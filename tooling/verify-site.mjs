@@ -289,11 +289,13 @@ if (index.includes('id="hero-dissolve"') && !index.includes('id="era-strip"')) {
   const registry = readFileSync(path.join(root, "apps", "desktop", "app", "core", "theme-registry.js"), "utf8");
   const released = [];
   let pendingId = null;
-  for (const token of registry.matchAll(/\bid:\s*"([a-z-]+)"|\breleaseReady:\s*(true|false)/g)) {
+  // [a-z0-9-]: an id with a digit ("system-7") must not be skipped, or its
+  // releaseReady would be paired with the next id and the check would lie.
+  for (const token of registry.matchAll(/\bid:\s*"([a-z0-9-]+)"|\breleaseReady:\s*(true|false)/g)) {
     if (token[1]) pendingId = token[1];
     else if (pendingId) { if (token[2] === "true") released.push(pendingId); pendingId = null; }
   }
-  const listed = [...index.matchAll(/data-appearance="([a-z-]+)"/g)].map((match) => match[1]);
+  const listed = [...index.matchAll(/data-appearance="([a-z0-9-]+)"/g)].map((match) => match[1]);
   const missing = released.filter((id) => !listed.includes(id));
   const extra = listed.filter((id) => !released.includes(id));
   if (released.length && !missing.length && !extra.length) {
@@ -304,7 +306,7 @@ if (index.includes('id="hero-dissolve"') && !index.includes('id="era-strip"')) {
   const erasSource = readFileSync(path.join(siteRoot, "js", "eras.js"), "utf8");
   const lineSource = erasSource.slice(erasSource.indexOf("export const ERAS"), erasSource.indexOf("export const BRANCHES"));
   const branchSource = erasSource.slice(erasSource.indexOf("export const BRANCHES"));
-  const branches = [...branchSource.matchAll(/\bid:\s*"([a-z-]+)"/g)].map((match) => match[1]).filter((id) => released.includes(id));
+  const branches = [...branchSource.matchAll(/\bid:\s*"([a-z0-9-]+)"/g)].map((match) => match[1]).filter((id) => released.includes(id));
   const onLine = branches.filter((id) => lineSource.includes(`id: "${id}"`));
   const menuTail = index.slice(index.lastIndexOf('data-appearance="liquid-glass"'));
   const grouped = branches.every((id) => /menu-sep[^]*?data-appearance="/.test(menuTail) && menuTail.includes(`data-appearance="${id}"`));

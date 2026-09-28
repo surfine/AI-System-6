@@ -275,9 +275,13 @@ function frameContentRegion(win, host) {
 // starting somewhere inside the content's padding.
 function frameBarTop(win, host) {
   const strips = [...win.children]
-    .filter((el) => !el.matches(".grow-box, .window-frame-bar, .finder-continuation"));
+    .filter((el) => !el.matches(".grow-box, .window-frame-bar, .finder-continuation, .nextstep-resize-strip"));
   const region = frameContentRegion(win, host);
-  const above = strips[strips.indexOf(region) - 1];
+  // The strip above is the nearest one actually drawn: a hidden sibling (the
+  // Finder sidebar in eras without one, display:none) measures 0, and taking
+  // it started the vertical bar at the window's top, over the title bar.
+  const above = strips.slice(0, strips.indexOf(region)).reverse()
+    .find((el) => (typeof el.getClientRects === "function" ? el.getClientRects().length : 1) > 0);
   return Math.round(above ? above.offsetTop + above.offsetHeight : region.offsetTop);
 }
 
@@ -286,7 +290,7 @@ function frameBarTop(win, host) {
 // below the content would run under the vertical lane.
 function markFrameReserve(scroller, win) {
   const content = [...win.children]
-    .filter((el) => !el.matches(".title-bar, .details-bar, .grow-box, .window-frame-bar, .finder-continuation"));
+    .filter((el) => !el.matches(".title-bar, .details-bar, .grow-box, .window-frame-bar, .finder-continuation, .nextstep-resize-strip"));
   const host = content.find((el) => el === scroller || el.contains(scroller));
   if (!host) return;
 

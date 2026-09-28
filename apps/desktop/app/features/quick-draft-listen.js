@@ -611,7 +611,7 @@ function renderQuickDraftFindings() {
       ? `<p class="draft-desk-finding-spoken">${escapeHtml(finding.spoken)}</p>` : "";
     // When audio alone fails, a rewrite is sometimes the wrong instruction:
     // the honest exits are more narration, an on-screen visual cue, or both.
-    // They record a production note for the shot list and never touch the text.
+    // They record a production note for the storyboard and never touch the text.
     const visualExits = finding.kind === "review" && finding.type === "visual-dependence"
       ? [
         `<button class="btn mini-btn" type="button" data-quick-draft-visual-exit="narration" data-quick-draft-visual-index="${index}">${escapeHtml(t("quick_draft_finding_visual_narration"))}</button>`,
@@ -697,7 +697,7 @@ function jumpToQuickDraftFinding(index) {
 
 // A visual-cue exit resolves the finding without a rewrite: the beat gets a
 // production note (add narration, add an on-screen cue, or both) that the
-// shot list will carry. The note anchors by quote and re-locates at export —
+// storyboard will carry. The note anchors by quote and re-locates at export —
 // an unlocatable beat refuses here rather than guessing.
 function noteVisualCueExit(index, exit = "visual") {
   const state = quickDraftListenState;
@@ -1073,10 +1073,10 @@ function toggleQuickDraftListen() {
 
 // --- Deliver-menu exports (P3) ----------------------------------------------
 //
-// Subtitles and the shot list go out through the existing Deliver menu — no
-// new panel. Both are built from the same listen beats the prompter reads;
-// SRT timings are estimates from reading speed and the export's own receipt
-// says so.
+// Subtitles and the storyboard go out through the existing Deliver menu — no
+// new panel. Both are built from the same listen beats the prompter reads
+// (storyboard rows are paragraphs whose estimates sum those beats); timings
+// are estimates from reading speed and each export's receipt says so.
 
 function quickDraftListenExportName() {
   const slot = activeProjectQuickDraft({ create: false });
@@ -1105,50 +1105,51 @@ async function exportQuickDraftListenSrt() {
   return saved;
 }
 
+// The storyboard (分镜) is one row per paragraph with a q: anchor and an
+// estimate at the SRT's rate; the pure rows live in listen-beats.js. Visual,
+// footage and cuttable judgments belong to the writer, so the skeleton fills
+// only what the draft itself shows and leaves the rest empty.
 async function exportQuickDraftShotList() {
   const state = ensureQuickDraftListenState();
   if (!state.beats.length) {
     setQuickDraftStatus(t("quick_draft_listen_empty"));
     return false;
   }
-  const body = quickDraftListenBody();
-  // Re-locate every visual-cue note by its quote. A note whose sentence has
-  // left the body is dropped, never guessed onto another beat.
-  const cuesByBeat = new Map();
-  for (const cue of state.visualCues || []) {
-    const range = window.AISystem6ListenBeats.findListenQuoteRange(body, cue.quote);
-    if (!range) continue;
-    const beat = window.AISystem6ListenBeats.listenBeatForOffset(state.beats, range.start);
-    if (!beat) continue;
-    const slot = cuesByBeat.get(beat.index) || { narration: false, visual: false };
-    slot.narration = slot.narration || cue.narration === true;
-    slot.visual = slot.visual || cue.visual === true;
-    cuesByBeat.set(beat.index, slot);
-  }
-  const cell = (value) => String(value || "").replace(/\|/g, "\\|").replace(/\s*\n\s*/g, " ").trim();
-  const rows = state.beats.map((beat) => {
-    const cue = cuesByBeat.get(beat.index);
-    const notes = [];
-    if (cue?.narration) notes.push(t("quick_draft_finding_visual_narration"));
-    if (cue?.visual) notes.push(t("quick_draft_finding_visual_cue"));
-    // The one shootable-visual classifier (可拍画面) from the intake strategy
-    // signals, reused as a hint — never a claim that footage exists.
-    if (!notes.length && QUICK_DRAFT_SHOOTABLE_PATTERN.test(beat.text)) {
-      notes.push(t("quick_draft_shootable_hint"));
-    }
-    return `| ${beat.index + 1} | ${cell(beat.text)} | ${cell(notes.join(" + ")) || "—"} |`;
+  const beatsApi = window.AISystem6ListenBeats;
+  const rows = beatsApi.buildStoryboardRows(quickDraftListenBody(), {
+    rate: Number(state.rate) || 1,
+    cues: state.visualCues || [],
   });
-  const markdown = [
-    `# ${quickDraftListenExportName()} · ${t("quick_draft_export_shot_list")}`,
-    "",
-    `| ${t("quick_draft_shot_list_col_beat")} | ${t("quick_draft_shot_list_col_text")} | ${t("quick_draft_shot_list_col_cue")} |`,
-    "| --- | --- | --- |",
-    ...rows,
-    "",
-  ].join("\n");
+  const cueLabel = (cue) => [
+    cue.narration === true ? t("quick_draft_finding_visual_narration") : "",
+    cue.visual === true ? t("quick_draft_finding_visual_cue") : "",
+  ].filter(Boolean).join(" + ");
+  const cueOpening = (quote) => {
+    const clause = String(quote || "").trim().split(/[，。！？；,.!?;\n]/)[0];
+    return clause.length > 16 ? `${clause.slice(0, 16)}…` : clause;
+  };
+  // The one shootable-visual classifier (可拍画面) from the intake strategy
+  // signals, reused as a hint — never a claim that footage exists.
+  const visual = (row) => (row.cues.length
+    ? row.cues.map((cue) => t("quick_draft_storyboard_cue_at", cueLabel(cue), cueOpening(cue.quote))).join("；")
+    : (QUICK_DRAFT_SHOOTABLE_PATTERN.test(row.text) ? t("quick_draft_shootable_hint") : ""));
+  const title = `${quickDraftListenExportName()} · ${t("quick_draft_export_shot_list")}`;
+  const markdown = beatsApi.buildStoryboardMarkdown(rows, {
+    title,
+    intro: t("quick_draft_storyboard_intro"),
+    columns: [
+      t("quick_draft_storyboard_col_paragraph"),
+      t("quick_draft_storyboard_col_visual"),
+      t("quick_draft_storyboard_col_footage"),
+      t("quick_draft_storyboard_col_duration"),
+      t("quick_draft_storyboard_col_cuttable"),
+    ],
+    notesHeading: t("quick_draft_storyboard_notes"),
+    visual,
+  });
   const saved = window.AISystem6WebPlatform.saveArtifact({
     text: markdown,
-    fileName: `${quickDraftListenExportName()}-shot-list.md`,
+    fileName: `${title}.md`,
     mimeType: "text/markdown;charset=utf-8",
   });
   setQuickDraftStatus(saved ? t("quick_draft_export_shot_list_done") : t("markdown_download_failed"));

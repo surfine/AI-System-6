@@ -23,9 +23,9 @@
 <meta name="twitter:title" content="AI System 6 - Keep your voice, sources, and judgment visible">
 <meta name="twitter:description" content="A local-first writing desk where AI helps without quietly becoming the writer.">
 <meta name="twitter:image" content="https://aisystem6.pages.dev/img/og-poster.png">
-<script>try{var t=localStorage.getItem("s6-site-theme");if(t&&t!=="classic")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<script>try{var t=localStorage.getItem("s6-site-theme"),p={"system-7":"classic",tiger:"aqua",lion:"snow-leopard","drawing-board":"platinum"}[t]||t;if(t)document.documentElement.setAttribute("data-era",t);if(p&&p!=="classic")document.documentElement.setAttribute("data-theme",p)}catch(e){}</script>
 <link rel="stylesheet" href="site.css?v=20260923a">
-<link rel="stylesheet" href="desk.css?v=20260923a">
+<link rel="stylesheet" href="desk.css?v=20260925a">
 </head>
 <body>
 
@@ -87,14 +87,18 @@
     <summary>Special</summary>
     <ul class="menu-list">
       <li><a href="#" data-appearance="classic"><span><span class="menu-check" aria-hidden="true">&#10003;</span>System 6</span><kbd>1988</kbd></a></li>
+      <li><a href="#" data-appearance="system-7"><span><span class="menu-check" aria-hidden="true">&#10003;</span>System 7</span><kbd>1991</kbd></a></li>
       <li><a href="#" data-appearance="platinum"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Platinum</span><kbd>1999</kbd></a></li>
       <li><a href="#" data-appearance="aqua"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Aqua</span><kbd>2002</kbd></a></li>
+      <li><a href="#" data-appearance="tiger"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Tiger</span><kbd>2005</kbd></a></li>
       <li><a href="#" data-appearance="snow-leopard"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Snow Leopard</span><kbd>2009</kbd></a></li>
+      <li><a href="#" data-appearance="lion"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Lion</span><kbd>2011</kbd></a></li>
       <li><a href="#" data-appearance="yosemite"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Yosemite</span><kbd>2014</kbd></a></li>
       <li><a href="#" data-appearance="big-sur"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Big Sur</span><kbd>2020</kbd></a></li>
       <li><a href="#" data-appearance="liquid-glass"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Liquid Glass</span><kbd>2026</kbd></a></li>
       <li class="menu-sep" aria-hidden="true"></li>
       <li><a href="#" data-appearance="nextstep"><span><span class="menu-check" aria-hidden="true">&#10003;</span>NeXTSTEP</span><kbd>1995</kbd></a></li>
+      <li><a href="#" data-appearance="drawing-board"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Drawing Board</span><kbd>1998</kbd></a></li>
       <li class="menu-sep" aria-hidden="true"></li>
       <li><a href="#" id="menu-cycle"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Cycle Appearances</span></a></li>
       <li class="menu-sep" aria-hidden="true"></li>
@@ -280,10 +284,9 @@
   <section class="scene" id="more" aria-labelledby="more-title">
     <p class="scene-kicker">After hours</p>
     <h2 class="scene-head" id="more-title">When you stop writing,<br>it's still a whole computer.</h2>
-    <p class="scene-note">Games in windows, a music quiz, the desk accessories, and tools a quiet desk still has room for. Every picture here is a photograph of the running app.</p>
+    <p class="scene-note">Games in windows, the desk accessories, and tools a quiet desk still has room for. Every picture here is a photograph of the running app.</p>
     <div class="more-switch" role="tablist" aria-label="What else is on the desk" hidden>
       <button type="button" role="tab" data-panel="games" aria-selected="true">Games</button>
-      <button type="button" role="tab" data-panel="music" aria-selected="false">Music</button>
       <button type="button" role="tab" data-panel="accessories" aria-selected="false">Desk accessories</button>
       <button type="button" role="tab" data-panel="impossible" aria-selected="false">Tools</button>
     </div>
@@ -306,19 +309,6 @@
       </figure>
     </div>
       <p class="btn-row"><a class="btn btn-default" href="https://system6.aaronlau.me">Go Play Them</a></p>
-    </div>
-
-    <div class="more-panel" id="music" role="tabpanel">
-      <h3 class="more-head" id="music-title">It also plays the music.</h3>
-      <p class="scene-fine">One More Tune puts an Apple ad on a white-label record. Listen, choose, and follow ten track positions through the round. Come back later and continue with all ten questions at the place you reached. Two more rounds follow Apple's keynotes: Relay, about the people who handed the stage to one another, and Next Act, about what a famous line was doing and what came after it. An unofficial quiz, made by a fan.</p>
-      <div class="games-wall games-wall-single">
-      <figure class="proof-card">
-        <img class="proof-shot games-shot" src="img/proofs/one-more-tune-2026.webp?v=20260925a" alt="One More Tune in Liquid Glass: a record, ten track positions, the revealed answer and the next tune." loading="lazy" decoding="async">
-        <figcaption class="proof-cap"><span class="proof-label">One More Tune</span><span class="proof-line">Ten tracks, one record, your next tune.</span></figcaption>
-      </figure>
-    </div>
-      <p class="proof-note">The music is the store's own promotional preview.</p>
-      <p class="btn-row"><a class="btn btn-default" href="https://system6.aaronlau.me/?launch=one-more-tune">Play a Round</a></p>
     </div>
 
     <div class="more-panel" id="accessories" role="tabpanel">
@@ -372,12 +362,40 @@
     </div>
   </section>
 
+  <!-- ================= Bonsai City ================= -->
+  <section class="scene" id="bonsai-city" aria-labelledby="bonsai-title">
+    <p class="scene-kicker">Our own city builder</p>
+    <h2 class="scene-head" id="bonsai-title">Bonsai City.<br>It grows street by street.</h2>
+    <p class="scene-note">Bonsai City is the desk's own city builder, written for AI System 6. Lay roads, rail and subway, zone the blocks, and a city grows around them. Maps come in 64², 96² and 128²; transport and public services really move people; advisers tell you what the city is missing; saves stay in your browser; and the 3D view changes from day to night. You can bring in a city from Micropolis, too.</p>
+    <div class="games-wall games-wall-single">
+      <figure class="proof-card">
+        <img class="proof-shot games-shot" src="img/proofs/bonsai-city.webp?v=20260927a" alt="Bonsai City under Platinum: the example mid-size city in 3D, with streets, rail, traffic, the transport tools and the minimap." loading="lazy" decoding="async">
+        <figcaption class="proof-cap"><span class="proof-label">Bonsai City</span><span class="proof-line">A mid-size city, 1903, population 1,245.</span></figcaption>
+      </figure>
+    </div>
+    <p class="btn-row"><a class="btn btn-default" href="https://system6.aaronlau.me/go/bonsai-city">Build a City</a></p>
+  </section>
+  <!-- ================= One More Tune ================= -->
+  <section class="scene" id="one-more-tune" aria-labelledby="tune-title">
+    <p class="scene-kicker">A music quiz</p>
+    <h2 class="scene-head" id="tune-title">One More Tune.<br>Name the ad from the song.</h2>
+    <p class="scene-note">One More Tune puts an Apple ad on a white-label record. Listen, choose, and follow ten track positions through the round. Come back later and continue with all ten questions at the place you reached. Two more rounds follow Apple's keynotes: Relay, about the people who handed the stage to one another, and Next Act, about what a famous line was doing and what came after it. An unofficial quiz, made by a fan.</p>
+    <div class="games-wall games-wall-single">
+      <figure class="proof-card">
+        <img class="proof-shot games-shot" src="img/proofs/one-more-tune-2026.webp?v=20260925a" alt="One More Tune in Liquid Glass: a record, ten track positions, the revealed answer and the next tune." loading="lazy" decoding="async">
+        <figcaption class="proof-cap"><span class="proof-label">One More Tune</span><span class="proof-line">Ten tracks, one record, your next tune.</span></figcaption>
+      </figure>
+    </div>
+    <p class="proof-note">The music is the store's own promotional preview.</p>
+    <p class="btn-row"><a class="btn btn-default" href="https://system6.aaronlau.me/?launch=one-more-tune">Play a Round</a></p>
+  </section>
+
   <!-- ================= Two floppies ================= -->
   <section class="scene" id="floppies" aria-labelledby="floppies-title">
     <p class="scene-kicker">Size</p>
     <h2 class="scene-head" id="floppies-title">Two floppies.</h2>
     <div class="floppy-wall" id="floppy-wall"></div>
-    <p class="scene-fine">The desk you boot into fits in what two 1.44&nbsp;MB floppy disks once held. The AI model is a separate and far larger thing, and which one you use stays your choice. The same system also carries thirty-five finished project disks, real sample projects you can open and take apart. Each has an address of its own, under the same rule every window follows, so a disk can be passed to a friend as one link: <code>/go/dtk</code>, <code>/go/m5mba</code>, <code>/go/pocket</code>.</p>
+    <p class="scene-fine">The desk you boot into fits in what two 1.44&nbsp;MB floppy disks once held. The AI model is a separate and far larger thing, and which one you use stays your choice. The same system also carries thirty-six finished project disks, real sample projects you can open and take apart. Each has an address of its own, under the same rule every window follows, so a disk can be passed to a friend as one link: <code>/go/dtk</code>, <code>/go/m5mba</code>, <code>/go/pocket</code>. The whole shelf is one link too, <code>/go/disks</code>, and it opens on the newest disk, ready to read.</p>
   </section>
   <!-- ================= Your model ================= -->
   <section class="scene" id="model" aria-labelledby="model-title">
@@ -443,7 +461,7 @@
       <header class="tbar"><span class="close-box" aria-hidden="true"></span><h2 id="demo-title">AI System 6 - The Film</h2><span class="qt-badge">50s&nbsp;Demo</span></header>
       <div class="qt-body" id="qt-body">
         <a class="qt-poster" id="qt-poster" href="https://www.bilibili.com/video/BV1ht3m6UEDb/">
-          <img src="img/hero-poster.jpg" width="1440" height="900" loading="lazy" decoding="async"
+          <img src="img/hero-poster.webp" width="1440" height="900" loading="lazy" decoding="async"
                alt="Poster frame: the AI System 6 desktop with Searcher, Reader, DocMap, and ClioTalk windows open.">
           <span class="qt-poster-play" aria-hidden="true"></span>
           <span class="qt-poster-note">Play the 50-second film</span>
@@ -489,6 +507,6 @@
   </footer>
 
 </main>
-<script type="module" src="js/main.js?v=20260923a"></script>
+<script type="module" src="js/main.js?v=20260925a"></script>
 </body>
 </html>

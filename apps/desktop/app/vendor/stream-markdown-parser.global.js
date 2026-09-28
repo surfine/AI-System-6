@@ -1,4 +1,4 @@
-/*! stream-markdown-parser v1.2.6 | MIT License | https://github.com/Simon-He95/markstream-vue/tree/main/packages/markdown-parser */
+/*! stream-markdown-parser v1.2.16 | MIT License | https://github.com/Simon-He95/markstream-vue/tree/main/packages/markdown-parser */
 (function(global) {
 "use strict";
 var exports = {};
@@ -1032,7 +1032,7 @@ function decodeHTML(htmlString, mode = DecodingMode.Legacy) {
 }
 
 //#endregion
-//#region ../../node_modules/.pnpm/mdurl@2.0.0/node_modules/mdurl/lib/decode.mjs
+//#region ../../node_modules/.pnpm/mdurl@2.1.0/node_modules/mdurl/lib/decode.mjs
 var import_markdown_it_task_checkbox = /* @__PURE__ */ __toESM(require_markdown_it_task_checkbox(), 1);
 const decodeCache = {};
 function getDecodeCache(exclude) {
@@ -1106,7 +1106,7 @@ decode$1.componentChars = "";
 var decode_default = decode$1;
 
 //#endregion
-//#region ../../node_modules/.pnpm/mdurl@2.0.0/node_modules/mdurl/lib/encode.mjs
+//#region ../../node_modules/.pnpm/mdurl@2.1.0/node_modules/mdurl/lib/encode.mjs
 const encodeCache = {};
 function getEncodeCache(exclude) {
 	let cache = encodeCache[exclude];
@@ -1162,7 +1162,7 @@ encode$1.componentChars = "-_.!~*'()";
 var encode_default = encode$1;
 
 //#endregion
-//#region ../../node_modules/.pnpm/mdurl@2.0.0/node_modules/mdurl/lib/format.mjs
+//#region ../../node_modules/.pnpm/mdurl@2.1.0/node_modules/mdurl/lib/format.mjs
 function format(url) {
 	let result = "";
 	result += url.protocol || "";
@@ -1178,7 +1178,7 @@ function format(url) {
 }
 
 //#endregion
-//#region ../../node_modules/.pnpm/mdurl@2.0.0/node_modules/mdurl/lib/parse.mjs
+//#region ../../node_modules/.pnpm/mdurl@2.1.0/node_modules/mdurl/lib/parse.mjs
 function Url() {
 	this.protocol = null;
 	this.slashes = null;
@@ -1352,7 +1352,7 @@ Url.prototype.parseHost = function(host) {
 var parse_default = urlParse;
 
 //#endregion
-//#region ../../node_modules/.pnpm/mdurl@2.0.0/node_modules/mdurl/index.mjs
+//#region ../../node_modules/.pnpm/mdurl@2.1.0/node_modules/mdurl/index.mjs
 var mdurl_exports = /* @__PURE__ */ __export$1({
 	decode: () => decode_default,
 	encode: () => encode_default,
@@ -1361,7 +1361,7 @@ var mdurl_exports = /* @__PURE__ */ __export$1({
 });
 
 //#endregion
-//#region ../../node_modules/.pnpm/markdown-it-ts@1.0.7/node_modules/markdown-it-ts/dist/strategy_diagnostics-Bq2ur_-v.js
+//#region ../../node_modules/.pnpm/markdown-it-ts@1.1.2/node_modules/markdown-it-ts/dist/strategy_diagnostics-12ExVXij.js
 var __defProp = Object.defineProperty;
 var __export = (all) => {
 	let target = {};
@@ -1743,7 +1743,6 @@ function countLines(input) {
 }
 const FOOTNOTE_DEF_RE = /(?:^|\n)[ \t]{0,3}\[\^[^\]\n]+\]:/m;
 const ABBR_DEF_RE = /(?:^|\n)[ \t]{0,3}\*\[[^\]\n]+\]:/m;
-const REFERENCE_DEF_RE = /(?:^|\n)[ \t]{0,3}\[(?!\^)(?:\\[\s\S]|[^\]\\[])+\][ \t]*:/m;
 const GLOBAL_STATE_ENV_KEYS = [
 	"references",
 	"footnotes",
@@ -1753,6 +1752,59 @@ const GLOBAL_STATE_ENV_KEYS = [
 ];
 const GLOBAL_STATE_ENV_MARKER = Symbol.for("markdown-it-ts.global-state");
 const hasOwn$2 = Object.prototype.hasOwnProperty;
+/**
+* Scanner equivalent of the former reference-definition regex
+* `(?:^|\n)[ \t]{0,3}\[(?!\^)(?:\\[\s\S]|[^\]\\[])+\][ \t]*:` without a
+* backtracking regex.
+*
+* The reference-definition pattern is expensive to run on large documents
+* (nested alternation over the whole source). This scanner walks the source
+* with native `indexOf` and only examines `[` characters that sit at a line
+* start with up to 3 spaces of indent, which is exactly the pattern shape.
+*/
+function hasReferenceDefinition(src) {
+	const len = src.length;
+	let searchFrom = 0;
+	while (searchFrom < len) {
+		const lb = src.indexOf("[", searchFrom);
+		if (lb === -1) return false;
+		let indent = 0;
+		let prev = lb - 1;
+		while (prev >= 0 && src.charCodeAt(prev) !== 10) {
+			const ch = src.charCodeAt(prev);
+			if (ch === 32 || ch === 9) {
+				indent++;
+				prev--;
+				continue;
+			}
+			break;
+		}
+		if ((prev < 0 || src.charCodeAt(prev) === 10) && indent <= 3 && src.charCodeAt(lb + 1) !== 94) {
+			let pos = lb + 1;
+			if (pos >= len || src.charCodeAt(pos) === 93) {
+				searchFrom = lb + 1;
+				continue;
+			}
+			while (pos < len) {
+				const ch = src.charCodeAt(pos);
+				if (ch === 93) {
+					let p = pos + 1;
+					while (p < len && (src.charCodeAt(p) === 32 || src.charCodeAt(p) === 9)) p++;
+					if (p < len && src.charCodeAt(p) === 58) return true;
+					break;
+				}
+				if (ch === 91) break;
+				if (ch === 92) {
+					pos += 2;
+					continue;
+				}
+				pos++;
+			}
+		}
+		searchFrom = lb + 1;
+	}
+	return false;
+}
 function isGlobalMarkdownStateReason(value) {
 	return value === "reference-definition" || value === "footnote-definition" || value === "abbreviation-definition";
 }
@@ -1844,7 +1896,7 @@ function detectGlobalMarkdownState(src) {
 	if (!src.includes("]:") && !src.includes("*[")) return null;
 	if (FOOTNOTE_DEF_RE.test(src)) return "footnote-definition";
 	if (ABBR_DEF_RE.test(src)) return "abbreviation-definition";
-	if (REFERENCE_DEF_RE.test(src)) return "reference-definition";
+	if (hasReferenceDefinition(src)) return "reference-definition";
 	return null;
 }
 function getKnownGlobalMarkdownState(env) {
@@ -2812,7 +2864,7 @@ var require_punycode = /* @__PURE__ */ __commonJS({ "../../node_modules/.pnpm/pu
 }) });
 
 //#endregion
-//#region ../../node_modules/.pnpm/markdown-it-ts@1.0.7/node_modules/markdown-it-ts/dist/parse-jHxLY2Qp.js
+//#region ../../node_modules/.pnpm/markdown-it-ts@1.1.2/node_modules/markdown-it-ts/dist/parse-SbdwJ_yx.js
 var import_punycode = /* @__PURE__ */ __toESM(require_punycode(), 1);
 /**
 * Parse link destination: returns { ok, pos, str }
@@ -3846,33 +3898,34 @@ const strikethrough = {
 * Skip text characters for text token, place those to pending buffer
 * and increment current pos
 */
+const TERMINATOR_TABLE = new Uint8Array(256);
+for (const code$1 of [
+	10,
+	33,
+	35,
+	36,
+	37,
+	38,
+	42,
+	43,
+	45,
+	58,
+	60,
+	61,
+	62,
+	64,
+	91,
+	92,
+	93,
+	94,
+	95,
+	96,
+	123,
+	125,
+	126
+]) TERMINATOR_TABLE[code$1] = 1;
 function isTerminatorChar(ch) {
-	switch (ch) {
-		case 10:
-		case 33:
-		case 35:
-		case 36:
-		case 37:
-		case 38:
-		case 42:
-		case 43:
-		case 45:
-		case 58:
-		case 60:
-		case 61:
-		case 62:
-		case 64:
-		case 91:
-		case 92:
-		case 93:
-		case 94:
-		case 95:
-		case 96:
-		case 123:
-		case 125:
-		case 126: return true;
-		default: return false;
-	}
+	return ch < 256 && TERMINATOR_TABLE[ch] === 1;
 }
 function text(state, silent) {
 	const src = state.src;
@@ -4452,6 +4505,29 @@ function inline(state) {
 }
 const CJK_CHAR_RE = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
 const ASCII_DOMAIN_START_RE = /[0-9a-z]/i;
+function hasLinkifySeed(text$1) {
+	return text$1.includes(".") || text$1.includes("@") || text$1.includes(":");
+}
+const linkifySeedSafety = /* @__PURE__ */ new WeakMap();
+function isLinkifySeedSafe(linkify$2) {
+	const schemaSearch = linkify$2.re?.get_schema_search?.();
+	if (!schemaSearch) return false;
+	const cached = linkifySeedSafety.get(linkify$2);
+	if (cached && cached.schemaSearch === schemaSearch) return cached.safe;
+	const schemas = linkify$2.__schemas__;
+	let safe = true;
+	if (schemas) {
+		for (const name in schemas) if (name.charCodeAt(name.length - 1) !== 58) {
+			safe = false;
+			break;
+		}
+	}
+	linkifySeedSafety.set(linkify$2, {
+		schemaSearch,
+		safe
+	});
+	return safe;
+}
 function isLinkOpen(str) {
 	return /^<a[>\s]/i.test(str);
 }
@@ -4478,9 +4554,11 @@ function trimCjkPrefixFromFuzzyLink(linkify$2, link$1) {
 function linkify(state) {
 	const blockTokens = state.tokens;
 	if (!state.md?.options?.linkify) return;
+	const seedSafe = isLinkifySeedSafe(state.md.linkify);
+	const mayMatch = (text$1) => seedSafe ? hasLinkifySeed(text$1) : true;
 	for (let j = 0; j < blockTokens.length; j++) {
 		const blockToken$1 = blockTokens[j];
-		if (blockToken$1.type !== "inline" || !state.md.linkify.test(blockToken$1.content)) continue;
+		if (blockToken$1.type !== "inline" || !mayMatch(blockToken$1.content)) continue;
 		let tokens = blockToken$1.children;
 		if (!tokens) {
 			tokens = [];
@@ -4499,7 +4577,7 @@ function linkify(state) {
 				if (isLinkClose(currentToken.content)) htmlLinkLevel++;
 			}
 			if (htmlLinkLevel > 0) continue;
-			if (currentToken.type !== "text" || !state.md.linkify.test(currentToken.content)) continue;
+			if (currentToken.type !== "text" || !mayMatch(currentToken.content)) continue;
 			const text$1 = currentToken.content;
 			let links = (state.md.linkify.match(text$1) || []).map((link$1) => trimCjkPrefixFromFuzzyLink(state.md.linkify, link$1));
 			if (links.length === 0) continue;
@@ -4763,8 +4841,8 @@ function process_inlines(tokens, state) {
 				nextChar = tokens[j].content.charCodeAt(0);
 				break;
 			}
-			const isLastPunctChar = isMdAsciiPunct(lastChar) || isPunctChar(String.fromCharCode(lastChar));
-			const isNextPunctChar = isMdAsciiPunct(nextChar) || isPunctChar(String.fromCharCode(nextChar));
+			const isLastPunctChar = isPunctCode(lastChar);
+			const isNextPunctChar = isPunctCode(nextChar);
 			const isLastWhiteSpace = isWhiteSpace(lastChar);
 			const isNextWhiteSpace = isWhiteSpace(nextChar);
 			if (isNextWhiteSpace) canOpen = false;
@@ -4856,6 +4934,10 @@ const RECODE_HOSTNAME_FOR = [
 	"https:",
 	"mailto:"
 ];
+const NON_ASCII_RE = /[^\0-\x7F]/;
+const PUNYCODE_LABEL_RE = /xn--/;
+const ENCODE_IDENTITY_RE = /%(?![0-9a-f]{2})|[^\w;/?:@&=+$,\-.!~*'()#%]/i;
+const DECODE_SCAN_RE = /%[0-9a-f]{2}/i;
 /**
 * Validate URL to prevent XSS attacks.
 * This validator can prohibit more than really needed to prevent XSS.
@@ -4871,11 +4953,14 @@ function validateLink(url) {
 function normalizeLink(url) {
 	const parsed = parse_default(url, true);
 	if (parsed.hostname) {
-		if (!parsed.protocol || RECODE_HOSTNAME_FOR.includes(parsed.protocol)) try {
-			parsed.hostname = import_punycode.default.toASCII(parsed.hostname);
-		} catch {}
+		if (!parsed.protocol || RECODE_HOSTNAME_FOR.includes(parsed.protocol)) {
+			if (NON_ASCII_RE.test(parsed.hostname)) try {
+				parsed.hostname = import_punycode.default.toASCII(parsed.hostname);
+			} catch {}
+		}
 	}
-	return encode_default(format(parsed));
+	const formatted = format(parsed);
+	return ENCODE_IDENTITY_RE.test(formatted) ? encode_default(formatted) : formatted;
 }
 /**
 * Normalize link text by decoding hostname from punycode to Unicode
@@ -4883,11 +4968,14 @@ function normalizeLink(url) {
 function normalizeLinkText(url) {
 	const parsed = parse_default(url, true);
 	if (parsed.hostname) {
-		if (!parsed.protocol || RECODE_HOSTNAME_FOR.includes(parsed.protocol)) try {
-			parsed.hostname = import_punycode.default.toUnicode(parsed.hostname);
-		} catch {}
+		if (!parsed.protocol || RECODE_HOSTNAME_FOR.includes(parsed.protocol)) {
+			if (NON_ASCII_RE.test(parsed.hostname) || PUNYCODE_LABEL_RE.test(parsed.hostname)) try {
+				parsed.hostname = import_punycode.default.toUnicode(parsed.hostname);
+			} catch {}
+		}
 	}
-	return decode_default(format(parsed), `${decode_default.defaultChars}%`);
+	const formatted = format(parsed);
+	return DECODE_SCAN_RE.test(formatted) ? decode_default(formatted, `${decode_default.defaultChars}%`) : formatted;
 }
 function isSpace$7(code$1) {
 	switch (code$1) {
@@ -5150,7 +5238,7 @@ function hr(state, startLine, endLine, silent) {
 	state.line = startLine + 1;
 	const token = state.push("hr", "hr", 0);
 	token.map = [startLine, state.line];
-	token.markup = new Array(cnt + 1).join(String.fromCharCode(marker));
+	token.markup = String.fromCharCode(marker).repeat(cnt);
 	return true;
 }
 const HTML_SEQUENCES = [
@@ -5292,21 +5380,29 @@ const LineFlag = {
 	Pipe: 1,
 	ParagraphTerminator: 2
 };
-function isParagraphTerminatorCandidate(code$1) {
-	switch (code$1) {
-		case 35:
-		case 42:
-		case 43:
-		case 45:
-		case 60:
-		case 62:
-		case 95:
-		case 96:
-		case 124:
-		case 126: return true;
-	}
-	return code$1 >= 48 && code$1 <= 57;
-}
+const PARAGRAPH_TERMINATOR_TABLE = new Uint8Array(256);
+for (const code$1 of [
+	35,
+	42,
+	43,
+	45,
+	60,
+	62,
+	95,
+	96,
+	124,
+	126,
+	48,
+	49,
+	50,
+	51,
+	52,
+	53,
+	54,
+	55,
+	56,
+	57
+]) PARAGRAPH_TERMINATOR_TABLE[code$1] = 1;
 var StateBlock = class {
 	src;
 	md;
@@ -5332,45 +5428,63 @@ var StateBlock = class {
 		this.env = env;
 		this.tokens = tokens;
 		const s = this.src;
-		let indent = 0;
-		let offset = 0;
+		const len = s.length;
+		const bMarks = this.bMarks;
+		const eMarks = this.eMarks;
+		const tShift = this.tShift;
+		const sCount = this.sCount;
+		const bsCount = this.bsCount;
+		const lineFlags = this.lineFlags;
 		let start = 0;
-		let indent_found = false;
-		let flags = 0;
-		for (let pos = 0, len = s.length; pos < len; pos++) {
-			const ch = s.charCodeAt(pos);
-			if (ch === 124) flags |= LineFlag.Pipe | LineFlag.ParagraphTerminator;
-			if (!indent_found) if (isSpace$4(ch)) {
-				indent++;
-				if (ch === 9) offset += 4 - offset % 4;
-				else offset++;
-				continue;
-			} else {
-				indent_found = true;
-				if (isParagraphTerminatorCandidate(ch)) flags |= LineFlag.ParagraphTerminator;
+		let pipePos = s.indexOf("|");
+		while (start < len) {
+			let end = start;
+			while (end < len && end - start < 4 && s.charCodeAt(end) !== 10) end++;
+			if (end - start === 4 && end < len) {
+				const nl = s.indexOf("\n", end);
+				end = nl === -1 ? len : nl;
 			}
-			if (ch === 10 || pos === len - 1) {
-				if (ch !== 10) pos++;
-				this.bMarks.push(start);
-				this.eMarks.push(pos);
-				this.tShift.push(indent);
-				this.sCount.push(offset);
-				this.bsCount.push(0);
-				this.lineFlags.push(flags);
-				indent_found = false;
-				indent = 0;
-				offset = 0;
-				flags = 0;
-				start = pos + 1;
+			let indent = 0;
+			let offset = 0;
+			let pos = start;
+			while (pos < end) {
+				const ch = s.charCodeAt(pos);
+				if (ch === 32) {
+					indent++;
+					offset++;
+					pos++;
+					continue;
+				}
+				if (ch === 9) {
+					indent++;
+					offset += 4 - offset % 4;
+					pos++;
+					continue;
+				}
+				break;
 			}
+			let flags = 0;
+			if (pos < end) {
+				if (PARAGRAPH_TERMINATOR_TABLE[s.charCodeAt(pos)] === 1) flags |= LineFlag.ParagraphTerminator;
+				if (pipePos < start) pipePos = s.indexOf("|", start);
+				if (pipePos !== -1 && pipePos < end) flags |= LineFlag.Pipe | LineFlag.ParagraphTerminator;
+				if (pipePos === -1) pipePos = len;
+			}
+			bMarks.push(start);
+			eMarks.push(end);
+			tShift.push(indent);
+			sCount.push(offset);
+			bsCount.push(0);
+			lineFlags.push(flags);
+			start = end + 1;
 		}
-		this.bMarks.push(s.length);
-		this.eMarks.push(s.length);
-		this.tShift.push(0);
-		this.sCount.push(0);
-		this.bsCount.push(0);
-		this.lineFlags.push(0);
-		this.lineMax = this.bMarks.length - 1;
+		bMarks.push(len);
+		eMarks.push(len);
+		tShift.push(0);
+		sCount.push(0);
+		bsCount.push(0);
+		lineFlags.push(0);
+		this.lineMax = bMarks.length - 1;
 	}
 	push(type, tag, nesting) {
 		if (nesting === 0) {
@@ -5445,7 +5559,7 @@ var StateBlock = class {
 				else break;
 				first++;
 			}
-			if (lineIndent > indent) return new Array(lineIndent - indent + 1).join(" ") + src$1.slice(first, last);
+			if (lineIndent > indent) return " ".repeat(lineIndent - indent) + src$1.slice(first, last);
 			return src$1.slice(first, last);
 		}
 		const queue = new Array(end - begin);
@@ -5469,7 +5583,7 @@ var StateBlock = class {
 				else break;
 				first++;
 			}
-			if (lineIndent > indent) queue[i] = new Array(lineIndent - indent + 1).join(" ") + src.slice(first, last);
+			if (lineIndent > indent) queue[i] = " ".repeat(lineIndent - indent) + src.slice(first, last);
 			else queue[i] = src.slice(first, last);
 		}
 		return queue.join("");
@@ -6023,6 +6137,7 @@ function lineContainsPipe(state, line) {
 	return false;
 }
 function escapedSplit(str) {
+	if (!str.includes("\\")) return str.split("|");
 	const result = [];
 	const max = str.length;
 	let pos = 0;
@@ -6575,8 +6690,9 @@ var ParserCore = class {
 		}
 		return this.cachedCoreNamedRules;
 	}
-	process(state) {
-		if (!(!!state.env && (Object.prototype.hasOwnProperty.call(state.env, "__mdtsRuleProfile") || Object.prototype.hasOwnProperty.call(state.env, "__mdtsProfileRules")))) {
+	process(state, afterRule) {
+		const shouldProfile = !!state.env && (Object.prototype.hasOwnProperty.call(state.env, "__mdtsRuleProfile") || Object.prototype.hasOwnProperty.call(state.env, "__mdtsProfileRules"));
+		if (!shouldProfile && !afterRule) {
 			const rules = this.getCoreRules();
 			for (let i = 0; i < rules.length; i++) rules[i](state);
 			return;
@@ -6586,9 +6702,10 @@ var ParserCore = class {
 			const startedAt = typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
 			namedRules[i].fn(state);
 			const endedAt = typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
-			recordRuleInvocation(state.env, "core", namedRules[i].name, endedAt - startedAt, true, false);
+			if (shouldProfile) recordRuleInvocation(state.env, "core", namedRules[i].name, endedAt - startedAt, true, false);
+			afterRule?.(namedRules[i], state);
 		}
-		finalizeRuleProfile(state.env);
+		if (shouldProfile) finalizeRuleProfile(state.env);
 	}
 	parseSource(src, env = {}, md) {
 		if (typeof src !== "string" && hasNormalizationChars(src)) return this.parse(sourceToString(src), env, md);
@@ -6607,7 +6724,7 @@ var ParserCore = class {
 };
 
 //#endregion
-//#region ../../node_modules/.pnpm/markdown-it-ts@1.0.7/node_modules/markdown-it-ts/dist/chunk_recommend-utTQZeMj.js
+//#region ../../node_modules/.pnpm/markdown-it-ts@1.1.2/node_modules/markdown-it-ts/dist/chunk_recommend-BlERghvM.js
 const INLINE_TERMINATOR_RE = /[\n!#$%&*+\-:<=>@[\]\\^_`{}~]/;
 function isPlainInlineText(src) {
 	return !INLINE_TERMINATOR_RE.test(src);
@@ -7039,33 +7156,37 @@ function renderAtxHeading(src, pos, end) {
 function startsWithBulletItem(src, pos, end) {
 	return pos + 1 < end && src.charCodeAt(pos) === 45 && src.charCodeAt(pos + 1) === 32;
 }
+const BULLET_SAFE_TABLE = new Uint8Array(256).fill(1);
+for (const code$1 of [
+	10,
+	33,
+	35,
+	36,
+	37,
+	38,
+	42,
+	43,
+	45,
+	58,
+	60,
+	61,
+	62,
+	64,
+	91,
+	92,
+	93,
+	94,
+	95,
+	96,
+	123,
+	125,
+	126
+]) BULLET_SAFE_TABLE[code$1] = 0;
+BULLET_SAFE_TABLE[34] = 0;
 function renderSingleCharBulletItem(src, pos) {
-	switch (src.charCodeAt(pos)) {
-		case 34: return "<li>&quot;</li>\n";
-		case 10:
-		case 33:
-		case 35:
-		case 36:
-		case 37:
-		case 38:
-		case 42:
-		case 43:
-		case 45:
-		case 58:
-		case 60:
-		case 61:
-		case 62:
-		case 64:
-		case 91:
-		case 92:
-		case 93:
-		case 94:
-		case 95:
-		case 96:
-		case 123:
-		case 125:
-		case 126: return null;
-	}
+	const ch = src.charCodeAt(pos);
+	if (ch === 34) return "<li>&quot;</li>\n";
+	if (ch < 256 && BULLET_SAFE_TABLE[ch] === 0) return null;
 	return `<li>${src[pos]}</li>\n`;
 }
 function renderBulletItem(src, pos, end) {
@@ -7920,7 +8041,7 @@ function getAutoUnboundedDecision(md, totalChars, totalLines) {
 	if (totalChars >= (md.options.autoUnboundedThresholdChars ?? DEFAULT_AUTO_UNBOUNDED_THRESHOLD_CHARS)) return "yes";
 	const thresholdLines = md.options.autoUnboundedThresholdLines ?? DEFAULT_AUTO_UNBOUNDED_THRESHOLD_LINES;
 	if (totalLines !== void 0) return totalLines >= thresholdLines ? "yes" : "no";
-	if (totalChars + 1 < thresholdLines) return "no";
+	if (totalChars < 2 * thresholdLines - 1) return "no";
 	return "need-lines";
 }
 /**
@@ -8161,7 +8282,7 @@ function recommendStreamChunkStrategy(sizeChars, sizeLines = Math.max(0, sizeCha
 }
 
 //#endregion
-//#region ../../node_modules/.pnpm/markdown-it-ts@1.0.7/node_modules/markdown-it-ts/dist/index.js
+//#region ../../node_modules/.pnpm/markdown-it-ts@1.1.2/node_modules/markdown-it-ts/dist/index.js
 var commonmark_default = {
 	options: {
 		html: true,
@@ -9013,6 +9134,41 @@ var Renderer = class {
 var renderer_default = Renderer;
 const EMPTY_TOKENS = [];
 const GLOBAL_STATE_APPEND_SCAN_WINDOW = 4096;
+function copyOptions(options) {
+	const copy = { ...options };
+	if (Array.isArray(options.quotes)) copy.quotes = [...options.quotes];
+	if (options.experimental) copy.experimental = { ...options.experimental };
+	return copy;
+}
+function optionsEqual(left, right) {
+	const keys = Object.keys(right);
+	if (Object.keys(left).length !== keys.length) return false;
+	return keys.every((key) => {
+		if (!Object.hasOwn(left, key)) return false;
+		const leftValue = left[key];
+		const rightValue = right[key];
+		if (Array.isArray(leftValue) && Array.isArray(rightValue)) return leftValue.length === rightValue.length && leftValue.every((value, index) => Object.is(value, rightValue[index]));
+		if (key === "experimental" && leftValue && rightValue) {
+			const leftExperimental = leftValue;
+			const rightExperimental = rightValue;
+			const experimentalKeys = Object.keys(rightExperimental);
+			return Object.keys(leftExperimental).length === experimentalKeys.length && experimentalKeys.every((option) => Object.hasOwn(leftExperimental, option) && Object.is(leftExperimental[option], rightExperimental[option]));
+		}
+		return Object.is(leftValue, rightValue);
+	});
+}
+function copyParserConfig(md) {
+	return {
+		options: copyOptions(md.options),
+		coreVersion: md.core.ruler.version,
+		blockVersion: md.block.ruler.version,
+		inlineVersion: md.inline.ruler.version,
+		inline2Version: md.inline.ruler2.version
+	};
+}
+function parserConfigEqual(config$1, md) {
+	return optionsEqual(config$1.options, md.options) && config$1.coreVersion === md.core.ruler.version && config$1.blockVersion === md.block.ruler.version && config$1.inlineVersion === md.inline.ruler.version && config$1.inline2Version === md.inline.ruler2.version;
+}
 function appendedHasBlockConstructs(s) {
 	const len = s.length;
 	let lineStart = 0;
@@ -9143,8 +9299,13 @@ function makeEmptyStats() {
 }
 var StreamParser = class {
 	core;
+	anchorBlock = new ParserBlock();
 	cache = null;
+	snapshots = /* @__PURE__ */ new WeakSet();
 	stats = makeEmptyStats();
+	normalizeLineEndings = true;
+	tokenMapsTrusted = true;
+	allowUntrustedTailReuse = false;
 	MIN_SIZE_FOR_OPTIMIZATION = 1e3;
 	DEFAULT_SKIP_CACHE_CHARS = 1e6;
 	DEFAULT_SKIP_CACHE_LINES = 1e5;
@@ -9169,12 +9330,55 @@ var StreamParser = class {
 		this.stats = makeEmptyStats();
 		this.stats.resets = resets;
 	}
-	parse(src, env, md) {
-		const envProvided = env;
+	snapshot() {
+		const cache = this.cache;
+		if (!cache) return null;
+		const state = cache.snapshotState ?? { cache };
+		cache.snapshotState = state;
+		const snapshot = {
+			state,
+			get sourceLength() {
+				return this.state.cache.src.length;
+			},
+			get tokenCount() {
+				return this.state.cache.tokens.length;
+			}
+		};
+		this.snapshots.add(snapshot);
+		return snapshot;
+	}
+	restore(snapshot, md) {
+		if (!this.snapshots.has(snapshot)) throw new TypeError("Invalid stream snapshot");
+		const cache = snapshot.state.cache;
+		this.cache = cache;
+		if (parserConfigEqual(cache.config, md)) return cache.tokens;
+		return this.parse(cache.src, cache.env, md);
+	}
+	append(segment, env, md) {
 		const cached = this.cache;
-		beginParseDiagnostics(envProvided ?? cached?.env);
+		if (!cached) throw new Error("Stream append requires cached history; call stream.parse(fullSource) first");
+		this.ensureBoundaryState(cached);
+		return this.parse(cached.src + segment, env, md, segment);
+	}
+	parse(src, env, md, knownAppend) {
+		const previousCache = this.cache;
+		const priorEnv = previousCache?.env;
+		const coreRules = md.core.ruler.getNamedRules("");
+		const lineNormalizerIndex = coreRules.findIndex((rule) => rule.fn === normalize);
+		const blockRuleIndex = coreRules.findIndex((rule) => rule.fn === block);
+		const namedNormalizeRule = coreRules.find((rule) => rule.name === "normalize");
+		this.normalizeLineEndings = lineNormalizerIndex >= 0 && blockRuleIndex >= 0 && lineNormalizerIndex < blockRuleIndex;
+		const envProvided = env;
+		const configChanged = !!previousCache && !parserConfigEqual(previousCache.config, md);
+		const customNormalize = namedNormalizeRule && namedNormalizeRule.fn !== normalize;
+		const nonstandardBuiltinNormalize = namedNormalizeRule && !this.normalizeLineEndings && src.includes("\r");
+		const unknownPreBlockRule = blockRuleIndex < 0 || coreRules.slice(0, blockRuleIndex).some((rule) => rule.fn !== normalize);
+		this.tokenMapsTrusted = !(blockRuleIndex < 0 || coreRules.slice(blockRuleIndex + 1).some((rule) => rule.fn !== inline && rule.fn !== linkify && rule.fn !== replacements && rule.fn !== smartquotes && rule.fn !== text_join));
+		this.allowUntrustedTailReuse = this.tokenMapsTrusted || md.options?.streamTailLocalPostBlockRules === true;
+		const cached = configChanged || customNormalize || nonstandardBuiltinNormalize || unknownPreBlockRule ? null : previousCache;
+		beginParseDiagnostics(envProvided ?? previousCache?.env ?? priorEnv);
 		if (!cached || envProvided && envProvided !== cached.env) {
-			const workingEnv = envProvided ?? {};
+			const workingEnv = envProvided ?? previousCache?.env ?? priorEnv ?? {};
 			const explicitChunkFallbackSetting$1 = !!md.__explicitStreamChunkFallbackSetting;
 			const canImplicitLargeInput$1 = typeof md.__canUseImplicitLargeInputStrategy === "function" ? md.__canUseImplicitLargeInputStrategy() : true;
 			const wantsChunking$1 = !!md.options?.streamChunkedFallback;
@@ -9200,8 +9404,9 @@ var StreamParser = class {
 					shouldSkipLargeCache = srcLineCount >= skipCacheLines;
 				}
 			}
-			if (shouldSkipLargeCache) {
+			if (shouldSkipLargeCache && knownAppend === void 0 && !previousCache?.snapshotState) {
 				const parsed$2 = this.parseFullDocument(src, workingEnv, md, srcLineCount, false);
+				this.cache = null;
 				this.stats.total += 1;
 				this.stats.fullParses += 1;
 				this.stats.lastMode = "full";
@@ -9228,30 +9433,31 @@ var StreamParser = class {
 						fenceAware: recommendation?.fenceAware ?? chunkFenceAware$1,
 						maxChunks: useMaxChunks
 					});
-					this.cache = {
+					const globalStateReason = getParseDiagnostics(workingEnv)?.chunk?.globalStateDetected ?? null;
+					const cache$2 = this.setCache({
 						src,
 						tokens,
 						env: workingEnv,
 						lineCount: srcLineCount,
 						lastSegment: void 0,
-						globalStateReason: detectGlobalMarkdownState(src)
-					};
-					this.updateCacheLineCount(this.cache, srcLineCount);
+						globalStateReason
+					}, md);
+					this.updateCacheLineCount(cache$2, srcLineCount);
 					this.recordChunkedParseResult(workingEnv, wantsChunking$1 ? "explicit-initial-large-doc" : "default-initial-large-doc");
 					return tokens;
 				}
 			}
 			const parsed$1 = this.parseFullDocument(src, workingEnv, md, srcLineCount);
 			srcLineCount = parsed$1.lineCount;
-			this.cache = {
+			const cache$1 = this.setCache({
 				src,
 				tokens: parsed$1.tokens,
 				env: workingEnv,
 				lineCount: srcLineCount,
 				lastSegment: void 0,
-				globalStateReason: detectGlobalMarkdownState(src)
-			};
-			this.updateCacheLineCount(this.cache, srcLineCount);
+				globalStateReason: parsed$1.globalStateReason
+			}, md);
+			this.updateCacheLineCount(cache$1, srcLineCount);
 			this.stats.total += 1;
 			this.stats.fullParses += 1;
 			this.stats.lastMode = "full";
@@ -9274,7 +9480,7 @@ var StreamParser = class {
 			});
 			return cached.tokens;
 		}
-		const appendDelta = src.startsWith(cached.src) ? src.slice(cached.src.length) : null;
+		const appendDelta = knownAppend !== void 0 ? knownAppend : src.startsWith(cached.src) ? src.slice(cached.src.length) : null;
 		let cachedGlobalStateReason = cached.globalStateReason;
 		if (cachedGlobalStateReason === void 0) {
 			cachedGlobalStateReason = detectGlobalMarkdownState(cached.src);
@@ -9285,19 +9491,18 @@ var StreamParser = class {
 		if (nextGlobalStateReason) {
 			const fallbackEnv$1 = envProvided ?? cached.env;
 			resetKnownGlobalMarkdownState(fallbackEnv$1);
-			const fallbackGlobalStateReason = detectGlobalMarkdownState(src);
 			const parsed$1 = this.parseFullDocument(src, fallbackEnv$1, md);
 			const nextTokens$1 = parsed$1.tokens;
 			const lineCount = parsed$1.lineCount;
-			this.cache = {
+			const cache$1 = this.setCache({
 				src,
 				tokens: nextTokens$1,
 				env: fallbackEnv$1,
 				lineCount,
 				lastSegment: void 0,
-				globalStateReason: fallbackGlobalStateReason
-			};
-			this.updateCacheLineCount(this.cache, lineCount);
+				globalStateReason: parsed$1.globalStateReason
+			}, md);
+			this.updateCacheLineCount(cache$1, lineCount);
 			this.stats.total += 1;
 			this.stats.fullParses += 1;
 			this.stats.lastMode = "full";
@@ -9310,20 +9515,20 @@ var StreamParser = class {
 			return nextTokens$1;
 		}
 		const threshold = md.options?.streamOptimizationMinSize ?? this.MIN_SIZE_FOR_OPTIMIZATION;
-		if (cached.src.length < threshold && src.length < threshold * 1.5 && !src.startsWith(cached.src)) {
+		if (cached.src.length < threshold && src.length < threshold * 1.5 && appendDelta === null) {
 			const fallbackEnv$1 = envProvided ?? cached.env;
 			const parsed$1 = this.parseFullDocument(src, fallbackEnv$1, md);
 			const nextTokens$1 = parsed$1.tokens;
 			const lineCount = parsed$1.lineCount;
-			this.cache = {
+			const cache$1 = this.setCache({
 				src,
 				tokens: nextTokens$1,
 				env: fallbackEnv$1,
 				lineCount,
 				lastSegment: void 0,
-				globalStateReason: detectGlobalMarkdownState(src)
-			};
-			this.updateCacheLineCount(this.cache, lineCount);
+				globalStateReason: parsed$1.globalStateReason
+			}, md);
+			this.updateCacheLineCount(cache$1, lineCount);
 			this.stats.total += 1;
 			this.stats.fullParses += 1;
 			this.stats.lastMode = "full";
@@ -9335,8 +9540,10 @@ var StreamParser = class {
 			});
 			return nextTokens$1;
 		}
-		const appended = this.getAppendedSegment(cached.src, src, appendDelta);
-		if (appended && !this.shouldPreferTailReparseForAppend(cached)) {
+		const cachedLastSegment = this.ensureLastSegment(cached, knownAppend !== void 0);
+		const verifiedUntrustedTail = this.tokenMapsTrusted || this.allowUntrustedTailReuse && (cached.lastSegmentVerified === true || !!(cachedLastSegment && this.hasVerifiedSegmentAnchor(cached, cachedLastSegment, md)));
+		const appended = appendDelta !== null && this.shouldPreferTailReparseForAppend(cached, verifiedUntrustedTail) || !this.tokenMapsTrusted ? null : this.getAppendedSegment(cached, src, appendDelta);
+		if (appended) {
 			const cachedLineCount = cached.lineCount ?? countLines(cached.src);
 			let ctxLines = 3;
 			if (appended.length > 5e3) ctxLines = 8;
@@ -9440,14 +9647,26 @@ var StreamParser = class {
 				if (dup > 0) appendedTokenStart += dup;
 				if (a.length > appendedTokenStart) this.appendTokens(cached.tokens, a, appendedTokenStart);
 			}
+			if (cached.boundary) this.updateBoundaryStateForAppend(cached, appended);
+			else this.updateFenceMarkerCacheForAppend(cached, appended);
 			cached.src = src;
 			cached.globalStateReason = null;
 			cached.lineCount = cachedLineCount + (appendedLineCount ?? countAppendedLines());
 			if (cached.tokens.length > appendStart) {
 				const appendedLastSegment = this.getLastSegment(cached.tokens, src, appendStart, cached.tokens.length, src.length - appended.length, cachedLineCount);
-				if (appendedLastSegment) cached.lastSegment = appendedLastSegment;
-				else cached.lastSegment = void 0;
-			} else cached.lastSegment = void 0;
+				if (appendedLastSegment) {
+					cached.lastSegment = appendedLastSegment;
+					const appendedOffset = src.length - appended.length;
+					cached.lastSegmentSource = appended.slice(Math.max(0, appendedLastSegment.srcOffset - appendedOffset));
+				} else {
+					cached.lastSegment = void 0;
+					cached.lastSegmentSource = void 0;
+				}
+			} else {
+				cached.lastSegment = void 0;
+				cached.lastSegmentSource = void 0;
+			}
+			cached.lastSegmentVerified = void 0;
 			this.stats.total += 1;
 			this.stats.appendHits += 1;
 			if (useUnboundedAppend) this.stats.unboundedAppendHits = (this.stats.unboundedAppendHits || 0) + 1;
@@ -9461,7 +9680,7 @@ var StreamParser = class {
 			return cached.tokens;
 		}
 		const fallbackEnv = envProvided ?? cached.env;
-		const tailReparsed = this.tryTailSegmentReparse(src, cached, fallbackEnv, md);
+		const tailReparsed = verifiedUntrustedTail ? this.tryTailSegmentReparse(src, cached, fallbackEnv, md, cachedLastSegment ?? void 0, appendDelta ?? void 0) : this.allowUntrustedTailReuse ? this.tryUntrustedParagraphTailReparse(src, cached, fallbackEnv, md) : null;
 		if (tailReparsed) {
 			this.stats.total += 1;
 			this.stats.tailHits += 1;
@@ -9503,15 +9722,16 @@ var StreamParser = class {
 					fenceAware: recommendation?.fenceAware ?? chunkFenceAware,
 					maxChunks: useMaxChunks
 				});
-				this.cache = {
+				const globalStateReason = getParseDiagnostics(fallbackEnv)?.chunk?.globalStateDetected ?? null;
+				const cache$1 = this.setCache({
 					src,
 					tokens,
 					env: fallbackEnv,
 					lineCount: srcLineCount2,
 					lastSegment: void 0,
-					globalStateReason: detectGlobalMarkdownState(src)
-				};
-				this.updateCacheLineCount(this.cache, srcLineCount2);
+					globalStateReason
+				}, md);
+				this.updateCacheLineCount(cache$1, srcLineCount2);
 				this.recordChunkedParseResult(fallbackEnv, wantsChunking ? "explicit-fallback-large-doc" : "default-fallback-large-doc");
 				return tokens;
 			}
@@ -9519,15 +9739,15 @@ var StreamParser = class {
 		const parsed = this.parseFullDocument(src, fallbackEnv, md, srcLineCount2);
 		const nextTokens = parsed.tokens;
 		srcLineCount2 = parsed.lineCount;
-		this.cache = {
+		const cache = this.setCache({
 			src,
 			tokens: nextTokens,
 			env: fallbackEnv,
 			lineCount: srcLineCount2,
 			lastSegment: void 0,
-			globalStateReason: detectGlobalMarkdownState(src)
-		};
-		this.updateCacheLineCount(this.cache, srcLineCount2);
+			globalStateReason: parsed.globalStateReason
+		}, md);
+		this.updateCacheLineCount(cache, srcLineCount2);
 		this.stats.total += 1;
 		this.stats.fullParses += 1;
 		this.stats.lastMode = "full";
@@ -9564,11 +9784,11 @@ var StreamParser = class {
 		});
 	}
 	parseFullDocument(src, env, md, knownLineCount, needLineCount = true) {
-		const currentGlobalStateReason = detectGlobalMarkdownState(src);
 		if (getKnownGlobalMarkdownState(env)) resetKnownGlobalMarkdownState(env);
 		const autoUnboundedDecision = (typeof md.__canUseImplicitLargeInputStrategy === "function" ? md.__canUseImplicitLargeInputStrategy() : true) ? getAutoUnboundedDecision(md, src.length, knownLineCount) : "no";
 		if (autoUnboundedDecision === "yes") {
 			const tokens = parseStringUnbounded(md, src, env);
+			const globalStateReason = getParseDiagnostics(env)?.unbounded?.globalStateDetected ?? null;
 			setStrategyDiagnostics(env, {
 				area: "stream",
 				path: "stream-full",
@@ -9577,7 +9797,8 @@ var StreamParser = class {
 			});
 			return {
 				tokens,
-				lineCount: knownLineCount ?? (needLineCount ? countLines(src) : 0)
+				lineCount: knownLineCount ?? (needLineCount ? countLines(src) : 0),
+				globalStateReason
 			};
 		}
 		let lineCount = knownLineCount;
@@ -9585,6 +9806,7 @@ var StreamParser = class {
 			lineCount = countLines(src);
 			if (shouldAutoUseUnbounded(md, src.length, lineCount)) {
 				const tokens = parseStringUnbounded(md, src, env);
+				const globalStateReason = getParseDiagnostics(env)?.unbounded?.globalStateDetected ?? null;
 				setStrategyDiagnostics(env, {
 					area: "stream",
 					path: "stream-full",
@@ -9593,16 +9815,19 @@ var StreamParser = class {
 				});
 				return {
 					tokens,
-					lineCount
+					lineCount,
+					globalStateReason
 				};
 			}
 		}
 		if (lineCount === void 0) lineCount = needLineCount ? countLines(src) : 0;
+		const currentGlobalStateReason = detectGlobalMarkdownState(src);
 		return {
 			tokens: runWithKnownGlobalMarkdownState(env, currentGlobalStateReason, () => {
 				return this.core.parse(src, env, md).tokens;
 			}),
-			lineCount
+			lineCount,
+			globalStateReason: currentGlobalStateReason
 		};
 	}
 	shouldUseUnboundedAppend(src, _cached, appended) {
@@ -9611,10 +9836,11 @@ var StreamParser = class {
 		if (appended.length >= this.MIN_UNBOUNDED_APPEND_CHARS) return true;
 		return countLines(appended) >= this.MIN_UNBOUNDED_APPEND_LINES;
 	}
-	getAppendedSegment(prev, next, knownAppend) {
+	getAppendedSegment(cache, next, knownAppend) {
+		const prev = cache.src;
 		if (knownAppend === null) return null;
 		if (knownAppend === void 0 && !next.startsWith(prev)) return null;
-		if (!prev.endsWith("\n")) return null;
+		if (knownAppend !== void 0 ? !this.ensureBoundaryState(cache).endsWithNewline : !prev.endsWith("\n")) return null;
 		const segment = knownAppend ?? next.slice(prev.length);
 		if (!segment) return null;
 		const segLen = segment.length;
@@ -9630,52 +9856,191 @@ var StreamParser = class {
 		const trimmedFirstLine = (firstLineBreak === -1 ? segment : segment.slice(0, firstLineBreak)).trim();
 		if (trimmedFirstLine.length === 0) return null;
 		if (/^[-=]+$/.test(trimmedFirstLine)) {
-			const prevWithoutTrailingNewline = prev.slice(0, -1);
-			const lastBreak = prevWithoutTrailingNewline.lastIndexOf("\n");
-			if (prevWithoutTrailingNewline.slice(lastBreak + 1).trim().length > 0) return null;
+			let previousLineNonBlank;
+			if (knownAppend !== void 0) previousLineNonBlank = this.ensureBoundaryState(cache).previousLineNonBlank;
+			else {
+				const prevWithoutTrailingNewline = prev.slice(0, -1);
+				const lastBreak = prevWithoutTrailingNewline.lastIndexOf("\n");
+				previousLineNonBlank = prevWithoutTrailingNewline.slice(lastBreak + 1).trim().length > 0;
+			}
+			if (previousLineNonBlank) return null;
 		}
-		if (this.endsInsideOpenFence(prev)) return null;
+		if (knownAppend !== void 0) {
+			const lastSegment = this.ensureLastSegment(cache);
+			if (lastSegment && this.segmentHasFence(cache, lastSegment)) {
+				const scanStart = this.tokenMapsTrusted ? this.ensureSegmentSourceOffset(cache, lastSegment) : 0;
+				if (this.endsInsideOpenFence(prev, scanStart)) return null;
+			}
+		} else {
+			const scanStart = this.tokenMapsTrusted ? this.ensureLastSegment(cache)?.srcOffset ?? 0 : 0;
+			if ((this.tokenMapsTrusted || this.cacheHasFenceMarker(cache)) && this.endsInsideOpenFence(prev, scanStart)) return null;
+		}
 		if (this.mayContainReferenceDefinition(segment)) return null;
 		return segment;
 	}
-	tryTailSegmentReparse(src, cached, env, md) {
-		const lastSegment = this.ensureLastSegment(cached);
+	tryTailSegmentReparse(src, cached, env, md, segmentOverride, knownAppend) {
+		const lastSegment = segmentOverride ?? this.ensureLastSegment(cached);
 		if (!lastSegment) return null;
+		const directAppend = knownAppend !== void 0;
+		if (directAppend) this.ensureSegmentSourceOffset(cached, lastSegment);
 		if (lastSegment.srcOffset <= 0 && lastSegment.tokenStart <= 0) return null;
-		const stablePrefix = cached.src.slice(0, lastSegment.srcOffset);
-		if (!src.startsWith(stablePrefix)) return null;
-		const prevTail = cached.src.slice(lastSegment.srcOffset);
-		const nextTail = src.slice(lastSegment.srcOffset);
+		if (!directAppend) {
+			const stablePrefix = cached.src.slice(0, lastSegment.srcOffset);
+			if (!src.startsWith(stablePrefix)) return null;
+		}
+		const prevTail = directAppend ? cached.lastSegmentSource ?? cached.src.slice(lastSegment.srcOffset) : cached.src.slice(lastSegment.srcOffset);
+		const nextTail = directAppend ? prevTail + knownAppend : src.slice(lastSegment.srcOffset);
 		if (nextTail === prevTail) return null;
-		const appended = src.startsWith(cached.src) ? src.slice(cached.src.length) : null;
+		const appended = directAppend ? knownAppend : src.startsWith(cached.src) ? src.slice(cached.src.length) : null;
+		const postBlockSrc = directAppend && this.tokenMapsTrusted ? src : this.getNormalizedUpdatedSource(cached, src, knownAppend);
 		if (appended) {
-			const merged = this.tryContainerTailAppendMerge(src, cached, env, md, lastSegment, appended);
-			if (merged) return merged;
+			const merged = this.tryContainerTailAppendMerge(src, cached, env, md, lastSegment, appended, postBlockSrc);
+			if (merged) {
+				cached.lastSegmentSource = directAppend ? nextTail : void 0;
+				return merged;
+			}
 		}
 		if (this.mayContainReferenceDefinition(prevTail) || this.mayContainReferenceDefinition(nextTail)) return null;
 		try {
-			const tailState = this.core.parse(nextTail, env, md);
-			const localLastSegment = this.getLastSegment(tailState.tokens, nextTail);
-			if (lastSegment.lineStart > 0) this.shiftTokenLines(tailState.tokens, lastSegment.lineStart);
+			const parsedTail = this.parseAtLineOffset(nextTail, env, md, lastSegment.lineStart, postBlockSrc);
+			const tailState = parsedTail.state;
+			const localLastSegment = this.getLastSegment(tailState.tokens, nextTail, 0, tailState.tokens.length, parsedTail.mapsShifted ? 0 : void 0, parsedTail.mapsShifted ? lastSegment.lineStart : void 0);
+			if (lastSegment.lineStart > 0 && !parsedTail.mapsShifted) this.shiftTokenLines(tailState.tokens, lastSegment.lineStart);
+			if (appended) if (directAppend) this.updateBoundaryStateForAppend(cached, appended);
+			else this.updateFenceMarkerCacheForAppend(cached, appended);
+			else {
+				cached.boundary = void 0;
+				cached.hasFenceMarker = void 0;
+			}
 			cached.src = src;
+			cached.normalizedSrc = postBlockSrc;
 			cached.env = env;
 			cached.globalStateReason = null;
-			cached.globalStateCarry = void 0;
+			if (!directAppend || !appended) cached.globalStateCarry = void 0;
 			cached.tokens.length = lastSegment.tokenStart;
 			this.appendTokens(cached.tokens, tailState.tokens);
 			cached.lineCount = lastSegment.lineStart + countLines(nextTail);
-			if (localLastSegment) cached.lastSegment = {
-				tokenStart: lastSegment.tokenStart + localLastSegment.tokenStart,
-				tokenEnd: lastSegment.tokenStart + localLastSegment.tokenEnd,
-				lineStart: lastSegment.lineStart + localLastSegment.lineStart,
-				lineEnd: lastSegment.lineStart + localLastSegment.lineEnd,
-				srcOffset: lastSegment.srcOffset + localLastSegment.srcOffset
-			};
-			else cached.lastSegment = null;
+			if (localLastSegment) {
+				cached.lastSegment = {
+					tokenStart: lastSegment.tokenStart + localLastSegment.tokenStart,
+					tokenEnd: lastSegment.tokenStart + localLastSegment.tokenEnd,
+					lineStart: parsedTail.mapsShifted ? localLastSegment.lineStart : lastSegment.lineStart + localLastSegment.lineStart,
+					lineEnd: parsedTail.mapsShifted ? localLastSegment.lineEnd : lastSegment.lineStart + localLastSegment.lineEnd,
+					srcOffset: lastSegment.srcOffset + localLastSegment.srcOffset
+				};
+				cached.lastSegmentSource = directAppend ? nextTail.slice(localLastSegment.srcOffset) : void 0;
+			} else {
+				cached.lastSegment = null;
+				cached.lastSegmentSource = void 0;
+			}
+			cached.lastSegmentVerified = void 0;
 			return cached.tokens;
 		} catch {
 			return null;
 		}
+	}
+	tryUntrustedParagraphTailReparse(src, cached, env, md) {
+		if (cached.boundary ? cached.boundary.endsWithBlankLine : this.endsWithBlankLine(cached.src)) return null;
+		const lastSegment = this.ensureLastSegment(cached);
+		if (!lastSegment || cached.tokens[lastSegment.tokenStart]?.type !== "paragraph_open") return null;
+		const inlineToken$1 = cached.tokens.slice(lastSegment.tokenStart, lastSegment.tokenEnd).find((token) => token.type === "inline");
+		if (!inlineToken$1?.content) return null;
+		let contentEnd = cached.src.length;
+		while (contentEnd > 0) {
+			const ch = cached.src.charCodeAt(contentEnd - 1);
+			if (ch !== 10 && ch !== 13) break;
+			contentEnd--;
+		}
+		const srcOffset = cached.src.lastIndexOf(inlineToken$1.content, contentEnd - inlineToken$1.content.length);
+		if (srcOffset < 0 || srcOffset + inlineToken$1.content.length !== contentEnd) return null;
+		return this.tryTailSegmentReparse(src, cached, env, md, {
+			...lastSegment,
+			lineStart: this.countSourceLineBreaks(cached.src, srcOffset),
+			srcOffset
+		});
+	}
+	countSourceLineBreaks(src, end) {
+		let count = 0;
+		for (let pos = 0; pos < end; pos++) {
+			const ch = src.charCodeAt(pos);
+			if (ch === 10) count++;
+			else if (this.normalizeLineEndings && ch === 13) {
+				count++;
+				if (src.charCodeAt(pos + 1) === 10) pos++;
+			}
+		}
+		return count;
+	}
+	hasVerifiedSegmentAnchor(cache, segment, md) {
+		if (segment.srcOffset < 0) this.ensureSegmentSourceOffset(cache, segment);
+		const lineCount = cache.lineCount ?? countLines(cache.src);
+		const docLineCount = this.getDocLineCount(cache.src, lineCount);
+		if (!(segment.lineStart >= 0 && segment.lineStart <= segment.lineEnd && segment.lineEnd <= docLineCount && segment.srcOffset < cache.src.length)) return false;
+		const tail = cache.src.slice(segment.srcOffset);
+		try {
+			const anchorMd = Object.create(md);
+			Object.defineProperty(anchorMd, "block", { value: this.anchorBlock });
+			const state = this.core.createState(tail, {}, anchorMd);
+			if (this.normalizeLineEndings) normalize(state);
+			this.anchorBlock.parse(state.src, anchorMd, state.env, state.tokens);
+			const parsedSegment = this.getLastSegment(state.tokens, tail);
+			if (!parsedSegment || parsedSegment.tokenStart !== 0) return false;
+			const normalizedTail = typeof state.src === "string" ? state.src : tail;
+			const parsedType = state.tokens[0]?.type;
+			const cachedType = cache.tokens[segment.tokenStart]?.type;
+			const compatibleTransform = cachedType === "table_open" && parsedType === "paragraph_open" && /^\s*\|/.test(normalizedTail) || cachedType === "inline" && parsedType === "html_block" || cachedType === "math_block" && parsedType === "paragraph_open" && /^\s*\$\$\s*(?:\n|$)/.test(normalizedTail);
+			if (parsedType !== cachedType && !compatibleTransform) return false;
+			const cachedContents = cache.tokens.slice(segment.tokenStart, segment.tokenEnd).map((token) => token.content).filter(Boolean);
+			let contentOffset = 0;
+			for (const content of cachedContents) {
+				contentOffset = normalizedTail.indexOf(content, contentOffset);
+				if (contentOffset < 0) return false;
+				contentOffset += content.length;
+			}
+			return true;
+		} catch {
+			return false;
+		}
+	}
+	normalizeSource(src) {
+		return src.replace(/\r\n?/g, "\n").replace(/\0/g, "�");
+	}
+	cacheHasFenceMarker(cache) {
+		if (cache.hasFenceMarker === void 0) cache.hasFenceMarker = cache.src.includes("```") || cache.src.includes("~~~");
+		return cache.hasFenceMarker;
+	}
+	updateFenceMarkerCacheForAppend(cache, appended) {
+		if (this.cacheHasFenceMarker(cache)) return;
+		const boundary = cache.src.slice(-2) + appended;
+		cache.hasFenceMarker = boundary.includes("```") || boundary.includes("~~~");
+	}
+	getNormalizedUpdatedSource(cache, next, knownAppend) {
+		if (!this.normalizeLineEndings) return next;
+		if (knownAppend === void 0 && !next.startsWith(cache.src)) return this.normalizeSource(next);
+		const normalizedCached = cache.normalizedSrc ?? this.normalizeSource(cache.src);
+		const appended = knownAppend ?? next.slice(cache.src.length);
+		let normalizedAppend = this.normalizeSource(appended);
+		if (cache.src.endsWith("\r") && appended.startsWith("\n")) normalizedAppend = normalizedAppend.slice(1);
+		return normalizedCached + normalizedAppend;
+	}
+	parseAtLineOffset(src, env, md, lineOffset, globalSrc) {
+		if (this.tokenMapsTrusted || lineOffset <= 0) return {
+			state: this.core.parse(src, env, md),
+			mapsShifted: false
+		};
+		const state = this.core.createState(src, env, md);
+		let mapsShifted = false;
+		this.core.process(state, (rule, currentState) => {
+			if (!mapsShifted && rule.fn === block) {
+				this.shiftTokenLines(currentState.tokens, lineOffset);
+				if (globalSrc !== void 0) currentState.src = globalSrc;
+				mapsShifted = true;
+			}
+		});
+		return {
+			state,
+			mapsShifted
+		};
 	}
 	getTailLines(src, lineCount) {
 		if (lineCount <= 0) return "";
@@ -9686,47 +10051,80 @@ var StreamParser = class {
 		}
 		return src;
 	}
-	endsInsideOpenFence(text$1) {
-		const WINDOW = 4e3;
-		const start = text$1.length > WINDOW ? text$1.length - WINDOW : 0;
+	endsInsideOpenFence(text$1, start) {
 		const chunk = text$1.slice(start);
 		const len = chunk.length;
 		let inFence = null;
 		let lineStart = 0;
-		while (lineStart <= len) {
+		while (lineStart < len) {
 			let lineEnd$2 = chunk.indexOf("\n", lineStart);
+			if (this.normalizeLineEndings) {
+				const carriageReturn = chunk.indexOf("\r", lineStart);
+				if (carriageReturn >= 0 && (lineEnd$2 === -1 || carriageReturn < lineEnd$2)) lineEnd$2 = carriageReturn;
+			}
 			if (lineEnd$2 === -1) lineEnd$2 = len;
 			let p = lineStart;
+			let indent = 0;
 			while (p < lineEnd$2) {
 				const c = chunk.charCodeAt(p);
-				if (c === 32 || c === 9) p++;
-				else break;
+				if (c === 32) {
+					p++;
+					indent++;
+					if (indent >= 4) break;
+				} else if (c === 9) {
+					indent = 4;
+					break;
+				} else break;
 			}
-			if (p < lineEnd$2) {
+			if (indent < 4 && p < lineEnd$2) {
 				const ch = chunk.charCodeAt(p);
 				if (ch === 96 || ch === 126) {
 					let q = p;
 					while (q < lineEnd$2 && chunk.charCodeAt(q) === ch) q++;
 					const runLen = q - p;
 					if (runLen >= 3) {
-						if (!inFence) inFence = {
-							marker: ch,
-							length: runLen
-						};
-						else if (inFence.marker === ch && runLen >= inFence.length) inFence = null;
+						if (!inFence) {
+							const nextBacktick = ch === 96 ? chunk.indexOf("`", q) : -1;
+							if (!(nextBacktick >= 0 && nextBacktick < lineEnd$2)) inFence = {
+								marker: ch,
+								length: runLen
+							};
+						} else if (inFence.marker === ch && runLen >= inFence.length) {
+							let tail = q;
+							while (tail < lineEnd$2) {
+								const c = chunk.charCodeAt(tail);
+								if (c === 32 || c === 9) tail++;
+								else break;
+							}
+							if (tail === lineEnd$2) inFence = null;
+						}
 					}
 				}
 			}
 			if (lineEnd$2 === len) break;
-			lineStart = lineEnd$2 + 1;
+			lineStart = lineEnd$2 + (this.normalizeLineEndings && chunk.charCodeAt(lineEnd$2) === 13 && chunk.charCodeAt(lineEnd$2 + 1) === 10 ? 2 : 1);
 		}
 		return inFence !== null;
 	}
 	peek() {
 		return this.cache?.tokens ?? EMPTY_TOKENS;
 	}
+	hasCache() {
+		return this.cache !== null;
+	}
 	getStats() {
 		return { ...this.stats };
+	}
+	setCache(cache, md) {
+		const snapshotState = this.cache?.snapshotState;
+		const nextCache = {
+			...cache,
+			config: copyParserConfig(md),
+			snapshotState
+		};
+		if (snapshotState) snapshotState.cache = nextCache;
+		this.cache = nextCache;
+		return nextCache;
 	}
 	appendTokens(target, source, start = 0, end = source.length) {
 		for (let i = start; i < end; i++) target.push(source[i]);
@@ -9734,7 +10132,11 @@ var StreamParser = class {
 	updateCacheLineCount(cache, lineCount) {
 		cache.lineCount = lineCount ?? countLines(cache.src);
 		cache.lastSegment = void 0;
-		cache.globalStateCarry = void 0;
+		cache.lastSegmentVerified = void 0;
+		cache.normalizedSrc = void 0;
+		cache.globalStateCarry = cache.src.slice(-GLOBAL_STATE_APPEND_SCAN_WINDOW);
+		cache.boundary = void 0;
+		cache.lastSegmentSource = void 0;
 	}
 	detectGlobalStateForAppend(cache, appended) {
 		if (cache.globalStateReason) return cache.globalStateReason;
@@ -9744,12 +10146,12 @@ var StreamParser = class {
 		if (reason) cache.globalStateReason = reason;
 		return reason;
 	}
-	ensureLastSegment(cache) {
+	ensureLastSegment(cache, skipSourceOffset = false) {
 		if (cache.lastSegment !== void 0) return cache.lastSegment;
-		cache.lastSegment = this.getLastSegment(cache.tokens, cache.src);
+		cache.lastSegment = this.getLastSegment(cache.tokens, cache.src, 0, cache.tokens.length, void 0, void 0, skipSourceOffset);
 		return cache.lastSegment;
 	}
-	getLastSegment(tokens, src, tokenStart = 0, tokenEnd = tokens.length, knownSrcOffset, knownLineStart) {
+	getLastSegment(tokens, src, tokenStart = 0, tokenEnd = tokens.length, knownSrcOffset, knownLineStart, skipSourceOffset = false) {
 		if (tokenEnd <= tokenStart) return null;
 		let lineStart = Number.POSITIVE_INFINITY;
 		let lineEnd$2 = -1;
@@ -9774,7 +10176,7 @@ var StreamParser = class {
 						tokenEnd,
 						lineStart: resolvedStart,
 						lineEnd: resolvedEnd,
-						srcOffset: this.getLineStartOffset(src, resolvedStart, knownSrcOffset, knownLineStart)
+						srcOffset: skipSourceOffset ? -1 : this.getLineStartOffset(src, resolvedStart, knownSrcOffset, knownLineStart)
 					};
 				}
 				continue;
@@ -9787,41 +10189,67 @@ var StreamParser = class {
 					tokenEnd,
 					lineStart: resolvedStart,
 					lineEnd: resolvedEnd,
-					srcOffset: this.getLineStartOffset(src, resolvedStart, knownSrcOffset, knownLineStart)
+					srcOffset: skipSourceOffset ? -1 : this.getLineStartOffset(src, resolvedStart, knownSrcOffset, knownLineStart)
 				};
 			}
 		}
 		return null;
 	}
-	getLineStartOffset(src, line, knownSrcOffset, knownLineStart) {
-		if (knownSrcOffset !== void 0 && knownLineStart !== void 0 && line >= knownLineStart) return this.getLineStartOffsetFrom(src, knownSrcOffset, line - knownLineStart);
+	segmentHasFence(cache, segment) {
+		const end = Math.min(segment.tokenEnd, cache.tokens.length);
+		for (let i = segment.tokenStart; i < end; i++) if (cache.tokens[i].type === "fence") return true;
+		return false;
+	}
+	ensureSegmentSourceOffset(cache, segment) {
+		if (segment.srcOffset < 0) {
+			const lineCount = cache.lineCount;
+			segment.srcOffset = lineCount !== void 0 && segment.lineStart <= lineCount && segment.lineEnd <= lineCount + 1 ? this.getLineStartOffsetFromEnd(cache.src, segment.lineStart, lineCount) : this.getLineStartOffset(cache.src, segment.lineStart);
+		}
+		return segment.srcOffset;
+	}
+	getLineStartOffsetFromEnd(src, line, lineCount) {
 		if (line <= 0) return 0;
-		let remaining = line;
-		let pos = -1;
+		let remaining = lineCount - line + 1;
+		let pos = src.length;
 		while (remaining > 0) {
-			pos = src.indexOf("\n", pos + 1);
-			if (pos === -1) return src.length;
+			pos = src.lastIndexOf("\n", pos - 1);
+			if (pos < 0) return 0;
 			remaining--;
 		}
 		return pos + 1;
 	}
+	getLineStartOffset(src, line, knownSrcOffset, knownLineStart) {
+		if (knownSrcOffset !== void 0 && knownLineStart !== void 0 && line >= knownLineStart) return this.getLineStartOffsetFrom(src, knownSrcOffset, line - knownLineStart);
+		return this.getLineStartOffsetFrom(src, 0, line);
+	}
 	getLineStartOffsetFrom(src, startOffset, lineDelta) {
 		if (lineDelta <= 0) return startOffset;
 		let remaining = lineDelta;
-		let pos = startOffset - 1;
-		while (remaining > 0) {
-			pos = src.indexOf("\n", pos + 1);
-			if (pos === -1) return src.length;
-			remaining--;
+		let pos = startOffset;
+		while (pos < src.length) {
+			const ch = src.charCodeAt(pos);
+			if (ch === 10) {
+				pos++;
+				remaining--;
+			} else if (this.normalizeLineEndings && ch === 13) {
+				pos++;
+				if (pos < src.length && src.charCodeAt(pos) === 10) pos++;
+				remaining--;
+			} else {
+				pos++;
+				continue;
+			}
+			if (remaining === 0) return pos;
 		}
-		return pos + 1;
+		return src.length;
 	}
 	mayContainReferenceDefinition(src) {
 		if (!src.includes("]:")) return false;
 		return /(?:^|\n)[ \t]{0,3}\[[^\]\n]+\]:/.test(src);
 	}
 	canDirectlyParseAppend(cache) {
-		if (!this.endsWithBlankLine(cache.src)) return false;
+		if (!this.tokenMapsTrusted) return false;
+		if (!(cache.boundary ? cache.boundary.endsWithBlankLine : this.endsWithBlankLine(cache.src))) return false;
 		const lastSegment = this.ensureLastSegment(cache);
 		if (!lastSegment) return false;
 		switch (cache.tokens[lastSegment.tokenStart]?.type) {
@@ -9835,46 +10263,53 @@ var StreamParser = class {
 			default: return false;
 		}
 	}
-	tryContainerTailAppendMerge(src, cached, env, md, lastSegment, appended) {
+	tryContainerTailAppendMerge(src, cached, env, md, lastSegment, appended, postBlockSrc) {
 		if (!appended || this.mayContainReferenceDefinition(appended)) return null;
 		const lastToken = cached.tokens[lastSegment.tokenStart];
 		switch (lastToken?.type) {
 			case "bullet_list_open":
-			case "ordered_list_open": return this.tryListTailAppendMerge(src, cached, env, md, lastSegment, appended, lastToken);
-			case "table_open": return this.tryTableTailAppendMerge(src, cached, env, md, lastSegment, appended, lastToken);
+			case "ordered_list_open": return this.tryListTailAppendMerge(src, cached, env, md, lastSegment, appended, lastToken, postBlockSrc);
+			case "table_open": return this.tryTableTailAppendMerge(src, cached, env, md, lastSegment, appended, lastToken, postBlockSrc);
 			default: return null;
 		}
 	}
-	tryListTailAppendMerge(src, cached, env, md, lastSegment, appended, listOpen) {
-		if (cached.src.length === 0 || cached.src.charCodeAt(cached.src.length - 1) !== 10) return null;
+	tryListTailAppendMerge(src, cached, env, md, lastSegment, appended, listOpen, postBlockSrc) {
+		if (cached.src.length === 0 || !(cached.boundary ? cached.boundary.endsWithNewline : cached.src.charCodeAt(cached.src.length - 1) === 10)) return null;
+		this.ensureSegmentSourceOffset(cached, lastSegment);
 		const segmentLineSpan = lastSegment.lineEnd - lastSegment.lineStart;
 		const segmentChars = cached.src.length - lastSegment.srcOffset;
 		if (segmentLineSpan < this.MIN_LIST_LINES_FOR_MERGE && segmentChars < this.MIN_LIST_CHARS_FOR_MERGE) return null;
 		const closeType = listOpen.type === "bullet_list_open" ? "bullet_list_close" : "ordered_list_close";
+		const lineOffset = cached.lineCount ?? countLines(cached.src);
 		let parsed;
+		let mapsShifted = false;
 		try {
-			parsed = this.core.parse(appended, env, md).tokens;
+			const parsedAppend = this.parseAtLineOffset(appended, env, md, lineOffset, postBlockSrc);
+			parsed = parsedAppend.state.tokens;
+			mapsShifted = parsedAppend.mapsShifted;
 		} catch {
 			return null;
 		}
 		if (!this.isSingleTopLevelContainer(parsed, listOpen.type, closeType, listOpen.markup)) return null;
 		const inserted = parsed.slice(1, -1);
 		if (inserted.length === 0) return null;
-		const lineOffset = cached.lineCount ?? countLines(cached.src);
-		if (lineOffset > 0) this.shiftTokenLines(inserted, lineOffset);
+		if (lineOffset > 0 && !mapsShifted) this.shiftTokenLines(inserted, lineOffset);
 		const existingMode = this.getListParagraphMode(cached.tokens, lastSegment.tokenStart, cached.tokens.length, listOpen.level);
 		const appendedMode = this.getListParagraphMode(parsed, 0, parsed.length, 0);
-		if (existingMode === "loose" || appendedMode === "loose" || this.endsWithBlankLine(cached.src) || (parsed[0]?.map?.[0] ?? 0) > 0) {
+		if (existingMode === "loose" || appendedMode === "loose" || (cached.boundary ? cached.boundary.endsWithBlankLine : this.endsWithBlankLine(cached.src)) || (parsed[0]?.map?.[0] ?? 0) - (mapsShifted ? lineOffset : 0) > 0) {
 			this.setListParagraphVisibility(cached.tokens, lastSegment.tokenStart, cached.tokens.length, listOpen.level, false);
 			this.setListParagraphVisibility(inserted, 0, inserted.length, listOpen.level, false);
 		}
 		cached.tokens.splice(cached.tokens.length - 1, 0, ...inserted);
+		if (cached.boundary) this.updateBoundaryStateForAppend(cached, appended);
+		else this.updateFenceMarkerCacheForAppend(cached, appended);
 		cached.src = src;
+		cached.normalizedSrc = postBlockSrc;
 		cached.env = env;
 		cached.globalStateReason = null;
 		const nextLineCount = lineOffset + countLines(appended);
 		cached.lineCount = nextLineCount;
-		const nextDocLineCount = this.getDocLineCount(src, nextLineCount);
+		const nextDocLineCount = this.getCachedDocLineCount(cached, nextLineCount);
 		if (listOpen.map) listOpen.map[1] = nextDocLineCount;
 		cached.lastSegment = {
 			tokenStart: lastSegment.tokenStart,
@@ -9883,20 +10318,26 @@ var StreamParser = class {
 			lineEnd: nextDocLineCount,
 			srcOffset: lastSegment.srcOffset
 		};
+		cached.lastSegmentVerified = true;
 		return cached.tokens;
 	}
-	tryTableTailAppendMerge(src, cached, env, md, lastSegment, appended, tableOpen) {
-		if (cached.src.length === 0 || cached.src.charCodeAt(cached.src.length - 1) !== 10) return null;
+	tryTableTailAppendMerge(src, cached, env, md, lastSegment, appended, tableOpen, postBlockSrc) {
+		if (cached.src.length === 0 || !(cached.boundary ? cached.boundary.endsWithNewline : cached.src.charCodeAt(cached.src.length - 1) === 10)) return null;
 		if (/(?:^|\n)[ \t]*\n/.test(appended)) return null;
+		this.ensureSegmentSourceOffset(cached, lastSegment);
 		const segmentLineSpan = lastSegment.lineEnd - lastSegment.lineStart;
 		const segmentChars = cached.src.length - lastSegment.srcOffset;
 		if (segmentLineSpan < this.MIN_TABLE_LINES_FOR_MERGE && segmentChars < this.MIN_TABLE_CHARS_FOR_MERGE) return null;
 		const tableContext = this.getTableHeaderContext(cached.src.slice(lastSegment.srcOffset));
 		if (!tableContext) return null;
 		const syntheticSrc = `${tableContext}${appended}`;
+		const lineOffset = lastSegment.lineEnd - 2;
 		let parsed;
+		let mapsShifted = false;
 		try {
-			parsed = this.core.parse(syntheticSrc, env, md).tokens;
+			const parsedTable = this.parseAtLineOffset(syntheticSrc, env, md, lineOffset, postBlockSrc);
+			parsed = parsedTable.state.tokens;
+			mapsShifted = parsedTable.mapsShifted;
 		} catch {
 			return null;
 		}
@@ -9907,17 +10348,19 @@ var StreamParser = class {
 		if (!parsedSection || !cachedSection || parsedSection.tbodyOpenIndex < 0 || parsedSection.tbodyCloseIndex < 0) return null;
 		const inserted = cachedSection.tbodyOpenIndex >= 0 ? parsed.slice(parsedSection.tbodyOpenIndex + 1, parsedSection.tbodyCloseIndex) : parsed.slice(parsedSection.tbodyOpenIndex, parsedSection.tbodyCloseIndex + 1);
 		if (inserted.length === 0) return null;
-		const lineOffset = lastSegment.lineEnd - 2;
-		if (lineOffset !== 0) this.shiftTokenLines(inserted, lineOffset);
+		if (lineOffset !== 0 && !mapsShifted) this.shiftTokenLines(inserted, lineOffset);
 		const insertAt = cachedSection.tbodyCloseIndex >= 0 ? cachedSection.tbodyCloseIndex : cachedSection.tableCloseIndex;
 		const previousLineCount = cached.lineCount ?? countLines(cached.src);
 		cached.tokens.splice(insertAt, 0, ...inserted);
+		if (cached.boundary) this.updateBoundaryStateForAppend(cached, appended);
+		else this.updateFenceMarkerCacheForAppend(cached, appended);
 		cached.src = src;
+		cached.normalizedSrc = postBlockSrc;
 		cached.env = env;
 		cached.globalStateReason = null;
 		const nextLineCount = previousLineCount + countLines(appended);
 		cached.lineCount = nextLineCount;
-		const nextDocLineCount = this.getDocLineCount(src, nextLineCount);
+		const nextDocLineCount = this.getCachedDocLineCount(cached, nextLineCount);
 		if (tableOpen.map) tableOpen.map[1] = nextDocLineCount;
 		if (cachedSection.tbodyOpenIndex >= 0) {
 			const tbodyOpen = cached.tokens[cachedSection.tbodyOpenIndex];
@@ -9930,6 +10373,7 @@ var StreamParser = class {
 			lineEnd: nextDocLineCount,
 			srcOffset: lastSegment.srcOffset
 		};
+		cached.lastSegmentVerified = true;
 		return cached.tokens;
 	}
 	getTableHeaderContext(src) {
@@ -10012,18 +10456,20 @@ var StreamParser = class {
 			if ((token.type === "paragraph_open" || token.type === "paragraph_close") && token.level === paragraphLevel) token.hidden = hidden;
 		}
 	}
-	shouldPreferTailReparseForAppend(cache) {
+	shouldPreferTailReparseForAppend(cache, verifiedUntrustedTail) {
 		const lastSegment = this.ensureLastSegment(cache);
 		if (!lastSegment) return false;
-		switch (cache.tokens[lastSegment.tokenStart]?.type) {
+		const lastToken = cache.tokens[lastSegment.tokenStart];
+		if (!this.tokenMapsTrusted) return verifiedUntrustedTail;
+		switch (lastToken?.type) {
 			case "bullet_list_open":
 			case "ordered_list_open":
 			case "blockquote_open":
 			case "table_open": return true;
 			case "paragraph_open":
 			case "code_block":
-			case "html_block": return !this.endsWithBlankLine(cache.src);
-			default: return false;
+			case "html_block": return !(cache.boundary ? cache.boundary.endsWithBlankLine : this.endsWithBlankLine(cache.src));
+			default: return lastToken?.nesting === 1;
 		}
 	}
 	endsWithBlankLine(src) {
@@ -10040,9 +10486,54 @@ var StreamParser = class {
 		}
 		return true;
 	}
+	ensureBoundaryState(cache) {
+		if (cache.boundary) return cache.boundary;
+		const src = cache.src;
+		const len = src.length;
+		const endsWithNewline = len > 0 && src.charCodeAt(len - 1) === 10;
+		const lineEnd$2 = endsWithNewline ? len - 1 : len;
+		let lineStart = lineEnd$2 - 1;
+		while (lineStart >= 0 && src.charCodeAt(lineStart) !== 10) lineStart--;
+		let lineNonBlank = false;
+		for (let i = lineStart + 1; i < lineEnd$2; i++) {
+			const ch = src.charCodeAt(i);
+			if (ch !== 32 && ch !== 9) {
+				lineNonBlank = true;
+				break;
+			}
+		}
+		cache.boundary = {
+			currentLineNonBlank: endsWithNewline ? false : lineNonBlank,
+			previousLineNonBlank: endsWithNewline ? lineNonBlank : false,
+			endsWithNewline,
+			endsWithBlankLine: this.endsWithBlankLine(src)
+		};
+		return cache.boundary;
+	}
+	updateBoundaryStateForAppend(cache, appended) {
+		const boundary = this.ensureBoundaryState(cache);
+		let currentLineNonBlank = boundary.currentLineNonBlank;
+		let previousLineNonBlank = boundary.previousLineNonBlank;
+		for (let i = 0; i < appended.length; i++) {
+			const ch = appended.charCodeAt(i);
+			if (ch === 10) {
+				previousLineNonBlank = currentLineNonBlank;
+				currentLineNonBlank = false;
+			} else if (ch !== 32 && ch !== 9) currentLineNonBlank = true;
+		}
+		boundary.currentLineNonBlank = currentLineNonBlank;
+		boundary.previousLineNonBlank = previousLineNonBlank;
+		boundary.endsWithNewline = appended.length > 0 ? appended.charCodeAt(appended.length - 1) === 10 : boundary.endsWithNewline;
+		boundary.endsWithBlankLine = cache.src.length + appended.length >= 2 && boundary.endsWithNewline && !previousLineNonBlank;
+	}
 	getDocLineCount(src, lineCount = countLines(src)) {
 		if (src.length === 0) return 0;
 		return src.charCodeAt(src.length - 1) === 10 ? lineCount : lineCount + 1;
+	}
+	getCachedDocLineCount(cache, lineCount) {
+		if (cache.src.length === 0) return 0;
+		if (cache.boundary) return cache.boundary.endsWithNewline ? lineCount : lineCount + 1;
+		return this.getDocLineCount(cache.src, lineCount);
 	}
 	shiftTokenLines(tokens, offset) {
 		if (offset === 0) return;
@@ -10139,6 +10630,7 @@ function markdownIt(presetName, options) {
 		maxNesting: 100,
 		stream: false,
 		streamOptimizationMinSize: 1e3,
+		streamTailLocalPostBlockRules: false,
 		streamChunkedFallback: false,
 		streamChunkSizeChars: 1e4,
 		streamChunkSizeLines: 200,
@@ -10570,8 +11062,22 @@ function markdownIt(presetName, options) {
 			if (!md.stream.enabled) return md.parse(src, env ?? {});
 			return getStreamParser().parse(src, env, md);
 		},
+		append(segment, env) {
+			if (!md.stream.enabled) throw new Error("Stream append requires stream mode");
+			return getStreamParser().append(segment, env, md);
+		},
+		snapshot() {
+			return streamParser ? streamParser.snapshot() : null;
+		},
+		restore(snapshot) {
+			if (!md.stream.enabled) throw new Error("Stream restore requires stream mode");
+			return getStreamParser().restore(snapshot, md);
+		},
 		reset() {
 			getStreamParser().reset();
+		},
+		hasCache() {
+			return streamParser?.hasCache() ?? false;
 		},
 		peek() {
 			return streamParser ? streamParser.peek() : [];
@@ -11244,10 +11750,10 @@ function applyContainers(md) {
 function escapeTagForRegExp(tag) {
 	return tag.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
-function findTagCloseIndexOutsideQuotes(input) {
+function findTagCloseIndexOutsideQuotes(input, start = 0) {
 	let inSingle = false;
 	let inDouble = false;
-	for (let i = 0; i < input.length; i++) {
+	for (let i = start; i < input.length; i++) {
 		const ch = input[i];
 		if (ch === "\\") {
 			i++;
@@ -12322,6 +12828,35 @@ function applyFixIndentedCodeBlock(md, options = {}) {
 }
 
 //#endregion
+//#region src/parser/parse-context.ts
+const PARSE_CONTEXT = Symbol("markstream.parse-context");
+function isParseContext(options) {
+	return Boolean(options && options[PARSE_CONTEXT] === true);
+}
+function createParseContext(options = {}, overrides = {}) {
+	return {
+		...options,
+		[PARSE_CONTEXT]: true,
+		customHtmlBlockCursor: 0,
+		disableStreamParse: false,
+		disableStructuredReuse: false,
+		insideStrong: false,
+		isFragment: false,
+		...overrides
+	};
+}
+function ensureParseContext(options) {
+	return isParseContext(options) ? options : createParseContext(options);
+}
+function createChildParseContext(parent, options = parent, overrides = {}) {
+	return createParseContext(options, {
+		runtime: parent.runtime,
+		markdownIt: parent.markdownIt,
+		...overrides
+	});
+}
+
+//#endregion
 //#region src/parser/linkifyHeuristics.ts
 const FILENAMEISH_EXTENSION_RE = /\.([a-z0-9]{1,15})$/i;
 const FILENAMEISH_SEGMENT_RE = /[_()[\]{}<>]/u;
@@ -12337,7 +12872,8 @@ const EXPLICIT_FILENAME_CONTEXT_RE = /文件名\s*[:：]?|附件\s*[:：]?|路�
 const FILENAME_CONTEXT_RE = /文件名\s*[:：]?|文件\s*[:：]?|附件\s*[:：]?|档案\s*[:：]?|檔案\s*[:：]?|文档\s*[:：]?|文檔\s*[:：]?|资料\s*[:：]?|資料\s*[:：]?|路径\s*[:：]?|路徑\s*[:：]?|\bfile\s*name\b\s*[:：]?|\battachments?\b\s*[:：]?|\bfiles?\b\s*[:：]?|\bdocuments?\b\s*[:：]?|\bdocs?\b\s*[:：]?|\bpaths?\b\s*[:：]?/iu;
 const MARKET_TICKER_CONTEXT_RE = /股票代码|股票代碼|证券代码|證券代碼|(?:代码|代碼|交易所|后缀|後綴|市场|市場)(?=$|[\s:：/|,，、()（）])|\btickers?\b|\bsymbols?\b|\bexchanges?\b/iu;
 const LINKIFY_DEMOTION_CONTEXT_CACHE_LIMIT = 2e3;
-const LINKIFY_DEMOTION_CONTEXT_CACHE_MAX_TEXT_LENGTH = 512;
+const LINKIFY_DEMOTION_CONTEXT_CACHE_MAX_TEXT_LENGTH = 16384;
+const LINKIFY_DEMOTION_CONTEXT_CACHE_MAX_TOTAL_TEXT_LENGTH = 512 * LINKIFY_DEMOTION_CONTEXT_CACHE_LIMIT;
 const EMPTY_LINKIFY_DEMOTION_CONTEXT = {};
 const AMBIGUOUS_BARE_DOMAIN_EXTENSIONS = new Set([
 	"ai",
@@ -12466,13 +13002,16 @@ const FILENAMEISH_LINK_EXTENSIONS = new Set([
 	"zsh"
 ]);
 const linkifyDemotionContextCache = /* @__PURE__ */ new Map();
+let linkifyDemotionContextCacheTextLength = 0;
 function rememberLinkifyDemotionContext(text$1, context) {
 	if (!text$1 || text$1.length > LINKIFY_DEMOTION_CONTEXT_CACHE_MAX_TEXT_LENGTH) return context;
+	if (!linkifyDemotionContextCache.has(text$1)) linkifyDemotionContextCacheTextLength += text$1.length;
 	linkifyDemotionContextCache.set(text$1, context);
-	while (linkifyDemotionContextCache.size > LINKIFY_DEMOTION_CONTEXT_CACHE_LIMIT) {
+	while (linkifyDemotionContextCache.size > LINKIFY_DEMOTION_CONTEXT_CACHE_LIMIT || linkifyDemotionContextCacheTextLength > LINKIFY_DEMOTION_CONTEXT_CACHE_MAX_TOTAL_TEXT_LENGTH) {
 		const oldestKey = linkifyDemotionContextCache.keys().next().value;
 		if (!oldestKey) break;
 		linkifyDemotionContextCache.delete(oldestKey);
+		linkifyDemotionContextCacheTextLength -= oldestKey.length;
 	}
 	return context;
 }
@@ -12489,10 +13028,11 @@ function mergeLinkifyDemotionContext(left, right) {
 }
 function withLinkifyDemotionContext(options, context) {
 	if (!hasLinkifyDemotionContext(context)) return options;
-	const inheritedContext = options?.__linkifyDemotionContext;
+	const parseContext = ensureParseContext(options);
+	const inheritedContext = parseContext.linkifyDemotionContext;
 	return {
-		...options,
-		__linkifyDemotionContext: {
+		...parseContext,
+		linkifyDemotionContext: {
 			filename: inheritedContext?.filename || context?.filename,
 			explicitFilename: inheritedContext?.explicitFilename || context?.explicitFilename,
 			marketTicker: inheritedContext?.marketTicker || context?.marketTicker
@@ -12520,7 +13060,7 @@ function inferContinuationLinkifyContext(raw, inherited) {
 	return hasLinkifyDemotionContext(continuation) ? continuation : void 0;
 }
 function createLinkifyDemotionContextTracker(options, sticky = false) {
-	let context;
+	let context = ensureParseContext(options).linkifyDemotionSeedContext;
 	return {
 		options(raw) {
 			if (sticky || raw == null) return withLinkifyDemotionContext(options, context);
@@ -12532,6 +13072,9 @@ function createLinkifyDemotionContextTracker(options, sticky = false) {
 		},
 		reset() {
 			context = void 0;
+		},
+		snapshot() {
+			return context;
 		}
 	};
 }
@@ -12567,11 +13110,7 @@ function mayContainLinkifyDemotionContext(text$1) {
 function inferLinkifyDemotionContext(contextText) {
 	const text$1 = String(contextText ?? "");
 	const cached = linkifyDemotionContextCache.get(text$1);
-	if (cached) {
-		linkifyDemotionContextCache.delete(text$1);
-		linkifyDemotionContextCache.set(text$1, cached);
-		return cached;
-	}
+	if (cached) return cached;
 	if (!mayContainLinkifyDemotionContext(text$1)) return rememberLinkifyDemotionContext(text$1, EMPTY_LINKIFY_DEMOTION_CONTEXT);
 	return rememberLinkifyDemotionContext(text$1, {
 		explicitFilename: EXPLICIT_FILENAME_CONTEXT_RE.test(text$1),
@@ -13469,18 +14008,22 @@ function applyFixTableTokens(md) {
 		}
 	});
 }
-function createStart() {
+function createStart(sourceMap) {
+	const tableMap = Array.isArray(sourceMap) ? [...sourceMap] : null;
+	const headerMap = tableMap ? [tableMap[0], tableMap[0] + 1] : null;
 	return [
 		{
 			type: "table_open",
 			tag: "table",
 			attrs: null,
-			map: null,
+			map: tableMap,
 			children: null,
 			content: "",
 			markup: "",
 			info: "",
 			level: 0,
+			nesting: 1,
+			block: true,
 			loading: true,
 			meta: null
 		},
@@ -13490,6 +14033,8 @@ function createStart() {
 			attrs: null,
 			block: true,
 			level: 1,
+			map: headerMap,
+			nesting: 1,
 			children: null
 		},
 		{
@@ -13498,6 +14043,8 @@ function createStart() {
 			attrs: null,
 			block: true,
 			level: 2,
+			map: headerMap,
+			nesting: 1,
 			children: null
 		}
 	];
@@ -13510,6 +14057,8 @@ function createEnd() {
 			attrs: null,
 			block: true,
 			level: 2,
+			map: null,
+			nesting: -1,
 			children: null
 		},
 		{
@@ -13518,6 +14067,8 @@ function createEnd() {
 			attrs: null,
 			block: true,
 			level: 1,
+			map: null,
+			nesting: -1,
 			children: null
 		},
 		{
@@ -13530,6 +14081,8 @@ function createEnd() {
 			markup: "",
 			info: "",
 			level: 0,
+			nesting: -1,
+			block: true,
 			meta: null
 		}
 	];
@@ -13542,6 +14095,8 @@ function createTh(text$1) {
 			attrs: null,
 			block: true,
 			level: 3,
+			map: null,
+			nesting: 1,
 			children: null
 		},
 		{
@@ -13551,6 +14106,8 @@ function createTh(text$1) {
 			content: text$1,
 			level: 4,
 			attrs: null,
+			map: null,
+			nesting: 0,
 			block: true
 		},
 		{
@@ -13559,6 +14116,8 @@ function createTh(text$1) {
 			attrs: null,
 			block: true,
 			level: 3,
+			map: null,
+			nesting: -1,
 			children: null
 		}
 	];
@@ -13600,37 +14159,40 @@ function hasTrailingPipeHeaderRowWithoutColon(line) {
 	return cells !== null && cells.every((cell) => !cell.includes(":"));
 }
 function fixTableTokens(tokens, final = false, source = "") {
-	const fixedTokens = [...tokens];
-	if (tokens.length < 3) return fixedTokens;
+	if (tokens.length < 3) return tokens;
 	const i = tokens.length - 2;
 	const token = tokens[i];
-	if (token.type === "inline") {
-		const tcontent = String(token.content ?? "");
-		const headerContent = tcontent.split("\n")[0] ?? "";
-		const [headerLine = "", separatorLine = "", ...rest] = tcontent.split("\n");
-		const hasTrailingNewlineSeparatorStart = !final && !tcontent.includes("\n") && /\r?\n$/.test(source) && hasTrailingPipeHeaderRow(tcontent);
-		if (!final && (tcontent.includes("\n") && rest.length === 0 && hasTrailingPipeHeaderRow(headerLine) && isTableSeparatorRowWithPartialTail(separatorLine) || hasTrailingNewlineSeparatorStart)) {
-			const body = headerContent.slice(1, -1).split("|").map((i$1) => i$1.trim()).flatMap((i$1) => createTh(i$1));
-			const insert = [
-				...createStart(),
-				...body,
-				...createEnd()
-			];
-			fixedTokens.splice(i - 1, 3, ...insert);
-		} else if (tcontent.includes("\n") && rest.length === 0 && hasTrailingPipeHeaderRow(headerLine) && isTableSeparatorRow(separatorLine)) {
-			const body = headerContent.slice(1, -1).split("|").map((i$1) => i$1.trim()).flatMap((i$1) => createTh(i$1));
-			const insert = [
-				...createStart(),
-				...body,
-				...createEnd()
-			];
-			fixedTokens.splice(i - 1, 3, ...insert);
-		} else if (tcontent.includes("\n") && rest.length === 0 && hasTrailingPipeHeaderRowWithoutColon(headerLine) && isTruncatedSeparatorRow(separatorLine)) {
-			token.content = tcontent.slice(0, -2);
-			token.children.splice(2, 1);
-		}
+	if (token.type !== "inline") return tokens;
+	const sourceMap = tokens[i - 1]?.map;
+	const tcontent = String(token.content ?? "");
+	const headerContent = tcontent.split("\n")[0] ?? "";
+	const [headerLine = "", separatorLine = "", ...rest] = tcontent.split("\n");
+	const hasTrailingNewlineSeparatorStart = !final && !tcontent.includes("\n") && /\r?\n$/.test(source) && hasTrailingPipeHeaderRow(tcontent);
+	let fixedTokens = null;
+	if (!final && (tcontent.includes("\n") && rest.length === 0 && hasTrailingPipeHeaderRow(headerLine) && isTableSeparatorRowWithPartialTail(separatorLine) || hasTrailingNewlineSeparatorStart)) {
+		const body = headerContent.slice(1, -1).split("|").map((i$1) => i$1.trim()).flatMap((i$1) => createTh(i$1));
+		const insert = [
+			...createStart(sourceMap),
+			...body,
+			...createEnd()
+		];
+		fixedTokens = [...tokens];
+		fixedTokens.splice(i - 1, 3, ...insert);
+	} else if (tcontent.includes("\n") && rest.length === 0 && hasTrailingPipeHeaderRow(headerLine) && isTableSeparatorRow(separatorLine)) {
+		const body = headerContent.slice(1, -1).split("|").map((i$1) => i$1.trim()).flatMap((i$1) => createTh(i$1));
+		const insert = [
+			...createStart(sourceMap),
+			...body,
+			...createEnd()
+		];
+		fixedTokens = [...tokens];
+		fixedTokens.splice(i - 1, 3, ...insert);
+	} else if (tcontent.includes("\n") && rest.length === 0 && hasTrailingPipeHeaderRowWithoutColon(headerLine) && isTruncatedSeparatorRow(separatorLine)) {
+		token.content = tcontent.slice(0, -2);
+		token.children.splice(2, 1);
+		return tokens;
 	}
-	return fixedTokens;
+	return fixedTokens ?? tokens;
 }
 
 //#endregion
@@ -13925,6 +14487,35 @@ function isPlainBracketMathLike(content) {
 	if (!(/\\[a-z]+/i.test(stripped) || /[=+*/^<>]|\\times|\\pm|\\cdot|\\le|\\ge|\\neq/.test(stripped) || /[_^]/.test(stripped)) && /\s-\s/.test(stripped)) return false;
 	return true;
 }
+const inlineScanStateCache = /* @__PURE__ */ new WeakMap();
+function getInlineScanState(s) {
+	let entry = inlineScanStateCache.get(s);
+	if (entry) return entry;
+	const src = s.src;
+	const allowLoading = s.env?.__markstreamFinal !== true;
+	const mathOpenerPositions = [];
+	for (let index = 0; index < src.length; index++) {
+		const char = src[index];
+		if (char === "$" || char === "\\") mathOpenerPositions.push(index);
+	}
+	entry = {
+		codeSpanRanges: buildCodeSpanRanges(src),
+		imageRanges: buildImageRanges(src, allowLoading),
+		mathOpenerPositions
+	};
+	inlineScanStateCache.set(s, entry);
+	return entry;
+}
+function hasMathOpenerAtOrAfter(mathOpenerPositions, pos) {
+	let low = 0;
+	let high = mathOpenerPositions.length;
+	while (low < high) {
+		const mid = low + high >> 1;
+		if (mathOpenerPositions[mid] < pos) low = mid + 1;
+		else high = mid;
+	}
+	return low < mathOpenerPositions.length;
+}
 function buildCodeSpanRanges(src) {
 	const ranges = [];
 	let i = 0;
@@ -14177,27 +14768,36 @@ function hashTolerantBoundaryContent(content) {
 	for (let index = 0; index < content.length; index++) hash = hash * 31 + content.charCodeAt(index) | 0;
 	return hash.toString(36);
 }
-function getTolerantBoundaryScanWindow(source) {
+function getTolerantBoundaryScanWindow(source, cache) {
 	if (source.length <= TOLERANT_BOUNDARY_SCAN_TAIL_CHARS) return {
 		source,
 		lineOffset: 0
 	};
+	if (cache) {
+		const cut = source.length - TOLERANT_BOUNDARY_SCAN_TAIL_CHARS;
+		let start$1 = source.indexOf("\n", cut);
+		start$1 = start$1 === -1 ? source.length : start$1 + 1;
+		const lineOffset$1 = cache.lineOffset + countLineBreaks(source.slice(cache.windowStart, start$1));
+		cache.lineOffset = lineOffset$1;
+		cache.windowStart = start$1;
+		return {
+			source: source.slice(start$1),
+			lineOffset: lineOffset$1
+		};
+	}
 	let start = source.length - TOLERANT_BOUNDARY_SCAN_TAIL_CHARS;
 	const nextLineBreak = source.indexOf("\n", start);
-	if (nextLineBreak === -1) return {
-		source: "",
-		lineOffset: countLineBreaks(source)
-	};
-	start = nextLineBreak + 1;
+	start = nextLineBreak === -1 ? source.length : nextLineBreak + 1;
+	const lineOffset = countLineBreaks(source.slice(0, start));
 	return {
 		source: source.slice(start),
-		lineOffset: countLineBreaks(source.slice(0, start))
+		lineOffset
 	};
 }
-function mayContainTolerantMathBlockBoundaryOpener(markdown) {
+function mayContainTolerantMathBlockBoundaryOpener(markdown, scanWindowCache) {
 	const fullSource = String(markdown ?? "");
 	if (!fullSource || !fullSource.includes("$$") && !fullSource.includes("\\[")) return false;
-	const { source } = getTolerantBoundaryScanWindow(fullSource);
+	const { source } = getTolerantBoundaryScanWindow(fullSource, scanWindowCache);
 	if (!source) return false;
 	const lines = source.split(/\r?\n/);
 	const startLine = Math.max(0, lines.length - TOLERANT_BOUNDARY_SCAN_MAX_LINES - 2);
@@ -14210,10 +14810,10 @@ function mayContainTolerantMathBlockBoundaryOpener(markdown) {
 	}
 	return false;
 }
-function getTolerantMathBlockBoundaryStreamKey(markdown) {
+function getTolerantMathBlockBoundaryStreamKey(markdown, scanWindowCache) {
 	const fullSource = String(markdown ?? "");
 	if (!fullSource || !fullSource.includes("$$") && !fullSource.includes("\\[")) return null;
-	const { source, lineOffset } = getTolerantBoundaryScanWindow(fullSource);
+	const { source, lineOffset } = getTolerantBoundaryScanWindow(fullSource, scanWindowCache);
 	if (!source) return null;
 	const lines = source.split(/\r?\n/);
 	const startLine = Math.max(0, lines.length - TOLERANT_BOUNDARY_SCAN_MAX_LINES - 2);
@@ -14307,17 +14907,21 @@ function applyMath(md, mathOpts) {
 		const s = state;
 		const strict = !!mathOpts?.strictDelimiters;
 		const allowLoading = !s?.env?.__markstreamFinal;
-		const preserveSpacesBeforeLineBreak = (src, start) => {
+		const preserveSpacesBeforeLineBreak = (src$1, start) => {
 			let end = start;
-			while (end < src.length && (src[end] === " " || src[end] === "	")) end++;
+			while (end < src$1.length && (src$1[end] === " " || src$1[end] === "	")) end++;
 			if (end === start) return start;
-			if (!(src[end] === "\n" || src[end] === "\r" && src[end + 1] === "\n")) return start;
-			const text$1 = src.slice(start, end);
+			if (!(src$1[end] === "\n" || src$1[end] === "\r" && src$1[end + 1] === "\n")) return start;
+			const text$1 = src$1.slice(start, end);
 			const token = s.push("text", "", 0);
 			token.content = text$1;
 			return end;
 		};
 		if (/^\*[^*]+/.test(s.src)) return false;
+		const pending = String(s.pending ?? "");
+		const currentStart = Math.max(0, s.pos - pending.length);
+		const scan = getInlineScanState(s);
+		if (!hasMathOpenerAtOrAfter(scan.mathOpenerPositions, currentStart)) return false;
 		if (s.src[s.pos] === "$") {
 			let dollarRunEnd = s.pos + 1;
 			while (s.src[dollarRunEnd] === "$") dollarRunEnd++;
@@ -14335,15 +14939,12 @@ function applyMath(md, mathOpts) {
 			["$", "$"],
 			["\\(", "\\)"]
 		];
-		const pending = String(s.pending ?? "");
-		const currentStart = Math.max(0, s.pos - pending.length);
 		let searchPos = currentStart;
 		let preMathPos = currentStart;
 		const initialPos = currentStart;
+		const src = s.src;
+		const { codeSpanRanges, imageRanges } = scan;
 		for (const [open, close] of delimiters) {
-			const src = s.src;
-			const codeSpanRanges = buildCodeSpanRanges(src);
-			const imageRanges = buildImageRanges(src, allowLoading);
 			let foundAny = false;
 			if (open === "$$" && searchPos !== initialPos) searchPos = initialPos;
 			let lastIndex = -1;
@@ -14895,6 +15496,7 @@ function applyRenderRules(md) {
 //#region src/factory.ts
 const HTML_LINK_OPEN_RE = /^<a[>\s]/i;
 const HTML_LINK_CLOSE_RE = /^<\/a\s*>/i;
+const LINKIFY_SEED_RE = /[@:]|\/\/|\.\S/;
 function inlineTokenMayNeedLinkify(token, linkify$2) {
 	if (token?.type !== "inline") return false;
 	const children = token.children;
@@ -14921,12 +15523,37 @@ function applyLinkifyCandidateFilter(md) {
 	const ruler = md.core?.ruler;
 	const original = ruler.getNamedRules?.().find((rule) => rule.name === "linkify")?.fn;
 	if (typeof original !== "function") return;
+	const nativeLinkify = md.options.linkify ? md.linkify : void 0;
+	const nativeTest = nativeLinkify?.test;
+	const nativeMatch = nativeLinkify?.match;
+	const nativeBuilderPrototype = nativeLinkify?.re && Object.getPrototypeOf(nativeLinkify.re);
+	let screenedCache;
+	let seedSafe = false;
 	ruler.at("linkify", (state) => {
 		if (!state.md?.options?.linkify) return;
 		const tokens = Array.isArray(state.tokens) ? state.tokens : [];
 		const linkify$2 = state.md.linkify;
 		if (!linkify$2) return;
-		const candidates = tokens.filter((token) => inlineTokenMayNeedLinkify(token, linkify$2));
+		if (!tokens.some((token) => token?.type === "inline")) return;
+		const re = linkify$2.re;
+		const nativeBuilder = re && Object.getPrototypeOf(re) === nativeBuilderPrototype && !Object.values(re).some((value) => typeof value === "function");
+		const nativeMethods = linkify$2.test === nativeTest && linkify$2.match === nativeMatch;
+		if (nativeMethods && nativeBuilder && screenedCache !== re.cache) {
+			screenedCache = re.cache;
+			const { schema_names: schemas = [], tlds = [] } = re.opts;
+			seedSafe = schemas.every((name) => name === "//" || name.endsWith(":")) && tlds.every((tld) => /^[\p{L}\p{N}-]+$/u.test(tld));
+		}
+		let canScreen = !!nativeMethods && !!nativeBuilder && seedSafe && (state.env?.__markstreamFinal !== false || !!re?.cache.link_fuzzy_search);
+		const candidates = tokens.filter((token) => {
+			if (canScreen && token?.type === "inline") {
+				const children = token.children;
+				if (Array.isArray(children) && children.length > 0) {
+					if (!children.some((child) => child?.type === "text" && LINKIFY_SEED_RE.test(String(child.content ?? "")))) return false;
+				} else if (!LINKIFY_SEED_RE.test(String(token.content ?? ""))) return false;
+				canScreen = false;
+			}
+			return inlineTokenMayNeedLinkify(token, linkify$2);
+		});
 		if (!candidates.length) return;
 		return original(Object.assign(Object.create(Object.getPrototypeOf(state)), state, { tokens: candidates }));
 	});
@@ -14969,16 +15596,19 @@ function factory(opts = {}) {
 	const experimental = typeof markdownItOptions.experimental === "object" && markdownItOptions.experimental !== null ? markdownItOptions.experimental : {};
 	const stream = Object.prototype.hasOwnProperty.call(markdownItOptions, "stream") ? Boolean(markdownItOptions.stream) : true;
 	const hasCustomValidateLink = Object.prototype.hasOwnProperty.call(markdownItOptions, "validateLink");
+	const experimentalOptions = {
+		stream,
+		...experimental
+	};
 	const md = new src_default({
 		html: true,
 		linkify: true,
 		typographer: true,
 		...markdownItOptions,
-		experimental: {
-			stream,
-			...experimental
-		}
+		experimental: experimentalOptions
 	});
+	const tailLocalOption = "streamTailLocalPostBlockRules";
+	if (!(Object.prototype.hasOwnProperty.call(markdownItOptions, tailLocalOption) || Object.prototype.hasOwnProperty.call(experimental, tailLocalOption)) && Object.prototype.hasOwnProperty.call(md.options, tailLocalOption)) md.options[tailLocalOption] = true;
 	if (!hasCustomValidateLink) {
 		const validateLink$1 = (url) => !isUnsafeHtmlUrl(url, {
 			tagName: "a",
@@ -15005,6 +15635,410 @@ function factory(opts = {}) {
 }
 
 //#endregion
+//#region src/parser/regex-cache.ts
+/**
+* Regex cache for performance optimization.
+* Avoids repeatedly creating the same RegExp objects in hot parsing paths.
+*/
+const regexCache = /* @__PURE__ */ new Map();
+/**
+* Get a cached RegExp instance or create and cache a new one.
+* @param pattern - The regex pattern string
+* @param flags - Optional regex flags (e.g., 'gi', 'i')
+* @returns A RegExp instance with lastIndex reset to 0
+*/
+function getCachedRegex(pattern, flags) {
+	const key = flags ? `${pattern}:::${flags}` : pattern;
+	let regex = regexCache.get(key);
+	if (!regex) {
+		regex = new RegExp(pattern, flags);
+		regexCache.set(key, regex);
+		if (regexCache.size > 200) {
+			const keysToDelete = Array.from(regexCache.keys()).slice(0, 50);
+			for (const keyToDelete of keysToDelete) regexCache.delete(keyToDelete);
+		}
+	}
+	regex.lastIndex = 0;
+	return regex;
+}
+
+//#endregion
+//#region src/parser/html/source-scanner.ts
+const NOT_WHITESPACE = /\S/;
+const STARTS_LIKE_HTML_DOCUMENT_RE = /^(?:<!doctype\s+html[^>]*>\s*)?<html(?:\s[^>]*)?>/i;
+const ENDS_WITH_HTML_CLOSE_RE = /<\/html>\s*$/i;
+const NON_ELEMENT_MARKUP_START_RE = /^<\s*[!?]/;
+const MARKUP_TAG_NAME_RE = /^([A-Z][\w:-]*)/i;
+const SELF_CLOSING_END_RE$1 = /\/\s*>$/;
+function parseStandaloneHtmlDocument(markdown) {
+	const firstNonWhitespace = markdown.search(NOT_WHITESPACE);
+	if (firstNonWhitespace === -1 || markdown.charCodeAt(firstNonWhitespace) !== 60) return null;
+	const trimmed = markdown.trim();
+	if (!trimmed) return null;
+	const startsLikeHtmlDocument = STARTS_LIKE_HTML_DOCUMENT_RE.test(trimmed);
+	const endsWithHtmlClose = ENDS_WITH_HTML_CLOSE_RE.test(trimmed);
+	if (!startsLikeHtmlDocument || !endsWithHtmlClose) return null;
+	return [{
+		type: "html_block",
+		tag: "html",
+		raw: markdown,
+		content: markdown,
+		loading: false
+	}];
+}
+function getMergeableNodeRaw(node) {
+	const raw = node.raw;
+	if (typeof raw === "string") return raw;
+	const content = node.content;
+	if (typeof content === "string") return content;
+	return "";
+}
+function isCloseOnlyHtmlBlockForTag(node, tag) {
+	if (node.type !== "html_block" || !tag) return false;
+	const raw = String(node.raw ?? node.content ?? "");
+	return getCachedRegex(String.raw`^\s*<\s*\/\s*${escapeTagForRegExp(tag)}\s*>\s*$`, "i").test(raw);
+}
+const RAW_TEXT_HTML_TAGS = new Set([
+	"iframe",
+	"script",
+	"style",
+	"textarea",
+	"title"
+]);
+function findNextHtmlBlockFromSource(source, tag, startIndex) {
+	if (!source || !tag) return null;
+	const lowerTag = tag.toLowerCase();
+	const readMarkup = (start$1) => {
+		if (source.startsWith("<!--", start$1)) {
+			const commentEnd = source.indexOf("-->", start$1 + 4);
+			return {
+				closing: false,
+				end: commentEnd === -1 ? source.length : commentEnd + 3,
+				selfClosing: false,
+				tag: ""
+			};
+		}
+		if (source.startsWith("<![CDATA[", start$1)) {
+			const cdataEnd = source.indexOf("]]>", start$1 + 9);
+			return {
+				closing: false,
+				end: cdataEnd === -1 ? source.length : cdataEnd + 3,
+				selfClosing: false,
+				tag: ""
+			};
+		}
+		const closeIndex = findTagCloseIndexOutsideQuotes(source, start$1);
+		if (closeIndex === -1) return null;
+		const end = closeIndex + 1;
+		const raw = source.slice(start$1, end);
+		if (NON_ELEMENT_MARKUP_START_RE.test(raw)) return {
+			closing: false,
+			end,
+			selfClosing: false,
+			tag: ""
+		};
+		let body = raw.slice(1).trimStart();
+		const closing = body.startsWith("/");
+		if (closing) body = body.slice(1).trimStart();
+		const tagMatch = body.match(MARKUP_TAG_NAME_RE);
+		if (!tagMatch?.[1]) return {
+			closing: false,
+			end: start$1 + 1,
+			selfClosing: false,
+			tag: ""
+		};
+		return {
+			closing,
+			end,
+			selfClosing: SELF_CLOSING_END_RE$1.test(raw),
+			tag: tagMatch[1].toLowerCase()
+		};
+	};
+	const findRawTextClose = (rawTextTag, from) => {
+		const closeRe = getCachedRegex(String.raw`<\s*\/\s*${escapeTagForRegExp(rawTextTag)}(?=\s|>)`, "gi");
+		closeRe.lastIndex = from;
+		const match = closeRe.exec(source);
+		if (!match || match.index == null) return null;
+		const markup = readMarkup(match.index);
+		return markup ? {
+			start: match.index,
+			end: markup.end
+		} : null;
+	};
+	let start = -1;
+	let openEnd = -1;
+	let searchIndex = Math.max(0, startIndex);
+	while (searchIndex < source.length) {
+		const lt = source.indexOf("<", searchIndex);
+		if (lt === -1) return null;
+		const markup = readMarkup(lt);
+		if (!markup) return null;
+		if (!markup.closing && markup.tag === lowerTag) {
+			start = lt;
+			openEnd = markup.end - 1;
+			break;
+		}
+		if (!markup.closing && RAW_TEXT_HTML_TAGS.has(markup.tag)) {
+			searchIndex = findRawTextClose(markup.tag, markup.end)?.end ?? source.length;
+			continue;
+		}
+		searchIndex = markup.end;
+	}
+	if (start === -1 || openEnd === -1) return null;
+	const openTag = source.slice(start, openEnd + 1);
+	if (VOID_HTML_TAGS.has(lowerTag) || SELF_CLOSING_END_RE$1.test(openTag)) return {
+		raw: openTag,
+		start,
+		end: openEnd + 1,
+		closed: true
+	};
+	if (RAW_TEXT_HTML_TAGS.has(lowerTag)) {
+		const close = findRawTextClose(lowerTag, openEnd + 1);
+		if (!close) return {
+			raw: source.slice(start),
+			start,
+			end: source.length,
+			closed: false
+		};
+		return {
+			raw: source.slice(start, close.end),
+			start,
+			end: close.end,
+			closeStart: close.start,
+			closed: true
+		};
+	}
+	let depth = 1;
+	let index = openEnd + 1;
+	while (index < source.length) {
+		const lt = source.indexOf("<", index);
+		if (lt === -1) return {
+			raw: source.slice(start),
+			start,
+			end: source.length,
+			closed: false
+		};
+		const markup = readMarkup(lt);
+		if (!markup) return null;
+		if (markup.closing && markup.tag === lowerTag) {
+			depth--;
+			const end = markup.end;
+			if (depth === 0) return {
+				raw: source.slice(start, end),
+				start,
+				end,
+				closeStart: lt,
+				closed: true
+			};
+			index = end;
+			continue;
+		}
+		if (!markup.closing && markup.tag === lowerTag) {
+			if (!markup.selfClosing && !VOID_HTML_TAGS.has(markup.tag)) depth++;
+			index = markup.end;
+			continue;
+		}
+		if (!markup.closing && RAW_TEXT_HTML_TAGS.has(markup.tag)) {
+			index = findRawTextClose(markup.tag, markup.end)?.end ?? source.length;
+			continue;
+		}
+		index = markup.end;
+	}
+	return {
+		raw: source.slice(start),
+		start,
+		end: source.length,
+		closed: false
+	};
+}
+function findApproximateConsumedPrefixEnd(exact, approximate) {
+	if (!approximate) return 0;
+	let i = 0;
+	let j = 0;
+	while (i < exact.length && j < approximate.length) {
+		if (exact[i] === approximate[j]) {
+			i++;
+			j++;
+			continue;
+		}
+		if (exact[i] === "\r" || exact[i] === "\n") {
+			i++;
+			continue;
+		}
+		return -1;
+	}
+	return j === approximate.length ? i : -1;
+}
+function buildHtmlBlockContent(raw, tag, closed) {
+	if (closed) return raw;
+	return `${raw.replace(/<[^>]*$/, "")}\n</${tag}>`;
+}
+function normalizeIndentedSourceForLookup(value) {
+	return value.replace(/\r\n/g, "\n").replace(/(^|\n)[ \t]{1,4}/g, "$1");
+}
+function canFindNodeRawAfterSourceIndex(source, startIndex, nodeRaw) {
+	if (!nodeRaw) return false;
+	if (source.includes(nodeRaw, startIndex)) return true;
+	return normalizeIndentedSourceForLookup(source.slice(Math.max(0, startIndex))).includes(normalizeIndentedSourceForLookup(nodeRaw));
+}
+function extendHtmlBlockCloseToLineEnding(source, startIndex) {
+	let end = Math.max(0, startIndex);
+	while (end < source.length && (source[end] === " " || source[end] === "	")) end++;
+	if (source[end] === "\r") {
+		end++;
+		if (source[end] === "\n") end++;
+		return end;
+	}
+	if (source[end] === "\n") return end + 1;
+	return startIndex;
+}
+function findLastClosingTagStart(raw, tag) {
+	const closeRe = getCachedRegex(String.raw`<\s*\/\s*${escapeTagForRegExp(tag)}(?=\s|>)`, "gi");
+	let last = -1;
+	let match;
+	while ((match = closeRe.exec(raw)) !== null) last = match.index;
+	return last;
+}
+
+//#endregion
+//#region src/parser/node-parsers/html-block-parser.ts
+const NON_ELEMENT_HTML_BLOCK_START_RE = /^\s*(?:<!--|<!|<\?)/;
+const FIRST_TAG_NAME_RE = /^\s*<([A-Z][\w:-]*)/i;
+const SELF_CLOSING_END_RE = /\/\s*>$/;
+const TRAILING_UNCLOSED_TAG_RE = /<[^>]*$/;
+function findMatchingCloseTagEnd(rawHtml, tag, startIndex) {
+	const lowerTag = tag.toLowerCase();
+	const openTagRe = getCachedRegex(String.raw`^<\s*${lowerTag}(?=\s|>|/)`, "i");
+	const closeTagRe = getCachedRegex(String.raw`^<\s*\/\s*${lowerTag}(?=\s|>)`, "i");
+	let depth = 0;
+	let index = Math.max(0, startIndex);
+	while (index < rawHtml.length) {
+		const lt = rawHtml.indexOf("<", index);
+		if (lt === -1) return -1;
+		const slice = rawHtml.slice(lt);
+		if (closeTagRe.test(slice)) {
+			const endRel = findTagCloseIndexOutsideQuotes(slice);
+			if (endRel === -1) return -1;
+			if (depth === 0) return lt + endRel + 1;
+			depth--;
+			index = lt + endRel + 1;
+			continue;
+		}
+		if (openTagRe.test(slice)) {
+			const endRel = findTagCloseIndexOutsideQuotes(slice);
+			if (endRel === -1) return -1;
+			const rawTag = slice.slice(0, endRel + 1);
+			if (!SELF_CLOSING_END_RE.test(rawTag)) depth++;
+			index = lt + endRel + 1;
+			continue;
+		}
+		index = lt + 1;
+	}
+	return -1;
+}
+function parseHtmlBlock(token) {
+	const raw = String(token.content ?? "");
+	if (NON_ELEMENT_HTML_BLOCK_START_RE.test(raw)) return {
+		type: "html_block",
+		content: raw,
+		raw,
+		tag: "",
+		loading: false
+	};
+	const tag = (raw.match(FIRST_TAG_NAME_RE)?.[1] || "").toLowerCase();
+	if (!tag) return {
+		type: "html_block",
+		content: raw,
+		raw,
+		tag: "",
+		loading: false
+	};
+	const openEnd = findTagCloseIndexOutsideQuotes(raw);
+	const openTag = openEnd === -1 ? raw : raw.slice(0, openEnd + 1);
+	const selfClosing = openEnd !== -1 && SELF_CLOSING_END_RE.test(openTag);
+	const isVoid = VOID_HTML_TAGS.has(tag);
+	const attrs = parseTagAttrs(openTag);
+	const hasClosing = (openEnd === -1 ? -1 : findMatchingCloseTagEnd(raw, tag, openEnd + 1)) !== -1;
+	const loading = !(isVoid || selfClosing || hasClosing);
+	return {
+		type: "html_block",
+		content: loading ? `${raw.replace(TRAILING_UNCLOSED_TAG_RE, "")}\n</${tag}>` : raw,
+		raw,
+		tag,
+		attrs: attrs.length ? attrs : void 0,
+		loading
+	};
+}
+
+//#endregion
+//#region src/parser/node-source-map.ts
+function mapSourceLineRange(startLine, endLine, options) {
+	const mapper = isParseContext(options) ? options.sourceLineMapper : void 0;
+	if (!mapper) return {
+		startLine,
+		endLine
+	};
+	const mappedStartRange = mapper(startLine);
+	const mappedEndLine = endLine > startLine ? mapper(endLine - 1).endLine : mapper(endLine).startLine;
+	return {
+		startLine: mappedStartRange.startLine,
+		endLine: Math.max(mappedStartRange.startLine, mappedEndLine)
+	};
+}
+function lineAtOffset(source, offset) {
+	const target = Math.max(0, Math.min(source.length, Math.trunc(offset)));
+	let line = 0;
+	for (let i = 0; i < target; i++) if (source[i] === "\n") line++;
+	return line;
+}
+function sourceLineRangeFromOffsets(source, start, end) {
+	const startIndex = Math.max(0, Math.min(source.length, Math.trunc(start)));
+	const endIndex = Math.max(startIndex, Math.min(source.length, Math.trunc(end)));
+	const startLine = lineAtOffset(source, startIndex);
+	let endLine = lineAtOffset(source, endIndex);
+	if (endIndex > startIndex && source[endIndex - 1] !== "\n") endLine++;
+	return {
+		startLine,
+		endLine
+	};
+}
+function createSourceMapFromOffsets(source, start, end, options) {
+	const range = sourceLineRangeFromOffsets(source, start, end);
+	return mapSourceLineRange(range.startLine, range.endLine, options);
+}
+function readSourceMap(token, options) {
+	const map$1 = token?.map;
+	if (!Array.isArray(map$1) || map$1.length < 2) return null;
+	const startLine = Number(map$1[0]);
+	const endLine = Number(map$1[1]);
+	if (!Number.isFinite(startLine) || !Number.isFinite(endLine)) return null;
+	return mapSourceLineRange(startLine, endLine, options);
+}
+function applyNodeSourceMap(node, token, options) {
+	if (!options?.includeSourceMap) return node;
+	const sourceMap = readSourceMap(token, options);
+	if (!sourceMap) return node;
+	node.sourceMap = sourceMap;
+	if (node.type === "code_block") {
+		const codeNode = node;
+		codeNode.startLine = sourceMap.startLine;
+		codeNode.endLine = sourceMap.endLine;
+	}
+	return node;
+}
+function applyNodeSourceMapRange(node, token, endLine, options) {
+	if (!options?.includeSourceMap) return node;
+	const map$1 = token?.map;
+	if (!Array.isArray(map$1) || map$1.length < 2) return node;
+	const startLine = Number(map$1[0]);
+	const tokenEndLine = Number(map$1[1]);
+	const rangeEndLine = Number(endLine);
+	if (!Number.isFinite(startLine) || !Number.isFinite(tokenEndLine) || !Number.isFinite(rangeEndLine)) return node;
+	node.sourceMap = mapSourceLineRange(startLine, Math.max(tokenEndLine, rangeEndLine), options);
+	return node;
+}
+
+//#endregion
 //#region src/parser/token-copy.ts
 function cloneTokenWithMutableChildren(token) {
 	const copy = Object.assign(Object.create(Object.getPrototypeOf(token)), token);
@@ -15012,6 +16046,1521 @@ function cloneTokenWithMutableChildren(token) {
 	if (Array.isArray(token.map)) copy.map = [...token.map];
 	if (Array.isArray(token.children)) copy.children = token.children.map((child) => cloneTokenWithMutableChildren(child));
 	return copy;
+}
+
+//#endregion
+//#region src/parser/token-clone.ts
+function isPlainObject(value) {
+	if (!value || typeof value !== "object") return false;
+	const proto = Object.getPrototypeOf(value);
+	return proto === Object.prototype || proto === null;
+}
+function copyCloneableOwnDataProperties(source, target, seen) {
+	for (const key of Reflect.ownKeys(source)) {
+		const descriptor = Object.getOwnPropertyDescriptor(source, key);
+		if (!descriptor || !("value" in descriptor)) continue;
+		const targetDescriptor = Object.getOwnPropertyDescriptor(target, key);
+		if (targetDescriptor && (!("value" in targetDescriptor) || targetDescriptor.writable === false)) continue;
+		target[key] = safeCloneTokenField(descriptor.value, seen);
+	}
+}
+function safeCloneTokenField(value, seen = /* @__PURE__ */ new WeakMap()) {
+	if (!value || typeof value !== "object") return value;
+	const object = value;
+	const existing = seen.get(object);
+	if (existing) return existing;
+	if (Array.isArray(value)) {
+		const cloned$1 = [];
+		seen.set(object, cloned$1);
+		for (const item of value) cloned$1.push(safeCloneTokenField(item, seen));
+		return cloned$1;
+	}
+	if (value instanceof Map) {
+		const cloned$1 = /* @__PURE__ */ new Map();
+		seen.set(object, cloned$1);
+		for (const [key, item] of value) cloned$1.set(safeCloneTokenField(key, seen), safeCloneTokenField(item, seen));
+		return cloned$1;
+	}
+	if (value instanceof Set) {
+		const cloned$1 = /* @__PURE__ */ new Set();
+		seen.set(object, cloned$1);
+		for (const item of value) cloned$1.add(safeCloneTokenField(item, seen));
+		return cloned$1;
+	}
+	if (value instanceof Date) {
+		const cloned$1 = new Date(value.getTime());
+		seen.set(object, cloned$1);
+		return cloned$1;
+	}
+	if (value instanceof RegExp) {
+		const cloned$1 = new RegExp(value.source, value.flags);
+		cloned$1.lastIndex = value.lastIndex;
+		seen.set(object, cloned$1);
+		return cloned$1;
+	}
+	if (typeof URL !== "undefined" && value instanceof URL) {
+		const cloned$1 = new URL(value.href);
+		seen.set(object, cloned$1);
+		copyCloneableOwnDataProperties(object, cloned$1, seen);
+		return cloned$1;
+	}
+	if (typeof URLSearchParams !== "undefined" && value instanceof URLSearchParams) {
+		const cloned$1 = new URLSearchParams(value.toString());
+		seen.set(object, cloned$1);
+		copyCloneableOwnDataProperties(object, cloned$1, seen);
+		return cloned$1;
+	}
+	if (value instanceof Error) {
+		let cloned$1;
+		const ErrorCtor = value.constructor;
+		try {
+			cloned$1 = new ErrorCtor(value.message);
+		} catch {
+			cloned$1 = new Error(value.message);
+		}
+		Object.setPrototypeOf(cloned$1, Object.getPrototypeOf(value));
+		seen.set(object, cloned$1);
+		copyCloneableOwnDataProperties(object, cloned$1, seen);
+		return cloned$1;
+	}
+	if (typeof Promise !== "undefined" && value instanceof Promise) {
+		seen.set(object, value);
+		return value;
+	}
+	if (typeof Node !== "undefined" && value instanceof Node) {
+		seen.set(object, value);
+		return value;
+	}
+	if (!isPlainObject(value)) {
+		const cloned$1 = Object.create(Object.getPrototypeOf(value));
+		seen.set(object, cloned$1);
+		copyCloneableOwnDataProperties(object, cloned$1, seen);
+		return cloned$1;
+	}
+	const cloned = {};
+	seen.set(object, cloned);
+	const record = value;
+	for (const key of Object.keys(record)) cloned[key] = safeCloneTokenField(record[key], seen);
+	return cloned;
+}
+function canCloneMarkdownTokenFast(token, enumerableKeys) {
+	for (let index = 0; index < enumerableKeys.length; index++) {
+		const descriptor = Object.getOwnPropertyDescriptor(token, enumerableKeys[index]);
+		if (enumerableKeys[index] === "__proto__" || !descriptor || !("value" in descriptor) || descriptor.writable !== true || descriptor.configurable !== true) return false;
+	}
+	return true;
+}
+function cloneMarkdownToken(token, cloneObjectFields = true) {
+	if (!cloneObjectFields) return cloneTokenWithMutableChildren(token);
+	const allKeys = Reflect.ownKeys(token);
+	const enumerableKeys = Object.keys(token);
+	if (allKeys.length === enumerableKeys.length && canCloneMarkdownTokenFast(token, enumerableKeys)) try {
+		return cloneMarkdownTokenFast(token, enumerableKeys, cloneObjectFields);
+	} catch {
+		return cloneMarkdownTokenReflective(token, cloneObjectFields);
+	}
+	return cloneMarkdownTokenReflective(token, cloneObjectFields);
+}
+function cloneMarkdownTokenFast(token, enumerableKeys, cloneObjectFields) {
+	const prototype = Object.getPrototypeOf(token);
+	const cloned = {};
+	const seen = /* @__PURE__ */ new WeakMap();
+	const children = token.children;
+	const attrs = token.attrs;
+	const map$1 = token.map;
+	const source = token;
+	for (let keyIndex = 0; keyIndex < enumerableKeys.length; keyIndex++) {
+		const key = enumerableKeys[keyIndex];
+		const value = source[key];
+		if (key === "children" && Array.isArray(children)) {
+			const clonedChildren = new Array(children.length);
+			for (let index = 0; index < children.length; index++) clonedChildren[index] = cloneMarkdownToken(children[index], cloneObjectFields);
+			cloned[key] = clonedChildren;
+		} else if (key === "attrs" && Array.isArray(attrs)) {
+			const clonedAttrs = new Array(attrs.length);
+			for (let index = 0; index < attrs.length; index++) {
+				const attr = attrs[index];
+				clonedAttrs[index] = [attr[0], attr[1]];
+			}
+			cloned[key] = clonedAttrs;
+		} else if (key === "map" && Array.isArray(map$1)) cloned[key] = [map$1[0], map$1[1]];
+		else if (cloneObjectFields && value && typeof value === "object") cloned[key] = safeCloneTokenField(value, seen);
+		else cloned[key] = value;
+	}
+	Object.setPrototypeOf(cloned, prototype);
+	return cloned;
+}
+function cloneMarkdownTokenReflective(token, cloneObjectFields = true) {
+	const cloned = Object.create(Object.getPrototypeOf(token));
+	const seen = /* @__PURE__ */ new WeakMap();
+	for (const key of Reflect.ownKeys(token)) {
+		const descriptor = Object.getOwnPropertyDescriptor(token, key);
+		if (!descriptor) continue;
+		if (!("value" in descriptor)) {
+			Object.defineProperty(cloned, key, descriptor);
+			continue;
+		}
+		const value = descriptor.value;
+		let clonedValue = value;
+		if (key === "attrs" && Array.isArray(value)) clonedValue = value.map((attr) => [...attr]);
+		else if (key === "map" && Array.isArray(value)) clonedValue = [...value];
+		else if (key === "children" && Array.isArray(value)) clonedValue = value.map((child) => cloneMarkdownToken(child, cloneObjectFields));
+		else if (cloneObjectFields && value && typeof value === "object") clonedValue = safeCloneTokenField(value, seen);
+		Object.defineProperty(cloned, key, {
+			...descriptor,
+			value: clonedValue
+		});
+	}
+	return cloned;
+}
+function cloneMarkdownTokens(tokens, cloneObjectFields = true) {
+	return tokens.map((token) => cloneMarkdownToken(token, cloneObjectFields));
+}
+
+//#endregion
+//#region src/parser/markdown-context.ts
+function isEscapedDelimiterAt(source, index) {
+	let cursor = index - 1;
+	let backslashes = 0;
+	while (cursor >= 0 && source[cursor] === "\\") {
+		backslashes++;
+		cursor--;
+	}
+	return backslashes % 2 === 1;
+}
+function isIndentWhitespace(ch) {
+	return ch === " " || ch === "	";
+}
+function advanceMarkdownIndentColumn(column, ch) {
+	return ch === " " ? column + 1 : column + 4 - column % 4;
+}
+function getMarkdownIndent(line) {
+	let index = 0;
+	let column = 0;
+	while (index < line.length && isIndentWhitespace(line[index])) {
+		column = advanceMarkdownIndentColumn(column, line[index]);
+		index++;
+	}
+	return {
+		index,
+		column
+	};
+}
+function consumeMarkdownIndent(line) {
+	const indent = getMarkdownIndent(line);
+	return indent.column > 3 ? null : indent;
+}
+function parseMarkdownFenceMarker(line) {
+	const indent = consumeMarkdownIndent(line);
+	if (!indent) return null;
+	const index = indent.index;
+	const markerChar = line[index];
+	if (markerChar !== "`" && markerChar !== "~") return null;
+	let markerEnd = index;
+	while (markerEnd < line.length && line[markerEnd] === markerChar) markerEnd++;
+	const markerLen = markerEnd - index;
+	if (markerLen < 3) return null;
+	const rest = line.slice(markerEnd);
+	if (markerChar === "`" && rest.includes("`")) return null;
+	return {
+		markerChar,
+		markerLen,
+		rest
+	};
+}
+function stripMarkdownListPrefix(line) {
+	const indent = consumeMarkdownIndent(line);
+	if (!indent) return null;
+	const rest = line.slice(indent.index);
+	const marker = /^(?:[-+*]|\d{1,9}[.)])(?=[\t ]|$)/.exec(rest)?.[0];
+	if (!marker) return null;
+	let index = indent.index + marker.length;
+	let column = indent.column + marker.length;
+	if (!isIndentWhitespace(line[index])) return null;
+	while (index < line.length && isIndentWhitespace(line[index])) {
+		column = advanceMarkdownIndentColumn(column, line[index]);
+		index++;
+	}
+	return {
+		content: line.slice(index),
+		contentIndent: column
+	};
+}
+function stripMarkdownBlockquotePrefix(line) {
+	let rest = line;
+	let saw = false;
+	while (true) {
+		const indent = consumeMarkdownIndent(rest);
+		if (!indent) return saw ? rest : null;
+		let index = indent.index;
+		if (rest[index] !== ">") return saw ? rest : null;
+		saw = true;
+		index++;
+		if (rest[index] === " " || rest[index] === "	") index++;
+		rest = rest.slice(index);
+	}
+}
+function matchMarkdownFenceMarker(line) {
+	const direct = parseMarkdownFenceMarker(line);
+	if (direct) return {
+		...direct,
+		inBlockquote: false,
+		inList: false,
+		listIndent: 0
+	};
+	const quoted = stripMarkdownBlockquotePrefix(line);
+	const quotedMarker = quoted == null ? null : parseMarkdownFenceMarker(quoted);
+	if (quotedMarker) return {
+		...quotedMarker,
+		inBlockquote: true,
+		inList: false,
+		listIndent: 0
+	};
+	const listed = stripMarkdownListPrefix(line);
+	if (!listed) return null;
+	const listedMarker = parseMarkdownFenceMarker(listed.content);
+	return listedMarker == null ? null : {
+		...listedMarker,
+		inBlockquote: false,
+		inList: true,
+		listIndent: listed.contentIndent
+	};
+}
+function countRepeatedChar(source, index, ch) {
+	let end = index;
+	while (end < source.length && source[end] === ch) end++;
+	return end - index;
+}
+function findCodeSpanCloseIndex(line, start, markerLen) {
+	let index = start;
+	while (index < line.length) {
+		const next = line.indexOf("`", index);
+		if (next === -1) return -1;
+		const runLen = countRepeatedChar(line, next, "`");
+		if (runLen === markerLen) return next;
+		index = next + runLen;
+	}
+	return -1;
+}
+
+//#endregion
+//#region src/parser/streaming/boundary-state.ts
+const TOLERANT_BOUNDARY_SPLIT_OPENERS = ["$", "\\["];
+const STREAMING_ADMONITION_OPEN_RE = /(^|\r?\n)[\t ]*:::[\t ]*(?:warning|info|note|tip|danger|caution|error)(?=[\t ]|\r?\n|$)[^\r\n]*(?:\r?\n[\t ]*)*$/;
+function createExplicitBracketMathContext() {
+	return {
+		fenceChar: "",
+		fenceInBlockquote: false,
+		fenceInList: false,
+		fenceLen: 0,
+		fenceListIndent: 0,
+		inDollarMath: false,
+		inFence: false,
+		inMath: false,
+		listContentIndent: null,
+		dollarMathOpenOffset: null,
+		mathOpenOffset: null
+	};
+}
+function cloneExplicitBracketMathContext(context) {
+	return { ...context };
+}
+function setTolerantMathBoundaryStreamCache(runtime, source, key, explicitBracketMath = scanExplicitBracketMathStreamState(source).state, scanWindow = {
+	lineOffset: 0,
+	windowStart: 0
+}) {
+	runtime.tolerantMathBoundary = {
+		explicitBracketMath,
+		source,
+		key,
+		pendingCandidate: key === null && mayContainTolerantMathBlockBoundaryOpener(source, scanWindow),
+		scanWindow
+	};
+}
+function sourceEndsWithSplitTolerantBoundaryPrefix(source) {
+	return source.endsWith("$") || source.endsWith("\\");
+}
+function sourceEndsWithCompleteTolerantBoundaryOpener(source) {
+	const lastLineStart = Math.max(source.lastIndexOf("\n") + 1, 0);
+	const lastLine = source.slice(lastLineStart).replace(/[\t ]+$/, "");
+	return TOLERANT_BOUNDARY_SPLIT_OPENERS.some((open) => lastLine.endsWith(open));
+}
+function appendedChunkMayAffectTolerantMathBoundary(previousSource, appended) {
+	if (!appended) return false;
+	if (appended.includes("$$") || appended.includes("\\[")) return true;
+	if (previousSource.endsWith("$") && appended[0] === "$") return true;
+	if (previousSource.endsWith("\\") && appended[0] === "[") return true;
+	if (sourceEndsWithCompleteTolerantBoundaryOpener(previousSource) && /[\r\n]/.test(appended)) return true;
+	return false;
+}
+function isInsideOpenMarkdownFenceBeforeOffset(markdown, offset) {
+	let inFence = false;
+	let fenceChar = "";
+	let fenceLen = 0;
+	let fenceInBlockquote = false;
+	let fenceInList = false;
+	let fenceListIndent = 0;
+	let listContentIndent = null;
+	let index = 0;
+	while (index < offset) {
+		const newlineIndex = markdown.indexOf("\n", index);
+		const lineEnd$2 = newlineIndex === -1 || newlineIndex >= offset ? offset : newlineIndex;
+		const rawLine = markdown.slice(index, lineEnd$2);
+		const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+		const lineIndent = getMarkdownIndent(line);
+		const listPrefix = stripMarkdownListPrefix(line);
+		if (inFence && fenceInBlockquote && line.trim() && stripMarkdownBlockquotePrefix(line) == null) {
+			inFence = false;
+			fenceChar = "";
+			fenceLen = 0;
+			fenceInBlockquote = false;
+			fenceInList = false;
+			fenceListIndent = 0;
+		}
+		if (inFence && fenceInList && line.trim() && lineIndent.column < fenceListIndent && !listPrefix) {
+			inFence = false;
+			fenceChar = "";
+			fenceLen = 0;
+			fenceInBlockquote = false;
+			fenceInList = false;
+			fenceListIndent = 0;
+		}
+		if (listPrefix) listContentIndent = listPrefix.contentIndent;
+		else if (line.trim() && listContentIndent != null && lineIndent.column < listContentIndent && !inFence) listContentIndent = null;
+		const fenceMatch = matchMarkdownFenceMarker(line);
+		if (fenceMatch) if (inFence) {
+			if (fenceMatch.markerChar === fenceChar && fenceMatch.markerLen >= fenceLen && /^\s*$/.test(fenceMatch.rest)) {
+				inFence = false;
+				fenceChar = "";
+				fenceLen = 0;
+				fenceInBlockquote = false;
+				fenceInList = false;
+				fenceListIndent = 0;
+			}
+		} else {
+			inFence = true;
+			fenceChar = fenceMatch.markerChar;
+			fenceLen = fenceMatch.markerLen;
+			fenceInBlockquote = fenceMatch.inBlockquote;
+			fenceInList = fenceMatch.inList || listContentIndent != null && !fenceMatch.inBlockquote && lineIndent.column >= listContentIndent;
+			fenceListIndent = fenceMatch.listIndent || listContentIndent || 0;
+		}
+		if (newlineIndex === -1 || newlineIndex >= offset) break;
+		index = newlineIndex + 1;
+	}
+	return inFence;
+}
+function isInsideOpenStandardHtmlBlockBeforeOffset(markdown, offset) {
+	const isWs = (ch) => ch === " " || ch === "	";
+	const isNameChar = (ch) => {
+		const c = ch.charCodeAt(0);
+		return c >= 65 && c <= 90 || c >= 97 && c <= 122 || c >= 48 && c <= 57 || ch === "_" || ch === "-" || ch === ":";
+	};
+	const parseLineStartTag = (line) => {
+		if (line[0] !== "<") return null;
+		let index$1 = 1;
+		while (index$1 < line.length && isWs(line[index$1])) index$1++;
+		const closing = line[index$1] === "/";
+		if (closing) {
+			index$1++;
+			while (index$1 < line.length && isWs(line[index$1])) index$1++;
+		}
+		const nameStart = index$1;
+		while (index$1 < line.length && isNameChar(line[index$1])) index$1++;
+		if (index$1 === nameStart) return null;
+		const tag = line.slice(nameStart, index$1).toLowerCase();
+		if (!STANDARD_BLOCK_HTML_TAGS.has(tag)) return null;
+		const boundary = line[index$1];
+		if (boundary && boundary !== " " && boundary !== "	" && boundary !== ">" && boundary !== "/") return null;
+		const tagEnd = findTagCloseIndexOutsideQuotes(line);
+		if (tagEnd === -1) return null;
+		let beforeEnd = tagEnd - 1;
+		while (beforeEnd >= 0 && isWs(line[beforeEnd])) beforeEnd--;
+		return {
+			closing,
+			tag,
+			selfClosing: !closing && line[beforeEnd] === "/",
+			after: line.slice(tagEnd + 1)
+		};
+	};
+	const hasSameLineClose = (line, tag) => {
+		const lower = line.toLowerCase();
+		let index$1 = 0;
+		while (index$1 < lower.length) {
+			const closeStart = lower.indexOf("</", index$1);
+			if (closeStart === -1) return false;
+			index$1 = closeStart + 2;
+			while (index$1 < lower.length && isWs(lower[index$1])) index$1++;
+			if (lower.startsWith(tag, index$1)) {
+				const boundary = lower[index$1 + tag.length];
+				if (!boundary || boundary === " " || boundary === "	" || boundary === ">") return true;
+			}
+		}
+		return false;
+	};
+	const stack = [];
+	let inComment = false;
+	let inDeclaration = false;
+	let inProcessingInstruction = false;
+	let index = 0;
+	while (index < offset) {
+		const newlineIndex = markdown.indexOf("\n", index);
+		const lineEnd$2 = newlineIndex === -1 || newlineIndex >= offset ? offset : newlineIndex;
+		const rawLine = markdown.slice(index, lineEnd$2);
+		const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+		const indent = consumeMarkdownIndent(line);
+		if (indent) {
+			const rest = line.slice(indent.index);
+			if (inComment) inComment = !rest.includes("-->");
+			else if (inDeclaration) inDeclaration = !rest.includes(">");
+			else if (inProcessingInstruction) inProcessingInstruction = !rest.includes("?>");
+			else if (rest.startsWith("<!--")) inComment = !rest.includes("-->");
+			else if (rest.startsWith("<?")) inProcessingInstruction = !rest.includes("?>");
+			else if (rest.startsWith("<!")) inDeclaration = !rest.includes(">");
+			else {
+				const tagInfo = parseLineStartTag(rest);
+				if (tagInfo) {
+					if (tagInfo.closing) {
+						for (let i = stack.length - 1; i >= 0; i--) if (stack[i] === tagInfo.tag) {
+							stack.length = i;
+							break;
+						}
+					} else if (!tagInfo.selfClosing) {
+						if (!hasSameLineClose(tagInfo.after, tagInfo.tag)) stack.push(tagInfo.tag);
+					}
+				}
+			}
+		}
+		if (newlineIndex === -1 || newlineIndex >= offset) break;
+		index = newlineIndex + 1;
+	}
+	return inComment || inDeclaration || inProcessingInstruction || stack.length > 0;
+}
+function isInsideOpenCustomHtmlBlockBeforeOffset(markdown, offset, customHtmlTags) {
+	if (!customHtmlTags?.length) return false;
+	const tagSet = new Set(normalizeCustomHtmlTags(customHtmlTags));
+	if (!tagSet.size) return false;
+	const isNameChar = (ch) => {
+		const c = ch.charCodeAt(0);
+		return c >= 65 && c <= 90 || c >= 97 && c <= 122 || c >= 48 && c <= 57 || ch === "_" || ch === "-" || ch === ":";
+	};
+	const isWs = (ch) => ch === " " || ch === "	";
+	const parseLineStartTag = (line) => {
+		if (line[0] !== "<") return null;
+		let index$1 = 1;
+		while (index$1 < line.length && isWs(line[index$1])) index$1++;
+		const closing = line[index$1] === "/";
+		if (closing) {
+			index$1++;
+			while (index$1 < line.length && isWs(line[index$1])) index$1++;
+		}
+		const nameStart = index$1;
+		while (index$1 < line.length && isNameChar(line[index$1])) index$1++;
+		if (index$1 === nameStart) return null;
+		const tag = line.slice(nameStart, index$1).toLowerCase();
+		if (!tagSet.has(tag)) return null;
+		const boundary = line[index$1];
+		if (boundary && boundary !== " " && boundary !== "	" && boundary !== ">" && boundary !== "/") return null;
+		const tagEnd = line.indexOf(">", index$1);
+		if (tagEnd === -1) return null;
+		let beforeEnd = tagEnd - 1;
+		while (beforeEnd >= 0 && isWs(line[beforeEnd])) beforeEnd--;
+		return {
+			closing,
+			tag,
+			selfClosing: !closing && line[beforeEnd] === "/",
+			after: line.slice(tagEnd + 1)
+		};
+	};
+	const hasSameLineClose = (line, tag) => {
+		const lower = line.toLowerCase();
+		let index$1 = 0;
+		while (index$1 < lower.length) {
+			const closeStart = lower.indexOf("</", index$1);
+			if (closeStart === -1) return false;
+			index$1 = closeStart + 2;
+			while (index$1 < lower.length && isWs(lower[index$1])) index$1++;
+			if (lower.startsWith(tag, index$1)) {
+				const boundary = lower[index$1 + tag.length];
+				if (!boundary || boundary === " " || boundary === "	" || boundary === ">") return true;
+			}
+		}
+		return false;
+	};
+	const stack = [];
+	let index = 0;
+	while (index < offset) {
+		const newlineIndex = markdown.indexOf("\n", index);
+		const lineEnd$2 = newlineIndex === -1 || newlineIndex >= offset ? offset : newlineIndex;
+		const rawLine = markdown.slice(index, lineEnd$2);
+		const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+		const indent = consumeMarkdownIndent(line);
+		if (indent) {
+			const tagInfo = parseLineStartTag(line.slice(indent.index));
+			if (tagInfo) {
+				if (tagInfo.closing) {
+					for (let i = stack.length - 1; i >= 0; i--) if (stack[i] === tagInfo.tag) {
+						stack.length = i;
+						break;
+					}
+				} else if (!tagInfo.selfClosing) {
+					if (!hasSameLineClose(tagInfo.after, tagInfo.tag)) stack.push(tagInfo.tag);
+				}
+			}
+		}
+		if (newlineIndex === -1 || newlineIndex >= offset) break;
+		index = newlineIndex + 1;
+	}
+	return stack.length > 0;
+}
+function getStreamingAdmonitionOpenTailReplacement(markdown, customHtmlTags) {
+	const match = STREAMING_ADMONITION_OPEN_RE.exec(markdown);
+	if (!match) return null;
+	const separator = match[1] ?? "";
+	const lineStart = match.index + separator.length;
+	const lineEnd$2 = markdown.indexOf("\n", lineStart);
+	const rawLine = markdown.slice(lineStart, lineEnd$2 === -1 ? markdown.length : lineEnd$2);
+	if (!consumeMarkdownIndent(rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine)) return null;
+	if (isInsideOpenMarkdownFenceBeforeOffset(markdown, lineStart)) return null;
+	if (isInsideOpenStandardHtmlBlockBeforeOffset(markdown, lineStart)) return null;
+	if (isInsideOpenCustomHtmlBlockBeforeOffset(markdown, lineStart, customHtmlTags)) return null;
+	return `${markdown.slice(0, match.index)}${separator}`;
+}
+function resetExplicitBracketFenceContext(context) {
+	context.inFence = false;
+	context.fenceChar = "";
+	context.fenceLen = 0;
+	context.fenceInBlockquote = false;
+	context.fenceInList = false;
+	context.fenceListIndent = 0;
+}
+function scanLineForExplicitBracketMathState(line, context, lineStart, appendStart, openAtAppendStart) {
+	let index = 0;
+	let closedOpenMath = false;
+	while (index < line.length) {
+		const sourceIndex = index;
+		if (context.inMath) {
+			if (line.startsWith("\\]", index) && !isEscapedDelimiterAt(line, sourceIndex)) {
+				if (appendStart != null && openAtAppendStart && lineStart + index + 2 > appendStart) closedOpenMath = true;
+				context.inMath = false;
+				context.mathOpenOffset = null;
+				index += 2;
+				continue;
+			}
+			index++;
+			continue;
+		}
+		if (context.inDollarMath) {
+			if (line.startsWith("$$", index) && !isEscapedDelimiterAt(line, sourceIndex)) {
+				if (appendStart != null && openAtAppendStart && lineStart + index + 2 > appendStart) closedOpenMath = true;
+				context.inDollarMath = false;
+				context.dollarMathOpenOffset = null;
+				index += 2;
+				continue;
+			}
+			index++;
+			continue;
+		}
+		if (line[index] === "`" && !isEscapedDelimiterAt(line, sourceIndex)) {
+			const markerLen = countRepeatedChar(line, index, "`");
+			const closeIndex = findCodeSpanCloseIndex(line, index + markerLen, markerLen);
+			if (closeIndex === -1) break;
+			index = closeIndex + markerLen;
+			continue;
+		}
+		if (line.startsWith("\\[", index) && !isEscapedDelimiterAt(line, sourceIndex)) {
+			context.inMath = true;
+			context.mathOpenOffset = lineStart + index;
+			index += 2;
+			continue;
+		}
+		if (line.startsWith("$$", index) && !isEscapedDelimiterAt(line, sourceIndex)) {
+			context.inDollarMath = true;
+			context.dollarMathOpenOffset = lineStart + index;
+			index += 2;
+			continue;
+		}
+		index++;
+	}
+	return closedOpenMath;
+}
+function stripPendingExplicitMathTail(markdown, runtime, useCache = true) {
+	const md = runtime.markdownIt;
+	if (!hasMarkstreamMathPlugin(md)) return markdown;
+	const previous = useCache ? runtime.pendingExplicitMathTail : void 0;
+	const state = previous?.source === markdown ? previous.state : previous && runtime.sourceExtends(previous.source, markdown) ? updateExplicitBracketMathStreamState(previous.state, markdown.slice(previous.source.length), previous.source.length - previous.state.lineBuffer.length).state : scanExplicitBracketMathStreamState(markdown).state;
+	if (useCache) runtime.pendingExplicitMathTail = {
+		source: markdown,
+		state
+	};
+	const { context } = state;
+	const openOffset = context.inMath ? context.mathOpenOffset : context.inDollarMath ? context.dollarMathOpenOffset : null;
+	if (openOffset == null) return markdown;
+	const content = markdown.slice(openOffset + 2);
+	const lineStart = markdown.lastIndexOf("\n", openOffset - 1) + 1;
+	if (!(markdown.slice(lineStart, openOffset).trim() === "") && !/^\r?\n/.test(content)) return markdown;
+	if (/^\s*!\[/.test(content)) return markdown;
+	const stripped = content.trim();
+	const weakSingleVariable = /^(?:[a-z]|pi)$/i.test(stripped);
+	if (isMathLike(content) && !weakSingleVariable) return markdown;
+	return markdown.slice(0, openOffset);
+}
+function scanExplicitBracketMathLine(line, context, lineStart, appendStart, openAtAppendStart) {
+	const lineIndent = getMarkdownIndent(line);
+	const listPrefix = stripMarkdownListPrefix(line);
+	if (context.inFence && context.fenceInBlockquote && line.trim() && stripMarkdownBlockquotePrefix(line) == null) resetExplicitBracketFenceContext(context);
+	if (context.inFence && context.fenceInList && line.trim() && lineIndent.column < context.fenceListIndent && !listPrefix) resetExplicitBracketFenceContext(context);
+	if (listPrefix) context.listContentIndent = listPrefix.contentIndent;
+	else if (line.trim() && context.listContentIndent != null && lineIndent.column < context.listContentIndent && !context.inFence) context.listContentIndent = null;
+	if (!context.inMath && !context.inDollarMath) {
+		const fenceMatch = matchMarkdownFenceMarker(line);
+		if (fenceMatch) if (context.inFence) {
+			if (fenceMatch.markerChar === context.fenceChar && fenceMatch.markerLen >= context.fenceLen && /^\s*$/.test(fenceMatch.rest)) resetExplicitBracketFenceContext(context);
+		} else {
+			context.inFence = true;
+			context.fenceChar = fenceMatch.markerChar;
+			context.fenceLen = fenceMatch.markerLen;
+			context.fenceInBlockquote = fenceMatch.inBlockquote;
+			context.fenceInList = fenceMatch.inList || context.listContentIndent != null && !fenceMatch.inBlockquote && lineIndent.column >= context.listContentIndent;
+			context.fenceListIndent = fenceMatch.listIndent || context.listContentIndent || 0;
+		}
+		else if (!context.inFence) return scanLineForExplicitBracketMathState(line, context, lineStart, appendStart, openAtAppendStart);
+	} else return scanLineForExplicitBracketMathState(line, context, lineStart, appendStart, openAtAppendStart);
+	return false;
+}
+function scanExplicitBracketMathStreamState(source, initialContext = createExplicitBracketMathContext(), appendStart = null, openAtAppendStart = false, sourceOffset = 0) {
+	const context = cloneExplicitBracketMathContext(initialContext);
+	let committedContext = cloneExplicitBracketMathContext(initialContext);
+	let lineBuffer = "";
+	let closedOpenMath = false;
+	let index = 0;
+	while (index < source.length) {
+		const newlineIndex = source.indexOf("\n", index);
+		const hasNewline = newlineIndex !== -1;
+		const lineEnd$2 = hasNewline && newlineIndex > index && source[newlineIndex - 1] === "\r" ? newlineIndex - 1 : hasNewline ? newlineIndex : source.length;
+		const line = source.slice(index, lineEnd$2);
+		if (scanExplicitBracketMathLine(line, context, sourceOffset + index, appendStart, openAtAppendStart)) closedOpenMath = true;
+		if (hasNewline) {
+			committedContext = cloneExplicitBracketMathContext(context);
+			lineBuffer = "";
+		} else lineBuffer = line;
+		index = hasNewline ? newlineIndex + 1 : source.length;
+	}
+	return {
+		closedOpenMath,
+		state: {
+			committedContext,
+			context,
+			lineBuffer
+		}
+	};
+}
+function updateExplicitBracketMathStreamState(previous, appended, lineBufferStartOffset = 0) {
+	if (appended && !previous.context.inMath && !previous.context.inDollarMath && !previous.context.inFence && !previous.committedContext.inFence && !/[\\$`~\r\n]/.test(appended) && !(previous.lineBuffer.endsWith("\\") && (appended[0] === "[" || appended[0] === "]"))) return {
+		closedOpenMath: false,
+		state: {
+			committedContext: cloneExplicitBracketMathContext(previous.committedContext),
+			context: cloneExplicitBracketMathContext(previous.context),
+			lineBuffer: previous.lineBuffer + appended
+		}
+	};
+	return scanExplicitBracketMathStreamState(previous.lineBuffer + appended, previous.committedContext, lineBufferStartOffset + previous.lineBuffer.length, previous.context.inMath || previous.context.inDollarMath, lineBufferStartOffset);
+}
+function syncTolerantMathBoundaryStreamCache(runtime, source) {
+	const md = runtime.markdownIt;
+	if (!hasMarkstreamMathPlugin(md)) return;
+	if (typeof md.stream?.reset !== "function") return;
+	const previous = runtime.tolerantMathBoundary;
+	if (previous?.source === source) return;
+	const sourceExtendsPrevious = previous ? runtime.sourceExtends(previous.source, source) : false;
+	const appended = sourceExtendsPrevious && previous ? source.slice(previous.source.length) : "";
+	const explicitBracketMathUpdate = sourceExtendsPrevious && previous ? updateExplicitBracketMathStreamState(previous.explicitBracketMath, appended, previous.source.length - previous.explicitBracketMath.lineBuffer.length) : scanExplicitBracketMathStreamState(source);
+	const nextExplicitBracketMath = explicitBracketMathUpdate.state;
+	const completesExplicitBracketMathClose = sourceExtendsPrevious && previous ? explicitBracketMathUpdate.closedOpenMath : false;
+	if (previous && sourceExtendsPrevious) {
+		if (previous.key === null && previous.pendingCandidate === false && !completesExplicitBracketMathClose && !appendedChunkMayAffectTolerantMathBoundary(previous.source, appended) && !sourceEndsWithSplitTolerantBoundaryPrefix(source)) {
+			previous.source = source;
+			previous.explicitBracketMath = nextExplicitBracketMath;
+			return;
+		}
+	}
+	const scanWindow = sourceExtendsPrevious && previous ? previous.scanWindow : {
+		lineOffset: 0,
+		windowStart: 0
+	};
+	const nextKey = getTolerantMathBlockBoundaryStreamKey(source, scanWindow);
+	if (previous && ((previous ? !sourceExtendsPrevious : false) || previous.key !== nextKey || completesExplicitBracketMathClose)) runtime.resetStreamOnly();
+	else if (!previous && nextKey) runtime.resetStreamOnly();
+	setTolerantMathBoundaryStreamCache(runtime, source, nextKey, nextExplicitBracketMath, scanWindow);
+}
+function shouldUseSyncParseForPendingTolerantMathBoundary(runtime) {
+	const cache = runtime.tolerantMathBoundary;
+	return typeof cache?.key === "string" && cache.key.startsWith("pending:");
+}
+function createLatexSplitMathScanner(source) {
+	let inFence = false;
+	let fenceMarker = "";
+	let fenceLen = 0;
+	let inDollarBlock = false;
+	let inBracketMath = false;
+	let singleDollarOpen = false;
+	let scanned = 0;
+	const processLine = (line, _lineStartOffset) => {
+		const fenceMatch = matchMarkdownFenceMarker(line);
+		if (fenceMatch) {
+			if (inFence) {
+				if (fenceMatch.markerChar === fenceMarker && fenceMatch.markerLen >= fenceLen && /^\s*$/.test(fenceMatch.rest)) {
+					inFence = false;
+					fenceMarker = "";
+					fenceLen = 0;
+				}
+			} else {
+				inFence = true;
+				fenceMarker = fenceMatch.markerChar;
+				fenceLen = fenceMatch.markerLen;
+			}
+			return;
+		}
+		if (inFence) return;
+		let i = 0;
+		while (i < line.length) {
+			if (inDollarBlock) {
+				if (line.startsWith("$$", i) && !isEscapedDelimiterAt(line, i)) {
+					inDollarBlock = false;
+					i += 2;
+				} else i++;
+				continue;
+			}
+			if (inBracketMath) {
+				if (line.startsWith("\\]", i) && !isEscapedDelimiterAt(line, i)) {
+					inBracketMath = false;
+					i += 2;
+				} else i++;
+				continue;
+			}
+			const ch = line[i];
+			if (ch === "`") {
+				const runLen = countRepeatedChar(line, i, "`");
+				const closeIndex = findCodeSpanCloseIndex(line, i + runLen, runLen);
+				if (closeIndex === -1) break;
+				i = closeIndex + runLen;
+				continue;
+			}
+			if (ch === "\\") {
+				const next = line[i + 1];
+				if (next === "[" && !isEscapedDelimiterAt(line, i)) {
+					inBracketMath = true;
+					i += 2;
+				} else if (next === "]" && !isEscapedDelimiterAt(line, i) && !inBracketMath) i += 2;
+				else i += 2;
+				continue;
+			}
+			if (ch === "$") {
+				if (line[i + 1] === "$" && !isEscapedDelimiterAt(line, i)) {
+					inDollarBlock = true;
+					singleDollarOpen = false;
+					i += 2;
+					continue;
+				}
+				if (singleDollarOpen) {
+					singleDollarOpen = false;
+					i++;
+					continue;
+				}
+				const after = line[i + 1];
+				if (after === void 0 || after !== " " && after !== "	" && !/\d/.test(after)) singleDollarOpen = true;
+				i++;
+				continue;
+			}
+			i++;
+		}
+	};
+	const scanTo = (target) => {
+		while (scanned < target) {
+			const newlineIndex = source.indexOf("\n", scanned);
+			const lineEndRaw = newlineIndex === -1 || newlineIndex >= target ? target : newlineIndex;
+			const lineEnd$2 = lineEndRaw > scanned && source[lineEndRaw - 1] === "\r" ? lineEndRaw - 1 : lineEndRaw;
+			processLine(source.slice(scanned, lineEnd$2), scanned);
+			if (newlineIndex === -1 || newlineIndex >= target) {
+				scanned = target;
+				break;
+			}
+			singleDollarOpen = false;
+			scanned = newlineIndex + 1;
+		}
+	};
+	return {
+		scanTo,
+		inMath: () => inDollarBlock || inBracketMath || singleDollarOpen
+	};
+}
+
+//#endregion
+//#region src/parser/streaming/tokenizer.ts
+function getParserNow$1() {
+	return typeof performance !== "undefined" ? performance.now() : Date.now();
+}
+function getStableStreamEnv(runtime, env) {
+	const modeKey = env.__markstreamFinal === true ? "final" : "streaming";
+	let stableEnv = runtime.streamParseEnvs.get(modeKey);
+	if (!stableEnv) {
+		stableEnv = {};
+		runtime.streamParseEnvs.set(modeKey, stableEnv);
+	}
+	for (const key of Object.keys(stableEnv)) if (!Object.prototype.hasOwnProperty.call(env, key)) delete stableEnv[key];
+	Object.assign(stableEnv, env);
+	return stableEnv;
+}
+function shouldUseTopLevelStreamParse(runtime, options) {
+	const md = runtime.markdownIt;
+	const stream = md.stream;
+	const streamParse = options.streamParse ?? "auto";
+	return options.disableStreamParse !== true && md.__markstreamHasCustomParserExtensions === false && (streamParse === true || streamParse === "auto" && options.final !== true) && stream?.enabled === true && typeof stream.parse === "function";
+}
+function shouldResetTopLevelStreamCacheForFinalAutoParse(runtime, options) {
+	const md = runtime.markdownIt;
+	const streamParse = options.streamParse ?? "auto";
+	const stream = md.stream;
+	return options.final === true && streamParse === "auto" && options.disableStreamParse !== true && md.__markstreamHasCustomParserExtensions === false && stream?.enabled === true && typeof stream.reset === "function";
+}
+function resetTopLevelTokenizerForFinalAutoParse(runtime, options) {
+	if (!shouldResetTopLevelStreamCacheForFinalAutoParse(runtime, options)) return false;
+	runtime.resetForFinalAutoParse();
+	return true;
+}
+function shouldCloneTopLevelStreamTokens(options) {
+	return typeof options.preTransformTokens === "function" || typeof options.postTransformTokens === "function";
+}
+function sameTokenizerTokenMap(left, right) {
+	const leftMap = left?.map;
+	const rightMap = right?.map;
+	if (leftMap === rightMap) return true;
+	if (!Array.isArray(leftMap) || !Array.isArray(rightMap)) return false;
+	return leftMap.length === rightMap.length && leftMap.every((value, index) => value === rightMap[index]);
+}
+function isSameTokenShape(left, right) {
+	return !!left && !!right && left.type === right.type && left.tag === right.tag && left.nesting === right.nesting && left.markup === right.markup && left.content === right.content && sameTokenizerTokenMap(left, right);
+}
+function isParagraphTokenTriplet(tokens, index) {
+	return tokens[index]?.type === "paragraph_open" && tokens[index + 1]?.type === "inline" && tokens[index + 2]?.type === "paragraph_close";
+}
+function hasAdjacentDuplicateParagraphTokenTriplet(tokens) {
+	for (let index = 0; index + 5 < tokens.length; index++) if (isParagraphTokenTriplet(tokens, index) && isParagraphTokenTriplet(tokens, index + 3) && isSameTokenShape(tokens[index], tokens[index + 3]) && isSameTokenShape(tokens[index + 1], tokens[index + 4]) && isSameTokenShape(tokens[index + 2], tokens[index + 5])) return true;
+	return false;
+}
+function shouldFallbackDuplicateTolerantMathStreamTokens(md, source, tokens) {
+	return hasMarkstreamMathPlugin(md) && mayContainTolerantMathBlockBoundaryOpener(source) && hasAdjacentDuplicateParagraphTokenTriplet(tokens);
+}
+function getTopLevelStreamParseMode(runtime) {
+	return runtime.topLevelStreamParseMode;
+}
+function parseTopLevelTokens(runtime, source, env, options, timingCallbacks) {
+	const md = runtime.markdownIt;
+	if (options.customHtmlTags?.length) env.__markstreamCustomHtmlTags = options.customHtmlTags;
+	if (!shouldUseTopLevelStreamParse(runtime, options)) {
+		if (!options.isFragment) runtime.topLevelStreamParseMode = "sync";
+		return md.parse(source, env);
+	}
+	syncTolerantMathBoundaryStreamCache(runtime, source);
+	if (shouldUseSyncParseForPendingTolerantMathBoundary(runtime)) {
+		runtime.topLevelStreamParseMode = "sync";
+		return md.parse(source, env);
+	}
+	runtime.markStreamParseStarted();
+	const tokens = md.stream.parse(source, getStableStreamEnv(runtime, env));
+	if (shouldFallbackDuplicateTolerantMathStreamTokens(md, source, tokens)) {
+		runtime.resetStreamOnly();
+		runtime.topLevelStreamParseMode = "sync";
+		return md.parse(source, env);
+	}
+	runtime.topLevelStreamParseMode = (md.stream?.stats?.())?.lastMode ?? "stream";
+	if (!shouldCloneTopLevelStreamTokens(options)) return tokens;
+	if (!timingCallbacks?.recordTokenCloneMs) return cloneMarkdownTokens(tokens, true);
+	const startedAt = getParserNow$1();
+	const cloned = cloneMarkdownTokens(tokens, true);
+	timingCallbacks.recordTokenCloneMs(getParserNow$1() - startedAt);
+	return cloned;
+}
+
+//#endregion
+//#region src/parser/reuse/structured-node-reuse.ts
+const REUSABLE_INLINE_TOKEN_TYPES = new Set([
+	"code_inline",
+	"em_close",
+	"em_open",
+	"emoji",
+	"hardbreak",
+	"html_block",
+	"html_inline",
+	"image",
+	"ins_close",
+	"ins_open",
+	"link",
+	"link_close",
+	"link_open",
+	"mark_close",
+	"mark_open",
+	"math_inline",
+	"s_close",
+	"s_open",
+	"softbreak",
+	"strong_close",
+	"strong_open",
+	"sub",
+	"sup",
+	"text"
+]);
+const REUSABLE_TOP_LEVEL_PAIRED_TOKEN_TYPES = new Map([
+	["paragraph_open", "paragraph_close"],
+	["heading_open", "heading_close"],
+	["bullet_list_open", "bullet_list_close"],
+	["ordered_list_open", "ordered_list_close"],
+	["blockquote_open", "blockquote_close"],
+	["table_open", "table_close"]
+]);
+const REUSABLE_TOP_LEVEL_SINGLE_TOKEN_TYPES = new Set([
+	"code_block",
+	"fence",
+	"hr",
+	"html_block",
+	"inline",
+	"math_block"
+]);
+function hasOnlyReusableInlineTokens(tokens, validateLink$1) {
+	return tokens.every((token) => {
+		if (!REUSABLE_INLINE_TOKEN_TYPES.has(token.type)) return false;
+		if ((token.type === "link" || token.type === "link_open" || token.type === "link_close") && !isCacheStableLinkValidator(validateLink$1)) return false;
+		if (token.type === "link") {
+			const origin = readSyntheticLinkOrigin(token);
+			if (origin !== "explicit" && origin !== "linkify" && origin !== "autolink") return false;
+		}
+		if (token.type === "link_open" || token.type === "link_close") {
+			const markup = token.markup ?? "";
+			if (markup !== "" && markup !== "linkify" && markup !== "autolink") return false;
+		}
+		const children = token.children;
+		return !Array.isArray(children) || hasOnlyReusableInlineTokens(children, validateLink$1);
+	});
+}
+function getReusableTopLevelPairedCloseType(tokenType) {
+	const known = REUSABLE_TOP_LEVEL_PAIRED_TOKEN_TYPES.get(tokenType);
+	if (known) return known;
+	const containerMatch = /^container_(.+)_open$/.exec(tokenType);
+	return containerMatch ? `container_${containerMatch[1]}_close` : void 0;
+}
+/**
+* Compute reusable top-level token groups. With `startIndex > 0` the prefix is
+* assumed to have been validated on a previous call (the caller only does this
+* when the token array identity proves the prefix is unchanged), so only the
+* tail tokens are scanned.
+*/
+function getReusableTopLevelTokenGroups(tokens, validateLink$1, startIndex = 0) {
+	const groupStarts = [];
+	let mixed = false;
+	let index = startIndex;
+	while (index < tokens.length) {
+		const token = tokens[index];
+		if (!token || token.level !== 0) return null;
+		const closeType = getReusableTopLevelPairedCloseType(token.type);
+		let groupEnd = index + 1;
+		if (closeType) {
+			if (token.nesting !== 1) return null;
+			while (groupEnd < tokens.length) {
+				const current = tokens[groupEnd];
+				if (current.level === 0) {
+					if (current.type !== closeType || current.nesting !== -1) return null;
+					groupEnd++;
+					break;
+				}
+				groupEnd++;
+			}
+			if (tokens[groupEnd - 1]?.type !== closeType) return null;
+			if (token.type === "paragraph_open" || token.type === "heading_open") {
+				if (groupEnd !== index + 3 || tokens[index + 1]?.type !== "inline") return null;
+			} else mixed = true;
+		} else if (REUSABLE_TOP_LEVEL_SINGLE_TOKEN_TYPES.has(token.type)) {
+			if (token.nesting !== 0) return null;
+			mixed = true;
+		} else return null;
+		for (let tokenIndex = index; tokenIndex < groupEnd; tokenIndex++) {
+			const current = tokens[tokenIndex];
+			if (current.type !== "inline") continue;
+			const children = current.children;
+			if (!Array.isArray(children) || !hasOnlyReusableInlineTokens(children, validateLink$1)) return null;
+		}
+		groupStarts.push(index);
+		index = groupEnd;
+	}
+	return {
+		mixed,
+		starts: groupStarts
+	};
+}
+function sourceEndsWithBlankLine(source) {
+	return /\r?\n[\t ]*\r?\n[\t ]*$/.test(source);
+}
+function canReuseStructuredStreamNodes(options) {
+	return options.reuseStableTopLevelNodes === true && options.final !== true && !options.preTransformTokens && !options.postTransformTokens && !options.postTransformNodes && !options.customHtmlTags?.length && options.includeSourceMap !== true;
+}
+function sameTokenMap(left, right) {
+	const leftMap = left?.map;
+	const rightMap = right?.map;
+	if (leftMap === rightMap) return true;
+	if (!Array.isArray(leftMap) || !Array.isArray(rightMap)) return false;
+	return leftMap.length === rightMap.length && leftMap.every((value, index) => value === rightMap[index]);
+}
+function sameTokenAttrs(left, right) {
+	const leftAttrs = left?.attrs;
+	const rightAttrs = right?.attrs;
+	if (leftAttrs === rightAttrs) return true;
+	if (!Array.isArray(leftAttrs) || !Array.isArray(rightAttrs)) return false;
+	if (leftAttrs.length !== rightAttrs.length) return false;
+	for (let index = 0; index < leftAttrs.length; index++) {
+		const leftAttr = leftAttrs[index];
+		const rightAttr = rightAttrs[index];
+		if (leftAttr[0] !== rightAttr[0] || leftAttr[1] !== rightAttr[1]) return false;
+	}
+	return true;
+}
+/**
+* Shape equality for reuse-boundary tokens, used when the stream parser
+* recreates prefix tokens after a full re-parse or a container tail merge
+* (identity comparison fails because the tokens are new objects).
+*
+* Correctness rests on markdown-it tokenization being a deterministic
+* function of the source text: identical source in the stream re-parse
+* yields tokens with identical shape INCLUDING fields not compared here
+* (children, meta, interior group tokens). The shape fallback therefore
+* never detects a change that identity comparison would have caught; it
+* only re-admits groups whose source provably did not change (interior
+* groups never receive appended content). `level` is compared because a
+* re-parsed boundary token at a different nesting depth cannot be the
+* same group.
+*/
+function isSameTokenShapeForReuse(left, right) {
+	return !!left && !!right && left.type === right.type && left.tag === right.tag && left.nesting === right.nesting && left.level === right.level && left.markup === right.markup && left.content === right.content && left.info === right.info && sameTokenMap(left, right) && sameTokenAttrs(left, right);
+}
+function updateStructuredStreamCache(runtime, source, tokens, groups, nodes, options, linkifyDemotionContexts, linkifyDemotionContextOffset = 0, fallbackLinkifyDemotionContext) {
+	const groupStarts = groups.starts;
+	if (groupStarts.length === 0 || nodes.length !== groupStarts.length) {
+		runtime.structuredStream = void 0;
+		return;
+	}
+	const groupBoundaries = groupStarts.map((start, index) => {
+		const end = groupStarts[index + 1] ?? tokens.length;
+		return {
+			firstToken: tokens[start],
+			lastToken: tokens[end - 1],
+			tokenCount: end - start
+		};
+	});
+	const stableGroupCount = groups.mixed ? Math.max(0, groupStarts.length - 1) : sourceEndsWithBlankLine(source) ? groupStarts.length : Math.max(0, groupStarts.length - 1);
+	const linkifyContextIndex = stableGroupCount - linkifyDemotionContextOffset - 1;
+	const linkifyDemotionContext = linkifyContextIndex >= 0 ? linkifyDemotionContexts?.[linkifyContextIndex] : fallbackLinkifyDemotionContext;
+	runtime.structuredStream = {
+		groupBoundaries,
+		groupStarts,
+		tokenCount: tokens.length,
+		tokens,
+		mixed: groups.mixed,
+		source,
+		nodes,
+		linkifyDemotionContext,
+		stableGroupCount,
+		requireClosingStrong: options.requireClosingStrong,
+		validateLink: options.validateLink
+	};
+}
+function hasStableStructuredStreamGroupBoundaries(previous, tokens, groupStarts, stableGroupCount) {
+	if (previous.tokens === tokens) return true;
+	const lastGroupIndex = groupStarts.length - 1;
+	for (let index = 0; index < stableGroupCount; index++) {
+		const start = groupStarts[index];
+		const end = groupStarts[index + 1] ?? tokens.length;
+		const boundary = previous.groupBoundaries[index];
+		if (!boundary || boundary.tokenCount !== end - start) return false;
+		if (boundary.firstToken === tokens[start] && boundary.lastToken === tokens[end - 1]) continue;
+		if (index >= lastGroupIndex || !isSameTokenShapeForReuse(boundary.firstToken, tokens[start]) || !isSameTokenShapeForReuse(boundary.lastToken, tokens[end - 1])) return false;
+	}
+	return true;
+}
+function processTopLevelTokensWithReuse(runtime, source, tokens, options, callbacks) {
+	const structuredReuseDisabled = options.disableStructuredReuse;
+	const reuseEnabled = shouldUseTopLevelStreamParse(runtime, options) && canReuseStructuredStreamNodes(options);
+	if (!options.isFragment) runtime.structuredReuseTailStart = void 0;
+	if (!reuseEnabled) {
+		if (!structuredReuseDisabled) runtime.structuredStream = void 0;
+		return callbacks.processTokens(tokens, options);
+	}
+	if (structuredReuseDisabled) return callbacks.processTokens(tokens, options);
+	const previous = runtime.structuredStream;
+	const mode = getTopLevelStreamParseMode(runtime);
+	const prefixUnchanged = !!previous && (mode === "append" || mode === "tail") && previous.tokenCount !== void 0 && previous.tokenCount <= tokens.length && tokens === previous.tokens;
+	let groups;
+	if (prefixUnchanged) {
+		const tailGroups = getReusableTopLevelTokenGroups(tokens, options.validateLink, previous.tokenCount);
+		groups = tailGroups ? {
+			starts: previous.groupStarts.concat(tailGroups.starts),
+			mixed: previous.mixed || tailGroups.mixed
+		} : getReusableTopLevelTokenGroups(tokens, options.validateLink);
+	} else groups = getReusableTopLevelTokenGroups(tokens, options.validateLink);
+	if (!groups) {
+		runtime.structuredStream = void 0;
+		return callbacks.processTokens(tokens, options);
+	}
+	const groupStarts = groups.starts;
+	const stableGroupCount = previous && groups.mixed ? Math.min(previous.stableGroupCount, Math.max(0, previous.groupBoundaries.length - 1)) : previous?.stableGroupCount ?? 0;
+	if (previous && stableGroupCount > 0 && previous.requireClosingStrong === options.requireClosingStrong && previous.validateLink === options.validateLink && runtime.sourceExtends(previous.source, source) && groupStarts.length >= stableGroupCount && (mode === "append" || mode === "tail") && hasStableStructuredStreamGroupBoundaries(previous, tokens, groupStarts, stableGroupCount)) {
+		const tailStart = groupStarts[stableGroupCount] ?? tokens.length;
+		const tailOptions = {
+			...options,
+			linkifyDemotionSeedContext: previous.linkifyDemotionContext
+		};
+		const tailNodes = callbacks.processTokens(tokens.slice(tailStart), tailOptions);
+		const expectedTailNodes = groupStarts.length - stableGroupCount;
+		if (tailNodes.length === expectedTailNodes) {
+			const result$1 = previous.nodes.slice(0, stableGroupCount).concat(tailNodes);
+			runtime.structuredReuseTailStart = stableGroupCount;
+			callbacks.recordReusedTopLevelNodes?.(stableGroupCount);
+			updateStructuredStreamCache(runtime, source, tokens, groups, result$1, options, tailOptions.linkifyDemotionResultContexts, stableGroupCount, previous.linkifyDemotionContext);
+			return result$1;
+		}
+	}
+	const result = callbacks.processTokens(tokens, options);
+	updateStructuredStreamCache(runtime, source, tokens, groups, result, options, options.linkifyDemotionResultContexts);
+	return result;
+}
+
+//#endregion
+//#region src/parser/html/structure.ts
+function isDetailsOpenHtmlBlock(node) {
+	if (node.type !== "html_block") return false;
+	if (String(node.tag ?? "").toLowerCase() !== "details") return false;
+	const raw = String(node.raw ?? node.content ?? "");
+	return /^\s*<details\b/i.test(raw);
+}
+function isDetailsCloseHtmlBlock(node) {
+	if (node.type !== "html_block") return false;
+	const raw = String(node.raw ?? node.content ?? "");
+	return /^\s*<\/details\b/i.test(raw);
+}
+function buildDetailsChildParseOptions(options, final) {
+	return createChildParseContext(options, {
+		final,
+		requireClosingStrong: options.requireClosingStrong,
+		customHtmlTags: options.customHtmlTags,
+		validateLink: options.validateLink
+	}, {
+		disableStreamParse: true,
+		disableStructuredReuse: true,
+		isFragment: true
+	});
+}
+const STRUCTURED_HTML_WRAPPER_BLOCK_TYPES = new Set([
+	"admonition",
+	"blockquote",
+	"code_block",
+	"definition_list",
+	"footnote",
+	"heading",
+	"list",
+	"math_block",
+	"table",
+	"thematic_break"
+]);
+const STRUCTURED_HTML_WRAPPER_MARKER_RE = /(?:^|\n)\s{0,3}(?:#{1,6}\s+\S|[-+*]\s+\S|\d+[.)]\s+\S|>\s*\S|`{3,}|~{3,}|(?:\*{3,}|-{3,}|_{3,})(?:\s|$)|\|.*\|)/m;
+const INDENTED_CODE_MARKER_RE = /(?:^|\n)(?: {4}|\t)(?![ \t]*<)\S/m;
+function hasStructuredHtmlWrapperMarkers(fragment) {
+	return /\n\s*\n/.test(fragment) || STRUCTURED_HTML_WRAPPER_MARKER_RE.test(fragment) || INDENTED_CODE_MARKER_RE.test(fragment);
+}
+function shouldStructureGenericHtmlBlockChildren(children) {
+	if (children.length === 0) return false;
+	if (children.some((child) => STRUCTURED_HTML_WRAPPER_BLOCK_TYPES.has(String(child?.type ?? "").toLowerCase()))) return true;
+	if (children.some((child) => {
+		if (child?.type !== "html_block") return false;
+		const childFields = child;
+		return Array.isArray(childFields.children) && childFields.children.length > 0;
+	})) return true;
+	if (children.length > 1) return true;
+	const [first] = children;
+	return Boolean(first && first.type === "paragraph");
+}
+function splitSiblingHtmlBlockFragments(fragment) {
+	const blocks = [];
+	let cursor = 0;
+	while (cursor < fragment.length) {
+		while (/\s/.test(fragment[cursor] ?? "")) cursor++;
+		if (cursor >= fragment.length) break;
+		const tagMatch = fragment.slice(cursor).match(/^<([A-Z][\w:-]*)/i);
+		if (!tagMatch?.[1]) return null;
+		const exact = findNextHtmlBlockFromSource(fragment, tagMatch[1], cursor);
+		if (!exact || exact.start !== cursor) return null;
+		blocks.push(exact.raw);
+		cursor = exact.end;
+	}
+	return blocks.length > 1 ? blocks : null;
+}
+function parseDetailsFragmentChildren(fragment, context, options) {
+	if (!fragment.trim()) return [];
+	return context.parseFragment(fragment, options);
+}
+function parseSiblingHtmlBlockChildren(blocks, context, options, final, useCache) {
+	const customHtmlTags = options.customHtmlTags?.join("\0") ?? "";
+	const runtime = options.runtime;
+	const previous = useCache ? runtime?.siblingHtmlChildren : void 0;
+	const canReuse = previous && previous.final === final && previous.customHtmlTags === customHtmlTags && previous.requireClosingStrong === options.requireClosingStrong && previous.validateLink === options.validateLink;
+	const children = blocks.map((block$1, index) => {
+		if (canReuse && previous.blocks[index] === block$1) return previous.children[index];
+		return parseDetailsFragmentChildren(block$1, context, options);
+	});
+	if (useCache && runtime) runtime.siblingHtmlChildren = {
+		blocks,
+		children,
+		customHtmlTags,
+		final,
+		requireClosingStrong: options.requireClosingStrong,
+		validateLink: options.validateLink
+	};
+	return children.flat();
+}
+function structureGenericHtmlBlockChildren(nodes, context, options, final) {
+	const processNode = (node) => {
+		if (node?.type !== "html_block") return node;
+		const fields = node;
+		const tag = String(fields.tag ?? "").toLowerCase();
+		if (!tag || tag === "details" || NON_STRUCTURING_HTML_TAGS.has(tag) || Array.isArray(fields.children)) return node;
+		const raw = String(node.raw ?? fields.content ?? "");
+		if (!raw) return node;
+		const openEnd = findTagCloseIndexOutsideQuotes(raw);
+		if (openEnd === -1) return node;
+		const exact = findNextHtmlBlockFromSource(raw, tag, 0);
+		const closeStart = exact?.closeStart ?? -1;
+		const hasClose = exact?.closed === true && closeStart >= openEnd + 1;
+		const innerRaw = hasClose ? raw.slice(openEnd + 1, closeStart) : raw.slice(openEnd + 1);
+		if (!innerRaw.trim()) return node;
+		if (!hasStructuredHtmlWrapperMarkers(innerRaw)) return node;
+		const childOptions = buildDetailsChildParseOptions(options, final);
+		const siblingHtmlBlocks = hasClose ? null : splitSiblingHtmlBlockFragments(innerRaw);
+		const useSiblingCache = !options.isFragment && typeof options.preTransformTokens !== "function" && typeof options.postTransformTokens !== "function" && typeof options.postTransformNodes !== "function" && context.markdownIt.__markstreamHasCustomParserExtensions === false && isCacheStableLinkValidator(options.validateLink);
+		const children = siblingHtmlBlocks ? parseSiblingHtmlBlockChildren(siblingHtmlBlocks, context, childOptions, final, useSiblingCache) : parseDetailsFragmentChildren(innerRaw, context, childOptions);
+		if (!shouldStructureGenericHtmlBlockChildren(children)) return node;
+		fields.children = children;
+		return node;
+	};
+	return nodes.map(processNode);
+}
+function hasTopLevelHtmlBlock(nodes, start = 0) {
+	for (let i = start; i < nodes.length; i++) if (nodes[i]?.type === "html_block") return true;
+	return false;
+}
+function parseSummaryChildren(fragment, context, options) {
+	const children = parseDetailsFragmentChildren(fragment, context, options);
+	const onlyChild = children[0];
+	if (children.length === 1 && onlyChild?.type === "paragraph" && Array.isArray(onlyChild.children)) return onlyChild.children;
+	return children;
+}
+function buildStructuredSummaryNode(summaryRaw, context, options) {
+	const summaryNode = parseHtmlBlock({ content: summaryRaw });
+	const openEnd = findTagCloseIndexOutsideQuotes(summaryRaw);
+	const closeStart = findLastClosingTagStart(summaryRaw, "summary");
+	if (openEnd !== -1 && closeStart !== -1 && closeStart >= openEnd + 1) {
+		const children = parseSummaryChildren(summaryRaw.slice(openEnd + 1, closeStart), context, options);
+		if (children.length > 0) summaryNode.children = children;
+	}
+	summaryNode.raw = summaryRaw;
+	return summaryNode;
+}
+function buildDetailsPrefixChildren(openRaw, context, options) {
+	const openEnd = findTagCloseIndexOutsideQuotes(openRaw);
+	if (openEnd === -1) return [];
+	const innerPrefix = openRaw.slice(openEnd + 1);
+	if (!innerPrefix.trim()) return [];
+	const summaryBlock = findNextHtmlBlockFromSource(innerPrefix, "summary", 0);
+	if (!summaryBlock) return parseDetailsFragmentChildren(innerPrefix, context, options);
+	const beforeSummary = innerPrefix.slice(0, summaryBlock.start);
+	const afterSummary = innerPrefix.slice(summaryBlock.end);
+	return [
+		...parseDetailsFragmentChildren(beforeSummary, context, options),
+		buildStructuredSummaryNode(summaryBlock.raw, context, options),
+		...parseDetailsFragmentChildren(afterSummary, context, options)
+	];
+}
+function combineStructuredDetailsHtmlBlocks(nodes, source, context, options, final, sourceCursor = 0) {
+	const merged = [];
+	let cursor = sourceCursor;
+	for (let i = 0; i < nodes.length; i++) {
+		const node = nodes[i];
+		const nodeRaw = getMergeableNodeRaw(node);
+		let nodePos = -1;
+		if (nodeRaw) {
+			nodePos = source.indexOf(nodeRaw, cursor);
+			if (nodePos !== -1) cursor = nodePos + nodeRaw.length;
+		}
+		if (!isDetailsOpenHtmlBlock(node)) {
+			merged.push(node);
+			continue;
+		}
+		const openRaw = String(node.raw ?? getMergeableNodeRaw(node) ?? "");
+		const openStart = nodePos !== -1 ? nodePos : source.indexOf(openRaw, Math.max(0, cursor - openRaw.length));
+		if (openStart === -1) {
+			merged.push(node);
+			continue;
+		}
+		let depth = 1;
+		let closeIndex = -1;
+		for (let j = i + 1; j < nodes.length; j++) {
+			const current = nodes[j];
+			if (isDetailsOpenHtmlBlock(current)) {
+				depth++;
+				continue;
+			}
+			if (!isDetailsCloseHtmlBlock(current)) continue;
+			depth--;
+			if (depth === 0) {
+				closeIndex = j;
+				break;
+			}
+		}
+		const exact = findNextHtmlBlockFromSource(source, "details", openStart);
+		const selfContained = closeIndex === -1 && exact?.closed === true;
+		const effectiveOpenRaw = selfContained ? (() => {
+			const ct = findLastClosingTagStart(openRaw, "details");
+			return ct !== -1 ? openRaw.slice(0, ct) : openRaw;
+		})() : openRaw;
+		const closeRaw = closeIndex === -1 ? "</details>" : String(nodes[closeIndex].raw ?? getMergeableNodeRaw(nodes[closeIndex]) ?? "</details>");
+		const explicitClose = selfContained || closeIndex !== -1 && exact?.closed === true;
+		const trimmedCloseRaw = closeRaw.replace(/[\t\r\n ]+$/, "");
+		const closeStart = explicitClose ? (() => {
+			const closeOffset = (exact?.raw ?? "").lastIndexOf(trimmedCloseRaw);
+			return closeOffset === -1 ? source.length : openStart + closeOffset;
+		})() : source.length;
+		const openTagEndIndex = findTagCloseIndexOutsideQuotes(openRaw);
+		const middleSourceStart = openTagEndIndex !== -1 ? openStart + openTagEndIndex + 1 : openStart + openRaw.length;
+		const middleSource = source.slice(middleSourceStart, closeStart === -1 ? source.length : closeStart);
+		const closeMarkupEnd = closeStart + trimmedCloseRaw.length;
+		const closeSliceEnd = explicitClose ? Math.max(closeStart + closeRaw.length, extendHtmlBlockCloseToLineEnding(source, closeMarkupEnd)) : source.length;
+		const renderedCloseRaw = explicitClose ? source.slice(closeStart, closeSliceEnd) : closeRaw;
+		const mergedRaw = explicitClose ? source.slice(openStart, closeSliceEnd) : source.slice(openStart);
+		const stitchCache = canReuseStructuredStreamNodes(options) && (options.runtime?.structuredReuseTailStart ?? 0) > 0 ? options.runtime?.detailsStitchCache : void 0;
+		const cachedDetails = stitchCache?.get(node);
+		if (cachedDetails && cachedDetails.openRaw === openRaw && cachedDetails.explicitClose === explicitClose && cachedDetails.closeSliceEnd === closeSliceEnd && cachedDetails.middleSource === middleSource) {
+			merged.push(cachedDetails.node);
+			cursor = explicitClose ? closeSliceEnd : source.length;
+			if (closeIndex === -1 && !selfContained) break;
+			if (closeIndex !== -1) i = closeIndex;
+			continue;
+		}
+		const [children] = combineStructuredDetailsHtmlBlocks(selfContained ? [] : closeIndex === -1 ? nodes.slice(i + 1) : nodes.slice(i + 1, closeIndex), source, context, options, final, openStart + openRaw.length);
+		let prefixChildren = buildDetailsPrefixChildren(effectiveOpenRaw, context, buildDetailsChildParseOptions(options, final));
+		let structuredChildren = children;
+		const leadingChild = children[0];
+		if (!prefixChildren.some((child) => {
+			const fields = child;
+			return fields?.type === "html_block" && String(fields.tag ?? "").toLowerCase() === "summary";
+		})) {
+			if (leadingChild?.type === "html_block" && String(leadingChild.tag ?? "").toLowerCase() === "summary" && !Array.isArray(leadingChild.children)) structuredChildren = [buildStructuredSummaryNode(String(leadingChild.raw ?? leadingChild.content ?? ""), context, buildDetailsChildParseOptions(options, final)), ...children.slice(1)];
+			else if (openTagEndIndex !== -1) {
+				const summaryBlock = findNextHtmlBlockFromSource(source, "summary", openStart + openTagEndIndex + 1);
+				if (summaryBlock && summaryBlock.closed) {
+					const gap = source.slice(openStart + openTagEndIndex + 1, summaryBlock.start);
+					if (/^[\t \r\n]*$/.test(gap)) prefixChildren = [buildStructuredSummaryNode(summaryBlock.raw, context, buildDetailsChildParseOptions(options, final)), ...prefixChildren];
+				}
+			}
+		}
+		const middleTokens = context.markdownIt.parse(middleSource, { __markstreamFinal: final });
+		const renderedMiddle = context.markdownIt.renderer.render(middleTokens, context.markdownIt.options, { __markstreamFinal: final });
+		const contentPrefix = openTagEndIndex !== -1 ? source.slice(openStart, openStart + openTagEndIndex + 1) : openRaw;
+		const detailsNode = {
+			...node,
+			tag: "details",
+			attrs: parseTagAttrs(openRaw.slice(0, openTagEndIndex + 1)),
+			raw: mergedRaw,
+			content: `${contentPrefix}${renderedMiddle}${renderedCloseRaw}`,
+			children: [...prefixChildren, ...structuredChildren],
+			loading: !final && !explicitClose
+		};
+		if (options.includeSourceMap) detailsNode.sourceMap = createSourceMapFromOffsets(source, openStart, explicitClose ? closeSliceEnd : source.length, options);
+		if (stitchCache && explicitClose) stitchCache.set(node, {
+			openRaw,
+			explicitClose,
+			closeSliceEnd,
+			middleSource,
+			node: detailsNode
+		});
+		merged.push(detailsNode);
+		cursor = explicitClose ? closeSliceEnd : source.length;
+		if (closeIndex === -1 && !selfContained) break;
+		if (closeIndex !== -1) i = closeIndex;
+	}
+	return [merged, cursor];
+}
+function mergeSplitTopLevelHtmlBlocks(nodes, final, source, context, options, initialSourceCursor = 0) {
+	if (!source) return nodes;
+	const merged = nodes.slice();
+	let sourceHtmlCursor = initialSourceCursor;
+	for (let i = 0; i < merged.length; i++) {
+		const node = merged[i];
+		const nodeRaw = getMergeableNodeRaw(node);
+		const nodePos = nodeRaw ? source.indexOf(nodeRaw, sourceHtmlCursor) : -1;
+		if (node?.type !== "html_block") {
+			if (nodePos !== -1) sourceHtmlCursor = nodePos + nodeRaw.length;
+			continue;
+		}
+		const tag = String(node.tag ?? "").toLowerCase();
+		if (!tag) continue;
+		if (tag === "details") {
+			if (nodePos !== -1) sourceHtmlCursor = nodePos + nodeRaw.length;
+			continue;
+		}
+		const exact = findNextHtmlBlockFromSource(source, tag, nodePos !== -1 ? nodePos : sourceHtmlCursor);
+		if (!exact) continue;
+		sourceHtmlCursor = exact.end;
+		const currentContent = String(node.content ?? nodeRaw);
+		const currentRaw = String(node.raw ?? currentContent);
+		const currentRawEnd = nodePos + currentRaw.length;
+		if (nodePos !== -1 && exact.end < currentRawEnd && source.slice(nodePos, currentRawEnd) === currentRaw) {
+			sourceHtmlCursor = currentRawEnd;
+			if (options?.includeSourceMap) node.sourceMap = createSourceMapFromOffsets(source, nodePos, currentRawEnd, options);
+			continue;
+		}
+		const nextContent = buildHtmlBlockContent(exact.raw, tag, exact.closed);
+		const desiredLoading = !final && !exact.closed;
+		const needsExpansion = currentContent !== nextContent || currentRaw !== exact.raw || Boolean(node.loading) !== desiredLoading;
+		const exactOpenEnd = findTagCloseIndexOutsideQuotes(exact.raw);
+		const exactOpenTag = exactOpenEnd === -1 ? "" : exact.raw.slice(0, exactOpenEnd + 1);
+		const exactAttrs = exactOpenTag ? parseTagAttrs(exactOpenTag) : [];
+		node.content = nextContent;
+		node.raw = exact.raw;
+		node.loading = desiredLoading;
+		node.attrs = exactAttrs.length ? exactAttrs : void 0;
+		if (options?.includeSourceMap) node.sourceMap = createSourceMapFromOffsets(source, exact.start, exact.end, options);
+		if (!needsExpansion) continue;
+		let tailCursor = findApproximateConsumedPrefixEnd(exact.raw, currentRaw);
+		if (tailCursor === -1) tailCursor = 0;
+		const j = i + 1;
+		while (j < merged.length) {
+			if (exact.closed && isCloseOnlyHtmlBlockForTag(merged[j], tag)) {
+				merged.splice(j, 1);
+				continue;
+			}
+			const nextRaw = getMergeableNodeRaw(merged[j]);
+			if (!nextRaw) break;
+			const nextPos = exact.raw.indexOf(nextRaw, tailCursor);
+			if (nextPos === -1) {
+				if (canFindNodeRawAfterSourceIndex(source, exact.end, nextRaw)) break;
+				const range = context.getInternalNodeSourceRange(merged[j]);
+				if (!range) break;
+				if (range.start >= exact.start && range.end <= exact.end) {
+					merged.splice(j, 1);
+					continue;
+				}
+				break;
+			}
+			tailCursor = nextPos + nextRaw.length;
+			merged.splice(j, 1);
+		}
+	}
+	return merged;
 }
 
 //#endregion
@@ -15048,33 +17597,50 @@ function parseEmojiToken(token) {
 }
 
 //#endregion
-//#region src/parser/inline-parsers/emphasis-parser.ts
-function parseEmphasisToken(tokens, startIndex, options) {
-	const children = [];
-	let emText = "";
-	let i = startIndex + 1;
+//#region src/parser/inline-parsers/token-range.ts
+function collectDelimitedInlineTokens(tokens, startIndex, closeType, openType, useTextFallback = false) {
+	let content = "";
+	let index = startIndex + 1;
+	let openCount = 1;
 	const innerTokens = [];
-	while (i < tokens.length && tokens[i].type !== "em_close") {
-		const tokenText = tokens[i];
-		emText += String(tokens[i].content ?? tokenText.text ?? "");
-		innerTokens.push(tokens[i]);
-		i++;
+	while (index < tokens.length) {
+		if (tokens[index].type === closeType) {
+			if (openCount === 1) break;
+			openCount--;
+		}
+		if (openType && tokens[index].type === openType) openCount++;
+		const tokenText = tokens[index];
+		content += useTextFallback ? String(tokens[index].content ?? tokenText.text ?? "") : String(tokens[index].content ?? "");
+		innerTokens.push(tokens[index]);
+		index++;
 	}
-	children.push(...parseInlineTokens(innerTokens, void 0, void 0, options));
+	return {
+		content,
+		innerTokens,
+		nextIndex: index < tokens.length ? index + 1 : tokens.length
+	};
+}
+
+//#endregion
+//#region src/parser/inline-parsers/emphasis-parser.ts
+function parseEmphasisToken(tokens, startIndex, parseInlineTokens$1, options) {
+	const children = [];
+	const { content: emText, innerTokens, nextIndex } = collectDelimitedInlineTokens(tokens, startIndex, "em_close", void 0, true);
+	children.push(...parseInlineTokens$1(innerTokens, void 0, void 0, options));
 	return {
 		node: {
 			type: "emphasis",
 			children,
 			raw: `*${emText}*`
 		},
-		nextIndex: i < tokens.length ? i + 1 : tokens.length
+		nextIndex
 	};
 }
 
 //#endregion
 //#region src/parser/inline-parsers/fence-parser.ts
-function TRAILING_OWN_FENCE_LINE_RE(marker, minLen) {
-	return /* @__PURE__ */ new RegExp(`\r?\n[ \\t]*${marker}{${minLen},}[ \\t]*$`);
+function TRAILING_OWN_FENCE_CANDIDATE_LINE_RE(marker) {
+	return getCachedRegex(`(?:^|\\r\\n|\\n|\\r) {0,3}${marker}+[ \\t]*$`);
 }
 const DIFF_HEADER_PREFIXES = [
 	"diff ",
@@ -15151,9 +17717,8 @@ function parseFenceToken(token) {
 	let content = String(token.content ?? "");
 	if (!closed && token.markup) {
 		const marker = token.markup[0];
-		const minLen = token.markup.length;
-		const trailingFenceLineRe = TRAILING_OWN_FENCE_LINE_RE(marker, minLen);
-		if (trailingFenceLineRe.test(content)) content = content.replace(trailingFenceLineRe, "");
+		const trailingFenceCandidateLineRe = TRAILING_OWN_FENCE_CANDIDATE_LINE_RE(marker);
+		if (trailingFenceCandidateLineRe.test(content)) content = content.replace(trailingFenceCandidateLineRe, "");
 	}
 	if (diff) {
 		const { original, updated } = splitUnifiedDiff(content, closed === true);
@@ -15200,25 +17765,28 @@ function parseHardbreakToken() {
 
 //#endregion
 //#region src/parser/inline-parsers/highlight-parser.ts
-function parseHighlightToken(tokens, startIndex, options) {
+function parseHighlightToken(tokens, startIndex, parseInlineTokens$1, options) {
 	const children = [];
-	let markText = "";
-	let i = startIndex + 1;
-	const innerTokens = [];
-	while (i < tokens.length && tokens[i].type !== "mark_close") {
-		markText += String(tokens[i].content ?? "");
-		innerTokens.push(tokens[i]);
-		i++;
-	}
-	children.push(...parseInlineTokens(innerTokens, void 0, void 0, options));
+	const { content: markText, innerTokens, nextIndex } = collectDelimitedInlineTokens(tokens, startIndex, "mark_close");
+	children.push(...parseInlineTokens$1(innerTokens, void 0, void 0, options));
 	return {
 		node: {
 			type: "highlight",
 			children,
 			raw: `==${markText}==`
 		},
-		nextIndex: i < tokens.length ? i + 1 : tokens.length
+		nextIndex
 	};
+}
+
+//#endregion
+//#region src/parser/html-tag-sets.ts
+function buildAllowedHtmlTagSet(options) {
+	const custom = options?.customHtmlTags;
+	if (!Array.isArray(custom) || custom.length === 0) return STANDARD_HTML_TAGS;
+	const set = new Set(STANDARD_HTML_TAGS);
+	for (const name of normalizeCustomHtmlTags(custom)) if (name) set.add(name);
+	return set;
 }
 
 //#endregion
@@ -15483,6 +18051,33 @@ function parseHtmlInlineCodeToken(token, tokens, i, parseInlineTokens$1, raw, pP
 }
 
 //#endregion
+//#region src/parser/inline-parsers/inline-code-parser.ts
+function parseInlineCodeToken(token) {
+	const code$1 = String(token.content ?? "");
+	return {
+		type: "inline_code",
+		code: code$1,
+		raw: code$1
+	};
+}
+
+//#endregion
+//#region src/parser/inline-parsers/insert-parser.ts
+function parseInsertToken(tokens, startIndex, parseInlineTokens$1, options) {
+	const children = [];
+	const { content: insText, innerTokens, nextIndex } = collectDelimitedInlineTokens(tokens, startIndex, "ins_close");
+	children.push(...parseInlineTokens$1(innerTokens, void 0, void 0, options));
+	return {
+		node: {
+			type: "insert",
+			children,
+			raw: `++${String(insText)}++`
+		},
+		nextIndex
+	};
+}
+
+//#endregion
 //#region src/parser/inline-parsers/image-parser.ts
 function stringifyAltToken(token) {
 	if (token.type === "math_inline") {
@@ -15532,40 +18127,6 @@ function parseImageToken(token, loading = false) {
 }
 
 //#endregion
-//#region src/parser/inline-parsers/inline-code-parser.ts
-function parseInlineCodeToken(token) {
-	const code$1 = String(token.content ?? "");
-	return {
-		type: "inline_code",
-		code: code$1,
-		raw: code$1
-	};
-}
-
-//#endregion
-//#region src/parser/inline-parsers/insert-parser.ts
-function parseInsertToken(tokens, startIndex, options) {
-	const children = [];
-	let insText = "";
-	let i = startIndex + 1;
-	const innerTokens = [];
-	while (i < tokens.length && tokens[i].type !== "ins_close") {
-		insText += String(tokens[i].content ?? "");
-		innerTokens.push(tokens[i]);
-		i++;
-	}
-	children.push(...parseInlineTokens(innerTokens, void 0, void 0, options));
-	return {
-		node: {
-			type: "insert",
-			children,
-			raw: `++${String(insText)}++`
-		},
-		nextIndex: i < tokens.length ? i + 1 : tokens.length
-	};
-}
-
-//#endregion
 //#region src/parser/inline-parsers/link-parser.ts
 function toAttrsTuple(attrs) {
 	const tuples = [];
@@ -15590,7 +18151,7 @@ function normalizeLinkAttrs(attrs, href, title) {
 	if (title != null && !getAttrValue(normalized, "title")) normalized.push(["title", title]);
 	return normalized;
 }
-function parseLinkToken(tokens, startIndex, options) {
+function parseLinkToken(tokens, startIndex, parseInlineTokens$1, options) {
 	const openToken = tokens[startIndex];
 	const attrsTuple = toAttrsTuple(openToken.attrs);
 	const href = String(getAttrValue(attrsTuple, "href") ?? "");
@@ -15607,7 +18168,7 @@ function parseLinkToken(tokens, startIndex, options) {
 	if (tokens[i]?.type === "link_close") loading = false;
 	let childTokens = linkTokens;
 	const lastLinkToken = linkTokens[linkTokens.length - 1];
-	if (options?.__insideStrong && lastLinkToken?.type === "text" && String(lastLinkToken.content ?? "").endsWith("**") && !linkTokens.some((token) => token.type === "strong_open")) {
+	if (isParseContext(options) && options.insideStrong && lastLinkToken?.type === "text" && String(lastLinkToken.content ?? "").endsWith("**") && !linkTokens.some((token) => token.type === "strong_open")) {
 		const originalContent = String(lastLinkToken.content ?? "");
 		const originalRaw = String(lastLinkToken.raw ?? originalContent);
 		const adjustedLastLinkToken = cloneTokenWithMutableChildren(lastLinkToken);
@@ -15616,7 +18177,7 @@ function parseLinkToken(tokens, startIndex, options) {
 		childTokens = linkTokens.slice();
 		childTokens[childTokens.length - 1] = adjustedLastLinkToken;
 	}
-	const children = parseInlineTokens(childTokens, void 0, void 0, options);
+	const children = parseInlineTokens$1(childTokens, void 0, void 0, options);
 	const linkText = children.map((node) => {
 		const nodeAny = node;
 		if ("content" in node) return String(nodeAny.content ?? "");
@@ -15638,165 +18199,7 @@ function parseLinkToken(tokens, startIndex, options) {
 }
 
 //#endregion
-//#region src/parser/inline-parsers/math-inline-parser.ts
-function parseMathInlineToken(token) {
-	const content = token.content ?? "";
-	const raw = token.raw === "$$" ? `$${content}$` : token.raw || "";
-	return {
-		type: "math_inline",
-		content,
-		loading: !!token.loading,
-		raw,
-		markup: token.markup
-	};
-}
-
-//#endregion
-//#region src/parser/inline-parsers/reference-parser.ts
-function parseReferenceToken(token) {
-	return {
-		type: "reference",
-		id: String(token.content ?? ""),
-		raw: String(token.markup ?? `[${token.content ?? ""}]`)
-	};
-}
-
-//#endregion
-//#region src/parser/inline-parsers/strikethrough-parser.ts
-function parseStrikethroughToken(tokens, startIndex, options) {
-	const children = [];
-	let sText = "";
-	let i = startIndex + 1;
-	const innerTokens = [];
-	while (i < tokens.length && tokens[i].type !== "s_close") {
-		sText += String(tokens[i].content ?? "");
-		innerTokens.push(tokens[i]);
-		i++;
-	}
-	children.push(...parseInlineTokens(innerTokens, void 0, void 0, options));
-	return {
-		node: {
-			type: "strikethrough",
-			children,
-			raw: `~~${sText}~~`
-		},
-		nextIndex: i < tokens.length ? i + 1 : tokens.length
-	};
-}
-
-//#endregion
-//#region src/parser/inline-parsers/strong-parser.ts
-const ESCAPED_PUNCTUATION_RE$1 = /\\([\\()[\]`$|*_\-!])/g;
-function resolveInnerRaw(raw, strongText) {
-	if (!raw) return void 0;
-	const rawText = String(raw);
-	if (!rawText) return void 0;
-	if (rawText === strongText) return rawText;
-	if (rawText.replace(ESCAPED_PUNCTUATION_RE$1, "$1") === strongText) return rawText;
-}
-function parseStrongToken(tokens, startIndex, raw, options) {
-	const children = [];
-	let strongText = "";
-	let i = startIndex + 1;
-	const innerTokens = [];
-	let openCount = 1;
-	while (i < tokens.length) {
-		if (tokens[i].type === "strong_close") {
-			if (openCount === 1) break;
-			openCount--;
-		}
-		if (tokens[i].type === "strong_open") openCount++;
-		strongText += String(tokens[i].content ?? "");
-		innerTokens.push(tokens[i]);
-		i++;
-	}
-	const innerOptions = {
-		...options,
-		__insideStrong: true
-	};
-	children.push(...parseInlineTokens(innerTokens, resolveInnerRaw(raw, strongText), void 0, innerOptions));
-	return {
-		node: {
-			type: "strong",
-			children,
-			raw: `**${String(strongText)}**`
-		},
-		nextIndex: i < tokens.length ? i + 1 : tokens.length
-	};
-}
-
-//#endregion
-//#region src/parser/inline-parsers/subscript-parser.ts
-function parseSubscriptToken(tokens, startIndex, options) {
-	const children = [];
-	let subText = "";
-	let i = startIndex + 1;
-	const innerTokens = [];
-	while (i < tokens.length && tokens[i].type !== "sub_close") {
-		subText += String(tokens[i].content ?? "");
-		innerTokens.push(tokens[i]);
-		i++;
-	}
-	children.push(...parseInlineTokens(innerTokens, void 0, void 0, options));
-	const startContent = String(tokens[startIndex].content ?? "");
-	const display = subText || startContent;
-	return {
-		node: {
-			type: "subscript",
-			children: children.length > 0 ? children : [{
-				type: "text",
-				content: display,
-				raw: display
-			}],
-			raw: `~${display}~`
-		},
-		nextIndex: i < tokens.length ? i + 1 : tokens.length
-	};
-}
-
-//#endregion
-//#region src/parser/inline-parsers/superscript-parser.ts
-function parseSuperscriptToken(tokens, startIndex, options) {
-	const children = [];
-	let supText = "";
-	let i = startIndex + 1;
-	const innerTokens = [];
-	while (i < tokens.length && tokens[i].type !== "sup_close") {
-		supText += String(tokens[i].content ?? "");
-		innerTokens.push(tokens[i]);
-		i++;
-	}
-	children.push(...parseInlineTokens(innerTokens, void 0, void 0, options));
-	return {
-		node: {
-			type: "superscript",
-			children: children.length > 0 ? children : [{
-				type: "text",
-				content: supText || String(tokens[startIndex].content ?? ""),
-				raw: supText || String(tokens[startIndex].content ?? "")
-			}],
-			raw: `^${supText || String(tokens[startIndex].content ?? "")}^`
-		},
-		nextIndex: i < tokens.length ? i + 1 : tokens.length
-	};
-}
-
-//#endregion
-//#region src/parser/inline-parsers/text-parser.ts
-function parseTextToken(token) {
-	const content = String(token.content ?? "");
-	return {
-		type: "text",
-		content,
-		raw: content
-	};
-}
-
-//#endregion
-//#region src/parser/inline-parsers/index.ts
-const STRIKETHROUGH_RE = /[^~]*~{2,}[^~]+/;
-const HAS_STRONG_RE = /\*\*/;
-const INLINE_REPARSE_MARKER_RE = /[[_*^~]/;
+//#region src/parser/inline-parsers/literal-text-helpers.ts
 const ESCAPED_PUNCTUATION_RE = /\\([\\()[\]`$|*_\-!])/g;
 const ESCAPABLE_PUNCTUATION = new Set([
 	"\\",
@@ -15812,13 +18215,6 @@ const ESCAPABLE_PUNCTUATION = new Set([
 	"-",
 	"!"
 ]);
-const WHITESPACE_RE = /\s/u;
-const ASCII_PUNCTUATION_RE = /[!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]/;
-const UNICODE_PUNCTUATION_RE = /\p{P}/u;
-const CJK_OPENING_PUNCTUATION_RE = /^[\x22\x27《「『【〔〖〘〚〈（［｛“‘﹁﹃﹙﹛﹝]$/u;
-const CJK_CLOSING_PUNCTUATION_RE = /^[\x22\x27》」』】〕〗〙〛〉）］｝”’﹂﹄﹚﹜﹞]$/u;
-const AUTOLINK_PROTOCOL_RE = /^(?:https?:\/\/|mailto:|ftp:\/\/)/i;
-const AUTOLINK_GENERIC_RE = /:\/\//;
 const INLINE_TEXT_MARKER_BACKSLASH = 1;
 const INLINE_TEXT_MARKER_ASTERISK = 2;
 const INLINE_TEXT_MARKER_UNDERSCORE = 4;
@@ -15870,6 +18266,682 @@ function getInlineTextMarkerFlags(content) {
 	}
 	return flags;
 }
+function decodeVisibleTextFromRaw(rawText) {
+	let output = "";
+	let index = 0;
+	while (index < rawText.length) {
+		if (rawText[index] !== "\\") {
+			output += rawText[index];
+			index++;
+			continue;
+		}
+		let slashCount = 0;
+		while (index + slashCount < rawText.length && rawText[index + slashCount] === "\\") slashCount++;
+		const nextChar = rawText[index + slashCount];
+		output += "\\".repeat(Math.floor(slashCount / 2));
+		if (slashCount % 2 === 1) {
+			if (nextChar && ESCAPABLE_PUNCTUATION.has(nextChar)) {
+				output += nextChar;
+				index += slashCount + 1;
+				continue;
+			}
+			output += "\\";
+		}
+		index += slashCount;
+	}
+	return output;
+}
+function getRawIndexForVisibleIndex(rawText, visibleIndex) {
+	let outputIndex = 0;
+	for (let rawIndex = 0; rawIndex < rawText.length; rawIndex++) {
+		const char = rawText[rawIndex];
+		const nextChar = rawText[rawIndex + 1];
+		if (char === "\\" && nextChar && ESCAPABLE_PUNCTUATION.has(nextChar)) {
+			if (outputIndex === visibleIndex) return rawIndex + 1;
+			outputIndex++;
+			rawIndex++;
+			continue;
+		}
+		if (outputIndex === visibleIndex) return rawIndex;
+		outputIndex++;
+	}
+	return -1;
+}
+function isEscapedVisibleChar(rawText, visibleIndex, expectedChar) {
+	const rawIndex = getRawIndexForVisibleIndex(rawText, visibleIndex);
+	if (rawIndex === -1) return false;
+	if (expectedChar && rawText[rawIndex] !== expectedChar) return false;
+	let slashCount = 0;
+	for (let i = rawIndex - 1; i >= 0 && rawText[i] === "\\"; i--) slashCount++;
+	return slashCount % 2 === 1;
+}
+function recoverTrailingMarkdownLinkLabel(raw, href) {
+	if (!raw || !href) return null;
+	const match = raw.match(/\[([^\]\n]+)\]\(([^)]*)$/);
+	if (!match) return null;
+	return match[2] === href ? match[1] : null;
+}
+function hasEscapedMarkup(token, escapedPrefix) {
+	return String(token.markup ?? "").startsWith(escapedPrefix);
+}
+function stripTrailingMidStateMarker(content, token, markerFlags = getInlineTextMarkerFlags(content)) {
+	let nextContent = content;
+	const rawTokenContent = String(token.content ?? "");
+	if ((markerFlags & INLINE_TEXT_MARKER_BACKSLASH) !== 0 && nextContent.endsWith("\\") && !hasEscapedMarkup(token, "\\\\") && !rawTokenContent.endsWith("\\\\")) nextContent = nextContent.slice(0, -1);
+	if ((markerFlags & INLINE_TEXT_MARKER_OPEN_PAREN) !== 0 && nextContent.endsWith("(") && !hasEscapedMarkup(token, "\\(") && !rawTokenContent.endsWith("\\(")) nextContent = nextContent.slice(0, -1);
+	if ((markerFlags & INLINE_TEXT_MARKER_ASTERISK) !== 0 && /\*+$/.test(nextContent) && !hasEscapedMarkup(token, "\\*") && !rawTokenContent.endsWith("\\*")) nextContent = nextContent.replace(/\*+$/, "");
+	return nextContent;
+}
+
+//#endregion
+//#region src/parser/inline-parsers/strong-parser.ts
+function resolveInnerRaw(raw, strongText) {
+	if (!raw) return void 0;
+	const rawText = String(raw);
+	if (!rawText) return void 0;
+	if (rawText === strongText) return rawText;
+	if (rawText.replace(ESCAPED_PUNCTUATION_RE, "$1") === strongText) return rawText;
+}
+function parseStrongToken(tokens, startIndex, parseInlineTokens$1, raw, options) {
+	const children = [];
+	const { content: strongText, innerTokens, nextIndex } = collectDelimitedInlineTokens(tokens, startIndex, "strong_close", "strong_open");
+	const innerOptions = {
+		...ensureParseContext(options),
+		insideStrong: true
+	};
+	children.push(...parseInlineTokens$1(innerTokens, resolveInnerRaw(raw, strongText), void 0, innerOptions));
+	return {
+		node: {
+			type: "strong",
+			children,
+			raw: `**${String(strongText)}**`
+		},
+		nextIndex
+	};
+}
+
+//#endregion
+//#region src/parser/inline-parsers/link-image-recovery.ts
+const AUTOLINK_PROTOCOL_RE = /^(?:https?:\/\/|mailto:|ftp:\/\/)/i;
+const AUTOLINK_GENERIC_RE = /:\/\//;
+function isLikelyUrl(href) {
+	if (!href) return false;
+	return AUTOLINK_PROTOCOL_RE.test(href) || AUTOLINK_GENERIC_RE.test(href);
+}
+function pushInlineTextContent(state, content, token) {
+	if (!content) return;
+	const parsed = state.parseInlineTokens([{
+		...token,
+		type: "text",
+		content,
+		raw: content
+	}], content, state.pPreToken, state.options);
+	if (parsed.length === 1 && parsed[0]?.type === "text") {
+		const text$1 = parsed[0];
+		state.pushText(String(text$1.content ?? ""), String(text$1.raw ?? text$1.content ?? ""));
+		return;
+	}
+	for (const node of parsed) state.pushParsed(node);
+}
+function isMarkdownLinkBeforeLinkifiedUrl(state, content) {
+	if (!content.endsWith("](")) return false;
+	return state.tokens[state.index + 1]?.type === "link_open" && state.tokens[state.index + 1]?.markup === "linkify" && state.tokens[state.index + 2]?.type === "text" && state.tokens[state.index + 3]?.type === "link_close" && state.tokens[state.index + 4]?.type === "text" && String(state.tokens[state.index + 4]?.content ?? "").startsWith(")");
+}
+function handleLinkOpen(state, token) {
+	if (recoverMarkdownImageFromLoadingImageTailLinkOpen(state, token)) return;
+	if (shouldTreatLinkOpenAsTextInEscapedOuterImageTail(state)) {
+		const { node: node$1, nextIndex: nextIndex$1 } = parseLinkToken(state.tokens, state.index, state.parseInlineTokens, state.options);
+		const text$1 = String(node$1.text || node$1.href || "");
+		state.pushText(text$1, text$1);
+		state.index = nextIndex$1;
+		return;
+	}
+	state.resetCurrentTextNode();
+	const linkStartIndex = state.index;
+	const { node, nextIndex } = parseLinkToken(state.tokens, state.index, state.parseInlineTokens, state.options);
+	state.index = nextIndex;
+	const linkText = node.text || node.href || "";
+	if (token.markup === "linkify" && !isDecodedFromRawPunycode(linkText, node.href, state.raw) && shouldDemoteFilenameLikeLinkify(linkText, state.options.linkifyDemotionContext)) {
+		state.pushText(linkText, linkText);
+		return;
+	}
+	const hasSingleTextChild = node.children.length === 1 && node.children[0]?.type === "text";
+	if (node.loading && state.raw && node.text === node.href && hasSingleTextChild) {
+		const recoveredLabel = recoverTrailingMarkdownLinkLabel(state.raw, node.href);
+		if (recoveredLabel) {
+			node.text = recoveredLabel;
+			node.children = [{
+				type: "text",
+				content: recoveredLabel,
+				raw: recoveredLabel
+			}];
+			node.raw = String(`[${recoveredLabel}](${node.href}${node.title ? ` "${node.title}"` : ""})`);
+		}
+	}
+	if (state.options?.validateLink && !state.options.validateLink(node.href)) {
+		state.pushText(node.text, node.text);
+		return;
+	}
+	const hrefAttr = token.attrs?.find(([name]) => name === "href")?.[1];
+	const hrefStr = String(hrefAttr ?? "");
+	if (state.raw && hrefStr) {
+		const openIdx = state.raw.indexOf("](");
+		if (openIdx === -1) {} else {
+			const closeIdx = state.raw.indexOf(")", openIdx + 2);
+			if (closeIdx === -1) node.loading = true;
+			else if (node.loading) {
+				if (state.raw.slice(openIdx + 2, closeIdx).includes(hrefStr)) node.loading = false;
+			}
+		}
+	}
+	if (/^file:\/\/\/[a-z]:\//i.test(node.href) && recoverMarkdownImageFromTrailingBang(state, node, linkStartIndex - 1)) return;
+	if (recoverMarkdownLinkFromTrailingText(state, node)) return;
+	state.pushParsed(node);
+}
+function recoverMarkdownImageFromLoadingImageTailLinkOpen(state, token) {
+	if (token.markup !== "linkify") return false;
+	const { node, nextIndex } = parseLinkToken(state.tokens, state.index, state.parseInlineTokens, state.options);
+	if (!recoverMarkdownImageFromLoadingImageTailLink(state, node, nextIndex)) return false;
+	state.index = nextIndex;
+	return true;
+}
+function recoverMarkdownLinkFromTrailingText(state, token) {
+	if (token.type !== "link") return false;
+	const previous = state.result[state.result.length - 1];
+	if (!previous || previous.type !== "text") return false;
+	const match = String(previous.content ?? "").match(/^([^[]*)\[([^\]\n]+)\]\($/);
+	if (!match) return false;
+	const linkToken = token;
+	const href = String(linkToken.href ?? "");
+	const linkText = String(linkToken.text ?? "");
+	const label = String(match[2] ?? "");
+	const visibleHref = href.replace(/^(?:https?:\/\/|mailto:|ftp:\/\/)/i, "");
+	if (!href || !(linkText === href || linkText === visibleHref || isLikelyUrl(linkText))) return false;
+	const before = String(match[1] ?? "");
+	if (before) {
+		previous.content = before;
+		previous.raw = before;
+	} else state.result.pop();
+	state.pushParsed({
+		...token,
+		text: label,
+		children: [{
+			type: "text",
+			content: label,
+			raw: label
+		}],
+		raw: String(`[${label}](${href}${linkToken.title ? ` "${linkToken.title}"` : ""})`)
+	});
+	return true;
+}
+function recoverMarkdownImageFromLoadingImageTail(state, token) {
+	if (token.type !== "link") return false;
+	const linkToken = token;
+	const href = String(linkToken.href ?? "");
+	if (!href) return false;
+	return recoverMarkdownImageFromLoadingImageTailLink(state, {
+		href,
+		title: linkToken.title == null || linkToken.title === "" ? null : String(linkToken.title),
+		loading: Boolean(linkToken.loading)
+	}, state.index + 1);
+}
+function recoverMarkdownImageFromLoadingImageTailLink(state, link$1, nextIndex) {
+	const previous = state.result[state.result.length - 1];
+	if (previous?.type !== "image" || previous.src || !previous.loading || !String(previous.raw ?? "").endsWith("](")) return false;
+	const nextToken = state.tokens[nextIndex];
+	const nextContent = String(nextToken?.content ?? "");
+	if (nextToken?.type !== "text" || !nextContent.startsWith(")")) return false;
+	state.result.pop();
+	state.currentTextNode = null;
+	const alt = String(previous.alt ?? "");
+	state.pushParsed({
+		type: "image",
+		src: link$1.href,
+		alt,
+		title: link$1.title,
+		raw: String(`![${alt}](${link$1.href}${link$1.title ? ` "${link$1.title}"` : ""})`),
+		loading: Boolean(link$1.loading)
+	});
+	const trailing = nextContent.slice(1);
+	const adjustedNext = cloneTokenWithMutableChildren(nextToken);
+	adjustedNext.content = trailing;
+	adjustedNext.raw = trailing;
+	state.ensureWorkingTokens()[nextIndex] = adjustedNext;
+	return true;
+}
+function recoverMarkdownImageFromTrailingBang(state, token, previousTokenIndex = state.index - 1) {
+	if (token.type !== "link") return false;
+	const previous = state.result[state.result.length - 1];
+	const previousToken = state.tokens[previousTokenIndex];
+	if (!previous || previous.type !== "text" || previousToken?.type !== "text") return false;
+	const previousContent = String(previous.content ?? "");
+	const previousTokenContent = String(previousToken.content ?? "");
+	if (!previousContent.endsWith("!") || !previousTokenContent.endsWith("!")) return false;
+	if (hasEscapedMarkup(previousToken, "\\!")) return false;
+	const before = previousContent.slice(0, -1);
+	if (before) {
+		previous.content = before;
+		previous.raw = before;
+		state.currentTextNode = previous;
+	} else {
+		state.result.pop();
+		state.currentTextNode = null;
+	}
+	const linkToken = token;
+	const alt = String(linkToken.text ?? linkToken.children?.map((child) => String(child?.content ?? child?.raw ?? "")).join("") ?? "");
+	const href = String(linkToken.href ?? "");
+	const title = linkToken.title == null || linkToken.title === "" ? null : String(linkToken.title);
+	state.pushParsed({
+		type: "image",
+		src: href,
+		alt,
+		title,
+		raw: String(`![${alt}](${href}${title ? ` "${title}"` : ""})`),
+		loading: Boolean(linkToken.loading)
+	});
+	return true;
+}
+function buildLoadingOuterImageLinkNode(imageNode, href = "", title = null) {
+	const text$1 = String(imageNode.alt ?? imageNode.raw ?? "");
+	return {
+		type: "link",
+		href,
+		title,
+		text: text$1,
+		children: [imageNode],
+		raw: String(`[${text$1}](${href}${title ? ` "${title}"` : ""})`),
+		loading: true
+	};
+}
+function buildLoadingImageNodeFromRaw(raw) {
+	const normalizedRaw = raw.startsWith("![") ? raw : `![${raw}`;
+	const innerRaw = normalizedRaw.slice(2);
+	const closeIdx = innerRaw.indexOf("](");
+	return {
+		type: "image",
+		src: "",
+		alt: closeIdx === -1 ? innerRaw.replace(/\]$/, "") : innerRaw.slice(0, closeIdx),
+		title: null,
+		raw: normalizedRaw,
+		loading: true
+	};
+}
+function recoverOuterImageLinkFromRawText(state, content) {
+	const outerStart = content.indexOf("[![");
+	if (outerStart === -1) return false;
+	if (typeof state.raw === "string" && state.tokens.length === 1 && isEscapedVisibleChar(state.raw, outerStart, "[")) return false;
+	const before = content.slice(0, outerStart);
+	if (before) state.pushText(before, before);
+	const imageNode = buildLoadingImageNodeFromRaw(content.slice(outerStart + 1));
+	state.pushParsed(buildLoadingOuterImageLinkNode(imageNode));
+	state.index++;
+	return true;
+}
+function recoverOuterImageLinkStartFromImageToken(state, token) {
+	if (state.options?.final) return false;
+	const previousToken = state.tokens[state.index - 1];
+	if (previousToken?.type !== "text") return false;
+	if (!String(previousToken.content ?? "").endsWith("[")) return false;
+	if (hasEscapedMarkup(previousToken, "\\[")) return false;
+	const previous = state.result[state.result.length - 1];
+	if (previous?.type === "text" && previous.content.endsWith("[")) {
+		const before = previous.content.slice(0, -1);
+		if (before) {
+			previous.content = before;
+			previous.raw = before;
+			state.currentTextNode = previous;
+		} else {
+			state.result.pop();
+			state.currentTextNode = null;
+		}
+	}
+	const imageNode = parseImageToken(token);
+	state.pushParsed(buildLoadingOuterImageLinkNode(imageNode));
+	state.index++;
+	return true;
+}
+function recoverOuterImageLinkFromSyntheticLinkToken(state, token) {
+	if (token.type !== "link") return false;
+	const linkToken = token;
+	const raw = String(linkToken.raw ?? "");
+	const text$1 = String(linkToken.text ?? "");
+	if (!raw.startsWith("[![") && !text$1.startsWith("![")) return false;
+	const imageTitle = linkToken.title == null || linkToken.title === "" ? null : String(linkToken.title);
+	const imageNode = {
+		type: "image",
+		src: String(linkToken.href ?? ""),
+		alt: text$1.replace(/^!\[/, "").replace(/\]$/, ""),
+		title: imageTitle,
+		raw: raw.startsWith("[![") ? raw.slice(1) : raw,
+		loading: true
+	};
+	state.pushParsed(buildLoadingOuterImageLinkNode(imageNode));
+	return true;
+}
+function recoverOuterImageLinkMidStateFromText(state, content) {
+	if (!content.startsWith("](")) return false;
+	const outerOpenToken = state.tokens[state.index - 2];
+	if (outerOpenToken?.type === "text" && String(outerOpenToken.content ?? "").endsWith("[") && hasEscapedMarkup(outerOpenToken, "\\[")) return false;
+	const previous = state.result[state.result.length - 1];
+	if (previous?.type !== "image" && previous?.type !== "link") return false;
+	const previousWithChildren = previous;
+	const previousLink = previous?.type === "link" && Array.isArray(previousWithChildren.children) && previousWithChildren.children.length === 1 && previousWithChildren.children[0]?.type === "image" ? state.result.pop() : null;
+	const imageNode = previousLink ? previousLink.children[0] : state.result.pop();
+	if (!imageNode || imageNode.type !== "image") return false;
+	const nextToken = state.tokens[state.index + 1];
+	let href = String(previousLink?.href ?? "");
+	let title = previousLink?.title == null ? null : String(previousLink.title);
+	let loading = true;
+	if (nextToken?.type === "link_open") {
+		const { node, nextIndex } = parseLinkToken(state.tokens, state.index + 1, state.parseInlineTokens, state.options);
+		href = node.href;
+		title = node.title;
+		loading = true;
+		state.index = nextIndex;
+	} else {
+		href = content.slice(2);
+		if (href.includes("\"")) {
+			const parts = href.split("\"");
+			href = String(parts[0] ?? "").trim();
+			title = parts[1] == null ? null : String(parts[1]).trim();
+		}
+		state.index++;
+	}
+	const linkNode = buildLoadingOuterImageLinkNode(imageNode, href, title);
+	linkNode.loading = loading;
+	state.pushParsed(linkNode);
+	return true;
+}
+function shouldTreatLinkOpenAsTextInEscapedOuterImageTail(state) {
+	const outerOpenToken = state.tokens[state.index - 3];
+	return state.tokens[state.index - 2]?.type === "image" && state.tokens[state.index - 1]?.type === "text" && String(state.tokens[state.index - 1].content ?? "") === "](" && outerOpenToken?.type === "text" && String(outerOpenToken.content ?? "").endsWith("[") && hasEscapedMarkup(outerOpenToken, "\\[");
+}
+function handleInlineLinkContent(state, content, _token) {
+	const linkStart = content.indexOf("[");
+	if (linkStart === -1) return false;
+	let textNodeContent = content.slice(0, linkStart);
+	const linkEnd = content.indexOf("](", linkStart);
+	if (linkEnd !== -1) {
+		const textToken$1 = state.tokens[state.index + 2];
+		let text$1 = content.slice(linkStart + 1, linkEnd);
+		if (text$1.includes("[")) {
+			const secondLinkStart = text$1.indexOf("[");
+			textNodeContent += content.slice(0, linkStart + secondLinkStart + 1);
+			const newLinkStart = linkStart + secondLinkStart + 1;
+			text$1 = content.slice(newLinkStart + 1, linkEnd);
+		}
+		const nextToken = state.tokens[state.index + 1];
+		if (content.endsWith("](") && nextToken?.type === "link_open" && textToken$1) {
+			const last = state.tokens[state.index + 4];
+			let index = 4;
+			let loading$1 = true;
+			if (last?.type === "text") {
+				const lastContent = String(last.content ?? "");
+				if (lastContent.startsWith(")")) {
+					loading$1 = false;
+					const trailingAfterClose = lastContent.slice(1);
+					if (trailingAfterClose) {
+						const trailingToken = cloneTokenWithMutableChildren(last);
+						trailingToken.content = trailingAfterClose;
+						trailingToken.raw = trailingAfterClose;
+						state.ensureWorkingTokens()[state.index + 4] = trailingToken;
+					} else index++;
+				} else if (lastContent === ".") index++;
+			}
+			pushInlineTextContent(state, textNodeContent, _token);
+			const hrefFromToken = String(textToken$1.content ?? "");
+			if (state.options?.validateLink && !state.options.validateLink(hrefFromToken)) state.pushText(text$1, text$1);
+			else state.pushParsed({
+				type: "link",
+				href: hrefFromToken,
+				title: null,
+				text: text$1,
+				children: [{
+					type: "text",
+					content: text$1,
+					raw: text$1
+				}],
+				loading: loading$1
+			});
+			state.index += index;
+			return true;
+		}
+		const linkContentEnd = content.indexOf(")", linkEnd);
+		const href = linkContentEnd !== -1 ? content.slice(linkEnd + 2, linkContentEnd) : "";
+		const loading = linkContentEnd === -1;
+		let emphasisMatch = textNodeContent.match(/\*+$/);
+		if (emphasisMatch) textNodeContent = textNodeContent.replace(/\*+$/, "");
+		pushInlineTextContent(state, textNodeContent, _token);
+		if (!emphasisMatch) emphasisMatch = text$1.match(/^\*+/);
+		if (!state.requireClosingStrong && emphasisMatch) {
+			const type = emphasisMatch[0].length;
+			text$1 = text$1.replace(/^\*+/, "").replace(/\*+$/, "");
+			const newTokens = [];
+			if (type === 1) newTokens.push({
+				type: "em_open",
+				tag: "em",
+				nesting: 1
+			});
+			else if (type === 2) newTokens.push({
+				type: "strong_open",
+				tag: "strong",
+				nesting: 1
+			});
+			else if (type === 3) {
+				newTokens.push({
+					type: "strong_open",
+					tag: "strong",
+					nesting: 1
+				});
+				newTokens.push({
+					type: "em_open",
+					tag: "em",
+					nesting: 1
+				});
+			}
+			newTokens.push({
+				type: "link",
+				href,
+				title: null,
+				text: text$1,
+				children: [{
+					type: "text",
+					content: text$1,
+					raw: text$1
+				}],
+				loading
+			});
+			if (type === 1) {
+				newTokens.push({
+					type: "em_close",
+					tag: "em",
+					nesting: -1
+				});
+				const { node } = parseEmphasisToken(newTokens, 0, state.parseInlineTokens, state.options);
+				state.pushParsed(node);
+			} else if (type === 2) {
+				newTokens.push({
+					type: "strong_close",
+					tag: "strong",
+					nesting: -1
+				});
+				const { node } = parseStrongToken(newTokens, 0, state.parseInlineTokens, void 0, state.options);
+				state.pushParsed(node);
+			} else if (type === 3) {
+				newTokens.push({
+					type: "em_close",
+					tag: "em",
+					nesting: -1
+				});
+				newTokens.push({
+					type: "strong_close",
+					tag: "strong",
+					nesting: -1
+				});
+				const { node } = parseStrongToken(newTokens, 0, state.parseInlineTokens, void 0, state.options);
+				state.pushParsed(node);
+			} else {
+				const { node } = parseEmphasisToken(newTokens, 0, state.parseInlineTokens, state.options);
+				state.pushParsed(node);
+			}
+		} else if (state.options?.validateLink && !state.options.validateLink(href)) state.pushText(text$1, text$1);
+		else state.pushParsed({
+			type: "link",
+			href,
+			title: null,
+			text: text$1,
+			children: [{
+				type: "text",
+				content: text$1,
+				raw: text$1
+			}],
+			loading
+		});
+		const afterText = linkContentEnd !== -1 ? content.slice(linkContentEnd + 1) : "";
+		if (afterText) {
+			state.dispatchToken({
+				type: "text",
+				content: afterText,
+				raw: afterText
+			});
+			state.index--;
+		}
+		state.index++;
+		return true;
+	}
+	return false;
+}
+function handleInlineImageContent(state, content) {
+	const imageStart = content.indexOf("![");
+	if (imageStart === -1) return false;
+	const textNodeContent = content.slice(0, imageStart);
+	if (textNodeContent && !state.currentTextNode) state.currentTextNode = {
+		type: "text",
+		content: textNodeContent,
+		raw: textNodeContent
+	};
+	else if (textNodeContent && state.currentTextNode) state.currentTextNode.content += textNodeContent;
+	if (state.currentTextNode) {
+		state.result.push(state.currentTextNode);
+		state.currentTextNode = null;
+	}
+	state.pushParsed(buildLoadingImageNodeFromRaw(content.slice(imageStart)));
+	state.index++;
+	return true;
+}
+function handleImageToken(state, token) {
+	if (!recoverOuterImageLinkStartFromImageToken(state, token)) {
+		state.resetCurrentTextNode();
+		state.pushParsed(parseImageToken(token));
+		state.index++;
+	}
+}
+function handleFallbackToken(state, token) {
+	const syntheticLink = token;
+	if (token.type === "link" && syntheticLink.href != null && state.options.validateLink && !state.options.validateLink(String(syntheticLink.href))) {
+		state.resetCurrentTextNode();
+		const displayText = String(syntheticLink.text ?? "");
+		state.pushText(displayText, displayText);
+		state.index++;
+	} else if (recoverOuterImageLinkFromSyntheticLinkToken(state, token)) state.index++;
+	else if (recoverMarkdownImageFromLoadingImageTail(state, token)) state.index++;
+	else if (recoverMarkdownImageFromTrailingBang(state, token)) state.index++;
+	else if (recoverMarkdownLinkFromTrailingText(state, token)) state.index++;
+	else {
+		state.pushToken(token);
+		state.index++;
+	}
+}
+
+//#endregion
+//#region src/parser/inline-parsers/math-inline-parser.ts
+function parseMathInlineToken(token) {
+	const content = token.content ?? "";
+	const raw = token.raw === "$$" ? `$${content}$` : token.raw || "";
+	return {
+		type: "math_inline",
+		content,
+		loading: !!token.loading,
+		raw,
+		markup: token.markup
+	};
+}
+
+//#endregion
+//#region src/parser/inline-parsers/reference-parser.ts
+function parseReferenceToken(token) {
+	return {
+		type: "reference",
+		id: String(token.content ?? ""),
+		raw: String(token.markup ?? `[${token.content ?? ""}]`)
+	};
+}
+
+//#endregion
+//#region src/parser/inline-parsers/strikethrough-parser.ts
+function parseStrikethroughToken(tokens, startIndex, parseInlineTokens$1, options) {
+	const children = [];
+	const { content: sText, innerTokens, nextIndex } = collectDelimitedInlineTokens(tokens, startIndex, "s_close");
+	children.push(...parseInlineTokens$1(innerTokens, void 0, void 0, options));
+	return {
+		node: {
+			type: "strikethrough",
+			children,
+			raw: `~~${sText}~~`
+		},
+		nextIndex
+	};
+}
+
+//#endregion
+//#region src/parser/inline-parsers/subscript-parser.ts
+function parseSubscriptToken(tokens, startIndex, parseInlineTokens$1, options) {
+	const children = [];
+	const { content: subText, innerTokens, nextIndex } = collectDelimitedInlineTokens(tokens, startIndex, "sub_close");
+	children.push(...parseInlineTokens$1(innerTokens, void 0, void 0, options));
+	const startContent = String(tokens[startIndex].content ?? "");
+	const display = subText || startContent;
+	return {
+		node: {
+			type: "subscript",
+			children: children.length > 0 ? children : [{
+				type: "text",
+				content: display,
+				raw: display
+			}],
+			raw: `~${display}~`
+		},
+		nextIndex
+	};
+}
+
+//#endregion
+//#region src/parser/inline-parsers/superscript-parser.ts
+function parseSuperscriptToken(tokens, startIndex, parseInlineTokens$1, options) {
+	const children = [];
+	const { content: supText, innerTokens, nextIndex } = collectDelimitedInlineTokens(tokens, startIndex, "sup_close");
+	children.push(...parseInlineTokens$1(innerTokens, void 0, void 0, options));
+	return {
+		node: {
+			type: "superscript",
+			children: children.length > 0 ? children : [{
+				type: "text",
+				content: supText || String(tokens[startIndex].content ?? ""),
+				raw: supText || String(tokens[startIndex].content ?? "")
+			}],
+			raw: `^${supText || String(tokens[startIndex].content ?? "")}^`
+		},
+		nextIndex
+	};
+}
+
+//#endregion
+//#region src/parser/inline-parsers/delimiter-helpers.ts
+const WHITESPACE_RE = /\s/u;
+const ASCII_PUNCTUATION_RE = /[!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]/;
+const UNICODE_PUNCTUATION_RE = /\p{P}/u;
+const CJK_OPENING_PUNCTUATION_RE = /^[\x22\x27《「『【〔〖〘〚〈（［｛“‘﹁﹃﹙﹛﹝]$/u;
+const CJK_CLOSING_PUNCTUATION_RE = /^[\x22\x27》」』】〕〗〙〛〉）］｝”’﹂﹄﹚﹜﹞]$/u;
 function countUnescapedAsterisks(str) {
 	let count = 0;
 	let i = 0;
@@ -15976,55 +19048,6 @@ function findNextStrongClose(content, startContentIndex = 0) {
 		sawInvalidClose
 	};
 }
-function decodeVisibleTextFromRaw(rawText) {
-	let output = "";
-	let index = 0;
-	while (index < rawText.length) {
-		if (rawText[index] !== "\\") {
-			output += rawText[index];
-			index++;
-			continue;
-		}
-		let slashCount = 0;
-		while (index + slashCount < rawText.length && rawText[index + slashCount] === "\\") slashCount++;
-		const nextChar = rawText[index + slashCount];
-		output += "\\".repeat(Math.floor(slashCount / 2));
-		if (slashCount % 2 === 1) {
-			if (nextChar && ESCAPABLE_PUNCTUATION.has(nextChar)) {
-				output += nextChar;
-				index += slashCount + 1;
-				continue;
-			}
-			output += "\\";
-		}
-		index += slashCount;
-	}
-	return output;
-}
-function getRawIndexForVisibleIndex(rawText, visibleIndex) {
-	let outputIndex = 0;
-	for (let rawIndex = 0; rawIndex < rawText.length; rawIndex++) {
-		const char = rawText[rawIndex];
-		const nextChar = rawText[rawIndex + 1];
-		if (char === "\\" && nextChar && ESCAPABLE_PUNCTUATION.has(nextChar)) {
-			if (outputIndex === visibleIndex) return rawIndex + 1;
-			outputIndex++;
-			rawIndex++;
-			continue;
-		}
-		if (outputIndex === visibleIndex) return rawIndex;
-		outputIndex++;
-	}
-	return -1;
-}
-function isEscapedVisibleChar(rawText, visibleIndex, expectedChar) {
-	const rawIndex = getRawIndexForVisibleIndex(rawText, visibleIndex);
-	if (rawIndex === -1) return false;
-	if (expectedChar && rawText[rawIndex] !== expectedChar) return false;
-	let slashCount = 0;
-	for (let i = rawIndex - 1; i >= 0 && rawText[i] === "\\"; i--) slashCount++;
-	return slashCount % 2 === 1;
-}
 const WORD_CHAR_RE = /[\p{L}\p{N}]/u;
 const WORD_ONLY_RE = /^[\p{L}\p{N}]+$/u;
 function isWordChar(ch) {
@@ -16083,1361 +19106,870 @@ function findTripleAsteriskClose(content, start) {
 	}
 	return -1;
 }
-function isLikelyUrl(href) {
-	if (!href) return false;
-	return AUTOLINK_PROTOCOL_RE.test(href) || AUTOLINK_GENERIC_RE.test(href);
+
+//#endregion
+//#region src/parser/inline-parsers/text-parser.ts
+function parseTextToken(token) {
+	const content = String(token.content ?? "");
+	return {
+		type: "text",
+		content,
+		raw: content
+	};
 }
-function recoverTrailingMarkdownLinkLabel(raw, href) {
-	if (!raw || !href) return null;
-	const match = raw.match(/\[([^\]\n]+)\]\(([^)]*)$/);
-	if (!match) return null;
-	return match[2] === href ? match[1] : null;
+
+//#endregion
+//#region src/parser/inline-parsers/text-token-handler.ts
+const STRIKETHROUGH_RE = /[^~]*~{2,}[^~]+/;
+const HAS_STRONG_RE = /\*\*/;
+const INLINE_REPARSE_MARKER_RE = /[[_*^~]/;
+function isCurrentStreamToken(state, token) {
+	return token === state.tokens[state.index];
 }
+function handleEmphasisAndStrikethrough(state, content, token) {
+	const rawSource = isCurrentStreamToken(state, token) && state.tokens.length === 1 ? state.raw : String(token.content ?? "");
+	const markerCandidates = [];
+	const literalIntrawordRunPairEnd = findLiteralIntrawordAsteriskRunPairEnd(content);
+	if (literalIntrawordRunPairEnd !== -1) {
+		state.pushText(content.slice(0, literalIntrawordRunPairEnd), content.slice(0, literalIntrawordRunPairEnd));
+		const afterContent = content.slice(literalIntrawordRunPairEnd);
+		if (afterContent) {
+			state.dispatchToken({
+				type: "text",
+				content: afterContent,
+				raw: afterContent
+			});
+			state.index--;
+		}
+		state.index++;
+		return true;
+	}
+	if (STRIKETHROUGH_RE.test(content)) {
+		const idx = content.indexOf("~~");
+		if (idx !== -1) markerCandidates.push({
+			type: "strikethrough",
+			index: idx
+		});
+	}
+	if (HAS_STRONG_RE.test(content)) {
+		const idx = content.indexOf("**");
+		if (idx !== -1) markerCandidates.push({
+			type: "strong",
+			index: idx
+		});
+	}
+	if (/[^*]*\*[^*]+/.test(content)) {
+		const idx = rawSource ? findNextUnescapedAsterisk(rawSource, 0) : content.indexOf("*");
+		if (rawSource && idx === -1) return false;
+		if (idx !== -1) markerCandidates.push({
+			type: "emphasis",
+			index: idx
+		});
+	}
+	markerCandidates.sort((a, b) => {
+		if (a.index !== b.index) return a.index - b.index;
+		if (a.type === b.type) return 0;
+		if (a.type === "strong") return -1;
+		if (b.type === "strong") return 1;
+		return 0;
+	});
+	const nextMarker = markerCandidates[0];
+	if (!nextMarker) return false;
+	if (nextMarker.type === "strikethrough") {
+		const idx = nextMarker.index;
+		const beforeText = idx > -1 ? content.slice(0, idx) : "";
+		if (beforeText) state.pushText(beforeText, beforeText);
+		if (idx === -1) {
+			state.index++;
+			return true;
+		}
+		const closeIdx = content.indexOf("~~", idx + 2);
+		const inner = closeIdx === -1 ? content.slice(idx + 2) : content.slice(idx + 2, closeIdx);
+		const after = closeIdx === -1 ? "" : content.slice(closeIdx + 2);
+		const { node } = parseStrikethroughToken([
+			{
+				type: "s_open",
+				tag: "s",
+				content: "",
+				markup: "~~",
+				info: "",
+				meta: null
+			},
+			{
+				type: "text",
+				tag: "",
+				content: inner,
+				markup: "",
+				info: "",
+				meta: null
+			},
+			{
+				type: "s_close",
+				tag: "s",
+				content: "",
+				markup: "~~",
+				info: "",
+				meta: null
+			}
+		], 0, state.parseInlineTokens, state.options);
+		state.resetCurrentTextNode();
+		state.pushParsed(node);
+		if (after) {
+			state.dispatchToken({
+				type: "text",
+				content: after,
+				raw: after
+			});
+			state.index--;
+		}
+		state.index++;
+		return true;
+	}
+	if (nextMarker.type === "strong") {
+		const openIdx = nextMarker.index;
+		const beforeText = openIdx > -1 ? content.slice(0, openIdx) : "";
+		if (beforeText) state.pushText(beforeText, beforeText);
+		if (openIdx === -1) {
+			state.index++;
+			return true;
+		}
+		if (state.raw && openIdx === 0) {
+			let rawHasEscapedAsteriskAtStart = false;
+			let asteriskCount = 0;
+			while (asteriskCount < content.length && content[asteriskCount] === "*") asteriskCount++;
+			if (state.raw.startsWith("\\*")) rawHasEscapedAsteriskAtStart = true;
+			if (rawHasEscapedAsteriskAtStart) {
+				let escapedCount = 0;
+				let j = 0;
+				while (j < state.raw.length && escapedCount < asteriskCount) if (state.raw[j] === "\\" && j + 1 < state.raw.length && state.raw[j + 1] === "*") {
+					escapedCount += 1;
+					j += 2;
+				} else if (state.raw[j] === "*") break;
+				else j++;
+				if (escapedCount >= 2) {
+					state.pushText(content, content);
+					state.index++;
+					return true;
+				}
+			}
+		}
+		if (state.raw) {
+			if ((content.match(/\*/g) || []).length > countUnescapedAsterisks(state.raw)) {
+				state.pushText(content.slice(beforeText.length), content.slice(beforeText.length));
+				state.index++;
+				return true;
+			}
+		}
+		const runInfo = getAsteriskRunInfo(content, openIdx);
+		if (runInfo.len >= 3) {
+			const closeIndex = findTripleAsteriskClose(content, openIdx + runInfo.len);
+			if (closeIndex !== -1) {
+				const inner$1 = content.slice(openIdx + runInfo.len, closeIndex);
+				if (isTripleAsteriskInnerText(inner$1)) {
+					const { node: node$1 } = parseStrongToken([
+						{
+							type: "strong_open",
+							tag: "strong",
+							content: "",
+							markup: "**",
+							info: "",
+							meta: null
+						},
+						{
+							type: "em_open",
+							tag: "em",
+							content: "",
+							markup: "*",
+							info: "",
+							meta: null
+						},
+						{
+							type: "text",
+							tag: "",
+							content: inner$1,
+							markup: "",
+							info: "",
+							meta: null
+						},
+						{
+							type: "em_close",
+							tag: "em",
+							content: "",
+							markup: "*",
+							info: "",
+							meta: null
+						},
+						{
+							type: "strong_close",
+							tag: "strong",
+							content: "",
+							markup: "**",
+							info: "",
+							meta: null
+						}
+					], 0, state.parseInlineTokens, state.raw, state.options);
+					state.resetCurrentTextNode();
+					state.pushParsed(node$1);
+					const afterContent = content.slice(closeIndex + 3);
+					if (afterContent) {
+						state.dispatchToken({
+							type: "text",
+							content: afterContent,
+							raw: afterContent
+						});
+						state.index--;
+					}
+					state.index++;
+					return true;
+				}
+			}
+		}
+		if (!isStrongOpenDelimiter(content, openIdx)) {
+			const literalRun = content.slice(openIdx, openIdx + runInfo.len);
+			state.pushText(literalRun, literalRun);
+			const afterContent = content.slice(openIdx + runInfo.len);
+			if (afterContent) {
+				state.dispatchToken({
+					type: "text",
+					content: afterContent,
+					raw: afterContent
+				});
+				state.index--;
+			}
+			state.index++;
+			return true;
+		}
+		const close = findNextStrongClose(content, openIdx + 2);
+		let inner = "";
+		let after = "";
+		if (close.index !== -1) {
+			inner = content.slice(openIdx + 2, close.index);
+			after = content.slice(close.index + 2);
+			const closeIdx = close.index;
+			const closeRunInfo = getAsteriskRunInfo(content, closeIdx);
+			if (runInfo.intraword && closeRunInfo.intraword && !isWordOnly(inner)) {
+				state.pushText(content.slice(beforeText.length), content.slice(beforeText.length));
+				state.index++;
+				return true;
+			}
+			if (!inner && runInfo.len >= 4 && runInfo.intraword) {
+				state.pushText(content.slice(beforeText.length), content.slice(beforeText.length));
+				state.index++;
+				return true;
+			}
+		} else {
+			if (state.requireClosingStrong || close.sawInvalidClose) {
+				state.pushText(content.slice(beforeText.length), content.slice(beforeText.length));
+				state.index++;
+				return true;
+			}
+			if (runInfo.intraword) {
+				state.pushText(content.slice(beforeText.length), content.slice(beforeText.length));
+				state.index++;
+				return true;
+			}
+			inner = content.slice(openIdx + 2);
+			after = "";
+		}
+		if (!inner && /^\*+$/.test(after)) {
+			state.pushText(content, content);
+			state.index++;
+			return true;
+		}
+		const { node } = parseStrongToken([
+			{
+				type: "strong_open",
+				tag: "strong",
+				content: "",
+				markup: "**",
+				info: "",
+				meta: null
+			},
+			{
+				type: "text",
+				tag: "",
+				content: inner,
+				markup: "",
+				info: "",
+				meta: null
+			},
+			{
+				type: "strong_close",
+				tag: "strong",
+				content: "",
+				markup: "**",
+				info: "",
+				meta: null
+			}
+		], 0, state.parseInlineTokens, state.raw, state.options);
+		state.resetCurrentTextNode();
+		state.pushParsed(node);
+		if (after) {
+			state.dispatchToken({
+				type: "text",
+				content: after,
+				raw: after
+			});
+			state.index--;
+		}
+		state.index++;
+		return true;
+	}
+	if (nextMarker.type === "emphasis") {
+		let idx = nextMarker.index;
+		if (idx === -1) idx = 0;
+		const _text = content.slice(0, idx);
+		if (_text) state.pushText(_text, _text);
+		if (!isEmphasisOpenDelimiter(content, idx)) {
+			state.pushText(content[idx], content[idx]);
+			const afterContent = content.slice(idx + 1);
+			if (afterContent) {
+				state.dispatchToken({
+					type: "text",
+					content: afterContent,
+					raw: afterContent
+				});
+				state.index--;
+			}
+			state.index++;
+			return true;
+		}
+		const runInfo = getAsteriskRunInfo(content, idx);
+		const close = findNextUnescapedEmphasisClose(rawSource, content, idx + 1);
+		const closeIndex = close.index;
+		const nextInlineToken = state.tokens[state.index + 1];
+		if (state.options?.final && nextInlineToken?.type === "em_open" && closeIndex !== -1 && content.slice(idx + 1, closeIndex).trim() !== content.slice(idx + 1, closeIndex)) {
+			state.pushText(content.slice(idx), content.slice(idx));
+			state.index++;
+			return true;
+		}
+		if (closeIndex === -1 && (close.sawInvalidClose || state.options?.final || runInfo.intraword || !isWordChar(content[idx + 1]))) {
+			state.pushText(content.slice(idx), content.slice(idx));
+			state.index++;
+			return true;
+		}
+		const { node } = parseEmphasisToken([
+			{
+				type: "em_open",
+				tag: "em",
+				content: "",
+				markup: "*",
+				info: "",
+				meta: null
+			},
+			{
+				type: "text",
+				tag: "",
+				content: closeIndex > -1 ? content.slice(idx + 1, closeIndex) : content.slice(idx + 1),
+				markup: "",
+				info: "",
+				meta: null
+			},
+			{
+				type: "em_close",
+				tag: "em",
+				content: "",
+				markup: "*",
+				info: "",
+				meta: null
+			}
+		], 0, state.parseInlineTokens, state.options);
+		state.resetCurrentTextNode();
+		state.pushParsed(node);
+		if (closeIndex !== -1 && closeIndex < content.length - 1) {
+			const afterContent = content.slice(closeIndex + 1);
+			if (afterContent) {
+				state.dispatchToken({
+					type: "text",
+					content: afterContent,
+					raw: afterContent
+				});
+				state.index--;
+			}
+		}
+		state.index++;
+		return true;
+	}
+	return false;
+}
+function handleInlineCodeContent(state, content, _token) {
+	if (!content.includes("`")) return false;
+	const findFirstUnescapedBacktick = (src) => {
+		for (let idx = 0; idx < src.length; idx++) {
+			if (src[idx] !== "`") continue;
+			let slashCount = 0;
+			for (let j = idx - 1; j >= 0 && src[j] === "\\"; j--) slashCount++;
+			if (slashCount % 2 === 0) return idx;
+		}
+		return -1;
+	};
+	const codeStart = findFirstUnescapedBacktick(content);
+	if (codeStart === -1) return false;
+	let runLen = 1;
+	for (let k = codeStart + 1; k < content.length && content[k] === "`"; k++) runLen++;
+	const closingSeq = "`".repeat(runLen);
+	const searchFrom = codeStart + runLen;
+	const codeEnd = content.indexOf(closingSeq, searchFrom);
+	if (codeEnd === -1) {
+		if (runLen === 1) {
+			const beforeText$1 = content.slice(0, codeStart);
+			const codeContent$1 = content.slice(codeStart + 1);
+			if (beforeText$1) if (!handleEmphasisAndStrikethrough(state, beforeText$1, _token)) state.pushText(beforeText$1, beforeText$1);
+			else state.index--;
+			state.pushParsed({
+				type: "inline_code",
+				code: codeContent$1,
+				raw: String(codeContent$1)
+			});
+			state.index++;
+			return true;
+		}
+		let merged = content;
+		for (let j = state.index + 1; j < state.tokens.length; j++) merged += String((state.tokens[j].content ?? "") + (state.tokens[j].markup ?? ""));
+		state.index = state.tokens.length - 1;
+		state.pushText(merged, merged);
+		state.index++;
+		return true;
+	}
+	state.resetCurrentTextNode();
+	const beforeText = content.slice(0, codeStart);
+	const codeContent = content.slice(codeStart + runLen, codeEnd);
+	const after = content.slice(codeEnd + runLen);
+	if (beforeText) if (!handleEmphasisAndStrikethrough(state, beforeText, _token)) state.pushText(beforeText, beforeText);
+	else state.index--;
+	state.pushParsed({
+		type: "inline_code",
+		code: codeContent,
+		raw: String(codeContent ?? "")
+	});
+	if (after) {
+		state.dispatchToken({
+			type: "text",
+			content: after,
+			raw: after
+		});
+		state.index--;
+	}
+	state.index++;
+	return true;
+}
+function tryReparseCollapsedInlineText(state, rawContent) {
+	const md = state.options.markdownIt;
+	if (!md) return null;
+	if (state.tokens.length <= 1 || !state.tokens.some((token) => token?.type === "math_inline")) return null;
+	if (!INLINE_REPARSE_MARKER_RE.test(rawContent)) return null;
+	const reparsed = md.parseInline(rawContent, { __markstreamFinal: !!state.options?.final });
+	if (!Array.isArray(reparsed) || reparsed.length === 0) return null;
+	const children = (reparsed.find((token) => token?.type === "inline")?.children ?? []).filter((child) => !(child?.type === "text" && String(child.content ?? "") === ""));
+	if (!children.length) return null;
+	if (!children.some((child) => child?.type !== "text")) return null;
+	if (children.length === 1 && children[0]?.type === "text" && String(children[0].content ?? "") === rawContent) return null;
+	const reparsedNodes = state.parseInlineTokens(children, rawContent, state.pPreToken, state.options);
+	return reparsedNodes.length ? reparsedNodes : null;
+}
+function commitTextNode(state, content, token, preToken, nextToken, markerFlags = getInlineTextMarkerFlags(content)) {
+	const textNode = parseTextToken({
+		...token,
+		content
+	});
+	if (state.currentTextNode) {
+		state.currentTextNode.content += state.options?.final ? textNode.content : stripTrailingMidStateMarker(textNode.content, token, markerFlags);
+		state.currentTextNode.raw += textNode.raw;
+		return;
+	}
+	const maybeMath = preToken?.tag === "br" && state.tokens[state.index - 2]?.content === "[";
+	if (!nextToken) textNode.content = state.options?.final ? textNode.content : stripTrailingMidStateMarker(textNode.content, token, markerFlags);
+	state.currentTextNode = textNode;
+	state.currentTextNode.center = maybeMath;
+	state.result.push(state.currentTextNode);
+}
+function handleTextToken(state, token) {
+	const rawContent = String(token.content ?? "");
+	const rawMarkerFlags = getInlineTextMarkerFlags(rawContent);
+	const rawHasBackslash = (rawMarkerFlags & INLINE_TEXT_MARKER_BACKSLASH) !== 0;
+	const rawSource = isCurrentStreamToken(state, token) && state.tokens.length === 1 && rawHasBackslash && typeof state.raw === "string" ? String(state.raw) : "";
+	let content = rawSource ? decodeVisibleTextFromRaw(rawSource) : rawHasBackslash ? rawContent.replace(ESCAPED_PUNCTUATION_RE, "$1") : rawContent;
+	const markerFlags = content === rawContent ? rawMarkerFlags : getInlineTextMarkerFlags(content);
+	if (token.content === "<" || content === "1" && state.tokens[state.index - 1]?.tag === "br") {
+		state.index++;
+		return;
+	}
+	const dollarIndex = (markerFlags & INLINE_TEXT_MARKER_DOLLAR) !== 0 ? content.indexOf("$") : -1;
+	if (dollarIndex !== -1 && dollarIndex === content.lastIndexOf("$") && content.endsWith("$")) content = content.slice(0, -1);
+	if (content.endsWith("undefined") && !state.raw?.endsWith("undefined")) content = content.slice(0, -9);
+	let trailingTextStart = state.result.length;
+	let trailingTextContent = "";
+	for (let index = state.result.length - 1; index >= 0; index--) {
+		const item = state.result[index];
+		if (item.type !== "text") break;
+		trailingTextStart = index;
+		trailingTextContent = String(item.content ?? "") + trailingTextContent;
+	}
+	if (trailingTextStart < state.result.length) if (content.startsWith(trailingTextContent)) {
+		state.currentTextNode = null;
+		state.result.length = trailingTextStart;
+	} else state.currentTextNode = state.result[state.result.length - 1];
+	const nextToken = state.tokens[state.index + 1];
+	if ((content === "`" || content === "|" || content === "$") && !hasEscapedMarkup(token, `\\${content}`) || /^\*+$/.test(content) && !hasEscapedMarkup(token, "\\*")) {
+		state.index++;
+		return;
+	}
+	if (!nextToken && state.options?.final !== true && (markerFlags & INLINE_TEXT_MARKER_OPEN_PAREN) !== 0 && /[^\]]\s*\(\s*$/.test(content)) content = content.replace(/\(\s*$/, "");
+	if (!content) {
+		state.index++;
+		return;
+	}
+	if ((markerFlags & (INLINE_TEXT_MARKER_OPEN_BRACKET | INLINE_TEXT_MARKER_BANG)) === (INLINE_TEXT_MARKER_OPEN_BRACKET | INLINE_TEXT_MARKER_BANG) && recoverOuterImageLinkFromRawText(state, content)) return;
+	if ((markerFlags & (INLINE_TEXT_MARKER_CLOSE_BRACKET | INLINE_TEXT_MARKER_OPEN_PAREN)) === (INLINE_TEXT_MARKER_CLOSE_BRACKET | INLINE_TEXT_MARKER_OPEN_PAREN) && recoverOuterImageLinkMidStateFromText(state, content)) return;
+	if (!((markerFlags & INLINE_CANDIDATE_MARKERS) !== 0)) {
+		commitTextNode(state, content, token, state.tokens[state.index - 1], nextToken, markerFlags);
+		state.index++;
+		return;
+	}
+	if ((markerFlags & INLINE_TEXT_MARKER_OPEN_BRACKET) !== 0 && handleCheckboxLike(state, content)) return;
+	const preToken = state.tokens[state.index - 1];
+	if ((markerFlags & INLINE_TEXT_MARKER_OPEN_BRACKET) !== 0 && content === "[" && !nextToken?.markup?.includes("*") && !hasEscapedMarkup(token, "\\[") || (markerFlags & INLINE_TEXT_MARKER_CLOSE_BRACKET) !== 0 && content === "]" && !preToken?.markup?.includes("*") && !hasEscapedMarkup(token, "\\]")) {
+		state.index++;
+		return;
+	}
+	if ((markerFlags & INLINE_TEXT_MARKER_BACKTICK) !== 0 && handleInlineCodeContent(state, rawContent, token)) return;
+	if ((markerFlags & (INLINE_TEXT_MARKER_BANG | INLINE_TEXT_MARKER_OPEN_BRACKET)) === (INLINE_TEXT_MARKER_BANG | INLINE_TEXT_MARKER_OPEN_BRACKET) && handleInlineImageContent(state, content)) return;
+	if ((markerFlags & INLINE_TEXT_MARKER_OPEN_BRACKET) !== 0 && (state.tokens[state.index + 1]?.type !== "link_open" || isMarkdownLinkBeforeLinkifiedUrl(state, content)) && handleInlineLinkContent(state, content, token)) return;
+	const reparsedNodes = tryReparseCollapsedInlineText(state, rawContent);
+	if (reparsedNodes) {
+		state.resetCurrentTextNode();
+		for (const node of reparsedNodes) state.pushParsed(node);
+		state.index++;
+		return;
+	}
+	if (handleEmphasisAndStrikethrough(state, content, token)) return;
+	commitTextNode(state, content, token, preToken, nextToken, markerFlags);
+	state.index++;
+}
+function handleCheckboxLike(state, content) {
+	if (!(content?.startsWith("[") && state.pPreToken?.type === "list_item_open")) return false;
+	const w = content.slice(1).match(/[^\s\]]/);
+	if (w === null) {
+		state.index++;
+		return true;
+	}
+	if (w && /x/i.test(w[0])) {
+		const checked = w[0] === "x" || w[0] === "X";
+		state.pushParsed({
+			type: "checkbox_input",
+			checked,
+			raw: checked ? "[x]" : "[ ]"
+		});
+		state.index++;
+		return true;
+	}
+	return false;
+}
+
+//#endregion
+//#region src/parser/inline-parsers/inline-token-dispatcher.ts
+function stripTrailingLoadingParenMathOpener(state, token) {
+	if (!state.currentTextNode || token.loading !== true || token.markup !== "\\(\\)") return;
+	const previousToken = state.tokens[state.index - 1];
+	if (!previousToken || previousToken.type !== "text" || !hasEscapedMarkup(previousToken, "\\(")) return;
+	if (!state.currentTextNode.content.endsWith("(")) return;
+	state.currentTextNode.content = state.currentTextNode.content.slice(0, -1);
+	if (state.currentTextNode.raw.endsWith("(")) state.currentTextNode.raw = state.currentTextNode.raw.slice(0, -1);
+	if (!state.currentTextNode.content && state.result[state.result.length - 1] === state.currentTextNode) {
+		state.result.pop();
+		state.currentTextNode = null;
+	}
+}
+function dispatchInlineToken(state, token) {
+	switch (token.type) {
+		case "text":
+			handleTextToken(state, token);
+			break;
+		case "softbreak":
+			if (state.currentTextNode) {
+				state.currentTextNode.content += "\n";
+				state.currentTextNode.raw += "\n";
+			} else {
+				state.currentTextNode = {
+					type: "text",
+					content: "\n",
+					raw: "\n"
+				};
+				state.result.push(state.currentTextNode);
+			}
+			state.index++;
+			break;
+		case "code_inline":
+			state.pushParsed(parseInlineCodeToken(token));
+			state.index++;
+			break;
+		case "html_inline": {
+			const [node, index] = parseHtmlInlineCodeToken(token, state.tokens, state.index, state.parseInlineTokens, state.raw, state.pPreToken, state.options);
+			state.pushParsed(node);
+			state.index = index;
+			break;
+		}
+		case "link_open":
+			handleLinkOpen(state, token);
+			break;
+		case "image":
+			handleImageToken(state, token);
+			break;
+		case "strong_open": {
+			state.resetCurrentTextNode();
+			const { node, nextIndex } = parseStrongToken(state.tokens, state.index, state.parseInlineTokens, token.content, state.options);
+			state.pushParsed(node);
+			state.index = nextIndex;
+			break;
+		}
+		case "em_open": {
+			state.resetCurrentTextNode();
+			const { node, nextIndex } = parseEmphasisToken(state.tokens, state.index, state.parseInlineTokens, state.options);
+			state.pushParsed(node);
+			state.index = nextIndex;
+			break;
+		}
+		case "s_open": {
+			state.resetCurrentTextNode();
+			const { node, nextIndex } = parseStrikethroughToken(state.tokens, state.index, state.parseInlineTokens, state.options);
+			state.pushParsed(node);
+			state.index = nextIndex;
+			break;
+		}
+		case "mark_open": {
+			state.resetCurrentTextNode();
+			const { node, nextIndex } = parseHighlightToken(state.tokens, state.index, state.parseInlineTokens, state.options);
+			state.pushParsed(node);
+			state.index = nextIndex;
+			break;
+		}
+		case "ins_open": {
+			state.resetCurrentTextNode();
+			const { node, nextIndex } = parseInsertToken(state.tokens, state.index, state.parseInlineTokens, state.options);
+			state.pushParsed(node);
+			state.index = nextIndex;
+			break;
+		}
+		case "sub_open": {
+			state.resetCurrentTextNode();
+			const { node, nextIndex } = parseSubscriptToken(state.tokens, state.index, state.parseInlineTokens, state.options);
+			state.pushParsed(node);
+			state.index = nextIndex;
+			break;
+		}
+		case "sup_open": {
+			state.resetCurrentTextNode();
+			const { node, nextIndex } = parseSuperscriptToken(state.tokens, state.index, state.parseInlineTokens, state.options);
+			state.pushParsed(node);
+			state.index = nextIndex;
+			break;
+		}
+		case "sub":
+			state.resetCurrentTextNode();
+			state.pushParsed({
+				type: "subscript",
+				children: [{
+					type: "text",
+					content: String(token.content ?? ""),
+					raw: String(token.content ?? "")
+				}],
+				raw: `~${String(token.content ?? "")}~`
+			});
+			state.index++;
+			break;
+		case "sup":
+			state.resetCurrentTextNode();
+			state.pushParsed({
+				type: "superscript",
+				children: [{
+					type: "text",
+					content: String(token.content ?? ""),
+					raw: String(token.content ?? "")
+				}],
+				raw: `^${String(token.content ?? "")}^`
+			});
+			state.index++;
+			break;
+		case "emoji": {
+			state.resetCurrentTextNode();
+			const preToken = state.tokens[state.index - 1];
+			if (preToken?.type === "text" && /\|:-+/.test(String(preToken.content ?? ""))) state.pushText("", "");
+			else state.pushParsed(parseEmojiToken(token));
+			state.index++;
+			break;
+		}
+		case "checkbox":
+			state.resetCurrentTextNode();
+			state.pushParsed(parseCheckboxToken(token));
+			state.index++;
+			break;
+		case "checkbox_input":
+			state.resetCurrentTextNode();
+			state.pushParsed(parseCheckboxInputToken(token));
+			state.index++;
+			break;
+		case "footnote_ref":
+			state.resetCurrentTextNode();
+			state.pushParsed(parseFootnoteRefToken(token));
+			state.index++;
+			break;
+		case "footnote_anchor": {
+			state.resetCurrentTextNode();
+			const meta = token.meta ?? {};
+			const id = String(meta.label ?? token.content ?? "");
+			state.pushParsed({
+				type: "footnote_anchor",
+				id,
+				raw: String(token.content ?? "")
+			});
+			state.index++;
+			break;
+		}
+		case "hardbreak":
+			state.resetCurrentTextNode();
+			state.pushParsed(parseHardbreakToken());
+			state.index++;
+			break;
+		case "fence":
+			state.resetCurrentTextNode();
+			state.pushParsed(parseFenceToken(state.tokens[state.index]));
+			state.index++;
+			break;
+		case "math_inline":
+			stripTrailingLoadingParenMathOpener(state, token);
+			state.resetCurrentTextNode();
+			if (!token.content && token.markup === "$" && state.tokens[state.index + 1]?.type === "text" && state.tokens[state.index + 2]?.type === "math_inline") {
+				state.pushParsed(parseMathInlineToken({
+					...token,
+					content: state.tokens[state.index + 1].content
+				}));
+				state.index += 2;
+			} else state.pushParsed(parseMathInlineToken(token));
+			state.index++;
+			break;
+		case "reference":
+			handleReference(state, token);
+			break;
+		case "text_special":
+			state.pushText(String(token.content ?? ""), String(token.content ?? ""));
+			state.index++;
+			break;
+		default:
+			handleFallbackToken(state, token);
+			break;
+	}
+}
+function handleReference(state, token) {
+	state.resetCurrentTextNode();
+	state.pushParsed(parseReferenceToken(token));
+	state.index++;
+}
+
+//#endregion
+//#region src/parser/inline-parsers/index.ts
+const TEXT_RECOVERY_MARKER_RE = /[!$(*[\\\]_`|~]/;
 function parseInlineTokens(tokens, raw, pPreToken, options) {
 	if (!tokens || tokens.length === 0) return [];
-	const inheritedContext = options?.__linkifyDemotionContext;
+	if (tokens.length === 1 && tokens[0].type === "text") {
+		const content = tokens[0].content;
+		if (typeof content === "string" && content && content !== "<" && !content.endsWith("undefined") && !TEXT_RECOVERY_MARKER_RE.test(content)) return [{
+			type: "text",
+			content,
+			raw: content,
+			center: false
+		}];
+	}
+	let parseContext = ensureParseContext(options);
+	const inheritedContext = parseContext.linkifyDemotionContext;
 	const inferredContext = inferLinkifyDemotionContext(raw);
 	const linkifyDemotionContext = {
 		filename: inheritedContext?.filename || inferredContext.filename,
 		explicitFilename: inheritedContext?.explicitFilename || inferredContext.explicitFilename,
 		marketTicker: inheritedContext?.marketTicker || inferredContext.marketTicker
 	};
-	if (linkifyDemotionContext.filename || linkifyDemotionContext.explicitFilename || linkifyDemotionContext.marketTicker) options = {
-		...options,
-		__linkifyDemotionContext: linkifyDemotionContext
+	if (linkifyDemotionContext.filename || linkifyDemotionContext.explicitFilename || linkifyDemotionContext.marketTicker) parseContext = {
+		...parseContext,
+		linkifyDemotionContext
 	};
-	const internalOptions = options;
-	const result = [];
-	let currentTextNode = null;
-	let i = 0;
+	options = parseContext;
 	const requireClosingStrong = options?.requireClosingStrong;
 	const originalTokens = tokens;
+	const state = {
+		currentTextNode: null,
+		index: 0,
+		options: parseContext,
+		parseInlineTokens,
+		pPreToken,
+		raw,
+		requireClosingStrong,
+		result: [],
+		tokens,
+		dispatchToken: (token) => dispatchInlineToken(state, token),
+		ensureWorkingTokens,
+		pushParsed,
+		pushText,
+		pushToken,
+		resetCurrentTextNode
+	};
 	function ensureWorkingTokens() {
-		if (tokens === originalTokens) tokens = tokens.slice();
-		return tokens;
+		if (state.tokens === originalTokens) state.tokens = state.tokens.slice();
+		return state.tokens;
 	}
 	function resetCurrentTextNode() {
-		currentTextNode = null;
-	}
-	function handleEmphasisAndStrikethrough(content, token) {
-		const rawSource = tokens.length === 1 ? raw : String(token.content ?? "");
-		const markerCandidates = [];
-		const literalIntrawordRunPairEnd = findLiteralIntrawordAsteriskRunPairEnd(content);
-		if (literalIntrawordRunPairEnd !== -1) {
-			pushText(content.slice(0, literalIntrawordRunPairEnd), content.slice(0, literalIntrawordRunPairEnd));
-			const afterContent = content.slice(literalIntrawordRunPairEnd);
-			if (afterContent) {
-				handleToken({
-					type: "text",
-					content: afterContent,
-					raw: afterContent
-				});
-				i--;
-			}
-			i++;
-			return true;
-		}
-		if (STRIKETHROUGH_RE.test(content)) {
-			const idx = content.indexOf("~~");
-			if (idx !== -1) markerCandidates.push({
-				type: "strikethrough",
-				index: idx
-			});
-		}
-		if (HAS_STRONG_RE.test(content)) {
-			const idx = content.indexOf("**");
-			if (idx !== -1) markerCandidates.push({
-				type: "strong",
-				index: idx
-			});
-		}
-		if (/[^*]*\*[^*]+/.test(content)) {
-			const idx = rawSource ? findNextUnescapedAsterisk(rawSource, 0) : content.indexOf("*");
-			if (rawSource && idx === -1) return false;
-			if (idx !== -1) markerCandidates.push({
-				type: "emphasis",
-				index: idx
-			});
-		}
-		markerCandidates.sort((a, b) => {
-			if (a.index !== b.index) return a.index - b.index;
-			if (a.type === b.type) return 0;
-			if (a.type === "strong") return -1;
-			if (b.type === "strong") return 1;
-			return 0;
-		});
-		const nextMarker = markerCandidates[0];
-		if (!nextMarker) return false;
-		if (nextMarker.type === "strikethrough") {
-			const idx = nextMarker.index;
-			const beforeText = idx > -1 ? content.slice(0, idx) : "";
-			if (beforeText) pushText(beforeText, beforeText);
-			if (idx === -1) {
-				i++;
-				return true;
-			}
-			const closeIdx = content.indexOf("~~", idx + 2);
-			const inner = closeIdx === -1 ? content.slice(idx + 2) : content.slice(idx + 2, closeIdx);
-			const after = closeIdx === -1 ? "" : content.slice(closeIdx + 2);
-			const { node } = parseStrikethroughToken([
-				{
-					type: "s_open",
-					tag: "s",
-					content: "",
-					markup: "~~",
-					info: "",
-					meta: null
-				},
-				{
-					type: "text",
-					tag: "",
-					content: inner,
-					markup: "",
-					info: "",
-					meta: null
-				},
-				{
-					type: "s_close",
-					tag: "s",
-					content: "",
-					markup: "~~",
-					info: "",
-					meta: null
-				}
-			], 0, options);
-			resetCurrentTextNode();
-			pushNode(node);
-			if (after) {
-				handleToken({
-					type: "text",
-					content: after,
-					raw: after
-				});
-				i--;
-			}
-			i++;
-			return true;
-		}
-		if (nextMarker.type === "strong") {
-			const openIdx = nextMarker.index;
-			const beforeText = openIdx > -1 ? content.slice(0, openIdx) : "";
-			if (beforeText) pushText(beforeText, beforeText);
-			if (openIdx === -1) {
-				i++;
-				return true;
-			}
-			if (raw && openIdx === 0) {
-				let rawHasEscapedAsteriskAtStart = false;
-				let asteriskCount = 0;
-				while (asteriskCount < content.length && content[asteriskCount] === "*") asteriskCount++;
-				if (raw.startsWith("\\*")) rawHasEscapedAsteriskAtStart = true;
-				if (rawHasEscapedAsteriskAtStart) {
-					let escapedCount = 0;
-					let j = 0;
-					while (j < raw.length && escapedCount < asteriskCount) if (raw[j] === "\\" && j + 1 < raw.length && raw[j + 1] === "*") {
-						escapedCount += 1;
-						j += 2;
-					} else if (raw[j] === "*") break;
-					else j++;
-					if (escapedCount >= 2) {
-						pushText(content, content);
-						i++;
-						return true;
-					}
-				}
-			}
-			if (raw) {
-				if ((content.match(/\*/g) || []).length > countUnescapedAsterisks(raw)) {
-					pushText(content.slice(beforeText.length), content.slice(beforeText.length));
-					i++;
-					return true;
-				}
-			}
-			const runInfo = getAsteriskRunInfo(content, openIdx);
-			if (runInfo.len >= 3) {
-				const closeIndex = findTripleAsteriskClose(content, openIdx + runInfo.len);
-				if (closeIndex !== -1) {
-					const inner$1 = content.slice(openIdx + runInfo.len, closeIndex);
-					if (isTripleAsteriskInnerText(inner$1)) {
-						const { node: node$1 } = parseStrongToken([
-							{
-								type: "strong_open",
-								tag: "strong",
-								content: "",
-								markup: "**",
-								info: "",
-								meta: null
-							},
-							{
-								type: "em_open",
-								tag: "em",
-								content: "",
-								markup: "*",
-								info: "",
-								meta: null
-							},
-							{
-								type: "text",
-								tag: "",
-								content: inner$1,
-								markup: "",
-								info: "",
-								meta: null
-							},
-							{
-								type: "em_close",
-								tag: "em",
-								content: "",
-								markup: "*",
-								info: "",
-								meta: null
-							},
-							{
-								type: "strong_close",
-								tag: "strong",
-								content: "",
-								markup: "**",
-								info: "",
-								meta: null
-							}
-						], 0, raw, options);
-						resetCurrentTextNode();
-						pushNode(node$1);
-						const afterContent = content.slice(closeIndex + 3);
-						if (afterContent) {
-							handleToken({
-								type: "text",
-								content: afterContent,
-								raw: afterContent
-							});
-							i--;
-						}
-						i++;
-						return true;
-					}
-				}
-			}
-			if (!isStrongOpenDelimiter(content, openIdx)) {
-				const literalRun = content.slice(openIdx, openIdx + runInfo.len);
-				pushText(literalRun, literalRun);
-				const afterContent = content.slice(openIdx + runInfo.len);
-				if (afterContent) {
-					handleToken({
-						type: "text",
-						content: afterContent,
-						raw: afterContent
-					});
-					i--;
-				}
-				i++;
-				return true;
-			}
-			const close = findNextStrongClose(content, openIdx + 2);
-			let inner = "";
-			let after = "";
-			if (close.index !== -1) {
-				inner = content.slice(openIdx + 2, close.index);
-				after = content.slice(close.index + 2);
-				const closeIdx = close.index;
-				const closeRunInfo = getAsteriskRunInfo(content, closeIdx);
-				if (runInfo.intraword && closeRunInfo.intraword && !isWordOnly(inner)) {
-					pushText(content.slice(beforeText.length), content.slice(beforeText.length));
-					i++;
-					return true;
-				}
-				if (!inner && runInfo.len >= 4 && runInfo.intraword) {
-					pushText(content.slice(beforeText.length), content.slice(beforeText.length));
-					i++;
-					return true;
-				}
-			} else {
-				if (requireClosingStrong || close.sawInvalidClose) {
-					pushText(content.slice(beforeText.length), content.slice(beforeText.length));
-					i++;
-					return true;
-				}
-				if (runInfo.intraword) {
-					pushText(content.slice(beforeText.length), content.slice(beforeText.length));
-					i++;
-					return true;
-				}
-				inner = content.slice(openIdx + 2);
-				after = "";
-			}
-			if (!inner && /^\*+$/.test(after)) {
-				pushText(content, content);
-				i++;
-				return true;
-			}
-			const { node } = parseStrongToken([
-				{
-					type: "strong_open",
-					tag: "strong",
-					content: "",
-					markup: "**",
-					info: "",
-					meta: null
-				},
-				{
-					type: "text",
-					tag: "",
-					content: inner,
-					markup: "",
-					info: "",
-					meta: null
-				},
-				{
-					type: "strong_close",
-					tag: "strong",
-					content: "",
-					markup: "**",
-					info: "",
-					meta: null
-				}
-			], 0, raw, options);
-			resetCurrentTextNode();
-			pushNode(node);
-			if (after) {
-				handleToken({
-					type: "text",
-					content: after,
-					raw: after
-				});
-				i--;
-			}
-			i++;
-			return true;
-		}
-		if (nextMarker.type === "emphasis") {
-			let idx = nextMarker.index;
-			if (idx === -1) idx = 0;
-			const _text = content.slice(0, idx);
-			if (_text) pushText(_text, _text);
-			if (!isEmphasisOpenDelimiter(content, idx)) {
-				pushText(content[idx], content[idx]);
-				const afterContent = content.slice(idx + 1);
-				if (afterContent) {
-					handleToken({
-						type: "text",
-						content: afterContent,
-						raw: afterContent
-					});
-					i--;
-				}
-				i++;
-				return true;
-			}
-			const runInfo = getAsteriskRunInfo(content, idx);
-			const close = findNextUnescapedEmphasisClose(rawSource, content, idx + 1);
-			const closeIndex = close.index;
-			const nextInlineToken = tokens[i + 1];
-			if (options?.final && nextInlineToken?.type === "em_open" && closeIndex !== -1 && content.slice(idx + 1, closeIndex).trim() !== content.slice(idx + 1, closeIndex)) {
-				pushText(content.slice(idx), content.slice(idx));
-				i++;
-				return true;
-			}
-			if (closeIndex === -1 && (close.sawInvalidClose || options?.final || runInfo.intraword || !isWordChar(content[idx + 1]))) {
-				pushText(content.slice(idx), content.slice(idx));
-				i++;
-				return true;
-			}
-			const { node } = parseEmphasisToken([
-				{
-					type: "em_open",
-					tag: "em",
-					content: "",
-					markup: "*",
-					info: "",
-					meta: null
-				},
-				{
-					type: "text",
-					tag: "",
-					content: closeIndex > -1 ? content.slice(idx + 1, closeIndex) : content.slice(idx + 1),
-					markup: "",
-					info: "",
-					meta: null
-				},
-				{
-					type: "em_close",
-					tag: "em",
-					content: "",
-					markup: "*",
-					info: "",
-					meta: null
-				}
-			], 0, options);
-			resetCurrentTextNode();
-			pushNode(node);
-			if (closeIndex !== -1 && closeIndex < content.length - 1) {
-				const afterContent = content.slice(closeIndex + 1);
-				if (afterContent) {
-					handleToken({
-						type: "text",
-						content: afterContent,
-						raw: afterContent
-					});
-					i--;
-				}
-			}
-			i++;
-			return true;
-		}
-		return false;
-	}
-	function handleInlineCodeContent(content, _token) {
-		if (!content.includes("`")) return false;
-		const findFirstUnescapedBacktick = (src) => {
-			for (let idx = 0; idx < src.length; idx++) {
-				if (src[idx] !== "`") continue;
-				let slashCount = 0;
-				for (let j = idx - 1; j >= 0 && src[j] === "\\"; j--) slashCount++;
-				if (slashCount % 2 === 0) return idx;
-			}
-			return -1;
-		};
-		const codeStart = findFirstUnescapedBacktick(content);
-		if (codeStart === -1) return false;
-		let runLen = 1;
-		for (let k = codeStart + 1; k < content.length && content[k] === "`"; k++) runLen++;
-		const closingSeq = "`".repeat(runLen);
-		const searchFrom = codeStart + runLen;
-		const codeEnd = content.indexOf(closingSeq, searchFrom);
-		if (codeEnd === -1) {
-			if (runLen === 1) {
-				const beforeText$1 = content.slice(0, codeStart);
-				const codeContent$1 = content.slice(codeStart + 1);
-				if (beforeText$1) if (!handleEmphasisAndStrikethrough(beforeText$1, _token)) pushText(beforeText$1, beforeText$1);
-				else i--;
-				pushParsed({
-					type: "inline_code",
-					code: codeContent$1,
-					raw: String(codeContent$1)
-				});
-				i++;
-				return true;
-			}
-			let merged = content;
-			for (let j = i + 1; j < tokens.length; j++) merged += String((tokens[j].content ?? "") + (tokens[j].markup ?? ""));
-			i = tokens.length - 1;
-			pushText(merged, merged);
-			i++;
-			return true;
-		}
-		resetCurrentTextNode();
-		const beforeText = content.slice(0, codeStart);
-		const codeContent = content.slice(codeStart + runLen, codeEnd);
-		const after = content.slice(codeEnd + runLen);
-		if (beforeText) if (!handleEmphasisAndStrikethrough(beforeText, _token)) pushText(beforeText, beforeText);
-		else i--;
-		pushParsed({
-			type: "inline_code",
-			code: codeContent,
-			raw: String(codeContent ?? "")
-		});
-		if (after) {
-			handleToken({
-				type: "text",
-				content: after,
-				raw: after
-			});
-			i--;
-		}
-		i++;
-		return true;
-	}
-	function tryReparseCollapsedInlineText(rawContent) {
-		const md = internalOptions?.__markdownIt;
-		if (!md) return null;
-		if (tokens.length <= 1 || !tokens.some((token) => token?.type === "math_inline")) return null;
-		if (!INLINE_REPARSE_MARKER_RE.test(rawContent)) return null;
-		const reparsed = md.parseInline(rawContent, { __markstreamFinal: !!options?.final });
-		if (!Array.isArray(reparsed) || reparsed.length === 0) return null;
-		const children = (reparsed.find((token) => token?.type === "inline")?.children ?? []).filter((child) => !(child?.type === "text" && String(child.content ?? "") === ""));
-		if (!children.length) return null;
-		if (!children.some((child) => child?.type !== "text")) return null;
-		if (children.length === 1 && children[0]?.type === "text" && String(children[0].content ?? "") === rawContent) return null;
-		const reparsedNodes = parseInlineTokens(children, rawContent, pPreToken, options);
-		return reparsedNodes.length ? reparsedNodes : null;
+		state.currentTextNode = null;
 	}
 	function pushParsed(node) {
 		resetCurrentTextNode();
-		result.push(node);
+		state.result.push(node);
 	}
 	function pushToken(token) {
 		resetCurrentTextNode();
 		const node = cloneTokenWithMutableChildren(token);
-		result.push(node);
-	}
-	function pushNode(node) {
-		pushParsed(node);
+		state.result.push(node);
 	}
 	function pushText(content, raw$1) {
-		if (currentTextNode) {
-			currentTextNode.content += content;
-			currentTextNode.raw += raw$1 ?? content;
+		if (state.currentTextNode) {
+			state.currentTextNode.content += content;
+			state.currentTextNode.raw += raw$1 ?? content;
 		} else {
-			currentTextNode = {
+			state.currentTextNode = {
 				type: "text",
 				content: String(content ?? ""),
 				raw: String(raw$1 ?? content ?? "")
 			};
-			result.push(currentTextNode);
+			state.result.push(state.currentTextNode);
 		}
 	}
-	function pushInlineTextContent(content, token) {
-		if (!content) return;
-		const parsed = parseInlineTokens([{
-			...token,
-			type: "text",
-			content,
-			raw: content
-		}], content, pPreToken, options);
-		if (parsed.length === 1 && parsed[0]?.type === "text") {
-			const text$1 = parsed[0];
-			pushText(String(text$1.content ?? ""), String(text$1.raw ?? text$1.content ?? ""));
-			return;
-		}
-		for (const node of parsed) pushNode(node);
+	while (state.index < state.tokens.length) {
+		const token = state.tokens[state.index];
+		dispatchInlineToken(state, token);
 	}
-	function hasEscapedMarkup(token, escapedPrefix) {
-		return String(token.markup ?? "").startsWith(escapedPrefix);
-	}
-	function stripTrailingLoadingParenMathOpener(token) {
-		if (!currentTextNode || token.loading !== true || token.markup !== "\\(\\)") return;
-		const previousToken = tokens[i - 1];
-		if (!previousToken || previousToken.type !== "text" || !hasEscapedMarkup(previousToken, "\\(")) return;
-		if (!currentTextNode.content.endsWith("(")) return;
-		currentTextNode.content = currentTextNode.content.slice(0, -1);
-		if (currentTextNode.raw.endsWith("(")) currentTextNode.raw = currentTextNode.raw.slice(0, -1);
-		if (!currentTextNode.content && result[result.length - 1] === currentTextNode) {
-			result.pop();
-			currentTextNode = null;
-		}
-	}
-	function isMarkdownLinkBeforeLinkifiedUrl(content) {
-		if (!content.endsWith("](")) return false;
-		return tokens[i + 1]?.type === "link_open" && tokens[i + 1]?.markup === "linkify" && tokens[i + 2]?.type === "text" && tokens[i + 3]?.type === "link_close" && tokens[i + 4]?.type === "text" && String(tokens[i + 4]?.content ?? "").startsWith(")");
-	}
-	function stripTrailingMidStateMarker(content, token, markerFlags = getInlineTextMarkerFlags(content)) {
-		let nextContent = content;
-		const rawTokenContent = String(token.content ?? "");
-		if ((markerFlags & INLINE_TEXT_MARKER_BACKSLASH) !== 0 && nextContent.endsWith("\\") && !hasEscapedMarkup(token, "\\\\") && !rawTokenContent.endsWith("\\\\")) nextContent = nextContent.slice(0, -1);
-		if ((markerFlags & INLINE_TEXT_MARKER_OPEN_PAREN) !== 0 && nextContent.endsWith("(") && !hasEscapedMarkup(token, "\\(") && !rawTokenContent.endsWith("\\(")) nextContent = nextContent.slice(0, -1);
-		if ((markerFlags & INLINE_TEXT_MARKER_ASTERISK) !== 0 && /\*+$/.test(nextContent) && !hasEscapedMarkup(token, "\\*") && !rawTokenContent.endsWith("\\*")) nextContent = nextContent.replace(/\*+$/, "");
-		return nextContent;
-	}
-	while (i < tokens.length) {
-		const token = tokens[i];
-		handleToken(token);
-	}
-	function handleToken(token) {
-		switch (token.type) {
-			case "text":
-				handleTextToken(token);
-				break;
-			case "softbreak":
-				if (currentTextNode) {
-					currentTextNode.content += "\n";
-					currentTextNode.raw += "\n";
-				} else {
-					currentTextNode = {
-						type: "text",
-						content: "\n",
-						raw: "\n"
-					};
-					result.push(currentTextNode);
-				}
-				i++;
-				break;
-			case "code_inline":
-				pushNode(parseInlineCodeToken(token));
-				i++;
-				break;
-			case "html_inline": {
-				const [node, index] = parseHtmlInlineCodeToken(token, tokens, i, parseInlineTokens, raw, pPreToken, options);
-				pushNode(node);
-				i = index;
-				break;
-			}
-			case "link_open":
-				handleLinkOpen(token);
-				break;
-			case "image":
-				if (!recoverOuterImageLinkStartFromImageToken(token)) {
-					resetCurrentTextNode();
-					pushNode(parseImageToken(token));
-					i++;
-				}
-				break;
-			case "strong_open": {
-				resetCurrentTextNode();
-				const { node, nextIndex } = parseStrongToken(tokens, i, token.content, options);
-				pushNode(node);
-				i = nextIndex;
-				break;
-			}
-			case "em_open": {
-				resetCurrentTextNode();
-				const { node, nextIndex } = parseEmphasisToken(tokens, i, options);
-				pushNode(node);
-				i = nextIndex;
-				break;
-			}
-			case "s_open": {
-				resetCurrentTextNode();
-				const { node, nextIndex } = parseStrikethroughToken(tokens, i, options);
-				pushNode(node);
-				i = nextIndex;
-				break;
-			}
-			case "mark_open": {
-				resetCurrentTextNode();
-				const { node, nextIndex } = parseHighlightToken(tokens, i, options);
-				pushNode(node);
-				i = nextIndex;
-				break;
-			}
-			case "ins_open": {
-				resetCurrentTextNode();
-				const { node, nextIndex } = parseInsertToken(tokens, i, options);
-				pushNode(node);
-				i = nextIndex;
-				break;
-			}
-			case "sub_open": {
-				resetCurrentTextNode();
-				const { node, nextIndex } = parseSubscriptToken(tokens, i, options);
-				pushNode(node);
-				i = nextIndex;
-				break;
-			}
-			case "sup_open": {
-				resetCurrentTextNode();
-				const { node, nextIndex } = parseSuperscriptToken(tokens, i, options);
-				pushNode(node);
-				i = nextIndex;
-				break;
-			}
-			case "sub":
-				resetCurrentTextNode();
-				pushNode({
-					type: "subscript",
-					children: [{
-						type: "text",
-						content: String(token.content ?? ""),
-						raw: String(token.content ?? "")
-					}],
-					raw: `~${String(token.content ?? "")}~`
-				});
-				i++;
-				break;
-			case "sup":
-				resetCurrentTextNode();
-				pushNode({
-					type: "superscript",
-					children: [{
-						type: "text",
-						content: String(token.content ?? ""),
-						raw: String(token.content ?? "")
-					}],
-					raw: `^${String(token.content ?? "")}^`
-				});
-				i++;
-				break;
-			case "emoji": {
-				resetCurrentTextNode();
-				const preToken = tokens[i - 1];
-				if (preToken?.type === "text" && /\|:-+/.test(String(preToken.content ?? ""))) pushText("", "");
-				else pushNode(parseEmojiToken(token));
-				i++;
-				break;
-			}
-			case "checkbox":
-				resetCurrentTextNode();
-				pushNode(parseCheckboxToken(token));
-				i++;
-				break;
-			case "checkbox_input":
-				resetCurrentTextNode();
-				pushNode(parseCheckboxInputToken(token));
-				i++;
-				break;
-			case "footnote_ref":
-				resetCurrentTextNode();
-				pushNode(parseFootnoteRefToken(token));
-				i++;
-				break;
-			case "footnote_anchor": {
-				resetCurrentTextNode();
-				const meta = token.meta ?? {};
-				pushParsed({
-					type: "footnote_anchor",
-					id: String(meta.label ?? token.content ?? ""),
-					raw: String(token.content ?? "")
-				});
-				i++;
-				break;
-			}
-			case "hardbreak":
-				resetCurrentTextNode();
-				pushNode(parseHardbreakToken());
-				i++;
-				break;
-			case "fence":
-				resetCurrentTextNode();
-				pushNode(parseFenceToken(tokens[i]));
-				i++;
-				break;
-			case "math_inline":
-				stripTrailingLoadingParenMathOpener(token);
-				resetCurrentTextNode();
-				if (!token.content && token.markup === "$" && tokens[i + 1]?.type === "text" && tokens[i + 2]?.type === "math_inline") {
-					pushNode(parseMathInlineToken({
-						...token,
-						content: tokens[i + 1].content
-					}));
-					i += 2;
-				} else pushNode(parseMathInlineToken(token));
-				i++;
-				break;
-			case "reference":
-				handleReference(token);
-				break;
-			case "text_special":
-				pushText(String(token.content ?? ""), String(token.content ?? ""));
-				i++;
-				break;
-			default: {
-				const syntheticLink = token;
-				if (token.type === "link" && syntheticLink.href != null && options?.validateLink && !options.validateLink(String(syntheticLink.href))) {
-					resetCurrentTextNode();
-					const displayText = String(syntheticLink.text ?? "");
-					pushText(displayText, displayText);
-					i++;
-				} else if (recoverOuterImageLinkFromSyntheticLinkToken(token)) i++;
-				else if (recoverMarkdownImageFromLoadingImageTail(token)) i++;
-				else if (recoverMarkdownImageFromTrailingBang(token)) i++;
-				else if (recoverMarkdownLinkFromTrailingText(token)) i++;
-				else {
-					pushToken(token);
-					i++;
-				}
-				break;
-			}
-		}
-	}
-	function commitTextNode(content, token, preToken, nextToken, markerFlags = getInlineTextMarkerFlags(content)) {
-		const textNode = parseTextToken({
-			...token,
-			content
-		});
-		if (currentTextNode) {
-			currentTextNode.content += options?.final ? textNode.content : stripTrailingMidStateMarker(textNode.content, token, markerFlags);
-			currentTextNode.raw += textNode.raw;
-			return;
-		}
-		const maybeMath = preToken?.tag === "br" && tokens[i - 2]?.content === "[";
-		if (!nextToken) textNode.content = options?.final ? textNode.content : stripTrailingMidStateMarker(textNode.content, token, markerFlags);
-		currentTextNode = textNode;
-		currentTextNode.center = maybeMath;
-		result.push(currentTextNode);
-	}
-	function handleTextToken(token) {
-		const rawContent = String(token.content ?? "");
-		const rawMarkerFlags = getInlineTextMarkerFlags(rawContent);
-		const rawHasBackslash = (rawMarkerFlags & INLINE_TEXT_MARKER_BACKSLASH) !== 0;
-		const rawSource = tokens.length === 1 && rawHasBackslash && typeof raw === "string" ? String(raw) : "";
-		let content = rawSource ? decodeVisibleTextFromRaw(rawSource) : rawHasBackslash ? rawContent.replace(ESCAPED_PUNCTUATION_RE, "$1") : rawContent;
-		const markerFlags = content === rawContent ? rawMarkerFlags : getInlineTextMarkerFlags(content);
-		if (token.content === "<" || content === "1" && tokens[i - 1]?.tag === "br") {
-			i++;
-			return;
-		}
-		const dollarIndex = (markerFlags & INLINE_TEXT_MARKER_DOLLAR) !== 0 ? content.indexOf("$") : -1;
-		if (dollarIndex !== -1 && dollarIndex === content.lastIndexOf("$") && content.endsWith("$")) content = content.slice(0, -1);
-		if (content.endsWith("undefined") && !raw?.endsWith("undefined")) content = content.slice(0, -9);
-		let trailingTextStart = result.length;
-		let trailingTextContent = "";
-		for (let index = result.length - 1; index >= 0; index--) {
-			const item = result[index];
-			if (item.type !== "text") break;
-			trailingTextStart = index;
-			trailingTextContent = String(item.content ?? "") + trailingTextContent;
-		}
-		if (trailingTextStart < result.length) if (content.startsWith(trailingTextContent)) {
-			currentTextNode = null;
-			result.length = trailingTextStart;
-		} else currentTextNode = result[result.length - 1];
-		const nextToken = tokens[i + 1];
-		if ((content === "`" || content === "|" || content === "$") && !hasEscapedMarkup(token, `\\${content}`) || /^\*+$/.test(content) && !hasEscapedMarkup(token, "\\*")) {
-			i++;
-			return;
-		}
-		if (!nextToken && options?.final !== true && (markerFlags & INLINE_TEXT_MARKER_OPEN_PAREN) !== 0 && /[^\]]\s*\(\s*$/.test(content)) content = content.replace(/\(\s*$/, "");
-		if (!content) {
-			i++;
-			return;
-		}
-		if ((markerFlags & (INLINE_TEXT_MARKER_OPEN_BRACKET | INLINE_TEXT_MARKER_BANG)) === (INLINE_TEXT_MARKER_OPEN_BRACKET | INLINE_TEXT_MARKER_BANG) && recoverOuterImageLinkFromRawText(content)) return;
-		if ((markerFlags & (INLINE_TEXT_MARKER_CLOSE_BRACKET | INLINE_TEXT_MARKER_OPEN_PAREN)) === (INLINE_TEXT_MARKER_CLOSE_BRACKET | INLINE_TEXT_MARKER_OPEN_PAREN) && recoverOuterImageLinkMidStateFromText(content)) return;
-		if (!((markerFlags & INLINE_CANDIDATE_MARKERS) !== 0)) {
-			commitTextNode(content, token, tokens[i - 1], nextToken, markerFlags);
-			i++;
-			return;
-		}
-		if ((markerFlags & INLINE_TEXT_MARKER_OPEN_BRACKET) !== 0 && handleCheckboxLike(content)) return;
-		const preToken = tokens[i - 1];
-		if ((markerFlags & INLINE_TEXT_MARKER_OPEN_BRACKET) !== 0 && content === "[" && !nextToken?.markup?.includes("*") && !hasEscapedMarkup(token, "\\[") || (markerFlags & INLINE_TEXT_MARKER_CLOSE_BRACKET) !== 0 && content === "]" && !preToken?.markup?.includes("*") && !hasEscapedMarkup(token, "\\]")) {
-			i++;
-			return;
-		}
-		if ((markerFlags & INLINE_TEXT_MARKER_BACKTICK) !== 0 && handleInlineCodeContent(rawContent, token)) return;
-		if ((markerFlags & (INLINE_TEXT_MARKER_BANG | INLINE_TEXT_MARKER_OPEN_BRACKET)) === (INLINE_TEXT_MARKER_BANG | INLINE_TEXT_MARKER_OPEN_BRACKET) && handleInlineImageContent(content)) return;
-		if ((markerFlags & INLINE_TEXT_MARKER_OPEN_BRACKET) !== 0 && (tokens[i + 1]?.type !== "link_open" || isMarkdownLinkBeforeLinkifiedUrl(content)) && handleInlineLinkContent(content, token)) return;
-		const reparsedNodes = tryReparseCollapsedInlineText(rawContent);
-		if (reparsedNodes) {
-			resetCurrentTextNode();
-			for (const node of reparsedNodes) pushNode(node);
-			i++;
-			return;
-		}
-		if (handleEmphasisAndStrikethrough(content, token)) return;
-		commitTextNode(content, token, preToken, nextToken, markerFlags);
-		i++;
-	}
-	function handleLinkOpen(token) {
-		if (recoverMarkdownImageFromLoadingImageTailLinkOpen(token)) return;
-		if (shouldTreatLinkOpenAsTextInEscapedOuterImageTail()) {
-			const { node: node$1, nextIndex: nextIndex$1 } = parseLinkToken(tokens, i, options);
-			const text$1 = String(node$1.text || node$1.href || "");
-			pushText(text$1, text$1);
-			i = nextIndex$1;
-			return;
-		}
-		resetCurrentTextNode();
-		const linkStartIndex = i;
-		const { node, nextIndex } = parseLinkToken(tokens, i, options);
-		i = nextIndex;
-		const linkText = node.text || node.href || "";
-		if (token.markup === "linkify" && !isDecodedFromRawPunycode(linkText, node.href, raw) && shouldDemoteFilenameLikeLinkify(linkText, internalOptions?.__linkifyDemotionContext)) {
-			pushText(linkText, linkText);
-			return;
-		}
-		const hasSingleTextChild = node.children.length === 1 && node.children[0]?.type === "text";
-		if (node.loading && raw && node.text === node.href && hasSingleTextChild) {
-			const recoveredLabel = recoverTrailingMarkdownLinkLabel(raw, node.href);
-			if (recoveredLabel) {
-				node.text = recoveredLabel;
-				node.children = [{
-					type: "text",
-					content: recoveredLabel,
-					raw: recoveredLabel
-				}];
-				node.raw = String(`[${recoveredLabel}](${node.href}${node.title ? ` "${node.title}"` : ""})`);
-			}
-		}
-		if (options?.validateLink && !options.validateLink(node.href)) {
-			pushText(node.text, node.text);
-			return;
-		}
-		const hrefAttr = token.attrs?.find(([name]) => name === "href")?.[1];
-		const hrefStr = String(hrefAttr ?? "");
-		if (raw && hrefStr) {
-			const openIdx = raw.indexOf("](");
-			if (openIdx === -1) {} else {
-				const closeIdx = raw.indexOf(")", openIdx + 2);
-				if (closeIdx === -1) node.loading = true;
-				else if (node.loading) {
-					if (raw.slice(openIdx + 2, closeIdx).includes(hrefStr)) node.loading = false;
-				}
-			}
-		}
-		if (/^file:\/\/\/[a-z]:\//i.test(node.href) && recoverMarkdownImageFromTrailingBang(node, linkStartIndex - 1)) return;
-		if (recoverMarkdownLinkFromTrailingText(node)) return;
-		pushParsed(node);
-	}
-	function recoverMarkdownImageFromLoadingImageTailLinkOpen(token) {
-		if (token.markup !== "linkify") return false;
-		const { node, nextIndex } = parseLinkToken(tokens, i, options);
-		if (!recoverMarkdownImageFromLoadingImageTailLink(node, nextIndex)) return false;
-		i = nextIndex;
-		return true;
-	}
-	function handleReference(token) {
-		resetCurrentTextNode();
-		pushNode(parseReferenceToken(token));
-		i++;
-	}
-	function recoverMarkdownLinkFromTrailingText(token) {
-		if (token.type !== "link") return false;
-		const previous = result[result.length - 1];
-		if (!previous || previous.type !== "text") return false;
-		const match = String(previous.content ?? "").match(/^([^[]*)\[([^\]\n]+)\]\($/);
-		if (!match) return false;
-		const linkToken = token;
-		const href = String(linkToken.href ?? "");
-		const linkText = String(linkToken.text ?? "");
-		const label = String(match[2] ?? "");
-		const visibleHref = href.replace(/^(?:https?:\/\/|mailto:|ftp:\/\/)/i, "");
-		if (!href || !(linkText === href || linkText === visibleHref || isLikelyUrl(linkText))) return false;
-		const before = String(match[1] ?? "");
-		if (before) {
-			previous.content = before;
-			previous.raw = before;
-		} else result.pop();
-		pushParsed({
-			...token,
-			text: label,
-			children: [{
-				type: "text",
-				content: label,
-				raw: label
-			}],
-			raw: String(`[${label}](${href}${linkToken.title ? ` "${linkToken.title}"` : ""})`)
-		});
-		return true;
-	}
-	function recoverMarkdownImageFromLoadingImageTail(token) {
-		if (token.type !== "link") return false;
-		const linkToken = token;
-		const href = String(linkToken.href ?? "");
-		if (!href) return false;
-		return recoverMarkdownImageFromLoadingImageTailLink({
-			href,
-			title: linkToken.title == null || linkToken.title === "" ? null : String(linkToken.title),
-			loading: Boolean(linkToken.loading)
-		}, i + 1);
-	}
-	function recoverMarkdownImageFromLoadingImageTailLink(link$1, nextIndex) {
-		const previous = result[result.length - 1];
-		if (previous?.type !== "image" || previous.src || !previous.loading || !String(previous.raw ?? "").endsWith("](")) return false;
-		const nextToken = tokens[nextIndex];
-		const nextContent = String(nextToken?.content ?? "");
-		if (nextToken?.type !== "text" || !nextContent.startsWith(")")) return false;
-		result.pop();
-		currentTextNode = null;
-		const alt = String(previous.alt ?? "");
-		pushParsed({
-			type: "image",
-			src: link$1.href,
-			alt,
-			title: link$1.title,
-			raw: String(`![${alt}](${link$1.href}${link$1.title ? ` "${link$1.title}"` : ""})`),
-			loading: Boolean(link$1.loading)
-		});
-		const trailing = nextContent.slice(1);
-		const adjustedNext = cloneTokenWithMutableChildren(nextToken);
-		adjustedNext.content = trailing;
-		adjustedNext.raw = trailing;
-		ensureWorkingTokens()[nextIndex] = adjustedNext;
-		return true;
-	}
-	function recoverMarkdownImageFromTrailingBang(token, previousTokenIndex = i - 1) {
-		if (token.type !== "link") return false;
-		const previous = result[result.length - 1];
-		const previousToken = tokens[previousTokenIndex];
-		if (!previous || previous.type !== "text" || previousToken?.type !== "text") return false;
-		const previousContent = String(previous.content ?? "");
-		const previousTokenContent = String(previousToken.content ?? "");
-		if (!previousContent.endsWith("!") || !previousTokenContent.endsWith("!")) return false;
-		if (hasEscapedMarkup(previousToken, "\\!")) return false;
-		const before = previousContent.slice(0, -1);
-		if (before) {
-			previous.content = before;
-			previous.raw = before;
-			currentTextNode = previous;
-		} else {
-			result.pop();
-			currentTextNode = null;
-		}
-		const linkToken = token;
-		const alt = String(linkToken.text ?? linkToken.children?.map((child) => String(child?.content ?? child?.raw ?? "")).join("") ?? "");
-		const href = String(linkToken.href ?? "");
-		const title = linkToken.title == null || linkToken.title === "" ? null : String(linkToken.title);
-		pushParsed({
-			type: "image",
-			src: href,
-			alt,
-			title,
-			raw: String(`![${alt}](${href}${title ? ` "${title}"` : ""})`),
-			loading: Boolean(linkToken.loading)
-		});
-		return true;
-	}
-	function buildLoadingOuterImageLinkNode(imageNode, href = "", title = null) {
-		const text$1 = String(imageNode.alt ?? imageNode.raw ?? "");
-		return {
-			type: "link",
-			href,
-			title,
-			text: text$1,
-			children: [imageNode],
-			raw: String(`[${text$1}](${href}${title ? ` "${title}"` : ""})`),
-			loading: true
-		};
-	}
-	function buildLoadingImageNodeFromRaw(raw$1) {
-		const normalizedRaw = raw$1.startsWith("![") ? raw$1 : `![${raw$1}`;
-		const innerRaw = normalizedRaw.slice(2);
-		const closeIdx = innerRaw.indexOf("](");
-		return {
-			type: "image",
-			src: "",
-			alt: closeIdx === -1 ? innerRaw.replace(/\]$/, "") : innerRaw.slice(0, closeIdx),
-			title: null,
-			raw: normalizedRaw,
-			loading: true
-		};
-	}
-	function recoverOuterImageLinkFromRawText(content) {
-		const outerStart = content.indexOf("[![");
-		if (outerStart === -1) return false;
-		if (typeof raw === "string" && tokens.length === 1 && isEscapedVisibleChar(raw, outerStart, "[")) return false;
-		const before = content.slice(0, outerStart);
-		if (before) pushText(before, before);
-		pushParsed(buildLoadingOuterImageLinkNode(buildLoadingImageNodeFromRaw(content.slice(outerStart + 1))));
-		i++;
-		return true;
-	}
-	function recoverOuterImageLinkStartFromImageToken(token) {
-		if (options?.final) return false;
-		const previousToken = tokens[i - 1];
-		if (previousToken?.type !== "text") return false;
-		if (!String(previousToken.content ?? "").endsWith("[")) return false;
-		if (hasEscapedMarkup(previousToken, "\\[")) return false;
-		const previous = result[result.length - 1];
-		if (previous?.type === "text" && previous.content.endsWith("[")) {
-			const before = previous.content.slice(0, -1);
-			if (before) {
-				previous.content = before;
-				previous.raw = before;
-				currentTextNode = previous;
-			} else {
-				result.pop();
-				currentTextNode = null;
-			}
-		}
-		pushParsed(buildLoadingOuterImageLinkNode(parseImageToken(token)));
-		i++;
-		return true;
-	}
-	function recoverOuterImageLinkFromSyntheticLinkToken(token) {
-		if (token.type !== "link") return false;
-		const linkToken = token;
-		const raw$1 = String(linkToken.raw ?? "");
-		const text$1 = String(linkToken.text ?? "");
-		if (!raw$1.startsWith("[![") && !text$1.startsWith("![")) return false;
-		const imageTitle = linkToken.title == null || linkToken.title === "" ? null : String(linkToken.title);
-		pushParsed(buildLoadingOuterImageLinkNode({
-			type: "image",
-			src: String(linkToken.href ?? ""),
-			alt: text$1.replace(/^!\[/, "").replace(/\]$/, ""),
-			title: imageTitle,
-			raw: raw$1.startsWith("[![") ? raw$1.slice(1) : raw$1,
-			loading: true
-		}));
-		return true;
-	}
-	function recoverOuterImageLinkMidStateFromText(content) {
-		if (!content.startsWith("](")) return false;
-		const outerOpenToken = tokens[i - 2];
-		if (outerOpenToken?.type === "text" && String(outerOpenToken.content ?? "").endsWith("[") && hasEscapedMarkup(outerOpenToken, "\\[")) return false;
-		const previous = result[result.length - 1];
-		if (previous?.type !== "image" && previous?.type !== "link") return false;
-		const previousWithChildren = previous;
-		const previousLink = previous?.type === "link" && Array.isArray(previousWithChildren.children) && previousWithChildren.children.length === 1 && previousWithChildren.children[0]?.type === "image" ? result.pop() : null;
-		const imageNode = previousLink ? previousLink.children[0] : result.pop();
-		if (!imageNode || imageNode.type !== "image") return false;
-		const nextToken = tokens[i + 1];
-		let href = String(previousLink?.href ?? "");
-		let title = previousLink?.title == null ? null : String(previousLink.title);
-		let loading = true;
-		if (nextToken?.type === "link_open") {
-			const { node, nextIndex } = parseLinkToken(tokens, i + 1, options);
-			href = node.href;
-			title = node.title;
-			loading = true;
-			i = nextIndex;
-		} else {
-			href = content.slice(2);
-			if (href.includes("\"")) {
-				const parts = href.split("\"");
-				href = String(parts[0] ?? "").trim();
-				title = parts[1] == null ? null : String(parts[1]).trim();
-			}
-			i++;
-		}
-		const linkNode = buildLoadingOuterImageLinkNode(imageNode, href, title);
-		linkNode.loading = loading;
-		pushParsed(linkNode);
-		return true;
-	}
-	function shouldTreatLinkOpenAsTextInEscapedOuterImageTail() {
-		const outerOpenToken = tokens[i - 3];
-		return tokens[i - 2]?.type === "image" && tokens[i - 1]?.type === "text" && String(tokens[i - 1].content ?? "") === "](" && outerOpenToken?.type === "text" && String(outerOpenToken.content ?? "").endsWith("[") && hasEscapedMarkup(outerOpenToken, "\\[");
-	}
-	function handleInlineLinkContent(content, _token) {
-		const linkStart = content.indexOf("[");
-		if (linkStart === -1) return false;
-		let textNodeContent = content.slice(0, linkStart);
-		const linkEnd = content.indexOf("](", linkStart);
-		if (linkEnd !== -1) {
-			const textToken$1 = tokens[i + 2];
-			let text$1 = content.slice(linkStart + 1, linkEnd);
-			if (text$1.includes("[")) {
-				const secondLinkStart = text$1.indexOf("[");
-				textNodeContent += content.slice(0, linkStart + secondLinkStart + 1);
-				const newLinkStart = linkStart + secondLinkStart + 1;
-				text$1 = content.slice(newLinkStart + 1, linkEnd);
-			}
-			const nextToken = tokens[i + 1];
-			if (content.endsWith("](") && nextToken?.type === "link_open" && textToken$1) {
-				const last = tokens[i + 4];
-				let index = 4;
-				let loading$1 = true;
-				if (last?.type === "text") {
-					const lastContent = String(last.content ?? "");
-					if (lastContent.startsWith(")")) {
-						loading$1 = false;
-						const trailingAfterClose = lastContent.slice(1);
-						if (trailingAfterClose) {
-							const trailingToken = cloneTokenWithMutableChildren(last);
-							trailingToken.content = trailingAfterClose;
-							trailingToken.raw = trailingAfterClose;
-							ensureWorkingTokens()[i + 4] = trailingToken;
-						} else index++;
-					} else if (lastContent === ".") index++;
-				}
-				pushInlineTextContent(textNodeContent, _token);
-				const hrefFromToken = String(textToken$1.content ?? "");
-				if (options?.validateLink && !options.validateLink(hrefFromToken)) pushText(text$1, text$1);
-				else pushParsed({
-					type: "link",
-					href: hrefFromToken,
-					title: null,
-					text: text$1,
-					children: [{
-						type: "text",
-						content: text$1,
-						raw: text$1
-					}],
-					loading: loading$1
-				});
-				i += index;
-				return true;
-			}
-			const linkContentEnd = content.indexOf(")", linkEnd);
-			const href = linkContentEnd !== -1 ? content.slice(linkEnd + 2, linkContentEnd) : "";
-			const loading = linkContentEnd === -1;
-			let emphasisMatch = textNodeContent.match(/\*+$/);
-			if (emphasisMatch) textNodeContent = textNodeContent.replace(/\*+$/, "");
-			pushInlineTextContent(textNodeContent, _token);
-			if (!emphasisMatch) emphasisMatch = text$1.match(/^\*+/);
-			if (!requireClosingStrong && emphasisMatch) {
-				const type = emphasisMatch[0].length;
-				text$1 = text$1.replace(/^\*+/, "").replace(/\*+$/, "");
-				const newTokens = [];
-				if (type === 1) newTokens.push({
-					type: "em_open",
-					tag: "em",
-					nesting: 1
-				});
-				else if (type === 2) newTokens.push({
-					type: "strong_open",
-					tag: "strong",
-					nesting: 1
-				});
-				else if (type === 3) {
-					newTokens.push({
-						type: "strong_open",
-						tag: "strong",
-						nesting: 1
-					});
-					newTokens.push({
-						type: "em_open",
-						tag: "em",
-						nesting: 1
-					});
-				}
-				newTokens.push({
-					type: "link",
-					href,
-					title: null,
-					text: text$1,
-					children: [{
-						type: "text",
-						content: text$1,
-						raw: text$1
-					}],
-					loading
-				});
-				if (type === 1) {
-					newTokens.push({
-						type: "em_close",
-						tag: "em",
-						nesting: -1
-					});
-					const { node } = parseEmphasisToken(newTokens, 0, options);
-					pushNode(node);
-				} else if (type === 2) {
-					newTokens.push({
-						type: "strong_close",
-						tag: "strong",
-						nesting: -1
-					});
-					const { node } = parseStrongToken(newTokens, 0, void 0, options);
-					pushNode(node);
-				} else if (type === 3) {
-					newTokens.push({
-						type: "em_close",
-						tag: "em",
-						nesting: -1
-					});
-					newTokens.push({
-						type: "strong_close",
-						tag: "strong",
-						nesting: -1
-					});
-					const { node } = parseStrongToken(newTokens, 0, void 0, options);
-					pushNode(node);
-				} else {
-					const { node } = parseEmphasisToken(newTokens, 0, options);
-					pushNode(node);
-				}
-			} else if (options?.validateLink && !options.validateLink(href)) pushText(text$1, text$1);
-			else pushParsed({
-				type: "link",
-				href,
-				title: null,
-				text: text$1,
-				children: [{
-					type: "text",
-					content: text$1,
-					raw: text$1
-				}],
-				loading
-			});
-			const afterText = linkContentEnd !== -1 ? content.slice(linkContentEnd + 1) : "";
-			if (afterText) {
-				handleToken({
-					type: "text",
-					content: afterText,
-					raw: afterText
-				});
-				i--;
-			}
-			i++;
-			return true;
-		}
-		return false;
-	}
-	function handleInlineImageContent(content) {
-		const imageStart = content.indexOf("![");
-		if (imageStart === -1) return false;
-		const textNodeContent = content.slice(0, imageStart);
-		if (textNodeContent && !currentTextNode) currentTextNode = {
-			type: "text",
-			content: textNodeContent,
-			raw: textNodeContent
-		};
-		else if (textNodeContent && currentTextNode) currentTextNode.content += textNodeContent;
-		if (currentTextNode) {
-			result.push(currentTextNode);
-			currentTextNode = null;
-		}
-		pushParsed(buildLoadingImageNodeFromRaw(content.slice(imageStart)));
-		i++;
-		return true;
-	}
-	function handleCheckboxLike(content) {
-		if (!(content?.startsWith("[") && pPreToken?.type === "list_item_open")) return false;
-		const w = content.slice(1).match(/[^\s\]]/);
-		if (w === null) {
-			i++;
-			return true;
-		}
-		if (w && /x/i.test(w[0])) {
-			const checked = w[0] === "x" || w[0] === "X";
-			pushParsed({
-				type: "checkbox_input",
-				checked,
-				raw: checked ? "[x]" : "[ ]"
-			});
-			i++;
-			return true;
-		}
-		return false;
-	}
-	return result;
+	return state.result;
 }
 
 //#endregion
-//#region src/parser/node-source-map.ts
-function mapSourceLineRange(startLine, endLine, options) {
-	const mapper = options?.__sourceLineMapper;
-	if (!mapper) return {
-		startLine,
-		endLine
+//#region src/parser/nodes/finalize-nodes.ts
+function finalizeHtmlBlockLoading(nodes) {
+	const seen = /* @__PURE__ */ new WeakSet();
+	const visit = (value) => {
+		if (!value || typeof value !== "object") return;
+		if (seen.has(value)) return;
+		seen.add(value);
+		if (Array.isArray(value)) {
+			for (const item of value) visit(item);
+			return;
+		}
+		const node = value;
+		if (node.type === "html_block" && node.loading === true) node.loading = false;
+		for (const child of Object.values(node)) visit(child);
 	};
-	const mappedStartRange = mapper(startLine);
-	const mappedEndLine = endLine > startLine ? mapper(endLine - 1).endLine : mapper(endLine).startLine;
-	return {
-		startLine: mappedStartRange.startLine,
-		endLine: Math.max(mappedStartRange.startLine, mappedEndLine)
-	};
+	visit(nodes);
 }
-function lineAtOffset(source, offset) {
-	const target = Math.max(0, Math.min(source.length, Math.trunc(offset)));
-	let line = 0;
-	for (let i = 0; i < target; i++) if (source[i] === "\n") line++;
-	return line;
-}
-function sourceLineRangeFromOffsets(source, start, end) {
-	const startIndex = Math.max(0, Math.min(source.length, Math.trunc(start)));
-	const endIndex = Math.max(startIndex, Math.min(source.length, Math.trunc(end)));
-	const startLine = lineAtOffset(source, startIndex);
-	let endLine = lineAtOffset(source, endIndex);
-	if (endIndex > startIndex && source[endIndex - 1] !== "\n") endLine++;
-	return {
-		startLine,
-		endLine
-	};
-}
-function createSourceMapFromOffsets(source, start, end, options) {
-	const range = sourceLineRangeFromOffsets(source, start, end);
-	return mapSourceLineRange(range.startLine, range.endLine, options);
-}
-function readSourceMap(token, options) {
-	const map$1 = token?.map;
-	if (!Array.isArray(map$1) || map$1.length < 2) return null;
-	const startLine = Number(map$1[0]);
-	const endLine = Number(map$1[1]);
-	if (!Number.isFinite(startLine) || !Number.isFinite(endLine)) return null;
-	return mapSourceLineRange(startLine, endLine, options);
-}
-function applyNodeSourceMap(node, token, options) {
-	if (!options?.includeSourceMap) return node;
-	const sourceMap = readSourceMap(token, options);
-	if (!sourceMap) return node;
-	node.sourceMap = sourceMap;
-	if (node.type === "code_block") {
-		const codeNode = node;
-		codeNode.startLine = sourceMap.startLine;
-		codeNode.endLine = sourceMap.endLine;
-	}
-	return node;
-}
-function applyNodeSourceMapRange(node, token, endLine, options) {
-	if (!options?.includeSourceMap) return node;
-	const map$1 = token?.map;
-	if (!Array.isArray(map$1) || map$1.length < 2) return node;
-	const startLine = Number(map$1[0]);
-	const tokenEndLine = Number(map$1[1]);
-	const rangeEndLine = Number(endLine);
-	if (!Number.isFinite(startLine) || !Number.isFinite(tokenEndLine) || !Number.isFinite(rangeEndLine)) return node;
-	node.sourceMap = mapSourceLineRange(startLine, Math.max(tokenEndLine, rangeEndLine), options);
-	return node;
+function applyPostTransformNodes(nodes, options) {
+	const transform = options.postTransformNodes;
+	if (typeof transform !== "function") return nodes;
+	const transformed = transform(nodes);
+	return Array.isArray(transformed) ? transformed : nodes;
 }
 
 //#endregion
@@ -17507,7 +20039,7 @@ function needsListParagraphTokenPatch(token) {
 	const rawContent = String(token.content ?? "");
 	return /[ \t\r\n]+$/.test(rawContent) || /\r?\n\s*\d+[.)]?\s*$/.test(rawContent);
 }
-function parseList(tokens, index, options) {
+function parseList(tokens, index, options, parseInlineTokens$1) {
 	const token = tokens[index];
 	const listItems = [];
 	const linkifyContext = createLinkifyDemotionContextTracker(options, true);
@@ -17526,7 +20058,7 @@ function parseList(tokens, index, options) {
 			const paragraphRaw = String(contentToken.content ?? "");
 			const paragraphNode = {
 				type: "paragraph",
-				children: parseInlineTokens(contentToken.children || [], paragraphRaw, preToken, linkifyContext.options()),
+				children: parseInlineTokens$1(contentToken.children || [], paragraphRaw, preToken, linkifyContext.options()),
 				raw: paragraphRaw
 			};
 			if (options?.includeSourceMap) applyNodeSourceMap(paragraphNode, tokens[k], options);
@@ -17534,17 +20066,17 @@ function parseList(tokens, index, options) {
 			linkifyContext.remember(paragraphRaw);
 			k += 3;
 		} else if (tokens[k].type === "blockquote_open") {
-			const [blockquoteNode, newIndex] = parseBlockquote(tokens, k, linkifyContext.options());
+			const [blockquoteNode, newIndex] = parseBlockquote(tokens, k, linkifyContext.options(), parseInlineTokens$1);
 			itemChildren.push(blockquoteNode);
 			linkifyContext.remember(blockquoteNode.raw);
 			k = newIndex;
 		} else if (tokens[k].type === "bullet_list_open" || tokens[k].type === "ordered_list_open") {
-			const [nestedListNode, newIndex] = parseList(tokens, k, linkifyContext.options());
+			const [nestedListNode, newIndex] = parseList(tokens, k, linkifyContext.options(), parseInlineTokens$1);
 			itemChildren.push(nestedListNode);
 			linkifyContext.remember(nestedListNode.raw);
 			k = newIndex;
 		} else {
-			const handled = parseCommonBlockToken(tokens, k, linkifyContext.options(), containerTokenHandlers);
+			const handled = parseCommonBlockToken(tokens, k, linkifyContext.options(), containerTokenHandlers, parseInlineTokens$1);
 			if (handled) {
 				itemChildren.push(handled[0]);
 				linkifyContext.remember(handled[0].raw);
@@ -17581,7 +20113,7 @@ function parseList(tokens, index, options) {
 
 //#endregion
 //#region src/parser/node-parsers/admonition-parser.ts
-function parseAdmonition(tokens, index, match, options) {
+function parseAdmonition(tokens, index, match, options, parseInlineTokens$1) {
 	const kind = String(match[1] ?? "note");
 	const title = String(match[2] ?? kind.charAt(0).toUpperCase() + kind.slice(1));
 	const admonitionChildren = [];
@@ -17592,7 +20124,7 @@ function parseAdmonition(tokens, index, match, options) {
 		if (contentToken) {
 			const paragraphNode = {
 				type: "paragraph",
-				children: parseInlineTokens(contentToken.children || [], String(contentToken.content ?? ""), void 0, linkifyContext.options()),
+				children: parseInlineTokens$1(contentToken.children || [], String(contentToken.content ?? ""), void 0, linkifyContext.options()),
 				raw: String(contentToken.content ?? "")
 			};
 			if (options?.includeSourceMap) applyNodeSourceMap(paragraphNode, tokens[j], options);
@@ -17601,19 +20133,19 @@ function parseAdmonition(tokens, index, match, options) {
 		}
 		j += 3;
 	} else if (tokens[j].type === "bullet_list_open" || tokens[j].type === "ordered_list_open") {
-		const [listNode, newIndex] = parseList(tokens, j, linkifyContext.options());
+		const [listNode, newIndex] = parseList(tokens, j, linkifyContext.options(), parseInlineTokens$1);
 		if (options?.includeSourceMap) applyNodeSourceMap(listNode, tokens[j], options);
 		admonitionChildren.push(listNode);
 		linkifyContext.remember(listNode.raw);
 		j = newIndex;
 	} else if (tokens[j].type === "blockquote_open") {
-		const [blockquoteNode, newIndex] = parseBlockquote(tokens, j, linkifyContext.options());
+		const [blockquoteNode, newIndex] = parseBlockquote(tokens, j, linkifyContext.options(), parseInlineTokens$1);
 		if (options?.includeSourceMap) applyNodeSourceMap(blockquoteNode, tokens[j], options);
 		admonitionChildren.push(blockquoteNode);
 		linkifyContext.remember(blockquoteNode.raw);
 		j = newIndex;
 	} else {
-		const handled = parseBasicBlockToken(tokens, j, linkifyContext.options());
+		const handled = parseBasicBlockToken(tokens, j, linkifyContext.options(), parseInlineTokens$1);
 		if (handled) {
 			admonitionChildren.push(handled[0]);
 			linkifyContext.remember(handled[0].raw);
@@ -17653,7 +20185,7 @@ function parseContainerInfo(info) {
 		title: firstWhitespace === -1 ? "" : rest.slice(firstWhitespace).trim()
 	};
 }
-function parseContainer(tokens, index, options) {
+function parseContainer(tokens, index, options, parseInlineTokens$1) {
 	const openToken = tokens[index];
 	let kind = "note";
 	let title = "";
@@ -17693,7 +20225,7 @@ function parseContainer(tokens, index, options) {
 			}
 			const paragraphNode = {
 				type: "paragraph",
-				children: parseInlineTokens((i !== -1 ? childrenArr.slice(0, i) : childrenArr) || [], void 0, void 0, linkifyContext.options()),
+				children: parseInlineTokens$1((i !== -1 ? childrenArr.slice(0, i) : childrenArr) || [], void 0, void 0, linkifyContext.options()),
 				raw: String(contentToken.content ?? "").replace(/\n:+$/, "").replace(/\n\s*:::\s*$/, "")
 			};
 			if (options?.includeSourceMap) applyNodeSourceMap(paragraphNode, tokens[j], options);
@@ -17702,19 +20234,19 @@ function parseContainer(tokens, index, options) {
 		}
 		j += 3;
 	} else if (tokens[j].type === "bullet_list_open" || tokens[j].type === "ordered_list_open") {
-		const [listNode, newIndex] = parseList(tokens, j, linkifyContext.options());
+		const [listNode, newIndex] = parseList(tokens, j, linkifyContext.options(), parseInlineTokens$1);
 		if (options?.includeSourceMap) applyNodeSourceMap(listNode, tokens[j], options);
 		children.push(listNode);
 		linkifyContext.remember(listNode.raw);
 		j = newIndex;
 	} else if (tokens[j].type === "blockquote_open") {
-		const [blockquoteNode, newIndex] = parseBlockquote(tokens, j, linkifyContext.options());
+		const [blockquoteNode, newIndex] = parseBlockquote(tokens, j, linkifyContext.options(), parseInlineTokens$1);
 		if (options?.includeSourceMap) applyNodeSourceMap(blockquoteNode, tokens[j], options);
 		children.push(blockquoteNode);
 		linkifyContext.remember(blockquoteNode.raw);
 		j = newIndex;
 	} else {
-		const handled = parseBasicBlockToken(tokens, j, linkifyContext.options());
+		const handled = parseBasicBlockToken(tokens, j, linkifyContext.options(), parseInlineTokens$1);
 		if (handled) {
 			children.push(handled[0]);
 			linkifyContext.remember(handled[0].raw);
@@ -17733,21 +20265,21 @@ function parseContainer(tokens, index, options) {
 //#endregion
 //#region src/parser/node-parsers/container-token-handlers.ts
 const CONTAINER_REGEX = /^::: ?(warning|info|note|tip|danger|caution|error) ?(.*)$/;
-function handleContainerOpen(tokens, index, options) {
+function handleContainerOpen(tokens, index, options, parseInlineTokens$1) {
 	const token = tokens[index];
 	if (token.type !== "container_open") return null;
 	const match = CONTAINER_REGEX.exec(String(token.info ?? ""));
 	if (!match) return null;
-	return parseAdmonition(tokens, index, match, options);
+	return parseAdmonition(tokens, index, match, options, parseInlineTokens$1);
 }
 const containerTokenHandlers = {
-	parseContainer: (tokens, index, options) => parseContainer(tokens, index, options),
+	parseContainer: (tokens, index, options, parseInlineTokens$1) => parseContainer(tokens, index, options, parseInlineTokens$1),
 	matchAdmonition: handleContainerOpen
 };
 
 //#endregion
 //#region src/parser/node-parsers/blockquote-parser.ts
-function parseBlockquote(tokens, index, options) {
+function parseBlockquote(tokens, index, options, parseInlineTokens$1) {
 	const blockquoteChildren = [];
 	const linkifyContext = createLinkifyDemotionContextTracker(options, true);
 	let j = index + 1;
@@ -17758,7 +20290,7 @@ function parseBlockquote(tokens, index, options) {
 				const contentToken = tokens[j + 1];
 				const paragraphNode = {
 					type: "paragraph",
-					children: parseInlineTokens(contentToken.children || [], String(contentToken.content ?? ""), void 0, linkifyContext.options()),
+					children: parseInlineTokens$1(contentToken.children || [], String(contentToken.content ?? ""), void 0, linkifyContext.options()),
 					raw: String(contentToken.content ?? "")
 				};
 				if (options?.includeSourceMap) applyNodeSourceMap(paragraphNode, token, options);
@@ -17769,21 +20301,21 @@ function parseBlockquote(tokens, index, options) {
 			}
 			case "bullet_list_open":
 			case "ordered_list_open": {
-				const [listNode, newIndex] = parseList(tokens, j, linkifyContext.options());
+				const [listNode, newIndex] = parseList(tokens, j, linkifyContext.options(), parseInlineTokens$1);
 				blockquoteChildren.push(listNode);
 				linkifyContext.remember(listNode.raw);
 				j = newIndex;
 				break;
 			}
 			case "blockquote_open": {
-				const [nestedBlockquote, newIndex] = parseBlockquote(tokens, j, linkifyContext.options());
+				const [nestedBlockquote, newIndex] = parseBlockquote(tokens, j, linkifyContext.options(), parseInlineTokens$1);
 				blockquoteChildren.push(nestedBlockquote);
 				linkifyContext.remember(nestedBlockquote.raw);
 				j = newIndex;
 				break;
 			}
 			default: {
-				const handled = parseCommonBlockToken(tokens, j, linkifyContext.options(), containerTokenHandlers);
+				const handled = parseCommonBlockToken(tokens, j, linkifyContext.options(), containerTokenHandlers, parseInlineTokens$1);
 				if (handled) {
 					blockquoteChildren.push(handled[0]);
 					linkifyContext.remember(handled[0].raw);
@@ -17822,7 +20354,7 @@ function parseCodeBlock(token) {
 
 //#endregion
 //#region src/parser/node-parsers/definition-list-parser.ts
-function parseDefinitionList(tokens, index, options) {
+function parseDefinitionList(tokens, index, options, parseInlineTokens$1) {
 	const items = [];
 	let j = index + 1;
 	let termNodes = [];
@@ -17830,7 +20362,7 @@ function parseDefinitionList(tokens, index, options) {
 	const linkifyContext = createLinkifyDemotionContextTracker(options, true);
 	while (j < tokens.length && tokens[j].type !== "dl_close") if (tokens[j].type === "dt_open") {
 		const termToken = tokens[j + 1];
-		termNodes = parseInlineTokens(termToken.children || [], void 0, void 0, linkifyContext.options());
+		termNodes = parseInlineTokens$1(termToken.children || [], void 0, void 0, linkifyContext.options());
 		linkifyContext.remember(termNodes.map((term) => term.raw).join(""));
 		j += 3;
 	} else if (tokens[j].type === "dd_open") {
@@ -17840,7 +20372,7 @@ function parseDefinitionList(tokens, index, options) {
 			const contentToken = tokens[k + 1];
 			definitionNodes.push({
 				type: "paragraph",
-				children: parseInlineTokens(contentToken.children || [], String(contentToken.content ?? ""), void 0, linkifyContext.options()),
+				children: parseInlineTokens$1(contentToken.children || [], String(contentToken.content ?? ""), void 0, linkifyContext.options()),
 				raw: String(contentToken.content ?? "")
 			});
 			linkifyContext.remember(String(contentToken.content ?? ""));
@@ -17866,7 +20398,7 @@ function parseDefinitionList(tokens, index, options) {
 
 //#endregion
 //#region src/parser/node-parsers/footnote-parser.ts
-function parseFootnote(tokens, index, options) {
+function parseFootnote(tokens, index, options, parseInlineTokens$1) {
 	const meta = tokens[index].meta ?? {};
 	const id = String(meta?.label ?? "0");
 	const footnoteChildren = [];
@@ -17878,7 +20410,7 @@ function parseFootnote(tokens, index, options) {
 		if (tokens[j + 2].type === "footnote_anchor") children.push(tokens[j + 2]);
 		const paragraphNode = {
 			type: "paragraph",
-			children: parseInlineTokens(children, String(contentToken.content ?? ""), void 0, linkifyContext.options()),
+			children: parseInlineTokens$1(children, String(contentToken.content ?? ""), void 0, linkifyContext.options()),
 			raw: String(contentToken.content ?? "")
 		};
 		footnoteChildren.push(paragraphNode);
@@ -17895,7 +20427,7 @@ function parseFootnote(tokens, index, options) {
 
 //#endregion
 //#region src/parser/node-parsers/heading-parser.ts
-function parseHeading(tokens, index, options) {
+function parseHeading(tokens, index, options, parseInlineTokens$1) {
 	const token = tokens[index];
 	const attrs = token.attrs;
 	const attrsRecord = Array.isArray(attrs) && attrs.length ? Object.fromEntries(attrs.filter((pair) => Array.isArray(pair) && pair.length >= 1 && pair[0]).map(([name, value]) => [String(name), value == null || value === "" ? true : String(value)])) : void 0;
@@ -17908,74 +20440,8 @@ function parseHeading(tokens, index, options) {
 		level: headingLevel,
 		text: headingContent,
 		...attrsRecord ? { attrs: attrsRecord } : {},
-		children: parseInlineTokens(headingContentToken.children || [], headingContent, void 0, options),
+		children: parseInlineTokens$1(headingContentToken.children || [], headingContent, void 0, options),
 		raw: headingContent
-	};
-}
-
-//#endregion
-//#region src/parser/node-parsers/html-block-parser.ts
-function findMatchingCloseTagEnd(rawHtml, tag, startIndex) {
-	const lowerTag = tag.toLowerCase();
-	const openTagRe = new RegExp(String.raw`^<\s*${lowerTag}(?=\s|>|/)`, "i");
-	const closeTagRe = new RegExp(String.raw`^<\s*\/\s*${lowerTag}(?=\s|>)`, "i");
-	let depth = 0;
-	let index = Math.max(0, startIndex);
-	while (index < rawHtml.length) {
-		const lt = rawHtml.indexOf("<", index);
-		if (lt === -1) return -1;
-		const slice = rawHtml.slice(lt);
-		if (closeTagRe.test(slice)) {
-			const endRel = findTagCloseIndexOutsideQuotes(slice);
-			if (endRel === -1) return -1;
-			if (depth === 0) return lt + endRel + 1;
-			depth--;
-			index = lt + endRel + 1;
-			continue;
-		}
-		if (openTagRe.test(slice)) {
-			const endRel = findTagCloseIndexOutsideQuotes(slice);
-			if (endRel === -1) return -1;
-			const rawTag = slice.slice(0, endRel + 1);
-			if (!/\/\s*>$/.test(rawTag)) depth++;
-			index = lt + endRel + 1;
-			continue;
-		}
-		index = lt + 1;
-	}
-	return -1;
-}
-function parseHtmlBlock(token) {
-	const raw = String(token.content ?? "");
-	if (/^\s*<!--/.test(raw) || /^\s*<!/.test(raw) || /^\s*<\?/.test(raw)) return {
-		type: "html_block",
-		content: raw,
-		raw,
-		tag: "",
-		loading: false
-	};
-	const tag = (raw.match(/^\s*<([A-Z][\w:-]*)/i)?.[1] || "").toLowerCase();
-	if (!tag) return {
-		type: "html_block",
-		content: raw,
-		raw,
-		tag: "",
-		loading: false
-	};
-	const openEnd = findTagCloseIndexOutsideQuotes(raw);
-	const openTag = openEnd === -1 ? raw : raw.slice(0, openEnd + 1);
-	const selfClosing = openEnd !== -1 && /\/\s*>$/.test(openTag);
-	const isVoid = VOID_HTML_TAGS.has(tag);
-	const attrs = parseTagAttrs(openTag);
-	const hasClosing = (openEnd === -1 ? -1 : findMatchingCloseTagEnd(raw, tag, openEnd + 1)) !== -1;
-	const loading = !(isVoid || selfClosing || hasClosing);
-	return {
-		type: "html_block",
-		content: loading ? `${raw.replace(/<[^>]*$/, "")}\n</${tag}>` : raw,
-		raw,
-		tag,
-		attrs: attrs.length ? attrs : void 0,
-		loading
 	};
 }
 
@@ -18023,17 +20489,18 @@ function mergeTableCellContext(left, right) {
 function parseOptionsForTableCell(options, headerRaw, rowContext) {
 	const cellContext = mergeTableCellContext(inferLinkifyDemotionContext(headerRaw), rowContext);
 	if (!hasTableCellContext(cellContext)) return options;
-	const inheritedContext = options?.__linkifyDemotionContext;
+	const parseContext = ensureParseContext(options);
+	const inheritedContext = parseContext.linkifyDemotionContext;
 	return {
-		...options,
-		__linkifyDemotionContext: {
+		...parseContext,
+		linkifyDemotionContext: {
 			filename: inheritedContext?.filename || cellContext?.filename,
 			explicitFilename: inheritedContext?.explicitFilename || cellContext?.explicitFilename,
 			marketTicker: inheritedContext?.marketTicker || cellContext?.marketTicker
 		}
 	};
 }
-function parseTable(tokens, index, options) {
+function parseTable(tokens, index, options, parseInlineTokens$1) {
 	let j = index + 1;
 	let headerRow = null;
 	const rows = [];
@@ -18060,7 +20527,7 @@ function parseTable(tokens, index, options) {
 			cells.push({
 				type: "table_cell",
 				header: isHeaderCell || isHeader,
-				children: parseInlineTokens(contentToken.children || [], content, void 0, parseOptionsForTableCell(options, headerRaw, isBodyCell ? rowContext : void 0)),
+				children: parseInlineTokens$1(contentToken.children || [], content, void 0, parseOptionsForTableCell(options, headerRaw, isBodyCell ? rowContext : void 0)),
 				raw: content,
 				align
 			});
@@ -18128,7 +20595,7 @@ function getHtmlTagSets(customTags) {
 	HTML_TAG_SET_CACHE.set(customTags, entry);
 	return entry;
 }
-function parseVmrContainer(tokens, index, options) {
+function parseVmrContainer(tokens, index, options, parseInlineTokens$1) {
 	const openToken = tokens[index];
 	const attrs = openToken.attrs;
 	let name = "";
@@ -18154,7 +20621,7 @@ function parseVmrContainer(tokens, index, options) {
 		if (contentToken) {
 			const paragraphNode = {
 				type: "paragraph",
-				children: parseInlineTokens(contentToken.children || [], void 0, void 0, linkifyContext.options()),
+				children: parseInlineTokens$1(contentToken.children || [], void 0, void 0, linkifyContext.options()),
 				raw: String(contentToken.content ?? "")
 			};
 			if (options?.includeSourceMap) applyNodeSourceMap(paragraphNode, tokens[j], options);
@@ -18163,19 +20630,19 @@ function parseVmrContainer(tokens, index, options) {
 		}
 		j += 3;
 	} else if (tokens[j].type === "bullet_list_open" || tokens[j].type === "ordered_list_open") {
-		const [listNode, newIndex] = parseList(tokens, j, linkifyContext.options());
+		const [listNode, newIndex] = parseList(tokens, j, linkifyContext.options(), parseInlineTokens$1);
 		if (options?.includeSourceMap) applyNodeSourceMap(listNode, tokens[j], options);
 		children.push(listNode);
 		linkifyContext.remember(listNode.raw);
 		j = newIndex;
 	} else if (tokens[j].type === "blockquote_open") {
-		const [blockquoteNode, newIndex] = parseBlockquote(tokens, j, linkifyContext.options());
+		const [blockquoteNode, newIndex] = parseBlockquote(tokens, j, linkifyContext.options(), parseInlineTokens$1);
 		if (options?.includeSourceMap) applyNodeSourceMap(blockquoteNode, tokens[j], options);
 		children.push(blockquoteNode);
 		linkifyContext.remember(blockquoteNode.raw);
 		j = newIndex;
 	} else {
-		const handled = parseBasicBlockToken(tokens, j, linkifyContext.options());
+		const handled = parseBasicBlockToken(tokens, j, linkifyContext.options(), parseInlineTokens$1);
 		if (handled) {
 			children.push(handled[0]);
 			linkifyContext.remember(handled[0].raw);
@@ -18212,24 +20679,36 @@ function applyPairedBlockSourceMap(node, openToken, closeToken, options) {
 function stripWrapperNewlines(s) {
 	return s.replace(/^\r?\n/, "").replace(/\r?\n$/, "");
 }
+const tagRegexEntryCache = /* @__PURE__ */ new Map();
+function getTagRegexEntry(tag) {
+	let entry = tagRegexEntryCache.get(tag);
+	if (entry) return entry;
+	const escaped = escapeTagForRegExp(tag);
+	entry = {
+		strip: new RegExp(`[\\t ]*<\\s*\\/\\s*${escaped}[^>]*$`, "i"),
+		search: new RegExp(`<\\s*${escaped}(?=\\s|>|/)`, "gi"),
+		openAny: new RegExp(`<\\s*${escaped}(?=\\s|>|/)`, "gi"),
+		closeAny: new RegExp(`<\\s*\\/\\s*${escaped}(?=\\s|>)`, "gi")
+	};
+	tagRegexEntryCache.set(tag, entry);
+	return entry;
+}
 function stripTrailingPartialClosingTag(inner, tag) {
 	if (!inner || !tag) return inner;
-	const re = new RegExp(String.raw`[\t ]*<\s*\/\s*${tag}[^>]*$`, "i");
+	const re = getTagRegexEntry(tag).strip;
 	return inner.replace(re, "");
 }
 function findMatchingCloseTagRange(rawHtml, tag, startIndex) {
 	if (!rawHtml || !tag) return null;
-	const lowerTag = tag.toLowerCase();
-	const openTagRe = new RegExp(String.raw`^<\s*${escapeTagForRegExp(lowerTag)}(?=\s|>|/)`, "i");
-	const closeTagRe = new RegExp(String.raw`^<\s*\/\s*${escapeTagForRegExp(lowerTag)}(?=\s|>)`, "i");
+	const { openAny, closeAny } = getTagRegexEntry(tag.toLowerCase());
 	let depth = 0;
 	let index = Math.max(0, startIndex);
 	while (index < rawHtml.length) {
 		const lt = rawHtml.indexOf("<", index);
 		if (lt === -1) break;
-		const slice = rawHtml.slice(lt);
-		if (closeTagRe.test(slice)) {
-			const endRel = findTagCloseIndexOutsideQuotes(slice);
+		closeAny.lastIndex = lt;
+		if (closeAny.exec(rawHtml)?.index === lt) {
+			const endRel = findTagCloseIndexOutsideQuotes(rawHtml.slice(lt));
 			if (endRel === -1) return null;
 			if (depth === 0) return {
 				start: lt,
@@ -18239,10 +20718,11 @@ function findMatchingCloseTagRange(rawHtml, tag, startIndex) {
 			index = lt + endRel + 1;
 			continue;
 		}
-		if (openTagRe.test(slice)) {
-			const endRel = findTagCloseIndexOutsideQuotes(slice);
+		openAny.lastIndex = lt;
+		if (openAny.exec(rawHtml)?.index === lt) {
+			const endRel = findTagCloseIndexOutsideQuotes(rawHtml.slice(lt));
 			if (endRel === -1) return null;
-			const raw = slice.slice(0, endRel + 1);
+			const raw = rawHtml.slice(lt, lt + endRel + 1);
 			if (!/\/\s*>$/.test(raw)) depth++;
 			index = lt + endRel + 1;
 			continue;
@@ -18253,10 +20733,9 @@ function findMatchingCloseTagRange(rawHtml, tag, startIndex) {
 }
 function findNextCustomHtmlBlockFromSource(source, tag, startIndex) {
 	if (!source || !tag) return null;
-	const lowerTag = tag.toLowerCase();
-	const openRe = new RegExp(String.raw`<\s*${lowerTag}(?=\s|>|/)`, "gi");
-	openRe.lastIndex = Math.max(0, startIndex || 0);
-	const openMatch = openRe.exec(source);
+	const { search, openAny, closeAny } = getTagRegexEntry(tag.toLowerCase());
+	search.lastIndex = Math.max(0, startIndex || 0);
+	const openMatch = search.exec(source);
 	if (!openMatch || openMatch.index == null) return null;
 	const openStart = openMatch.index;
 	const openSlice = source.slice(openStart);
@@ -18274,12 +20753,12 @@ function findNextCustomHtmlBlockFromSource(source, tag, startIndex) {
 	let depth = 1;
 	let i = openEnd + 1;
 	const isOpenAt = (pos) => {
-		const s = source.slice(pos);
-		return new RegExp(String.raw`^<\s*${lowerTag}(?=\s|>|/)`, "i").test(s);
+		openAny.lastIndex = pos;
+		return openAny.exec(source)?.index === pos;
 	};
 	const isCloseAt = (pos) => {
-		const s = source.slice(pos);
-		return new RegExp(String.raw`^<\s*\/\s*${lowerTag}(?=\s|>)`, "i").test(s);
+		closeAny.lastIndex = pos;
+		return closeAny.exec(source)?.index === pos;
 	};
 	while (i < source.length) {
 		const lt = source.indexOf("<", i);
@@ -18331,12 +20810,12 @@ function lineToIndex(source, line) {
 	}
 	return source.length;
 }
-function parseBasicBlockToken(tokens, index, options) {
+function parseBasicBlockToken(tokens, index, options, parseInlineTokens$1) {
 	const token = tokens[index];
 	const includeSourceMap = options?.includeSourceMap === true;
 	switch (token.type) {
 		case "heading_open": {
-			const node = parseHeading(tokens, index, options);
+			const node = parseHeading(tokens, index, options, parseInlineTokens$1);
 			if (includeSourceMap) applyNodeSourceMap(node, token, options);
 			return [node, index + 3];
 		}
@@ -18374,11 +20853,13 @@ function parseBasicBlockToken(tokens, index, options) {
 			}
 			if (htmlBlockNode.tag && tagSets?.customTagSet?.has(htmlBlockNode.tag)) {
 				const tag = htmlBlockNode.tag;
-				const source = String(options?.__sourceMarkdown ?? "");
-				const cursor = Number(options?.__customHtmlBlockCursor ?? 0);
-				const mappedLineStart = Array.isArray(token.map) ? lineToIndex(source, Number(token.map?.[0] ?? 0)) : 0;
+				const context = isParseContext(options) ? options : void 0;
+				const source = String(context?.sourceMarkdown ?? "");
+				const cursor = Number(context?.customHtmlBlockCursor ?? 0);
+				const mappedLine = Number(token.map?.[0] ?? 0);
+				const mappedLineStart = Array.isArray(token.map) ? context?.sourceLineOffsets?.[mappedLine] ?? lineToIndex(source, mappedLine) : 0;
 				const fromSource = findNextCustomHtmlBlockFromSource(source, tag, Math.max(clampNonNegative(cursor), clampNonNegative(mappedLineStart)));
-				if (fromSource && options) options.__customHtmlBlockCursor = fromSource.end;
+				if (fromSource && context) context.customHtmlBlockCursor = fromSource.end;
 				const rawHtml = String(fromSource?.raw ?? htmlBlockNode.raw ?? "");
 				const openEnd = findTagCloseIndexOutsideQuotes(rawHtml);
 				const openTag = openEnd !== -1 ? rawHtml.slice(0, openEnd + 1) : rawHtml;
@@ -18415,17 +20896,17 @@ function parseBasicBlockToken(tokens, index, options) {
 			return [htmlBlockNode, index + 1];
 		}
 		case "table_open": {
-			const [tableNode, newIndex] = parseTable(tokens, index, options);
+			const [tableNode, newIndex] = parseTable(tokens, index, options, parseInlineTokens$1);
 			if (includeSourceMap) applyNodeSourceMap(tableNode, token, options);
 			return [tableNode, newIndex];
 		}
 		case "dl_open": {
-			const [definitionListNode, newIndex] = parseDefinitionList(tokens, index, options);
+			const [definitionListNode, newIndex] = parseDefinitionList(tokens, index, options, parseInlineTokens$1);
 			if (includeSourceMap) applyNodeSourceMap(definitionListNode, token, options);
 			return [definitionListNode, newIndex];
 		}
 		case "footnote_open": {
-			const [footnoteNode, newIndex] = parseFootnote(tokens, index, options);
+			const [footnoteNode, newIndex] = parseFootnote(tokens, index, options, parseInlineTokens$1);
 			if (includeSourceMap) applyNodeSourceMap(footnoteNode, token, options);
 			return [footnoteNode, newIndex];
 		}
@@ -18438,8 +20919,8 @@ function parseBasicBlockToken(tokens, index, options) {
 	}
 	return null;
 }
-function parseCommonBlockToken(tokens, index, options, handlers) {
-	const basicResult = parseBasicBlockToken(tokens, index, options);
+function parseCommonBlockToken(tokens, index, options, handlers, parseInlineTokens$1) {
+	const basicResult = parseBasicBlockToken(tokens, index, options, parseInlineTokens$1);
 	if (basicResult) return basicResult;
 	const token = tokens[index];
 	const includeSourceMap = options?.includeSourceMap === true;
@@ -18452,14 +20933,14 @@ function parseCommonBlockToken(tokens, index, options, handlers) {
 		case "container_caution_open":
 		case "container_error_open":
 			if (handlers?.parseContainer) {
-				const result = handlers.parseContainer(tokens, index, options);
+				const result = handlers.parseContainer(tokens, index, options, parseInlineTokens$1);
 				if (includeSourceMap) applyPairedBlockSourceMap(result[0], token, tokens[result[1] - 1], options);
 				return result;
 			}
 			break;
 		case "container_open":
 			if (handlers?.matchAdmonition) {
-				const result = handlers.matchAdmonition(tokens, index, options);
+				const result = handlers.matchAdmonition(tokens, index, options, parseInlineTokens$1);
 				if (result) {
 					if (includeSourceMap) applyPairedBlockSourceMap(result[0], token, tokens[result[1] - 1], options);
 					return result;
@@ -18467,7 +20948,7 @@ function parseCommonBlockToken(tokens, index, options, handlers) {
 			}
 			break;
 		case "vmr_container_open": {
-			const result = parseVmrContainer(tokens, index, options);
+			const result = parseVmrContainer(tokens, index, options, parseInlineTokens$1);
 			if (includeSourceMap) applyPairedBlockSourceMap(result[0], token, tokens[result[1] - 1], options);
 			return result;
 		}
@@ -18487,1090 +20968,53 @@ function parseHardBreak() {
 
 //#endregion
 //#region src/parser/node-parsers/paragraph-parser.ts
-function parseParagraph(tokens, index, options) {
+function parseParagraph(tokens, index, options, parseInlineTokens$1) {
 	const paragraphContentToken = tokens[index + 1];
 	const paragraphContent$2 = String(paragraphContentToken.content ?? "");
 	return {
 		type: "paragraph",
-		children: parseInlineTokens(paragraphContentToken.children || [], paragraphContent$2, void 0, options),
+		children: parseInlineTokens$1(paragraphContentToken.children || [], paragraphContent$2, void 0, options),
 		raw: paragraphContent$2
 	};
 }
 
 //#endregion
-//#region src/parser/index.ts
-const streamParseEnvCache = /* @__PURE__ */ new WeakMap();
-const internalNodeSourceRanges = /* @__PURE__ */ new WeakMap();
-const sourceLineOffsetsCache = /* @__PURE__ */ new WeakMap();
-const siblingHtmlChildrenCache = /* @__PURE__ */ new WeakMap();
+//#region src/parser/nodes/token-to-nodes.ts
 function recordInternalNodeSourceRange(node, token, options) {
 	const map$1 = token?.map;
-	const source = options?.__sourceMarkdown;
-	if (!Array.isArray(map$1) || map$1.length < 2 || typeof source !== "string" || !options) return;
+	const source = options.sourceMarkdown;
+	const runtime = options.runtime;
+	if (!Array.isArray(map$1) || map$1.length < 2 || typeof source !== "string" || !runtime) return;
 	const startLine = Number(map$1[0]);
 	const endLine = Number(map$1[1]);
 	if (!Number.isFinite(startLine) || !Number.isFinite(endLine)) return;
-	let offsets = sourceLineOffsetsCache.get(options);
+	let offsets = options.sourceLineOffsets;
 	if (!offsets) {
 		offsets = [0];
 		for (let i = 0; i < source.length; i++) if (source[i] === "\n") offsets.push(i + 1);
-		sourceLineOffsetsCache.set(options, offsets);
+		options.sourceLineOffsets = offsets;
 	}
-	internalNodeSourceRanges.set(node, {
+	runtime.nodeSourceRanges.set(node, {
 		start: offsets[Math.max(0, Math.trunc(startLine))] ?? source.length,
 		end: offsets[Math.max(0, Math.trunc(endLine))] ?? source.length
 	});
 }
-const tolerantMathBoundaryStreamCache = /* @__PURE__ */ new WeakMap();
-const pendingExplicitMathTailCache = /* @__PURE__ */ new WeakMap();
-const TOLERANT_BOUNDARY_SPLIT_OPENERS = ["$", "\\["];
-const STREAMING_ADMONITION_OPEN_RE = /(^|\r?\n)[\t ]*:::[\t ]*(?:warning|info|note|tip|danger|caution|error)(?=[\t ]|\r?\n|$)[^\r\n]*(?:\r?\n[\t ]*)*$/;
-const SAFE_MARKDOWN_WINDOW_MARGIN = 1024;
-const SAFE_MARKDOWN_WINDOW_OVERLAP = 16;
-/**
-* Cached streaming safe-markdown transform, keyed by the md instance.
-*
-* The cache is owned by the TOP-LEVEL document stream: fragment parses
-* (e.g. `<details>` / custom html children, `__disableStructuredReuse`)
-* share the md instance and may overwrite the entry — benign, because the
-* transforms are deterministic functions of the source text, and the fast
-* path additionally guards with `mode` + `startsWith(previous.source)`, so
-* a stale/foreign entry either re-produces the identical transform or falls
-* back to a full-document transform.
-*
-* Memory: holds the full raw source + transformed output (~2-3x the document
-* size) per md instance for the instance lifetime; WeakMap-keyed so it is
-* collected with the instance. Cleared on the final auto-parse reset.
-*/
-const safeMarkdownCache = /* @__PURE__ */ new WeakMap();
-const structuredStreamCache = /* @__PURE__ */ new WeakMap();
-const topLevelStreamParseMode = /* @__PURE__ */ new WeakMap();
-const REUSABLE_INLINE_TOKEN_TYPES = new Set([
-	"code_inline",
-	"em_close",
-	"em_open",
-	"emoji",
-	"hardbreak",
-	"html_block",
-	"html_inline",
-	"image",
-	"ins_close",
-	"ins_open",
-	"link",
-	"link_close",
-	"link_open",
-	"mark_close",
-	"mark_open",
-	"math_inline",
-	"s_close",
-	"s_open",
-	"softbreak",
-	"strong_close",
-	"strong_open",
-	"sub",
-	"sup",
-	"text"
-]);
-const REUSABLE_TOP_LEVEL_PAIRED_TOKEN_TYPES = new Map([
-	["paragraph_open", "paragraph_close"],
-	["heading_open", "heading_close"],
-	["bullet_list_open", "bullet_list_close"],
-	["ordered_list_open", "ordered_list_close"],
-	["blockquote_open", "blockquote_close"],
-	["table_open", "table_close"]
-]);
-const REUSABLE_TOP_LEVEL_SINGLE_TOKEN_TYPES = new Set([
-	"code_block",
-	"fence",
-	"hr",
-	"inline",
-	"math_block"
-]);
+function getInternalNodeSourceRange(node, runtime) {
+	return runtime.nodeSourceRanges.get(node);
+}
 function getNodeFields(node) {
 	return node;
 }
-function getParserNow() {
-	return typeof performance !== "undefined" ? performance.now() : Date.now();
-}
-function addTiming(metrics, key, value) {
-	if (!metrics) return;
-	metrics[key] = (metrics[key] ?? 0) + value;
-}
-function getParseTiming(options) {
-	return options.__timing;
-}
-function finishTimedParse(result, timing, startedAt) {
-	if (timing) addTiming(timing, "parseMarkdownToStructureTotalMs", getParserNow() - startedAt);
-	return result;
-}
-function applyPostTransformNodes(nodes, options) {
-	const transform = options.postTransformNodes;
-	if (typeof transform !== "function") return nodes;
-	const transformed = transform(nodes);
-	return Array.isArray(transformed) ? transformed : nodes;
-}
-function finishParsedNodes(result, options, timing, startedAt) {
-	return finishTimedParse(applyPostTransformNodes(result, options), timing, startedAt);
-}
-function processTokensWithTiming(tokens, options, timing) {
-	if (!timing) return processTokens(tokens, options);
-	addTiming(timing, "processTokensInputTokens", tokens.length);
-	const startedAt = getParserNow();
-	const result = processTokens(tokens, options);
-	addTiming(timing, "processTokensMs", getParserNow() - startedAt);
-	return result;
-}
-function hasOnlyReusableInlineTokens(tokens, validateLink$1) {
-	return tokens.every((token) => {
-		if (!REUSABLE_INLINE_TOKEN_TYPES.has(token.type)) return false;
-		if ((token.type === "link" || token.type === "link_open" || token.type === "link_close") && !isCacheStableLinkValidator(validateLink$1)) return false;
-		if (token.type === "link") {
-			const origin = readSyntheticLinkOrigin(token);
-			if (origin !== "explicit" && origin !== "linkify" && origin !== "autolink") return false;
-		}
-		if (token.type === "link_open" || token.type === "link_close") {
-			const markup = token.markup ?? "";
-			if (markup !== "" && markup !== "linkify" && markup !== "autolink") return false;
-		}
-		const children = token.children;
-		return !Array.isArray(children) || hasOnlyReusableInlineTokens(children, validateLink$1);
-	});
-}
-function getReusableTopLevelPairedCloseType(tokenType) {
-	const known = REUSABLE_TOP_LEVEL_PAIRED_TOKEN_TYPES.get(tokenType);
-	if (known) return known;
-	const containerMatch = /^container_(.+)_open$/.exec(tokenType);
-	return containerMatch ? `container_${containerMatch[1]}_close` : void 0;
-}
-function getReusableTopLevelTokenGroups(tokens, validateLink$1) {
-	const groupStarts = [];
-	let mixed = false;
-	let index = 0;
-	while (index < tokens.length) {
-		const token = tokens[index];
-		if (!token || token.level !== 0) return null;
-		const closeType = getReusableTopLevelPairedCloseType(token.type);
-		let groupEnd = index + 1;
-		if (closeType) {
-			if (token.nesting !== 1) return null;
-			while (groupEnd < tokens.length) {
-				const current = tokens[groupEnd];
-				if (current.level === 0) {
-					if (current.type !== closeType || current.nesting !== -1) return null;
-					groupEnd++;
-					break;
-				}
-				groupEnd++;
-			}
-			if (tokens[groupEnd - 1]?.type !== closeType) return null;
-			if (token.type === "paragraph_open" || token.type === "heading_open") {
-				if (groupEnd !== index + 3 || tokens[index + 1]?.type !== "inline") return null;
-			} else mixed = true;
-		} else if (REUSABLE_TOP_LEVEL_SINGLE_TOKEN_TYPES.has(token.type)) {
-			if (token.nesting !== 0) return null;
-			mixed = true;
-		} else return null;
-		for (let tokenIndex = index; tokenIndex < groupEnd; tokenIndex++) {
-			const current = tokens[tokenIndex];
-			if (current.type !== "inline") continue;
-			const children = current.children;
-			if (!Array.isArray(children) || !hasOnlyReusableInlineTokens(children, validateLink$1)) return null;
-		}
-		groupStarts.push(index);
-		index = groupEnd;
-	}
-	return {
-		mixed,
-		starts: groupStarts
-	};
-}
-function sourceEndsWithBlankLine(source) {
-	return /\r?\n[\t ]*\r?\n[\t ]*$/.test(source);
-}
-function canReuseStructuredStreamNodes(options) {
-	return options.__reuseStableTopLevelNodes === true && options.final !== true && !options.preTransformTokens && !options.postTransformTokens && !options.postTransformNodes && !options.customHtmlTags?.length && options.includeSourceMap !== true;
-}
-function updateStructuredStreamCache(md, source, tokens, groups, nodes, options) {
-	const groupStarts = groups.starts;
-	if (groupStarts.length === 0 || nodes.length !== groupStarts.length) {
-		structuredStreamCache.delete(md);
-		return;
-	}
-	const groupBoundaries = groupStarts.map((start, index) => {
-		const end = groupStarts[index + 1] ?? tokens.length;
-		return {
-			firstToken: tokens[start],
-			lastToken: tokens[end - 1],
-			tokenCount: end - start
-		};
-	});
-	structuredStreamCache.set(md, {
-		groupBoundaries,
-		source,
-		nodes,
-		stableGroupCount: groups.mixed ? Math.max(0, groupStarts.length - 1) : sourceEndsWithBlankLine(source) ? groupStarts.length : Math.max(0, groupStarts.length - 1),
-		requireClosingStrong: options.requireClosingStrong,
-		validateLink: options.validateLink
-	});
-}
-function hasStableStructuredStreamGroupBoundaries(previous, tokens, groupStarts, stableGroupCount) {
-	const lastGroupIndex = groupStarts.length - 1;
-	for (let index = 0; index < stableGroupCount; index++) {
-		const start = groupStarts[index];
-		const end = groupStarts[index + 1] ?? tokens.length;
-		const boundary = previous.groupBoundaries[index];
-		if (!boundary || boundary.tokenCount !== end - start) return false;
-		if (boundary.firstToken === tokens[start] && boundary.lastToken === tokens[end - 1]) continue;
-		if (index >= lastGroupIndex || !isSameTokenShapeForReuse(boundary.firstToken, tokens[start]) || !isSameTokenShapeForReuse(boundary.lastToken, tokens[end - 1])) return false;
-	}
-	return true;
-}
-function processTopLevelTokensWithReuse(md, source, tokens, options, timing) {
-	const owner = md;
-	const structuredReuseDisabled = options.__disableStructuredReuse === true;
-	if (!(shouldUseTopLevelStreamParse(md, options) && canReuseStructuredStreamNodes(options))) {
-		if (!structuredReuseDisabled) structuredStreamCache.delete(owner);
-		return processTokensWithTiming(tokens, options, timing);
-	}
-	if (structuredReuseDisabled) return processTokensWithTiming(tokens, options, timing);
-	const groups = getReusableTopLevelTokenGroups(tokens, options.validateLink);
-	if (!groups) {
-		structuredStreamCache.delete(owner);
-		return processTokensWithTiming(tokens, options, timing);
-	}
-	const groupStarts = groups.starts;
-	const previous = structuredStreamCache.get(owner);
-	const mode = topLevelStreamParseMode.get(owner);
-	const stableGroupCount = previous && groups.mixed ? Math.min(previous.stableGroupCount, Math.max(0, previous.groupBoundaries.length - 1)) : previous?.stableGroupCount ?? 0;
-	if (previous && stableGroupCount > 0 && previous.requireClosingStrong === options.requireClosingStrong && previous.validateLink === options.validateLink && source.startsWith(previous.source) && groupStarts.length >= stableGroupCount && (mode === "append" || mode === "tail") && hasStableStructuredStreamGroupBoundaries(previous, tokens, groupStarts, stableGroupCount)) {
-		const tailStart = groupStarts[stableGroupCount] ?? tokens.length;
-		const tailNodes = processTokensWithTiming(tokens.slice(tailStart), {
-			...options,
-			__linkifyDemotionSeed: previous.nodes.slice(0, stableGroupCount).map((node) => String(node.raw ?? ""))
-		}, timing);
-		const expectedTailNodes = groupStarts.length - stableGroupCount;
-		if (tailNodes.length === expectedTailNodes) {
-			const result$1 = previous.nodes.slice(0, stableGroupCount).concat(tailNodes);
-			addTiming(timing, "processTokensReusedTopLevelNodes", stableGroupCount);
-			updateStructuredStreamCache(md, source, tokens, groups, result$1, options);
-			return result$1;
-		}
-	}
-	const result = processTokensWithTiming(tokens, options, timing);
-	updateStructuredStreamCache(md, source, tokens, groups, result, options);
-	return result;
-}
+const customHtmlTagSetCache = /* @__PURE__ */ new Map();
 function getCustomHtmlTagSet(options) {
 	const custom = options?.customHtmlTags;
 	if (!Array.isArray(custom) || custom.length === 0) return null;
+	const cacheKey = custom.join("\0");
+	const cached = customHtmlTagSetCache.get(cacheKey);
+	if (cached) return cached;
 	const normalized = normalizeCustomHtmlTags(custom);
-	return normalized.length ? new Set(normalized) : null;
-}
-function getStableStreamEnv(md, env) {
-	const mdKey = md;
-	let byMode = streamParseEnvCache.get(mdKey);
-	if (!byMode) {
-		byMode = /* @__PURE__ */ new Map();
-		streamParseEnvCache.set(mdKey, byMode);
-	}
-	const modeKey = env.__markstreamFinal === true ? "final" : "streaming";
-	let stableEnv = byMode.get(modeKey);
-	if (!stableEnv) {
-		stableEnv = {};
-		byMode.set(modeKey, stableEnv);
-	}
-	for (const key of Object.keys(stableEnv)) if (!Object.prototype.hasOwnProperty.call(env, key)) delete stableEnv[key];
-	Object.assign(stableEnv, env);
-	return stableEnv;
-}
-function isPlainObject(value) {
-	if (!value || typeof value !== "object") return false;
-	const proto = Object.getPrototypeOf(value);
-	return proto === Object.prototype || proto === null;
-}
-function copyCloneableOwnDataProperties(source, target, seen) {
-	for (const key of Reflect.ownKeys(source)) {
-		const descriptor = Object.getOwnPropertyDescriptor(source, key);
-		if (!descriptor || !("value" in descriptor)) continue;
-		const targetDescriptor = Object.getOwnPropertyDescriptor(target, key);
-		if (targetDescriptor && (!("value" in targetDescriptor) || targetDescriptor.writable === false)) continue;
-		target[key] = safeCloneTokenField(descriptor.value, seen);
-	}
-}
-function safeCloneTokenField(value, seen = /* @__PURE__ */ new WeakMap()) {
-	if (!value || typeof value !== "object") return value;
-	const object = value;
-	const existing = seen.get(object);
-	if (existing) return existing;
-	if (Array.isArray(value)) {
-		const cloned$1 = [];
-		seen.set(object, cloned$1);
-		for (const item of value) cloned$1.push(safeCloneTokenField(item, seen));
-		return cloned$1;
-	}
-	if (value instanceof Map) {
-		const cloned$1 = /* @__PURE__ */ new Map();
-		seen.set(object, cloned$1);
-		for (const [key, item] of value) cloned$1.set(safeCloneTokenField(key, seen), safeCloneTokenField(item, seen));
-		return cloned$1;
-	}
-	if (value instanceof Set) {
-		const cloned$1 = /* @__PURE__ */ new Set();
-		seen.set(object, cloned$1);
-		for (const item of value) cloned$1.add(safeCloneTokenField(item, seen));
-		return cloned$1;
-	}
-	if (value instanceof Date) {
-		const cloned$1 = new Date(value.getTime());
-		seen.set(object, cloned$1);
-		return cloned$1;
-	}
-	if (value instanceof RegExp) {
-		const cloned$1 = new RegExp(value.source, value.flags);
-		cloned$1.lastIndex = value.lastIndex;
-		seen.set(object, cloned$1);
-		return cloned$1;
-	}
-	if (typeof URL !== "undefined" && value instanceof URL) {
-		const cloned$1 = new URL(value.href);
-		seen.set(object, cloned$1);
-		copyCloneableOwnDataProperties(object, cloned$1, seen);
-		return cloned$1;
-	}
-	if (typeof URLSearchParams !== "undefined" && value instanceof URLSearchParams) {
-		const cloned$1 = new URLSearchParams(value.toString());
-		seen.set(object, cloned$1);
-		copyCloneableOwnDataProperties(object, cloned$1, seen);
-		return cloned$1;
-	}
-	if (value instanceof Error) {
-		let cloned$1;
-		const ErrorCtor = value.constructor;
-		try {
-			cloned$1 = new ErrorCtor(value.message);
-		} catch {
-			cloned$1 = new Error(value.message);
-		}
-		Object.setPrototypeOf(cloned$1, Object.getPrototypeOf(value));
-		seen.set(object, cloned$1);
-		copyCloneableOwnDataProperties(object, cloned$1, seen);
-		return cloned$1;
-	}
-	if (typeof Promise !== "undefined" && value instanceof Promise) {
-		seen.set(object, value);
-		return value;
-	}
-	if (typeof Node !== "undefined" && value instanceof Node) {
-		seen.set(object, value);
-		return value;
-	}
-	if (!isPlainObject(value)) {
-		const cloned$1 = Object.create(Object.getPrototypeOf(value));
-		seen.set(object, cloned$1);
-		copyCloneableOwnDataProperties(object, cloned$1, seen);
-		return cloned$1;
-	}
-	const cloned = {};
-	seen.set(object, cloned);
-	const record = value;
-	for (const key of Object.keys(record)) cloned[key] = safeCloneTokenField(record[key], seen);
-	return cloned;
-}
-function cloneMarkdownToken(token, cloneObjectFields = true) {
-	if (!cloneObjectFields) return cloneTokenWithMutableChildren(token);
-	const cloned = Object.create(Object.getPrototypeOf(token));
-	const seen = /* @__PURE__ */ new WeakMap();
-	for (const key of Reflect.ownKeys(token)) {
-		const descriptor = Object.getOwnPropertyDescriptor(token, key);
-		if (!descriptor) continue;
-		if (!("value" in descriptor)) {
-			Object.defineProperty(cloned, key, descriptor);
-			continue;
-		}
-		const value = descriptor.value;
-		let clonedValue = value;
-		if (key === "attrs" && Array.isArray(value)) clonedValue = value.map((attr) => [...attr]);
-		else if (key === "map" && Array.isArray(value)) clonedValue = [...value];
-		else if (key === "children" && Array.isArray(value)) clonedValue = value.map((child) => cloneMarkdownToken(child, cloneObjectFields));
-		else if (cloneObjectFields && value && typeof value === "object") clonedValue = safeCloneTokenField(value, seen);
-		Object.defineProperty(cloned, key, {
-			...descriptor,
-			value: clonedValue
-		});
-	}
-	return cloned;
-}
-function cloneMarkdownTokens(tokens, cloneObjectFields = true) {
-	return tokens.map((token) => cloneMarkdownToken(token, cloneObjectFields));
-}
-function shouldUseTopLevelStreamParse(md, options) {
-	const internalOptions = options;
-	const stream = md.stream;
-	const streamParse = options.streamParse ?? "auto";
-	return internalOptions.__disableStreamParse !== true && md.__markstreamHasCustomParserExtensions !== true && (streamParse === true || streamParse === "auto" && options.final !== true) && stream?.enabled === true && typeof stream.parse === "function";
-}
-function shouldResetTopLevelStreamCacheForFinalAutoParse(md, options) {
-	const internalOptions = options;
-	const streamParse = options.streamParse ?? "auto";
-	const stream = md.stream;
-	return options.final === true && streamParse === "auto" && internalOptions.__disableStreamParse !== true && md.__markstreamHasCustomParserExtensions !== true && stream?.enabled === true && typeof stream.reset === "function";
-}
-function clearTolerantMathBoundaryStreamCache(md) {
-	tolerantMathBoundaryStreamCache.delete(md);
-}
-function createExplicitBracketMathContext() {
-	return {
-		fenceChar: "",
-		fenceInBlockquote: false,
-		fenceInList: false,
-		fenceLen: 0,
-		fenceListIndent: 0,
-		inDollarMath: false,
-		inFence: false,
-		inMath: false,
-		listContentIndent: null,
-		dollarMathOpenOffset: null,
-		mathOpenOffset: null
-	};
-}
-function cloneExplicitBracketMathContext(context) {
-	return { ...context };
-}
-function setTolerantMathBoundaryStreamCache(md, source, key, explicitBracketMath = scanExplicitBracketMathStreamState(source).state) {
-	tolerantMathBoundaryStreamCache.set(md, {
-		explicitBracketMath,
-		source,
-		key,
-		pendingCandidate: key === null && mayContainTolerantMathBlockBoundaryOpener(source)
-	});
-}
-function sourceEndsWithSplitTolerantBoundaryPrefix(source) {
-	return source.endsWith("$") || source.endsWith("\\");
-}
-function sourceEndsWithCompleteTolerantBoundaryOpener(source) {
-	const lastLineStart = Math.max(source.lastIndexOf("\n") + 1, 0);
-	const lastLine = source.slice(lastLineStart).replace(/[\t ]+$/, "");
-	return TOLERANT_BOUNDARY_SPLIT_OPENERS.some((open) => lastLine.endsWith(open));
-}
-function appendedChunkMayAffectTolerantMathBoundary(previousSource, appended) {
-	if (!appended) return false;
-	if (appended.includes("$$") || appended.includes("\\[")) return true;
-	if (previousSource.endsWith("$") && appended[0] === "$") return true;
-	if (previousSource.endsWith("\\") && appended[0] === "[") return true;
-	if (sourceEndsWithCompleteTolerantBoundaryOpener(previousSource) && /[\r\n]/.test(appended)) return true;
-	return false;
-}
-function isEscapedDelimiterAt(source, index) {
-	let cursor = index - 1;
-	let backslashes = 0;
-	while (cursor >= 0 && source[cursor] === "\\") {
-		backslashes++;
-		cursor--;
-	}
-	return backslashes % 2 === 1;
-}
-function isIndentWhitespace(ch) {
-	return ch === " " || ch === "	";
-}
-function advanceMarkdownIndentColumn(column, ch) {
-	return ch === " " ? column + 1 : column + 4 - column % 4;
-}
-function getMarkdownIndent(line) {
-	let index = 0;
-	let column = 0;
-	while (index < line.length && isIndentWhitespace(line[index])) {
-		column = advanceMarkdownIndentColumn(column, line[index]);
-		index++;
-	}
-	return {
-		index,
-		column
-	};
-}
-function consumeMarkdownIndent(line) {
-	const indent = getMarkdownIndent(line);
-	return indent.column > 3 ? null : indent;
-}
-function parseMarkdownFenceMarker(line) {
-	const indent = consumeMarkdownIndent(line);
-	if (!indent) return null;
-	const index = indent.index;
-	const markerChar = line[index];
-	if (markerChar !== "`" && markerChar !== "~") return null;
-	let markerEnd = index;
-	while (markerEnd < line.length && line[markerEnd] === markerChar) markerEnd++;
-	const markerLen = markerEnd - index;
-	if (markerLen < 3) return null;
-	const rest = line.slice(markerEnd);
-	if (markerChar === "`" && rest.includes("`")) return null;
-	return {
-		markerChar,
-		markerLen,
-		rest
-	};
-}
-function stripMarkdownListPrefix(line) {
-	const indent = consumeMarkdownIndent(line);
-	if (!indent) return null;
-	const rest = line.slice(indent.index);
-	const marker = /^(?:[-+*]|\d{1,9}[.)])(?=[\t ]|$)/.exec(rest)?.[0];
-	if (!marker) return null;
-	let index = indent.index + marker.length;
-	let column = indent.column + marker.length;
-	if (!isIndentWhitespace(line[index])) return null;
-	while (index < line.length && isIndentWhitespace(line[index])) {
-		column = advanceMarkdownIndentColumn(column, line[index]);
-		index++;
-	}
-	return {
-		content: line.slice(index),
-		contentIndent: column
-	};
-}
-function stripMarkdownBlockquotePrefix(line) {
-	let rest = line;
-	let saw = false;
-	while (true) {
-		const indent = consumeMarkdownIndent(rest);
-		if (!indent) return saw ? rest : null;
-		let index = indent.index;
-		if (rest[index] !== ">") return saw ? rest : null;
-		saw = true;
-		index++;
-		if (rest[index] === " " || rest[index] === "	") index++;
-		rest = rest.slice(index);
-	}
-}
-function matchMarkdownFenceMarker(line) {
-	const direct = parseMarkdownFenceMarker(line);
-	if (direct) return {
-		...direct,
-		inBlockquote: false,
-		inList: false,
-		listIndent: 0
-	};
-	const quoted = stripMarkdownBlockquotePrefix(line);
-	const quotedMarker = quoted == null ? null : parseMarkdownFenceMarker(quoted);
-	if (quotedMarker) return {
-		...quotedMarker,
-		inBlockquote: true,
-		inList: false,
-		listIndent: 0
-	};
-	const listed = stripMarkdownListPrefix(line);
-	if (!listed) return null;
-	const listedMarker = parseMarkdownFenceMarker(listed.content);
-	return listedMarker == null ? null : {
-		...listedMarker,
-		inBlockquote: false,
-		inList: true,
-		listIndent: listed.contentIndent
-	};
-}
-function isInsideOpenMarkdownFenceBeforeOffset(markdown, offset) {
-	let inFence = false;
-	let fenceChar = "";
-	let fenceLen = 0;
-	let fenceInBlockquote = false;
-	let fenceInList = false;
-	let fenceListIndent = 0;
-	let listContentIndent = null;
-	let index = 0;
-	while (index < offset) {
-		const newlineIndex = markdown.indexOf("\n", index);
-		const lineEnd$2 = newlineIndex === -1 || newlineIndex >= offset ? offset : newlineIndex;
-		const rawLine = markdown.slice(index, lineEnd$2);
-		const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
-		const lineIndent = getMarkdownIndent(line);
-		const listPrefix = stripMarkdownListPrefix(line);
-		if (inFence && fenceInBlockquote && line.trim() && stripMarkdownBlockquotePrefix(line) == null) {
-			inFence = false;
-			fenceChar = "";
-			fenceLen = 0;
-			fenceInBlockquote = false;
-			fenceInList = false;
-			fenceListIndent = 0;
-		}
-		if (inFence && fenceInList && line.trim() && lineIndent.column < fenceListIndent && !listPrefix) {
-			inFence = false;
-			fenceChar = "";
-			fenceLen = 0;
-			fenceInBlockquote = false;
-			fenceInList = false;
-			fenceListIndent = 0;
-		}
-		if (listPrefix) listContentIndent = listPrefix.contentIndent;
-		else if (line.trim() && listContentIndent != null && lineIndent.column < listContentIndent && !inFence) listContentIndent = null;
-		const fenceMatch = matchMarkdownFenceMarker(line);
-		if (fenceMatch) if (inFence) {
-			if (fenceMatch.markerChar === fenceChar && fenceMatch.markerLen >= fenceLen && /^\s*$/.test(fenceMatch.rest)) {
-				inFence = false;
-				fenceChar = "";
-				fenceLen = 0;
-				fenceInBlockquote = false;
-				fenceInList = false;
-				fenceListIndent = 0;
-			}
-		} else {
-			inFence = true;
-			fenceChar = fenceMatch.markerChar;
-			fenceLen = fenceMatch.markerLen;
-			fenceInBlockquote = fenceMatch.inBlockquote;
-			fenceInList = fenceMatch.inList || listContentIndent != null && !fenceMatch.inBlockquote && lineIndent.column >= listContentIndent;
-			fenceListIndent = fenceMatch.listIndent || listContentIndent || 0;
-		}
-		if (newlineIndex === -1 || newlineIndex >= offset) break;
-		index = newlineIndex + 1;
-	}
-	return inFence;
-}
-function isInsideOpenStandardHtmlBlockBeforeOffset(markdown, offset) {
-	const isWs = (ch) => ch === " " || ch === "	";
-	const isNameChar = (ch) => {
-		const c = ch.charCodeAt(0);
-		return c >= 65 && c <= 90 || c >= 97 && c <= 122 || c >= 48 && c <= 57 || ch === "_" || ch === "-" || ch === ":";
-	};
-	const parseLineStartTag = (line) => {
-		if (line[0] !== "<") return null;
-		let index$1 = 1;
-		while (index$1 < line.length && isWs(line[index$1])) index$1++;
-		const closing = line[index$1] === "/";
-		if (closing) {
-			index$1++;
-			while (index$1 < line.length && isWs(line[index$1])) index$1++;
-		}
-		const nameStart = index$1;
-		while (index$1 < line.length && isNameChar(line[index$1])) index$1++;
-		if (index$1 === nameStart) return null;
-		const tag = line.slice(nameStart, index$1).toLowerCase();
-		if (!STANDARD_BLOCK_HTML_TAGS.has(tag)) return null;
-		const boundary = line[index$1];
-		if (boundary && boundary !== " " && boundary !== "	" && boundary !== ">" && boundary !== "/") return null;
-		const tagEnd = findTagCloseIndexOutsideQuotes(line);
-		if (tagEnd === -1) return null;
-		let beforeEnd = tagEnd - 1;
-		while (beforeEnd >= 0 && isWs(line[beforeEnd])) beforeEnd--;
-		return {
-			closing,
-			tag,
-			selfClosing: !closing && line[beforeEnd] === "/",
-			after: line.slice(tagEnd + 1)
-		};
-	};
-	const hasSameLineClose = (line, tag) => {
-		const lower = line.toLowerCase();
-		let index$1 = 0;
-		while (index$1 < lower.length) {
-			const closeStart = lower.indexOf("</", index$1);
-			if (closeStart === -1) return false;
-			index$1 = closeStart + 2;
-			while (index$1 < lower.length && isWs(lower[index$1])) index$1++;
-			if (lower.startsWith(tag, index$1)) {
-				const boundary = lower[index$1 + tag.length];
-				if (!boundary || boundary === " " || boundary === "	" || boundary === ">") return true;
-			}
-		}
-		return false;
-	};
-	const stack = [];
-	let inComment = false;
-	let inDeclaration = false;
-	let inProcessingInstruction = false;
-	let index = 0;
-	while (index < offset) {
-		const newlineIndex = markdown.indexOf("\n", index);
-		const lineEnd$2 = newlineIndex === -1 || newlineIndex >= offset ? offset : newlineIndex;
-		const rawLine = markdown.slice(index, lineEnd$2);
-		const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
-		const indent = consumeMarkdownIndent(line);
-		if (indent) {
-			const rest = line.slice(indent.index);
-			if (inComment) inComment = !rest.includes("-->");
-			else if (inDeclaration) inDeclaration = !rest.includes(">");
-			else if (inProcessingInstruction) inProcessingInstruction = !rest.includes("?>");
-			else if (rest.startsWith("<!--")) inComment = !rest.includes("-->");
-			else if (rest.startsWith("<?")) inProcessingInstruction = !rest.includes("?>");
-			else if (rest.startsWith("<!")) inDeclaration = !rest.includes(">");
-			else {
-				const tagInfo = parseLineStartTag(rest);
-				if (tagInfo) {
-					if (tagInfo.closing) {
-						for (let i = stack.length - 1; i >= 0; i--) if (stack[i] === tagInfo.tag) {
-							stack.length = i;
-							break;
-						}
-					} else if (!tagInfo.selfClosing) {
-						if (!hasSameLineClose(tagInfo.after, tagInfo.tag)) stack.push(tagInfo.tag);
-					}
-				}
-			}
-		}
-		if (newlineIndex === -1 || newlineIndex >= offset) break;
-		index = newlineIndex + 1;
-	}
-	return inComment || inDeclaration || inProcessingInstruction || stack.length > 0;
-}
-function isInsideOpenCustomHtmlBlockBeforeOffset(markdown, offset, customHtmlTags) {
-	if (!customHtmlTags?.length) return false;
-	const tagSet = new Set(normalizeCustomHtmlTags(customHtmlTags));
-	if (!tagSet.size) return false;
-	const isNameChar = (ch) => {
-		const c = ch.charCodeAt(0);
-		return c >= 65 && c <= 90 || c >= 97 && c <= 122 || c >= 48 && c <= 57 || ch === "_" || ch === "-" || ch === ":";
-	};
-	const isWs = (ch) => ch === " " || ch === "	";
-	const parseLineStartTag = (line) => {
-		if (line[0] !== "<") return null;
-		let index$1 = 1;
-		while (index$1 < line.length && isWs(line[index$1])) index$1++;
-		const closing = line[index$1] === "/";
-		if (closing) {
-			index$1++;
-			while (index$1 < line.length && isWs(line[index$1])) index$1++;
-		}
-		const nameStart = index$1;
-		while (index$1 < line.length && isNameChar(line[index$1])) index$1++;
-		if (index$1 === nameStart) return null;
-		const tag = line.slice(nameStart, index$1).toLowerCase();
-		if (!tagSet.has(tag)) return null;
-		const boundary = line[index$1];
-		if (boundary && boundary !== " " && boundary !== "	" && boundary !== ">" && boundary !== "/") return null;
-		const tagEnd = line.indexOf(">", index$1);
-		if (tagEnd === -1) return null;
-		let beforeEnd = tagEnd - 1;
-		while (beforeEnd >= 0 && isWs(line[beforeEnd])) beforeEnd--;
-		return {
-			closing,
-			tag,
-			selfClosing: !closing && line[beforeEnd] === "/",
-			after: line.slice(tagEnd + 1)
-		};
-	};
-	const hasSameLineClose = (line, tag) => {
-		const lower = line.toLowerCase();
-		let index$1 = 0;
-		while (index$1 < lower.length) {
-			const closeStart = lower.indexOf("</", index$1);
-			if (closeStart === -1) return false;
-			index$1 = closeStart + 2;
-			while (index$1 < lower.length && isWs(lower[index$1])) index$1++;
-			if (lower.startsWith(tag, index$1)) {
-				const boundary = lower[index$1 + tag.length];
-				if (!boundary || boundary === " " || boundary === "	" || boundary === ">") return true;
-			}
-		}
-		return false;
-	};
-	const stack = [];
-	let index = 0;
-	while (index < offset) {
-		const newlineIndex = markdown.indexOf("\n", index);
-		const lineEnd$2 = newlineIndex === -1 || newlineIndex >= offset ? offset : newlineIndex;
-		const rawLine = markdown.slice(index, lineEnd$2);
-		const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
-		const indent = consumeMarkdownIndent(line);
-		if (indent) {
-			const tagInfo = parseLineStartTag(line.slice(indent.index));
-			if (tagInfo) {
-				if (tagInfo.closing) {
-					for (let i = stack.length - 1; i >= 0; i--) if (stack[i] === tagInfo.tag) {
-						stack.length = i;
-						break;
-					}
-				} else if (!tagInfo.selfClosing) {
-					if (!hasSameLineClose(tagInfo.after, tagInfo.tag)) stack.push(tagInfo.tag);
-				}
-			}
-		}
-		if (newlineIndex === -1 || newlineIndex >= offset) break;
-		index = newlineIndex + 1;
-	}
-	return stack.length > 0;
-}
-function getStreamingAdmonitionOpenTailReplacement(markdown, customHtmlTags) {
-	const match = STREAMING_ADMONITION_OPEN_RE.exec(markdown);
-	if (!match) return null;
-	const separator = match[1] ?? "";
-	const lineStart = match.index + separator.length;
-	const lineEnd$2 = markdown.indexOf("\n", lineStart);
-	const rawLine = markdown.slice(lineStart, lineEnd$2 === -1 ? markdown.length : lineEnd$2);
-	if (!consumeMarkdownIndent(rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine)) return null;
-	if (isInsideOpenMarkdownFenceBeforeOffset(markdown, lineStart)) return null;
-	if (isInsideOpenStandardHtmlBlockBeforeOffset(markdown, lineStart)) return null;
-	if (isInsideOpenCustomHtmlBlockBeforeOffset(markdown, lineStart, customHtmlTags)) return null;
-	return `${markdown.slice(0, match.index)}${separator}`;
-}
-function countRepeatedChar(source, index, ch) {
-	let end = index;
-	while (end < source.length && source[end] === ch) end++;
-	return end - index;
-}
-function findCodeSpanCloseIndex(line, start, markerLen) {
-	let index = start;
-	while (index < line.length) {
-		const next = line.indexOf("`", index);
-		if (next === -1) return -1;
-		const runLen = countRepeatedChar(line, next, "`");
-		if (runLen === markerLen) return next;
-		index = next + runLen;
-	}
-	return -1;
-}
-function resetExplicitBracketFenceContext(context) {
-	context.inFence = false;
-	context.fenceChar = "";
-	context.fenceLen = 0;
-	context.fenceInBlockquote = false;
-	context.fenceInList = false;
-	context.fenceListIndent = 0;
-}
-function scanLineForExplicitBracketMathState(line, context, lineStart, appendStart, openAtAppendStart) {
-	let index = 0;
-	let closedOpenMath = false;
-	while (index < line.length) {
-		const sourceIndex = index;
-		if (context.inMath) {
-			if (line.startsWith("\\]", index) && !isEscapedDelimiterAt(line, sourceIndex)) {
-				if (appendStart != null && openAtAppendStart && lineStart + index + 2 > appendStart) closedOpenMath = true;
-				context.inMath = false;
-				context.mathOpenOffset = null;
-				index += 2;
-				continue;
-			}
-			index++;
-			continue;
-		}
-		if (context.inDollarMath) {
-			if (line.startsWith("$$", index) && !isEscapedDelimiterAt(line, sourceIndex)) {
-				if (appendStart != null && openAtAppendStart && lineStart + index + 2 > appendStart) closedOpenMath = true;
-				context.inDollarMath = false;
-				context.dollarMathOpenOffset = null;
-				index += 2;
-				continue;
-			}
-			index++;
-			continue;
-		}
-		if (line[index] === "`" && !isEscapedDelimiterAt(line, sourceIndex)) {
-			const markerLen = countRepeatedChar(line, index, "`");
-			const closeIndex = findCodeSpanCloseIndex(line, index + markerLen, markerLen);
-			if (closeIndex === -1) break;
-			index = closeIndex + markerLen;
-			continue;
-		}
-		if (line.startsWith("\\[", index) && !isEscapedDelimiterAt(line, sourceIndex)) {
-			context.inMath = true;
-			context.mathOpenOffset = lineStart + index;
-			index += 2;
-			continue;
-		}
-		if (line.startsWith("$$", index) && !isEscapedDelimiterAt(line, sourceIndex)) {
-			context.inDollarMath = true;
-			context.dollarMathOpenOffset = lineStart + index;
-			index += 2;
-			continue;
-		}
-		index++;
-	}
-	return closedOpenMath;
-}
-function stripPendingExplicitMathTail(markdown, md) {
-	if (!hasMarkstreamMathPlugin(md)) return markdown;
-	const owner = md;
-	const previous = pendingExplicitMathTailCache.get(owner);
-	const state = previous?.source === markdown ? previous.state : previous && markdown.startsWith(previous.source) ? updateExplicitBracketMathStreamState(previous.state, markdown.slice(previous.source.length), previous.source.length - previous.state.lineBuffer.length).state : scanExplicitBracketMathStreamState(markdown).state;
-	pendingExplicitMathTailCache.set(owner, {
-		source: markdown,
-		state
-	});
-	const { context } = state;
-	const openOffset = context.inMath ? context.mathOpenOffset : context.inDollarMath ? context.dollarMathOpenOffset : null;
-	if (openOffset == null) return markdown;
-	const content = markdown.slice(openOffset + 2);
-	const lineStart = markdown.lastIndexOf("\n", openOffset - 1) + 1;
-	if (!(markdown.slice(lineStart, openOffset).trim() === "") && !/^\r?\n/.test(content)) return markdown;
-	if (/^\s*!\[/.test(content)) return markdown;
-	const stripped = content.trim();
-	const weakSingleVariable = /^(?:[a-z]|pi)$/i.test(stripped);
-	if (isMathLike(content) && !weakSingleVariable) return markdown;
-	return markdown.slice(0, openOffset);
-}
-function scanExplicitBracketMathLine(line, context, lineStart, appendStart, openAtAppendStart) {
-	const lineIndent = getMarkdownIndent(line);
-	const listPrefix = stripMarkdownListPrefix(line);
-	if (context.inFence && context.fenceInBlockquote && line.trim() && stripMarkdownBlockquotePrefix(line) == null) resetExplicitBracketFenceContext(context);
-	if (context.inFence && context.fenceInList && line.trim() && lineIndent.column < context.fenceListIndent && !listPrefix) resetExplicitBracketFenceContext(context);
-	if (listPrefix) context.listContentIndent = listPrefix.contentIndent;
-	else if (line.trim() && context.listContentIndent != null && lineIndent.column < context.listContentIndent && !context.inFence) context.listContentIndent = null;
-	if (!context.inMath && !context.inDollarMath) {
-		const fenceMatch = matchMarkdownFenceMarker(line);
-		if (fenceMatch) if (context.inFence) {
-			if (fenceMatch.markerChar === context.fenceChar && fenceMatch.markerLen >= context.fenceLen && /^\s*$/.test(fenceMatch.rest)) resetExplicitBracketFenceContext(context);
-		} else {
-			context.inFence = true;
-			context.fenceChar = fenceMatch.markerChar;
-			context.fenceLen = fenceMatch.markerLen;
-			context.fenceInBlockquote = fenceMatch.inBlockquote;
-			context.fenceInList = fenceMatch.inList || context.listContentIndent != null && !fenceMatch.inBlockquote && lineIndent.column >= context.listContentIndent;
-			context.fenceListIndent = fenceMatch.listIndent || context.listContentIndent || 0;
-		}
-		else if (!context.inFence) return scanLineForExplicitBracketMathState(line, context, lineStart, appendStart, openAtAppendStart);
-	} else return scanLineForExplicitBracketMathState(line, context, lineStart, appendStart, openAtAppendStart);
-	return false;
-}
-function scanExplicitBracketMathStreamState(source, initialContext = createExplicitBracketMathContext(), appendStart = null, openAtAppendStart = false, sourceOffset = 0) {
-	const context = cloneExplicitBracketMathContext(initialContext);
-	let committedContext = cloneExplicitBracketMathContext(initialContext);
-	let lineBuffer = "";
-	let closedOpenMath = false;
-	let index = 0;
-	while (index < source.length) {
-		const newlineIndex = source.indexOf("\n", index);
-		const hasNewline = newlineIndex !== -1;
-		const lineEnd$2 = hasNewline && newlineIndex > index && source[newlineIndex - 1] === "\r" ? newlineIndex - 1 : hasNewline ? newlineIndex : source.length;
-		const line = source.slice(index, lineEnd$2);
-		if (scanExplicitBracketMathLine(line, context, sourceOffset + index, appendStart, openAtAppendStart)) closedOpenMath = true;
-		if (hasNewline) {
-			committedContext = cloneExplicitBracketMathContext(context);
-			lineBuffer = "";
-		} else lineBuffer = line;
-		index = hasNewline ? newlineIndex + 1 : source.length;
-	}
-	return {
-		closedOpenMath,
-		state: {
-			committedContext,
-			context,
-			lineBuffer
-		}
-	};
-}
-function updateExplicitBracketMathStreamState(previous, appended, lineBufferStartOffset = 0) {
-	if (appended && !previous.context.inMath && !previous.context.inDollarMath && !previous.context.inFence && !previous.committedContext.inFence && !/[\\$`~\r\n]/.test(appended) && !(previous.lineBuffer.endsWith("\\") && (appended[0] === "[" || appended[0] === "]"))) return {
-		closedOpenMath: false,
-		state: {
-			committedContext: cloneExplicitBracketMathContext(previous.committedContext),
-			context: cloneExplicitBracketMathContext(previous.context),
-			lineBuffer: previous.lineBuffer + appended
-		}
-	};
-	return scanExplicitBracketMathStreamState(previous.lineBuffer + appended, previous.committedContext, lineBufferStartOffset + previous.lineBuffer.length, previous.context.inMath || previous.context.inDollarMath, lineBufferStartOffset);
-}
-function syncTolerantMathBoundaryStreamCache(md, source) {
-	if (!hasMarkstreamMathPlugin(md)) return;
-	const stream = md.stream;
-	if (typeof stream?.reset !== "function") return;
-	const owner = md;
-	const previous = tolerantMathBoundaryStreamCache.get(owner);
-	if (previous?.source === source) return;
-	const sourceExtendsPrevious = previous ? source.startsWith(previous.source) : false;
-	const appended = sourceExtendsPrevious && previous ? source.slice(previous.source.length) : "";
-	const explicitBracketMathUpdate = sourceExtendsPrevious && previous ? updateExplicitBracketMathStreamState(previous.explicitBracketMath, appended, previous.source.length - previous.explicitBracketMath.lineBuffer.length) : scanExplicitBracketMathStreamState(source);
-	const nextExplicitBracketMath = explicitBracketMathUpdate.state;
-	const completesExplicitBracketMathClose = sourceExtendsPrevious && previous ? explicitBracketMathUpdate.closedOpenMath : false;
-	if (previous && sourceExtendsPrevious) {
-		if (previous.key === null && previous.pendingCandidate === false && !completesExplicitBracketMathClose && !appendedChunkMayAffectTolerantMathBoundary(previous.source, appended) && !sourceEndsWithSplitTolerantBoundaryPrefix(source)) {
-			previous.source = source;
-			previous.explicitBracketMath = nextExplicitBracketMath;
-			return;
-		}
-	}
-	const nextKey = getTolerantMathBlockBoundaryStreamKey(source);
-	if (previous && ((previous ? !sourceExtendsPrevious : false) || previous.key !== nextKey || completesExplicitBracketMathClose)) stream.reset();
-	else if (!previous && nextKey) stream.reset();
-	setTolerantMathBoundaryStreamCache(md, source, nextKey, nextExplicitBracketMath);
-}
-function shouldCloneTopLevelStreamTokens(options) {
-	return typeof options.preTransformTokens === "function" || typeof options.postTransformTokens === "function";
-}
-function sameTokenMap(left, right) {
-	const leftMap = left?.map;
-	const rightMap = right?.map;
-	if (leftMap === rightMap) return true;
-	if (!Array.isArray(leftMap) || !Array.isArray(rightMap)) return false;
-	return leftMap.length === rightMap.length && leftMap.every((value, index) => value === rightMap[index]);
-}
-function sameTokenAttrs(left, right) {
-	const leftAttrs = left?.attrs;
-	const rightAttrs = right?.attrs;
-	if (leftAttrs === rightAttrs) return true;
-	if (!Array.isArray(leftAttrs) || !Array.isArray(rightAttrs)) return false;
-	if (leftAttrs.length !== rightAttrs.length) return false;
-	for (let index = 0; index < leftAttrs.length; index++) {
-		const leftAttr = leftAttrs[index];
-		const rightAttr = rightAttrs[index];
-		if (leftAttr[0] !== rightAttr[0] || leftAttr[1] !== rightAttr[1]) return false;
-	}
-	return true;
-}
-/**
-* Shape equality for reuse-boundary tokens, used when the stream parser
-* recreates prefix tokens after a full re-parse or a container tail merge
-* (identity comparison fails because the tokens are new objects).
-*
-* Correctness rests on markdown-it tokenization being a deterministic
-* function of the source text: identical source in the stream re-parse
-* yields tokens with identical shape INCLUDING fields not compared here
-* (children, meta, interior group tokens). The shape fallback therefore
-* never detects a change that identity comparison would have caught; it
-* only re-admits groups whose source provably did not change (interior
-* groups never receive appended content). `level` is compared because a
-* re-parsed boundary token at a different nesting depth cannot be the
-* same group.
-*/
-function isSameTokenShapeForReuse(left, right) {
-	return !!left && !!right && left.type === right.type && left.tag === right.tag && left.nesting === right.nesting && left.level === right.level && left.markup === right.markup && left.content === right.content && left.info === right.info && sameTokenMap(left, right) && sameTokenAttrs(left, right);
-}
-function isSameTokenShape(left, right) {
-	return !!left && !!right && left.type === right.type && left.tag === right.tag && left.nesting === right.nesting && left.markup === right.markup && left.content === right.content && sameTokenMap(left, right);
-}
-function isParagraphTokenTriplet(tokens, index) {
-	return tokens[index]?.type === "paragraph_open" && tokens[index + 1]?.type === "inline" && tokens[index + 2]?.type === "paragraph_close";
-}
-function hasAdjacentDuplicateParagraphTokenTriplet(tokens) {
-	for (let index = 0; index + 5 < tokens.length; index++) if (isParagraphTokenTriplet(tokens, index) && isParagraphTokenTriplet(tokens, index + 3) && isSameTokenShape(tokens[index], tokens[index + 3]) && isSameTokenShape(tokens[index + 1], tokens[index + 4]) && isSameTokenShape(tokens[index + 2], tokens[index + 5])) return true;
-	return false;
-}
-function shouldFallbackDuplicateTolerantMathStreamTokens(md, source, tokens) {
-	return hasMarkstreamMathPlugin(md) && mayContainTolerantMathBlockBoundaryOpener(source) && hasAdjacentDuplicateParagraphTokenTriplet(tokens);
-}
-function shouldUseSyncParseForPendingTolerantMathBoundary(md) {
-	const cache = tolerantMathBoundaryStreamCache.get(md);
-	return typeof cache?.key === "string" && cache.key.startsWith("pending:");
-}
-function parseTopLevelTokens(md, source, env, options) {
-	const owner = md;
-	if (options.customHtmlTags?.length) env.__markstreamCustomHtmlTags = options.customHtmlTags;
-	if (!shouldUseTopLevelStreamParse(md, options)) {
-		topLevelStreamParseMode.set(owner, "sync");
-		return md.parse(source, env);
-	}
-	syncTolerantMathBoundaryStreamCache(md, source);
-	if (shouldUseSyncParseForPendingTolerantMathBoundary(md)) {
-		topLevelStreamParseMode.set(owner, "sync");
-		return md.parse(source, env);
-	}
-	const tokens = md.stream.parse(source, getStableStreamEnv(md, env));
-	if (shouldFallbackDuplicateTolerantMathStreamTokens(md, source, tokens)) {
-		md.stream?.reset?.();
-		topLevelStreamParseMode.set(owner, "sync");
-		return md.parse(source, env);
-	}
-	const stats = md.stream?.stats?.();
-	topLevelStreamParseMode.set(owner, stats?.lastMode ?? "stream");
-	if (!shouldCloneTopLevelStreamTokens(options)) return tokens;
-	const timing = getParseTiming(options);
-	if (!timing) return cloneMarkdownTokens(tokens, true);
-	const startedAt = getParserNow();
-	const cloned = cloneMarkdownTokens(tokens, true);
-	addTiming(timing, "tokenCloneMs", getParserNow() - startedAt);
-	return cloned;
-}
-function buildAllowedHtmlTagSet(options) {
-	const custom = options?.customHtmlTags;
-	if (!Array.isArray(custom) || custom.length === 0) return STANDARD_HTML_TAGS;
-	const set = new Set(STANDARD_HTML_TAGS);
-	for (const name of normalizeCustomHtmlTags(custom)) if (name) set.add(name);
+	const set = normalized.length ? new Set(normalized) : null;
+	if (set) customHtmlTagSetCache.set(cacheKey, set);
 	return set;
 }
 function stringifyInlineNodeRaw(node) {
@@ -19620,609 +21064,322 @@ function maybePromoteCustomNodeFromParagraph(node, options) {
 	if (suffixChildren.length) result.push(buildParagraphFromInlineChildren(suffixChildren));
 	return result;
 }
-function parseStandaloneHtmlDocument(markdown) {
-	const trimmed = markdown.trim();
-	if (!trimmed) return null;
-	const startsLikeHtmlDocument = /^(?:<!doctype\s+html[^>]*>\s*)?<html(?:\s[^>]*)?>/i.test(trimmed);
-	const endsWithHtmlClose = /<\/html>\s*$/i.test(trimmed);
-	if (!startsLikeHtmlDocument || !endsWithHtmlClose) return null;
-	return [{
-		type: "html_block",
-		tag: "html",
-		raw: markdown,
-		content: markdown,
-		loading: false
-	}];
-}
-function getMergeableNodeRaw(node) {
-	const raw = node.raw;
-	if (typeof raw === "string") return raw;
-	const content = getNodeFields(node).content;
-	if (typeof content === "string") return content;
-	return "";
-}
-function isCloseOnlyHtmlBlockForTag(node, tag) {
-	if (node.type !== "html_block" || !tag) return false;
-	const raw = String(node.raw ?? node.content ?? "");
-	return new RegExp(String.raw`^\s*<\s*\/\s*${escapeTagForRegExp(tag)}\s*>\s*$`, "i").test(raw);
-}
-const RAW_TEXT_HTML_TAGS = new Set([
-	"iframe",
-	"script",
-	"style",
-	"textarea",
-	"title"
-]);
-function findNextHtmlBlockFromSource(source, tag, startIndex) {
-	if (!source || !tag) return null;
-	const lowerTag = tag.toLowerCase();
-	const readMarkup = (start$1) => {
-		if (source.startsWith("<!--", start$1)) {
-			const commentEnd = source.indexOf("-->", start$1 + 4);
-			return {
-				closing: false,
-				end: commentEnd === -1 ? source.length : commentEnd + 3,
-				selfClosing: false,
-				tag: ""
-			};
-		}
-		if (source.startsWith("<![CDATA[", start$1)) {
-			const cdataEnd = source.indexOf("]]>", start$1 + 9);
-			return {
-				closing: false,
-				end: cdataEnd === -1 ? source.length : cdataEnd + 3,
-				selfClosing: false,
-				tag: ""
-			};
-		}
-		const endRel = findTagCloseIndexOutsideQuotes(source.slice(start$1));
-		if (endRel === -1) return null;
-		const end = start$1 + endRel + 1;
-		const raw = source.slice(start$1, end);
-		if (/^<\s*[!?]/.test(raw)) return {
-			closing: false,
-			end,
-			selfClosing: false,
-			tag: ""
-		};
-		let body = raw.slice(1).trimStart();
-		const closing = body.startsWith("/");
-		if (closing) body = body.slice(1).trimStart();
-		const tagMatch = body.match(/^([A-Z][\w:-]*)/i);
-		if (!tagMatch?.[1]) return {
-			closing: false,
-			end: start$1 + 1,
-			selfClosing: false,
-			tag: ""
-		};
-		return {
-			closing,
-			end,
-			selfClosing: /\/\s*>$/.test(raw),
-			tag: tagMatch[1].toLowerCase()
-		};
-	};
-	const findRawTextClose = (rawTextTag, from) => {
-		const closeRe = new RegExp(String.raw`<\s*\/\s*${escapeTagForRegExp(rawTextTag)}(?=\s|>)`, "gi");
-		closeRe.lastIndex = from;
-		const match = closeRe.exec(source);
-		if (!match || match.index == null) return null;
-		const markup = readMarkup(match.index);
-		return markup ? {
-			start: match.index,
-			end: markup.end
-		} : null;
-	};
-	let start = -1;
-	let openEnd = -1;
-	let searchIndex = Math.max(0, startIndex);
-	while (searchIndex < source.length) {
-		const lt = source.indexOf("<", searchIndex);
-		if (lt === -1) return null;
-		const markup = readMarkup(lt);
-		if (!markup) return null;
-		if (!markup.closing && markup.tag === lowerTag) {
-			start = lt;
-			openEnd = markup.end - 1;
-			break;
-		}
-		if (!markup.closing && RAW_TEXT_HTML_TAGS.has(markup.tag)) {
-			searchIndex = findRawTextClose(markup.tag, markup.end)?.end ?? source.length;
-			continue;
-		}
-		searchIndex = markup.end;
-	}
-	if (start === -1 || openEnd === -1) return null;
-	const openTag = source.slice(start, openEnd + 1);
-	if (VOID_HTML_TAGS.has(lowerTag) || /\/\s*>$/.test(openTag)) return {
-		raw: openTag,
-		start,
-		end: openEnd + 1,
-		closed: true
-	};
-	if (RAW_TEXT_HTML_TAGS.has(lowerTag)) {
-		const close = findRawTextClose(lowerTag, openEnd + 1);
-		if (!close) return {
-			raw: source.slice(start),
-			start,
-			end: source.length,
-			closed: false
-		};
-		return {
-			raw: source.slice(start, close.end),
-			start,
-			end: close.end,
-			closeStart: close.start,
-			closed: true
-		};
-	}
-	let depth = 1;
-	let index = openEnd + 1;
-	while (index < source.length) {
-		const lt = source.indexOf("<", index);
-		if (lt === -1) return {
-			raw: source.slice(start),
-			start,
-			end: source.length,
-			closed: false
-		};
-		const markup = readMarkup(lt);
-		if (!markup) return null;
-		if (markup.closing && markup.tag === lowerTag) {
-			depth--;
-			const end = markup.end;
-			if (depth === 0) return {
-				raw: source.slice(start, end),
-				start,
-				end,
-				closeStart: lt,
-				closed: true
-			};
-			index = end;
-			continue;
-		}
-		if (!markup.closing && markup.tag === lowerTag) {
-			if (!markup.selfClosing && !VOID_HTML_TAGS.has(markup.tag)) depth++;
-			index = markup.end;
-			continue;
-		}
-		if (!markup.closing && RAW_TEXT_HTML_TAGS.has(markup.tag)) {
-			index = findRawTextClose(markup.tag, markup.end)?.end ?? source.length;
-			continue;
-		}
-		index = markup.end;
-	}
-	return {
-		raw: source.slice(start),
-		start,
-		end: source.length,
-		closed: false
-	};
-}
-function findApproximateConsumedPrefixEnd(exact, approximate) {
-	if (!approximate) return 0;
+function processTokensWithContext(tokens, options, parseInlineTokens$1) {
+	if (!tokens || !Array.isArray(tokens)) return [];
+	const result = [];
+	const resultContexts = [];
+	const linkifyContext = createLinkifyDemotionContextTracker(options);
+	const includeSourceMap = options?.includeSourceMap === true;
 	let i = 0;
-	let j = 0;
-	while (i < exact.length && j < approximate.length) {
-		if (exact[i] === approximate[j]) {
-			i++;
-			j++;
+	while (i < tokens.length) {
+		const handled = parseCommonBlockToken(tokens, i, linkifyContext.options(), containerTokenHandlers, parseInlineTokens$1);
+		if (handled) {
+			recordInternalNodeSourceRange(handled[0], tokens[i], options);
+			result.push(handled[0]);
+			linkifyContext.remember(handled[0].raw);
+			resultContexts.push(linkifyContext.snapshot());
+			i = handled[1];
 			continue;
 		}
-		if (exact[i] === "\r" || exact[i] === "\n") {
-			i++;
-			continue;
-		}
-		return -1;
-	}
-	return j === approximate.length ? i : -1;
-}
-function buildHtmlBlockContent(raw, tag, closed) {
-	if (closed) return raw;
-	return `${raw.replace(/<[^>]*$/, "")}\n</${tag}>`;
-}
-function normalizeIndentedSourceForLookup(value) {
-	return value.replace(/\r\n/g, "\n").replace(/(^|\n)[ \t]{1,4}/g, "$1");
-}
-function canFindNodeRawAfterSourceIndex(source, startIndex, nodeRaw) {
-	if (!nodeRaw) return false;
-	if (source.includes(nodeRaw, startIndex)) return true;
-	return normalizeIndentedSourceForLookup(source.slice(Math.max(0, startIndex))).includes(normalizeIndentedSourceForLookup(nodeRaw));
-}
-function extendHtmlBlockCloseToLineEnding(source, startIndex) {
-	let end = Math.max(0, startIndex);
-	while (end < source.length && (source[end] === " " || source[end] === "	")) end++;
-	if (source[end] === "\r") {
-		end++;
-		if (source[end] === "\n") end++;
-		return end;
-	}
-	if (source[end] === "\n") return end + 1;
-	return startIndex;
-}
-function isDetailsOpenHtmlBlock(node) {
-	if (node.type !== "html_block") return false;
-	if (String(node.tag ?? "").toLowerCase() !== "details") return false;
-	const raw = String(node.raw ?? node.content ?? "");
-	return /^\s*<details\b/i.test(raw);
-}
-function isDetailsCloseHtmlBlock(node) {
-	if (node.type !== "html_block") return false;
-	const raw = String(node.raw ?? node.content ?? "");
-	return /^\s*<\/details\b/i.test(raw);
-}
-function findLastClosingTagStart(raw, tag) {
-	const closeRe = new RegExp(String.raw`<\s*\/\s*${escapeTagForRegExp(tag)}(?=\s|>)`, "gi");
-	let last = -1;
-	let match;
-	while ((match = closeRe.exec(raw)) !== null) last = match.index;
-	return last;
-}
-function buildDetailsChildParseOptions(options, final) {
-	return {
-		final,
-		__disableStreamParse: true,
-		requireClosingStrong: options.requireClosingStrong,
-		customHtmlTags: options.customHtmlTags,
-		validateLink: options.validateLink
-	};
-}
-const STRUCTURED_HTML_WRAPPER_BLOCK_TYPES = new Set([
-	"admonition",
-	"blockquote",
-	"code_block",
-	"definition_list",
-	"footnote",
-	"heading",
-	"list",
-	"math_block",
-	"table",
-	"thematic_break"
-]);
-const STRUCTURED_HTML_WRAPPER_MARKER_RE = /(?:^|\n)\s{0,3}(?:#{1,6}\s+\S|[-+*]\s+\S|\d+[.)]\s+\S|>\s*\S|`{3,}|~{3,}|(?:\*{3,}|-{3,}|_{3,})(?:\s|$)|\|.*\|)/m;
-function hasStructuredHtmlWrapperMarkers(fragment) {
-	return /\n\s*\n/.test(fragment) || STRUCTURED_HTML_WRAPPER_MARKER_RE.test(fragment);
-}
-function shouldStructureGenericHtmlBlockChildren(innerRaw, children) {
-	if (!innerRaw.trim() || children.length === 0) return false;
-	if (children.some((child) => STRUCTURED_HTML_WRAPPER_BLOCK_TYPES.has(String(child?.type ?? "").toLowerCase()))) return true;
-	if (children.some((child) => {
-		if (child?.type !== "html_block") return false;
-		const childFields = getNodeFields(child);
-		return Array.isArray(childFields.children) && childFields.children.length > 0;
-	})) return true;
-	if (!hasStructuredHtmlWrapperMarkers(innerRaw)) return false;
-	if (children.length > 1) return true;
-	const [first] = children;
-	return Boolean(first && first.type === "paragraph");
-}
-function splitSiblingHtmlBlockFragments(fragment) {
-	const blocks = [];
-	let cursor = 0;
-	while (cursor < fragment.length) {
-		while (/\s/.test(fragment[cursor] ?? "")) cursor++;
-		if (cursor >= fragment.length) break;
-		const tagMatch = fragment.slice(cursor).match(/^<([A-Z][\w:-]*)/i);
-		if (!tagMatch?.[1]) return null;
-		const exact = findNextHtmlBlockFromSource(fragment, tagMatch[1], cursor);
-		if (!exact || exact.start !== cursor) return null;
-		blocks.push(exact.raw);
-		cursor = exact.end;
-	}
-	return blocks.length > 1 ? blocks : null;
-}
-function parseSiblingHtmlBlockChildren(blocks, md, options, final) {
-	const customHtmlTags = options.customHtmlTags?.join("\0") ?? "";
-	const cacheOwner = md;
-	const previous = siblingHtmlChildrenCache.get(cacheOwner);
-	const canReuse = previous && previous.final === final && previous.customHtmlTags === customHtmlTags && previous.requireClosingStrong === options.requireClosingStrong && previous.validateLink === options.validateLink;
-	const children = blocks.map((block$1, index) => {
-		if (canReuse && previous.blocks[index] === block$1) return previous.children[index];
-		return parseDetailsFragmentChildren(block$1, md, options);
-	});
-	siblingHtmlChildrenCache.set(cacheOwner, {
-		blocks,
-		children,
-		customHtmlTags,
-		final,
-		requireClosingStrong: options.requireClosingStrong,
-		validateLink: options.validateLink
-	});
-	return children.flat();
-}
-function structureGenericHtmlBlockChildren(nodes, md, options, final) {
-	return nodes.map((node) => {
-		if (node?.type !== "html_block") return node;
-		const fields = getNodeFields(node);
-		const tag = String(fields.tag ?? "").toLowerCase();
-		if (!tag || tag === "details" || NON_STRUCTURING_HTML_TAGS.has(tag) || Array.isArray(fields.children)) return node;
-		const raw = String(node.raw ?? fields.content ?? "");
-		if (!raw) return node;
-		const openEnd = findTagCloseIndexOutsideQuotes(raw);
-		if (openEnd === -1) return node;
-		const exact = findNextHtmlBlockFromSource(raw, tag, 0);
-		const closeStart = exact?.closeStart ?? -1;
-		const hasClose = exact?.closed === true && closeStart >= openEnd + 1;
-		const innerRaw = hasClose ? raw.slice(openEnd + 1, closeStart) : raw.slice(openEnd + 1);
-		if (!innerRaw.trim()) return node;
-		const childOptions = buildDetailsChildParseOptions(options, final);
-		const siblingHtmlBlocks = hasClose ? null : splitSiblingHtmlBlockFragments(innerRaw);
-		const children = siblingHtmlBlocks ? parseSiblingHtmlBlockChildren(siblingHtmlBlocks, md, childOptions, final) : parseDetailsFragmentChildren(innerRaw, md, childOptions);
-		if (!shouldStructureGenericHtmlBlockChildren(innerRaw, children)) return node;
-		return {
-			...node,
-			children
-		};
-	});
-}
-function hasTopLevelHtmlBlock(nodes) {
-	for (const node of nodes) if (node?.type === "html_block") return true;
-	return false;
-}
-function parseDetailsFragmentChildren(fragment, md, options) {
-	if (!fragment.trim()) return [];
-	return parseMarkdownToStructure(fragment, md, {
-		...options,
-		__disableStreamParse: true,
-		__disableStructuredReuse: true
-	});
-}
-function parseSummaryChildren(fragment, md, options) {
-	const children = parseDetailsFragmentChildren(fragment, md, options);
-	const onlyChild = children[0];
-	if (children.length === 1 && onlyChild?.type === "paragraph" && Array.isArray(onlyChild.children)) return onlyChild.children;
-	return children;
-}
-function buildStructuredSummaryNode(summaryRaw, md, options) {
-	const summaryNode = parseHtmlBlock({ content: summaryRaw });
-	const openEnd = findTagCloseIndexOutsideQuotes(summaryRaw);
-	const closeStart = findLastClosingTagStart(summaryRaw, "summary");
-	if (openEnd !== -1 && closeStart !== -1 && closeStart >= openEnd + 1) {
-		const children = parseSummaryChildren(summaryRaw.slice(openEnd + 1, closeStart), md, options);
-		if (children.length > 0) summaryNode.children = children;
-	}
-	summaryNode.raw = summaryRaw;
-	return summaryNode;
-}
-function buildDetailsPrefixChildren(openRaw, md, options) {
-	const openEnd = findTagCloseIndexOutsideQuotes(openRaw);
-	if (openEnd === -1) return [];
-	const innerPrefix = openRaw.slice(openEnd + 1);
-	if (!innerPrefix.trim()) return [];
-	const summaryBlock = findNextHtmlBlockFromSource(innerPrefix, "summary", 0);
-	if (!summaryBlock) return parseDetailsFragmentChildren(innerPrefix, md, options);
-	const beforeSummary = innerPrefix.slice(0, summaryBlock.start);
-	const afterSummary = innerPrefix.slice(summaryBlock.end);
-	return [
-		...parseDetailsFragmentChildren(beforeSummary, md, options),
-		buildStructuredSummaryNode(summaryBlock.raw, md, options),
-		...parseDetailsFragmentChildren(afterSummary, md, options)
-	];
-}
-function combineStructuredDetailsHtmlBlocks(nodes, source, md, options, final, sourceCursor = 0) {
-	const merged = [];
-	let cursor = sourceCursor;
-	for (let i = 0; i < nodes.length; i++) {
-		const node = nodes[i];
-		const nodeRaw = getMergeableNodeRaw(node);
-		let nodePos = -1;
-		if (nodeRaw) {
-			nodePos = source.indexOf(nodeRaw, cursor);
-			if (nodePos !== -1) cursor = nodePos + nodeRaw.length;
-		}
-		if (!isDetailsOpenHtmlBlock(node)) {
-			merged.push(node);
-			continue;
-		}
-		const openRaw = String(node.raw ?? getMergeableNodeRaw(node) ?? "");
-		const openStart = nodePos !== -1 ? nodePos : source.indexOf(openRaw, Math.max(0, cursor - openRaw.length));
-		if (openStart === -1) {
-			merged.push(node);
-			continue;
-		}
-		let depth = 1;
-		let closeIndex = -1;
-		for (let j = i + 1; j < nodes.length; j++) {
-			const current = nodes[j];
-			if (isDetailsOpenHtmlBlock(current)) {
-				depth++;
-				continue;
-			}
-			if (!isDetailsCloseHtmlBlock(current)) continue;
-			depth--;
-			if (depth === 0) {
-				closeIndex = j;
-				break;
-			}
-		}
-		const exact = findNextHtmlBlockFromSource(source, "details", openStart);
-		const selfContained = closeIndex === -1 && exact?.closed === true;
-		const effectiveOpenRaw = selfContained ? (() => {
-			const ct = findLastClosingTagStart(openRaw, "details");
-			return ct !== -1 ? openRaw.slice(0, ct) : openRaw;
-		})() : openRaw;
-		const [children] = combineStructuredDetailsHtmlBlocks(selfContained ? [] : closeIndex === -1 ? nodes.slice(i + 1) : nodes.slice(i + 1, closeIndex), source, md, options, final, openStart + openRaw.length);
-		const prefixChildren = buildDetailsPrefixChildren(effectiveOpenRaw, md, buildDetailsChildParseOptions(options, final));
-		const closeRaw = closeIndex === -1 ? "</details>" : String(nodes[closeIndex].raw ?? getMergeableNodeRaw(nodes[closeIndex]) ?? "</details>");
-		const explicitClose = selfContained || closeIndex !== -1 && exact?.closed === true;
-		const trimmedCloseRaw = closeRaw.replace(/[\t\r\n ]+$/, "");
-		const closeStart = explicitClose ? (() => {
-			const closeOffset = (exact?.raw ?? "").lastIndexOf(trimmedCloseRaw);
-			return closeOffset === -1 ? source.length : openStart + closeOffset;
-		})() : source.length;
-		const openTagEndIndex = findTagCloseIndexOutsideQuotes(openRaw);
-		const middleSourceStart = selfContained && openTagEndIndex !== -1 ? openStart + openTagEndIndex + 1 : openStart + openRaw.length;
-		const middleSource = source.slice(middleSourceStart, closeStart === -1 ? source.length : closeStart);
-		const middleTokens = md.parse(middleSource, { __markstreamFinal: final });
-		const renderedMiddle = md.renderer.render(middleTokens, md.options, { __markstreamFinal: final });
-		const closeMarkupEnd = closeStart + trimmedCloseRaw.length;
-		const closeSliceEnd = explicitClose ? Math.max(closeStart + closeRaw.length, extendHtmlBlockCloseToLineEnding(source, closeMarkupEnd)) : source.length;
-		const renderedCloseRaw = explicitClose ? source.slice(closeStart, closeSliceEnd) : closeRaw;
-		const mergedRaw = explicitClose ? source.slice(openStart, closeSliceEnd) : source.slice(openStart);
-		const contentPrefix = selfContained && openTagEndIndex !== -1 ? openRaw.slice(0, openTagEndIndex + 1) : openRaw;
-		const detailsNode = {
-			...node,
-			tag: "details",
-			attrs: parseTagAttrs(openRaw.slice(0, openTagEndIndex + 1)),
-			raw: mergedRaw,
-			content: `${contentPrefix}${renderedMiddle}${renderedCloseRaw}`,
-			children: [...prefixChildren, ...children],
-			loading: !final && !explicitClose
-		};
-		if (options.includeSourceMap) detailsNode.sourceMap = createSourceMapFromOffsets(source, openStart, explicitClose ? closeSliceEnd : source.length, options);
-		merged.push(detailsNode);
-		cursor = explicitClose ? closeSliceEnd : source.length;
-		if (closeIndex === -1 && !selfContained) break;
-		if (closeIndex !== -1) i = closeIndex;
-	}
-	return [merged, cursor];
-}
-function mergeSplitTopLevelHtmlBlocks(nodes, final, source, options) {
-	if (!source) return nodes;
-	const merged = nodes.slice();
-	let sourceHtmlCursor = 0;
-	for (let i = 0; i < merged.length; i++) {
-		const node = merged[i];
-		const nodeRaw = getMergeableNodeRaw(node);
-		const nodePos = nodeRaw ? source.indexOf(nodeRaw, sourceHtmlCursor) : -1;
-		if (node?.type !== "html_block") {
-			if (nodePos !== -1) sourceHtmlCursor = nodePos + nodeRaw.length;
-			continue;
-		}
-		const tag = String(node.tag ?? "").toLowerCase();
-		if (!tag) continue;
-		if (tag === "details") {
-			if (nodePos !== -1) sourceHtmlCursor = nodePos + nodeRaw.length;
-			continue;
-		}
-		const exact = findNextHtmlBlockFromSource(source, tag, nodePos !== -1 ? nodePos : sourceHtmlCursor);
-		if (!exact) continue;
-		sourceHtmlCursor = exact.end;
-		const currentContent = String(node.content ?? nodeRaw);
-		const currentRaw = String(node.raw ?? currentContent);
-		const currentRawEnd = nodePos + currentRaw.length;
-		if (nodePos !== -1 && exact.end < currentRawEnd && source.slice(nodePos, currentRawEnd) === currentRaw) {
-			sourceHtmlCursor = currentRawEnd;
-			if (options?.includeSourceMap) node.sourceMap = createSourceMapFromOffsets(source, nodePos, currentRawEnd, options);
-			continue;
-		}
-		const nextContent = buildHtmlBlockContent(exact.raw, tag, exact.closed);
-		const desiredLoading = !final && !exact.closed;
-		const needsExpansion = currentContent !== nextContent || currentRaw !== exact.raw || Boolean(node.loading) !== desiredLoading;
-		const exactOpenEnd = findTagCloseIndexOutsideQuotes(exact.raw);
-		const exactOpenTag = exactOpenEnd === -1 ? "" : exact.raw.slice(0, exactOpenEnd + 1);
-		const exactAttrs = exactOpenTag ? parseTagAttrs(exactOpenTag) : [];
-		node.content = nextContent;
-		node.raw = exact.raw;
-		node.loading = desiredLoading;
-		node.attrs = exactAttrs.length ? exactAttrs : void 0;
-		if (options?.includeSourceMap) node.sourceMap = createSourceMapFromOffsets(source, exact.start, exact.end, options);
-		if (!needsExpansion) continue;
-		let tailCursor = findApproximateConsumedPrefixEnd(exact.raw, currentRaw);
-		if (tailCursor === -1) tailCursor = 0;
-		const j = i + 1;
-		while (j < merged.length) {
-			if (exact.closed && isCloseOnlyHtmlBlockForTag(merged[j], tag)) {
-				merged.splice(j, 1);
-				continue;
-			}
-			const nextRaw = getMergeableNodeRaw(merged[j]);
-			if (!nextRaw) break;
-			const nextPos = exact.raw.indexOf(nextRaw, tailCursor);
-			if (nextPos === -1) {
-				if (canFindNodeRawAfterSourceIndex(source, exact.end, nextRaw)) break;
-				const range = internalNodeSourceRanges.get(merged[j]);
-				if (!range) break;
-				if (range.start >= exact.start && range.end <= exact.end) {
-					merged.splice(j, 1);
-					continue;
-				}
-				break;
-			}
-			tailCursor = nextPos + nextRaw.length;
-			merged.splice(j, 1);
-		}
-	}
-	return merged;
-}
-function stripDanglingHtmlLikeTail(markdown) {
-	const isWs = (ch) => ch === " " || ch === "	" || ch === "\n" || ch === "\r";
-	const isLikelyHtmlTagPrefix = (tail$1) => {
-		if (!tail$1 || tail$1[0] !== "<") return false;
-		if (tail$1.includes(">")) return false;
-		let i = 1;
-		if (i < tail$1.length && isWs(tail$1[i])) return false;
-		if (tail$1.startsWith("<!--") || tail$1.startsWith("<?") || tail$1.startsWith("<!")) return false;
-		if (tail$1[i] === "/") {
-			i++;
-			if (i < tail$1.length && isWs(tail$1[i])) return false;
-		}
-		const isAlpha = (ch) => {
-			const c = ch.charCodeAt(0);
-			return c >= 65 && c <= 90 || c >= 97 && c <= 122;
-		};
-		const isDigit$2 = (ch) => {
-			const c = ch.charCodeAt(0);
-			return c >= 48 && c <= 57;
-		};
-		const isNameStart = (ch) => ch === "!" || isAlpha(ch);
-		const isNameChar = (ch) => isAlpha(ch) || isDigit$2(ch) || ch === ":" || ch === "-";
-		const isAttrStart = (ch) => isAlpha(ch) || isDigit$2(ch) || ch === "_" || ch === "." || ch === ":" || ch === "-";
-		const isAttrChar = isAttrStart;
-		if (i >= tail$1.length || !isNameStart(tail$1[i])) return false;
-		i++;
-		while (i < tail$1.length && isNameChar(tail$1[i])) i++;
-		while (i < tail$1.length) {
-			while (i < tail$1.length && isWs(tail$1[i])) i++;
-			if (i >= tail$1.length) return true;
-			if (tail$1[i] === "/") {
-				i++;
-				while (i < tail$1.length && isWs(tail$1[i])) i++;
-				return i >= tail$1.length;
-			}
-			if (!isAttrStart(tail$1[i])) return false;
-			i++;
-			while (i < tail$1.length && isAttrChar(tail$1[i])) i++;
-			while (i < tail$1.length && isWs(tail$1[i])) i++;
-			if (i < tail$1.length && tail$1[i] === "=") {
-				i++;
-				while (i < tail$1.length && isWs(tail$1[i])) i++;
-				if (i >= tail$1.length) return true;
-				const quote = tail$1[i];
-				if (quote === "\"" || quote === "'") {
-					i++;
-					while (i < tail$1.length && tail$1[i] !== quote) i++;
-					if (i >= tail$1.length) return true;
-					i++;
+		const token = tokens[i];
+		switch (token.type) {
+			case "paragraph_open": {
+				const paragraphRaw = String(tokens[i + 1]?.content ?? "");
+				const paragraphNode = parseParagraph(tokens, i, linkifyContext.options(paragraphRaw), parseInlineTokens$1);
+				if (includeSourceMap) applyNodeSourceMap(paragraphNode, token, options);
+				const promoted = maybePromoteCustomNodeFromParagraph(paragraphNode, options);
+				if (promoted) {
+					if (includeSourceMap) inheritSourceMap(promoted, paragraphNode);
+					for (const node of promoted) recordInternalNodeSourceRange(node, token, options);
+					result.push(...promoted);
 				} else {
-					while (i < tail$1.length) {
-						const ch = tail$1[i];
-						if (isWs(ch) || ch === "<" || ch === ">" || ch === "\"" || ch === "'" || ch === "`") break;
-						i++;
-					}
-					if (i >= tail$1.length) return true;
+					recordInternalNodeSourceRange(paragraphNode, token, options);
+					result.push(paragraphNode);
 				}
+				linkifyContext.remember(paragraphNode.raw);
+				i += 3;
+				break;
 			}
+			case "bullet_list_open":
+			case "ordered_list_open": {
+				const [listNode, newIndex] = parseList(tokens, i, linkifyContext.options(), parseInlineTokens$1);
+				if (includeSourceMap) applyNodeSourceMap(listNode, token, options);
+				recordInternalNodeSourceRange(listNode, token, options);
+				result.push(listNode);
+				linkifyContext.remember(listNode.raw);
+				i = newIndex;
+				break;
+			}
+			case "blockquote_open": {
+				const [blockquoteNode, newIndex] = parseBlockquote(tokens, i, linkifyContext.options(), parseInlineTokens$1);
+				if (includeSourceMap) applyNodeSourceMap(blockquoteNode, token, options);
+				recordInternalNodeSourceRange(blockquoteNode, token, options);
+				result.push(blockquoteNode);
+				linkifyContext.remember(blockquoteNode.raw);
+				i = newIndex;
+				break;
+			}
+			case "footnote_anchor": {
+				const meta = token.meta ?? {};
+				const footnoteAnchorNode = {
+					type: "footnote_anchor",
+					id: String(meta.label ?? token.content ?? ""),
+					raw: String(token.content ?? "")
+				};
+				if (includeSourceMap) applyNodeSourceMap(footnoteAnchorNode, token, options);
+				recordInternalNodeSourceRange(footnoteAnchorNode, token, options);
+				result.push(footnoteAnchorNode);
+				linkifyContext.remember(String(token.content ?? ""));
+				i++;
+				break;
+			}
+			case "hardbreak":
+				result.push(parseHardBreak());
+				linkifyContext.reset();
+				i++;
+				break;
+			case "text": {
+				const content = String(token.content ?? "");
+				const paragraphNode = {
+					type: "paragraph",
+					raw: content,
+					children: content ? [{
+						type: "text",
+						content,
+						raw: content
+					}] : []
+				};
+				if (includeSourceMap) applyNodeSourceMap(paragraphNode, token, options);
+				recordInternalNodeSourceRange(paragraphNode, token, options);
+				result.push(paragraphNode);
+				linkifyContext.remember(content);
+				i++;
+				break;
+			}
+			case "inline":
+				{
+					const raw = String(token.content ?? "");
+					const parsed = parseInlineTokens$1(token.children || [], raw, void 0, linkifyContext.options(raw));
+					if (parsed.length === 0) {} else if (parsed.every((n) => n.type === "html_block")) {
+						if (includeSourceMap) for (const node of parsed) applyNodeSourceMap(node, token, options);
+						for (const node of parsed) recordInternalNodeSourceRange(node, token, options);
+						result.push(...parsed);
+					} else {
+						const paragraphNode = {
+							type: "paragraph",
+							raw,
+							children: parsed
+						};
+						if (includeSourceMap) applyNodeSourceMap(paragraphNode, token, options);
+						const promoted = maybePromoteCustomNodeFromParagraph(paragraphNode, options);
+						if (promoted) {
+							if (includeSourceMap) inheritSourceMap(promoted, paragraphNode);
+							for (const node of promoted) recordInternalNodeSourceRange(node, token, options);
+							result.push(...promoted);
+						} else {
+							recordInternalNodeSourceRange(paragraphNode, token, options);
+							result.push(paragraphNode);
+						}
+					}
+					linkifyContext.remember(raw);
+				}
+				i += 1;
+				break;
+			default:
+				i += 1;
+				break;
 		}
-		return true;
-	};
-	const isInsideFencedCodeBlock = (src, pos) => isInsideOpenMarkdownFenceBeforeOffset(src, pos);
-	const s = String(markdown ?? "");
-	const lastLt = s.lastIndexOf("<");
-	if (lastLt === -1) return s;
-	if (isInsideFencedCodeBlock(s, lastLt)) return s;
-	if (lastLt > 0) {
-		const prev = s[lastLt - 1];
-		const prevIsWs = prev === " " || prev === "	" || prev === "\n" || prev === "\r";
-		const prev2 = s[lastLt - 2];
-		if (!prevIsWs && !((prev === "n" || prev === "r") && prev2 === "\\")) return s;
+		const context = linkifyContext.snapshot();
+		while (resultContexts.length < result.length) resultContexts.push(context);
 	}
-	const tail = s.slice(lastLt);
-	if (tail.includes(">")) return s;
-	if (tail.length > 1 && (tail[1] === " " || tail[1] === "	" || tail[1] === "\n" || tail[1] === "\r")) return s;
-	if (!isLikelyHtmlTagPrefix(tail)) return s;
-	return s.slice(0, lastLt);
+	options.linkifyDemotionResultContexts = resultContexts;
+	return result;
 }
+
+//#endregion
+//#region src/parser/runtime.ts
+/**
+* Resolve (and cache) the line-start offsets for a source string.
+*
+* Streaming commits grow the source append-only, so a previously cached
+* offset array can be extended by scanning only the appended tail instead of
+* re-scanning the whole document on every commit (the previous behavior
+* rebuilt the offsets from scratch once per parse). Correctness is preserved
+* by keying on the actual string: if the new source is not an extension of
+* the cached one, the cache is rebuilt from scratch.
+*/
+function getCachedSourceLineOffsets(runtime, source) {
+	const cached = runtime.sourceLineOffsets;
+	if (cached?.source === source) return cached.offsets;
+	if (cached && source.length > cached.source.length && runtime.sourceExtends(cached.source, source)) {
+		const offsets$1 = cached.offsets;
+		for (let i = cached.source.length; i < source.length; i++) if (source.charCodeAt(i) === 10) offsets$1.push(i + 1);
+		cached.source = source;
+		return offsets$1;
+	}
+	const offsets = [0];
+	for (let i = 0; i < source.length; i++) if (source.charCodeAt(i) === 10) offsets.push(i + 1);
+	runtime.sourceLineOffsets = {
+		source,
+		offsets
+	};
+	return offsets;
+}
+const parserRuntimes = /* @__PURE__ */ new WeakMap();
+const wrappedMarkdownItInstances = /* @__PURE__ */ new WeakSet();
+const wrappedStreamInstances = /* @__PURE__ */ new WeakSet();
+function sameSemantics(left, right) {
+	return left.customHtmlTags === right.customHtmlTags && left.hasCustomParserExtensions === right.hasCustomParserExtensions && left.includeSourceMap === right.includeSourceMap && left.postTransformNodes === right.postTransformNodes && left.postTransformTokens === right.postTransformTokens && left.preTransformTokens === right.preTransformTokens && left.requireClosingStrong === right.requireClosingStrong && left.reuseStableTopLevelNodes === right.reuseStableTopLevelNodes && left.streamParse === right.streamParse && left.validateLink === right.validateLink;
+}
+var ParserRuntime = class {
+	constructor(markdownIt$1) {
+		this.streamParseEnvs = /* @__PURE__ */ new Map();
+		this.htmlPassIdentityPreserving = false;
+		this.detailsStitchCache = /* @__PURE__ */ new WeakMap();
+		this.nodeSourceRanges = /* @__PURE__ */ new WeakMap();
+		this.finalized = false;
+		this.resettingStream = false;
+		this.streamStateActive = false;
+		this.streamResetInCurrentRootParse = false;
+		this.markdownIt = markdownIt$1;
+	}
+	sourceExtends(previousSource, currentSource) {
+		if (this.sourceRelationPrevious === previousSource && this.sourceRelationCurrent === currentSource) return true;
+		if (!currentSource.startsWith(previousSource)) return false;
+		this.sourceRelationPrevious = previousSource;
+		this.sourceRelationCurrent = currentSource;
+		return true;
+	}
+	beginRootParse(source, semantics) {
+		this.streamResetInCurrentRootParse = false;
+		const sourceChangedNonAppend = this.documentSource !== void 0 && source !== this.documentSource && !this.sourceExtends(this.documentSource, source);
+		const semanticsChanged = this.semantics !== void 0 && !sameSemantics(this.semantics, semantics);
+		if (this.finalized || sourceChangedNonAppend || semanticsChanged) this.resetDocument(this.streamStateActive);
+		this.finalized = false;
+		this.documentSource = source;
+		this.semantics = semantics;
+	}
+	finishRootParse(final) {
+		this.sourceRelationPrevious = void 0;
+		this.sourceRelationCurrent = void 0;
+		if (!final) return;
+		this.clearDocumentCaches();
+		this.documentSource = void 0;
+		this.semantics = void 0;
+		this.finalized = true;
+	}
+	resetForFinalAutoParse() {
+		if (!this.streamResetInCurrentRootParse) this.resetStreamOnly();
+		this.clearDocumentCaches();
+	}
+	markStreamParseStarted() {
+		this.streamStateActive = true;
+	}
+	resetDocument(resetStream) {
+		if (resetStream) this.resetStreamOnly();
+		this.clearDocumentCaches();
+		this.documentSource = void 0;
+		this.semantics = void 0;
+		this.finalized = false;
+	}
+	resetStreamOnly() {
+		const stream = this.markdownIt.stream;
+		const reset = stream?.reset;
+		if (!stream || typeof reset !== "function") return;
+		this.resettingStream = true;
+		try {
+			reset.call(stream);
+			this.streamStateActive = false;
+			this.streamResetInCurrentRootParse = true;
+		} finally {
+			this.resettingStream = false;
+		}
+	}
+	isResettingStream() {
+		return this.resettingStream;
+	}
+	handleExternalStreamReset() {
+		this.streamStateActive = false;
+		this.streamResetInCurrentRootParse = true;
+		this.clearDocumentCaches();
+		this.documentSource = void 0;
+		this.semantics = void 0;
+		this.finalized = false;
+	}
+	invalidateConfiguration() {
+		this.resetDocument(true);
+	}
+	dispose() {
+		this.resetDocument(true);
+		parserRuntimes.delete(this.markdownIt);
+	}
+	clearDocumentCaches() {
+		this.safeMarkdown = void 0;
+		this.tolerantMathBoundary = void 0;
+		this.pendingExplicitMathTail = void 0;
+		this.streamParseEnvs.clear();
+		this.topLevelStreamParseMode = void 0;
+		this.structuredStream = void 0;
+		this.htmlPassIdentityPreserving = false;
+		this.siblingHtmlChildren = void 0;
+		this.detailsStitchCache = /* @__PURE__ */ new WeakMap();
+		this.nodeSourceRanges = /* @__PURE__ */ new WeakMap();
+		this.sourceLineOffsets = void 0;
+		this.sourceRelationPrevious = void 0;
+		this.sourceRelationCurrent = void 0;
+	}
+};
+function wrapMarkdownItBoundaries(md) {
+	const owner = md;
+	const ownerState = md;
+	if (!wrappedMarkdownItInstances.has(owner)) {
+		wrappedMarkdownItInstances.add(owner);
+		const originalUse = md.use;
+		md.use = function(...args) {
+			try {
+				ownerState.__markstreamHasCustomParserExtensions = true;
+				return Reflect.apply(originalUse, this, args);
+			} finally {
+				parserRuntimes.get(owner)?.invalidateConfiguration();
+			}
+		};
+		const originalSet = md.set;
+		md.set = function(...args) {
+			try {
+				return Reflect.apply(originalSet, this, args);
+			} finally {
+				parserRuntimes.get(owner)?.invalidateConfiguration();
+			}
+		};
+	}
+	const stream = md.stream;
+	if (!stream || typeof stream.reset !== "function") return;
+	const streamOwner = stream;
+	if (wrappedStreamInstances.has(streamOwner)) return;
+	wrappedStreamInstances.add(streamOwner);
+	const originalReset = stream.reset;
+	stream.reset = function(...args) {
+		const runtime = parserRuntimes.get(owner);
+		try {
+			return Reflect.apply(originalReset, this, args);
+		} finally {
+			if (!runtime?.isResettingStream()) runtime?.handleExternalStreamReset();
+		}
+	};
+}
+function getParserRuntime(md) {
+	const owner = md;
+	let runtime = parserRuntimes.get(owner);
+	if (!runtime) {
+		runtime = new ParserRuntime(md);
+		parserRuntimes.set(owner, runtime);
+	}
+	wrapMarkdownItBoundaries(md);
+	return runtime;
+}
+
+//#endregion
+//#region src/parser/source-line-mapper.ts
 function createSourceLineMapper(source, parsedSource) {
 	if (source === parsedSource) return void 0;
 	const sourceLines = source.split(/\r?\n/);
@@ -20322,6 +21479,96 @@ function createSourceLineMapper(source, parsedSource) {
 			endLine: Math.min(sourceLines.length, startLine + 1)
 		};
 	};
+}
+
+//#endregion
+//#region src/parser/streaming/custom-html-preprocess.ts
+const closingTagBlankLineReCache = /* @__PURE__ */ new Map();
+function getClosingTagBlankLineRe(tag) {
+	let re = closingTagBlankLineReCache.get(tag);
+	if (!re) {
+		re = new RegExp(String.raw`(^[\t ]*<\s*\/\s*${tag}\s*>[\t ]*)(\r?\n)(?![\t ]*\r?\n|$)`, "gim");
+		if (closingTagBlankLineReCache.size >= 64) closingTagBlankLineReCache.clear();
+		closingTagBlankLineReCache.set(tag, re);
+	}
+	return re;
+}
+function stripDanglingHtmlLikeTail(markdown) {
+	const isWs = (ch) => ch === " " || ch === "	" || ch === "\n" || ch === "\r";
+	const isLikelyHtmlTagPrefix = (tail$1) => {
+		if (!tail$1 || tail$1[0] !== "<") return false;
+		if (tail$1.includes(">")) return false;
+		let i = 1;
+		if (i < tail$1.length && isWs(tail$1[i])) return false;
+		if (tail$1.startsWith("<!--") || tail$1.startsWith("<?") || tail$1.startsWith("<!")) return false;
+		if (tail$1[i] === "/") {
+			i++;
+			if (i < tail$1.length && isWs(tail$1[i])) return false;
+		}
+		const isAlpha = (ch) => {
+			const c = ch.charCodeAt(0);
+			return c >= 65 && c <= 90 || c >= 97 && c <= 122;
+		};
+		const isDigit$2 = (ch) => {
+			const c = ch.charCodeAt(0);
+			return c >= 48 && c <= 57;
+		};
+		const isNameStart = (ch) => ch === "!" || isAlpha(ch);
+		const isNameChar = (ch) => isAlpha(ch) || isDigit$2(ch) || ch === ":" || ch === "-";
+		const isAttrStart = (ch) => isAlpha(ch) || isDigit$2(ch) || ch === "_" || ch === "." || ch === ":" || ch === "-";
+		const isAttrChar = isAttrStart;
+		if (i >= tail$1.length || !isNameStart(tail$1[i])) return false;
+		i++;
+		while (i < tail$1.length && isNameChar(tail$1[i])) i++;
+		while (i < tail$1.length) {
+			while (i < tail$1.length && isWs(tail$1[i])) i++;
+			if (i >= tail$1.length) return true;
+			if (tail$1[i] === "/") {
+				i++;
+				while (i < tail$1.length && isWs(tail$1[i])) i++;
+				return i >= tail$1.length;
+			}
+			if (!isAttrStart(tail$1[i])) return false;
+			i++;
+			while (i < tail$1.length && isAttrChar(tail$1[i])) i++;
+			while (i < tail$1.length && isWs(tail$1[i])) i++;
+			if (i < tail$1.length && tail$1[i] === "=") {
+				i++;
+				while (i < tail$1.length && isWs(tail$1[i])) i++;
+				if (i >= tail$1.length) return true;
+				const quote = tail$1[i];
+				if (quote === "\"" || quote === "'") {
+					i++;
+					while (i < tail$1.length && tail$1[i] !== quote) i++;
+					if (i >= tail$1.length) return true;
+					i++;
+				} else {
+					while (i < tail$1.length) {
+						const ch = tail$1[i];
+						if (isWs(ch) || ch === "<" || ch === ">" || ch === "\"" || ch === "'" || ch === "`") break;
+						i++;
+					}
+					if (i >= tail$1.length) return true;
+				}
+			}
+		}
+		return true;
+	};
+	const s = String(markdown ?? "");
+	const lastLt = s.lastIndexOf("<");
+	if (lastLt === -1) return s;
+	if (lastLt > 0) {
+		const prev = s[lastLt - 1];
+		const prevIsWs = prev === " " || prev === "	" || prev === "\n" || prev === "\r";
+		const prev2 = s[lastLt - 2];
+		if (!prevIsWs && !((prev === "n" || prev === "r") && prev2 === "\\")) return s;
+	}
+	const tail = s.slice(lastLt);
+	if (tail.includes(">")) return s;
+	if (tail.length > 1 && (tail[1] === " " || tail[1] === "	" || tail[1] === "\n" || tail[1] === "\r")) return s;
+	if (!isLikelyHtmlTagPrefix(tail)) return s;
+	if (isInsideOpenMarkdownFenceBeforeOffset(s, lastLt)) return s;
+	return s.slice(0, lastLt);
 }
 function ensureBlankLineBeforeInlineMultilineCustomHtmlBlocks(markdown, tags) {
 	if (!markdown || !tags.length) return markdown;
@@ -20940,118 +22187,32 @@ function ensureBlankLineBeforeCustomHtmlBlocks(markdown, tags) {
 	}
 	return out;
 }
-/**
-* Math-context scanner used to gate the transport-split LaTeX-command
-* reconstruction. Tracks fenced code (including list/blockquote-prefixed
-* fences via matchMarkdownFenceMarker), backtick spans, $$...$$ blocks,
-* \[...\] spans and single-$ math.
-*
-* Single-$ math is line-scoped (markdown-it-math never lets $...$ span a
-* line break): the opener state resets at every line break. A $ that is the
-* last char of a line counts as an opener because a transport split can land
-* exactly after it (`$\nabla$` -> "$" + newline + "abla$").
-*
-* The scanner is a pure function of the consumed text, so the append-only
-* windowed fast path in getSafeMarkdown stays deterministic.
-*/
-function createLatexSplitMathScanner(source) {
-	let inFence = false;
-	let fenceMarker = "";
-	let fenceLen = 0;
-	let inDollarBlock = false;
-	let inBracketMath = false;
-	let singleDollarOpen = false;
-	let scanned = 0;
-	const processLine = (line, _lineStartOffset) => {
-		const fenceMatch = matchMarkdownFenceMarker(line);
-		if (fenceMatch) {
-			if (inFence) {
-				if (fenceMatch.markerChar === fenceMarker && fenceMatch.markerLen >= fenceLen && /^\s*$/.test(fenceMatch.rest)) {
-					inFence = false;
-					fenceMarker = "";
-					fenceLen = 0;
-				}
-			} else {
-				inFence = true;
-				fenceMarker = fenceMatch.markerChar;
-				fenceLen = fenceMatch.markerLen;
-			}
-			return;
+function normalizeStreamingCustomHtmlSource(markdown, customHtmlTags, isFinal) {
+	let safeMarkdown = markdown;
+	if (customHtmlTags?.length && safeMarkdown.includes("<")) {
+		const tags = normalizeCustomHtmlTags(customHtmlTags);
+		if (tags.length) {
+			safeMarkdown = ensureBlankLineBeforeInlineMultilineCustomHtmlBlocks(safeMarkdown, tags);
+			safeMarkdown = normalizeCustomHtmlOpeningTagSameLine(safeMarkdown, tags);
+			safeMarkdown = ensureBlankLineBeforeCustomHtmlBlocks(safeMarkdown, tags);
+			safeMarkdown = ensureBlankLineAfterCustomHtmlCloseBeforeBlockMarkerSameLine(safeMarkdown, tags);
+			if (safeMarkdown.includes("</")) for (const tag of tags) safeMarkdown = safeMarkdown.replace(getClosingTagBlankLineRe(tag), "$1$2$2");
 		}
-		if (inFence) return;
-		let i = 0;
-		while (i < line.length) {
-			if (inDollarBlock) {
-				if (line.startsWith("$$", i) && !isEscapedDelimiterAt(line, i)) {
-					inDollarBlock = false;
-					i += 2;
-				} else i++;
-				continue;
-			}
-			if (inBracketMath) {
-				if (line.startsWith("\\]", i) && !isEscapedDelimiterAt(line, i)) {
-					inBracketMath = false;
-					i += 2;
-				} else i++;
-				continue;
-			}
-			const ch = line[i];
-			if (ch === "`") {
-				const runLen = countRepeatedChar(line, i, "`");
-				const closeIndex = findCodeSpanCloseIndex(line, i + runLen, runLen);
-				if (closeIndex === -1) break;
-				i = closeIndex + runLen;
-				continue;
-			}
-			if (ch === "\\") {
-				const next = line[i + 1];
-				if (next === "[" && !isEscapedDelimiterAt(line, i)) {
-					inBracketMath = true;
-					i += 2;
-				} else if (next === "]" && !isEscapedDelimiterAt(line, i) && !inBracketMath) i += 2;
-				else i += 2;
-				continue;
-			}
-			if (ch === "$") {
-				if (line[i + 1] === "$" && !isEscapedDelimiterAt(line, i)) {
-					inDollarBlock = true;
-					singleDollarOpen = false;
-					i += 2;
-					continue;
-				}
-				if (singleDollarOpen) {
-					singleDollarOpen = false;
-					i++;
-					continue;
-				}
-				const after = line[i + 1];
-				if (after === void 0 || after !== " " && after !== "	" && !/\d/.test(after)) singleDollarOpen = true;
-				i++;
-				continue;
-			}
-			i++;
-		}
-	};
-	const scanTo = (target) => {
-		while (scanned < target) {
-			const newlineIndex = source.indexOf("\n", scanned);
-			const lineEndRaw = newlineIndex === -1 || newlineIndex >= target ? target : newlineIndex;
-			const lineEnd$2 = lineEndRaw > scanned && source[lineEndRaw - 1] === "\r" ? lineEndRaw - 1 : lineEndRaw;
-			processLine(source.slice(scanned, lineEnd$2), scanned);
-			if (newlineIndex === -1 || newlineIndex >= target) {
-				scanned = target;
-				break;
-			}
-			singleDollarOpen = false;
-			scanned = newlineIndex + 1;
-		}
-	};
-	return {
-		scanTo,
-		inMath: () => inDollarBlock || inBracketMath || singleDollarOpen
-	};
+	}
+	if (!isFinal) safeMarkdown = stripDanglingHtmlLikeTail(safeMarkdown);
+	return safeMarkdown;
 }
-function transformStreamingSafeMarkdown(source, isFinal, md, options) {
+
+//#endregion
+//#region src/parser/streaming/safe-markdown.ts
+const SAFE_MARKDOWN_WINDOW_MARGIN = 1024;
+const SAFE_MARKDOWN_WINDOW_OVERLAP = 16;
+/**
+* Cached streaming safe-markdown transform, owned by the parser runtime.
+*
+* Fragment parses bypass this top-level cache and use a full transform.
+*/
+function transformStreamingSafeMarkdown(source, isFinal, options) {
 	let safeMarkdown = source.replace(/([^\\])\r(ight|ho)/g, "$1\\r$2");
 	const latexSplitMathScanner = createLatexSplitMathScanner(safeMarkdown);
 	safeMarkdown = safeMarkdown.replace(/([^\\])\r?\n(abla|eq|ot|exists)/g, (full, before, cmd, offset) => {
@@ -21083,91 +22244,116 @@ function transformStreamingSafeMarkdown(source, isFinal, md, options) {
 		else if (/\n[[(]\n*$/.test(safeMarkdown)) safeMarkdown = safeMarkdown.replace(/(\n\[|\n\()+\n*$/g, "\n");
 		safeMarkdown = getStreamingAdmonitionOpenTailReplacement(safeMarkdown, options.customHtmlTags) ?? safeMarkdown;
 	}
-	if (options.customHtmlTags?.length && safeMarkdown.includes("<")) {
-		const tags = normalizeCustomHtmlTags(options.customHtmlTags);
-		if (tags.length) {
-			safeMarkdown = ensureBlankLineBeforeInlineMultilineCustomHtmlBlocks(safeMarkdown, tags);
-			safeMarkdown = normalizeCustomHtmlOpeningTagSameLine(safeMarkdown, tags);
-			safeMarkdown = ensureBlankLineBeforeCustomHtmlBlocks(safeMarkdown, tags);
-			safeMarkdown = ensureBlankLineAfterCustomHtmlCloseBeforeBlockMarkerSameLine(safeMarkdown, tags);
-			if (!safeMarkdown.includes("</")) {} else for (const tag of tags) {
-				const re = new RegExp(String.raw`(^[\t ]*<\s*\/\s*${tag}\s*>[\t ]*)(\r?\n)(?![\t ]*\r?\n|$)`, "gim");
-				safeMarkdown = safeMarkdown.replace(re, "$1$2$2");
-			}
-		}
-	}
-	if (!isFinal) safeMarkdown = stripDanglingHtmlLikeTail(safeMarkdown);
+	safeMarkdown = normalizeStreamingCustomHtmlSource(safeMarkdown, options.customHtmlTags, isFinal);
 	return safeMarkdown;
 }
-function getSafeMarkdown(md, sourceMarkdown, isFinal, options) {
-	const owner = md;
+function getSafeMarkdown(runtime, sourceMarkdown, isFinal, options) {
 	const mode = `${isFinal ? "final" : "stream"}:${(options.customHtmlTags ?? []).join(",")}`;
-	const previous = safeMarkdownCache.get(owner);
+	const previous = options.isFragment ? void 0 : runtime.safeMarkdown;
 	let safeMarkdown;
-	if (!isFinal && !options.customHtmlTags?.length && previous && previous.mode === mode && sourceMarkdown.length >= previous.source.length && sourceMarkdown.startsWith(previous.source)) {
+	if (!isFinal && !options.customHtmlTags?.length && previous && previous.mode === mode && sourceMarkdown.length >= previous.source.length && runtime.sourceExtends(previous.source, sourceMarkdown)) {
 		const windowStart = Math.max(0, previous.source.length - SAFE_MARKDOWN_WINDOW_MARGIN - SAFE_MARKDOWN_WINDOW_OVERLAP);
-		const transformed = transformStreamingSafeMarkdown(sourceMarkdown.slice(windowStart), isFinal, md, options);
+		const transformed = transformStreamingSafeMarkdown(sourceMarkdown.slice(windowStart), isFinal, options);
 		const overlapLength = previous.source.length - windowStart;
-		safeMarkdown = transformed.length >= overlapLength && transformed.slice(0, overlapLength) === previous.safeMarkdown.slice(-overlapLength) ? previous.safeMarkdown.slice(0, previous.safeMarkdown.length - overlapLength) + transformed : transformStreamingSafeMarkdown(sourceMarkdown, isFinal, md, options);
-	} else safeMarkdown = transformStreamingSafeMarkdown(sourceMarkdown, isFinal, md, options);
-	if (!isFinal) safeMarkdown = stripPendingExplicitMathTail(safeMarkdown, md);
-	safeMarkdownCache.set(owner, {
+		safeMarkdown = transformed.length >= overlapLength && transformed.slice(0, overlapLength) === previous.safeMarkdown.slice(-overlapLength) ? previous.safeMarkdown.slice(0, previous.safeMarkdown.length - overlapLength) + transformed : transformStreamingSafeMarkdown(sourceMarkdown, isFinal, options);
+	} else safeMarkdown = transformStreamingSafeMarkdown(sourceMarkdown, isFinal, options);
+	if (!isFinal) safeMarkdown = stripPendingExplicitMathTail(safeMarkdown, runtime, !options.isFragment);
+	if (!options.isFragment) runtime.safeMarkdown = {
 		source: sourceMarkdown,
 		safeMarkdown,
 		mode
-	});
+	};
 	return safeMarkdown;
 }
-function parseMarkdownToStructure(markdown, md, options = {}) {
+
+//#endregion
+//#region src/parser/index.ts
+function getParserNow() {
+	return typeof performance !== "undefined" ? performance.now() : Date.now();
+}
+function addTiming(metrics, key, value) {
+	if (!metrics) return;
+	metrics[key] = (metrics[key] ?? 0) + value;
+}
+function getParseTiming(options) {
+	return options.parserMetrics;
+}
+function finishTimedParse(result, timing, startedAt) {
+	if (timing) addTiming(timing, "parseMarkdownToStructureTotalMs", getParserNow() - startedAt);
+	return result;
+}
+function finishParsedNodes(result, options, timing, startedAt) {
+	return finishTimedParse(applyPostTransformNodes(result, options), timing, startedAt);
+}
+function processTokens(tokens, options) {
+	return processTokensWithContext(tokens, ensureParseContext(options), parseInlineTokens);
+}
+function processTokensWithTiming(tokens, options, timing) {
+	if (!timing) return processTokensWithContext(tokens, options, parseInlineTokens);
+	addTiming(timing, "processTokensInputTokens", tokens.length);
+	const startedAt = getParserNow();
+	const result = processTokensWithContext(tokens, options, parseInlineTokens);
+	addTiming(timing, "processTokensMs", getParserNow() - startedAt);
+	return result;
+}
+function resolveValidateLink(md, options) {
+	const mdAny = md;
+	const directValidateLink = typeof mdAny.validateLink === "function" && mdAny.__markstreamOriginalValidateLink && mdAny.validateLink !== mdAny.__markstreamOriginalValidateLink ? mdAny.validateLink : void 0;
+	return options.validateLink ?? directValidateLink ?? mdAny.options?.validateLink ?? (typeof mdAny.validateLink === "function" ? mdAny.validateLink : void 0);
+}
+function parseMarkdownWithContext(markdown, inputContext) {
+	const runtime = inputContext.runtime;
+	const md = inputContext.markdownIt;
+	const options = {
+		...inputContext,
+		customHtmlBlockCursor: 0,
+		sourceLineOffsets: void 0
+	};
 	const timing = getParseTiming(options);
+	const tokenizerTiming = timing ? { recordTokenCloneMs: (durationMs) => addTiming(timing, "tokenCloneMs", durationMs) } : void 0;
 	const parseStartedAt = timing ? getParserNow() : 0;
 	const isFinal = !!options.final;
 	const sourceMarkdown = (markdown ?? "").toString();
-	if (shouldResetTopLevelStreamCacheForFinalAutoParse(md, options)) {
-		md.stream.reset();
-		clearTolerantMathBoundaryStreamCache(md);
-		safeMarkdownCache.delete(md);
-	}
-	const safeMarkdown = getSafeMarkdown(md, sourceMarkdown, isFinal, options);
+	if (!options.isFragment) resetTopLevelTokenizerForFinalAutoParse(runtime, options);
+	const safeMarkdown = getSafeMarkdown(runtime, sourceMarkdown, isFinal, options);
 	if (timing) addTiming(timing, "safeMarkdownMs", getParserNow() - parseStartedAt);
 	const standaloneHtmlDocument = parseStandaloneHtmlDocument(safeMarkdown);
 	if (standaloneHtmlDocument) {
 		if (options.includeSourceMap) {
 			const sourceMapOptions = {
 				...options,
-				__sourceLineMapper: createSourceLineMapper(sourceMarkdown, safeMarkdown)
+				sourceLineMapper: createSourceLineMapper(sourceMarkdown, safeMarkdown)
 			};
 			standaloneHtmlDocument[0].sourceMap = createSourceMapFromOffsets(safeMarkdown, 0, safeMarkdown.length, sourceMapOptions);
 		}
 		const preHook = options.preTransformTokens;
 		const postHook = options.postTransformTokens;
-		if (shouldUseTopLevelStreamParse(md, options) || typeof preHook === "function" || typeof postHook === "function") {
-			const rawTokens = parseTopLevelTokens(md, safeMarkdown, { __markstreamFinal: isFinal }, options);
+		if (shouldUseTopLevelStreamParse(runtime, options) || typeof preHook === "function" || typeof postHook === "function") {
+			const rawTokens = parseTopLevelTokens(runtime, safeMarkdown, { __markstreamFinal: isFinal }, options, tokenizerTiming);
 			const hookedTokens = typeof preHook === "function" ? preHook(rawTokens) || rawTokens : rawTokens;
 			if (typeof postHook === "function") postHook(hookedTokens);
 		}
 		return finishParsedNodes(standaloneHtmlDocument, options, timing, parseStartedAt);
 	}
 	const tokenizeStartedAt = timing ? getParserNow() : 0;
-	const tokens = parseTopLevelTokens(md, safeMarkdown, { __markstreamFinal: isFinal }, options);
+	const tokens = parseTopLevelTokens(runtime, safeMarkdown, { __markstreamFinal: isFinal }, options, tokenizerTiming);
 	if (timing) addTiming(timing, "tokenizeMs", getParserNow() - tokenizeStartedAt);
 	if (!tokens || !Array.isArray(tokens)) return finishParsedNodes([], options, timing, parseStartedAt);
 	const pre = options.preTransformTokens;
 	const post = options.postTransformTokens;
 	let transformedTokens = tokens;
 	if (pre && typeof pre === "function") transformedTokens = pre(transformedTokens) || transformedTokens;
-	const mdAny = md;
-	const directValidateLink = typeof mdAny.validateLink === "function" && mdAny.__markstreamOriginalValidateLink && mdAny.validateLink !== mdAny.__markstreamOriginalValidateLink ? mdAny.validateLink : void 0;
-	const validateLink$1 = options.validateLink ?? directValidateLink ?? mdAny.options?.validateLink ?? (typeof mdAny.validateLink === "function" ? mdAny.validateLink : void 0);
 	const internalOptions = {
 		...options,
-		validateLink: validateLink$1,
-		__markdownIt: md,
-		__sourceLineMapper: options.includeSourceMap === true ? createSourceLineMapper(sourceMarkdown, safeMarkdown) : void 0,
-		__sourceMarkdown: safeMarkdown,
-		__customHtmlBlockCursor: 0
+		sourceLineMapper: options.includeSourceMap === true ? createSourceLineMapper(sourceMarkdown, safeMarkdown) : void 0,
+		sourceMarkdown: safeMarkdown,
+		sourceLineOffsets: getCachedSourceLineOffsets(runtime, safeMarkdown),
+		customHtmlBlockCursor: 0
 	};
-	let result = processTopLevelTokensWithReuse(md, safeMarkdown, transformedTokens, internalOptions, timing);
+	let result = processTopLevelTokensWithReuse(runtime, safeMarkdown, transformedTokens, internalOptions, {
+		processTokens: (nextTokens, nextOptions) => processTokensWithTiming(nextTokens, nextOptions, timing),
+		recordReusedTopLevelNodes: (count) => addTiming(timing, "processTokensReusedTopLevelNodes", count)
+	});
 	if (post && typeof post === "function") {
 		const postResult = post(transformedTokens);
 		if (Array.isArray(postResult)) {
@@ -21175,165 +22361,74 @@ function parseMarkdownToStructure(markdown, md, options = {}) {
 			const firstType = first?.type;
 			if (first && typeof firstType === "string") result = processTokensWithTiming(postResult, {
 				...internalOptions,
-				__customHtmlBlockCursor: 0
+				customHtmlBlockCursor: 0
 			}, timing);
 			else result = postResult;
 		}
 	}
+	const reuseTailStart = runtime.structuredReuseTailStart;
+	const tailStart = reuseTailStart && reuseTailStart > 0 && reuseTailStart < result.length ? reuseTailStart : 0;
 	if (hasTopLevelHtmlBlock(result)) {
 		const htmlPassesStartedAt = timing ? getParserNow() : 0;
-		result = mergeSplitTopLevelHtmlBlocks(result, isFinal, safeMarkdown, internalOptions);
-		result = combineStructuredDetailsHtmlBlocks(result, safeMarkdown, md, internalOptions, isFinal)[0];
-		result = structureGenericHtmlBlockChildren(result, md, internalOptions, isFinal);
-		if (timing) addTiming(timing, "htmlBlockPassesMs", getParserNow() - htmlPassesStartedAt);
-	}
-	if (isFinal) {
-		const seen = /* @__PURE__ */ new WeakSet();
-		const finalizeHtmlBlockLoading = (value) => {
-			if (!value || typeof value !== "object") return;
-			if (seen.has(value)) return;
-			seen.add(value);
-			if (Array.isArray(value)) {
-				for (const item of value) finalizeHtmlBlockLoading(item);
-				return;
-			}
-			const node = value;
-			if (node.type === "html_block" && node.loading === true) node.loading = false;
-			for (const child of Object.values(node)) finalizeHtmlBlockLoading(child);
+		const htmlStructureContext = {
+			getInternalNodeSourceRange: (node) => getInternalNodeSourceRange(node, runtime),
+			markdownIt: md,
+			parseFragment: (fragment, fragmentOptions) => parseMarkdownWithContext(fragment, fragmentOptions)
 		};
-		finalizeHtmlBlockLoading(result);
-	}
+		const canReuseHtmlPrefix = tailStart > 0 && runtime.htmlPassIdentityPreserving;
+		const tailSourceStart = canReuseHtmlPrefix ? getInternalNodeSourceRange(result[tailStart], runtime)?.start : void 0;
+		let hasDetailsInput = false;
+		for (let i = canReuseHtmlPrefix ? tailStart : 0; i < result.length; i++) {
+			const node = result[i];
+			if (node.type === "html_block" && String(node.tag ?? "").toLowerCase() === "details") {
+				hasDetailsInput = true;
+				break;
+			}
+		}
+		const useHtmlTail = canReuseHtmlPrefix && !hasDetailsInput && tailSourceStart != null;
+		const prefix = useHtmlTail ? result.slice(0, tailStart) : [];
+		const htmlInput = useHtmlTail ? result.slice(tailStart) : result;
+		const htmlSourceStart = useHtmlTail ? tailSourceStart : 0;
+		let htmlResult = mergeSplitTopLevelHtmlBlocks(htmlInput, isFinal, safeMarkdown, htmlStructureContext, internalOptions, htmlSourceStart);
+		const mergeIdentityPreserving = htmlResult.length === htmlInput.length && htmlResult.every((node, index) => node === htmlInput[index]);
+		if (hasDetailsInput) htmlResult = combineStructuredDetailsHtmlBlocks(htmlResult, safeMarkdown, htmlStructureContext, internalOptions, isFinal, htmlSourceStart)[0];
+		htmlResult = structureGenericHtmlBlockChildren(htmlResult, htmlStructureContext, internalOptions, isFinal);
+		result = useHtmlTail ? prefix.concat(htmlResult) : htmlResult;
+		runtime.htmlPassIdentityPreserving = !hasDetailsInput && mergeIdentityPreserving;
+		if (timing) addTiming(timing, "htmlBlockPassesMs", getParserNow() - htmlPassesStartedAt);
+	} else runtime.htmlPassIdentityPreserving = true;
+	if (isFinal) finalizeHtmlBlockLoading(result);
 	result = applyPostTransformNodes(result, options);
 	if (options.debug) console.log("Parsed Markdown Tree Structure:", result);
 	return finishTimedParse(result, timing, parseStartedAt);
 }
-function processTokens(tokens, options) {
-	if (!tokens || !Array.isArray(tokens)) return [];
-	const result = [];
-	const linkifyContext = createLinkifyDemotionContextTracker(options);
-	const seedRaws = options?.__linkifyDemotionSeed;
-	if (Array.isArray(seedRaws) && seedRaws.length) for (const raw of seedRaws) linkifyContext.remember(String(raw ?? ""));
-	const includeSourceMap = options?.includeSourceMap === true;
-	let i = 0;
-	while (i < tokens.length) {
-		const handled = parseCommonBlockToken(tokens, i, linkifyContext.options(), containerTokenHandlers);
-		if (handled) {
-			recordInternalNodeSourceRange(handled[0], tokens[i], options);
-			result.push(handled[0]);
-			linkifyContext.remember(handled[0].raw);
-			i = handled[1];
-			continue;
-		}
-		const token = tokens[i];
-		switch (token.type) {
-			case "paragraph_open": {
-				const paragraphRaw = String(tokens[i + 1]?.content ?? "");
-				const paragraphNode = parseParagraph(tokens, i, linkifyContext.options(paragraphRaw));
-				if (includeSourceMap) applyNodeSourceMap(paragraphNode, token, options);
-				const promoted = maybePromoteCustomNodeFromParagraph(paragraphNode, options);
-				if (promoted) {
-					if (includeSourceMap) inheritSourceMap(promoted, paragraphNode);
-					for (const node of promoted) recordInternalNodeSourceRange(node, token, options);
-					result.push(...promoted);
-				} else {
-					recordInternalNodeSourceRange(paragraphNode, token, options);
-					result.push(paragraphNode);
-				}
-				linkifyContext.remember(paragraphNode.raw);
-				i += 3;
-				break;
-			}
-			case "bullet_list_open":
-			case "ordered_list_open": {
-				const [listNode, newIndex] = parseList(tokens, i, linkifyContext.options());
-				if (includeSourceMap) applyNodeSourceMap(listNode, token, options);
-				recordInternalNodeSourceRange(listNode, token, options);
-				result.push(listNode);
-				linkifyContext.remember(listNode.raw);
-				i = newIndex;
-				break;
-			}
-			case "blockquote_open": {
-				const [blockquoteNode, newIndex] = parseBlockquote(tokens, i, linkifyContext.options());
-				if (includeSourceMap) applyNodeSourceMap(blockquoteNode, token, options);
-				recordInternalNodeSourceRange(blockquoteNode, token, options);
-				result.push(blockquoteNode);
-				linkifyContext.remember(blockquoteNode.raw);
-				i = newIndex;
-				break;
-			}
-			case "footnote_anchor": {
-				const meta = token.meta ?? {};
-				const footnoteAnchorNode = {
-					type: "footnote_anchor",
-					id: String(meta.label ?? token.content ?? ""),
-					raw: String(token.content ?? "")
-				};
-				if (includeSourceMap) applyNodeSourceMap(footnoteAnchorNode, token, options);
-				recordInternalNodeSourceRange(footnoteAnchorNode, token, options);
-				result.push(footnoteAnchorNode);
-				linkifyContext.remember(String(token.content ?? ""));
-				i++;
-				break;
-			}
-			case "hardbreak":
-				result.push(parseHardBreak());
-				linkifyContext.reset();
-				i++;
-				break;
-			case "text": {
-				const content = String(token.content ?? "");
-				const paragraphNode = {
-					type: "paragraph",
-					raw: content,
-					children: content ? [{
-						type: "text",
-						content,
-						raw: content
-					}] : []
-				};
-				if (includeSourceMap) applyNodeSourceMap(paragraphNode, token, options);
-				recordInternalNodeSourceRange(paragraphNode, token, options);
-				result.push(paragraphNode);
-				linkifyContext.remember(content);
-				i++;
-				break;
-			}
-			case "inline":
-				{
-					const raw = String(token.content ?? "");
-					const parsed = parseInlineTokens(token.children || [], raw, void 0, linkifyContext.options(raw));
-					if (parsed.length === 0) {} else if (parsed.every((n) => n.type === "html_block")) {
-						if (includeSourceMap) for (const node of parsed) applyNodeSourceMap(node, token, options);
-						for (const node of parsed) recordInternalNodeSourceRange(node, token, options);
-						result.push(...parsed);
-					} else {
-						const paragraphNode = {
-							type: "paragraph",
-							raw,
-							children: parsed
-						};
-						if (includeSourceMap) applyNodeSourceMap(paragraphNode, token, options);
-						const promoted = maybePromoteCustomNodeFromParagraph(paragraphNode, options);
-						if (promoted) {
-							if (includeSourceMap) inheritSourceMap(promoted, paragraphNode);
-							for (const node of promoted) recordInternalNodeSourceRange(node, token, options);
-							result.push(...promoted);
-						} else {
-							recordInternalNodeSourceRange(paragraphNode, token, options);
-							result.push(paragraphNode);
-						}
-					}
-					linkifyContext.remember(raw);
-				}
-				i += 1;
-				break;
-			default:
-				i += 1;
-				break;
-		}
+function parseMarkdownToStructure(markdown, md, options = {}) {
+	const sourceMarkdown = (markdown ?? "").toString();
+	const runtime = getParserRuntime(md);
+	const validateLink$1 = resolveValidateLink(md, options);
+	const context = createParseContext(options, {
+		markdownIt: md,
+		runtime,
+		validateLink: validateLink$1
+	});
+	const mdState = md;
+	runtime.beginRootParse(sourceMarkdown, {
+		customHtmlTags: (options.customHtmlTags ?? []).join("\0"),
+		hasCustomParserExtensions: mdState.__markstreamHasCustomParserExtensions === true,
+		includeSourceMap: options.includeSourceMap === true,
+		postTransformNodes: options.postTransformNodes,
+		postTransformTokens: options.postTransformTokens,
+		preTransformTokens: options.preTransformTokens,
+		requireClosingStrong: options.requireClosingStrong,
+		reuseStableTopLevelNodes: options.reuseStableTopLevelNodes === true,
+		streamParse: options.streamParse,
+		validateLink: validateLink$1
+	});
+	try {
+		return parseMarkdownWithContext(sourceMarkdown, context);
+	} finally {
+		runtime.finishRootParse(options.final === true);
 	}
-	return result;
 }
 
 //#endregion
@@ -22287,7 +23382,7 @@ function getMarkdown(msgId = `editor-${Date.now()}`, options = {}) {
 		const s = state;
 		const src = s.src;
 		const envFinal = !!s.env?.__markstreamFinal;
-		const lines = src.split(/\r?\n/);
+		let lines;
 		for (const token of s.tokens) {
 			if (token.type !== "fence" || !token.map || !token.markup) continue;
 			const openLine = token.map[0];
@@ -22295,7 +23390,9 @@ function getMarkdown(msgId = `editor-${Date.now()}`, options = {}) {
 			const markup = token.markup;
 			const marker = markup[0];
 			const minLen = markup.length;
-			const line = lines[Math.max(0, endLine - 1)] ?? "";
+			const lineIdx = Math.max(0, endLine - 1);
+			lines ??= src.split(/\r?\n/);
+			const line = lines[lineIdx] ?? "";
 			let i = 0;
 			while (i < line.length && (line[i] === " " || line[i] === "	")) i++;
 			let count = 0;

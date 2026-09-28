@@ -237,7 +237,10 @@ function getAlarmClockState() {
   };
 }
 
-function restoreAlarmClockState(state = {}) {
+function restoreAlarmClockState(state) {
+  // The desk saves null here while this module has not loaded yet; null means
+  // "nothing saved", exactly like a missing key.
+  state ||= {};
   alarmClockMode = ["time", "date", "alarm"].includes(state.mode) ? state.mode : "date";
   alarmClockExpanded = state.expanded !== false;
   alarmClockEnabled = state.enabled === true;

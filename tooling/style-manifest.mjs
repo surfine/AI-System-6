@@ -8,8 +8,6 @@ export const styleRuntimePaths = [
   "styles/50-apps.css",
   "styles/60-responsive.css",
   "styles/65-appearance-themes.css",
-  "styles/67-aqua-appearance.css",
-  "styles/70-liquid-glass.css",
 ];
 
 // Stylesheets that ship in production but load with their window instead of at
@@ -20,9 +18,32 @@ export const styleRuntimePaths = [
 //
 // These files are outside the System Floppy Budget on purpose: the budget
 // measures what a boot must download, and this sheet is not part of a boot.
+//
+// Appearance sheets (loader theme-registry.js) are one stylesheet per bundle,
+// so a sheet two appearances share is downloaded once. Each is keyed by the
+// appearance whose recipe it carries (`id`) or by the capability that asks for
+// it (`capability`); an appearance loads the sheet of every appearance in its
+// recipe chain plus those of its capabilities, in the order declared here —
+// which is root to leaf, and is also their cascade-layer order. Aqua and Liquid
+// Glass lead: they were the last two boot sheets, so declaring them first keeps
+// every layer where it was. theme-registry.js carries the same table in the same
+// order; tests/features/lazy-loader.test.mjs holds the two in step.
 export const lazyStyleBundles = [
+  // Aqua is the Mac OS X recipe root; Snow Leopard's rules live in the same
+  // sheet under [data-lineage~="snow-leopard"], and Tiger and Lion inherit them.
+  { id: "aqua", output: "styles.aqua.css", loader: "app/core/theme-registry.js",
+    sources: ["styles/67-aqua-appearance.css"] },
+  // Liquid Glass's own material. Every rule is scoped to Liquid Glass itself;
+  // Yosemite and Big Sur load it as their recipe root.
+  { id: "liquid-glass", output: "styles.liquid-glass.css", loader: "app/core/theme-registry.js",
+    sources: ["styles/70-liquid-glass.css"] },
   { id: "nextstep", output: "styles.nextstep.css", loader: "app/core/theme-registry.js",
     sources: ["styles/nextstep-shell.css", "styles/69-nextstep-appearance.css"] },
+  // The Mac OS X Dock and its yellow lamp: the appearance sheet of every era
+  // whose Dock has shipped (capability "dock"; Snow Leopard first). It sits
+  // before the era sheets that restyle it.
+  { id: "desk-dock", capability: "dock", output: "styles.desk-dock.css", loader: "app/core/theme-registry.js",
+    sources: ["styles/88-desk-dock.css"] },
   // An independent appearance is requested only when selected, including boot.
   { id: "big-sur", output: "styles.big-sur.css", loader: "app/core/theme-registry.js",
     sources: ["styles/68-big-sur-appearance.css"] },
@@ -30,6 +51,12 @@ export const lazyStyleBundles = [
     sources: ["styles/67-tiger-appearance.css"] },
   { id: "system-7", output: "styles.system-7.css", loader: "app/core/theme-registry.js",
     sources: ["styles/65-system-7-appearance.css"] },
+  // The Writing Flow utility window. Platinum's appearance chrome rides the
+  // boot bundle, but the palette's own sheet is loaded only when the Platinum
+  // lineage is selected; Drawing Board, its child, inherits it through its
+  // recipe chain.
+  { id: "platinum", output: "styles.platinum.css", loader: "app/core/theme-registry.js",
+    sources: ["styles/65-platinum-utility.css"] },
   { id: "drawing-board", output: "styles.drawing-board.css", loader: "app/core/theme-registry.js",
     sources: ["styles/65-drawing-board-appearance.css"] },
   { id: "lion", output: "styles.lion.css", loader: "app/core/theme-registry.js",
@@ -93,6 +120,14 @@ export const lazyStyleBundles = [
     loader: "app/core/config.js",
     sources: ["styles/23-docmap.css"],
   },
+  // Searcher is summoned, not resident: findpath.js has always loaded on first
+  // use, and every selector in its sheet is .find-path-*.
+  {
+    id: "searcher",
+    output: "styles.searcher.css",
+    loader: "app/core/config.js",
+    sources: ["styles/24-searcher.css"],
+  },
   // ClioChart's own module has always been lazy. Its sheet also dresses one
   // ClioStage element (.clio-stage-chart-slide, added when a slide carries a
   // chart snapshot), and a snapshot can come back from a restored session
@@ -142,7 +177,7 @@ export const lazyStyleBundles = [
   },
   // Cover Glass is a creative lab whose module was already lazy, and every
   // selector in its sheet is scoped to .lc-* - including the Liquid Glass
-  // twins, which are all `body.use-liquid-glass .lc-…`.
+  // twins, which are all `body[data-theme="liquid-glass"] .lc-…`.
   // Image Prompt Studio is a lazy creative lab, and every selector in its sheet
   // is scoped to .image-prompt-studio-window or .ips-*, so it travels with its
   // window rather than the startup disk.
@@ -217,6 +252,7 @@ export const styleLayerByPath = Object.freeze({
   "styles/20-reader-docmap.css": "reader-docmap",
   "styles/22-time-machine.css": "time-machine",
   "styles/23-docmap.css": "docmap",
+  "styles/24-searcher.css": "searcher",
   "styles/30-surfaces.css": "surfaces",
   "styles/40-icons.css": "icons",
   "styles/50-apps.css": "apps",
@@ -227,6 +263,8 @@ export const styleLayerByPath = Object.freeze({
   "styles/67-tiger-appearance.css": "tiger-appearance",
   "styles/65-system-7-appearance.css": "system-7-appearance",
   "styles/65-drawing-board-appearance.css": "drawing-board-appearance",
+  "styles/65-platinum-utility.css": "platinum-utility",
+  "styles/88-desk-dock.css": "desk-dock",
   "styles/67-lion-appearance.css": "lion-appearance",
   "styles/69-nextstep-appearance.css": "nextstep-appearance",
   "styles/nextstep-shell.css": "nextstep-shell",

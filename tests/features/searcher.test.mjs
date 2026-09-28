@@ -9,7 +9,7 @@ const test = createFeatureTest("searcher");
 const findPath = read("app/features/findpath.js");
 const actions = read("app/core/actions.js");
 const html = read("index.html");
-const windowsCss = read("styles/10-windows.css");
+const windowsCss = read("styles/24-searcher.css");
 const appsCss = read("styles/50-apps.css");
 const en = read("app/data/translations-en.js");
 const zh = read("app/data/translations-zh.js");
@@ -40,5 +40,15 @@ test.assertIncludes(appsCss, ".teachtext-command-menu.is-disabled > summary {", 
 // Scannable rows in a window wide enough to hold them.
 test.assertIncludes(windowsCss, "width: min(560px, calc(100vw - 24px));", "the window holds a query and one row of actions");
 test.assertIncludes(windowsCss, "-webkit-line-clamp: 2;", "unpicked rows show two lines of snippet");
+
+// The sheet travels with the lazy module (owner decision D5, 2026-09-25).
+const styleManifest = read("tooling/style-manifest.mjs");
+test.assertIncludes(styleManifest, 'sources: ["styles/24-searcher.css"]', "Searcher's styles are a lazy bundle");
+test.assertIncludes(read("app/core/config.js"), 'createLazyModuleLoader("AISystem6FindPathLoaded", ["app/features/findpath.js"], false, ["styles.searcher.css"])', "the loader brings the sheet with the module");
+test.assertNotIncludes(read("styles/10-windows.css"), ".find-path-result", "no Searcher rule is left on the startup sheet");
+test.assertIncludes(read("styles/65-appearance-themes.css"), "--find-path-query-padding: var(--field-control-padding);", "Yosemite's query field keeps its own padding now that the Searcher sheet loads after it");
+for (const allowlist of ["apps/server/server/static.js", "tooling/lib/paths.mjs", "tooling/web-release-manifest.mjs", "tooling/check-release-assets.mjs"]) {
+  test.assertIncludes(read(allowlist), "styles.searcher.css", `${allowlist} serves the lazy sheet`);
+}
 
 test.finish();

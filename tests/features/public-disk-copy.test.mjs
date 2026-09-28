@@ -1,6 +1,6 @@
 // Public shared-disk copy: the published disk must not name a listed identity.
 //
-// The generator stamps app/content/shared-project-disks.js from the raw source
+// The generator stamps app/content/shared-disks/<route>.js from the raw source
 // under internal/, which never ships. Four dtk scraps named a private pseudonym
 // listed in internal/agents/pii-patterns.json, so the published module carried
 // an identity the owner keeps in internal docs only. The fix is a small pure
@@ -187,18 +187,19 @@ const policyNames = existsSync(policyPath)
   : []; // A public clone omits the private policy; the synthetic tests still run.
 
 if (policyNames.length) {
-  const payloadSource = readFileSync(
-    fileURLToPath(new URL("../../apps/desktop/app/content/shared-project-disks.js", import.meta.url)),
+  const diskSourceFor = (route) => readFileSync(
+    fileURLToPath(new URL(`../../apps/desktop/app/content/shared-disks/${route}.js`, import.meta.url)),
     "utf8",
   );
+  const payloadSources = SHARED_DISKS.map(({ route }) => diskSourceFor(route));
   const indexSource = readFileSync(
     fileURLToPath(new URL("../../apps/desktop/app/content/shared-project-disks-index.js", import.meta.url)),
     "utf8",
   );
   for (const name of policyNames) {
     test.assert(
-      !payloadSource.includes(name),
-      "the generated shared-project-disks.js contains no listed identity name",
+      payloadSources.every((source) => !source.includes(name)),
+      "the generated per-disk modules contain no listed identity name",
     );
     test.assert(
       !indexSource.includes(name),
@@ -206,14 +207,17 @@ if (policyNames.length) {
     );
   }
 
-  // Every one of the 35 bundles must still validate through the real verifier.
-  // The module assigns a JSON object to a window global; pull that object out
-  // the same way the launch path does, then verify each route's backup.
-  const assignment = "window.AISystem6SharedProjectDisks = ";
-  const body = payloadSource.slice(payloadSource.indexOf(assignment) + assignment.length);
-  const disks = JSON.parse(body.slice(0, body.indexOf(";\n")));
+  // Every one of the 36 bundles must still validate through the real verifier.
+  // Each route's module assigns its own key to the window global; pull that
+  // object out the same way the launch path does, then verify the backup.
+  const disks = {};
+  for (const { route } of SHARED_DISKS) {
+    const assignment = `window.AISystem6SharedProjectDisks["${route}"] = `;
+    const body = diskSourceFor(route).slice(diskSourceFor(route).indexOf(assignment) + assignment.length);
+    disks[route] = JSON.parse(body.slice(0, body.indexOf(";\n")));
+  }
   const routes = Object.keys(disks);
-  test.assert(routes.length === 35, `all 35 shared disks are present in the payload (${routes.length})`);
+  test.assert(routes.length === 36, `all 36 shared disks are present in the payload (${routes.length})`);
   let refused = [];
   for (const route of routes) {
     // eslint-disable-next-line no-await-in-loop
@@ -221,7 +225,7 @@ if (policyNames.length) {
     if (verdict.valid !== true) refused.push(`${route}: ${verdict.errors.join("; ")}`);
   }
   test.assert(refused.length === 0, refused.length === 0
-    ? "all 35 published bundles validate through the app's own verifier"
+    ? "all 36 published bundles validate through the app's own verifier"
     : `published bundles would be refused by the importer: ${refused.join(" | ")}`);
 
   // The registry names the same routes the payload carries.

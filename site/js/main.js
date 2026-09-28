@@ -1,9 +1,9 @@
 // AI System 6 official site - entry module. Progressive enhancement only:
 // with JS off the page is a readable document with a desktop screenshot.
 
-import { ERAS, setEra, onEraChange, prefetchEras, refreshIcons, iconSrc } from "./eras.js?v=20260820a";
+import { ERAS, setEra, onEraChange, prefetchEras, refreshIcons, iconSrc } from "./eras.js?v=20260925a";
 import { initBalloons, setBalloons, balloonsEnabled, flashBalloon } from "./balloon.js?v=20260820a";
-import { loadMachine, createMachine, warmAllFrames, machineManifest } from "./machine.js?v=20260820a";
+import { loadMachine, createMachine, warmAllFrames, machineManifest } from "./machine.js?v=20260925a";
 import { createDissolve } from "./dissolve.js?v=20260820a";
 import { initRouteScene } from "./route.js?v=20260820a";
 import { initImpossible } from "./impossible.js?v=20260820a";
@@ -87,7 +87,9 @@ const cycleItem = doc.getElementById("menu-cycle");
 let cycleTimer = null;
 
 function currentThemeId() {
-  return doc.documentElement.getAttribute("data-theme") || "classic";
+  // data-era names the era; data-theme may be a parent's page (eras.js).
+  return doc.documentElement.getAttribute("data-era")
+    || doc.documentElement.getAttribute("data-theme") || "classic";
 }
 function syncChecks() {
   const active = currentThemeId();
@@ -209,7 +211,7 @@ if (notesIcons) {
     img.alt = "";
     img.loading = "lazy";
     img.decoding = "async";
-    if (era.id === "classic" || era.id === "platinum") img.classList.add("is-pixel");
+    if (["classic", "system-7", "platinum", "drawing-board"].includes(era.id)) img.classList.add("is-pixel");
     notesIcons.appendChild(img);
   });
 }

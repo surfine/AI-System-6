@@ -24,7 +24,7 @@ import { fileURLToPath } from "node:url";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const TRANSPORT = ["play", "pause", "previousTrack", "nextTrack", "shuffleTracks", "repeatTracks", "speaker"];
 const FILE_THEMES = [
-  { id: "platinum", dir: "platinum", manifest: "platinum-icon-manifest.json" },
+  { id: "platinum", dir: "platinum", manifest: "platinum-icon-manifest.json", styleFile: "65-platinum-utility.css" },
   { id: "yosemite", dir: "yosemite", manifest: "yosemite-icon-manifest.json" },
   { id: "big-sur", dir: "big-sur", manifest: "big-sur-icon-manifest.json", svgLayer: "big-sur", styleFile: "68-big-sur-appearance.css" },
 ];

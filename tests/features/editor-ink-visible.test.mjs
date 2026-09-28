@@ -23,11 +23,12 @@
 // contract holds that rule two ways — the repaint side by running the real
 // module against a DOM whose textarea keeps `value` on its prototype the way a
 // browser does, and the paint side by resolving the real cascade over the boot
-// stylesheets for every writing surface, in every appearance, focused and not.
+// stylesheets and the eras' own appearance sheets for every writing surface, in
+// every appearance, focused and not.
 
 import vm from "node:vm";
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
-import { styleRuntimePaths } from "../../tooling/style-manifest.mjs";
+import { lazyStyleBundles, styleRuntimePaths } from "../../tooling/style-manifest.mjs";
 import { SHOWCASE_THEMES, WIDTHS } from "../appearance-snapshot-manifest.mjs";
 
 const test = createFeatureTest("editor-ink-visible");
@@ -531,7 +532,17 @@ function compareSpecificity(left, right) {
 
 // --- The sheets, read once. ---
 
-const sheets = styleRuntimePaths.map((path) => ({ path, css: stripComments(read(path)) }));
+// The boot sheets, then every appearance sheet a showcase era loads on demand
+// (Aqua's and Liquid Glass's left the boot bundle on 2026-09-26), in the order
+// the registry inserts them after the bundle.
+const sheetHost = {};
+vm.runInNewContext(read("app/core/theme-registry.js"), { window: sheetHost });
+const showcaseSheets = new Set(SHOWCASE_THEMES.flatMap((theme) => sheetHost.AISystem6Theme.appearanceStylePaths(theme)));
+const sheetPaths = [
+  ...styleRuntimePaths,
+  ...lazyStyleBundles.filter((bundle) => showcaseSheets.has(bundle.output)).flatMap((bundle) => bundle.sources),
+];
+const sheets = sheetPaths.map((path) => ({ path, css: stripComments(read(path)) }));
 const rules = [];
 sheets.forEach(({ path, css }, sheetIndex) => {
   eachRule(css, (selectorList, body, conditions) => {

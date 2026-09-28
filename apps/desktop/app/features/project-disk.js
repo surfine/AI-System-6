@@ -685,10 +685,84 @@ function compareFinderItemsByMode(a, b, mode) {
   return getFinderItemName(a).localeCompare(getFinderItemName(b), currentLanguage, { numeric: true });
 }
 
-function sortFinderItemsForView(items, mode) {
+function sortFinderItemsForView(items, mode, reversed = false) {
   const normalized = normalizeFinderViewMode(mode);
   if (normalized === "small-icon" || normalized === "icon") return items;
-  return [...items].sort((a, b) => compareFinderItemsByMode(a, b, normalized));
+  const sorted = [...items].sort((a, b) => compareFinderItemsByMode(a, b, normalized));
+  return reversed ? sorted.reverse() : sorted;
+}
+
+// Which column a list mode sorts by: name 0, kind 1, size 2, date 3; icon
+// modes sort by nothing.
+function finderSortedColumn(mode) {
+  const normalized = normalizeFinderViewMode(mode);
+  if (!isFinderListMode(normalized)) return -1;
+  return { name: 0, kind: 1, size: 2, date: 3 }[normalized] ?? 0;
+}
+
+// The direction the sorted column reads in. compareFinderItemsByMode sorts
+// name and kind ascending, size and date descending; reversal flips that.
+function finderSortDirection(mode, reversed) {
+  const descending = ["size", "date"].includes(normalizeFinderViewMode(mode));
+  const isDescending = reversed ? !descending : descending;
+  return isDescending ? "descending" : "ascending";
+}
+
+const finderSortReversedStorageKey = "ai-system-6-finder-sort-reversed";
+
+function readFinderSortReversedStore() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(finderSortReversedStorageKey));
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function finderSortReversed(windowName) {
+  return readFinderSortReversedStore()[windowName] === true;
+}
+
+function toggleFinderSortReversed(windowName) {
+  try {
+    const store = readFinderSortReversedStore();
+    store[windowName] = !(store[windowName] === true);
+    localStorage.setItem(finderSortReversedStorageKey, JSON.stringify(store));
+  } catch {
+    // A desk without storage keeps the current sort order.
+  }
+}
+
+// One header for every Finder window's list view, so the sorted column and the
+// reversal button stay in step.
+function renderFinderListHeader(windowName, mode, { interactive = true, onChange = null } = {}) {
+  const reversed = finderSortReversed(windowName);
+  const direction = finderSortDirection(mode, reversed);
+  const column = finderSortedColumn(mode);
+  const header = document.createElement("div");
+  header.className = "finder-list-header";
+  header.innerHTML = [t("file_name"), t("kind"), t("size"), t("modified")]
+    .map((label, index) => `<span${index === column ? ` aria-sort="${direction}"` : ""}>${escapeHtml(label)}</span>`)
+    .join("");
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "finder-sort-direction";
+  button.dataset.direction = direction;
+  button.setAttribute("aria-pressed", String(reversed));
+  button.setAttribute("aria-label", t("finder_sort_reverse"));
+  button.title = t("finder_sort_reverse");
+  if (interactive) {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      toggleFinderSortReversed(windowName);
+      onChange?.();
+    });
+  } else {
+    button.tabIndex = -1;
+    button.setAttribute("aria-hidden", "true");
+  }
+  header.append(button);
+  return header;
 }
 
 function setFinderViewClasses(grid, mode) {
@@ -696,6 +770,8 @@ function setFinderViewClasses(grid, mode) {
   grid.classList.toggle("finder-list", isFinderListMode(normalized));
   grid.classList.toggle("finder-grid", isFinderIconMode(normalized));
   grid.classList.toggle("finder-small-icons", normalized === "small-icon");
+  if (isFinderListMode(normalized)) grid.dataset.sortedColumn = String(finderSortedColumn(normalized));
+  else delete grid.dataset.sortedColumn;
 }
 
 function updateFinderViewButtons(win, mode) {
@@ -1391,6 +1467,26 @@ function toggleWritingToolsShade() {
   scheduleWorkingSessionSave();
 }
 
+// Closing the Writing Flow is a second verb beside its WindowShade (owner,
+// 2026-09-25). Shade leaves the title bar where it stood; close puts the whole
+// palette away, the way a NeXTSTEP panel's or a Mac OS 9 utility window's close
+// box does. Only the eras that draw a close box can close it, but the state
+// outlives a change of appearance, so the way back is a command in every era:
+// this Apple menu row, or Tools > Writing Flow... under NeXTSTEP. The state
+// travels in the working session like the shade.
+function syncWritingFlowClosed() {
+  const closed = Boolean(writingToolsPanelEl?.classList.contains("is-closed"));
+  document.querySelector('[data-action="show-writing-flow"]')?.classList.toggle("is-hidden", !closed);
+}
+
+function setWritingFlowClosed(closed) {
+  if (!writingToolsPanelEl) return;
+  if (closed && writingToolsPanelEl.contains(document.activeElement)) document.activeElement.blur();
+  writingToolsPanelEl.classList.toggle("is-closed", Boolean(closed));
+  syncWritingFlowClosed();
+  scheduleWorkingSessionSave();
+}
+
 function setComposeToolsMenu(open) {
   if (!composeToolsMenuEl || !composeToolsToggleButton) return;
   composeToolsMenuEl.classList.toggle("is-hidden", !open);
@@ -2052,10 +2148,7 @@ window.AISystem6FinderList = {
   create(rows) {
     const list = document.createElement("div");
     list.className = "finder-list";
-    const header = document.createElement("div");
-    header.className = "finder-list-header";
-    header.innerHTML = `<span>${escapeHtml(t("file_name"))}</span><span>${escapeHtml(t("kind"))}</span><span>${escapeHtml(t("size"))}</span><span>${escapeHtml(t("modified"))}</span>`;
-    list.append(header);
+    list.append(renderFinderListHeader("themeLabSpecimen", "name", { interactive: false }));
     for (const entry of rows) {
       const row = document.createElement("div");
       row.className = `finder-list-row${entry.selected ? " is-selected" : ""}`;
@@ -2181,7 +2274,7 @@ function renderProjectDisks() {
 
   const mode = normalizeFinderViewMode(windowViewModes.projects);
   windowViewModes.projects = mode;
-  const items = sortFinderItemsForView(getProjectRootFinderItems(), mode);
+  const items = sortFinderItemsForView(getProjectRootFinderItems(), mode, finderSortReversed("projects"));
   const selectedRootItem = getSelectedProjectRootItem();
   const signature = [
     activeProjectId,
@@ -2191,6 +2284,7 @@ function renderProjectDisks() {
     selectedScrapId,
     selectedProjectCdItemId,
     mode,
+    finderSortReversed("projects"),
     currentLanguage,
     collectionVersion(items),
   ].join("::");
@@ -2220,14 +2314,7 @@ function renderProjectDisks() {
   updateFinderViewButtons(getWindow("projects"), mode);
   setFinderViewClasses(projectDiskGridEl, mode);
   if (isFinderListMode(mode)) {
-    const header = document.createElement("div");
-    header.className = "finder-list-header";
-    header.innerHTML = `
-      <span>${t("file_name")}</span>
-      <span>${t("kind")}</span>
-      <span>${t("size")}</span>
-      <span>${t("modified")}</span>
-    `;
+    const header = renderFinderListHeader("projects", mode, { onChange: renderProjectDisks });
     fragment.append(header);
     let previousKind = "";
     items.forEach((item) => {

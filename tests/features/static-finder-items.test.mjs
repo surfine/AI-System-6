@@ -22,11 +22,11 @@ test.assertIncludes(icons, "a 32×32 vector grid, a 2-unit safe edge, and one-un
 test.assertMatches(icons, /questionSheet:[\s\S]*M4 2h19l5 5v23H4z[\s\S]*outline:[\s\S]*M4 2h24v28H4z[\s\S]*applications:[\s\S]*M3 3h26v26H3z/, "Core route and desktop companions occupy the shared Classic safe area");
 test.assertIncludes(foundationStyles, "--system-icon-stroke-width: 1", "Classic outlines default to one 32-grid unit");
 test.assertIncludes(foundationStyles, "--system-icon-pixel-run-expansion: 0", "Classic native pixel resources keep their exact one-bit geometry by default");
-test.assertMatches(iconStyles, /\.sys-icon-svg \{[\s\S]*stroke-width: var\(--system-icon-stroke-width\)/, "System icons consume the theme-owned stroke weight");
-test.assertNotIncludes(`${windowStyles}\n${iconStyles}`, "--sys-icon-stroke", "Classic icon size variants cannot reintroduce local stroke weights");
-test.assertNotMatches(iconStyles, /\.sys-icon-svg (?:path|rect|circle)[^{]*\{[^}]*vector-effect: non-scaling-stroke;/, "Classic strokes scale with their vector grid instead of mixing CSS pixel weights");
+test.assertMatches(foundationStyles, /\.sys-icon-svg \{[\s\S]*stroke-width: var\(--system-icon-stroke-width\)/, "System icons consume the theme-owned stroke weight");
+test.assertNotIncludes(`${windowStyles}\n${iconStyles}\n${foundationStyles}`, "--sys-icon-stroke", "Classic icon size variants cannot reintroduce local stroke weights");
+test.assertNotMatches(`${iconStyles}\n${foundationStyles}`, /\.sys-icon-svg (?:path|rect|circle)[^{]*\{[^}]*vector-effect: non-scaling-stroke;/, "Classic strokes scale with their vector grid instead of mixing CSS pixel weights");
 test.assertIncludes(liquidStyles, "--system-icon-stroke-width: 1.8", "Liquid Glass retains its independent rounded stroke weight");
-test.assertMatches(liquidStyles, /body\.use-liquid-glass \.sys-icon-liquid path:not\(\.classic-ink\)[\s\S]*vector-effect: non-scaling-stroke;/, "Liquid Glass retains non-scaling outline rendering");
+test.assertMatches(liquidStyles, /body\[data-theme="liquid-glass"\] \.sys-icon-liquid path:not\(\.classic-ink\)[\s\S]*vector-effect: non-scaling-stroke;/, "Liquid Glass retains non-scaling outline rendering");
 
 test.assertIncludes(app, "function withStaticFinderMetadata(items, location)", "one helper owns static Finder metadata");
 for (const name of ["System", "Finder", "MultiFinder", "DA Handler"]) {

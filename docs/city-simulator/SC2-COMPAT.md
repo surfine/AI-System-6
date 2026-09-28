@@ -28,7 +28,11 @@ incl. waterfalls, streams, and bays (XTER), salinity and footprint rotation
 (XBIT), zones incl. military/airport/seaport (XZON), roads, rails, power
 lines, trees, and parks (XBLD ranges), pipes, subways, and crossovers
 (XUND), and grown R/C/I buildings with size-class stages and
-construction/abandoned states. City scalars arrive from MISC: funds,
+construction/abandoned states. Under ruleset 5 each grown building
+(XBLD 0x70–0xC5) lands as one whole lot of its catalog size — 1×1, 2×2 or
+3×3 — with its tier in the mid band (`variant` 9–16) and its XBLD id kept in
+`catalogId`; export writes each lot's XBLD id back from its size and anchor
+variant. City scalars arrive from MISC: funds,
 founding year, city age (as ticks), the residential tax rate, and the five
 service funding levels. Power plants and services with native equivalents
 become working facilities (plants map by output class).

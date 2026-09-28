@@ -111,6 +111,7 @@ test.assertIncludes(app, "syncDocMapSvgSizeAttributes(docMapMarkmapInstance)", "
 test.assertIncludes(app, 'syncDocMapSvgSizeAttributes({ svg: { node: () => svg } })', "render pins svg size attributes before creating markmap");
 test.assertIncludes(app, "document.styleSheets", "DocMap PDF copies the active app stylesheet rules");
 test.assertIncludes(app, 'bodyClass = getCurrentTheme() === "liquid-glass"', "DocMap PDF preserves the active Liquid Glass compatibility class through the canonical Appearance API");
+test.assertIncludes(app, `\${bodyClass ? ' data-theme="liquid-glass"' : ""}`, "the DocMap PDF body carries the attribute its copied Liquid Glass rules select");
 test.assertIncludes(app, '".docmap-balanced-center-box"', "DocMap PDF copies the balanced center-box style");
 test.assertIncludes(app, '".docmap-mm-balanced-root"', "DocMap PDF copies balanced root ornament rules");
 test.assertIncludes(app, 'page: "A4 landscape"', "DocMap PDF uses landscape A4 for symmetric maps");
@@ -253,6 +254,6 @@ test.assertIncludes(docmap, 'refreshAskBar("docMap")', "the ask bar's focus foll
 
 // A small map stays near its natural size when fitted.
 test.assertIncludes(docmap, "maxInitialScale: 1.25,", "fitting a three-branch map no longer doubles its labels");
-test.assertIncludes(read("styles/70-liquid-glass.css"), "body.use-liquid-glass .docmap-markmap-frame {\n  border: 0;", "Liquid Glass draws one canvas surface, not a card inside a card");
+test.assertIncludes(read("styles/70-liquid-glass.css"), "body[data-theme=\"liquid-glass\"] .docmap-markmap-frame {\n  border: 0;", "Liquid Glass draws one canvas surface, not a card inside a card");
 
 test.finish();

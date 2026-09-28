@@ -1790,6 +1790,7 @@ async function importProjectBackupAsNewProject(backup = previewedProjectBackup) 
         });
       }
     }
+    if (typeof migrateMachineClipBodies === "function") migrateMachineClipBodies(imported.scraps);
     const committedSettings = await commitImportedProjectAtomically(imported);
 
     projects.unshift(imported.project);
@@ -1885,7 +1886,7 @@ async function openSharedProjectDisk(route) {
     return;
   }
 
-  await ensureSharedProjectDisksModule();
+  await ensureSharedProjectDiskModule(route);
   const backup = (window.AISystem6SharedProjectDisks || {})[route];
   if (!backup) {
     setStatus(t("backup_import_invalid"));
@@ -2112,7 +2113,7 @@ function formatProjectBackupMarkdown(project) {
     projectScraps.forEach((scrap) => {
       lines.push(`### ${scrap.title}`, "");
       if (scrap.tags?.length) lines.push(`Tags: ${scrap.tags.join(", ")}`, "");
-      lines.push(scrap.body || "", "");
+      lines.push(scrapDocumentText(scrap) || "", "");
     });
   } else {
     lines.push("_No scraps._", "");
@@ -2138,5 +2139,5 @@ function formatInfoItemMarkdown(item) {
   if (projects.includes(item)) {
     return formatProjectBackupMarkdown(item);
   }
-  return [`# ${item.title || t("scrapbook")}`, "", item.body || ""].join("\n");
+  return [`# ${item.title || t("scrapbook")}`, "", scrapDocumentText(item) || ""].join("\n");
 }

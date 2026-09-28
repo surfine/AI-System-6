@@ -1005,7 +1005,7 @@ function getClioTalkPendingInputDescriptors(options = {}) {
       kind: "scrap",
       name: scrap.title,
       path: `${getActiveProject()?.name || ""} / Scrapbook / ${scrap.title}`,
-      body: scrap.body,
+      body: (typeof scrapDocumentText === "function" ? scrapDocumentText(scrap) : scrap.body),
     }));
   });
   if (!temporaryChat && typeof hasMountedFileDiskContext === "function" && hasMountedFileDiskContext()) {
@@ -3558,7 +3558,7 @@ function buildPayload(userText, options = {}) {
           sourceType: scrap.source?.type || "",
         };
         const citationId = sourceCitationForContextItem(contextItem, index) || `[A${index + 1}]`;
-        return `${citationId} Explicit Scrapbook attachment / ${scrap.title}\n${clipContextContent(scrap.body, maxContextItemChars)}`;
+        return `${citationId} Explicit Scrapbook attachment / ${scrap.title}\n${clipContextContent((typeof scrapDocumentText === "function" ? scrapDocumentText(scrap) : scrap.body), maxContextItemChars)}`;
       }
     );
 

@@ -44,6 +44,7 @@ window.AISystem6BonsaiSaveWorkerManagerLoaded = true;
       }
       if (!sim) return Promise.reject(new Error("bonsai-save-codec-missing"));
       if (operation === "encode") return sim.encodeSave(input, metadata || {});
+      if (operation === "encode-text") return sim.encodeSave(input, metadata || {}).then(JSON.stringify);
       if (operation === "parse-decode") return Promise.resolve().then(() => sim.decodeSave(JSON.parse(input)));
       return sim.decodeSave(input);
     }
@@ -99,7 +100,7 @@ window.AISystem6BonsaiSaveWorkerManagerLoaded = true;
           fallback,
         });
         try {
-          active.postMessage(operation === "encode"
+          active.postMessage(operation === "encode" || operation === "encode-text"
             ? { id, operation, state: input, metadata: metadata || {} }
             : operation === "parse-decode"
               ? { id, operation, text: input }
@@ -120,7 +121,9 @@ window.AISystem6BonsaiSaveWorkerManagerLoaded = true;
 
     return Object.freeze({
       encode(state, metadata) { return run("encode", state, metadata); },
-      decode(envelope) { return run("decode", envelope); },
+      // A string crosses the worker and IndexedDB boundaries without cloning every tile.
+      encodeForStorage(state, metadata) { return run("encode-text", state, metadata); },
+      decode(envelope) { return typeof envelope === "string" ? run("parse-decode", envelope) : run("decode", envelope); },
       parseAndDecode(text) { return run("parse-decode", String(text || "")); },
       importSc2(bytes) { return run("sc2-import", bytes); },
       exportSc2(payload) { return run("sc2-export", payload); },

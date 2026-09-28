@@ -16,7 +16,25 @@ const math = mathContext.window.AISystem6BonsaiRenderer;
 
 test.assert(math.TILE_W === 64 && math.TILE_H === 32, "the formal renderer uses 64x32 2:1 tiles");
 test.assert(math.HEIGHT_STEP === 10, "each terrain height level lifts ten pixels");
-test.assert(math.DEFAULT_ZOOM === 0.7, "the initial camera uses the SC2K zoom");
+test.assert(math.DEFAULT_ZOOM === 0.5, "the initial camera opens at the SC2K 32px overview step");
+test.assert(JSON.stringify(math.ZOOM_LEVELS) === "[0.25,0.5,1,2]" && math.MIN_ZOOM === 0.25 && math.MAX_ZOOM === 2, "zoom moves between four whole-number-friendly steps");
+test.assert(math.snapZoom(0.7) === 0.5 && math.snapZoom(0.75) === 1 && math.snapZoom(9) === 2 && math.snapZoom(0.01) === 0.25, "arbitrary scales snap to the nearest step in doublings");
+test.assert(math.stepZoom(0.5, 1) === 1 && math.stepZoom(0.5, -1) === 0.25 && math.stepZoom(2, 1) === 2 && math.stepZoom(0.25, -3) === 0.25, "a step moves one level and stops at the ends");
+{
+  // The ground under the anchor stays put: centre + pan + zoom x offset.
+  const from = 0.5; const to = 1; const width = 800; const height = 600;
+  const view = { panX: 37, panY: -21 };
+  const anchor = { x: 610, y: 145 };
+  const worldX = (anchor.x - width / 2 - view.panX) / from;
+  const worldY = (anchor.y - height / 2 - view.panY) / from;
+  const next = math.anchoredPan(view, from, to, anchor.x, anchor.y, width, height);
+  test.assert(Math.abs(width / 2 + next.panX + to * worldX - anchor.x) < 1e-9 && Math.abs(height / 2 + next.panY + to * worldY - anchor.y) < 1e-9,
+    "anchored zoom keeps the point under the pointer on the same screen pixel");
+  const centred = math.anchoredPan(view, from, to, undefined, undefined, width, height);
+  test.assert(centred.panX === view.panX * 2 && centred.panY === view.panY * 2, "without an anchor, zoom holds the middle of the view");
+}
+test.assert(math.seasonOf({ tick: 400, season: 1 }) === 1 && math.seasonOf({ tick: 400 }) === 1 && math.seasonOf({ tick: 1200 }) === 3 && math.seasonOf({ tick: 1200, season: 0 }) === 0,
+  "a stamped season wins over the clock; an unstamped snapshot keeps the clock");
 test.assert(math.ROTATIONS === 4, "the camera exposes exactly four quarter-turns");
 
 // --- waterfall edges: the SC2000 mountain signature, pure and deterministic ---
@@ -100,14 +118,22 @@ for (let rotation = 0; rotation < 4; rotation += 1) {
 
 function makeContext() {
   const calls = [];
+  const images = [];
   return {
-    calls,
+    calls, images,
     imageSmoothingEnabled: true,
     setTransform: (...args) => calls.push(["setTransform", ...args]),
     clearRect: (...args) => calls.push(["clearRect", ...args]),
     fillRect: (...args) => calls.push(["fillRect", ...args]),
     strokeRect: (...args) => calls.push(["strokeRect", ...args]),
-    drawImage: (...args) => calls.push(["drawImage", ...args.slice(-4)]),
+    drawImage: (...args) => { images.push(args[0]); calls.push(["drawImage", ...args.slice(-4)]); },
+    save: () => calls.push(["save"]),
+    translate: (...args) => calls.push(["translate", ...args]),
+    scale: (...args) => calls.push(["scale", ...args]),
+    restore: () => calls.push(["restore"]),
+    transform: (...args) => calls.push(["transform", ...args]),
+    rect: (...args) => calls.push(["rect", ...args]),
+    clip: () => calls.push(["clip"]),
     beginPath: () => calls.push(["beginPath"]),
     moveTo: (...args) => calls.push(["moveTo", ...args]),
     lineTo: (...args) => calls.push(["lineTo", ...args]),
@@ -300,6 +326,14 @@ const miniStats = renderer.renderMiniMap(miniMapCanvas, v2Snapshot, {
 });
 test.assert(miniStats.cssWidth === 180 && miniStats.cssHeight === 100, "minimap measures its separate inspector canvas CSS bounds");
 test.assert(miniStats.dpr === 2 && miniStats.backingWidth === 360 && miniStats.backingHeight === 200, "minimap caps backing resolution at CSS size times DPR 2");
+test.assert(miniStats.rasterized === false, "minimap keeps the direct fillRect fallback for contexts that cannot round-trip ImageData");
+// The fallback still paints terrain, features, and the overlay tile by tile,
+// so the feature pixels are never dropped on the doubles.
+const miniMapFills = miniMapCanvas._context.calls.filter(([name]) => name === "fillRect");
+test.assert(miniMapFills.length === 1 + cellCount * 2 + 4,
+  "minimap fallback draws the background, every terrain and overlay cell, and each of the four network feature pixels");
+test.assert(miniMapFills.filter(([, , , width, height]) => width === 1 && height === 1).length === 4,
+  "minimap fallback keeps all four road/rail/wire/pipe pixels at their feature centers");
 test.assert(miniMapCanvas._context.calls.filter(([name]) => name === "strokeRect").length === 2, "minimap draws a high-contrast viewport outline");
 const firstMiniMapTrace = JSON.stringify(miniMapCanvas._context.calls);
 miniMapCanvas._context.calls.length = 0;
@@ -312,11 +346,96 @@ test.assert(JSON.stringify(miniMapCanvas._context.calls) === firstMiniMapTrace, 
 test.assert(JSON.stringify(v2Snapshot) === miniMapBefore && renderer.debugStats().activeRaf === 0, "minimap uses no RAF and never mutates core data");
 const bitmapMiniMap = createCanvas(1, 1);
 bitmapMiniMap.getBoundingClientRect = () => ({ left: 0, top: 0, width: 180, height: 100 });
-renderer.renderMiniMap(bitmapMiniMap, v2Snapshot, { overlay: "land-value", viewport: { x: 1, y: 1, width: 5, height: 4 }, dpr: 2 });
+// The harness's document doubles cannot round-trip ImageData, so the real
+// bitmap path gets a real scratch surface. In a browser the document canvas
+// fills this role; the hook is what keeps the raster path exercised here.
+const scratchCanvases = [];
+const createScratchCanvas = () => { const scratch = createCanvas(1, 1); scratchCanvases.push(scratch); return scratch; };
+const bitmapOptions = { overlay: "land-value", viewport: { x: 1, y: 1, width: 5, height: 4 }, dpr: 2, createScratchCanvas };
+const bitmapStats = renderer.renderMiniMap(bitmapMiniMap, v2Snapshot, bitmapOptions);
 const firstMiniMapHash = createHash("sha256").update(bitmapMiniMap.toBuffer("image/png")).digest("hex");
-renderer.renderMiniMap(bitmapMiniMap, v2Snapshot, { overlay: "land-value", viewport: { x: 1, y: 1, width: 5, height: 4 }, dpr: 2 });
+renderer.renderMiniMap(bitmapMiniMap, v2Snapshot, bitmapOptions);
 const secondMiniMapHash = createHash("sha256").update(bitmapMiniMap.toBuffer("image/png")).digest("hex");
 test.assert(firstMiniMapHash === secondMiniMapHash, "real minimap bitmap output is byte-deterministic across repeated renders");
+test.assert(bitmapStats.rasterized === true, "a real 2D context takes the single ImageData raster path");
+test.assert(scratchCanvases.length === 1 && scratchCanvases[0].width === 180 && scratchCanvases[0].height === 100,
+  "minimap reuses one CSS-resolution scratch canvas per target instead of allocating per frame");
+
+{
+  // Assert the uploaded bitmap itself, not the call trace: the minimap is a
+  // 180x100 CSS picture at DPR 2, so CSS pixel (px, py) is the 2x2 device block
+  // at (px * 2, py * 2). Every expected value below is the plain source-over of
+  // the snapshot's own terrain/feature/overlay colors.
+  const bitmapContext = bitmapMiniMap.getContext("2d");
+  const devicePixel = (px, py) => [...bitmapContext.getImageData(px * 2, py * 2, 1, 1).data];
+
+  // Tile (0, 0) is grass at altitude 0 — 99/147/84 lifted by (0 - 4) * 6 — with
+  // a land-value bucket 4 tint (landValue 255) over it.
+  test.assert(JSON.stringify(devicePixel(0, 0)) === JSON.stringify([58, 125, 66, 255]),
+    "minimap raster paints the elevation-lifted terrain color under the land-value overlay");
+
+  // Tile (3, 3) carries the road at index 27: its dark network pixel is then
+  // covered by that tile's own land-value tint, exactly as the fillRect order
+  // did. Feature center is floor((67 + 90) / 2), floor((37 + 50) / 2) => 78, 43.
+  test.assert(JSON.stringify(devicePixel(78, 43)) === JSON.stringify([53, 79, 44, 255]),
+    "minimap raster keeps the road's dark feature pixel under the tile overlay");
+
+  // The same tile with no overlay isolates the network feature color over the
+  // grass base: rgba(24,26,24,0.92) over 75/123/60.
+  const featureMiniMap = createCanvas(1, 1);
+  featureMiniMap.getBoundingClientRect = () => ({ left: 0, top: 0, width: 180, height: 100 });
+  renderer.renderMiniMap(featureMiniMap, v2Snapshot, { viewport: { x: 1, y: 1, width: 5, height: 4 }, dpr: 2, createScratchCanvas });
+  const featurePixel = [...featureMiniMap.getContext("2d").getImageData(78 * 2, 43 * 2, 1, 1).data];
+  test.assert(JSON.stringify(featurePixel) === JSON.stringify([28, 34, 27, 255]),
+    "minimap raster paints the road pixel in its dark network color over the terrain");
+
+  // Water is skipped by the overlay, so its tile keeps the plain water color.
+  const waterSnapshot = { ...v2Snapshot, water: new Uint8Array(cellCount) };
+  waterSnapshot.water[0] = 1;
+  const waterMiniMap = createCanvas(1, 1);
+  waterMiniMap.getBoundingClientRect = () => ({ left: 0, top: 0, width: 180, height: 100 });
+  renderer.renderMiniMap(waterMiniMap, waterSnapshot, { overlay: "land-value", viewport: { x: 1, y: 1, width: 5, height: 4 }, dpr: 2, createScratchCanvas });
+  const waterPixel = [...waterMiniMap.getContext("2d").getImageData(0, 0, 1, 1).data];
+  test.assert(JSON.stringify(waterPixel) === JSON.stringify([53, 110, 154, 255]),
+    "minimap raster leaves water tiles unshaded by the overlay");
+
+  // Buildings and facilities take the light pixel: stage 3 at (3, 3) would be a
+  // building pixel if the road were not painted first, so probe the facility
+  // tile (1, 1) instead, which has a water-pump footprint and no network.
+  const buildingSnapshot = { ...v2Snapshot, facilityAt: Array(cellCount).fill(-1), zone: new Uint8Array(cellCount) };
+  buildingSnapshot.facilityAt[1 * size + 1] = 0;
+  const buildingMiniMap = createCanvas(1, 1);
+  buildingMiniMap.getBoundingClientRect = () => ({ left: 0, top: 0, width: 180, height: 100 });
+  renderer.renderMiniMap(buildingMiniMap, buildingSnapshot, { viewport: { x: 1, y: 1, width: 5, height: 4 }, dpr: 2, createScratchCanvas });
+  // Tile (1, 1): left 22, right 45, top 12, bottom 25 => feature center 33, 18.
+  const buildingPixel = [...buildingMiniMap.getContext("2d").getImageData(33 * 2, 18 * 2, 1, 1).data];
+  test.assert(JSON.stringify(buildingPixel) === JSON.stringify([224, 223, 206, 255]),
+    "minimap raster paints facility tiles with the light building pixel");
+}
+
+{
+  // A host with neither OffscreenCanvas nor ImageData round-tripping — the
+  // shape of an old shim — must still draw the whole minimap.
+  const fallbackContext = vm.createContext({
+    window: { devicePixelRatio: 1 },
+    document,
+    Promise,
+    Uint8Array,
+    Set,
+    Map,
+  });
+  vm.runInContext(mathSource, fallbackContext);
+  vm.runInContext(canvasSource, fallbackContext);
+  const fallbackRenderer = fallbackContext.window.AISystem6BonsaiCanvasRenderer;
+  const fallbackMiniMap = makeCanvas(null);
+  fallbackMiniMap.getBoundingClientRect = () => ({ left: 0, top: 0, width: 64, height: 64 });
+  const fallbackStats = fallbackRenderer.renderMiniMap(fallbackMiniMap, v2Snapshot, { overlay: "traffic", dpr: 1 });
+  test.assert(fallbackStats && fallbackStats.rasterized === false && fallbackStats.backingWidth === 64,
+    "minimap without any image-capable canvas reports the fillRect fallback at CSS resolution");
+  const fallbackFills = fallbackMiniMap._context.calls.filter(([name]) => name === "fillRect");
+  test.assert(fallbackFills.length === 1 + cellCount * 2 + 4,
+    "minimap fillRect fallback paints every terrain cell, every overlay cell, and each network pixel");
+}
 
 {
   const camera = math.createCamera({
@@ -335,6 +454,17 @@ vm.runInContext(read("app/features/bonsai-city-sim.js"), canvasContext);
 const liveSim = canvasContext.window.AISystem6BonsaiSim;
 const liveCity = liveSim.createCity({ name: "Renderer Contract", seed: 731, size: 64, terrainPreset: "balanced" });
 const liveSnapshot = liveSim.buildRenderSnapshot(liveCity);
+{
+  const typed = { ...liveSnapshot, season: 3 };
+  const compatible = Object.fromEntries(Object.entries(typed).map(([key, value]) =>
+    [key, ArrayBuffer.isView(value) ? Array.from(value) : value]));
+  const options = { ...bitmapOptions, overlay: "none" };
+  renderer.renderMiniMap(bitmapMiniMap, typed, options);
+  const typedPixels = bitmapMiniMap.toBuffer("image/png");
+  renderer.renderMiniMap(bitmapMiniMap, compatible, options);
+  test.assert(typedPixels.equals(bitmapMiniMap.toBuffer("image/png")),
+    "real city typed grids and compatible array snapshots produce identical winter minimaps");
+}
 renderer.render(liveSnapshot);
 test.assert(renderer.debugStats().visibleTileCount > 0, "renderer consumes the current v2 core's real render snapshot without an adapter in the shell");
 const beforeRoadBuilds = renderer.debugStats().chunkBuildCount;
@@ -342,6 +472,46 @@ liveSnapshot.road[32 * 64 + 32] = 1;
 liveSnapshot.rev += 1;
 renderer.render(liveSnapshot);
 test.assert(renderer.debugStats().chunkBuildCount === beforeRoadBuilds + 1, "a road transaction invalidates only its one infrastructure chunk");
+{
+  // The scenery list (buildings, trees, parks, blazes) is built once per
+  // content revision: panning redraws the layer from it, a city change
+  // rebuilds it.
+  const builds = renderer.debugStats().derivedBuilds;
+  const draws = renderer.debugStats().buildingsDraws;
+  renderer.panByScreen(30, 12);
+  renderer.panByScreen(-8, 40);
+  test.assert(renderer.debugStats().derivedBuilds === builds && renderer.debugStats().buildingsDraws === draws + 2,
+    "panning redraws the buildings layer without rebuilding or re-sorting the scenery list");
+  const rasterBuilds = renderer.debugStats().sceneryRasterBuilds;
+  renderer.panByScreen(1, 1);
+  test.assert(renderer.debugStats().sceneryRasterBuilds === rasterBuilds,
+    "nearby camera moves reuse the painter-ordered overscan raster");
+  renderer.panByScreen(400, 0);
+  test.assert(renderer.debugStats().sceneryRasterBuilds === rasterBuilds + 1,
+    "leaving the overscan margin repaints scenery instead of exposing an empty edge");
+  const beforeDeferred = renderer.debugStats();
+  renderer.panByScreen(7, -3, { defer: true });
+  renderer.panByScreen(5, 2, { defer: true });
+  test.assert(renderer.debugStats().buildingsDraws === beforeDeferred.buildingsDraws,
+    "coalesced camera input does not synchronously draw either intermediate view");
+  test.assert(renderer.debugStats().view.panX === beforeDeferred.view.panX + 12,
+    "deferred input still accumulates every camera delta immediately");
+  renderer.render(liveSnapshot);
+  test.assert(renderer.debugStats().buildingsDraws === beforeDeferred.buildingsDraws + 1,
+    "one scheduled render draws the accumulated camera position");
+  liveSnapshot.tree[20 * 64 + 20] = liveSnapshot.tree[20 * 64 + 20] ? 0 : 1;
+  liveSnapshot.rev += 1;
+  renderer.render(liveSnapshot);
+  test.assert(renderer.debugStats().derivedBuilds === builds + 1, "a new content revision rebuilds the scenery list once");
+  liveSnapshot.catalogId[21 * 64 + 21] = 0xd3;
+  liveSnapshot.rev += 1;
+  renderer.render(liveSnapshot);
+  test.assert(renderer.debugStats().derivedBuilds === builds + 2, "an imported catalog tile change rebuilds the scenery that draws it");
+  const zoomBefore = renderer.debugStats().view.zoom;
+  const zoomed = renderer.zoomBy(1.1);
+  test.assert(zoomed === math.stepZoom(zoomBefore, 1), "a small wheel factor still moves exactly one zoom step");
+  renderer.zoomBy(0.9);
+}
 
 renderer.setPreview({ accepted: false, footprint: [{ x: 2, y: 2 }, { x: 3, y: 2 }] });
 renderer.clearPreview();
@@ -351,9 +521,13 @@ await Promise.resolve();
 test.assert(atlasPaths().includes("/assets/bonsai/atlas-east.png") && loadedImageUrls.length === 2, "rotation lazily decodes only the newly active direction");
 test.assert(renderer.rotateBy(-1) === 0, "rotateBy applies an exact reversible counterclockwise quarter turn");
 test.assert(renderer.zoomBy(100) === math.MAX_ZOOM && renderer.zoomBy(0.0001) === math.MIN_ZOOM, "zoomBy clamps at the pure camera limits");
-test.assert(JSON.stringify(renderer.panByScreen(12, -8)) === JSON.stringify({ x: 12, y: -8 }), "pan is retained as view-only screen state");
+// Rotation re-centres the pan on the ground at the middle of the view, so
+// measure the pan change rather than assuming it started at zero.
+const panBefore = renderer.debugStats().view;
+const panAfter = renderer.panByScreen(12, -8);
+test.assert(panAfter.x === panBefore.panX + 12 && panAfter.y === panBefore.panY - 8, "pan is retained as view-only screen state");
 const persistedView = renderer.debugStats().view;
-test.assert(Object.isFrozen(persistedView) && persistedView.panX === 12 && persistedView.panY === -8, "debug stats expose a detached frozen camera view for Working Session persistence");
+test.assert(Object.isFrozen(persistedView) && persistedView.panX === panAfter.x && persistedView.panY === panAfter.y, "debug stats expose a detached frozen camera view for Working Session persistence");
 renderer.resetView({ center: { x: 10, y: 20 }, size: 64, zoom: math.DEFAULT_ZOOM });
 {
   const rotated = math.rotateTile(10, 20, 64, 0);
@@ -424,7 +598,7 @@ for (const source of [mathSource, canvasSource]) {
   test.assertIncludes(canvasSource, "buildingFrame(building, night)", "night swaps growable building frames");
   test.assertIncludes(canvasSource, "nightFrame(`facility.", "facilities select their night variant");
 test.assertIncludes(canvasSource, "drawNightWindowGlow", "the lighting layer draws lit windows after the darkness overlay");
-test.assertIncludes(canvasSource, '`${viewKey}:${buildingSignature(snapshot)}:${night ? "n" : "d"}:${season}`', "the buildings layer rebuilds only at day/night or season transitions");
+test.assertIncludes(canvasSource, 'const key = `${revision}:${state.camera.rotation}:${season}:${night ? "n" : "d"}`;', "the scenery list is keyed by content revision, rotation, season and night");
 test.assertIncludes(canvasSource, "isNight(snapshot) ? 1 : 0", "the infrastructure chunk signature carries the night flag");
 test.assertIncludes(canvasSource, "season === 3", "autumn doubles the maple share");
 test.assertIncludes(canvasSource, "drawWaterfalls", "the agents layer draws waterfall curtains");
@@ -444,7 +618,7 @@ test.assertIncludes(canvasSource, "Snow: peaks above the snow line always", "hig
 test.assertIncludes(canvasSource, "the whole lowland in", "winter snows over the lowland");
 test.assertIncludes(canvasSource, "Winter freezes the lakes", "winter lays a pale ice sheet over water");
 test.assertIncludes(canvasSource, 'winter ? "#dce8ee" : "#356e9a"', "the minimap shows frozen water in winter");
-test.assertIncludes(canvasSource, 'if (layer === "terrain") {\n      hash = fnvUpdate(hash, Math.floor(((Number(snapshot.tick) || 0) % 1500) / 375));', "the terrain chunk signature carries the season");
+test.assertIncludes(canvasSource, 'if (layer === "terrain") {\n      hash = fnvUpdate(hash, MATH.seasonOf(snapshot));', "the terrain chunk signature carries the season");
 test.assertIncludes(canvasSource, '`${family}.mask-${mask}`', "networks draw their direction-aware mask frames");
 test.assertIncludes(canvasSource, '"bridge-road"', "road crossings over water draw the bridge deck family");
 test.assertIncludes(canvasSource, '"bridge-highway"', "highway crossings over water draw the highway bridge deck");
@@ -456,6 +630,101 @@ test.assertIncludes(canvasSource, "SC2000 port signatures", "airport and seaport
 test.assertIncludes(canvasSource, "Moon reflection", "water near the moon column carries a faint glint");
 test.assertIncludes(canvasSource, "drawSakuraPetals", "spring drifts sakura petals on the agents layer");
 test.assertIncludes(canvasSource, "A ramp has two ends", "onramps pick orientation frames from highway and road neighbours");
+}
+
+// --- networks follow the ground, SC2K-style ---------------------------------------
+{
+  // Chunks are drawn on canvases the renderer creates; keep them to read
+  // what was drawn on them.
+  const created = [];
+  const createElement = document.createElement;
+  document.createElement = (name) => { const canvas = createElement(name); created.push(canvas); return canvas; };
+  await renderer.mount(stack);
+  await Promise.resolve(); await Promise.resolve();
+  const n = 8;
+  const base = () => ({
+    size: n, tick: 12, seed: 5, rev: 1, timeOfDay: 0.5,
+    alt: new Uint8Array(n * n).fill(1), water: new Uint8Array(n * n), slope: new Uint8Array(n * n),
+    road: new Uint8Array(n * n), rail: new Uint8Array(n * n), wire: new Uint8Array(n * n), pipe: new Uint8Array(n * n),
+    highway: new Uint8Array(n * n), onramp: new Uint8Array(n * n), zone: new Uint8Array(n * n),
+  });
+  const drawn = (snapshot, display = {}) => {
+    renderer.resetView({ center: { x: 4, y: 4 }, size: n, zoom: math.DEFAULT_ZOOM });
+    // A quarter turn and back empties the chunk cache: every chunk redraws.
+    renderer.rotateBy(1); renderer.rotateBy(-1);
+    created.length = 0;
+    snapshot.rev = (snapshot.rev || 0) + Math.floor(Math.random() * 1e6);
+    renderer.render(snapshot, { display: { buildings: true, infrastructure: true, zones: false, underground: false, ...display } });
+    return created.flatMap((canvas) => canvas._context.calls);
+  };
+  const count = (calls, name) => calls.filter((call) => call[0] === name).length;
+
+  // A road up a hillside: the tile below the step is a slope tile.
+  const hill = base();
+  for (let y = 0; y < n; y += 1) for (let x = 4; x < n; x += 1) hill.alt[y * n + x] = 2;
+  for (let y = 0; y < n; y += 1) hill.slope[y * n + 3] = 1;
+  for (let x = 1; x < 7; x += 1) hill.road[3 * n + x] = 1;
+  const sloped = drawn(hill);
+  const tilted = sloped.filter((call) => call[0] === "transform" && Math.abs(call[2]) > 1e-9);
+  test.assert(count(sloped, "clip") >= 4 && tilted.length >= 2,
+    `a road on a slope tile is laid on the tilted ground in four quadrants (${count(sloped, "clip")} clips, ${tilted.length} tilted quadrants)`);
+  const flat = base();
+  for (let x = 1; x < 7; x += 1) flat.road[3 * n + x] = 1;
+  test.assert(count(drawn(flat), "clip") === count(drawn(base()), "clip"), "a road on level ground is drawn flat, as before");
+
+  // Water pipes are buried: the daylight map does not draw them.
+  const piped = base();
+  for (let x = 1; x < 7; x += 1) piped.pipe[3 * n + x] = 1;
+  const daylightPipes = count(drawn(piped), "drawImage");
+  const daylightNothing = count(drawn(base()), "drawImage");
+  const undergroundPipes = count(drawn(piped, { underground: true }), "drawImage");
+  test.assert(daylightPipes === daylightNothing && undergroundPipes > count(drawn(base(), { underground: true }), "drawImage"),
+    `pipes show on the underground view only (daylight ${daylightPipes} = ${daylightNothing} draws; underground ${undergroundPipes})`);
+
+  // Highways stand on piers with the buildings, so they sort with them.
+  const buildingsLayer = stack.children.find((canvas) => canvas.dataset.bonsaiLayer === "buildings")._context;
+  const road = base();
+  for (let x = 0; x < n; x += 1) road.road[5 * n + x] = 1;
+  buildingsLayer.calls.length = 0;
+  drawn(road);
+  const sceneryCalls = () => buildingsLayer.images.at(-1)?._context?.calls || [];
+  const withoutHighway = count(sceneryCalls(), "drawImage");
+  const raised = base();
+  for (let x = 0; x < n; x += 1) { raised.road[5 * n + x] = 1; raised.highway[2 * n + x] = 1; raised.highway[3 * n + x] = 1; }
+  buildingsLayer.calls.length = 0;
+  drawn(raised);
+  test.assert(count(sceneryCalls(), "drawImage") >= withoutHighway + 2 * n,
+    "a highway deck is drawn on the buildings layer, raised above the streets it crosses");
+
+  // A building faces its street: on an east or west street its sprite is
+  // mirrored, on a north or south street it is drawn as composed.
+  const facing = (roadAt) => {
+    const snapshot = base();
+    roadAt(snapshot);
+    snapshot.buildings = [{ x: 3, y: 3, w: 1, h: 1, footprint: { w: 1, h: 1 }, zone: 2, stage: 1, variant: 4, state: 3 }];
+    // A blank draw first, so nothing of the previous case is still pending.
+    drawn(base());
+    buildingsLayer.calls.length = 0;
+    drawn(snapshot);
+    return sceneryCalls().filter((call) => call[0] === "scale" && call[1] === -1).length;
+  };
+  const eastStreet = facing((snapshot) => { for (let y = 0; y < n; y += 1) snapshot.road[y * n + 4] = 1; });
+  const southStreet = facing((snapshot) => { for (let x = 0; x < n; x += 1) snapshot.road[4 * n + x] = 1; });
+  test.assert(eastStreet === 1 && southStreet === 0,
+    `a building on an east street is mirrored toward it, one on a south street is not (${eastStreet}, ${southStreet} mirrored draws)`);
+  // The anchor is below the viewport, but a 3x3 downtown tower still reaches
+  // into it at zoom 2. Culling must follow its sprite, not a 60px anchor margin.
+  const tower = base();
+  tower.buildings = [{ x: 3, y: 3, w: 3, h: 3, footprint: { w: 3, h: 3 }, zone: 2, stage: 3, variant: 24, state: 3 }];
+  const height = renderer.debugStats().cssHeight;
+  const panY = height / 2 + 300 - 32 + 20;
+  renderer.render(tower, { zoom: 2, rotation: 0, panX: 0, panY });
+  test.assert(count(sceneryCalls(), "drawImage") > 0, "a tower whose anchor is below the viewport retains its visible upper floors");
+  sceneryCalls().length = 0;
+  renderer.render(tower, { panY: panY + 10000 });
+  test.assert(count(sceneryCalls(), "drawImage") === 0, "a fully offscreen tower is still culled");
+  document.createElement = createElement;
+  renderer.dispose();
 }
 
 test.finish();

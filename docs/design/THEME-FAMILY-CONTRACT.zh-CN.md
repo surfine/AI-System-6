@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/THEME-FAMILY-CONTRACT.md -->
-<!-- source-sha256: 23d6dcff87c80c2ecdf6cbf0abd02b58f5891a22f1fedc2a87fac6b7f979af85 -->
+<!-- source-sha256: bcf828df30562bbb5e203f7c2a7fdfe0c8f4b7e80bf928d107474805356ab72d -->
 
 英文版为准。本文档仅供人类参考。
 
@@ -33,7 +33,9 @@ app、面板、对话框或系统控件时，只针对共享对象语法和它�
   `data-theme-base` 投影到 `html` 与 `body` 上。
 - `getRecipeChain(themeId)` 返回有序继承链；成环是注册表 bug，会抛错。
 
-只有 Liquid Glass 家族携带 `use-liquid-glass` 皮肤类。Aqua 与 Snow
+只有 Liquid Glass 家族携带 `use-liquid-glass` 皮肤类，保留它是为了读取它的
+脚本：样式表用 `body[data-theme="liquid-glass"]` 选中 Liquid Glass，与其他
+外观的写法一致（`verify:css` 拒绝在样式表里选这个类）。Aqua 与 Snow
 Leopard 直接在 `body[data-theme="..."]` 下拥有自己的规则；它们不得继承
 玻璃皮肤。
 

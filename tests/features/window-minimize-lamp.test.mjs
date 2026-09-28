@@ -2,11 +2,13 @@
 //
 // The owner's ruling of 2026-09-25: a Mac OS X era draws its yellow lamp only
 // together with its Dock, because a window put away needs a place to go and a
-// way back. No era has its Dock yet, so no era grants the registry capability
-// `minimize-lamp`; Big Sur, which drew a three-lamp leading group for two days,
-// draws the product's close-left / zoom-right pair again. NeXTSTEP keeps its
-// own miniaturize button and its Dock's miniwindows, and it is the era this
-// contract uses to pin the state machine the coming Docks will share.
+// way back. Snow Leopard's Dock shipped first, and every Mac OS X era's Dock
+// followed the same day, so the seven Mac OS X eras grant the registry
+// capability `minimize-lamp` together with `dock`, and no Classic-family era
+// does. Big Sur, which once drew a lamp with no Dock behind it for two days,
+// now draws it because its Dock is there. NeXTSTEP keeps its own
+// miniaturize button and its Dock's miniwindows, and it is the era this
+// contract uses to pin the state machine the Mac OS X Dock shares.
 //
 // Minimize is not WindowShade. Rolling a window up in place stays the title-bar
 // double-click in every era, and Hide keeps using it. So two more rules live
@@ -51,7 +53,14 @@ test.assert(
   vmw.run('AISystem6Theme.themes.every((theme) => !theme.capabilities.includes("minimize-lamp") || theme.capabilities.includes("dock"))'),
   "no appearance grants the minimize lamp unless it also has a dock capability",
 );
-test.assert(lampEras.length === 0, `no appearance grants the minimize lamp today, because no era's Dock has shipped (found: ${lampEras.join(", ") || "none"})`);
+test.assert(
+  JSON.stringify(lampEras) === JSON.stringify(["aqua", "tiger", "snow-leopard", "lion", "yosemite", "big-sur", "liquid-glass"]),
+  `the seven Mac OS X eras grant the minimize lamp, each with its Dock (found: ${lampEras.join(", ") || "none"})`,
+);
+test.assert(
+  vmw.run('AISystem6Theme.themes.filter((theme) => ["classic", "nextstep"].includes(theme.family)).every((theme) => !theme.capabilities.includes("minimize-lamp"))'),
+  "no Classic-family era and not NeXTSTEP grants the Mac OS X lamp: their windows never had one",
+);
 
 // 2. An era whose windows had no miniaturize button carries no lamp and loads
 //    no module: adding a shared control must not restyle Classic or Platinum.
@@ -62,18 +71,23 @@ test.assert(
   "and it does not load the miniaturize module at all, so an era without the control pays nothing for it",
 );
 
-// 3. Big Sur, the era that shipped the lamp without its Dock, draws none now.
+// 3. Big Sur, the era that once shipped the lamp without its Dock, draws it
+//    again now that its Dock is there.
 await vmw.context.AISystem6Theme.applyTheme("big-sur", { persist: false });
 await vmw.context.AISystem6Theme.whenReady();
-test.assert(vmw.run('AISystem6Theme.hasCapability("minimize-lamp") === false'), "Big Sur does not grant the minimize lamp");
-test.assert(lampCount() === 0, "Big Sur draws no minimize lamp on any window");
+await vmw.waitFor(() => vmw.run("!!window.AISystem6WindowMinimizeLoaded"));
+test.assert(vmw.run('AISystem6Theme.hasCapability("minimize-lamp") && AISystem6Theme.hasCapability("dock")'), "Big Sur grants the lamp together with its Dock");
+// Owner, 2026-09-25 evening: until the writer asks for it, a Mac OS X era
+// draws no yellow lamp (and no Dock) — the verb starts off.
+vmw.run('localStorage.removeItem("ai-system-6-minimize"); localStorage.removeItem("ai-system-6-dock"); window.AISystem6WindowMinimize.syncLamps()');
 test.assert(
-  vmw.run("!window.AISystem6WindowMinimizeLoaded"),
-  "and Big Sur does not load the miniaturize module",
+  vmw.run("window.AISystem6WindowMinimize.minimizeEnabled() === false") && lampCount() === 0,
+  "with no stored choice Big Sur starts with minimize off and draws no yellow lamp",
 );
+vmw.run("window.AISystem6WindowMinimize.setMinimizeEnabled(true); window.AISystem6WindowMinimize.setDockVisible(true)");
 test.assert(
-  vmw.run('getWindow("notePad").querySelector(":scope > .title-bar > .close-box") !== null'),
-  "Big Sur's windows keep their Close lamp, so the absence above is the yellow lamp's alone",
+  vmw.run('getWindow("notePad").querySelector(":scope > .title-bar > .close-box + .minimize-box") !== null'),
+  "Big Sur's yellow lamp sits right after Close, the order the group is drawn in",
 );
 
 // 4. NeXTSTEP's miniaturize button acts on the window it sits on, and the
@@ -144,8 +158,23 @@ test.assert(
   vmw.run(`visibleWindowsForApp(${JSON.stringify(notePadApp)}).length === 0`),
   "the application icon alone (NeXTSTEP's Dock) activates the application and leaves the window miniaturized",
 );
+await vmw.context.AISystem6Theme.applyTheme("platinum", { persist: false });
+// Platinum draws no lamp and has no Dock, so this desk has no way back to a
+// miniwindow and releaseOrphanedMiniwindows rolls the window up in place.
+test.assert(
+  !has("notePad", "is-minimized"),
+  "Platinum neither draws the lamp nor has a Dock, so a window put away under NeXTSTEP is rolled up rather than left in a list that does not exist",
+);
 await vmw.context.AISystem6Theme.applyTheme("aqua", { persist: false });
-test.assert(has("notePad", "is-minimized"), "Aqua under MultiFinder keeps it put away, because its switcher lists put-away windows");
+// Aqua draws the lamp and has its Dock, and under MultiFinder its switcher
+// lists the put-away windows too.
+vmw.run(`(() => {
+  const win = getWindow("notePad");
+  if (win.classList.contains("is-collapsed")) toggleCollapsed(win);
+  focusWindow(win);
+  minimizeWindow(win);
+})()`);
+test.assert(has("notePad", "is-minimized"), "the window is put away again, this time while the module owns the state");
 vmw.run("renderMultiFinderMenu()");
 test.assert(
   vmw.run('document.querySelector(\'#multifinder-popover .multifinder-miniwindow[data-miniwindow="notePad"]\') !== null'),
@@ -157,21 +186,155 @@ test.assert(
   "asking for an application whose windows are all miniaturized brings one back rather than opening nothing",
 );
 vmw.run('minimizeWindow(getWindow("notePad"))');
+// The put-away list moved into the module, so with no module there is no list
+// at all. That is safe because a desk without the module never has a window in
+// this state (releaseOrphanedMiniwindows rolls it up), so the two absences
+// agree -- there is nothing stranded.
 test.assert(
   vmw.run(`(() => {
     const module = window.AISystem6WindowMinimize;
     delete window.AISystem6WindowMinimize;
     try {
       renderMultiFinderMenu();
-      const row = document.querySelector('#multifinder-popover .multifinder-miniwindow[data-miniwindow="notePad"]');
-      row?.dispatchEvent(new Event("click"));
-      return Boolean(row) && !getWindow("notePad").classList.contains("is-minimized");
+      return document.querySelector('#multifinder-popover .multifinder-miniwindow[data-miniwindow="notePad"]') === null;
     } finally {
       window.AISystem6WindowMinimize = module;
     }
   })()`),
-  "and its row brings it back even in an era that never loaded the miniaturize module",
+  "with no miniaturize module there is no put-away list, because that module now owns both the state and the rows",
 );
+vmw.run("renderMultiFinderMenu()");
+test.assert(
+  vmw.run(`(() => {
+    const row = document.querySelector('#multifinder-popover .multifinder-miniwindow[data-miniwindow="notePad"]');
+    row?.dispatchEvent(new Event("click"));
+    return Boolean(row) && !getWindow("notePad").classList.contains("is-minimized");
+  })()`),
+  "and its row (drawn by the module) brings it back, the same call the Dock will use",
+);
+
+// 5b. The Apple menu's own list of put-away windows. It lives in the module
+//     (renderAppleMenuSection) and is filled into #apple-minimized-windows, the
+//     container index.html leaves in the Apple menu popover. In Finder mode,
+//     where no switcher is shown, it is the only list a writer can reach.
+await vmw.context.AISystem6Theme.applyTheme("nextstep", { persist: false });
+await vmw.context.AISystem6Theme.whenReady();
+vmw.run(`(() => {
+  runtimeEnvironment = "finder";
+  document.querySelectorAll(".window[data-window]").forEach((win) => {
+    win.classList.add("is-hidden");
+    win.classList.remove("is-minimized", "is-active", "is-collapsed", "is-app-hidden");
+  });
+})()`);
+await vmw.context.openWindow("notePad");
+vmw.run('focusWindow(getWindow("notePad")); minimizeWindow(getWindow("notePad"));');
+test.assert(has("notePad", "is-minimized"), "Finder mode really puts the window away");
+test.assert(
+  vmw.run('document.getElementById("apple-minimized-windows").classList.contains("is-hidden") === false'),
+  "the Apple menu's minimized-windows section is shown the moment a window is put away, because in Finder mode it is the only list",
+);
+const appleRow = () => vmw.run(`(() => {
+  const row = document.querySelector('#apple-minimized-windows .apple-minimized-window[data-miniwindow="notePad"]');
+  return row ? { text: row.textContent, action: row.dataset.action ?? null, node: row } : null;
+})()`);
+const appleRowBefore = appleRow();
+test.assert(appleRowBefore !== null, "and it holds a row for the window, grouped under the put-away list");
+test.assert(
+  typeof appleRowBefore?.text === "string" && appleRowBefore.text.startsWith("◆"),
+  "the row is marked with the leading diamond the Mac OS X Window menu uses for a minimized window",
+);
+test.assert(
+  appleRowBefore?.action === null,
+  "the row carries no data-action, because the NeXTSTEP menu mirrors every .apple-menu-popover > [data-action] and a delegate would double-handle the click",
+);
+vmw.run(`(() => {
+  const win = getWindow("notePad");
+  win.__appleRowSentinel = "same-node";
+  document.querySelector('#apple-minimized-windows .apple-minimized-window[data-miniwindow="notePad"]').dispatchEvent(new Event("click"));
+})()`);
+test.assert(
+  vmw.run('!getWindow("notePad").classList.contains("is-minimized") && getWindow("notePad").__appleRowSentinel === "same-node"'),
+  "clicking the Apple menu row restores the same window node, not a reopened copy",
+);
+test.assert(
+  vmw.run('document.getElementById("apple-minimized-windows").classList.contains("is-hidden") === true'),
+  "and the section hides again once nothing is put away",
+);
+
+// 5c. Mac OS X's next-focus rule. Minimizing an application's last window
+//     leaves the application frontmost; the old rule handed the front to
+//     whatever window was next in the z-order (and to "finder" when there was
+//     none), which is not what a Mac does. The focus only leaves the window.
+vmw.run(`(() => {
+  runtimeEnvironment = "multifinder";
+  document.querySelectorAll(".window[data-window]").forEach((win) => {
+    win.classList.add("is-hidden");
+    win.classList.remove("is-minimized", "is-active", "is-collapsed", "is-app-hidden");
+  });
+})()`);
+await vmw.context.openWindow("notePad");
+vmw.run('focusWindow(getWindow("notePad"))');
+test.assert(has("notePad", "is-active"), "the fixture has Note Pad in front and it is its application's only open window");
+// No other application's window is visible, so the old rule would have set
+// activeAppId to "finder"; the Mac rule keeps the window's own application.
+vmw.run('minimizeWindow(getWindow("notePad"))');
+test.assert(
+  vmw.run(`activeAppId === ${JSON.stringify(notePadApp)} && activeAppId !== "finder"`),
+  "minimizing an application's only window leaves that application in front, not Finder",
+);
+test.assert(
+  vmw.run('document.activeElement === document.body || !document.activeElement?.classList?.contains("window")'),
+  "and only the caret leaves the window; the application still owns the front",
+);
+
+// 5d. Two windows of one application: putting the front one away brings the
+//     other one of the same application forward, never a window of another app.
+vmw.run(`document.querySelectorAll(".window[data-window]").forEach((win) => {
+  win.classList.add("is-hidden");
+  win.classList.remove("is-minimized", "is-active", "is-collapsed", "is-app-hidden");
+})`);
+await vmw.context.openWindow("documents");
+await vmw.context.openWindow("projects");
+const documentsApp = vmw.run('getWindowAppId(getWindow("documents"))');
+const projectsApp = vmw.run('getWindowAppId(getWindow("projects"))');
+if (documentsApp !== projectsApp) {
+  test.assert(false, `skipping the same-application pair check: documents is ${documentsApp} and projects is ${projectsApp}, so the VM has no two windows sharing an application`);
+} else {
+  vmw.run('focusWindow(getWindow("documents"))');
+  test.assert(has("documents", "is-active"), "the fixture has the first window of the pair in front");
+  vmw.run('minimizeWindow(getWindow("documents"))');
+  test.assert(has("documents", "is-minimized"), "the first window is put away");
+  test.assert(
+    vmw.run('getWindow("projects").classList.contains("is-active")'),
+    "and the other window of the same application comes forward, not a window of another application",
+  );
+  test.assert(
+    vmw.run(`activeAppId === ${JSON.stringify(projectsApp)}`),
+    "the same application stays in front, the rule it shares with the single-window case",
+  );
+}
+
+// 5e. Writer Mode draws no lamp and has no Dock, so a window must not vanish
+//     into a list that is not on that desk.
+const writerModeBefore = vmw.run("writerMode");
+vmw.run("writerMode = true");
+test.assert(
+  vmw.run('minimizeWindow(getWindow("projects")) === false'),
+  "with Writer Mode on, minimize refuses outright rather than flagging a window no control there can restore",
+);
+test.assert(
+  vmw.run('!getWindow("projects").classList.contains("is-minimized")'),
+  "and the window is left exactly as it was",
+);
+vmw.run(`writerMode = ${writerModeBefore === true ? "true" : "false"}`);
+
+// Return the desk to the state step 6 expects: Note Pad visible again, the
+// pair used above out of the way.
+vmw.run(`(() => {
+  for (const name of ["documents", "projects"]) getWindow(name)?.classList.add("is-hidden");
+  const win = getWindow("notePad");
+  win.classList.remove("is-hidden", "is-minimized", "is-collapsed");
+})()`);
 
 // 6. No way back means WindowShade in place, never a stranded window and never
 //    a full release. Classic's Apple menu lists applications but not windows,

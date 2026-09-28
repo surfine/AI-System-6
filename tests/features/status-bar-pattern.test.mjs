@@ -114,13 +114,26 @@ shippedSources.forEach((path) => {
 });
 test.assertMatches(
   index,
-  /scrapbook-details-bar[\s\S]*?<div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host><\/span><\/div>\s*<input id="scrap-filter"[^>]*>\s*<\/div>/,
-  "Scrapbook hosts the shared status line in the stretching cell of its bar, with only the filter field after it",
+  /scrapbook-details-bar[\s\S]*?<div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host><\/span><\/div>\s*<div class="select-wrap select-wrap-inline scrap-stack-wrap">[\s\S]*?<\/select><\/div>\s*<input id="scrap-filter"[^>]*>\s*<\/div>/,
+  "Scrapbook hosts the shared status line in the stretching cell of its bar, with only the stack chooser and filter after it",
 );
 test.assertIncludes(readerStyles, ".reader-status-actions,\n.docmap-status-actions {\n  justify-self: stretch;", "the trailing cell stretches so a long receipt ellipsizes instead of displacing Commands");
-test.assertIncludes(readerStyles, ".scrapbook-details-bar > .window-status-strip {\n  box-sizing: border-box;\n  flex: 1 1 auto;\n  padding-block: 1px;", "a strip inside an existing bar measures its frame, so a receipt never shoves the row");
+const surfaceStyles = read("styles/30-surfaces.css");
+test.assert(surfaceStyles.indexOf("\n.window-status-strip {") >= 0 && surfaceStyles.indexOf("\n.window-status-strip {") < surfaceStyles.indexOf(".scrapbook-details-bar > .window-status-strip {"),
+  "a strip hosted in a bar refines the strip rule, after it in the same sheet");
+test.assertIncludes(surfaceStyles, ".scrapbook-details-bar > .window-status-strip {\n  box-sizing: border-box;\n  flex: 1 1 auto;\n  padding-block: 1px;", "a strip inside an existing bar measures its frame, so a receipt never shoves the row");
 
 const soundscapeSource = read("app/features/soundscape.js");
 test.assertIncludes(soundscapeSource, "function setStatus(message)", "Soundscape prints into its own bar, which is why it needs no host");
+
+// A receipt in a window's strip steps back after a few seconds (owner decision
+// D2, 2026-09-25); ClioTalk's home line and running long tasks keep theirs.
+{
+  const persistence = read("app/core/persistence-status.js");
+  test.assertIncludes(persistence, "function scheduleStatusFade(message)", "window receipts are scheduled to step back");
+  test.assertIncludes(persistence, 'statusEl.closest("[data-status-home]")) return;', "ClioTalk's home status line is never cleared by the timer");
+  test.assertIncludes(persistence, "if (activeLongTasks.size) {", "a message stays while a long task is still running");
+  test.assertIncludes(persistence, "isSystemReceiptStatusMessage(message) ? 12000 : 6000", "a failure stays longer than a receipt");
+}
 
 test.finish();

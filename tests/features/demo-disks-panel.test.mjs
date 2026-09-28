@@ -17,6 +17,7 @@
 // to draw thirty-five names.
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 import { createAppBootVm } from "../helpers/app-boot-vm.mjs";
+import { SHARED_DISKS } from "../../tooling/lib/project-disk-integrity.mjs";
 
 const test = createFeatureTest("demo-disks-panel");
 
@@ -24,7 +25,7 @@ const menus = read("app/data/menus.js");
 const actions = read("app/core/actions.js");
 const panel = read("app/content/shared-disks-panel.js");
 const index = read("app/content/shared-project-disks-index.js");
-const backups = read("app/content/shared-project-disks.js");
+const diskFiles = SHARED_DISKS.map(({ route }) => read(`app/content/shared-disks/${route}.js`));
 const help = read("app/data/writing-flow-help.js");
 const translationsZh = read("app/data/translations-zh.js");
 const translationsEn = read("app/data/translations-en.js");
@@ -99,7 +100,11 @@ test.assertIncludes(index, "window.AISystem6DemoDisksPanel", "the generator appe
 //    is the route's own command.
 test.assertIncludes(app, "window.AISystem6DemonstrationDiskItems?.()", "the folder's page asks the disk module for its rows");
 test.assertIncludes(panel, "window.AISystem6SharedProjectDisksIndex", "and that module reads the published index");
-test.assertMatches(panel, /action: `open-shared-disk-\$\{route\}`/, "a row opens the disk through the route's own command");
+// Opening a row is looking inside the disk: a visitor comes to read, and the
+// copy is a second, deliberate step taken from inside that window, through the
+// same command a /go/<route> link runs.
+test.assertMatches(panel, /action: `look-shared-disk-\$\{route\}`/, "a row opens the disk by looking inside it");
+test.assertIncludes(read("app/features/disk-peek.js"), "handleAction(`open-shared-disk-${route}`)", "and the copy is made by the route's own command");
 {
   const mapper = panel.slice(panel.indexOf("function finderItems()"), panel.indexOf("window.AISystem6DemonstrationDiskItems"));
   test.assert(
@@ -107,18 +112,28 @@ test.assertMatches(panel, /action: `open-shared-disk-\$\{route\}`/, "a row opens
     "the folder names no disk: a new disk needs one registration, not an edit here",
   );
   test.assert(
-    !/sizeLabel/.test(mapper),
-    "a disk reports the shared built-in size rather than a byte figure nobody measured",
+    /sizeLabel: size/.test(mapper) && /wordsLabel\(disk\)/.test(mapper),
+    "a disk's size is its manuscript's length, measured by the generator, not a byte figure",
   );
 }
 test.assertIncludes(index, '"name":', "the index carries the project's own name");
 test.assertIncludes(index, '"subject":', "the index carries the writer's own subject line");
+test.assertIncludes(index, '"label":{"zh":', "the index carries the disk's own short name in both languages");
+test.assertIncludes(index, '"released":', "the index carries the month the finished piece came out");
+test.assertIncludes(index, '"words":', "the index carries the manuscript's measured length");
 // That the subject IS the writer's own line, rather than something the build
 // invented, needs both the source disk and the index, so it is asserted where
 // both exist: tests/features/shared-disk-sources.test.mjs.
+const diskBytes = diskFiles.reduce((sum, file) => sum + file.length, 0);
 test.assert(
-  index.length * 50 < backups.length,
-  `opening the folder fetches the list, not the manuscripts (${index.length} vs ${backups.length} bytes)`,
+  index.length * 50 < diskBytes,
+  `opening the folder fetches the list, not the manuscripts (${index.length} vs ${diskBytes} bytes)`,
+);
+// And opening one row fetches one disk, not the shelf: every module carries a
+// single backup, well under the old all-in-one file's megabytes.
+test.assert(
+  diskFiles.every((file) => file.length < 700 * 1024),
+  "no per-disk module carries more than one disk's worth of bytes",
 );
 test.assert(
   !index.includes("documentTabs") && !index.includes("questionSheet"),
@@ -219,20 +234,32 @@ await vmw.context.handleAction("open-demo-disks");
 const itemCount = () => vmw.run('document.querySelectorAll(\'.window[data-window="projectDisks"] .finder-item\').length');
 const windowElement = vmw.windowElement("projectDisks");
 test.assert(
-  await vmw.waitFor(() => itemCount() === 35 && !windowElement.classList.contains("is-hidden")),
+  await vmw.waitFor(() => itemCount() === 36 && !windowElement.classList.contains("is-hidden")),
   `the folder lists every published disk once it is open (${itemCount()})`,
 );
 test.assert(
-  vmw.run('document.querySelector(\'.window[data-window="projectDisks"] .details-bar > span:first-child\').textContent') === "35 items",
+  vmw.run('document.querySelector(\'.window[data-window="projectDisks"] .details-bar > span:first-child\').textContent') === "36 items",
   "the count reports what the folder holds, the way every Finder page does",
 );
 test.assert(
   vmw.run('document.querySelector(\'.window[data-window="projectDisks"] .details-bar > span:last-child\').textContent') === "Startup Disk",
   "the folder says where it lives",
 );
+// The shelf is in release order, newest first, and a row wears the object on
+// the disk rather than the article's title.
+const newestRoute = vmw.run("AISystem6DemoDisksPanel.orderedRoutes()[0]");
+test.assert(newestRoute === "ipad97", `the newest finished piece comes first (${newestRoute})`);
 test.assert(
-  vmw.run('document.querySelector(\'.window[data-window="projectDisks"] .finder-item\').dataset.staticFinderAction') === "open-shared-disk-dtk",
-  "a row is the disk, and opening it runs that disk's own command",
+  vmw.run('document.querySelector(\'.window[data-window="projectDisks"] .finder-item\').dataset.staticFinderAction') === "look-shared-disk-ipad97",
+  "a row is the disk, and opening it looks inside that disk",
+);
+test.assert(
+  vmw.run('document.querySelector(\'.window[data-window="projectDisks"] .finder-item .finder-item-label\').textContent') === "iPad Pro 9.7",
+  "a row is named for the object on the disk, not for the article inside",
+);
+test.assert(
+  vmw.run('AISystem6DemoDisksPanel.orderedRoutes().slice(-5).every((route) => !AISystem6SharedProjectDisksIndex[route].released)'),
+  "disks written ahead of their video come after every released one",
 );
 test.assert(
   vmw.run('document.querySelector(\'.window[data-window="projectDisks"] .finder-item .sys-icon\') !== null'),
@@ -247,7 +274,8 @@ test.assert(
 // was published without its command would be a row that clicks and does nothing.
 const unopenableRows = JSON.parse(vmw.run(`
   JSON.stringify(Object.keys(window.AISystem6SharedProjectDisksIndex)
-    .filter((route) => !AISystem6Runtime.getCommand(\`open-shared-disk-\${route}\`)))
+    .filter((route) => !AISystem6Runtime.getCommand(\`open-shared-disk-\${route}\`)
+      || !AISystem6Runtime.getCommand(\`look-shared-disk-\${route}\`)))
 `));
 test.assert(
   unopenableRows.length === 0,
@@ -260,14 +288,23 @@ test.assert(
 // change and on a language switch through the same code path as Help Folder.
 vmw.run('toggleViewMode("projectDisks", "list")');
 test.assert(
-  await vmw.waitFor(() => vmw.run('document.querySelectorAll(\'.window[data-window="projectDisks"] .finder-list-row\').length') === 35),
-  "list view is the same 35 disks in the shared list rows",
+  await vmw.waitFor(() => vmw.run('document.querySelectorAll(\'.window[data-window="projectDisks"] .finder-list-row\').length') === 36),
+  "list view is the same 36 disks in the shared list rows",
 );
+// Kind and size said the same thing on every row, so this folder's columns are
+// the article, its length and its month; every other folder keeps the Finder's.
+const listHeads = JSON.parse(vmw.run('JSON.stringify([...document.querySelectorAll(\'.window[data-window="projectDisks"] .finder-list-header span\')].map((cell) => cell.textContent))'));
+test.assert(
+  listHeads.length === 4 && listHeads[1] === vmw.run('t("demo_disk_column_title")') && listHeads[3] === vmw.run('t("demo_disk_column_released")'),
+  `the list names its own columns (${listHeads.join(" | ")})`,
+);
+const unreleasedCell = vmw.run('[...document.querySelectorAll(\'.window[data-window="projectDisks"] .finder-list-row\')].find((row) => row.dataset.staticFinderAction === "look-shared-disk-glass")?.lastElementChild.textContent');
+test.assert(unreleasedCell === "--", "a disk with no video yet shows the Finder's blank, not an invented date");
 vmw.run('toggleViewMode("projectDisks", "icon")');
 vmw.run('currentLanguage = "en"');
 vmw.context.applyLanguage();
 test.assert(
-  await vmw.waitFor(() => vmw.run('document.querySelector(\'.window[data-window="projectDisks"] .details-bar > span:first-child\').textContent') === "35 items"),
+  await vmw.waitFor(() => vmw.run('document.querySelector(\'.window[data-window="projectDisks"] .details-bar > span:first-child\').textContent') === "36 items"),
   "a language switch redraws the folder's count and title with the rest of the desk",
 );
 test.assert(
@@ -280,8 +317,8 @@ test.assert(
 // disks exist, and the button says which kind of visit this is.
 const inlineRows = () => vmw.run('document.querySelectorAll(".backup-preview-section .import-row").length');
 test.assert(
-  await vmw.waitFor(() => inlineRows() === 35),
-  "the Import Utility gets the same 35 rows",
+  await vmw.waitFor(() => inlineRows() === 36),
+  "the Import Utility gets the same 36 rows",
 );
 test.assert(
   vmw.run('document.querySelector(".backup-preview-section").textContent.includes("Each demonstration disk")'),
@@ -300,6 +337,55 @@ test.assert(
 test.assert(
   typeof vmw.context.renderDemoDisksPanel === "function",
   "and the painter that row names is the one the module installs",
+);
+
+// 11. Looking inside a disk. The acceptance, run: it opens on the manuscript,
+//     rendered, with the other stops a click away; the arrows walk the shelf and
+//     the folder behind follows; Escape puts it away; and nothing is written,
+//     because a look is not a copy.
+const projectCount = vmw.run("projects.length");
+await vmw.context.handleAction("look-shared-disk-pm12");
+const peek = () => vmw.windowElement("diskPeek");
+test.assert(
+  await vmw.waitFor(() => peek() && !peek().classList.contains("is-hidden")
+    && vmw.run('document.querySelectorAll("#disk-peek-docs [data-disk-peek-doc]").length') === 4),
+  "a double click opens the disk's read-only window with its four stops",
+);
+test.assert(vmw.run('document.querySelector("#disk-peek-title").textContent') === "iPhone 12 Pro Max", "the window is named for the disk");
+test.assert(
+  vmw.run('document.querySelector("#disk-peek-docs .is-selected").dataset.diskPeekDoc') === "manuscript",
+  "it opens on the manuscript, which is what the visitor came to read",
+);
+test.assert(
+  vmw.run('!!document.querySelector("#disk-peek-reader h1") && !document.querySelector("#disk-peek-reader textarea") && !/\\{#[0-9a-f]{6}\\}/.test(document.querySelector("#disk-peek-reader").textContent)'),
+  "the manuscript is rendered through the shared Markdown wrapper, section ids and all hidden",
+);
+test.assert(vmw.run('getWindowAppId(document.querySelector(".window[data-window=diskPeek]"))') === "accessories", "it floats over the folder instead of replacing it");
+// The shim's events do not bubble, so the click is delivered where the window
+// listens for it -- its root -- with the tab as its target, as a browser would.
+vmw.run('document.querySelector(".window[data-window=diskPeek]").dispatchEvent({ type: "click", target: document.querySelector("[data-disk-peek-doc=review]") })');
+test.assert(
+  await vmw.waitFor(() => vmw.run('document.querySelector("#disk-peek-docs .is-selected")?.dataset.diskPeekDoc') === "review"),
+  "the review record is one click away",
+);
+const beforeStep = vmw.run('document.querySelector("#disk-peek-count").textContent');
+vmw.run('document.querySelector(".window[data-window=diskPeek]").classList.add("is-active"); document.querySelector(".window[data-window=projectDisks]").classList.remove("is-active")');
+vmw.fireKeydown(vmw.run('document.querySelector("#disk-peek-reader")'), { key: "ArrowRight" });
+test.assert(
+  await vmw.waitFor(() => vmw.run('document.querySelector("#disk-peek-count").textContent') !== beforeStep),
+  `the right arrow walks to the next disk (${beforeStep} -> ${vmw.run('document.querySelector("#disk-peek-count").textContent')})`,
+);
+test.assert(
+  vmw.run('getSelectedStaticFinderItem("projectDisks")?.action') === `look-shared-disk-${vmw.run("AISystem6DemoDisksPanel.step('pm12', 1)")}`,
+  "and the folder behind selects the disk being read",
+);
+vmw.fireKeydown(vmw.run('document.querySelector("#disk-peek-reader")'), { key: "Escape" });
+test.assert(await vmw.waitFor(() => peek().classList.contains("is-hidden")), "Escape puts it away");
+test.assert(vmw.run("projects.length") === projectCount, "looking wrote nothing: no project was made");
+await vmw.context.handleAction("open-demo-disks-latest");
+test.assert(
+  await vmw.waitFor(() => !peek().classList.contains("is-hidden") && vmw.run('document.querySelector("#disk-peek-title").textContent') === "iPad Pro 9.7"),
+  "/go/disks opens the folder reading its newest disk",
 );
 
 test.finish();

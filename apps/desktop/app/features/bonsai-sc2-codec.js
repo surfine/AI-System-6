@@ -268,12 +268,30 @@ window.AISystem6BonsaiSc2CodecLoaded = true;
       if (isOnrampId(id)) layers.onramp[i] = 1;
       if (isGrowableId(id) && layers.zone[i] >= 1 && layers.zone[i] <= 3) {
         const stage = stageOfGrowableId(id);
-        layers.variant[i] = id & 3;
-        if (CONSTRUCTION_IDS.includes(id)) { layers.buildingState[i] = 2; layers.stage[i] = 0; }
+        layers.variant[i] = 9 + (id % 8);
+        if (CONSTRUCTION_IDS.includes(id)) { layers.buildingState[i] = 2; layers.stage[i] = stage; }
         else if (ABANDONED_IDS.includes(id)) { layers.buildingState[i] = 5; layers.stage[i] = stage; }
         else { layers.buildingState[i] = 3; layers.stage[i] = stage; }
       }
     }
+    // Growable buildings land as whole lots of their catalog size (1x1, 2x2,
+    // 3x3), anchored at the top-left tile of each square of the same id; a
+    // square that does not close becomes single-tile lots.
+    const lot = zeros();
+    for (let y = 0; y < SC2_SIZE; y += 1) for (let x = 0; x < SC2_SIZE; x += 1) {
+      const i = y * SC2_SIZE + x; const id = xbld[i];
+      if (lot[i] || !isGrowableId(id) || layers.zone[i] < 1 || layers.zone[i] > 3) continue;
+      let side = stageOfGrowableId(id);
+      for (let dy = 0; dy < side && side > 1; dy += 1) for (let dx = 0; dx < side; dx += 1) {
+        const c = (y + dy) * SC2_SIZE + x + dx;
+        if (x + dx >= SC2_SIZE || y + dy >= SC2_SIZE || lot[c] || xbld[c] !== id || layers.zone[c] !== layers.zone[i]) { side = 1; break; }
+      }
+      for (let dy = 0; dy < side; dy += 1) for (let dx = 0; dx < side; dx += 1) {
+        const c = (y + dy) * SC2_SIZE + x + dx;
+        lot[c] = i + 1; layers.stage[c] = side; layers.buildingState[c] = layers.buildingState[i];
+      }
+    }
+    layers.lot = lot;
 
     // Facilities: walk each mapped id's tiles; the top-left tile of every
     // contiguous run opens one facility (XZON corner bits mark footprints,
@@ -551,7 +569,10 @@ window.AISystem6BonsaiSc2CodecLoaded = true;
       const facilityTile = facilityTiles.get(`${x}:${y}`);
       const stage = view.tileAt("stage", x, y, 0);
       const buildingState = view.tileAt("buildingState", x, y, 0);
-      const variant = view.tileAt("variant", x, y, 0);
+      // A lot's look lives on its anchor; every tile of the building writes
+      // the same XBLD id so the square reads back as one building.
+      const lotRef = view.tileAt("lot", x, y, 0);
+      const variant = lotRef && Array.isArray(payload.variant) ? payload.variant[lotRef - 1] || 0 : view.tileAt("variant", x, y, 0);
       const highwayTile = view.tileAt("highway", x, y, 0);
       const onrampTile = view.tileAt("onramp", x, y, 0);
       const highwayTB = (networkMaskAt(view, "highway", x, y) & 5) !== 0;
@@ -714,7 +735,7 @@ window.AISystem6BonsaiSc2CodecLoaded = true;
   }
 
   function exportSc2(payload) {
-    if (!payload || payload.format !== "bonsai-city" || (payload.version !== 3 && payload.version !== 4)) fail("export-payload");
+    if (!payload || payload.format !== "bonsai-city" || ![3, 4, 5].includes(payload.version)) fail("export-payload");
     const sidecar = payload.sc2Sidecar && payload.sc2Sidecar.chunks ? payload.sc2Sidecar : null;
     const modeled = buildSegmentsFromPayload(payload);
     const segments = {};

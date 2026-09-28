@@ -441,7 +441,7 @@ test.assertIncludes(liquidCss, "--clio-chart-switcher-width: 100%", "Liquid Glas
 });
 test.assertNotIncludes(
   liquidCss,
-  "body.use-liquid-glass .clio-chart",
+  "body[data-theme=\"liquid-glass\"] .clio-chart",
   "Liquid Glass does not fork ClioChart selectors; component tokens own the second theme"
 );
 

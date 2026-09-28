@@ -39,12 +39,12 @@ test.assertIncludes(menus, 'submenu("appearance", appearanceItems)', "Special ow
 // place that can see it.
 test.assertIncludes(
   liquid,
-  "@supports (-apple-visual-effect: -apple-system-glass-material) {\n  body.use-liquid-glass .window,\n  body.use-liquid-glass .menu-popover,",
+  "@supports (-apple-visual-effect: -apple-system-glass-material) {\n  body[data-theme=\"liquid-glass\"] .window,\n  body[data-theme=\"liquid-glass\"] .menu-popover,",
   "the system glass material is offered to windows and popovers, not to the menu bar",
 );
 test.assertIncludes(
   liquid,
-  "body.use-liquid-glass .menu-bar {\n    background: var(--menu-bar-bg);\n    backdrop-filter: none;\n    -webkit-backdrop-filter: none;",
+  "body[data-theme=\"liquid-glass\"] .menu-bar {\n    background: var(--menu-bar-bg);\n    backdrop-filter: none;\n    -webkit-backdrop-filter: none;",
   "the menu bar keeps the appearance's own material in that branch",
 );
 // The bar is the one surface the material must never reach again, and the
@@ -54,7 +54,7 @@ test.assertIncludes(
 // selector list can hand the bar the material and no test can notice.
 test.assertMatches(
   liquid,
-  /body\.use-liquid-glass \.menu-bar \{[^}]*-apple-visual-effect: none;[^}]*\}/,
+  /body\[data-theme="liquid-glass"\] \.menu-bar \{[^}]*-apple-visual-effect: none;[^}]*\}/,
   "and it refuses the material by name instead of by omission",
 );
 

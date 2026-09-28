@@ -41,7 +41,7 @@ Current floor standing (derived from the committed manifests, not estimated):
 | --- | --- | --- | --- | --- |
 | Platinum | 20 | 12 | 2 | 6 (three photo-thumbnail crops plus three crops of the wrong object) |
 | Aqua | 18 | 17 | 1 | 0 (default push button: reference frames the pre-fix 21px box) |
-| Snow Leopard | 18 | 18 | 0 | 0 |
+| Snow Leopard | 19 | 19 | 0 | 0 |
 | Yosemite | 17 | 5 | 10 | 2 (checkbox/radio marks pinned only to clone assets) |
 | Yosemite 2x | 4 | 3 | 0 | 1 (checkbox pinned only to a scaled clone asset) |
 
@@ -178,8 +178,10 @@ records the web adaptation, not native fidelity. WWDC20 session 10104 and the
 512 Pixels macOS 11 Light Blue / Finder Home captures informed the design.
 Their image scale and pixel tolerances have not been calibrated; historical
 fidelity remains unverified. The product keeps close-left / zoom-right actions
-and its existing window structures, rather than adding a decorative minimize
-action or rebuilding every application sidebar.
+and its existing window structures, rather than rebuilding every application
+sidebar. A minimize lamp is never decorative: an era draws it only together
+with its own Dock (Snow Leopard first, 2026-09-25), red and yellow at the left
+and Zoom at the right edge.
 
 The era sheet is loaded only when selected, including saved-theme boot, and
 retained by the service worker for subsequent offline starts. The seven release

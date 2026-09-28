@@ -510,15 +510,20 @@ claim("product:deploy:web and release scripts exist with --mac/--github/--web", 
   const release = read("tooling/release.mjs");
   return { ok: ["--mac", "--github", "--web"].every((flag) => release.includes(flag)) };
 });
-claim("product:Playwright numbers in CLAUDE.md match the removal commit", () => {
+claim("product:Playwright removal numbers match the removal commit and live in the runbook, not the entrypoint", () => {
   const message = execFileSync("git", ["show", "-s", "--format=%B", "ce5eec905"], { cwd: root, encoding: "utf8" });
   const facts = ["40 spec files", "148 tests", "1.6 hours", "17.5 minutes", "29 tests", "1.8 busy"];
   const missing = facts.filter((fact) => !message.includes(fact));
-  const claude = read("CLAUDE.md");
-  const claudeMissing = ["40 files and 148 tests", "1.6 hours green", "17.5 minutes", "29 tests", "1.8 busy cores"].filter(
-    (fact) => !claude.includes(fact)
+  const runbook = read("internal/operations/REPO-RUNBOOK.md");
+  const runbookMissing = ["40 spec files", "148 tests", "1.6 hours", "17.5 minutes", "29 tests", "1.8 busy cores"].filter(
+    (fact) => !runbook.includes(fact)
   );
-  return { ok: missing.length === 0 && claudeMissing.length === 0, detail: [...missing, ...claudeMissing].join(" | ") };
+  const claude = read("CLAUDE.md");
+  const entrypointPointsAtRunbook = /Browser checks:\s+instruments, not a suite/.test(claude);
+  return {
+    ok: missing.length === 0 && runbookMissing.length === 0 && entrypointPointsAtRunbook,
+    detail: [...missing, ...runbookMissing, entrypointPointsAtRunbook ? "" : "CLAUDE.md lost the runbook pointer"].filter(Boolean).join(" | "),
+  };
 });
 claim("product:balloon help is off by default and touch inspect is a separate contract", () => {
   const balloon = read("apps/desktop/app/core/balloon-help.js");
@@ -529,14 +534,14 @@ claim("product:city-simulator saves are versioned (formatVersion)", () => {
   const contract = JSON.parse(read("docs/city-simulator/foundation-contract.json"));
   return { ok: typeof contract.saveFormat?.formatVersion === "number", detail: `formatVersion ${contract.saveFormat?.formatVersion}` };
 });
-claim("product:6000-token claim is retracted and marked unverified", () => {
+claim("product:6000-token claim is not restated and its retraction is recorded in the audit ledger", () => {
   const claude = read("CLAUDE.md");
-  const restated = /Project config\nkeeps a 6,000-token budget/.test(claude);
-  const retracted = /has no owner in this repository/.test(claude);
-  const marked = /<!-- unverified: a per-tool-output token budget/.test(claude);
+  const restated = /6,000-token budget/.test(claude);
+  const denies = /sets no per-output token budget/.test(claude);
+  const ledger = /6,000-token budget per tool output/.test(read("internal/agents/DOC-CLAIM-AUDIT.md"));
   return {
-    ok: !restated && retracted && marked,
-    detail: `restated: ${restated}; retracted: ${retracted}; marked: ${marked}`,
+    ok: !restated && denies && ledger,
+    detail: `restated: ${restated}; entrypoint denies a budget: ${denies}; ledger records retraction: ${ledger}`,
   };
 });
 

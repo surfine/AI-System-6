@@ -79,7 +79,7 @@ export const WORKING_WINDOWS = [
 
 // Headless Liquid Glass desktop route windows race between legitimate split
 // arrangements (solo 563px, 540px with a scrollbar, ~800px paired) that settle
-// differently on boot timing even under --deterministic-mode. They are not
+// differently on boot timing. They are not
 // reproducible, so they are not baselined — the tool's own contract says only
 // reproducible cells may enter the promise. Classic desktop and Liquid Glass
 // phone/tablet route cells keep full coverage.

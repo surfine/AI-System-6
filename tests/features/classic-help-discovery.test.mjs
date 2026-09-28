@@ -191,8 +191,11 @@ test.assertMatches(foundation, /\.balloon-help\[data-side="left"\]::before[\s\S]
   "edge targets can use horizontal balloon tails instead of being covered");
 test.assertMatches(foundation, /\.menu-sub-popover \{\s*z-index: var\(--z-system-menu-subpopover\)/, "menu sub-popovers keep their own system layer");
 test.assertMatches(foundation, /\.balloon-help \{\s*z-index: var\(--z-balloon-help\)/, "balloons use a dedicated layer above modal dialogs");
-test.assertIncludes(foundation, "body.is-balloon-help [data-balloon-help]", "help mode gives eligible objects a visible pointer affordance");
+const windowsCss = read("styles/10-windows.css");
+test.assertIncludes(windowsCss, "body.is-balloon-help [data-balloon-help]", "help mode gives eligible objects a visible pointer affordance");
+test.assert(["\n.close-box,", "\n.cloud-model-indicator {"].every((rule) => windowsCss.indexOf(rule) >= 0 && windowsCss.indexOf(rule) < windowsCss.indexOf("body.is-balloon-help [data-balloon-help]")),
+  "the help pointer follows the window-control cursors it replaces, in their own sheet");
 test.assertIncludes(liquid, "--balloon-help-radius: var(--r-lg)", "Liquid Glass changes balloon material through tokens");
-test.assertNotIncludes(liquid, "body.use-liquid-glass .balloon-help", "Liquid Glass does not fork the Balloon Help DOM or selector");
+test.assertNotIncludes(liquid, "body[data-theme=\"liquid-glass\"] .balloon-help", "Liquid Glass does not fork the Balloon Help DOM or selector");
 
 test.finish();

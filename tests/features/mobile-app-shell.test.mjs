@@ -108,7 +108,7 @@ test.assertIncludes(
   "ClioTalk constrains generated content to the phone viewport"
 );
 test.assertIncludes(
-  responsive,
+  read("styles/24-searcher.css"),
   ".find-path-pane > .button-row:last-child {\n    display: grid;\n    grid-auto-columns: minmax(0, 1fr);\n    grid-auto-flow: column;",
   "Searcher keeps handoff actions on one row so results remain the main surface"
 );
@@ -414,7 +414,7 @@ test.assertIncludes(
 );
 test.assertIncludes(
   windowManager,
-  "const vh = (window.innerHeight || document.documentElement.clientHeight) - keyboardInset;",
+  "const vh = (window.innerHeight || document.documentElement.clientHeight) - keyboardInset - deskDockReserve();",
   "the clamp's visible height ends above the keyboard, never under it"
 );
 test.assertIncludes(

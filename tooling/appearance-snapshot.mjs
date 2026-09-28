@@ -29,6 +29,7 @@ import { createRequire } from "node:module";
 import { availableParallelism } from "node:os";
 import { startAppServer, stopProcess } from "./lib/app-preview-server.mjs";
 import { assertReferenceAssets } from "./lib/reference-assets.mjs";
+import { retryShootability } from "./lib/appearance-retry.mjs";
 import { windowInterfaceRegistry } from "./interface-guidelines-contract.mjs";
 import { snapshotCells } from "../tests/appearance-snapshot-manifest.mjs";
 
@@ -660,7 +661,9 @@ try {
       "--disable-gpu-compositing",
       "--disable-lcd-text",
       "--font-render-hinting=none",
-      "--deterministic-mode",
+      // No --deterministic-mode: from Chromium 151 it stops
+      // requestAnimationFrame, so every wait and screenshot timed out. Two
+      // captures without it agree in all 37 cells (tolerance 8).
     ],
   });
 
@@ -773,9 +776,14 @@ try {
       // compare the two fresh shots with each other.
       rmSync(retryDir, { recursive: true, force: true });
       const [again] = await captureMatrix(browser, server.url, [cellById.get(record.id)], retryDir);
-      const selfDiff = again && !again.missing
-        ? await diffPng(page, join(current, `${record.id}.png`), join(retryDir, `${record.id}.png`))
-        : null;
+      // A failed retry has no comparable PNG. Fail this cell and keep the matrix running.
+      const retryShot = retryShootability(again, existsSync(join(retryDir, `${record.id}.png`)));
+      if (!retryShot.ok) {
+        console.log(`  ! ${record.id} drifted and could not be re-shot to confirm: ${retryShot.reason}`);
+        failed = true;
+        continue;
+      }
+      const selfDiff = await diffPng(page, join(current, `${record.id}.png`), join(retryDir, `${record.id}.png`));
       const selfUnstable = !selfDiff || selfDiff.sizeMismatch || selfDiff.changed >= MIN_CHANGED_PIXELS;
       if (selfUnstable) {
         // Two shots of the same tree disagree, so the earlier one cannot be

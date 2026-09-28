@@ -14,6 +14,7 @@ export const SHIP_REQUIRED_CHECKS = Object.freeze([
   "appearance-real-apps",
   "bonsai-acceptance",
   "bonsai-playthrough",
+  "bonsai-sim-cost",
   "eight-stop-walk",
   "appearance-phase5",
   "appearance-snapshot",
@@ -133,6 +134,15 @@ export const SHIP_GATES = Object.freeze([
     lane: "batch",
     quiet: true,
     costHintMs: 90_000,
+  },
+  {
+    // Tick duration is a wall-clock budget, so competing work must not share
+    // this measurement. Keep the original 0.5ms / 15ms limits in the probe.
+    name: "bonsai-sim-cost",
+    args: ["tooling/probe-bonsai-sim-cost.mjs"],
+    lane: "batch",
+    quiet: true,
+    costHintMs: 4_000,
   },
   {
     // Behaviour AND the clock: twelve browser scenarios that assert what the

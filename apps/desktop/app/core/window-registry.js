@@ -421,6 +421,18 @@ const windowRegistry = Object.freeze({
   projectInfo: {
     app: "finder",
   },
+  // Looking inside a demonstration disk before copying it. A desk accessory, so
+  // in single-tasking Finder mode it floats over the folder it was opened from
+  // instead of replacing it; the arrows walk that folder while it reads.
+  diskPeek: {
+    builtByModule: true,
+    app: "accessories",
+    mobileOverlay: true,
+    lazy: {
+      ensure: () => ensureDiskPeekModule(),
+      attach: () => window.AISystem6DiskPeek?.attach?.(),
+    },
+  },
   projectPeek: {
     builtByModule: true,
     app: "accessories",
@@ -470,6 +482,8 @@ const windowRegistry = Object.freeze({
   },
   rebuildFlow: {
     app: "teachText",
+    // Built by app/features/rebuild-flow.js, which loads with Writing Flow.
+    builtByModule: true,
     onOpen: () => renderRebuildFlow(),
     lazy: { ensure: () => ensureWritingFlowModule() },
   },

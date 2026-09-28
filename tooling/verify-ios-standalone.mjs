@@ -820,6 +820,9 @@ async function geometryPhase({ url, deviceName, screen, scratch, summary, failur
           aboveTopInset: controls.filter(({ rect }) => rect.top < insetBox.top - 1).map(({ el }) => descriptor(el)),
           undersized: controls
             .filter(({ el }) => el.closest('.window[data-window="oneMoreTune"]'))
+            // The title bar keeps each appearance's own controls on touch (owner's
+            // decision, 2026-09-26): its boxes are the era's size, not a finding.
+            .filter(({ el }) => !el.closest(".title-bar"))
             // Rounded, because an intersection with a scroll container lands on
             // a fractional pixel: a 44px control measured as 43.99 is the size
             // it is, not a miss.

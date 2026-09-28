@@ -49,6 +49,11 @@ const keyboardShortcutRegistry = [
   { id: "paste", key: "v", action: "paste", display: "⌘V", labelKey: "paste", scope: "application" },
   { id: "select-all", key: "a", action: "select-all", display: "⌘A", labelKey: "select_all", scope: "application" },
   { id: "format-writing", key: "b", display: "⌘B/I/K", labelKey: "format_basics", keyCaps: true, dispatch: false },
+  // The Format menu's key equivalents, display-only: the editor answers these
+  // keys itself (tooling/vendor/writing-editor/entry.mjs). Each row is the key,
+  // then o for ⌥⌘ or s for ⇧⌘.
+  ...Object.entries({ "heading-0": "0o", "heading-1": "1o", "heading-2": "2o", "heading-3": "3o", bold: "b", italic: "i", strike: "xs", code: "e", link: "k", quote: "'", bullet: "7s", numbered: "9s", task: "ls", indent: "]", outdent: "[", table: "to", "code-block": "co" })
+    .map(([id, [key, mod]]) => ({ id: `format-${id}`, key, display: (mod === "o" ? "⌥⌘" : mod ? "⇧⌘" : "⌘") + key.toUpperCase(), dispatch: false })),
   { id: "get-info", key: "i", action: "open-file-info", display: "⌘I", labelKey: "get_info", keyCaps: true, suppressInEditable: true, scope: ["finder"] },
   { id: "duplicate", key: "d", action: "duplicate-selection", display: "⌘D", labelKey: "duplicate", suppressInEditable: true, scope: ["finder"] },
   { id: "move-to-trash", key: "backspace", action: "move-file-trash", display: "⌘⌫", labelKey: "move_to_trash", suppressInEditable: true, scope: ["finder"] },
@@ -497,6 +502,12 @@ function syncReviewDeskAvailability() {
   }
   reviewDeskPreviewEl?.classList.add("is-hidden");
   reviewDeskEmptyNoteEl?.classList.toggle("is-hidden", ready);
+  // A rebuild waiting for the writer shows through the lock; the guest tools
+  // draw its card, so they load only when one is waiting.
+  if (!ready && window.AISystem6RunReceipts?.queryReceipts?.({ projectId: activeProjectId, limit: 50, includeRunning: true })
+    ?.some((file) => file.rebuildPack && file.runReceipt?.checkpointState === "awaitingCommit")) {
+    ensureGuestToolsModule().then(() => window.AISystem6GuestTools?.renderGuestReviews?.()).catch(() => {});
+  }
   updateReviewDeskStatusTitle();
   updateReviewDeskStats();
   updateMenuState();
@@ -1179,6 +1190,13 @@ function getApplicationActionHandlers() {
     // took the click, and did nothing at all. Three feature tests pinned the
     // markup and none of them pressed it.
     "guide-start-route": openWritingStudio,
+    "minimize-window": () => {
+      const win = document.querySelector(".window.is-active[data-window]");
+      if (win) minimizeWindow(win);
+    },
+    "close-writing-flow": () => setWritingFlowClosed(true),
+    "show-writing-flow": () => setWritingFlowClosed(false),
+    "toggle-writing-flow-shade": toggleWritingToolsShade,
     "exit-writing-studio": exitWritingStudio,
     // The way back does not open the accessory to do its job: the menu row
     // already names the place, so pressing it should land you in the sentence
@@ -1186,11 +1204,10 @@ function getApplicationActionHandlers() {
     // restore, so the module is ensured rather than referenced bare.
     "resume-my-place": async () => { await ensureHoldThatThoughtModule(); await resumeMyPlace(); },
     "clear-notifications": clearSystemNotifications,
-    "rebuild-use-reader": () => useReaderForRebuildFlow(),
-    "rebuild-use-teachtext": () => useTeachTextForRebuildFlow(),
-    "rebuild-use-clipboard": () => useClipboardForRebuildFlow(),
-    "rebuild-use-sample": () => useSampleArticleForRebuildFlow(),
     "run-rebuild-flow": () => runRebuildFlow(),
+    "hand-in-rebuild-flow": () => handInRebuildFlow(),
+    "rebuild-merge-section": () => mergeRebuildSection(),
+    "rebuild-stop": () => stopRebuildFlow(),
     "close-rebuild-flow": () => closeWindow("rebuildFlow", true),
     "toggle-compose-tools": toggleComposeToolsMenu,
     "versions-compare": () => compareSelectedDocumentVersions(),
@@ -1683,6 +1700,11 @@ Object.entries({
   "open-assistant":"assistant",
   "open-control-strip-modules":"controlStripModules",
 }).forEach(([commandId,windowName])=>window.AISystem6Runtime?.registerCommand?.(commandId,{handler:()=>openWindow(windowName),isAvailable:()=>!0}));
+// The Format menu: one command per Markdown edit, all acting on the writing
+// surface in front (markdown-editor.js decides which one that is).
+["heading-0","heading-1","heading-2","heading-3","bold","italic","strike","code","link","quote","bullet","numbered","task","indent","outdent","table","rule","code-block"]
+  .forEach((command)=>window.AISystem6Runtime?.registerCommand?.(`format-${command}`,{handler:()=>mdeRunFormat(command),isAvailable:()=>!!mdeFormatTarget()}));
+window.AISystem6Runtime?.registerCommand?.("open-heading-navigator",{handler:mdeOpenHeadings});
 window.AISystem6Runtime?.registerCommand?.("open-project-info",{handler:openProjectInfo,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-file-info",{handler:openFileInfo,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-project-disks",{handler:()=>{openWindow("projects");if(!isProjectMounted)setStatus(t("no_project_mounted"));},isAvailable:()=>!0});
@@ -1719,7 +1741,7 @@ window.AISystem6Runtime?.registerCommand?.("open-teachtext",{handler:openTeachTe
 // built. One row per route: a fifth disk is a string in this list, not a fifth
 // registration, which is what makes the writing route's advice ("adding a disk
 // is one entry") true of the boot payload too.
-"dtk ipad1 m5ipad iphone17e bongo glass ipad97 airbattery pm17 sympathy ceramic macpro19 pocket iphone6sp sleeve pm12 pm11 m5mba mbneo mini7 mkb sd ios19 ipada4 ip16p mgscrap t2nic airtrans ip4sdemo airact touch2 noport cdma4 iphone17 windowshade".split(" ").forEach((route)=>window.AISystem6Runtime?.registerCommand?.(`open-shared-disk-${route}`,{handler:()=>openSharedProjectDisk(route),isAvailable:()=>!0}));
+"dtk ipad1 m5ipad iphone17e bongo glass ipad97 airbattery pm17 sympathy ceramic macpro19 pocket iphone6sp sleeve pm12 pm11 m5mba mbneo mini7 mkb sd ios19 ipada4 ip16p mgscrap t2nic airtrans ip4sdemo airact touch2 noport cdma4 iphone17 windowshade ipadpro18".split(" ").forEach((route)=>window.AISystem6Runtime?.registerCommand?.(`open-shared-disk-${route}`,{handler:()=>openSharedProjectDisk(route),isAvailable:()=>!0}));
 window.AISystem6Runtime?.registerCommand?.("open-finishing-receipt",{handler:()=>openFinishingReceiptForSelection(),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-clio-attachment-picker",{handler:beginClioTalkAttachmentPicker,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-clio-image-picker",{handler:openClioImagePicker,isAvailable:()=>!0});

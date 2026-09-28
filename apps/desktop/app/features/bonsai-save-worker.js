@@ -29,6 +29,8 @@
       const sim = scope.AISystem6BonsaiSim;
       const value = message.operation === "encode"
         ? await sim.encodeSave(message.state, message.metadata || {})
+        : message.operation === "encode-text"
+          ? JSON.stringify(await sim.encodeSave(message.state, message.metadata || {}))
         : message.operation === "decode"
           ? await sim.decodeSave(message.envelope)
           : message.operation === "parse-decode"

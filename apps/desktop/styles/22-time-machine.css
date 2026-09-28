@@ -1,3 +1,14 @@
+/* A copy of a boot rule that must keep beating this sheet's own rule below:
+   the same selector and specificity, scoped by :where() to this surface, and
+   first in the sheet so every rule after it keeps its place. Under a per-file
+   @layer order the boot rule alone would lose; here specificity decides. */
+.window .window-frame-scroller:where(.time-machine-stage) {
+  overflow: auto;
+  border: 0;
+  box-shadow: none;
+  min-height: 0;
+}
+
 .time-machine-window {
   width: var(--time-machine-window-width);
   height: var(--time-machine-window-height);
@@ -32,7 +43,7 @@
   padding: 4px;
 }
 
-.time-machine-navigation .btn {
+body .time-machine-navigation .btn {
   display: grid;
   grid-template-columns: auto auto;
   align-items: center;
@@ -540,12 +551,64 @@
   display: none;
 }
 
+/* Wide enough for one row: navigation, the address, which snapshot is on
+   screen, and the view -- the way a browser's toolbar reads, instead of two
+   stacked bars. The navigation group dissolves into the row so its parts can
+   take their places; its buttons keep their words for screen readers and show
+   only their glyphs. Narrower windows keep the two rows below. */
+@container (min-width: 700px) {
+  .time-machine-browser-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .time-machine-navigation {
+    display: contents;
+  }
+
+  .time-machine-address-form {
+    order: 1;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .time-machine-provenance {
+    order: 2;
+    flex: 0 1 auto;
+    max-width: 16em;
+  }
+
+  .time-machine-view-switch {
+    order: 3;
+  }
+
+  /* In one row the address gets the space a view switch would hold before a
+     page is open; the switch arrives with the page. */
+  .time-machine-pane:has(#time-machine-home:not([hidden])) .time-machine-view-switch {
+    display: none;
+  }
+
+  body .time-machine-navigation .btn {
+    grid-template-columns: auto;
+  }
+
+  .time-machine-nav-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
 @container (max-width: 680px) {
   .time-machine-navigation .time-machine-nav-label {
     display: none;
   }
 
-  .time-machine-navigation .btn {
+  body .time-machine-navigation .btn {
     grid-template-columns: auto;
   }
 
@@ -593,7 +656,7 @@
     grid-template-columns: repeat(auto-fit, minmax(44px, 1fr));
   }
 
-  .time-machine-navigation .btn,
+  body .time-machine-navigation .btn,
   .time-machine-view-switch .view-switch-option {
     min-height: 44px;
     padding-inline: 6px;

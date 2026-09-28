@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/city-simulator/SAVE-FORMAT.md -->
-<!-- source-sha256: 79516e2d360d36efdeea5ba442e4a5ea610dba3dd65176be687118027ca76c6a -->
+<!-- source-sha256: aa8cde1f5971f035e57ad7d3e043204a180b663645a4cffd33012c06217cdbcc -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -8,8 +8,8 @@
 ## 身份
 
 - 存档格式：`bonsai-city`
-- 当前格式版本：4
-- 当前引擎存档版本：4
+- 当前格式版本：5
+- 当前引擎存档版本：5
 - 支持地图尺寸：64×64、96×96 与 128×128（SC2K 原生尺寸）
 
 格式名与版本由模拟核心（`FORMAT` / `SAVE_VERSION`）和
@@ -25,13 +25,13 @@
 | `rulesetVersion` | 模拟语义 | 模拟核心 |
 | `indexedDbVersion` | 浏览器物理 store 布局 | AI System 6 外壳 |
 
-## v4 字段
+## v5 字段
 
 `serialize()` 输出纯 JSON 兼容值：
 
 | 字段 | 含义 |
 | --- | --- |
-| `format` / `version` | `bonsai-city` / 4 |
+| `format` / `version` | `bonsai-city` / 5 |
 | `name` | 城市名（仅显示，不翻译） |
 | `seed` | 初始整数种子 |
 | `rngState` | 当前 32 位 PRNG 状态 |
@@ -42,18 +42,21 @@
 | `size`、`terrainPreset` | 64、96 或 128，以及确定性地形预设 |
 | `terrain`、`alt`、`water`、`shore`、`slope`、`tree` | 耐久地形层；海拔范围 0..31 |
 | `road`、`rail`、`wire`、`pipe`、`zone`、`density` | 独立网络与区域层；zone 值 4/5/6 为军事/机场/海港（模型层面，命令随交通里程碑到来） |
-| `stage`、`buildingState`、`constructionTimer`、`variant` | 耐久发展与施工层 |
+| `stage`、`buildingState`、`constructionTimer`、`variant` | 耐久发展与施工层；在地块锚点上（规则集 5），`stage` 是地块尺寸 1–3，`constructionTimer` 以天计，`variant` 1–24 带着建筑档次（1–8 低、9–16 中、17–24 高）；地块内其余格镜像 `stage` 与 `buildingState` |
+| `lot` | v5：地块层——0 表示没有建筑，否则整栋 1×1、2×2 或 3×3 建筑的每一格都记锚点下标 + 1；锚点是地块 x、y 最小的那一格 |
 | `catalogId` | 显式的 XBLD 对齐地块 id；0 表示"由模拟状态派生"——让导入的 `.sc2` 建筑在模拟接管该地块前得以保留的载体 |
 | `subway`、`waterLevel`、`salt`、`rotate`、`tunnel`、`waterKind` | v3 SC2K 模型层（地下、水位、盐度、占地旋转、地形隧道、水体分类） |
 | `sc2Sidecar` | 导入 `.sc2` 城市的可选保留侧表（原始 MISC 字节与未建模段），或 `null` |
-| `facilities` | 电力、供水、交通和公共服务设施；记录可自带 `w`/`h`（存档规则 3.1：煤电厂记录 SC2K 的 4×4 占地，没有该字段的记录是旧版 2×2 电厂并保持原尺寸） |
+| `facilities` | 电力、供水、交通和公共服务设施；记录可自带 `w`/`h`（存档规则 3.1：煤电厂记录 SC2K 的 4×4 占地，没有该字段的记录是旧版 2×2 电厂并保持原尺寸；穹顶与巨构记录与贴图一致的 4×4，没有该字段的记录是旧版 3×3 并保持原尺寸） |
 | `history` | 有界的 120 个月城市历史 |
 | `view`、`budgetHistory`、`militaryBase` | v4 新增：保存的相机（`panX`/`panY`/`zoom`）、有界的逐月财政历史，以及军事基地生命周期（0 无、1 提议、2 拒绝、3 陆军、4 空军、5 海军、6 导弹） |
+| `landValue`、`crime`、`pollution` | v5：月度环境。之所以保存，是因为它每月由上个月的值（平滑与扩散）重算，加载时重建会得到与保存时不同的城市 |
 | `nextCommandSequence` / `pendingCommands` | 确定性命令顺序 |
 
-派生网络（`powered`、`watered`、道路连接、覆盖、交通）、多格
-`buildingAt`/`buildings` 锚点、问题标记、人口、岗位、需求、视觉代理和渲染
-缓存加载时重建，绝不保存。
+派生网络（`powered`、`watered`、道路连接、覆盖、通勤距离场、交通）、
+`buildings` 列表、问题标记、人口、岗位、需求、视觉代理和渲染缓存加载时重建，
+绝不保存。加载的 `lot` 层会逐格检查（`repairLots`）：格子与锚点不一致、越出
+地图或与别的地块重叠的地块，一律退回空的分区地，而不是照单全收。
 
 视图状态（相机、当前覆盖层、检查器与昼夜光照）由 `tick` 派生或由外壳
 持有，同样绝不序列化；无论上次以何种视角查看，重载城市都会重放相同的模拟。
@@ -77,19 +80,24 @@ parse → 结构验证 → 完整性验证 → clone
   `w`/`h`，`footprintOf` 对没有该字段的记录回答旧版尺寸，因此信封版本不变，
   旧城市逐字节照常加载。troubled 示例的检查点重新钉死，因为其配方现在建的
   是 4×4 电厂。
+- v5（规则集 5）为地块模型而设。`migrateEngineV4To5` 从左上角开始把现有建筑
+  归成地块：同类、高密、使用中且阶段 3 的 3×3 方块成为 3×3 地块，阶段 ≥ 2 的
+  2×2 方块成为 2×2 地块，其余有建筑的单格成为 1×1 地块（`.sc2` 这类已知建筑
+  的导入器直接交来自己的地块）；尺寸写回 `stage`，资金、历史和其余内容原样
+  保留。迁移后的城市按新规则继续生长，人口会重新计算；文件里的东西不会丢。
 
 ## 信封
 
-`encodeSave` 把 v4 引擎载荷包进信封：
+`encodeSave` 把 v5 引擎载荷包进信封：
 
 ```json
 {
   "format": "bonsai-city",
-  "formatVersion": 4,
+  "formatVersion": 5,
   "metadata": { "cityId": "…", "name": "…", "createdAt": "…", "updatedAt": "…" },
-  "engine": { "rulesetVersion": 4, "fixedTickHz": 20, "ticksPerDay": 5, "daysPerMonth": 25 },
+  "engine": { "rulesetVersion": 5, "fixedTickHz": 20, "ticksPerDay": 5, "daysPerMonth": 25 },
   "simulation": { "seed": "...", "rng": { "algorithm": "mulberry32-v1", "state": [0] } },
-  "payload": { "format": "bonsai-city", "version": 4, "…": "v4 引擎存档" },
+  "payload": { "format": "bonsai-city", "version": 5, "…": "v5 引擎存档" },
   "integrity": { "algorithm": "SHA-256", "canonicalization": "sorted-json-v1", "digest": "..." }
 }
 ```
@@ -97,11 +105,13 @@ parse → 结构验证 → 完整性验证 → clone
 `decodeSave` 校验结构、对除 `integrity` 外的内容重算规范化 JSON 摘要，并拒绝
 被篡改的存档。`migrateSave` 是纯迁移链；v1 的固定 64×64 状态映射到 v2 独立
 层，并把 `tick` 转为 `tick * 5`；v2 以零值补齐 SC2K 模型层（`waterKind` 从
-`water` 派生），建城年份默认 1900。更新的版本显式拒绝。
+`water` 派生），建城年份默认 1900；v3 补上保存的相机、财政历史和军事基地生命
+周期，`rulesetVersion` 升到 4；v4 经上面的归并迁移得到 `lot` 层与保存的月度环境，
+`rulesetVersion` 升到 5。更新的版本显式拒绝。
 规范化 = 键排序、数组保序、无空白，Node 与浏览器结果一致，检查点哈希可移植。
 
 内存版 `createCityRepository`（create/list/get/put/remove）保留为测试适配器。
-外壳通过共享写入围栏，把 v4 信封持久化到既有专用 `bonsaiCities` IndexedDB
+外壳通过共享写入围栏，把 v5 信封持久化到既有专用 `bonsaiCities` IndexedDB
 store。
 规范化序列化、完整性计算和大型导入解析优先使用专用存档 Worker。超时/错误
 路径有界地回退到同一直接 codec；Worker 与回退输出逐字节一致。
@@ -110,7 +120,7 @@ store。
 
 城市存档位于专用 `bonsaiCities` store，盆景城市的状态绝不复用 GPL Micropolis
 的 `cities` store。导入先验证格式、版本、结构和完整性，再分配新的城市 id；绝
-不覆盖现有记录。v3 记录信封不需要提高 IndexedDB schema 版本。
+不覆盖现有记录。v5 记录信封不需要提高 IndexedDB schema 版本。
 
 这条边界只有一处有意的、只有一个模块宽的穿越：盆景城市召唤 Micropolis 的城市，
 也能把一座城送回去；两个方向都有损，并且都报告损失。出站的一半
@@ -129,10 +139,11 @@ store。
 
 ### 入站 —— `bonsai-micropolis-codec.js`
 
-一条 Micropolis `cities` 记录（或其裸 `saveData`）变成 v3 payload。经典的 120×100
+一条 Micropolis `cities` 记录（或其裸 `saveData`）变成 v3 payload，由迁移链带到 v5。经典的 120×100
 地图居中嵌入 128 方格；围裙是咸水。道路、铁路和电线按 tile 家族带过来，含交叉；
 桥落地为水面加其上的网络。九格分区块落地为逐格分区，阶段与密度从家族读出，而精确
-的经典家族（或独栋房）以 `1 + level` 搭在 `variant` 层上，使该块能原样送回。运转
+的经典家族（或独栋房）以 `1 + level` 搭在 `variant` 层上，使该块能原样送回；长满的九格
+块成为一个 3×3 地块，其余有建筑的单格成为 1×1 地块。运转
 中的电厂与服务设施在经典左上角变成活的设施；体育场、教堂与放射性地面落地为目录
 tile。代码：`ruins-cleared:N`、`tiles-without-equivalent:N`、`terrain-flat`、
 `population-recomputed`、`ratings-not-carried`、`demand-reset`、
@@ -145,7 +156,8 @@ population, details }`。选项：`name`、`cityId`、`exportedAt`（调用方�
 自己从不读时钟）、`powered`（活的供电层，只用作 POWERBIT 提示）、`population`，以及
 移动裁剪窗的 `window: { x, y }`。
 
-- **裁剪。** 128 方格地图裁成以 `spawnCenter` 为中心的 120×100 窗口
+- **裁剪。** 128 方格地图裁成以玩家建设内容（分区、网络与地标的外接矩形，
+  不含树）为中心的 120×100 窗口，尚无建设时以 `spawnCenter` 为中心
   （`cropWindowFor` 返回该矩形供预览）；64 与 96 方格地图居中嵌入，围裙是开阔水
   面。窗外的内容计入 `map-cropped:N`。
 - **tile。** 水面与树林按邻接掩码取经典边缘形状；道路、铁路、电线按连通性取形状，
@@ -181,3 +193,9 @@ Micropolis → 盆景：裁剪窗内道路、铁路、电线、水、树各层�
 之间转换。文件放不下的 JSON 字段（预算效果、上次支出、城市中心）以引擎默认值回来，
 并在解码警告里点名。与其他程序写出的文件互通刻意不做验证：不提交任何来源的城市
 文件，契约的夹具都由引擎构建。
+
+### 存档续跑一致性
+
+v5 新增可选 `routing`（version 1），保存上一轮交通量、拥堵、通勤距离场、源数量和轨道/高速客流；这些字段带有历史依赖，不能在读档时任意重算。旧 v5 缺少此字段仍可加载，首次重建后继续保存会保留该状态；存在但长度或值域非法的记录会被拒绝。
+
+新本地记录的 `saveData` 保存完整信封的 JSON 文本，由 Worker 序列化后返回，避免 IndexedDB 写入时在界面线程逐项复制大量地块数组。旧对象记录与新文本记录均可读取，JSON 导出的信封结构保持不变。

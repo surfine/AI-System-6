@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/DESIGN.md -->
-<!-- source-sha256: 25d5d63a803b29a72ae772ae0e291fa1dd0970b677c109a4d96cf1992abd6036 -->
+<!-- source-sha256: 5626d02429a202dc67189acb4a2659518996df4f67ea8a07caa6c11fd96472f0 -->
 
 # AI System 6 设计合约
 
@@ -51,6 +51,16 @@ Classic Mac OS 思想，只要能改善产品，就可以被引进、消化和�
 - 右下角 grow box 用于手动改变可调整窗口的尺寸。
 - WindowShade 是后来的 Classic Mac OS 行为，只把窗口收成标题栏，并保留为独立的双击动作；
   Zoom 绝不能退化成 WindowShade。
+- 最小化（黄灯，NeXTSTEP 的 miniaturize 按钮）把整个窗口收到一个固定去处：该时代的 Dock、
+  NeXTSTEP 沿底边排开的 miniwindow，或者 Dock 关闭时苹果菜单里的「已最小化的窗口」。它与
+  WindowShade（原地卷起）、Hide（按程序隐藏，借用 WindowShade）是三个动词，互不替代；各时代
+  双击标题栏都是 WindowShade。Mac OS X 外观只有在自己的 Dock 上线后才画黄灯（左二右一：红、黄
+  在左，Zoom 在右缘）。Lion 是业主认可的唯一例外（2026-09-25）：它的右缘是真正的全屏按钮，
+  Zoom 改为左侧第三颗灯。Mac OS X 外观里的 Dock 和最小化都是偏好设置，默认关闭（业主，
+  2026-09-25），在控制面板里打开；NeXTSTEP 默认两者都开，因为那是它自己的外壳。Dock 关闭时，
+  每个外观照样能从桌面图标启动、从菜单栏切换、在苹果菜单里找到收起的窗口，隐藏 Dock 不会困住
+  任何窗口。在苹果菜单里列窗口是产品的改编：Mac OS X 的苹果菜单从不列窗口，而这张
+  桌面没有 Window 菜单。
 - 完整应用和文档窗口可以提供 Zoom 与 grow。固定系统窗口和 Desk Accessory 通常不提供，
   除非原生证据或明确的产品合约另有说明。
 

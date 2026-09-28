@@ -214,7 +214,10 @@ function startupTaskWithTimeout(promise, label, ms = 1600) {
       return null;
     }),
     timeout,
-  ]).finally(() => clearTimeout(timeoutId));
+  ]).finally(() => {
+    clearTimeout(timeoutId);
+    markBootProgress(label);
+  });
 }
 
 // Non-essential boot step: a per-feature initializer (one window's render,
@@ -238,6 +241,8 @@ async function runBootStep(label, fn, notify = defaultBootStepNotify) {
     console.error(`AI System 6 boot: "${label}" failed and was skipped.`, error);
     notify(t("lazy_load_failed", label, error?.message || String(error)));
     return undefined;
+  } finally {
+    markBootProgress(label);
   }
 }
 
@@ -245,15 +250,26 @@ function defaultBootStepNotify(message) {
   if (typeof pushSystemNotification === "function") pushSystemNotification(message, { state: "failed" });
 }
 
+// Tells the boot safety net (boot-safety-net.js) that boot is still moving.
+// The net treats twenty seconds without any step as a hang; a slow machine
+// that keeps finishing steps is only slow.
+function markBootProgress(step) {
+  try {
+    window.AISystem6BootProgress?.(step);
+  } catch {}
+}
+
 async function boot() {
   if (bootInProgress) return false;
   bootInProgress = true;
+  markBootProgress("boot");
   try {
     registerRuntimeRenderTasks();
     // Single-writer lease: acquire before any durable write can run. A second
     // instance starts read-only and gets the conflict dialog after first paint.
     window.AISystem6WriteLease?.initUi?.();
     await window.AISystem6WriteLease?.acquireAtBoot?.();
+    markBootProgress("write lease");
     // Sad Mac recovery controls (wired once; boot may retry).
     const retryControl = document.getElementById("boot-retry");
     if (retryControl && retryControl.dataset.wired !== "true") {
@@ -285,17 +301,20 @@ async function boot() {
       ensurePromptFilesData().catch((error) => console.warn("AI System 6 boot: prompt files data failed to load.", error)),
       ensureLanguageFor(currentLanguage).catch((error) => console.warn("AI System 6 boot: language table failed to load.", error)),
     ]);
+    markBootProgress("preloads");
     // Clio's static first paint is plain HTML; load Markdown in the background
     // and rely on the escaped-text fallback until it arrives.
     ensureMarkdownParser().catch(() => {});
     await runBootStep(t("alarm_clock"), () => initializeAlarmClock(), queueEarlyBootFailure);
     await runBootStep("Version", () => loadAppVersion(), queueEarlyBootFailure);
     await loadDeskState();
+    markBootProgress("desk state");
     earlyBootFailures.forEach(defaultBootStepNotify);
     // A saved setting may have switched the active language away from the
     // system default; make sure its table is present before the first paint.
     // A failed fetch degrades to key fallbacks rather than stalling boot.
     await ensureLanguageFor(currentLanguage).catch(() => {});
+    markBootProgress("language");
     applyLanguage();
     await startupTaskWithTimeout(applyDeploymentWorkspaceDefault(), "deploymentWorkspaceDefault", 3500);
     if (window.AISystem6DerivedIndexQueue) {
@@ -340,6 +359,7 @@ async function boot() {
     // be present before any restored message paints. If it cannot load, the
     // escaped-text fallback still paints usable messages.
     await ensureMarkdownParser().catch(() => {});
+    markBootProgress("markdown parser");
     // The writer's words are not part of onboarding. A snapshot exists only if
     // someone already worked here, so resuming one cannot disturb a true first
     // launch. The persisted onboarding bit is deliberately independent from
@@ -373,9 +393,12 @@ async function boot() {
     refreshSystemSelectControls();
     installWorkingSessionAutosave();
     installApplicationLifecycleWatch();
+    markBootProgress("boot sequence");
     await runBootSequence();
+    markBootProgress("boot sequence done");
     if (bootDebugTheme?.releaseReady === false && developmentPreviewAllowed) await window.AISystem6Theme.previewExperimentalTheme(bootDebugTheme.id);
     await window.AISystem6Theme?.whenReady();
+    markBootProgress("appearance");
     // The appearance is final only now (boot passes through the release theme
     // on its way to a preview), so this is where a restored miniwindow learns
     // whether the desk it woke on can show the way back to it.

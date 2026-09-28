@@ -378,7 +378,7 @@ test.assert(city.funds < payload.funds, "building on the imported city spends it
 
 // Saving again writes a Bonsai city, not a Micropolis one.
 const resaved = sim.serialize(city);
-test.assert(resaved.format === "bonsai-city" && resaved.version === 4, "saving the imported city writes a Bonsai save");
+test.assert(resaved.format === "bonsai-city" && resaved.version === 5, "saving the imported city writes a Bonsai save");
 test.assert(resaved.road[spotY * SIZE + spotX] === 1, "the new road survives the round trip");
 const reloaded = sim.deserialize(resaved);
 test.assert(reloaded.road[spotY * SIZE + spotX] === 1, "the resaved city loads again with the player's work intact");

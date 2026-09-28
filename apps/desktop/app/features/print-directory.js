@@ -51,7 +51,7 @@ function getDocumentsPrintDirectoryItems(mode) {
   const visibleFolders = getProjectFolders()
     .filter((folder) => (folder.parentId || null) === currentParentId)
     .map(getDocumentFolderItem);
-  return sortFinderItemsForView([...visibleFolders, ...visibleFiles.map(getProjectFileFinderItem)], mode);
+  return sortFinderItemsForView([...visibleFolders, ...visibleFiles.map(getProjectFileFinderItem)], mode, finderSortReversed("documents"));
 }
 
 function getTrashPrintDirectoryItems() {
@@ -80,7 +80,7 @@ function buildPrintDirectorySnapshot() {
       title,
       source: title,
       viewMode: mode,
-      items: sortFinderItemsForView(getStaticFinderItems(activeName), mode).map(printDirectoryItemRow),
+      items: sortFinderItemsForView(getStaticFinderItems(activeName), mode, finderSortReversed(activeName)).map(printDirectoryItemRow),
     };
   }
 
@@ -94,7 +94,7 @@ function buildPrintDirectorySnapshot() {
       title,
       source: title,
       viewMode: mode,
-      items: sortFinderItemsForView(getProjectRootFinderItems(), mode).map(printDirectoryItemRow),
+      items: sortFinderItemsForView(getProjectRootFinderItems(), mode, finderSortReversed("projects")).map(printDirectoryItemRow),
     };
   }
 

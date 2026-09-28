@@ -59,5 +59,6 @@ test("go short-link handler redirects known routes and rejects others", () => {
     status: 302,
     location: "/?launch=endfield-terminal&mode=fullscreen",
   });
+  assert.deepEqual(run("/go/disks"), { status: 302, location: "/?launch=disks" });
   assert.equal(run("/go/bogus").status, 404);
 });

@@ -6,6 +6,9 @@
    no Liquid Glass painter or refraction runs behind it. */
 html[data-theme="big-sur"],
 body[data-theme="big-sur"] {
+  /* Period tokens Platinum made shared (2026-09-25), answered with the values
+     this era already drew, so nothing here changes on screen. */
+  --tab-last-border-right: var(--system-border);
   color-scheme: light;
   --theme-ui-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Segoe UI", sans-serif;
   --theme-title-font: var(--theme-ui-font);
@@ -500,12 +503,11 @@ body[data-theme="big-sur"][data-color-mode="dark"] {
 }
 
 /* Preserve the product's close-left / zoom-right semantics. The 12px lamps
-   sit inside separate 20px targets; no nonfunctional minimize lamp is drawn.
-   macOS 11 groups close, minimize and zoom at the leading edge, but the
-   owner's standing rule keeps red Close at the left and green Zoom at the
-   right edge in every era -- a product rule, not Big Sur history. No yellow
-   lamp is drawn until this era's Dock ships with it (owner decision
-   2026-09-25): a lamp whose window has nowhere to go is a lie. The 29px bar,
+   sit inside separate 20px targets. macOS 11 groups close, minimize and zoom
+   at the leading edge, but the owner's standing rule keeps red Close at the
+   left and green Zoom at the right edge in every era -- a product rule, not
+   Big Sur history. The yellow lamp ships with this era's Dock and is placed
+   by styles/88-desk-dock.css next to Close ("left two, right one"). The 29px bar,
    20px pitch and first lamp centre 14px in are the macOS 11 calibration
    above; this block only decides which end each lamp sits at, through the
    base sheet's column tokens rather than placement of its own. */

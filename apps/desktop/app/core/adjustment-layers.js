@@ -19,7 +19,12 @@
 // and the prompt copy that turns a strength into instructions lives beside the
 // prompts that consume it.
 
-const ADJUSTMENT_LAYER_KINDS = ["mingming", "luoluo", "hkrr", "density"];
+// 清稿 (clean) sits first: a walk's transcript is the negative, verbatim, and
+// clean-up is a layer over it -- fillers and repeats out, a self-correction
+// kept at its last wording, spoken lists as lists, misheard words and
+// punctuation fixed -- never a rewrite of the wording or the voice. It has no
+// strength: the writer chose all four operations, always, as one switch.
+const ADJUSTMENT_LAYER_KINDS = ["clean", "mingming", "luoluo", "hkrr", "density"];
 const ADJUSTMENT_STRENGTHS = [25, 50, 75];
 const ADJUSTMENT_DEFAULT_STRENGTH = 50;
 

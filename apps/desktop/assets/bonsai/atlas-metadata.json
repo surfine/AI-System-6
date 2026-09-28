@@ -8,31 +8,31 @@
   },
   "atlas": {
     "width": 2048,
-    "height": 5057,
+    "height": 7280,
     "cellWidth": 320,
-    "cellHeight": 320,
+    "cellHeight": 440,
     "packing": "direction-union-shelf-v1"
   },
   "directions": {
     "north": {
       "url": "/assets/bonsai/atlas-north.png",
       "file": "assets/bonsai/atlas-north.png",
-      "sha256": "eda417575c460a7b7960df8eaa2e16bec356e2768fc6d19974b0763ef4b9c920"
+      "sha256": "b3956a34a0eecfa96cde40e3e08777e30c95092970ad4cec6be81be9c9f85e9a"
     },
     "east": {
       "url": "/assets/bonsai/atlas-east.png",
       "file": "assets/bonsai/atlas-east.png",
-      "sha256": "6a7832aad0dad3c1bf3bf6d33e69a24507c64eb51d2d9260b4a6ff2638ce9e44"
+      "sha256": "531a1518b467d344d1d90cc63b0b9a4222f0bc8089b0588cfd8d45468681e215"
     },
     "south": {
       "url": "/assets/bonsai/atlas-south.png",
       "file": "assets/bonsai/atlas-south.png",
-      "sha256": "92a1386c25466d456783890056282c158123702669b9b08f86780e91f7b18931"
+      "sha256": "33a0c3a24f5bd7bfc561645d30f9d165b5f4b3b1d27508c823551a302f37e27e"
     },
     "west": {
       "url": "/assets/bonsai/atlas-west.png",
       "file": "assets/bonsai/atlas-west.png",
-      "sha256": "42fa781725c66d88eaf62e977dbcb1ed970306226b416bcc52edd60dbe22e287"
+      "sha256": "a28700869ef984d17a9c2bf954541f5d53fc6ae8fbcd3665d6052a35d90ce7f4"
     }
   },
   "frames": {
@@ -2080,14 +2080,14 @@
       "x": 161,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2104,14 +2104,14 @@
       "x": 210,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2128,14 +2128,14 @@
       "x": 259,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2152,14 +2152,14 @@
       "x": 308,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2176,14 +2176,14 @@
       "x": 357,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2200,14 +2200,14 @@
       "x": 406,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2224,14 +2224,14 @@
       "x": 455,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2248,14 +2248,14 @@
       "x": 504,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2272,14 +2272,14 @@
       "x": 553,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2296,14 +2296,14 @@
       "x": 602,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2320,14 +2320,14 @@
       "x": 651,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2344,14 +2344,14 @@
       "x": 700,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2368,14 +2368,14 @@
       "x": 749,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2392,14 +2392,14 @@
       "x": 798,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2416,14 +2416,14 @@
       "x": 847,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2464,14 +2464,14 @@
       "x": 919,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2488,14 +2488,14 @@
       "x": 968,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2512,14 +2512,14 @@
       "x": 1017,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2536,14 +2536,14 @@
       "x": 1066,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2560,14 +2560,14 @@
       "x": 1115,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2584,14 +2584,14 @@
       "x": 1164,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2608,14 +2608,14 @@
       "x": 1213,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2632,14 +2632,14 @@
       "x": 1262,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2656,14 +2656,14 @@
       "x": 1311,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2680,14 +2680,14 @@
       "x": 1360,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2704,14 +2704,14 @@
       "x": 1409,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2728,14 +2728,14 @@
       "x": 1458,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2752,14 +2752,14 @@
       "x": 1507,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2776,14 +2776,14 @@
       "x": 1556,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -2800,14 +2800,14 @@
       "x": 1605,
       "y": 90,
       "w": 49,
-      "h": 33,
+      "h": 35,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 24,
-        "y": 16
+        "y": 17
       },
       "height": 0,
       "state": "normal",
@@ -5488,14 +5488,14 @@
       "x": 1024,
       "y": 332,
       "w": 128,
-      "h": 102,
+      "h": 116,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 64,
-        "y": 69
+        "y": 83
       },
       "height": 44,
       "state": "normal",
@@ -5512,14 +5512,14 @@
       "x": 1152,
       "y": 332,
       "w": 128,
-      "h": 100,
+      "h": 124,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 64,
-        "y": 67
+        "y": 91
       },
       "height": 44,
       "state": "normal",
@@ -5536,14 +5536,14 @@
       "x": 1280,
       "y": 332,
       "w": 128,
-      "h": 81,
+      "h": 140,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 64,
-        "y": 48
+        "y": 107
       },
       "height": 44,
       "state": "normal",
@@ -5560,14 +5560,14 @@
       "x": 1408,
       "y": 332,
       "w": 128,
-      "h": 86,
+      "h": 148,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 64,
-        "y": 53
+        "y": 115
       },
       "height": 44,
       "state": "normal",
@@ -5584,14 +5584,14 @@
       "x": 1536,
       "y": 332,
       "w": 128,
-      "h": 84,
+      "h": 163,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 64,
-        "y": 51
+        "y": 130
       },
       "height": 44,
       "state": "normal",
@@ -5608,14 +5608,14 @@
       "x": 1664,
       "y": 332,
       "w": 128,
-      "h": 89,
+      "h": 171,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 64,
-        "y": 56
+        "y": 138
       },
       "height": 44,
       "state": "normal",
@@ -5632,14 +5632,14 @@
       "x": 1792,
       "y": 332,
       "w": 128,
-      "h": 94,
+      "h": 179,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 64,
-        "y": 61
+        "y": 146
       },
       "height": 44,
       "state": "normal",
@@ -5656,14 +5656,14 @@
       "x": 1920,
       "y": 332,
       "w": 128,
-      "h": 92,
+      "h": 195,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 64,
-        "y": 59
+        "y": 162
       },
       "height": 44,
       "state": "normal",
@@ -5678,7 +5678,7 @@
     },
     "building.r.3.1.normal": {
       "x": 0,
-      "y": 434,
+      "y": 527,
       "w": 190,
       "h": 127,
       "footprint": {
@@ -5702,7 +5702,7 @@
     },
     "building.r.3.2.normal": {
       "x": 190,
-      "y": 434,
+      "y": 527,
       "w": 190,
       "h": 135,
       "footprint": {
@@ -5726,7 +5726,7 @@
     },
     "building.r.3.3.normal": {
       "x": 380,
-      "y": 434,
+      "y": 527,
       "w": 190,
       "h": 135,
       "footprint": {
@@ -5750,7 +5750,7 @@
     },
     "building.r.3.4.normal": {
       "x": 570,
-      "y": 434,
+      "y": 527,
       "w": 190,
       "h": 127,
       "footprint": {
@@ -5774,7 +5774,7 @@
     },
     "building.r.3.5.normal": {
       "x": 760,
-      "y": 434,
+      "y": 527,
       "w": 190,
       "h": 127,
       "footprint": {
@@ -5798,7 +5798,7 @@
     },
     "building.r.3.6.normal": {
       "x": 950,
-      "y": 434,
+      "y": 527,
       "w": 190,
       "h": 135,
       "footprint": {
@@ -5822,7 +5822,7 @@
     },
     "building.r.3.7.normal": {
       "x": 1140,
-      "y": 434,
+      "y": 527,
       "w": 190,
       "h": 135,
       "footprint": {
@@ -5846,7 +5846,7 @@
     },
     "building.r.3.8.normal": {
       "x": 1330,
-      "y": 434,
+      "y": 527,
       "w": 190,
       "h": 143,
       "footprint": {
@@ -5870,7 +5870,7 @@
     },
     "building.r.3.9.normal": {
       "x": 1520,
-      "y": 434,
+      "y": 527,
       "w": 190,
       "h": 143,
       "footprint": {
@@ -5894,7 +5894,7 @@
     },
     "building.r.3.10.normal": {
       "x": 1710,
-      "y": 434,
+      "y": 527,
       "w": 190,
       "h": 135,
       "footprint": {
@@ -5918,7 +5918,7 @@
     },
     "building.r.3.11.normal": {
       "x": 0,
-      "y": 577,
+      "y": 670,
       "w": 190,
       "h": 135,
       "footprint": {
@@ -5942,7 +5942,7 @@
     },
     "building.r.3.12.normal": {
       "x": 190,
-      "y": 577,
+      "y": 670,
       "w": 190,
       "h": 143,
       "footprint": {
@@ -5966,7 +5966,7 @@
     },
     "building.r.3.13.normal": {
       "x": 380,
-      "y": 577,
+      "y": 670,
       "w": 190,
       "h": 143,
       "footprint": {
@@ -5990,7 +5990,7 @@
     },
     "building.r.3.14.normal": {
       "x": 570,
-      "y": 577,
+      "y": 670,
       "w": 190,
       "h": 151,
       "footprint": {
@@ -6014,7 +6014,7 @@
     },
     "building.r.3.15.normal": {
       "x": 760,
-      "y": 577,
+      "y": 670,
       "w": 190,
       "h": 150,
       "footprint": {
@@ -6038,7 +6038,7 @@
     },
     "building.r.3.16.normal": {
       "x": 950,
-      "y": 577,
+      "y": 670,
       "w": 190,
       "h": 143,
       "footprint": {
@@ -6062,16 +6062,16 @@
     },
     "building.r.3.17.normal": {
       "x": 1140,
-      "y": 577,
+      "y": 670,
       "w": 190,
-      "h": 143,
+      "h": 182,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 95,
-        "y": 95
+        "y": 134
       },
       "height": 76,
       "state": "normal",
@@ -6086,16 +6086,16 @@
     },
     "building.r.3.18.normal": {
       "x": 1330,
-      "y": 577,
+      "y": 670,
       "w": 190,
-      "h": 151,
+      "h": 198,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 95,
-        "y": 103
+        "y": 150
       },
       "height": 76,
       "state": "normal",
@@ -6110,16 +6110,16 @@
     },
     "building.r.3.19.normal": {
       "x": 1520,
-      "y": 577,
+      "y": 670,
       "w": 190,
-      "h": 127,
+      "h": 213,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 95,
-        "y": 79
+        "y": 165
       },
       "height": 76,
       "state": "normal",
@@ -6134,16 +6134,16 @@
     },
     "building.r.3.20.normal": {
       "x": 1710,
-      "y": 577,
+      "y": 670,
       "w": 190,
-      "h": 135,
+      "h": 221,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 95,
-        "y": 87
+        "y": 173
       },
       "height": 76,
       "state": "normal",
@@ -6158,16 +6158,16 @@
     },
     "building.r.3.21.normal": {
       "x": 0,
-      "y": 728,
+      "y": 891,
       "w": 190,
-      "h": 135,
+      "h": 237,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 95,
-        "y": 87
+        "y": 189
       },
       "height": 76,
       "state": "normal",
@@ -6182,16 +6182,16 @@
     },
     "building.r.3.22.normal": {
       "x": 190,
-      "y": 728,
+      "y": 891,
       "w": 190,
-      "h": 127,
+      "h": 253,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 95,
-        "y": 79
+        "y": 205
       },
       "height": 76,
       "state": "normal",
@@ -6206,16 +6206,16 @@
     },
     "building.r.3.23.normal": {
       "x": 380,
-      "y": 728,
+      "y": 891,
       "w": 190,
-      "h": 127,
+      "h": 268,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 95,
-        "y": 79
+        "y": 220
       },
       "height": 76,
       "state": "normal",
@@ -6230,16 +6230,16 @@
     },
     "building.r.3.24.normal": {
       "x": 570,
-      "y": 728,
+      "y": 891,
       "w": 190,
-      "h": 135,
+      "h": 284,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 95,
-        "y": 87
+        "y": 236
       },
       "height": 76,
       "state": "normal",
@@ -6252,9 +6252,129 @@
       "license": "MIT",
       "source": "original"
     },
-    "building.r.2.1.foundation": {
+    "building.r.1.1.foundation": {
       "x": 760,
-      "y": 728,
+      "y": 891,
+      "w": 62,
+      "h": 35,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 31,
+        "y": 19
+      },
+      "height": 6,
+      "state": "foundation",
+      "animation": null,
+      "variant": 1,
+      "category": "building",
+      "zone": "residential",
+      "stage": 1,
+      "density": "light",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.r.1.1.construction": {
+      "x": 822,
+      "y": 891,
+      "w": 66,
+      "h": 50,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 33,
+        "y": 33
+      },
+      "height": 15,
+      "state": "construction",
+      "animation": "construction-1",
+      "variant": 2,
+      "category": "building",
+      "zone": "residential",
+      "stage": 1,
+      "density": "light",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.r.1.1.declined": {
+      "x": 888,
+      "y": 891,
+      "w": 66,
+      "h": 41,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 33,
+        "y": 24
+      },
+      "height": 19,
+      "state": "declined",
+      "animation": null,
+      "variant": 3,
+      "category": "building",
+      "zone": "residential",
+      "stage": 1,
+      "density": "light",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.r.1.1.abandoned": {
+      "x": 954,
+      "y": 891,
+      "w": 66,
+      "h": 39,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 33,
+        "y": 22
+      },
+      "height": 19,
+      "state": "abandoned",
+      "animation": null,
+      "variant": 4,
+      "category": "building",
+      "zone": "residential",
+      "stage": 1,
+      "density": "light",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.r.1.1.recovering": {
+      "x": 1020,
+      "y": 891,
+      "w": 66,
+      "h": 41,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 33,
+        "y": 24
+      },
+      "height": 19,
+      "state": "recovering",
+      "animation": null,
+      "variant": 5,
+      "category": "building",
+      "zone": "residential",
+      "stage": 1,
+      "density": "light",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.r.2.1.foundation": {
+      "x": 1086,
+      "y": 891,
       "w": 120,
       "h": 65,
       "footprint": {
@@ -6277,8 +6397,8 @@
       "source": "original"
     },
     "building.r.2.1.construction": {
-      "x": 880,
-      "y": 728,
+      "x": 1206,
+      "y": 891,
       "w": 128,
       "h": 95,
       "footprint": {
@@ -6301,8 +6421,8 @@
       "source": "original"
     },
     "building.r.2.1.declined": {
-      "x": 1008,
-      "y": 728,
+      "x": 1334,
+      "y": 891,
       "w": 128,
       "h": 84,
       "footprint": {
@@ -6325,8 +6445,8 @@
       "source": "original"
     },
     "building.r.2.1.abandoned": {
-      "x": 1136,
-      "y": 728,
+      "x": 1462,
+      "y": 891,
       "w": 128,
       "h": 89,
       "footprint": {
@@ -6349,8 +6469,8 @@
       "source": "original"
     },
     "building.r.2.1.recovering": {
-      "x": 1264,
-      "y": 728,
+      "x": 1590,
+      "y": 891,
       "w": 128,
       "h": 94,
       "footprint": {
@@ -6372,18 +6492,138 @@
       "license": "MIT",
       "source": "original"
     },
+    "building.r.3.1.foundation": {
+      "x": 1718,
+      "y": 891,
+      "w": 176,
+      "h": 93,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "anchor": {
+        "x": 88,
+        "y": 48
+      },
+      "height": 6,
+      "state": "foundation",
+      "animation": null,
+      "variant": 1,
+      "category": "building",
+      "zone": "residential",
+      "stage": 3,
+      "density": "high",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.r.3.1.construction": {
+      "x": 0,
+      "y": 1175,
+      "w": 190,
+      "h": 146,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "anchor": {
+        "x": 95,
+        "y": 98
+      },
+      "height": 59,
+      "state": "construction",
+      "animation": "construction-3",
+      "variant": 2,
+      "category": "building",
+      "zone": "residential",
+      "stage": 3,
+      "density": "high",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.r.3.1.declined": {
+      "x": 190,
+      "y": 1175,
+      "w": 190,
+      "h": 135,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "anchor": {
+        "x": 95,
+        "y": 87
+      },
+      "height": 73,
+      "state": "declined",
+      "animation": null,
+      "variant": 3,
+      "category": "building",
+      "zone": "residential",
+      "stage": 3,
+      "density": "high",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.r.3.1.abandoned": {
+      "x": 380,
+      "y": 1175,
+      "w": 190,
+      "h": 127,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "anchor": {
+        "x": 95,
+        "y": 79
+      },
+      "height": 73,
+      "state": "abandoned",
+      "animation": null,
+      "variant": 4,
+      "category": "building",
+      "zone": "residential",
+      "stage": 3,
+      "density": "high",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.r.3.1.recovering": {
+      "x": 570,
+      "y": 1175,
+      "w": 190,
+      "h": 127,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "anchor": {
+        "x": 95,
+        "y": 79
+      },
+      "height": 73,
+      "state": "recovering",
+      "animation": null,
+      "variant": 5,
+      "category": "building",
+      "zone": "residential",
+      "stage": 3,
+      "density": "high",
+      "license": "MIT",
+      "source": "original"
+    },
     "building.c.1.1.normal": {
-      "x": 1392,
-      "y": 728,
+      "x": 760,
+      "y": 1175,
       "w": 66,
-      "h": 49,
+      "h": 44,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 33,
-        "y": 31
+        "y": 26
       },
       "height": 20,
       "state": "normal",
@@ -6397,8 +6637,8 @@
       "source": "original"
     },
     "building.c.1.2.normal": {
-      "x": 1458,
-      "y": 728,
+      "x": 826,
+      "y": 1175,
       "w": 66,
       "h": 49,
       "footprint": {
@@ -6421,8 +6661,8 @@
       "source": "original"
     },
     "building.c.1.3.normal": {
-      "x": 1524,
-      "y": 728,
+      "x": 892,
+      "y": 1175,
       "w": 66,
       "h": 44,
       "footprint": {
@@ -6445,8 +6685,8 @@
       "source": "original"
     },
     "building.c.1.4.normal": {
-      "x": 1590,
-      "y": 728,
+      "x": 958,
+      "y": 1175,
       "w": 66,
       "h": 44,
       "footprint": {
@@ -6469,8 +6709,8 @@
       "source": "original"
     },
     "building.c.1.5.normal": {
-      "x": 1656,
-      "y": 728,
+      "x": 1024,
+      "y": 1175,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -6493,8 +6733,8 @@
       "source": "original"
     },
     "building.c.1.6.normal": {
-      "x": 1722,
-      "y": 728,
+      "x": 1090,
+      "y": 1175,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -6517,8 +6757,8 @@
       "source": "original"
     },
     "building.c.1.7.normal": {
-      "x": 1788,
-      "y": 728,
+      "x": 1156,
+      "y": 1175,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -6541,8 +6781,8 @@
       "source": "original"
     },
     "building.c.1.8.normal": {
-      "x": 1854,
-      "y": 728,
+      "x": 1222,
+      "y": 1175,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -6565,17 +6805,17 @@
       "source": "original"
     },
     "building.c.1.9.normal": {
-      "x": 1920,
-      "y": 728,
+      "x": 1288,
+      "y": 1175,
       "w": 66,
-      "h": 49,
+      "h": 44,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 33,
-        "y": 31
+        "y": 26
       },
       "height": 20,
       "state": "normal",
@@ -6589,8 +6829,8 @@
       "source": "original"
     },
     "building.c.1.10.normal": {
-      "x": 0,
-      "y": 863,
+      "x": 1354,
+      "y": 1175,
       "w": 66,
       "h": 49,
       "footprint": {
@@ -6613,8 +6853,8 @@
       "source": "original"
     },
     "building.c.1.11.normal": {
-      "x": 66,
-      "y": 863,
+      "x": 1420,
+      "y": 1175,
       "w": 66,
       "h": 44,
       "footprint": {
@@ -6637,8 +6877,8 @@
       "source": "original"
     },
     "building.c.1.12.normal": {
-      "x": 132,
-      "y": 863,
+      "x": 1486,
+      "y": 1175,
       "w": 66,
       "h": 44,
       "footprint": {
@@ -6661,8 +6901,8 @@
       "source": "original"
     },
     "building.c.1.13.normal": {
-      "x": 198,
-      "y": 863,
+      "x": 1552,
+      "y": 1175,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -6685,8 +6925,8 @@
       "source": "original"
     },
     "building.c.1.14.normal": {
-      "x": 264,
-      "y": 863,
+      "x": 1618,
+      "y": 1175,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -6709,8 +6949,8 @@
       "source": "original"
     },
     "building.c.1.15.normal": {
-      "x": 330,
-      "y": 863,
+      "x": 1684,
+      "y": 1175,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -6733,8 +6973,8 @@
       "source": "original"
     },
     "building.c.1.16.normal": {
-      "x": 396,
-      "y": 863,
+      "x": 1750,
+      "y": 1175,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -6757,17 +6997,17 @@
       "source": "original"
     },
     "building.c.1.17.normal": {
-      "x": 462,
-      "y": 863,
+      "x": 1816,
+      "y": 1175,
       "w": 66,
-      "h": 49,
+      "h": 44,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 33,
-        "y": 31
+        "y": 26
       },
       "height": 20,
       "state": "normal",
@@ -6781,8 +7021,8 @@
       "source": "original"
     },
     "building.c.1.18.normal": {
-      "x": 528,
-      "y": 863,
+      "x": 1882,
+      "y": 1175,
       "w": 66,
       "h": 49,
       "footprint": {
@@ -6805,8 +7045,8 @@
       "source": "original"
     },
     "building.c.1.19.normal": {
-      "x": 594,
-      "y": 863,
+      "x": 1948,
+      "y": 1175,
       "w": 66,
       "h": 44,
       "footprint": {
@@ -6829,8 +7069,8 @@
       "source": "original"
     },
     "building.c.1.20.normal": {
-      "x": 660,
-      "y": 863,
+      "x": 0,
+      "y": 1321,
       "w": 66,
       "h": 44,
       "footprint": {
@@ -6853,8 +7093,8 @@
       "source": "original"
     },
     "building.c.1.21.normal": {
-      "x": 726,
-      "y": 863,
+      "x": 66,
+      "y": 1321,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -6877,8 +7117,8 @@
       "source": "original"
     },
     "building.c.1.22.normal": {
-      "x": 792,
-      "y": 863,
+      "x": 132,
+      "y": 1321,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -6901,8 +7141,8 @@
       "source": "original"
     },
     "building.c.1.23.normal": {
-      "x": 858,
-      "y": 863,
+      "x": 198,
+      "y": 1321,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -6925,8 +7165,8 @@
       "source": "original"
     },
     "building.c.1.24.normal": {
-      "x": 924,
-      "y": 863,
+      "x": 264,
+      "y": 1321,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -6949,8 +7189,8 @@
       "source": "original"
     },
     "building.c.2.1.normal": {
-      "x": 990,
-      "y": 863,
+      "x": 330,
+      "y": 1321,
       "w": 130,
       "h": 89,
       "footprint": {
@@ -6973,8 +7213,8 @@
       "source": "original"
     },
     "building.c.2.2.normal": {
-      "x": 1120,
-      "y": 863,
+      "x": 460,
+      "y": 1321,
       "w": 130,
       "h": 90,
       "footprint": {
@@ -6997,8 +7237,8 @@
       "source": "original"
     },
     "building.c.2.3.normal": {
-      "x": 1250,
-      "y": 863,
+      "x": 590,
+      "y": 1321,
       "w": 130,
       "h": 90,
       "footprint": {
@@ -7021,8 +7261,8 @@
       "source": "original"
     },
     "building.c.2.4.normal": {
-      "x": 1380,
-      "y": 863,
+      "x": 720,
+      "y": 1321,
       "w": 130,
       "h": 98,
       "footprint": {
@@ -7045,8 +7285,8 @@
       "source": "original"
     },
     "building.c.2.5.normal": {
-      "x": 1510,
-      "y": 863,
+      "x": 850,
+      "y": 1321,
       "w": 130,
       "h": 98,
       "footprint": {
@@ -7069,8 +7309,8 @@
       "source": "original"
     },
     "building.c.2.6.normal": {
-      "x": 1640,
-      "y": 863,
+      "x": 980,
+      "y": 1321,
       "w": 130,
       "h": 98,
       "footprint": {
@@ -7093,8 +7333,8 @@
       "source": "original"
     },
     "building.c.2.7.normal": {
-      "x": 1770,
-      "y": 863,
+      "x": 1110,
+      "y": 1321,
       "w": 130,
       "h": 106,
       "footprint": {
@@ -7117,8 +7357,8 @@
       "source": "original"
     },
     "building.c.2.8.normal": {
-      "x": 1900,
-      "y": 863,
+      "x": 1240,
+      "y": 1321,
       "w": 130,
       "h": 107,
       "footprint": {
@@ -7141,8 +7381,8 @@
       "source": "original"
     },
     "building.c.2.9.normal": {
-      "x": 0,
-      "y": 970,
+      "x": 1370,
+      "y": 1321,
       "w": 130,
       "h": 107,
       "footprint": {
@@ -7165,8 +7405,8 @@
       "source": "original"
     },
     "building.c.2.10.normal": {
-      "x": 130,
-      "y": 970,
+      "x": 1500,
+      "y": 1321,
       "w": 130,
       "h": 89,
       "footprint": {
@@ -7189,8 +7429,8 @@
       "source": "original"
     },
     "building.c.2.11.normal": {
-      "x": 260,
-      "y": 970,
+      "x": 1630,
+      "y": 1321,
       "w": 130,
       "h": 90,
       "footprint": {
@@ -7213,8 +7453,8 @@
       "source": "original"
     },
     "building.c.2.12.normal": {
-      "x": 390,
-      "y": 970,
+      "x": 1760,
+      "y": 1321,
       "w": 130,
       "h": 90,
       "footprint": {
@@ -7237,8 +7477,8 @@
       "source": "original"
     },
     "building.c.2.13.normal": {
-      "x": 520,
-      "y": 970,
+      "x": 1890,
+      "y": 1321,
       "w": 130,
       "h": 98,
       "footprint": {
@@ -7261,8 +7501,8 @@
       "source": "original"
     },
     "building.c.2.14.normal": {
-      "x": 650,
-      "y": 970,
+      "x": 0,
+      "y": 1428,
       "w": 130,
       "h": 98,
       "footprint": {
@@ -7285,8 +7525,8 @@
       "source": "original"
     },
     "building.c.2.15.normal": {
-      "x": 780,
-      "y": 970,
+      "x": 130,
+      "y": 1428,
       "w": 130,
       "h": 98,
       "footprint": {
@@ -7309,8 +7549,8 @@
       "source": "original"
     },
     "building.c.2.16.normal": {
-      "x": 910,
-      "y": 970,
+      "x": 260,
+      "y": 1428,
       "w": 130,
       "h": 106,
       "footprint": {
@@ -7333,17 +7573,17 @@
       "source": "original"
     },
     "building.c.2.17.normal": {
-      "x": 1040,
-      "y": 970,
+      "x": 390,
+      "y": 1428,
       "w": 130,
-      "h": 107,
+      "h": 144,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 65,
-        "y": 74
+        "y": 111
       },
       "height": 44,
       "state": "normal",
@@ -7357,17 +7597,17 @@
       "source": "original"
     },
     "building.c.2.18.normal": {
-      "x": 1170,
-      "y": 970,
+      "x": 520,
+      "y": 1428,
       "w": 130,
-      "h": 107,
+      "h": 162,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 65,
-        "y": 74
+        "y": 129
       },
       "height": 44,
       "state": "normal",
@@ -7381,17 +7621,17 @@
       "source": "original"
     },
     "building.c.2.19.normal": {
-      "x": 1300,
-      "y": 970,
+      "x": 650,
+      "y": 1428,
       "w": 130,
-      "h": 89,
+      "h": 180,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 65,
-        "y": 56
+        "y": 147
       },
       "height": 44,
       "state": "normal",
@@ -7405,17 +7645,17 @@
       "source": "original"
     },
     "building.c.2.20.normal": {
-      "x": 1430,
-      "y": 970,
+      "x": 780,
+      "y": 1428,
       "w": 130,
-      "h": 90,
+      "h": 215,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 65,
-        "y": 57
+        "y": 182
       },
       "height": 44,
       "state": "normal",
@@ -7429,17 +7669,17 @@
       "source": "original"
     },
     "building.c.2.21.normal": {
-      "x": 1560,
-      "y": 970,
+      "x": 910,
+      "y": 1428,
       "w": 130,
-      "h": 90,
+      "h": 246,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 65,
-        "y": 57
+        "y": 213
       },
       "height": 44,
       "state": "normal",
@@ -7453,17 +7693,17 @@
       "source": "original"
     },
     "building.c.2.22.normal": {
-      "x": 1690,
-      "y": 970,
+      "x": 1040,
+      "y": 1428,
       "w": 130,
-      "h": 98,
+      "h": 250,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 65,
-        "y": 65
+        "y": 217
       },
       "height": 44,
       "state": "normal",
@@ -7477,17 +7717,17 @@
       "source": "original"
     },
     "building.c.2.23.normal": {
-      "x": 1820,
-      "y": 970,
+      "x": 1170,
+      "y": 1428,
       "w": 130,
-      "h": 98,
+      "h": 266,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 65,
-        "y": 65
+        "y": 233
       },
       "height": 44,
       "state": "normal",
@@ -7501,17 +7741,17 @@
       "source": "original"
     },
     "building.c.2.24.normal": {
-      "x": 0,
-      "y": 1077,
+      "x": 1300,
+      "y": 1428,
       "w": 130,
-      "h": 98,
+      "h": 284,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 65,
-        "y": 65
+        "y": 251
       },
       "height": 44,
       "state": "normal",
@@ -7525,8 +7765,8 @@
       "source": "original"
     },
     "building.c.3.1.normal": {
-      "x": 130,
-      "y": 1077,
+      "x": 1430,
+      "y": 1428,
       "w": 192,
       "h": 135,
       "footprint": {
@@ -7549,8 +7789,8 @@
       "source": "original"
     },
     "building.c.3.2.normal": {
-      "x": 322,
-      "y": 1077,
+      "x": 1622,
+      "y": 1428,
       "w": 192,
       "h": 145,
       "footprint": {
@@ -7573,8 +7813,8 @@
       "source": "original"
     },
     "building.c.3.3.normal": {
-      "x": 514,
-      "y": 1077,
+      "x": 1814,
+      "y": 1428,
       "w": 192,
       "h": 135,
       "footprint": {
@@ -7597,8 +7837,8 @@
       "source": "original"
     },
     "building.c.3.4.normal": {
-      "x": 706,
-      "y": 1077,
+      "x": 0,
+      "y": 1712,
       "w": 192,
       "h": 127,
       "footprint": {
@@ -7621,8 +7861,8 @@
       "source": "original"
     },
     "building.c.3.5.normal": {
-      "x": 898,
-      "y": 1077,
+      "x": 192,
+      "y": 1712,
       "w": 192,
       "h": 135,
       "footprint": {
@@ -7645,8 +7885,8 @@
       "source": "original"
     },
     "building.c.3.6.normal": {
-      "x": 1090,
-      "y": 1077,
+      "x": 384,
+      "y": 1712,
       "w": 192,
       "h": 145,
       "footprint": {
@@ -7669,8 +7909,8 @@
       "source": "original"
     },
     "building.c.3.7.normal": {
-      "x": 1282,
-      "y": 1077,
+      "x": 576,
+      "y": 1712,
       "w": 192,
       "h": 144,
       "footprint": {
@@ -7693,8 +7933,8 @@
       "source": "original"
     },
     "building.c.3.8.normal": {
-      "x": 1474,
-      "y": 1077,
+      "x": 768,
+      "y": 1712,
       "w": 192,
       "h": 154,
       "footprint": {
@@ -7717,8 +7957,8 @@
       "source": "original"
     },
     "building.c.3.9.normal": {
-      "x": 1666,
-      "y": 1077,
+      "x": 960,
+      "y": 1712,
       "w": 192,
       "h": 144,
       "footprint": {
@@ -7741,8 +7981,8 @@
       "source": "original"
     },
     "building.c.3.10.normal": {
-      "x": 0,
-      "y": 1231,
+      "x": 1152,
+      "y": 1712,
       "w": 192,
       "h": 136,
       "footprint": {
@@ -7765,8 +8005,8 @@
       "source": "original"
     },
     "building.c.3.11.normal": {
-      "x": 192,
-      "y": 1231,
+      "x": 1344,
+      "y": 1712,
       "w": 192,
       "h": 144,
       "footprint": {
@@ -7789,8 +8029,8 @@
       "source": "original"
     },
     "building.c.3.12.normal": {
-      "x": 384,
-      "y": 1231,
+      "x": 1536,
+      "y": 1712,
       "w": 192,
       "h": 154,
       "footprint": {
@@ -7813,8 +8053,8 @@
       "source": "original"
     },
     "building.c.3.13.normal": {
-      "x": 576,
-      "y": 1231,
+      "x": 1728,
+      "y": 1712,
       "w": 192,
       "h": 153,
       "footprint": {
@@ -7837,8 +8077,8 @@
       "source": "original"
     },
     "building.c.3.14.normal": {
-      "x": 768,
-      "y": 1231,
+      "x": 0,
+      "y": 1866,
       "w": 192,
       "h": 162,
       "footprint": {
@@ -7861,8 +8101,8 @@
       "source": "original"
     },
     "building.c.3.15.normal": {
-      "x": 960,
-      "y": 1231,
+      "x": 192,
+      "y": 1866,
       "w": 192,
       "h": 153,
       "footprint": {
@@ -7885,8 +8125,8 @@
       "source": "original"
     },
     "building.c.3.16.normal": {
-      "x": 1152,
-      "y": 1231,
+      "x": 384,
+      "y": 1866,
       "w": 192,
       "h": 145,
       "footprint": {
@@ -7909,17 +8149,17 @@
       "source": "original"
     },
     "building.c.3.17.normal": {
-      "x": 1344,
-      "y": 1231,
+      "x": 576,
+      "y": 1866,
       "w": 192,
-      "h": 153,
+      "h": 231,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 96,
-        "y": 104
+        "y": 182
       },
       "height": 76,
       "state": "normal",
@@ -7933,17 +8173,17 @@
       "source": "original"
     },
     "building.c.3.18.normal": {
-      "x": 1536,
-      "y": 1231,
+      "x": 768,
+      "y": 1866,
       "w": 192,
-      "h": 162,
+      "h": 258,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 96,
-        "y": 113
+        "y": 209
       },
       "height": 76,
       "state": "normal",
@@ -7957,17 +8197,17 @@
       "source": "original"
     },
     "building.c.3.19.normal": {
-      "x": 1728,
-      "y": 1231,
+      "x": 960,
+      "y": 1866,
       "w": 192,
-      "h": 135,
+      "h": 276,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 96,
-        "y": 86
+        "y": 227
       },
       "height": 76,
       "state": "normal",
@@ -7981,17 +8221,17 @@
       "source": "original"
     },
     "building.c.3.20.normal": {
-      "x": 0,
-      "y": 1393,
+      "x": 1152,
+      "y": 1866,
       "w": 192,
-      "h": 145,
+      "h": 318,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 96,
-        "y": 96
+        "y": 269
       },
       "height": 76,
       "state": "normal",
@@ -8005,17 +8245,17 @@
       "source": "original"
     },
     "building.c.3.21.normal": {
-      "x": 192,
-      "y": 1393,
+      "x": 1344,
+      "y": 1866,
       "w": 192,
-      "h": 135,
+      "h": 344,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 96,
-        "y": 86
+        "y": 295
       },
       "height": 76,
       "state": "normal",
@@ -8029,17 +8269,17 @@
       "source": "original"
     },
     "building.c.3.22.normal": {
-      "x": 384,
-      "y": 1393,
+      "x": 1536,
+      "y": 1866,
       "w": 192,
-      "h": 127,
+      "h": 362,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 96,
-        "y": 78
+        "y": 313
       },
       "height": 76,
       "state": "normal",
@@ -8053,17 +8293,17 @@
       "source": "original"
     },
     "building.c.3.23.normal": {
-      "x": 576,
-      "y": 1393,
+      "x": 1728,
+      "y": 1866,
       "w": 192,
-      "h": 135,
+      "h": 378,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 96,
-        "y": 86
+        "y": 329
       },
       "height": 76,
       "state": "normal",
@@ -8077,17 +8317,17 @@
       "source": "original"
     },
     "building.c.3.24.normal": {
-      "x": 768,
-      "y": 1393,
+      "x": 0,
+      "y": 2244,
       "w": 192,
-      "h": 145,
+      "h": 392,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 96,
-        "y": 96
+        "y": 343
       },
       "height": 76,
       "state": "normal",
@@ -8100,9 +8340,129 @@
       "license": "MIT",
       "source": "original"
     },
+    "building.c.1.1.foundation": {
+      "x": 192,
+      "y": 2244,
+      "w": 62,
+      "h": 35,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 31,
+        "y": 19
+      },
+      "height": 6,
+      "state": "foundation",
+      "animation": null,
+      "variant": 1,
+      "category": "building",
+      "zone": "commercial",
+      "stage": 1,
+      "density": "light",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.c.1.1.construction": {
+      "x": 254,
+      "y": 2244,
+      "w": 66,
+      "h": 54,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 33,
+        "y": 36
+      },
+      "height": 15,
+      "state": "construction",
+      "animation": "construction-1",
+      "variant": 2,
+      "category": "building",
+      "zone": "commercial",
+      "stage": 1,
+      "density": "light",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.c.1.1.declined": {
+      "x": 320,
+      "y": 2244,
+      "w": 66,
+      "h": 44,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 33,
+        "y": 26
+      },
+      "height": 19,
+      "state": "declined",
+      "animation": null,
+      "variant": 3,
+      "category": "building",
+      "zone": "commercial",
+      "stage": 1,
+      "density": "light",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.c.1.1.abandoned": {
+      "x": 386,
+      "y": 2244,
+      "w": 66,
+      "h": 44,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 33,
+        "y": 26
+      },
+      "height": 19,
+      "state": "abandoned",
+      "animation": null,
+      "variant": 4,
+      "category": "building",
+      "zone": "commercial",
+      "stage": 1,
+      "density": "light",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.c.1.1.recovering": {
+      "x": 452,
+      "y": 2244,
+      "w": 66,
+      "h": 53,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 33,
+        "y": 35
+      },
+      "height": 19,
+      "state": "recovering",
+      "animation": null,
+      "variant": 5,
+      "category": "building",
+      "zone": "commercial",
+      "stage": 1,
+      "density": "light",
+      "license": "MIT",
+      "source": "original"
+    },
     "building.c.2.1.foundation": {
-      "x": 960,
-      "y": 1393,
+      "x": 518,
+      "y": 2244,
       "w": 120,
       "h": 65,
       "footprint": {
@@ -8125,8 +8485,8 @@
       "source": "original"
     },
     "building.c.2.1.construction": {
-      "x": 1080,
-      "y": 1393,
+      "x": 638,
+      "y": 2244,
       "w": 130,
       "h": 100,
       "footprint": {
@@ -8149,8 +8509,8 @@
       "source": "original"
     },
     "building.c.2.1.declined": {
-      "x": 1210,
-      "y": 1393,
+      "x": 768,
+      "y": 2244,
       "w": 130,
       "h": 90,
       "footprint": {
@@ -8173,8 +8533,8 @@
       "source": "original"
     },
     "building.c.2.1.abandoned": {
-      "x": 1340,
-      "y": 1393,
+      "x": 898,
+      "y": 2244,
       "w": 130,
       "h": 98,
       "footprint": {
@@ -8197,8 +8557,8 @@
       "source": "original"
     },
     "building.c.2.1.recovering": {
-      "x": 1470,
-      "y": 1393,
+      "x": 1028,
+      "y": 2244,
       "w": 130,
       "h": 98,
       "footprint": {
@@ -8220,9 +8580,129 @@
       "license": "MIT",
       "source": "original"
     },
+    "building.c.3.1.foundation": {
+      "x": 1158,
+      "y": 2244,
+      "w": 176,
+      "h": 93,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "anchor": {
+        "x": 88,
+        "y": 48
+      },
+      "height": 6,
+      "state": "foundation",
+      "animation": null,
+      "variant": 1,
+      "category": "building",
+      "zone": "commercial",
+      "stage": 3,
+      "density": "high",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.c.3.1.construction": {
+      "x": 1334,
+      "y": 2244,
+      "w": 192,
+      "h": 155,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "anchor": {
+        "x": 96,
+        "y": 106
+      },
+      "height": 59,
+      "state": "construction",
+      "animation": "construction-3",
+      "variant": 2,
+      "category": "building",
+      "zone": "commercial",
+      "stage": 3,
+      "density": "high",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.c.3.1.declined": {
+      "x": 1526,
+      "y": 2244,
+      "w": 192,
+      "h": 135,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "anchor": {
+        "x": 96,
+        "y": 86
+      },
+      "height": 73,
+      "state": "declined",
+      "animation": null,
+      "variant": 3,
+      "category": "building",
+      "zone": "commercial",
+      "stage": 3,
+      "density": "high",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.c.3.1.abandoned": {
+      "x": 1718,
+      "y": 2244,
+      "w": 192,
+      "h": 127,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "anchor": {
+        "x": 96,
+        "y": 78
+      },
+      "height": 73,
+      "state": "abandoned",
+      "animation": null,
+      "variant": 4,
+      "category": "building",
+      "zone": "commercial",
+      "stage": 3,
+      "density": "high",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.c.3.1.recovering": {
+      "x": 0,
+      "y": 2636,
+      "w": 192,
+      "h": 135,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "anchor": {
+        "x": 96,
+        "y": 86
+      },
+      "height": 73,
+      "state": "recovering",
+      "animation": null,
+      "variant": 5,
+      "category": "building",
+      "zone": "commercial",
+      "stage": 3,
+      "density": "high",
+      "license": "MIT",
+      "source": "original"
+    },
     "building.i.1.1.normal": {
-      "x": 1600,
-      "y": 1393,
+      "x": 192,
+      "y": 2636,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -8245,8 +8725,8 @@
       "source": "original"
     },
     "building.i.1.2.normal": {
-      "x": 1664,
-      "y": 1393,
+      "x": 256,
+      "y": 2636,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -8269,8 +8749,8 @@
       "source": "original"
     },
     "building.i.1.3.normal": {
-      "x": 1728,
-      "y": 1393,
+      "x": 320,
+      "y": 2636,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -8293,8 +8773,8 @@
       "source": "original"
     },
     "building.i.1.4.normal": {
-      "x": 1792,
-      "y": 1393,
+      "x": 384,
+      "y": 2636,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -8317,8 +8797,8 @@
       "source": "original"
     },
     "building.i.1.5.normal": {
-      "x": 1856,
-      "y": 1393,
+      "x": 448,
+      "y": 2636,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -8341,8 +8821,8 @@
       "source": "original"
     },
     "building.i.1.6.normal": {
-      "x": 1920,
-      "y": 1393,
+      "x": 512,
+      "y": 2636,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -8365,8 +8845,8 @@
       "source": "original"
     },
     "building.i.1.7.normal": {
-      "x": 1984,
-      "y": 1393,
+      "x": 576,
+      "y": 2636,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -8389,8 +8869,8 @@
       "source": "original"
     },
     "building.i.1.8.normal": {
-      "x": 0,
-      "y": 1538,
+      "x": 640,
+      "y": 2636,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -8413,8 +8893,8 @@
       "source": "original"
     },
     "building.i.1.9.normal": {
-      "x": 64,
-      "y": 1538,
+      "x": 704,
+      "y": 2636,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -8437,8 +8917,8 @@
       "source": "original"
     },
     "building.i.1.10.normal": {
-      "x": 128,
-      "y": 1538,
+      "x": 768,
+      "y": 2636,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -8461,8 +8941,8 @@
       "source": "original"
     },
     "building.i.1.11.normal": {
-      "x": 192,
-      "y": 1538,
+      "x": 832,
+      "y": 2636,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -8485,8 +8965,8 @@
       "source": "original"
     },
     "building.i.1.12.normal": {
-      "x": 256,
-      "y": 1538,
+      "x": 896,
+      "y": 2636,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -8509,8 +8989,8 @@
       "source": "original"
     },
     "building.i.1.13.normal": {
-      "x": 320,
-      "y": 1538,
+      "x": 960,
+      "y": 2636,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -8533,8 +9013,8 @@
       "source": "original"
     },
     "building.i.1.14.normal": {
-      "x": 384,
-      "y": 1538,
+      "x": 1024,
+      "y": 2636,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -8557,8 +9037,8 @@
       "source": "original"
     },
     "building.i.1.15.normal": {
-      "x": 448,
-      "y": 1538,
+      "x": 1088,
+      "y": 2636,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -8581,8 +9061,8 @@
       "source": "original"
     },
     "building.i.1.16.normal": {
-      "x": 512,
-      "y": 1538,
+      "x": 1152,
+      "y": 2636,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -8605,8 +9085,8 @@
       "source": "original"
     },
     "building.i.1.17.normal": {
-      "x": 576,
-      "y": 1538,
+      "x": 1216,
+      "y": 2636,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -8629,8 +9109,8 @@
       "source": "original"
     },
     "building.i.1.18.normal": {
-      "x": 640,
-      "y": 1538,
+      "x": 1280,
+      "y": 2636,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -8653,8 +9133,8 @@
       "source": "original"
     },
     "building.i.1.19.normal": {
-      "x": 704,
-      "y": 1538,
+      "x": 1344,
+      "y": 2636,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -8677,8 +9157,8 @@
       "source": "original"
     },
     "building.i.1.20.normal": {
-      "x": 768,
-      "y": 1538,
+      "x": 1408,
+      "y": 2636,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -8701,8 +9181,8 @@
       "source": "original"
     },
     "building.i.1.21.normal": {
-      "x": 832,
-      "y": 1538,
+      "x": 1472,
+      "y": 2636,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -8725,8 +9205,8 @@
       "source": "original"
     },
     "building.i.1.22.normal": {
-      "x": 896,
-      "y": 1538,
+      "x": 1536,
+      "y": 2636,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -8749,8 +9229,8 @@
       "source": "original"
     },
     "building.i.1.23.normal": {
-      "x": 960,
-      "y": 1538,
+      "x": 1600,
+      "y": 2636,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -8773,8 +9253,8 @@
       "source": "original"
     },
     "building.i.1.24.normal": {
-      "x": 1024,
-      "y": 1538,
+      "x": 1664,
+      "y": 2636,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -8797,8 +9277,8 @@
       "source": "original"
     },
     "building.i.2.1.normal": {
-      "x": 1088,
-      "y": 1538,
+      "x": 1728,
+      "y": 2636,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -8821,8 +9301,8 @@
       "source": "original"
     },
     "building.i.2.2.normal": {
-      "x": 1214,
-      "y": 1538,
+      "x": 1854,
+      "y": 2636,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -8845,8 +9325,8 @@
       "source": "original"
     },
     "building.i.2.3.normal": {
-      "x": 1340,
-      "y": 1538,
+      "x": 0,
+      "y": 2771,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -8869,8 +9349,8 @@
       "source": "original"
     },
     "building.i.2.4.normal": {
-      "x": 1466,
-      "y": 1538,
+      "x": 126,
+      "y": 2771,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -8893,8 +9373,8 @@
       "source": "original"
     },
     "building.i.2.5.normal": {
-      "x": 1592,
-      "y": 1538,
+      "x": 252,
+      "y": 2771,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -8917,8 +9397,8 @@
       "source": "original"
     },
     "building.i.2.6.normal": {
-      "x": 1718,
-      "y": 1538,
+      "x": 378,
+      "y": 2771,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -8941,8 +9421,8 @@
       "source": "original"
     },
     "building.i.2.7.normal": {
-      "x": 1844,
-      "y": 1538,
+      "x": 504,
+      "y": 2771,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -8965,8 +9445,8 @@
       "source": "original"
     },
     "building.i.2.8.normal": {
-      "x": 0,
-      "y": 1617,
+      "x": 630,
+      "y": 2771,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -8989,8 +9469,8 @@
       "source": "original"
     },
     "building.i.2.9.normal": {
-      "x": 126,
-      "y": 1617,
+      "x": 756,
+      "y": 2771,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -9013,8 +9493,8 @@
       "source": "original"
     },
     "building.i.2.10.normal": {
-      "x": 252,
-      "y": 1617,
+      "x": 882,
+      "y": 2771,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -9037,8 +9517,8 @@
       "source": "original"
     },
     "building.i.2.11.normal": {
-      "x": 378,
-      "y": 1617,
+      "x": 1008,
+      "y": 2771,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -9061,8 +9541,8 @@
       "source": "original"
     },
     "building.i.2.12.normal": {
-      "x": 504,
-      "y": 1617,
+      "x": 1134,
+      "y": 2771,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -9085,8 +9565,8 @@
       "source": "original"
     },
     "building.i.2.13.normal": {
-      "x": 630,
-      "y": 1617,
+      "x": 1260,
+      "y": 2771,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -9109,8 +9589,8 @@
       "source": "original"
     },
     "building.i.2.14.normal": {
-      "x": 756,
-      "y": 1617,
+      "x": 1386,
+      "y": 2771,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -9133,8 +9613,8 @@
       "source": "original"
     },
     "building.i.2.15.normal": {
-      "x": 882,
-      "y": 1617,
+      "x": 1512,
+      "y": 2771,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -9157,8 +9637,8 @@
       "source": "original"
     },
     "building.i.2.16.normal": {
-      "x": 1008,
-      "y": 1617,
+      "x": 1638,
+      "y": 2771,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -9181,8 +9661,8 @@
       "source": "original"
     },
     "building.i.2.17.normal": {
-      "x": 1134,
-      "y": 1617,
+      "x": 1764,
+      "y": 2771,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -9205,8 +9685,8 @@
       "source": "original"
     },
     "building.i.2.18.normal": {
-      "x": 1260,
-      "y": 1617,
+      "x": 1890,
+      "y": 2771,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -9229,8 +9709,8 @@
       "source": "original"
     },
     "building.i.2.19.normal": {
-      "x": 1386,
-      "y": 1617,
+      "x": 0,
+      "y": 2850,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -9253,8 +9733,8 @@
       "source": "original"
     },
     "building.i.2.20.normal": {
-      "x": 1512,
-      "y": 1617,
+      "x": 126,
+      "y": 2850,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -9277,8 +9757,8 @@
       "source": "original"
     },
     "building.i.2.21.normal": {
-      "x": 1638,
-      "y": 1617,
+      "x": 252,
+      "y": 2850,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -9301,8 +9781,8 @@
       "source": "original"
     },
     "building.i.2.22.normal": {
-      "x": 1764,
-      "y": 1617,
+      "x": 378,
+      "y": 2850,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -9325,8 +9805,8 @@
       "source": "original"
     },
     "building.i.2.23.normal": {
-      "x": 1890,
-      "y": 1617,
+      "x": 504,
+      "y": 2850,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -9349,8 +9829,8 @@
       "source": "original"
     },
     "building.i.2.24.normal": {
-      "x": 0,
-      "y": 1696,
+      "x": 630,
+      "y": 2850,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -9373,17 +9853,17 @@
       "source": "original"
     },
     "building.i.3.1.normal": {
-      "x": 126,
-      "y": 1696,
+      "x": 756,
+      "y": 2850,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9397,17 +9877,17 @@
       "source": "original"
     },
     "building.i.3.2.normal": {
-      "x": 312,
-      "y": 1696,
+      "x": 942,
+      "y": 2850,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9421,17 +9901,17 @@
       "source": "original"
     },
     "building.i.3.3.normal": {
-      "x": 498,
-      "y": 1696,
+      "x": 1128,
+      "y": 2850,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9445,17 +9925,17 @@
       "source": "original"
     },
     "building.i.3.4.normal": {
-      "x": 684,
-      "y": 1696,
+      "x": 1314,
+      "y": 2850,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9469,17 +9949,17 @@
       "source": "original"
     },
     "building.i.3.5.normal": {
-      "x": 870,
-      "y": 1696,
+      "x": 1500,
+      "y": 2850,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9493,17 +9973,17 @@
       "source": "original"
     },
     "building.i.3.6.normal": {
-      "x": 1056,
-      "y": 1696,
+      "x": 1686,
+      "y": 2850,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9517,17 +9997,17 @@
       "source": "original"
     },
     "building.i.3.7.normal": {
-      "x": 1242,
-      "y": 1696,
+      "x": 0,
+      "y": 2954,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9541,17 +10021,17 @@
       "source": "original"
     },
     "building.i.3.8.normal": {
-      "x": 1428,
-      "y": 1696,
+      "x": 186,
+      "y": 2954,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9565,17 +10045,17 @@
       "source": "original"
     },
     "building.i.3.9.normal": {
-      "x": 1614,
-      "y": 1696,
+      "x": 372,
+      "y": 2954,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9589,17 +10069,17 @@
       "source": "original"
     },
     "building.i.3.10.normal": {
-      "x": 1800,
-      "y": 1696,
+      "x": 558,
+      "y": 2954,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9613,17 +10093,17 @@
       "source": "original"
     },
     "building.i.3.11.normal": {
-      "x": 0,
-      "y": 1801,
+      "x": 744,
+      "y": 2954,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9637,17 +10117,17 @@
       "source": "original"
     },
     "building.i.3.12.normal": {
-      "x": 186,
-      "y": 1801,
+      "x": 930,
+      "y": 2954,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9661,17 +10141,17 @@
       "source": "original"
     },
     "building.i.3.13.normal": {
-      "x": 372,
-      "y": 1801,
+      "x": 1116,
+      "y": 2954,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9685,17 +10165,17 @@
       "source": "original"
     },
     "building.i.3.14.normal": {
-      "x": 558,
-      "y": 1801,
+      "x": 1302,
+      "y": 2954,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9709,17 +10189,17 @@
       "source": "original"
     },
     "building.i.3.15.normal": {
-      "x": 744,
-      "y": 1801,
+      "x": 1488,
+      "y": 2954,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9733,17 +10213,17 @@
       "source": "original"
     },
     "building.i.3.16.normal": {
-      "x": 930,
-      "y": 1801,
+      "x": 1674,
+      "y": 2954,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9757,17 +10237,17 @@
       "source": "original"
     },
     "building.i.3.17.normal": {
-      "x": 1116,
-      "y": 1801,
+      "x": 1860,
+      "y": 2954,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9781,17 +10261,17 @@
       "source": "original"
     },
     "building.i.3.18.normal": {
-      "x": 1302,
-      "y": 1801,
+      "x": 0,
+      "y": 3058,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9805,17 +10285,17 @@
       "source": "original"
     },
     "building.i.3.19.normal": {
-      "x": 1488,
-      "y": 1801,
+      "x": 186,
+      "y": 3058,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9829,17 +10309,17 @@
       "source": "original"
     },
     "building.i.3.20.normal": {
-      "x": 1674,
-      "y": 1801,
+      "x": 372,
+      "y": 3058,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9853,17 +10333,17 @@
       "source": "original"
     },
     "building.i.3.21.normal": {
-      "x": 1860,
-      "y": 1801,
+      "x": 558,
+      "y": 3058,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9877,17 +10357,17 @@
       "source": "original"
     },
     "building.i.3.22.normal": {
-      "x": 0,
-      "y": 1906,
+      "x": 744,
+      "y": 3058,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9901,17 +10381,17 @@
       "source": "original"
     },
     "building.i.3.23.normal": {
-      "x": 186,
-      "y": 1906,
+      "x": 930,
+      "y": 3058,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9925,17 +10405,17 @@
       "source": "original"
     },
     "building.i.3.24.normal": {
-      "x": 372,
-      "y": 1906,
+      "x": 1116,
+      "y": 3058,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "normal",
@@ -9948,9 +10428,129 @@
       "license": "MIT",
       "source": "original"
     },
+    "building.i.1.1.foundation": {
+      "x": 1302,
+      "y": 3058,
+      "w": 62,
+      "h": 35,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 31,
+        "y": 19
+      },
+      "height": 6,
+      "state": "foundation",
+      "animation": null,
+      "variant": 1,
+      "category": "building",
+      "zone": "industrial",
+      "stage": 1,
+      "density": "light",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.i.1.1.construction": {
+      "x": 1364,
+      "y": 3058,
+      "w": 64,
+      "h": 55,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 32,
+        "y": 38
+      },
+      "height": 15,
+      "state": "construction",
+      "animation": "construction-1",
+      "variant": 2,
+      "category": "building",
+      "zone": "industrial",
+      "stage": 1,
+      "density": "light",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.i.1.1.declined": {
+      "x": 1428,
+      "y": 3058,
+      "w": 64,
+      "h": 46,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 32,
+        "y": 29
+      },
+      "height": 19,
+      "state": "declined",
+      "animation": null,
+      "variant": 3,
+      "category": "building",
+      "zone": "industrial",
+      "stage": 1,
+      "density": "light",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.i.1.1.abandoned": {
+      "x": 1492,
+      "y": 3058,
+      "w": 64,
+      "h": 44,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 32,
+        "y": 27
+      },
+      "height": 19,
+      "state": "abandoned",
+      "animation": null,
+      "variant": 4,
+      "category": "building",
+      "zone": "industrial",
+      "stage": 1,
+      "density": "light",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.i.1.1.recovering": {
+      "x": 1556,
+      "y": 3058,
+      "w": 64,
+      "h": 44,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 32,
+        "y": 27
+      },
+      "height": 19,
+      "state": "recovering",
+      "animation": null,
+      "variant": 5,
+      "category": "building",
+      "zone": "industrial",
+      "stage": 1,
+      "density": "light",
+      "license": "MIT",
+      "source": "original"
+    },
     "building.i.2.1.foundation": {
-      "x": 558,
-      "y": 1906,
+      "x": 1620,
+      "y": 3058,
       "w": 120,
       "h": 65,
       "footprint": {
@@ -9973,8 +10573,8 @@
       "source": "original"
     },
     "building.i.2.1.construction": {
-      "x": 678,
-      "y": 1906,
+      "x": 1740,
+      "y": 3058,
       "w": 126,
       "h": 86,
       "footprint": {
@@ -9997,8 +10597,8 @@
       "source": "original"
     },
     "building.i.2.1.declined": {
-      "x": 804,
-      "y": 1906,
+      "x": 1866,
+      "y": 3058,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -10021,8 +10621,8 @@
       "source": "original"
     },
     "building.i.2.1.abandoned": {
-      "x": 930,
-      "y": 1906,
+      "x": 0,
+      "y": 3162,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -10045,8 +10645,8 @@
       "source": "original"
     },
     "building.i.2.1.recovering": {
-      "x": 1056,
-      "y": 1906,
+      "x": 126,
+      "y": 3162,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -10068,9 +10668,153 @@
       "license": "MIT",
       "source": "original"
     },
+    "building.i.3.1.foundation": {
+      "x": 252,
+      "y": 3162,
+      "w": 176,
+      "h": 93,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "anchor": {
+        "x": 88,
+        "y": 48
+      },
+      "height": 6,
+      "state": "foundation",
+      "animation": null,
+      "variant": 1,
+      "category": "building",
+      "zone": "industrial",
+      "stage": 3,
+      "density": "high",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.i.3.1.construction": {
+      "x": 428,
+      "y": 3162,
+      "w": 186,
+      "h": 111,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "anchor": {
+        "x": 93,
+        "y": 64
+      },
+      "height": 59,
+      "state": "construction",
+      "animation": "construction-3",
+      "variant": 2,
+      "category": "building",
+      "zone": "industrial",
+      "stage": 3,
+      "density": "high",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.i.3.1.declined": {
+      "x": 614,
+      "y": 3162,
+      "w": 186,
+      "h": 104,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "anchor": {
+        "x": 93,
+        "y": 57
+      },
+      "height": 73,
+      "state": "declined",
+      "animation": null,
+      "variant": 3,
+      "category": "building",
+      "zone": "industrial",
+      "stage": 3,
+      "density": "high",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.i.3.1.abandoned": {
+      "x": 800,
+      "y": 3162,
+      "w": 186,
+      "h": 104,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "anchor": {
+        "x": 93,
+        "y": 57
+      },
+      "height": 73,
+      "state": "abandoned",
+      "animation": null,
+      "variant": 4,
+      "category": "building",
+      "zone": "industrial",
+      "stage": 3,
+      "density": "high",
+      "license": "MIT",
+      "source": "original"
+    },
+    "building.i.3.1.recovering": {
+      "x": 986,
+      "y": 3162,
+      "w": 186,
+      "h": 104,
+      "footprint": {
+        "w": 3,
+        "h": 3
+      },
+      "anchor": {
+        "x": 93,
+        "y": 57
+      },
+      "height": 73,
+      "state": "recovering",
+      "animation": null,
+      "variant": 5,
+      "category": "building",
+      "zone": "industrial",
+      "stage": 3,
+      "density": "high",
+      "license": "MIT",
+      "source": "original"
+    },
     "facility.coal": {
-      "x": 1182,
-      "y": 1906,
+      "x": 1172,
+      "y": 3162,
+      "w": 244,
+      "h": 229,
+      "footprint": {
+        "w": 4,
+        "h": 4
+      },
+      "anchor": {
+        "x": 122,
+        "y": 167
+      },
+      "height": 66,
+      "state": "normal",
+      "animation": null,
+      "variant": 1,
+      "category": "facility",
+      "zone": null,
+      "stage": 0,
+      "density": null,
+      "license": "MIT",
+      "source": "original"
+    },
+    "facility.coal-2x2": {
+      "x": 1416,
+      "y": 3162,
       "w": 124,
       "h": 117,
       "footprint": {
@@ -10093,8 +10837,8 @@
       "source": "original"
     },
     "facility.wind": {
-      "x": 1306,
-      "y": 1906,
+      "x": 1540,
+      "y": 3162,
       "w": 64,
       "h": 73,
       "footprint": {
@@ -10117,8 +10861,8 @@
       "source": "original"
     },
     "facility.pump": {
-      "x": 1370,
-      "y": 1906,
+      "x": 1604,
+      "y": 3162,
       "w": 64,
       "h": 42,
       "footprint": {
@@ -10141,8 +10885,8 @@
       "source": "original"
     },
     "facility.tower": {
-      "x": 1434,
-      "y": 1906,
+      "x": 1668,
+      "y": 3162,
       "w": 64,
       "h": 63,
       "footprint": {
@@ -10165,8 +10909,8 @@
       "source": "original"
     },
     "facility.police": {
-      "x": 1498,
-      "y": 1906,
+      "x": 1732,
+      "y": 3162,
       "w": 64,
       "h": 56,
       "footprint": {
@@ -10189,8 +10933,8 @@
       "source": "original"
     },
     "facility.fire": {
-      "x": 1562,
-      "y": 1906,
+      "x": 1796,
+      "y": 3162,
       "w": 64,
       "h": 56,
       "footprint": {
@@ -10213,8 +10957,8 @@
       "source": "original"
     },
     "facility.school": {
-      "x": 1626,
-      "y": 1906,
+      "x": 1860,
+      "y": 3162,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -10237,8 +10981,8 @@
       "source": "original"
     },
     "facility.clinic": {
-      "x": 1690,
-      "y": 1906,
+      "x": 1924,
+      "y": 3162,
       "w": 64,
       "h": 50,
       "footprint": {
@@ -10261,8 +11005,8 @@
       "source": "original"
     },
     "facility.station": {
-      "x": 1754,
-      "y": 1906,
+      "x": 0,
+      "y": 3391,
       "w": 124,
       "h": 85,
       "footprint": {
@@ -10285,8 +11029,8 @@
       "source": "original"
     },
     "facility.hydro": {
-      "x": 1878,
-      "y": 1906,
+      "x": 124,
+      "y": 3391,
       "w": 64,
       "h": 57,
       "footprint": {
@@ -10309,8 +11053,8 @@
       "source": "original"
     },
     "facility.oil": {
-      "x": 0,
-      "y": 2023,
+      "x": 188,
+      "y": 3391,
       "w": 244,
       "h": 223,
       "footprint": {
@@ -10333,8 +11077,8 @@
       "source": "original"
     },
     "facility.gas": {
-      "x": 244,
-      "y": 2023,
+      "x": 432,
+      "y": 3391,
       "w": 244,
       "h": 199,
       "footprint": {
@@ -10357,8 +11101,8 @@
       "source": "original"
     },
     "facility.nuclear": {
-      "x": 488,
-      "y": 2023,
+      "x": 676,
+      "y": 3391,
       "w": 244,
       "h": 194,
       "footprint": {
@@ -10381,8 +11125,8 @@
       "source": "original"
     },
     "facility.solar": {
-      "x": 732,
-      "y": 2023,
+      "x": 920,
+      "y": 3391,
       "w": 244,
       "h": 134,
       "footprint": {
@@ -10405,8 +11149,8 @@
       "source": "original"
     },
     "facility.microwave": {
-      "x": 976,
-      "y": 2023,
+      "x": 1164,
+      "y": 3391,
       "w": 244,
       "h": 252,
       "footprint": {
@@ -10429,8 +11173,8 @@
       "source": "original"
     },
     "facility.fusion": {
-      "x": 1220,
-      "y": 2023,
+      "x": 1408,
+      "y": 3391,
       "w": 244,
       "h": 165,
       "footprint": {
@@ -10453,8 +11197,8 @@
       "source": "original"
     },
     "facility.treatment": {
-      "x": 1464,
-      "y": 2023,
+      "x": 1652,
+      "y": 3391,
       "w": 64,
       "h": 42,
       "footprint": {
@@ -10477,8 +11221,8 @@
       "source": "original"
     },
     "facility.desal": {
-      "x": 1528,
-      "y": 2023,
+      "x": 1716,
+      "y": 3391,
       "w": 124,
       "h": 84,
       "footprint": {
@@ -10501,8 +11245,8 @@
       "source": "original"
     },
     "facility.subway-station": {
-      "x": 1652,
-      "y": 2023,
+      "x": 1840,
+      "y": 3391,
       "w": 64,
       "h": 42,
       "footprint": {
@@ -10525,8 +11269,8 @@
       "source": "original"
     },
     "facility.bus": {
-      "x": 1716,
-      "y": 2023,
+      "x": 1904,
+      "y": 3391,
       "w": 64,
       "h": 45,
       "footprint": {
@@ -10549,8 +11293,8 @@
       "source": "original"
     },
     "catalog.city_hall": {
-      "x": 1780,
-      "y": 2023,
+      "x": 0,
+      "y": 3643,
       "w": 188,
       "h": 117,
       "footprint": {
@@ -10573,8 +11317,8 @@
       "source": "original"
     },
     "catalog.hospital": {
-      "x": 0,
-      "y": 2275,
+      "x": 188,
+      "y": 3643,
       "w": 188,
       "h": 123,
       "footprint": {
@@ -10597,8 +11341,8 @@
       "source": "original"
     },
     "catalog.museum": {
-      "x": 188,
-      "y": 2275,
+      "x": 376,
+      "y": 3643,
       "w": 188,
       "h": 109,
       "footprint": {
@@ -10621,8 +11365,8 @@
       "source": "original"
     },
     "catalog.stadium": {
-      "x": 376,
-      "y": 2275,
+      "x": 564,
+      "y": 3643,
       "w": 188,
       "h": 124,
       "footprint": {
@@ -10645,8 +11389,8 @@
       "source": "original"
     },
     "catalog.prison": {
-      "x": 564,
-      "y": 2275,
+      "x": 752,
+      "y": 3643,
       "w": 188,
       "h": 124,
       "footprint": {
@@ -10669,8 +11413,8 @@
       "source": "original"
     },
     "catalog.college": {
-      "x": 752,
-      "y": 2275,
+      "x": 940,
+      "y": 3643,
       "w": 188,
       "h": 120,
       "footprint": {
@@ -10693,8 +11437,8 @@
       "source": "original"
     },
     "catalog.zoo": {
-      "x": 940,
-      "y": 2275,
+      "x": 1128,
+      "y": 3643,
       "w": 188,
       "h": 103,
       "footprint": {
@@ -10717,8 +11461,8 @@
       "source": "original"
     },
     "catalog.statue": {
-      "x": 1128,
-      "y": 2275,
+      "x": 1316,
+      "y": 3643,
       "w": 66,
       "h": 55,
       "footprint": {
@@ -10741,8 +11485,8 @@
       "source": "original"
     },
     "catalog.park_big": {
-      "x": 1194,
-      "y": 2275,
+      "x": 1382,
+      "y": 3643,
       "w": 188,
       "h": 103,
       "footprint": {
@@ -10765,8 +11509,8 @@
       "source": "original"
     },
     "catalog.library": {
-      "x": 1382,
-      "y": 2275,
+      "x": 1570,
+      "y": 3643,
       "w": 126,
       "h": 80,
       "footprint": {
@@ -10789,8 +11533,8 @@
       "source": "original"
     },
     "catalog.church": {
-      "x": 1508,
-      "y": 2275,
+      "x": 1696,
+      "y": 3643,
       "w": 66,
       "h": 80,
       "footprint": {
@@ -10813,8 +11557,8 @@
       "source": "original"
     },
     "catalog.marina": {
-      "x": 1574,
-      "y": 2275,
+      "x": 1762,
+      "y": 3643,
       "w": 110,
       "h": 69,
       "footprint": {
@@ -10837,8 +11581,8 @@
       "source": "original"
     },
     "catalog.mayors_house": {
-      "x": 1684,
-      "y": 2275,
+      "x": 1872,
+      "y": 3643,
       "w": 126,
       "h": 80,
       "footprint": {
@@ -10861,8 +11605,8 @@
       "source": "original"
     },
     "catalog.water_treatment": {
-      "x": 1810,
-      "y": 2275,
+      "x": 0,
+      "y": 3767,
       "w": 66,
       "h": 48,
       "footprint": {
@@ -10885,8 +11629,8 @@
       "source": "original"
     },
     "catalog.desalination": {
-      "x": 1876,
-      "y": 2275,
+      "x": 66,
+      "y": 3767,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -10909,8 +11653,8 @@
       "source": "original"
     },
     "catalog.missile_silo": {
-      "x": 0,
-      "y": 2399,
+      "x": 192,
+      "y": 3767,
       "w": 66,
       "h": 44,
       "footprint": {
@@ -10933,8 +11677,8 @@
       "source": "original"
     },
     "catalog.runway": {
-      "x": 66,
-      "y": 2399,
+      "x": 258,
+      "y": 3767,
       "w": 66,
       "h": 36,
       "footprint": {
@@ -10957,8 +11701,8 @@
       "source": "original"
     },
     "catalog.tarmac": {
-      "x": 132,
-      "y": 2399,
+      "x": 324,
+      "y": 3767,
       "w": 66,
       "h": 36,
       "footprint": {
@@ -10981,8 +11725,8 @@
       "source": "original"
     },
     "catalog.pier": {
-      "x": 198,
-      "y": 2399,
+      "x": 390,
+      "y": 3767,
       "w": 52,
       "h": 47,
       "footprint": {
@@ -11005,8 +11749,8 @@
       "source": "original"
     },
     "catalog.crane": {
-      "x": 250,
-      "y": 2399,
+      "x": 442,
+      "y": 3767,
       "w": 32,
       "h": 61,
       "footprint": {
@@ -11029,8 +11773,8 @@
       "source": "original"
     },
     "catalog.control_tower": {
-      "x": 282,
-      "y": 2399,
+      "x": 474,
+      "y": 3767,
       "w": 126,
       "h": 100,
       "footprint": {
@@ -11053,8 +11797,8 @@
       "source": "original"
     },
     "catalog.bus_depot": {
-      "x": 408,
-      "y": 2399,
+      "x": 600,
+      "y": 3767,
       "w": 66,
       "h": 51,
       "footprint": {
@@ -11077,8 +11821,8 @@
       "source": "original"
     },
     "catalog.subway_station": {
-      "x": 474,
-      "y": 2399,
+      "x": 666,
+      "y": 3767,
       "w": 66,
       "h": 50,
       "footprint": {
@@ -11101,8 +11845,8 @@
       "source": "original"
     },
     "catalog.rubble": {
-      "x": 540,
-      "y": 2399,
+      "x": 732,
+      "y": 3767,
       "w": 66,
       "h": 36,
       "footprint": {
@@ -11125,8 +11869,8 @@
       "source": "original"
     },
     "catalog.radioactive": {
-      "x": 606,
-      "y": 2399,
+      "x": 798,
+      "y": 3767,
       "w": 66,
       "h": 36,
       "footprint": {
@@ -11149,8 +11893,8 @@
       "source": "original"
     },
     "catalog.construction": {
-      "x": 672,
-      "y": 2399,
+      "x": 864,
+      "y": 3767,
       "w": 66,
       "h": 44,
       "footprint": {
@@ -11173,8 +11917,8 @@
       "source": "original"
     },
     "catalog.abandoned": {
-      "x": 738,
-      "y": 2399,
+      "x": 930,
+      "y": 3767,
       "w": 66,
       "h": 50,
       "footprint": {
@@ -11197,8 +11941,8 @@
       "source": "original"
     },
     "catalog.arcology": {
-      "x": 804,
-      "y": 2399,
+      "x": 996,
+      "y": 3767,
       "w": 250,
       "h": 195,
       "footprint": {
@@ -11221,8 +11965,8 @@
       "source": "original"
     },
     "catalog.dome": {
-      "x": 1054,
-      "y": 2399,
+      "x": 1246,
+      "y": 3767,
       "w": 250,
       "h": 146,
       "footprint": {
@@ -11245,8 +11989,8 @@
       "source": "original"
     },
     "catalog.infrastructure": {
-      "x": 1304,
-      "y": 2399,
+      "x": 1496,
+      "y": 3767,
       "w": 66,
       "h": 54,
       "footprint": {
@@ -11269,8 +12013,8 @@
       "source": "original"
     },
     "catalog.service": {
-      "x": 1370,
-      "y": 2399,
+      "x": 1562,
+      "y": 3767,
       "w": 126,
       "h": 86,
       "footprint": {
@@ -11293,8 +12037,8 @@
       "source": "original"
     },
     "catalog.power_plant": {
-      "x": 1496,
-      "y": 2399,
+      "x": 1688,
+      "y": 3767,
       "w": 250,
       "h": 157,
       "footprint": {
@@ -11317,17 +12061,17 @@
       "source": "original"
     },
     "agent.car.1": {
-      "x": 1746,
-      "y": 2399,
+      "x": 1938,
+      "y": 3767,
       "w": 16,
-      "h": 18,
+      "h": 13,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 8,
-        "y": 14
+        "y": 9
       },
       "height": 0,
       "state": "normal",
@@ -11341,17 +12085,17 @@
       "source": "original"
     },
     "agent.car.2": {
-      "x": 1762,
-      "y": 2399,
+      "x": 1954,
+      "y": 3767,
       "w": 16,
-      "h": 18,
+      "h": 13,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 8,
-        "y": 14
+        "y": 9
       },
       "height": 0,
       "state": "normal",
@@ -11365,17 +12109,17 @@
       "source": "original"
     },
     "agent.car.3": {
-      "x": 1778,
-      "y": 2399,
+      "x": 1970,
+      "y": 3767,
       "w": 16,
-      "h": 18,
+      "h": 13,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 8,
-        "y": 14
+        "y": 9
       },
       "height": 0,
       "state": "normal",
@@ -11389,17 +12133,17 @@
       "source": "original"
     },
     "agent.car.4": {
-      "x": 1794,
-      "y": 2399,
+      "x": 1986,
+      "y": 3767,
       "w": 16,
-      "h": 18,
+      "h": 13,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 8,
-        "y": 14
+        "y": 9
       },
       "height": 0,
       "state": "normal",
@@ -11413,17 +12157,17 @@
       "source": "original"
     },
     "agent.pedestrian.1": {
-      "x": 1810,
-      "y": 2399,
-      "w": 6,
-      "h": 8,
+      "x": 2002,
+      "y": 3767,
+      "w": 10,
+      "h": 11,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
-        "x": 3,
-        "y": 7
+        "x": 5,
+        "y": 8
       },
       "height": 0,
       "state": "normal",
@@ -11437,17 +12181,17 @@
       "source": "original"
     },
     "agent.pedestrian.2": {
-      "x": 1816,
-      "y": 2399,
-      "w": 6,
-      "h": 8,
+      "x": 2012,
+      "y": 3767,
+      "w": 10,
+      "h": 11,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
-        "x": 3,
-        "y": 7
+        "x": 5,
+        "y": 8
       },
       "height": 0,
       "state": "normal",
@@ -11461,17 +12205,17 @@
       "source": "original"
     },
     "agent.train.1": {
-      "x": 1822,
-      "y": 2399,
-      "w": 44,
-      "h": 36,
+      "x": 0,
+      "y": 3962,
+      "w": 38,
+      "h": 28,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
-        "x": 22,
-        "y": 27
+        "x": 19,
+        "y": 22
       },
       "height": 0,
       "state": "normal",
@@ -11485,17 +12229,17 @@
       "source": "original"
     },
     "agent.train.2": {
-      "x": 1866,
-      "y": 2399,
-      "w": 44,
-      "h": 36,
+      "x": 38,
+      "y": 3962,
+      "w": 38,
+      "h": 28,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
-        "x": 22,
-        "y": 27
+        "x": 19,
+        "y": 22
       },
       "height": 0,
       "state": "normal",
@@ -11509,17 +12253,17 @@
       "source": "original"
     },
     "agent.service.police": {
-      "x": 1910,
-      "y": 2399,
-      "w": 32,
-      "h": 24,
+      "x": 76,
+      "y": 3962,
+      "w": 16,
+      "h": 13,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
-        "x": 16,
-        "y": 18
+        "x": 8,
+        "y": 9
       },
       "height": 0,
       "state": "normal",
@@ -11533,17 +12277,17 @@
       "source": "original"
     },
     "agent.service.fire": {
-      "x": 1942,
-      "y": 2399,
-      "w": 32,
-      "h": 24,
+      "x": 92,
+      "y": 3962,
+      "w": 22,
+      "h": 18,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
-        "x": 16,
-        "y": 18
+        "x": 11,
+        "y": 12
       },
       "height": 0,
       "state": "normal",
@@ -11557,17 +12301,17 @@
       "source": "original"
     },
     "agent.service.medical": {
-      "x": 1974,
-      "y": 2399,
-      "w": 32,
-      "h": 24,
+      "x": 114,
+      "y": 3962,
+      "w": 20,
+      "h": 16,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
-        "x": 16,
-        "y": 18
+        "x": 10,
+        "y": 11
       },
       "height": 0,
       "state": "normal",
@@ -11581,8 +12325,8 @@
       "source": "original"
     },
     "agent.smoke.1": {
-      "x": 2006,
-      "y": 2399,
+      "x": 134,
+      "y": 3962,
       "w": 18,
       "h": 19,
       "footprint": {
@@ -11605,8 +12349,8 @@
       "source": "original"
     },
     "agent.smoke.2": {
-      "x": 2024,
-      "y": 2399,
+      "x": 152,
+      "y": 3962,
       "w": 22,
       "h": 23,
       "footprint": {
@@ -11629,8 +12373,8 @@
       "source": "original"
     },
     "agent.smoke.3": {
-      "x": 0,
-      "y": 2594,
+      "x": 174,
+      "y": 3962,
       "w": 26,
       "h": 27,
       "footprint": {
@@ -11653,8 +12397,8 @@
       "source": "original"
     },
     "building.r.1.1.night": {
-      "x": 26,
-      "y": 2594,
+      "x": 200,
+      "y": 3962,
       "w": 66,
       "h": 40,
       "footprint": {
@@ -11679,8 +12423,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.2.night": {
-      "x": 92,
-      "y": 2594,
+      "x": 266,
+      "y": 3962,
       "w": 66,
       "h": 41,
       "footprint": {
@@ -11705,8 +12449,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.3.night": {
-      "x": 158,
-      "y": 2594,
+      "x": 332,
+      "y": 3962,
       "w": 66,
       "h": 41,
       "footprint": {
@@ -11731,8 +12475,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.4.night": {
-      "x": 224,
-      "y": 2594,
+      "x": 398,
+      "y": 3962,
       "w": 66,
       "h": 40,
       "footprint": {
@@ -11757,8 +12501,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.5.night": {
-      "x": 290,
-      "y": 2594,
+      "x": 464,
+      "y": 3962,
       "w": 66,
       "h": 41,
       "footprint": {
@@ -11783,8 +12527,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.6.night": {
-      "x": 356,
-      "y": 2594,
+      "x": 530,
+      "y": 3962,
       "w": 66,
       "h": 41,
       "footprint": {
@@ -11809,8 +12553,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.7.night": {
-      "x": 422,
-      "y": 2594,
+      "x": 596,
+      "y": 3962,
       "w": 66,
       "h": 40,
       "footprint": {
@@ -11835,8 +12579,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.8.night": {
-      "x": 488,
-      "y": 2594,
+      "x": 662,
+      "y": 3962,
       "w": 66,
       "h": 41,
       "footprint": {
@@ -11861,8 +12605,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.9.night": {
-      "x": 554,
-      "y": 2594,
+      "x": 728,
+      "y": 3962,
       "w": 66,
       "h": 41,
       "footprint": {
@@ -11887,8 +12631,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.10.night": {
-      "x": 620,
-      "y": 2594,
+      "x": 794,
+      "y": 3962,
       "w": 66,
       "h": 40,
       "footprint": {
@@ -11913,8 +12657,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.11.night": {
-      "x": 686,
-      "y": 2594,
+      "x": 860,
+      "y": 3962,
       "w": 66,
       "h": 41,
       "footprint": {
@@ -11939,8 +12683,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.12.night": {
-      "x": 752,
-      "y": 2594,
+      "x": 926,
+      "y": 3962,
       "w": 66,
       "h": 41,
       "footprint": {
@@ -11965,8 +12709,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.13.night": {
-      "x": 818,
-      "y": 2594,
+      "x": 992,
+      "y": 3962,
       "w": 66,
       "h": 40,
       "footprint": {
@@ -11991,8 +12735,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.14.night": {
-      "x": 884,
-      "y": 2594,
+      "x": 1058,
+      "y": 3962,
       "w": 66,
       "h": 41,
       "footprint": {
@@ -12017,8 +12761,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.15.night": {
-      "x": 950,
-      "y": 2594,
+      "x": 1124,
+      "y": 3962,
       "w": 66,
       "h": 41,
       "footprint": {
@@ -12043,8 +12787,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.16.night": {
-      "x": 1016,
-      "y": 2594,
+      "x": 1190,
+      "y": 3962,
       "w": 66,
       "h": 40,
       "footprint": {
@@ -12069,8 +12813,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.17.night": {
-      "x": 1082,
-      "y": 2594,
+      "x": 1256,
+      "y": 3962,
       "w": 66,
       "h": 41,
       "footprint": {
@@ -12095,8 +12839,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.18.night": {
-      "x": 1148,
-      "y": 2594,
+      "x": 1322,
+      "y": 3962,
       "w": 66,
       "h": 41,
       "footprint": {
@@ -12121,8 +12865,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.19.night": {
-      "x": 1214,
-      "y": 2594,
+      "x": 1388,
+      "y": 3962,
       "w": 66,
       "h": 40,
       "footprint": {
@@ -12147,8 +12891,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.20.night": {
-      "x": 1280,
-      "y": 2594,
+      "x": 1454,
+      "y": 3962,
       "w": 66,
       "h": 41,
       "footprint": {
@@ -12173,8 +12917,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.21.night": {
-      "x": 1346,
-      "y": 2594,
+      "x": 1520,
+      "y": 3962,
       "w": 66,
       "h": 41,
       "footprint": {
@@ -12199,8 +12943,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.22.night": {
-      "x": 1412,
-      "y": 2594,
+      "x": 1586,
+      "y": 3962,
       "w": 66,
       "h": 40,
       "footprint": {
@@ -12225,8 +12969,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.23.night": {
-      "x": 1478,
-      "y": 2594,
+      "x": 1652,
+      "y": 3962,
       "w": 66,
       "h": 41,
       "footprint": {
@@ -12251,8 +12995,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.1.24.night": {
-      "x": 1544,
-      "y": 2594,
+      "x": 1718,
+      "y": 3962,
       "w": 66,
       "h": 41,
       "footprint": {
@@ -12277,8 +13021,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.1.night": {
-      "x": 1610,
-      "y": 2594,
+      "x": 1784,
+      "y": 3962,
       "w": 128,
       "h": 81,
       "footprint": {
@@ -12303,8 +13047,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.2.night": {
-      "x": 1738,
-      "y": 2594,
+      "x": 1912,
+      "y": 3962,
       "w": 128,
       "h": 86,
       "footprint": {
@@ -12329,8 +13073,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.3.night": {
-      "x": 1866,
-      "y": 2594,
+      "x": 0,
+      "y": 4048,
       "w": 128,
       "h": 84,
       "footprint": {
@@ -12355,8 +13099,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.4.night": {
-      "x": 0,
-      "y": 2680,
+      "x": 128,
+      "y": 4048,
       "w": 128,
       "h": 89,
       "footprint": {
@@ -12381,8 +13125,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.5.night": {
-      "x": 128,
-      "y": 2680,
+      "x": 256,
+      "y": 4048,
       "w": 128,
       "h": 94,
       "footprint": {
@@ -12407,8 +13151,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.6.night": {
-      "x": 256,
-      "y": 2680,
+      "x": 384,
+      "y": 4048,
       "w": 128,
       "h": 92,
       "footprint": {
@@ -12433,8 +13177,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.7.night": {
-      "x": 384,
-      "y": 2680,
+      "x": 512,
+      "y": 4048,
       "w": 128,
       "h": 97,
       "footprint": {
@@ -12459,8 +13203,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.8.night": {
-      "x": 512,
-      "y": 2680,
+      "x": 640,
+      "y": 4048,
       "w": 128,
       "h": 102,
       "footprint": {
@@ -12485,8 +13229,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.9.night": {
-      "x": 640,
-      "y": 2680,
+      "x": 768,
+      "y": 4048,
       "w": 128,
       "h": 100,
       "footprint": {
@@ -12511,8 +13255,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.10.night": {
-      "x": 768,
-      "y": 2680,
+      "x": 896,
+      "y": 4048,
       "w": 128,
       "h": 81,
       "footprint": {
@@ -12537,8 +13281,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.11.night": {
-      "x": 896,
-      "y": 2680,
+      "x": 1024,
+      "y": 4048,
       "w": 128,
       "h": 86,
       "footprint": {
@@ -12563,8 +13307,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.12.night": {
-      "x": 1024,
-      "y": 2680,
+      "x": 1152,
+      "y": 4048,
       "w": 128,
       "h": 84,
       "footprint": {
@@ -12589,8 +13333,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.13.night": {
-      "x": 1152,
-      "y": 2680,
+      "x": 1280,
+      "y": 4048,
       "w": 128,
       "h": 89,
       "footprint": {
@@ -12615,8 +13359,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.14.night": {
-      "x": 1280,
-      "y": 2680,
+      "x": 1408,
+      "y": 4048,
       "w": 128,
       "h": 94,
       "footprint": {
@@ -12641,8 +13385,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.15.night": {
-      "x": 1408,
-      "y": 2680,
+      "x": 1536,
+      "y": 4048,
       "w": 128,
       "h": 92,
       "footprint": {
@@ -12667,8 +13411,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.16.night": {
-      "x": 1536,
-      "y": 2680,
+      "x": 1664,
+      "y": 4048,
       "w": 128,
       "h": 97,
       "footprint": {
@@ -12693,17 +13437,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.17.night": {
-      "x": 1664,
-      "y": 2680,
+      "x": 1792,
+      "y": 4048,
       "w": 128,
-      "h": 102,
+      "h": 116,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 64,
-        "y": 69
+        "y": 83
       },
       "height": 44,
       "state": "night",
@@ -12719,17 +13463,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.18.night": {
-      "x": 1792,
-      "y": 2680,
+      "x": 1920,
+      "y": 4048,
       "w": 128,
-      "h": 100,
+      "h": 124,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 64,
-        "y": 67
+        "y": 91
       },
       "height": 44,
       "state": "night",
@@ -12745,17 +13489,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.19.night": {
-      "x": 1920,
-      "y": 2680,
+      "x": 0,
+      "y": 4172,
       "w": 128,
-      "h": 81,
+      "h": 140,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 64,
-        "y": 48
+        "y": 107
       },
       "height": 44,
       "state": "night",
@@ -12771,17 +13515,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.20.night": {
-      "x": 0,
-      "y": 2782,
+      "x": 128,
+      "y": 4172,
       "w": 128,
-      "h": 86,
+      "h": 148,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 64,
-        "y": 53
+        "y": 115
       },
       "height": 44,
       "state": "night",
@@ -12797,17 +13541,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.21.night": {
-      "x": 128,
-      "y": 2782,
+      "x": 256,
+      "y": 4172,
       "w": 128,
-      "h": 84,
+      "h": 163,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 64,
-        "y": 51
+        "y": 130
       },
       "height": 44,
       "state": "night",
@@ -12823,17 +13567,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.22.night": {
-      "x": 256,
-      "y": 2782,
+      "x": 384,
+      "y": 4172,
       "w": 128,
-      "h": 89,
+      "h": 171,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 64,
-        "y": 56
+        "y": 138
       },
       "height": 44,
       "state": "night",
@@ -12849,17 +13593,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.23.night": {
-      "x": 384,
-      "y": 2782,
+      "x": 512,
+      "y": 4172,
       "w": 128,
-      "h": 94,
+      "h": 179,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 64,
-        "y": 61
+        "y": 146
       },
       "height": 44,
       "state": "night",
@@ -12875,17 +13619,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.2.24.night": {
-      "x": 512,
-      "y": 2782,
+      "x": 640,
+      "y": 4172,
       "w": 128,
-      "h": 92,
+      "h": 195,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 64,
-        "y": 59
+        "y": 162
       },
       "height": 44,
       "state": "night",
@@ -12901,8 +13645,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.1.night": {
-      "x": 640,
-      "y": 2782,
+      "x": 768,
+      "y": 4172,
       "w": 190,
       "h": 127,
       "footprint": {
@@ -12927,8 +13671,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.2.night": {
-      "x": 830,
-      "y": 2782,
+      "x": 958,
+      "y": 4172,
       "w": 190,
       "h": 135,
       "footprint": {
@@ -12953,8 +13697,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.3.night": {
-      "x": 1020,
-      "y": 2782,
+      "x": 1148,
+      "y": 4172,
       "w": 190,
       "h": 135,
       "footprint": {
@@ -12979,8 +13723,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.4.night": {
-      "x": 1210,
-      "y": 2782,
+      "x": 1338,
+      "y": 4172,
       "w": 190,
       "h": 127,
       "footprint": {
@@ -13005,8 +13749,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.5.night": {
-      "x": 1400,
-      "y": 2782,
+      "x": 1528,
+      "y": 4172,
       "w": 190,
       "h": 127,
       "footprint": {
@@ -13031,8 +13775,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.6.night": {
-      "x": 1590,
-      "y": 2782,
+      "x": 1718,
+      "y": 4172,
       "w": 190,
       "h": 135,
       "footprint": {
@@ -13057,8 +13801,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.7.night": {
-      "x": 1780,
-      "y": 2782,
+      "x": 0,
+      "y": 4367,
       "w": 190,
       "h": 135,
       "footprint": {
@@ -13083,8 +13827,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.8.night": {
-      "x": 0,
-      "y": 2917,
+      "x": 190,
+      "y": 4367,
       "w": 190,
       "h": 143,
       "footprint": {
@@ -13109,8 +13853,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.9.night": {
-      "x": 190,
-      "y": 2917,
+      "x": 380,
+      "y": 4367,
       "w": 190,
       "h": 143,
       "footprint": {
@@ -13135,8 +13879,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.10.night": {
-      "x": 380,
-      "y": 2917,
+      "x": 570,
+      "y": 4367,
       "w": 190,
       "h": 135,
       "footprint": {
@@ -13161,8 +13905,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.11.night": {
-      "x": 570,
-      "y": 2917,
+      "x": 760,
+      "y": 4367,
       "w": 190,
       "h": 135,
       "footprint": {
@@ -13187,8 +13931,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.12.night": {
-      "x": 760,
-      "y": 2917,
+      "x": 950,
+      "y": 4367,
       "w": 190,
       "h": 143,
       "footprint": {
@@ -13213,8 +13957,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.13.night": {
-      "x": 950,
-      "y": 2917,
+      "x": 1140,
+      "y": 4367,
       "w": 190,
       "h": 143,
       "footprint": {
@@ -13239,8 +13983,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.14.night": {
-      "x": 1140,
-      "y": 2917,
+      "x": 1330,
+      "y": 4367,
       "w": 190,
       "h": 151,
       "footprint": {
@@ -13265,8 +14009,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.15.night": {
-      "x": 1330,
-      "y": 2917,
+      "x": 1520,
+      "y": 4367,
       "w": 190,
       "h": 150,
       "footprint": {
@@ -13291,8 +14035,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.16.night": {
-      "x": 1520,
-      "y": 2917,
+      "x": 1710,
+      "y": 4367,
       "w": 190,
       "h": 143,
       "footprint": {
@@ -13317,17 +14061,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.17.night": {
-      "x": 1710,
-      "y": 2917,
+      "x": 0,
+      "y": 4518,
       "w": 190,
-      "h": 143,
+      "h": 182,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 95,
-        "y": 95
+        "y": 134
       },
       "height": 76,
       "state": "night",
@@ -13343,17 +14087,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.18.night": {
-      "x": 0,
-      "y": 3068,
+      "x": 190,
+      "y": 4518,
       "w": 190,
-      "h": 151,
+      "h": 198,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 95,
-        "y": 103
+        "y": 150
       },
       "height": 76,
       "state": "night",
@@ -13369,17 +14113,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.19.night": {
-      "x": 190,
-      "y": 3068,
+      "x": 380,
+      "y": 4518,
       "w": 190,
-      "h": 127,
+      "h": 213,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 95,
-        "y": 79
+        "y": 165
       },
       "height": 76,
       "state": "night",
@@ -13395,17 +14139,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.20.night": {
-      "x": 380,
-      "y": 3068,
+      "x": 570,
+      "y": 4518,
       "w": 190,
-      "h": 135,
+      "h": 221,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 95,
-        "y": 87
+        "y": 173
       },
       "height": 76,
       "state": "night",
@@ -13421,17 +14165,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.21.night": {
-      "x": 570,
-      "y": 3068,
+      "x": 760,
+      "y": 4518,
       "w": 190,
-      "h": 135,
+      "h": 237,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 95,
-        "y": 87
+        "y": 189
       },
       "height": 76,
       "state": "night",
@@ -13447,17 +14191,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.22.night": {
-      "x": 760,
-      "y": 3068,
+      "x": 950,
+      "y": 4518,
       "w": 190,
-      "h": 127,
+      "h": 253,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 95,
-        "y": 79
+        "y": 205
       },
       "height": 76,
       "state": "night",
@@ -13473,17 +14217,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.23.night": {
-      "x": 950,
-      "y": 3068,
+      "x": 1140,
+      "y": 4518,
       "w": 190,
-      "h": 127,
+      "h": 268,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 95,
-        "y": 79
+        "y": 220
       },
       "height": 76,
       "state": "night",
@@ -13499,17 +14243,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.r.3.24.night": {
-      "x": 1140,
-      "y": 3068,
+      "x": 1330,
+      "y": 4518,
       "w": 190,
-      "h": 135,
+      "h": 284,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 95,
-        "y": 87
+        "y": 236
       },
       "height": 76,
       "state": "night",
@@ -13525,17 +14269,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.1.night": {
-      "x": 1330,
-      "y": 3068,
+      "x": 1520,
+      "y": 4518,
       "w": 66,
-      "h": 49,
+      "h": 44,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 33,
-        "y": 31
+        "y": 26
       },
       "height": 20,
       "state": "night",
@@ -13551,8 +14295,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.2.night": {
-      "x": 1396,
-      "y": 3068,
+      "x": 1586,
+      "y": 4518,
       "w": 66,
       "h": 49,
       "footprint": {
@@ -13577,8 +14321,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.3.night": {
-      "x": 1462,
-      "y": 3068,
+      "x": 1652,
+      "y": 4518,
       "w": 66,
       "h": 44,
       "footprint": {
@@ -13603,8 +14347,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.4.night": {
-      "x": 1528,
-      "y": 3068,
+      "x": 1718,
+      "y": 4518,
       "w": 66,
       "h": 44,
       "footprint": {
@@ -13629,8 +14373,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.5.night": {
-      "x": 1594,
-      "y": 3068,
+      "x": 1784,
+      "y": 4518,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -13655,8 +14399,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.6.night": {
-      "x": 1660,
-      "y": 3068,
+      "x": 1850,
+      "y": 4518,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -13681,8 +14425,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.7.night": {
-      "x": 1726,
-      "y": 3068,
+      "x": 1916,
+      "y": 4518,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -13707,8 +14451,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.8.night": {
-      "x": 1792,
-      "y": 3068,
+      "x": 1982,
+      "y": 4518,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -13733,17 +14477,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.9.night": {
-      "x": 1858,
-      "y": 3068,
+      "x": 0,
+      "y": 4802,
       "w": 66,
-      "h": 49,
+      "h": 44,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 33,
-        "y": 31
+        "y": 26
       },
       "height": 20,
       "state": "night",
@@ -13759,8 +14503,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.10.night": {
-      "x": 1924,
-      "y": 3068,
+      "x": 66,
+      "y": 4802,
       "w": 66,
       "h": 49,
       "footprint": {
@@ -13785,8 +14529,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.11.night": {
-      "x": 0,
-      "y": 3219,
+      "x": 132,
+      "y": 4802,
       "w": 66,
       "h": 44,
       "footprint": {
@@ -13811,8 +14555,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.12.night": {
-      "x": 66,
-      "y": 3219,
+      "x": 198,
+      "y": 4802,
       "w": 66,
       "h": 44,
       "footprint": {
@@ -13837,8 +14581,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.13.night": {
-      "x": 132,
-      "y": 3219,
+      "x": 264,
+      "y": 4802,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -13863,8 +14607,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.14.night": {
-      "x": 198,
-      "y": 3219,
+      "x": 330,
+      "y": 4802,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -13889,8 +14633,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.15.night": {
-      "x": 264,
-      "y": 3219,
+      "x": 396,
+      "y": 4802,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -13915,8 +14659,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.16.night": {
-      "x": 330,
-      "y": 3219,
+      "x": 462,
+      "y": 4802,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -13941,17 +14685,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.17.night": {
-      "x": 396,
-      "y": 3219,
+      "x": 528,
+      "y": 4802,
       "w": 66,
-      "h": 49,
+      "h": 44,
       "footprint": {
         "w": 1,
         "h": 1
       },
       "anchor": {
         "x": 33,
-        "y": 31
+        "y": 26
       },
       "height": 20,
       "state": "night",
@@ -13967,8 +14711,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.18.night": {
-      "x": 462,
-      "y": 3219,
+      "x": 594,
+      "y": 4802,
       "w": 66,
       "h": 49,
       "footprint": {
@@ -13993,8 +14737,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.19.night": {
-      "x": 528,
-      "y": 3219,
+      "x": 660,
+      "y": 4802,
       "w": 66,
       "h": 44,
       "footprint": {
@@ -14019,8 +14763,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.20.night": {
-      "x": 594,
-      "y": 3219,
+      "x": 726,
+      "y": 4802,
       "w": 66,
       "h": 44,
       "footprint": {
@@ -14045,8 +14789,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.21.night": {
-      "x": 660,
-      "y": 3219,
+      "x": 792,
+      "y": 4802,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -14071,8 +14815,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.22.night": {
-      "x": 726,
-      "y": 3219,
+      "x": 858,
+      "y": 4802,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -14097,8 +14841,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.23.night": {
-      "x": 792,
-      "y": 3219,
+      "x": 924,
+      "y": 4802,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -14123,8 +14867,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.1.24.night": {
-      "x": 858,
-      "y": 3219,
+      "x": 990,
+      "y": 4802,
       "w": 66,
       "h": 53,
       "footprint": {
@@ -14149,8 +14893,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.1.night": {
-      "x": 924,
-      "y": 3219,
+      "x": 1056,
+      "y": 4802,
       "w": 130,
       "h": 89,
       "footprint": {
@@ -14175,8 +14919,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.2.night": {
-      "x": 1054,
-      "y": 3219,
+      "x": 1186,
+      "y": 4802,
       "w": 130,
       "h": 90,
       "footprint": {
@@ -14201,8 +14945,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.3.night": {
-      "x": 1184,
-      "y": 3219,
+      "x": 1316,
+      "y": 4802,
       "w": 130,
       "h": 90,
       "footprint": {
@@ -14227,8 +14971,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.4.night": {
-      "x": 1314,
-      "y": 3219,
+      "x": 1446,
+      "y": 4802,
       "w": 130,
       "h": 98,
       "footprint": {
@@ -14253,8 +14997,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.5.night": {
-      "x": 1444,
-      "y": 3219,
+      "x": 1576,
+      "y": 4802,
       "w": 130,
       "h": 98,
       "footprint": {
@@ -14279,8 +15023,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.6.night": {
-      "x": 1574,
-      "y": 3219,
+      "x": 1706,
+      "y": 4802,
       "w": 130,
       "h": 98,
       "footprint": {
@@ -14305,8 +15049,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.7.night": {
-      "x": 1704,
-      "y": 3219,
+      "x": 1836,
+      "y": 4802,
       "w": 130,
       "h": 106,
       "footprint": {
@@ -14331,8 +15075,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.8.night": {
-      "x": 1834,
-      "y": 3219,
+      "x": 0,
+      "y": 4908,
       "w": 130,
       "h": 107,
       "footprint": {
@@ -14357,8 +15101,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.9.night": {
-      "x": 0,
-      "y": 3326,
+      "x": 130,
+      "y": 4908,
       "w": 130,
       "h": 107,
       "footprint": {
@@ -14383,8 +15127,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.10.night": {
-      "x": 130,
-      "y": 3326,
+      "x": 260,
+      "y": 4908,
       "w": 130,
       "h": 89,
       "footprint": {
@@ -14409,8 +15153,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.11.night": {
-      "x": 260,
-      "y": 3326,
+      "x": 390,
+      "y": 4908,
       "w": 130,
       "h": 90,
       "footprint": {
@@ -14435,8 +15179,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.12.night": {
-      "x": 390,
-      "y": 3326,
+      "x": 520,
+      "y": 4908,
       "w": 130,
       "h": 90,
       "footprint": {
@@ -14461,8 +15205,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.13.night": {
-      "x": 520,
-      "y": 3326,
+      "x": 650,
+      "y": 4908,
       "w": 130,
       "h": 98,
       "footprint": {
@@ -14487,8 +15231,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.14.night": {
-      "x": 650,
-      "y": 3326,
+      "x": 780,
+      "y": 4908,
       "w": 130,
       "h": 98,
       "footprint": {
@@ -14513,8 +15257,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.15.night": {
-      "x": 780,
-      "y": 3326,
+      "x": 910,
+      "y": 4908,
       "w": 130,
       "h": 98,
       "footprint": {
@@ -14539,8 +15283,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.16.night": {
-      "x": 910,
-      "y": 3326,
+      "x": 1040,
+      "y": 4908,
       "w": 130,
       "h": 106,
       "footprint": {
@@ -14565,17 +15309,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.17.night": {
-      "x": 1040,
-      "y": 3326,
+      "x": 1170,
+      "y": 4908,
       "w": 130,
-      "h": 107,
+      "h": 144,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 65,
-        "y": 74
+        "y": 111
       },
       "height": 44,
       "state": "night",
@@ -14591,17 +15335,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.18.night": {
-      "x": 1170,
-      "y": 3326,
+      "x": 1300,
+      "y": 4908,
       "w": 130,
-      "h": 107,
+      "h": 162,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 65,
-        "y": 74
+        "y": 129
       },
       "height": 44,
       "state": "night",
@@ -14617,17 +15361,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.19.night": {
-      "x": 1300,
-      "y": 3326,
+      "x": 1430,
+      "y": 4908,
       "w": 130,
-      "h": 89,
+      "h": 180,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 65,
-        "y": 56
+        "y": 147
       },
       "height": 44,
       "state": "night",
@@ -14643,17 +15387,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.20.night": {
-      "x": 1430,
-      "y": 3326,
+      "x": 1560,
+      "y": 4908,
       "w": 130,
-      "h": 90,
+      "h": 215,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 65,
-        "y": 57
+        "y": 182
       },
       "height": 44,
       "state": "night",
@@ -14669,17 +15413,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.21.night": {
-      "x": 1560,
-      "y": 3326,
+      "x": 1690,
+      "y": 4908,
       "w": 130,
-      "h": 90,
+      "h": 246,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 65,
-        "y": 57
+        "y": 213
       },
       "height": 44,
       "state": "night",
@@ -14695,17 +15439,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.22.night": {
-      "x": 1690,
-      "y": 3326,
+      "x": 1820,
+      "y": 4908,
       "w": 130,
-      "h": 98,
+      "h": 250,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 65,
-        "y": 65
+        "y": 217
       },
       "height": 44,
       "state": "night",
@@ -14721,17 +15465,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.23.night": {
-      "x": 1820,
-      "y": 3326,
+      "x": 0,
+      "y": 5158,
       "w": 130,
-      "h": 98,
+      "h": 266,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 65,
-        "y": 65
+        "y": 233
       },
       "height": 44,
       "state": "night",
@@ -14747,17 +15491,17 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.2.24.night": {
-      "x": 0,
-      "y": 3433,
+      "x": 130,
+      "y": 5158,
       "w": 130,
-      "h": 98,
+      "h": 284,
       "footprint": {
         "w": 2,
         "h": 2
       },
       "anchor": {
         "x": 65,
-        "y": 65
+        "y": 251
       },
       "height": 44,
       "state": "night",
@@ -14773,8 +15517,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.3.1.night": {
-      "x": 130,
-      "y": 3433,
+      "x": 260,
+      "y": 5158,
       "w": 192,
       "h": 135,
       "footprint": {
@@ -14799,8 +15543,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.3.2.night": {
-      "x": 322,
-      "y": 3433,
+      "x": 452,
+      "y": 5158,
       "w": 192,
       "h": 145,
       "footprint": {
@@ -14825,8 +15569,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.3.3.night": {
-      "x": 514,
-      "y": 3433,
+      "x": 644,
+      "y": 5158,
       "w": 192,
       "h": 135,
       "footprint": {
@@ -14851,8 +15595,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.3.4.night": {
-      "x": 706,
-      "y": 3433,
+      "x": 836,
+      "y": 5158,
       "w": 192,
       "h": 127,
       "footprint": {
@@ -14877,8 +15621,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.3.5.night": {
-      "x": 898,
-      "y": 3433,
+      "x": 1028,
+      "y": 5158,
       "w": 192,
       "h": 135,
       "footprint": {
@@ -14903,8 +15647,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.3.6.night": {
-      "x": 1090,
-      "y": 3433,
+      "x": 1220,
+      "y": 5158,
       "w": 192,
       "h": 145,
       "footprint": {
@@ -14929,8 +15673,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.3.7.night": {
-      "x": 1282,
-      "y": 3433,
+      "x": 1412,
+      "y": 5158,
       "w": 192,
       "h": 144,
       "footprint": {
@@ -14955,8 +15699,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.3.8.night": {
-      "x": 1474,
-      "y": 3433,
+      "x": 1604,
+      "y": 5158,
       "w": 192,
       "h": 154,
       "footprint": {
@@ -14981,8 +15725,8 @@
       "lighting": "baked-emission-mask"
     },
     "building.c.3.9.night": {
-      "x": 1666,
-      "y": 3433,
+      "x": 1796,
+      "y": 5158,
       "w": 192,
       "h": 144,
       "footprint": {
@@ -15008,7 +15752,7 @@
     },
     "building.c.3.10.night": {
       "x": 0,
-      "y": 3587,
+      "y": 5442,
       "w": 192,
       "h": 136,
       "footprint": {
@@ -15034,7 +15778,7 @@
     },
     "building.c.3.11.night": {
       "x": 192,
-      "y": 3587,
+      "y": 5442,
       "w": 192,
       "h": 144,
       "footprint": {
@@ -15060,7 +15804,7 @@
     },
     "building.c.3.12.night": {
       "x": 384,
-      "y": 3587,
+      "y": 5442,
       "w": 192,
       "h": 154,
       "footprint": {
@@ -15086,7 +15830,7 @@
     },
     "building.c.3.13.night": {
       "x": 576,
-      "y": 3587,
+      "y": 5442,
       "w": 192,
       "h": 153,
       "footprint": {
@@ -15112,7 +15856,7 @@
     },
     "building.c.3.14.night": {
       "x": 768,
-      "y": 3587,
+      "y": 5442,
       "w": 192,
       "h": 162,
       "footprint": {
@@ -15138,7 +15882,7 @@
     },
     "building.c.3.15.night": {
       "x": 960,
-      "y": 3587,
+      "y": 5442,
       "w": 192,
       "h": 153,
       "footprint": {
@@ -15164,7 +15908,7 @@
     },
     "building.c.3.16.night": {
       "x": 1152,
-      "y": 3587,
+      "y": 5442,
       "w": 192,
       "h": 145,
       "footprint": {
@@ -15190,16 +15934,16 @@
     },
     "building.c.3.17.night": {
       "x": 1344,
-      "y": 3587,
+      "y": 5442,
       "w": 192,
-      "h": 153,
+      "h": 231,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 96,
-        "y": 104
+        "y": 182
       },
       "height": 76,
       "state": "night",
@@ -15216,16 +15960,16 @@
     },
     "building.c.3.18.night": {
       "x": 1536,
-      "y": 3587,
+      "y": 5442,
       "w": 192,
-      "h": 162,
+      "h": 258,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 96,
-        "y": 113
+        "y": 209
       },
       "height": 76,
       "state": "night",
@@ -15242,16 +15986,16 @@
     },
     "building.c.3.19.night": {
       "x": 1728,
-      "y": 3587,
+      "y": 5442,
       "w": 192,
-      "h": 135,
+      "h": 276,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 96,
-        "y": 86
+        "y": 227
       },
       "height": 76,
       "state": "night",
@@ -15268,16 +16012,16 @@
     },
     "building.c.3.20.night": {
       "x": 0,
-      "y": 3749,
+      "y": 5718,
       "w": 192,
-      "h": 145,
+      "h": 318,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 96,
-        "y": 96
+        "y": 269
       },
       "height": 76,
       "state": "night",
@@ -15294,16 +16038,16 @@
     },
     "building.c.3.21.night": {
       "x": 192,
-      "y": 3749,
+      "y": 5718,
       "w": 192,
-      "h": 135,
+      "h": 344,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 96,
-        "y": 86
+        "y": 295
       },
       "height": 76,
       "state": "night",
@@ -15320,16 +16064,16 @@
     },
     "building.c.3.22.night": {
       "x": 384,
-      "y": 3749,
+      "y": 5718,
       "w": 192,
-      "h": 127,
+      "h": 362,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 96,
-        "y": 78
+        "y": 313
       },
       "height": 76,
       "state": "night",
@@ -15346,16 +16090,16 @@
     },
     "building.c.3.23.night": {
       "x": 576,
-      "y": 3749,
+      "y": 5718,
       "w": 192,
-      "h": 135,
+      "h": 378,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 96,
-        "y": 86
+        "y": 329
       },
       "height": 76,
       "state": "night",
@@ -15372,16 +16116,16 @@
     },
     "building.c.3.24.night": {
       "x": 768,
-      "y": 3749,
+      "y": 5718,
       "w": 192,
-      "h": 145,
+      "h": 392,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 96,
-        "y": 96
+        "y": 343
       },
       "height": 76,
       "state": "night",
@@ -15398,7 +16142,7 @@
     },
     "building.i.1.1.night": {
       "x": 960,
-      "y": 3749,
+      "y": 5718,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -15424,7 +16168,7 @@
     },
     "building.i.1.2.night": {
       "x": 1024,
-      "y": 3749,
+      "y": 5718,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -15450,7 +16194,7 @@
     },
     "building.i.1.3.night": {
       "x": 1088,
-      "y": 3749,
+      "y": 5718,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -15476,7 +16220,7 @@
     },
     "building.i.1.4.night": {
       "x": 1152,
-      "y": 3749,
+      "y": 5718,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -15502,7 +16246,7 @@
     },
     "building.i.1.5.night": {
       "x": 1216,
-      "y": 3749,
+      "y": 5718,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -15528,7 +16272,7 @@
     },
     "building.i.1.6.night": {
       "x": 1280,
-      "y": 3749,
+      "y": 5718,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -15554,7 +16298,7 @@
     },
     "building.i.1.7.night": {
       "x": 1344,
-      "y": 3749,
+      "y": 5718,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -15580,7 +16324,7 @@
     },
     "building.i.1.8.night": {
       "x": 1408,
-      "y": 3749,
+      "y": 5718,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -15606,7 +16350,7 @@
     },
     "building.i.1.9.night": {
       "x": 1472,
-      "y": 3749,
+      "y": 5718,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -15632,7 +16376,7 @@
     },
     "building.i.1.10.night": {
       "x": 1536,
-      "y": 3749,
+      "y": 5718,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -15658,7 +16402,7 @@
     },
     "building.i.1.11.night": {
       "x": 1600,
-      "y": 3749,
+      "y": 5718,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -15684,7 +16428,7 @@
     },
     "building.i.1.12.night": {
       "x": 1664,
-      "y": 3749,
+      "y": 5718,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -15710,7 +16454,7 @@
     },
     "building.i.1.13.night": {
       "x": 1728,
-      "y": 3749,
+      "y": 5718,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -15736,7 +16480,7 @@
     },
     "building.i.1.14.night": {
       "x": 1792,
-      "y": 3749,
+      "y": 5718,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -15762,7 +16506,7 @@
     },
     "building.i.1.15.night": {
       "x": 1856,
-      "y": 3749,
+      "y": 5718,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -15788,7 +16532,7 @@
     },
     "building.i.1.16.night": {
       "x": 1920,
-      "y": 3749,
+      "y": 5718,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -15814,7 +16558,7 @@
     },
     "building.i.1.17.night": {
       "x": 1984,
-      "y": 3749,
+      "y": 5718,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -15840,7 +16584,7 @@
     },
     "building.i.1.18.night": {
       "x": 0,
-      "y": 3894,
+      "y": 6110,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -15866,7 +16610,7 @@
     },
     "building.i.1.19.night": {
       "x": 64,
-      "y": 3894,
+      "y": 6110,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -15892,7 +16636,7 @@
     },
     "building.i.1.20.night": {
       "x": 128,
-      "y": 3894,
+      "y": 6110,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -15918,7 +16662,7 @@
     },
     "building.i.1.21.night": {
       "x": 192,
-      "y": 3894,
+      "y": 6110,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -15944,7 +16688,7 @@
     },
     "building.i.1.22.night": {
       "x": 256,
-      "y": 3894,
+      "y": 6110,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -15970,7 +16714,7 @@
     },
     "building.i.1.23.night": {
       "x": 320,
-      "y": 3894,
+      "y": 6110,
       "w": 64,
       "h": 44,
       "footprint": {
@@ -15996,7 +16740,7 @@
     },
     "building.i.1.24.night": {
       "x": 384,
-      "y": 3894,
+      "y": 6110,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -16022,7 +16766,7 @@
     },
     "building.i.2.1.night": {
       "x": 448,
-      "y": 3894,
+      "y": 6110,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -16048,7 +16792,7 @@
     },
     "building.i.2.2.night": {
       "x": 574,
-      "y": 3894,
+      "y": 6110,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -16074,7 +16818,7 @@
     },
     "building.i.2.3.night": {
       "x": 700,
-      "y": 3894,
+      "y": 6110,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -16100,7 +16844,7 @@
     },
     "building.i.2.4.night": {
       "x": 826,
-      "y": 3894,
+      "y": 6110,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -16126,7 +16870,7 @@
     },
     "building.i.2.5.night": {
       "x": 952,
-      "y": 3894,
+      "y": 6110,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -16152,7 +16896,7 @@
     },
     "building.i.2.6.night": {
       "x": 1078,
-      "y": 3894,
+      "y": 6110,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -16178,7 +16922,7 @@
     },
     "building.i.2.7.night": {
       "x": 1204,
-      "y": 3894,
+      "y": 6110,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -16204,7 +16948,7 @@
     },
     "building.i.2.8.night": {
       "x": 1330,
-      "y": 3894,
+      "y": 6110,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -16230,7 +16974,7 @@
     },
     "building.i.2.9.night": {
       "x": 1456,
-      "y": 3894,
+      "y": 6110,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -16256,7 +17000,7 @@
     },
     "building.i.2.10.night": {
       "x": 1582,
-      "y": 3894,
+      "y": 6110,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -16282,7 +17026,7 @@
     },
     "building.i.2.11.night": {
       "x": 1708,
-      "y": 3894,
+      "y": 6110,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -16308,7 +17052,7 @@
     },
     "building.i.2.12.night": {
       "x": 1834,
-      "y": 3894,
+      "y": 6110,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -16334,7 +17078,7 @@
     },
     "building.i.2.13.night": {
       "x": 0,
-      "y": 3973,
+      "y": 6189,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -16360,7 +17104,7 @@
     },
     "building.i.2.14.night": {
       "x": 126,
-      "y": 3973,
+      "y": 6189,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -16386,7 +17130,7 @@
     },
     "building.i.2.15.night": {
       "x": 252,
-      "y": 3973,
+      "y": 6189,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -16412,7 +17156,7 @@
     },
     "building.i.2.16.night": {
       "x": 378,
-      "y": 3973,
+      "y": 6189,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -16438,7 +17182,7 @@
     },
     "building.i.2.17.night": {
       "x": 504,
-      "y": 3973,
+      "y": 6189,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -16464,7 +17208,7 @@
     },
     "building.i.2.18.night": {
       "x": 630,
-      "y": 3973,
+      "y": 6189,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -16490,7 +17234,7 @@
     },
     "building.i.2.19.night": {
       "x": 756,
-      "y": 3973,
+      "y": 6189,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -16516,7 +17260,7 @@
     },
     "building.i.2.20.night": {
       "x": 882,
-      "y": 3973,
+      "y": 6189,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -16542,7 +17286,7 @@
     },
     "building.i.2.21.night": {
       "x": 1008,
-      "y": 3973,
+      "y": 6189,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -16568,7 +17312,7 @@
     },
     "building.i.2.22.night": {
       "x": 1134,
-      "y": 3973,
+      "y": 6189,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -16594,7 +17338,7 @@
     },
     "building.i.2.23.night": {
       "x": 1260,
-      "y": 3973,
+      "y": 6189,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -16620,7 +17364,7 @@
     },
     "building.i.2.24.night": {
       "x": 1386,
-      "y": 3973,
+      "y": 6189,
       "w": 126,
       "h": 79,
       "footprint": {
@@ -16646,16 +17390,16 @@
     },
     "building.i.3.1.night": {
       "x": 1512,
-      "y": 3973,
+      "y": 6189,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -16672,16 +17416,16 @@
     },
     "building.i.3.2.night": {
       "x": 1698,
-      "y": 3973,
+      "y": 6189,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -16698,16 +17442,16 @@
     },
     "building.i.3.3.night": {
       "x": 0,
-      "y": 4078,
+      "y": 6293,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -16724,16 +17468,16 @@
     },
     "building.i.3.4.night": {
       "x": 186,
-      "y": 4078,
+      "y": 6293,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -16750,16 +17494,16 @@
     },
     "building.i.3.5.night": {
       "x": 372,
-      "y": 4078,
+      "y": 6293,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -16776,16 +17520,16 @@
     },
     "building.i.3.6.night": {
       "x": 558,
-      "y": 4078,
+      "y": 6293,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -16802,16 +17546,16 @@
     },
     "building.i.3.7.night": {
       "x": 744,
-      "y": 4078,
+      "y": 6293,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -16828,16 +17572,16 @@
     },
     "building.i.3.8.night": {
       "x": 930,
-      "y": 4078,
+      "y": 6293,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -16854,16 +17598,16 @@
     },
     "building.i.3.9.night": {
       "x": 1116,
-      "y": 4078,
+      "y": 6293,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -16880,16 +17624,16 @@
     },
     "building.i.3.10.night": {
       "x": 1302,
-      "y": 4078,
+      "y": 6293,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -16906,16 +17650,16 @@
     },
     "building.i.3.11.night": {
       "x": 1488,
-      "y": 4078,
+      "y": 6293,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -16932,16 +17676,16 @@
     },
     "building.i.3.12.night": {
       "x": 1674,
-      "y": 4078,
+      "y": 6293,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -16958,16 +17702,16 @@
     },
     "building.i.3.13.night": {
       "x": 1860,
-      "y": 4078,
+      "y": 6293,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -16984,16 +17728,16 @@
     },
     "building.i.3.14.night": {
       "x": 0,
-      "y": 4183,
+      "y": 6397,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -17010,16 +17754,16 @@
     },
     "building.i.3.15.night": {
       "x": 186,
-      "y": 4183,
+      "y": 6397,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -17036,16 +17780,16 @@
     },
     "building.i.3.16.night": {
       "x": 372,
-      "y": 4183,
+      "y": 6397,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -17062,16 +17806,16 @@
     },
     "building.i.3.17.night": {
       "x": 558,
-      "y": 4183,
+      "y": 6397,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -17088,16 +17832,16 @@
     },
     "building.i.3.18.night": {
       "x": 744,
-      "y": 4183,
+      "y": 6397,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -17114,16 +17858,16 @@
     },
     "building.i.3.19.night": {
       "x": 930,
-      "y": 4183,
+      "y": 6397,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -17140,16 +17884,16 @@
     },
     "building.i.3.20.night": {
       "x": 1116,
-      "y": 4183,
+      "y": 6397,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -17166,16 +17910,16 @@
     },
     "building.i.3.21.night": {
       "x": 1302,
-      "y": 4183,
+      "y": 6397,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -17192,16 +17936,16 @@
     },
     "building.i.3.22.night": {
       "x": 1488,
-      "y": 4183,
+      "y": 6397,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -17218,16 +17962,16 @@
     },
     "building.i.3.23.night": {
       "x": 1674,
-      "y": 4183,
+      "y": 6397,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -17244,16 +17988,16 @@
     },
     "building.i.3.24.night": {
       "x": 1860,
-      "y": 4183,
+      "y": 6397,
       "w": 186,
-      "h": 105,
+      "h": 104,
       "footprint": {
         "w": 3,
         "h": 3
       },
       "anchor": {
         "x": 93,
-        "y": 58
+        "y": 57
       },
       "height": 76,
       "state": "night",
@@ -17270,7 +18014,33 @@
     },
     "facility.coal.night": {
       "x": 0,
-      "y": 4288,
+      "y": 6501,
+      "w": 244,
+      "h": 229,
+      "footprint": {
+        "w": 4,
+        "h": 4
+      },
+      "anchor": {
+        "x": 122,
+        "y": 167
+      },
+      "height": 66,
+      "state": "night",
+      "animation": null,
+      "variant": 1,
+      "category": "facility",
+      "zone": null,
+      "stage": 0,
+      "density": null,
+      "license": "MIT",
+      "source": "original",
+      "windows": [],
+      "lighting": "baked-emission-mask"
+    },
+    "facility.coal-2x2.night": {
+      "x": 244,
+      "y": 6501,
       "w": 124,
       "h": 117,
       "footprint": {
@@ -17295,8 +18065,8 @@
       "lighting": "baked-emission-mask"
     },
     "facility.wind.night": {
-      "x": 124,
-      "y": 4288,
+      "x": 368,
+      "y": 6501,
       "w": 64,
       "h": 73,
       "footprint": {
@@ -17321,8 +18091,8 @@
       "lighting": "baked-emission-mask"
     },
     "facility.pump.night": {
-      "x": 188,
-      "y": 4288,
+      "x": 432,
+      "y": 6501,
       "w": 64,
       "h": 42,
       "footprint": {
@@ -17347,8 +18117,8 @@
       "lighting": "baked-emission-mask"
     },
     "facility.tower.night": {
-      "x": 252,
-      "y": 4288,
+      "x": 496,
+      "y": 6501,
       "w": 64,
       "h": 63,
       "footprint": {
@@ -17373,8 +18143,8 @@
       "lighting": "baked-emission-mask"
     },
     "facility.police.night": {
-      "x": 316,
-      "y": 4288,
+      "x": 560,
+      "y": 6501,
       "w": 64,
       "h": 56,
       "footprint": {
@@ -17399,8 +18169,8 @@
       "lighting": "baked-emission-mask"
     },
     "facility.fire.night": {
-      "x": 380,
-      "y": 4288,
+      "x": 624,
+      "y": 6501,
       "w": 64,
       "h": 56,
       "footprint": {
@@ -17425,8 +18195,8 @@
       "lighting": "baked-emission-mask"
     },
     "facility.school.night": {
-      "x": 444,
-      "y": 4288,
+      "x": 688,
+      "y": 6501,
       "w": 64,
       "h": 46,
       "footprint": {
@@ -17451,8 +18221,8 @@
       "lighting": "baked-emission-mask"
     },
     "facility.clinic.night": {
-      "x": 508,
-      "y": 4288,
+      "x": 752,
+      "y": 6501,
       "w": 64,
       "h": 50,
       "footprint": {
@@ -17477,8 +18247,8 @@
       "lighting": "baked-emission-mask"
     },
     "facility.station.night": {
-      "x": 572,
-      "y": 4288,
+      "x": 816,
+      "y": 6501,
       "w": 124,
       "h": 85,
       "footprint": {
@@ -17503,8 +18273,8 @@
       "lighting": "baked-emission-mask"
     },
     "facility.hydro.night": {
-      "x": 696,
-      "y": 4288,
+      "x": 940,
+      "y": 6501,
       "w": 64,
       "h": 57,
       "footprint": {
@@ -17529,8 +18299,8 @@
       "lighting": "baked-emission-mask"
     },
     "facility.oil.night": {
-      "x": 760,
-      "y": 4288,
+      "x": 1004,
+      "y": 6501,
       "w": 244,
       "h": 223,
       "footprint": {
@@ -17555,8 +18325,8 @@
       "lighting": "baked-emission-mask"
     },
     "facility.gas.night": {
-      "x": 1004,
-      "y": 4288,
+      "x": 1248,
+      "y": 6501,
       "w": 244,
       "h": 199,
       "footprint": {
@@ -17581,8 +18351,8 @@
       "lighting": "baked-emission-mask"
     },
     "facility.nuclear.night": {
-      "x": 1248,
-      "y": 4288,
+      "x": 1492,
+      "y": 6501,
       "w": 244,
       "h": 194,
       "footprint": {
@@ -17607,8 +18377,8 @@
       "lighting": "baked-emission-mask"
     },
     "facility.solar.night": {
-      "x": 1492,
-      "y": 4288,
+      "x": 1736,
+      "y": 6501,
       "w": 244,
       "h": 134,
       "footprint": {
@@ -17633,8 +18403,8 @@
       "lighting": "baked-emission-mask"
     },
     "facility.microwave.night": {
-      "x": 1736,
-      "y": 4288,
+      "x": 0,
+      "y": 6730,
       "w": 244,
       "h": 252,
       "footprint": {
@@ -17659,8 +18429,8 @@
       "lighting": "baked-emission-mask"
     },
     "facility.fusion.night": {
-      "x": 0,
-      "y": 4540,
+      "x": 244,
+      "y": 6730,
       "w": 244,
       "h": 165,
       "footprint": {
@@ -17685,8 +18455,8 @@
       "lighting": "baked-emission-mask"
     },
     "facility.treatment.night": {
-      "x": 244,
-      "y": 4540,
+      "x": 488,
+      "y": 6730,
       "w": 64,
       "h": 42,
       "footprint": {
@@ -17711,8 +18481,8 @@
       "lighting": "baked-emission-mask"
     },
     "facility.desal.night": {
-      "x": 308,
-      "y": 4540,
+      "x": 552,
+      "y": 6730,
       "w": 124,
       "h": 84,
       "footprint": {
@@ -17737,8 +18507,8 @@
       "lighting": "baked-emission-mask"
     },
     "facility.subway-station.night": {
-      "x": 432,
-      "y": 4540,
+      "x": 676,
+      "y": 6730,
       "w": 64,
       "h": 42,
       "footprint": {
@@ -17763,8 +18533,8 @@
       "lighting": "baked-emission-mask"
     },
     "facility.bus.night": {
-      "x": 496,
-      "y": 4540,
+      "x": 740,
+      "y": 6730,
       "w": 64,
       "h": 45,
       "footprint": {
@@ -17789,8 +18559,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.city_hall.night": {
-      "x": 560,
-      "y": 4540,
+      "x": 804,
+      "y": 6730,
       "w": 188,
       "h": 117,
       "footprint": {
@@ -17815,8 +18585,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.hospital.night": {
-      "x": 748,
-      "y": 4540,
+      "x": 992,
+      "y": 6730,
       "w": 188,
       "h": 123,
       "footprint": {
@@ -17841,8 +18611,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.museum.night": {
-      "x": 936,
-      "y": 4540,
+      "x": 1180,
+      "y": 6730,
       "w": 188,
       "h": 109,
       "footprint": {
@@ -17867,8 +18637,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.stadium.night": {
-      "x": 1124,
-      "y": 4540,
+      "x": 1368,
+      "y": 6730,
       "w": 188,
       "h": 124,
       "footprint": {
@@ -17893,8 +18663,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.prison.night": {
-      "x": 1312,
-      "y": 4540,
+      "x": 1556,
+      "y": 6730,
       "w": 188,
       "h": 124,
       "footprint": {
@@ -17919,8 +18689,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.college.night": {
-      "x": 1500,
-      "y": 4540,
+      "x": 1744,
+      "y": 6730,
       "w": 188,
       "h": 120,
       "footprint": {
@@ -17945,8 +18715,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.zoo.night": {
-      "x": 1688,
-      "y": 4540,
+      "x": 0,
+      "y": 6982,
       "w": 188,
       "h": 103,
       "footprint": {
@@ -17971,8 +18741,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.statue.night": {
-      "x": 1876,
-      "y": 4540,
+      "x": 188,
+      "y": 6982,
       "w": 66,
       "h": 55,
       "footprint": {
@@ -17997,8 +18767,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.park_big.night": {
-      "x": 0,
-      "y": 4705,
+      "x": 254,
+      "y": 6982,
       "w": 188,
       "h": 103,
       "footprint": {
@@ -18023,8 +18793,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.library.night": {
-      "x": 188,
-      "y": 4705,
+      "x": 442,
+      "y": 6982,
       "w": 126,
       "h": 80,
       "footprint": {
@@ -18049,8 +18819,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.church.night": {
-      "x": 314,
-      "y": 4705,
+      "x": 568,
+      "y": 6982,
       "w": 66,
       "h": 80,
       "footprint": {
@@ -18075,8 +18845,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.marina.night": {
-      "x": 380,
-      "y": 4705,
+      "x": 634,
+      "y": 6982,
       "w": 110,
       "h": 69,
       "footprint": {
@@ -18101,8 +18871,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.mayors_house.night": {
-      "x": 490,
-      "y": 4705,
+      "x": 744,
+      "y": 6982,
       "w": 126,
       "h": 80,
       "footprint": {
@@ -18127,8 +18897,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.water_treatment.night": {
-      "x": 616,
-      "y": 4705,
+      "x": 870,
+      "y": 6982,
       "w": 66,
       "h": 48,
       "footprint": {
@@ -18153,8 +18923,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.desalination.night": {
-      "x": 682,
-      "y": 4705,
+      "x": 936,
+      "y": 6982,
       "w": 126,
       "h": 77,
       "footprint": {
@@ -18179,8 +18949,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.missile_silo.night": {
-      "x": 808,
-      "y": 4705,
+      "x": 1062,
+      "y": 6982,
       "w": 66,
       "h": 44,
       "footprint": {
@@ -18205,8 +18975,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.runway.night": {
-      "x": 874,
-      "y": 4705,
+      "x": 1128,
+      "y": 6982,
       "w": 66,
       "h": 36,
       "footprint": {
@@ -18231,8 +19001,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.tarmac.night": {
-      "x": 940,
-      "y": 4705,
+      "x": 1194,
+      "y": 6982,
       "w": 66,
       "h": 36,
       "footprint": {
@@ -18257,8 +19027,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.pier.night": {
-      "x": 1006,
-      "y": 4705,
+      "x": 1260,
+      "y": 6982,
       "w": 52,
       "h": 47,
       "footprint": {
@@ -18283,8 +19053,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.crane.night": {
-      "x": 1058,
-      "y": 4705,
+      "x": 1312,
+      "y": 6982,
       "w": 32,
       "h": 61,
       "footprint": {
@@ -18309,8 +19079,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.control_tower.night": {
-      "x": 1090,
-      "y": 4705,
+      "x": 1344,
+      "y": 6982,
       "w": 126,
       "h": 100,
       "footprint": {
@@ -18335,8 +19105,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.bus_depot.night": {
-      "x": 1216,
-      "y": 4705,
+      "x": 1470,
+      "y": 6982,
       "w": 66,
       "h": 51,
       "footprint": {
@@ -18361,8 +19131,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.subway_station.night": {
-      "x": 1282,
-      "y": 4705,
+      "x": 1536,
+      "y": 6982,
       "w": 66,
       "h": 50,
       "footprint": {
@@ -18387,8 +19157,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.rubble.night": {
-      "x": 1348,
-      "y": 4705,
+      "x": 1602,
+      "y": 6982,
       "w": 66,
       "h": 36,
       "footprint": {
@@ -18413,8 +19183,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.radioactive.night": {
-      "x": 1414,
-      "y": 4705,
+      "x": 1668,
+      "y": 6982,
       "w": 66,
       "h": 36,
       "footprint": {
@@ -18439,8 +19209,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.construction.night": {
-      "x": 1480,
-      "y": 4705,
+      "x": 1734,
+      "y": 6982,
       "w": 66,
       "h": 44,
       "footprint": {
@@ -18465,8 +19235,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.abandoned.night": {
-      "x": 1546,
-      "y": 4705,
+      "x": 1800,
+      "y": 6982,
       "w": 66,
       "h": 50,
       "footprint": {
@@ -18491,8 +19261,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.arcology.night": {
-      "x": 1612,
-      "y": 4705,
+      "x": 0,
+      "y": 7085,
       "w": 250,
       "h": 195,
       "footprint": {
@@ -18517,8 +19287,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.dome.night": {
-      "x": 0,
-      "y": 4900,
+      "x": 250,
+      "y": 7085,
       "w": 250,
       "h": 146,
       "footprint": {
@@ -18543,8 +19313,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.infrastructure.night": {
-      "x": 250,
-      "y": 4900,
+      "x": 500,
+      "y": 7085,
       "w": 66,
       "h": 54,
       "footprint": {
@@ -18569,8 +19339,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.service.night": {
-      "x": 316,
-      "y": 4900,
+      "x": 566,
+      "y": 7085,
       "w": 126,
       "h": 86,
       "footprint": {
@@ -18595,8 +19365,8 @@
       "lighting": "baked-emission-mask"
     },
     "catalog.power_plant.night": {
-      "x": 442,
-      "y": 4900,
+      "x": 692,
+      "y": 7085,
       "w": 250,
       "h": 157,
       "footprint": {
@@ -18622,9 +19392,9 @@
     }
   },
   "completeness": {
-    "frameCount": 752,
+    "frameCount": 784,
     "normalBuildingVariants": 216,
-    "nightFrames": 268,
+    "nightFrames": 269,
     "buildingStates": [
       "normal",
       "foundation",

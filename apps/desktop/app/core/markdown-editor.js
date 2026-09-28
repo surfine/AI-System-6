@@ -576,6 +576,7 @@ function mdeUpdateTypewriterPadding(textarea) {
 function mdeCenterCaret(textarea) {
   const surface = textarea?.closest(".mde-surface");
   if (!surface?.classList.contains("is-typewriter-mode")) return;
+  if (window.AISystem6WritingEditor?.centerCaret(textarea)) return;
   mdeUpdateTypewriterPadding(textarea);
   const cs = getComputedStyle(textarea);
   const lineHeight = parseFloat(cs.lineHeight) || 25.5;
@@ -598,6 +599,9 @@ const mdeRepainters = new WeakMap();
 
 function mdeRepaintHighlight(textarea) {
   if (!textarea) return false;
+  // A mounted editor draws straight from its own document; there is no
+  // overlay to repaint.
+  if (window.AISystem6WritingEditor?.isMounted(textarea)) return true;
   const repaint = mdeRepainters.get(textarea);
   if (!repaint) return false;
   repaint();
@@ -675,6 +679,113 @@ function attachMarkdownHighlight(textarea) {
   // opens later opens in the mode they were last working in.
   const restored = mdeStoredFocusMode();
   if (restored !== "off") mdeSetFocusMode(textarea, restored, { remember: false });
+
+  // Then the writing editor takes over the page, when it has loaded.
+  mdeMountWritingEditor(textarea, surface);
+}
+
+// The writing editor (CodeMirror 6, app/vendor/writing-editor.js) takes over
+// the page from the overlay once it has loaded. Until then, and wherever it is
+// switched off, the overlay above keeps the surface fully usable: it is the
+// fallback, not dead code. The switch exists for phones -- if iOS ever breaks
+// selection handles or dictation inside the editor, setting
+// localStorage["ai-system6-writing-engine"] = "textarea" puts every surface
+// back on the plain textarea without a release.
+const MDE_ENGINE_STORAGE_KEY = "ai-system6-writing-engine";
+let mdeWritingEditorLoader = null;
+
+function mdeWritingEngine() {
+  try {
+    if (localStorage.getItem(MDE_ENGINE_STORAGE_KEY) === "textarea") return "textarea";
+  } catch {}
+  return "codemirror";
+}
+
+// The editor loads after the desk has finished starting, never during it. Boot
+// loads its own lazy modules in a fixed order, and 330 KB arriving in the
+// middle of it pushed the Alarm Clock's module past boot's first desk write:
+// the settings were saved with its state still null and read straight back,
+// which stopped startup on one fresh boot in four (2026-09-25). Until then
+// the page is the textarea and its overlay, which is complete on its own.
+function mdeAfterBoot() {
+  return new Promise((resolve) => {
+    const settled = () => ["ready", "error"].includes(document.body?.dataset.appReady);
+    if (settled()) return resolve();
+    const watch = new MutationObserver(() => {
+      if (!settled()) return;
+      watch.disconnect();
+      resolve();
+    });
+    watch.observe(document.body, { attributes: true, attributeFilter: ["data-app-ready"] });
+  });
+}
+
+function mdeEditorReady() {
+  mdeWritingEditorLoader ||= createLazyModuleLoader("AISystem6WritingEditor", ["app/vendor/writing-editor.js"]);
+  return mdeWritingEditorLoader().then(() => window.AISystem6WritingEditor);
+}
+
+function mdeMountWritingEditor(textarea, surface) {
+  if (mdeWritingEngine() !== "codemirror" || typeof createLazyModuleLoader !== "function") return;
+  mdeAfterBoot()
+    .then(mdeEditorReady)
+    .then((editor) => editor?.mount(textarea, surface, {
+      onPaste: mdePaste,
+      paragraphRange: mdeParagraphRange,
+      sentenceRange: mdeSentenceRange,
+    }))
+    .catch((error) => console.warn("Writing editor unavailable; the surface stays a textarea.", error));
+}
+
+// Which writing surface a Format command acts on: the editor holding the
+// caret, else the writing window that owns the menu bar. A surface showing its
+// preview, or one the route has made read-only, takes no formatting.
+const MDE_FORMAT_SURFACES = {
+  teachText: "teachtext-body",
+  sectionDrafts: "draft-body",
+  outline: "outline-content",
+  questionSheet: "question-sheet-body",
+  reviewDesk: "review-desk-body",
+  quickDraft: "quick-draft-draft",
+};
+
+function mdeFormatTarget(editing = true) {
+  let target = window.AISystem6WritingEditor?.focusedTextarea?.() || null;
+  if (!target) {
+    const win = typeof resolveMenuContextWindow === "function"
+      ? resolveMenuContextWindow()
+      : document.querySelector(".window.is-active:not(.is-hidden)");
+    const id = MDE_FORMAT_SURFACES[win?.dataset.window || ""];
+    target = id ? document.getElementById(id) : null;
+  }
+  if (!target || target.closest(".is-hidden, .is-previewing")) return null;
+  if (editing && (target.readOnly || target.disabled)) return null;
+  return target;
+}
+
+
+function mdeRunFormat(command) {
+  const target = mdeFormatTarget();
+  return target ? mdeEditorReady().then((editor) => editor?.format(target, command)) : false;
+}
+
+// 前往标题…: the document's headings, from the Writing menu or Commands…. It
+// is a whole-document command, so it lives with the commands; the status bar
+// keeps its one document identity (HIG: never two titles in that slot).
+function mdeOpenHeadings() {
+  const target = mdeFormatTarget(false);
+  return target
+    ? mdeEditorReady().then((editor) => editor?.openHeadings(target, target.closest(".window")?.querySelector(".teachtext-command-menu > summary") || target))
+    : false;
+}
+
+// The Preview button is a 写 | 读 (| 并排) switch, drawn by the writing
+// editor. Until it has loaded, and on the textarea fallback, it keeps its old
+// one-word label naming what a press does.
+function mdeSyncModeToggle(button, mode) {
+  const editor = window.AISystem6WritingEditor;
+  if (editor) return editor.drawToggle(button, mode);
+  if (button) button.textContent = t(mode && mode !== "write" ? "edit" : "preview");
 }
 
 const MDE_FOCUS_STORAGE_KEY = "ai-system6-writing-focus";

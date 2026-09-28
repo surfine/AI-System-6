@@ -768,18 +768,27 @@ function updateTeachTextDeskState() {
     teachTextModeStateEl.textContent = readonlyManuscript
       ? t("teachtext_mode_readonly_draft")
       : t(isPreview ? "teachtext_mode_preview" : "teachtext_mode_edit");
+    // The 写 | 读 switch shows the mode; this cell speaks only when it has
+    // something the switch cannot say: why the page will not take typing.
+    teachTextModeStateEl.hidden = !readonlyManuscript;
   }
 
   if (teachTextSourceCountEl) {
-    teachTextSourceCountEl.textContent = teachTextSourceStateLabel(body);
+    const sourceLabel = teachTextSourceStateLabel(body);
+    teachTextSourceCountEl.textContent = sourceLabel;
+    // "Final" already sits in the status pop-up above the paper, and an empty
+    // page says it is empty by being empty.
+    teachTextSourceCountEl.hidden = sourceLabel === t("label_final") || sourceLabel === t("teachtext_source_empty");
   }
 
   if (teachTextSelectionStateEl) {
     const selection = getTeachTextSelectionInfo();
     teachTextSelectionStateEl.textContent = selection?.text ? t("teachtext_selection_count", selection.text.length) : t("teachtext_selection_empty");
+    teachTextSelectionStateEl.hidden = !selection?.text;
   }
 
   if (teachTextExportStateEl) {
+    teachTextExportStateEl.hidden = !teachTextLastExportAt;
     if (!teachTextLastExportAt) {
       teachTextExportStateEl.textContent = t("teachtext_export_empty");
     } else {

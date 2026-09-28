@@ -98,12 +98,6 @@
   font-size: 13px;
   line-height: 1.25;
 }
-
-.message-content p {
-  margin: 0 0 10px;
-  white-space: normal;
-}
-
 .message-content ul,
 .message-content ol {
   margin: 8px 0 12px 24px;
@@ -210,7 +204,13 @@
      break point, and the 80px-wide icon column below only requested this at
      narrow viewports -- at ordinary desktop width the label instead overflowed
      unbroken to one side, clipped against its own icon and the next column. */
-  overflow-wrap: anywhere;
+  /* P11: the wrap policy is an era hook. Defaults are today's literals, so
+     every appearance renders unchanged; Platinum answers via its token block
+     (native Geneva view labels break between words, never inside one). */
+  overflow-wrap: var(--finder-label-wrap, anywhere);
+  word-break: var(--finder-label-word-break, normal);
+  font-weight: var(--finder-label-weight, 600);
+  font-variation-settings: var(--finder-label-font-variation, "wdth" 113);
 }
 
 .finder-item small {
@@ -223,8 +223,24 @@
 }
 
 .finder-item.is-selected span:last-of-type {
-  background: var(--selection-bg);
-  color: var(--selection-fg);
+  background: var(--desktop-label-selected-bg, var(--selection-bg));
+  color: var(--desktop-label-selected-fg, var(--selection-fg));
+}
+
+/* P13: the selected object darkens its artwork the way the native Finder does.
+   The hook's default is `none`, so every other appearance keeps today's look;
+   Platinum answers with brightness(0.5) and also flips the label to a black
+   tag with white text (native 02-desktop-clean). */
+.finder-item.is-selected .sys-icon,
+.desktop-icon.is-selected .sys-icon {
+  filter: var(--desktop-icon-selected-filter, none);
+}
+
+/* The same state for an era whose icon rule sets its own filter (Platinum):
+   it reads this instead of a literal none. */
+.finder-item.is-selected,
+.desktop-icon.is-selected {
+  --sys-icon-state-filter: var(--desktop-icon-selected-filter, none);
 }
 
 /* Classic keeps smooth artwork and its System 6 selection silhouette separate.
@@ -638,13 +654,9 @@
   outline-offset: 2px;
 }
 
+/* A .btn: the button recipe sets its minimum size, padding and face. */
 .finder-navigation-back {
   width: 30px;
-  min-width: 30px;
-  min-height: 28px;
-  padding: 0;
-  font-size: 22px;
-  line-height: 1;
 }
 
 .finder-breadcrumbs {
@@ -1010,6 +1022,29 @@
   border-radius: var(--empty-note-radius);
   background: var(--empty-note-bg);
   box-shadow: var(--empty-note-shadow);
+}
+
+/* Find File's and the Dictionary's empty notes (moved from 10-windows.css
+   and 20-reader-docmap.css) refine the note above. */
+.find-file-window .find-file-results > .empty-folder-note {
+  max-width: var(--find-file-empty-note-max-width);
+  margin: var(--find-file-empty-note-margin);
+  padding: var(--find-file-empty-note-padding);
+  border: var(--find-file-empty-note-border);
+  border-radius: var(--find-file-empty-note-radius);
+  background: var(--find-file-empty-note-bg);
+  box-shadow: var(--find-file-empty-note-shadow);
+  color: var(--find-file-empty-note-fg);
+}
+
+.dictionary-window .dictionary-result > .empty-folder-note {
+  max-width: var(--dictionary-empty-note-max-width);
+  margin: var(--dictionary-empty-note-margin);
+  border: var(--dictionary-empty-note-border);
+  border-radius: var(--dictionary-empty-note-radius);
+  background: var(--dictionary-empty-note-bg);
+  color: var(--dictionary-empty-note-fg);
+  box-shadow: var(--dictionary-empty-note-shadow);
 }
 
 .sr-only {

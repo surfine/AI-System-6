@@ -268,7 +268,7 @@ test.assertMatches(stripCss, /\.control-strip-module \.sys-icon\s*\{[^}]*padding
   "Liquid Glass does not shrink strip glyphs inside the global icon tile padding");
 test.assertMatches(stripCss, /\.control-strip-module \.sys-icon\s*\{[^}]*background-color:\s*transparent;/s,
   "Control Strip clears tile material without erasing era sprite painters");
-test.assertIncludes(liquidGlass, "body.use-liquid-glass :is(.menu-bar, .control-strip) .sys-icon", "the late Liquid Glass icon layer preserves the strip's compact glyph reset without duplicating its theme selector");
+test.assertIncludes(liquidGlass, "body[data-theme=\"liquid-glass\"] :is(.menu-bar, .control-strip) .sys-icon", "the late Liquid Glass icon layer preserves the strip's compact glyph reset without duplicating its theme selector");
 test.assertIncludes(stripCss, "--system-icon-shape-rendering: crispEdges", "the strip keeps crisp glyphs through the late Liquid Glass SVG rule");
 test.assertIncludes(stripCss, ".control-strip-menu.project-switcher-popover", "the shared project menu is sized for the strip host");
 test.assertIncludes(stripCss, ".control-strip-menu.cloud-model-popover", "the shared model menu is sized for the strip host");
@@ -281,7 +281,7 @@ test.assertMatches(stripCss, /\.control-strip-handle::after\s*\{[^}]*background:
 
 // --- Themes ------------------------------------------------------------------
 
-test.assertNotMatches(liquidGlass, /body\.use-liquid-glass \.control-strip\s*\{/, "the strip material is themed by tokens, not a selector twin");
+test.assertNotMatches(liquidGlass, /body\[data-theme="liquid-glass"\] \.control-strip\s*\{/, "the strip material is themed by tokens, not a selector twin");
 test.assertIncludes(liquidGlass, "--control-strip-hover-bg", "Liquid Glass uses a light hover material instead of a full black inversion");
 test.assertIncludes(liquidGlass, "--control-strip-thickness: var(--menu-bar-height)", "Liquid Glass strip follows its taller menu bar token");
 test.assertIncludes(stripCss, "background: var(--control-strip-hover-bg)", "strip hover states consume the owned material token");

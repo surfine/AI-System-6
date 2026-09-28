@@ -203,8 +203,9 @@ add("dock-lifecycle", ["NS-13", "NS-14"], async (page) => {
       return window.edgeOriginalOpen(name, options);
     };
   });
-  await page.locator(".nextstep-dock summary").click();
-  await page.locator(".nextstep-dock details").getByRole("button", { name: "+ TeachText", exact: true }).click();
+  // TeachText is one of the Dock's default pins (NeXTSTEP 3.3 draws no Edit
+  // Dock controls in the column; pins change by drag and context menu).
+  await page.waitForSelector('.nextstep-dock [data-dock-key="app:teachText"]');
   const tile = page.locator('[data-dock-key="app:teachText"]');
   assert.equal(await tile.getAttribute("data-state"), "stopped");
   assert.equal(await page.evaluate(() => window.edgeOpenCalls), 0, "pinning must not launch an application");
@@ -226,8 +227,9 @@ add("dock-lifecycle", ["NS-13", "NS-14"], async (page) => {
 });
 
 add("dock-drag-unpin", ["NS-14"], async (page) => {
-  await page.locator(".nextstep-dock summary").click();
-  await page.locator(".nextstep-dock details").getByRole("button", { name: "+ TeachText", exact: true }).click();
+  // TeachText is one of the Dock's default pins (NeXTSTEP 3.3 draws no Edit
+  // Dock controls in the column; pins change by drag and context menu).
+  await page.waitForSelector('.nextstep-dock [data-dock-key="app:teachText"]');
   const tile = page.locator('[data-dock-key="app:teachText"]');
   await tile.dblclick();
   await page.waitForFunction(() => windowsForApp("teachText").some((win) => !win.classList.contains("is-hidden")));

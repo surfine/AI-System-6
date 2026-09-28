@@ -145,8 +145,8 @@ test.assertNotMatches(
 // white pill under Liquid Glass.
 test.assertIncludes(windowsCss, ".spine-actions button.is-selected b {", "the stop the writer is in reverses its label through the shared selected state");
 test.assertIncludes(windowManager, 'button.classList.toggle("is-selected", current);', "the palette sets the shared selected state");
-test.assertIncludes(liquidCss, "body.use-liquid-glass .spine-actions button.is-selected b", "Liquid Glass reverses the selected label and sets its text fill");
-test.assertIncludes(liquidCss, "body.use-liquid-glass .spine-actions button.holds-pen .spine-step-number", "Liquid Glass reverses the pen badge too");
+test.assertIncludes(liquidCss, "body[data-theme=\"liquid-glass\"] .spine-actions button.is-selected b", "Liquid Glass reverses the selected label and sets its text fill");
+test.assertIncludes(liquidCss, "body[data-theme=\"liquid-glass\"] .spine-actions button.holds-pen .spine-step-number", "Liquid Glass reverses the pen badge too");
 test.assertIncludes(windowsCss, ".spine-actions button.holds-pen .spine-step-number {", "the stop that owns the text fills its step badge");
 // The two shapes are the two conventions, not a drift to be corrected: Liquid
 // Glass marks a step with a filled circle centred on the artwork, and the five

@@ -172,12 +172,6 @@ function wireAppEvents() {
 
   clipSelectionButton.addEventListener("click", clipAssistantSelection);
 
-  rebuildFlowSourceInput?.addEventListener("input", () => {
-    rebuildFlowSourceInput.dataset.sourceLabel = t("rebuild_pasted_source");
-    resetRebuildProgress();
-    renderRebuildFlow();
-  });
-
   scrapBodyInput.addEventListener("input", updateSelectedScrapMetadata);
 
   scrapStackSelect?.addEventListener("change", () => {
@@ -205,7 +199,13 @@ function wireAppEvents() {
     });
   });
 
-  teachTextTogglePreviewButton.addEventListener("click", toggleTeachTextPreview);
+  // 写 | 读 | 并排 is the writing editor's; before it loads the button is the
+  // old one-way toggle.
+  teachTextTogglePreviewButton.addEventListener("click", (event) => {
+    const editor = window.AISystem6WritingEditor;
+    if (editor) editor.chooseMode(teachTextBodyInput, event.target.closest?.("[data-mode]")?.dataset.mode);
+    else toggleTeachTextPreview();
+  });
 
   const syncMdeFocusButton = (button, mode) => {
     const keys = {

@@ -120,8 +120,8 @@ test.assertIncludes(
 );
 test.assertIncludes(liquid, "--system-help-panel-bg: var(--glass-reading-surface)", "both scrollers stay solid on glass");
 test.assertIncludes(liquid, "--system-help-row-icon-size: 22px", "solid glass object art gets its two extra pixels through a token");
-test.assertNotIncludes(liquid, "body.use-liquid-glass .system-help-list", "Liquid Glass does not fork the System Help list");
-test.assertNotIncludes(liquid, "body.use-liquid-glass .system-help-info", "Liquid Glass does not fork the Get Info rows");
+test.assertNotIncludes(liquid, "body[data-theme=\"liquid-glass\"] .system-help-list", "Liquid Glass does not fork the System Help list");
+test.assertNotIncludes(liquid, "body[data-theme=\"liquid-glass\"] .system-help-info", "Liquid Glass does not fork the Get Info rows");
 
 // Copy exists in both languages.
 for (const key of [

@@ -114,7 +114,7 @@ function collectDerivedIndexSources() {
     sourceKind: "scrap",
     sourceVersion: scrap.updatedAt || scrap.createdAt,
     title: scrap.title,
-    content: scrap.body,
+    content: (typeof scrapDocumentText === "function" ? scrapDocumentText(scrap) : scrap.body),
   }));
   (Array.isArray(projectReferences) ? projectReferences : [])
     .filter((reference) => reference?.enabled !== false)

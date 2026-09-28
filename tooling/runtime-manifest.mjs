@@ -27,6 +27,11 @@
 // wall the note above names: the honest answer is to make admission itself
 // cheaper — one registration per app instead of eight — not to raise this
 // number a third time.
+// The shared-disk backups are one module per route, so the lazy list derives
+// them from the same registry the generator and the launcher read instead of
+// hand-listing thirty-five paths that could drift from it.
+import { SHARED_DISKS } from "./lib/project-disk-integrity.mjs";
+
 export const floppyBudgetBytes = 2_954_624;
 
 export const coreFiles = [
@@ -125,6 +130,7 @@ export const lazyRuntimePaths = [
   "app/core/launch-intent.js",
   "app/core/embed-in-browser.js",
   "app/vendor/marked.umd.js",
+  "app/vendor/writing-editor.js",
   "app/core/writing-tools-prompts.js",
   "app/generated/ai-prompt-files.js",
   "app/features/find-change.js",
@@ -146,13 +152,15 @@ export const lazyRuntimePaths = [
   "app/features/dictation-pad.js",
   "app/features/hold-that-thought.js",
   "app/features/project-peek.js",
+  "app/features/disk-peek.js",
   "app/features/dictionary-help.js",
   "app/features/video-docmap.js",
   "app/features/findpath.js",
   "app/content/rebuild-samples.js",
   "app/content/shared-project-disks-index.js",
-  "app/content/shared-project-disks.js",
+  ...SHARED_DISKS.map(({ route }) => `app/content/shared-disks/${route}.js`),
   "app/features/writing-flow.js",
+  "app/features/rebuild-flow.js",
   "app/features/outline-claim.js",
   "app/features/mingming-lens.js",
   "app/features/slides-export.js",
@@ -181,6 +189,8 @@ export const lazyRuntimePaths = [
   "app/core/nextstep-dock.js",
   "app/core/nextstep-menus.js",
   "app/core/window-minimize.js",
+  "app/core/window-fullscreen.js",
+  "app/core/desk-dock.js",
   "app/features/finder-columns.js",
   "app/core/text-compose.js",
   "app/core/darkroom-record.js",
@@ -235,6 +245,7 @@ export const lazyRuntimePaths = [
   "app/features/video-transcript.js",
   "app/features/hkrr-review.js",
   "app/features/guest-tools.js",
+  "app/core/rebuild-pack.js",
   "app/features/mcp-servers.js",
   "app/features/mingming-handoff-review.js",
   "app/features/docmap.js",

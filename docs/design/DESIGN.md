@@ -65,6 +65,23 @@ Control meanings are load-bearing:
 - The bottom-right grow box manually changes a resizable window's dimensions.
 - WindowShade, a later Classic Mac OS behavior, collapses a window to its title
   bar and remains a separate double-click action; Zoom must never fall back to it.
+- Minimize (the yellow lamp, NeXTSTEP's miniaturize button) puts the whole
+  window away to a known place: the era's Dock, NeXTSTEP's miniwindow row along
+  the bottom edge, or, with the Dock switched off, the Apple menu's
+  Miniaturized windows list. It is a third verb beside WindowShade (roll up in
+  place) and Hide (per application, which borrows WindowShade); none of the
+  three stands in for another, and the title-bar double-click is WindowShade in
+  every era. A Mac OS X era draws the lamp only once its own Dock ships
+  (left two, right one: red and yellow at the left, Zoom at the right edge).
+  Lion is the one owner-approved exception (2026-09-25): its right edge is the
+  real full-screen button, so Zoom is the third lamp at the left.
+  In the Mac OS X eras the Dock and minimize are preferences that start off
+  (owner, 2026-09-25) and are switched on in the Control Panel; NeXTSTEP starts
+  with both on because they are its own shell. With the Dock off every era
+  still launches from the desk icons, switches from the menu bar and lists
+  put-away windows in the Apple menu, so hiding it never strands a window.
+  Listing windows in the Apple menu is the product's adaptation: Mac OS X's
+  Apple menu never listed windows, and the desk has no Window menu.
 - Full application and document windows may expose Zoom and grow. Fixed system
   windows and Desk Accessories generally omit them unless native evidence or a
   deliberate product contract says otherwise.

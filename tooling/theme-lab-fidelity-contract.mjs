@@ -77,6 +77,11 @@ export const REQUIRED_FIDELITY_SPECIMENS = Object.freeze({
     "checkbox-disabled",
     "radio-disabled",
     "search-field-focused",
+    // The lamps, as Aqua's are: active-titlebar's crop starts at x=80, past
+    // them, so a broken lamp left this board all green. Close and Zoom only,
+    // for the same reason as Aqua's list.
+    "titlebar-lamps",
+    "titlebar-lamps-zoom",
   ]),
   yosemite: Object.freeze([
     "checkbox-checked",

@@ -159,14 +159,6 @@ function collectLeafRules(css) {
  * deeper, and a guess would probe the wrong element).
  */
 function stripThemePrefix(selector, themeId) {
-  if (themeId === "liquid-glass" && selector.startsWith("body.use-liquid-glass")) {
-    // 70-liquid-glass.css scopes through a class, not a data attribute. The
-    // attribute form (body.use-liquid-glass[data-theme="liquid-glass"]) falls
-    // through to the branch below; this one handles the plain class prefix.
-    let end = "body.use-liquid-glass".length;
-    const rest = selector.slice(end).replace(/^[\s>+~]+/, "").trim();
-    return rest || "body";
-  }
   const attr = themeScopeAttributes(themeId).find((candidate) => selector.includes(candidate));
   if (!attr) return null;
   const at = selector.indexOf(attr);

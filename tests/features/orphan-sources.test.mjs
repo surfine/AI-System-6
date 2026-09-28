@@ -18,6 +18,7 @@
 
 import { globSync } from "node:fs";
 import { coreFiles, appModulePaths, lazyRuntimePaths, appRuntimePaths } from "../../tooling/runtime-manifest.mjs";
+import { SHARED_DISKS } from "../../tooling/lib/project-disk-integrity.mjs";
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("orphan-sources");
@@ -34,7 +35,7 @@ const DECLARED_UNBUNDLED = {
   "app/core/endfield-grounding.js":
     "Endfield grounding core, loaded lazily through ensureLazySystemModule(\"app/core/endfield-grounding.js\", ...) from app/core/actions.js and app/core/chat-messages.js. It is not named by a createLazyModuleLoader in config.js or an index.html script tag, so the static manifest cannot list it; the runtime loader string is the only reachable path and must not be bundled.",
   "app/content/shared-disks-panel.js":
-    "The window and its list for the demonstration project disks. tooling/build-shared-project-disks.mjs appends this file to app/content/shared-project-disks.js, so the panel ships inside the generated disk module the launch links already fetch — reachable without a manifest row, and deliberately not in the boot bundle (it would spend floppy bytes on a window most boots never open).",
+    "The window and its list for the demonstration project disks. tooling/build-shared-project-disks.mjs appends this file to app/content/shared-project-disks-index.js, so the panel ships inside the generated list module the folder already fetches — reachable without a manifest row, and deliberately not in the boot bundle (it would spend floppy bytes on a window most boots never open).",
   "app/features/bonsai-sc2000-reader.js":
     "SC2000.DAT container reader, clean-room and tested (tests/features/bonsai-sc2000-reader.test.mjs). The loader that named it had no caller anywhere in the tree, so the loader is gone and the file is declared unbundled: the lane is unwired, not lazy. Wiring it is one createLazyModuleLoader the day the Bonsai import lane starts reading containers.",
   "app/features/bonsai-large-dat-reader.js":
@@ -67,6 +68,16 @@ test.assert(
     ? "every source file is named by a manifest, a loader, or the declared-unbundled list"
     : `unreachable source file(s) with no declared reason: ${orphans.join(", ")}`
 );
+
+// The published shared disks are one module per route. They are named by the
+// derived list above rather than by any literal loader string, so this is where
+// a route that reached SHARED_DISKS but never reached the manifest is caught.
+for (const { route } of SHARED_DISKS) {
+  test.assert(
+    listed.has(`app/content/shared-disks/${route}.js`),
+    `the ${route} shared-disk module is named by lazyRuntimePaths, so gates cover it`,
+  );
+}
 
 // The declared list must stay honest in both directions: a file that has since
 // been wired into a manifest should lose its row here rather than accumulate.

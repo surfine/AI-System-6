@@ -50,8 +50,8 @@ or decline once; the answer is kept in the settings record and listed in
 
 | Level | Chinese | Unlocks |
 | --- | --- | --- |
-| read | 只读 | `get_desk_state`, `list_project_objects`, `read_project_object`, `search_project_sources`, `read_route_document`, `list_file_floppy`, `read_file_floppy_item`, `list_scrapbook_clips`, `list_run_receipts`, `read_run_receipt`, `list_writing_lenses`, `open_writing_lens`, `open_writing_context`, `open_quick_draft_capability`, `validate_capability_result`, `list_writing_route`, `list_desk_applications`, `list_projects`, `map_document`, `list_document_revisions`, `read_document_revision`, `read_darkroom_record`, `list_dictionary_terms`, `read_write_lease`, `list_guests` |
-| propose | 可提议 | read + `put_on_file_floppy`, `submit_review`, `submit_proposal`, `deliver_lens_result`, `deliver_quick_draft_result`, `propose_scrapbook_clip`, `annotate_section` |
+| read | 只读 | `get_desk_state`, `list_project_objects`, `read_project_object`, `search_project_sources`, `read_route_document`, `list_file_floppy`, `read_file_floppy_item`, `list_scrapbook_clips`, `list_run_receipts`, `read_run_receipt`, `list_writing_lenses`, `open_writing_lens`, `open_writing_context`, `open_quick_draft_capability`, `validate_capability_result`, `list_writing_route`, `list_desk_applications`, `list_projects`, `map_document`, `list_document_revisions`, `read_document_revision`, `read_darkroom_record`, `list_dictionary_terms`, `read_write_lease`, `list_guests`, `open_rebuild_context`, `validate_rebuild_pack` |
+| propose | 可提议 | read + `put_on_file_floppy`, `submit_review`, `submit_proposal`, `deliver_lens_result`, `deliver_quick_draft_result`, `propose_scrapbook_clip`, `annotate_section`, `submit_rebuild_pack` |
 | change | 可改动 | propose + `dispatch_intent` (`map` and `review` run at once; `present`, `edit`, `attach`, `export`, `develop` are parked awaiting commit), `open_application`, `switch_project`, `eject_file_floppy`, `commit_receipt`, `restore_document_revision`, `write_manuscript`, `set_route_document`, `create_scrapbook_clip`, `burn_project_cd`, `mount_file_floppy`, `add_project_reference`, `export_project_disk` |
 
 The writer can lower a guest below what it asked for, never raise it above.
@@ -96,9 +96,50 @@ the shape is copied rather than invented.
 
 `set_route_document` writes the stops above the manuscript — Question Sheet,
 Outline, one section draft — through the surfaces the writer uses.
-`setProjectOutlineMarkdown` is the one road into the outline record because it
-stamps the section record ids the lens and annotation tools take; writing the
-outline around it would hand out ids nothing else knows.
+`setProjectOutlineMarkdown` is the one road into the outline record. It stores
+the outline and its section titles; the section record ids the lens and
+annotation tools take are stamped by the writing route when the outline is
+opened there, not by this call.
+
+### Rebuild packs
+
+「还原写作对象」 rebuilds a project's writing route around a manuscript: the
+question sheet's new round, the sections and their drafts, dossiers with their
+sources, the fact ledger, the lineage. A guest does it in three steps.
+`open_rebuild_context` (read) returns the pack contract, the manuscript as the
+writer sees it, the route documents, dossiers, reference names (not their
+text) and a `sourceRevision`. `validate_rebuild_pack` (read) runs the desk's
+own check and writes nothing. `submit_rebuild_pack` (propose) checks again and
+parks the pack as a receipt awaiting the writer.
+
+The rules are one pure module, `apps/desktop/app/core/rebuild-pack.js`, shared
+with the offline `tooling/rebuild-disk.mjs`: sections that split the
+manuscript, as many as the article has (at least two; the demo disks' tooling
+asks for exactly six); in `own` mode no undeclared change to the author's text (every
+difference is a correction pointing at a fact-ledger row, an author
+instruction, an author quote or a removal with a reason, plus one dated
+addendum); every fact sourced and labelled 官方 / 公开 / 实测 / 作者数据 / 推测;
+dossiers that carry their origin; no private chat as a dossier, reference or
+quote; no private detail, reported by field path without echoing it.
+
+A rebuild is the one proposal that 可改动 does not adopt on its own: it rewrites
+the route around the manuscript in one go, so `commit_receipt` on a rebuild
+receipt always shows the writer the confirmation (owner decision, 2026-09-26),
+and the Review Desk card adopts only on the writer's click. Adoption keeps the
+manuscript's previous text as a `restore-before` revision, records the round
+as a `guest` / `rebuild-round` revision pointing at the receipt, moves retired
+dossiers and references to the Trash, and refuses if the project changed after
+the context was opened.
+
+The desk's own 「还原写作对象」 window builds the same pack with the local or
+cloud model and hands a round in the same way: the receipt comes from
+`rebuildFlow` instead of a guest, waits on the same Review Desk card, and its
+adopted revision is recorded as `model`. A waiting rebuild card shows through
+Review Desk's lock: the desk locks its reviews until the manuscript is marked
+final, but a rebuild is the round that produces that manuscript, so its card
+sits under the lock note while everything else stays locked. A pack for a new disk has nothing of
+the writer's to overwrite, so the window builds that disk at once and records
+the receipt as adopted.
 
 ## What the writer sees
 
@@ -321,5 +362,11 @@ claude mcp add --transport http my-desk https://system6.example/mcp \
 
 - **ClioTalk tool calls.** Clio itself calling an external server's tools mid
   conversation, with the results still landing on the File Floppy.
+- **Frontier models for the desk's own features.** Not through sampling:
+  no Claude or GPT host supports it and the 2026-07-28 revision deprecates it.
+  The findings and the options are in [Desk Port](MCP.md#frontier-models-through-the-port-checked-2026-09-28).
+- **Protocol revision.** This bridge negotiates `2025-11-25` and the three
+  revisions before it; the stateless `2026-07-28` shape described in
+  [Desk Port](MCP.md) is a design, not what `/mcp` speaks today.
 
 <!-- claim-check: apps/server/server/routes/mcp.js, apps/server/server/mcp-tools.js, apps/server/server/security/mcp-admission.js | tests/features/mcp-guest-bridge.test.mjs, tests/features/mcp-outbound.test.mjs | functions/api/capabilities.js (AI_SYSTEM6_PUBLIC_MCP) -->

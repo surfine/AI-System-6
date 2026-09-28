@@ -1,4 +1,14 @@
-body.use-liquid-glass {
+body[data-theme="liquid-glass"] {
+  /* Period tokens Platinum made shared (2026-09-25, second batch), answered
+     with the values this era already drew. */
+  --window-frame-arrow-up-order: 0;
+  --window-frame-arrow-down-order: 0;
+  --window-frame-arrow-down-border-top: var(--window-frame-track-border);
+  --window-frame-arrow-up-art-size: 1px 1px, 3px 1px, 5px 1px, 7px 1px;
+  --window-frame-arrow-up-art-position: left 7px top 5px, left 6px top 6px, left 5px top 7px, left 4px top 8px;
+  --window-frame-arrow-down-art-size: 7px 1px, 5px 1px, 3px 1px, 1px 1px;
+  --window-frame-arrow-down-art-position: left 4px top 5px, left 5px top 6px, left 6px top 7px, left 7px top 8px;
+  --choice-checkmark-size: 12px 12px;
   /* HIG shape ladder: compact desktop controls, rounded surfaces, and capsules.
      Nested surfaces subtract their inset from the parent, with a positive floor. */
   --r-xs: 4px;
@@ -52,6 +62,14 @@ body.use-liquid-glass {
      the point where the backdrop is still readable, and lifts its chroma
      back up so the glass stays coloured by what it covers. */
   --window-backdrop-filter: blur(18px) saturate(185%) brightness(1.06);
+  /* The title bar and status strip frost again over the window. A window
+     whose content repaints every frame (Bonsai City's map) turns both
+     filters off and takes the solid surface: a blurred backdrop over a
+     moving map is recomposited on every frame. */
+  --window-chrome-backdrop-filter: blur(12px) saturate(150%);
+  --glass-solid-surface:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(246, 251, 253, 0.86)),
+    rgb(246, 251, 253);
   --surface-primary: var(--liquid-fill-tint);
   --surface-secondary: rgba(230, 237, 242, 0.34);
   --surface-inset: rgba(255, 255, 255, 0.18);
@@ -968,7 +986,7 @@ body.use-liquid-glass {
   --settings-scrollbar-thumb-shadow: none;
 
   /* Migrated twin overrides. Each pairs with a default in :root in
-     styles/00-foundation.css. Deleting the corresponding body.use-liquid-glass
+     styles/00-foundation.css. Deleting the corresponding body[data-theme="liquid-glass"]
      <selector> rule below dropped liquidGlassTwinCount accordingly. */
   --menu-divider-color: rgba(16, 17, 20, 0.12);
   --menu-shortcut-color: currentColor;
@@ -1988,7 +2006,9 @@ body.use-liquid-glass {
     #e4e8ea;
 }
 
-body.use-liquid-glass[data-theme="liquid-glass"] .desktop {
+/* Two attributes keep this rule's (0,2,1): it outranked the era root when
+   it was written as the class plus data-theme. */
+body[data-theme="liquid-glass"][data-theme-family="liquid-glass"] .desktop {
   background:
     linear-gradient(rgba(255, 255, 255, 0.32) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.26) 1px, transparent 1px),
@@ -1996,7 +2016,7 @@ body.use-liquid-glass[data-theme="liquid-glass"] .desktop {
   background-size: 22px 22px, 22px 22px, auto;
 }
 
-body.use-liquid-glass #liquid-glass-overlay {
+body[data-theme="liquid-glass"] #liquid-glass-overlay {
   position: fixed;
   inset: 0;
   width: 100vw;
@@ -2004,7 +2024,7 @@ body.use-liquid-glass #liquid-glass-overlay {
   pointer-events: none;
 }
 
-body.use-liquid-glass #clock:not(.is-hidden) {
+body[data-theme="liquid-glass"] #clock:not(.is-hidden) {
   display: inline-flex;
   align-items: center;
   padding: 0 9px;
@@ -2015,42 +2035,43 @@ body.use-liquid-glass #clock:not(.is-hidden) {
    .menu > button, .project-switcher-button, …) would otherwise set the classic
    height on the menu buttons in glass. Value is single-sourced through the
    token. */
-body.use-liquid-glass .menu-bar > .menu > button {
+body[data-theme="liquid-glass"] .menu-bar > .menu > button {
   height: var(--menu-button-height);
 }
 
-body.use-liquid-glass .menu-popover,
-body.use-liquid-glass .menu-submenu-popover,
-body.use-liquid-glass .menu-sub-popover,
-body.use-liquid-glass .system-select-menu {
+body[data-theme="liquid-glass"] .menu-popover,
+body[data-theme="liquid-glass"] .menu-submenu-popover,
+body[data-theme="liquid-glass"] .menu-sub-popover,
+body[data-theme="liquid-glass"] .system-select-menu {
   border: 1px solid var(--glass-border);
   border-radius: var(--r-md);
   background: var(--liquid-menu-panel);
   box-shadow: var(--menu-panel-shadow);
   backdrop-filter: blur(34px) saturate(160%) brightness(1.04);
   -webkit-backdrop-filter: blur(34px) saturate(160%) brightness(1.04);
-  overflow: hidden;
+  /* A menu-bar panel hands over its own overflow (60-responsive.css). */
+  overflow: var(--menu-popover-overflow, hidden);
 }
 
-body.use-liquid-glass .menu-bar > .menu > .menu-popover,
-body.use-liquid-glass .menu-bar > .project-switcher-menu > .menu-popover {
+body[data-theme="liquid-glass"] .menu-bar > .menu > .menu-popover,
+body[data-theme="liquid-glass"] .menu-bar > .project-switcher-menu > .menu-popover {
   top: var(--menu-popover-top);
 }
 
-body.use-liquid-glass .project-switcher-menu .menu-popover {
+body[data-theme="liquid-glass"] .project-switcher-menu .menu-popover {
   min-width: min(430px, calc(100vw - 18px));
   background: var(--liquid-menu-panel);
 }
 
-body.use-liquid-glass .project-switcher-copy small {
+body[data-theme="liquid-glass"] .project-switcher-copy small {
   overflow: visible;
   text-overflow: clip;
   white-space: normal;
 }
 
-body.use-liquid-glass .menu-popover button,
-body.use-liquid-glass .menu-submenu-trigger,
-body.use-liquid-glass .menu-sub-popover button {
+body[data-theme="liquid-glass"] .menu-popover button,
+body[data-theme="liquid-glass"] .menu-submenu-trigger,
+body[data-theme="liquid-glass"] .menu-sub-popover button {
   --liquid-disabled-control-border: transparent;
   --liquid-disabled-control-bg: transparent;
   --liquid-disabled-control-fg: rgba(16, 17, 20, 0.38);
@@ -2067,17 +2088,17 @@ body.use-liquid-glass .menu-sub-popover button {
   min-height: 30px;
 }
 
-body.use-liquid-glass .menu-section-label {
+body[data-theme="liquid-glass"] .menu-section-label {
   padding-top: 8px;
   padding-bottom: 4px;
   color: rgba(16, 17, 20, 0.62);
 }
 
-body.use-liquid-glass .window,
-body.use-liquid-glass .spine-toolbox-panel,
-body.use-liquid-glass .system-modal,
-body.use-liquid-glass .startup-settings-modal,
-body.use-liquid-glass .finder-operation-modal {
+body[data-theme="liquid-glass"] .window,
+body[data-theme="liquid-glass"] .spine-toolbox-panel,
+body[data-theme="liquid-glass"] .system-modal,
+body[data-theme="liquid-glass"] .startup-settings-modal,
+body[data-theme="liquid-glass"] .finder-operation-modal {
   isolation: isolate;
   border: 0;
   border-radius: var(--r-xl);
@@ -2091,27 +2112,27 @@ body.use-liquid-glass .finder-operation-modal {
   -webkit-backdrop-filter: var(--window-backdrop-filter);
 }
 
-body.use-liquid-glass .spine-toolbox-panel {
+body[data-theme="liquid-glass"] .spine-toolbox-panel {
   position: relative;
 }
 
-body.use-liquid-glass .writing-spine-panel {
+body[data-theme="liquid-glass"] .writing-spine-panel {
   background: transparent;
   box-shadow: none;
 }
-/* Specificity-only twin: the generic body.use-liquid-glass .window rule above
+/* Specificity-only twin: the generic body[data-theme="liquid-glass"] .window rule above
    sets box-shadow at (0,0,2,0), same as base .window.is-active, so we restate
    the active-state shadow at higher specificity. Value still lives in the
-   --active-window-shadow token (defined in :root + body.use-liquid-glass). */
-body.use-liquid-glass .window.is-active {
+   --active-window-shadow token (defined in :root + body[data-theme="liquid-glass"]). */
+body[data-theme="liquid-glass"] .window.is-active {
   box-shadow: var(--active-window-shadow);
 }
 
-body.use-liquid-glass .window::before,
-body.use-liquid-glass .spine-toolbox-panel::before,
-body.use-liquid-glass .system-modal::before,
-body.use-liquid-glass .startup-settings-modal::before,
-body.use-liquid-glass .finder-operation-modal::before {
+body[data-theme="liquid-glass"] .window::before,
+body[data-theme="liquid-glass"] .spine-toolbox-panel::before,
+body[data-theme="liquid-glass"] .system-modal::before,
+body[data-theme="liquid-glass"] .startup-settings-modal::before,
+body[data-theme="liquid-glass"] .finder-operation-modal::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -2126,17 +2147,17 @@ body.use-liquid-glass .finder-operation-modal::before {
   pointer-events: none;
 }
 
-body.use-liquid-glass .system-modal {
+body[data-theme="liquid-glass"] .system-modal {
   width: min(520px, calc(100vw - 32px));
   padding: 28px 30px 26px;
 }
 
-body.use-liquid-glass .system-modal form {
+body[data-theme="liquid-glass"] .system-modal form {
   display: grid;
   gap: 22px;
 }
 
-body.use-liquid-glass .system-modal p {
+body[data-theme="liquid-glass"] .system-modal p {
   display: flex;
   gap: 18px;
   align-items: start;
@@ -2149,7 +2170,7 @@ body.use-liquid-glass .system-modal p {
   overflow-wrap: break-word;
 }
 
-body.use-liquid-glass .system-modal p::before {
+body[data-theme="liquid-glass"] .system-modal p::before {
   position: static;
   flex: 0 0 54px;
   width: 54px;
@@ -2166,30 +2187,30 @@ body.use-liquid-glass .system-modal p::before {
   font-family: var(--title-font);
   font-size: 28px;
 }
-body.use-liquid-glass .system-modal .button-row {
+body[data-theme="liquid-glass"] .system-modal .button-row {
   justify-content: flex-end;
   gap: 10px;
 }
 
-body.use-liquid-glass .system-modal .btn {
+body[data-theme="liquid-glass"] .system-modal .btn {
   min-height: 36px;
   padding-inline: 18px;
 }
 
-body.use-liquid-glass .finder-operation-modal {
+body[data-theme="liquid-glass"] .finder-operation-modal {
   width: min(680px, calc(100vw - 32px));
 }
 
-body.use-liquid-glass .finder-operation-modal form {
+body[data-theme="liquid-glass"] .finder-operation-modal form {
   padding: 28px;
 }
 
-body.use-liquid-glass .finder-operation-layout {
+body[data-theme="liquid-glass"] .finder-operation-layout {
   grid-template-columns: 156px minmax(0, 1fr);
   gap: 30px;
 }
 
-body.use-liquid-glass .finder-operation-subject {
+body[data-theme="liquid-glass"] .finder-operation-subject {
   padding: 16px 12px;
   border: 1px solid rgba(255, 255, 255, 0.42);
   border-radius: var(--r-xl);
@@ -2199,12 +2220,12 @@ body.use-liquid-glass .finder-operation-subject {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.66);
 }
 
-body.use-liquid-glass .finder-operation-subject .icon {
+body[data-theme="liquid-glass"] .finder-operation-subject .icon {
   margin-bottom: 4px;
   filter: drop-shadow(0 8px 18px rgba(18, 28, 38, 0.12));
 }
 
-body.use-liquid-glass .finder-operation-list {
+body[data-theme="liquid-glass"] .finder-operation-list {
   display: grid;
   gap: 6px;
   padding: 8px;
@@ -2218,7 +2239,7 @@ body.use-liquid-glass .finder-operation-list {
     0 12px 30px rgba(18, 28, 38, 0.08);
 }
 
-body.use-liquid-glass .finder-operation-item {
+body[data-theme="liquid-glass"] .finder-operation-item {
   padding: 7px 10px;
   border: 1px solid rgba(255, 255, 255, 0.42);
   border-radius: var(--r-md);
@@ -2226,17 +2247,17 @@ body.use-liquid-glass .finder-operation-item {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.54);
 }
 
-body.use-liquid-glass .finder-operation-item.is-empty {
+body[data-theme="liquid-glass"] .finder-operation-item.is-empty {
   color: rgba(16, 17, 20, 0.48);
   background: rgba(255, 255, 255, 0.12);
 }
 
-body.use-liquid-glass .finder-operation-item .sys-icon {
+body[data-theme="liquid-glass"] .finder-operation-item .sys-icon {
   width: 24px;
   height: 24px;
 }
 
-body.use-liquid-glass .finder-operation-result {
+body[data-theme="liquid-glass"] .finder-operation-result {
   margin-top: 14px;
   padding: 12px 14px;
   border: 1px solid rgba(255, 255, 255, 0.36);
@@ -2245,24 +2266,21 @@ body.use-liquid-glass .finder-operation-result {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
 }
 
-body.use-liquid-glass .finder-operation-actions {
+body[data-theme="liquid-glass"] .finder-operation-actions {
   gap: 10px;
   margin-top: 20px;
 }
 
-body.use-liquid-glass .assistant-window .messages {
+body[data-theme="liquid-glass"] .assistant-window .messages {
   padding: 0;
   background: var(--glass-reading-surface);
   backdrop-filter: var(--glass-reading-blur);
   -webkit-backdrop-filter: var(--glass-reading-blur);
 }
 
-body.use-liquid-glass .docmap-markmap-svg {
-}
-
-body.use-liquid-glass .docmap-markmap-svg .markmap-link {
+body[data-theme="liquid-glass"] .docmap-markmap-svg .markmap-link {
   stroke-opacity: 0.9;
-}body.use-liquid-glass .reader-content > .empty-folder-note {
+}body[data-theme="liquid-glass"] .reader-content > .empty-folder-note {
   --empty-note-max-width: 760px;
   --empty-note-margin: 32px auto 0;
   --empty-note-padding: 16px 22px;
@@ -2281,19 +2299,19 @@ body.use-liquid-glass .docmap-markmap-svg .markmap-link {
    continuous system region -- one material, no interior hairlines -- while the
    title bar, status strip and navigator keep their separate semantics. The one
    divider belongs where chrome meets content, so it sits on the pane. */
-body.use-liquid-glass .window > :is(.title-bar, .details-bar, .finder-navigation-bar) {
+body[data-theme="liquid-glass"] .window > :is(.title-bar, .details-bar, .finder-navigation-bar) {
   border-bottom-color: transparent;
   background: var(--glass-title-surface);
   box-shadow: none;
-  backdrop-filter: blur(12px) saturate(150%);
-  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  backdrop-filter: var(--window-chrome-backdrop-filter);
+  -webkit-backdrop-filter: var(--window-chrome-backdrop-filter);
 }
 
-body.use-liquid-glass .window > .window-pane {
+body[data-theme="liquid-glass"] .window > .window-pane {
   border-top: 1px solid rgba(16, 17, 20, 0.12);
 }
 
-body.use-liquid-glass .title-bar {
+body[data-theme="liquid-glass"] .title-bar {
   height: auto;
   min-height: 34px;
   grid-template-columns: 18px minmax(0, 1fr) 18px;
@@ -2304,12 +2322,12 @@ body.use-liquid-glass .title-bar {
   background: var(--glass-title-surface);
   box-shadow:
     inset 0 -1px 0 rgba(16, 17, 20, 0.12);
-  backdrop-filter: blur(12px) saturate(150%);
-  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  backdrop-filter: var(--window-chrome-backdrop-filter);
+  -webkit-backdrop-filter: var(--window-chrome-backdrop-filter);
 }
 
-body.use-liquid-glass .title-bar h1,
-body.use-liquid-glass .title-bar h2 {
+body[data-theme="liquid-glass"] .title-bar h1,
+body[data-theme="liquid-glass"] .title-bar h2 {
   min-height: 0;
   height: auto;
   padding: 0 10px;
@@ -2320,8 +2338,8 @@ body.use-liquid-glass .title-bar h2 {
   font-weight: 700;
 }
 
-body.use-liquid-glass .window:not(.is-active) .title-bar h1,
-body.use-liquid-glass .window:not(.is-active) .title-bar h2 {
+body[data-theme="liquid-glass"] .window:not(.is-active) .title-bar h1,
+body[data-theme="liquid-glass"] .window:not(.is-active) .title-bar h2 {
   color: rgba(16, 17, 20, 0.72);
   font-weight: 650;
 }
@@ -2329,7 +2347,7 @@ body.use-liquid-glass .window:not(.is-active) .title-bar h2 {
 /* A backdrop window quietens its chrome, never its document. The status strip
    and the buttons it carries are chrome; .window-pane keeps full contrast, so
    the reader can still read a window that is not the current target. */
-body.use-liquid-glass .window:not(.is-active) {
+body[data-theme="liquid-glass"] .window:not(.is-active) {
   --liquid-action-ink: rgba(16, 17, 20, 0.62);
   /* The suggested action of a backdrop window is still the suggested action,
      but it is not the current target: mute the blue rather than erase it, and
@@ -2343,17 +2361,17 @@ body.use-liquid-glass .window:not(.is-active) {
   --btn-default-text-shadow: none;
 }
 
-body.use-liquid-glass .window:not(.is-active) :is(.details-bar, .details-bar .sys-icon) {
+body[data-theme="liquid-glass"] .window:not(.is-active) :is(.details-bar, .details-bar .sys-icon) {
   color: rgba(16, 17, 20, 0.62);
 }
 
-html:lang(zh-Hans) body.use-liquid-glass .title-bar h1,
-html:lang(zh-Hans) body.use-liquid-glass .title-bar h2 {
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .title-bar h1,
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .title-bar h2 {
   font-size: 13px;
 }
 
-body.use-liquid-glass .close-box,
-body.use-liquid-glass .resize-box {
+body[data-theme="liquid-glass"] .close-box,
+body[data-theme="liquid-glass"] .resize-box {
   width: 14px;
   height: 14px;
   align-self: center;
@@ -2365,14 +2383,14 @@ body.use-liquid-glass .resize-box {
   background: linear-gradient(var(--lamp-hi) 30%, var(--lamp-lo) 75%);
 }
 
-body.use-liquid-glass .close-box {
+body[data-theme="liquid-glass"] .close-box {
   justify-self: start;
   --lamp-hi: var(--glass-lamp-close);
   --lamp-lo: #e8928b;
   --lamp-rim: #b40a09;
 }
 
-body.use-liquid-glass .resize-box {
+body[data-theme="liquid-glass"] .resize-box {
   justify-self: end;
   --lamp-hi: var(--glass-lamp-zoom);
   --lamp-lo: #a6d989;
@@ -2382,15 +2400,15 @@ body.use-liquid-glass .resize-box {
 /* Glyphs only under the pointer or focus, as on the real window; touch has
    no hover, so it keeps them. */
 @media (hover: hover) {
-  body.use-liquid-glass :is(.close-box, .resize-box):not(:hover, :focus-visible) {
+  body[data-theme="liquid-glass"] :is(.close-box, .resize-box):not(:hover, :focus-visible) {
     --glass-lamp-mark-opacity: 0;
   }
 }
 
-body.use-liquid-glass .close-box::before,
-body.use-liquid-glass .close-box::after,
-body.use-liquid-glass .resize-box::before,
-body.use-liquid-glass .resize-box::after {
+body[data-theme="liquid-glass"] .close-box::before,
+body[data-theme="liquid-glass"] .close-box::after,
+body[data-theme="liquid-glass"] .resize-box::before,
+body[data-theme="liquid-glass"] .resize-box::after {
   content: "";
   position: absolute;
   left: 50%;
@@ -2404,19 +2422,19 @@ body.use-liquid-glass .resize-box::after {
   transform: translate(-50%, -50%);
 }
 
-body.use-liquid-glass .close-box::before {
+body[data-theme="liquid-glass"] .close-box::before {
   transform: translate(-50%, -50%) rotate(45deg);
 }
 
-body.use-liquid-glass .close-box::after {
+body[data-theme="liquid-glass"] .close-box::after {
   transform: translate(-50%, -50%) rotate(-45deg);
 }
 
-body.use-liquid-glass .resize-box::after {
+body[data-theme="liquid-glass"] .resize-box::after {
   transform: translate(-50%, -50%) rotate(90deg);
 }
 
-body.use-liquid-glass .window.alarm-clock-window {
+body[data-theme="liquid-glass"] .window.alarm-clock-window {
   border-radius: var(--alarm-clock-frame-radius);
   background: var(--alarm-clock-surface-bg);
   box-shadow: var(--alarm-clock-frame-shadow);
@@ -2425,7 +2443,7 @@ body.use-liquid-glass .window.alarm-clock-window {
   border: var(--alarm-clock-frame-border);
 }
 
-body.use-liquid-glass .grow-box {
+body[data-theme="liquid-glass"] .grow-box {
   /* No stacking token needed: identical to the base 10-windows.css .grow-box
      token; the base rule's value already applies here, this twin only
      overrides paint. */
@@ -2439,7 +2457,7 @@ body.use-liquid-glass .grow-box {
   border: 0;
 }
 
-body.use-liquid-glass .grow-box::before {
+body[data-theme="liquid-glass"] .grow-box::before {
   content: "";
   position: absolute;
   right: var(--grow-box-arc-inset);
@@ -2458,27 +2476,27 @@ body.use-liquid-glass .grow-box::before {
   box-shadow: 1px 1px 0 rgba(255, 255, 255, 0.42);
 }
 
-body.use-liquid-glass .grow-box:hover,
-body.use-liquid-glass .grow-box:focus,
-body.use-liquid-glass .grow-box:focus-visible {
+body[data-theme="liquid-glass"] .grow-box:hover,
+body[data-theme="liquid-glass"] .grow-box:focus,
+body[data-theme="liquid-glass"] .grow-box:focus-visible {
   background: transparent;
   outline: 0;
   box-shadow: inset -4px -4px 0 rgba(255, 255, 255, 0.44);
 }
 
-body.use-liquid-glass .grow-box:hover::before,
-body.use-liquid-glass .grow-box:focus::before,
-body.use-liquid-glass .grow-box:focus-visible::before {
+body[data-theme="liquid-glass"] .grow-box:hover::before,
+body[data-theme="liquid-glass"] .grow-box:focus::before,
+body[data-theme="liquid-glass"] .grow-box:focus-visible::before {
   border-color: rgba(16, 17, 20, 0.62);
 }
 
-body.use-liquid-glass textarea,
-body.use-liquid-glass input[type="url"],
-body.use-liquid-glass input[type="text"],
-body.use-liquid-glass input[type="password"],
-body.use-liquid-glass input[type="number"],
-body.use-liquid-glass input[type="date"],
-body.use-liquid-glass .system-select-button {
+body[data-theme="liquid-glass"] textarea,
+body[data-theme="liquid-glass"] input[type="url"],
+body[data-theme="liquid-glass"] input[type="text"],
+body[data-theme="liquid-glass"] input[type="password"],
+body[data-theme="liquid-glass"] input[type="number"],
+body[data-theme="liquid-glass"] input[type="date"],
+body[data-theme="liquid-glass"] .system-select-button {
   border: 1px solid rgba(255, 255, 255, 0.62);
   border-radius: var(--r-md);
   background:
@@ -2497,7 +2515,7 @@ body.use-liquid-glass .system-select-button {
 /* The native select's arrow survives the glass background because the arrow is
    part of the material (the responsive layer once re-added it with priority
    after this shorthand; now it lives here and the override is gone). */
-body.use-liquid-glass select {
+body[data-theme="liquid-glass"] select {
   border: 1px solid rgba(255, 255, 255, 0.62);
   border-radius: var(--r-md);
   background:
@@ -2518,10 +2536,10 @@ body.use-liquid-glass select {
    in the Question Sheet, the Outline, Section Drafts and the Review Desk the
    moment the writer clicked in. TeachText was carved out one rule at a time
    below; the guard belongs on the field rule, where it holds for all of them. */
-body.use-liquid-glass textarea:not(.mde-input):focus,
-body.use-liquid-glass input:focus,
-body.use-liquid-glass select:focus,
-body.use-liquid-glass .system-select-button:focus-visible {
+body[data-theme="liquid-glass"] textarea:not(.mde-input):focus,
+body[data-theme="liquid-glass"] input:focus,
+body[data-theme="liquid-glass"] select:focus,
+body[data-theme="liquid-glass"] .system-select-button:focus-visible {
   outline: 0;
   outline-offset: 0;
   border-color: var(--glass-field-focus-rim);
@@ -2536,8 +2554,8 @@ body.use-liquid-glass .system-select-button:focus-visible {
     0 8px 22px rgba(18, 28, 38, 0.08);
 }
 
-body.use-liquid-glass input[type="checkbox"],
-body.use-liquid-glass input[type="radio"] {
+body[data-theme="liquid-glass"] input[type="checkbox"],
+body[data-theme="liquid-glass"] input[type="radio"] {
   appearance: none;
   -webkit-appearance: none;
   display: inline-grid;
@@ -2558,42 +2576,42 @@ body.use-liquid-glass input[type="radio"] {
 
 /* Order-specific twin: the mixed rule above paints the rounded checkbox shape, but the radio has always rendered as a circle — the base rule's 50%
    must win here. Kept as a later same-selector rule with the value tokenized. */
-body.use-liquid-glass input[type="radio"] {
+body[data-theme="liquid-glass"] input[type="radio"] {
   border-radius: var(--radio-radius);
 }
 
-body.use-liquid-glass input[type="checkbox"]::before,
-body.use-liquid-glass input[type="radio"]::before {
+body[data-theme="liquid-glass"] input[type="checkbox"]::before,
+body[data-theme="liquid-glass"] input[type="radio"]::before {
   content: "";
   display: block;
   transform: scale(0);
   transition: transform 0.12s ease-out;
 }
 
-body.use-liquid-glass input[type="checkbox"]::before {
+body[data-theme="liquid-glass"] input[type="checkbox"]::before {
   width: 10px;
   height: 10px;
   clip-path: polygon(14% 0, 50% 36%, 86% 0, 100% 14%, 64% 50%, 100% 86%, 86% 100%, 50% 64%, 14% 100%, 0 86%, 36% 50%, 0 14%);
   background: rgba(16, 17, 20, 0.86);
 }
 
-body.use-liquid-glass input[type="radio"]::before {
+body[data-theme="liquid-glass"] input[type="radio"]::before {
   width: 8px;
   height: 8px;
   border-radius: var(--r-circle);
   background: rgba(16, 17, 20, 0.86);
 }
 
-body.use-liquid-glass input[type="checkbox"]:checked,
-body.use-liquid-glass input[type="radio"]:checked {
+body[data-theme="liquid-glass"] input[type="checkbox"]:checked,
+body[data-theme="liquid-glass"] input[type="radio"]:checked {
   border-color: rgba(16, 17, 20, 0.5);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.04)),
     linear-gradient(180deg, #0a84ff, #0071e3);
 }
 
-body.use-liquid-glass input[type="checkbox"]:checked::before,
-body.use-liquid-glass input[type="radio"]:checked::before {
+body[data-theme="liquid-glass"] input[type="checkbox"]:checked::before,
+body[data-theme="liquid-glass"] input[type="radio"]:checked::before {
   background: rgba(255, 255, 255, 0.96);
   transform: scale(1);
 }
@@ -2608,7 +2626,7 @@ body.use-liquid-glass input[type="radio"]:checked::before {
    that the user drives — pointer approach and drag — only swap tokens on the
    input, and the track and lens read those tokens through inheritance, so the
    material is described once and the states say how much of it. */
-body.use-liquid-glass .liquid-tint-row input[type="range"] {
+body[data-theme="liquid-glass"] .liquid-tint-row input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   /* Taller than the lens so the lens's drop is not clipped by the input box.
@@ -2618,13 +2636,13 @@ body.use-liquid-glass .liquid-tint-row input[type="range"] {
   cursor: pointer;
 }
 
-body.use-liquid-glass .liquid-tint-row input[type="range"]:focus {
+body[data-theme="liquid-glass"] .liquid-tint-row input[type="range"]:focus {
   outline: none;
 }
 
 /* Approach deepens the knob's drop a touch and does nothing else: the pointer
    must not resize what it is about to grab. */
-body.use-liquid-glass .liquid-tint-row input[type="range"]:hover {
+body[data-theme="liquid-glass"] .liquid-tint-row input[type="range"]:hover {
   --glass-slider-lens-scale: var(--glass-slider-hover-scale);
   --glass-slider-lens-shadow:
     0 0 0 0.5px rgba(16, 17, 20, 0.1),
@@ -2634,7 +2652,7 @@ body.use-liquid-glass .liquid-tint-row input[type="range"]:hover {
 
 /* Keyboard focus must be at least as findable as hover, so it keeps the
    hover lift and adds the accent halo the fields use. */
-body.use-liquid-glass .liquid-tint-row input[type="range"]:focus-visible {
+body[data-theme="liquid-glass"] .liquid-tint-row input[type="range"]:focus-visible {
   --glass-slider-lens-scale: var(--glass-slider-hover-scale);
   --glass-slider-lens-shadow:
     0 0 0 0.5px rgba(16, 17, 20, 0.1),
@@ -2646,7 +2664,7 @@ body.use-liquid-glass .liquid-tint-row input[type="range"]:focus-visible {
 /* The drag. A held knob sits into the line — a shade cooler, a shorter drop,
    the accent halo the focus ring already uses — so the press reads as contact
    rather than as a bigger object. */
-body.use-liquid-glass .liquid-tint-row input[type="range"]:active {
+body[data-theme="liquid-glass"] .liquid-tint-row input[type="range"]:active {
   --glass-slider-lens-scale: var(--glass-slider-press-scale);
   --glass-slider-lens-bg: #f2f3f5;
   --glass-slider-lens-shadow:
@@ -2655,14 +2673,14 @@ body.use-liquid-glass .liquid-tint-row input[type="range"]:active {
     0 1px 2px rgba(18, 28, 38, 0.24);
 }
 
-body.use-liquid-glass .liquid-tint-row input[type="range"]::-webkit-slider-runnable-track {
+body[data-theme="liquid-glass"] .liquid-tint-row input[type="range"]::-webkit-slider-runnable-track {
   height: var(--glass-slider-thickness);
   border-radius: var(--r-pill);
   background: var(--glass-slider-track-bg);
   box-shadow: var(--glass-slider-track-shadow);
 }
 
-body.use-liquid-glass .liquid-tint-row input[type="range"]::-webkit-slider-thumb {
+body[data-theme="liquid-glass"] .liquid-tint-row input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: var(--glass-slider-lens-size);
@@ -2681,14 +2699,14 @@ body.use-liquid-glass .liquid-tint-row input[type="range"]::-webkit-slider-thumb
     box-shadow var(--glass-slider-motion) var(--control-motion-ease);
 }
 
-body.use-liquid-glass .liquid-tint-row input[type="range"]::-moz-range-track {
+body[data-theme="liquid-glass"] .liquid-tint-row input[type="range"]::-moz-range-track {
   height: var(--glass-slider-thickness);
   border-radius: var(--r-pill);
   background: var(--glass-slider-track-bg);
   box-shadow: var(--glass-slider-track-shadow);
 }
 
-body.use-liquid-glass .liquid-tint-row input[type="range"]::-moz-range-thumb {
+body[data-theme="liquid-glass"] .liquid-tint-row input[type="range"]::-moz-range-thumb {
   width: var(--glass-slider-lens-size);
   height: var(--glass-slider-lens-size);
   border: 0;
@@ -2701,7 +2719,7 @@ body.use-liquid-glass .liquid-tint-row input[type="range"]::-moz-range-thumb {
     box-shadow var(--glass-slider-motion) var(--control-motion-ease);
 }
 
-body.use-liquid-glass .btn {
+body[data-theme="liquid-glass"] .btn {
   border: 1px solid var(--btn-border-color);
   border-radius: var(--btn-radius);
   background: var(--btn-bg);
@@ -2717,31 +2735,31 @@ body.use-liquid-glass .btn {
    button.btn rule both outrank a plain .btn.default base rule, so the default
    button material must keep its own glass rule. Values stay single-sourced
    through the tokens. */
-body.use-liquid-glass .btn.default {
+body[data-theme="liquid-glass"] .btn.default {
   background: var(--btn-default-bg);
   color: var(--btn-default-fg);
   text-shadow: var(--btn-default-text-shadow);
   box-shadow: var(--btn-default-shadow);
 }
 
-body.use-liquid-glass .btn.default:active:not(:disabled):not(.is-disabled) {
+body[data-theme="liquid-glass"] .btn.default:active:not(:disabled):not(.is-disabled) {
   background: var(--btn-default-active-bg);
   color: var(--btn-default-active-fg);
 }
 
-body.use-liquid-glass .btn:hover:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected) {
+body[data-theme="liquid-glass"] .btn:hover:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected) {
   background: var(--btn-hover-bg);
   box-shadow: var(--btn-hover-shadow);
 }
 
-body.use-liquid-glass .btn:active:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected) {
+body[data-theme="liquid-glass"] .btn:active:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected) {
   transform: var(--liquid-press-transform);
   background: rgba(255, 255, 255, 0.64);
   color: rgba(16, 17, 20, 0.94);
   box-shadow: inset 0 2px 4px rgba(18, 28, 38, 0.12);
 }
 
-body.use-liquid-glass .btn.is-glass-pressed:not(:disabled):not(.is-disabled):not(.is-selected):not(.is-multi-selected) {
+body[data-theme="liquid-glass"] .btn.is-glass-pressed:not(:disabled):not(.is-disabled):not(.is-selected):not(.is-multi-selected) {
   transform: var(--liquid-press-transform);
   background: var(--liquid-interaction-tint);
   color: var(--liquid-action-ink);
@@ -2750,7 +2768,7 @@ body.use-liquid-glass .btn.is-glass-pressed:not(:disabled):not(.is-disabled):not
     0 0 0 3px var(--glass-field-focus-ring);
 }
 
-body.use-liquid-glass .btn.danger:not(:disabled):not(.is-disabled) {
+body[data-theme="liquid-glass"] .btn.danger:not(:disabled):not(.is-disabled) {
   border-color: rgba(228, 54, 54, 0.38);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.24)),
@@ -2759,8 +2777,8 @@ body.use-liquid-glass .btn.danger:not(:disabled):not(.is-disabled) {
   -webkit-text-fill-color: rgb(185, 28, 28);
 }
 
-body.use-liquid-glass .btn.danger:hover:not(:disabled):not(.is-disabled),
-body.use-liquid-glass .btn.danger:focus-visible:not(:disabled):not(.is-disabled) {
+body[data-theme="liquid-glass"] .btn.danger:hover:not(:disabled):not(.is-disabled),
+body[data-theme="liquid-glass"] .btn.danger:focus-visible:not(:disabled):not(.is-disabled) {
   border-color: rgba(228, 54, 54, 0.52);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.3)),
@@ -2773,10 +2791,10 @@ body.use-liquid-glass .btn.danger:focus-visible:not(:disabled):not(.is-disabled)
     0 0 0 3px rgba(228, 54, 54, 0.12);
 }
 
-body.use-liquid-glass .btn:disabled,
-body.use-liquid-glass .btn.is-disabled,
-body.use-liquid-glass .btn.default:disabled,
-body.use-liquid-glass .btn.default.is-disabled {
+body[data-theme="liquid-glass"] .btn:disabled,
+body[data-theme="liquid-glass"] .btn.is-disabled,
+body[data-theme="liquid-glass"] .btn.default:disabled,
+body[data-theme="liquid-glass"] .btn.default.is-disabled {
   border-color: rgba(16, 17, 20, 0.22);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.54), rgba(255, 255, 255, 0.2)),
@@ -2787,15 +2805,15 @@ body.use-liquid-glass .btn.default.is-disabled {
   opacity: 1;
 }
 
-body.use-liquid-glass .btn:disabled:active,
-body.use-liquid-glass .btn.is-disabled:active,
-body.use-liquid-glass .btn.default:disabled:active,
-body.use-liquid-glass .btn.default.is-disabled:active {
+body[data-theme="liquid-glass"] .btn:disabled:active,
+body[data-theme="liquid-glass"] .btn.is-disabled:active,
+body[data-theme="liquid-glass"] .btn.default:disabled:active,
+body[data-theme="liquid-glass"] .btn.default.is-disabled:active {
   transform: none;
   color: rgba(16, 17, 20, 0.42);
 }
 
-body.use-liquid-glass .composer {
+body[data-theme="liquid-glass"] .composer {
   /* The composer keeps its docked layout while its visible surface follows
      the same rounded panel role as the rest of Liquid Glass. */
   border-radius: var(--r-lg);
@@ -2805,18 +2823,18 @@ body.use-liquid-glass .composer {
   -webkit-backdrop-filter: blur(22px) saturate(150%);
 }
 
-body.use-liquid-glass .assistant-window .composer-action-row {
+body[data-theme="liquid-glass"] .assistant-window .composer-action-row {
   box-sizing: border-box;
 }
 
-body.use-liquid-glass .window:has(> .grow-box) .window-pane > .button-row:last-child,
-body.use-liquid-glass .window:has(> .grow-box) .teachtext-actions:last-child,
-body.use-liquid-glass .window:has(> .grow-box) .dictation-bottom-actions,
-body.use-liquid-glass .window:has(> .grow-box) .translation-pad-actions {
+body[data-theme="liquid-glass"] .window:has(> .grow-box) .window-pane > .button-row:last-child,
+body[data-theme="liquid-glass"] .window:has(> .grow-box) .teachtext-actions:last-child,
+body[data-theme="liquid-glass"] .window:has(> .grow-box) .dictation-bottom-actions,
+body[data-theme="liquid-glass"] .window:has(> .grow-box) .translation-pad-actions {
   box-sizing: border-box;
 }
 
-body.use-liquid-glass .assistant-window .composer label {
+body[data-theme="liquid-glass"] .assistant-window .composer label {
   width: fit-content;
   min-height: auto;
   display: block;
@@ -2827,18 +2845,18 @@ body.use-liquid-glass .assistant-window .composer label {
   font-weight: 700;
 }
 
-body.use-liquid-glass .assistant-window .composer textarea {
+body[data-theme="liquid-glass"] .assistant-window .composer textarea {
   border: 0;
   border-radius: var(--r-md);
   background: transparent;
 }
 
-body.use-liquid-glass .assistant-window .composer textarea:focus {
+body[data-theme="liquid-glass"] .assistant-window .composer textarea:focus {
   outline: 0;
   box-shadow: none;
 }
 
-body.use-liquid-glass .mde-surface::before {
+body[data-theme="liquid-glass"] .mde-surface::before {
   content: "";
   position: absolute;
   top: 0;
@@ -2857,15 +2875,15 @@ body.use-liquid-glass .mde-surface::before {
   pointer-events: none;
 }
 
-body.use-liquid-glass .mde-surface::after {
+body[data-theme="liquid-glass"] .mde-surface::after {
   right: 14px;
 }
 
-body.use-liquid-glass .mde-surface > .mde-input {
+body[data-theme="liquid-glass"] .mde-surface > .mde-input {
   scrollbar-gutter: stable;
 }
 
-body.use-liquid-glass .teachtext-pane textarea {
+body[data-theme="liquid-glass"] .teachtext-pane textarea {
   /* Concentric with the window corner, not a second window inside it. */
   --container-inset: 12px;
   border-radius: max(var(--r-xs), calc(var(--container-radius) - var(--container-inset)));
@@ -2876,7 +2894,7 @@ body.use-liquid-glass .teachtext-pane textarea {
   outline: 0;
 }
 
-body.use-liquid-glass .teachtext-pane textarea:focus {
+body[data-theme="liquid-glass"] .teachtext-pane textarea:focus {
   outline: 0;
   background: transparent;
   box-shadow: none;
@@ -2889,9 +2907,9 @@ body.use-liquid-glass .teachtext-pane textarea:focus {
    `.mde-surface > .mde-input` rule, and the writer read Question Sheet, Outline
    and Section Drafts through a 16% white veil. The glass they were reaching for
    is already on .mde-surface::before, which sits behind the ink. */
-body.use-liquid-glass .question-sheet-pane textarea:not(.mde-input),
-body.use-liquid-glass .outline-content:not(.mde-input),
-body.use-liquid-glass .draft-editor textarea:not(.mde-input) {
+body[data-theme="liquid-glass"] .question-sheet-pane textarea:not(.mde-input),
+body[data-theme="liquid-glass"] .outline-content:not(.mde-input),
+body[data-theme="liquid-glass"] .draft-editor textarea:not(.mde-input) {
   background: rgba(255, 255, 255, 0.16);
   box-shadow: none;
   outline: 0;
@@ -2903,8 +2921,8 @@ body.use-liquid-glass .draft-editor textarea:not(.mde-input) {
    both let underlying text bleed through, collide, and clip on scroll. Give
    them a solid reading fill + blur. Win over the base .teachtext-preview rule
    on specificity, so they need no priority override. */
-body.use-liquid-glass .specialized-teachtext-preview,
-body.use-liquid-glass .review-desk-preview {
+body[data-theme="liquid-glass"] .specialized-teachtext-preview,
+body[data-theme="liquid-glass"] .review-desk-preview {
   background: var(--glass-reading-surface);
   box-shadow: none;
   outline: 0;
@@ -2912,7 +2930,7 @@ body.use-liquid-glass .review-desk-preview {
   -webkit-backdrop-filter: var(--glass-reading-blur);
 }
 
-body.use-liquid-glass .dictation-field-button {
+body[data-theme="liquid-glass"] .dictation-field-button {
   min-width: 52px;
   border: 1px solid rgba(255, 255, 255, 0.56);
   border-radius: var(--r-pill);
@@ -2925,8 +2943,8 @@ body.use-liquid-glass .dictation-field-button {
   -webkit-backdrop-filter: blur(10px) saturate(145%);
 }
 
-body.use-liquid-glass .dictation-field-button:hover,
-body.use-liquid-glass .dictation-field-button:focus {
+body[data-theme="liquid-glass"] .dictation-field-button:hover,
+body[data-theme="liquid-glass"] .dictation-field-button:focus {
   outline: 0;
   border-color: rgba(0, 122, 255, 0.42);
   background:
@@ -2939,7 +2957,7 @@ body.use-liquid-glass .dictation-field-button:focus {
     0 0 0 2px rgba(0, 122, 255, 0.12);
 }
 
-body.use-liquid-glass .chooser-panel .control-section {
+body[data-theme="liquid-glass"] .chooser-panel .control-section {
   gap: 12px;
   padding: 14px;
   border: 1px solid rgba(255, 255, 255, 0.48);
@@ -2952,7 +2970,7 @@ body.use-liquid-glass .chooser-panel .control-section {
     0 12px 30px rgba(18, 28, 38, 0.08);
 }
 
-body.use-liquid-glass .chooser-panel .control-section h3 {
+body[data-theme="liquid-glass"] .chooser-panel .control-section h3 {
   margin: 0;
   padding: 0 10px;
   border: 1px solid rgba(255, 255, 255, 0.44);
@@ -2963,24 +2981,24 @@ body.use-liquid-glass .chooser-panel .control-section h3 {
   line-height: 1.6;
 }
 
-body.use-liquid-glass .chooser-source {
+body[data-theme="liquid-glass"] .chooser-source {
   grid-template-columns: 42px minmax(0, 1fr);
 }
 
-body.use-liquid-glass .chooser-source .sys-icon {
+body[data-theme="liquid-glass"] .chooser-source .sys-icon {
   grid-column: 1;
   width: 38px;
   height: 38px;
 }
 
-body.use-liquid-glass .chooser-panel .select-wrap,
-body.use-liquid-glass .chooser-panel .system-select-button {
+body[data-theme="liquid-glass"] .chooser-panel .select-wrap,
+body[data-theme="liquid-glass"] .chooser-panel .system-select-button {
   grid-column: 2;
   width: 100%;
 }
 
-body.use-liquid-glass .chooser-panel .system-select-button,
-body.use-liquid-glass .chooser-panel select {
+body[data-theme="liquid-glass"] .chooser-panel .system-select-button,
+body[data-theme="liquid-glass"] .chooser-panel select {
   min-height: 34px;
   border-radius: var(--r-pill);
   background:
@@ -2988,7 +3006,7 @@ body.use-liquid-glass .chooser-panel select {
     rgba(255, 255, 255, 0.28);
 }
 
-body.use-liquid-glass .chooser-panel .control-status {
+body[data-theme="liquid-glass"] .chooser-panel .control-status {
   padding: 9px 0 0;
   border-top: 1px solid rgba(16, 17, 20, 0.1);
   color: rgba(16, 17, 20, 0.72);
@@ -2996,18 +3014,18 @@ body.use-liquid-glass .chooser-panel .control-status {
   line-height: 1.35;
 }
 
-body.use-liquid-glass .chooser-panel #importer-status {
+body[data-theme="liquid-glass"] .chooser-panel #importer-status {
   max-height: 7.2em;
   overflow: auto;
 }
 
-body.use-liquid-glass .find-file-pane .button-row {
+body[data-theme="liquid-glass"] .find-file-pane .button-row {
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
 }
 
-body.use-liquid-glass .control-panel .control-footer {
+body[data-theme="liquid-glass"] .control-panel .control-footer {
   padding: 10px 12px;
   border: 1px solid rgba(255, 255, 255, 0.48);
   --container-inset: 9px;
@@ -3023,15 +3041,15 @@ body.use-liquid-glass .control-panel .control-footer {
   line-height: 1.35;
 }
 
-body.use-liquid-glass .memory-card:hover:not([aria-disabled="true"]) {
+body[data-theme="liquid-glass"] .memory-card:hover:not([aria-disabled="true"]) {
   border-color: rgba(16, 17, 20, 0.28);
 }
-body.use-liquid-glass .memory-card.is-face-up,
-body.use-liquid-glass .memory-card.is-matched {
+body[data-theme="liquid-glass"] .memory-card.is-face-up,
+body[data-theme="liquid-glass"] .memory-card.is-matched {
   border-color: rgba(16, 17, 20, 0.28);
 }
 
-body.use-liquid-glass #memory-cards-status {
+body[data-theme="liquid-glass"] #memory-cards-status {
   padding: 6px 10px;
   border: 1px solid rgba(255, 255, 255, 0.36);
   border-radius: var(--r-pill);
@@ -3040,7 +3058,7 @@ body.use-liquid-glass #memory-cards-status {
   color: rgba(16, 17, 20, 0.86);
 }
 
-body.use-liquid-glass .compose-tools-menu {
+body[data-theme="liquid-glass"] .compose-tools-menu {
   min-width: 286px;
   padding: 6px;
   gap: 3px;
@@ -3055,7 +3073,7 @@ body.use-liquid-glass .compose-tools-menu {
   overflow: hidden;
 }
 
-body.use-liquid-glass .compose-tools-menu button {
+body[data-theme="liquid-glass"] .compose-tools-menu button {
   padding: 7px 9px;
   border-radius: var(--r-md);
   background: transparent;
@@ -3065,8 +3083,8 @@ body.use-liquid-glass .compose-tools-menu button {
 /* Specificity-only twin: the generic liquid button rule above (0,3,1) would
    otherwise beat the base hover rule (0,3,0) and the hover feedback would
    disappear in glass. The values stay single-sourced through the tokens. */
-body.use-liquid-glass .compose-tools-menu button:hover,
-body.use-liquid-glass .compose-tools-menu button:focus-visible {
+body[data-theme="liquid-glass"] .compose-tools-menu button:hover,
+body[data-theme="liquid-glass"] .compose-tools-menu button:focus-visible {
   /* The bold line reads its ink from a token, so hand it the hover ink here
      rather than restating white in two more selectors. The small line cannot
      follow: the base sheet paints it color: var(--paper) directly, and under
@@ -3076,12 +3094,12 @@ body.use-liquid-glass .compose-tools-menu button:focus-visible {
   color: var(--compose-menu-hover-fg);
 }
 
-body.use-liquid-glass .compose-tools-menu button:hover .compose-tool-copy small,
-body.use-liquid-glass .compose-tools-menu button:focus-visible .compose-tool-copy small {
+body[data-theme="liquid-glass"] .compose-tools-menu button:hover .compose-tool-copy small,
+body[data-theme="liquid-glass"] .compose-tools-menu button:focus-visible .compose-tool-copy small {
   color: var(--compose-menu-hover-fg);
 }
 
-body.use-liquid-glass .compose-tool-icon {
+body[data-theme="liquid-glass"] .compose-tool-icon {
   width: 32px;
   height: 32px;
   border: 1px solid rgba(16, 17, 20, 0.62);
@@ -3090,12 +3108,12 @@ body.use-liquid-glass .compose-tool-icon {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 5px 14px rgba(18, 28, 38, 0.1);
 }
 
-body.use-liquid-glass .memory-transfer-window .details-bar {
+body[data-theme="liquid-glass"] .memory-transfer-window .details-bar {
   border-bottom: 1px solid rgba(16, 17, 20, 0.1);
   background: rgba(255, 255, 255, 0.24);
 }
 
-body.use-liquid-glass .memory-transfer-pane {
+body[data-theme="liquid-glass"] .memory-transfer-pane {
   gap: 16px;
   padding: 18px;
   background:
@@ -3103,35 +3121,35 @@ body.use-liquid-glass .memory-transfer-pane {
     rgba(255, 255, 255, 0.2);
 }
 
-body.use-liquid-glass .memory-transfer-note,
-body.use-liquid-glass .memory-transfer-note {
+body[data-theme="liquid-glass"] .memory-transfer-note,
+body[data-theme="liquid-glass"] .memory-transfer-note {
   grid-template-columns: 48px minmax(0, 1fr);
   min-height: 68px;
   padding: 12px 14px;
 }
 
-body.use-liquid-glass .memory-transfer-note b {
+body[data-theme="liquid-glass"] .memory-transfer-note b {
   color: rgba(16, 17, 20, 0.96);
 }
 
-body.use-liquid-glass .memory-transfer-note span:not(.compose-tool-icon) {
+body[data-theme="liquid-glass"] .memory-transfer-note span:not(.compose-tool-icon) {
   color: rgba(16, 17, 20, 0.58);
   font-size: 13px;
 }
 
-body.use-liquid-glass .memory-transfer-field label {
+body[data-theme="liquid-glass"] .memory-transfer-field label {
   margin-bottom: 0;
 }
 
-body.use-liquid-glass .file-picker {
+body[data-theme="liquid-glass"] .file-picker {
   gap: 12px;
 }
 
-body.use-liquid-glass .file-picker .file-picker-button {
+body[data-theme="liquid-glass"] .file-picker .file-picker-button {
   min-width: 126px;
 }
 
-body.use-liquid-glass .file-picker-name {
+body[data-theme="liquid-glass"] .file-picker-name {
   border: 1px solid rgba(16, 17, 20, 0.18);
   border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.42);
@@ -3139,27 +3157,27 @@ body.use-liquid-glass .file-picker-name {
   box-shadow: inset 0 1px 0 var(--glass-highlight), 0 6px 18px rgba(18, 28, 38, 0.06);
 }
 
-body.use-liquid-glass .file-picker-input:focus-visible + .file-picker-button {
+body[data-theme="liquid-glass"] .file-picker-input:focus-visible + .file-picker-button {
   outline: 0;
   box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.28), inset 0 1px 0 var(--glass-highlight);
 }
 
-body.use-liquid-glass .memory-transfer-footer {
+body[data-theme="liquid-glass"] .memory-transfer-footer {
   gap: 12px;
 }
 
-body.use-liquid-glass .memory-transfer-footer .hint {
+body[data-theme="liquid-glass"] .memory-transfer-footer .hint {
   color: rgba(16, 17, 20, 0.8);
 }
 
-body.use-liquid-glass .import-preview > .empty-folder-note,
-body.use-liquid-glass .backup-preview > .empty-folder-note {
+body[data-theme="liquid-glass"] .import-preview > .empty-folder-note,
+body[data-theme="liquid-glass"] .backup-preview > .empty-folder-note {
   --empty-note-max-width: none;
   --empty-note-margin: 10px;
   --empty-note-radius: var(--r-md);
 }
 
-body.use-liquid-glass .backup-preview-section {
+body[data-theme="liquid-glass"] .backup-preview-section {
   gap: 10px;
   margin-top: 8px;
   padding: 14px 16px;
@@ -3173,40 +3191,40 @@ body.use-liquid-glass .backup-preview-section {
     0 8px 22px rgba(18, 28, 38, 0.05);
 }
 
-body.use-liquid-glass .backup-preview-section summary {
+body[data-theme="liquid-glass"] .backup-preview-section summary {
   font-size: 14px;
   line-height: 1.2;
   color: rgba(16, 17, 20, 0.96);
 }
 
-body.use-liquid-glass .backup-preview-section > span {
+body[data-theme="liquid-glass"] .backup-preview-section > span {
   margin-top: -2px;
   color: rgba(16, 17, 20, 0.62);
   font-size: 13px;
   line-height: 1.22;
 }
 
-body.use-liquid-glass .backup-action-row {
+body[data-theme="liquid-glass"] .backup-action-row {
   grid-template-columns: minmax(0, 1fr) minmax(180px, auto);
   gap: 12px;
 }
 
-body.use-liquid-glass .backup-preview-section .file-picker {
+body[data-theme="liquid-glass"] .backup-preview-section .file-picker {
   grid-template-columns: minmax(116px, auto) minmax(150px, 1fr);
   gap: 10px;
 }
 
-body.use-liquid-glass .backup-preview {
+body[data-theme="liquid-glass"] .backup-preview {
   min-height: 72px;
 }
 
-body.use-liquid-glass .backup-preview > .empty-folder-note {
+body[data-theme="liquid-glass"] .backup-preview > .empty-folder-note {
   display: block;
   padding: 4px 2px;
   text-align: left;
 }
 
-body.use-liquid-glass .backup-preview:has(> .empty-folder-note) {
+body[data-theme="liquid-glass"] .backup-preview:has(> .empty-folder-note) {
   min-height: 0;
   border: 0;
   background: transparent;
@@ -3214,7 +3232,7 @@ body.use-liquid-glass .backup-preview:has(> .empty-folder-note) {
   box-shadow: none;
 }
 
-body.use-liquid-glass .backup-preview:has(> .empty-folder-note) > .empty-folder-note {
+body[data-theme="liquid-glass"] .backup-preview:has(> .empty-folder-note) > .empty-folder-note {
   --empty-note-margin: 0;
   --empty-note-border: 0;
   --empty-note-bg: transparent;
@@ -3223,12 +3241,12 @@ body.use-liquid-glass .backup-preview:has(> .empty-folder-note) > .empty-folder-
   background-image: none;
 }
 
-body.use-liquid-glass .backup-action-row #import-project-backup {
+body[data-theme="liquid-glass"] .backup-action-row #import-project-backup {
   justify-self: end;
   max-width: 230px;
 }
 
-body.use-liquid-glass .teachtext-desk-strip {
+body[data-theme="liquid-glass"] .teachtext-desk-strip {
   gap: 4px;
   border: 1px solid rgba(16, 17, 20, 0.14);
   --container-inset: 11px;
@@ -3241,7 +3259,7 @@ body.use-liquid-glass .teachtext-desk-strip {
   font-family: var(--text-font);
 }
 
-body.use-liquid-glass .teachtext-desk-strip span {
+body[data-theme="liquid-glass"] .teachtext-desk-strip span {
   border-right: 0;
   border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.28);
@@ -3251,7 +3269,7 @@ body.use-liquid-glass .teachtext-desk-strip span {
 /* The route's status strip is the same instrument as the desk strip above it,
    so it takes the same glass rather than the raw paper token - otherwise the
    two sit on each other as visibly different materials. */
-body.use-liquid-glass .window-status-strip.has-message {
+body[data-theme="liquid-glass"] .window-status-strip.has-message {
   border: 1px solid rgba(16, 17, 20, 0.14);
   --container-inset: 11px;
   border-radius: max(var(--r-xs), calc(var(--container-radius) - var(--container-inset)));
@@ -3263,29 +3281,29 @@ body.use-liquid-glass .window-status-strip.has-message {
   color: rgba(16, 17, 20, 0.86);
 }
 
-body.use-liquid-glass .spine-toolbox-panel {
+body[data-theme="liquid-glass"] .spine-toolbox-panel {
   border: 1px solid var(--glass-border);
   border-radius: var(--r-lg);
   box-shadow: 0 18px 52px rgba(18, 28, 38, 0.18), 0 2px 8px rgba(18, 28, 38, 0.1);
 }
 
-body.use-liquid-glass .writing-spine-panel.is-shaded .spine-toolbox-panel {
+body[data-theme="liquid-glass"] .writing-spine-panel.is-shaded .spine-toolbox-panel {
   border: 0;
   background: transparent;
   box-shadow: none;
 }
 
-body.use-liquid-glass .writing-spine-panel.is-shaded .spine-toolbox-panel::before {
+body[data-theme="liquid-glass"] .writing-spine-panel.is-shaded .spine-toolbox-panel::before {
   content: none;
 }
 
-body.use-liquid-glass .writing-spine-panel.is-shaded .spine-title-row {
+body[data-theme="liquid-glass"] .writing-spine-panel.is-shaded .spine-title-row {
   border: 1px solid var(--glass-border);
   border-radius: var(--r-pill);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 1px 3px rgba(18, 28, 38, 0.06);
 }
 
-body.use-liquid-glass .spine-title-row {
+body[data-theme="liquid-glass"] .spine-title-row {
   border-bottom: 1px solid rgba(16, 17, 20, 0.1);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.16)),
@@ -3293,11 +3311,11 @@ body.use-liquid-glass .spine-title-row {
   background-clip: border-box;
 }
 
-body.use-liquid-glass .review-desk-markdown:focus {
+body[data-theme="liquid-glass"] .review-desk-markdown:focus {
   outline: 0;
 }
 
-body.use-liquid-glass .review-desk-splitter {
+body[data-theme="liquid-glass"] .review-desk-splitter {
   height: 12px;
   border-top: 1px solid rgba(16, 17, 20, 0.1);
   border-bottom: 1px solid rgba(16, 17, 20, 0.1);
@@ -3306,15 +3324,15 @@ body.use-liquid-glass .review-desk-splitter {
     rgba(255, 255, 255, 0.2);
 }
 
-body.use-liquid-glass .review-desk-empty-note,
-body.use-liquid-glass .style-sheet-results > .empty-folder-note,
-body.use-liquid-glass .claim-results > .empty-folder-note,
-body.use-liquid-glass .claim-section-meta.empty-folder-note {
+body[data-theme="liquid-glass"] .review-desk-empty-note,
+body[data-theme="liquid-glass"] .style-sheet-results > .empty-folder-note,
+body[data-theme="liquid-glass"] .claim-results > .empty-folder-note,
+body[data-theme="liquid-glass"] .claim-section-meta.empty-folder-note {
   --empty-note-max-width: min(680px, calc(100% - 48px));
   --empty-note-margin: 22px auto;
 }
 
-body.use-liquid-glass .review-desk-window.is-review-locked .review-desk-empty-note {
+body[data-theme="liquid-glass"] .review-desk-window.is-review-locked .review-desk-empty-note {
   width: min(var(--mde-page-width), calc(100% - 64px));
   min-height: 180px;
   margin: 0;
@@ -3330,8 +3348,8 @@ body.use-liquid-glass .review-desk-window.is-review-locked .review-desk-empty-no
     0 14px 34px rgba(18, 28, 38, 0.08);
 }
 
-body.use-liquid-glass .shutdown-screen,
-body.use-liquid-glass .boot-screen {
+body[data-theme="liquid-glass"] .shutdown-screen,
+body[data-theme="liquid-glass"] .boot-screen {
   background:
     linear-gradient(rgba(255, 255, 255, 0.32) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.26) 1px, transparent 1px),
@@ -3341,7 +3359,7 @@ body.use-liquid-glass .boot-screen {
   background-size: 22px 22px, 22px 22px, auto, auto, auto;
 }
 
-body.use-liquid-glass .happy-mac {
+body[data-theme="liquid-glass"] .happy-mac {
   border-radius: var(--r-md);
   background:
     linear-gradient(rgba(16, 17, 20, 0.92), rgba(16, 17, 20, 0.92)) 16px 84px / 11px 4px no-repeat,
@@ -3353,19 +3371,19 @@ body.use-liquid-glass .happy-mac {
   -webkit-backdrop-filter: var(--happy-mac-backdrop);
 }
 
-body.use-liquid-glass .happy-mac::after {
+body[data-theme="liquid-glass"] .happy-mac::after {
   border-radius: 0 0 4px 4px;
   background: rgba(255, 255, 255, 0.36);
 }
 
-body.use-liquid-glass .happy-mac-face {
+body[data-theme="liquid-glass"] .happy-mac-face {
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.62);
   box-shadow: var(--happy-mac-face-shadow);
 }
 
-body.use-liquid-glass .shutdown-ledger,
-body.use-liquid-glass .boot-ledger {
+body[data-theme="liquid-glass"] .shutdown-ledger,
+body[data-theme="liquid-glass"] .boot-ledger {
   border: 1px solid rgba(16, 17, 20, 0.16);
   border-radius: var(--r-lg);
   background:
@@ -3378,23 +3396,23 @@ body.use-liquid-glass .boot-ledger {
   -webkit-backdrop-filter: blur(12px) saturate(150%);
 }
 
-body.use-liquid-glass .shutdown-ledger .btn {
+body[data-theme="liquid-glass"] .shutdown-ledger .btn {
   color: rgba(16, 17, 20, 0.96);
 }
 
-body.use-liquid-glass .boot-progress {
+body[data-theme="liquid-glass"] .boot-progress {
   border: 1px solid rgba(16, 17, 20, 0.18);
   border-radius: var(--r-pill);
   background: rgba(255, 255, 255, 0.38);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
 }
 
-body.use-liquid-glass .boot-progress span {
+body[data-theme="liquid-glass"] .boot-progress span {
   border-radius: var(--r-pill);
   background: linear-gradient(90deg, var(--glass-progress-blue), var(--glass-progress-accent));
 }
 
-body.use-liquid-glass .progress-track {
+body[data-theme="liquid-glass"] .progress-track {
   height: 14px;
   border: 1px solid rgba(16, 17, 20, 0.18);
   border-radius: var(--r-pill);
@@ -3404,7 +3422,7 @@ body.use-liquid-glass .progress-track {
     inset 0 -1px 0 rgba(16, 17, 20, 0.06);
 }
 
-body.use-liquid-glass .progress-bar {
+body[data-theme="liquid-glass"] .progress-bar {
   width: 160%;
   border-radius: inherit;
   background:
@@ -3413,16 +3431,7 @@ body.use-liquid-glass .progress-bar {
   animation: liquid-progress 1.2s linear infinite;
 }
 
-body.use-liquid-glass .rebuild-progress {
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: var(--r-lg);
-  background: rgba(255, 255, 255, 0.24);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    0 12px 28px rgba(18, 28, 38, 0.1);
-}
-
-body.use-liquid-glass .rebuild-progress-meter {
+body[data-theme="liquid-glass"] .rebuild-progress-meter {
   height: 12px;
   border: 1px solid rgba(16, 17, 20, 0.14);
   border-radius: var(--r-pill);
@@ -3430,54 +3439,33 @@ body.use-liquid-glass .rebuild-progress-meter {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
 }
 
-body.use-liquid-glass .rebuild-progress-meter span {
+body[data-theme="liquid-glass"] .rebuild-progress-meter span {
   border-radius: inherit;
   background: linear-gradient(90deg, var(--glass-progress-blue), var(--glass-progress-accent));
 }
 
-body.use-liquid-glass .rebuild-progress-meter.is-working span {
+body[data-theme="liquid-glass"] .rebuild-progress-meter.is-working span {
   background: linear-gradient(90deg, var(--glass-progress-blue-soft), var(--glass-progress-accent-soft), var(--glass-progress-blue-soft));
   background-size: 50% 100%;
   animation: liquid-progress 1.2s linear infinite;
 }
 
-body.use-liquid-glass .rebuild-progress-steps li::before {
-  width: 14px;
-  height: 14px;
-  border: 1px solid rgba(16, 17, 20, 0.24);
-  border-radius: var(--r-circle);
-  background: rgba(255, 255, 255, 0.38);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
-}
-
-body.use-liquid-glass .rebuild-progress-steps li.is-running::before {
-  background: radial-gradient(circle, var(--glass-blue) 0 42%, rgba(255, 255, 255, 0.38) 46%);
-}
-
-body.use-liquid-glass .rebuild-progress-steps li.is-complete::before {
-  background: var(--glass-accent);
-}
-
-body.use-liquid-glass .rebuild-progress-steps li.is-skipped::before {
-  background: rgba(16, 17, 20, 0.18);
-}
-
-body.use-liquid-glass .scrapbook-pane {
+body[data-theme="liquid-glass"] .scrapbook-pane {
   padding: 18px 24px 22px;
 }
 
-body.use-liquid-glass .scrap-editor {
+body[data-theme="liquid-glass"] .scrap-editor {
   padding: 18px 20px;
 }
 
-body.use-liquid-glass .scrap-editor {
+body[data-theme="liquid-glass"] .scrap-editor {
   border: 1px solid rgba(255, 255, 255, 0.44);
   border-radius: var(--r-lg);
   background: rgba(255, 255, 255, 0.18);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
 }
 
-body.use-liquid-glass .scrap-title-display {
+body[data-theme="liquid-glass"] .scrap-title-display {
   border: 0;
 }
 
@@ -3485,7 +3473,7 @@ body.use-liquid-glass .scrap-title-display {
    scroller class, whose rule would otherwise beat the base editor rule in
    glass and strip the rounded transparent material. Values are single-sourced
    through the tokens. */
-body.use-liquid-glass .teachtext-editor-container {
+body[data-theme="liquid-glass"] .teachtext-editor-container {
   border-radius: var(--teachtext-editor-radius);
   background: var(--teachtext-editor-bg);
   box-shadow: var(--teachtext-editor-shadow);
@@ -3493,7 +3481,7 @@ body.use-liquid-glass .teachtext-editor-container {
   border: var(--teachtext-editor-border);
 }
 
-body.use-liquid-glass #scrap-body-input:focus {
+body[data-theme="liquid-glass"] #scrap-body-input:focus {
   outline: 0;
 }
 
@@ -3502,10 +3490,10 @@ body.use-liquid-glass #scrap-body-input:focus {
   to { transform: translateX(0); }
 }
 
-body.use-liquid-glass .message,
-body.use-liquid-glass .scrap-list button,
-body.use-liquid-glass .trash-list button,
-body.use-liquid-glass .finder-list-row:not(:hover):not(.is-selected) {
+body[data-theme="liquid-glass"] .message,
+body[data-theme="liquid-glass"] .scrap-list button,
+body[data-theme="liquid-glass"] .trash-list button,
+body[data-theme="liquid-glass"] .finder-list-row:not(:hover):not(.is-selected) {
   border-color: rgba(255, 255, 255, 0.48);
   border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.24);
@@ -3515,19 +3503,19 @@ body.use-liquid-glass .finder-list-row:not(:hover):not(.is-selected) {
 /* Specificity-only twin: `.scrap-list button { border: 0; background:
    transparent }` would otherwise strip the empty card's frame and material.
    The values are single-sourced through the scrap tokens in :root + the
-   body.use-liquid-glass token block. */
-body.use-liquid-glass .scrap-empty-card {
+   body[data-theme="liquid-glass"] token block. */
+body[data-theme="liquid-glass"] .scrap-empty-card {
   background: var(--scrap-empty-card-bg);
   border: var(--scrap-empty-card-border);
 }
 
-body.use-liquid-glass .message {
+body[data-theme="liquid-glass"] .message {
   border-radius: var(--r-sm);
 }
 
-body.use-liquid-glass .message-content h1,
-body.use-liquid-glass .message-content h2,
-body.use-liquid-glass .message-content h3 {
+body[data-theme="liquid-glass"] .message-content h1,
+body[data-theme="liquid-glass"] .message-content h2,
+body[data-theme="liquid-glass"] .message-content h3 {
   display: block;
   margin: 8px 0 8px;
   padding: 0 0 7px;
@@ -3537,30 +3525,30 @@ body.use-liquid-glass .message-content h3 {
   box-shadow: none;
 }
 
-body.use-liquid-glass .message-content hr {
+body[data-theme="liquid-glass"] .message-content hr {
   border-top: 1px solid rgba(16, 17, 20, 0.14);
   margin: 10px 0;
 }
 
-body.use-liquid-glass .message-content blockquote,
-body.use-liquid-glass .message-content pre,
-body.use-liquid-glass .message-translation {
+body[data-theme="liquid-glass"] .message-content blockquote,
+body[data-theme="liquid-glass"] .message-content pre,
+body[data-theme="liquid-glass"] .message-translation {
   border: 1px solid rgba(255, 255, 255, 0.46);
   border-radius: var(--r-md);
   background: rgba(255, 255, 255, 0.22);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
 }
 
-body.use-liquid-glass .message-content blockquote {
+body[data-theme="liquid-glass"] .message-content blockquote {
   border-left: 3px solid rgba(16, 17, 20, 0.24);
 }
 
-body.use-liquid-glass .message-content :not(pre) > code {
+body[data-theme="liquid-glass"] .message-content :not(pre) > code {
   border: 1px solid rgba(16, 17, 20, 0.12);
   border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.28);
 }
-body.use-liquid-glass .finder-list-header {
+body[data-theme="liquid-glass"] .finder-list-header {
   margin: 2px 0 6px;
   padding: 7px 10px;
   border: 1px solid rgba(255, 255, 255, 0.36);
@@ -3572,26 +3560,26 @@ body.use-liquid-glass .finder-list-header {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
 }
 
-body.use-liquid-glass .finder-list-group {
+body[data-theme="liquid-glass"] .finder-list-group {
   margin: 6px 0 4px;
   border-radius: var(--r-pill);
   background: rgba(255, 255, 255, 0.28);
   color: rgba(16, 17, 20, 0.72);
 }
 
-body.use-liquid-glass .finder-list-row {
+body[data-theme="liquid-glass"] .finder-list-row {
   margin-bottom: 4px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.28);
 }
 
-body.use-liquid-glass .empty-folder-note .icon {
+body[data-theme="liquid-glass"] .empty-folder-note .icon {
   border-color: rgba(255, 255, 255, 0.5);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.24)),
     rgba(255, 255, 255, 0.26);
 }
 
-body.use-liquid-glass .empty-folder-note .export-empty-icon {
+body[data-theme="liquid-glass"] .empty-folder-note .export-empty-icon {
   border-color: rgba(16, 17, 20, 0.2);
   background:
     linear-gradient(rgba(16, 17, 20, 0.78), rgba(16, 17, 20, 0.78)) 7px 9px / 24px 2px no-repeat,
@@ -3600,22 +3588,22 @@ body.use-liquid-glass .empty-folder-note .export-empty-icon {
     rgba(255, 255, 255, 0.3);
 }
 
-body.use-liquid-glass .finder-grid {
+body[data-theme="liquid-glass"] .finder-grid {
   grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
   gap: 14px 12px;
 }
 
-body.use-liquid-glass .document-icon-grid,
-body.use-liquid-glass .project-disk-grid,
-body.use-liquid-glass .text-disk-grid {
+body[data-theme="liquid-glass"] .document-icon-grid,
+body[data-theme="liquid-glass"] .project-disk-grid,
+body[data-theme="liquid-glass"] .text-disk-grid {
   padding: 14px;
 }
 
-body.use-liquid-glass .project-finder-pathbar {
+body[data-theme="liquid-glass"] .project-finder-pathbar {
   border-bottom: 1px solid rgba(16, 17, 20, 0.1);
 }
 
-body.use-liquid-glass .finder-item {
+body[data-theme="liquid-glass"] .finder-item {
   width: 118px;
   min-height: 94px;
   display: grid;
@@ -3629,17 +3617,17 @@ body.use-liquid-glass .finder-item {
   overflow: hidden;
 }
 
-body.use-liquid-glass .finder-item .sys-icon {
+body[data-theme="liquid-glass"] .finder-item .sys-icon {
   width: 44px;
   height: 44px;
   margin: 0;
 }
 
-body.use-liquid-glass .finder-item span:last-of-type,
-body.use-liquid-glass .finder-item:focus span:last-of-type,
-body.use-liquid-glass .finder-item:hover span:last-of-type,
-body.use-liquid-glass .finder-item.is-selected span:last-of-type,
-body.use-liquid-glass .finder-item small {
+body[data-theme="liquid-glass"] .finder-item span:last-of-type,
+body[data-theme="liquid-glass"] .finder-item:focus span:last-of-type,
+body[data-theme="liquid-glass"] .finder-item:hover span:last-of-type,
+body[data-theme="liquid-glass"] .finder-item.is-selected span:last-of-type,
+body[data-theme="liquid-glass"] .finder-item small {
   width: 100%;
   max-width: 100%;
   display: block;
@@ -3652,50 +3640,50 @@ body.use-liquid-glass .finder-item small {
   word-break: keep-all;
 }
 
-body.use-liquid-glass .finder-item span:last-of-type {
+body[data-theme="liquid-glass"] .finder-item span:last-of-type {
   line-height: 1.18;
   padding: 2px 5px;
 }
 
-body.use-liquid-glass .finder-item small {
+body[data-theme="liquid-glass"] .finder-item small {
   color: rgba(16, 17, 20, 0.58);
   line-height: 1.2;
   padding: 1px 5px;
 }
 
-body.use-liquid-glass .finder-item:hover,
-body.use-liquid-glass .finder-item:focus-visible {
+body[data-theme="liquid-glass"] .finder-item:hover,
+body[data-theme="liquid-glass"] .finder-item:focus-visible {
   background: rgba(255, 255, 255, 0.22);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.54), 0 8px 26px rgba(18, 28, 38, 0.1);
 }
 
-body.use-liquid-glass .finder-item.is-selected {
+body[data-theme="liquid-glass"] .finder-item.is-selected {
   border-color: rgba(255, 255, 255, 0.6);
   background: rgba(16, 17, 20, 0.84);
   color: #ffffff;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 12px 30px rgba(18, 28, 38, 0.18);
 }
 
-body.use-liquid-glass .finder-item.is-selected span:last-of-type,
-body.use-liquid-glass .finder-item.is-selected small {
+body[data-theme="liquid-glass"] .finder-item.is-selected span:last-of-type,
+body[data-theme="liquid-glass"] .finder-item.is-selected small {
   background: transparent;
   color: #ffffff;
 }
 
-body.use-liquid-glass .finder-item.is-selected .sys-icon {
+body[data-theme="liquid-glass"] .finder-item.is-selected .sys-icon {
   color: #ffffff;
   background: transparent;
 }
 
-body.use-liquid-glass .finder-list-row.is-selected,
-body.use-liquid-glass .scrap-list button.is-selected,
-body.use-liquid-glass .scrap-list button.is-multi-selected,
-body.use-liquid-glass .trash-list button.is-selected {
+body[data-theme="liquid-glass"] .finder-list-row.is-selected,
+body[data-theme="liquid-glass"] .scrap-list button.is-selected,
+body[data-theme="liquid-glass"] .scrap-list button.is-multi-selected,
+body[data-theme="liquid-glass"] .trash-list button.is-selected {
   background: rgba(16, 17, 20, 0.84);
   color: #ffffff;
 }
 
-body.use-liquid-glass .finder-marquee {
+body[data-theme="liquid-glass"] .finder-marquee {
   border: 1px solid rgba(0, 122, 255, 0.38);
   border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.08);
@@ -3706,18 +3694,18 @@ body.use-liquid-glass .finder-marquee {
   -webkit-backdrop-filter: blur(2px) saturate(112%);
 }
 
-body.use-liquid-glass .desktop-icon {
+body[data-theme="liquid-glass"] .desktop-icon {
   border-radius: var(--r-lg);
   padding: var(--liquid-desktop-icon-padding);
   width: var(--desktop-icon-width);
 }
 
-body.use-liquid-glass .desktop-icon:hover,
-body.use-liquid-glass .desktop-icon:focus-visible,
-body.use-liquid-glass .desktop-icon.is-selected,
-body.use-liquid-glass .spine-actions button:hover,
-body.use-liquid-glass .spine-actions button:focus-visible,
-body.use-liquid-glass .spine-actions button.is-selected {
+body[data-theme="liquid-glass"] .desktop-icon:hover,
+body[data-theme="liquid-glass"] .desktop-icon:focus-visible,
+body[data-theme="liquid-glass"] .desktop-icon.is-selected,
+body[data-theme="liquid-glass"] .spine-actions button:hover,
+body[data-theme="liquid-glass"] .spine-actions button:focus-visible,
+body[data-theme="liquid-glass"] .spine-actions button.is-selected {
   background: rgba(255, 255, 255, 0.2);
   border-radius: var(--r-lg);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.54), 0 8px 26px rgba(18, 28, 38, 0.12);
@@ -3726,20 +3714,20 @@ body.use-liquid-glass .spine-actions button.is-selected {
   outline: 0;
 }
 
-body.use-liquid-glass .spine-actions b {
+body[data-theme="liquid-glass"] .spine-actions b {
   border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.54);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
-body.use-liquid-glass .spine-actions button.holds-pen .spine-step-number {
+body[data-theme="liquid-glass"] .spine-actions button.holds-pen .spine-step-number {
   background: rgba(16, 17, 20, 0.84);
   color: #ffffff;
   -webkit-text-fill-color: #ffffff;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 
-body.use-liquid-glass .spine-actions .spine-step-number {
+body[data-theme="liquid-glass"] .spine-actions .spine-step-number {
   /* This era's step badge is a 24px circle where the other five draw a 17px
      square chip. The difference is the shape, and only the shape: the circle
      sits on the icon's top-left corner like every other era's chip, so the map
@@ -3767,53 +3755,53 @@ body.use-liquid-glass .spine-actions .spine-step-number {
     0 8px 20px rgba(18, 28, 38, 0.1);
 }
 
-body.use-liquid-glass .desktop-app-icon span[data-liquid-label] {
+body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label] {
   width: fit-content;
   max-width: min(104px, calc(100vw - 24px));
   line-height: var(--liquid-desktop-icon-label-line-height);
 }
 
-body.use-liquid-glass .desktop-app-icon span[data-liquid-label] {
+body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label] {
   font-size: 0;
 }
 
-body.use-liquid-glass .desktop-app-icon span[data-liquid-label]::before {
+body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label]::before {
   content: attr(data-liquid-label);
   font-size: var(--system-text-size);
 }
 
-html:lang(zh-Hans) body.use-liquid-glass .desktop-app-icon span[data-liquid-label-zh]::before {
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label-zh]::before {
   content: attr(data-liquid-label-zh);
 }
 
-html:lang(zh-Hans) body.use-liquid-glass .desktop-app-icon span[data-liquid-label-zh-main] {
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label-zh-main] {
   width: max-content;
   max-width: min(104px, calc(100vw - 24px));
   line-height: 1.12;
 }
 
-html:lang(zh-Hans) body.use-liquid-glass .desktop-app-icon span[data-liquid-label-zh-main]::before,
-html:lang(zh-Hans) body.use-liquid-glass .desktop-app-icon span[data-liquid-label-zh-sub]::after {
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label-zh-main]::before,
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label-zh-sub]::after {
   display: block;
   font-size: var(--system-text-size);
   white-space: nowrap;
 }
 
-html:lang(zh-Hans) body.use-liquid-glass .desktop-app-icon span[data-liquid-label-zh-main]::before {
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label-zh-main]::before {
   content: attr(data-liquid-label-zh-main);
 }
 
-html:lang(zh-Hans) body.use-liquid-glass .desktop-app-icon span[data-liquid-label-zh-sub]::after {
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label-zh-sub]::after {
   content: attr(data-liquid-label-zh-sub);
 }
 
-body.use-liquid-glass .desktop-app-icon span[data-liquid-label-mode="nowrap"] {
+body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label-mode="nowrap"] {
   width: max-content;
   max-width: min(132px, calc(100vw - 24px));
   white-space: nowrap;
 }
 
-body.use-liquid-glass .desktop-app-icon span[data-liquid-label-mode="wrap"] {
+body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label-mode="wrap"] {
   max-width: 92px;
 }
 
@@ -3821,31 +3809,31 @@ body.use-liquid-glass .desktop-app-icon span[data-liquid-label-mode="wrap"] {
    -webkit-text-fill-color, and that inherits past `color` onto the name. On the
    dark selection plate it painted the name 42% black on 84% black, so the
    selected item became unreadable. The reversed name has to set the fill too. */
-body.use-liquid-glass .desktop-icon:hover span:last-child,
-body.use-liquid-glass .desktop-icon:focus span:last-child,
-body.use-liquid-glass .desktop-icon.is-selected span:last-child,
-body.use-liquid-glass .spine-actions button:hover b,
-body.use-liquid-glass .spine-actions button:focus-visible b,
-body.use-liquid-glass .spine-actions button.is-selected b {
+body[data-theme="liquid-glass"] .desktop-icon:hover span:last-child,
+body[data-theme="liquid-glass"] .desktop-icon:focus span:last-child,
+body[data-theme="liquid-glass"] .desktop-icon.is-selected span:last-child,
+body[data-theme="liquid-glass"] .spine-actions button:hover b,
+body[data-theme="liquid-glass"] .spine-actions button:focus-visible b,
+body[data-theme="liquid-glass"] .spine-actions button.is-selected b {
   background: rgba(16, 17, 20, 0.84);
   color: #ffffff;
   -webkit-text-fill-color: #ffffff;
 }
 
-body.use-liquid-glass .icon,
-body.use-liquid-glass .mini-icon {
+body[data-theme="liquid-glass"] .icon,
+body[data-theme="liquid-glass"] .mini-icon {
   filter: drop-shadow(0 4px 8px rgba(18, 28, 38, 0.16));
 }
 
-body.use-liquid-glass .sys-icon-classic {
+body[data-theme="liquid-glass"] .sys-icon-classic {
   display: none;
 }
 
-body.use-liquid-glass .sys-icon-liquid {
+body[data-theme="liquid-glass"] .sys-icon-liquid {
   display: block;
 }
 
-body.use-liquid-glass .sys-icon {
+body[data-theme="liquid-glass"] .sys-icon {
   color: #101114;
   border: 0;
   border-radius: 0;
@@ -3862,18 +3850,18 @@ body.use-liquid-glass .sys-icon {
    folder, document, disc, and trash silhouettes. The 22% radius is a local
    adaptation of the macOS mask geometry; it is deliberately not baked into
    the source PNGs. */
-body.use-liquid-glass .sys-icon-svg.liquid-glass-rounded {
+body[data-theme="liquid-glass"] .sys-icon-svg.liquid-glass-rounded {
   border-radius: 22%;
   clip-path: inset(0 round 22%);
   overflow: hidden;
 }
 
-body.use-liquid-glass :is(.menu-bar, .control-strip) .sys-icon,
-body.use-liquid-glass .finder-list-name-cell .sys-icon,
-body.use-liquid-glass .finder-list-row > span:first-child .sys-icon,
-body.use-liquid-glass .system-select-button .sys-icon,
-body.use-liquid-glass .compose-tools-menu .sys-icon,
-body.use-liquid-glass .details-bar .sys-icon {
+body[data-theme="liquid-glass"] :is(.menu-bar, .control-strip) .sys-icon,
+body[data-theme="liquid-glass"] .finder-list-name-cell .sys-icon,
+body[data-theme="liquid-glass"] .finder-list-row > span:first-child .sys-icon,
+body[data-theme="liquid-glass"] .system-select-button .sys-icon,
+body[data-theme="liquid-glass"] .compose-tools-menu .sys-icon,
+body[data-theme="liquid-glass"] .details-bar .sys-icon {
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -3885,7 +3873,7 @@ body.use-liquid-glass .details-bar .sys-icon {
   padding: 0;
 }
 
-body.use-liquid-glass .sys-icon-svg {
+body[data-theme="liquid-glass"] .sys-icon-svg {
   stroke-width: var(--system-icon-stroke-width);
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -3893,60 +3881,56 @@ body.use-liquid-glass .sys-icon-svg {
 }
 
 /* .classic-ink is opted out: transport glyphs stay solid in both themes. */
-body.use-liquid-glass .sys-icon-liquid path:not(.classic-ink),
-body.use-liquid-glass .sys-icon-liquid rect,
-body.use-liquid-glass .sys-icon-liquid circle {
+body[data-theme="liquid-glass"] .sys-icon-liquid path:not(.classic-ink),
+body[data-theme="liquid-glass"] .sys-icon-liquid rect,
+body[data-theme="liquid-glass"] .sys-icon-liquid circle {
   fill: none;
   vector-effect: non-scaling-stroke;
 }
 
-body.use-liquid-glass .sys-icon-liquid .icon-fill {
+body[data-theme="liquid-glass"] .sys-icon-liquid .icon-fill {
   fill: rgba(255, 255, 255, 0.54);
 }
 
-body.use-liquid-glass .sys-icon-liquid .icon-fill-soft {
+body[data-theme="liquid-glass"] .sys-icon-liquid .icon-fill-soft {
   fill: rgba(0, 122, 255, 0.18);
 }
 
-body.use-liquid-glass .sys-icon-liquid .icon-accent {
+body[data-theme="liquid-glass"] .sys-icon-liquid .icon-accent {
   stroke: #6d7c00;
   fill: rgba(90, 200, 250, 0.36);
 }
 
-body.use-liquid-glass .desktop-icon .sys-icon,
-body.use-liquid-glass .spine-actions .sys-icon {
+body[data-theme="liquid-glass"] .desktop-icon .sys-icon,
+body[data-theme="liquid-glass"] .spine-actions .sys-icon {
   width: var(--liquid-desktop-icon-size);
   height: var(--liquid-desktop-icon-size);
 }
 
-body.use-liquid-glass .desktop-icon:hover .sys-icon,
-body.use-liquid-glass .desktop-icon:focus-visible .sys-icon,
-body.use-liquid-glass .desktop-icon.is-selected .sys-icon,
-body.use-liquid-glass .spine-actions button:hover .sys-icon,
-body.use-liquid-glass .spine-actions button:focus-visible .sys-icon {
+body[data-theme="liquid-glass"] .desktop-icon:hover .sys-icon,
+body[data-theme="liquid-glass"] .desktop-icon:focus-visible .sys-icon,
+body[data-theme="liquid-glass"] .desktop-icon.is-selected .sys-icon,
+body[data-theme="liquid-glass"] .spine-actions button:hover .sys-icon,
+body[data-theme="liquid-glass"] .spine-actions button:focus-visible .sys-icon {
   background: transparent;
   box-shadow: none;
   filter: drop-shadow(0 5px 9px rgba(18, 28, 38, 0.2)) saturate(1.08);
 }
-body.use-liquid-glass .docmap-pane {
+body[data-theme="liquid-glass"] .docmap-pane {
   background:
     linear-gradient(135deg, rgba(232, 238, 242, 0.12), rgba(235, 241, 247, 0.1)),
     rgba(255, 255, 255, 0.14);
 }
 
-body.use-liquid-glass .docmap-layout {
-  gap: 12px;
-}
-
-body.use-liquid-glass .docmap-map-toolbar {
+body[data-theme="liquid-glass"] .docmap-map-toolbar {
   padding: 0 2px 2px;
 }
 
-body.use-liquid-glass .docmap-tree,
-body.use-liquid-glass .docmap-markmap-frame,
-body.use-liquid-glass .video-docmap-map,
-body.use-liquid-glass .video-docmap-inspector,
-body.use-liquid-glass .video-docmap-node {
+body[data-theme="liquid-glass"] .docmap-tree,
+body[data-theme="liquid-glass"] .docmap-markmap-frame,
+body[data-theme="liquid-glass"] .video-docmap-map,
+body[data-theme="liquid-glass"] .video-docmap-inspector,
+body[data-theme="liquid-glass"] .video-docmap-node {
   border: 1px solid rgba(16, 17, 20, 0.12);
   border-radius: var(--r-lg);
   background:
@@ -3957,7 +3941,7 @@ body.use-liquid-glass .video-docmap-node {
     0 10px 26px rgba(18, 28, 38, 0.05);
 }
 
-body.use-liquid-glass .docmap-drop-zone {
+body[data-theme="liquid-glass"] .docmap-drop-zone {
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -3965,8 +3949,7 @@ body.use-liquid-glass .docmap-drop-zone {
   box-shadow: none;
 }
 
-body.use-liquid-glass .docmap-tree {
-  padding: 14px;
+body[data-theme="liquid-glass"] .docmap-tree {
   border-color: rgba(16, 17, 20, 0.1);
   background:
     radial-gradient(circle at 18% 12%, rgba(232, 238, 242, 0.34), transparent 38%),
@@ -3980,7 +3963,7 @@ body.use-liquid-glass .docmap-tree {
 
 /* One glass surface for the canvas: the tree already carries it, so the frame
    inside drops the border the shared rule above gave it. */
-body.use-liquid-glass .docmap-markmap-frame {
+body[data-theme="liquid-glass"] .docmap-markmap-frame {
   border: 0;
   border-radius: var(--r-lg);
   background: transparent;
@@ -3988,27 +3971,27 @@ body.use-liquid-glass .docmap-markmap-frame {
   overflow: hidden;
 }
 
-body.use-liquid-glass .docmap-markmap-svg .markmap-node > circle {
+body[data-theme="liquid-glass"] .docmap-markmap-svg .markmap-node > circle {
   fill: rgba(255, 255, 255, 0.9);
   stroke: rgba(16, 17, 20, 0.36);
 }
 
-body.use-liquid-glass .docmap-markmap-svg .markmap-link {
+body[data-theme="liquid-glass"] .docmap-markmap-svg .markmap-link {
   stroke-width: 3px;
   opacity: 0.92;
 }
 
-body.use-liquid-glass .video-docmap-workbench {
+body[data-theme="liquid-glass"] .video-docmap-workbench {
   gap: 14px;
 }
 
-body.use-liquid-glass .video-docmap-map {
+body[data-theme="liquid-glass"] .video-docmap-map {
   padding: 10px 6px 10px 10px;
   background: transparent;
   box-shadow: none;
 }
 
-body.use-liquid-glass .video-docmap-inspector {
+body[data-theme="liquid-glass"] .video-docmap-inspector {
   gap: 12px;
   padding: 0 0 0 10px;
   border-left: 1px solid rgba(16, 17, 20, 0.1);
@@ -4017,20 +4000,20 @@ body.use-liquid-glass .video-docmap-inspector {
   box-shadow: none;
 }
 
-body.use-liquid-glass .video-docmap-timeline {
+body[data-theme="liquid-glass"] .video-docmap-timeline {
   gap: 7px;
   padding: 2px 4px 2px 0;
 }
 
-body.use-liquid-glass .video-docmap-timeline button:hover,
-body.use-liquid-glass .video-docmap-timeline button:focus-visible {
+body[data-theme="liquid-glass"] .video-docmap-timeline button:hover,
+body[data-theme="liquid-glass"] .video-docmap-timeline button:focus-visible {
   border-color: rgba(47, 157, 179, 0.34);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.3)),
     rgba(0, 122, 255, 0.08);
 }
 
-body.use-liquid-glass .video-docmap-node {
+body[data-theme="liquid-glass"] .video-docmap-node {
   padding: 16px 18px;
   border-color: rgba(16, 17, 20, 0.1);
   border-radius: var(--r-lg);
@@ -4039,25 +4022,25 @@ body.use-liquid-glass .video-docmap-node {
     rgba(255, 255, 255, 0.2);
 }
 
-body.use-liquid-glass .video-docmap-node header {
+body[data-theme="liquid-glass"] .video-docmap-node header {
   gap: 6px;
   margin-bottom: 10px;
 }
 
-body.use-liquid-glass .video-docmap-node header b {
+body[data-theme="liquid-glass"] .video-docmap-node header b {
   color: rgba(16, 17, 20, 0.92);
   font-size: 17px;
   line-height: 1.3;
 }
 
-body.use-liquid-glass .video-docmap-node .video-docmap-time {
+body[data-theme="liquid-glass"] .video-docmap-node .video-docmap-time {
   color: rgba(16, 17, 20, 0.6);
   font-size: 13px;
   font-weight: 500;
 }
 
-body.use-liquid-glass .video-docmap-node header small,
-body.use-liquid-glass .video-docmap-node blockquote {
+body[data-theme="liquid-glass"] .video-docmap-node header small,
+body[data-theme="liquid-glass"] .video-docmap-node blockquote {
   margin-top: 12px;
   border-left-color: rgba(47, 157, 179, 0.48);
   color: rgba(16, 17, 20, 0.82);
@@ -4065,8 +4048,8 @@ body.use-liquid-glass .video-docmap-node blockquote {
   border-radius: var(--r-md);
 }
 
-body.use-liquid-glass .teachtext-command-popover,
-body.use-liquid-glass .docmap-command-popover {
+body[data-theme="liquid-glass"] .teachtext-command-popover,
+body[data-theme="liquid-glass"] .docmap-command-popover {
   gap: 3px;
   padding: 6px;
   border: 1px solid var(--glass-border);
@@ -4080,9 +4063,9 @@ body.use-liquid-glass .docmap-command-popover {
   overflow: var(--teachtext-command-popover-overflow, hidden);
 }
 
-body.use-liquid-glass .question-sheet-window .teachtext-command-popover,
-body.use-liquid-glass .outline-window .teachtext-command-popover,
-body.use-liquid-glass .section-drafts-window .teachtext-command-popover {
+body[data-theme="liquid-glass"] .question-sheet-window .teachtext-command-popover,
+body[data-theme="liquid-glass"] .outline-window .teachtext-command-popover,
+body[data-theme="liquid-glass"] .section-drafts-window .teachtext-command-popover {
   left: 0;
   right: auto;
   width: max-content;
@@ -4090,19 +4073,19 @@ body.use-liquid-glass .section-drafts-window .teachtext-command-popover {
   max-width: min(280px, calc(100vw - 48px));
 }
 
-html:lang(zh-Hans) body.use-liquid-glass .question-sheet-window .teachtext-command-popover,
-html:lang(zh-Hans) body.use-liquid-glass .outline-window .teachtext-command-popover,
-html:lang(zh-Hans) body.use-liquid-glass .section-drafts-window .teachtext-command-popover {
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .question-sheet-window .teachtext-command-popover,
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .outline-window .teachtext-command-popover,
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .section-drafts-window .teachtext-command-popover {
   min-width: 160px;
   max-width: min(220px, calc(100vw - 48px));
 }
 
-body.use-liquid-glass .docmap-command-popover {
+body[data-theme="liquid-glass"] .docmap-command-popover {
   min-width: 300px;
 }
 
-body.use-liquid-glass .teachtext-command-popover .btn,
-body.use-liquid-glass .teachtext-command-subpopover .btn {
+body[data-theme="liquid-glass"] .teachtext-command-popover .btn,
+body[data-theme="liquid-glass"] .teachtext-command-subpopover .btn {
   min-height: 34px;
   min-width: 0;
   padding: 4px 12px;
@@ -4115,12 +4098,12 @@ body.use-liquid-glass .teachtext-command-subpopover .btn {
   text-shadow: none;
 }
 
-body.use-liquid-glass .docmap-command-popover .btn {
+body[data-theme="liquid-glass"] .docmap-command-popover .btn {
   overflow-wrap: anywhere;
 }
 
-body.use-liquid-glass .teachtext-command-popover .btn:hover,
-body.use-liquid-glass .teachtext-command-popover .btn:focus-visible {
+body[data-theme="liquid-glass"] .teachtext-command-popover .btn:hover,
+body[data-theme="liquid-glass"] .teachtext-command-popover .btn:focus-visible {
   outline: 0;
   border: 0;
   background:
@@ -4130,9 +4113,9 @@ body.use-liquid-glass .teachtext-command-popover .btn:focus-visible {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
 }
 
-body.use-liquid-glass .teachtext-command-popover .btn:disabled,
-body.use-liquid-glass .teachtext-command-popover .btn.is-disabled,
-body.use-liquid-glass .teachtext-command-menu.is-disabled summary {
+body[data-theme="liquid-glass"] .teachtext-command-popover .btn:disabled,
+body[data-theme="liquid-glass"] .teachtext-command-popover .btn.is-disabled,
+body[data-theme="liquid-glass"] .teachtext-command-menu.is-disabled summary {
   border-color: rgba(255, 255, 255, 0.44);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.2)),
@@ -4142,53 +4125,53 @@ body.use-liquid-glass .teachtext-command-menu.is-disabled summary {
   opacity: 1;
 }
 
-body.use-liquid-glass .teachtext-command-popover .btn:not(:disabled):not(.is-disabled):not(:hover):not(:focus-visible) {
+body[data-theme="liquid-glass"] .teachtext-command-popover .btn:not(:disabled):not(.is-disabled):not(:hover):not(:focus-visible) {
   color: rgba(16, 17, 20, 0.96);
 }
 
-html:not(:lang(zh-Hans)) body.use-liquid-glass .question-sheet-window .details-bar-button,
-html:not(:lang(zh-Hans)) body.use-liquid-glass .outline-window .details-bar-button,
-html:not(:lang(zh-Hans)) body.use-liquid-glass .section-drafts-window .details-bar-button {
+html:not(:lang(zh-Hans)) body[data-theme="liquid-glass"] .question-sheet-window .details-bar-button,
+html:not(:lang(zh-Hans)) body[data-theme="liquid-glass"] .outline-window .details-bar-button,
+html:not(:lang(zh-Hans)) body[data-theme="liquid-glass"] .section-drafts-window .details-bar-button {
   max-width: min(190px, 34vw);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-html:not(:lang(zh-Hans)) body.use-liquid-glass .section-draft-nav .btn {
+html:not(:lang(zh-Hans)) body[data-theme="liquid-glass"] .section-draft-nav .btn {
   min-height: 46px;
   padding-inline: 14px;
   line-height: 1.12;
   overflow-wrap: normal;
 }
 
-html:not(:lang(zh-Hans)) body.use-liquid-glass .section-draft-nav {
+html:not(:lang(zh-Hans)) body[data-theme="liquid-glass"] .section-draft-nav {
   grid-template-columns: minmax(120px, 1fr) minmax(0, 1.35fr) minmax(120px, 1fr);
 }
 
-body.use-liquid-glass .specialized-command-menu .teachtext-command-popover {
+body[data-theme="liquid-glass"] .specialized-command-menu .teachtext-command-popover {
   width: min(360px, calc(100vw - 48px));
   min-width: 250px;
   padding: 8px;
 }
 
-body.use-liquid-glass .question-sheet-window .specialized-command-menu .teachtext-command-popover,
-body.use-liquid-glass .outline-window .specialized-command-menu .teachtext-command-popover,
-body.use-liquid-glass .section-drafts-window .specialized-command-menu .teachtext-command-popover {
+body[data-theme="liquid-glass"] .question-sheet-window .specialized-command-menu .teachtext-command-popover,
+body[data-theme="liquid-glass"] .outline-window .specialized-command-menu .teachtext-command-popover,
+body[data-theme="liquid-glass"] .section-drafts-window .specialized-command-menu .teachtext-command-popover {
   width: max-content;
   min-width: 184px;
   max-width: min(280px, calc(100vw - 48px));
   padding: 6px;
 }
 
-html:lang(zh-Hans) body.use-liquid-glass .question-sheet-window .specialized-command-menu .teachtext-command-popover,
-html:lang(zh-Hans) body.use-liquid-glass .outline-window .specialized-command-menu .teachtext-command-popover,
-html:lang(zh-Hans) body.use-liquid-glass .section-drafts-window .specialized-command-menu .teachtext-command-popover {
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .question-sheet-window .specialized-command-menu .teachtext-command-popover,
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .outline-window .specialized-command-menu .teachtext-command-popover,
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .section-drafts-window .specialized-command-menu .teachtext-command-popover {
   min-width: 160px;
   max-width: min(220px, calc(100vw - 48px));
 }
 
-body.use-liquid-glass .review-desk-actions .specialized-command-menu .teachtext-command-popover {
+body[data-theme="liquid-glass"] .review-desk-actions .specialized-command-menu .teachtext-command-popover {
   right: auto;
   width: min(300px, calc(100vw - 56px));
   min-width: 220px;
@@ -4196,15 +4179,15 @@ body.use-liquid-glass .review-desk-actions .specialized-command-menu .teachtext-
   overflow: auto;
 }
 
-body.use-liquid-glass .specialized-command-menu .teachtext-command-popover .btn {
+body[data-theme="liquid-glass"] .specialized-command-menu .teachtext-command-popover .btn {
   min-height: 34px;
   white-space: normal;
   line-height: 1.18;
 }
 
-body.use-liquid-glass .specialized-command-menu .teachtext-command-popover .btn:disabled,
-body.use-liquid-glass .specialized-command-menu .teachtext-command-popover .btn.is-disabled,
-body.use-liquid-glass .review-desk-window.is-review-locked .specialized-command-menu .teachtext-command-popover .btn {
+body[data-theme="liquid-glass"] .specialized-command-menu .teachtext-command-popover .btn:disabled,
+body[data-theme="liquid-glass"] .specialized-command-menu .teachtext-command-popover .btn.is-disabled,
+body[data-theme="liquid-glass"] .review-desk-window.is-review-locked .specialized-command-menu .teachtext-command-popover .btn {
   border-color: rgba(255, 255, 255, 0.48);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.24)),
@@ -4213,13 +4196,13 @@ body.use-liquid-glass .review-desk-window.is-review-locked .specialized-command-
   opacity: 1;
 }
 
-body.use-liquid-glass .teachtext-command-popover hr {
+body[data-theme="liquid-glass"] .teachtext-command-popover hr {
   width: auto;
   margin: 3px 10px;
   border-top: 1px solid rgba(16, 17, 20, 0.12);
 }
 
-body.use-liquid-glass .view-controls {
+body[data-theme="liquid-glass"] .view-controls {
   gap: 0;
   height: 28px;
   padding: 3px;
@@ -4235,7 +4218,7 @@ body.use-liquid-glass .view-controls {
   -webkit-backdrop-filter: blur(12px) saturate(160%);
 }
 
-body.use-liquid-glass .view-btn {
+body[data-theme="liquid-glass"] .view-btn {
   width: 30px;
   height: 22px;
   border: 1px solid transparent;
@@ -4245,14 +4228,14 @@ body.use-liquid-glass .view-btn {
   transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
-body.use-liquid-glass .view-btn:hover:not(.is-active),
-body.use-liquid-glass .view-btn:focus-visible:not(.is-active) {
+body[data-theme="liquid-glass"] .view-btn:hover:not(.is-active),
+body[data-theme="liquid-glass"] .view-btn:focus-visible:not(.is-active) {
   border-color: rgba(16, 17, 20, 0.18);
   background: rgba(255, 255, 255, 0.42);
   outline: none;
 }
 
-body.use-liquid-glass .view-btn.is-active {
+body[data-theme="liquid-glass"] .view-btn.is-active {
   border-color: rgba(16, 17, 20, 0.7);
   background:
     linear-gradient(180deg, rgba(16, 17, 20, 0.86), rgba(16, 17, 20, 0.68)),
@@ -4262,7 +4245,7 @@ body.use-liquid-glass .view-btn.is-active {
     0 5px 12px rgba(18, 28, 38, 0.14);
 }
 
-body.use-liquid-glass .view-btn[data-view="icon"]::before {
+body[data-theme="liquid-glass"] .view-btn[data-view="icon"]::before {
   border-radius: 1px;
   background: rgba(16, 17, 20, 0.84);
   box-shadow:
@@ -4271,7 +4254,7 @@ body.use-liquid-glass .view-btn[data-view="icon"]::before {
     6px 6px 0 rgba(16, 17, 20, 0.84);
 }
 
-body.use-liquid-glass .view-btn[data-view="icon"].is-active::before {
+body[data-theme="liquid-glass"] .view-btn[data-view="icon"].is-active::before {
   background: rgba(255, 255, 255, 0.9);
   box-shadow:
     6px 0 0 rgba(255, 255, 255, 0.9),
@@ -4279,36 +4262,36 @@ body.use-liquid-glass .view-btn[data-view="icon"].is-active::before {
     6px 6px 0 rgba(255, 255, 255, 0.9);
 }
 
-body.use-liquid-glass .view-btn[data-view="list"]::before {
+body[data-theme="liquid-glass"] .view-btn[data-view="list"]::before {
   width: 13px;
   border-radius: var(--r-pill);
   background: rgba(16, 17, 20, 0.84);
   box-shadow: 0 -5px 0 rgba(16, 17, 20, 0.84), 0 5px 0 rgba(16, 17, 20, 0.84);
 }
 
-body.use-liquid-glass .view-btn[data-view="list"].is-active::before {
+body[data-theme="liquid-glass"] .view-btn[data-view="list"].is-active::before {
   background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 -5px 0 rgba(255, 255, 255, 0.9), 0 5px 0 rgba(255, 255, 255, 0.9);
 }
 
-body.use-liquid-glass button:disabled:not(.memory-card),
-body.use-liquid-glass button.is-disabled:not(.memory-card),
-body.use-liquid-glass .btn:disabled,
-body.use-liquid-glass .btn.is-disabled,
-body.use-liquid-glass .btn.default:disabled,
-body.use-liquid-glass .btn.default.is-disabled,
+body[data-theme="liquid-glass"] button:disabled:not(.memory-card),
+body[data-theme="liquid-glass"] button.is-disabled:not(.memory-card),
+body[data-theme="liquid-glass"] .btn:disabled,
+body[data-theme="liquid-glass"] .btn.is-disabled,
+body[data-theme="liquid-glass"] .btn.default:disabled,
+body[data-theme="liquid-glass"] .btn.default.is-disabled,
 /* The three state suffixes were spelled out once per disabled shape —
    eighteen selectors that all said the same thing. :is() folds them to six
    and moves no weight: every argument is a single pseudo-class, so each
    compound keeps exactly the specificity its spelled-out form had. The
    restatements themselves stay, because out-weighing the enabled hover and
    active rules is the job they were written for. */
-body.use-liquid-glass button:disabled:not(.memory-card):is(:hover, :focus-visible, :active),
-body.use-liquid-glass button.is-disabled:not(.memory-card):is(:hover, :focus-visible, :active),
-body.use-liquid-glass .btn:disabled:is(:hover, :focus-visible, :active),
-body.use-liquid-glass .btn.is-disabled:is(:hover, :focus-visible, :active),
-body.use-liquid-glass .btn.default:disabled:is(:hover, :focus-visible, :active),
-body.use-liquid-glass .btn.default.is-disabled:is(:hover, :focus-visible, :active) {
+body[data-theme="liquid-glass"] button:disabled:not(.memory-card):is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] button.is-disabled:not(.memory-card):is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] .btn:disabled:is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] .btn.is-disabled:is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] .btn.default:disabled:is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] .btn.default.is-disabled:is(:hover, :focus-visible, :active) {
   --menu-shortcut-color: var(--liquid-disabled-control-fg);
   border-color: var(--liquid-disabled-control-border);
   background: var(--liquid-disabled-control-bg);
@@ -4324,11 +4307,11 @@ body.use-liquid-glass .btn.default.is-disabled:is(:hover, :focus-visible, :activ
    .shutdown-ledger .btn, which this already beats. The :active state now falls
    through to --btn-default-active-fg, which is the same white but reaches it
    through the token instead of a second literal. */
-body.use-liquid-glass .btn.default:not(:disabled):not(.is-disabled) {
+body[data-theme="liquid-glass"] .btn.default:not(:disabled):not(.is-disabled) {
   color: var(--btn-default-fg);
 }
 
-body.use-liquid-glass .btn:not(.default):not(:disabled):not(.is-disabled):active {
+body[data-theme="liquid-glass"] .btn:not(.default):not(:disabled):not(.is-disabled):active {
   color: rgba(16, 17, 20, 0.94);
 }
 
@@ -4336,18 +4319,18 @@ body.use-liquid-glass .btn:not(.default):not(:disabled):not(.is-disabled):active
    glass. The ink is a token so a backdrop window can quieten it by inheritance
    -- this rule is deliberately specific, and out-specifying it would start the
    arms race css-no-pingpong forbids. */
-body.use-liquid-glass .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled),
-body.use-liquid-glass .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):hover,
-body.use-liquid-glass .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):focus-visible,
-body.use-liquid-glass .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):active {
+body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled),
+body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):hover,
+body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):focus-visible,
+body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):active {
   color: var(--liquid-action-ink);
   -webkit-text-fill-color: var(--liquid-action-ink);
   text-shadow: none;
 }
 
-body.use-liquid-glass .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):hover,
-body.use-liquid-glass .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):focus-visible,
-body.use-liquid-glass .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):active {
+body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):hover,
+body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):focus-visible,
+body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):active {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.28)),
     rgba(255, 255, 255, 0.42);
@@ -4356,30 +4339,30 @@ body.use-liquid-glass .btn:not(.default):not(.is-active):not(.is-selected):not(.
     0 8px 22px rgba(18, 28, 38, 0.08);
 }
 
-body.use-liquid-glass .btn.danger:not(:disabled):not(.is-disabled),
-body.use-liquid-glass .btn.danger:not(:disabled):not(.is-disabled):hover,
-body.use-liquid-glass .btn.danger:not(:disabled):not(.is-disabled):focus-visible,
-body.use-liquid-glass .btn.danger:not(:disabled):not(.is-disabled):active {
+body[data-theme="liquid-glass"] .btn.danger:not(:disabled):not(.is-disabled),
+body[data-theme="liquid-glass"] .btn.danger:not(:disabled):not(.is-disabled):hover,
+body[data-theme="liquid-glass"] .btn.danger:not(:disabled):not(.is-disabled):focus-visible,
+body[data-theme="liquid-glass"] .btn.danger:not(:disabled):not(.is-disabled):active {
   color: rgb(185, 28, 28);
   -webkit-text-fill-color: rgb(185, 28, 28);
 }
 
-body.use-liquid-glass .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected),
-body.use-liquid-glass .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):hover,
-body.use-liquid-glass .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):focus,
-body.use-liquid-glass .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):focus-visible,
-body.use-liquid-glass .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):active {
+body[data-theme="liquid-glass"] .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected),
+body[data-theme="liquid-glass"] .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):hover,
+body[data-theme="liquid-glass"] .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):focus,
+body[data-theme="liquid-glass"] .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):focus-visible,
+body[data-theme="liquid-glass"] .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):active {
   color: rgba(16, 17, 20, 0.94);
   -webkit-text-fill-color: rgba(16, 17, 20, 0.94);
   text-shadow: none;
 }
 
-body.use-liquid-glass .btn:hover:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
-body.use-liquid-glass button:hover:not(.menu-bar button):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.tdi-stack-open):not(.tdi-stack-close):not(.view-switch-option):not(.system-help-related-link),
-body.use-liquid-glass .btn:focus:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
-body.use-liquid-glass button:focus:not(.menu-bar button):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.tdi-stack-open):not(.tdi-stack-close):not(.view-switch-option):not(.system-help-related-link),
-body.use-liquid-glass .btn:focus-visible:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
-body.use-liquid-glass button:focus-visible:not(.menu-bar button):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.tdi-stack-open):not(.tdi-stack-close):not(.view-switch-option):not(.system-help-related-link) {
+body[data-theme="liquid-glass"] .btn:hover:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
+body[data-theme="liquid-glass"] button:hover:not(.menu-bar button):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.tdi-stack-open):not(.tdi-stack-close):not(.view-switch-option):not(.system-help-related-link),
+body[data-theme="liquid-glass"] .btn:focus:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
+body[data-theme="liquid-glass"] button:focus:not(.menu-bar button):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.tdi-stack-open):not(.tdi-stack-close):not(.view-switch-option):not(.system-help-related-link),
+body[data-theme="liquid-glass"] .btn:focus-visible:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
+body[data-theme="liquid-glass"] button:focus-visible:not(.menu-bar button):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.tdi-stack-open):not(.tdi-stack-close):not(.view-switch-option):not(.system-help-related-link) {
   outline: 0;
   border-color: rgba(0, 122, 255, 0.56);
   box-shadow:
@@ -4388,8 +4371,8 @@ body.use-liquid-glass button:focus-visible:not(.menu-bar button):not(:disabled):
     0 0 0 3px rgba(0, 122, 255, 0.18);
 }
 
-body.use-liquid-glass .btn:active:not(:disabled):not(.is-disabled):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
-body.use-liquid-glass button:active:not(.menu-bar button):not(:disabled):not(.tdi-tab-close):not(.tdi-stack-open):not(.tdi-stack-close):not(.view-switch-option):not(.system-help-related-link) {
+body[data-theme="liquid-glass"] .btn:active:not(:disabled):not(.is-disabled):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
+body[data-theme="liquid-glass"] button:active:not(.menu-bar button):not(:disabled):not(.tdi-tab-close):not(.tdi-stack-open):not(.tdi-stack-close):not(.view-switch-option):not(.system-help-related-link) {
   border-color: rgba(0, 122, 255, 0.56);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.82),
@@ -4397,37 +4380,37 @@ body.use-liquid-glass button:active:not(.menu-bar button):not(:disabled):not(.td
     0 0 0 3px rgba(0, 122, 255, 0.18);
 }
 
-body.use-liquid-glass .btn.default:hover:not(:disabled):not(.is-disabled),
-body.use-liquid-glass .btn.default:focus:not(:disabled):not(.is-disabled),
-body.use-liquid-glass .btn.default:focus-visible:not(:disabled):not(.is-disabled) {
+body[data-theme="liquid-glass"] .btn.default:hover:not(:disabled):not(.is-disabled),
+body[data-theme="liquid-glass"] .btn.default:focus:not(:disabled):not(.is-disabled),
+body[data-theme="liquid-glass"] .btn.default:focus-visible:not(:disabled):not(.is-disabled) {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.06)),
     linear-gradient(180deg, #178bff, #0071e3);
 }
 
-body.use-liquid-glass button:disabled:not(.memory-card),
-body.use-liquid-glass button.is-disabled:not(.memory-card),
-body.use-liquid-glass .btn:disabled,
-body.use-liquid-glass .btn.is-disabled,
-body.use-liquid-glass .btn.default:disabled,
-body.use-liquid-glass .btn.default.is-disabled,
+body[data-theme="liquid-glass"] button:disabled:not(.memory-card),
+body[data-theme="liquid-glass"] button.is-disabled:not(.memory-card),
+body[data-theme="liquid-glass"] .btn:disabled,
+body[data-theme="liquid-glass"] .btn.is-disabled,
+body[data-theme="liquid-glass"] .btn.default:disabled,
+body[data-theme="liquid-glass"] .btn.default.is-disabled,
 /* Same fold as the disabled-material rule above, for the same reason. */
-body.use-liquid-glass button:disabled:not(.memory-card):is(:hover, :focus-visible, :active),
-body.use-liquid-glass button.is-disabled:not(.memory-card):is(:hover, :focus-visible, :active),
-body.use-liquid-glass .btn:disabled:is(:hover, :focus-visible, :active),
-body.use-liquid-glass .btn.is-disabled:is(:hover, :focus-visible, :active),
-body.use-liquid-glass .btn.default:disabled:is(:hover, :focus-visible, :active),
-body.use-liquid-glass .btn.default.is-disabled:is(:hover, :focus-visible, :active) {
+body[data-theme="liquid-glass"] button:disabled:not(.memory-card):is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] button.is-disabled:not(.memory-card):is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] .btn:disabled:is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] .btn.is-disabled:is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] .btn.default:disabled:is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] .btn.default.is-disabled:is(:hover, :focus-visible, :active) {
   color: var(--liquid-disabled-control-fg);
   -webkit-text-fill-color: var(--liquid-disabled-control-fg);
   text-shadow: none;
 }
 
 @supports (-apple-visual-effect: -apple-system-glass-material) {
-  body.use-liquid-glass .window,
-  body.use-liquid-glass .menu-popover,
-  body.use-liquid-glass .system-modal,
-  body.use-liquid-glass .startup-settings-modal {
+  body[data-theme="liquid-glass"] .window,
+  body[data-theme="liquid-glass"] .menu-popover,
+  body[data-theme="liquid-glass"] .system-modal,
+  body[data-theme="liquid-glass"] .startup-settings-modal {
     background: transparent;
     /* Where the system has its own glass material, that material IS the
        material: stacking the CSS blur on top of it blurred the surface twice.
@@ -4448,7 +4431,7 @@ body.use-liquid-glass .btn.default.is-disabled:is(:hover, :focus-visible, :activ
      appearance's own translucent gradient instead. Windows, popovers and the
      modals keep the system material: their content is large and sits on the
      material, not in it. */
-  body.use-liquid-glass .menu-bar {
+  body[data-theme="liquid-glass"] .menu-bar {
     background: var(--menu-bar-bg);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -4461,7 +4444,7 @@ body.use-liquid-glass .btn.default.is-disabled:is(:hover, :focus-visible, :activ
     -apple-visual-effect: none;
   }
 
-  body.use-liquid-glass .menu-bar::before {
+  body[data-theme="liquid-glass"] .menu-bar::before {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
@@ -4472,7 +4455,7 @@ body.use-liquid-glass .btn.default.is-disabled:is(:hover, :focus-visible, :activ
    discrete 1px jump, which is the motion a reduced-motion reader asked not to
    see, so drop the movement itself. */
 @media (prefers-reduced-motion: reduce) {
-  body.use-liquid-glass {
+  body[data-theme="liquid-glass"] {
     --liquid-press-transform: none;
     /* The lens keeps its material and its states; it only stops travelling.
        Hover and drag still read, through the rim and the halo. */
@@ -4485,56 +4468,30 @@ body.use-liquid-glass .btn.default.is-disabled:is(:hover, :focus-visible, :activ
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
   /* The hierarchy has to survive without the refraction: the well and the
      lens go opaque, and the value stays as readable as it was. */
-  body.use-liquid-glass {
+  body[data-theme="liquid-glass"] {
     --glass-slider-lens-filter: none;
     --glass-slider-well: rgba(120, 122, 128, 0.42);
     --glass-slider-lens-bg:
       linear-gradient(180deg, #ffffff, #f2f4f7);
   }
 
-  body.use-liquid-glass .assistant-window .messages {
+  body[data-theme="liquid-glass"] .assistant-window .messages {
     background: var(--paper);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
 
-  body.use-liquid-glass .assistant-window .message.assistant[data-reply-state="temporary"]:not(.clio-welcome) {
+  body[data-theme="liquid-glass"] .assistant-window .message.assistant[data-reply-state="temporary"]:not(.clio-welcome) {
     border-style: solid;
   }
 }
 
-/* ---------------------------------------------------------------------------
-   Increase Contrast.
-
-   The system setting asks for a higher-contrast scheme. Until now this app
-   answered it with exactly the bytes it answers with by default: measured in
-   Chromium with `Emulation.setEmulatedMedia({ features: [{ name:
-   "prefers-contrast", value: "more" }] })`, every role below read what it reads
-   with the setting off — the same silence `prefers-reduced-transparency` used
-   to keep in this file. So this block is the answer, and it is deliberately
-   small: the two roles that carry meaning at a glance (a secondary divider, a
-   disabled label), plus the one thing that can never be made legible by
-   tweaking a colour — a control sitting on a translucent surface it cannot be
-   separated from. The glass era gives up its blur here and its labels keep
-   their opaque fills.
-
-   It is scoped to `body[data-theme]`, the same specificity the era blocks use,
-   and it lives in the last boot sheet, so it wins by order in all six eras
-   without editing one of them. It cannot reach the appearance instruments:
-   they run with the setting off. */
+/* Increase Contrast for Liquid Glass. The canonical block (every era) ends
+   styles/65-appearance-themes.css; this sheet loads after it, so its era root
+   above would win the tie. The same answer, after that root. */
 @media (prefers-contrast: more) {
-  body[data-theme] {
-    /* A dotted 1px shade becomes a solid ink rule: the divider is the most
-       common non-text element here, and a dotted line never reaches the 3:1
-       that non-text content asks for across its whole length. */
+  body[data-theme="liquid-glass"] {
     --system-secondary-divider: 1px solid var(--ink);
-    /* Disabled ink at 7.4:1 on the era's paper instead of 5.7:1, so a disabled
-       label reads as disabled by weight and context rather than by being hard
-       to read. The blur this setting also asks for is dropped by the
-       reduced-transparency blocks above, which now match both settings.
-       Menu-item disabled ink is deliberately left to its era: it is the one
-       role that costs 30 boot bytes to reach, disabled controls are exempt from
-       the contrast floor, and the floppy reserve is a harder promise. */
     --system-disabled-fg: #3f3f3f;
   }
 }

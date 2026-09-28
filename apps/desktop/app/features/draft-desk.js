@@ -281,29 +281,18 @@ function draftUnitCount(text = "") {
 }
 
 function updateDraftStats() {
+  renderQuickDraftDial();
   if (!refs.stats) return;
   const body = refs.draft?.value || "";
   if (!String(body).trim()) {
     refs.stats.textContent = t("quick_draft_stats_empty");
     return;
   }
-  if (typeof formatReviewVoiceStats === "function") {
-    refs.stats.textContent = formatReviewVoiceStats(body);
-    return;
-  }
-  const units = draftUnitCount(body);
-  const seconds = Math.ceil(units / (currentLanguage === "zh" ? 5 : 2.4));
-  if (!units) {
-    refs.stats.textContent = t("quick_draft_stats_empty");
-  } else if (seconds < 60) {
-    refs.stats.textContent = t("draft_voice_stats_seconds", units, seconds);
-  } else {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    refs.stats.textContent = remainingSeconds
-      ? t("draft_voice_stats_minutes_seconds", units, minutes, remainingSeconds)
-      : t("draft_voice_stats_minutes", units, minutes);
-  }
+  // The length now lives on the dial in the sheet head, so the details bar
+  // reports words only; saying the seconds twice made two answers to one
+  // question.
+  const units = typeof countTextWords === "function" ? countTextWords(String(body).trim()) : draftUnitCount(body);
+  refs.stats.textContent = units ? t("quick_draft_stats_units", units) : t("quick_draft_stats_empty");
 }
 
 function refreshQuickDraftSelectControls() {
@@ -997,7 +986,7 @@ function installLightroomWindow() {
                   <div class="draft-desk-eli5-bar" data-quick-draft-eli5-bar hidden>
                     <label class="draft-desk-eli5-toggle">
                       <input type="checkbox" data-quick-draft-eli5-enabled />
-                      <span data-i18n="quick_draft_eli5_enabled">Explain like a five-year-old</span>
+                      <span data-i18n="lightroom_listener_label">Listener</span>
                     </label>
                     <span class="select-wrap draft-desk-eli5-select" data-quick-draft-eli5-baseline-wrap hidden>
                       <select data-quick-draft-eli5-baseline-select data-i18n-aria-label="quick_draft_eli5_baseline">
@@ -1026,6 +1015,10 @@ function installLightroomWindow() {
                   </div>
                   <span id="quick-draft-adjustment-strength-label" class="visually-hidden" data-i18n="quick_draft_adjustment_strength">Adjustment layer strength</span>
                   <div class="draft-desk-layer-stack">
+                    <div class="draft-desk-layer" data-quick-draft-adjustment-layer="clean" data-balloon-help="quick_draft_layer_clean_desc">
+                      <label class="draft-desk-layer-row"><input type="checkbox" data-requires-write data-quick-draft-adjustment-enabled="clean" /><i data-quick-draft-layer-order="clean" aria-hidden="true"></i><span id="quick-draft-layer-clean-label" data-i18n="quick_draft_adjustment_clean">Clean-up</span></label>
+                      <button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="clean" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button>
+                    </div>
                     <div class="draft-desk-layer" data-quick-draft-adjustment-layer="mingming" data-balloon-help="quick_draft_layer_mingming_desc">
                       <label class="draft-desk-layer-row">
                         <input type="checkbox" data-requires-write data-quick-draft-adjustment-enabled="mingming" checked />
@@ -1075,10 +1068,6 @@ function installLightroomWindow() {
                     </div>
                     <button type="button" class="btn mini-btn" data-requires-write data-quick-draft-protect-selection data-i18n="quick_draft_protect_selection" data-balloon-help="balloon_qd_protect">Protect Selection</button>
                   </div>
-                  <div class="draft-desk-mobile-inspector-actions">
-                    <button type="button" class="btn mini-btn" data-quick-draft-adjustment-apply data-i18n="quick_draft_preview_adjustments">Preview</button>
-                    <button type="button" class="btn mini-btn default" data-requires-write data-quick-draft-adjustment-develop data-i18n="quick_draft_develop" data-balloon-help="balloon_qd_develop">Develop</button>
-                  </div>
                 </section>
                 <section class="draft-desk-inspector-section draft-desk-versions-section" data-balloon-help="balloon_qd_versions">
                   <div class="draft-desk-region-head"><b data-i18n="quick_draft_versions">Versions</b></div>
@@ -1096,8 +1085,14 @@ function installLightroomWindow() {
                 <button class="view-switch-option is-active" type="button" role="tab" id="quick-draft-toggle-composite" data-quick-draft-display="read" aria-controls="lightroom-paper-view" aria-selected="true" data-i18n="quick_draft_composite" data-balloon-help="quick_draft_composite_balloon">Read</button>
                 <button class="view-switch-option" type="button" role="tab" id="quick-draft-toggle-listen" data-quick-draft-display="listen" aria-controls="lightroom-paper-view" aria-selected="false" data-i18n="quick_draft_listen" data-balloon-help="quick_draft_listen_balloon">Listen</button>
               </span>
+              <button class="btn draft-desk-lightroom-stack" type="button" data-action="lightroom-toggle-inspector" data-i18n="quick_draft_adjustments_label">Adjustments</button>
               <span class="draft-desk-action-gap"></span>
-              <button class="btn default" id="quick-draft-display-body" type="button" data-quick-draft-display="body" data-i18n="lightroom_back_to_draft" data-balloon-help="balloon_lightroom_back">Back to the Draft</button>
+              <button class="btn door" id="quick-draft-display-body" type="button" data-quick-draft-display="body" data-i18n="lightroom_back_to_draft" data-balloon-help="balloon_lightroom_back">Back to the Draft</button>
+              <!-- The darkroom's own two verbs sit in its footer, on every screen.
+                   They lived only in a drawer row the desktop never showed, so
+                   the window offered 23 controls and not one of them developed. -->
+              <button type="button" class="btn" data-quick-draft-adjustment-apply data-i18n="quick_draft_preview_adjustments" data-balloon-help="balloon_qd_apply">Preview</button>
+              <button type="button" class="btn" data-requires-write data-quick-draft-adjustment-develop data-i18n="quick_draft_develop" data-balloon-help="balloon_qd_develop">Develop</button>
           </footer>`,
   });
 }
@@ -1317,7 +1312,8 @@ function syncQuickDraftEli5Ui(source = null) {
     enabled: false,
     baselineKnowledge: "secondary-school",
   };
-  if (refs.eli5Bar) refs.eli5Bar.hidden = !hasBody;
+  const listening = typeof currentQuickDraftDisplayMode === "function" && currentQuickDraftDisplayMode() === "listen";
+  if (refs.eli5Bar) refs.eli5Bar.hidden = !hasBody || !listening;
   if (refs.eli5Enabled) refs.eli5Enabled.checked = lens.enabled === true;
   if (refs.eli5Baseline) refs.eli5Baseline.value = lens.baselineKnowledge || "secondary-school";
   if (refs.eli5BaselineWrap) refs.eli5BaselineWrap.hidden = lens.enabled !== true;
@@ -1438,7 +1434,29 @@ function setQuickDraftDrawer(drawer = "", { restoreFocus = false } = {}) {
 }
 
 function closeQuickDraftDrawer(options = {}) {
+  document.querySelector(".lightroom-layout")?.classList.remove("is-stack-open");
   return setQuickDraftDrawer("", options);
+}
+
+// On a phone 文字亮室's stack is a drawer of its own. The drawer state used to
+// be a class on Quick Draft's form, which is not an ancestor of the darkroom's
+// inspector since the split -- so on a phone the stack could never be shown,
+// from the footer or from the View menu.
+function lightroomUsesStackDrawer() {
+  const close = document.querySelector('.lightroom-layout [data-quick-draft-drawer-close="inspector"]');
+  // The close key sits inside the closed drawer, so ask for its own display
+  // (the narrow layout shows it), never whether it is visible right now.
+  return Boolean(close
+    && getComputedStyle(close).display !== "none"
+    && document.querySelector('[data-window="lightroom"]:not(.is-hidden)'));
+}
+
+function toggleLightroomStack(force) {
+  const layout = document.querySelector(".lightroom-layout");
+  if (!layout) return false;
+  const open = layout.classList.toggle("is-stack-open", typeof force === "boolean" ? force : undefined);
+  if (typeof updateMenuState === "function") updateMenuState();
+  return open;
 }
 
 function quickDraftUsesDrawerLayout() {
@@ -1465,6 +1483,9 @@ function quickDraftPanelActionable(panel = "shelf") {
 function quickDraftPanelVisible(panel = "shelf") {
   const target = panel === "inspector" ? "inspector" : "shelf";
   if (!quickDraftPanelActionable(target)) return false;
+  if (target === "inspector" && lightroomUsesStackDrawer()) {
+    return Boolean(document.querySelector(".lightroom-layout")?.classList.contains("is-stack-open"));
+  }
   if (quickDraftUsesDrawerLayout()) {
     return refs.form.classList.contains(target === "inspector" ? "is-inspector-open" : "is-shelf-open");
   }
@@ -1474,6 +1495,7 @@ function quickDraftPanelVisible(panel = "shelf") {
 function toggleQuickDraftPanel(panel = "shelf") {
   const target = panel === "inspector" ? "inspector" : "shelf";
   if (!quickDraftPanelActionable(target)) return false;
+  if (target === "inspector" && lightroomUsesStackDrawer()) return toggleLightroomStack();
   const hiddenClass = target === "inspector" ? "is-inspector-hidden" : "is-shelf-hidden";
   if (quickDraftUsesDrawerLayout()) {
     refs.form.classList.remove(hiddenClass);
@@ -1593,11 +1615,319 @@ function isAdjustmentLayerControl(target) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// 一个钟点: the dial and the hold-to-say key.
+//
+// The dial replaces the length menu and the details bar's "~36 sec" with one
+// object: the ring is the target length, the fill is how long this draft takes
+// to say aloud, and anything past the target is drawn outside the ring. The
+// <select> stays in the DOM as the model -- every existing reader and the
+// record keep using it -- and a click on the dial steps it to the next length.
+//
+// 按住说 is dictation without a detour through the Dictation Pad: hold the key,
+// speak, let go, and the words land where the writer is -- the say field on an
+// empty sheet, the caret in the body once there is one. What was said is the
+// writer's own language, so it is inserted exactly as recognised.
+// ---------------------------------------------------------------------------
+const QUICK_DRAFT_DIAL_SVG_NS = "http://www.w3.org/2000/svg";
+
+function quickDraftDialSpokenSeconds(text = "") {
+  const body = String(text || "");
+  if (!body.trim()) return 0;
+  if (typeof estimateVoiceoverSeconds === "function") return estimateVoiceoverSeconds(body);
+  if (typeof estimateBilibiliVoiceoverSeconds === "function") return estimateBilibiliVoiceoverSeconds(body);
+  return Math.ceil(draftUnitCount(body) / (currentLanguage === "zh" ? 4 : 2.5));
+}
+
+// "7m" is minutes of speech; "280w" is words, said at the same pace the
+// seconds above assume (240 CJK characters or 150 Latin words a minute).
+function quickDraftDialTargetSeconds(value = "") {
+  const match = String(value || "").match(/^(\d+)([mw])$/);
+  if (!match) return 0;
+  const amount = Number(match[1]) || 0;
+  if (match[2] === "m") return amount * 60;
+  return Math.ceil((amount / (currentLanguage === "zh" ? 240 : 150)) * 60);
+}
+
+function quickDraftDialClock(seconds = 0) {
+  const whole = Math.max(0, Math.round(Number(seconds) || 0));
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
+}
+
+function installQuickDraftDial() {
+  const select = refs.duration || document.getElementById("quick-draft-duration");
+  const wrap = select?.closest(".select-wrap");
+  if (!select || !wrap || wrap.parentElement?.querySelector("[data-quick-draft-dial]")) return;
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "draft-desk-dial";
+  button.dataset.quickDraftDial = "";
+  button.dataset.i18nAriaLabel = "quick_draft_dial_label";
+  button.setAttribute("aria-label", t("quick_draft_dial_label"));
+  const svg = document.createElementNS(QUICK_DRAFT_DIAL_SVG_NS, "svg");
+  svg.setAttribute("viewBox", "0 0 36 36");
+  svg.setAttribute("aria-hidden", "true");
+  svg.classList.add("draft-desk-dial-face");
+  const ring = (className, r) => {
+    const circle = document.createElementNS(QUICK_DRAFT_DIAL_SVG_NS, "circle");
+    circle.setAttribute("cx", "18");
+    circle.setAttribute("cy", "18");
+    circle.setAttribute("r", String(r));
+    circle.setAttribute("class", className);
+    circle.setAttribute("pathLength", "100");
+    svg.append(circle);
+    return circle;
+  };
+  ring("draft-desk-dial-track", 14);
+  ring("draft-desk-dial-fill", 14);
+  ring("draft-desk-dial-over", 17);
+  for (let index = 0; index < 12; index += 1) {
+    const angle = (index / 12) * Math.PI * 2 - Math.PI / 2;
+    const tick = document.createElementNS(QUICK_DRAFT_DIAL_SVG_NS, "line");
+    const inner = index % 3 === 0 ? 7.5 : 9;
+    tick.setAttribute("x1", String(18 + inner * Math.cos(angle)));
+    tick.setAttribute("y1", String(18 + inner * Math.sin(angle)));
+    tick.setAttribute("x2", String(18 + 10.5 * Math.cos(angle)));
+    tick.setAttribute("y2", String(18 + 10.5 * Math.sin(angle)));
+    tick.setAttribute("class", "draft-desk-dial-tick");
+    svg.append(tick);
+  }
+  const readout = document.createElement("span");
+  readout.className = "draft-desk-dial-readout";
+  readout.innerHTML = '<b data-quick-draft-dial-now>0:00</b><small data-quick-draft-dial-target></small>';
+  button.append(svg, readout);
+  button.addEventListener("click", () => {
+    const options = Array.from(select.options).filter((option) => !option.disabled && !option.hidden);
+    if (options.length < 2) return;
+    const index = options.findIndex((option) => option.value === select.value);
+    select.value = options[(index + 1) % options.length].value;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    renderQuickDraftDial();
+  });
+  wrap.classList.add("draft-desk-dial-model");
+  wrap.before(button);
+}
+
+function renderQuickDraftDial() {
+  const dial = /** @type {HTMLElement | null} */ (document.querySelector("[data-quick-draft-dial]"));
+  const select = refs.duration || document.getElementById("quick-draft-duration");
+  if (!dial || !select) return;
+  const hasBody = Boolean(String(refs.draft?.value || "").trim());
+  const sayField = /** @type {HTMLTextAreaElement | null} */ (document.getElementById("quick-draft-say"));
+  const text = hasBody ? refs.draft.value : (refs.say?.value || sayField?.value || "");
+  const seconds = quickDraftDialSpokenSeconds(text);
+  const target = quickDraftDialTargetSeconds(select.value);
+  const ratio = target ? seconds / target : 0;
+  dial.style.setProperty("--dial-fill", String(Math.min(ratio, 1) * 100));
+  dial.style.setProperty("--dial-over", String(Math.min(Math.max(ratio - 1, 0), 1) * 100));
+  dial.classList.toggle("is-over", ratio > 1);
+  const now = dial.querySelector("[data-quick-draft-dial-now]");
+  const goal = dial.querySelector("[data-quick-draft-dial-target]");
+  if (now) now.textContent = quickDraftDialClock(seconds);
+  const optionLabel = select.selectedOptions?.[0]?.textContent?.trim() || "";
+  if (goal) goal.textContent = target ? `/ ${quickDraftDialClock(target)}` : optionLabel;
+  dial.title = optionLabel;
+}
+
+let quickDraftSayRecognition = null;
+let quickDraftSayHeard = "";
+
+function quickDraftSayTarget() {
+  const draft = refs.draft || document.getElementById("quick-draft-draft");
+  const say = document.getElementById("quick-draft-say");
+  const bodySurface = draft?.closest("[data-quick-draft-body-surface]");
+  return draft && bodySurface && !bodySurface.hidden ? draft : say;
+}
+
+function insertQuickDraftSpokenText(target, text = "") {
+  const words = String(text || "").trim();
+  if (!target || !words || target.readOnly || target.disabled) return false;
+  const value = String(target.value || "");
+  const start = Number.isInteger(target.selectionStart) ? target.selectionStart : value.length;
+  const end = Number.isInteger(target.selectionEnd) ? target.selectionEnd : start;
+  const before = value.slice(0, start);
+  const joiner = before && !/\s$/.test(before) && !/[㐀-鿿。，！？；：]$/.test(before) ? " " : "";
+  target.value = `${before}${joiner}${words}${value.slice(end)}`;
+  const caret = before.length + joiner.length + words.length;
+  target.setSelectionRange?.(caret, caret);
+  target.dispatchEvent(new Event("input", { bubbles: true }));
+  return true;
+}
+
+function setQuickDraftSayLive(live = false) {
+  /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll("[data-quick-draft-say]")).forEach((button) => {
+    button.dataset.live = live ? "true" : "";
+    button.setAttribute("aria-pressed", live ? "true" : "false");
+  });
+}
+
+function startQuickDraftSay() {
+  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!Recognition || quickDraftSayRecognition) return;
+  const recognition = new Recognition();
+  recognition.lang = currentLanguage === "zh" ? "zh-CN" : "en-US";
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  quickDraftSayHeard = "";
+  recognition.onresult = (event) => {
+    let heard = "";
+    let interim = "";
+    for (let index = 0; index < event.results.length; index += 1) {
+      const result = event.results[index];
+      if (result.isFinal) heard += result[0].transcript;
+      else interim += result[0].transcript;
+    }
+    quickDraftSayHeard = heard;
+    setQuickDraftStatus(t("quick_draft_say_listening", `${heard}${interim}`.slice(-40)));
+  };
+  recognition.onerror = (event) => {
+    if (event?.error && event.error !== "aborted" && event.error !== "no-speech") {
+      setQuickDraftStatus(t("quick_draft_say_failed"));
+    }
+  };
+  recognition.onend = () => {
+    quickDraftSayRecognition = null;
+    setQuickDraftSayLive(false);
+    const landed = insertQuickDraftSpokenText(quickDraftSayTarget(), quickDraftSayHeard);
+    setQuickDraftStatus(landed ? t("quick_draft_say_landed") : "");
+    quickDraftSayHeard = "";
+  };
+  quickDraftSayRecognition = recognition;
+  setQuickDraftSayLive(true);
+  setQuickDraftStatus(t("quick_draft_say_listening", ""));
+  try {
+    recognition.start();
+  } catch {
+    quickDraftSayRecognition = null;
+    setQuickDraftSayLive(false);
+  }
+}
+
+function stopQuickDraftSay() {
+  try {
+    quickDraftSayRecognition?.stop();
+  } catch {}
+}
+
+function makeQuickDraftSayButton(className) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = className;
+  button.dataset.quickDraftSay = "";
+  button.dataset.dictation = "off";
+  button.setAttribute("aria-pressed", "false");
+  const supported = Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
+  const label = document.createElement("span");
+  label.dataset.i18n = "quick_draft_say_hold";
+  label.textContent = t("quick_draft_say_hold");
+  button.append(label);
+  if (!supported) {
+    button.disabled = true;
+    button.dataset.balloonHelpDisabled = "quick_draft_say_unsupported";
+    button.title = t("quick_draft_say_unsupported");
+  }
+  button.addEventListener("pointerdown", (event) => {
+    if (button.disabled || event.button > 0) return;
+    event.preventDefault();
+    button.setPointerCapture?.(event.pointerId);
+    startQuickDraftSay();
+  });
+  ["pointerup", "pointercancel", "lostpointercapture"].forEach((name) => {
+    button.addEventListener(name, stopQuickDraftSay);
+  });
+  button.addEventListener("keydown", (event) => {
+    if ((event.key === " " || event.key === "Enter") && !event.repeat) {
+      event.preventDefault();
+      startQuickDraftSay();
+    }
+  });
+  button.addEventListener("keyup", (event) => {
+    if (event.key === " " || event.key === "Enter") stopQuickDraftSay();
+  });
+  button.addEventListener("contextmenu", (event) => event.preventDefault());
+  return button;
+}
+
+function installQuickDraftSayKeys() {
+  const entrances = refs.form?.querySelector(".draft-desk-intake-actions");
+  if (entrances && !entrances.querySelector("[data-quick-draft-say]")) {
+    entrances.prepend(makeQuickDraftSayButton("btn mini-btn draft-desk-say"));
+  }
+  const drawerSwitch = refs.form?.querySelector(".draft-desk-actions > .draft-desk-drawer-switch");
+  if (drawerSwitch && !refs.form.querySelector(".draft-desk-actions > [data-quick-draft-say]")) {
+    drawerSwitch.after(makeQuickDraftSayButton("draft-desk-mic"));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 文字亮室 as a light table: hold a frame to see that version.
+// ---------------------------------------------------------------------------
+let lightroomPeekFrame = null;
+
+function lightroomPeekText(frame) {
+  const record = activeProjectQuickDraft({ create: false })?.record;
+  const darkroom = darkroomOf(record);
+  if (frame?.dataset.quickDraftVersionPeekKind === "negative") return String(darkroom.negative || "");
+  const version = (darkroom.versions || []).find((entry) => entry.id === frame?.dataset.quickDraftVersionPeek);
+  return String(version?.body || "");
+}
+
+function startLightroomPeek(frame) {
+  if (!frame || !refs.preview) return;
+  const text = lightroomPeekText(frame);
+  if (!text.trim()) return;
+  lightroomPeekFrame = frame;
+  frame.classList.add("is-peeking");
+  quickDraftPreviewHost()?.classList.add("is-peeking");
+  quickDraftMarkdownPreview(text);
+}
+
+function endLightroomPeek() {
+  if (!lightroomPeekFrame) return;
+  lightroomPeekFrame.classList.remove("is-peeking");
+  lightroomPeekFrame = null;
+  quickDraftPreviewHost()?.classList.remove("is-peeking");
+  if (typeof renderQuickDraftPreviewPane === "function") renderQuickDraftPreviewPane();
+}
+
+function bindLightroomPeek() {
+  const list = refs.versionsList;
+  if (!list || list.dataset.peekBound) return;
+  list.dataset.peekBound = "true";
+  list.addEventListener("pointerdown", (event) => {
+    const frame = event.target.closest?.("[data-quick-draft-version-peek]");
+    if (!frame || event.button > 0) return;
+    event.preventDefault();
+    frame.setPointerCapture?.(event.pointerId);
+    startLightroomPeek(frame);
+  });
+  ["pointerup", "pointercancel", "lostpointercapture"].forEach((name) => {
+    list.addEventListener(name, endLightroomPeek);
+  });
+  list.addEventListener("keydown", (event) => {
+    const frame = event.target.closest?.("[data-quick-draft-version-peek]");
+    if (frame && (event.key === " " || event.key === "Enter") && !event.repeat) {
+      event.preventDefault();
+      startLightroomPeek(frame);
+    }
+  });
+  list.addEventListener("keyup", (event) => {
+    if (event.key === " " || event.key === "Enter") endLightroomPeek();
+  });
+  list.addEventListener("focusout", endLightroomPeek);
+  list.addEventListener("contextmenu", (event) => {
+    if (event.target.closest?.("[data-quick-draft-version-peek]")) event.preventDefault();
+  });
+}
+
 function bind() {
   if (bound) return;
   collectRefs();
   if (!refs.form) return;
   bound = true;
+  installQuickDraftDial();
+  installQuickDraftSayKeys();
+  bindLightroomPeek();
   attachQuickDraftMarkdownEditor();
   observeQuickDraftLayerLayout();
 

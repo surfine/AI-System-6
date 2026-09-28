@@ -1480,7 +1480,7 @@ function renderClaimResults(markdown) {
         if (scrap) {
           selectedScrapId = scrapId;
           // Try to find URL for Reader
-          const urlMatch = scrap.body.match(/URL:\s*(https?:\/\/\S+)/i);
+          const urlMatch = scrap.source?.url ? [null, scrap.source.url] : scrap.body.match(/URL:\s*(https?:\/\/\S+)/i);
           if (urlMatch) {
             readerUrlInput.value = urlMatch[1];
             openWindow("reader");

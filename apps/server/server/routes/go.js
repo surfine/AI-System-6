@@ -16,6 +16,7 @@ const LAUNCH_ROUTES = new Map([
   ["liquid-cover", "open-liquid-cover"],
   ["cmf-studio", "open-cmf-studio"],
   ["one-more-tune", "open-one-more-tune"],
+  ["disks", "open-demo-disks-latest"],
   ["dtk", "open-shared-disk-dtk"],
   ["ipad1", "open-shared-disk-ipad1"],
   ["m5ipad", "open-shared-disk-m5ipad"],
@@ -51,6 +52,7 @@ const LAUNCH_ROUTES = new Map([
   ["cdma4", "open-shared-disk-cdma4"],
   ["iphone17", "open-shared-disk-iphone17"],
   ["windowshade", "open-shared-disk-windowshade"],
+  ["ipadpro18", "open-shared-disk-ipadpro18"],
 ]);
 
 /**

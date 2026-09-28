@@ -9,6 +9,38 @@
   let lastOwner = "";
   const active = () => window.AISystem6Theme.getCurrentTheme() === "nextstep";
   const owner = () => menuOwnerAppId || activeAppId || "finder";
+  // The Writing Flow panel belongs to the writing session: Writing Studio and
+  // the tools the route summons. While any of these owns the main menu the
+  // panel stays up (NeXT's Info-panel exception); any other owner hides it.
+  // One definition, read by nextstep-shell.js through this module's frozen API.
+  const writingFamily = new Set(["writingStudio", "teachText", "clioTalk", "reader", "searcher", "scrapbook",
+    "docMap", "clioChart", "clioStage", "lightroom", "imagePromptStudio", "liquidCover", "cmfStudio",
+    "clioPaint", "clioProject"]);
+
+  // NeXTSTEP 3.3 prints the key equivalent at the right end of a menu row. The
+  // product's own table (actions.js's keyboardShortcutRegistry) answers for the
+  // rows it covers; the application verbs Hide and Quit are not in that table,
+  // so they are added here with the letters NeXTSTEP uses (Hide h, Quit q).
+  const verbShortcuts = new Map([["hide-active-app", { key: "h", shift: false }],
+    ["quit-active-app", { key: "q", shift: false }]]);
+  function keyEquivalent(action) {
+    if (!action) return "";
+    const verb = verbShortcuts.get(action);
+    if (verb) return verb.shift ? verb.key.toUpperCase() : verb.key;
+    const registry = typeof keyboardShortcutRegistry !== "undefined" ? keyboardShortcutRegistry : null;
+    const entry = registry?.find((shortcut) => shortcut.action === action);
+    if (!entry?.key || entry.key.length !== 1 || !/[a-z0-9]/i.test(entry.key)) return "";
+    return entry.shift ? entry.key.toUpperCase() : entry.key;
+  }
+
+  // The root main menu palette's real rectangle, for the panel that hangs under
+  // it and for window-manager.js's left inset. Null when there is nothing to
+  // hang under: no palette for this owner, or it is hidden.
+  function rootRect() {
+    const node = palettes.get(`${owner()}:root`)?.node;
+    if (!node || node.hidden) return null;
+    return node.getBoundingClientRect();
+  }
 
   function context() {
     const target = document.activeElement;
@@ -38,7 +70,10 @@
   }
 
   function workspaceItems() {
+    // NeXTSTEP's way back to the Writing Flow is Tools ▸ Writing Flow..., so the
+    // Apple-menu row that serves every other era is not repeated here.
     return Array.from(document.querySelectorAll(".apple-menu-popover > [data-action]"))
+      .filter((node) => node.dataset.action !== "show-writing-flow")
       .map((node) => menuItem(node.dataset.action, node.dataset.i18n || node.textContent));
   }
 
@@ -46,6 +81,9 @@
     return [
       submenu("nextstep_workspace", workspaceItems()),
       ...menuSetForApp(appId).map((definition) => ({ ...definition, type: "submenu" })),
+      ...(writingFamily.has(appId)
+        ? [submenu("nextstep_tools", [menuItem("nextstep-writing-flow", "nextstep_writing_flow_command")])]
+        : []),
       submenu("selection_services", selectionTools),
       submenu("nextstep_windows", [
         menuItem("nextstep-zoom-window", "nextstep_zoom"),
@@ -72,10 +110,14 @@
     return Array.from(palette.body.querySelectorAll(":scope > button:not(:disabled)"));
   }
 
+  // The root main menu sits at (-1,-1) so its 1px border falls off-screen and
+  // (0,0) is the white highlight (NeXTSTEP 3.3 capture B3): every other palette
+  // keeps the desk's own (0,0) lower bound.
   function place(palette, x, y) {
     const rect = palette.node.getBoundingClientRect();
-    palette.x = Math.max(0, Math.min(x, innerWidth - rect.width));
-    palette.y = Math.max(0, Math.min(y, innerHeight - Math.min(rect.height, innerHeight)));
+    const floor = palette.path === "root" ? -1 : 0;
+    palette.x = Math.max(floor, Math.min(x, innerWidth - rect.width));
+    palette.y = Math.max(floor, Math.min(y, innerHeight - Math.min(rect.height, innerHeight)));
     palette.node.style.left = `${palette.x}px`;
     palette.node.style.top = `${palette.y}px`;
   }
@@ -138,9 +180,10 @@
     child.source = palette.source || source || context();
     child.trigger = trigger;
     trigger.setAttribute("aria-expanded", "true");
-    const rect = trigger.getBoundingClientRect();
     const parentRect = palette.node.getBoundingClientRect();
-    place(child, parentRect.right, rect.top);
+    // Every 3.3 submenu opens with its first row level with the main menu's own
+    // title (top at the parent palette's top), never at the clicked row.
+    place(child, parentRect.right, parentRect.top);
     return child;
   }
 
@@ -164,8 +207,17 @@
       const button = document.createElement("button");
       button.type = "button";
       button.setAttribute("role", "menuitem");
-      button.textContent = item.type === "window" ? item.label : t(item.labelKey);
-      button.setAttribute("aria-label", button.textContent);
+      const label = item.type === "window" ? item.label : t(item.labelKey);
+      button.textContent = label;
+      button.setAttribute("aria-label", label);
+      const equivalent = keyEquivalent(item.action);
+      if (equivalent) {
+        const key = document.createElement("span");
+        key.className = "nextstep-key";
+        key.setAttribute("aria-hidden", "true");
+        key.textContent = equivalent;
+        button.append(key);
+      }
       if (item.action) button.dataset.nextstepAction = item.action;
       if (item.type === "submenu") {
         button.setAttribute("aria-haspopup", "menu");
@@ -203,7 +255,9 @@
     title.title = t("nextstep_menu_move");
     const close = document.createElement("button");
     close.type = "button";
-    close.textContent = "×";
+    // The torn-off palette's close box is NeXT's bevelled 15x15 X (P9); the SVG
+    // is painted by CSS as the button's background, so no glyph text is set.
+    close.className = "nextstep-menu-close";
     close.setAttribute("aria-label", t("close"));
     close.hidden = true;
     header.append(title, close);
@@ -224,7 +278,7 @@
         place(palette, palette.x + (event.key === "ArrowRight" ? 16 : event.key === "ArrowLeft" ? -16 : 0),
           palette.y + (event.key === "ArrowDown" ? 16 : event.key === "ArrowUp" ? -16 : 0));
       }
-      if (event.key === "Home") { event.preventDefault(); place(palette, 8, 32); }
+      if (event.key === "Home") { event.preventDefault(); place(palette, palette.path === "root" ? -1 : 0, palette.path === "root" ? -1 : 0); }
     });
     header.addEventListener("pointerdown", (event) => {
       if (event.target === close || event.button !== 0) return;
@@ -296,12 +350,17 @@
       }
       gesture = null;
       palettes.forEach((palette) => { palette.node.hidden = true; });
+      document.body.style.removeProperty("--nextstep-menu-right");
+      document.body.classList.remove("nextstep-main-menu");
       return;
     }
     if (lastOwner !== currentOwner) { closeAttached(); source = null; lastOwner = currentOwner; }
     const key = `${currentOwner}:root`;
     let root = palettes.get(key);
-    if (!root) { root = create(key, currentOwner, "root", activeAppLabel(), rootItems(currentOwner)); place(root, 8, 32); }
+    // The 3.3 main menu hangs from the screen's top-left corner with its 1px
+    // border off-screen: the palette sits at (-1,-1) so (0,0) is the white
+    // highlight. There is no Mac menu bar above it in this appearance.
+    if (!root) { root = create(key, currentOwner, "root", activeAppLabel(), rootItems(currentOwner)); place(root, -1, -1); }
     else if (!root.node.contains(document.activeElement) && !gesture) render(root, rootItems(currentOwner));
     palettes.forEach((palette) => {
       palette.node.hidden = palette.owner !== currentOwner;
@@ -311,11 +370,24 @@
         refreshAvailability(palette); place(palette, palette.x, palette.y);
       }
     });
+    // The main menu's right edge, for layouts that must stay clear of it
+    // (the Theme Lab window, the narrow full-screen shell).
+    // A phone takes the palette off (nextstep-shell.css), which leaves it a
+    // zero box: that is "not on screen" here too.
+    const rootBox = root.node.hidden ? null : root.node.getBoundingClientRect();
+    const onScreen = Boolean(rootBox && rootBox.width > 0);
+    document.body.style.setProperty("--nextstep-menu-right", `${onScreen ? Math.max(0, Math.round(rootBox.right)) : 0}px`);
+    // A class the lazy NeXTSTEP sheet can scope by without a theme selector:
+    // present exactly while a NeXTSTEP main menu is on screen.
+    document.body.classList.toggle("nextstep-main-menu", onScreen);
+    // The Writing Flow panel hangs under the root palette, so it re-places
+    // itself once the palettes are where they belong.
+    window.AISystem6NextstepWritingFlow?.sync();
   }
   function schedule() { if (!queued) { queued = true; queueMicrotask(sync); } }
   document.addEventListener("ai-system6-themechange", schedule);
   window.addEventListener("resize", schedule);
   window.AISystem6Runtime.registerCommand("nextstep-zoom-window", { handler: () => { const win = resolveMenuContextWindow(); if (win) zoomWindow(win); } });
   window.AISystem6Runtime.registerCommand("nextstep-shade-window", { handler: () => { const win = resolveMenuContextWindow(); if (win) toggleCollapsed(win); } });
-  window.AISystem6NextstepMenus = Object.freeze({ sync: schedule });
+  window.AISystem6NextstepMenus = Object.freeze({ sync: schedule, rootRect, writingFamily });
 })();

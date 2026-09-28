@@ -433,22 +433,6 @@ window.AISystem6PromptFiles = Object.freeze([
     "hash": "1530b3252c1aed4ab8919e4d7666231b97822dc1a89f238d0760cf7a05871d6a"
   },
   {
-    "id": "writing-route.rebuild-section",
-    "name": "写作对象重建段落",
-    "nameEn": "Rebuild Section",
-    "names": {
-      "zh": "写作对象重建段落",
-      "en": "Rebuild Section"
-    },
-    "editable": "project",
-    "category": "Writing Route",
-    "bodies": {
-      "zh": "只把任务指定的写作区块还原成简洁 Markdown。保留原文的功能、证据边界、不确定性和有价值的声音，不照搬措辞，也不编造事实。只返回指定区块，不要 JSON 或解释。",
-      "en": "Rebuild only the requested writing section as concise Markdown. Preserve the source's function, evidence boundary, uncertainty, and useful voice; do not imitate its wording or invent facts. Return the requested section only, never JSON or an explanation."
-    },
-    "hash": "9e8b6b4439301418fc5235c4a9222d4a9f2646517800149499a5154a55bf9f6c"
-  },
-  {
     "id": "writing-route.review-hkrr",
     "name": "HKRR 审校",
     "nameEn": "HKRR Review",

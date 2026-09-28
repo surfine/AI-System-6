@@ -1,14 +1,14 @@
 // Projection of windowRegistry/runningApps. Pins are personal shortcuts; they
 // never construct an application or change its document/session state.
 //
-// NeXTSTEP 3.3 keeps three classes of object in the Dock column and they are
-// not interchangeable: the fixed application icons, the icons of applications
-// that are merely running, and one miniwindow per window. The data was already
-// kept apart here (pins / runningApps / the miniaturized windows on the desk);
-// what was wrong was the projection -- all three went into one flat list of
-// tiles separated by `<hr>`, so an application icon and a window's miniwindow
-// were told apart only by their order. Each class now renders into its own
-// labelled region inside the one Dock root, from that same single source.
+// NeXTSTEP 3.3 keeps two places on the desk, and they are not one object: the
+// Dock, down the right edge, holds ONLY the fixed (pinned) application icons,
+// and a desk row along the bottom holds the rest -- the applications that are
+// merely running, then one miniwindow per put-away window to their right. Both
+// project the same source (pins / runningApps / the miniaturized windows), but
+// into two roots: a `.nextstep-dock` the writer can switch off, and a desk row
+// that is always there so nothing strands when the Dock is off (owner decision:
+// the bottom row is a desk object, NOT part of the Dock).
 (() => {
   const storageKey = "ai-system-6-nextstep-dock";
   let pins;
@@ -16,20 +16,31 @@
   if (!Array.isArray(pins)) pins = ["finder", "teachText", "clioTalk"];
   pins = [...new Set(pins.filter((id) => typeof id === "string"))];
   let root = null;
+  let row = null;
   let signature = "";
   let queued = false;
   const launching = new Map();
   const failures = new Set();
 
-  // The three regions, in the order the 3.3 Dock reads them top to bottom: the
-  // fixed applications directly under the menu bar, the applications that are
-  // running but not fixed, and the window miniwindows at the foot of the
-  // column. Labels come from strings the desk already ships, so a region never
-  // needs a new translation to say what it holds.
-  const REGIONS = Object.freeze([
-    { id: "fixed", labelKey: "nextstep_dock" },
-    { id: "running", labelKey: "applications" },
-    { id: "windows", labelKey: "nextstep_windows" },
+  // The shared Dock preference owns whether the right-edge Dock exists. The
+  // module is loaded for NeXTSTEP whether or not that preference is on, so this
+  // reads the state rather than the module's presence.
+  function dockShown() {
+    return window.AISystem6WindowMinimize?.dockVisible?.() !== false;
+  }
+
+  // The one labelled region the Dock root holds: the fixed applications, in
+  // their pinned order, directly under the menu bar. Labels come from strings
+  // the desk already ships, so a region never needs a new translation.
+  const FIXED_REGION = Object.freeze({ id: "fixed", labelKey: "nextstep_dock" });
+  // The two sections of the bottom desk row, in the order they read left to
+  // right: running applications, then the window miniwindows. `legacy` carries
+  // the class the old windows-region selector used: the lamp contract (and the
+  // NeXTSTEP workflow verifier) reach a miniwindow by that name, and a
+  // miniwindow is still a miniwindow whichever root draws it.
+  const ROW_SECTIONS = Object.freeze([
+    { id: "running", labelKey: "applications", className: "nextstep-desk-row-apps", legacy: "" },
+    { id: "windows", labelKey: "nextstep_windows", className: "nextstep-desk-row-windows", legacy: "nextstep-dock-windows" },
   ]);
 
   function catalog() {
@@ -38,6 +49,14 @@
       const app = record.app || window.AISystem6Admissions.windowRecord(name)?.app;
       if (!app || ["accessories", "system"].includes(app) || (result.has(app) && name !== app)) return;
       result.set(app, { id: app, name, label: multiFinderAppLabels[app] || app });
+    });
+    // A running application the registry names by another id (Writing Studio
+    // runs as "writingStudio" and owns no window of its own) still gets its
+    // icon: the desk row and the Dock project what is running, not only what
+    // the registry lists.
+    getRunningApps().forEach((app) => {
+      if (result.has(app.id)) return;
+      result.set(app.id, { id: app.id, name: app.lastWindowName || app.id, label: multiFinderAppLabels[app.id] || app.label || app.id });
     });
     return result;
   }
@@ -54,10 +73,16 @@
     if (!entry) return;
     const app = runningApps.get(id);
     const live = windowsForApp(id).filter((win) => !win.classList.contains("is-hidden"));
-    if (live.length && isMultiFinderMode()) {
-      switchToApp(id);
+    // An application that already has windows is brought forward, never
+    // relaunched: relaunching reopens its last window through openWindow,
+    // which is also the way back from a miniwindow, and NeXTSTEP leaves a
+    // miniwindow where it is when its application is activated. So with only
+    // miniwindows left the application comes forward with no window in front.
+    if (live.length) {
+      if (isMultiFinderMode()) switchToApp(id);
       const candidate = live.find((win) => !win.classList.contains("is-minimized"));
       if (candidate) focusWindow(candidate);
+      else if (!isMultiFinderMode()) { activeAppId = id; renderMultiFinderMenu(); }
       return;
     }
     failures.delete(id);
@@ -95,54 +120,128 @@
     return node;
   }
 
-  function region(descriptor) {
+  // The Dock root's one region carries a printed heading as well as its
+  // accessible name: a narrow right-edge column reads as a labelled thing. The
+  // desk row's sections carry the accessible name only -- a desk row carries
+  // icons, not headings (owner decision) -- so the heading is opt-in, and so is
+  // the class prefix: a row section is a desk-row object, not a Dock region,
+  // and must not inherit the column's styling.
+  function region(descriptor, { heading = false, row = false } = {}) {
     const label = t(descriptor.labelKey);
     const node = document.createElement("section");
-    node.className = `nextstep-dock-region nextstep-dock-${descriptor.id}`;
+    node.className = row
+      ? `nextstep-desk-row-section ${descriptor.className}${descriptor.legacy ? ` ${descriptor.legacy}` : ""}`
+      : `nextstep-dock-region nextstep-dock-${descriptor.id}`;
     node.dataset.dockRegion = descriptor.id;
     node.setAttribute("aria-label", label);
-    const heading = document.createElement("h2");
-    heading.className = "nextstep-dock-region-label";
-    heading.textContent = label;
-    node.append(heading);
+    if (heading) {
+      const title = document.createElement("h2");
+      title.className = "nextstep-dock-region-label";
+      title.textContent = label;
+      node.append(title);
+    }
     return node;
   }
 
   // A region with nothing in it keeps its place in the structure and hides.
-  // The contract pins that: three regions, not one list that grows and shrinks.
+  // The contract pins that: the Dock has its fixed region and the desk row its
+  // two sections, not one list that grows and shrinks.
   function settle(node) {
     if (!node.querySelector(".nextstep-dock-tile")) node.setAttribute("hidden", "");
     return node;
   }
 
+  // The desk row along the bottom: running applications first, then the window
+  // miniwindows to their right. It is appended to the body whenever NeXTSTEP is
+  // active, whether or not the Dock is shown, because it is not part of the
+  // Dock -- it is where a running application and a put-away window live when
+  // the right-edge column is switched off.
+  function ensureRow() {
+    if (row) return row;
+    row = document.createElement("div");
+    row.className = "nextstep-desk-row";
+    row.setAttribute("aria-label", t("nextstep_desk_icons"));
+    document.body.append(row);
+    return row;
+  }
+
+  // The bottom reserve the desk subtracts from its window working area. The row
+  // measures itself: the CSS pixel height it actually took, standing on the
+  // screen edge as 3.3's icons do. Only the NeXTSTEP owner may set or clear it;
+  // an era that reads the same CSS variable is left alone.
+  function syncRowReserve() {
+    const body = document.body;
+    if (row && row.querySelector(".nextstep-dock-tile")) {
+      const height = row.getBoundingClientRect?.().height || 0;
+      // At least one tile: a row that holds tiles is 64px tall even before it
+      // has been laid out.
+      body.style.setProperty("--desk-dock-reserve", `${Math.max(64, Math.round(height))}px`);
+      body.classList.add("desk-dock-shown");
+      body.dataset.deskDockOwner = "nextstep";
+    } else if (body.dataset.deskDockOwner === "nextstep") {
+      body.style.removeProperty("--desk-dock-reserve");
+      body.classList.remove("desk-dock-shown");
+      delete body.dataset.deskDockOwner;
+    }
+  }
+
+  // Leaving NeXTSTEP takes every object this module owns off the desk, and
+  // gives the bottom reserve back only if this module is the one holding it.
+  function teardown() {
+    root?.remove(); root = null;
+    row?.remove(); row = null;
+    document.body.classList.remove("nextstep-dock-shown");
+    document.body.style.removeProperty("--nextstep-dock-width");
+    syncRowReserve();
+    signature = "";
+  }
+
   function sync() {
     queued = false;
     if (window.AISystem6Theme.getCurrentTheme() !== "nextstep") {
-      root?.remove(); root = null; signature = "";
+      teardown();
       return;
     }
     const apps = catalog();
     const running = getRunningApps();
     const minis = Array.from(document.querySelectorAll(".window.is-minimized:not(.is-hidden):not(.is-app-hidden)"))
       .filter((win) => !hiddenAppIds.has(getWindowAppId(win)));
-    const nextSignature = JSON.stringify([pins, running.map((app) => [app.id, app.hidden, app.windowCount]),
-      Array.from(launching.keys()), Array.from(failures), minis.map((win) => [win.dataset.window, applicationWindowTitle(win)]), t("nextstep_dock")]);
+    // The Dock preference is part of the render signature: turning the Dock off
+    // has to re-project the desk, not wait for the next theme change.
+    const shown = dockShown();
+    const nextSignature = JSON.stringify([pins, shown, running.map((app) => [app.id, app.hidden, app.windowCount]),
+      Array.from(launching.keys()), Array.from(failures), minis.map((win) => [win.dataset.window, applicationWindowTitle(win)]),
+      t("nextstep_dock"), t("nextstep_desk_icons")]);
     if (signature === nextSignature) return;
     signature = nextSignature;
-    if (!root) {
+    // The Dock is a user-switchable object: when the preference is off the root
+    // is not in the document at all, and `nextstep-dock-shown` -- the class the
+    // appearance stylesheet gates the Classic icon column on -- comes off with
+    // it, exactly as it comes off when the root is empty.
+    if (!shown) { root?.remove(); root = null; document.body.classList.remove("nextstep-dock-shown"); document.body.style.removeProperty("--nextstep-dock-width"); }
+    else if (!root) {
       root = document.createElement("aside");
       root.className = "nextstep-dock";
       root.setAttribute("aria-label", t("nextstep_dock"));
       document.body.append(root);
+      // The class the appearance stylesheet gates the Classic icon column on is
+      // present exactly while the Dock root is on screen.
+      document.body.classList.add("nextstep-dock-shown");
     }
-    const focusedKey = root.contains(document.activeElement) ? document.activeElement.dataset.dockKey : "";
+    if (root) document.body.style.setProperty("--nextstep-dock-width", "64px");
+    if (root) root.setAttribute("aria-label", t("nextstep_dock"));
+    const deskRow = ensureRow();
+    deskRow.setAttribute("aria-label", t("nextstep_desk_icons"));
+    const focusedKey = root?.contains(document.activeElement) ? document.activeElement.dataset.dockKey : "";
     function addApp(id, pinned, container) {
       const entry = apps.get(id);
       if (!entry) return;
-      const node = tile(entry.label, () => activate(id), entry.name, `app:${id}`);
+      // Workspace (the Finder here) is the Dock's first tile with its own
+      // application icon, not the icon of the window it happens to open.
+      const node = tile(entry.label, () => activate(id), id === "finder" ? "finderApp" : entry.name, `app:${id}`);
       node.dataset.appId = id;
       node.dataset.state = launching.has(id) ? "launching" : failures.has(id) ? "failed"
-        : running.some((app) => app.id === id) ? "running" : "stopped";
+        : running.some((app) => app.id === id || (id === "teachText" && app.id === "writingStudio")) ? "running" : "stopped";
       node.draggable = true;
       node.addEventListener("dragstart", (event) => {
         event.dataTransfer.setData("application/x-system6-dock", id);
@@ -150,7 +249,12 @@
       });
       node.addEventListener("dragend", (event) => {
         const target = document.elementFromPoint(event.clientX, event.clientY);
-        if (pinned && target && !target.closest(".nextstep-dock") && event.dataTransfer.dropEffect === "move") {
+        // Dragging a pinned icon off the Dock unpins it. Only an icon that is
+        // really in the Dock can be dragged out of it: a pinned icon drawn in
+        // the desk row (the Dock is off) is a desk icon, not a Dock icon, and
+        // must not lose its pin by being moved off the row.
+        if (pinned && node.closest(".nextstep-dock") && target && !target.closest(".nextstep-dock")
+          && event.dataTransfer.dropEffect === "move") {
           pins = pins.filter((value) => value !== id); save();
         }
       });
@@ -185,27 +289,31 @@
       node.append(caption);
       container.append(node);
     }
-    const [fixedRegion, runningRegion, windowRegion] = REGIONS.map(region);
-    pins.forEach((id) => addApp(id, true, fixedRegion));
-    running.filter((app) => !pins.includes(app.id)).forEach((app) => addApp(app.id, false, runningRegion));
-    minis.forEach((win) => addMiniwindow(win, windowRegion));
-    const settings = document.createElement("details");
-    const summary = document.createElement("summary");
-    summary.textContent = t("nextstep_dock_edit");
-    settings.append(summary);
-    apps.forEach((entry, id) => {
-      const row = document.createElement("div");
-      const pinned = pins.includes(id);
-      row.append(button(`${pinned ? "−" : "+"} ${entry.label}`, () => {
-        pins = pinned ? pins.filter((value) => value !== id) : [...pins, id]; save();
-      }));
-      if (pinned && pins.indexOf(id) > 0) row.append(button(t("nextstep_move_up"), () => {
-        const index = pins.indexOf(id); [pins[index - 1], pins[index]] = [pins[index], pins[index - 1]]; save();
-      }));
-      settings.append(row);
-    });
-    root.replaceChildren(settle(fixedRegion), settle(runningRegion), settle(windowRegion), settings);
-    if (focusedKey) Array.from(root.querySelectorAll("[data-dock-key]")).find((node) => node.dataset.dockKey === focusedKey)?.focus({ preventScroll: true });
+    // The Dock root: the pinned tiles, and nothing else -- NeXTSTEP 3.3 draws
+    // no heading and no controls in the Dock column. A tile is pinned by
+    // dragging a desk-row icon onto the Dock, unpinned by dragging it off (or
+    // from its context menu), and the Dock itself is shown or hidden from the
+    // Control Panel's Show Dock switch. The tiles are added before the region
+    // settles: settle() hides a region that has none.
+    let fixedRegion = null;
+    if (root) {
+      fixedRegion = region(FIXED_REGION);
+      pins.forEach((id) => addApp(id, true, fixedRegion));
+      root.replaceChildren(settle(fixedRegion));
+    }
+    // The desk row: running applications, then the miniwindows.
+    const [appsSection, windowsSection] = ROW_SECTIONS.map((descriptor) => region(descriptor, { row: true }));
+    // Which running applications are not already in the Dock. With the Dock on,
+    // a pinned application is reachable there and stays out of the row; with it
+    // off, the row is the only place it can be reached, so a pinned *running*
+    // application joins the row as well -- nothing strands when the Dock is off.
+    running
+      .filter((app) => shown ? !pins.includes(app.id) : true)
+      .forEach((app) => addApp(app.id, pins.includes(app.id), appsSection));
+    minis.forEach((win) => addMiniwindow(win, windowsSection));
+    deskRow.replaceChildren(settle(appsSection), settle(windowsSection));
+    syncRowReserve();
+    if (focusedKey) Array.from(root?.querySelectorAll("[data-dock-key]") || []).find((node) => node.dataset.dockKey === focusedKey)?.focus({ preventScroll: true });
   }
 
   function schedule() {
@@ -222,5 +330,9 @@
     if (event.dataTransfer.types.includes("application/x-system6-dock")) event.preventDefault();
   });
   document.addEventListener("ai-system6-themechange", schedule);
+  // Turning the Dock on or off in the Control Panel re-projects the desk: the
+  // root appears or goes, and the pinned running icons move in or out of the
+  // bottom row.
+  document.addEventListener("ai-system6-dockchange", schedule);
   window.AISystem6NextstepDock = Object.freeze({ sync: schedule, activate });
 })();

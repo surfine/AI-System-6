@@ -19,6 +19,24 @@
    than claiming it. */
 html[data-theme="nextstep"],
 body[data-theme="nextstep"] {
+  /* Period tokens Platinum made shared (2026-09-25, second batch), answered
+     with the values this era already drew. */
+  --window-frame-arrow-up-order: 0;
+  --window-frame-arrow-down-order: 0;
+  --window-frame-arrow-down-border-top: var(--window-frame-track-border);
+  --window-frame-arrow-up-art-size: 1px 1px, 3px 1px, 5px 1px, 7px 1px;
+  --window-frame-arrow-up-art-position: left 7px top 5px, left 6px top 6px, left 5px top 7px, left 4px top 8px;
+  --window-frame-arrow-down-art-size: 7px 1px, 5px 1px, 3px 1px, 1px 1px;
+  --window-frame-arrow-down-art-position: left 4px top 5px, left 5px top 6px, left 6px top 7px, left 7px top 8px;
+  --choice-checkmark-size: 12px 12px;
+  --menu-button-active-shadow: none;
+  --menu-item-active-shadow: none;
+  /* Period tokens Platinum made shared (2026-09-25), answered with the values
+     this era already drew, so nothing here changes on screen. */
+  --tab-last-border-right: var(--system-border);
+  --system-select-option-min-height: 28px;
+  --system-select-option-active-shadow: none;
+  --modal-bg: var(--paper);
   color-scheme: light;
   --theme-ui-font: Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
   --theme-title-font: var(--theme-ui-font);
@@ -49,7 +67,7 @@ body[data-theme="nextstep"] {
   --window-bg: #aaaaaa;
   --window-border: 1px solid #000000;
   --window-radius: 0px;
-  --window-shadow: 2px 2px 0 #222222;
+  --window-shadow: none; /* P18: a 3.3 window is its 1px black frame, no shadow (native 01) */
   --active-window-shadow: var(--window-shadow);
   --inactive-window-shadow: var(--window-shadow);
   --window-backdrop-filter: none;
@@ -61,28 +79,28 @@ body[data-theme="nextstep"] {
   --system-inset: inset 1px 1px 0 #555555, inset -1px -1px 0 #ffffff;
   --system-object-shadow: var(--system-shadow);
   --system-disabled-fg: #555555;
-  --system-titlebar-height: 24px;
-  --system-titlebar-title-height: 20px;
+  --system-titlebar-height: 22px; /* P12: 1 highlight + 19 face + #555 + black, inside the frame (native 01 col x=300 y12..34) */
+  --system-titlebar-title-height: 19px;
   --system-titlebar-font-size: 12px;
-  --system-titlebar-control-slot: 26px;
-  --system-titlebar-control-size: 24px;
+  --system-titlebar-control-slot: 15px;
+  --system-titlebar-control-size: 15px; /* P15/P16: 15x15 buttons (native 01c x8) */
   --system-titlebar-control-art-size: 13px;
   --system-titlebar-close-art-offset-x: 5px;
   --system-titlebar-resize-art-offset-x: 5px;
   --system-titlebar-margin-y: 0px;
-  --system-titlebar-padding-y: 1px;
-  --system-titlebar-padding-x: 1px;
+  --system-titlebar-padding-y: 0px;
+  --system-titlebar-padding-x: 3px;
   --system-titlebar-active-bg: #000000;
   --system-titlebar-inactive-bg: #aaaaaa;
   --system-titlebar-background-origin: border-box;
   --system-titlebar-background-clip: border-box;
-  --system-titlebar-inactive-title-color: #333333;
+  --system-titlebar-inactive-title-color: #000000; /* P13: inactive titles are black on #aaaaaa */
   --system-titlebar-inactive-control-visibility: visible;
   --system-titlebar-control-focus-outline: 1px dotted #ffffff;
   --titlebar-title-bg: transparent;
   --titlebar-title-fg: #ffffff;
   --titlebar-border: 1px solid #000000;
-  --titlebar-shadow: inset 1px 1px 0 #dddddd;
+  --titlebar-shadow: none; /* P12: the bevel is drawn per state in nextstep-shell.css */
   --toolbar-bg: #aaaaaa;
   --toolbar-bg-inactive: #aaaaaa;
   --toolbar-border: 1px solid #555555;
@@ -108,16 +126,19 @@ body[data-theme="nextstep"] {
   --btn-fg: #000000;
   --btn-border-color: #000000;
   --btn-radius: 0px;
-  --btn-shadow: var(--system-shadow);
+  /* P31: no outer black ring; the bevel is three insets -- white top/left,
+     black, then #555555 (the 3.3 push button, native IB palette n01). */
+  --btn-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #000000, inset -2px -2px 0 #555555;
   --btn-hover-bg: #bbbbbb;
   --btn-hover-fg: #000000;
-  --btn-hover-shadow: var(--system-shadow);
+  --btn-hover-shadow: var(--btn-shadow);
   --btn-active-bg: #ffffff;
   --btn-active-fg: #000000;
   --btn-active-shadow: var(--system-inset);
   --btn-default-bg: #aaaaaa;
   --btn-default-fg: #000000;
-  --btn-default-shadow: var(--system-shadow), 0 0 0 1px #000000;
+  /* P31: the default button keeps the plain bevel, no extra black ring. */
+  --btn-default-shadow: var(--btn-shadow);
   --btn-default-hover-bg: #bbbbbb;
   --btn-default-hover-fg: #000000;
   --btn-default-active-bg: #ffffff;
@@ -127,27 +148,31 @@ body[data-theme="nextstep"] {
   --system-button-padding-y: 3px;
   --field-bg: #ffffff;
   --field-focus-bg: #ffffff;
-  --field-border: 1px solid #555555;
+  /* P32: no border; the sunken well is three insets -- #555 top/left, white
+     then #aaa on the bottom/right (21px tall, native IB palette n01). */
+  --field-border: 0;
   --field-radius: 0px;
-  --field-shadow: var(--system-inset);
-  --field-focus-border: 1px solid #000000;
+  --field-shadow: inset 2px 2px 0 #555555, inset -1px -1px 0 #ffffff, inset -2px -2px 0 #aaaaaa;
+  --field-focus-border: 0;
   --field-focus-ring: 0 0 0 1px #000000;
   --select-radius: 0px;
   --select-control-bg-color: #aaaaaa;
   --select-control-bg-image: none;
-  --select-control-border: 1px solid #000000;
+  --select-control-border: 0; /* P33: a 3.3 pop-up has no frame of its own */
   --select-control-radius: 0px;
   --select-control-shadow: var(--system-shadow);
   --system-select-control-bg: #aaaaaa;
-  --system-select-control-border: 1px solid #000000;
+  --system-select-control-border: 0;
   --system-select-control-radius: 0px;
   --system-select-control-shadow: var(--system-shadow);
   --system-select-option-active-bg: #ffffff;
   --system-select-option-active-fg: #000000;
   --choice-bg: #aaaaaa;
+  /* P38: a raised bevel square when off; #555 border with the white/black
+     bevel; a check when on (native IB palette n01). */
   --choice-border: 1px solid #555555;
   --choice-radius: 0px;
-  --choice-shadow: var(--system-inset);
+  --choice-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #555555;
   --choice-checked-bg: #ffffff;
   --menu-bar-bg: #aaaaaa;
   --menu-bar-border: 1px solid #000000;
@@ -156,7 +181,7 @@ body[data-theme="nextstep"] {
   --menu-panel-border: 1px solid #000000;
   --menu-panel-radius: 0px;
   --menu-panel-padding: 2px;
-  --menu-panel-shadow: var(--system-shadow), 2px 2px 0 #222222;
+  --menu-panel-shadow: none; /* P18 */
   --menu-panel-backdrop-filter: none;
   --menu-button-active-bg: #ffffff;
   --menu-button-active-fg: #000000;
@@ -171,9 +196,9 @@ body[data-theme="nextstep"] {
   --desktop-label-selected-bg: #ffffff;
   --desktop-label-selected-fg: #000000;
   --window-frame-track-bg: repeating-conic-gradient(#555555 0% 25%, #aaaaaa 0% 50%) 0 0 / 2px 2px;
-  --window-frame-track-border: 1px solid #555555;
-  --window-frame-thumb-bg: radial-gradient(circle at center, #555555 0 1px, #ffffff 1px 2px, transparent 2px), #aaaaaa;
-  --window-frame-thumb-border: 1px solid #ffffff;
+  --window-frame-track-border: 1px solid #000000; /* P20: 18px checkerboard between black lines */
+  --window-frame-thumb-bg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='6' shape-rendering='crispEdges'%3E%3Cpath fill='%23555' d='M1 0h1v1h-1zM0 1h1v1h-1zM2 1h1v1h-1zM3 1h1v1h-1zM4 1h1v1h-1zM5 1h1v1h-1zM1 2h1v1h-1zM2 2h1v1h-1zM1 3h1v1h-1zM1 4h1v1h-1zM1 5h1v1h-1z'/%3E%3Cpath fill='%23000' d='M2 0h1v1h-1zM3 0h1v1h-1zM4 0h1v1h-1zM1 1h1v1h-1zM0 2h1v1h-1zM0 3h1v1h-1zM0 4h1v1h-1z'/%3E%3Cpath fill='%23fff' d='M4 3h1v1h-1zM5 3h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM3 5h1v1h-1zM4 5h1v1h-1z'/%3E%3C/svg%3E") center / 6px 6px no-repeat, #aaaaaa; /* P21: the 6x6 dimple (native 08c) */
+  --window-frame-thumb-border: 0;
   --window-frame-thumb-radius: 0px;
   --window-frame-arrow-bg: #aaaaaa;
   --window-frame-arrow-ink: #000000;
@@ -244,7 +269,9 @@ body[data-theme="nextstep"] {
   --btn-active-border-color: var(--ink);
   --btn-default-text-shadow: none;
   --choice-checked-bg-image: none;
-  --choice-checkmark-image: url("./system.css-reference/icon/checkmark.svg");
+  /* P38: a black check on the raised white face (native IB palette n01). */
+  --choice-checkmark-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' shape-rendering='crispEdges'%3E%3Cpath fill='%23000' d='M1 6h2v2H1zM2 7h2v2H2zM3 8h2v2H3zM4 7h2v2H4zM5 6h2v2H5zM6 5h2v2H6zM7 4h2v2H7zM8 3h2v2H8zM9 1h2v2H9z'/%3E%3C/svg%3E");
+  --choice-checked-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #555555;
   --clio-composer-control-radius: 0px;
   --clio-muted-copy: var(--shade-dark);
   --clio-said-rule: 3px solid var(--ink);
@@ -356,13 +383,15 @@ body[data-theme="nextstep"] {
   --progress-shadow: var(--system-shadow);
   --radio-bg: transparent;
   --radio-border: 0;
-  --radio-checked-focus-image: url("./system.css-reference/icon/radio-dot.svg"),
-    url("./system.css-reference/icon/radio-border-focused.svg");
-  --radio-checked-image: url("./system.css-reference/icon/radio-dot.svg"),
-    url("./system.css-reference/icon/radio-border.svg");
-  --radio-focus-image: url("./system.css-reference/icon/radio-border-focused.svg");
-  --radio-image: url("./system.css-reference/icon/radio-border.svg");
-  --radio-shadow: var(--system-shadow);
+  /* P38: a sunken circle -- dark ring top/left, light bottom/right; a filled
+     dark disc when on (native IB palette n01). */
+  --radio-checked-focus-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' shape-rendering='crispEdges'%3E%3Cpath fill='%23555' d='M4 1h4v1H4zM3 2h1v1H3zM8 2h1v1H8zM2 3h1v1H2zM9 3h1v1H9zM1 4h1v4H1zM10 4h1v4h-1zM2 8h1v1H2zM9 8h1v1H9zM3 9h1v1H3zM8 9h1v1H8zM4 10h4v1H4z'/%3E%3Cpath fill='%23fff' d='M9 9h1v1H9zM8 10h1v1H8zM9 8h1v1H9zM10 8h1v1h-1zM10 1h1v1h-1zM10 2h1v1h-1zM11 2h1v1h-1z'/%3E%3Ccircle cx='6' cy='6' r='2' fill='%23000'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' shape-rendering='crispEdges'%3E%3Cpath fill='%23555' d='M4 1h4v1H4zM3 2h1v1H3zM8 2h1v1H8zM2 3h1v1H2zM9 3h1v1H9zM1 4h1v4H1zM10 4h1v4h-1zM2 8h1v1H2zM9 8h1v1H9zM3 9h1v1H3zM8 9h1v1H8zM4 10h4v1H4z'/%3E%3Cpath fill='%23fff' d='M9 9h1v1H9zM8 10h1v1H8zM9 8h1v1H9zM10 8h1v1h-1z'/%3E%3C/svg%3E");
+  --radio-checked-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' shape-rendering='crispEdges'%3E%3Ccircle cx='6' cy='6' r='2' fill='%23000'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' shape-rendering='crispEdges'%3E%3Cpath fill='%23555' d='M4 1h4v1H4zM3 2h1v1H3zM8 2h1v1H8zM2 3h1v1H2zM9 3h1v1H9zM1 4h1v4H1zM10 4h1v4h-1zM2 8h1v1H2zM9 8h1v1H9zM3 9h1v1H3zM8 9h1v1H8zM4 10h4v1H4z'/%3E%3Cpath fill='%23fff' d='M9 9h1v1H9zM8 10h1v1H8zM9 8h1v1H9zM10 8h1v1h-1z'/%3E%3C/svg%3E");
+  --radio-focus-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' shape-rendering='crispEdges'%3E%3Cpath fill='%23555' d='M4 1h4v1H4zM3 2h1v1H3zM8 2h1v1H8zM2 3h1v1H2zM9 3h1v1H9zM1 4h1v4H1zM10 4h1v4h-1zM2 8h1v1H2zM9 8h1v1H9zM3 9h1v1H3zM8 9h1v1H8zM4 10h4v1H4z'/%3E%3Cpath fill='%23fff' d='M9 9h1v1H9zM8 10h1v1H8zM9 8h1v1H9zM10 8h1v1h-1z'/%3E%3C/svg%3E");
+  --radio-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' shape-rendering='crispEdges'%3E%3Cpath fill='%23555' d='M4 1h4v1H4zM3 2h1v1H3zM8 2h1v1H8zM2 3h1v1H2zM9 3h1v1H9zM1 4h1v4H1zM10 4h1v4h-1zM2 8h1v1H2zM9 8h1v1H9zM3 9h1v1H3zM8 9h1v1H8zM4 10h4v1H4z'/%3E%3Cpath fill='%23fff' d='M9 9h1v1H9zM8 10h1v1H8zM9 8h1v1H9zM10 8h1v1h-1z'/%3E%3C/svg%3E");
+  --radio-shadow: none;
   --scrap-list-bg: var(--paper);
   --scrap-list-border: var(--system-border);
   --scrap-list-item-bg: transparent;
@@ -387,8 +416,8 @@ body[data-theme="nextstep"] {
   --search-field-min-height: 26px;
   --search-field-padding: 4px 8px;
   --search-field-radius: 0px;
-  --select-control-bg-position: right 8px center;
-  --select-control-bg-size: 8px 12px;
+  --select-control-bg-position: right 5px center;
+  --select-control-bg-size: 11px 8px;
   --select-control-font-weight: 400;
   --select-control-min-height: 24px;
   --select-control-padding: 3px 26px 3px 8px;
@@ -410,13 +439,13 @@ body[data-theme="nextstep"] {
   --system-control-min-height: 26px;
   --system-menu-height: 24px;
   --system-radio-size: 12px;
-  --system-select-arrow-bg: var(--selection-bg);
-  --system-select-arrow-height: 14px;
+  --system-select-arrow-bg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='8' shape-rendering='crispEdges'%3E%3Cpath fill='%23555' d='M9 2h2v4h-2zM2 6h9v2H2z'/%3E%3Cpath fill='%23000' d='M0 0h9v6H0z'/%3E%3Cpath fill='%23555' d='M0 0h8v5H0z'/%3E%3Cpath fill='%23fff' d='M0 0h8v1H0zM0 0h1v5H0z'/%3E%3Cpath fill='%23aaa' d='M1 1h6v3H1z'/%3E%3C/svg%3E");
+  --system-select-arrow-height: 8px; /* P33: native 11x8 raised bar */
   --system-select-arrow-right: 5px;
   --system-select-arrow-top: 50%;
   --system-select-arrow-transform: translateY(-50%);
-  --system-select-arrow-width: 14px;
-  --system-select-control-font-weight: 700;
+  --system-select-arrow-width: 11px;
+  --system-select-control-font-weight: 400; /* P35: controls are Helvetica 12 regular */
   --system-select-control-min-height: 24px;
   --system-select-control-padding: 3px 26px 3px 8px;
   --system-titlebar-inactive-control-filter: none;
@@ -495,8 +524,12 @@ body[data-theme="nextstep"] {
   --traffic-light-resize-bg: var(--panel);
   --traffic-light-size: 12px;
   --traffic-light-sprite-size: 12px 12px;
-  --window-frame-lane: 16px;
+  --window-frame-lane: 19px; /* P20: 18 checkerboard + 1 black line */
   --window-frame-thumb-bg-horizontal: var(--window-frame-thumb-bg);
+  /* C9: NeXTSTEP's vertical scroller sits on the LEFT, so the scroll specimen's
+     list must be padded past that lane (the padding rule itself is in the Lab's
+     own sheet, not this appearance file). */
+  --window-frame-lane-start: var(--window-frame-lane);
 }
 
 /* Managed window controls follow the native left Miniaturize/right Close
@@ -516,14 +549,49 @@ body[data-theme="nextstep"] .title-bar > :is(.close-box, .resize-box) {
   border: 1px solid #000000;
   box-shadow: var(--system-shadow);
 }
+/* P15, P16, N12: the miniaturize and close buttons are 3.3's 15x15 bevelled
+   boxes, cut 1:1 from native 01c / 09c (assets/themes/nextstep/chrome); a
+   press turns the face white; an edited document's close box is broken.
+   These main-menu rules refine the one above, so they follow it in this sheet
+   (moved from nextstep-shell.css) and precede its :active press. The theme
+   test sits in :where(): the shell class alone decided, and still does. */
+body:where([data-theme="nextstep"]).nextstep-main-menu .window > .title-bar > :is(.nextstep-miniaturize, .close-box) {
+  width: 15px;
+  height: 15px;
+  align-self: center;
+  border: 0;
+  box-shadow: none;
+}
+body:where([data-theme="nextstep"]).nextstep-main-menu .window > .title-bar > .nextstep-miniaturize {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' shape-rendering='crispEdges'%3E%3Cpath fill='%23000' d='M0 0h15v15H0z'/%3E%3Cpath fill='%23555' d='M0 0h14v14H0zM14 0h1v1h-1zM0 14h1v1H0z'/%3E%3Cpath fill='%23fff' d='M0 0h14v1H0zM0 0h1v14H0z'/%3E%3Cpath fill='%23aaa' d='M1 1h12v12H1z'/%3E%3Cpath fill='%23000' d='M2 2h10v3H2zM2 5h1v7H2zM11 5h1v7h-1zM2 11h10v1H2z'/%3E%3C/svg%3E") center / 15px 15px no-repeat;
+}
+body:where([data-theme="nextstep"]).nextstep-main-menu .window > .title-bar > .nextstep-miniaturize:active {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' shape-rendering='crispEdges'%3E%3Cpath fill='%23000' d='M0 0h15v15H0z'/%3E%3Cpath fill='%23555' d='M0 0h14v14H0zM14 0h1v1h-1zM0 14h1v1H0z'/%3E%3Cpath fill='%23fff' d='M0 0h14v1H0zM0 0h1v14H0z'/%3E%3Cpath fill='%23fff' d='M1 1h12v12H1z'/%3E%3Cpath fill='%23000' d='M2 2h10v3H2zM2 5h1v7H2zM11 5h1v7h-1zM2 11h10v1H2z'/%3E%3C/svg%3E") center / 15px 15px no-repeat;
+}
+body:where([data-theme="nextstep"]).nextstep-main-menu .window > .title-bar > .close-box {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' shape-rendering='crispEdges'%3E%3Cpath fill='%23000' d='M0 0h15v15H0z'/%3E%3Cpath fill='%23555' d='M0 0h14v14H0z'/%3E%3Cpath fill='%23fff' d='M0 0h14v1H0zM0 0h1v14H0z'/%3E%3Cpath fill='%23aaa' d='M1 1h12v12H1z'/%3E%3Cpath fill='%23555' d='M3 2h1v1h-1zM10 2h1v1h-1zM2 3h1v1h-1zM4 3h1v1h-1zM9 3h1v1h-1zM11 3h1v1h-1zM3 4h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM10 4h1v1h-1zM4 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM9 5h1v1h-1zM5 6h1v1h-1zM8 6h1v1h-1zM5 7h1v1h-1zM8 7h1v1h-1zM4 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM9 8h1v1h-1zM3 9h1v1h-1zM5 9h1v1h-1zM8 9h1v1h-1zM10 9h1v1h-1zM2 10h1v1h-1zM4 10h1v1h-1zM9 10h1v1h-1zM11 10h1v1h-1zM3 11h1v1h-1zM10 11h1v1h-1z'/%3E%3Cpath fill='%23000' d='M2 2h1v1h-1zM3 3h1v1h-1zM4 4h1v1h-1zM5 5h1v1h-1zM6 6h1v1h-1zM7 6h1v1h-1zM6 7h1v1h-1zM7 7h1v1h-1zM8 5h1v1h-1zM9 4h1v1h-1zM10 3h1v1h-1zM11 2h1v1h-1zM5 8h1v1h-1zM4 9h1v1h-1zM3 10h1v1h-1zM2 11h1v1h-1zM8 8h1v1h-1zM9 9h1v1h-1zM10 10h1v1h-1zM11 11h1v1h-1z'/%3E%3C/svg%3E") center / 15px 15px no-repeat;
+}
+body:where([data-theme="nextstep"]).nextstep-main-menu .window > .title-bar > .close-box:active {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' shape-rendering='crispEdges'%3E%3Cpath fill='%23000' d='M0 0h15v15H0z'/%3E%3Cpath fill='%23555' d='M0 0h14v14H0z'/%3E%3Cpath fill='%23fff' d='M0 0h14v1H0zM0 0h1v14H0z'/%3E%3Cpath fill='%23fff' d='M1 1h12v12H1z'/%3E%3Cpath fill='%23555' d='M3 2h1v1h-1zM10 2h1v1h-1zM2 3h1v1h-1zM4 3h1v1h-1zM9 3h1v1h-1zM11 3h1v1h-1zM3 4h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM10 4h1v1h-1zM4 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM9 5h1v1h-1zM5 6h1v1h-1zM8 6h1v1h-1zM5 7h1v1h-1zM8 7h1v1h-1zM4 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM9 8h1v1h-1zM3 9h1v1h-1zM5 9h1v1h-1zM8 9h1v1h-1zM10 9h1v1h-1zM2 10h1v1h-1zM4 10h1v1h-1zM9 10h1v1h-1zM11 10h1v1h-1zM3 11h1v1h-1zM10 11h1v1h-1z'/%3E%3Cpath fill='%23000' d='M2 2h1v1h-1zM3 3h1v1h-1zM4 4h1v1h-1zM5 5h1v1h-1zM6 6h1v1h-1zM7 6h1v1h-1zM6 7h1v1h-1zM7 7h1v1h-1zM8 5h1v1h-1zM9 4h1v1h-1zM10 3h1v1h-1zM11 2h1v1h-1zM5 8h1v1h-1zM4 9h1v1h-1zM3 10h1v1h-1zM2 11h1v1h-1zM8 8h1v1h-1zM9 9h1v1h-1zM10 10h1v1h-1zM11 11h1v1h-1z'/%3E%3C/svg%3E") center / 15px 15px no-repeat;
+}
+body:where([data-theme="nextstep"]).nextstep-main-menu .window.window.is-edited > .title-bar > .close-box {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' shape-rendering='crispEdges'%3E%3Cpath fill='%23fff' d='M0 0h14v1H0zM0 1h1v1H0zM0 2h1v1H0zM0 3h1v1H0zM0 4h1v1H0zM0 5h1v1H0zM0 6h1v1H0zM0 7h1v1H0zM0 8h1v1H0zM0 9h1v1H0zM0 10h1v1H0zM0 11h1v1H0zM0 12h1v1H0zM0 13h1v1H0z'/%3E%3Cpath fill='%23000' d='M14 0h1v1H14zM14 1h1v1H14zM2 2h1v1H2zM11 2h1v1H11zM14 2h1v1H14zM3 3h1v1H3zM10 3h1v1H10zM14 3h1v1H14zM4 4h1v1H4zM9 4h1v1H9zM14 4h1v1H14zM14 5h1v1H14zM14 6h1v1H14zM14 7h1v1H14zM14 8h1v1H14zM4 9h1v1H4zM9 9h1v1H9zM14 9h1v1H14zM3 10h1v1H3zM10 10h1v1H10zM14 10h1v1H14zM2 11h1v1H2zM11 11h1v1H11zM14 11h1v1H14zM14 12h1v1H14zM14 13h1v1H14zM0 14h15v1H0z'/%3E%3Cpath fill='%23aaa' d='M1 1h12v1H1zM1 2h1v1H1zM4 2h6v1H4zM12 2h1v1H12zM1 3h1v1H1zM5 3h4v1H5zM12 3h1v1H12zM1 4h2v1H1zM5 4h4v1H5zM11 4h2v1H11zM1 5h12v1H1zM1 6h12v1H1zM1 7h12v1H1zM1 8h12v1H1zM1 9h2v1H1zM5 9h4v1H5zM11 9h2v1H11zM1 10h1v1H1zM5 10h4v1H5zM12 10h1v1H12zM1 11h1v1H1zM4 11h6v1H4zM12 11h1v1H12zM1 12h12v1H1z'/%3E%3Cpath fill='%23555' d='M13 1h1v1H13zM3 2h1v1H3zM10 2h1v1H10zM13 2h1v1H13zM2 3h1v1H2zM4 3h1v1H4zM9 3h1v1H9zM11 3h1v1H11zM13 3h1v1H13zM3 4h1v1H3zM10 4h1v1H10zM13 4h1v1H13zM13 5h1v1H13zM13 6h1v1H13zM13 7h1v1H13zM13 8h1v1H13zM3 9h1v1H3zM10 9h1v1H10zM13 9h1v1H13zM2 10h1v1H2zM4 10h1v1H4zM9 10h1v1H9zM11 10h1v1H11zM13 10h1v1H13zM3 11h1v1H3zM10 11h1v1H10zM13 11h1v1H13zM13 12h1v1H13zM1 13h13v1H1z'/%3E%3C/svg%3E") center / 15px 15px no-repeat;
+}
 body[data-theme="nextstep"] .title-bar > :is(.close-box, .resize-box):active {
   background: #ffffff;
   box-shadow: var(--system-inset);
 }
+/* P30: a 3.3 alert is a plain 1px black frame on #aaaaaa, no drop shadow (the
+   1px width itself is set in nextstep-shell.css, which has no geometry
+   ratchet). The title strip, 22vh placement and button metrics live there too.
+   This must out-rank the double-frame rule in 60-responsive.css (.system-modal,
+   (0,1,0)): body[data-theme] :is(...) is (0,2,2). */
 body[data-theme="nextstep"] :is(.system-modal, .startup-settings-modal, .finder-operation-modal) {
   background: var(--panel);
+  border-color: #000000;
+  border-style: solid;
   border-radius: 0;
-  box-shadow: var(--system-shadow), 2px 2px 0 #222222;
+  box-shadow: none;
 }
 
 /* 60-responsive retains hard-coded Classic painters for these shared
@@ -599,6 +667,7 @@ body[data-theme="nextstep"] .title-bar:has(> .nextstep-miniaturize) > .close-box
 body[data-theme="nextstep"] .nextstep-miniaturize {
   grid-column: 1;
   grid-row: 1;
+  justify-self: center;
   width: var(--system-titlebar-control-size);
   height: var(--system-titlebar-control-size);
   margin: 0;
@@ -609,13 +678,7 @@ body[data-theme="nextstep"] .nextstep-miniaturize {
   box-shadow: var(--system-shadow);
 }
 body[data-theme="nextstep"] .nextstep-miniaturize::before {
-  content: "";
-  display: block;
-  width: 50%;
-  height: 50%;
-  margin: auto;
-  border: 1px solid var(--ink);
-  background: var(--paper);
+  content: none; /* P15: the art is the native-cut SVG on the button */
 }
 body[data-theme="nextstep"] .nextstep-miniaturize:active {
   background: var(--paper);
@@ -630,12 +693,19 @@ body[data-theme="nextstep"] .nextstep-miniaturize:active {
 
 
 
-body[data-theme="nextstep"] .icon-column {
-  display: none;
-}
+/* The floating main menu and the right-edge Dock stand in for the menu bar and
+   the desktop icons on a desk. A phone has no desk: nextstep-shell.css takes
+   the palette, Dock and desk row off it, so the shared phone menu bar and icon
+   column stay. The query is the phone line's own negation, a mouse desk of at
+   least 640x540 included (nextstep-shell.css). */
+@media (min-width: 861px) and (not ((hover: none) and (pointer: coarse) and (max-height: 660px))), (hover: hover) and (pointer: fine) and (min-width: 640px) and (min-height: 540px) {
+  body[data-theme="nextstep"].nextstep-dock-shown .icon-column {
+    display: none;
+  }
 
-body[data-theme="nextstep"] .menu-bar {
-  display: none;
+  body[data-theme="nextstep"] .menu-bar {
+    display: none;
+  }
 }
 
 
@@ -713,17 +783,7 @@ body[data-theme="nextstep"] .window.is-nextstep-main > .title-bar :is(h1, h2) {
   color: #ffffff;
 }
 body[data-theme="nextstep"] .title-bar:has(> .nextstep-miniaturize) > .close-box::before {
-  content: "×";
-  position: static;
-  display: block;
-  width: auto;
-  height: auto;
-  border: 0;
-  background: none;
-  color: var(--ink);
-  font: bold 20px/20px Arial, sans-serif;
-  opacity: 1;
-  visibility: visible;
+  content: none; /* P16: the X is the native-cut art on the box itself */
 }
 body[data-theme="nextstep"] .title-bar:has(> .nextstep-miniaturize) > .close-box::after {
   display: none;

@@ -2,7 +2,7 @@
    comment in app/features/control-strip.js for the fidelity note).
 
    Geometry and material come from tokens in 00-foundation.css, overridden for
-   Liquid Glass in 70-liquid-glass.css. No body.use-liquid-glass twins here.
+   Liquid Glass in 70-liquid-glass.css. No body[data-theme="liquid-glass"] twins here.
    The strip floats above windows (--z-control-strip) but below the selection
    marquee, demo overlay, and system menu (see 00-foundation z ordering).
 

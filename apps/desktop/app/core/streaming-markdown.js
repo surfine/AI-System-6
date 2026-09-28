@@ -148,5 +148,5 @@ function showStreamingTeachTextPreview(markdown, options = {}) {
   renderStreamingMarkdownPreview(teachTextPreviewEl, markdown, options);
   teachTextBodyInput.classList.add("is-hidden");
   teachTextPreviewEl.classList.remove("is-hidden");
-  teachTextTogglePreviewButton.textContent = t("edit");
+  mdeSyncModeToggle(teachTextTogglePreviewButton, true);
 }

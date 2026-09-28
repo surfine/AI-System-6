@@ -52,7 +52,7 @@ function writingAgentProjectToolContext(projectId) {
     projectId,
     scrapId: String(scrap?.id || ""),
     title: String(scrap?.title || ""),
-    body: writingAgentClip(scrap?.body || scrap?.selectedText || "", 8000),
+    body: writingAgentClip((typeof scrapDocumentText === "function" ? scrapDocumentText(scrap) : scrap?.body) || scrap?.selectedText || "", 8000),
     sourceId: String(scrap?.sourceId || ""),
     sourceTitle: String(scrap?.sourceTitle || ""),
     tags: Array.isArray(scrap?.tags) ? scrap.tags.slice(0, 12).map(String) : [],

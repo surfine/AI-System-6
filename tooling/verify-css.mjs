@@ -4,7 +4,7 @@
 // 1. Per-file !important + z-index budgets (ratchet, only allowed to shrink).
 // 2. Inline element.style.<layout> count in app/ (ratchet).
 // 3. Liquid-glass twins:
-//    - Orphan check: every body.use-liquid-glass selector must reference a
+//    - Orphan check: every body[data-theme="liquid-glass"] selector must reference a
 //      class/id token that still exists somewhere in the non-theme CSS files.
 //      Catches the case where a base selector gets renamed or deleted but
 //      its liquid-glass override is left behind, drifting silently.
@@ -458,7 +458,7 @@ function extractClassIdTokens(selector) {
   return Array.from(selector.matchAll(/[.#][A-Za-z_-][\w-]*/g)).map((m) => m[0]);
 }
 
-const TWIN_PREFIX = /^(html:lang\([^)]+\)\s+)?body\.use-liquid-glass(\s|$)/;
+const TWIN_PREFIX = /^(html:lang\([^)]+\)\s+)?body\[data-theme="liquid-glass"\](\s|$)/;
 const LIQUID_ONLY_BASE_PATTERNS = [
   /#liquid-glass-overlay\b/,
   /\.sys-icon-liquid\b/,
@@ -513,7 +513,7 @@ if (typeof orphanBudget !== "number") {
       `Some twin base class/id no longer appears in any non-theme CSS file. New orphans usually mean a base selector was renamed or deleted while leaving its liquid-glass override behind. First 10:`
   );
   orphanTwins.slice(0, 10).forEach(({ baseSel, missing }) => {
-    fail(`  body.use-liquid-glass ${baseSel}   (missing: ${missing.join(", ")})`);
+    fail(`  body[data-theme="liquid-glass"] ${baseSel}   (missing: ${missing.join(", ")})`);
   });
   if (orphanTwins.length > 10) {
     fail(`  … and ${orphanTwins.length - 10} more`);
@@ -536,6 +536,17 @@ if (typeof twinBudget !== "number") {
   );
 } else {
   ok(`${LIQUID_FILE}: twin selectors ${twinCount}/${twinBudget}`);
+}
+
+// Liquid Glass is selected the way every era is, by body[data-theme]
+// (2026-09-26). The body class the registry still projects is for scripts that
+// read it; a stylesheet selecting it would be a second spelling of one scope.
+const retiredLiquidClass = allCssFiles.filter((path) =>
+  /\.use-liquid-glass\b/.test(stripComments(readFileSync(resolveProjectPath(path), "utf8"))));
+if (retiredLiquidClass.length) {
+  fail(`.use-liquid-glass is selected in ${retiredLiquidClass.join(", ")}; write body[data-theme="liquid-glass"] instead.`);
+} else {
+  ok(`no stylesheet selects the .use-liquid-glass class (${allCssFiles.length} sheets)`);
 }
 
 // --- Multi-era Appearance checks -------------------------------------------
@@ -703,7 +714,7 @@ if (typeof childAppBudget !== "number") {
   ok(`${APPEARANCE_FILE}: child+app-specific selectors ${childAppSpecificCount}/${childAppBudget} across ${Object.keys(windowInterfaceRegistry).length} registered windows`);
 }
 
-const OUTSIDE_THEME_SELECTOR_PATTERN = /\b(?:body(?:\.use-liquid-glass|:not\(\.use-liquid-glass\))|(?:html|body)\[data-(?:theme(?:-family)?|lineage~)=)/;
+const OUTSIDE_THEME_SELECTOR_PATTERN = /\b(?:body:not\(\[data-theme="liquid-glass"\]\)|(?:html|body)\[data-(?:theme(?:-family)?|lineage~)=)/;
 const outsideThemeBudgets = budget.themeSelectorsOutsideLiquid ?? {};
 cssFiles
   .filter((path) => path !== LIQUID_FILE && path !== APPEARANCE_FILE)
@@ -838,7 +849,7 @@ function countUnprefixedRules(relPath) {
           });
           if (declaresRealProperty
             && selectors.length
-            && selectors.every((one) => !/use-liquid-glass|\[data-(?:theme|lineage)/.test(one))) {
+            && selectors.every((one) => !/\[data-(?:theme|lineage)/.test(one))) {
             offenders.push(selectors[0].replace(/\s+/g, " ").slice(0, 70));
           }
         }
@@ -889,7 +900,7 @@ function eraTokenCoverage() {
   const own = new Map();
   for (const id of ids) {
     const blocks = id === "liquid-glass"
-      ? /body\.use-liquid-glass\s*\{([^}]*)\}/g
+      ? /body\[data-theme="liquid-glass"\]\s*\{([^}]*)\}/g
       : new RegExp(`(?:html|body)\\[data-(?:theme|lineage~)="${id}"\\][^{]*\\{([^}]*)\\}`, "g");
     const tokens = new Set();
     for (const block of sources.matchAll(blocks)) {

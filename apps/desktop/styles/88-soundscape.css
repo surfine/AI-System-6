@@ -4,6 +4,19 @@
    position track, and Sound control panel segment cells - so nothing in the
    window falls back to a browser-native slider. */
 
+/* A copy of a boot rule that must keep beating this sheet's own rule below:
+   the same selector and specificity, scoped by :where() to this surface, and
+   first in the sheet so every rule after it keeps its place. Under a per-file
+   @layer order the boot rule alone would lose; here specificity decides. */
+.window .window-frame-scroller:where(.soundscape-queue) {
+  overflow: auto;
+  min-height: 0;
+}
+
+.soundscape-window button.btn:where(.soundscape-save-moment) {
+  min-width: 72px;
+}
+
 .soundscape-window {
   --ss-ink-quiet: color-mix(in srgb, var(--ink) 64%, transparent);
   --ss-key-size: 26px;
@@ -204,7 +217,7 @@
   align-items: center;
 }
 
-.soundscape-deck .soundscape-key {
+body .soundscape-deck .soundscape-key {
   display: grid;
   place-items: center;
   width: var(--ss-key-size);
@@ -220,7 +233,7 @@
   height: 16px;
 }
 
-.soundscape-deck .soundscape-key-wide {
+body .soundscape-deck .soundscape-key-wide {
   width: 34px;
   min-width: 34px;
 }
@@ -338,7 +351,7 @@
   justify-content: flex-end;
 }
 
-.soundscape-switch-action .btn {
+body .soundscape-switch-action .btn {
   max-width: 100%;
   min-width: 0;
   min-height: 20px;
@@ -416,7 +429,7 @@
   margin-bottom: 14px;
 }
 
-.soundscape-source-actions .btn {
+body .soundscape-source-actions .btn {
   min-width: 0;
 }
 
@@ -895,7 +908,7 @@
     display: none;
   }
 
-  .soundscape-deck .soundscape-key-wide {
+  body .soundscape-deck .soundscape-key-wide {
     width: 40px;
     min-width: 40px;
   }

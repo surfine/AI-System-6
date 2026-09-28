@@ -23,8 +23,8 @@ vm.runInContext(source, context);
 // Defaults: every layer present, off, standard strength, in stack order.
 const defaults = context.defaultAdjustmentLayers();
 test.assert(
-  defaults.map((layer) => layer.kind).join(",") === "mingming,luoluo,hkrr,density",
-  "the stack keeps the four layers in canonical order"
+  defaults.map((layer) => layer.kind).join(",") === "clean,mingming,luoluo,hkrr,density",
+  "the stack keeps the five layers in canonical order, 清稿 first"
 );
 test.assert(
   defaults.every((layer) => !layer.enabled && layer.strength === 50),
@@ -44,12 +44,13 @@ const partial = context.normalizeAdjustmentLayers([
   { kind: "unknown" },
 ]);
 test.assert(
-  partial.length === 4 && partial.map((layer) => layer.kind).join(",") === "luoluo,hkrr,mingming,density",
+  partial.length === 5 && partial.map((layer) => layer.kind).join(",") === "luoluo,hkrr,clean,mingming,density",
   "the stored order is preserved and missing layers fill in at the end"
 );
 test.assert(partial[0].strength === 25, "an explicit strength is kept");
 test.assert(partial[1].enabled === false, "a disabled layer stays off");
-test.assert(partial[2].kind === "mingming" && partial[2].strength === 50, "a missing layer fills in with standard defaults");
+test.assert(partial[3].kind === "mingming" && partial[3].strength === 50, "a missing layer fills in with standard defaults");
+test.assert(partial[2].kind === "clean" && partial[2].enabled === false, "a record written before 清稿 existed gains it switched off");
 test.assert(partial.every((layer) => layer.kind !== "unknown"), "unknown kinds are dropped");
 const normalizedPartial = context.normalizeAdjustmentLayers(partial);
 test.assert(
@@ -62,7 +63,7 @@ const reordered = context.normalizeAdjustmentLayers([
   { kind: "luoluo" },
 ]);
 test.assert(
-  reordered.map((layer) => layer.kind).join(",") === "hkrr,mingming,luoluo,density",
+  reordered.map((layer) => layer.kind).join(",") === "hkrr,mingming,luoluo,clean,density",
   "a reordered stack keeps the user's order"
 );
 test.assert(

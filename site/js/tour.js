@@ -7,8 +7,8 @@
 // one image; the spotlight is a hole cut in a dimming layer over the real
 // pixels, so it annotates the photograph instead of replacing it.
 
-import { currentEra, onEraChange } from "./eras.js?v=20260820a";
-import { frameSrc, regionRect } from "./machine.js?v=20260820a";
+import { currentEra, onEraChange } from "./eras.js?v=20260925a";
+import { frameSrc, regionRect } from "./machine.js?v=20260925a";
 import { L } from "./copy.js?v=20260820a";
 
 const doc = document;

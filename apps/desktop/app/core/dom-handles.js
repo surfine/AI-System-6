@@ -284,12 +284,6 @@ function getElements() {
   const claimSectionPreviousButton = reviewSectionPreviousButton || document.querySelector("#claim-section-prev");
   const claimSectionNextButton = reviewSectionNextButton || document.querySelector("#claim-section-next");
   const claimResultsEl = document.querySelector("#claim-results");
-  const rebuildFlowProjectEl = document.querySelector("#rebuild-flow-project");
-  const rebuildFlowSourceMetaEl = document.querySelector("#rebuild-flow-source-meta");
-  const rebuildFlowSourceInput = document.querySelector("#rebuild-flow-source");
-  const rebuildFlowStatusEl = document.querySelector("#rebuild-flow-status");
-  const rebuildFlowProgressBarEl = document.querySelector("#rebuild-flow-progress-bar");
-  const rebuildFlowStepsEl = document.querySelector("#rebuild-flow-steps");
   const docMapCountEl = document.querySelector("#docmap-count");
   const docMapTabsEl = document.querySelector("#docmap-tabs");
   const docMapTreeEl = document.querySelector("#docmap-tree");
@@ -687,12 +681,6 @@ function getElements() {
     claimSectionPreviousButton,
     claimSectionNextButton,
     claimResultsEl,
-    rebuildFlowProjectEl,
-    rebuildFlowSourceMetaEl,
-    rebuildFlowSourceInput,
-    rebuildFlowStatusEl,
-    rebuildFlowProgressBarEl,
-    rebuildFlowStepsEl,
     docMapCountEl,
     docMapTabsEl,
     docMapTreeEl,

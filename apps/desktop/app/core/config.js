@@ -192,8 +192,8 @@ window.AISystem6Config = (() => {
     docMapMinSelectionChars: 200,
     docMapMinDocumentChars: 800,
     dictionaryMaxSelectionChars: 160,
-    // The Rebuild button asks this before the click and runRebuildFlow() asks
-    // it again before the work, so both read the same number.
+    // The Split button greys below this and runRebuildFlow() refuses below
+    // it, so both read the same number.
     rebuildMinSourceChars: 400,
     defaultOutlineSection: "New Section",
   });
@@ -401,6 +401,11 @@ function loadClassicScriptOnce(src) {
 const lazyStylePromises = new Map();
 
 function loadStylesheetOnce(href) {
+  // An appearance sheet has one owner: the registry keeps one <link> per sheet,
+  // in cascade order right after the boot bundle. A window that needs one asks
+  // it rather than appending a second copy after everything else.
+  const appearanceSheet = window.AISystem6Theme?.loadAppearanceStylesheet?.(href);
+  if (appearanceSheet) return appearanceSheet.then(() => true, () => false);
   if (lazyStylePromises.has(href)) return lazyStylePromises.get(href);
   const promise = new Promise((resolve) => {
     const existing = document.querySelector(`link[data-lazy-style="${CSS.escape(href)}"]`);
@@ -476,6 +481,8 @@ const ensureWritingFlowModule = createLazyModuleLoader("AISystem6WritingFlowLoad
   "app/data/evergreen-demo-corpus.js",
   "app/content/rebuild-samples.js",
   "app/features/writing-flow.js",
+  // 「还原写作对象」: its own window, built on Writing Flow's helpers.
+  "app/features/rebuild-flow.js",
 ]);
 // The Luoluo style contract is prompt text, not runtime: only the Mingming
 // commands read it, so it loads with them instead of at boot.
@@ -547,19 +554,21 @@ const ensureDictationPadModule = createLazyModuleLoader("AISystem6DictationPadLo
   "app/features/dictation-pad.js",
 ]);
 const ensureHoldThatThoughtModule = createLazyModuleLoader("AISystem6HoldThatThoughtLoaded", ["app/core/application-shell.js", "app/features/hold-that-thought.js"]);
-const ensureProjectPeekModule = createLazyModuleLoader("AISystem6ProjectPeekLoaded", ["app/core/application-shell.js", "app/features/project-peek.js"]);
+const ensureProjectPeekModule = createLazyModuleLoader("AISystem6ProjectPeekLoaded", ["app/core/application-shell.js", "app/features/project-peek.js"], false, ["styles.project-disks.css"]);
 // The backup schema and the assembler that reads it travel with an export or
 // a restore, not with every boot.
 const ensureProjectDiskBackupModule = createLazyModuleLoader("AISystem6ProjectDiskBackupLoaded", ["app/core/project-disk-backup.js"]);
 const ensureVideoTranscriptModule = createLazyModuleLoader("AISystem6VideoTranscriptLoaded", ["app/features/video-transcript.js"]);
 const ensureVideoDocMapModule = createLazyModuleLoader("AISystem6VideoDocMapLoaded", ["app/features/video-docmap.js"]);
-const ensureFindPathModule = createLazyModuleLoader("AISystem6FindPathLoaded", ["app/features/findpath.js"]);
+// The Searcher sheet travels with the module (Find File's rules stay eager).
+const ensureFindPathModule = createLazyModuleLoader("AISystem6FindPathLoaded", ["app/features/findpath.js"], false, ["styles.searcher.css"]);
 const ensureEndfieldTerminalModule = createLazyModuleLoader("AISystem6EndfieldTerminalLoaded", ["app/features/endfield-terminal.js"], false, ["styles.endfield-terminal.css"]);
 const ensureTimeMachineModule = createLazyModuleLoader("AISystem6TimeMachineLoaded", ["app/features/time-machine.js"], false, ["styles.time-machine.css"]);
 const ensureHkrrReviewModule = createLazyModuleLoader("", ["app/features/hkrr-review.js"]);
 // The guest bridge: tool handlers, the approval dialog and the Chooser guest
 // list load together on the first guest call or when Chooser opens.
 const ensureGuestToolsModule = createLazyModuleLoader("AISystem6GuestTools", ["app/features/guest-tools.js"]);
+const ensureRebuildPackModule = createLazyModuleLoader("AISystem6RebuildPack", ["app/core/rebuild-pack.js"]);
 // The outbound half: the servers this desk asks, and the File Floppy landing
 // every answer takes. Chooser loads it; so does Searcher when the chosen
 // provider is one of those servers.
@@ -610,7 +619,11 @@ const ensureCmfStudioModule = createLazyModuleLoader("AISystem6CMFStudioLoaded",
 ], false, ["styles.cmf-studio.css"]);
 const ensureSoundscapeModule = createLazyModuleLoader("AISystem6SoundscapeLoaded", ["app/features/soundscape.js"], false, ["styles.soundscape.css"]);
 const ensureFindChangeModule = createLazyModuleLoader("AISystem6FindChangeLoaded", ["app/features/find-change.js"]);
-const ensureThemeLabModule = createLazyModuleLoader("AISystem6ThemeLabLoaded", ["app/core/application-shell.js", "app/features/theme-authoring.js", "app/features/theme-lab.js"], false, ["styles.theme-lab.css"]);
+// The token workbench reads every era's delta from the live CSSOM. Aqua and
+// Liquid Glass were boot sheets when it was written, and their deltas decide
+// which tokens count as era-owned, so the lab asks for both as it opens (the
+// registry places them; see loadStylesheetOnce).
+const ensureThemeLabModule = createLazyModuleLoader("AISystem6ThemeLabLoaded", ["app/core/application-shell.js", "app/features/theme-authoring.js", "app/features/theme-lab.js"], false, ["styles.theme-lab.css", "styles.aqua.css", "styles.liquid-glass.css"]);
 window.AISystem6EnsureThemeLabModule = ensureThemeLabModule;
 // The GPL engine bundle loads first, then the AI System 6 shell; the shell's
 // flag proves both arrived. Styles ride along as a lazy bundle.
@@ -660,16 +673,27 @@ const ensureWritingDemoModule = createLazyModuleLoader("AISystem6WritingDemoLoad
   "app/data/evergreen-demo-corpus.js",
   "app/features/writing-demo.js",
 ]);
-// A shared launch link mounts a whole Project Hard Disk. The backups are large
-// and few visitors need one, so they travel as their own lazy module -- and the
+// A shared launch link mounts one Project Hard Disk. The backups are large and
+// few visitors need one, so each travels as its own lazy module -- and the
 // folder that lists them reads a small one first: thirty-five rows should not
-// cost every manuscript in the set.
+// cost every manuscript in the set, nor should opening one disk fetch the rest.
 const ensureSharedProjectDisksIndexModule = createLazyModuleLoader("AISystem6SharedProjectDisksIndexLoaded", [
   "app/content/shared-project-disks-index.js",
 ], false, ["styles.project-disks.css"]);
-const ensureSharedProjectDisksModule = createLazyModuleLoader("AISystem6SharedProjectDisksLoaded", [
-  "app/content/shared-project-disks.js",
-]);
+// Looking inside a demonstration disk: the window module, after the index it
+// reads and the shell that builds it; its styles share the folder's sheet.
+const ensureDiskPeekModule = createLazyModuleLoader("AISystem6DiskPeekLoaded", [
+  "app/core/application-shell.js",
+  "app/content/shared-project-disks-index.js",
+  "app/features/disk-peek.js",
+], false, ["styles.project-disks.css"]);
+// One lazy loader per route, made on first use and kept, so opening one disk
+// never fetches another. Null-prototype so a route cannot shadow Object.
+const sharedDiskLoaders = Object.create(null);
+function ensureSharedProjectDiskModule(route) {
+  if (!/^[a-z0-9-]+$/.test(route)) return Promise.reject(new Error(`Unknown shared project disk route: ${route}`));
+  return (sharedDiskLoaders[route] ||= createLazyModuleLoader(`AISystem6SharedProjectDisk:${route}`, [`app/content/shared-disks/${route}.js`]))();
+}
 
 // A lazy window/command whose module failed to load this session: keyed by
 // action id, valued with the already-rendered failure message (so the menu
@@ -781,8 +805,6 @@ const passiveWritingFlowStubs = new Set([
   "renderFlowProgress",
   "renderPipeline",
   "renderRebuildFlow",
-  "renderRebuildProgress",
-  "resetRebuildProgress",
   "renderReaderTabs",
   "savePipelineData",
   "refreshTeachTextSurfacePreview",
@@ -833,14 +855,11 @@ function installLazyWritingFlowStub(name) {
   "renderFlowProgress",
   "renderPipeline",
   "renderRebuildFlow",
-  "renderRebuildProgress",
-  "resetRebuildProgress",
   "openRebuildFlow",
-  "useReaderForRebuildFlow",
-  "useTeachTextForRebuildFlow",
-  "useClipboardForRebuildFlow",
-  "useSampleArticleForRebuildFlow",
   "runRebuildFlow",
+  "handInRebuildFlow",
+  "mergeRebuildSection",
+  "stopRebuildFlow",
   "openWritingFlowHelp",
   "openQuestionSheetSurface",
   "openOutlineSurface",

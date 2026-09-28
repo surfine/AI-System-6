@@ -1995,7 +1995,10 @@ async function loadDeskState() {
   }
   assignProjectScope(activeProjectId);
   selectedProjectId = activeProjectId;
-  if (projectStateChanged || shouldRewriteSanitizedSettings) {
+  // Clips saved in the old Source:/URL:/Context body template become the
+  // passage alone, with the record left on the scrap (scrapbook.js).
+  const migratedClipBodies = typeof migrateMachineClipBodies === "function" ? migrateMachineClipBodies(scraps) : 0;
+  if (projectStateChanged || shouldRewriteSanitizedSettings || migratedClipBodies) {
     if (shouldRewriteSanitizedSettings) markDeskDirty("settings");
     const saved = await saveDeskState();
     if (!saved) throw new Error("The initial Project Hard Disk could not be saved.");
@@ -2960,9 +2963,7 @@ function clearStatus() {
   setStatus("");
 }
 
-function setStatus(text, options = {}) {
-  const message = decorateStatusMessage(text);
-  syncStatusHost();
+function showStatusText(message) {
   statusEl.textContent = message;
   statusEl.hidden = !String(message).trim();
   // An always-drawn empty box is dead chrome: it asks a question ("what is
@@ -2972,6 +2973,34 @@ function setStatus(text, options = {}) {
   document.querySelectorAll(".window-status-strip").forEach((strip) => {
     strip.classList.toggle("has-message", strip.contains(statusEl) && !statusEl.hidden);
   });
+}
+
+// A receipt in a window's own strip is read and then gone: it used to stay
+// until the next message, so a sentence from boot ("... imported as a new
+// Project Hard Disk.") sat in the Reader, the DocMap and the Scrapbook for the
+// rest of the session. It steps back after a few seconds -- longer for a
+// failure, which is also kept in the notification center -- and waits while a
+// long task is still running. ClioTalk's home line keeps what it was told.
+let statusFadeTimer = 0;
+function scheduleStatusFade(message) {
+  clearTimeout(statusFadeTimer);
+  if (!String(message).trim()) return;
+  const fade = () => {
+    if (statusEl.textContent !== message || statusEl.closest("[data-status-home]")) return;
+    if (activeLongTasks.size) {
+      statusFadeTimer = setTimeout(fade, 2000);
+      return;
+    }
+    showStatusText("");
+  };
+  statusFadeTimer = setTimeout(fade, isSystemReceiptStatusMessage(message) ? 12000 : 6000);
+}
+
+function setStatus(text, options = {}) {
+  const message = decorateStatusMessage(text);
+  syncStatusHost();
+  showStatusText(message);
+  scheduleStatusFade(message);
   const shouldNotify = options.notify === true || (options.notify !== false && isSystemReceiptStatusMessage(message));
   if (!shouldNotify) return;
   const updatedTaskNotification = isSystemReceiptStatusMessage(message) ? markActiveLongTaskFailed(message) : "";

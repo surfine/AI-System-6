@@ -242,6 +242,24 @@ const dynamicWindowSources = Object.freeze({
     cssPrefixes: Object.freeze(["lightroom-", "draft-desk-"]),
     iconId: "lightroom",
   }),
+  diskPeek: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-demo-disks-latest",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/disk-peek.js#installDiskPeekWindow",
+    cssPrefixes: Object.freeze(["disk-peek-"]),
+    iconId: "projectDisk",
+  }),
+  // 「还原写作对象」 left index.html in the P2 rework (2026-09-26); it loads
+  // with Writing Flow and builds itself at module eval.
+  rebuildFlow: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-rebuild-flow",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/rebuild-flow.js#installRebuildFlowWindow",
+    cssPrefixes: Object.freeze(["rebuild-"]),
+    iconId: "rebuildArticle",
+  }),
   projectPeek: Object.freeze({
     sourceKind: "lazy",
     openCommand: "open-project-peek",
@@ -572,7 +590,7 @@ const windowInterfaceContracts = Object.freeze({
     route: "core",
     statusLayout: "compact",
     referenceSurface: "teachText",
-    rationale: "Rebuild Flow reports destination and source identity while step progress remains beside the rebuild operation.",
+    rationale: "Rebuild Flow reports the section count and where the work stands; progress appears only while the model drafts.",
   }),
   docMap: standardDocument("utility", "summoned", { documentModel: "tdi", tdiHost: "docmap-tabs" }),
   clioStage: creativeLab(),
@@ -602,6 +620,7 @@ const windowInterfaceContracts = Object.freeze({
   todo: deskAccessory("system", { documentModel: "sdi" }),
   holdThought: deskAccessory("system", { documentModel: "sdi", statusLayout: "none" }),
   projectPeek: deskAccessory("system", { documentModel: "sdi" }),
+  diskPeek: deskAccessory("system", { documentModel: "sdi", statusLayout: "none" }),
   clipboard: deskAccessory("system", { documentModel: "sdi" }),
   alarmClock: deskAccessory("system", { statusLayout: "none" }),
   calculator: deskAccessory("system", { statusLayout: "none" }),

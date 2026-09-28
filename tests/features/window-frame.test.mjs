@@ -12,6 +12,7 @@ const icons = read("styles/40-icons.css");
 const apps = read("styles/50-apps.css");
 const liquid = read("styles/70-liquid-glass.css");
 const responsive = read("styles/60-responsive.css");
+const aqua = read("styles/67-aqua-appearance.css");
 const windowManager = read("app/core/window-manager.js");
 const frameBars = read("app/core/window-frame-bars.js");
 const wireup = read("app/core/wireup.js");
@@ -244,7 +245,7 @@ test.assertMatches(
 test.assertIncludes(liquid, "--glass-lamp-inactive: #f1f1f4", "Glass has one flat tone for background lamps");
 test.assertMatches(
   liquid,
-  /body\.use-liquid-glass \.close-box \{[^}]*var\(--glass-lamp-close\)/,
+  /body\[data-theme="liquid-glass"\] \.close-box \{[^}]*var\(--glass-lamp-close\)/,
   "The close lamp's colour comes from a token, so state can swap it"
 );
 test.assertMatches(
@@ -286,7 +287,7 @@ test.assertMatches(responsive, /\.title-bar h1,\n\.title-bar h2 \{[^}]*font-size
 test.assertNotMatches(responsive, /html:lang\(zh-Hans\) \.title-bar h1,\nhtml:lang\(zh-Hans\) \.title-bar h2 \{\n  font-size: var\(--system-title-size\)/, "The final Chinese locale rule cannot enlarge Classic titles after native sizing");
 test.assertMatches(windows, /\.title-bar h1,\n\.title-bar h2 \{[^}]*align-self: center/, "Classic window titles share the title-bar vertical center");
 test.assertMatches(windows, /\.close-box,\n\.resize-box \{[^}]*align-self: center/, "Classic close and zoom hit targets share the title-bar vertical center");
-test.assertMatches(liquid, /body\.use-liquid-glass \.close-box,\nbody\.use-liquid-glass \.resize-box \{[^}]*align-self: center;[^}]*margin: 0;/, "Liquid close and zoom lamps use grid centering instead of a manual top offset");
+test.assertMatches(liquid, /body\[data-theme="liquid-glass"\] \.close-box,\nbody\[data-theme="liquid-glass"\] \.resize-box \{[^}]*align-self: center;[^}]*margin: 0;/, "Liquid close and zoom lamps use grid centering instead of a manual top offset");
 
 // The grabber is part of the corner it lives in, so it follows the corner
 // system rather than a number of its own. Two halves: where the corner belongs
@@ -298,7 +299,7 @@ test.assertMatches(responsive, /\.is-mobile-fullscreen \.grow-box,\s*\n\s*\.is-m
 test.assertIncludes(liquid, "--grow-box-arc-inset: 4px;", "the Liquid Glass arc keeps one inset from the window edge");
 test.assertIncludes(liquid, "--grow-box-arc-radius: calc(var(--window-radius) - var(--grow-box-arc-inset));",
   "and takes the radius the window's own corner leaves it, so the two curves are concentric");
-test.assertMatches(liquid, /body\.use-liquid-glass \.grow-box::before \{[\s\S]{0,420}width: var\(--grow-box-arc-radius\);[\s\S]{0,900}border-radius: 0 0 var\(--grow-box-arc-radius\) 0;/,
+test.assertMatches(liquid, /body\[data-theme="liquid-glass"\] \.grow-box::before \{[\s\S]{0,420}width: var\(--grow-box-arc-radius\);[\s\S]{0,900}border-radius: 0 0 var\(--grow-box-arc-radius\) 0;/,
   "which is the size and the curve the arc is actually drawn at");
 test.assertIncludes(foundation, "--system-titlebar-control-focus-outline: 0", "Classic title-bar controls do not expose a browser-coloured focus rectangle around the full hit target");
 test.assertIncludes(foundation, "--system-titlebar-control-focus-shadow: none", "Classic title-bar focus does not manufacture a second oversized frame");
@@ -310,11 +311,15 @@ test.assertMatches(wireup, /win\.querySelector\("\.resize-box"\)\?\.addEventList
 // Platinum collapse box: one shared DOM control, hidden by default, opened
 // and painted only by the Mac OS 8/9 recipe, wired to WindowShade not Zoom.
 const themes = read("styles/65-appearance-themes.css");
+// Platinum-only chrome that loads with the Platinum sheet, not at boot.
+const platinumUtility = read("styles/65-platinum-utility.css");
 const aquaThemes = read("styles/67-aqua-appearance.css");
 const bigSur = read("styles/68-big-sur-appearance.css");
 test.assertIncludes(html, 'class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"', "Every full window carries the collapse box in the shared DOM");
 test.assertIncludes(en, 'collapse: "Collapse"', "English has the collapse box accessible label");
-test.assertIncludes(zh, 'collapse: "折叠"', "Chinese has the collapse box accessible label");
+// WindowShade's fixed Chinese pair is 收起 / 展开 (owner's WindowShade copy
+// guide), never 折叠; minimize keeps its own word so the two verbs stay two.
+test.assertIncludes(zh, 'collapse: "收起"', "Chinese has the collapse box accessible label");
 test.assertIncludes(foundation, "--system-titlebar-shade-slot: 0px", "The collapse-box slot is closed by default");
 test.assertIncludes(foundation, "--system-titlebar-shade-display: none", "The collapse box is hidden outside eras that own it");
 test.assertMatches(themes, /--system-titlebar-control-slot: 16px;[\s\S]*?--system-titlebar-shade-slot: 16px;\s*\n\s*--system-titlebar-shade-display: block;/, "Platinum uses measured 16px lanes for its 11px boxes and 5px visual gaps");
@@ -330,9 +335,9 @@ test.assertNotMatches(
   /body\[data-theme-family="classic"\]\[data-lineage~="platinum"\] \.grow-box \{[^}]*body\[data-lineage~="platinum"\] \.title-bar \.shade-box::after/,
   "The Platinum WindowShade mark is a top-level painter, not an unreachable rule nested inside the grow box"
 );
-test.assertMatches(themes, /body\[data-lineage~="platinum"\] \.title-bar \.resize-box::after \{[^}]*width: 6px;[^}]*height: 6px;[^}]*right top \/ 1px 6px no-repeat,[^}]*left bottom \/ 6px 1px no-repeat;/, "Platinum draws the real six-pixel lower-left Zoom corner");
-test.assertMatches(themes, /body\[data-lineage~="platinum"\] \.title-bar \.shade-box::after \{[^}]*width: 9px;[^}]*height: 3px;[^}]*left top \/ 9px 1px no-repeat,[^}]*left bottom \/ 9px 1px no-repeat;/, "Platinum draws WindowShade's two native nine-pixel rules");
-test.assertIncludes(themes, "right top / calc(var(--system-titlebar-control-slot) + var(--system-titlebar-shade-slot)) 100% no-repeat", "Platinum clears the striped title field behind both right-side Zoom and WindowShade boxes");
+test.assertMatches(platinumUtility, /body\[data-lineage~="platinum"\] \.title-bar \.resize-box::after \{[^}]*width: 6px;[^}]*height: 6px;[^}]*right top \/ 1px 6px no-repeat,[^}]*left bottom \/ 6px 1px no-repeat;/, "Platinum draws the real six-pixel lower-left Zoom corner");
+test.assertMatches(platinumUtility, /body\[data-lineage~="platinum"\] \.title-bar \.shade-box::after \{[^}]*width: 9px;[^}]*height: 3px;[^}]*left top \/ 9px 1px no-repeat,[^}]*left bottom \/ 9px 1px no-repeat;/, "Platinum draws WindowShade's two native nine-pixel rules");
+test.assertIncludes(themes, "right top / var(--system-titlebar-control-slot-right, calc(var(--system-titlebar-control-slot) + var(--system-titlebar-shade-slot))) 100% no-repeat", "Platinum clears the striped title field behind both right-side Zoom and WindowShade boxes (a window without them narrows the slot, re-audit X3)");
 test.assertMatches(themes, /body\[data-lineage~="platinum"\] \.title-bar:not\(\.spine-title-row\) \{[^}]*var\(--titlebar-gutter\)[^}]*var\(--titlebar-slot-zoom\)[^}]*calc\(var\(--titlebar-gutter\) - var\(--titlebar-slot-zoom\)\);/, "Platinum restores the fourth WindowShade lane after responsive title-bar rules — the Writing Flow rail's lamp-less row stays on its own template");
 
 // The title is centred on the whole bar, so the two ends reserve the same
@@ -360,9 +365,9 @@ test.assertMatches(bigSur, /body\[data-theme="big-sur"\] \.window > \.title-bar 
 test.assertNotIncludes(bigSur, "minimize-box", "Big Sur paints no minimize lamp and opens no slot for one");
 // Liquid Glass reaches the same two ends through the base columns (Close 1,
 // Zoom 3) and its own 18px end cells.
-test.assertMatches(liquid, /body\.use-liquid-glass \.title-bar \{[^}]*grid-template-columns: 18px minmax\(0, 1fr\) 18px;/, "liquid-glass keeps two end cells around the title");
-test.assertMatches(liquid, /body\.use-liquid-glass \.close-box \{[^}]*justify-self: start;/, "liquid-glass keeps Close on the left edge");
-test.assertMatches(liquid, /body\.use-liquid-glass \.resize-box \{[^}]*justify-self: end;/, "liquid-glass keeps Zoom on the right edge");
+test.assertMatches(liquid, /body\[data-theme="liquid-glass"\] \.title-bar \{[^}]*grid-template-columns: 18px minmax\(0, 1fr\) 18px;/, "liquid-glass keeps two end cells around the title");
+test.assertMatches(liquid, /body\[data-theme="liquid-glass"\] \.close-box \{[^}]*justify-self: start;/, "liquid-glass keeps Close on the left edge");
+test.assertMatches(liquid, /body\[data-theme="liquid-glass"\] \.resize-box \{[^}]*justify-self: end;/, "liquid-glass keeps Zoom on the right edge");
 test.assertNotMatches(liquid, /--titlebar-(close|zoom|minimize)-column:|minimize-box/, "liquid-glass moves no lamp off its edge column and draws no minimize lamp");
 test.assertMatches(windows, /\.title-bar > \.close-box \{[^}]*grid-column: var\(--titlebar-close-column, 1\);/, "the base puts Close in the first column");
 test.assertMatches(windows, /\.title-bar > \.resize-box \{[^}]*grid-column: var\(--titlebar-zoom-column, 3\);\s*justify-self: var\(--titlebar-zoom-justify, end\);/, "the base puts Zoom in the column after the title, at its end");
@@ -611,5 +616,26 @@ test.assertMatches(
   /classList\.remove\("is-collapsed"\);\s*setInlineStyleValue\(win, "--window-shade-width", ""\)/,
   "Unshading releases the captured width so responsive layout can resume"
 );
+
+// A finger does not grow the title bar. Every appearance keeps, on a phone and
+// a tablet, installed or in a tab, the bar height and the controls it draws on
+// the desk: the owner's decision of 2026-09-26, which reverted the 44px bars of
+// 2026-09-22/23, the lamp padding built for them, and Platinum's 40px touch
+// boxes of 2026-09-05. A new touch rule that resizes the bar or its boxes has
+// to come with a new decision.
+const titleBarTouchGrowth = /\.title-bar[^{}]*\{[^}]*(?:min-height: 44px|--system-titlebar-control-size: (?:40|44)px|--system-titlebar-control-slot: 44px)/;
+for (const [name, css] of [["60-responsive", responsive], ["65-appearance-themes", themes]]) {
+  test.assert(!titleBarTouchGrowth.test(css), `${name} does not grow the title bar or its controls for a finger`);
+}
+test.assert(!/--titlebar-touch-|--system-titlebar-lamp-size/.test(`${responsive}${themes}${liquid}${aqua}`), "no appearance carries the reverted touch-lamp recipe");
+test.assert(!/html\[data-installed\] \.grow-box/.test(responsive), "an installed app keeps the era's grow box");
+
+// NeXTSTEP's desk objects stand in for the menu bar; a phone has no desk, but a
+// mouse desk of 640x540 or more (an 800x600 display) is still one (floats()).
+const nextstep = read("styles/69-nextstep-appearance.css");
+const nextstepShell = read("styles/nextstep-shell.css");
+test.assertMatches(nextstep, /@media \(min-width: 861px\) and \(not \(\(hover: none\) and \(pointer: coarse\) and \(max-height: 660px\)\)\), \(hover: hover\) and \(pointer: fine\) and \(min-width: 640px\) and \(min-height: 540px\) \{[^@]*body\[data-theme="nextstep"\] \.menu-bar \{\s*display: none;/, "NeXTSTEP hides the shared menu bar only on a desk");
+test.assertMatches(nextstepShell, /@media \(max-width: 860px\) and \(not \(\(hover: hover\) and \(pointer: fine\) and \(min-width: 640px\) and \(min-height: 540px\)\)\), \(hover: none\) and \(pointer: coarse\) and \(max-height: 660px\) \{\s*\.nextstep-menu-palette,\s*\.nextstep-dock,\s*\.nextstep-desk-row \{ display: none;/, "a phone takes the floating main menu, the Dock column and the desk row off the one window");
+test.assertIncludes(nextstep, "grid-template-columns: var(--system-titlebar-control-size) minmax(0, 1fr) var(--system-titlebar-control-size);", "NeXTSTEP's end lanes are the era's control width everywhere");
 
 test.finish();

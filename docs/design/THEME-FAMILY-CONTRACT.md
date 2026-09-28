@@ -33,9 +33,12 @@ contracts (`tests/features/appearance-system.test.mjs`).
 - `getRecipeChain(themeId)` returns the ordered lineage; cycles are a
   registry bug and throw.
 
-Only the Liquid Glass appearance carries the `use-liquid-glass` skin class.
-Aqua and Snow Leopard own their rules directly under
-`body[data-theme="..."]`; they must not inherit the glass skin.
+Only the Liquid Glass appearance carries the `use-liquid-glass` skin class,
+and it is kept for scripts that read it: stylesheets select Liquid Glass as
+`body[data-theme="liquid-glass"]`, the same way every era is selected
+(`verify:css` refuses the class in a stylesheet). Aqua and Snow Leopard own
+their rules directly under `body[data-theme="..."]`; they must not inherit
+the glass skin.
 
 ## 2. What a child inherits from its parent
 

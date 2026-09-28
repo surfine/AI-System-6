@@ -1138,7 +1138,6 @@ function clipReaderSelection() {
   const url = currentReaderPage?.url || "";
   const site = currentReaderPage?.site || "";
   const capturedAt = new Date().toISOString();
-  const timestamp = new Date(capturedAt).toLocaleString();
 
   const context = getReaderSelectionContext(selection, text);
   const transcriptContract = readerVideoTranscriptSelectionContract(selection);
@@ -1148,27 +1147,7 @@ function clipReaderSelection() {
   const videoTimeEnd = transcriptContract?.end || "";
   const originalBlockIds = transcriptContract?.blockIds || [];
 
-  const scrapBody = [
-    "Selected passage:",
-    text,
-    "",
-    "---",
-    `Source: ${title}`,
-    site ? `Site: ${site}` : "",
-    url ? `URL: ${url}` : `File: ${currentReaderPage?.fileName || sourceRef}`,
-    isVideoTranscriptClip ? "Source kind: video_transcript" : "",
-    isVideoTranscriptClip ? `Time range: ${videoTimeStart} --> ${videoTimeEnd}` : "",
-    isVideoTranscriptClip ? `Original SRT blocks: ${originalBlockIds.join(", ")}` : "",
-    currentReaderPage?.author ? `Author: ${currentReaderPage.author}` : "",
-    currentReaderPage?.date ? `Date: ${currentReaderPage.date}` : "",
-    `Time: ${timestamp}`,
-    "",
-    "Context before:",
-    context.before || "[start of readable text]",
-    "",
-    "Context after:",
-    context.after || "[end of readable text]",
-  ].filter(Boolean).join("\n");
+  const scrapBody = text;
 
   const scrap = createScrap(
     `Clip: ${text.slice(0, 20)}...`,
@@ -1249,7 +1228,6 @@ async function clipReaderSelectionWithTranslation() {
   const url = currentReaderPage?.url || "";
   const site = currentReaderPage?.site || "";
   const capturedAt = new Date().toISOString();
-  const timestamp = new Date(capturedAt).toLocaleString();
   const context = getReaderSelectionContext(selection, text);
   const transcriptContract = readerVideoTranscriptSelectionContract(selection);
   const isVideoTranscriptClip = currentReaderPage?.videoTranscript?.type === "video_transcript" && transcriptContract;
@@ -1272,30 +1250,7 @@ async function clipReaderSelectionWithTranslation() {
       title,
     });
 
-    const scrapBody = [
-      "Selected passage:",
-      text,
-      "",
-      `${formatTranslationMeta(targetLanguage, translationCreatedAt, "Reader", translationModel)}:`,
-      translatedText,
-      "",
-      "---",
-      `Source: ${title}`,
-      site ? `Site: ${site}` : "",
-      url ? `URL: ${url}` : `File: ${currentReaderPage?.fileName || sourceRef}`,
-      isVideoTranscriptClip ? "Source kind: video_transcript" : "",
-      isVideoTranscriptClip ? `Time range: ${videoTimeStart} --> ${videoTimeEnd}` : "",
-      isVideoTranscriptClip ? `Original SRT blocks: ${originalBlockIds.join(", ")}` : "",
-      currentReaderPage?.author ? `Author: ${currentReaderPage.author}` : "",
-      currentReaderPage?.date ? `Date: ${currentReaderPage.date}` : "",
-      `Time: ${timestamp}`,
-      "",
-      "Context before:",
-      context.before || "[start of readable text]",
-      "",
-      "Context after:",
-      context.after || "[end of readable text]",
-    ].filter(Boolean).join("\n");
+    const scrapBody = text;
 
     const scrap = createScrap(
       `Clip: ${text.slice(0, 20)}...`,

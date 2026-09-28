@@ -359,7 +359,8 @@ function getWritingBellState() {
   };
 }
 
-function restoreWritingBellState(state = {}) {
+function restoreWritingBellState(state) {
+  state ||= {};
   writingBellMode = normalizeWritingBellMode(state.mode);
   writingBellDurations = {
     work: normalizeWritingBellDuration(state.durations?.work, 25 * 60),

@@ -11,6 +11,27 @@
   font-display: swap;
 }
 
+/* A copy of a boot rule that must keep beating this sheet's own rule below:
+   the same selector and specificity, scoped by :where() to this surface, and
+   first in the sheet so every rule after it keeps its place. Under a per-file
+   @layer order the boot rule alone would lose; here specificity decides. */
+.window .window-frame-scroller:where(.lc-panel) {
+  overflow: auto;
+  border: 0;
+  min-height: 0;
+}
+
+/* The window's own button sizes tie the era .btn recipe (0,2,1) and win by
+   source order, today and once each sheet is its own layer. */
+.liquid-cover-window button.btn:where(.lc-toolbar-export) {
+  min-width: 72px;
+}
+
+.liquid-cover-window button.btn:where(.lc-stage-expand) {
+  min-width: 72px;
+  padding: var(--system-button-padding-y) var(--system-button-padding-x);
+}
+
 /* Default frame so the tool is usable in every layout regime. Desktop
    maximize sets inline width/height (which win); portrait-flow override
    rules also win. This is only the fallback when neither runs, and the
@@ -423,12 +444,17 @@
 }
 
 .lc-stage-expand {
-  position: absolute;
   top: auto;
   right: 12px;
   bottom: 9px;
   min-width: 28px;
   padding-inline: 7px;
+}
+
+/* An era .btn recipe sets position: relative; the expand button stays
+   pinned to the stage corner in every era. */
+body .liquid-cover-window .lc-stage-expand {
+  position: absolute;
 }
 
 .liquid-cover-window.is-stage-focused .lc-panel,
@@ -945,6 +971,21 @@
   --lc-accent: var(--ink);
   --lc-track: var(--paper);
   --lc-fill: 0%;
+  /* P07: the slider is tokenised so an era can restyle it without a
+     selector of its own. Every default below is today's literal, so the
+     System 6 slider renders unchanged. */
+  --lc-range-height: 7px;
+  --lc-range-border: var(--system-control-line) solid var(--ink);
+  --lc-range-radius: var(--item-radius);
+  --lc-range-bg: linear-gradient(to right, var(--lc-accent) 0 var(--lc-fill), var(--lc-track) var(--lc-fill) 100%);
+  --lc-range-shadow: inset 1px 1px 0 var(--shade-dark);
+  --lc-range-thumb-width: 13px;
+  --lc-range-thumb-height: 18px;
+  --lc-range-thumb-offset: -7px;
+  --lc-range-thumb-border: var(--system-control-line) solid var(--ink);
+  --lc-range-thumb-radius: var(--item-radius);
+  --lc-range-thumb-bg: var(--paper);
+  --lc-range-thumb-shadow: 2px 2px 0 var(--ink);
   -webkit-appearance: none;
   appearance: none;
   height: 20px;
@@ -961,39 +1002,39 @@
 }
 
 .liquid-cover-window input[type="range"]::-webkit-slider-runnable-track {
-  height: 7px;
-  border: var(--system-control-line) solid var(--ink);
-  border-radius: var(--item-radius);
-  background: linear-gradient(to right, var(--lc-accent) 0 var(--lc-fill), var(--lc-track) var(--lc-fill) 100%);
-  box-shadow: inset 1px 1px 0 var(--shade-dark);
+  height: var(--lc-range-height);
+  border: var(--lc-range-border);
+  border-radius: var(--lc-range-radius);
+  background: var(--lc-range-bg);
+  box-shadow: var(--lc-range-shadow);
 }
 
 .liquid-cover-window input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 13px;
-  height: 18px;
-  margin-top: -7px;
-  border: var(--system-control-line) solid var(--ink);
-  border-radius: var(--item-radius);
-  background: var(--paper);
-  box-shadow: 2px 2px 0 var(--ink);
+  width: var(--lc-range-thumb-width);
+  height: var(--lc-range-thumb-height);
+  margin-top: var(--lc-range-thumb-offset);
+  border: var(--lc-range-thumb-border);
+  border-radius: var(--lc-range-thumb-radius);
+  background: var(--lc-range-thumb-bg);
+  box-shadow: var(--lc-range-thumb-shadow);
 }
 
 .liquid-cover-window input[type="range"]::-moz-range-track {
-  height: 7px;
-  border: var(--system-control-line) solid var(--ink);
-  border-radius: var(--item-radius);
-  background: linear-gradient(to right, var(--lc-accent) 0 var(--lc-fill), var(--lc-track) var(--lc-fill) 100%);
-  box-shadow: inset 1px 1px 0 var(--shade-dark);
+  height: var(--lc-range-height);
+  border: var(--lc-range-border);
+  border-radius: var(--lc-range-radius);
+  background: var(--lc-range-bg);
+  box-shadow: var(--lc-range-shadow);
 }
 
 .liquid-cover-window input[type="range"]::-moz-range-thumb {
-  width: 13px;
-  height: 18px;
-  border: var(--system-control-line) solid var(--ink);
-  border-radius: var(--item-radius);
-  background: var(--paper);
-  box-shadow: 2px 2px 0 var(--ink);
+  width: var(--lc-range-thumb-width);
+  height: var(--lc-range-thumb-height);
+  border: var(--lc-range-thumb-border);
+  border-radius: var(--lc-range-thumb-radius);
+  background: var(--lc-range-thumb-bg);
+  box-shadow: var(--lc-range-thumb-shadow);
 }
 
 .liquid-cover-window input[type="range"]:disabled {
@@ -1059,15 +1100,20 @@
 }
 
 .lc-inspector-tab {
-  width: 78px;
-  min-width: 0;
+  /* C4: the first mode tab's label ("Background") is clipped at a fixed 78px;
+     an era may ask for `auto` with a floor instead. */
+  width: var(--lc-inspector-tab-width, 78px);
+  min-width: var(--lc-inspector-tab-min-width, 0);
   min-height: var(--control-hit-target, 28px);
   padding: 4px 5px;
-  border: 0;
-  border-right: 1px solid var(--ink);
-  border-radius: var(--item-radius);
-  background: transparent;
-  color: var(--ink);
+  /* P08: the segment face follows P04's bevel-button hooks (default = today's
+     flat System 6 cell), so one answer reskins Background/Type/Glass. */
+  border: var(--lc-segment-btn-border, 0);
+  border-right: var(--lc-segment-divider, 1px solid var(--ink));
+  border-radius: var(--lc-segment-btn-radius, var(--item-radius));
+  background: var(--lc-segment-btn-bg, transparent);
+  color: var(--lc-segment-btn-fg, var(--ink));
+  box-shadow: var(--lc-segment-btn-shadow, none);
   font: inherit;
   font-weight: 600;
   line-height: 1.15;
@@ -1082,11 +1128,11 @@
 }
 
 .lc-inspector-tab:last-child {
-  border-right: 0;
+  border-right: var(--lc-segment-last-divider, 0);
 }
 
 .lc-inspector-tab:hover:not(.is-active) {
-  background: var(--paper);
+  background: var(--lc-segment-hover-bg, var(--paper));
 }
 
 .lc-inspector-tab:focus-visible {
@@ -1094,9 +1140,11 @@
   outline-offset: var(--control-focus-offset);
 }
 
+/* P08: selected reads as pressed, not as a solid black fill. */
 .lc-inspector-tab.is-active {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--lc-segment-active-bg, var(--ink));
+  color: var(--lc-segment-active-fg, var(--paper));
+  box-shadow: var(--lc-segment-active-shadow, none);
 }
 
 .lc-inspector-panel {
@@ -1132,10 +1180,12 @@
 .lc-aspect {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0;
-  padding: 2px;
-  border: 1px solid var(--ink);
-  background: var(--shade);
+  gap: var(--lc-segment-gap, 0);
+  /* P08: the well is a hook, so Platinum can drop the System 6 #aaa tray and
+     let separate native bevel buttons sit on the toolbar. */
+  padding: var(--lc-segment-well-padding, 2px);
+  border: var(--lc-segment-well-border, 1px solid var(--ink));
+  background: var(--lc-segment-well-bg, var(--shade));
 }
 
 .lc-aspect button {
@@ -1143,11 +1193,13 @@
   font-weight: 600;
   min-height: var(--control-hit-target, 28px);
   padding: 4px 0;
-  border: 0;
-  border-right: 1px solid var(--ink);
-  border-radius: var(--item-radius);
-  background: transparent;
-  color: var(--ink);
+  /* P08: reuses the same segment hooks as the mode tabs above. */
+  border: var(--lc-segment-btn-border, 0);
+  border-right: var(--lc-segment-divider, 1px solid var(--ink));
+  border-radius: var(--lc-segment-btn-radius, var(--item-radius));
+  background: var(--lc-segment-btn-bg, transparent);
+  color: var(--lc-segment-btn-fg, var(--ink));
+  box-shadow: var(--lc-segment-btn-shadow, none);
   cursor: pointer;
   transition:
     background var(--control-motion-medium-in) var(--control-motion-ease),
@@ -1155,11 +1207,11 @@
 }
 
 .lc-aspect button:last-child {
-  border-right: 0;
+  border-right: var(--lc-segment-last-divider, 0);
 }
 
 .lc-aspect button:hover:not(.is-active) {
-  background: var(--paper);
+  background: var(--lc-segment-hover-bg, var(--paper));
 }
 
 .lc-aspect button:focus-visible {
@@ -1168,8 +1220,9 @@
 }
 
 .lc-aspect button.is-active {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--lc-segment-active-bg, var(--ink));
+  color: var(--lc-segment-active-fg, var(--paper));
+  box-shadow: var(--lc-segment-active-shadow, none);
 }
 
 .lc-layer-list {
@@ -1427,7 +1480,7 @@
   min-width: 0;
 }
 
-.lc-font-import-row .btn {
+body .lc-font-import-row .btn {
   min-height: 24px;
   padding: 3px 8px;
 }
@@ -1886,7 +1939,7 @@ body.image-gen-enabled .lc-img-group {
 /* Liquid Glass keeps one primary inspector material beside the matte artboard.
    Groups are separators inside that material, never blur-on-blur cards. */
 
-body.use-liquid-glass .lc-stage {
+body[data-theme="liquid-glass"] .lc-stage {
   background-color: #11151a;
   background-image:
     radial-gradient(circle at 48% 42%, rgba(91, 112, 123, 0.16), transparent 48%),
@@ -1895,7 +1948,7 @@ body.use-liquid-glass .lc-stage {
   background-size: auto, 24px 24px, 24px 24px;
 }
 
-body.use-liquid-glass .lc-canvas {
+body[data-theme="liquid-glass"] .lc-canvas {
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 8px;
   outline-color: rgba(0, 0, 0, 0.72);
@@ -1904,21 +1957,21 @@ body.use-liquid-glass .lc-canvas {
     0 0 0 7px rgba(255, 255, 255, 0.045);
 }
 
-body.use-liquid-glass .lc-panel {
+body[data-theme="liquid-glass"] .lc-panel {
   border-radius: var(--r-lg);
   border-left: 1px solid rgba(255, 255, 255, 0.42);
   background: rgba(246, 249, 251, 0.88);
   box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.7);
 }
 
-body.use-liquid-glass .lc-toolbar {
+body[data-theme="liquid-glass"] .lc-toolbar {
   border-radius: var(--r-lg);
   border-bottom: 1px solid rgba(255, 255, 255, 0.5);
   background: rgba(246, 249, 251, 0.64);
   box-shadow: inset 0 -1px 0 rgba(38, 52, 64, 0.08);
 }
 
-body.use-liquid-glass .lc-sidebar {
+body[data-theme="liquid-glass"] .lc-sidebar {
   border-radius: var(--r-lg);
   border-color: rgba(255, 255, 255, 0.38);
   background: rgba(226, 234, 239, 0.54);
@@ -1929,48 +1982,48 @@ body.use-liquid-glass .lc-sidebar {
    this one has to live after the rule directly above so the cascade (equal
    specificity, later source order wins) picks the reoriented border. */
 @container (max-width: 760px) {
-  body.use-liquid-glass .lc-panel {
+  body[data-theme="liquid-glass"] .lc-panel {
     border-left: none;
     border-top: 1px solid rgba(255, 255, 255, 0.42);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
   }
 }
 
-body.use-liquid-glass :is(.lc-panel-intro, .lc-sidebar-head) {
+body[data-theme="liquid-glass"] :is(.lc-panel-intro, .lc-sidebar-head) {
   border-bottom-color: rgba(16, 17, 20, 0.12);
 }
 
-body.use-liquid-glass .lc-group {
+body[data-theme="liquid-glass"] .lc-group {
   border-bottom: 1px solid rgba(16, 17, 20, 0.11);
   border-radius: var(--surface-radius);
   background: transparent;
   box-shadow: none;
 }
 
-body.use-liquid-glass :is(.lc-note, .lc-row .lc-val) {
+body[data-theme="liquid-glass"] :is(.lc-note, .lc-row .lc-val) {
   color: rgba(16, 17, 20, 0.62);
   opacity: 1;
 }
 
-body.use-liquid-glass .lc-ask-bar {
+body[data-theme="liquid-glass"] .lc-ask-bar {
   border: 0;
   background: transparent;
   box-shadow: none;
 }
 
-body.use-liquid-glass :is(.lc-inspector-tabs, .lc-toolbar-modes, .lc-aspect) {
+body[data-theme="liquid-glass"] :is(.lc-inspector-tabs, .lc-toolbar-modes, .lc-aspect) {
   border-color: rgba(255, 255, 255, 0.52);
   border-radius: var(--r-md);
   background: rgba(120, 132, 142, 0.1);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
 }
 
-body.use-liquid-glass .liquid-cover-window .lc-aspect button,
-body.use-liquid-glass .liquid-cover-window .lc-layer-item,
-body.use-liquid-glass .liquid-cover-window .lc-inspector-tab,
-body.use-liquid-glass .liquid-cover-window :is(.lc-finetune, .lc-object-advanced, .lc-media-ai, .lc-media-extras, .lc-look-assistant) > summary,
-body.use-liquid-glass .liquid-cover-window input[type="checkbox"],
-body.use-liquid-glass .liquid-cover-window .lc-color {
+body[data-theme="liquid-glass"] .liquid-cover-window .lc-aspect button,
+body[data-theme="liquid-glass"] .liquid-cover-window .lc-layer-item,
+body[data-theme="liquid-glass"] .liquid-cover-window .lc-inspector-tab,
+body[data-theme="liquid-glass"] .liquid-cover-window :is(.lc-finetune, .lc-object-advanced, .lc-media-ai, .lc-media-extras, .lc-look-assistant) > summary,
+body[data-theme="liquid-glass"] .liquid-cover-window input[type="checkbox"],
+body[data-theme="liquid-glass"] .liquid-cover-window .lc-color {
   border-color: rgba(16, 17, 20, 0.1);
   border-radius: var(--r-sm);
   background: rgba(255, 255, 255, 0.34);
@@ -1980,18 +2033,18 @@ body.use-liquid-glass .liquid-cover-window .lc-color {
     0 4px 12px rgba(18, 28, 38, 0.05);
 }
 
-body.use-liquid-glass .liquid-cover-window .lc-aspect button,
-body.use-liquid-glass .liquid-cover-window .lc-inspector-tab {
+body[data-theme="liquid-glass"] .liquid-cover-window .lc-aspect button,
+body[data-theme="liquid-glass"] .liquid-cover-window .lc-inspector-tab {
   border-radius: var(--r-sm);
   background: transparent;
   box-shadow: none;
 }
 
-body.use-liquid-glass .liquid-cover-window .lc-layer-item {
+body[data-theme="liquid-glass"] .liquid-cover-window .lc-layer-item {
   border-radius: var(--r-sm);
 }
 
-body.use-liquid-glass .liquid-cover-window input[type="checkbox"].lc-check {
+body[data-theme="liquid-glass"] .liquid-cover-window input[type="checkbox"].lc-check {
   position: relative;
   display: inline-block;
   width: 34px;
@@ -2009,7 +2062,7 @@ body.use-liquid-glass .liquid-cover-window input[type="checkbox"].lc-check {
     0 5px 12px rgba(18, 28, 38, 0.08);
 }
 
-body.use-liquid-glass .liquid-cover-window input[type="checkbox"].lc-check::before {
+body[data-theme="liquid-glass"] .liquid-cover-window input[type="checkbox"].lc-check::before {
   content: "";
   position: absolute;
   top: 1px;
@@ -2031,7 +2084,7 @@ body.use-liquid-glass .liquid-cover-window input[type="checkbox"].lc-check::befo
     box-shadow var(--control-motion-medium-in) var(--control-motion-ease);
 }
 
-body.use-liquid-glass .liquid-cover-window input[type="checkbox"].lc-check:checked {
+body[data-theme="liquid-glass"] .liquid-cover-window input[type="checkbox"].lc-check:checked {
   border-color: rgba(255, 255, 255, 0.68);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.08)),
@@ -2041,13 +2094,13 @@ body.use-liquid-glass .liquid-cover-window input[type="checkbox"].lc-check:check
     0 7px 16px rgba(0, 113, 227, 0.18);
 }
 
-body.use-liquid-glass .liquid-cover-window input[type="checkbox"].lc-check:checked::before {
+body[data-theme="liquid-glass"] .liquid-cover-window input[type="checkbox"].lc-check:checked::before {
   background:
     linear-gradient(180deg, #ffffff, rgba(245, 250, 253, 0.94));
   transform: translateX(14px);
 }
 
-body.use-liquid-glass .liquid-cover-window input[type="checkbox"].lc-check:focus-visible {
+body[data-theme="liquid-glass"] .liquid-cover-window input[type="checkbox"].lc-check:focus-visible {
   outline: 0;
   box-shadow:
     0 0 0 3px rgba(0, 122, 255, 0.22),
@@ -2056,7 +2109,7 @@ body.use-liquid-glass .liquid-cover-window input[type="checkbox"].lc-check:focus
     0 5px 12px rgba(18, 28, 38, 0.08);
 }
 
-body.use-liquid-glass .lc-bg-item {
+body[data-theme="liquid-glass"] .lc-bg-item {
   border: 1px solid rgba(255, 255, 255, 0.62);
   border-radius: var(--r-md);
   box-shadow:
@@ -2064,25 +2117,25 @@ body.use-liquid-glass .lc-bg-item {
     0 6px 16px rgba(18, 28, 38, 0.08);
 }
 
-body.use-liquid-glass .lc-bg-item.is-active {
+body[data-theme="liquid-glass"] .lc-bg-item.is-active {
   border-color: rgba(16, 17, 20, 0.68);
   box-shadow:
     0 0 0 2px rgba(255, 255, 255, 0.78),
     0 10px 24px rgba(18, 28, 38, 0.12);
 }
 
-body.use-liquid-glass .liquid-cover-window input[type="range"] {
+body[data-theme="liquid-glass"] .liquid-cover-window input[type="range"] {
   --lc-accent: #0a84ff;
   --lc-track: rgba(120, 122, 128, 0.26);
 }
 
-body.use-liquid-glass .liquid-cover-window input[type="range"]:focus-visible::-webkit-slider-thumb {
+body[data-theme="liquid-glass"] .liquid-cover-window input[type="range"]:focus-visible::-webkit-slider-thumb {
   box-shadow:
     0 0 0 3px rgba(10, 132, 255, 0.35),
     0 1px 3px rgba(16, 24, 32, 0.28);
 }
 
-body.use-liquid-glass .liquid-cover-window input[type="range"]::-webkit-slider-runnable-track {
+body[data-theme="liquid-glass"] .liquid-cover-window input[type="range"]::-webkit-slider-runnable-track {
   height: 4px;
   border: 0;
   border-radius: var(--r-pill);
@@ -2090,7 +2143,7 @@ body.use-liquid-glass .liquid-cover-window input[type="range"]::-webkit-slider-r
   box-shadow: none;
 }
 
-body.use-liquid-glass .liquid-cover-window input[type="range"]::-webkit-slider-thumb {
+body[data-theme="liquid-glass"] .liquid-cover-window input[type="range"]::-webkit-slider-thumb {
   width: 24px;
   height: 18px;
   margin-top: -7px;
@@ -2102,7 +2155,7 @@ body.use-liquid-glass .liquid-cover-window input[type="range"]::-webkit-slider-t
     0 1px 3px rgba(16, 24, 32, 0.28);
 }
 
-body.use-liquid-glass .liquid-cover-window input[type="range"]::-moz-range-track {
+body[data-theme="liquid-glass"] .liquid-cover-window input[type="range"]::-moz-range-track {
   height: 4px;
   border: 0;
   border-radius: var(--r-pill);
@@ -2110,7 +2163,7 @@ body.use-liquid-glass .liquid-cover-window input[type="range"]::-moz-range-track
   box-shadow: none;
 }
 
-body.use-liquid-glass .liquid-cover-window input[type="range"]::-moz-range-thumb {
+body[data-theme="liquid-glass"] .liquid-cover-window input[type="range"]::-moz-range-thumb {
   width: 24px;
   height: 18px;
   border: 0;
@@ -2121,15 +2174,15 @@ body.use-liquid-glass .liquid-cover-window input[type="range"]::-moz-range-thumb
     0 1px 3px rgba(16, 24, 32, 0.28);
 }
 
-body.use-liquid-glass .liquid-cover-window input[type="range"]:disabled {
+body[data-theme="liquid-glass"] .liquid-cover-window input[type="range"]:disabled {
   --lc-accent: rgba(120, 122, 128, 0.4);
 }
 
-body.use-liquid-glass .liquid-cover-window input[type="range"]:disabled::-webkit-slider-thumb { background: #e6e6e8; }
-body.use-liquid-glass .liquid-cover-window input[type="range"]:disabled::-moz-range-thumb { background: #e6e6e8; }
+body[data-theme="liquid-glass"] .liquid-cover-window input[type="range"]:disabled::-webkit-slider-thumb { background: #e6e6e8; }
+body[data-theme="liquid-glass"] .liquid-cover-window input[type="range"]:disabled::-moz-range-thumb { background: #e6e6e8; }
 
-body.use-liquid-glass .liquid-cover-window .lc-aspect button.is-active,
-body.use-liquid-glass .liquid-cover-window .lc-inspector-tab.is-active {
+body[data-theme="liquid-glass"] .liquid-cover-window .lc-aspect button.is-active,
+body[data-theme="liquid-glass"] .liquid-cover-window .lc-inspector-tab.is-active {
   border-color: rgba(0, 113, 227, 0.18);
   background: rgba(255, 255, 255, 0.72);
   color: #0068d1;
@@ -2138,7 +2191,7 @@ body.use-liquid-glass .liquid-cover-window .lc-inspector-tab.is-active {
     0 3px 9px rgba(24, 54, 78, 0.08);
 }
 
-body.use-liquid-glass .liquid-cover-window .lc-layer-item.is-active {
+body[data-theme="liquid-glass"] .liquid-cover-window .lc-layer-item.is-active {
   border-color: rgba(255, 255, 255, 0.68);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.04)),
@@ -2150,9 +2203,9 @@ body.use-liquid-glass .liquid-cover-window .lc-layer-item.is-active {
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
 }
 
-body.use-liquid-glass .liquid-cover-window .lc-aspect button:hover:not(.is-active),
-body.use-liquid-glass .liquid-cover-window .lc-inspector-tab:hover:not(.is-active),
-body.use-liquid-glass .liquid-cover-window .lc-layer-item:hover:not(.is-active) {
+body[data-theme="liquid-glass"] .liquid-cover-window .lc-aspect button:hover:not(.is-active),
+body[data-theme="liquid-glass"] .liquid-cover-window .lc-inspector-tab:hover:not(.is-active),
+body[data-theme="liquid-glass"] .liquid-cover-window .lc-layer-item:hover:not(.is-active) {
   background: rgba(255, 255, 255, 0.52);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
 }
@@ -2162,11 +2215,65 @@ body.use-liquid-glass .liquid-cover-window .lc-layer-item:hover:not(.is-active) 
   .liquid-cover-window .lc-aspect button,
   .liquid-cover-window .lc-layer-item,
   .liquid-cover-window .lc-bg-item,
-  body.use-liquid-glass .liquid-cover-window input[type="checkbox"].lc-check::before {
+  body[data-theme="liquid-glass"] .liquid-cover-window input[type="checkbox"].lc-check::before {
     transition: none;
   }
 
   .liquid-cover-window .lc-bg-item:hover:not(.is-active) {
     transform: none;
   }
+}
+
+/* ---- Platinum (Mac OS 8/9) -------------------------------------------------
+   Batch 3 lazy surfaces. Scoped with body[data-lineage~="platinum"], so
+   Drawing Board (Platinum's child) follows too. One selector list carries all
+   three items; the hook defaults above keep every other appearance identical.
+   - P07: native slider (capture 35) — a 7-row etched groove (#222 outline,
+     #aaa fill, white etch below) and a 15x16 downward lavender thumb.
+   - P08: native bevel button (P04) — #ccc face in a 1px black border, #eee
+     top/left over 2px #888 bottom/right raised; pressed is the mirror. The
+     selected segment is the pressed one, not a solid black fill.
+   - C4: the first mode tab gets `auto` with a 78px floor so "Background"
+     stops clipping. */
+body[data-lineage~="platinum"] :is(
+    .liquid-cover-window input[type="range"],
+    .lc-inspector-tabs,
+    .lc-toolbar-modes,
+    .lc-aspect
+  ) {
+  /* P07 */
+  --lc-range-height: 5px;
+  --lc-range-border: 1px solid #222222;
+  --lc-range-radius: 3px;
+  --lc-range-bg: #aaaaaa;
+  --lc-range-shadow: -1px -1px 0 #aaaaaa, 0 1px 0 #ffffff;
+  --lc-range-thumb-width: 15px;
+  --lc-range-thumb-height: 16px;
+  --lc-range-thumb-offset: -6px;
+  --lc-range-thumb-border: 0;
+  --lc-range-thumb-radius: 0;
+  --lc-range-thumb-bg: url("./assets/themes/platinum/chrome/slider-thumb-15x16.svg") center / 15px 16px no-repeat;
+  --lc-range-thumb-shadow: none;
+
+  /* P08: the well goes away and each segment becomes its own bevel button,
+     reusing the values the Platinum token block already gives --view-btn-*. */
+  --lc-segment-well-bg: transparent;
+  --lc-segment-well-padding: 0;
+  --lc-segment-well-border: 0;
+  --lc-segment-gap: 2px;
+  --lc-segment-divider: 1px solid #000000;
+  --lc-segment-last-divider: 1px solid #000000;
+  --lc-segment-btn-border: 1px solid #000000;
+  --lc-segment-btn-radius: 0;
+  --lc-segment-btn-bg: #cccccc;
+  --lc-segment-btn-fg: #000000;
+  --lc-segment-btn-shadow: inset 1px 1px 0 #eeeeee, inset -1px -1px 0 #888888, inset -2px -2px 0 #888888;
+  --lc-segment-hover-bg: #cccccc;
+  --lc-segment-active-bg: #cccccc;
+  --lc-segment-active-fg: #000000;
+  --lc-segment-active-shadow: inset 1px 1px 0 #888888, inset 2px 2px 0 #888888, inset -1px -1px 0 #eeeeee;
+
+  /* C4: no fixed 78px cell; the label sizes itself with a floor. */
+  --lc-inspector-tab-width: auto;
+  --lc-inspector-tab-min-width: 78px;
 }

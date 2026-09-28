@@ -50,22 +50,6 @@
   gap: 8px;
 }
 
-/* The strip's own min-height is content-box, so the frame it draws when a
-   message arrives added its border to the row: the Reader bar measured 28px
-   idle and 28.84px with a receipt, which is exactly the shove the strip exists
-   to avoid. Inside a bar that already has its own height, the box is measured
-   with its border, and one pixel comes off the padding to pay for it: both
-   states are 19px and all three bars keep the height they had before they
-   hosted anything (Reader 28, DocMap and Scrapbook 33). */
-.reader-status-actions > .window-status-strip,
-.docmap-status-actions > .window-status-strip,
-.scrapbook-details-bar > .window-status-strip {
-  box-sizing: border-box;
-  flex: 1 1 auto;
-  padding-block: 1px;
-  min-width: 0;
-}
-
 .reader-pane {
   display: flex;
   flex-direction: column;
@@ -325,6 +309,19 @@ body.is-resizing-tdi {
   box-shadow: var(--tdi-rail-shadow);
 }
 
+/* The Finder sidebar is the tdi-rail source list; an era that lays out a
+   "side" area turns it on. Everywhere else it stays out of the page. It
+   follows .tdi-rail (moved from 10-windows.css) so the hide keeps winning. */
+.is-toolbar-window > .finder-sidebar {
+  display: var(--finder-sidebar-display, none);
+  grid-area: side;
+  gap: 1px;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px;
+  border-right: var(--finder-sidebar-edge, 0);
+}
+
 /* Source-list category chrome is part of the rail's historical painter.
    Reader keeps one label in the shared DOM; System 6 hides it, while Snow
    Leopard reveals the familiar compact source-list heading. */
@@ -343,6 +340,13 @@ body.is-resizing-tdi {
   letter-spacing: var(--tdi-source-label-letter-spacing);
   line-height: 1;
   text-transform: var(--tdi-source-label-text-transform);
+}
+
+/* The Finder sidebar's section headings (moved from 10-windows.css) refine
+   the source-list heading above: a visible sidebar always shows them. */
+.finder-sidebar > .tdi-source-rail-label {
+  display: block;
+  margin-top: 8px;
 }
 
 /* Compact TDI document stack. The host sits in each app's existing chrome, so
@@ -616,6 +620,17 @@ body.is-resizing-tdi {
   box-shadow: var(--tdi-tab-shadow);
   backdrop-filter: var(--tdi-tab-backdrop-filter);
   -webkit-backdrop-filter: var(--tdi-tab-backdrop-filter);
+}
+
+/* (Moved from 10-windows.css: it refines the .tdi-tab rule above.)
+   Source-list rows are compact (16px glyphs), unlike document tabs. */
+.finder-sidebar > .tdi-tab.tdi-tab {
+  border: 0;
+  box-shadow: none;
+  height: auto;
+  min-height: var(--finder-sidebar-row-height, 24px);
+  padding: 2px 8px;
+  font-size: var(--finder-sidebar-font-size, 13px);
 }
 
 .tdi-tab:has(.tdi-tab-icon) {
@@ -1237,9 +1252,8 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   opacity: 0.75;
 }
 
+/* Also .message-content, whose face and size it takes. */
 .sideask-pad-reply {
-  font-family: var(--text-font);
-  font-size: 13px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -1346,7 +1360,7 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
 }
 
 .rebuild-flow-window {
-  width: 460px;
+  width: 540px;
   height: auto;
 }
 
@@ -1410,7 +1424,6 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
 }
 
 .clio-stage-pane .clio-stage-view-switcher .view-switch-option {
-  min-height: var(--clio-stage-view-button-min-height);
   border-color: var(--clio-stage-view-button-border-color);
   background: var(--clio-stage-view-button-bg);
   color: var(--clio-stage-view-button-fg);
@@ -1428,7 +1441,6 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   border-color: var(--clio-stage-view-disabled-border-color);
   background: var(--clio-stage-view-disabled-bg);
   color: var(--clio-stage-view-disabled-fg);
-  opacity: var(--clio-stage-view-disabled-opacity);
 }
 
 .clio-stage-viewport {
@@ -1887,32 +1899,160 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   max-height: calc(100vh - 52px);
 }
 
+/* 「还原写作对象」 reads top to bottom in the order its decisions are made:
+   the article, the sections, the checks. The pane scrolls when a long list
+   meets a short screen, so the button row is never cut off. */
 .rebuild-flow-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  padding: 10px 12px 12px;
+  overflow: auto;
+}
+
+.rebuild-flow-pane > * {
+  flex: none;
+}
+
+/* Parts that come and go (the DocMap option, the paste box, the progress
+   row) are toggled with the hidden attribute; their own display must not
+   bring them back. */
+.rebuild-flow-pane [hidden] {
+  display: none;
+}
+
+.rebuild-form {
   display: grid;
-  gap: 8px;
-  padding: 8px;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px 10px;
+  align-items: center;
+  font-size: 12px;
 }
 
-.rebuild-source-row {
-  justify-content: flex-start;
+.rebuild-label {
+  text-align: right;
+}
+
+.rebuild-choices {
+  display: flex;
   flex-wrap: wrap;
+  gap: 2px 14px;
 }
 
-.rebuild-flow-pane textarea {
+.rebuild-choices label,
+.rebuild-check-option {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.rebuild-choices label:has(input:disabled) {
+  opacity: var(--choice-disabled-opacity);
+}
+
+.rebuild-flow-pane .rebuild-paste {
   width: 100%;
-  min-height: 180px;
+  min-height: 160px;
   resize: vertical;
   font-family: var(--text-font);
   font-size: 13px;
   line-height: 1.45;
 }
 
-.rebuild-progress {
+.rebuild-subhead {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rebuild-subhead p,
+.rebuild-subhead-text {
+  margin: 0;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.rebuild-sections {
+  max-height: 264px;
+  overflow: auto;
+  border: var(--system-border);
+}
+
+/* .finder-list is a flex column: in a height-capped list its rows would
+   shrink to their minimum and two-line rows (phones) would overlap. */
+.rebuild-sections > * {
+  flex: none;
+}
+
+.rebuild-sections .finder-list-header,
+.rebuild-sections .finder-list-row {
+  grid-template-columns: 28px minmax(90px, 1fr) minmax(120px, 1.6fr) 48px;
+  cursor: default;
+}
+
+.rebuild-sections .finder-list-row > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rebuild-sections .finder-list-header > span:last-child,
+.rebuild-sections .finder-list-row > :last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.rebuild-sections .finder-list-row.is-bad > :nth-child(3) {
+  text-decoration: underline wavy;
+  text-underline-offset: 3px;
+}
+
+.rebuild-sections .finder-list-row input {
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+}
+
+.rebuild-empty {
+  padding: 14px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.rebuild-empty p,
+.rebuild-carry,
+.rebuild-run p {
+  margin: 0;
+  font-size: 12px;
+}
+
+.rebuild-run {
   display: grid;
-  gap: 7px;
-  padding: 8px;
-  border: var(--system-control-line) solid var(--ink);
-  background: var(--paper);
+  gap: 6px;
+}
+
+.rebuild-check {
+  padding: 6px 8px;
+  border: var(--system-border);
+  background: var(--pane-bg);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.rebuild-check p {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  margin: 0;
+}
+
+.rebuild-check .rebuild-summary {
+  display: block;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px dotted var(--shade);
+  font-weight: bold;
 }
 
 /* .progress-meter is the shared part: one recipe, era dressing entirely
@@ -1952,59 +2092,6 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
 @keyframes rebuild-progress-working {
   from { background-position: 0 0; }
   to { background-position: 40px 0; }
-}
-
-.rebuild-progress-steps {
-  display: grid;
-  gap: 4px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.rebuild-progress-steps li {
-  display: grid;
-  grid-template-columns: 18px minmax(0, 1fr) auto;
-  gap: 7px;
-  align-items: center;
-  min-height: 22px;
-  font-size: 12px;
-}
-
-.rebuild-progress-steps li::before {
-  content: "";
-  width: 12px;
-  height: 12px;
-  border: var(--system-control-line) solid var(--ink);
-  background: var(--paper);
-}
-
-.rebuild-progress-steps li.is-running::before {
-  background:
-    repeating-linear-gradient(
-      45deg,
-      var(--ink) 0,
-      var(--ink) 2px,
-      var(--paper) 2px,
-      var(--paper) 4px
-    );
-}
-
-.rebuild-progress-steps li.is-complete::before {
-  background: var(--ink);
-}
-
-.rebuild-progress-steps li.is-skipped::before {
-  background:
-    linear-gradient(45deg, transparent 42%, var(--ink) 42%, var(--ink) 58%, transparent 58%),
-    var(--paper);
-}
-
-.rebuild-progress-steps b,
-.rebuild-progress-steps span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .visually-hidden {
@@ -2072,16 +2159,6 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   background: var(--dictionary-result-bg);
   box-shadow: var(--dictionary-result-shadow);
   padding: 8px;
-}
-
-.dictionary-window .dictionary-result > .empty-folder-note {
-  max-width: var(--dictionary-empty-note-max-width);
-  margin: var(--dictionary-empty-note-margin);
-  border: var(--dictionary-empty-note-border);
-  border-radius: var(--dictionary-empty-note-radius);
-  background: var(--dictionary-empty-note-bg);
-  color: var(--dictionary-empty-note-fg);
-  box-shadow: var(--dictionary-empty-note-shadow);
 }
 
 .dictionary-card h3 {

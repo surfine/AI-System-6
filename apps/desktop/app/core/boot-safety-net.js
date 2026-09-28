@@ -101,10 +101,53 @@
   });
 
   // Last resort for a hang with no throw at all (a wedged promise chain, an
-  // infinite loop that never reaches the offending line): after a generous
-  // window, "still booting" stops being a plausible in-progress state.
-  window.setTimeout(function () {
-    if (appReady() === "ready" || appReady() === "error" || handled) return;
-    handle(new Error("AI System 6 did not finish starting within the expected time."));
-  }, 20000);
+  // infinite loop that never reaches the offending line). A hang is boot
+  // that has stopped moving, not boot that is slow: on a busy machine a
+  // healthy start can take longer than twenty seconds, and declaring it
+  // failed put the Sad Mac up over a desk that then finished starting.
+  // Boot reports each step it completes (AISystem6BootProgress); the net
+  // fires only after STALL_MS with no step at all, or once boot has run for
+  // CEILING_MS however busy it looks, so a step that loops for ever still
+  // ends on the failure screen.
+  var STALL_MS = 20000;
+  var CEILING_MS = 120000;
+  var now = function () {
+    return window.performance && typeof window.performance.now === "function" ? window.performance.now() : Date.now();
+  };
+  var startedAt = now();
+  var lastProgressAt = startedAt;
+  var lastStep = "";
+  var progressLog = [];
+
+  function settled() {
+    return handled || appReady() === "ready" || appReady() === "error";
+  }
+
+  window.AISystem6BootProgress = function (step) {
+    if (settled()) return;
+    lastProgressAt = now();
+    lastStep = String(step || "");
+    if (progressLog.length < 400) progressLog.push({ step: lastStep, at: Math.round(lastProgressAt - startedAt) });
+  };
+  window.AISystem6BootProgressLog = function () {
+    return progressLog.slice();
+  };
+
+  function check() {
+    if (settled()) return;
+    var at = now();
+    var quiet = at - lastProgressAt;
+    var elapsed = at - startedAt;
+    var where = lastStep ? " (last step: " + lastStep + ")" : " (no boot step reported)";
+    if (quiet >= STALL_MS) {
+      handle(new Error("AI System 6 did not finish starting: no progress for " + Math.round(quiet / 1000) + " seconds" + where + "."));
+      return;
+    }
+    if (elapsed >= CEILING_MS) {
+      handle(new Error("AI System 6 did not finish starting within " + Math.round(elapsed / 1000) + " seconds" + where + "."));
+      return;
+    }
+    window.setTimeout(check, Math.max(250, Math.min(STALL_MS - quiet, CEILING_MS - elapsed)));
+  }
+  window.setTimeout(check, STALL_MS);
 })();

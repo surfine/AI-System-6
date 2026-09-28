@@ -148,7 +148,8 @@ test.assertMatches(projectDisk, /currentProjectIcon\?\.classList\.remove\("is-hi
 test.assertIncludes(projectDisk, "scheduleWorkingSessionSave();", "shading Writing Flow updates the resumable session");
 test.assertIncludes(exportImport, "desktopProjectCdEl.hidden = !hasVisibleItems;", "Project CD media state remains independent from workspace visibility");
 test.assertIncludes(fileDisk, "mountedTextDiskEl.hidden = !mounted;", "File Floppy media state remains independent from workspace visibility");
-test.assertIncludes(read("styles/10-windows.css"), ".desktop-icon[hidden]", "unmounted desktop media stays hidden even when its workspace is visible");
+test.assertIncludes(appsCss, ".desktop-icon[hidden]", "unmounted desktop media stays hidden even when its workspace is visible");
+test.assert(appsCss.indexOf(".desktop-icon {") >= 0 && appsCss.indexOf(".desktop-icon {") < appsCss.indexOf(".desktop-icon[hidden]"), "the hidden-icon rule follows the icon grid it hides, in the same sheet");
 test.assertIncludes(domHandles, 'document.querySelector("#desktop-project-cd")', "the Project CD desktop volume uses a centralized DOM handle");
 test.assertIncludes(workingSession, 'toolsShaded: writingToolsPanelEl?.classList.contains("is-shaded") || false', "Working Session remembers the Writing Flow shade state");
 test.assertIncludes(workingSession, 'toolsViewMode: writingToolsViewMode', "Working Session remembers the Writing Flow icon density");
@@ -213,7 +214,9 @@ test.assertIncludes(zh, 'finder_location: "Finder 位置"', "Chinese exposes the
   }
   test.assertIncludes(registry, "element.dataset.finderLayout = theme.finderLayout", "the registry projects the era's Finder layout onto the page");
   const windowsCss = read("styles/10-windows.css");
-  test.assertIncludes(windowsCss, 'display: var(--finder-sidebar-display, none)', "the sidebar is out of the page unless a layout turns it on");
+  const railCss = read("styles/20-reader-docmap.css");
+  test.assertIncludes(railCss, 'display: var(--finder-sidebar-display, none)', "the sidebar is out of the page unless a layout turns it on");
+  test.assert(railCss.indexOf(".tdi-rail {") >= 0 && railCss.indexOf(".tdi-rail {") < railCss.indexOf(".is-toolbar-window > .finder-sidebar {"), "the sidebar's hide follows the tdi-rail rule it overrides, in the same sheet");
   test.assert(windowsCss.indexOf(".window.is-toolbar-window {") < windowsCss.indexOf(".window.is-hidden"), "the toolbar-window display rule sits above the hidden-window rules, which must win");
   test.assertMatches(windowsCss, /@media \(min-width: 861px\) and \(not \(\(hover: none\) and \(pointer: coarse\) and \(max-height: 660px\)\)\) \{\s*body\[data-finder-layout\] \{\s*--finder-window-display: grid;/, "the arrangement is a desktop window's: a phone keeps the stacked Finder page with no sidebar and its title");
   test.assertIncludes(windowManager, 'rail.className = "tdi-rail tdi-source-rail finder-sidebar"', "the sidebar is the tdi-rail source list, not a new primitive");

@@ -23,17 +23,33 @@ function findLand(state, w, h) {
   throw new Error("no land");
 }
 
-test.assert(sim.SAVE_VERSION === 4 && sim.ENGINE_RULESET_VERSION === 4, "the save format is v4");
+test.assert(sim.SAVE_VERSION === 5 && sim.ENGINE_RULESET_VERSION === 5, "the save format is v5");
 test.assert(Object.keys(sim.DISASTER_KINDS).length === 15, "the disaster set is expanded to 15");
 test.assert(sim.TECHS && sim.TECHS.airport === 1900, "the tech gate table is exported");
 test.assert(sim.ARCO_KINDS.length === 4, "four arco kinds are exported");
 
-// Every disaster triggers and its notice fires.
+// Every disaster triggers once its cause is on the map (spec 3.12: a
+// plant for a meltdown or microwave spill, high ground, a coast, an airport,
+// a high-crime block); bonsai-playable covers the refusals.
 {
   const all = Object.keys(sim.DISASTER_KINDS);
+  const cause = (c, kind, land) => {
+    const at = land.y * c.size + land.x;
+    if (kind === "meltdown" || kind === "microwave-spill") {
+      c.funds = 100000;
+      // Level the pad and its rim so the plant can stand.
+      for (let y = Math.max(0, land.y - 1); y <= land.y + 4; y += 1) for (let x = Math.max(0, land.x - 1); x <= land.x + 4; x += 1) c.alt[y * c.size + x] = c.alt[at];
+      sim.invalidateDerived(c);
+      cmd(c, "place-facility", { kind: kind === "meltdown" ? "nuclear" : "microwave", x: land.x, y: land.y });
+    } else if (kind === "volcano") c.alt[at] = 9;
+    else if (kind === "hurricane") { const wet = c.water.findIndex((value) => value); c.salt[wet] = 1; }
+    else if (kind === "air-crash") c.zone[at] = sim.ZONE.AIRPORT;
+    else if (kind === "riot") { c.zone[at] = sim.ZONE.R; c.crime[at] = 90; }
+  };
   for (const kind of all) {
-    const c = sim.createCity({ seed: 11, size: 64, terrainPreset: "balanced", yearFounded: 1900 });
+    const c = sim.createCity({ seed: 11, size: 64, terrainPreset: "balanced", yearFounded: kind === "meltdown" || kind === "microwave-spill" ? 2050 : 1900 });
     const land = findLand(c, 4, 4);
+    cause(c, kind, land);
     const r = cmd(c, "trigger-disaster", { kind, x: land.x, y: land.y });
     test.assert(r.accepted, `disaster ${kind} triggers`);
     test.assert(c.disaster && c.disaster.kind === kind, `disaster ${kind} is active`);

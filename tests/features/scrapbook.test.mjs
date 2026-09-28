@@ -2,6 +2,7 @@
 // project-scoped scrap directly, without routing through Reader, ClioTalk, or
 // another app first.
 
+import vm from "node:vm";
 import { createFeatureTest, read, readAppSurface } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("scrapbook");
@@ -39,6 +40,8 @@ test.assertIncludes(scrapbook, 't("ask_scope_scraps", selected.length) : t("ask_
 // list, the System 6 page rail and the in-place row refresh alike.
 const apps = read("styles/50-apps.css");
 test.assertIncludes(html, 'id="scrap-filter" class="scrap-filter" type="text" inputmode="search"', "the Scrapbook bar carries a filter field");
+test.assertIncludes(html, '<div class="select-wrap select-wrap-inline scrap-stack-wrap"><select id="scrap-stack" class="mini-select"', "the stack chooser is visible again, in the System 6 select harness (owner decision D4)");
+test.assertNotIncludes(html, 'data-i18n-aria-label="scrap_stack" hidden', "the stack chooser is no longer hidden");
 test.assertIncludes(scrapbook, "(selectedScrapStack === \"all\" || getScrapStack(scrap) === selectedScrapStack) && scrapMatchesFilter(scrap)", "stack and filter narrow the scraps in one place");
 test.assertIncludes(scrapbook, "const visibleScraps = scrapbookPageScraps();\n  syncScrapSelection(visibleScraps);", "the list draws from the same answer as the page rail");
 test.assertIncludes(scrapbook, 't("scrap_filter_empty", scrapFilterQuery)', "an empty filter result says what was filtered for");
@@ -90,5 +93,41 @@ test.assertIncludes(
 test.assertIncludes(enCopy, "scrap_image_unindexed", "English copy explains the un-indexed clip");
 test.assertIncludes(zhCopy, "scrap_image_unindexed", "Chinese copy explains the un-indexed clip");
 test.assertIncludes(enCopy, "nothing is saved until you keep it", "English copy is explicit that the reading is unsaved");
+
+// A clip is the passage (owner decision D1, 2026-09-25). The helpers run here
+// for real, against the old template and against bodies the writer changed.
+{
+  const start = scrapbook.indexOf("// --- A clip is the passage");
+  const end = scrapbook.indexOf("/**\n * A scrap that is already on disk");
+  const ctx = vm.createContext({ scraps: [], dirty: [], markDeskDirty: (kind, id) => ctx.dirty.push(id) });
+  vm.runInContext(scrapbook.slice(start, end), ctx);
+  const old = {
+    id: "a", source: { type: "reader-clip", title: "未来通车之后", site: "example.com", url: "https://example.com/a", date: "2026-09-01" },
+    selectedText: "",
+    body: "Selected passage:\n寄回的前一晚，我把硬盘抹掉。\n\n---\nSource: 未来通车之后\nSite: example.com\nURL: https://example.com/a\nDate: 2026-09-01\nTime: 9/1/2026, 10:00 AM\n\nContext before:\n那一年我手上也有一台。\n\nContext after:\n[end of readable text]",
+  };
+  const edited = { ...old, id: "b", body: old.body + "\n\n我的判断：这是全篇的转折。" };
+  const handwritten = { id: "c", source: { type: "reader-note", title: "档案 01" }, selectedText: "「迁移是常态」", body: "来源与日期\n档案 01\n\n判断\n……" };
+  test.assert(ctx.migrateMachineClipBodies([old, edited, handwritten]) === 1, "only the untouched template is migrated");
+  test.assert(old.body === "寄回的前一晚，我把硬盘抹掉。", "a migrated clip's body is the passage alone");
+  test.assert(old.selectedText === old.body && old.context.before === "那一年我手上也有一台。" && old.context.after === "", "the passage and its context move onto the record");
+  test.assert(edited.body.includes("我的判断") && edited.body.startsWith("Selected passage:"), "a body the writer added to is left as it is");
+  test.assert(handwritten.body.startsWith("来源与日期"), "a hand-written dossier is never touched");
+  test.assert(ctx.dirty.join() === "a", "only the migrated scrap is written back");
+  const outward = ctx.scrapDocumentText(old);
+  test.assert(outward.startsWith(old.body) && outward.includes("Source: 未来通车之后") && outward.includes("URL: https://example.com/a"), "the passage leaves the Scrapbook with its source beside it");
+  test.assert(ctx.scrapDocumentText(handwritten) === handwritten.body, "a non-clip scrap leaves as written");
+  test.assert(ctx.isClipScrap(old) && !ctx.isClipScrap(handwritten), "a dossier that quotes a passage is still a note, not a clip");
+}
+for (const [file, label] of [
+  ["app/features/reader.js", "Reader"], ["app/features/time-machine.js", "Time Machine"], ["app/features/selection-services.js", "selection services"],
+]) {
+  test.assertNotMatches(read(file), /"Selected passage:",\n\s+(text|context\.text),/, `${label} clips store the passage, not the old template`);
+}
+for (const file of ["app/core/context-retrieval.js", "app/core/derived-index-queue.js", "app/core/chat-messages.js", "app/features/export-import.js", "app/features/guest-tools.js"]) {
+  test.assertIncludes(read(file), "scrapDocumentText(", `${file} carries a scrap out with its source`);
+}
+test.assertIncludes(read("app/core/persistence-status.js"), "migrateMachineClipBodies(scraps)", "stored clips are migrated when the desk loads");
+test.assertIncludes(read("app/features/export-import.js"), "migrateMachineClipBodies(imported.scraps)", "imported disks are migrated before they are committed");
 
 test.finish();

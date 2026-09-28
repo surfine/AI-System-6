@@ -14,6 +14,7 @@ const multiFinderAppLabels = {
   finder: "Finder",
   writingStudio: "Writing Studio",
   quickDraft: "Quick Draft",
+  lightroom: "Lightroom",
   teachText: "TeachText",
   clioTalk: "ClioTalk",
   searcher: "Searcher",
@@ -186,7 +187,8 @@ function usesApplicationOwnedMenuBar() {
 // The list of open applications, with a check mark on the current one. In the
 // application-owned eras this belongs at the bottom of the Apple menu, which is
 // where System 6 put it; in the Mac OS X eras it is what the right-end control
-// is for, standing in for the Dock this desktop does not have.
+// is for: the way to switch applications on a keyboard, on a phone, and
+// whenever the era's Dock is switched off or has not shipped.
 function runningApplicationRows() {
   const rows = [];
   const apps = getRunningApps();
@@ -217,43 +219,12 @@ function runningApplicationRows() {
 
 // ---- Miniaturized windows --------------------------------------------------
 //
-// "Which window" has one answer that reaches every appearance: the walk over
-// the front application's windows (⌘`), which counts a miniaturized window as
-// still open. A walk is not a list, and a miniaturized window is the one kind
-// of window a writer cannot simply click — it is not on screen. The Dock
-// covers an application with no visible window left; this covers the rest,
-// including the case where a writer put one document away and left another of
-// the same application open. NeXTSTEP's shell still draws its own miniwindows
-// in its dock; the rows here are the desk's list, and they read the same state.
-function miniaturizedWindows() {
-  return Array.from(document.querySelectorAll(".window[data-window].is-minimized"))
-    .filter((win) => !win.classList.contains("is-hidden") && !win.classList.contains("is-app-hidden"))
-    .sort((a, b) => Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0));
-}
-
-function miniwindowRows() {
-  const windows = miniaturizedWindows();
-  if (!windows.length) return [];
-  const rows = [document.createElement("hr")];
-  const heading = document.createElement("div");
-  heading.className = "multifinder-heading";
-  heading.textContent = t("miniwindow_list");
-  rows.push(heading);
-  windows.forEach((win) => {
-    const row = document.createElement("button");
-    row.type = "button";
-    row.className = "multifinder-app multifinder-miniwindow";
-    row.dataset.miniwindow = win.dataset.window;
-    row.innerHTML = `
-      <span class="multifinder-mark">▫</span>
-      <span>${escapeHtml(applicationWindowTitle(win))}</span>
-      <small>${escapeHtml(multiFinderAppLabels[getWindowAppId(win)] || getWindowAppId(win))}</small>
-    `;
-    row.addEventListener("click", () => restoreMinimizedWindow(win));
-    rows.push(row);
-  });
-  return rows;
-}
+// The lists of put-away windows moved into the miniaturize module
+// (app/core/window-minimize.js), which owns the state and loads only for an
+// appearance that draws the control. Two faces read them there: `rows()` for
+// this switcher's miniwindow section, and `renderAppleMenuSection()` for the
+// Apple menu's own list. NeXTSTEP's shell still draws its own miniwindows in
+// its dock; the rows here are the desk's list, and they read the same state.
 
 // ---- The front application's windows ---------------------------------------
 //
@@ -360,6 +331,11 @@ function applicationVerbRows() {
     applicationRow("hide-active-app", t("hide_app", activeAppLabel())),
     applicationRow("hide-other-apps", t("hide_others")),
     applicationRow("show-all-apps", t("show_all")),
+    // Where the era draws the yellow lamp, the application menu also names the
+    // verb, with the shortcut the host may or may not let through.
+    ...(window.AISystem6WindowMinimize?.lampEnabled?.()
+      ? [applicationRow("minimize-window", t("minimize_window_command"))]
+      : []),
     document.createElement("hr"),
     applicationRow("quit-active-app", t("quit_app", activeAppLabel())),
   ];
@@ -404,6 +380,7 @@ function cycleToNextApp() {
 function renderMultiFinderMenu() {
   window.AISystem6NextstepShell?.syncMain();
   window.AISystem6NextstepDock?.sync();
+  window.AISystem6DeskDock?.sync();
   if (activeAppId !== "accessories" && activeAppId !== "system") menuOwnerAppId = activeAppId;
   if (typeof renderAppMenuBar === "function") renderAppMenuBar(menuOwnerAppId);
   // MultiFinder-only, on every screen size. A phone presents apps full-screen
@@ -415,6 +392,11 @@ function renderMultiFinderMenu() {
   document.querySelector(".multifinder-menu")?.classList.toggle("is-hidden", !showSwitcher);
   syncWorkspaceDesktopIcon();
   renderAppleMultiFinderSection(showSwitcher && applicationOwned);
+  // The Apple menu's minimized-windows section is drawn by the miniaturize
+  // module, in every menu-bar mode (Finder included, where it is the only
+  // list). Rendered through the same optional call the switcher rows use, so a
+  // desk with no module simply has no put-away windows to list.
+  window.AISystem6WindowMinimize?.renderAppleMenuSection?.();
 
   const labelEl = document.querySelector("#multifinder-label");
   const button = document.querySelector("#multifinder-button");
@@ -436,7 +418,7 @@ function renderMultiFinderMenu() {
     button.setAttribute("aria-haspopup", "menu");
     button.setAttribute("aria-label", t("multifinder_switcher"));
     button.dataset.balloonHelp = "balloon_multifinder_switcher";
-    popover.replaceChildren(...(showSwitcher ? [...runningApplicationRows(), ...miniwindowRows()] : []));
+    popover.replaceChildren(...(showSwitcher ? [...runningApplicationRows(), ...(window.AISystem6WindowMinimize?.rows?.() || [])] : []));
   }
   // These rows are rebuilt from scratch, so the element cache updateMenuState()
   // greys from is now stale. Without this the new rows would never be asked

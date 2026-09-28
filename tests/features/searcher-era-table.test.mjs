@@ -12,7 +12,8 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 const test = createFeatureTest("searcher-era-table");
 const findPath = read("app/features/findpath.js");
 const foundation = read("styles/00-foundation.css");
-const windowsCss = read("styles/10-windows.css");
+// The base recipe moved with the lazy Searcher sheet (owner decision D5).
+const windowsCss = read("styles/24-searcher.css");
 const platinumCss = read("styles/65-appearance-themes.css");
 const aquaCss = read("styles/67-aqua-appearance.css");
 const en = read("app/data/translations-en.js");

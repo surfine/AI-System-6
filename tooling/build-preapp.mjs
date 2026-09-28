@@ -82,6 +82,14 @@ export function preappGenerators(root, { publicOnly = false } = {}) {
       inputs: [...common, "node_modules/ts-fsrs", "tooling/vendor/fsrs-entry.mjs"],
       outputs: ["apps/desktop/app/vendor/fsrs.js"],
     },
+    {
+      // The writing editor (CodeMirror 6 + live preview). Its recipe lives in
+      // tooling/vendor/writing-editor/, which the common tooling input covers.
+      name: "writing-editor-vendor",
+      script: "tooling/build-writing-editor-vendor.mjs",
+      inputs: [...common, "node_modules/@codemirror", "node_modules/@lezer"],
+      outputs: ["apps/desktop/app/vendor/writing-editor.js"],
+    },
   ];
   return publicOnly ? all.filter((generator) => PUBLIC_PREAPP_GENERATOR_NAMES.includes(generator.name)) : all;
 }
@@ -103,6 +111,7 @@ export const PUBLIC_PREAPP_GENERATOR_NAMES = Object.freeze([
   "bonsai-atlas",
   "bonsai-renderer-vendor",
   "fsrs-vendor",
+  "writing-editor-vendor",
 ]);
 
 export function buildPreapp({ root = repositoryRoot, force = false, publicOnly = false } = {}) {

@@ -10,6 +10,19 @@
    #ccccff / #9999ff / #9999cc / #333366. */
 html[data-theme="system-7"],
 body[data-theme="system-7"] {
+  --btn-fg: var(--ink); /* period token (Platinum N1, 2026-09-25): the value this era already drew */
+  /* Period tokens Platinum made shared (2026-09-25, second batch), answered
+     with the values this era already drew. */
+  --window-frame-arrow-up-order: 0;
+  --window-frame-arrow-down-order: 0;
+  --window-frame-arrow-down-border-top: var(--window-frame-track-border);
+  --window-frame-arrow-up-art-size: 1px 1px, 3px 1px, 5px 1px, 7px 1px;
+  --window-frame-arrow-up-art-position: left 7px top 5px, left 6px top 6px, left 5px top 7px, left 4px top 8px;
+  --window-frame-arrow-down-art-size: 7px 1px, 5px 1px, 3px 1px, 1px 1px;
+  --window-frame-arrow-down-art-position: left 4px top 5px, left 5px top 6px, left 6px top 7px, left 7px top 8px;
+  --choice-checkmark-size: 12px 12px;
+  --menu-button-active-shadow: none;
+  --menu-item-active-shadow: none;
   /* Title bar: #eeeeee under six #777777 lines, lavender light on the top
      and left inner edge, #9999cc shade on the bottom and right. */
   --titlebar-title-bg: #eeeeee;

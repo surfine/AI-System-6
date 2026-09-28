@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/MCP.md -->
-<!-- source-sha256: 961381d9ed774878935bb7a48be483790f14eba17b920979831332cfabb794e6 -->
+<!-- source-sha256: 96f5e2707e196e5bd28d80f968ceb68c6629403f2ad11afbadaf0538b132e6c3 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -204,6 +204,28 @@ ais6://project/{id}/cd/{itemId}           text/markdown 或 text/html
 3. **提案。** In Tray、`propose.*`、Tasks 扩展、出处卡片。
 4. **反方向。** ClioTalk 和 File Floppy 作为 MCP 客户端，让 Zotero、文件系统或笔记服务
    可以作为来源挂载。客户端连接由服务端持有；凭据留在保险库里。
+
+## 经端口使用前沿模型（2026-09-28 核实）
+
+问题是：桌面自己的功能（ClioTalk、写作工具、审稿台）能否通过 MCP **sampling** 用上 Claude 和 GPT 的前沿模型——桌面作为 MCP 服务端，请已连接访客的宿主用写作者已订阅的模型完成一次生成，桌面不保管任何 Anthropic 或 OpenAI 密钥。目前的答案是否定的，理由有三条且彼此独立，因此没有实现。
+
+| 核查项 | 结论 | 出处 |
+| --- | --- | --- |
+| 规范状态 | 2026-07-28 修订版已**弃用** Sampling（SEP-2577）：“新实现不应再加入支持”，建议迁移为“直接集成 LLM 提供商 API”。最早在 2027-07-28 及之后的第一个修订版移除 | modelcontextprotocol.io/specification/2026-07-28/changelog、…/deprecated |
+| 服务端何时能发起 | 2026-07-28 下，服务端到客户端的请求只能放在回应客户端自己的 `tools/call`、`prompts/get` 或 `resources/read` 的 `InputRequiredResult` 里（MRTR）。桌面只能在访客调用工具的过程中借用模型，写作者打开 ClioTalk 时无法发起 | …/2026-07-28/basic/patterns/mrtr |
+| Claude 宿主 | “Claude doesn't yet support these MCP features … Sampling”，适用于 claude.ai、Claude Desktop、移动端、Cowork 和 Claude Code。本机 Claude Code 2.1.283 的 `initialize` 只声明 `roots` 与 `elicitation`（本机探测，未调用模型） | claude.com/docs/connectors/building |
+| GPT 宿主 | Codex 文档列出 STDIO、Streamable HTTP 与服务端说明；ChatGPT 开发者模式与 Apps SDK 文档写到工具与 elicitation。两者都未提及 sampling | learn.chatgpt.com/docs/extend/mcp、developers.openai.com/api/docs/guides/developer-mode |
+| 其他宿主 | 装有 GitHub Copilot 的 VS Code 实现了 sampling（发布时称“仍属初步”），由写作者 Copilot 套餐允许的模型回答；文档没有说明会遵从服务端的 `modelPreferences` | code.visualstudio.com/docs/agents/reference/mcp-configuration |
+
+不依赖 sampling 就已成立的：Claude Code、Codex 这类访客可以通过访客桥用它自己的模型和订阅在桌面上工作，审阅与草稿以回执形式到达，由写作者采用。这是协议仍然支持的方向。
+
+供写作者选择的方案（都未实现）：
+
+1. **直连提供商 API。** 在 DeepSeek 旁边加入 Anthropic 与 OpenAI 作为云端提供方，沿用现有 `cloud-models` 与任务策略表，写作者自己的密钥存进 `credential-vault.js`。Mac 应用和本地服务端都可靠；费用记在写作者的密钥上；稿件会发往该提供方。“端口从不用写作者的密钥代跑模型”这条对端口本身仍然成立，但桌面的提供方列表会多出写作者为这些提供方填入的密钥，设置文案必须写明。
+2. **本地订阅 CLI。** 仅在本地部署中，以无工具模式调用已安装的 `claude` 或 `codex` CLI 完成一次生成，使用写作者已登录的订阅。产品里没有密钥；延迟包含 CLI 启动时间；额度走订阅；上线前须核对提供方关于脚本化使用的条款。
+3. **在支持的宿主上用 sampling。** 为声明了 sampling 的访客（目前只有 VS Code Copilot）实现 MRTR sampling，作为绑定在访客自身调用上的实验。上游已弃用，不宜作为产品功能的基础。
+
+无论哪种方案，任务契约、humanizer 护栏和“AI 输出默认临时”的规则都照常生效，每次生成都标明由哪个提供方、哪个模型回答。
 
 ## 动代码之前要定下来的问题
 

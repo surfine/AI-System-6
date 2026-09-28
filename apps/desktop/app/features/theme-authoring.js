@@ -128,7 +128,7 @@
     })],
     ["liquid-glass", freezeAuthoringMetadata({
       tokenFile: "apps/desktop/styles/70-liquid-glass.css",
-      tokenSelector: "body.use-liquid-glass",
+      tokenSelector: 'body[data-theme="liquid-glass"]',
       art: {
         dir: "liquid-glass", ext: "png", tiers: [128, 64, 32, 16],
         ordinary: 32, compact: 16, large: 128,

@@ -22,6 +22,19 @@ canvas, `window`, IndexedDB, translation table, wall clock, timers, or
 with `createCity`, `advanceTicks`, `applyTool`, `tileInfo`, `ensureDerived`,
 `dateOf`, `drainNotices`, `serialize`, and `deserialize`.
 
+Since ruleset 5 the derived state is split into systems with dirty flags
+(terrain, facilities, networks, power, water, coverage, lots, routes,
+environment, problems); a command marks only what it touched and
+`ensureDerived` recomputes only what is dirty. Every game day one quarter
+of the map (cells where `index % 4` equals `day % 4`) takes its development
+turn, so each lot is looked at every four days; the commute distance fields
+are rebuilt every four days and the environment (land value, crime,
+pollution) once a month. `tooling/probe-bonsai-sim-cost.mjs` holds the
+result to the spec 3.10 budget on a mature 128² city.
+The last scheduled traffic and commute fields are saved in the optional v5
+`routing` record: congestion feeds the next routing pass, so rebuilding those
+fields on reload would advance the city differently.
+
 ### Renderer and input
 
 Implemented first as the pure projection module `bonsai-renderer.js` and now
@@ -35,7 +48,7 @@ selection/preview/errors; and day/night lighting. Static content uses 16x16
 offscreen chunk caches. The renderer reads snapshots only — pointer, keyboard,
 and touch produce previews or commands, never direct mutation. Camera and
 lighting are view state and never enter the city save; drawing never advances
-rules. The altitude step is 10 pixels and default zoom is 0.7.
+rules. The altitude step is 10 pixels and default zoom is 0.5.
 
 `createAssetBlocks` and `blockFaces` define shared building identity, footprint,
 materials and shape faces, including gabled/hipped roofs and faceted tree crowns.

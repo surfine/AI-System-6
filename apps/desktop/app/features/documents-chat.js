@@ -633,6 +633,7 @@ function renderDocuments() {
     selectedChatFileId,
     selectedDocumentFolderId,
     mode,
+    finderSortReversed("documents"),
     currentLanguage,
     collectionVersion(visibleFiles),
     collectionVersion(visibleFolders),
@@ -653,19 +654,11 @@ function renderDocuments() {
 
   const folderItems = visibleFolders.map(getDocumentFolderItem);
   const fileItems = visibleFiles.map(getProjectFileFinderItem);
-  const sortedItems = sortFinderItemsForView([...folderItems, ...fileItems], mode);
+  const sortedItems = sortFinderItemsForView([...folderItems, ...fileItems], mode, finderSortReversed("documents"));
 
   if (isFinderListMode(mode)) {
 
-    const header = document.createElement("div");
-    header.className = "finder-list-header";
-    header.innerHTML = `
-      <span>${t("file_name")}</span>
-      <span>${t("kind")}</span>
-      <span>${t("size")}</span>
-      <span>${t("modified")}</span>
-    `;
-    fragment.append(header);
+    fragment.append(renderFinderListHeader("documents", mode, { onChange: renderDocuments }));
 
     let previousKind = "";
     sortedItems.forEach(item => {
@@ -2892,7 +2885,26 @@ function openMountedTextFile(name) {
   });
 }
 
+// 并排: the source and the finished page, two sheets side by side. The window
+// grows to hold two 484px columns (and shrinks back on leaving), so the
+// writing-window width rule still holds everywhere else. Only offered when the
+// screen can show both at full measure (the writing editor's drawToggle).
+function teachTextSplitActive() {
+  return !!teachTextPreviewEl?.closest(".teachtext-editor-container")?.classList.contains("is-split");
+}
+
+// The work is the editor's (writing-editor bundle, setSplit): 并排 is only
+// offered once it has loaded.
+function setTeachTextSplit(on) {
+  window.AISystem6WritingEditor?.setSplit?.(teachTextBodyInput, on);
+}
+
 function toggleTeachTextPreview() {
+  if (teachTextSplitActive()) {
+    setTeachTextSplit(false);
+    showTeachTextPreview();
+    return;
+  }
   const isPreview = !teachTextPreviewEl.classList.contains("is-hidden");
   if (isPreview) {
     showTeachTextEditor();
@@ -2912,7 +2924,7 @@ function showTeachTextEditor({ focus = true } = {}) {
     teachTextBodyInput.selectionStart = teachTextPreviewState.selectionStart || 0;
     teachTextBodyInput.selectionEnd = teachTextPreviewState.selectionEnd || teachTextPreviewState.selectionStart || 0;
   }
-  teachTextTogglePreviewButton.textContent = t("preview");
+  mdeSyncModeToggle(teachTextTogglePreviewButton, false);
   updateTeachTextDeskState();
   if (focus) teachTextBodyInput.focus();
 }
@@ -2931,7 +2943,9 @@ function showTeachTextPreview({ focus = false, preserveScroll = true } = {}) {
   teachTextPreviewEl.scrollTop = previewScrollTop;
   if (preserveScroll) enterPreviewAtCaret(teachTextBodyInput, teachTextPreviewEl);
   teachTextBodyInput.classList.add("is-hidden");
-  teachTextTogglePreviewButton.textContent = t("edit");
+  // The page turned to Read: the keyboard and the format bar go with it.
+  if (window.AISystem6WritingEditor?.focusedTextarea?.() === teachTextBodyInput) teachTextBodyInput.blur();
+  mdeSyncModeToggle(teachTextTogglePreviewButton, true);
   updateTeachTextDeskState();
   if (focus) {
     teachTextPreviewEl.tabIndex = 0;

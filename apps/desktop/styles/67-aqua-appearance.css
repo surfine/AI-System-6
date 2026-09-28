@@ -18,6 +18,20 @@ body[data-theme-family="aqua"] .desktop {
 
 html[data-theme="aqua"],
 body[data-theme="aqua"] {
+  --btn-fg: var(--ink); /* period token (Platinum N1, 2026-09-25): the value this era already drew */
+  /* Period tokens Platinum made shared (2026-09-25, second batch), answered
+     with the values this era already drew. */
+  --choice-checkmark-size: 12px 12px;
+  --menu-button-active-shadow: none;
+  --menu-item-active-shadow: none;
+  /* Period tokens Platinum made shared (2026-09-25), answered with the values
+     this era already drew, so nothing here changes on screen. */
+  --tab-last-border-right: var(--system-border);
+  --system-select-option-min-height: 28px;
+  --system-select-option-active-bg: var(--ink);
+  --system-select-option-active-fg: var(--paper);
+  --system-select-option-active-shadow: none;
+  --modal-bg: var(--paper);
 
   /* Jaguar evidence boundary: Apple's June 2002 Aqua HIG owns control geometry;
      original 10.2 captures own final appearance. Quaqua 9.1 supplies the
@@ -1742,15 +1756,12 @@ body[data-theme-family="aqua"] .title-bar {
   background: var(--system-titlebar-active-bg);
   background-origin: var(--system-titlebar-background-origin);
   background-clip: var(--system-titlebar-background-clip);
-  box-shadow: var(--titlebar-shadow);
   border-bottom: var(--titlebar-border);
 }
 
 body[data-theme-family="aqua"] .window:not(.is-active) .title-bar {
 
   background: var(--system-titlebar-inactive-bg);
-  background-origin: var(--system-titlebar-background-origin);
-  background-clip: var(--system-titlebar-background-clip);
 
 }
 
@@ -1758,7 +1769,8 @@ body[data-theme-family="aqua"] .title-bar h1,
 body[data-theme-family="aqua"] .title-bar h2 {
 
   background: var(--titlebar-title-bg);
-  color: var(--titlebar-title-fg);
+  /* A background window's title hands over its colour (60-responsive.css). */
+  color: var(--titlebar-inactive-title-fg, var(--titlebar-title-fg));
   font-family: var(--theme-title-font);
 
 }
@@ -1777,12 +1789,6 @@ body[data-theme="aqua"] .theme-lab-window:not(.is-active) {
   box-shadow: var(--inactive-window-shadow);
   /* Jaguar inactive frames keep a dark blue top edge (44,85,133). */
   border-color: #2c5585;
-
-}
-
-/* The Finder toolbar keeps a 56px border-box so its 1px top rail matches the
-   Jaguar capture without moving the status strip below it. */
-body[data-theme="aqua"] .theme-lab-toolbar {
 
 }
 
@@ -1808,11 +1814,9 @@ body[data-theme="aqua"] :where(
   border: var(--field-border);
   border-radius: var(--field-radius);
   background: var(--field-bg);
-  color: var(--ink);
   box-shadow: var(--field-shadow);
   font-family: var(--theme-ui-font);
   font-size: var(--system-control-size);
-  font-weight: 400;
   line-height: 16px;
 
 }
@@ -1840,14 +1844,11 @@ body[data-theme="aqua"] :where(
   outline: 0;
   /* Preserve the arrow and other control images while changing the fill. */
   background-color: var(--field-focus-bg);
-  box-shadow: var(--field-focus-ring);
 
 }
 
 body[data-theme="aqua"] :is(input[type="checkbox"], input[type="radio"]) {
 
-  background-position: center;
-  background-repeat: no-repeat;
   background-size: 18px 18px;
 
 }
@@ -1927,9 +1928,9 @@ body[data-theme="aqua"] .resize-box {
 
 /* The Aqua title bar follows the owner's standing product rule, not Mac OS X
    history: Close on the left edge, Zoom on the right edge. The grid is
-   gutter | title | gutter, so there is no Minimize slot to leave empty; no
-   Minimize lamp is drawn until this era's Dock ships with it (owner decision
-   2026-09-25). */
+   gutter | title | gutter; the yellow lamp that ships with the era's Dock
+   stacks into the first gutter beside Close (styles/88-desk-dock.css,
+   "left two, right one"), so no column moves. */
 body[data-theme="aqua"] .window > .title-bar {
   grid-template-columns:
     var(--titlebar-gutter)
@@ -2012,7 +2013,6 @@ body[data-theme-family="aqua"] .title-bar > :is(.close-box, .resize-box):active 
 
 body[data-theme="aqua"] .window:not(.is-active) .title-bar > :is(.close-box, .resize-box) {
   filter: var(--system-titlebar-inactive-control-filter);
-  opacity: var(--system-titlebar-inactive-control-opacity);
 }
 
 /* Inactive Aqua title bars let the desktop show through: a slight blur
@@ -2037,8 +2037,9 @@ body[data-theme="aqua"] :is(.window, .system-modal) {
 body[data-theme-family="aqua"] .grow-box {
   width: 15px;
   height: 15px;
+  /* A background window's grow box hands over none (10-windows.css). */
   background:
-    url("./assets/themes/aqua/resize-grip.svg") bottom right / 15px 15px no-repeat;
+    var(--grow-box-art, url("./assets/themes/aqua/resize-grip.svg")) bottom right / 15px 15px no-repeat;
   cursor: nwse-resize;
   border: 0;
 }
@@ -2157,7 +2158,7 @@ body[data-theme="aqua"] select:not([multiple]) {
 
 body[data-theme="aqua"] select:disabled {
   filter: grayscale(0.7);
-  opacity: 0.65;
+  opacity: var(--select-disabled-opacity, 0.65);
 }
 
 body[data-theme="aqua"] .info-comments textarea {
@@ -2198,7 +2199,9 @@ body[data-lineage~="snow-leopard"] .resize-box {
     calc(var(--system-titlebar-control-art-offset-y) - 2px);
   background-size: var(--traffic-light-size) var(--traffic-light-size);
   background-repeat: no-repeat;
-  filter: none;
+  /* none on a front window; a background window's lamp takes the filter the
+     base inactive-control rule hands over (60-responsive.css). */
+  filter: var(--titlebar-control-filter, none);
 
 }
 
@@ -2226,8 +2229,8 @@ body[data-lineage~="snow-leopard"] .resize-box::before {
 }
 
 /* The owner's product rule, same as Aqua: Close on the left edge, Zoom on
-   the right edge, and no Minimize lamp until this era's Dock ships with it
-   (owner decision 2026-09-25). */
+   the right edge; the yellow lamp beside Close ships with the era's Dock
+   (styles/88-desk-dock.css). */
 body[data-lineage~="snow-leopard"] .window > .title-bar {
 
   grid-template-columns:
@@ -2297,7 +2300,6 @@ body[data-lineage~="snow-leopard"] select:not([multiple]) {
      of button body shows around it and the well reads as a separate pill
      floating outside the control. Measure it against the border box. */
   background-origin: border-box;
-  background-repeat: no-repeat;
   box-shadow: var(--select-control-shadow);
   font-family: var(--theme-ui-font);
   font-weight: var(--select-control-font-weight);
@@ -2903,18 +2905,12 @@ body[data-lineage~="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar bu
    and desktop/Retina surfaces 128. */
 :where(body[data-theme-family="aqua"])
   .sys-icon[data-system-icon]:not(:where([data-system-icon="play"], [data-system-icon="pause"], [data-system-icon="previousTrack"], [data-system-icon="nextTrack"], [data-system-icon="shuffleTracks"], [data-system-icon="repeatTracks"], [data-system-icon="speaker"])) {
-  border: 0;
   border-radius: 0;
   background-color: transparent;
   background-image: none;
   background-repeat: no-repeat;
   box-shadow: none;
 }
-:where(body[data-theme-family="aqua"])
-  .sys-icon[data-system-icon]:not(:where([data-system-icon="play"], [data-system-icon="pause"], [data-system-icon="previousTrack"], [data-system-icon="nextTrack"], [data-system-icon="shuffleTracks"], [data-system-icon="repeatTracks"], [data-system-icon="speaker"])) .sys-icon-svg {
-  display: block;
-}
-
 :where(body[data-theme-family="aqua"]) .sys-icon-svg :is(.sys-icon-classic, .sys-icon-platinum-core, .sys-icon-aqua, .sys-icon-snow-leopard, .sys-icon-yosemite, .sys-icon-liquid) {
   display: none;
 }
@@ -2927,9 +2923,6 @@ body[data-lineage~="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar bu
 }
 body[data-theme="aqua"] .sys-icon {
   --aqua-icon: url("./assets/themes/aqua/aqua-sprite.png");
-}
-
-body[data-lineage~="snow-leopard"] .sys-icon {
 }
 
 
@@ -2951,3 +2944,14 @@ body[data-lineage~="snow-leopard"] .boot-progress span { background: linear-grad
 @keyframes aqua-mac-in { from { opacity: 0; transform: scale(calc(var(--boot-mac-scale) * 0.97)) } to { opacity: 1; transform: scale(var(--boot-mac-scale)) } }
 @keyframes aqua-progress-sheen { from { transform: translateX(-100%) } to { transform: translateX(100%) } }
 @media (prefers-reduced-motion: reduce) { :where(body[data-theme-family="aqua"]) :is(.boot-screen, .shutdown-screen), :where(body[data-theme-family="aqua"]) .happy-mac, :where(body[data-theme-family="aqua"]) .boot-progress span::after { animation: none } }
+
+/* Increase Contrast for the Aqua family. The canonical block (every era) ends
+   styles/65-appearance-themes.css; this sheet loads after it, so Aqua's and
+   Snow Leopard's era roots above would win the tie. The same answer, after
+   them. */
+@media (prefers-contrast: more) {
+  body[data-theme-family="aqua"] {
+    --system-secondary-divider: 1px solid var(--ink);
+    --system-disabled-fg: #3f3f3f;
+  }
+}

@@ -65,15 +65,22 @@ const preBundlePaths = [...read("index.html").matchAll(/<script src="([^"?]+)/g)
   .filter((path) => path !== "app.bundle.js");
 const sources = [...preBundlePaths, ...appRuntimePaths].map((path) => [path, read(path)]);
 
-function classList() {
+// `onChange(name, present)` hears every real change of membership, so the DOM
+// shim can keep its query index (see `byKey` below) current.
+function classList(onChange = () => {}) {
   const values = new Set();
+  const set = (name, present) => {
+    if (values.has(name) === present) return;
+    if (present) values.add(name); else values.delete(name);
+    onChange(name, present);
+  };
   return {
-    add: (...names) => names.forEach((n) => values.add(n)),
-    remove: (...names) => names.forEach((n) => values.delete(n)),
+    add: (...names) => names.forEach((n) => set(n, true)),
+    remove: (...names) => names.forEach((n) => set(n, false)),
     contains: (name) => values.has(name),
     toggle(name, force) {
       const next = force === undefined ? !values.has(name) : Boolean(force);
-      if (next) values.add(name); else values.delete(name);
+      set(name, next);
       return next;
     },
     values: () => [...values],
@@ -135,9 +142,38 @@ function canvasContextStub() {
 // own globals), so the real script-tag loader below — which needs to run
 // code INTO that context — reads it lazily, once the caller fills it in.
 function createDomShim(contextRef) {
-  const byId = new Map();
   const registry = []; // every TRACKED element, for the selector matcher below
   const windowsByName = new Map(); // data-window value -> its static .window element
+  // What a selector's rightmost compound can require -- "id:x", "class:x",
+  // "data:x" (a dataset key) or "attr:x" -- mapped to the tracked elements that have
+  // it. Without it every document-scope query scanned the whole registry: the
+  // menu bar's availability pass asks for ".window.is-active" dozens of times
+  // per refresh (the answer is usually "none"), the language pass asks for
+  // every [data-i18n*] and [data-action] form, and a lazy window build does
+  // both repeatedly. With tens of thousands of elements a scan,
+  // window-registry's lazy loop and hook pass took minutes. A query now scans
+  // only the smallest of these sets, in the registry's own order; that
+  // ordered copy is kept until the set next changes.
+  const byKey = new Map(); // key -> { set, ordered }
+  function indexKey(el, key, present) {
+    let entry = byKey.get(key);
+    if (!entry) {
+      if (!present) return;
+      byKey.set(key, (entry = { set: new Set(), ordered: null }));
+    }
+    if (entry.set.has(el) === present) return;
+    if (present) entry.set.add(el); else entry.set.delete(el);
+    entry.ordered = null;
+  }
+  function ordered(entry) {
+    return (entry.ordered ||= [...entry.set].sort((a, b) => a.__order - b.__order));
+  }
+  function indexElement(el, present) {
+    if (el.id) indexKey(el, `id:${el.id}`, present);
+    el.classList?.values?.().forEach((name) => indexKey(el, `class:${name}`, present));
+    Object.keys(el.attributes || {}).forEach((name) => { if (!name.startsWith("data-")) indexKey(el, `attr:${name}`, present); });
+    if (el.dataset) Object.keys(el.dataset).forEach((key) => indexKey(el, `data:${key}`, present));
+  }
   // document.activeElement, kept by the elements' own focus()/blur(). The
   // `:focus` pseudo-class reads it, and so does app code that asks where the
   // caret is.
@@ -160,13 +196,16 @@ function createDomShim(contextRef) {
   function promote(el) {
     if (!el || el.__tracked || !el.tagName) return;
     el.__tracked = true;
+    // A re-attached element is pushed again, but a scan still meets it first
+    // at its original position, so its order is the first push's.
+    el.__order ??= registry.length;
     registry.push(el);
+    indexElement(el, true);
     // An element that carries an id or a data-window becomes reachable by the
     // two fast lookups the moment it is attached, exactly like a real DOM.
     // This is how a window that its own module BUILDS becomes findable: not
     // by the shim inventing it, but by ApplicationShell.createWindow() really
     // running and really appending it.
-    if (el.id && !byId.has(el.id)) byId.set(el.id, el);
     const windowName = el.dataset?.window;
     if (windowName && !windowsByName.has(windowName)) windowsByName.set(windowName, el);
     (el.children || []).forEach(promote);
@@ -184,7 +223,7 @@ function createDomShim(contextRef) {
     const untrack = (node) => {
       if (!node || !node.__tracked) return;
       node.__tracked = false;
-      if (byId.get(node.id) === node) byId.delete(node.id);
+      indexElement(node, false);
       const name = node.dataset?.window;
       if (name && windowsByName.get(name) === node) windowsByName.delete(name);
       (node.children || []).forEach(untrack);
@@ -259,7 +298,15 @@ function createDomShim(contextRef) {
   function makeElement(tag = "div", id = "", trackForQuery = false) {
     const el = {
       tagName: String(tag).toUpperCase(),
-      id,
+      __id: id,
+      // An accessor so an id given after attachment still reaches the index.
+      get id() { return this.__id; },
+      set id(value) {
+        if (value === this.__id) return;
+        if (this.__tracked && this.__id) indexKey(this, `id:${this.__id}`, false);
+        this.__id = value;
+        if (this.__tracked && value) indexKey(this, `id:${value}`, true);
+      },
       __tracked: false,
       value: "",
       innerText: "",
@@ -344,7 +391,7 @@ function createDomShim(contextRef) {
       options: [],
       isConnected: true,
       offsetParent: {},
-      classList: classList(),
+      classList: classList((name, present) => { if (el.__tracked) indexKey(el, `class:${name}`, present); }),
       // `className` is a plain string assignment in real DOM code —
       // application-shell.js's createWindow() does exactly that
       // (`win.className = classNames("window", options.windowClass,
@@ -359,7 +406,20 @@ function createDomShim(contextRef) {
         [...list.values()].forEach((name) => list.remove(name));
         String(value || "").trim().split(/\s+/).filter(Boolean).forEach((name) => list.add(name));
       },
-      attributes: {},
+      // A Proxy only so the query index hears plain attributes come and go;
+      // data-* attributes are indexed by their dataset key, below.
+      attributes: new Proxy({}, {
+        set(store, name, value) {
+          store[name] = value;
+          if (el.__tracked && !String(name).startsWith("data-")) indexKey(el, `attr:${name}`, true);
+          return true;
+        },
+        deleteProperty(store, name) {
+          delete store[name];
+          if (el.__tracked && !String(name).startsWith("data-")) indexKey(el, `attr:${name}`, false);
+          return true;
+        },
+      }),
       // setAttribute must reach dataset and classList, not only the attribute
       // bag. Bonsai City builds its window with
       // `win.setAttribute("data-window", "bonsaiCity")`, and while the two
@@ -417,8 +477,8 @@ function createDomShim(contextRef) {
       // real browser that does something else. Insertion order follows the DOM
       // spec: nodes are inserted in argument order, so `a.after(x, y)` yields
       // a, x, y.
-      before(...nodes) { insertSiblings(this, nodes, 0); },
-      after(...nodes) { insertSiblings(this, nodes, 1); },
+      before(...nodes) { insertSiblings(this, nodes, 0); loadBesideHeadChild(this, nodes); },
+      after(...nodes) { insertSiblings(this, nodes, 1); loadBesideHeadChild(this, nodes); },
       replaceWith(...nodes) {
         const parent = this.parentNode;
         insertSiblings(this, nodes, 0);
@@ -508,11 +568,13 @@ function createDomShim(contextRef) {
               if (typeof key !== "string") return true;
               store[key] = String(value);
               el.attributes[`data-${dashedAttrKey(key)}`] = String(value);
+              if (el.__tracked) indexKey(el, `data:${key}`, true);
               return true;
             },
             deleteProperty(store, key) {
               delete store[key];
               delete el.attributes[`data-${dashedAttrKey(key)}`];
+              if (el.__tracked && typeof key === "string") indexKey(el, `data:${key}`, false);
               return true;
             },
           });
@@ -548,13 +610,8 @@ function createDomShim(contextRef) {
   // element, takes the "it is there" branch, and reports green over code that
   // never ran.
   function getElementById(id) {
-    const known = byId.get(id);
-    if (known && known.__tracked) return known;
-    // An element that was given its id AFTER it was attached is not in the
-    // map; find it once and remember it.
-    const found = registry.find((el) => el.__tracked && el.id === id);
-    if (found) byId.set(id, found);
-    return found || null;
+    const entry = byKey.get(`id:${id}`);
+    return entry?.set.size ? ordered(entry)[0] : null;
   }
 
   // A `.window[data-window="name"]` element is what getWindow(name) and
@@ -578,7 +635,8 @@ function createDomShim(contextRef) {
   function windowElement(name) {
     const known = windowsByName.get(name);
     if (known && known.__tracked) return known;
-    const found = registry.find((el) => el.__tracked && el.classList?.contains("window") && el.dataset.window === name);
+    const entry = byKey.get("data:window");
+    const found = entry ? ordered(entry).find((el) => el.classList?.contains("window") && el.dataset.window === name) : null;
     if (found) windowsByName.set(name, found);
     return found || null;
   }
@@ -794,9 +852,22 @@ function createDomShim(contextRef) {
     return out;
   }
 
-  function candidatesFor(root) {
-    if (!root) return registry;
-    return collectDescendants(root, []);
+  function candidatesFor(root, steps) {
+    if (root) return collectDescendants(root, []);
+    const compound = steps[steps.length - 1]?.compound;
+    if (!compound) return registry;
+    const keys = [
+      ...(compound.id ? [`id:${compound.id}`] : []),
+      ...compound.classes.map((name) => `class:${name}`),
+      ...compound.attrs.map(({ attr, datasetKey }) => (datasetKey ? `data:${datasetKey}` : `attr:${attr}`)),
+    ];
+    let smallest = null;
+    for (const key of keys) {
+      const entry = byKey.get(key);
+      if (!entry || !entry.set.size) return [];
+      if (!smallest || entry.set.size < smallest.set.size) smallest = entry;
+    }
+    return smallest ? ordered(smallest) : registry;
   }
 
   function query(sel, root, all) {
@@ -823,7 +894,7 @@ function createDomShim(contextRef) {
           continue;
         }
       }
-      for (const el of candidatesFor(root)) {
+      for (const el of candidatesFor(root, steps)) {
         if (root === undefined || root === null) { if (!el.__tracked) continue; }
         if (!chainMatches(el, steps, root)) continue;
         if (!all) return el;
@@ -907,9 +978,19 @@ function createDomShim(contextRef) {
   const head = makeElement("head", "", true);
   const headAppend = (...nodes) => nodes.forEach((node) => {
     const tag = String(node?.tagName || "").toLowerCase();
+    if (node && typeof node === "object") node.__inHead = true;
     if (tag === "script") triggerScriptLoad(node);
     else if (tag === "link") triggerStyleLoad(node);
   });
+  // A <link> or <script> placed next to one that lives in <head> is an
+  // insertion into <head> as well, and a browser loads it the same way:
+  // theme-registry.js puts each appearance sheet beside its neighbour in
+  // cascade order. head.append() above does not record children, so the
+  // neighbour carries the fact.
+  function loadBesideHeadChild(reference, nodes) {
+    if (!reference?.__inHead) return;
+    headAppend(...nodes);
+  }
   head.append = headAppend;
   head.appendChild = (node) => { headAppend(node); return node; };
   head.prepend = headAppend;

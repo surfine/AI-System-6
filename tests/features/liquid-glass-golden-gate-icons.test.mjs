@@ -64,9 +64,9 @@ const icons = read("app/core/system-icons.js");
 const css = read("styles/70-liquid-glass.css");
 test.assertIncludes(icons, "liquidGlassRoundedRectIconIds", "runtime owns an explicit Golden Gate mask vocabulary");
 test.assertIncludes(icons, "liquid-glass-rounded", "direct SVG redraws retain the runtime mask decision");
-test.assertIncludes(css, "body.use-liquid-glass .sys-icon-svg.liquid-glass-rounded", "the mask is scoped to Liquid Glass");
+test.assertIncludes(css, "body[data-theme=\"liquid-glass\"] .sys-icon-svg.liquid-glass-rounded", "the mask is scoped to Liquid Glass");
 test.assertIncludes(css, "clip-path: inset(0 round 22%)", "the mask has a documented shared radius");
-test.assertNotIncludes(css, "body.use-liquid-glass .sys-icon[data-system-icon=\"folder\"]", "free-form objects are not individually boxed");
+test.assertNotIncludes(css, "body[data-theme=\"liquid-glass\"] .sys-icon[data-system-icon=\"folder\"]", "free-form objects are not individually boxed");
 test.assertNotIncludes(read("apps/desktop/assets/themes/liquid-glass/liquid-glass-icon-family.json"), "tinted", "the family does not add a tinted runtime tier");
 for (const file of [
   "internal/evidence/drafts/liquid-glass-golden-gate/golden-gate-core16-board.png",

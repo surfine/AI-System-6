@@ -43,13 +43,22 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     // zones visible, and the underground view. The shell passes them through
     // render()'s viewState; they never enter a save.
     display: { buildings: true, infrastructure: true, zones: true, underground: false },
-    camera: { zoom: MATH?.DEFAULT_ZOOM || 0.82, rotation: 0, panX: 0, panY: 0 },
+    camera: { zoom: MATH?.DEFAULT_ZOOM || 0.5, rotation: 0, panX: 0, panY: 0 },
     chunkCache: new Map(),
     chunkBuildCount: 0,
     cacheClock: 0,
     visibleTileCount: 0,
     activeRaf: 0,
     lastKeys: {},
+    // Everything the layers derive from the city's content — the sorted
+    // scenery list, facilities, construction sites, waterfall edges — is
+    // built once per content revision and reused by every frame until the
+    // city changes. Panning used to rebuild and re-sort the whole map's
+    // trees and buildings on every frame.
+    derived: null,
+    derivedBuilds: 0,
+    buildingsDraws: 0,
+    chunkSignatures: new Map(),
   };
 
   function isCanvas(node) {
@@ -117,7 +126,15 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     context.setTransform(1, 0, 0, 1, 0, 0);
     context.clearRect(0, 0, state.backingWidth, state.backingHeight);
     context.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
-    context.imageSmoothingEnabled = false;
+    context.imageSmoothingEnabled = spriteSmoothing();
+  }
+
+  // Pixel art stays nearest-neighbour when it is drawn at or above its own
+  // size; drawn smaller (the far zoom step, or the overview on a 1x screen)
+  // nearest-neighbour drops whole rows of pixels and the city shimmers, so
+  // the downscale is filtered instead.
+  function spriteSmoothing() {
+    return state.camera.zoom * state.dpr < 1;
   }
 
   function clearAllLayers() {
@@ -375,11 +392,22 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     context.fill();
   }
 
-  function drawSprite(context, name, sx, sy) {
+  function drawSprite(context, name, sx, sy, mirror = false) {
     const frame = atlasFrame(name);
     const image = currentAtlasImage();
     if (!frame || !image) return false;
     const zoom = state.camera.zoom;
+    if (mirror) {
+      // Mirrored about the anchor: the two faces the camera sees swap, so
+      // a building composed facing +z faces the side streets instead.
+      context.save();
+      context.translate(Math.round(sx), 0);
+      context.scale(-1, 1);
+      context.drawImage(image, frame.x, frame.y, frame.w, frame.h,
+        Math.round(-frame.anchor.x * zoom), Math.round(sy - frame.anchor.y * zoom), Math.round(frame.w * zoom), Math.round(frame.h * zoom));
+      context.restore();
+      return true;
+    }
     context.drawImage(
       image,
       frame.x,
@@ -403,28 +431,142 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
       // so one sprite used to serve every orientation and a hillside read as a
       // staircase. Derive the fall from the neighbours that stand higher and
       // ask for the matching face; mask 0 keeps the flat sprite.
-      const size = mapSize(snapshot);
-      const x = index % size;
-      const y = Math.floor(index / size);
-      const here = altitudeAt(snapshot, index);
-      let mask = 0;
-      if (y > 0 && altitudeAt(snapshot, index - size) > here) mask |= 1;
-      if (x < size - 1 && altitudeAt(snapshot, index + 1) > here) mask |= 2;
-      if (y < size - 1 && altitudeAt(snapshot, index + size) > here) mask |= 4;
-      if (x > 0 && altitudeAt(snapshot, index - 1) > here) mask |= 8;
-      const oriented = `terrain.slope.mask-${mask}`;
+      const oriented = `terrain.slope.mask-${higherNeighbours(snapshot, index)}`;
       return atlasFrame(oriented) ? oriented : "terrain.slope";
     }
     if (terrain === "rock" || terrain === 3) return "terrain.rock";
     if (terrain === "soil" || terrain === 2) return "terrain.soil";
     // Snow: peaks above the snow line always, plus the whole lowland in
     // winter — the OpenTTD-principled terrain read from the snapshot calendar.
-    const winter = Math.floor(((Number(snapshot.tick) || 0) % 1500) / 375) === 3;
+    const winter = MATH.seasonOf(snapshot) === 3;
     if ((terrain === "grass" || terrain === "slope" || terrain === null)
       && (altitudeAt(snapshot, index) >= 24 || winter)) {
       return "terrain.snow";
     }
     return "terrain.grass";
+  }
+
+  // The world-space mask of the neighbours that stand higher than a tile:
+  // bit 1 y-1, 2 x+1, 4 y+1, 8 x-1 — the edges a slope sprite lifts.
+  function higherNeighbours(snapshot, index) {
+    const size = mapSize(snapshot);
+    const x = index % size;
+    const y = Math.floor(index / size);
+    const here = altitudeAt(snapshot, index);
+    let mask = 0;
+    if (y > 0 && altitudeAt(snapshot, index - size) > here) mask |= 1;
+    if (x < size - 1 && altitudeAt(snapshot, index + 1) > here) mask |= 2;
+    if (y < size - 1 && altitudeAt(snapshot, index + size) > here) mask |= 4;
+    if (x > 0 && altitudeAt(snapshot, index - 1) > here) mask |= 8;
+    return mask;
+  }
+
+  // The lifted edges of the ground a network piece lies on: the edges the
+  // terrain sprite lifts on a slope tile, none elsewhere (a cliff stays a
+  // step, as the ground does).
+  function groundLift(snapshot, index) {
+    if (isWater(snapshot, index)) return 0;
+    const terrain = gridValue(snapshot, ["terrainType", "terrain"], index, null);
+    if (terrain !== "slope" && !gridValue(snapshot, ["slope"], index, false)) return 0;
+    return higherNeighbours(snapshot, index);
+  }
+
+  // Corner heights, in height steps, of a tile whose edges in the world-space
+  // mask are lifted by `levels`, turned to the screen: corners A (top),
+  // B (right), C (bottom), D (left) of the diamond.
+  function liftedCorners(worldMask, levels = 1) {
+    const r = state.camera.rotation;
+    const mask = ((worldMask << r) | (worldMask >>> (4 - r))) & 15;
+    const corners = [0, 0, 0, 0];
+    if (mask & 1) { corners[0] = levels; corners[1] = levels; }
+    if (mask & 2) { corners[1] = levels; corners[2] = levels; }
+    if (mask & 4) { corners[2] = levels; corners[3] = levels; }
+    if (mask & 8) { corners[3] = levels; corners[0] = levels; }
+    return corners;
+  }
+
+  // A flat tile sprite laid on a tilted tile. SC2K has a network piece for
+  // every slope; here the flat piece is cut into the four screen quadrants
+  // around the tile centre — one arm each — and every quadrant is drawn under
+  // the affine map that lays the flat tile onto that quarter of the surface:
+  // the plane through the centre and the quadrant's two corners. Each arm so
+  // ends at the height of its edge, where the neighbour's arm begins.
+  // `corners` are heights in steps for A (top), B (right), C (bottom),
+  // D (left); `center` defaults to their mean.
+  const SURFACE_QUADRANTS = Object.freeze([
+    { sx: 1, sy: -1, p: [[-0.5, -0.5], [0.5, -0.5]], c: [0, 1] },
+    { sx: 1, sy: 1, p: [[0.5, -0.5], [0.5, 0.5]], c: [1, 2] },
+    { sx: -1, sy: 1, p: [[0.5, 0.5], [-0.5, 0.5]], c: [2, 3] },
+    { sx: -1, sy: -1, p: [[-0.5, 0.5], [-0.5, -0.5]], c: [3, 0] },
+  ]);
+  function drawOnSurface(context, name, sx, sy, corners, center = null) {
+    if (corners.every((value) => value === corners[0]) && (center === null || center === corners[0])) {
+      return drawSprite(context, name, sx, sy - corners[0] * MATH.HEIGHT_STEP * state.camera.zoom);
+    }
+    if (!atlasFrame(name) || !currentAtlasImage()) return false;
+    const zoom = state.camera.zoom;
+    const K = MATH.HEIGHT_STEP * zoom;
+    const hw = (MATH.TILE_W / 2) * zoom;
+    const hh = (MATH.TILE_H / 2) * zoom;
+    const c = center === null ? (corners[0] + corners[1] + corners[2] + corners[3]) / 4 : center;
+    const reach = 240 * zoom;
+    SURFACE_QUADRANTS.forEach((quadrant) => {
+      // z = c + a*du + b*dv through the two corners of this quadrant.
+      const [[u1, v1], [u2, v2]] = quadrant.p;
+      const z1 = corners[quadrant.c[0]] - c;
+      const z2 = corners[quadrant.c[1]] - c;
+      const det = u1 * v2 - u2 * v1;
+      const a = (z1 * v2 - z2 * v1) / det;
+      const b = (u1 * z2 - u2 * z1) / det;
+      const m = -K * (a - b) / (2 * hw);
+      const n = 1 - K * (a + b) / (2 * hh);
+      context.save();
+      context.transform(1, m, 0, n, 0, -m * sx - n * sy + sy - K * c);
+      context.beginPath();
+      context.rect(quadrant.sx > 0 ? sx : sx - reach, quadrant.sy > 0 ? sy : sy - reach, reach, reach);
+      context.clip();
+      drawSprite(context, name, sx, sy);
+      context.restore();
+    });
+    return true;
+  }
+
+  // The lift in pixels (at zoom 1) of the ground at a screen offset from the
+  // tile centre, for corner heights A (top), B (right), C (bottom), D (left):
+  // bilinear across the tile, so it is exact along every edge.
+  function surfaceLift(corners, dx, dy) {
+    if (!corners.some(Boolean)) return 0;
+    const du = (dx / (MATH.TILE_W / 2) + dy / (MATH.TILE_H / 2)) / 2;
+    const dv = (dy / (MATH.TILE_H / 2) - dx / (MATH.TILE_W / 2)) / 2;
+    const s = Math.max(0, Math.min(1, du + 0.5));
+    const t = Math.max(0, Math.min(1, dv + 0.5));
+    const z = corners[0] * (1 - s) * (1 - t) + corners[1] * s * (1 - t) + corners[2] * s * t + corners[3] * (1 - s) * t;
+    return z * MATH.HEIGHT_STEP;
+  }
+
+  // A bridge deck rides at the height of its banks, not on the water: walk
+  // each connected arm across the water to the first dry tile and take the
+  // highest bank. A run with no bank yet sits one step over the water.
+  function bridgeDeckAltitude(snapshot, x, y, predicate) {
+    const size = mapSize(snapshot);
+    let bank = -Infinity;
+    for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
+      for (let nx = x + dx, ny = y + dy, steps = 0; nx >= 0 && ny >= 0 && nx < size && ny < size && steps < size; nx += dx, ny += dy, steps += 1) {
+        const i = ny * size + nx;
+        if (!predicate(snapshot, i)) break;
+        if (!isWater(snapshot, i)) { bank = Math.max(bank, altitudeAt(snapshot, i)); break; }
+      }
+    }
+    const here = altitudeAt(snapshot, y * size + x);
+    return Number.isFinite(bank) ? Math.max(bank, here + 1) : here + 1;
+  }
+
+  function drawPier(context, sx, top, bottom, zoom) {
+    if (bottom - top < 2) return;
+    context.fillStyle = "#6f7278";
+    context.fillRect(sx - 2 * zoom, top, 2 * zoom, bottom - top);
+    context.fillStyle = "#54565c";
+    context.fillRect(sx, top, 2 * zoom, bottom - top);
   }
 
   function connectorMask(snapshot, x, y, predicate) {
@@ -498,25 +640,30 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     const size = mapSize(snapshot);
     const index = y * size + x;
     if (!predicate(snapshot, index)) return;
-    const point = projectPoint(snapshot, x, y, altitudeAt(snapshot, index), true);
-    const mask = connectorMask(snapshot, x, y, predicate);
-    // A wire or pipe that shares a tile with a road is a covering overlay,
-    // not a second ground ribbon: draw it thin so the road stays readable
-    // underneath (the SC2000 wire-over-road / pipe-under-road look). Without
-    // this the two ribbons painted over each other and the crossing read as a
-    // single murky blob.
-    const roadHere = isRoad(snapshot, index);
-    const overlay = (family === "wire" || family === "pipe") && roadHere;
+    // A street reaches out to the onramp that climbs from it.
+    const mask = connectorMask(snapshot, x, y, family === "road" ? (snap, i) => isRoad(snap, i) || isOnramp(snap, i) : predicate);
     // Over water, road and rail tiles draw their deck family so crossings
-    // read as bridges with guard rails, not floating ribbons.
+    // read as bridges with guard rails, not floating ribbons. The deck rides
+    // at the height of its banks and stands on a pier.
     const bridgeFamily = isWater(snapshot, index)
       ? (family === "road" ? "bridge-road" : family === "rail" ? "bridge-rail" : null)
       : null;
     const frameFamily = bridgeFamily || family;
-    const spriteDrawn = overlay
-      ? drawSprite(context, `${frameFamily}.mask-${mask}`, point.sx, point.sy)
-      : drawSprite(context, `${frameFamily}.mask-${mask}`, point.sx, point.sy);
+    const ground = altitudeAt(snapshot, index);
+    const deck = bridgeFamily ? bridgeDeckAltitude(snapshot, x, y, predicate) : ground;
+    const point = projectPoint(snapshot, x, y, deck, true);
+    if (bridgeFamily) {
+      const zoom = state.camera.zoom;
+      drawPier(context, point.sx, point.sy + 2 * zoom, point.sy + (deck - ground) * MATH.HEIGHT_STEP * zoom + 4 * zoom, zoom);
+    }
+    // On a slope the piece is laid on the tilted ground, so a hillside road,
+    // railway or power line climbs with the hill instead of stepping.
+    // A wire or pipe that shares a tile with a road draws the same frame over
+    // it (the SC2000 wire-over-road look).
+    const corners = bridgeFamily ? [0, 0, 0, 0] : liftedCorners(groundLift(snapshot, index));
+    const spriteDrawn = drawOnSurface(context, `${frameFamily}.mask-${mask}`, point.sx, point.sy, corners);
     if (!spriteDrawn) {
+      const overlay = (family === "wire" || family === "pipe") && isRoad(snapshot, index);
       context.fillStyle = family === "road" ? "#555" : family === "rail" ? "#443c35" : "#292929";
       const w = overlay ? 4 : 18;
       const h = overlay ? 2 : 4;
@@ -535,11 +682,15 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     fallbackDiamond(context, point.sx, point.sy, "rgba(12,14,16,0.48)", null);
     const mask = connectorMask(snapshot, x, y, (snap, i) => isTunnel(snap, i));
     // The four shared-edge midpoints, in the same projection the tiles use.
+    // Half the neighbour offset on a 64x32 tile. These were written for the
+    // old 48x24 tile and put the portals a quarter of the way inside the edge.
+    const qx = MATH.TILE_W / 4;
+    const qy = MATH.TILE_H / 4;
     const edges = [
-      { bit: 1, ex: 12, ey: -6, ok: y > 0 },
-      { bit: 2, ex: 12, ey: 6, ok: x < size - 1 },
-      { bit: 4, ex: -12, ey: 6, ok: y < size - 1 },
-      { bit: 8, ex: -12, ey: -6, ok: x > 0 },
+      { bit: 1, ex: qx, ey: -qy, ok: y > 0 },
+      { bit: 2, ex: qx, ey: qy, ok: x < size - 1 },
+      { bit: 4, ex: -qx, ey: qy, ok: y < size - 1 },
+      { bit: 8, ex: -qx, ey: -qy, ok: x > 0 },
     ];
     context.fillStyle = "#0b0d0f";
     edges.forEach((edge) => {
@@ -556,45 +707,110 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     });
   }
 
-  // Highways and onramps draw their bespoke atlas frames now: a
-  // direction-aware deck with centre line and edge stripes (bridge deck over
-  // water), and a mask-driven ramp wedge. Procedural rects remain only as a
-  // graceful fallback.
+  // Highways stand on piers, SC2K-style: the deck rides HIGHWAY_DECK_STEPS
+  // over the ground (over its banks on a bridge), roads and railways pass
+  // underneath, and onramps climb from the street to the deck. The deck and
+  // the ramps are elevated objects, so they are drawn with the buildings and
+  // sorted with them (drawElevatedHighway); the ground keeps only the
+  // shadow the deck throws.
+  const HIGHWAY_DECK_STEPS = 1;
   function drawHighway(context, snapshot, x, y) {
     const size = mapSize(snapshot);
     const index = y * size + x;
-    const highway = isHighway(snapshot, index);
-    const onramp = isOnramp(snapshot, index);
-    if (!highway && !onramp) return;
+    if (!isHighway(snapshot, index) || isWater(snapshot, index)) return;
     const point = projectPoint(snapshot, x, y, altitudeAt(snapshot, index), true);
     const zoom = state.camera.zoom;
-    if (highway) {
-      const mask = connectorMask(snapshot, x, y, isHighway);
-      const family = isWater(snapshot, index) ? "bridge-highway" : "highway";
-      if (family === "highway") {
-        // The deck is elevated: a soft ground shadow slides out from under
-        // the slab toward the lower-right, the SC2000 raised-object read.
-        context.fillStyle = "rgba(22, 28, 24, 0.18)";
-        context.beginPath();
-        context.moveTo(point.sx + 4 * zoom, point.sy - 7 * zoom);
-        context.lineTo(point.sx + 28 * zoom, point.sy + 5 * zoom);
-        context.lineTo(point.sx + 4 * zoom, point.sy + 17 * zoom);
-        context.lineTo(point.sx - 20 * zoom, point.sy + 5 * zoom);
-        context.closePath();
-        context.fill();
+    context.fillStyle = "rgba(22, 28, 24, 0.18)";
+    context.beginPath();
+    context.moveTo(point.sx + 4 * zoom, point.sy - 7 * zoom);
+    context.lineTo(point.sx + 28 * zoom, point.sy + 5 * zoom);
+    context.lineTo(point.sx + 4 * zoom, point.sy + 17 * zoom);
+    context.lineTo(point.sx - 20 * zoom, point.sy + 5 * zoom);
+    context.closePath();
+    context.fill();
+  }
+
+  const onHighway = (snapshot, index) => isHighway(snapshot, index) || isOnramp(snapshot, index);
+
+  // Two highways that cross — both running on past the crossing, not a T —
+  // make an interchange: the world-x run climbs over the world-y run. A tile
+  // of the crossing has highway on all four sides and at least two tiles of
+  // highway beyond it in every direction.
+  function highwayRunLength(snapshot, x, y, dx, dy, limit) {
+    const size = mapSize(snapshot);
+    let length = 0;
+    for (let nx = x + dx, ny = y + dy; length < limit && nx >= 0 && ny >= 0 && nx < size && ny < size && isHighway(snapshot, ny * size + nx); nx += dx, ny += dy) length += 1;
+    return length;
+  }
+  function isInterchange(snapshot, x, y) {
+    const size = mapSize(snapshot);
+    if (x < 0 || y < 0 || x >= size || y >= size || !isHighway(snapshot, y * size + x)) return false;
+    return [[0, -1], [1, 0], [0, 1], [-1, 0]].every(([dx, dy]) => highwayRunLength(snapshot, x, y, dx, dy, 2) >= 2);
+  }
+  // The upper run's deck height at an edge `e` tiles out from the crossing:
+  // two decks up over it, easing down to one over two tiles.
+  const INTERCHANGE_RAMP_TILES = 2;
+  const upperDeck = (e) => HIGHWAY_DECK_STEPS * (1 + Math.max(0, 1 - e / INTERCHANGE_RAMP_TILES));
+  // A world-x highway tile within the ramp of an interchange: its distance in
+  // tiles (1 = next to the crossing) and the world edge that faces it.
+  function interchangeApproach(snapshot, x, y) {
+    for (const [dx, edge] of [[1, 2], [-1, 8]]) {
+      for (let d = 1; d <= INTERCHANGE_RAMP_TILES; d += 1) {
+        const size = mapSize(snapshot);
+        const nx = x + dx * d;
+        if (nx < 0 || nx >= size || !isHighway(snapshot, y * size + nx)) break;
+        if (isInterchange(snapshot, nx, y)) return { d, edge };
       }
-      if (!drawSprite(context, `${family}.mask-${mask}`, point.sx, point.sy)) {
+    }
+    return null;
+  }
+  function drawElevatedHighway(context, snapshot, item, point) {
+    const size = mapSize(snapshot);
+    const x = Number.isFinite(item.tileX) ? item.tileX : Math.floor(item.x);
+    const y = Number.isFinite(item.tileY) ? item.tileY : Math.floor(item.y);
+    const index = y * size + x;
+    const zoom = state.camera.zoom;
+    const K = MATH.HEIGHT_STEP * zoom;
+    const ground = altitudeAt(snapshot, index);
+    const water = isWater(snapshot, index);
+    const base = water ? bridgeDeckAltitude(snapshot, x, y, onHighway) : ground;
+    const baseY = point.sy - (base - ground) * K;
+    const slope = water ? [0, 0, 0, 0] : liftedCorners(groundLift(snapshot, index));
+    if (!item.onramp) {
+      const mask = connectorMask(snapshot, x, y, isHighway);
+      const family = water ? "bridge-highway" : "highway";
+      if (isInterchange(snapshot, x, y)) {
+        // The crossing: the world-y deck below; the world-x deck over it
+        // comes as its own item, after the whole block.
+        // Each deck joins its own run and the sibling carriageway beside it.
+        if (item.visualKind === "highway-upper") {
+          const upperMask = 10 | (isInterchange(snapshot, x, y - 1) ? 1 : 0) | (isInterchange(snapshot, x, y + 1) ? 4 : 0);
+          drawOnSurface(context, `${family}.mask-${upperMask}`, point.sx, baseY, slope.map((value) => value + upperDeck(0)));
+          return;
+        }
+        const lowerMask = 5 | (isInterchange(snapshot, x + 1, y) ? 2 : 0) | (isInterchange(snapshot, x - 1, y) ? 8 : 0);
+        drawPier(context, point.sx, baseY - upperDeck(0) * K + 4 * zoom, point.sy + 2 * zoom, zoom);
+        drawOnSurface(context, `${family}.mask-${lowerMask}`, point.sx, baseY, slope.map((value) => value + HIGHWAY_DECK_STEPS));
+        return;
+      }
+      const approach = interchangeApproach(snapshot, x, y);
+      let deck = slope.map((value) => value + HIGHWAY_DECK_STEPS);
+      if (approach) {
+        const inner = liftedCorners(approach.edge, 1);
+        deck = inner.map((onInner, corner) => slope[corner] + upperDeck(onInner ? approach.d - 1 : approach.d));
+      }
+      drawPier(context, point.sx, baseY - Math.max(...deck) * K + 4 * zoom, point.sy + 2 * zoom, zoom);
+      if (!drawOnSurface(context, `${family}.mask-${mask}`, point.sx, baseY, deck)) {
         context.fillStyle = "#4a4a52";
-        context.fillRect(point.sx - 11 * zoom, point.sy - 7 * zoom, 22 * zoom, 8 * zoom);
-        context.fillStyle = "#8d8d76";
-        context.fillRect(point.sx - 9 * zoom, point.sy - 4 * zoom, 18 * zoom, 1 * zoom);
+        context.fillRect(point.sx - 11 * zoom, baseY - HIGHWAY_DECK_STEPS * K - 7 * zoom, 22 * zoom, 8 * zoom);
       }
       return;
     }
     // A ramp has two ends: a highway side (wide) and a road side (narrow).
     // When each side has exactly one neighbour, pick the orientation frame;
-    // otherwise fall back to the mask ribbon.
-    const hMask = connectorMask(snapshot, x, y, (snap, i) => isHighway(snap, i) || isOnramp(snap, i));
+    // otherwise fall back to the mask ribbon. The ramp climbs from the road
+    // edge at street level to the highway edge at deck level.
+    const hMask = connectorMask(snapshot, x, y, isHighway);
     const rMask = connectorMask(snapshot, x, y, isRoad);
     const dirs = (mask) => ["n", "e", "s", "w"].filter((_, bit) => mask & (1 << bit));
     const hDirs = dirs(hMask);
@@ -602,15 +818,20 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     const orientation = hDirs.length === 1 && rDirs.length === 1 ? `onramp.${hDirs[0]}${rDirs[0]}` : null;
     const onrampMask = connectorMask(snapshot, x, y, (snap, i) => isRoad(snap, i) || isHighway(snap, i) || isOnramp(snap, i));
     const onrampFrame = orientation && atlasFrame(orientation) ? orientation : `onramp.mask-${onrampMask}`;
-    if (!drawSprite(context, onrampFrame, point.sx, point.sy)) {
+    const high = liftedCorners(hMask, HIGHWAY_DECK_STEPS);
+    const low = liftedCorners(rMask, 1);
+    // Corners on the highway edge stand at the deck; corners on the road
+    // edge at the street; a corner shared by both, or by neither, halfway.
+    const corners = high.map((value, corner) => {
+      if (value && low[corner]) return HIGHWAY_DECK_STEPS / 2;
+      if (value) return value;
+      if (low[corner]) return 0;
+      return hMask ? HIGHWAY_DECK_STEPS / 2 : 0;
+    }).map((value, corner) => value + slope[corner]);
+    drawPier(context, point.sx, baseY - (HIGHWAY_DECK_STEPS / 2) * K + 4 * zoom, point.sy + 2 * zoom, zoom);
+    if (!drawOnSurface(context, onrampFrame, point.sx, baseY, corners)) {
       context.fillStyle = "#5a5a60";
-      context.beginPath();
-      context.moveTo(point.sx - 9 * zoom, point.sy + 1 * zoom);
-      context.lineTo(point.sx + 9 * zoom, point.sy - 6 * zoom);
-      context.lineTo(point.sx + 9 * zoom, point.sy - 1 * zoom);
-      context.lineTo(point.sx - 9 * zoom, point.sy + 3 * zoom);
-      context.closePath();
-      context.fill();
+      context.fillRect(point.sx - 9 * zoom, baseY - K - 3 * zoom, 18 * zoom, 5 * zoom);
     }
   }
 
@@ -638,18 +859,37 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     const color = zoneColor(gridValue(snapshot, ["zone", "zoneType"], index, ZONE.NONE));
     if (!color) return;
     const point = projectPoint(snapshot, x, y, altitudeAt(snapshot, index), true);
-    fallbackDiamond(context, point.sx, point.sy, color, null);
+    // On a slope the tint lies on the tilted ground, like the network pieces.
+    const corners = liftedCorners(groundLift(snapshot, index));
+    const zoom = state.camera.zoom;
+    const lift = (dx, dy) => surfaceLift(corners, dx / zoom, dy / zoom) * zoom;
+    if (corners.some(Boolean)) {
+      const halfW = (MATH.TILE_W / 2) * zoom;
+      const halfH = (MATH.TILE_H / 2) * zoom;
+      const K = MATH.HEIGHT_STEP * zoom;
+      context.beginPath();
+      context.moveTo(point.sx, point.sy - halfH - corners[0] * K);
+      context.lineTo(point.sx + halfW, point.sy - corners[1] * K);
+      context.lineTo(point.sx, point.sy + halfH - corners[2] * K);
+      context.lineTo(point.sx - halfW, point.sy - corners[3] * K);
+      context.closePath();
+      context.fillStyle = color;
+      context.fill();
+    } else {
+      fallbackDiamond(context, point.sx, point.sy, color, null);
+    }
     const zone = gridValue(snapshot, ["zone", "zoneType"], index, ZONE.NONE);
     if (zone === ZONE.R || zone === ZONE.C || zone === ZONE.I) {
       // A whisper of a hatch — three short strokes — so claimed land stays
       // calm and clean rather than busy.
-      const zoom = state.camera.zoom;
       context.strokeStyle = "rgba(255,255,255,0.08)";
       context.lineWidth = 1;
       for (let i = -1; i <= 1; i += 1) {
+        const x0 = -9 * zoom + i * 7 * zoom; const y0 = -4 * zoom + i * 3.5 * zoom;
+        const x1 = x0 + 18 * zoom; const y1 = 4 * zoom - i * 3.5 * zoom;
         context.beginPath();
-        context.moveTo(point.sx - 9 * zoom + i * 7 * zoom, point.sy - 4 * zoom + i * 3.5 * zoom);
-        context.lineTo(point.sx - 9 * zoom + i * 7 * zoom + 18 * zoom, point.sy + 4 * zoom - i * 3.5 * zoom);
+        context.moveTo(point.sx + x0, point.sy + y0 - lift(x0, y0));
+        context.lineTo(point.sx + x1, point.sy + y1 - lift(x1, y1));
         context.stroke();
       }
     }
@@ -661,7 +901,7 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
       const zoom = state.camera.zoom;
       context.strokeStyle = "rgba(245,245,240,0.75)";
       context.lineWidth = Math.max(1, 2 * zoom);
-      for (const axis of [{ dx: 12, dy: 6 }, { dx: -12, dy: 6 }]) {
+      for (const axis of [{ dx: MATH.TILE_W / 4, dy: MATH.TILE_H / 4 }, { dx: -MATH.TILE_W / 4, dy: MATH.TILE_H / 4 }]) {
         context.beginPath();
         context.moveTo(point.sx - axis.dx * zoom, point.sy - axis.dy * zoom);
         context.lineTo(point.sx + axis.dx * zoom, point.sy + axis.dy * zoom);
@@ -701,10 +941,24 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     context.fillRect(point.sx + 3 * zoom, point.sy - 12 * zoom, 1.5 * zoom, 6 * zoom);
   }
 
+  // Civic buildings, leisure and rewards draw the original catalog art the
+  // atlas already carries; everything else has a facility frame.
+  const FACILITY_SPRITES = Object.freeze({
+    hospital: "catalog.hospital", university: "catalog.college", library: "catalog.library", museum: "catalog.museum",
+    prison: "catalog.prison", zoo: "catalog.zoo", stadium: "catalog.stadium", marina: "catalog.marina", "park-big": "catalog.park_big",
+    "mayors-house": "catalog.mayors_house", "city-hall": "catalog.city_hall", statue: "catalog.statue", dome: "catalog.dome",
+    arco: "catalog.arcology", "arco-plymouth": "catalog.arcology", "arco-forest": "catalog.arcology", "arco-darco": "catalog.arcology", "arco-launch": "catalog.arcology",
+  });
+  // A coal plant takes a 4x4 pad; one from an older save or a .sc2 import
+  // keeps its 2x2 footprint and the 2x2 art drawn for it.
+  function facilitySprite(kind, footprint = null) {
+    if (kind === "coal" && footprint && footprint.w === 2 && footprint.h === 2) return "facility.coal-2x2";
+    return FACILITY_SPRITES[kind] || `facility.${kind}`;
+  }
   function normalizeFacilityKind(kind) {
     const value = String(kind || "").toLowerCase();
     // Exact new kinds first: substring rules below would misfile them.
-    for (const exact of ["hydro", "oil", "gas", "nuclear", "solar", "microwave", "fusion", "treatment", "desal", "subway-station", "bus"]) {
+    for (const exact of ["hydro", "oil", "gas", "nuclear", "solar", "microwave", "fusion", "treatment", "desal", "subway-station", "bus", ...Object.keys(FACILITY_SPRITES)]) {
       if (value === exact) return exact;
     }
     if (value.includes("coal") || value.includes("power")) return "coal";
@@ -727,7 +981,7 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
       list.forEach((object) => {
         if (!Number.isFinite(object.x) || !Number.isFinite(object.y)) return;
         const kind = normalizeFacilityKind(object.kind || object.type);
-        const frame = atlasFrame(`facility.${kind}`);
+        const frame = atlasFrame(facilitySprite(kind, object.footprint));
         result.push({
           ...object,
           kind,
@@ -746,7 +1000,7 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     const baseY = Math.max(0, Math.min(size - 1, Math.floor(object.y)));
     const point = projectPoint(snapshot, x, y, altitudeAt(snapshot, baseY * size + baseX), originless);
     drawDropShadow(context, point);
-    drawSprite(context, nightFrame(`facility.${object.kind}`, snapshot), point.sx, point.sy);
+    drawSprite(context, nightFrame(facilitySprite(object.kind, object.footprint), snapshot), point.sx, point.sy);
   }
 
   function fnvUpdate(hash, value) {
@@ -760,34 +1014,58 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     return hash;
   }
 
+  // A chunk's identity is a hash of what it draws. Hashing is not free — a
+  // visible screen holds a few thousand tiles — so each chunk is hashed once
+  // per content revision of the city it belongs to and remembered until the
+  // city changes, the display switches change, or another city is shown. A
+  // snapshot without a revision number is hashed every time, as before.
   function chunkSignature(snapshot, layer, chunkX, chunkY) {
+    const owner = snapshot.alt || snapshot.terrain || snapshot;
+    const revision = Number.isFinite(snapshot.rev) ? snapshot.rev : null;
+    const flags = [MATH.seasonOf(snapshot), isNight(snapshot) ? 1 : 0, state.display.zones ? 1 : 0,
+      state.display.infrastructure ? 1 : 0, state.display.underground ? 1 : 0].join("");
+    const memo = state.chunkSignatureMemo;
+    if (revision === null || !memo || memo.owner !== owner || memo.revision !== revision || memo.flags !== flags) {
+      state.chunkSignatureMemo = revision === null ? null : { owner, revision, flags };
+      state.chunkSignatures.clear();
+    }
+    const memoKey = `${layer}:${chunkX}:${chunkY}`;
+    if (state.chunkSignatureMemo && state.chunkSignatures.has(memoKey)) return state.chunkSignatures.get(memoKey);
+    const signature = computeChunkSignature(snapshot, layer, chunkX, chunkY);
+    if (state.chunkSignatureMemo) state.chunkSignatures.set(memoKey, signature);
+    return signature;
+  }
+
+  function computeChunkSignature(snapshot, layer, chunkX, chunkY) {
     const size = mapSize(snapshot);
     const startX = chunkX * CHUNK_SIZE;
     const startY = chunkY * CHUNK_SIZE;
     const endX = Math.min(size, startX + CHUNK_SIZE);
     const endY = Math.min(size, startY + CHUNK_SIZE);
+    const alt = snapshot.alt || snapshot.height || snapshot.elevation || null;
+    const water = snapshot.water || null;
+    const terrain = snapshot.terrainType || snapshot.terrain || null;
+    const networks = layer === "terrain" ? [] : [
+      snapshot.road || snapshot.roads, snapshot.rail || snapshot.rails, snapshot.wire || snapshot.wires,
+      snapshot.pipe || snapshot.pipes, snapshot.subway, snapshot.highway, snapshot.onramp, snapshot.over,
+    ].filter(Boolean);
+    const zone = snapshot.zone || snapshot.zoneType || null;
     let hash = 2166136261;
     for (let y = startY; y < endY; y += 1) {
       for (let x = startX; x < endX; x += 1) {
         const index = y * size + x;
-        hash = fnvUpdate(hash, altitudeAt(snapshot, index));
+        hash = fnvUpdate(hash, alt ? alt[index] : 0);
         if (layer === "terrain") {
-          hash = fnvUpdate(hash, isWater(snapshot, index));
-          hash = fnvUpdate(hash, String(gridValue(snapshot, ["terrainType", "terrain"], index, "")).length);
+          hash = fnvUpdate(hash, water ? water[index] : 0);
+          hash = fnvAny(hash, terrain ? terrain[index] : 0);
         } else {
-          hash = fnvUpdate(hash, isRoad(snapshot, index));
-          hash = fnvUpdate(hash, isRail(snapshot, index));
-          hash = fnvUpdate(hash, isWire(snapshot, index));
-          hash = fnvUpdate(hash, isPipe(snapshot, index));
-          hash = fnvUpdate(hash, isSubway(snapshot, index));
-          hash = fnvUpdate(hash, isHighway(snapshot, index));
-          hash = fnvUpdate(hash, isOnramp(snapshot, index));
-          hash = fnvAny(hash, gridValue(snapshot, ["zone", "zoneType"], index, 0));
+          for (let n = 0; n < networks.length; n += 1) hash = fnvUpdate(hash, networks[n][index]);
+          hash = fnvAny(hash, zone ? zone[index] : 0);
         }
       }
     }
     if (layer === "terrain") {
-      hash = fnvUpdate(hash, Math.floor(((Number(snapshot.tick) || 0) % 1500) / 375));
+      hash = fnvUpdate(hash, MATH.seasonOf(snapshot));
     }
     if (layer === "infrastructure") {
       hash = fnvUpdate(hash, isNight(snapshot) ? 1 : 0);
@@ -842,7 +1120,7 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     const bounds = chunkBounds(snapshot, chunkX, chunkY);
     const canvas = makeOffscreen(Math.max(1, Math.round(bounds.width * state.dpr)), Math.max(1, Math.round(bounds.height * state.dpr)));
     const context = canvas.getContext("2d", { alpha: true });
-    context.imageSmoothingEnabled = false;
+    context.imageSmoothingEnabled = spriteSmoothing();
     context.setTransform(state.dpr, 0, 0, state.dpr, -bounds.minX * state.dpr, -bounds.minY * state.dpr);
     const size = mapSize(snapshot);
     const startX = chunkX * CHUNK_SIZE;
@@ -869,7 +1147,8 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
             drawConnector(context, snapshot, x, y, "rail", isRail);
             drawHighway(context, snapshot, x, y);
             drawConnector(context, snapshot, x, y, "wire", isWire);
-            drawConnector(context, snapshot, x, y, "pipe", isPipe);
+            // Water pipes are buried: like the subway they show on the
+            // underground view only, as in SC2K.
           }
         }
       });
@@ -894,6 +1173,8 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
   }
 
   function clearChunkCache() {
+    state.sceneryRaster = null;
+    state.sceneryExtents = null;
     state.chunkCache.forEach((entry) => {
       entry.canvas.width = 0;
       entry.canvas.height = 0;
@@ -916,20 +1197,23 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
 
   function visibleChunks(snapshot, tiles) {
     const chunks = new Map();
+    const size = mapSize(snapshot);
+    const columns = Math.ceil(size / CHUNK_SIZE);
     tiles.forEach(([x, y]) => {
       const chunkX = Math.floor(x / CHUNK_SIZE);
       const chunkY = Math.floor(y / CHUNK_SIZE);
-      chunks.set(`${chunkX}:${chunkY}`, { chunkX, chunkY });
+      const key = chunkY * columns + chunkX;
+      if (!chunks.has(key)) chunks.set(key, { chunkX, chunkY });
     });
-    const size = mapSize(snapshot);
-    facilityObjects(snapshot).forEach((facility) => {
+    sceneryFor(snapshot).facilities.forEach((facility) => {
       const x = Math.max(0, Math.min(size - 1, Math.floor(facility.x)));
       const y = Math.max(0, Math.min(size - 1, Math.floor(facility.y)));
       const point = projectPoint(snapshot, x, y, altitudeAt(snapshot, y * size + x));
       if (point.sx < -100 || point.sx > state.cssWidth + 100 || point.sy < -120 || point.sy > state.cssHeight + 50) return;
       const chunkX = Math.floor(x / CHUNK_SIZE);
       const chunkY = Math.floor(y / CHUNK_SIZE);
-      chunks.set(`${chunkX}:${chunkY}`, { chunkX, chunkY });
+      const key = chunkY * columns + chunkX;
+      if (!chunks.has(key)) chunks.set(key, { chunkX, chunkY });
     });
     return [...chunks.values()].sort((a, b) => {
       const ax = Math.min(size - 1, a.chunkX * CHUNK_SIZE + CHUNK_SIZE - 1);
@@ -1025,17 +1309,33 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     const size = mapSize(snapshot);
     const layers = gridLayers(snapshot);
     const buildings = [];
-    const covered = new Set();
+    const covered = new Uint8Array(size * size);
     if (Array.isArray(snapshot.buildings)) {
       snapshot.buildings.filter((building) => Number.isFinite(building.x) && Number.isFinite(building.y)).forEach((building) => {
         const footprint = normalizeFootprint(building.footprint, building.w || building.width, building.h || building.height);
-        buildings.push({ ...building, footprint });
-        for (let dy = 0; dy < footprint.h; dy += 1) for (let dx = 0; dx < footprint.w; dx += 1) covered.add(`${building.x + dx}:${building.y + dy}`);
+        const status = normalizeBuildingState(building.state || building.status);
+        const prefix = zonePrefix(building.zone || building.type) || "r";
+        // A lot that is not standing normally shows its state at its own
+        // size. Where the atlas has no state frame for that size, each cell
+        // gets the one-tile construction or abandoned sprite instead of a
+        // 2x2 frame drawn over a different footprint.
+        const transient = status === "foundation" || status === "construction" || status === "recovering" || status === "abandoned";
+        if (transient && footprint.w !== 2 && !atlasFrame(`building.${prefix}.${footprint.w}.1.${status}`)) {
+          const spriteId = status === "abandoned" ? "catalog.abandoned" : "catalog.construction";
+          for (let dy = 0; dy < footprint.h; dy += 1) for (let dx = 0; dx < footprint.w; dx += 1) {
+            buildings.push({ ...building, x: building.x + dx, y: building.y + dy, w: 1, h: 1, footprint: { w: 1, h: 1 }, spriteId });
+          }
+        } else buildings.push({ ...building, footprint });
+        for (let dy = 0; dy < footprint.h; dy += 1) for (let dx = 0; dx < footprint.w; dx += 1) {
+          const cx = building.x + dx;
+          const cy = building.y + dy;
+          if (cx >= 0 && cy >= 0 && cx < size && cy < size) covered[cy * size + cx] = 1;
+        }
       });
     }
     for (let y = 0; y < size; y += 1) {
       for (let x = 0; x < size; x += 1) {
-        if (covered.has(`${x}:${y}`)) continue;
+        if (covered[y * size + x]) continue;
         const index = y * size + x;
         const stage = Number(layerAt(layers.stage, index, 0)) | 0;
         const zone = layerAt(layers.zone, index, ZONE.NONE);
@@ -1074,46 +1374,42 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     const stage = Math.max(1, Math.min(3, Number(building.stage || building.level || 1) | 0));
     const variant = 1 + ((Math.max(1, Number(building.variant) || 1) - 1) % buildingVariantCount());
     const buildState = normalizeBuildingState(building.state || building.status);
+    // A declining building still stands: it keeps its own look unless the
+    // atlas has a declined frame at its size.
+    const sized = `building.${prefix}.${stage}.1.${buildState}`;
     const preferred = buildState === "normal"
       ? (night ? `building.${prefix}.${stage}.${variant}.night` : `building.${prefix}.${stage}.${variant}.normal`)
-      : `building.${prefix}.2.1.${buildState}`;
+      : atlasFrame(sized) ? sized : stage === 2 ? `building.${prefix}.2.1.${buildState}` : `building.${prefix}.${stage}.${variant}.normal`;
     return atlasFrame(preferred) ? preferred : `building.${prefix}.${stage}.${variant}.normal`;
   }
 
-  function buildingSignature(snapshot) {
-    const size = mapSize(snapshot);
-    const layers = gridLayers(snapshot);
-    let hash = 2166136261;
-    for (let index = 0; index < size * size; index += 1) {
-      hash = fnvUpdate(hash, Number(layerAt(layers.stage, index, 0)) || 0);
-      hash = fnvUpdate(hash, Number(layerAt(layers.variant, index, 0)) || 0);
-      hash = fnvAny(hash, layerAt(layers.zone, index, 0));
-      hash = fnvUpdate(hash, Boolean(layerAt(layers.trees, index, false)));
-      hash = fnvUpdate(hash, Boolean(layerAt(layers.park, index, false)) || layerAt(layers.over, index, OVER.NONE) === OVER.PARK);
-      hash = fnvUpdate(hash, layerAt(layers.catalogId, index, 0));
-      hash = fnvUpdate(hash, layerAt(layers.blaze, index, 0));
-    }
-    [snapshot.buildings, snapshot.trees].forEach((list) => {
-      if (!Array.isArray(list)) return;
-      list.forEach((object) => {
-        hash = fnvUpdate(hash, object?.x);
-        hash = fnvUpdate(hash, object?.y);
-        hash = fnvUpdate(hash, object?.stage || object?.level);
-        hash = fnvUpdate(hash, object?.variant);
-        hash = fnvAny(hash, object?.zone || object?.state || object?.status || object?.type || "");
-      });
-    });
-    return hash.toString(16);
+  // The scenery the buildings layer draws — grown buildings, trees, parks,
+  // blazes and imported landmarks — sorted into painter order and projected to
+  // rotated map coordinates once per content revision, rotation, season and
+  // night flag. A frame only culls and draws; before, every pan rebuilt the
+  // whole map's list, sorted it, and hashed every tile to decide whether it
+  // had to. A snapshot without a revision number is rebuilt every time.
+  function treeSpriteVariant(season, index) {
+    // Seasons accent the forest, they do not repaint it: one tree in
+    // eight blossoms in spring, one in three turns in autumn, and the
+    // rest stay green so the woods still read as woods.
+    return season === 0
+      ? ((index % 8) === 0 ? 5 : 1 + (index % 3))
+      : season === 3
+        ? ((index % 3) === 0 ? 6 : 1 + (index % 3))
+        : season === 2
+          ? ((index % 3) === 0 ? 4 : 1 + (index % 3))
+          : 1 + (index % 3);
   }
 
-  function drawBuildings(snapshot, viewKey) {
+  function sceneryFor(snapshot) {
+    const owner = snapshot.alt || snapshot.terrain || snapshot;
+    const revision = Number.isFinite(snapshot.rev) ? snapshot.rev : null;
+    const season = MATH.seasonOf(snapshot);
     const night = isNight(snapshot);
-    const season = Math.floor(((Number(snapshot.tick) || 0) % 1500) / 375);
-    const key = `${viewKey}:${buildingSignature(snapshot)}:${night ? "n" : "d"}:${season}`;
-    if (state.lastKeys.buildings === key) return;
-    state.lastKeys.buildings = key;
-    clearContext("buildings");
-    const context = state.contexts.buildings;
+    const key = `${revision}:${state.camera.rotation}:${season}:${night ? "n" : "d"}`;
+    const cached = state.derived;
+    if (revision !== null && cached && cached.owner === owner && cached.key === key) return cached;
     const size = mapSize(snapshot);
     const layers = gridLayers(snapshot);
     const scenery = buildingObjects(snapshot).map((building) => ({ ...building, visualKind: "building" }));
@@ -1123,84 +1419,191 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
           scenery.push({ ...tree, visualKind: "tree", variant: tree.variant || 1 + (sequence % 3), footprint: { w: 1, h: 1 } });
         }
       });
-    } else {
+    } else if (layers.trees) {
       for (let index = 0; index < size * size; index += 1) {
-        if (!layerAt(layers.trees, index, false)) continue;
-        scenery.push({
-          x: index % size, y: Math.floor(index / size), visualKind: "tree",
-          // Seasons accent the forest, they do not repaint it: one tree in
-          // eight blossoms in spring, one in three turns in autumn, and the
-          // rest stay green so the woods still read as woods.
-          variant: season === 0
-            ? ((index % 8) === 0 ? 5 : 1 + (index % 3))
-            : season === 3
-              ? ((index % 3) === 0 ? 6 : 1 + (index % 3))
-              : season === 2
-                ? ((index % 3) === 0 ? 4 : 1 + (index % 3))
-                : 1 + (index % 3),
-          footprint: { w: 1, h: 1 },
-        });
+        if (!layers.trees[index]) continue;
+        scenery.push({ x: index % size, y: Math.floor(index / size), visualKind: "tree", variant: treeSpriteVariant(season, index), footprint: { w: 1, h: 1 } });
       }
     }
     for (let index = 0; index < size * size; index += 1) {
       if (!layerAt(layers.park, index, false) && layerAt(layers.over, index, OVER.NONE) !== OVER.PARK) continue;
       scenery.push({ x: index % size, y: Math.floor(index / size), visualKind: "tree", variant: 3, footprint: { w: 1, h: 1 } });
     }
-    if (snapshot.blaze) {
+    const constructionSites = [];
+    if (layers.blaze || layers.buildingState) {
       for (let index = 0; index < size * size; index += 1) {
-        const value = layers.blaze[index];
-        if (!value) continue;
-        scenery.push({ x: index % size, y: Math.floor(index / size), visualKind: "blaze", flooded: value === 6, age: value, footprint: { w: 1, h: 1 } });
+        const value = layers.blaze ? layers.blaze[index] : 0;
+        if (value) scenery.push({ x: index % size, y: Math.floor(index / size), visualKind: "blaze", flooded: value === 6, age: value, footprint: { w: 1, h: 1 } });
+        if (layers.buildingState && Number(layers.buildingState[index]) === 2) constructionSites.push(index);
       }
     }
     const catalog = window.AISystem6BonsaiCatalog;
     MATH.collectCatalogObjects(snapshot, catalog).forEach((object) => scenery.push({ ...object, visualKind: "catalog" }));
-    MATH.sortByAnchor(scenery, size, state.camera.rotation).forEach((building) => {
-      const baseX = Math.max(0, Math.min(size - 1, Math.floor(building.x)));
-      const baseY = Math.max(0, Math.min(size - 1, Math.floor(building.y)));
-      const footprint = normalizeFootprint(building.footprint, building.width, building.height);
-      const x = building.x + ((footprint.w || 1) - 1) / 2;
-      const y = building.y + ((footprint.h || 1) - 1) / 2;
-      const point = projectPoint(snapshot, x, y, altitudeAt(snapshot, baseY * size + baseX));
-      if (point.sx < -120 || point.sx > state.cssWidth + 120 || point.sy < -130 || point.sy > state.cssHeight + 60) return;
-      if (building.visualKind === "building" || building.visualKind === "tree" || building.visualKind === "catalog") {
-        drawDropShadow(context, point);
+    // Highway decks and onramps stand above the ground, so they sort with
+    // the buildings: a tower behind the deck stays behind it.
+    const upperDecks = [];
+    for (let index = 0; index < size * size; index += 1) {
+      const highway = isHighway(snapshot, index);
+      if (!highway && !isOnramp(snapshot, index)) continue;
+      const x = index % size;
+      const y = Math.floor(index / size);
+      scenery.push({ x, y, visualKind: "highway", onramp: !highway, footprint: { w: 1, h: 1 } });
+      // An interchange's upper deck is drawn after every lower deck of its
+      // crossing block: it sorts as the whole 2x2 block, drawn at its tile.
+      if (highway && isInterchange(snapshot, x, y)) {
+        const blockX = isInterchange(snapshot, x - 1, y) ? x - 1 : x;
+        const blockY = isInterchange(snapshot, x, y - 1) ? y - 1 : y;
+        upperDecks.push({ x: blockX, y: blockY, tileX: x, tileY: y, visualKind: "highway-upper", footprint: { w: 2, h: 2 } });
       }
-      if (building.visualKind === "blaze") {
-        const width = 20 * state.camera.zoom;
-        const height = (building.flooded ? 8 : 14 + (building.age || 1) * 3) * state.camera.zoom;
-        context.fillStyle = building.flooded ? "rgba(64, 128, 200, 0.75)" : building.age >= 3 ? "#d1481f" : "#e8862a";
-        context.fillRect(point.sx - width / 2, point.sy - height, width, height);
-        return;
+    }
+    scenery.push(...upperDecks);
+    const items = MATH.sortByAnchor(scenery, size, state.camera.rotation).map((object) => {
+      if (Number.isFinite(object.tileX)) {
+        const rotated = MATH.rotateTile(object.tileX, object.tileY, size, state.camera.rotation);
+        return { object, rx: rotated.x, ry: rotated.y, alt: altitudeAt(snapshot, object.tileY * size + object.tileX) };
       }
-      if (building.visualKind === "catalog") {
-        if (building.spriteId && drawSprite(context, nightFrame(building.spriteId, snapshot), point.sx, point.sy)) return;
-        // Bespoke recipe first, then a shared facility frame, then the
-        // category-tinted placeholder block.
-        if (drawSprite(context, nightFrame(`catalog.${building.label}`, snapshot), point.sx, point.sy)) return;
-        const shared = { police: "police", fire: "fire", school: "school", hospital: "clinic", pump: "pump", water_tower: "tower", rail_station: "station" }[building.label];
-        if (shared && drawSprite(context, nightFrame(`facility.${shared}`, snapshot), point.sx, point.sy)) return;
-        if (drawSprite(context, nightFrame(`catalog.${building.category === "powerPlant" ? "power_plant" : building.category}`, snapshot), point.sx, point.sy)) return;
-        const width = 22 * state.camera.zoom;
-        const height = (10 + 8 * (building.size || 1)) * state.camera.zoom;
-        context.fillStyle = CATALOG_COLORS[building.category] || "#8a8f98";
-        context.fillRect(point.sx - width / 2, point.sy - height, width, height);
-        context.strokeStyle = "#2f2a26";
-        context.strokeRect(point.sx - width / 2, point.sy - height, width, height);
-        return;
-      }
-      if (building.visualKind === "tree") {
-        drawSprite(context, `tree.${building.variant === 2 ? "conifer" : building.variant === 3 ? "young" : building.variant === 4 ? "maple" : building.variant === 5 ? "blossom" : building.variant === 6 ? "winter" : "broadleaf"}`, point.sx, point.sy);
-        return;
-      }
-      if (!drawSprite(context, buildingFrame(building, night), point.sx, point.sy)) {
-        const color = zonePrefix(building.zone) === "r" ? "#b75d52" : zonePrefix(building.zone) === "c" ? "#486eaf" : "#b67c3b";
-        context.fillStyle = color;
-        const width = 22 * state.camera.zoom;
-        const height = 20 * Math.max(1, building.stage || 1) * state.camera.zoom;
-        context.fillRect(point.sx - width / 2, point.sy - height, width, height);
-      }
+      const baseX = Math.max(0, Math.min(size - 1, Math.floor(object.x)));
+      const baseY = Math.max(0, Math.min(size - 1, Math.floor(object.y)));
+      const footprint = normalizeFootprint(object.footprint, object.width, object.height);
+      const rotated = MATH.rotateTile(object.x + ((footprint.w || 1) - 1) / 2, object.y + ((footprint.h || 1) - 1) / 2, size, state.camera.rotation);
+      return { object, rx: rotated.x, ry: rotated.y, alt: altitudeAt(snapshot, baseY * size + baseX) };
     });
+    const blossoms = [];
+    if (season === 0 && layers.trees) {
+      for (let index = 0; index < size * size; index += 3) if (layers.trees[index]) blossoms.push(index);
+    }
+    state.derived = {
+      owner, key, items, constructionSites, blossoms,
+      facilities: facilityObjects(snapshot),
+      waterfalls: typeof MATH.waterfallEdges === "function" ? MATH.waterfallEdges(snapshot) : [],
+      serial: (state.derivedBuilds += 1),
+    };
+    return state.derived;
+  }
+
+  // Sprite anchors can sit far below the viewport while their towers remain
+  // visible. Cache conservative atlas extents; symmetric X also covers mirrors.
+  function sceneryInView(point, margin = 0) {
+    if (!state.sceneryExtents) {
+      const extent = { x: 120, above: 130, below: 60 };
+      for (const frame of Object.values(window.AISystem6BonsaiAtlas?.frames || {})) {
+        if (!frame.anchor) continue;
+        extent.x = Math.max(extent.x, frame.anchor.x, frame.w - frame.anchor.x);
+        extent.above = Math.max(extent.above, frame.anchor.y);
+        extent.below = Math.max(extent.below, frame.h - frame.anchor.y);
+      }
+      state.sceneryExtents = extent;
+    }
+    const { x, above, below } = state.sceneryExtents;
+    const zoom = state.camera.zoom;
+    return point.sx >= -margin - x * zoom && point.sx <= state.cssWidth + margin + x * zoom
+      && point.sy >= -margin - below * zoom && point.sy <= state.cssHeight + margin + above * zoom;
+  }
+
+  function drawBuildings(snapshot, viewKey) {
+    const night = isNight(snapshot);
+    const derived = sceneryFor(snapshot);
+    const showBuildings = state.display.buildings;
+    const showHighways = state.display.infrastructure;
+    const key = `${viewKey}:${derived.serial}:${showBuildings ? "b" : "-"}${showHighways ? "h" : "-"}`;
+    if (state.lastKeys.buildings === key) return;
+    state.lastKeys.buildings = key;
+    clearContext("buildings");
+    state.buildingsDraws += 1;
+    const context = state.contexts.buildings;
+    // Keep one overscanned painter-ordered image. Small camera moves only
+    // composite it; a content change or leaving its margin repaints it.
+    const margin = 128;
+    const rasterKey = `${derived.serial}:${showBuildings}:${showHighways}:${state.cssWidth}:${state.cssHeight}:${state.dpr}:${state.camera.zoom}:${state.camera.rotation}`;
+    let raster = state.sceneryRaster;
+    let dx = raster ? state.camera.panX - raster.panX : 0;
+    let dy = raster ? state.camera.panY - raster.panY : 0;
+    if (!raster || raster.key !== rasterKey || Math.abs(dx) > margin || Math.abs(dy) > margin) {
+      const width = state.cssWidth + 2 * margin;
+      const height = state.cssHeight + 2 * margin;
+      const canvas = raster?.canvas || makeOffscreen(1, 1);
+      const backingWidth = Math.ceil(width * state.dpr);
+      const backingHeight = Math.ceil(height * state.dpr);
+      if (canvas.width !== backingWidth) canvas.width = backingWidth;
+      if (canvas.height !== backingHeight) canvas.height = backingHeight;
+      const paint = canvas.getContext("2d", { alpha: true });
+      paint.setTransform(1, 0, 0, 1, 0, 0);
+      paint.clearRect(0, 0, backingWidth, backingHeight);
+      paint.setTransform(state.dpr, 0, 0, state.dpr, margin * state.dpr, margin * state.dpr);
+      paint.imageSmoothingEnabled = spriteSmoothing();
+      const camera = cameraFor(snapshot);
+      const halfW = (MATH.TILE_W / 2) * state.camera.zoom;
+      const halfH = (MATH.TILE_H / 2) * state.camera.zoom;
+      const lift = MATH.HEIGHT_STEP * state.camera.zoom;
+      for (const item of derived.items) {
+        const point = { sx: camera.originX + (item.rx - item.ry) * halfW,
+          sy: camera.originY + (item.rx + item.ry) * halfH - item.alt * lift };
+        if (!sceneryInView(point, margin)) continue;
+        if (String(item.object.visualKind).startsWith("highway") ? !showHighways : !showBuildings) continue;
+        drawSceneryItem(paint, snapshot, item.object, point, night);
+      }
+      raster = { key: rasterKey, canvas, width, height, panX: state.camera.panX, panY: state.camera.panY };
+      state.sceneryRaster = raster;
+      state.sceneryRasterBuilds = (state.sceneryRasterBuilds || 0) + 1;
+      dx = 0; dy = 0;
+    }
+    context.drawImage(raster.canvas, dx - margin, dy - margin, raster.width, raster.height);
+  }
+
+  // A planned building faces its street (shared rule): the art holds one
+  // view direction, so a lot whose street runs east or west is drawn
+  // mirrored, which lays its long side along that street.
+  function buildingMirrored(snapshot, building) {
+    if (typeof MATH.streetQuarter !== "function") return false;
+    const size = mapSize(snapshot);
+    const footprint = building.footprint || { w: building.w || 1, h: building.h || 1 };
+    return MATH.streetQuarter((tx, ty) => tx >= 0 && ty >= 0 && tx < size && ty < size && isRoad(snapshot, ty * size + tx),
+      Math.floor(building.x), Math.floor(building.y), footprint) % 2 === 1;
+  }
+
+  function drawSceneryItem(context, snapshot, building, point, night) {
+    if (building.visualKind === "highway" || building.visualKind === "highway-upper") {
+      drawElevatedHighway(context, snapshot, building, point);
+      return;
+    }
+    if (building.visualKind === "building" || building.visualKind === "tree" || building.visualKind === "catalog") {
+      drawDropShadow(context, point);
+    }
+    if (building.visualKind === "blaze") {
+      const width = 20 * state.camera.zoom;
+      const height = (building.flooded ? 8 : 14 + (building.age || 1) * 3) * state.camera.zoom;
+      context.fillStyle = building.flooded ? "rgba(64, 128, 200, 0.75)" : building.age >= 3 ? "#d1481f" : "#e8862a";
+      context.fillRect(point.sx - width / 2, point.sy - height, width, height);
+      return;
+    }
+    if (building.visualKind === "catalog") {
+      if (building.spriteId && drawSprite(context, nightFrame(building.spriteId, snapshot), point.sx, point.sy)) return;
+      // Bespoke recipe first, then a shared facility frame, then the
+      // category-tinted placeholder block.
+      if (drawSprite(context, nightFrame(`catalog.${building.label}`, snapshot), point.sx, point.sy)) return;
+      const shared = { police: "police", fire: "fire", school: "school", hospital: "clinic", pump: "pump", water_tower: "tower", rail_station: "station" }[building.label];
+      if (shared && drawSprite(context, nightFrame(`facility.${shared}`, snapshot), point.sx, point.sy)) return;
+      if (drawSprite(context, nightFrame(`catalog.${building.category === "powerPlant" ? "power_plant" : building.category}`, snapshot), point.sx, point.sy)) return;
+      const width = 22 * state.camera.zoom;
+      const height = (10 + 8 * (building.size || 1)) * state.camera.zoom;
+      context.fillStyle = CATALOG_COLORS[building.category] || "#8a8f98";
+      context.fillRect(point.sx - width / 2, point.sy - height, width, height);
+      context.strokeStyle = "#2f2a26";
+      context.strokeRect(point.sx - width / 2, point.sy - height, width, height);
+      return;
+    }
+    if (building.visualKind === "tree") {
+      drawSprite(context, `tree.${building.variant === 2 ? "conifer" : building.variant === 3 ? "young" : building.variant === 4 ? "maple" : building.variant === 5 ? "blossom" : building.variant === 6 ? "winter" : "broadleaf"}`, point.sx, point.sy);
+      return;
+    }
+    if (building.spriteId && drawSprite(context, nightFrame(building.spriteId, snapshot), point.sx, point.sy)) return;
+    if (!drawSprite(context, buildingFrame(building, night), point.sx, point.sy, buildingMirrored(snapshot, building))) {
+      const color = zonePrefix(building.zone) === "r" ? "#b75d52" : zonePrefix(building.zone) === "c" ? "#486eaf" : "#b67c3b";
+      context.fillStyle = color;
+      const width = 22 * state.camera.zoom;
+      const height = 20 * Math.max(1, building.stage || 1) * state.camera.zoom;
+      context.fillRect(point.sx - width / 2, point.sy - height, width, height);
+    }
   }
 
   function hashInt(seed, tick, id) {
@@ -1254,7 +1657,7 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     const size = mapSize(snapshot);
     const zoom = state.camera.zoom;
     const tick = Number(snapshot.tick) | 0;
-    (typeof MATH.waterfallEdges === "function" ? MATH.waterfallEdges(snapshot) : []).forEach((edge, index) => {
+    (sceneryFor(snapshot).waterfalls || []).forEach((edge, index) => {
       const point = projectPoint(snapshot, edge.x, edge.y, altitudeAt(snapshot, edge.y * size + edge.x));
       const offset = edge.dir === "e" ? 10 : edge.dir === "w" ? -10 : edge.dir === "n" ? -6 : 6;
       const jitter = ((tick + index * 3) % 4) * zoom;
@@ -1307,11 +1710,9 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
   // tile, its jib swinging with the tick.
   function drawConstructionCranes(context, snapshot) {
     const size = mapSize(snapshot);
-    const layers = gridLayers(snapshot);
     const zoom = state.camera.zoom;
     const tick = Number(snapshot.tick) | 0;
-    for (let index = 0; index < size * size; index += 1) {
-      if (Number(layerAt(layers.buildingState, index, 0)) !== 2) continue;
+    for (const index of sceneryFor(snapshot).constructionSites) {
       const x = index % size;
       const y = Math.floor(index / size);
       const point = projectPoint(snapshot, x, y, altitudeAt(snapshot, index));
@@ -1337,15 +1738,13 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
   // gentle, deterministic fall that stays sparse enough to keep the zen
   // cleanliness.
   function drawSakuraPetals(context, snapshot) {
+    if (MATH.seasonOf(snapshot) !== 0) return;
     const size = mapSize(snapshot);
-    const layers = gridLayers(snapshot);
     const zoom = state.camera.zoom;
     const tick = Number(snapshot.tick) | 0;
-    const season = Math.floor(((Number(snapshot.tick) || 0) % 1500) / 375);
-    if (season !== 0) return;
-    for (let index = 0; index < size * size; index += 1) {
-      if (!layerAt(layers.trees, index, false)) continue;
-      if (index % 3 !== 0) continue; // blossom trees only, matching the sprite selection
+    // Blossom trees only, matching the sprite selection; the derived list
+    // holds them, so a frame never walks the whole map to find them.
+    for (const index of sceneryFor(snapshot).blossoms) {
       const x = index % size;
       const y = Math.floor(index / size);
       const point = projectPoint(snapshot, x, y, altitudeAt(snapshot, index));
@@ -1358,6 +1757,18 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
         context.fillRect(px, py, 2 * zoom, 1.5 * zoom);
       }
     }
+  }
+
+  // Where a car or a train rides: on a bridge, the deck; on a slope, the
+  // middle of the tilted piece.
+  function travelAltitude(snapshot, x, y) {
+    const index = y * mapSize(snapshot) + x;
+    if (isWater(snapshot, index)) {
+      if (isRoad(snapshot, index)) return bridgeDeckAltitude(snapshot, x, y, isRoad);
+      if (isRail(snapshot, index)) return bridgeDeckAltitude(snapshot, x, y, isRail);
+    }
+    const corners = liftedCorners(groundLift(snapshot, index));
+    return altitudeAt(snapshot, index) + (corners[0] + corners[1] + corners[2] + corners[3]) / 4;
   }
 
   function drawAgents(snapshot, viewKey) {
@@ -1379,7 +1790,7 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
           if (!Number.isFinite(agent.x) || !Number.isFinite(agent.y)) return;
           const tileX = Math.max(0, Math.min(size - 1, Math.floor(agent.x)));
           const tileY = Math.max(0, Math.min(size - 1, Math.floor(agent.y)));
-          const point = projectPoint(snapshot, agent.x, agent.y, altitudeAt(snapshot, tileY * size + tileX));
+          const point = projectPoint(snapshot, agent.x, agent.y, travelAltitude(snapshot, tileX, tileY));
           const phase = (Number(agent.phase) || 0) - 0.5;
           drawSprite(context, frameFor(agent, index), point.sx + phase * 8, point.sy + phase * 2 - verticalOffset * state.camera.zoom);
         });
@@ -1449,13 +1860,80 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     return [];
   }
 
+  // Problem flags (spec 3.11): a small pixel sign over a building or zoned
+  // plot that is short of power or water, has no road, cannot commute, or
+  // stands abandoned — the SC2K lightning bolt and its siblings. Drawn in
+  // the view only, blinking at 1 Hz between full and half strength so a
+  // paused city still shows them.
+  const FLAG_ICONS = Object.freeze({
+    power: { color: "#f2d21b", rows: ["...##..", "..##...", ".##....", "#####..", "..##...", ".##....", "##....."] },
+    water: { color: "#3f8fe0", rows: ["...#...", "..###..", ".#####.", ".#####.", "#######", ".#####.", "..###.."] },
+    road: { color: "#d8453a", rows: ["..###..", ".#...#.", "#...###", "#..#..#", "###...#", ".#...#.", "..###.."] },
+    commute: { color: "#ef8a2c", rows: ["...#...", "...##..", "######.", "...##..", "...#...", "#.#.#.#", "......."] },
+    abandoned: { color: "#9a7a55", rows: ["#.....#", ".#...#.", "..#.#..", "...#...", "..#.#..", ".#...#.", "#.....#"] },
+  });
+  const FLAG_BY_PROBLEM = Object.freeze({ 1: "road", 2: "power", 3: "water", 7: "commute" });
+  // The shell stamps the blink phase from its clock; a bare snapshot blinks
+  // with the simulation (ten ticks a half-period at normal speed).
+  function flagPhase(snapshot) {
+    if (snapshot.flagPhase === 0 || snapshot.flagPhase === 1) return snapshot.flagPhase;
+    return Math.floor((Number(snapshot.tick) || 0) / 10) % 2;
+  }
+  function problemFlags(snapshot) {
+    const revision = Number.isFinite(snapshot.rev) ? snapshot.rev : null;
+    const owner = snapshot.problemCode || snapshot;
+    if (revision !== null && state.flagCache && state.flagCache.owner === owner && state.flagCache.revision === revision) return state.flagCache.flags;
+    const flags = []; const size = mapSize(snapshot); const codes = snapshot.problemCode; const covered = new Uint8Array(size * size);
+    for (const building of Array.isArray(snapshot.buildings) ? snapshot.buildings : []) {
+      const w = building.w || 1; const anchor = building.y * size + building.x;
+      for (let dy = 0; dy < w; dy += 1) for (let dx = 0; dx < w; dx += 1) covered[anchor + dy * size + dx] = 1;
+      const icon = building.state === 5 ? "abandoned" : codes ? FLAG_BY_PROBLEM[codes[anchor]] : null;
+      if (icon && (icon !== "water" || w > 1 || building.state !== 3)) flags.push({ x: building.x + (w - 1) / 2, y: building.y + (w - 1) / 2, tile: anchor, icon });
+    }
+    if (codes && snapshot.zone) {
+      // Empty zoned land: one sign per 2x2 patch, so a dark district reads as
+      // dark without a sign on every tile.
+      for (let index = 0; index < size * size; index += 1) {
+        const x = index % size; const y = (index - x) / size;
+        if (covered[index] || (x & 1) || (y & 1) || !snapshot.zone[index] || snapshot.zone[index] > 3) continue;
+        const icon = FLAG_BY_PROBLEM[codes[index]];
+        if (icon && icon !== "water") flags.push({ x, y, tile: index, icon });
+      }
+    }
+    state.flagCache = { owner, revision, flags };
+    return flags;
+  }
+  function drawProblemFlags(context, snapshot) {
+    if (!context || state.display.flags === false) return;
+    const size = mapSize(snapshot);
+    const pixel = Math.max(1, Math.round(2 * state.camera.zoom));
+    const bright = flagPhase(snapshot) === 0;
+    const alpha = context.globalAlpha;
+    context.globalAlpha = bright ? 1 : 0.55;
+    for (const flag of problemFlags(snapshot)) {
+      const point = projectPoint(snapshot, flag.x, flag.y, altitudeAt(snapshot, flag.tile));
+      if (point.sx < -20 || point.sy < -40 || point.sx > state.cssWidth + 20 || point.sy > state.cssHeight + 20) continue;
+      const icon = FLAG_ICONS[flag.icon];
+      const left = Math.round(point.sx - 3.5 * pixel); const top = Math.round(point.sy - (22 * state.camera.zoom) - 7 * pixel);
+      context.fillStyle = "#111";
+      context.fillRect(left - pixel, top - pixel, 9 * pixel, 9 * pixel);
+      context.fillStyle = "#fff";
+      context.fillRect(left, top, 7 * pixel, 7 * pixel);
+      context.fillStyle = icon.color;
+      icon.rows.forEach((row, ry) => { for (let rx = 0; rx < row.length; rx += 1) if (row[rx] === "#") context.fillRect(left + rx * pixel, top + ry * pixel, pixel, pixel); });
+    }
+    context.globalAlpha = alpha === undefined ? 1 : alpha;
+  }
+
   function drawFeedback(snapshot, viewKey) {
-    const key = `${viewKey}:${state.previewRevision}`;
+    const blink = flagPhase(snapshot);
+    const key = `${viewKey}:${state.previewRevision}:${snapshot.rev ?? "x"}:${blink}:${state.display.flags === false ? 0 : 1}`;
     if (state.lastKeys.feedback === key) return;
     state.lastKeys.feedback = key;
     clearContext("feedback");
     const context = state.contexts.feedback;
     const size = mapSize(snapshot);
+    drawProblemFlags(context, snapshot);
     const accepted = state.preview?.accepted !== false;
     previewFootprint().forEach((tile) => {
       const x = Math.floor(tile.x);
@@ -1557,7 +2035,11 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
   function drawLighting(snapshot, viewKey, tiles) {
     const time = Number.isFinite(snapshot.timeOfDay) ? snapshot.timeOfDay : ((Number(snapshot.tick) || 0) % 600) / 600;
     const lightStep = Math.round(time * 48);
-    const key = `${viewKey}:${lightStep}:${state.overlay}:${overlaySignature(snapshot, state.overlay, tiles)}`;
+    // Overlay values only change when the city does, so a revision number
+    // stands in for hashing every visible tile on every frame.
+    const overlayIdentity = state.overlay === "none" ? "none"
+      : Number.isFinite(snapshot.rev) ? `r${snapshot.seed}:${snapshot.size}:${snapshot.rev}` : overlaySignature(snapshot, state.overlay, tiles);
+    const key = `${viewKey}:${lightStep}:${state.overlay}:${overlayIdentity}`;
     if (state.lastKeys.lighting === key) return;
     state.lastKeys.lighting = key;
     clearContext("lighting");
@@ -1582,7 +2064,7 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     const time = Number.isFinite(snapshot.timeOfDay) ? snapshot.timeOfDay : 0;
     const step = Math.round(time * 48);
     // Winter freezes the lakes: a pale ice sheet over every water tile.
-    const winter = Math.floor(((Number(snapshot.tick) || 0) % 1500) / 375) === 3;
+    const winter = MATH.seasonOf(snapshot) === 3;
     if (winter) {
       context.fillStyle = "rgba(226, 236, 242, 0.4)";
       (Array.isArray(tiles) ? tiles : []).forEach(([x, y]) => {
@@ -1653,13 +2135,15 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
   function drawNightWindowGlow(context, snapshot) {
     const zoom = state.camera.zoom;
     const size = mapSize(snapshot);
-    const drawWindows = (point, frameId) => {
+    const drawWindows = (point, frameId, mirror = false) => {
       const frame = atlasFrame(frameId);
       if (!frame || !Array.isArray(frame.windows) || !frame.windows.length) return;
+      // A mirrored building's windows mirror with it about the sprite axis.
+      const left = (win) => mirror ? -(win.x - 80) - win.w : win.x - 80;
       context.fillStyle = "rgba(245,210,104,0.18)";
       frame.windows.forEach((win) => {
         context.fillRect(
-          point.sx + (win.x - 80) * zoom - 2 * zoom,
+          point.sx + left(win) * zoom - 2 * zoom,
           point.sy + (win.y - 104) * zoom - 2 * zoom,
           (win.w + 4) * zoom,
           (win.h + 4) * zoom,
@@ -1668,32 +2152,32 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
       context.fillStyle = "#f5d268";
       frame.windows.forEach((win) => {
         context.fillRect(
-          point.sx + (win.x - 80) * zoom,
+          point.sx + left(win) * zoom,
           point.sy + (win.y - 104) * zoom,
           win.w * zoom,
           win.h * zoom,
         );
       });
     };
-    const inView = (point) => point.sx >= -120 && point.sx <= state.cssWidth + 120 && point.sy >= -130 && point.sy <= state.cssHeight + 60;
-    buildingObjects(snapshot).forEach((building) => {
-      const footprint = normalizeFootprint(building.footprint, building.width, building.height);
-      const x = building.x + ((footprint.w || 1) - 1) / 2;
-      const y = building.y + ((footprint.h || 1) - 1) / 2;
-      const baseX = Math.max(0, Math.min(size - 1, Math.floor(building.x)));
-      const baseY = Math.max(0, Math.min(size - 1, Math.floor(building.y)));
-      const point = projectPoint(snapshot, x, y, altitudeAt(snapshot, baseY * size + baseX));
+    const inView = (point) => sceneryInView(point);
+    const camera = cameraFor(snapshot);
+    const halfW = (MATH.TILE_W / 2) * zoom;
+    const halfH = (MATH.TILE_H / 2) * zoom;
+    const derived = sceneryFor(snapshot);
+    derived.items.forEach((item) => {
+      if (item.object.visualKind !== "building") return;
+      const point = { sx: camera.originX + (item.rx - item.ry) * halfW, sy: camera.originY + (item.rx + item.ry) * halfH - item.alt * MATH.HEIGHT_STEP * zoom };
       if (!inView(point)) return;
-      drawWindows(point, nightFrame(buildingFrame(building, false), snapshot));
+      drawWindows(point, nightFrame(buildingFrame(item.object, false), snapshot), buildingMirrored(snapshot, item.object));
     });
-    facilityObjects(snapshot).forEach((facility) => {
+    derived.facilities.forEach((facility) => {
       const x = facility.x + ((facility.footprint?.w || 1) - 1) / 2;
       const y = facility.y + ((facility.footprint?.h || 1) - 1) / 2;
       const baseX = Math.max(0, Math.min(size - 1, Math.floor(facility.x)));
       const baseY = Math.max(0, Math.min(size - 1, Math.floor(facility.y)));
       const point = projectPoint(snapshot, x, y, altitudeAt(snapshot, baseY * size + baseX));
       if (!inView(point)) return;
-      drawWindows(point, nightFrame(`facility.${facility.kind}`, snapshot));
+      drawWindows(point, nightFrame(facilitySprite(facility.kind, facility.footprint), snapshot));
     });
     MATH.collectCatalogObjects(snapshot, window.AISystem6BonsaiCatalog).forEach((object) => {
       const x = object.x + (object.footprint.w - 1) / 2;
@@ -1707,7 +2191,7 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     if (!state.ready || state.disposed || !snapshot) return;
     state.snapshot = snapshot;
     if (viewState && typeof viewState === "object") {
-      if (Number.isFinite(viewState.zoom)) state.camera.zoom = MATH.clampZoom(viewState.zoom);
+      if (Number.isFinite(viewState.zoom)) state.camera.zoom = MATH.snapZoom(viewState.zoom);
       if (Number.isFinite(viewState.rotation)) state.camera.rotation = MATH.normalizeRotation(viewState.rotation);
       if (Number.isFinite(viewState.panX)) state.camera.panX = viewState.panX;
       if (Number.isFinite(viewState.panY)) state.camera.panY = viewState.panY;
@@ -1749,7 +2233,7 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
         clearContext("infrastructure");
       }
     }
-    if (state.display.buildings && !state.display.underground) {
+    if ((state.display.buildings || state.display.infrastructure) && !state.display.underground) {
       drawBuildings(snapshot, viewKey);
     } else {
       clearContext("buildings");
@@ -1798,10 +2282,22 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     if (state.snapshot) drawFeedback(state.snapshot, "preview");
   }
 
+  // Rotation turns the map about the ground at the middle of the view, the
+  // way SC2K does. The pan is a screen offset, so keeping it across a turn
+  // swung the city to wherever that offset pointed in the new orientation.
   function rotateBy(quarterTurns) {
     if (!Number.isFinite(quarterTurns) || quarterTurns === 0) return state.camera.rotation;
     const steps = Number.isInteger(quarterTurns) ? quarterTurns : Math.sign(quarterTurns);
+    const size = state.snapshot ? mapSize(state.snapshot) : 0;
+    const middle = size && state.cssWidth
+      ? MATH.unproject(state.cssWidth / 2, state.cssHeight / 2, cameraFor(state.snapshot), 0, size)
+      : null;
     state.camera.rotation = MATH.normalizeRotation(state.camera.rotation + steps);
+    if (middle && middle.x >= 0 && middle.y >= 0 && middle.x < size && middle.y < size) {
+      const rotated = MATH.rotateTile(middle.x, middle.y, size, state.camera.rotation);
+      state.camera.panX = -(rotated.x - rotated.y) * (MATH.TILE_W / 2) * state.camera.zoom;
+      state.camera.panY = ((size - 1) - (rotated.x + rotated.y)) * (MATH.TILE_H / 2) * state.camera.zoom;
+    }
     clearChunkCache();
     invalidateView();
     if (state.snapshot) render(state.snapshot);
@@ -1809,25 +2305,40 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     return state.camera.rotation;
   }
 
-  function zoomBy(factor) {
-    if (!Number.isFinite(factor) || factor <= 0) return state.camera.zoom;
-    state.camera.zoom = MATH.clampZoom(state.camera.zoom * factor);
-    clearChunkCache();
+  // Zoom moves between the fixed steps and holds the ground under the anchor
+  // (a CSS point inside the map; the middle when absent). Chunk caches are
+  // keyed by step, so returning to a step reuses what was drawn there.
+  function zoomBy(factor, anchor = null) {
+    if (!Number.isFinite(factor) || factor <= 0 || factor === 1) return state.camera.zoom;
+    const from = state.camera.zoom;
+    let to = MATH.snapZoom(MATH.clampZoom(from * factor));
+    if (to === from) to = MATH.stepZoom(from, factor > 1 ? 1 : -1);
+    return setZoom(to, anchor);
+  }
+
+  function setZoom(level, anchor = null) {
+    const from = state.camera.zoom;
+    const to = MATH.snapZoom(level);
+    if (to === from) return from;
+    const pan = MATH.anchoredPan(state.camera, from, to, anchor?.x, anchor?.y, state.cssWidth, state.cssHeight);
+    state.camera.zoom = to;
+    state.camera.panX = pan.panX;
+    state.camera.panY = pan.panY;
     invalidateView();
     if (state.snapshot) render(state.snapshot);
     return state.camera.zoom;
   }
 
-  function panByScreen(dx, dy) {
+  function panByScreen(dx, dy, options = {}) {
     if (Number.isFinite(dx)) state.camera.panX += dx;
     if (Number.isFinite(dy)) state.camera.panY += dy;
     invalidateView();
-    if (state.snapshot) render(state.snapshot);
+    if (!options.defer && state.snapshot) render(state.snapshot);
     return { x: state.camera.panX, y: state.camera.panY };
   }
 
   function resetView(options = {}) {
-    state.camera.zoom = MATH.clampZoom(Number.isFinite(options.zoom) ? options.zoom : MATH.DEFAULT_ZOOM);
+    state.camera.zoom = MATH.snapZoom(Number.isFinite(options.zoom) ? options.zoom : MATH.DEFAULT_ZOOM);
     state.camera.rotation = MATH.normalizeRotation(options.rotation);
     state.camera.panX = Number.isFinite(options.panX) ? options.panX : 0;
     state.camera.panY = Number.isFinite(options.panY) ? options.panY : 0;
@@ -1879,10 +2390,13 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     state.cssHeight = 0;
     state.backingWidth = 0;
     state.backingHeight = 0;
+    state.derived = null;
+    state.chunkSignatures.clear();
+    state.chunkSignatureMemo = null;
   }
 
   function miniMapTerrainColor(snapshot, index) {
-    const winter = Math.floor(((Number(snapshot.tick) || 0) % 1500) / 375) === 3;
+    const winter = MATH.seasonOf(snapshot) === 3;
     if (isWater(snapshot, index)) return winter ? "#dce8ee" : "#356e9a";
     const terrain = gridValue(snapshot, ["terrainType", "terrain"], index, 1);
     const base = terrain === "rock" || terrain === 3 ? [133, 135, 130]
@@ -1894,6 +2408,204 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     const lift = Math.max(-24, Math.min(40, (alt - 4) * 6));
     const channel = (value) => Math.max(32, Math.min(224, value + lift));
     return `rgb(${channel(base[0])},${channel(base[1])},${channel(base[2])})`;
+  }
+
+  // The minimap's SC2000 feature pixels: networks read as dark lines, buildings
+  // and facilities as light pixels, claimed zones as faint tints. Painter order
+  // is authoritative — the first match wins, exactly as the original inline
+  // if/else-if chain did.
+  const MINI_MAP_FEATURE_COLORS = Object.freeze({
+    network: "rgba(24,26,24,0.92)",
+    building: "rgba(232,228,214,0.95)",
+    zone: "rgba(255,255,255,0.28)",
+  });
+
+  function miniMapFeatureKind(snapshot, index) {
+    if (isRoad(snapshot, index) || isRail(snapshot, index) || isWire(snapshot, index)
+      || gridValue(snapshot, ["highway"], index, false) || isPipe(snapshot, index)) return "network";
+    if (Number(gridValue(snapshot, ["stage", "buildingStage"], index, 0)) > 0
+      || gridValue(snapshot, ["buildingState"], index, 0) > 0
+      || (snapshot.facilityAt && snapshot.facilityAt[index] >= 0)) return "building";
+    if (Number(gridValue(snapshot, ["zone", "zoneType"], index, 0)) > 0) return "zone";
+    return null;
+  }
+
+  // Two rasterizers paint the same picture. The bitmap path writes one CSS
+  // resolution ImageData and uploads it once; the direct path keeps the
+  // original per-tile fillRect calls for contexts that cannot round-trip
+  // ImageData (test doubles, older shims).
+  //
+  // Minimap colors arrive as generated strings — `rgb(r,g,b)` from the
+  // elevation lift, plus a small fixed set of rgba overlays and tints — so the
+  // parsed channels are memoised. The distinct-string set is bounded by the
+  // palette, so the cache cannot grow with map size or frame count.
+  const MINI_MAP_COLOR_CACHE = new Map();
+
+  function parseMiniMapColor(value) {
+    const key = String(value);
+    const cached = MINI_MAP_COLOR_CACHE.get(key);
+    if (cached) return cached;
+    let parsed = [0, 0, 0, 1];
+    const text = key.trim();
+    if (text.startsWith("#")) {
+      const hex = text.slice(1);
+      if (hex.length === 3 || hex.length === 6) {
+        const step = hex.length === 3 ? 1 : 2;
+        const channels = [];
+        for (let i = 0; i < 3; i += 1) {
+          const chunk = hex.slice(i * step, (i + 1) * step);
+          channels.push(parseInt(step === 1 ? chunk + chunk : chunk, 16));
+        }
+        if (channels.every(Number.isFinite)) parsed = [channels[0], channels[1], channels[2], 1];
+      }
+    } else {
+      const match = text.match(/^rgba?\(([^)]+)\)$/i);
+      if (match) {
+        const channels = match[1].split(",").map((part) => Number(part.trim()));
+        const alpha = Number.isFinite(channels[3]) ? channels[3] : 1;
+        if (channels.length >= 3 && channels.slice(0, 3).every(Number.isFinite)) {
+          parsed = [channels[0], channels[1], channels[2], Math.max(0, Math.min(1, alpha))];
+        }
+      }
+    }
+    const frozen = Object.freeze(parsed);
+    MINI_MAP_COLOR_CACHE.set(key, frozen);
+    return frozen;
+  }
+
+  // Canvas fillRect covers [x, x+width) x [y, y+height), clipped to the
+  // surface, with `Math.max(1, ...)` keeping a sliver for sub-pixel spans. The
+  // raster rect keeps that geometry and composites with source-over.
+  function miniMapRasterRect(data, cssWidth, cssHeight, left, top, right, bottom, color) {
+    const alpha = color[3];
+    const x0 = Math.max(0, left);
+    const y0 = Math.max(0, top);
+    const x1 = Math.min(cssWidth, left + Math.max(1, right - left));
+    const y1 = Math.min(cssHeight, top + Math.max(1, bottom - top));
+    if (x0 >= x1 || y0 >= y1) return;
+    const opaque = alpha >= 1;
+    const inv = 1 - alpha;
+    for (let y = y0; y < y1; y += 1) {
+      let offset = (y * cssWidth + x0) * 4;
+      for (let x = x0; x < x1; x += 1) {
+        if (opaque) {
+          data[offset] = color[0];
+          data[offset + 1] = color[1];
+          data[offset + 2] = color[2];
+        } else {
+          data[offset] = Math.round(color[0] * alpha + data[offset] * inv);
+          data[offset + 1] = Math.round(color[1] * alpha + data[offset + 1] * inv);
+          data[offset + 2] = Math.round(color[2] * alpha + data[offset + 2] * inv);
+        }
+        data[offset + 3] = 255;
+        offset += 4;
+      }
+    }
+  }
+
+  // One CSS-resolution scratch canvas per target, reused across frames and
+  // resized only when the minimap's CSS size changes.
+  const MINI_MAP_SCRATCH = new WeakMap();
+
+  function createMiniMapScratch(factory) {
+    const candidates = [];
+    // A host may hand the minimap its own scratch surface (a worker-friendly
+    // offscreen canvas, or a test double's real bitmap canvas); otherwise the
+    // document's own canvas is used.
+    if (typeof factory === "function") {
+      try { candidates.push(factory()); } catch (_) { /* host factory failed */ }
+    }
+    if (typeof document !== "undefined" && typeof document.createElement === "function") {
+      try { candidates.push(document.createElement("canvas")); } catch (_) { /* no document canvas */ }
+    }
+    if (typeof OffscreenCanvas === "function") {
+      try { candidates.push(new OffscreenCanvas(1, 1)); } catch (_) { /* no offscreen canvas */ }
+    }
+    for (const candidate of candidates) {
+      if (!candidate || typeof candidate.getContext !== "function") continue;
+      const context = candidate.getContext("2d");
+      if (context && typeof context.createImageData === "function" && typeof context.putImageData === "function") {
+        return { canvas: candidate, context };
+      }
+    }
+    return null;
+  }
+
+  function miniMapScratchFor(canvas, cssWidth, cssHeight, factory) {
+    let scratch = MINI_MAP_SCRATCH.get(canvas);
+    if (!scratch) {
+      scratch = createMiniMapScratch(factory);
+      if (!scratch) return null;
+      MINI_MAP_SCRATCH.set(canvas, scratch);
+    }
+    if (scratch.canvas.width !== cssWidth) scratch.canvas.width = cssWidth;
+    if (scratch.canvas.height !== cssHeight) scratch.canvas.height = cssHeight;
+    if (!scratch.image || scratch.image.width !== cssWidth || scratch.image.height !== cssHeight) {
+      scratch.image = scratch.context.createImageData(cssWidth, cssHeight);
+      scratch.contentKey = null;
+    }
+    return scratch;
+  }
+
+  function rasterizeMiniMap(image, snapshot, size, overlay, cssWidth, cssHeight) {
+    const data = image.data;
+    // Engine snapshots use complete typed grids. Read these directly; sparse
+    // host snapshots still use the alias-aware compatibility helpers below.
+    const { terrain, alt, water, road, rail, wire, pipe, over, highway, stage, buildingState, facilityAt, zone } = snapshot;
+    const direct = !snapshot.terrainType && [terrain, alt, water, road, rail, wire, pipe, over, highway, stage, buildingState, facilityAt, zone]
+      .every((grid) => ArrayBuffer.isView(grid) && grid.length === size * size);
+    const winter = MATH.seasonOf(snapshot) === 3;
+    const waterColor = parseMiniMapColor(winter ? "#dce8ee" : "#356e9a");
+    const landColor = [0, 0, 0, 1];
+    const networkColor = parseMiniMapColor(MINI_MAP_FEATURE_COLORS.network);
+    const buildingColor = parseMiniMapColor(MINI_MAP_FEATURE_COLORS.building);
+    const zoneColor = parseMiniMapColor(MINI_MAP_FEATURE_COLORS.zone);
+    const background = parseMiniMapColor("#18251c");
+    for (let offset = 0; offset < data.length; offset += 4) {
+      data[offset] = background[0];
+      data[offset + 1] = background[1];
+      data[offset + 2] = background[2];
+      data[offset + 3] = 255;
+    }
+    for (let y = 0; y < size; y += 1) {
+      const top = Math.floor((y * cssHeight) / size);
+      const bottom = Math.ceil(((y + 1) * cssHeight) / size);
+      for (let x = 0; x < size; x += 1) {
+        const index = y * size + x;
+        const left = Math.floor((x * cssWidth) / size);
+        const right = Math.ceil(((x + 1) * cssWidth) / size);
+        const wet = direct ? !!water[index] : isWater(snapshot, index);
+        let terrainColor;
+        let featureColor;
+        if (direct) {
+          const type = terrain[index];
+          const altitude = Number(alt[index]);
+          const lift = Math.max(-24, Math.min(40, ((Number.isFinite(altitude) ? altitude : 0) - 4) * 6));
+          landColor[0] = Math.max(32, Math.min(224, (type === 3 ? 133 : type === 2 ? 149 : 99) + lift));
+          landColor[1] = Math.max(32, Math.min(224, (type === 3 ? 135 : type === 2 ? 109 : 147) + lift));
+          landColor[2] = Math.max(32, Math.min(224, (type === 3 ? 130 : type === 2 ? 73 : 84) + lift));
+          terrainColor = wet ? waterColor : landColor;
+          const network = road[index] || rail[index] || wire[index] || pipe[index] || highway[index]
+            || over[index] === OVER.ROAD || over[index] === OVER.WIRE || over[index] === OVER.ROADWIRE;
+          featureColor = network ? networkColor : stage[index] > 0 || buildingState[index] > 0 || facilityAt[index] >= 0
+            ? buildingColor : zone[index] > 0 ? zoneColor : null;
+        } else {
+          terrainColor = parseMiniMapColor(miniMapTerrainColor(snapshot, index));
+          const feature = miniMapFeatureKind(snapshot, index);
+          featureColor = feature ? parseMiniMapColor(MINI_MAP_FEATURE_COLORS[feature]) : null;
+        }
+        miniMapRasterRect(data, cssWidth, cssHeight, left, top, right, bottom, terrainColor);
+        if (featureColor) {
+          const featureX = Math.floor((left + right) / 2);
+          const featureY = Math.floor((top + bottom) / 2);
+          miniMapRasterRect(data, cssWidth, cssHeight, featureX, featureY, featureX + 1, featureY + 1, featureColor);
+        }
+        if (overlay !== "none" && !wet) {
+          const color = overlayColor(overlay, overlayBucket(overlay, overlayValue(snapshot, overlay, index)));
+          miniMapRasterRect(data, cssWidth, cssHeight, left, top, right, bottom, parseMiniMapColor(color));
+        }
+      }
+    }
   }
 
   function miniMapViewportBounds(viewport, size) {
@@ -1929,44 +2641,56 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     if (canvas.height !== backingHeight) canvas.height = backingHeight;
     const context = canvas.getContext("2d", { alpha: false });
     if (!context) return null;
+    const size = mapSize(snapshot);
+    const overlay = normalizeOverlay(options.overlay);
+    // Real 2D contexts round-trip ImageData; context doubles and older shims do
+    // not, and they keep the direct per-tile fillRect path.
+    const canRasterize = typeof context.createImageData === "function" && typeof context.putImageData === "function" && typeof context.drawImage === "function";
     context.setTransform(1, 0, 0, 1, 0, 0);
     context.clearRect(0, 0, backingWidth, backingHeight);
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
     context.imageSmoothingEnabled = false;
-    context.fillStyle = "#18251c";
-    context.fillRect(0, 0, cssWidth, cssHeight);
 
-    const size = mapSize(snapshot);
-    const overlay = normalizeOverlay(options.overlay);
-    for (let y = 0; y < size; y += 1) {
-      const top = Math.floor((y * cssHeight) / size);
-      const bottom = Math.ceil(((y + 1) * cssHeight) / size);
-      for (let x = 0; x < size; x += 1) {
-        const index = y * size + x;
-        const left = Math.floor((x * cssWidth) / size);
-        const right = Math.ceil(((x + 1) * cssWidth) / size);
-        context.fillStyle = miniMapTerrainColor(snapshot, index);
-        context.fillRect(left, top, Math.max(1, right - left), Math.max(1, bottom - top));
-        // SC2000 minimap features: networks as dark lines, buildings and
-        // facilities as light pixels, claimed zones as faint tints.
-        const featureX = Math.floor((left + right) / 2);
-        const featureY = Math.floor((top + bottom) / 2);
-        if (isRoad(snapshot, index) || isRail(snapshot, index) || isWire(snapshot, index)
-          || gridValue(snapshot, ["highway"], index, false) || isPipe(snapshot, index)) {
-          context.fillStyle = "rgba(24,26,24,0.92)";
-          context.fillRect(featureX, featureY, 1, 1);
-        } else if (Number(gridValue(snapshot, ["stage", "buildingStage"], index, 0)) > 0
-          || gridValue(snapshot, ["buildingState"], index, 0) > 0
-          || (snapshot.facilityAt && snapshot.facilityAt[index] >= 0)) {
-          context.fillStyle = "rgba(232,228,214,0.95)";
-          context.fillRect(featureX, featureY, 1, 1);
-        } else if (Number(gridValue(snapshot, ["zone", "zoneType"], index, 0)) > 0) {
-          context.fillStyle = "rgba(255,255,255,0.28)";
-          context.fillRect(featureX, featureY, 1, 1);
-        }
-        if (overlay !== "none" && !isWater(snapshot, index)) {
-          context.fillStyle = overlayColor(overlay, overlayBucket(overlay, overlayValue(snapshot, overlay, index)));
+    // Batch tile painting into one upload; the DPR transform keeps pixels crisp.
+    const scratch = canRasterize ? miniMapScratchFor(canvas, cssWidth, cssHeight, options.createScratchCanvas) : null;
+    if (scratch) {
+      // The default map follows the same content-revision contract as scenery.
+      // Dynamic overlays can change between revisions and always repaint.
+      const owner = snapshot.alt || snapshot.terrain || snapshot;
+      const contentKey = overlay === "none" && Number.isFinite(snapshot.rev)
+        ? `${snapshot.rev}:${size}:${MATH.seasonOf(snapshot)}` : null;
+      if (contentKey === null || scratch.owner !== owner || scratch.contentKey !== contentKey) {
+        rasterizeMiniMap(scratch.image, snapshot, size, overlay, cssWidth, cssHeight);
+        scratch.context.putImageData(scratch.image, 0, 0);
+        scratch.owner = owner;
+        scratch.contentKey = contentKey;
+      }
+      context.drawImage(scratch.canvas, 0, 0, cssWidth, cssHeight, 0, 0, cssWidth, cssHeight);
+    } else {
+      context.fillStyle = "#18251c";
+      context.fillRect(0, 0, cssWidth, cssHeight);
+      for (let y = 0; y < size; y += 1) {
+        const top = Math.floor((y * cssHeight) / size);
+        const bottom = Math.ceil(((y + 1) * cssHeight) / size);
+        for (let x = 0; x < size; x += 1) {
+          const index = y * size + x;
+          const left = Math.floor((x * cssWidth) / size);
+          const right = Math.ceil(((x + 1) * cssWidth) / size);
+          context.fillStyle = miniMapTerrainColor(snapshot, index);
           context.fillRect(left, top, Math.max(1, right - left), Math.max(1, bottom - top));
+          // SC2000 minimap features: networks as dark lines, buildings and
+          // facilities as light pixels, claimed zones as faint tints.
+          const feature = miniMapFeatureKind(snapshot, index);
+          if (feature) {
+            const featureX = Math.floor((left + right) / 2);
+            const featureY = Math.floor((top + bottom) / 2);
+            context.fillStyle = MINI_MAP_FEATURE_COLORS[feature];
+            context.fillRect(featureX, featureY, 1, 1);
+          }
+          if (overlay !== "none" && !isWater(snapshot, index)) {
+            context.fillStyle = overlayColor(overlay, overlayBucket(overlay, overlayValue(snapshot, overlay, index)));
+            context.fillRect(left, top, Math.max(1, right - left), Math.max(1, bottom - top));
+          }
         }
       }
     }
@@ -1984,7 +2708,7 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
       context.lineWidth = 1;
       context.strokeRect(x, y, width, height);
     }
-    return Object.freeze({ cssWidth, cssHeight, backingWidth, backingHeight, dpr, tileCount: size * size, overlay });
+    return Object.freeze({ cssWidth, cssHeight, backingWidth, backingHeight, dpr, tileCount: size * size, overlay, rasterized: Boolean(scratch) });
   }
 
   function debugStats() {
@@ -2004,6 +2728,9 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
       activeRaf: Number(state.activeRaf || 0),
       chunkCacheCount: state.chunkCache.size,
       chunkBuildCount: state.chunkBuildCount,
+      derivedBuilds: state.derivedBuilds,
+      buildingsDraws: state.buildingsDraws,
+      sceneryRasterBuilds: state.sceneryRasterBuilds || 0,
       visibleTileCount: state.visibleTileCount,
       layerCount: Object.keys(state.canvases).length,
       rotation: state.camera.rotation,
@@ -2029,6 +2756,7 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     renderMiniMap,
     rotateBy,
     zoomBy,
+    setZoom,
     panByScreen,
     resetView,
     dispose,

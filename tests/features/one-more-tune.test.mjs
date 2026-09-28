@@ -292,10 +292,10 @@ const challengeRender = source.slice(source.indexOf("function renderOneMoreTuneC
 // The round's reveal names the era in the record's liner notes and prints it on
 // the white label, rather than in a separate band. The claim is the same one:
 // it is printed, and only after a submission.
-test.assertMatches(challengeRender, /question\.submitted[\s\S]*oneMoreTuneRoundStage\(question\)/, "the challenge reveal draws the stage that carries the naming, and only after a submission");
-test.assertMatches(source, /function oneMoreTuneRoundStage\(question, \{ idle = false \} = \{\}\) \{\s*const reveal = !idle && question\?\.submitted \? question\.reveal \|\| null : null;/, "the stage reads the reveal only after a submission");
+test.assertMatches(challengeRender, /question\.submitted[\s\S]*oneMoreTuneRoundStage\(question, \{ status:/, "the challenge reveal draws the radio that carries the naming, and only after a submission");
+test.assertMatches(source, /function oneMoreTuneRoundStage\(question, \{ idle = false, status = "" \} = \{\}\) \{\s*const reveal = !idle && question\?\.submitted \? question\.reveal \|\| null : null;/, "the radio reads the reveal only after a submission");
 test.assertMatches(source, /function oneMoreTuneLinerNotes\(reveal\)[\s\S]{0,600}era: era\.id !== "none" \? era : null/, "the liner notes carry the era, and a card with no year carries none");
-test.assertMatches(challengeRender, /notes\.era \? `<span class="omt-era-name" data-era="\$\{notes\.era\.id\}">[\s\S]{0,120}notes\.era\.name/, "and the reveal prints the era's name beside its colour, never the colour alone");
+test.assertMatches(source, /<span class="omt-cover"><b\$\{notes\.song\.length > 22 \? " data-long" : ""\}>\$\{oneMoreTuneEscape\(notes\.song\)\}<\/b><span>\$\{oneMoreTuneEscape\(\[notes\.artist, notes\.era \? notes\.era\.name : t\("one_more_tune_era_unknown"\)\]/, "and the card's back prints the era's name beside its colour, never the colour alone");
 test.assertNotMatches(challengeRender.slice(challengeRender.indexOf("clearOneMoreTuneNowPlaying")), /oneMoreTuneEraBand/, "the unanswered question still does not");
 test.assertIncludes(
   source.slice(source.indexOf("function renderOneMoreTuneLearn"), source.indexOf("function renderOneMoreTuneMatch")),
@@ -440,13 +440,13 @@ test.assertMatches(sheet, /\.lesson-card \{[^}]*box-shadow:var\(--system-shadow\
 // left the player's own labels invisible in those two appearances.
 test.assertMatches(sheet, /\.one-more-tune-window \{[^}]*--omt-stage-ink:var\(--paper\)/,
   "the deck names one stage ink, the desk's light pole, for the surface the appearance darkens");
-test.assertMatches(sheet, /\.one-more-tune-window \{[^}]*--omt-room:#111113;[^}]*--omt-room-ink:#F5F5F7;/, "the round's room is the deck's own dark, whatever the appearance");
-test.assertMatches(sheet, /body\[data-theme="classic"\] \.one-more-tune-window \{[^}]*--omt-room:var\(--ink\);[^}]*--omt-room-ink:var\(--paper\);/, "and the 1-bit desk re-values that room in its own two inks, in the one block that names an appearance");
+test.assertMatches(sheet, /\.one-more-tune-window \{[^}]*--omt-room:#F2F2F4;[^}]*--omt-dial:#1C1C1E;/, "the round's room is the desk's light and the dial is the set's own dark");
+test.assertMatches(sheet, /body\[data-theme="classic"\] \.one-more-tune-window \{[^}]*--omt-room:var\(--paper\);[^}]*--omt-dial:var\(--ink\);/, "and the 1-bit desk re-values the room and the dial in its own two inks, in the one block that names an appearance");
 // The progress mark moved from a `.trackline:before` painted at 22% whether or
 // not anything was playing to the disc's rim, which is the cue's own clock. The
 // token assertion is the same one: progress is drawn in the stage's ink, never
 // in an era's hue, because colour here is identity and never state.
-test.assertMatches(sheet, /\.omt-rim-arc \{[^}]*stroke:var\(--omt-room-ink\)/, "the progress mark is drawn in the room's ink, never an era's hue");
+test.assertMatches(sheet, /\.omt-ticks::after \{[^}]*background:currentColor;[^}]*scaleX\(var\(--omt-p,0\)\)/, "the progress mark is the card's own ink filling with the cue's clock, never an era's hue");
 test.assertNotMatches(sheet.replace(/\/\*[\s\S]*?\*\//g, ""), /\.trackline/,
   "the fake progress bar is gone rather than left behind as dead weight");
 test.assertNotMatches(sheet.replace(/\/\*[\s\S]*?\*\//g, ""), /color:var\(--surface-secondary\)/,
@@ -1007,38 +1007,32 @@ test.assertIncludes(source, 'if (action === "one-more-tune-play-again") return s
 test.assertIncludes(source, '"one-more-tune-play-again",', "the button's press unlocks the audio, so its first question sounds by itself");
 {
   const css = read("styles/97-one-more-tune.css");
-  const roomStart = css.indexOf("/* --- The round's room: a white label");
+  const roomStart = css.indexOf("/* --- The round's room: a radio");
   const room = css.slice(roomStart);
   test.assert(roomStart > 0, "the sheet declares the round's room, and it is the block this contract reads");
   test.assertMatches(room, /\.omt-room \{\s*container:omt\/size;/, "the room is a size container, so a window of any shape can host it");
-  test.assertIncludes(room, 'grid-template-areas:"track" "stage" "gap" "q" "opts"',
-    "upright, the track list, the record, the question and its answers stack, answers last");
-  test.assertMatches(room, /@container omt \(max-aspect-ratio:13\/10\) and \(max-height:600px\) \{[\s\S]{0,500}grid-template-areas:"track track" "stage q" "gap gap" "opts opts"/,
-    "a short upright room stands the question beside a smaller record");
-  test.assertMatches(room, /@container omt \(min-aspect-ratio:13\/10\) \{[\s\S]{0,900}grid-template-areas:"stage track" "stage q" "stage gap" "stage opts"/,
-    "a wide room gives the record the left column and stacks the rest on the right");
-  // The record's size is what the room has left once the question and its four
-  // answers are placed, not a size per breakpoint.
-  test.assertIncludes(room, "--omt-d:clamp(140px,min(100cqh - 440px,(100cqw - 32px) / 1.26),330px)",
-    "the record takes the room's height after the question and its four answers");
-  // A size container whose height came only from min-height measured its own
-  // container units as zero and dropped the record to its floor, so a room
-  // outside the phone shell has a height of its own.
+  test.assertIncludes(room, 'grid-template-areas:"stage" "gap" "q" "opts"',
+    "upright, the radio, the question and its keys stack, keys last where a thumb is");
+  test.assertMatches(room, /@container omt \(max-aspect-ratio:13\/10\) and \(max-height:600px\) \{[\s\S]{0,500}--omt-card-h:clamp\(/,
+    "a short upright room gives up the card's height first");
+  test.assertMatches(room, /@container omt \(min-aspect-ratio:13\/10\) \{[\s\S]{0,500}grid-template-areas:"stage gap" "stage q" "stage opts"/,
+    "a wide room gives the radio the left column and stacks the rest on the right");
+  test.assertIncludes(room, "--omt-card-h:clamp(84px,100cqh - 560px,200px)",
+    "the card takes the room's height after the dial, the question and its four keys");
   test.assertMatches(room, /:not\(\.is-mobile-fullscreen\) \.omt-room \{ flex:none;height:clamp\(/,
     "a desk window's room has a definite height");
-  // The way onward comes back where the answers were given: it is part of the
-  // answers' own block, so on a desk the pointer does not cross the window and
-  // on a phone the thumb does not travel.
-  test.assertMatches(source, /<div class="omt-opts">\s*<div class="omt-grid">\$\{rows\}<\/div>\s*<div class="omt-act"><button class="omt-next"/,
-    "the reveal's Next sits in the answers' own block");
+  test.assertMatches(source, /<div class="omt-opts">\s*<div class="omt-grid">\$\{oneMoreTuneChoiceKeys\(question, \{ reveal: true \}\)\}<\/div>\s*<div class="omt-act"><button class="omt-next"/,
+    "the reveal's Next sits in the keys' own block");
   test.assertMatches(room, /grid-auto-flow:column;grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)/,
-    "on a wide room the back cover's ten tracks run down two columns");
-  // The room carries no class an old face was styled by: those names still own
-  // layouts written for the disc, and one of them turned the whole room into a
-  // grid whose content column was 6px wide.
+    "on a wide room the back cover's ten tunes run down two columns");
+  // The turn-over and the landing are the reveal's two motions, and both run
+  // on the first paint of a reveal only.
+  test.assertMatches(room, /\.omt-room\[data-omt-enter\] \.omt-radio\[data-flipped\] \.omt-card-in \{ animation:omt-turn/, "the card turns over on the reveal's first paint");
+  test.assertMatches(room, /\.omt-room\[data-omt-enter\] \.omt-radio\[data-flipped\] \.omt-needle \{ animation:omt-land/, "and the needle lands on the year");
+  test.assertMatches(room, /\.omt-radio\[data-offscale\] \.omt-needle \{ opacity:0 \}/, "a card nobody dated gives the needle no year to land on");
   test.assertMatches(source, /return `<section class="omt-room" data-omt-phase="\$\{phase\}"/,
     "the room is only the room");
-  test.assertNotMatches(css.replace(/\/\*[\s\S]*?\*\//g, ""), /\.(darkplayer|omt-disc|sleeve|one-more-tune-round-reveal|one-more-tune-round-tail|one-more-tune-challenge-idle|one-more-tune-step-challenge)(?![\w-])/,
+  test.assertNotMatches(css.replace(/\/\*[\s\S]*?\*\//g, ""), /\.(darkplayer|omt-disc|sleeve|omt-arm|omt-grooves|omt-label|one-more-tune-round-reveal|one-more-tune-round-tail|one-more-tune-challenge-idle|one-more-tune-step-challenge)(?![\w-])/,
     "and no rule for a face the round no longer paints is left behind");
 
   // ---- What makes the six appearances six, in this window -------------------
@@ -1116,13 +1110,13 @@ test.assertIncludes(source, '"one-more-tune-play-again",', "the button's press u
   // score, because this is meant to be a happy thing to send, not a ladder.
   test.assertIncludes(source, "function oneMoreTuneRoundEra(round = oneMoreTuneRound) {",
     "the poster takes its era from the round's last answered question");
-  test.assertMatches(source, /const closingEra = oneMoreTuneRoundEra\(round\);[\s\S]{0,6000}ctx\.fillStyle = eraColor \|\| "#EFEBE1";/,
-    "and the record's label wears that era, paper when the last card has none");
+  test.assertMatches(source, /const closingEra = oneMoreTuneRoundEra\(round\);[\s\S]{0,6000}const lit = closingEra && band\.id === closingEra\.id;/,
+    "and the dial lights only the band of the era the round ended in");
   {
     const shareCard = source.slice(source.indexOf("function oneMoreTuneShareCardCanvas"), source.indexOf("function oneMoreTuneEraColor"));
     test.assert((shareCard.match(/oneMoreTuneEraColor\(/g) || []).length === 2,
       "the only colours the card asks for are the mark's and the closing era's: no band is painted in its question's era, which a friend would read as a hint");
-    test.assertNotMatches(shareCard, /reveal\.song|reveal\.product|question\.reveal/, "and it names no song and no product");
+    test.assertNotMatches(shareCard, /reveal\.song|reveal\.product/, "and it names no song and no product");
   }
   test.assertIncludes(en, 'one_more_tune_share_card_era: "last one landed in {era}"',
     "in words as well, because a colour is never the only carrier on this card");
@@ -1282,8 +1276,8 @@ test.assertMatches(omtStyles, /@media \(max-width: 430px\) and \(max-height: 520
   "the tab row stays, and grows to a thumb, because it is the only way between faces");
 test.assertMatches(omtStyles, /@media \(max-width: 430px\) and \(max-height: 520px\) \{[\s\S]{0,4000}height: auto;\s*\n\s*min-height: 0;\s*\n\s*padding: 4px 12px 2px;/,
   "and the header stops reserving a desktop masthead's 98px, which is what kept the last two answers off a 41mm screen");
-test.assertMatches(omtStyles, /@container omt \(min-aspect-ratio:13\/10\) and \(max-height:430px\) \{[\s\S]{0,1200}\.omt-grid \{ display:grid;grid-template-columns:1fr 1fr;/,
-  "a short wide room sets the four answers two by two, the one shape that fits four labels in two rows");
+test.assertMatches(omtStyles, /\.one-more-tune-window \.omt-grid \{ display:grid;grid-template-columns:1fr 1fr;gap:10px \}/,
+  "the four answers are preset keys, two by two, in every room");
 // The faces are the quiz's only navigation. On a touch screen they were a 28px
 // strip — a row a finger can miss, between the reader and the only way to change
 // which face they are looking at. The minimum is stated once, at the end of the
@@ -1308,14 +1302,14 @@ test.assertMatches(omtStyles, /\.one-more-tune-tabs \.system-tab \{ min-height:3
 // clamped: a room that cannot hold them is a room whose record gets smaller.
 test.assertMatches(omtStyles, /@container omt \(min-aspect-ratio:13\/10\) and \(max-height:430px\) \{[\s\S]{0,2400}\.omt-intro \{ display:none \}/,
   "a short wide room's start gives up its intro");
-test.assertMatches(omtStyles, /\.omt-room\[data-omt-phase="reveal"\] \.omt-opts \{ display:grid;grid-template-columns:minmax\(0,1fr\) auto;/,
-  "a sideways reveal stands the way onward beside the answer");
-test.assertMatches(omtStyles, /\.omt-room\[data-omt-phase="reveal"\] \.omt-ow:has\(\.omt-opt\[data-state="wrong"\]\) \{ display:none \}/,
-  "and keeps the answer rather than the miss");
+test.assertMatches(omtStyles, /@container omt \(max-aspect-ratio:13\/10\) and \(max-height:720px\) \{\s*\.one-more-tune-window \.omt-opt\[data-state="idle"\] \{ display:none \}/,
+  "a phone-height room keeps the answer and the miss on the reveal");
+test.assertMatches(omtStyles, /\.omt-opt\[data-state="idle"\] \{ opacity:\.35 \}/,
+  "and a taller room dims the other two in place rather than moving anything");
 test.assertNotMatches(omtStyles.slice(omtStyles.indexOf("/* --- The round's room")), /line-clamp/,
   "nothing in the room is clamped: a short room shrinks the record, not the words");
-test.assertMatches(omtStyles, /@container omt \(max-aspect-ratio:13\/10\) and \(max-height:600px\) \{[\s\S]{0,400}--omt-d:clamp\(104px,/,
-  "a short upright room's record keeps a floor it can be read at");
+test.assertMatches(omtStyles, /@container omt \(max-aspect-ratio:13\/10\) and \(max-height:600px\) \{[\s\S]{0,300}--omt-card-h:clamp\(76px,/,
+  "a short upright room's card keeps a floor its number can be read at");
 test.assertIncludes(source, "oneMoreTuneSourceQuery",
   "and the search has state of its own rather than borrowing the shelf's");
 test.assertIncludes(source, 'class="page-footer"',
@@ -1741,7 +1735,7 @@ test.assertIncludes(source, "question.localAnswer || oneMoreTuneCardIdForReveal(
   // answers — nothing else. The two state chips and the row of four controls
   // that used to sit here belong to the Study menu now, and a face that lists
   // every command of a round is the pile the menu bar exists to avoid.
-  test.assertIncludes(painted.html, 'class="omt-stage"', "the question face keeps the record");
+  test.assertIncludes(painted.html, 'class="omt-radio"', "the question face keeps the radio");
   test.assertIncludes(painted.html, 'class="omt-grid"', "and the four answers");
   test.assertNotIncludes(painted.html, "one_more_tune_not_revealed", "the face no longer says the answer is unrevealed");
   test.assertNotIncludes(painted.html, "one_more_tune_sounding", "nor narrates the sound it just started");
@@ -2117,28 +2111,25 @@ test.assertIncludes(source, "question.localAnswer || oneMoreTuneCardIdForReveal(
       "a revealed card hands its era to the one band that comes up");
     const noYear = run("oneMoreTuneDiscFrame({ playback: 'idle', position: 0, duration: 12, reveal: true, era: 'none' })");
     test.assert(!("data-era" in noYear.attrs), "and a card with no year lights none of them");
-    const small = run("oneMoreTuneDiscRim(132, 3)");
-    const large = run("oneMoreTuneDiscRim(296, 3)");
-    test.assert(Math.abs(small.length - 2 * Math.PI * small.radius) < 0.001 && large.radius > small.radius,
-      "the rim's circumference is computed from the diameter it was given, at any size");
     // The window it measures is the segment, not the recording the segment came
     // from: both play paths hand the rim their own start and end.
     test.assertMatches(source, /oneMoreTuneAudio\.cueEnd = start \+ length/,
       "the buffer path tells the rim the length of the segment it scheduled");
     test.assertMatches(source, /oneMoreTuneAudio\.cueEnd = to/,
       "and the element path tells it the window it was asked for");
-    // The white label's own geometry. A round is one record, sides A and B of
-    // five tracks, and the tonearm sits on the band of the question in front of
-    // the reader: A1 on the rim, A5 by the label, B1 back on the rim.
-    const codes = run("[0, 4, 5, 9].map((index) => oneMoreTuneTrackCode(index))");
-    test.assert(JSON.stringify(codes) === JSON.stringify(["A1", "A5", "B1", "B5"]), `ten questions are two sides of five (${codes.join(" ")})`);
-    const bands = run("[0, 1, 2, 3, 4].map((index) => oneMoreTuneArmBand(index))");
-    test.assert(bands.every((band, index) => band.to > band.from && (index === 0 || band.from > bands[index - 1].to)),
-      "the arm lands further in on each track and moves inward while one plays, never back over the last one");
-    test.assert(bands[0].from > 10 && bands[4].to < 50,
-      "and every band is on the record: past the resting arm and short of the label");
-    const again = run("oneMoreTuneArmBand(5)");
-    test.assert(Math.abs(again.from - bands[0].from) < 1e-9, "side B starts on the rim again");
+    // The dial's own geometry: forty years, 1984 at the left edge, and a card
+    // nobody dated has no place on it at all — null, never the left edge.
+    const places = run("[1984, 2005, 2026, null, undefined, 0, 1983, 2027].map((year) => oneMoreTuneDialPosition(year))");
+    test.assert(places[0] === 0 && places[2] === 1 && Math.abs(places[1] - 0.5) < 1e-9, `the dial runs 1984 to 2026 (${places.slice(0, 3).join(", ")})`);
+    test.assert(places.slice(3).every((place) => place === null), "and an unknown year, a zero or a year off the scale has no place on it");
+    const bands = run("oneMoreTuneDialBands()");
+    test.assert(bands.length === 6 && Math.abs(bands[0].start) < 1e-9,
+      "the six appearance eras are the dial's six bands, from its left edge");
+    test.assert(bands.every((band, index) => index === 0 || Math.abs(band.start - (bands[index - 1].start + bands[index - 1].width)) < 1e-9)
+      && Math.abs(bands[5].start + bands[5].width - 1) < 1e-9,
+      "and they meet end to end and fill it, so every dated card lands on exactly one");
+    const numbers = run("[0, 9].map((index) => oneMoreTuneTrackNumber(index))");
+    test.assert(JSON.stringify(numbers) === JSON.stringify(["01", "10"]), "the set counts its tunes in two digits");
     // Which of the four was right: the authority's word first, a label only
     // when it is the one label that matches, and nothing rather than a guess.
     const said = run("oneMoreTuneCorrectChoiceId({ correctChoice: 'c3', choices: [{ id: 'c1', label: 'iPod' }], reveal: { product: 'iPod' } })");

@@ -6,8 +6,8 @@
 // The page chrome follows the nearest era, so the whole document ages with
 // the photograph.
 
-import { ERAS, setEra, currentEra, fontLabel, onEraChange, isBranch } from "./eras.js?v=20260820a";
-import { frameSrc, machineManifest } from "./machine.js?v=20260820a";
+import { ERAS, setEra, currentEra, fontLabel, onEraChange, isBranch } from "./eras.js?v=20260925a";
+import { frameSrc, machineManifest } from "./machine.js?v=20260925a";
 import { L } from "./copy.js?v=20260820a";
 
 const doc = document;

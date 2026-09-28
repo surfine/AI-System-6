@@ -11,7 +11,7 @@
 // that interviews you before you write, the map of your own research, and the
 // desk that tells you your finished draft sounds like a machine.
 
-import { iconImg } from "./eras.js?v=20260820a";
+import { iconImg } from "./eras.js?v=20260925a";
 import { L } from "./copy.js?v=20260820a";
 
 const doc = document;

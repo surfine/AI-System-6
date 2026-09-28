@@ -182,3 +182,10 @@ interface Window {
 interface Element {
   hidden: boolean;
 }
+
+// Hold-to-speak uses the Web Speech API where the browser has it; neither
+// constructor is in TypeScript's DOM lib, and WebKit ships only the prefix.
+interface Window {
+  SpeechRecognition?: any;
+  webkitSpeechRecognition?: any;
+}

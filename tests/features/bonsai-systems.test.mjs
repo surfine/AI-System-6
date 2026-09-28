@@ -43,38 +43,53 @@ function wireBasicDistrict(state, density = "high") {
   // The plant is SC2K's 4x4 pad; the tower, road, and zone sit east of it.
   const plant = { x: base.x, y: base.y };
   const tower = { x: base.x + 5, y: base.y };
-  const zone = { x: base.x + 5, y: base.y + 2, width: 3, height: 3 };
+  // Every building stands on a street (ROAD_REACH 1): the block has streets
+  // on its north, east and south sides.
+  const zone = { x: base.x + 5, y: base.y + 2, width: 4, height: 3 };
   test.assert(command(state, "place-facility", { kind: "coal", ...plant }).accepted, "district builds a coal plant");
-  test.assert(command(state, "build-path", { network: "road", start: { x: zone.x, y: base.y + 1 }, end: { x: zone.x + zone.width - 1, y: base.y + 1 } }).accepted, "district builds road access");
+  test.assert(command(state, "build-path", { network: "road", points: [{ x: zone.x, y: base.y + 1 }, { x: zone.x + zone.width, y: base.y + 1 },
+    { x: zone.x + zone.width, y: zone.y + zone.height }, { x: zone.x, y: zone.y + zone.height }] }).accepted, "district builds road access");
   test.assert(command(state, "build-path", { network: "wire", start: { x: base.x + 4, y: base.y }, end: { x: zone.x, y: zone.y } }).accepted, "district connects power");
   test.assert(command(state, "zone-area", { zone: "residential", density, ...zone }).accepted, "district zones a residential area");
+  // Ruleset 5: without police, crime drives homes out; the district has one.
+  test.assert(command(state, "place-facility", { kind: "police", x: zone.x + zone.width + 1, y: zone.y }).accepted, "district builds a police station");
   return { base, wind: plant, plant, tower, zone };
 }
 
-// Water is a visible growth blocker; restoration starts and completes work.
+// Water caps a dense block at one-tile buildings (ruleset 5): without it the
+// block still grows, but only small houses, and it says why it stays small.
+// Restoring water lets the block rebuild as larger lots.
 {
   const state = sim.createCity({ seed: 101, size: 64, terrainPreset: "balanced" });
   const district = wireBasicDistrict(state);
-  sim.advanceTicks(state, sim.TICKS_PER_DAY * 20);
-  const blocked = sim.tileInfo(state, district.zone.x, district.zone.y);
-  test.assert(blocked.stage === 0 && blocked.problem?.code === "no-water" && blocked.problem.action === "connect-water", "missing water blocks growth with positioned guidance");
-  test.assert(command(state, "place-facility", { kind: "water-tower", ...district.tower }).accepted, "district builds a water tower");
-  test.assert(command(state, "build-path", { network: "pipe", start: district.tower, end: { x: district.zone.x, y: district.zone.y } }).accepted, "district connects its water network");
-  sim.advanceTicks(state, sim.TICKS_PER_DAY * 12);
-  const active = sim.tileInfo(state, district.zone.x, district.zone.y);
-  test.assert(active.stage === 1 && active.buildingState === sim.BUILDING_STATE.ACTIVE, "restored utilities complete explicit foundation and construction states");
-  test.assert(state.population >= 100, "a serviced starter district exceeds 100 residents in the first year");
-  const events = sim.drainEvents(state);
+  const { width, height } = district.zone;
+  const zoneCells = Array.from({ length: width * height }, (_, k) => ({ x: district.zone.x + (k % width), y: district.zone.y + Math.floor(k / width) }));
+  let events = [];
+  for (let day = 0; day < 300; day += 1) { state.demand = { ...state.demand, r: 60 }; sim.advanceTicks(state, sim.TICKS_PER_DAY); events.push(...sim.drainEvents(state)); }
+  const homes = () => state.buildings.filter((building) => building.zone === sim.ZONE.R);
+  test.assert(homes().length > 0 && homes().every((building) => building.w === 1), "without water a dense block raises only one-tile buildings");
+  test.assert(zoneCells.some(({ x, y }) => { const info = sim.tileInfo(state, x, y); return info.problem?.code === "no-water" && info.problem.action === "connect-water"; }),
+    "missing water is reported with positioned guidance");
   test.assert(events.some((event) => event.type === "problem-changed" && Number.isInteger(event.payload.x)), "problem changes carry positions");
   test.assert(events.some((event) => event.type === "construction-started") && events.some((event) => event.type === "building-completed"), "construction emits start and completion facts");
-
-  state.constructionTimer[district.zone.y * state.size + district.zone.x] = 44;
-  sim.advanceTicks(state, sim.TICKS_PER_DAY);
-  test.assert(sim.tileInfo(state, district.zone.x, district.zone.y).stage >= 2, "high-density buildings advance beyond the first development level");
-  const agentsA = sim.derivedAgentFacts(state);
-  const agentsB = sim.derivedAgentFacts(state);
-  test.assert(agentsA.vehicles.length > 0 && agentsA.pedestrians.length > 0, "population and roads derive visible agents");
-  test.assert(sim.canonicalStringify(agentsA) === sim.canonicalStringify(agentsB), "derived agents are stable facts of seed, tick, and entities");
+  test.assert(homes().some((building) => building.state === sim.BUILDING_STATE.ACTIVE), "serviced lots complete explicit foundation and construction states");
+  test.assert(state.population >= 100, "a serviced starter district exceeds 100 residents in the first year");
+  {
+    const agentsA = sim.derivedAgentFacts(state);
+    const agentsB = sim.derivedAgentFacts(state);
+    test.assert(agentsA.vehicles.length > 0 && agentsA.pedestrians.length > 0, "population and roads derive visible agents");
+    test.assert(sim.canonicalStringify(agentsA) === sim.canonicalStringify(agentsB), "derived agents are stable facts of seed, tick, and entities");
+  }
+  test.assert(command(state, "place-facility", { kind: "water-tower", ...district.tower }).accepted, "district builds a water tower");
+  test.assert(command(state, "build-path", { network: "pipe", start: district.tower, end: { x: district.zone.x, y: district.zone.y } }).accepted, "district connects its water network");
+  test.assert(zoneCells.every(({ x, y }) => sim.tileInfo(state, x, y).watered), "the whole block is watered");
+  // Demand is a monthly figure; hold it where a growing town would have it
+  // so the block has a reason to build up.
+  for (let day = 0; day < 400 && !homes().some((building) => building.w > 1); day += 1) {
+    state.demand = { ...state.demand, r: 60 };
+    sim.advanceTicks(state, sim.TICKS_PER_DAY);
+  }
+  test.assert(homes().some((building) => building.w > 1), "with water, dense homes rebuild as larger lots");
 }
 
 // Low density stops at level one under the same service conditions.
@@ -83,8 +98,8 @@ function wireBasicDistrict(state, density = "high") {
   const district = wireBasicDistrict(state, "low");
   command(state, "place-facility", { kind: "water-tower", ...district.tower });
   command(state, "build-path", { network: "pipe", start: district.tower, end: { x: district.zone.x, y: district.zone.y } });
-  sim.advanceTicks(state, sim.TICKS_PER_DAY * 60);
-  test.assert(sim.tileInfo(state, district.zone.x, district.zone.y).stage === 1, "low-density development is capped at level one");
+  for (let day = 0; day < 200; day += 1) { state.demand = { ...state.demand, r: 90 }; sim.advanceTicks(state, sim.TICKS_PER_DAY); }
+  test.assert(state.buildings.length > 0 && state.buildings.every((building) => building.w === 1 && building.stage === 1), "low-density development is capped at one-tile buildings");
 }
 
 // All four services have funding-scaled coverage and enter budget categories.
@@ -95,9 +110,11 @@ function wireBasicDistrict(state, density = "high") {
     test.assert(command(state, "place-facility", { kind, x: base.x + offset * 2, y: base.y }).accepted, `${kind} facility is placeable`);
   }
   const police = { x: base.x, y: base.y };
-  test.assert(sim.tileInfo(state, police.x + 5, police.y).policeCovered, "full police funding covers distance five");
+  const fullStrength = sim.tileInfo(state, police.x + 5, police.y).policeStrength;
+  test.assert(sim.tileInfo(state, police.x + 5, police.y).policeCovered && fullStrength > 0, "full police funding covers distance five");
+  test.assert(sim.tileInfo(state, police.x + 1, police.y).policeStrength > fullStrength, "police strength fades with distance");
   command(state, "set-policy", { policy: "funding", service: "police", level: 50 });
-  test.assert(!sim.tileInfo(state, police.x + 5, police.y).policeCovered, "half police funding shrinks coverage");
+  test.assert(sim.tileInfo(state, police.x + 5, police.y).policeStrength < fullStrength, "half police funding weakens coverage");
   sim.advanceTicks(state, sim.TICKS_PER_DAY * 30);
   const report = sim.cityReport(state);
   test.assert(report.budget.police > 0 && report.budget.fire > 0 && report.budget.schools > 0 && report.budget.health > 0, "budget separates the service categories");
@@ -148,7 +165,7 @@ function wireBasicDistrict(state, density = "high") {
   test.assert(report.railService.connectedStations === 1 && report.railService.connectedRailTiles === 7
     && report.railService.jobs === 20 && first.state.jobs === 20, "connected rail adds deterministic station jobs and capacity");
   test.assert(sim.derivedAgentFacts(first.state).trains.length === 2, "connected stations derive trains without a second simulation source");
-  test.assert(sim.tileInfo(first.state, 16, 3).landValue > first.before, "connected rail raises nearby land value");
+  test.assert(sim.tileInfo(first.state, 16, 3).railOk && !sim.tileInfo(first.state, 40, 40).railOk, "a connected station marks its rail service reach");
   test.assert(await sim.checkpoint(first.state) === await sim.checkpoint(second.state), "rail and station commands replay deterministically");
   const loaded = sim.deserialize(sim.serialize(first.state));
   test.assert(sim.cityReport(loaded).railService.connectedStations === 1
@@ -168,9 +185,11 @@ function wireBasicDistrict(state, density = "high") {
     const power = command(state, "place-facility", { kind: "coal", x: base.x, y: base.y });
     if (!power.accepted) command(state, "place-facility", { kind: "wind", x: base.x, y: base.y });
     command(state, "zone-area", { zone: "industrial", density: "high", x: base.x + 3, y: base.y, width: 2, height: 2 });
-    state.stage[(base.y) * state.size + base.x + 3] = 3;
-    state.buildingState[(base.y) * state.size + base.x + 3] = sim.BUILDING_STATE.ACTIVE;
-    state.derivedDirty = true;
+    // A standing one-tile factory, written straight into the lot layers.
+    const anchor = base.y * state.size + base.x + 3;
+    state.lot[anchor] = anchor + 1; state.stage[anchor] = 1; state.variant[anchor] = 9;
+    state.buildingState[anchor] = sim.BUILDING_STATE.ACTIVE;
+    sim.invalidateDerived(state);
     sim.ensureDerived(state);
   }
   const report = sim.cityReport(first);
@@ -274,6 +293,7 @@ function findFlatRect(state, width, height) {
   command(state, "build-path", { network: "road", points: [{ x: base.x, y: base.y + 6 }, { x: base.x + 11, y: base.y + 6 }] });
   command(state, "zone-area", { zone: "residential", density: "high", x: base.x, y: base.y + 3, width: 10, height: 3 });
   command(state, "zone-area", { zone: "residential", density: "high", x: base.x, y: base.y + 7, width: 10, height: 3 });
+  command(state, "place-facility", { kind: "police", x: base.x + 11, y: base.y + 4 });
   sim.advanceTicks(state, 400);
 
   const shortage = sim.cityReport(state);
@@ -308,7 +328,7 @@ function findFlatRect(state, width, height) {
     for (let i = 0; i < state.size * state.size; i += 1) if (state.zone[i] && state.stage[i]) count += 1;
     return count;
   };
-  const ceiling = Math.floor(shortage.powerCapacity / 2); // high-density plots draw 2 each
+  const ceiling = shortage.powerCapacity; // every zoned tile draws one unit (ruleset 5)
   const samples = [];
   for (let k = 0; k < 8; k += 1) { sim.advanceTicks(state, 200); samples.push(built()); }
   test.assert(samples.every((count) => count <= ceiling),
@@ -369,7 +389,7 @@ function findFlatRect(state, width, height) {
   sim.ensureDerived(state);
   test.assert(state.subwayService.connectedStations >= 1 && state.subwayService.connectedSubwayTiles >= 5,
     "a road-served station connects the whole subway line");
-  test.assert(state.subwayService.roadTrafficRelief > 0, "a connected subway relieves road traffic");
+  test.assert(state.subwayService.passengerCapacity > 0, "a connected subway offers passenger capacity to the commute");
   test.assert(command(state, "place-facility", { kind: "bus", x: base.x + 4, y: base.y + 1 }).accepted, "a bus depot stands beside the road");
   sim.ensureDerived(state);
   test.assert(state.busService.depots === 1 && state.busService.roadTrafficRelief > 0, "a road-served bus depot relieves traffic");
@@ -392,13 +412,13 @@ function findFlatRect(state, width, height) {
   const lonely = command(state, "build-path", { network: "onramp", points: [{ x: base.x + 5, y: base.y + 7 }] });
   test.assert(!lonely.accepted && lonely.code === "onramp-connection", "an onramp away from road and highway is refused");
   sim.ensureDerived(state);
-  test.assert(state.highwayService.roadTrafficRelief === 0, "a highway without onramps carries nothing");
+  test.assert(!state.highwayService.inService, "a highway without onramps carries nothing");
   test.assert(command(state, "build-path", { network: "onramp", points: [{ x: base.x + 1, y: base.y + 2 }] }).accepted, "the west onramp joins road and highway");
   sim.ensureDerived(state);
-  test.assert(state.highwayService.onramps === 1 && state.highwayService.roadTrafficRelief === 0, "one onramp is an entrance without an exit — still no relief");
+  test.assert(state.highwayService.onramps === 1 && !state.highwayService.inService, "one onramp is an entrance without an exit — still no relief");
   test.assert(command(state, "build-path", { network: "onramp", points: [{ x: base.x + 9, y: base.y + 2 }] }).accepted, "the east onramp joins road and highway");
   sim.ensureDerived(state);
-  test.assert(state.highwayService.onramps === 2 && state.highwayService.roadTrafficRelief > 0, "an entrance and an exit put the highway in service");
+  test.assert(state.highwayService.onramps === 2 && state.highwayService.inService, "an entrance and an exit put the highway in service");
   test.assert(state.highwayService.connectedHighwayTiles >= 16, "the whole ribbon connects through its onramps");
   sim.advanceTicks(state, 125);
   test.assert(state.budget.highways > 0, "highway mileage accrues on its own funding line");
@@ -488,7 +508,7 @@ function findFlatRect(state, width, height) {
   test.assert(command(port, "zone-area", { zone: "seaport", x: base.x + 1, y: base.y + 6, width: 4, height: 2 }).accepted, "a full-size seaport zone is accepted");
   test.assert(port.zone[(base.y + 6) * port.size + base.x + 1] === sim.ZONE.SEAPORT, "seaport tiles carry the SC2K zone value");
   sim.advanceTicks(port, 125); sim.advanceTicks(plain, 125);
-  test.assert(sim.cityReport(port).demand.i > sim.cityReport(plain).demand.i, "a powered, road-served seaport lifts industrial demand");
+  test.assert(sim.demandReport(port).market > sim.demandReport(plain).market, "a powered, road-served seaport lifts industrial demand");
 }
 
 // M3b-2a: bridges — roads, rails, and power lines cross water at bridge
@@ -524,8 +544,8 @@ function findFlatRect(state, width, height) {
   const bare = sim.createCity({ seed: 508, size: 64 });
   const { zone } = wireBasicDistrict(covered);
   wireBasicDistrict(bare);
-  test.assert(command(covered, "place-facility", { kind: "school", x: zone.x + 1, y: zone.y + 3 }).accepted, "demographics city builds a school");
-  test.assert(command(covered, "place-facility", { kind: "clinic", x: zone.x + 2, y: zone.y + 3 }).accepted, "demographics city builds a clinic");
+  test.assert(command(covered, "place-facility", { kind: "school", x: zone.x + 1, y: zone.y + zone.height + 1 }).accepted, "demographics city builds a school");
+  test.assert(command(covered, "place-facility", { kind: "clinic", x: zone.x + 2, y: zone.y + zone.height + 1 }).accepted, "demographics city builds a clinic");
   sim.advanceTicks(covered, 125 * 14); sim.advanceTicks(bare, 125 * 14);
   test.assert(covered.eq > bare.eq, "school coverage raises EQ over the uncovered twin");
   test.assert(covered.le > bare.le, "health coverage raises LE over the uncovered twin");
@@ -542,7 +562,7 @@ function findFlatRect(state, width, height) {
 // headline figure per tracked facility and prune with demolition.
 {
   const state = sim.createCity({ seed: 509, size: 64, yearFounded: 2000 });
-  const pad = findLandRect(state, 8, 8, flatPadAt(state, 3));
+  const pad = findLandRect(state, 8, 8, flatPadAt(state, 8));
   test.assert(command(state, "place-facility", { kind: "mayors-house", x: pad.x, y: pad.y }).code === "reward-locked", "rewards stay locked before the ladder offers them");
   test.assert(command(state, "zone-area", { zone: "military", x: pad.x, y: pad.y, width: 2, height: 2 }).code === "reward-locked", "the military zone waits for its reward");
   sim.ensureDerived(state);

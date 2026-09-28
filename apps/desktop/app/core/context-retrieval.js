@@ -1062,7 +1062,7 @@ function getCuratedContextItems(userText, limit = maxCuratedContextItems) {
       sourceType: scrap.source?.type || "",
       site: scrap.source?.site || "",
       url: scrap.source?.url || "",
-      content: scrap.body,
+      content: (typeof scrapDocumentText === "function" ? scrapDocumentText(scrap) : scrap.body),
       kind: "scrap",
       projectId: scrap.projectId,
       tags: scrap.tags || [],

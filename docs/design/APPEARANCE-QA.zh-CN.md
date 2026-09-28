@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/APPEARANCE-QA.md -->
-<!-- source-sha256: 313ba9fedf7f3e009462f668d3f70dfe4da9c3fa0efd74dc9a951027edaef079 -->
+<!-- source-sha256: 44ca9a721db935cf2adddb62e2039e4c788ee4d93f58696255779ef51b527d76 -->
 
 英文版为准。本文档仅供人类参考。
 
@@ -42,7 +42,7 @@ reference、一边自称 canonical。详见
 | --- | --- | --- | --- | --- |
 | Platinum | 20 | 12 | 2 | 6（3 个照片缩略图裁片，加 3 个裁错对象的裁片） |
 | Aqua | 18 | 17 | 1 | 0（默认按钮：参照框的是修正前的 21px 盒子） |
-| Snow Leopard | 18 | 18 | 0 | 0 |
+| Snow Leopard | 19 | 19 | 0 | 0 |
 | Yosemite | 17 | 5 | 10 | 2（checkbox/radio 标记只有 clone 资产） |
 | Yosemite 2x | 4 | 3 | 0 | 1（checkbox 只有缩放后的 clone 资产） |
 
@@ -143,8 +143,9 @@ Liquid Glass 正在通过现有主题 ID 与材质 token 重校到 macOS 27 Gold
 来源与交付记录见 [Big Sur 图标](BIG-SUR-ICONS.md)。`tests/visual/theme-lab/` 中的回归基线记录网页适配结果，
 不代表原生历史还原通过。设计参考 WWDC20 session 10104 和 512 Pixels macOS 11
 的 Light Blue、Finder Home 截图；原图比例和像素误差尚未校准，历史相似度未认证。
-产品保留左侧关闭、右侧缩放及现有窗口结构，不增设装饰性的最小化操作，
-也未重建各应用侧栏。
+产品保留左侧关闭、右侧缩放及现有窗口结构，也未重建各应用侧栏。最小化黄灯从不作装饰：
+一个时代只有连同自己的 Dock 一起才画黄灯（2026-09-25 起 Snow Leopard 首发），红、黄在左，
+Zoom 在右缘。
 
 本外观样式只在选用时加载（包括恢复已保存外观），由 Service Worker 留存供
 之后离线启动。七套正式外观保持原有颜色行为；新增默认表面参数保持其控制面板

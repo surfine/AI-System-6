@@ -1,13 +1,15 @@
 /* Layout owned by lazy shell components. Shared window material stays in 69. */
+/* The 3.3 Dock starts at the top of the screen (native 01: first tile
+   y0..63); NeXTSTEP has no menu bar, so nothing is reserved above it, and the
+   column between tiles is the desktop itself. */
 .nextstep-dock { position: fixed;
-  top: var(--menu-bar-height, 24px);
+  top: 0;
   right: 0;
   width: 64px;
-  max-height: calc(100dvh - var(--menu-bar-height, 24px));
+  max-height: 100dvh;
   overflow: auto;
   overscroll-behavior: contain;
-  z-index: var(--z-control-strip);
-  background: var(--panel);
+  background: none;
   display: flex;
   flex-direction: column;
 }
@@ -28,44 +30,25 @@
 .nextstep-dock-region[hidden] { display: none;
 }
 
-.nextstep-dock-region-label { margin: 0;
-  padding: 2px 1px;
-  background: var(--system-titlebar-active-bg);
-  color: var(--titlebar-title-fg);
-  /* 10px, not 11: the region names are longer than the 64px column and a
-     label that breaks mid-word ("Application / s") reads as damage. */
-  font: 10px Helvetica, Arial, sans-serif;
-  text-align: center;
-  overflow-wrap: anywhere;
+/* A miniwindow is a 64x64 tile whose top strip is black with the window's
+   title in white, cut short (native 13-edit-doc-miniaturized, 13c x4). */
+.nextstep-dock-tile.is-miniwindow { height: 64px;
+  min-height: 0;
+  padding: 14px 4px 4px;
 }
 
-.nextstep-dock-fixed { border-bottom: 1px solid var(--ink);
-}
-
-.nextstep-dock-running { border-bottom: 1px solid var(--ink);
-}
-
-.nextstep-dock-windows { margin-top: auto;
-  border-top: 1px solid var(--ink);
-}
-
-/* A miniwindow is one window and says which one: the title sits under the icon
-   so two documents of the same application are told apart without hovering.
-   The tile grows past 64px when the title needs the room. */
-.nextstep-dock-tile.is-miniwindow { flex-direction: column;
-  gap: 2px;
-  height: auto;
-  min-height: 64px;
-  padding-bottom: 3px;
-}
-
-.nextstep-dock-tile-label { max-width: 100%;
-  max-height: 2.2em;
+.nextstep-dock-tile.is-miniwindow .nextstep-dock-tile-label { position: absolute;
+  top: 1px;
+  left: 1px;
+  right: 1px;
+  height: 11px;
   overflow: hidden;
-  font: 10px Helvetica, Arial, sans-serif;
-  line-height: 1.1;
+  background: #000;
+  color: #fff;
+  font: bold 9px/11px Helvetica, Arial, "PingFang SC", sans-serif;
+  white-space: nowrap;
+  text-overflow: clip;
   text-align: center;
-  overflow-wrap: anywhere;
 }
 
 .nextstep-dock-tile { display: flex;
@@ -74,11 +57,14 @@
   justify-content: center;
   width: 64px;
   height: 64px;
-  border: 1px solid var(--ink);
+  border: 0;
   border-radius: 0;
   padding: 4px;
-  background: var(--panel);
-  box-shadow: var(--system-shadow);
+  /* The 3.3 tile: 2px white top/left, #443344 then black bottom/right, on
+     the purple-grey tile face (native 01 x1053..1116 y0..63). The face is a
+     gradient approximation of the textured original. */
+  background: linear-gradient(to bottom right, #aaaaaa, #9988aa 35%, #889999 65%, #778888);
+  box-shadow: inset 2px 2px 0 #fff, inset -1px -1px 0 #000, inset -2px -2px 0 #443344;
 }
 
 .nextstep-dock-tile[data-state="stopped"]::after { content: "…";
@@ -96,55 +82,99 @@
   left: 4px;
 }
 
-.nextstep-dock details { font-size: var(--system-font-size);
-  overflow-wrap: anywhere;
+/* The bottom desk row: a desk object, not part of the Dock. Running
+   applications sit at the bottom-left and the window miniwindows follow them to
+   the right, the 3.3 arrangement. It shares the Dock's stacking level through
+   one selector list rather than a second `var(--z-control-strip)` use, so the
+   file's z-index budget does not change. It never reaches under the right-edge
+   Dock: 96px of a 64px column plus the 8px edges. */
+.nextstep-dock,
+.nextstep-desk-row { z-index: var(--z-control-strip);
 }
 
-.nextstep-dock details[open] { position: fixed;
-  right: 64px;
-  top: var(--menu-bar-height, 24px);
-  width: min(240px, calc(100vw - 64px));
-  max-height: 80dvh;
-  overflow: auto;
-  background: var(--panel);
-  box-shadow: var(--system-shadow);
+/* Free application icons and miniwindows line up from the screen's
+   bottom-left corner, edge to edge (native: first miniwindow at (0,768)). */
+.nextstep-desk-row { position: fixed;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  gap: 0;
+  max-width: calc(100vw - 96px);
+  overflow: hidden;
 }
 
-.nextstep-dock details button { display: block;
-  width: 100%;
-  text-align: left;
+.nextstep-desk-row-section { display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 0;
+  flex: none;
+  /* A row section carries the legacy `.nextstep-dock-windows` name so an old
+     selector still reaches a miniwindow, but it is a desk-row object: it keeps
+     none of the Dock column's banding. */
+  margin-top: 0;
+  border-top: 0;
+}
+
+.nextstep-desk-row[hidden],
+.nextstep-desk-row-section[hidden] { display: none;
 }
 
 .nextstep-menu-palette { position: fixed;
   width: max-content;
-  min-width: 150px;
+  min-width: 0;
   max-width: min(320px, calc(100vw - 64px));
   max-height: 100dvh;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--ink);
-  background: var(--panel);
-  box-shadow: var(--system-shadow);
-  color: var(--ink);
-  font: 12px Helvetica, Arial, sans-serif;
+  /* 3.3 sheet: the shade comes from the two hairlines, never a drop shadow. */
+  border-style: solid;
+  border-width: 1px;
+  border-color: #555 #000 #000 #555;
+  background: #fff;
+  box-shadow: none;
+  color: #000;
+  font: 12px/16px Helvetica, Arial, "PingFang SC", sans-serif;
   z-index: var(--z-system-menu);
 }
 
 .nextstep-menu-palette[hidden] { display: none;
 }
 
+/* A phone keeps the shared full-screen presentation, the rule the Writing Flow
+   panel already follows (nextstep-shell.js floats()). The palette pinned at the
+   top left covered the one window's title and half its content, the Dock
+   column sat over its title bar, and the desk row over its bottom controls.
+   The shared phone menu bar carries the same menus (69-nextstep-appearance.css
+   leaves it up here). A mouse desk of at least 640x540 (an 800x600 display) is
+   still a desk, as floats() says, and keeps the main menu and the Dock. */
+@media (max-width: 860px) and (not ((hover: hover) and (pointer: fine) and (min-width: 640px) and (min-height: 540px))), (hover: none) and (pointer: coarse) and (max-height: 660px) {
+  .nextstep-menu-palette,
+  .nextstep-dock,
+  .nextstep-desk-row { display: none;
+  }
+}
+
+/* The title bar: a white top line over the black band, closed by the #555/
+   black bottom pair (22px: 1 + 19 + 2). */
 .nextstep-menu-palette > header { display: flex;
-  background: var(--system-titlebar-active-bg);
-  color: var(--titlebar-title-fg);
+  height: 22px;
+  box-sizing: border-box;
+  border-top: 1px solid #fff;
+  border-bottom: 1px solid #555;
+  box-shadow: inset 0 1px 0 #000, 0 1px 0 #000;
+  background: #000;
+  color: #fff;
   touch-action: none;
 }
 
 .nextstep-menu-palette > header button { padding: 3px 6px;
   border: 0;
+  border-radius: 0;
   background: transparent;
   color: inherit;
   font: inherit;
   font-weight: bold;
+  line-height: 15px;
   text-align: left;
 }
 
@@ -152,21 +182,41 @@
   cursor: move;
 }
 
-.nextstep-menu-palette > [role="menu"] { overflow: auto;
-  overscroll-behavior: contain;
+/* The torn-off close box: NeXT's bevelled 15x15 X, never a white × glyph. */
+.nextstep-menu-palette > header .nextstep-menu-close { flex: none;
+  width: 15px;
+  height: 15px;
+  margin: 2px 3px 0 auto;
+  padding: 0;
+  border: 0;
+  font-size: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' shape-rendering='crispEdges'%3E%3Cpath fill='%23000' d='M0 0h15v15H0z'/%3E%3Cpath fill='%23555' d='M0 0h14v14H0z'/%3E%3Cpath fill='%23fff' d='M0 0h14v1H0zM0 0h1v14H0z'/%3E%3Cpath fill='%23aaa' d='M1 1h12v12H1z'/%3E%3Cpath fill='%23555' d='M3 2h1v1h-1zM10 2h1v1h-1zM2 3h1v1h-1zM4 3h1v1h-1zM9 3h1v1h-1zM11 3h1v1h-1zM3 4h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM10 4h1v1h-1zM4 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM9 5h1v1h-1zM5 6h1v1h-1zM8 6h1v1h-1zM5 7h1v1h-1zM8 7h1v1h-1zM4 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM9 8h1v1h-1zM3 9h1v1h-1zM5 9h1v1h-1zM8 9h1v1h-1zM10 9h1v1h-1zM2 10h1v1h-1zM4 10h1v1h-1zM9 10h1v1h-1zM11 10h1v1h-1zM3 11h1v1h-1zM10 11h1v1h-1z'/%3E%3Cpath fill='%23000' d='M2 2h1v1h-1zM3 3h1v1h-1zM4 4h1v1h-1zM5 5h1v1h-1zM6 6h1v1h-1zM7 6h1v1h-1zM6 7h1v1h-1zM7 7h1v1h-1zM8 5h1v1h-1zM9 4h1v1h-1zM10 3h1v1h-1zM11 2h1v1h-1zM5 8h1v1h-1zM4 9h1v1h-1zM3 10h1v1h-1zM2 11h1v1h-1zM8 8h1v1h-1zM9 9h1v1h-1zM10 10h1v1h-1zM11 11h1v1h-1z'/%3E%3C/svg%3E") center / 15px 15px no-repeat;
 }
 
+.nextstep-menu-palette > [role="menu"] { overflow: auto;
+  overscroll-behavior: contain;
+  background: #fff;
+}
+
+/* A 3.3 menu row is 20 pixels: 12px Helvetica on a 16px line between a white
+   top line and the #555555/black bottom pair, text starting 5px in. `font`
+   resets line-height, so it must stay BEFORE `line-height` (N8: the Chinese
+   rows grew to 21px when it followed). */
 .nextstep-menu-palette [role="menuitem"] { display: block;
   width: 100%;
-  min-height: 24px;
-  padding: 3px 8px;
-  border: 0;
-  border-radius: 0;
-  background: var(--panel);
-  color: var(--ink);
-  box-shadow: var(--system-shadow);
-  text-align: left;
+  min-height: 20px;
+  box-sizing: border-box;
+  padding: 1px 8px 1px 5px;
   font: inherit;
+  line-height: 16px;
+  border: 0;
+  border-top: 1px solid #fff;
+  border-bottom: 1px solid #000;
+  border-radius: 0;
+  box-shadow: inset 0 -1px 0 #555555;
+  background: #aaaaaa;
+  color: #000;
+  text-align: left;
 }
 
 /* NeXTSTEP menus carry no separators (Release 3.3 Visual Guide, Menus): the
@@ -175,12 +225,23 @@
 .nextstep-menu-palette hr { display: none;
 }
 
-.nextstep-menu-palette [aria-haspopup="menu"]::after { content: "▸";
+/* The submenu arrow is the 7x7 embossed triangle asset, floated right. */
+.nextstep-menu-palette [aria-haspopup="menu"]::after { content: "";
   float: right;
-  margin-left: 20px;
+  width: 7px;
+  height: 7px;
+  margin-top: 4px;
+  margin-left: 12px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='7' shape-rendering='crispEdges'%3E%3Cpath fill='%23000' d='M0 0h1v7H0z'/%3E%3Cpath fill='%23555' d='M1 0h1v1H1zM2 1h2v1H2zM4 2h2v1H4z'/%3E%3Cpath fill='%23fff' d='M6 3h1v1H6zM4 4h2v1H4zM2 5h2v1H2zM1 6h1v1H1z'/%3E%3C/svg%3E") center / 7px 7px no-repeat;
 }
 
-.nextstep-menu-palette [role="menuitem"]:is(:hover, :focus-visible) { background: var(--paper);
+/* A key equivalent sits at the right end of its row (NeXT: Hide h, Quit q). */
+.nextstep-menu-palette .nextstep-key { float: right;
+  margin: 0 1px 0 12px;
+  color: #000;
+}
+
+.nextstep-menu-palette [role="menuitem"]:is(:hover, :focus-visible) { background: #fff;
 }
 
 .nextstep-menu-palette [role="menuitem"]:disabled { color: var(--system-disabled-fg);
@@ -197,16 +258,19 @@
 .nextstep-file-viewer[hidden] { display: none;
 }
 
+/* P27: 3.3 column browser -- #aaaaaa lists, 146px columns, 15px rows, text
+   only (no row icons), the selected row white on black text, a directory row
+   with a ▷. */
 .nextstep-finder-columns { display: flex;
   flex: 1;
   min-width: 0;
   min-height: 120px;
   overflow-x: auto;
   overscroll-behavior: contain;
-  background: var(--paper);
+  background: #aaaaaa;
 }
 
-.nextstep-finder-column { flex: 0 0 180px;
+.nextstep-finder-column { flex: 0 0 146px;
   overflow-y: auto;
   scrollbar-width: none;
   border-right: 1px solid var(--ink);
@@ -215,37 +279,588 @@
 .nextstep-column-item { display: flex;
   align-items: center;
   gap: 4px;
+  position: relative;
   width: 100%;
-  min-height: 24px;
-  padding: 2px 4px;
+  min-height: 15px;
+  padding: 0 4px;
   border: 0;
   border-radius: 0;
   background: transparent;
   color: var(--ink);
-  font: inherit;
+  font: 400 12px/15px Helvetica, Arial, "PingFang SC", sans-serif;
   text-align: left;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.nextstep-column-item.is-selected { background: var(--ink);
-  color: var(--paper);
+/* P27: the list is plain text, not an icon-and-label row. */
+.nextstep-column-item .sys-icon { display: none;
+}
+
+/* P27: a directory row carries .is-branch; the ▷ is a right-pointing triangle. */
+.nextstep-column-item.is-branch::after { content: "";
+  position: absolute;
+  right: 3px;
+  top: 50%;
+  width: 0;
+  height: 0;
+  margin-top: -4px;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid var(--ink);
+}
+
+.nextstep-column-item.is-selected { background: #ffffff;
+  color: #000000;
 }
 
 .nextstep-column-item.is-stale { color: var(--system-disabled-fg);
   text-decoration: line-through;
+  white-space: nowrap;
 }
 
+/* P28: the Shelf is an icon strip with small #555555 labels; the path view is
+   a sunken box (#555555 + black on top/left, white on bottom/right). */
 :is(.nextstep-shelf, .nextstep-finder-path) { display: flex;
   flex: none;
   gap: 6px;
   padding: 4px;
   overflow-x: auto;
+}
+
+.nextstep-shelf { align-items: flex-end;
+  flex-wrap: wrap;
   border-bottom: 1px solid var(--ink);
 }
 
-.nextstep-shelf > div { flex: 0 0 100px;
+.nextstep-shelf > div { flex: 0 0 64px;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  font-size: 11px;
+  line-height: 12px;
+  color: #555555;
+  text-align: center;
+}
+
+.nextstep-finder-path { align-items: center;
+  border: 1px solid #000000;
+  box-shadow: inset 1px 1px 0 #555555, inset -1px -1px 0 #ffffff;
+  background: #ffffff;
 }
 
 .nextstep-finder-path > button { width: auto;
   flex-shrink: 0;
+  font-weight: 400;
+  color: #000000;
 }
+
+/* Writing Flow as a floating panel (Window Order tier 6). Geometry and state
+   only; the era's material is in 69-nextstep-appearance.css. The shell JS sets
+   [data-nextstep-panel] only where a floating panel has room; without the
+   attribute the shared presentation keeps the palette. */
+/* :not(.is-closed): the close box puts the panel away, and this display must
+   not outrank the shared .writing-spine-panel.is-closed { display: none }. */
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel]:not(.is-closed) {
+  position: fixed;
+  left: var(--nextstep-flow-x, 8px);
+  top: var(--nextstep-flow-y, 333px);
+  right: auto;
+  bottom: auto;
+  width: 150px;
+  min-width: 0;
+  height: auto;
+  max-height: none;
+  display: block;
+  padding: 0;
+  overflow: visible;
+  visibility: visible;
+  container: none;
+}
+
+/* Away: another application owns the main menu (NeXT's Info-panel exception
+   keeps it up for the writing session's own tools). The panel keeps its frame,
+   so it comes back where it was, but nothing paints or hits. */
+/* Same specificity as the rule above plus the attribute value, so it wins:
+   a (0,3,1) away rule used to lose to that rule's (0,4,1) visibility:visible
+   and left a ghost panel painted but unclickable over Finder. */
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel="away"]:not(.is-closed) {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* WindowShade keeps the title bar on the desk, the two-state rule the shared
+   era already has: shade hides the body, never the panel. */
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel].is-shaded .spine-shade-body {
+  display: none;
+}
+
+/* Writing Flow as a NeXTSTEP 3.3 floating panel: material read off a 1:1 3.3
+   capture (Draw.app's Tools palette). Geometry and state are the
+   rules above. The attribute exists only while NeXTSTEP floats the panel
+   (nextstep-shell.js removes it on every other appearance), so these rules
+   need no theme selector. The panel keeps the shared
+   DOM and state classes (.is-selected / .holds-pen / .has-content / :disabled
+   / .is-shaded). */
+
+/* Frame: 1px black on all four sides, no drop shadow (NeXT windows cast none). */
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-toolbox-panel {
+  border: 1px solid #000000;
+  border-radius: 0;
+  background: #aaaaaa;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+/* Title bar of a panel that never becomes key: 23 rows with the frame's top
+   line -- white, 19 x #aaaaaa, #555555, then the black line under it. */
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-title-row {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  height: 22px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid #000000;
+  background: #aaaaaa;
+  background-image: none;
+  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #555555;
+  cursor: default;
+  touch-action: none;
+}
+
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-title-row > span[aria-hidden] {
+  display: none;
+}
+
+/* Bold System Font = Helvetica Bold 12, black on the non-key grey, centred on
+   the whole bar (the close box does not push it off centre). */
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-title-row h2 {
+  display: block;
+  max-width: none;
+  min-height: 0;
+  margin: 0;
+  padding: 0 20px;
+  overflow: hidden;
+  background: transparent;
+  color: #000000;
+  font: 700 12px/22px Helvetica, Arial, "PingFang SC", sans-serif;
+  letter-spacing: 0;
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Close box: 15x15 with its black edge, 3px in from the frame on the right and
+   3px under the white row; pixels are the native box (17-draw-launch-t5 x141-155
+   y261-275) with the #aaaaaa face left transparent. The panel's own [data-action]
+   delegate puts it away (Tools ▸ Writing Flow... brings it back). */
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-close-box {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: #aaaaaa url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAYAAAA71pVKAAAAaElEQVR42q1TQQ7AIAgrxi/y/6d0l7EwpkR0nEwrhNYqJImNEhH0+yCVRlUlADSH0cCk4c3b2kaOBkTuGeQ1jwZkGKJh/vJsm2lz0JfKaDip39beNuz0qZZDkrq9GE92n9Xy5/jktVAXCUSVgHKRA3MAAAAASUVORK5CYII=") 0 0 / 15px 15px no-repeat;
+  box-shadow: none;
+  image-rendering: pixelated;
+  cursor: default;
+}
+
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-close-box[hidden] {
+  display: none;
+}
+
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-close-box:active {
+  background-color: #ffffff;
+}
+
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-close-box:focus-visible {
+  outline: 1px dotted #000000;
+  outline-offset: 1px;
+}
+
+/* One column of adjacent graphical radio buttons, Draw's Tools palette cell
+   turned on its side: white row + left column, 32 rows of face, #555555, then
+   black. The last cell's black is the frame's own bottom line. */
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] :is(.spine-shade-body, .spine-actions) {
+  display: block;
+  justify-items: stretch;
+  padding: 0;
+  overflow: visible;
+}
+
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-section-main {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  justify-self: stretch;
+  width: 100%;
+}
+
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-actions button {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--nsf-icon, 32px) minmax(0, 1fr) 13px;
+  grid-template-areas: "icon label key";
+  align-items: center;
+  justify-items: start;
+  column-gap: 5px;
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--nsf-row, 35px);
+  min-height: 0;
+  margin: 0;
+  padding: 0 5px 1px 1px;
+  border: 0;
+  border-bottom: 1px solid #000000;
+  border-radius: 0;
+  background: #aaaaaa;
+  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #555555;
+  color: #000000;
+  font: 400 12px/14px Helvetica, Arial, "PingFang SC", sans-serif;
+  text-align: left;
+  cursor: default;
+}
+
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-actions button:last-child {
+  height: calc(var(--nsf-row, 35px) - 1px);
+  border-bottom: 0;
+}
+
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-actions button[hidden] {
+  display: none;
+}
+
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-actions .sys-icon {
+  grid-area: icon;
+  width: var(--nsf-icon, 32px);
+  height: var(--nsf-icon, 32px);
+  margin: 0;
+}
+
+/* Label: the Application Font, Helvetica 12, black; two lines at most. */
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-actions b {
+  grid-area: label;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+/* The step number takes the menu's key-alternative column: right-aligned, same
+   face and size. Stops 1-5 are also ⌘1-⌘5. */
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-step-number {
+  grid-area: key;
+  position: static;
+  justify-self: end;
+  width: 13px;
+  height: 15px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: 400 12px/15px Helvetica, Arial, sans-serif;
+  text-align: center;
+}
+
+/* Where the pen is: the numeral reversed, white on black, the way a miniwindow
+   carries its title. */
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-actions button.holds-pen .spine-step-number {
+  background: #000000;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* Has content: the shared diamond, scaled to a 32px icon, on the icon's
+   top-right corner, ringed white so it reads on grey art. */
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-step-mark {
+  top: calc(var(--nsf-row, 35px) / 2 - var(--nsf-icon, 32px) / 2 + 2px);
+  right: auto;
+  left: calc(var(--nsf-icon, 32px) - 5px);
+  width: 5px;
+  height: 5px;
+  background: #000000;
+  box-shadow: 0 0 0 1px #ffffff;
+}
+
+/* The current stop: the cell's face turns white. It highlights; it is not
+   pushed in (bevel unchanged). NeXT buttons do not light on hover. */
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-actions button:is(.is-selected, :active:not(:disabled)) {
+  background: #ffffff;
+}
+
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-actions button:is(:hover, :focus-visible, .is-selected) b {
+  background: transparent;
+  color: inherit;
+}
+
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-actions button:is(:hover, :focus-visible):not(.holds-pen) .spine-step-number {
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+/* Keyboard focus (the era had none): a dotted box on the label, clear of the
+   icon art, which paints above the cell. */
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-actions button:focus-visible {
+  outline: 0;
+}
+
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-actions button:focus-visible b {
+  outline: 1px dotted #000000;
+  outline-offset: 1px;
+}
+
+/* Disabled: #555555 ink, the NeXT disabled-title grey; the icon keeps the
+   shared every-other-pixel dither. */
+body:not(.is-writer-mode) .writing-spine-panel[data-nextstep-panel] .spine-actions button:is(:disabled, .is-disabled) {
+  background: #aaaaaa;
+  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #555555;
+  color: #555555;
+}
+
+/* Minimize switched off on the Control Panel: the miniaturize button keeps its
+   slot, so the title bar does not re-flow, but it is neither drawn nor
+   reachable (visibility also takes it out of the tab order). */
+body.minimize-off .nextstep-miniaturize {
+  visibility: hidden;
+}
+
+/* Theme Lab is 1080px wide; beside the main menu it ran 48px under the Dock
+   and its close box was unreachable. It narrows to the space between the two
+   (re-audit C4). */
+body.nextstep-dock-shown .theme-lab-window {
+  width: min(1080px, calc(100vw - var(--nextstep-menu-right, 150px) - 116px));
+}
+
+/* The narrow full-screen shell (a landscape screen of 860px or less, which
+   includes an 800x600 desk): the foreground window gives the main menu its
+   column on the left, the Dock its column on the right and the desk row its
+   band at the bottom, so its title bar and close box stay in reach
+   (re-audit C3). NeXTSTEP has no menu bar, so nothing is reserved on top. */
+body.nextstep-main-menu.mobile-landscape-shell .window.is-mobile-fullscreen:not(.is-collapsed) {
+  inset:
+    var(--safe-area-top, 0px)
+    calc(var(--safe-area-right, 0px) + var(--nextstep-dock-width, 0px))
+    max(var(--keyboard-inset, 0px), var(--desk-dock-reserve, 0px))
+    calc(var(--safe-area-left, 0px) + max(var(--nextstep-menu-right, 0px), var(--nextstep-panel-right, 0px)));
+}
+
+/* ---- The 3.3 window frame (re-audit B4) ---------------------------------
+   Scoped by body.nextstep-main-menu, the class present exactly while
+   NeXTSTEP's main menu is on screen, so these rules stay NeXTSTEP's even after
+   this lazy sheet has been loaded once.
+
+   P12-P14: the title bar is 22 rows inside the black frame -- a highlight
+   (#aaaaaa key, #ffffff otherwise), 19 rows of face, a #555555 row (black for
+   the main window) and a black line (native 01, 04, 20). */
+body.nextstep-main-menu .window > .title-bar {
+  box-sizing: border-box;
+  border: 0;
+  border-bottom: 1px solid #000000;
+  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #555555;
+}
+body.nextstep-main-menu .window.is-active > .title-bar {
+  box-shadow: inset 1px 1px 0 #aaaaaa, inset -1px -1px 0 #555555;
+}
+body.nextstep-main-menu .window.is-nextstep-main:not(.is-active) > .title-bar {
+  box-shadow: inset 1px 1px 0 #aaaaaa, inset -1px -1px 0 #000000;
+}
+body.nextstep-main-menu .window > .title-bar :is(h1, h2) {
+  font-weight: 700; /* Helvetica Bold 12, the Bold System Font (native 25c) */
+}
+
+/* P17: a panel (a desk accessory here) has only a close button; the
+   miniaturize slot keeps the grid but draws and hits nothing. */
+body.nextstep-main-menu .nextstep-miniaturize[hidden] {
+  display: block;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* P18: no drop shadow; the window is its 1px black frame. */
+body.nextstep-main-menu .window {
+  box-shadow: none;
+}
+
+/* P19: the resize bar -- a #555555 separator, then a white highlight over
+   #aaaaaa; the three segments are divided by #555555 and white only. */
+body.nextstep-main-menu .nextstep-resize-strip {
+  box-sizing: border-box;
+  border-top: 1px solid #555555;
+}
+body.nextstep-main-menu .nextstep-resize-strip > button {
+  border: 0;
+  background: #aaaaaa;
+  box-shadow: inset 1px 1px 0 #ffffff;
+}
+body.nextstep-main-menu .nextstep-resize-strip > button:not(:last-child) {
+  border-right: 1px solid #555555;
+}
+
+/* P20-P22: scroller knob and arrows. The knob is 3.3's raised block with the
+   dimple; the arrows are the native 16x16 cuts; a bar with nothing to scroll
+   keeps its checkerboard (only its arrows go). N6: an empty horizontal bar is
+   not drawn at all -- 3.3 text windows have none. */
+body.nextstep-main-menu .window-frame-thumb {
+  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #000000, inset -2px -2px 0 #555555;
+}
+body.nextstep-main-menu .window-frame-bar.is-vertical .window-frame-arrow:first-of-type {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' shape-rendering='crispEdges'%3E%3Cpath fill='%23fff' d='M0 0h15v1H0zM0 1h1v1H0zM0 2h1v1H0zM0 3h1v1H0zM0 4h1v1H0zM0 5h1v1H0zM0 6h1v1H0zM0 7h1v1H0zM0 8h1v1H0zM0 9h1v1H0zM0 10h1v1H0zM0 11h1v1H0zM0 12h1v1H0zM0 13h1v1H0zM0 14h1v1H0z'/%3E%3Cpath fill='%23000' d='M15 0h1v1H15zM15 1h1v1H15zM15 2h1v1H15zM15 3h1v1H15zM7 4h1v1H7zM15 4h1v1H15zM7 5h1v1H7zM15 5h1v1H15zM6 6h3v1H6zM15 6h1v1H15zM6 7h3v1H6zM15 7h1v1H15zM5 8h5v1H5zM15 8h1v1H15zM5 9h5v1H5zM15 9h1v1H15zM4 10h7v1H4zM15 10h1v1H15zM4 11h7v1H4zM15 11h1v1H15zM15 12h1v1H15zM15 13h1v1H15zM15 14h1v1H15zM0 15h16v1H0z'/%3E%3Cpath fill='%23aaa' d='M1 1h13v1H1zM1 2h13v1H1zM1 3h6v1H1zM8 3h6v1H8zM1 4h6v1H1zM8 4h6v1H8zM1 5h5v1H1zM9 5h5v1H9zM1 6h5v1H1zM9 6h5v1H9zM1 7h4v1H1zM10 7h4v1H10zM1 8h4v1H1zM10 8h4v1H10zM1 9h3v1H1zM11 9h3v1H11zM1 10h3v1H1zM11 10h3v1H11zM1 11h2v1H1zM12 11h2v1H12zM1 12h13v1H1zM1 13h13v1H1z'/%3E%3Cpath fill='%23555' d='M14 1h1v1H14zM14 2h1v1H14zM7 3h1v1H7zM14 3h1v1H14zM14 4h1v1H14zM6 5h1v1H6zM8 5h1v1H8zM14 5h1v1H14zM14 6h1v1H14zM5 7h1v1H5zM9 7h1v1H9zM14 7h1v1H14zM14 8h1v1H14zM4 9h1v1H4zM10 9h1v1H10zM14 9h1v1H14zM14 10h1v1H14zM3 11h1v1H3zM11 11h1v1H11zM14 11h1v1H14zM14 12h1v1H14zM14 13h1v1H14zM1 14h14v1H1z'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
+  box-shadow: none;
+}
+body.nextstep-main-menu .window-frame-bar.is-vertical .window-frame-arrow:last-of-type {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' shape-rendering='crispEdges'%3E%3Cpath fill='%23fff' d='M0 0h15v1H0zM0 1h1v1H0zM0 2h1v1H0zM0 3h1v1H0zM0 4h1v1H0zM0 5h1v1H0zM0 6h1v1H0zM0 7h1v1H0zM0 8h1v1H0zM0 9h1v1H0zM0 10h1v1H0zM0 11h1v1H0zM0 12h1v1H0zM0 13h1v1H0zM0 14h1v1H0z'/%3E%3Cpath fill='%23000' d='M15 0h1v1H15zM15 1h1v1H15zM15 2h1v1H15zM4 3h7v1H4zM15 3h1v1H15zM4 4h7v1H4zM15 4h1v1H15zM5 5h5v1H5zM15 5h1v1H15zM5 6h5v1H5zM15 6h1v1H15zM6 7h3v1H6zM15 7h1v1H15zM6 8h3v1H6zM15 8h1v1H15zM7 9h1v1H7zM15 9h1v1H15zM7 10h1v1H7zM15 10h1v1H15zM15 11h1v1H15zM15 12h1v1H15zM15 13h1v1H15zM15 14h1v1H15zM0 15h16v1H0z'/%3E%3Cpath fill='%23aaa' d='M1 1h13v1H1zM1 2h13v1H1zM1 3h2v1H1zM12 3h2v1H12zM1 4h3v1H1zM11 4h3v1H11zM1 5h3v1H1zM11 5h3v1H11zM1 6h4v1H1zM10 6h4v1H10zM1 7h4v1H1zM10 7h4v1H10zM1 8h5v1H1zM9 8h5v1H9zM1 9h5v1H1zM9 9h5v1H9zM1 10h6v1H1zM8 10h6v1H8zM1 11h6v1H1zM8 11h6v1H8zM1 12h13v1H1zM1 13h13v1H1z'/%3E%3Cpath fill='%23555' d='M14 1h1v1H14zM14 2h1v1H14zM3 3h1v1H3zM11 3h1v1H11zM14 3h1v1H14zM14 4h1v1H14zM4 5h1v1H4zM10 5h1v1H10zM14 5h1v1H14zM14 6h1v1H14zM5 7h1v1H5zM9 7h1v1H9zM14 7h1v1H14zM14 8h1v1H14zM6 9h1v1H6zM8 9h1v1H8zM14 9h1v1H14zM14 10h1v1H14zM7 11h1v1H7zM14 11h1v1H14zM14 12h1v1H14zM14 13h1v1H14zM1 14h14v1H1z'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
+  box-shadow: none;
+}
+body.nextstep-main-menu .window-frame-bar.is-vertical .window-frame-arrow {
+  color: transparent;
+}
+body.nextstep-main-menu .window-frame-bar.is-horizontal.is-empty {
+  display: none;
+}
+
+/* ---- The 3.3 controls, dialogs and Finder (re-audit B5/B6) ---------------
+   Scoped by body.nextstep-main-menu (the class present exactly while
+   NeXTSTEP's main menu is on screen) so these stay NeXTSTEP's even after this
+   lazy sheet has loaded once. Material (colours, bevels) stays in 69's token
+   block; only layout and the geometry the ratchet there forbids lives here. */
+
+/* P31: Helvetica regular, not the shared 600; the three-inset bevel is the
+   --btn-shadow token. */
+body.nextstep-main-menu :is(.btn, .file-picker-button) {
+  font-weight: 400;
+}
+
+/* P32: text fields are 21px tall (the shared control min-height is 26px). */
+body.nextstep-main-menu :is(input, textarea):not(.mde-input):not([type="checkbox"]):not([type="radio"]):not([type="range"]) {
+  min-height: 21px;
+}
+
+/* P33: the shared pop-up weights (border 0, weight 400, the native 11x8 mark)
+   are tokens in 69; the select button's own min-height here matches its 24px
+   content box. */
+body.nextstep-main-menu :is(select, .system-select-button) {
+  font-weight: 400;
+}
+
+/* P38: the choice box sits to the RIGHT of its label (Interface Builder's
+   palette, n01). Two shared markups carry a choice: div.field-row holding
+   <input> then <label>, and label.field-row holding <input> then <span>.
+   Reversing the row itself moves the box after its words in both, without
+   touching any markup. */
+body.nextstep-main-menu .field-row:has(> input:is([type="checkbox"], [type="radio"])) {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 7px;
+}
+
+body.nextstep-main-menu .field-row > label > :is(span, .control-grid) {
+  font-weight: 400;
+}
+
+/* P30: a 3.3 alert -- 1px black frame, no shadow, its top about 22% down the
+   screen, a 22px black title strip, three 128px buttons with 8px gaps pushed
+   right. This rule set must out-rank the double-frame rule at
+   60-responsive.css:800, which reaches .system-modal at (0,1,0); the material
+   counterpart in 69 is body[data-theme] :is(...) at (0,2,2) and already wins,
+   so here the higher-specificity body.nextstep-main-menu form descendants
+   carry the metrics. */
+body.nextstep-main-menu .system-modal {
+  top: 22vh;
+  transform: translateX(-50%);
+  padding: 30px 18px 16px;
+}
+
+body.nextstep-main-menu .system-modal::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 22px;
+  background: #000000;
+}
+
+body.nextstep-main-menu .system-modal form > .button-row {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+body.nextstep-main-menu .system-modal form > .button-row > .btn {
+  flex: 0 0 128px;
+  min-width: 128px;
+}
+
+/* P29: 3.3 icon labels are Helvetica regular, written straight on the #aaaaaa
+   desk (no white box) and never broken mid-word. */
+body.nextstep-main-menu .finder-item span:last-of-type,
+body.nextstep-main-menu .desktop-icon > span:last-of-type {
+  font-weight: 400;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* P34: Theme Lab's window specimens are built from the shared title bar
+   (close, title, zoom, WindowShade); in NeXTSTEP they show 3.3's pair --
+   miniaturize at the left, close at the right -- like every real window. */
+body.nextstep-main-menu .theme-lab-window-specimens > .window > .title-bar {
+  grid-template-columns: 15px minmax(0, 1fr) 15px;
+}
+body.nextstep-main-menu .theme-lab-window-specimens > .window > .title-bar::before {
+  content: "";
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  width: 15px;
+  height: 15px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' shape-rendering='crispEdges'%3E%3Cpath fill='%23000' d='M0 0h15v15H0z'/%3E%3Cpath fill='%23555' d='M0 0h14v14H0zM14 0h1v1h-1zM0 14h1v1H0z'/%3E%3Cpath fill='%23fff' d='M0 0h14v1H0zM0 0h1v14H0z'/%3E%3Cpath fill='%23aaa' d='M1 1h12v12H1z'/%3E%3Cpath fill='%23000' d='M2 2h10v3H2zM2 5h1v7H2zM11 5h1v7h-1zM2 11h10v1H2z'/%3E%3C/svg%3E") center / 15px 15px no-repeat;
+}
+body.nextstep-main-menu .theme-lab-window-specimens > .window > .title-bar > :is(.resize-box, .shade-box) {
+  display: none;
+}
+body.nextstep-main-menu .theme-lab-window-specimens > .window > .title-bar > .close-box {
+  grid-column: 3;
+  grid-row: 1;
+}
+body.nextstep-main-menu .theme-lab-window-specimens > .window > .title-bar > :is(h1, h2) {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+/* P33: a 3.3 pop-up list's mark is the 11x8 raised bar at its right end
+   (native 15c), not a black triangle: both the harness button and a native
+   select's wrapper draw it from the NeXTSTEP token. */
+body.nextstep-main-menu :is(.select-wrap, .system-select-button)::after {
+  right: 5px;
+  top: 50%;
+  width: 11px;
+  height: 8px;
+  border: 0;
+  transform: translateY(-50%);
+  background: var(--system-select-arrow-bg) center / 11px 8px no-repeat;
+}
+

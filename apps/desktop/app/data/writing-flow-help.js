@@ -24,7 +24,7 @@ window.AISystem6WritingFlowHelpData = (() => {
     shared: Object.freeze({
       question: "What are the demonstration project disks?",
       stuckPoint: "A finished piece is usually passed around as a file or a screenshot, so the route that produced it disappears.",
-      directAnswer: "Thirty-five disks ship with the application; the Startup Disk holds a folder that lists them, /go/dtk and /go/ipad1 open single ones, and each becomes an ordinary editable project on this computer.",
+      directAnswer: "Thirty-six disks ship with the application; the Startup Disk holds a folder that lists them, /go/dtk and /go/ipad1 open single ones, and each becomes an ordinary editable project on this computer.",
       boundary: "Nothing is imported until someone opens a disk on purpose, and the disks carry the writers' own working material rather than a polished showcase.",
     }),
   });
@@ -255,19 +255,23 @@ The practical rule is short: if something matters, put it in a visible project o
     shared: Object.freeze({
       en: `# Demonstration Project Disks
 
-Thirty-five project disks ship with the application, so the way a finished piece travels from a question sheet to a manuscript stays visible. They are a folder on the Startup Disk, beside the writer's own Project Hard Disk; the File menu opens the same folder. Each disk also has an address of its own, \`https://system6.aaronlau.me/go/<route>\`, which anyone can pass on.
+Thirty-six project disks ship with the application, so the way a finished piece travels from a question sheet to a manuscript stays visible. They are a folder on the Startup Disk, beside the writer's own Project Hard Disk; the File menu opens the same folder, and \`https://system6.aaronlau.me/go/disks\` opens it on the newest disk. Each disk also has an address of its own, \`https://system6.aaronlau.me/go/<route>\`, which anyone can pass on.
 
-## What happens when you open one
+## Looking inside
+
+Double-click a disk, or select it and press the space bar, and a read-only window shows what the writer left at each stop: the question sheet, the outline, the manuscript and the review record, opening on the manuscript. The left and right arrow keys walk to the next disk; the space bar or Escape puts the window away. Nothing is copied until you choose **Open a Copy**.
+
+## What happens when you open a copy
 
 - The disk is checked first. If its checksum or version history does not hold, the import stops cleanly instead of leaving half a project behind.
 - What passes becomes an ordinary project on this computer. It comes back from the Project Hard Disk list like any other project, and it stays editable.
 - Opening the same disk again reuses the copy you already have instead of adding a second one.
 
-## The thirty-five disks
+## The thirty-six disks
 
 - \`/go/dtk\` — *After the Bridge Opens*: six years of a 2020 Developer Transition Kit, from GoldenGateSeedSpike to macOS 27 Golden Gate: a board brought back to life, and a server that no longer recognises it.
-- \`/go/ipad1\` — *Why the First iPad Had Only 256MB*: from a blurry childhood video to the 2010 specification sheet.
-- \`/go/m5ipad\` — *M5 iPad Pro: Mac's last line, or the start of something else?*: two people, two sizes, and one keyboard that decides which of the two machines you get.
+- \`/go/ipad1\` — *Why the First iPad Had Only 256MB of Memory*: from a blurry childhood video to the 2010 specification sheet.
+- \`/go/m5ipad\` — *Kill That Keyboard*: the M5 iPad Pro, and whether talking to it could one day replace the keyboard.
 - \`/go/iphone17e\` — *iPhone 17e, pale pink: unremarkable, and better than it looks*: the cheapest new iPhone, argued from the things you bump into while using it.
 - \`/go/sleeve\` — *The MagSafe Leather Sleeve: how did Apple think about phone dependence?*: a window that ran the always-on logic on iPhone two years early, the 2018 belief in digital wellbeing behind it, and why Apple's always-on display went another way.
 - \`/go/iphone6sp\` — *Does anyone remember 3D Touch?*: the generation that made "durable" a word for an iPhone, and the press-and-hold that stayed.
@@ -283,6 +287,7 @@ Thirty-five project disks ship with the application, so the way a finished piece
 - \`/go/pm12\` — *iPhone 12 Pro Max: unboxing one never activated, and Apple's oddest case*: a sealed unit revived by raising a flat battery's voltage, the gemstone blue, the first iPhone to shoot 10-bit and where it fell short, and a leather sleeve that assumes you own the whole Apple family.
 - \`/go/iphone17\` — *iPhone 17: where the base model stopped being the cheap one*: the year 120Hz, 256GB and a self-designed radio chip all moved down a tier, and what that says about who the base model is really for.
 - \`/go/windowshade\` — *Shade the window, keep its place*: the WindowShade site read as one piece — a 1994 double-click that became a System 7.5 control panel, lost out to the Dock, lived on in Stickies, and came back to the Mac thirty years later.
+- \`/go/ipadpro18\` — *A12X, a dress rehearsal for desktop performance*: the unboxing draft for the 2018 iPad Pro, in its own words — A12X rehearsed, A12Z bridged (the DTK), M1 arrived.
 - \`/go/cdma4\` — *CDMA iPhone 4*: The first "China eSIM" iPhone — only half true: writing a number welds it to the phone while eSIM frees it, yet China's eSIM walked back to the counter.
 - \`/go/noport\` — *Portless Apple Watch*: A safety net came before the missing port: the diagnostic link went from pins to 60.5GHz, and the real driver was that a device has to be able to recover itself.
 - \`/go/touch2\` — *touch 2 Engineering Board*: A device that is not a device: built to test a chip rather than be an iPod, it answers to two products, has no serial number, and outlives its own launch.
@@ -303,24 +308,28 @@ Thirty-five project disks ship with the application, so the way a finished piece
 
 ## What is inside
 
-The question sheet, the outline, the section drafts, the manuscript and the review record are all there, so you can walk back up the route. This is not a read-only showcase; your copy is yours to change, and you can export it as a backup at any time.
+The question sheet, the outline, the section drafts, the manuscript and the review record are all there, so you can walk back up the route. Looking is read-only; the copy you open is yours to change, and you can export it as a backup at any time.
 
 A disk that arrives as a file from another computer goes in through the Project backup section of the Write to Project Hard Disk window. The address and the file are two doors to the same room.`,
       zh: `# 演示用项目硬盘
 
-这三十五块盘随应用发布，用来看清一篇作品是怎么从问题单走到正文的。它们是启动磁盘上的一个文件夹，就放在作者自己那块项目硬盘旁边；文件菜单打开的是同一个文件夹。每块盘另有一个自己的地址 \`https://system6.aaronlau.me/go/<route>\`，谁都可以把它转给别人。
+这三十六块盘随应用发布，用来看清一篇作品是怎么从问题单走到正文的。它们是启动磁盘上的一个文件夹，就放在作者自己那块项目硬盘旁边；文件菜单打开的是同一个文件夹，\`https://system6.aaronlau.me/go/disks\` 打开它时停在最新一块上。每块盘另有一个自己的地址 \`https://system6.aaronlau.me/go/<route>\`，谁都可以把它转给别人。
 
-## 打开之后会发生什么
+## 先看一眼
+
+双击一块盘，或者选中后按空格，会打开一个只读的窗口，按路线列出作者在每一站留下的东西：问题单、大纲、正文、审校记录，默认停在正文。左右方向键翻到前一块、后一块；再按空格或 Esc 收起。在你按下「打开副本」之前，什么都不会拷到这台电脑上。
+
+## 打开副本之后会发生什么
 
 - 先检查这块盘有没有被改过。校验或版本历史不过关，就直接干净退出，不会留下一个半截的项目。
 - 通过之后，它成为这台电脑上的一个普通项目；回到桌面，从「项目硬盘」的列表里就能再打开它，可以照常修改，也能随时导出成备份。
 - 再打开同一块盘，用的是你已经有的那一份，不会多出一份副本。
 
-## 现在有哪三十五块
+## 现在有哪三十六块
 
 - \`/go/dtk\`《未来通车之后》：一台 2020 年 DTK 的六年，从 GoldenGateSeedSpike 到 macOS 27 Golden Gate：一块救回来的板子，和一台不再承认它的服务器。
-- \`/go/ipad1\`《初代 iPad 为什么只有 256MB》：从童年一段模糊视频，追到 2010 年的那张配置表。
-- \`/go/m5ipad\`《M5 iPad Pro：是 Mac 的防线，还是 AI 交互的起点？》：两个人、两个尺寸，和一块键盘决定的两种生活。
+- \`/go/ipad1\`《初代 iPad 为什么只有 256MB 内存》：从童年一段模糊视频，追到 2010 年的那张配置表。
+- \`/go/m5ipad\`《杀掉那个键盘》：M5 iPad Pro，和说话能不能有一天替掉那把键盘。
 - \`/go/iphone17e\`《iPhone 17e 浅粉色：其貌不扬，但很有料》：最便宜的一台新 iPhone，从用的时候撞到的那些瞬间写起。
 - \`/go/sleeve\`《MagSafe 皮革保护套：苹果是怎么看待手机依赖的？》：一扇提前两年跑过息屏显示逻辑的小窗，它背后 2018 年「数字健康」的信念，以及苹果的息屏显示为什么走了另一条路。
 - \`/go/iphone6sp\`《还有人记得 3D Touch 吗 · iPhone 6s Plus》：让「耐用」第一次能用在一台 iPhone 上的那一代。
@@ -336,6 +345,7 @@ A disk that arrives as a file from another computer goes in through the Project 
 - \`/go/pm12\`《iPhone 12 Pro Max：开箱一台未激活的，还有苹果最奇葩的手机壳》：放了五年的全新机，电池只是亏电没坏；从宝石来的蓝；第一代能拍 10-bit，却卡在接口和屏幕；一个假设你有全家桶的皮革保护套。
 - \`/go/iphone17\`《iPhone 17 标准版：诚意不是心情，是价格行为》：高刷、256GB 起步与自研无线芯片在同一年下放到标准版；这一代真正被抬高的，是 iPhone 的体验基线。
 - \`/go/windowshade\`《收起窗口，留下位置：一个比 Mac 还老的双击》：把 WindowShade 官网整站读成一篇文章——1994 年的一个双击，进了 System 7.5 的控制面板，被 Dock 送走，在便笺里留了一口气，三十年后又回到 Mac 上。
+- \`/go/ipadpro18\`《A12X，桌面级性能的预演》：给 iPad Pro 2018 写的开箱稿原文——A12X 预演，A12Z 过桥（DTK），M1 通车。
 - \`/go/cdma4\`《CDMA iPhone 4》：最早的「国行 eSIM」iPhone：这话只对了一半——写号把号码锁进机器，eSIM 把它解放出来，可国行 eSIM 又走回了营业厅的柜台。
 - \`/go/noport\`《无接口 Apple Watch》：先有安全网，才敢拆掉那个口：诊断接口从针脚走到 60.5GHz，真正的推手是「设备必须能自己恢复」——手表又一次替手机先走一步。
 - \`/go/touch2\`《touch 2 工程板》：一块不是设备的设备：它的使命是测一颗芯片，而不是当一台播放器——既是 nano 4 也是 touch 2、没有序列号、比同期 iPhone 还快，却活得比发布会更久。
@@ -356,7 +366,7 @@ A disk that arrives as a file from another computer goes in through the Project 
 
 ## 盘里有什么
 
-问题单、大纲、分节草稿、正文、审校记录都在里面，可以沿着路线一层层往回看。这不是只读的展示页；你拿到的是一份可以照常修改的副本。
+问题单、大纲、分节草稿、正文、审校记录都在里面，可以沿着路线一层层往回看。看的时候是只读的；打开的副本归你，可以照常修改。
 
 从另一台电脑拿来的是文件，用「写入项目硬盘」窗口里的「项目备份」导入它。地址和文件，是进同一个房间的两扇门。`,
     }),

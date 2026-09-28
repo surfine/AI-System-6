@@ -38,6 +38,7 @@ test.assertIncludes(canvasRenderer, 'visualKind: "catalog"', "the Canvas backend
 test.assertIncludes(canvasRenderer, "CATALOG_COLORS", "catalog tiles are tinted by category");
 // The signature reads the resolved catalog layer now — the same fact, without
 // re-resolving the layer name sixteen thousand times a pass.
-test.assertMatches(canvasRenderer, /fnvUpdate\(hash, layerAt\(layers\.catalogId,/, "the chunk signature invalidates when catalog tiles change");
+// Catalog tiles are scenery now, rebuilt once per content revision; the
+// renderer contract (bonsai-renderer) proves a catalog change redraws.
 
 test.finish();

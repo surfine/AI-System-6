@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/city-simulator/ARCHITECTURE.md -->
-<!-- source-sha256: cb1b5c23e32a04430f84b05ce19e48f8abc402a7bf04b94413a73c3a90e37cb5 -->
+<!-- source-sha256: 7a3247bd38a9ce1cfe944b4f5438148410dd01653fdf5d3040131aafe90788ec -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -25,6 +25,14 @@ IndexedDB、翻译表、墙钟、定时器或 `Math.random()`。它以经典脚�
 `applyTool`、`tileInfo`、`ensureDerived`、`dateOf`、`drainNotices`、
 `serialize`、`deserialize`。
 
+从规则集 5 起，派生状态拆成带脏标记的若干系统（地形、设施、网络、供电、
+供水、覆盖、地块、路线、环境、问题）；命令只标记它动到的部分，
+`ensureDerived` 只重算脏的部分。每个游戏日轮到四分之一的地图（下标 `% 4`
+等于 `日 % 4` 的格子）做一次发展判定，所以每个地块每四天被看一次；通勤距离场
+每四天重建一次，环境（地价、犯罪、污染）每月一次。
+`tooling/probe-bonsai-sim-cost.mjs` 在成熟的 128² 城市上把结果卡在规格 3.10
+的预算内。
+
 ### 渲染与输入
 
 纯投影模块为 `bonsai-renderer.js`，正式视觉由
@@ -33,7 +41,7 @@ IndexedDB、翻译表、墙钟、定时器或 `Math.random()`。它以经典脚�
 视图数学。Canvas 渲染器消费 `buildRenderSnapshot`，绘制六个同尺寸层：地形；
 交通/公用事业/区域；建筑/树；代理/效果；选择/预览/错误；昼夜光照。静态内容
 使用 16x16 离屏分块缓存。渲染器只读快照——指针、键盘、触摸只产生预览或
-命令，绝不直接改状态。相机与光照不进城市存档；绘制绝不推进规则。高度步长为 10 像素，默认缩放为 0.7。
+命令，绝不直接改状态。相机与光照不进城市存档；绘制绝不推进规则。高度步长为 10 像素，默认缩放为 0.5。
 
 `createAssetBlocks` 和 `blockFaces` 共享建筑身份、占地、材质与几何面定义，
 包含双坡/四坡屋顶及低面数树冠。离线 CPU 正交渲染器由这些定义输出四方向
@@ -137,3 +145,7 @@ load → attach（幂等）→ activate/resume
 不注册窗口、不加入 runtime/style manifest 项、不改 IndexedDB schema、不加
 npm 依赖、不加运行时资产、不加 `.SC2` fixture、不在原创路径加入游戏代码。
 基础测试强制执行以上边界。
+
+### 存档续跑一致性
+
+v5 新增可选 `routing`（version 1），保存上一轮交通量、拥堵、通勤距离场、源数量和轨道/高速客流；这些字段带有历史依赖，不能在读档时任意重算。旧 v5 缺少此字段仍可加载，首次重建后继续保存会保留该状态；存在但长度或值域非法的记录会被拒绝。

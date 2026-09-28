@@ -523,6 +523,34 @@ const GUEST_TOOLS = [
     },
   },
   {
+    name: "open_rebuild_context",
+    level: "read",
+    description: "Open the rebuild of this project's writing route (还原写作对象): the pack contract (six sections, confidence labels, dossier origin kinds, the rules), the manuscript as the writer sees it, the question sheet, outline, drafts, dossiers, reference names, and a sourceRevision to hand back with the pack. 打开这个项目写作路线的还原：还原包契约、写作者眼中的正文、问题单、大纲、草稿、档案、参考资料名称，以及交包时要带回的 sourceRevision。",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "validate_rebuild_pack",
+    level: "read",
+    description: "Run the desk's own check on a rebuild pack without writing anything: six sections that split the manuscript, no undeclared change to the author's text, sourced facts and dossiers, no private chats or private detail. Returns errors and warnings with field paths. 用桌面自己的校验器检查一份还原包，不写入任何东西；返回带字段路径的错误与提醒。",
+    inputSchema: {
+      type: "object",
+      properties: { pack: { type: "object", description: "The rebuild pack (packVersion 1)." } },
+      required: ["pack"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "submit_rebuild_pack",
+    level: "propose",
+    description: "Hand in a rebuild pack. The desk checks it again; if it passes, it becomes a receipt awaiting the writer, who adopts it in Review Desk. It never lands on its own, whatever the grant. 交一份还原包。桌面会再校验一遍；通过后成为等待写作者的回执，由写作者在 Review Desk 采用。无论授权档位，它都不会自行落盘。",
+    inputSchema: {
+      type: "object",
+      properties: { pack: { type: "object", description: "The rebuild pack (packVersion 1), with target.sourceRevision from open_rebuild_context." } },
+      required: ["pack"],
+      additionalProperties: false,
+    },
+  },
+  {
     name: "list_writing_lenses",
     level: "read",
     description: "The writing capabilities this desk owns (HKRR Lift, Reader's Eye, Listener's Ear, style, facts, Humanizer). The product supplies the capability, prompt, framing, output shape and destination; you supply the inference. Use open_writing_lens to borrow one. 列出本桌面拥有的写作能力：能力、提示词、取景、输出形状和落点由产品提供，推理由你来做。",

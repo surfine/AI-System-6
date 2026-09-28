@@ -62,7 +62,7 @@ here only as history.
 - A headless simulation core exists at
   `apps/desktop/app/features/bonsai-city-sim.js` (64/96/128 tile grids, seeded
   terrain presets, independent networks and zoning, construction, utilities,
-  services, population/demand/finance, integer ticks, and v4
+  services, population/demand/finance, integer ticks, and v5
   `serialize`/`deserialize`). It is wired through the lazy Applications →
   Games window and ships in the curated public beta snapshot.
 - The core's seed policy is now contract-enforced: the shell must provide an
@@ -128,8 +128,10 @@ here only as history.
 ### Tile scale
 
 Both backends use 64×32-pixel diamonds, a 10-pixel altitude step and default
-zoom 0.7. These are the current source constants, superseding the earlier
-48×24 / 8-pixel / 0.82 baseline and the pending-retune proposal. Projection,
+zoom 0.5, on four fixed zoom steps 0.25 / 0.5 / 1 / 2 (SC2K opens on its
+32-pixel overview). These are the current source constants, superseding the
+earlier 48×24 / 8-pixel / 0.82 baseline, the later 0.7 default and the
+pending-retune proposal. Projection,
 pointer math, atlas output and acceptance checks must use the current values;
 the historical phase descriptions below do not override them.
 
@@ -222,6 +224,67 @@ the historical phase descriptions below do not override them.
     the pagehide flush confirmed through the application registry, the
     window already in the mobile full-screen and immersive sets, and one
     synthesized sound per simulation event.
+- Ruleset 5, the playable pass
+  (BONSAI-PLAYABLE-SPEC):
+  - Whole buildings on lots: a persistent `lot` layer holds 1×1, 2×2 and 3×3
+    buildings that go through foundation, construction, working, declining,
+    abandoned and recovering; small buildings are replaced by bigger ones
+    when demand, land value and water allow. Save v5 carries the lot layer
+    and the monthly environment; v4 cities migrate by grouping their
+    buildings into lots.
+  - Land value picks each building's look: low under 58, middle below the
+    city's tower line, high above it. The line is the land value the
+    city's dearest 3% of dry land reaches (never below 66), so every city
+    grows a downtown on its own dearest streets. Only a lot with a road
+    along a side reaches the high tier, and within it land value ranks the
+    height, so towers line streets and step down from the core. A working
+    lot whose land rises over the line, or a tower whose land rises two
+    ranks, is rebuilt while its zone has demand. Towers come as slab
+    blocks, podium towers and stepped landmarks, each on a podium built to
+    the street line with the shaft set back, and every building turns to
+    face its street (the 2D art, one view at a time, is mirrored toward
+    east and west streets). The tier is the look only: every tier houses
+    the same number of people, as every lot always has.
+  - Every building stands on a street: a lot grows, and keeps working,
+    only while a street (road, bridge or onramp; a highway is no way in)
+    runs along its footprint, since that is how the fire engine and the
+    police car reach it. A block's inner cells go up only as part of a 2×2
+    or 3×3 lot that reaches the street; the scripted mayor turns whatever
+    inside a block is still unbuilt five years on into a courtyard park.
+    Airports and seaports work within three tiles of a street.
+  - A lot grows only when its road reaches jobs (or homes) within the
+    commute limit over roads, rail and subway; traffic follows that route.
+    A blackout takes buildings down gradually (a small chance at every look,
+    certain after ninety dark days), and a lost road or a lost commute
+    brings a building down; no water caps it at 1×1. Demand, taxes, upkeep and bonds run on SC2K
+    scale, and land value, crime and pollution are monthly fields.
+  - Level plains with terraces, and pads that level themselves for a fee.
+  - Networks drawn the SC2K way: roads, railways and power lines lie on the
+    slope they climb instead of stepping; bridges run level with their banks
+    on piers; highways stand one step up on piers with streets passing under,
+    onramps climb from the street to the deck, and two crossing highways make
+    a two-level interchange; water pipes, like the subway, show on the
+    underground view only. Both backends draw it so (the 3D one gained the
+    underground view), and zone tints lie on the slope too.
+  - The 3D backend carries SimCity 3000's density of detail in its own
+    micro-voxel style: sidewalks, zebra crossings, street lamps, sleepers
+    and lattice pylons; towers on dear 2×2 and 3×3 street lots with helipads, roof tanks
+    and striped parking; water that deepens away from a surf-lined shore;
+    rooms lit floor by floor at night, round lamp pools and a golden hour;
+    cars, buses and lorries in their lanes as dense as each street's
+    traffic, pedestrians on the sidewalks and trains along the track. It
+    reads the same render snapshot, and the simulation is unchanged.
+  - New tools (hospital, university, library, museum, prison, zoo, stadium,
+    marina, big and small parks), blinking problem flags, an Advisors
+    window with Locate, a query balloon that says what a lot lacks, and
+    disasters that need their cause on the map.
+  - `tooling/play-bonsai-two-hours.mjs` plays 30 years as a scripted and a
+    laissez-faire mayor, on 128², 96² and 64² with a pace table per size
+    (a mayor who loses every plant rebuilds one before anything else);
+    `tooling/probe-bonsai-sim-cost.mjs` times a mature
+    128² city; `tooling/play-bonsai-browser.mjs` plays a new city through the
+    real UI. Acceptance evidence is in
+    `internal/plans/BONSAI-PLAYABLE-REPORT.zh-CN.md`.
 
 ## Document map
 

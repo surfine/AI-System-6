@@ -17,6 +17,7 @@ function adjustmentLayerState(kind = "", record = activeProjectQuickDraft({ crea
 
 function adjustmentLayerLabelKey(kind = "") {
   const labels = {
+    clean: "quick_draft_adjustment_clean",
     mingming: "quick_draft_chip_mingming",
     luoluo: "quick_draft_chip_luoluo",
     hkrr: "quick_draft_chip_hkrr",
@@ -50,6 +51,7 @@ let quickDraftLayerLayoutObserver = null;
 
 function layerDescriptionKey(kind = "") {
   const descriptions = {
+    clean: "quick_draft_layer_clean_desc",
     mingming: "quick_draft_layer_mingming_desc",
     luoluo: "quick_draft_layer_luoluo_desc",
     hkrr: "quick_draft_layer_hkrr_desc",
@@ -130,6 +132,45 @@ function toggleQuickDraftLayerDetail() {
   return open;
 }
 
+// Three stops instead of a pop-up: one click, and the choice is visible
+// without opening anything. The <select> stays as the model -- the change
+// handler, the menu rows and the read-only sweep all keep using it -- and the
+// segment carries data-requires-write so the write lease locks it too.
+function syncLightroomStrengthSegments(select, layer) {
+  const wrap = select.closest(".select-wrap-inline");
+  if (!wrap) return;
+  let group = wrap.parentElement?.querySelector(`[data-lightroom-strength="${layer.kind}"]`);
+  if (!group) {
+    group = document.createElement("span");
+    group.className = "view-switch draft-desk-strength";
+    group.dataset.lightroomStrength = layer.kind;
+    group.setAttribute("role", "group");
+    group.setAttribute("aria-label", select.getAttribute("aria-label") || t("quick_draft_adjustment_strength"));
+    Array.from(select.options).forEach((option) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "view-switch-option";
+      button.dataset.requiresWrite = "";
+      button.dataset.value = option.value;
+      if (option.dataset.i18n) button.dataset.i18n = option.dataset.i18n;
+      button.textContent = option.textContent;
+      button.addEventListener("click", () => {
+        if (select.value === option.value || button.disabled) return;
+        select.value = option.value;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      group.append(button);
+    });
+    wrap.classList.add("draft-desk-strength-model");
+    wrap.after(group);
+  }
+  group.querySelectorAll("button").forEach((button) => {
+    const on = button.dataset.value === String(layer.strength);
+    button.classList.toggle("is-active", on);
+    button.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+}
+
 function renderAdjustmentLayers(record = activeProjectQuickDraft({ create: false })?.record) {
   if (!refs.form) return;
   const layers = adjustmentLayersSnapshot(record);
@@ -148,7 +189,10 @@ function renderAdjustmentLayers(record = activeProjectQuickDraft({ create: false
     const checkbox = quickDraftQuery(`[data-quick-draft-adjustment-enabled="${layer.kind}"]`);
     const select = quickDraftQuery(`[data-quick-draft-adjustment-strength="${layer.kind}"]`);
     if (checkbox) checkbox.checked = layer.enabled;
-    if (select) select.value = String(layer.strength);
+    if (select) {
+      select.value = String(layer.strength);
+      syncLightroomStrengthSegments(select, layer);
+    }
     const order = quickDraftQuery(`[data-quick-draft-layer-order="${layer.kind}"]`);
     if (order) order.textContent = String(index + 1);
     const wrapper = quickDraftQuery(`[data-quick-draft-adjustment-layer="${layer.kind}"]`);
@@ -209,9 +253,20 @@ function syncQuickDraftMobileAdjustmentActions(record = activeProjectQuickDraft(
   const previewButton = quickDraftQuery("[data-quick-draft-adjustment-apply]");
   const developButton = quickDraftQuery("[data-quick-draft-adjustment-develop]");
   if (previewButton) previewButton.disabled = !hasBody || !enabled || !quickDraftModelAvailable();
+  // A proof is waiting only when 试看 has produced one for an enabled stack.
+  // With no layer on, "ready" is trivially true and 冲洗 would write the body
+  // onto itself and leave a version saying nothing happened -- the menu row
+  // already waits for a proof, and the key it shortcuts must say the same.
+  const compositeReady = enabled
+    && Boolean(darkroomOf(record).composite)
+    && currentCompositeState(normalized).ready;
   if (developButton) {
-    developButton.disabled = lightroomIsReadOnly() || !hasBody || !currentCompositeState(normalized).ready;
+    developButton.disabled = lightroomIsReadOnly() || !hasBody || !compositeReady;
   }
+  // One default key, and it is the verb that comes next: 冲洗 once a proof is
+  // waiting, 试看 until then. "Back to the Draft" is a door, never the default.
+  previewButton?.classList.toggle("default", !compositeReady);
+  developButton?.classList.toggle("default", compositeReady);
 }
 
 async function updateAdjustmentLayer(kind = "", patch = {}) {
@@ -444,10 +499,62 @@ function adjustmentStrengthPromptLine(strength = ADJUSTMENT_DEFAULT_STRENGTH, zh
 // The layer mask is stored against the original body's line numbers; the
 // prompt receives the sentinel-protected text, so the mask is remapped onto
 // that layout for honest line numbers.
+// The personal dictionary is read, never stored. Three sources, all the
+// writer's own: a title they typed (a derived title is the body's first
+// sentence and says nothing about spelling), Latin names and acronyms the
+// draft and its materials repeat (HKRR, iPhone), and -- when the writer keeps
+// one -- a project document called 词典 / Dictionary, one term per line.
+// Anything with sentence punctuation is a sentence, not a term.
+function quickDraftDictionaryTerms() {
+  const terms = new Set();
+  const add = (value) => {
+    const term = String(value || "").replace(/^[-*•\s]+/, "").trim();
+    if (term && term.length <= 16 && !/[。！？!?]/.test(term)) terms.add(term);
+  };
+  const record = activeProjectQuickDraft({ create: false })?.record;
+  const workspace = normalizeQuickDraftRecord(record).workspace;
+  if (workspace.titleMode === "manual") {
+    String(workspace.title || "").split(/[\s,，、:：;；/|]+/).filter((part) => part.length >= 2).forEach(add);
+  }
+  let materialText = "";
+  try {
+    materialText = (typeof sourceRecordsFromForm === "function" ? sourceRecordsFromForm() : [])
+      .map((source) => source.text).join("\n");
+  } catch {}
+  const counts = new Map();
+  `${workspace.body || ""}\n${materialText}`.match(/\b(?:[A-Z][A-Za-z0-9+]{1,15}|[a-z][A-Z][A-Za-z0-9+]{0,14})\b/g)?.forEach((word) => {
+    counts.set(word, (counts.get(word) || 0) + 1);
+  });
+  counts.forEach((count, word) => {
+    if (count >= 2 || /^[A-Z0-9+]{2,}$/.test(word)) add(word);
+  });
+  const files = typeof getProjectFiles === "function" ? getProjectFiles() : [];
+  files.forEach((file) => {
+    const name = String(file?.name || "").trim();
+    if (/^(词典|詞典|dictionary)(\.\w+)?$/i.test(name)) String(file.body || "").split(/\n+/).forEach(add);
+  });
+  return [...terms].slice(0, 120);
+}
+
+function quickDraftCleanPromptLines(zh = true) {
+  const terms = quickDraftDictionaryTerms();
+  const dictionary = terms.length
+    ? (zh ? `- 项目词典（听错时按这里改正写法）：${terms.join("、")}` : `- Project dictionary (use these spellings when a word was misheard): ${terms.join(", ")}`)
+    : "";
+  return [
+    zh
+      ? "- 清稿：这是作者口述的逐字稿。只做四件事：删掉口头禅和无意义的重复；作者改口时只留最后的说法；把口述的条目排成列表；按项目词典改正听错的字，补上标点。不换说法，不改语气，不增删观点和事实，不润色。"
+      : "- Clean-up: this is the author's spoken transcript. Do exactly four things: remove fillers and pointless repetition; where the author corrects themselves keep only the final wording; set spoken lists as lists; fix misheard words from the project dictionary and add punctuation. Never reword, never change the voice, never add or drop claims or facts, never polish.",
+    dictionary,
+  ].filter(Boolean).join("\n");
+}
+
 function adjustmentLayerCompositionInstruction(layer = {}, zh = true, protectedRanges = protectedRangesSnapshot()) {
   const kind = String(layer?.kind || "");
   const strength = Number(layer?.strength) || ADJUSTMENT_DEFAULT_STRENGTH;
-  const lensLine = kind === "density"
+  const lensLine = kind === "clean"
+    ? quickDraftCleanPromptLines(zh)
+    : kind === "density"
     ? densityStrengthPromptLine(strength, zh)
     : kind === "mingming"
     ? (zh
@@ -462,7 +569,7 @@ function adjustmentLayerCompositionInstruction(layer = {}, zh = true, protectedR
       ? "- HKRR 调整：加发现感、信息增量、人的感受和节奏；不编造，不抹平边界。"
       : "- HKRR adjustment: add discovery, information gain, human feeling, and rhythm; never invent, never flatten boundaries.")
     : "";
-  const strengthLine = kind === "density" ? "" : adjustmentStrengthPromptLine(strength, zh);
+  const strengthLine = kind === "density" || kind === "clean" ? "" : adjustmentStrengthPromptLine(strength, zh);
   const originalMask = normalizeAdjustmentLayerMask(layer?.mask);
   const maskRanges = window.AISystem6ProtectedRanges.remapLineRangesAfterSentinels(originalMask, protectedRanges);
   const maskLine = !originalMask.length

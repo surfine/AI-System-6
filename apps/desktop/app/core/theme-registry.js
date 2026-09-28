@@ -67,7 +67,7 @@
       family: "classic",
       recipeBase: "classic",
       menuBarModel: "application-owned",
-      releaseReady: false,
+      releaseReady: true,
       systemFont: "Chicago",
       systemFontSize: 12,
       fontStrategy: "preference",
@@ -103,7 +103,7 @@
       family: "classic",
       recipeBase: "platinum",
       menuBarModel: "application-owned",
-      releaseReady: false,
+      releaseReady: true,
       systemFont: "Charcoal",
       systemFontSize: 12,
       fontStrategy: "theme",
@@ -127,7 +127,7 @@
       systemFontSize: 13,
       fontStrategy: "theme",
       overlay: "none",
-      capabilities: Object.freeze(["solid-material", "pinstripe", "traffic-lights"]),
+      capabilities: Object.freeze(["solid-material", "pinstripe", "traffic-lights", "minimize-lamp", "dock"]),
     }),
     Object.freeze({
       id: "tiger",
@@ -141,12 +141,12 @@
       family: "aqua",
       recipeBase: "snow-leopard",
       menuBarModel: "system-owned",
-      releaseReady: false,
+      releaseReady: true,
       systemFont: "Lucida Grande",
       systemFontSize: 13,
       fontStrategy: "theme",
       overlay: "none",
-      capabilities: Object.freeze(["textured-material", "unified-toolbar", "traffic-lights"]),
+      capabilities: Object.freeze(["textured-material", "unified-toolbar", "traffic-lights", "minimize-lamp", "dock"]),
     }),
     Object.freeze({
       id: "snow-leopard",
@@ -165,7 +165,9 @@
       systemFontSize: 13,
       fontStrategy: "theme",
       overlay: "none",
-      capabilities: Object.freeze(["solid-material", "unified-toolbar", "traffic-lights"]),
+      // The first era whose Dock ships (owner decision B, 2026-09-25): the lamp
+      // and the Dock are granted together, never the lamp alone.
+      capabilities: Object.freeze(["solid-material", "unified-toolbar", "traffic-lights", "minimize-lamp", "dock"]),
     }),
     Object.freeze({
       id: "lion",
@@ -178,12 +180,12 @@
       family: "aqua",
       recipeBase: "snow-leopard",
       menuBarModel: "system-owned",
-      releaseReady: false,
+      releaseReady: true,
       systemFont: "Lucida Grande",
       systemFontSize: 13,
       fontStrategy: "theme",
       overlay: "none",
-      capabilities: Object.freeze(["solid-material", "unified-toolbar", "traffic-lights", "overlay-scrollbars"]),
+      capabilities: Object.freeze(["solid-material", "unified-toolbar", "traffic-lights", "overlay-scrollbars", "minimize-lamp", "dock", "full-screen"]),
     }),
     Object.freeze({
       id: "yosemite",
@@ -199,7 +201,7 @@
       systemFontSize: 13,
       fontStrategy: "theme",
       overlay: "none",
-      capabilities: Object.freeze(["vibrancy", "translucent-sidebar", "traffic-lights"]),
+      capabilities: Object.freeze(["vibrancy", "translucent-sidebar", "traffic-lights", "minimize-lamp", "dock"]),
     }),
     Object.freeze({
       id: "big-sur",
@@ -221,12 +223,11 @@
       fontStrategy: "theme",
       overlay: "none",
       colorModes: true,
-      // No `minimize-lamp`. The yellow lamp is granted only to an era whose
-      // Dock ships with it (owner decision 2026-09-25): a lamp is real only
-      // where the window it puts away has a place to go and a way back. No
-      // Mac OS X era has its Dock yet, so none has the capability today, and
-      // Big Sur draws the product's close-left / zoom-right pair.
-      capabilities: Object.freeze(["vibrancy", "translucent-sidebar", "traffic-lights", "independent-icons"]),
+      // The Mac OS X eras grant `dock` and `minimize-lamp` together once their
+      // Dock evidence is recorded (internal/evidence/drafts/dock-reference):
+      // the yellow lamp is real only where the window it puts away has a place
+      // to go and a way back. Both start off as preferences.
+      capabilities: Object.freeze(["vibrancy", "translucent-sidebar", "traffic-lights", "independent-icons", "minimize-lamp", "dock"]),
     }),
     Object.freeze({
       id: "liquid-glass",
@@ -242,7 +243,7 @@
       systemFontSize: 13,
       fontStrategy: "modern",
       overlay: "liquid-glass",
-      capabilities: Object.freeze(["vibrancy", "continuous-glass", "liquid-overlay", "traffic-lights"]),
+      capabilities: Object.freeze(["vibrancy", "continuous-glass", "liquid-overlay", "traffic-lights", "minimize-lamp", "dock"]),
     }),
     Object.freeze({
       id: "nextstep",
@@ -356,7 +357,23 @@
   let appearanceGeneration = 0;
   let pendingAppearance = null;
   const appearanceStyles = new Map();
-  const appearanceStylePaths = { "big-sur": "styles.big-sur.css", nextstep: "styles.nextstep.css", tiger: "styles.tiger.css", "system-7": "styles.system-7.css", "drawing-board": "styles.drawing-board.css", lion: "styles.lion.css" };
+  // The lazy appearance sheets, in cascade order, each keyed by the appearance
+  // whose recipe it carries or by the capability that asks for it. This is the
+  // table of tooling/style-manifest.mjs's appearance bundles in the same order
+  // (tests/features/lazy-loader.test.mjs holds the two in step); an
+  // appearance's own list is derived from it, never written out.
+  const appearanceSheets = Object.freeze([
+    ["aqua", "styles.aqua.css"],
+    ["liquid-glass", "styles.liquid-glass.css"],
+    ["nextstep", "styles.nextstep.css"],
+    ["dock", "styles.desk-dock.css"],
+    ["big-sur", "styles.big-sur.css"],
+    ["tiger", "styles.tiger.css"],
+    ["system-7", "styles.system-7.css"],
+    ["platinum", "styles.platinum.css"],
+    ["drawing-board", "styles.drawing-board.css"],
+    ["lion", "styles.lion.css"],
+  ]);
   const preparations = new Set();
   let composing = false;
   const interactionWaiters = new Set();
@@ -410,19 +427,36 @@
     }
   }
 
-  // Preparation never projects a partial appearance. Failed requests are
-  // evicted so an offline/404 failure can be retried without reloading work.
+  // The sheets an appearance needs: one for every appearance in its recipe
+  // chain and for every capability it has, in table order — root to leaf, so
+  // Tiger draws Aqua, then the Dock, then itself.
+  function appearanceStylePaths(value = currentThemeId) {
+    const theme = getTheme(value);
+    const keys = new Set([...getRecipeChain(theme.id).map(({ id }) => id), ...theme.capabilities]);
+    return appearanceSheets.filter(([key]) => keys.has(key)).map(([, path]) => path);
+  }
+
+  // Preparation never projects a partial appearance: every sheet the list names
+  // has to arrive before the appearance commits. Failed requests are evicted so
+  // an offline/404 failure can be retried without reloading work.
   function ensureAppearanceStyles(theme) {
     const doc = global.document;
-    if (!appearanceStylePaths[theme.id] || !doc?.createElement || !doc.head) return null;
-    const existing = appearanceStyles.get(theme.id);
+    if (!doc?.createElement || !doc.head) return null;
+    const pending = appearanceStylePaths(theme.id).map((path) => ensureAppearanceSheet(doc, path)).filter(Boolean);
+    return pending.length ? Promise.all(pending) : null;
+  }
+
+  function ensureAppearanceSheet(doc, path) {
+    // One request per sheet, not per appearance: the eras that share the Dock
+    // sheet, or a recipe root, load it once between them.
+    const existing = appearanceStyles.get(path);
     if (existing) return existing.ready ? null : existing.promise;
     const link = doc.createElement("link");
-    link.id = `${theme.id}-appearance-styles`;
+    link.id = `${path.replace(/^styles\.|\.css$/g, "")}-appearance-styles`;
     link.rel = "stylesheet";
     link.setAttribute("blocking", "render");
     const stamp = doc.querySelector('script[src*="theme-registry.js"]')?.src?.split("?")[1];
-    link.href = appearanceStylePaths[theme.id] + (stamp ? `?${stamp}` : "");
+    link.href = path + (stamp ? `?${stamp}` : "");
     const entry = { ready: false, promise: null };
     entry.promise = new Promise((resolve, reject) => {
       const timeout = global.setTimeout(() => finish(false), 15000);
@@ -434,17 +468,94 @@
           doc.dispatchEvent(new CustomEvent("ai-system6-appearancestylesready"));
           resolve();
         } else {
-          appearanceStyles.delete(theme.id);
+          appearanceStyles.delete(path);
           link.remove();
-          reject(new Error(`Appearance stylesheet unavailable: ${theme.id}`));
+          reject(new Error(`Appearance stylesheet unavailable: ${path}`));
         }
       };
       link.onload = () => finish(true);
       link.onerror = () => finish(false);
     });
-    appearanceStyles.set(theme.id, entry);
-    doc.head.appendChild(link);
+    entry.link = link;
+    appearanceStyles.set(path, entry);
+    insertAppearanceSheet(doc, link, path);
+    // At boot this runs from a <script> that sits above the boot bundle's
+    // <link>, so the appearance sheet lands BEFORE styles.bundle.css and loses
+    // every tie on specificity to it (a saved Drawing Board booted as
+    // Platinum; Platinum's Writing Flow bar drew the document ridges). Put
+    // the appearance sheets after the bundle, in table order, the moment the
+    // parser inserts the bundle's <link>: waiting for DOMContentLoaded let a
+    // frame painted while <body> was still parsing lose those ties (measured
+    // 2026-09-26: Liquid Glass's first frame took the boot sheets' selection
+    // tokens). A mutation record is delivered before the next paint, and <body>
+    // does not exist yet, so the moved links still block rendering.
+    if (doc.readyState === "loading" && !relocationQueued) {
+      relocationQueued = true;
+      const bundleParsed = () => doc.querySelector('link[rel="stylesheet"][href^="styles.bundle.css"]');
+      const observer = global.MutationObserver && new global.MutationObserver(() => {
+        if (!bundleParsed()) return;
+        observer.disconnect();
+        relocateAppearanceStyles(doc);
+      });
+      observer?.observe(doc.head, { childList: true });
+      doc.addEventListener("DOMContentLoaded", () => {
+        observer?.disconnect();
+        relocateAppearanceStyles(doc);
+      }, { once: true });
+    }
     return entry.promise;
+  }
+
+  // A sheet requested after boot goes where the table puts it: right after the
+  // boot bundle and the appearance sheets that precede it, and before the next
+  // one already present — so a later switch cannot reorder the cascade, and
+  // every window's own lazy sheet (appended at the end of <head>) still comes
+  // after the appearance sheets, as it did when Aqua and Liquid Glass were boot
+  // sheets. Links already in place are never moved: moving one re-applies it.
+  function insertAppearanceSheet(doc, link, path) {
+    const order = appearanceSheets.findIndex(([, sheet]) => sheet === path);
+    const later = appearanceSheets.slice(order + 1)
+      .map(([, sheet]) => appearanceStyles.get(sheet)?.link)
+      .find((candidate) => candidate?.isConnected);
+    if (later) {
+      later.before(link);
+      return;
+    }
+    const earlier = appearanceSheets.slice(0, order).reverse()
+      .map(([, sheet]) => appearanceStyles.get(sheet)?.link)
+      .find((candidate) => candidate?.isConnected);
+    const anchor = earlier || doc.querySelector?.('link[rel="stylesheet"][href^="styles.bundle.css"]');
+    if (anchor) anchor.after(link);
+    else doc.head.appendChild(link);
+  }
+
+  let relocationQueued = false;
+
+  function relocateAppearanceStyles(doc) {
+    const bundle = doc.querySelector('link[rel="stylesheet"][href^="styles.bundle.css"]');
+    if (!bundle) return;
+    let anchor = bundle;
+    appearanceSheets.forEach(([, path]) => {
+      const link = appearanceStyles.get(path)?.link;
+      if (!link?.isConnected) return;
+      if (bundle.compareDocumentPosition(link) & (global.Node?.DOCUMENT_POSITION_PRECEDING ?? 2)) {
+        anchor.after(link);
+        anchor = link;
+      } else {
+        anchor = link;
+      }
+    });
+  }
+
+  // Loads one appearance sheet without projecting anything, for a window that
+  // reads other eras' rules (Theme Lab's token workbench reads every era's
+  // delta from the live CSSOM). Returns null for a path that is not an
+  // appearance sheet, so the caller's own loader keeps it.
+  function loadAppearanceStylesheet(path) {
+    const doc = global.document;
+    const sheet = String(path || "").split("?")[0];
+    if (!appearanceSheets.some(([, known]) => known === sheet) || !doc?.createElement || !doc.head) return null;
+    return ensureAppearanceSheet(doc, sheet) || Promise.resolve();
   }
 
   function syncBody() {
@@ -604,6 +715,8 @@
     getTheme,
     getReleaseReadyThemes,
     getRecipeChain,
+    appearanceStylePaths,
+    loadAppearanceStylesheet,
     hasCapability,
     getMenuBarModel,
     isApplicationOwnedMenuBar,

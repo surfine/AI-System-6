@@ -9,6 +9,12 @@
       "file": "one-more-tune-2026.webp"
     },
     {
+      "id": "bonsai-city",
+      "label": "Bonsai City",
+      "caption": "The example mid-size city in 3D under Platinum: streets, rail, traffic and the RCI gauge, build 20260927.1.",
+      "file": "bonsai-city.webp"
+    },
+    {
       "id": "slides",
       "label": "Build Slides",
       "caption": "A Marp deck, opened and presented on the desktop.",

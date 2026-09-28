@@ -347,7 +347,7 @@ html[data-theme] .desk-icon.selected .desk-icon-label { background: var(--sel-bg
 
 /* Classic + Platinum icons keep their pixel edges at integer scale. */
 :root:not([data-theme]) img.obj-icon,
-html[data-theme="platinum"] img.obj-icon { image-rendering: pixelated; }
+html:is([data-theme="system-7"], [data-theme="platinum"], [data-theme="drawing-board"]) img.obj-icon { image-rendering: pixelated; }
 
 /* ---------- Era strip ---------- */
 
@@ -757,7 +757,9 @@ html[data-theme] .finder-item.selected .desk-icon-label { background: var(--sel-
 /* Each icon is pixelated by its own year, not by the page's: 1988 and 1999
    drew at 32 pixels and meant it. The later rows are smooth art. */
 .claim-row[data-era="classic"] .claim-icon,
-.claim-row[data-era="platinum"] .claim-icon { image-rendering: pixelated; }
+.claim-row[data-era="system-7"] .claim-icon,
+.claim-row[data-era="platinum"] .claim-icon,
+.claim-row[data-era="drawing-board"] .claim-icon { image-rendering: pixelated; }
 
 /* The year is set in the monospace of its own decade: Monaco until 2009, then
    Menlo, then SF Mono. Three faces nobody announces, which is the point. */

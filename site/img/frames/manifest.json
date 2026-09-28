@@ -1,6 +1,6 @@
 {
-  "capturedAt": "2026-09-24T04:24:00.164Z",
-  "build": "20260923.2",
+  "capturedAt": "2026-09-25T01:42:14.171Z",
+  "build": "20260925.1",
   "viewport": {
     "width": 1440,
     "height": 900
@@ -8,10 +8,14 @@
   "deviceScaleFactor": 2,
   "files": {
     "classic": "classic.webp",
+    "system-7": "system-7.webp",
     "nextstep": "nextstep.webp",
+    "drawing-board": "drawing-board.webp",
     "platinum": "platinum.webp",
     "aqua": "aqua.webp",
+    "tiger": "tiger.webp",
     "snow-leopard": "snow-leopard.webp",
+    "lion": "lion.webp",
     "yosemite": "yosemite.webp",
     "big-sur": "big-sur.webp",
     "liquid-glass": "liquid-glass.webp"

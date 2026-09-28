@@ -25,11 +25,10 @@ body[data-theme="drawing-board"] {
   --window-bg: #c0b6aa;
   --window-shadow: 1px 1px 0 #000000, inset 1px 0 0 #f4efe7, inset 0 1px 0 #f4efe7, inset -1px 0 0 #958671, inset 0 -1px 0 #958671;
   --inactive-window-shadow: 1px 1px 0 #958671, inset 1px 1px 0 #e7e3de, inset -1px -1px 0 #958671;
-  --system-titlebar-active-bg: linear-gradient(#c0b6aa, #c0b6aa) left top / var(--system-titlebar-control-slot) 100% no-repeat, linear-gradient(#c0b6aa, #c0b6aa) right top / calc(var(--system-titlebar-control-slot) + var(--system-titlebar-shade-slot)) 100% no-repeat, linear-gradient(to bottom, #c0b6aa 0 2px, transparent 2px 13px, #c0b6aa 13px 17px, #958671 17px 18px), repeating-linear-gradient(to bottom, #f4efe7 0 1px, #75685a 1px 2px) 0 1px / 100% 2px repeat-y, #c0b6aa;
+  --system-titlebar-active-bg: linear-gradient(#c0b6aa, #c0b6aa) left top / var(--system-titlebar-control-slot) 100% no-repeat, linear-gradient(#c0b6aa, #c0b6aa) right top / var(--system-titlebar-control-slot-right, calc(var(--system-titlebar-control-slot) + var(--system-titlebar-shade-slot))) 100% no-repeat, linear-gradient(to bottom, #c0b6aa 0 1px, transparent 1px 13px, #c0b6aa 13px 17px, #958671 17px 18px), repeating-linear-gradient(to bottom, #f4efe7 0 1px, #75685a 1px 2px) 0 1px / 100% 2px repeat-y, #c0b6aa;
   --system-titlebar-inactive-bg: #cec7bd;
   --system-titlebar-inactive-title-color: #75685a;
   --titlebar-title-bg: #c0b6aa;
-  --titlebar-shadow: inset 0 1px 0 #f4efe7;
   --surface-primary: #cec7bd;
   --surface-secondary: #cec7bd;
   --surface-inset: #f4efe7;
@@ -53,6 +52,7 @@ body[data-theme="drawing-board"] {
   --tdi-tab-pressed-fg: #f4efe7;
   --tdi-tab-pressed-shadow: inset 1px 1px 0 #3a3129, inset -1px -1px 0 #958671;
   --find-path-results-bg: #f4efe7;
+  --desktop-label-selected-fg: #f4efe7;
   --sidebar-selection-bg: #fffcdf;
   --separator: #857765;
   --control-shadow: inset 1px 1px 0 #f4efe7, inset -1px -1px 0 #857765;
@@ -99,6 +99,14 @@ body[data-theme="drawing-board"] {
   --window-frame-arrow-shadow: inset 1px 1px #f4efe7, inset -1px -1px #958671;
   --scrollbar-track: #a59888;
   --scrollbar-button: #cec7bd;
+  --window-frame-thumb-bg: url("./assets/themes/platinum/chrome/thumb-grip-vertical.svg") center 5px / 8px 8px no-repeat, linear-gradient(#e7e3de, #e7e3de) left top / 1px 1px no-repeat, #f7d784;
+  --window-frame-thumb-bg-horizontal: url("./assets/themes/platinum/chrome/thumb-grip-horizontal.svg") 5px center / 8px 8px no-repeat, linear-gradient(#e7e3de, #e7e3de) left top / 1px 1px no-repeat, #f7d784;
+  --window-frame-thumb-shadow: inset 1px 1px #fffcdf, inset -1px -1px #958671, 0 1px 0 #75685a, 0 2px 0 #857765;
+  --window-frame-thumb-shadow-horizontal: inset 1px 1px #fffcdf, inset -1px -1px #958671, 1px 0 0 #75685a, 2px 0 0 #857765;
+  --window-frame-track-shadow: inset 1px 1px #75685a, inset 2px 2px #857765, inset -1px -1px #c0b6aa, inset -2px -2px #b2a697;
+  --window-frame-arrow-shadow: inset 1px 1px #f4efe7, inset -1px -1px #b2a697;
+  --window-frame-empty-track-bg: #e7e3de;
+  --window-frame-empty-arrow-ink: #857765;
   --tab-bg: #c0b6aa;
   --tab-hover-bg: #cec7bd;
   --tab-active-bg: #e7e3de;
@@ -137,6 +145,39 @@ body[data-theme="drawing-board"] {
   --control-strip-gauge: #3a3129;
   --control-strip-gauge-bg: #f4efe7;
   --control-strip-grip: repeating-linear-gradient(to bottom, #efe9e1 0 1px, #8e8e8e 1px 2px, rgba(0, 0, 0, 0) 2px 4px) 50% 50% / 10px 100% no-repeat;
+  --tab-bg: linear-gradient(#000000, #000000) 16px 0 / calc(100% - 32px) 1px no-repeat, linear-gradient(#cec7bd, #cec7bd) 16px 2px / calc(100% - 32px) 1px no-repeat, linear-gradient(#000000, #000000) 16px 100% / calc(100% - 32px) 1px no-repeat, linear-gradient(#c0b6aa, #c0b6aa) 16px 0 / calc(100% - 32px) 100% no-repeat;
+  --tab-active-bg: linear-gradient(#000000, #000000) 16px 0 / calc(100% - 32px) 1px no-repeat, linear-gradient(#c0b6aa, #c0b6aa) 16px 1px / calc(100% - 32px) 1px no-repeat, linear-gradient(#f4efe7, #f4efe7) 16px 2px / calc(100% - 32px) 1px no-repeat, linear-gradient(#e7e3de, #e7e3de) 16px 0 / calc(100% - 32px) 100% no-repeat;
+  --tab-panel-bg: #e7e3de;
+  --view-btn-bg: #c0b6aa;
+  --view-btn-hover-bg: #c0b6aa;
+  --view-btn-shadow: inset 1px 1px 0 #e7e3de, inset -1px -1px 0 #857765, inset -2px -2px 0 #857765;
+  --view-btn-active-bg: #c0b6aa;
+  --view-btn-active-shadow: inset 1px 1px 0 #857765, inset 2px 2px 0 #857765, inset -1px -1px 0 #e7e3de;
+  --system-select-menu-shadow: inset 1px 1px 0 #f4efe7, inset -1px -1px 0 #958671, 1px 1px 0 #222222;
+  --system-select-option-selected-bg: #cec7bd;
+  --system-select-option-active-bg: #574c41;
+  --system-select-option-active-fg: #f4efe7;
+  --system-select-option-active-shadow: inset 1px 0 0 #958671, inset -1px 0 0 #000088;
+  --modal-bg: #cec7bd;
+  --modal-shadow: inset 1px 1px 0 #cec7bd, inset 2px 2px 0 #f4efe7, inset 3px 3px 0 #f4efe7, inset -1px -1px 0 #574c41, inset -2px -2px 0 #958671, inset -3px -3px 0 #a59888, 1px 1px 0 #000000;
+  --finder-list-header-bg: #c0b6aa;
+  --finder-list-header-cell-bg: #c0b6aa;
+  --finder-list-header-cell-shadow: inset 1px 1px 0 #665a4d, inset 2px 2px 0 #f4efe7, inset -1px -1px 0 #3a3129, inset -2px -2px 0 #857765;
+  --finder-list-header-sorted-bg: #857765;
+  --finder-list-header-sorted-shadow: inset 1px 1px 0 #1d1813, inset 2px 2px 0 #574c41, inset -1px -1px 0 #222222, inset -2px -2px 0 #463d34;
+  --finder-list-row-bg: #e7e3de;
+  --finder-list-sorted-first-cell-bg: #cec7bd;
+  --finder-pane-bg: #f4efe7;
+  --desktop-label-selected-fg: #f4efe7;
+  --control-section-border: 1px solid #857765;
+  --control-section-shadow: inset 1px 1px 0 #f4efe7, 1px 1px 0 #f4efe7;
+  --menu-panel-shadow: inset 1px 1px 0 #f4efe7, inset -1px -1px 0 #958671, 1px 1px 0 #222222;
+  --menu-button-active-shadow: inset 0 1px 0 #958671, inset 0 -1px 0 #000088;
+  --menu-item-active-shadow: inset 1px 0 0 #958671, inset -1px 0 0 #000088;
+  --btn-active-shadow: inset 1px 1px 0 #463d34, inset 2px 2px 0 #574c41, inset -1px -1px 0 #857765, inset -2px -2px 0 #75685a;
+  --field-shadow: -1px -1px 0 #857765, 1px 1px 0 #f4efe7;
+  --progress-fill-bg: linear-gradient(to bottom, #574c41 0 1px, #958671 1px 2px, #f7d784 2px 3px, #fffcdf 3px 4px, #e7e3de 4px 5px, #fffcdf 5px 6px, #f7d784 6px 7px, #958671 7px 8px, #574c41 8px 9px, #000055 9px 10px);
+  --details-bar-shadow: inset 0 1px 0 #f4efe7, inset 0 -1px 0 #a59888;
   /* END derived from Platinum */
   /* Title bar: a 22 px band of drafting paper between two pencil lines
      (#625c58 in the reference), no Platinum grooves. */

@@ -134,7 +134,11 @@ async function stopProcess(child) {
 // fail on a random case in roughly two runs of three. Drop that line, and only
 // that line, and only once per refused probe.
 const LOCAL_MODEL_PROBE = /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\]):1234\//;
-const REFUSED_RESOURCE = "Failed to load resource: net::ERR_CONNECTION_REFUSED";
+// The console twin carries no URL and reports whichever network error the
+// browser chose — ERR_CONNECTION_REFUSED when nothing is listening, ERR_FAILED
+// when something is but the browser refuses the response. Both name the same
+// probe, and the counter below bounds how many lines either can drop.
+const REFUSED_RESOURCE = "Failed to load resource";
 
 function attachDiagnostics(page) {
   const errors = [];
@@ -145,10 +149,15 @@ function attachDiagnostics(page) {
   page.on("pageerror", (error) => errors.push(`pageerror: ${error.message}`));
   page.on("console", (message) => {
     if (message.type() !== "error") return;
-    if (refusedLocalModelProbes > 0 && message.text() === REFUSED_RESOURCE) {
+    if (refusedLocalModelProbes > 0 && message.text().startsWith(REFUSED_RESOURCE)) {
       refusedLocalModelProbes -= 1;
       return;
     }
+    // LM Studio can also be running without CORS headers: the probe then fails
+    // inside the browser rather than at the socket, and the line still says
+    // nothing about appearance. Same non-finding, same single target.
+    const blocked = /Access to (?:fetch|XMLHttpRequest) at '([^']+)'/.exec(message.text());
+    if (blocked && LOCAL_MODEL_PROBE.test(blocked[1])) return;
     errors.push(`console: ${message.text()}`);
   });
   page.on("response", (response) => {
@@ -174,11 +183,15 @@ async function settleViewportResize(page) {
 }
 
 async function applyTheme(page, theme) {
-  await page.evaluate((themeId) => {
+  // An appearance whose sheet loads after the bundle (Aqua, Snow Leopard,
+  // Yosemite, Liquid Glass, Big Sur, NeXTSTEP) switches only once that sheet is
+  // in: applyTheme returns the transaction, so wait for it as the product's own
+  // callers do. A fixed 60 ms read "classic" whenever the machine was busy.
+  await page.evaluate(async (themeId) => {
     if (typeof window.AISystem6Theme?.applyTheme !== "function") {
       throw new Error("AISystem6Theme.applyTheme is unavailable");
     }
-    window.AISystem6Theme.applyTheme(themeId, {
+    await window.AISystem6Theme.applyTheme(themeId, {
       persist: false,
       announce: false,
       modernFontPreference: false,

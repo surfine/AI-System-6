@@ -20,6 +20,15 @@
      opt back in below. */
   -webkit-user-select: none;
   user-select: none;
+  /* The map repaints every frame while it pans or the city runs. Under
+     Liquid Glass a frosted window, title bar and status strip made the
+     compositor re-blur the whole 1040x712 frame on each of those frames
+     (12 fps panning on a real GPU against Classic's 60, acceptance B1).
+     This window keeps the glass shape and takes the theme's solid surface
+     instead; in themes without these tokens the lines are inert. */
+  --window-backdrop-filter: none;
+  --window-chrome-backdrop-filter: none;
+  --glass-surface: var(--glass-solid-surface);
 }
 
 .bonsai-window input,
@@ -854,6 +863,42 @@
   min-width: 0;
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+/* Advisors: one section per advisor, one line per piece of advice; the
+   dotted/solid rules and bold type express urgency in ink (1-bit safe). */
+.bonsai-window .bonsai-advisor h4 {
+  margin: 6px 0 2px;
+}
+
+.bonsai-window .bonsai-advisor ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bonsai-window .bonsai-advice {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 2px 0;
+  padding-left: 5px;
+  border-left: 1px dotted var(--ink);
+}
+
+.bonsai-window .bonsai-advice > span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.bonsai-window .bonsai-advice.is-warn {
+  border-left: 2px solid var(--ink);
+}
+
+.bonsai-window .bonsai-advice.is-urgent {
+  border-left: 2px solid var(--ink);
+  font-weight: bold;
 }
 
 /* Newspaper (M4): masthead rule, edition line, two newsprint columns on

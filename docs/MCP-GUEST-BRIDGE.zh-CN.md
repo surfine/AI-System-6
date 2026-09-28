@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/MCP-GUEST-BRIDGE.md -->
-<!-- source-sha256: d01b7ea2563e627e0dd8d68b0bdac57cf7ecdd273b192220ade0c259c701f09b -->
+<!-- source-sha256: 752801e0a0b2d8c4de2ef963520a66000de02abd66e96dd9f69c95124b1470c4 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -47,11 +47,21 @@ claude mcp add --transport http ais6 http://127.0.0.1:4173/mcp \
 
 | 档位 | 中文 | 解锁的工具 |
 | --- | --- | --- |
-| read | 只读 | `get_desk_state`、`list_project_objects`、`read_project_object`、`search_project_sources`、`read_route_document`、`list_file_floppy`、`read_file_floppy_item`、`list_scrapbook_clips`、`list_run_receipts`、`read_run_receipt`、`list_writing_lenses`、`open_writing_lens`、`open_writing_context`、`open_quick_draft_capability`、`validate_capability_result` |
-| propose | 可提议 | 只读 + `put_on_file_floppy`、`submit_review`、`submit_proposal`、`deliver_lens_result`、`deliver_quick_draft_result` |
-| change | 可改动 | 可提议 + `dispatch_intent`（`map` 与 `review` 立即执行；`present`、`edit`、`attach`、`export` 记成待提交回执） |
+| read | 只读 | `get_desk_state`、`list_project_objects`、`read_project_object`、`search_project_sources`、`read_route_document`、`list_file_floppy`、`read_file_floppy_item`、`list_scrapbook_clips`、`list_run_receipts`、`read_run_receipt`、`list_writing_lenses`、`open_writing_lens`、`open_writing_context`、`open_quick_draft_capability`、`validate_capability_result`、`list_writing_route`、`list_desk_applications`、`list_projects`、`map_document`、`list_document_revisions`、`read_document_revision`、`read_darkroom_record`、`list_dictionary_terms`、`read_write_lease`、`list_guests`、`open_rebuild_context`、`validate_rebuild_pack` |
+| propose | 可提议 | 只读 + `put_on_file_floppy`、`submit_review`、`submit_proposal`、`deliver_lens_result`、`deliver_quick_draft_result`、`propose_scrapbook_clip`、`annotate_section`、`submit_rebuild_pack` |
+| change | 可改动 | 可提议 + `dispatch_intent`（`map` 与 `review` 立即执行；`present`、`edit`、`attach`、`export`、`develop` 记成待提交回执）、`open_application`、`switch_project`、`eject_file_floppy`、`commit_receipt`、`restore_document_revision`、`write_manuscript`、`set_route_document`、`create_scrapbook_clip`、`burn_project_cd`、`mount_file_floppy`、`add_project_reference`、`export_project_disk` |
 
 写作者可以把访客降到比申请更低的档位，永远不能升到更高。
+
+### 还原包
+
+「还原写作对象」围绕一篇正文重建项目的写作路线：问题单的这一轮、分节与分节草稿、带出处的档案、核查台账、谱系。访客分三步做：`open_rebuild_context`（只读）给出还原包契约、写作者眼中的正文、路线文档、档案、参考资料名称（不含正文）和 `sourceRevision`；`validate_rebuild_pack`（只读）用桌面自己的校验器检查，不写任何东西；`submit_rebuild_pack`（可提议）再校验一遍，通过后成为等待写作者的回执。
+
+规则都在一个纯函数模块 `apps/desktop/app/core/rebuild-pack.js` 里，离线工具 `tooling/rebuild-disk.mjs` 共用它：分节切分正文，节数跟着文章走（至少两节；演示盘工具要求恰好六节）；`own` 模式下不许有未申报的原文改动；每条事实有来源和可信度（官方 / 公开 / 实测 / 作者数据 / 推测）；档案带来源类别；私人聊天不得成为档案、参考资料或引文；私人细节只报字段路径、不回显原文。
+
+还原包是「可改动」也不会自行采用的那一种提议：`commit_receipt` 对还原回执一律弹出确认框等写作者答复（所有者 2026-09-26 决定），Review Desk 的卡片也只在写作者点击时采用。采用时，正文原来的文字留成一条 `restore-before` 修订，这一轮记为指向回执的 `guest` / `rebuild-round` 修订，撤下的档案与参考资料进废纸篓；打开上下文之后项目若有改动，就拒绝采用。
+
+桌面自己的「还原写作对象」窗口用本地或云端模型生成同一种还原包，交一轮的方式也一样：回执来自 `rebuildFlow` 而不是访客，在同一张 Review Desk 卡片上等待，采用后的修订记为 `model`。等待中的还原卡片不受审校台的锁限制：正文标记定稿之前审校台会锁住各项审校，但还原正是产出这份正文的那一轮，所以它的卡片显示在锁的提示下方，其余内容照旧锁着。给新硬盘的还原包不会覆盖写作者已有的东西，所以窗口直接建盘，回执记为已采用。
 
 ## 写作者看到什么
 
@@ -224,3 +234,5 @@ claude mcp add --transport http my-desk https://system6.example/mcp \
 
 - **ClioTalk 的工具调用。** 让 Clio 在对话中直接调用外部服务器的工具，结果仍然落到
   文件软盘。
+- **桌面自身功能使用前沿模型。** 不走 sampling：没有 Claude 或 GPT 宿主支持，而且 2026-07-28 修订版已将其弃用。核查结果与方案见 [Desk Port](MCP.zh-CN.md#经端口使用前沿模型2026-09-28-核实)。
+- **协议修订版。** 本桥协商 `2025-11-25` 及之前三个修订版；[Desk Port](MCP.zh-CN.md) 描述的无状态 `2026-07-28` 形态是设计，不是 `/mcp` 当前使用的协议。

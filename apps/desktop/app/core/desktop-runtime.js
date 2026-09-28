@@ -1165,6 +1165,7 @@ function restoreTrashItem(item) {
   if (item.originalType === "scrap" && item.originalData) {
     item.originalData.projectId = activeProjectId;
     if (!scraps.some((scrap) => scrap.id === item.originalData.id && isInActiveProject(scrap))) {
+      if (typeof migrateMachineClipBody === "function") migrateMachineClipBody(item.originalData);
       scraps.push(item.originalData);
     }
     return true;

@@ -6,9 +6,9 @@ window.AISystem6BonsaiSimLoaded = true;
   "use strict";
 
   const FORMAT = "bonsai-city";
-  const SAVE_VERSION = 4;
-  const SAVE_FORMAT_VERSION = 4;
-  const ENGINE_RULESET_VERSION = 4;
+  const SAVE_VERSION = 5;
+  const SAVE_FORMAT_VERSION = 5;
+  const ENGINE_RULESET_VERSION = 5;
   const COMMAND_SCHEMA_VERSION = 2;
   const EVENT_SCHEMA_VERSION = 2;
   const FIXED_TICK_HZ = 20;
@@ -25,15 +25,31 @@ window.AISystem6BonsaiSimLoaded = true;
   const MAX_STAGE = 3;
   const START_YEAR = 1900;
   const YEAR_FOUNDED_CHOICES = Object.freeze([1900, 1950, 2000, 2050]);
-  const START_FUNDS = 30000;
+  // SC2K's easy-difficulty treasury; money is the first constraint.
+  const START_FUNDS = 20000;
   const DEFAULT_TAX = 7;
   const MAX_TAX_RATE = 20;
   const MAX_PENDING_COMMANDS = 256;
-  const MAX_EVENTS = 128;
+  // The event ring the shell drains once a frame and a headless driver once
+  // a day. A development pass on a grown city emits a few hundred events in
+  // one tick (construction, completions, rebuilds); at 128 the ring dropped
+  // the oldest of them, a disaster's end and its extra edition among them.
+  // Events are output only and never saved, so the size touches no replay.
+  const MAX_EVENTS = 1024;
   const MAX_HISTORY_MONTHS = 120;
   const MAX_UNDO = 100;
-  const ROAD_REACH = 3;
-  const CONGESTION_THRESHOLD = 64;
+  // Every building stands on a street: a lot works only while its footprint
+  // has a street tile along a side (SC3K's rule, not SC2K's three tiles),
+  // because that is the way in for the fire engine, the police car and the
+  // people who live and work there. A block's inner cells are built only as
+  // part of a bigger lot that reaches the street.
+  const ROAD_REACH = 1;
+  // An airport or seaport is one installation with roads of its own inside
+  // its fence: its tiles work within PORT_REACH of a street, as in SC2K.
+  const PORT_REACH = 3;
+  // Road capacity in commuter trips per 4-day routing pass (our balance).
+  const CONGESTION_THRESHOLD = 80;
+  const HIGHWAY_CAPACITY = 320;
   const INTEGRITY_ALGORITHM = "SHA-256";
   const CANONICALIZATION = "sorted-json-v1";
 
@@ -65,9 +81,90 @@ window.AISystem6BonsaiSimLoaded = true;
   const OVER_PARK = 3;
   const OVER_ROADWIRE = 4;
 
-  const PROBLEM = Object.freeze({ NONE: 0, NO_ROAD: 1, NO_POWER: 2, NO_WATER: 3, CONGESTED: 4, NO_DEMAND: 5, POLLUTION: 6 });
-  const PROBLEM_NAMES = Object.freeze([null, "no-road", "no-power", "no-water", "congested", "no-demand", "pollution"]);
-  const PROBLEM_ACTIONS = Object.freeze([null, "build-road", "connect-power", "connect-water", "add-transport-capacity", "rebalance-demand", "separate-industry"]);
+  const PROBLEM = Object.freeze({ NONE: 0, NO_ROAD: 1, NO_POWER: 2, NO_WATER: 3, CONGESTED: 4, NO_DEMAND: 5, POLLUTION: 6, NO_COMMUTE: 7 });
+  const PROBLEM_NAMES = Object.freeze([null, "no-road", "no-power", "no-water", "congested", "no-demand", "pollution", "no-commute"]);
+  const PROBLEM_ACTIONS = Object.freeze([null, "build-road", "connect-power", "connect-water", "add-transport-capacity", "rebalance-demand", "separate-industry", "connect-destinations"]);
+
+  // --- Lots (ruleset 5) --------------------------------------------------
+  // A lot is one whole building on a 1x1, 2x2 or 3x3 square of zoned land.
+  // The persistent `lot` layer holds anchor index + 1 on every cell of the
+  // lot (the anchor is its min-x, min-y cell); the anchor carries the lot's
+  // size in `stage`, its state in `buildingState`, its day counter in
+  // `constructionTimer` and its look in `variant` (1..24: 1-8 low, 9-16
+  // middle, 17-24 high tier). Every cell mirrors `stage` and `buildingState`
+  // so per-tile readers (codecs, minimap, overlays) keep working.
+  // Capacities are our own balance, multiplied by the tier.
+  const LOT_CAPACITY = Object.freeze([
+    null,
+    Object.freeze([0, 24, 16, 24]),
+    Object.freeze([0, 220, 160, 200]),
+    Object.freeze([0, 1100, 800, 700]),
+  ]);
+  // Capacity by tier. The tier is the look a lot's land value buys (low,
+  // middle, high: houses and walk-ups up to towers); it no longer buys
+  // people. The spec's 0.7 / 1.0 / 1.35 never came into play — the tier
+  // thresholds sat above every land value the formula makes, so every lot
+  // was low tier at 0.7 — and giving the middle and high tiers their
+  // bonus now would grow cities a fifth and push money past its rules.
+  // Every tier keeps the 0.7 the game has always run on.
+  const LOT_TIER_MULTIPLIER = Object.freeze([1, 0.7, 0.7, 0.7]);
+  const LOT_VARIANTS_PER_TIER = 8;
+  const LOT_CONSTRUCTION_DAYS = Object.freeze([0, 8, 16, 24]);
+  // Every cell is looked at once in DEV_SLICES days, so a lot's day counter
+  // advances by DEV_SLICES per look.
+  const DEV_SLICES = 4;
+  const LOT_RULES = Object.freeze({
+    foundationDays: 3, declineDays: 20, recoverDays: 10, abandonedClearDays: 300,
+    // A blackout empties a town gradually: every look at a dark lot carries
+    // powerDeclineChance of decline, and powerFuseDays in the dark brings it
+    // down for certain, so a plant rebuilt within two months saves most of it.
+    powerFuseDays: 90, powerDeclineChance: 0.03, roadFuseDays: 30, commuteFuseDays: 60, waterFuseDays: 60, nuisanceFuseDays: 60,
+    growthBase: 0.006, growthSlope: 0.04, upgradeChance: 0.015, oversupplyChance: 0.1,
+    // A 2x2 lot from land value 45: with every building on a street
+    // (ROAD_REACH 1) a block's second row is only built as part of a 2x2
+    // that reaches the street, and a young town's land is worth about 45.
+    bigDemand: 30, bigLandValue: 90, midDemand: 15, midLandValue: 45, upgradeDemand: 25,
+    // Tier thresholds on the land value the formula actually makes (a
+    // mature city's median lot is about 50, its dearest blocks 70-95):
+    // under 58 low, then middle, then high from the city's tower line —
+    // the land value only its dearest downtownShare of dry land reaches,
+    // never below tierHigh. How dear a downtown grows differs from
+    // city to city, so the line follows the city: every city gets a
+    // downtown on its own dearest streets. A working lot whose land has
+    // risen over the line is rebuilt at the high tier, redevelopChance per
+    // look while demand for its zone lasts, the SC2K way a block that grows
+    // dear gets its towers.
+    tierLow: 58, tierHigh: 66, downtownShare: 0.03, redevelopChance: 0.01,
+    // The high tier is for lots on a street: a lot that touches no road
+    // tops out at the middle tier, so towers line streets instead of
+    // standing in the middle of a block. Within the high tier the land
+    // value picks the height: every towerValueStep over the line is one of
+    // the eight high variants taller, so a downtown peaks where land is
+    // dearest and steps down toward its edges. A tower whose land has risen
+    // two ranks since it was built is rebuilt taller, at redevelopChance.
+    towerValueStep: 1.5,
+    declineCrime: 30, crimeDeclineSlope: 0.02, crimeDeclineMax: 0.3, crimeRecoverSpan: 8, declinePollution: 150, pollutionProblem: 50,
+  });
+  // Commuting: every 4 days two distance fields are routed over the road
+  // graph (to jobs, to homes). Costs are per tile entered; COMMUTE_LIMIT is
+  // about 40 plain road tiles.
+  // Grid units per plant megawatt: a 200 MW coal plant carries 400 zoned
+  // tiles, roughly ten thousand people in a mixed town (our balance).
+  const POWER_UNITS_PER_MW = 2;
+  const ROUTE_DAYS = 4;
+  const ROUTE_COST = Object.freeze({ road: 5, congested: 9, highway: 2, onramp: 3, rail: 2, subway: 2, station: 3 });
+  const COMMUTE_LIMIT = 200;
+  const ROUTE_UNREACHED = 65535;
+  const ROUTE_MAX = 4000;
+  const TRIPS_PER_RESIDENT = 1 / 8;
+  // Derived systems are marked dirty separately; a command marks only what
+  // it touches and ensureDerived recomputes only what is dirty.
+  const DIRTY = Object.freeze({
+    TERRAIN: 1, FACILITIES: 2, NETWORK: 4, POWER: 8, WATER: 16, COVERAGE: 32,
+    LOTS: 64, ROUTES: 128, ENV: 256, PROBLEMS: 512,
+  });
+  const DIRTY_STRUCTURE = 1023 & ~DIRTY.ENV;
+  const DIRTY_ALL = 1023;
 
   // Highway rides at SC2K's player-visible $100 per 2x2 section, charged as
   // $25 per tile; the onramp is the $25 joint piece [verify-during-impl].
@@ -75,7 +172,8 @@ window.AISystem6BonsaiSimLoaded = true;
   // Crossing water builds a bridge (or a line over pylons): same layer,
   // higher per-tile price. Pipes and subways stay on land.
   const BRIDGE_COST = Object.freeze({ road: 50, rail: 75, wire: 25, highway: 100 });
-  const ZONE_COST = Object.freeze({ low: 50, high: 100 });
+  // SC2K-scale zoning: $5 a light tile, $10 a dense one.
+  const ZONE_COST = Object.freeze({ low: 5, high: 10 });
   // Port zones per tile; military zones arrive with the reward flow.
   const PORT_ZONE_COST = Object.freeze({ seaport: 150, airport: 250 });
   const PORT_MIN_TILES = Object.freeze({ seaport: 8, airport: 12 });
@@ -130,17 +228,33 @@ window.AISystem6BonsaiSimLoaded = true;
     solar: { w: 4, h: 4, cost: 1300, upkeep: 20, power: 50, pollution: 0, tech: 1990, lifespan: true, group: "utility" },
     microwave: { w: 4, h: 4, cost: 28000, upkeep: 120, power: 1600, pollution: 0, tech: 2020, lifespan: true, group: "utility" },
     fusion: { w: 4, h: 4, cost: 40000, upkeep: 150, power: 2500, pollution: 0, tech: 2050, lifespan: true, group: "utility" },
-    pump: { w: 1, h: 1, cost: 450, upkeep: 15, water: 500, tech: 1900, group: "utility" },
+    // A pump yields its figure once per fresh-water tile it touches (the
+    // SC2K rule: the more shoreline, the more water).
+    pump: { w: 1, h: 1, cost: 450, upkeep: 15, water: 150, perShore: true, tech: 1900, group: "utility" },
     "water-tower": { w: 1, h: 1, cost: 300, upkeep: 8, water: 250, tech: 1900, group: "utility" },
     treatment: { w: 1, h: 1, cost: 500, upkeep: 30, water: 1000, tech: 1935, group: "utility" },
     desal: { w: 2, h: 2, cost: 1000, upkeep: 40, water: 500, tech: 1990, desalinates: true, group: "utility" },
-    police: { w: 1, h: 1, cost: 300, upkeep: 20, radius: 6, tech: 1900, group: "police" },
-    fire: { w: 1, h: 1, cost: 250, upkeep: 15, radius: 5, tech: 1900, group: "fire" },
-    school: { w: 1, h: 1, cost: 350, upkeep: 18, radius: 5, tech: 1900, group: "schools" },
-    clinic: { w: 1, h: 1, cost: 400, upkeep: 22, radius: 5, tech: 1900, group: "health" },
-    station: { w: 2, h: 2, cost: 600, upkeep: 25, radius: 4, tech: 1900, group: "transport" },
-    "subway-station": { w: 1, h: 1, cost: 250, upkeep: 12, radius: 4, tech: 1910, group: "transport" },
-    bus: { w: 1, h: 1, cost: 250, upkeep: 10, radius: 8, tech: 1920, group: "transport" },
+    // Monthly upkeep at full funding is our balance (ruleset 5), tuned with
+    // the scripted mayor so a 7% city with a sensible set of services
+    // spends about what it earns (spec 3.7).
+    // Police and fire reach sixteen tiles, fading with distance; schools,
+    // clinics, hospitals and universities serve by capacity.
+    police: { w: 1, h: 1, cost: 300, upkeep: 150, radius: 16, tech: 1900, group: "police" },
+    fire: { w: 1, h: 1, cost: 250, upkeep: 150, radius: 16, tech: 1900, group: "fire" },
+    school: { w: 1, h: 1, cost: 350, upkeep: 125, radius: 10, capacity: 1500, tech: 1900, group: "schools" },
+    clinic: { w: 1, h: 1, cost: 400, upkeep: 120, radius: 10, capacity: 500, tech: 1900, group: "health" },
+    hospital: { w: 3, h: 3, cost: 500, upkeep: 200, radius: 10, capacity: 3000, tech: 1900, group: "health" },
+    university: { w: 3, h: 3, cost: 1000, upkeep: 375, radius: 12, capacity: 5000, tech: 1900, group: "colleges" },
+    library: { w: 2, h: 2, cost: 500, upkeep: 75, radius: 8, eqBonus: 4, tech: 1900, group: "schools" },
+    museum: { w: 3, h: 3, cost: 1000, upkeep: 150, radius: 10, eqBonus: 4, valueBonus: 6, tech: 1900, group: "schools" },
+    prison: { w: 3, h: 3, cost: 3000, upkeep: 300, capacity: 2000, tech: 1900, group: "police" },
+    zoo: { w: 3, h: 3, cost: 3000, upkeep: 150, valueBonus: 12, radius: 8, happiness: 3, tech: 1900, group: "recreation" },
+    stadium: { w: 3, h: 3, cost: 5000, upkeep: 300, valueBonus: 10, radius: 8, happiness: 4, tech: 1900, group: "recreation" },
+    marina: { w: 2, h: 2, cost: 1000, upkeep: 75, valueBonus: 10, radius: 6, needsShore: true, tech: 1900, group: "recreation" },
+    "park-big": { w: 3, h: 3, cost: 150, upkeep: 6, valueBonus: 8, radius: 3, park: true, tech: 1900, group: "recreation" },
+    station: { w: 2, h: 2, cost: 600, upkeep: 100, radius: 4, tech: 1900, group: "transport" },
+    "subway-station": { w: 1, h: 1, cost: 250, upkeep: 75, radius: 4, tech: 1910, group: "transport" },
+    bus: { w: 1, h: 1, cost: 250, upkeep: 60, radius: 8, tech: 1920, group: "transport" },
     // Rewards: offered by the population ladder, free to place, and they
     // lift land value around them. Arcologies repeat; the rest are one
     // each. Thresholds and arco capacity are tuned against the owner's
@@ -148,23 +262,28 @@ window.AISystem6BonsaiSimLoaded = true;
     "mayors-house": { w: 2, h: 2, cost: 0, upkeep: 0, reward: true, valueBonus: 10, radius: 6, group: "civic" },
     "city-hall": { w: 3, h: 3, cost: 0, upkeep: 0, reward: true, valueBonus: 12, radius: 8, group: "civic" },
     statue: { w: 1, h: 1, cost: 0, upkeep: 0, reward: true, valueBonus: 8, radius: 5, group: "civic" },
-    dome: { w: 3, h: 3, cost: 0, upkeep: 0, reward: true, valueBonus: 10, radius: 6, group: "civic" },
-    arco: { w: 3, h: 3, cost: 0, upkeep: 0, reward: true, repeatable: true, population: 30000, valueBonus: 6, radius: 4, tech: 2000, group: "civic" },
+    dome: { w: 4, h: 4, cost: 0, upkeep: 0, reward: true, valueBonus: 10, radius: 6, group: "civic" },
+    arco: { w: 4, h: 4, cost: 0, upkeep: 0, reward: true, repeatable: true, population: 30000, valueBonus: 6, radius: 4, tech: 2000, group: "civic" },
     // SC2K arco family (MISC 0738-0774). The reward offers a single arco at
     // tier 6 the SC2K way; the mayor chooses which kind. Each has its own
     // population, value bonus, and discovery year.
-    "arco-plymouth": { w: 3, h: 3, cost: 0, upkeep: 0, reward: true, repeatable: true, population: 24000, valueBonus: 6, radius: 4, tech: 2000, group: "civic" },
-    "arco-forest": { w: 3, h: 3, cost: 0, upkeep: 0, reward: true, repeatable: true, population: 22000, valueBonus: 6, radius: 4, tech: 2000, group: "civic" },
-    "arco-darco": { w: 3, h: 3, cost: 0, upkeep: 0, reward: true, repeatable: true, population: 26000, valueBonus: 7, radius: 4, tech: 2000, group: "civic" },
-    "arco-launch": { w: 3, h: 3, cost: 0, upkeep: 0, reward: true, repeatable: true, population: 32000, valueBonus: 8, radius: 4, tech: 2000, group: "civic" },
+    "arco-plymouth": { w: 4, h: 4, cost: 0, upkeep: 0, reward: true, repeatable: true, population: 24000, valueBonus: 6, radius: 4, tech: 2000, group: "civic" },
+    "arco-forest": { w: 4, h: 4, cost: 0, upkeep: 0, reward: true, repeatable: true, population: 22000, valueBonus: 6, radius: 4, tech: 2000, group: "civic" },
+    "arco-darco": { w: 4, h: 4, cost: 0, upkeep: 0, reward: true, repeatable: true, population: 26000, valueBonus: 7, radius: 4, tech: 2000, group: "civic" },
+    "arco-launch": { w: 4, h: 4, cost: 0, upkeep: 0, reward: true, repeatable: true, population: 32000, valueBonus: 8, radius: 4, tech: 2000, group: "civic" },
   });
   const PLANT_KINDS = Object.freeze(Object.fromEntries(Object.entries(FACILITY_KINDS).filter(([, spec]) => spec.power)));
   // Save rule 3.1: a facility record may carry its own `w`/`h`. A coal plant
   // was 2x2 until the SC2K 4x4 footprint landed; records without a footprint
   // keep the size they were built with, so an old save and a `.sc2` import
   // stand unchanged while a new placement takes the full pad. The query
-  // panel names the older size. Only kinds listed here write w/h.
-  const LEGACY_FOOTPRINTS = Object.freeze({ coal: Object.freeze({ w: 2, h: 2 }) });
+  // panel names the older size. Only kinds listed here write w/h. Domes
+  // and arcologies were 3x3 until their footprint matched their 4x4 art.
+  const LEGACY_3X3 = Object.freeze({ w: 3, h: 3 });
+  const LEGACY_FOOTPRINTS = Object.freeze({
+    coal: Object.freeze({ w: 2, h: 2 }), dome: LEGACY_3X3, arco: LEGACY_3X3,
+    "arco-plymouth": LEGACY_3X3, "arco-forest": LEGACY_3X3, "arco-darco": LEGACY_3X3, "arco-launch": LEGACY_3X3,
+  });
   function footprintOf(facility) {
     if (Number.isInteger(facility.w) && Number.isInteger(facility.h) && facility.w > 0 && facility.h > 0) return { w: facility.w, h: facility.h };
     return LEGACY_FOOTPRINTS[facility.kind] || { w: FACILITY_KINDS[facility.kind].w, h: FACILITY_KINDS[facility.kind].h };
@@ -222,12 +341,16 @@ window.AISystem6BonsaiSimLoaded = true;
     meltdown: { duration: 300, radius: 4 },
     "microwave-spill": { duration: 120, radius: 4 },
     volcano: { duration: 160, radius: 7 },
-    firestorm: { duration: 180 },
+    firestorm: { duration: 180, radius: 12 },
     "mass-floods": { duration: 80, radius: 9 },
     "pollution-accident": { duration: 100, radius: 5 },
     hurricane: { duration: 140, radius: 10 },
     "air-crash": { duration: 90, radius: 4 },
   });
+  // Spec 3.12: some disasters need their cause on the map. High ground is
+  // six steps above the plains; a riot needs a block whose crime is twice
+  // the level where buildings start to decline.
+  const DISASTER_RULES = Object.freeze({ volcanoAlt: 8, riotCrime: 60 });
   // SC2K technology discovery years (MISC 0738-0778); a network or zone is
   // refused until its gate. Facilities already carry `tech`; these are the
   // non-facility unlocks the player drags (highway, onramp, subway) or zones
@@ -246,6 +369,8 @@ window.AISystem6BonsaiSimLoaded = true;
   // dialog; the label key names what the figure is.
   const MICROSIM_KINDS = Object.freeze({
     police: "arrests", fire: "responses", school: "students", clinic: "patients",
+    hospital: "patients", university: "students", library: "visitors", museum: "visitors", prison: "arrests",
+    zoo: "visitors", stadium: "events", marina: "visitors",
     station: "riders", "subway-station": "riders", bus: "riders",
     "city-hall": "visitors", "mayors-house": "visitors", dome: "events", arco: "residents",
     treatment: "volume", desal: "volume",
@@ -282,71 +407,97 @@ window.AISystem6BonsaiSimLoaded = true;
     return Object.freeze(recipe);
   }
 
-  function zoneCohortCommands(prefix, zone, y, targetTick) {
-    return [16, 18, 20, 22, 24, 26].map((x, index) => ({
-      schemaVersion: 2,
-      type: "zone-area",
-      payload: { zone, density: "high", x, y, width: 1, height: 1 },
-      targetTick,
-      clientCommandId: `${prefix}-${index + 1}`,
-    }));
+  // Example recipes (ruleset 5). Commands are written out so a replay is
+  // exactly what a player would have clicked.
+  const exampleCommand = (id, type, payload, targetTick = 0) => ({ schemaVersion: 2, type, payload, targetTick, clientCommandId: id });
+  const pathCommand = (id, network, points, targetTick = 0) => exampleCommand(id, "build-path", { network, points }, targetTick);
+  const zoneCommand = (id, zone, density, x, y, width, height, targetTick = 0) => exampleCommand(id, "zone-area", { zone, density, x, y, width, height }, targetTick);
+  const placeCommand = (id, kind, x, y, targetTick = 0) => exampleCommand(id, "place-facility", { kind, x, y }, targetTick);
+  // A 7-tile street grid from (x0, y0): road lines every seventh row and
+  // column, each column also carrying power and water.
+  function streetGrid(prefix, x0, y0, columns, rows, targetTick = 0) {
+    const out = []; const x1 = x0 + columns * 7; const y1 = y0 + rows * 7;
+    for (let r = 0; r <= rows; r += 1) out.push(pathCommand(`${prefix}-road-h${r}`, "road", [{ x: x0, y: y0 + r * 7 }, { x: x1, y: y0 + r * 7 }], targetTick));
+    for (let c = 0; c <= columns; c += 1) out.push(pathCommand(`${prefix}-road-v${c}`, "road", [{ x: x0 + c * 7, y: y0 }, { x: x0 + c * 7, y: y1 }], targetTick));
+    for (let c = 0; c <= columns; c += 1) {
+      out.push(pathCommand(`${prefix}-wire-v${c}`, "wire", [{ x: x0 + c * 7, y: y0 }, { x: x0 + c * 7, y: y1 }], targetTick));
+      out.push(pathCommand(`${prefix}-pipe-v${c}`, "pipe", [{ x: x0 + c * 7, y: y0 }, { x: x0 + c * 7, y: y1 }], targetTick));
+    }
+    return out;
+  }
+
+  // Every building stands on a street (ROAD_REACH 1), so an example's 6x6
+  // block has a mid-block street on its fourth row and is zoned only along
+  // its streets: a row on the north street, a row on the mid-block street,
+  // and the two rows between the mid-block and south streets (where a dense
+  // block's 2x2 lots reach both). The row left between is a garden strip.
+  function blockZoneCommands(id, zone, density, x, y, targetTick = 0) {
+    const strips = [[0, 1], [2, 1], [4, 2]];
+    return strips.map(([row, height], index) => zoneCommand(`${id}-${index}`, zone, density, x, y + row, 6, height, targetTick));
   }
 
   const EXAMPLES = Object.freeze({
+    // A healthy small town two and a half years in: a coal plant and water
+    // tower, a street grid carrying power and water, homes, shops and
+    // factories, and police, fire, a school and a park on the civic corner.
     "starter-town": freezeRecipe({
-      id: "starter-town", name: "Starter Town", seed: 6101, size: 64, terrainPreset: "balanced", targetTick: 1800,
+      id: "starter-town", name: "Starter Town", seed: 6101, size: 64, terrainPreset: "balanced", targetTick: 3750,
       commandLog: [
-        { schemaVersion: 2, type: "place-facility", payload: { kind: "wind", x: 8, y: 6 }, targetTick: 0, clientCommandId: "starter-wind" },
-        { schemaVersion: 2, type: "place-facility", payload: { kind: "water-tower", x: 8, y: 7 }, targetTick: 0, clientCommandId: "starter-water" },
-        { schemaVersion: 2, type: "build-path", payload: { network: "road", points: [{ x: 10, y: 8 }, { x: 24, y: 8 }] }, targetTick: 0, clientCommandId: "starter-road" },
-        { schemaVersion: 2, type: "build-path", payload: { network: "wire", points: [{ x: 8, y: 6 }, { x: 21, y: 9 }, { x: 10, y: 9 }] }, targetTick: 0, clientCommandId: "starter-wire" },
-        { schemaVersion: 2, type: "build-path", payload: { network: "pipe", points: [{ x: 8, y: 7 }, { x: 21, y: 9 }, { x: 10, y: 9 }] }, targetTick: 0, clientCommandId: "starter-pipe" },
-        { schemaVersion: 2, type: "zone-area", payload: { zone: "residential", density: "high", x: 10, y: 9, width: 4, height: 3 }, targetTick: 0, clientCommandId: "starter-r" },
-        { schemaVersion: 2, type: "zone-area", payload: { zone: "commercial", density: "high", x: 15, y: 9, width: 3, height: 3 }, targetTick: 0, clientCommandId: "starter-c" },
-        { schemaVersion: 2, type: "zone-area", payload: { zone: "industrial", density: "high", x: 19, y: 9, width: 3, height: 3 }, targetTick: 0, clientCommandId: "starter-i" },
-        { schemaVersion: 2, type: "place-facility", payload: { kind: "police", x: 8, y: 12 }, targetTick: 0, clientCommandId: "starter-police" },
-        { schemaVersion: 2, type: "place-facility", payload: { kind: "fire", x: 9, y: 12 }, targetTick: 0, clientCommandId: "starter-fire" },
+        placeCommand("starter-coal", "coal", 9, 17),
+        placeCommand("starter-water", "water-tower", 14, 19),
+        ...streetGrid("starter", 14, 21, 3, 2),
+        pathCommand("starter-mid-1", "road", [{ x: 14, y: 25 }, { x: 35, y: 25 }]),
+        pathCommand("starter-mid-2", "road", [{ x: 21, y: 32 }, { x: 35, y: 32 }]),
+        pathCommand("starter-wire-plant", "wire", [{ x: 13, y: 20 }, { x: 14, y: 20 }, { x: 14, y: 21 }]),
+        pathCommand("starter-pipe-tower", "pipe", [{ x: 15, y: 19 }, { x: 15, y: 20 }, { x: 14, y: 20 }]),
+        ...blockZoneCommands("starter-r1", "residential", "high", 15, 22),
+        ...blockZoneCommands("starter-c", "commercial", "high", 22, 22),
+        ...blockZoneCommands("starter-i", "industrial", "low", 29, 22),
+        ...blockZoneCommands("starter-r2", "residential", "low", 22, 29),
+        ...blockZoneCommands("starter-r3", "residential", "high", 29, 29),
+        placeCommand("starter-police", "police", 15, 29),
+        placeCommand("starter-fire", "fire", 16, 29),
+        placeCommand("starter-school", "school", 17, 29),
+        placeCommand("starter-park", "park-big", 17, 31),
       ],
     }),
+    // A town that grew and then was neglected: a neighbourhood on a road
+    // that reaches no jobs, a dense block no pipe reaches, police funding cut
+    // to nothing and taxes at 20% in its third year, and a few plots zoned in
+    // its last days so construction shows.
     "troubled-mid-size": freezeRecipe({
-      id: "troubled-mid-size", name: "Troubled Mid-size", seed: 6202, size: 64, terrainPreset: "balanced", targetTick: 600,
+      id: "troubled-mid-size", name: "Troubled Mid-size", seed: 6202, size: 64, terrainPreset: "balanced", targetTick: 4500,
       commandLog: [
-        { schemaVersion: 2, type: "place-facility", payload: { kind: "coal", x: 7, y: 0 }, targetTick: 0, clientCommandId: "troubled-coal" },
-        { schemaVersion: 2, type: "place-facility", payload: { kind: "water-tower", x: 14, y: 1 }, targetTick: 0, clientCommandId: "troubled-water" },
-        { schemaVersion: 2, type: "build-path", payload: { network: "road", points: [{ x: 16, y: 2 }, { x: 28, y: 2 }] }, targetTick: 0, clientCommandId: "troubled-road-early" },
-        { schemaVersion: 2, type: "build-path", payload: { network: "road", points: [{ x: 16, y: 7 }, { x: 28, y: 7 }] }, targetTick: 0, clientCommandId: "troubled-road-mid" },
-        { schemaVersion: 2, type: "build-path", payload: { network: "road", points: [{ x: 16, y: 12 }, { x: 28, y: 12 }] }, targetTick: 0, clientCommandId: "troubled-road-late" },
-        { schemaVersion: 2, type: "build-path", payload: { network: "rail", points: [{ x: 16, y: 6 }, { x: 28, y: 6 }] }, targetTick: 0, clientCommandId: "troubled-rail" },
-        { schemaVersion: 2, type: "build-path", payload: { network: "wire", points: [{ x: 11, y: 1 }, { x: 15, y: 1 }, { x: 15, y: 12 }] }, targetTick: 0, clientCommandId: "troubled-wire-main" },
-        { schemaVersion: 2, type: "build-path", payload: { network: "wire", points: [{ x: 15, y: 2 }, { x: 28, y: 2 }] }, targetTick: 0, clientCommandId: "troubled-wire-early" },
-        { schemaVersion: 2, type: "build-path", payload: { network: "wire", points: [{ x: 15, y: 7 }, { x: 28, y: 7 }] }, targetTick: 0, clientCommandId: "troubled-wire-mid" },
-        { schemaVersion: 2, type: "build-path", payload: { network: "wire", points: [{ x: 15, y: 12 }, { x: 28, y: 12 }] }, targetTick: 0, clientCommandId: "troubled-wire-late" },
-        { schemaVersion: 2, type: "build-path", payload: { network: "pipe", points: [{ x: 14, y: 1 }, { x: 15, y: 1 }, { x: 15, y: 12 }] }, targetTick: 0, clientCommandId: "troubled-pipe-main" },
-        { schemaVersion: 2, type: "build-path", payload: { network: "pipe", points: [{ x: 15, y: 2 }, { x: 28, y: 2 }] }, targetTick: 0, clientCommandId: "troubled-pipe-early" },
-        { schemaVersion: 2, type: "build-path", payload: { network: "pipe", points: [{ x: 15, y: 7 }, { x: 28, y: 7 }] }, targetTick: 0, clientCommandId: "troubled-pipe-mid" },
-        { schemaVersion: 2, type: "build-path", payload: { network: "pipe", points: [{ x: 15, y: 12 }, { x: 28, y: 12 }] }, targetTick: 0, clientCommandId: "troubled-pipe-late" },
-        { schemaVersion: 2, type: "place-facility", payload: { kind: "station", x: 29, y: 5 }, targetTick: 0, clientCommandId: "troubled-station" },
-        { schemaVersion: 2, type: "place-facility", payload: { kind: "police", x: 29, y: 3 }, targetTick: 0, clientCommandId: "troubled-police" },
-        { schemaVersion: 2, type: "place-facility", payload: { kind: "fire", x: 29, y: 4 }, targetTick: 0, clientCommandId: "troubled-fire" },
-        { schemaVersion: 2, type: "set-policy", payload: { policy: "tax-rate", taxRate: 0 }, targetTick: 0, clientCommandId: "troubled-growth-tax" },
-        ...zoneCohortCommands("troubled-early-r", "residential", 3, 0),
-        ...zoneCohortCommands("troubled-early-c", "commercial", 4, 0),
-        ...zoneCohortCommands("troubled-early-i", "industrial", 5, 0),
-        ...zoneCohortCommands("troubled-mid-r", "residential", 8, 250),
-        ...zoneCohortCommands("troubled-mid-c", "commercial", 9, 250),
-        ...zoneCohortCommands("troubled-mid-i", "industrial", 10, 250),
-        ...zoneCohortCommands("troubled-late-r", "residential", 13, 500),
-        ...zoneCohortCommands("troubled-late-c", "commercial", 14, 500),
-        ...zoneCohortCommands("troubled-late-i", "industrial", 15, 500),
-        { schemaVersion: 2, type: "set-policy", payload: { policy: "tax-rate", taxRate: 20 }, targetTick: 540, clientCommandId: "troubled-tax" },
-        { schemaVersion: 2, type: "set-policy", payload: { policy: "funding", service: "police", level: 0 }, targetTick: 540, clientCommandId: "troubled-police-cut" },
-        { schemaVersion: 2, type: "set-policy", payload: { policy: "funding", service: "fire", level: 0 }, targetTick: 540, clientCommandId: "troubled-fire-cut" },
-        { schemaVersion: 2, type: "zone-area", payload: { zone: "residential", density: "high", x: 18, y: 11, width: 1, height: 1 }, targetTick: 570, clientCommandId: "troubled-construction-r" },
-        { schemaVersion: 2, type: "zone-area", payload: { zone: "commercial", density: "high", x: 22, y: 11, width: 1, height: 1 }, targetTick: 570, clientCommandId: "troubled-construction-c" },
-        { schemaVersion: 2, type: "zone-area", payload: { zone: "industrial", density: "high", x: 26, y: 11, width: 1, height: 1 }, targetTick: 570, clientCommandId: "troubled-construction-i" },
-        { schemaVersion: 2, type: "zone-area", payload: { zone: "residential", density: "high", x: 16, y: 11, width: 1, height: 1 }, targetTick: 595, clientCommandId: "troubled-foundation-r" },
-        { schemaVersion: 2, type: "zone-area", payload: { zone: "commercial", density: "high", x: 20, y: 11, width: 1, height: 1 }, targetTick: 595, clientCommandId: "troubled-foundation-c" },
-        { schemaVersion: 2, type: "zone-area", payload: { zone: "industrial", density: "high", x: 24, y: 11, width: 1, height: 1 }, targetTick: 595, clientCommandId: "troubled-foundation-i" },
+        placeCommand("troubled-coal", "coal", 41, 0),
+        placeCommand("troubled-water", "water-tower", 40, 5),
+        ...streetGrid("troubled", 16, 6, 4, 1),
+        pathCommand("troubled-mid", "road", [{ x: 16, y: 10 }, { x: 44, y: 10 }]),
+        pathCommand("troubled-north-street", "road", [{ x: 16, y: 6 }, { x: 16, y: 2 }, { x: 30, y: 2 }]),
+        pathCommand("troubled-wire-plant", "wire", [{ x: 41, y: 4 }, { x: 41, y: 5 }, { x: 44, y: 5 }, { x: 44, y: 6 }]),
+        pathCommand("troubled-pipe-tower", "pipe", [{ x: 40, y: 6 }, { x: 44, y: 6 }]),
+        ...blockZoneCommands("troubled-r1", "residential", "high", 17, 7),
+        ...blockZoneCommands("troubled-c1", "commercial", "high", 24, 7),
+        ...blockZoneCommands("troubled-r2", "residential", "high", 31, 7),
+        ...blockZoneCommands("troubled-i1", "industrial", "high", 38, 7),
+        // The north strip fronts the grid on its south side and a street
+        // on its north side; its middle row is a garden strip.
+        zoneCommand("troubled-r-north-a", "residential", "low", 17, 3, 12, 1),
+        zoneCommand("troubled-r-north-b", "residential", "low", 17, 5, 12, 1),
+        placeCommand("troubled-police", "police", 30, 4),
+        placeCommand("troubled-fire", "fire", 31, 4),
+        pathCommand("troubled-rail", "rail", [{ x: 17, y: 14 }, { x: 44, y: 14 }]),
+        placeCommand("troubled-station", "station", 45, 13),
+        // A second neighbourhood whose road never joins the town.
+        pathCommand("troubled-island-road", "road", [{ x: 34, y: 34 }, { x: 44, y: 34 }], 750),
+        pathCommand("troubled-island-wire", "wire", [{ x: 45, y: 7 }, { x: 47, y: 7 }, { x: 47, y: 35 }, { x: 44, y: 35 }], 750),
+        zoneCommand("troubled-island-r", "residential", "low", 34, 35, 10, 1, 750),
+        // A dense block past the end of the pipes.
+        pathCommand("troubled-dry-road", "road", [{ x: 44, y: 6 }, { x: 48, y: 6 }], 1500),
+        zoneCommand("troubled-dry-r", "residential", "high", 45, 7, 2, 4, 1500),
+        exampleCommand("troubled-police-cut", "set-policy", { policy: "funding", service: "police", level: 0 }, 3750),
+        exampleCommand("troubled-tax", "set-policy", { policy: "tax-rate", taxRate: 20 }, 3750),
+        zoneCommand("troubled-late-r", "residential", "high", 17, 0, 6, 2, 4375),
+        zoneCommand("troubled-late-c", "commercial", "high", 24, 0, 6, 2, 4375),
       ],
     }),
   });
@@ -386,7 +537,7 @@ window.AISystem6BonsaiSimLoaded = true;
   function makeEmptyBudget() {
     return { income: 0, taxes: { r: 0, c: 0, i: 0 }, ordinanceIncome: 0, ordinanceCost: 0,
       roads: 0, highways: 0, bridges: 0, rail: 0, subway: 0, tunnels: 0,
-      police: 0, fire: 0, health: 0, schools: 0, colleges: 0, bondInterest: 0, expense: 0 };
+      police: 0, fire: 0, health: 0, schools: 0, colleges: 0, recreation: 0, bondInterest: 0, expense: 0 };
   }
   function tileCount(state) { return state.size * state.size; }
   function indexOf(state, x, y) { return y * state.size + x; }
@@ -403,6 +554,8 @@ window.AISystem6BonsaiSimLoaded = true;
       // explicit XBLD-aligned tile id; 0 means "derive from sim state", so
       // imports can preserve buildings the sim does not simulate yet.
       catalogId: new Uint8Array(count), subway: new Uint8Array(count), waterLevel: new Uint8Array(count),
+      // v5: lot anchor + 1 on every cell of a lot (0 = no lot).
+      lot: new Uint16Array(count),
       salt: new Uint8Array(count), rotate: new Uint8Array(count), tunnel: new Uint8Array(count), waterKind: new Uint8Array(count),
       highway: new Uint8Array(count), onramp: new Uint8Array(count),
       // blaze: 0 none, 1..4 burning (age), 5 burns out to rubble, 6 flooded.
@@ -451,7 +604,11 @@ window.AISystem6BonsaiSimLoaded = true;
         const i = indexOf(state, x + dx, y + dy);
         if (!state.water[i] && Math.abs(state.alt[i] - base) <= 1) score += 1;
       }
-      if (score > best.score) best = { x, y, score };
+      // On wide plains many places score the same: the one nearest the
+      // middle of the map wins, so a new city does not start in a corner.
+      const middle = state.size / 2;
+      const ranked = score * 1000 - (Math.abs(x - middle) + Math.abs(y - middle));
+      if (ranked > best.score) best = { x, y, score: ranked };
     }
     return { x: best.x, y: best.y };
   }
@@ -466,8 +623,14 @@ window.AISystem6BonsaiSimLoaded = true;
       // The mountain preset raises a diagonal ridge over the same noise
       // field, so the map climbs toward its spine instead of rolling.
       const ridge = state.terrainPreset === "mountain"
-        ? Math.max(0, 12 - Math.abs(x + y - state.size) * 24 / state.size) + noise[i] * 8 : 0;
-      state.alt[i] = wet ? 0 : 1 + Math.min(MAX_ALT - 1, Math.floor(noise[i] * 6 + ridge));
+        ? Math.max(0, 16 - Math.abs(x + y - state.size) * 32 / state.size) + (smoothNoise(x, y, 1 / 16, state.seed + 323) - 0.5) * 4 : 0;
+      // SC2K ground (3.9): a wide base plain at altitude 2 with a few
+      // terraces one to three steps up, so most land is buildable as it
+      // lies. The mountain preset stacks its ridge in steps of two, which
+      // keeps broad benches between the climbs.
+      const plateau = smoothNoise(x, y, 1 / 22, state.seed + 303) * 0.7 + smoothNoise(x, y, 1 / 9, state.seed + 313) * 0.3;
+      const terrace = state.terrainPreset === "mountain" ? 0 : plateau > 0.8 ? 3 : plateau > 0.72 ? 2 : plateau > 0.64 ? 1 : 0;
+      state.alt[i] = wet ? 0 : Math.min(MAX_ALT - 1, 2 + terrace + Math.floor(Math.max(0, ridge) / 3) * 2);
       state.waterKind[i] = wet ? 1 : 0; state.salt[i] = wet && state.terrainPreset === "coast" ? 1 : 0;
     }
     for (let pass = 0; pass < 2; pass += 1) {
@@ -494,11 +657,19 @@ window.AISystem6BonsaiSimLoaded = true;
 
   function allocateDerived(state) {
     const count = tileCount(state);
-    for (const key of ["over", "powered", "watered", "roadOk", "railConnected", "railOk", "congested", "policeCovered", "fireCovered", "educationCovered", "healthCovered", "civicBonus", "landValue", "pollution", "crime", "fireRisk", "happiness", "problemCode", "lastProblemCode"]) state[key] = new Uint8Array(count);
+    for (const key of ["over", "powered", "watered", "roadOk", "portOk", "railConnected", "railOk", "subwayConnected", "congested", "policeCovered", "fireCovered",
+      "educationCovered", "healthCovered", "civicBonus", "landValue", "pollution", "crime", "fireRisk", "happiness", "problemCode", "lastProblemCode",
+      "policeStrength", "fireStrength", "accessDist", "waterDist", "parkNear", "busRelief", "routeKind"]) state[key] = new Uint8Array(count);
     state.traffic = new Uint16Array(count);
     for (const key of ["facilityAt", "plantAt", "serviceAt"]) { state[key] = new Int16Array(count); state[key].fill(-1); }
-    for (const key of ["buildingId", "buildingAnchor"]) { state[key] = new Int32Array(count); state[key].fill(-1); }
-    state.derivedDirty = true;
+    for (const key of ["buildingId", "buildingAnchor", "accessRoad"]) { state[key] = new Int32Array(count); state[key].fill(-1); }
+    // Distance fields cover three node layers: roads, rail, subway.
+    state.distJobs = new Uint16Array(count * 3); state.distJobs.fill(ROUTE_UNREACHED);
+    state.distHomes = new Uint16Array(count * 3); state.distHomes.fill(ROUTE_UNREACHED);
+    state.routeSources = { jobs: 0, homes: 0 };
+    state.cityCenter = { x: Math.floor(state.size / 2), y: Math.floor(state.size / 2) };
+    state.lotCounts = { total: 0, r: 0, c: 0, i: 0, working: 0, big: 0 };
+    state.dirty = DIRTY_ALL;
   }
 
   function createCity(options = {}) {
@@ -519,10 +690,11 @@ window.AISystem6BonsaiSimLoaded = true;
       founded: options.founded !== false,
       tick: 0, speed: 0, funds: START_FUNDS, taxRate: DEFAULT_TAX, taxRates: { r: DEFAULT_TAX, c: DEFAULT_TAX, i: DEFAULT_TAX },
       bonds: [], ordinances: makeOrdinanceState(), milestone: 0, wasBroke: false, brownout: false, waterShortage: false,
-      facilities: [], buildings: [], population: 0, jobs: 0, cJobs: 0, iJobs: 0, demand: { r: 55, c: 30, i: 35 }, economyIndex: 0,
-      railService: { stations: 0, connectedStations: 0, connectedRailTiles: 0, passengerCapacity: 0, freightCapacity: 0, roadTrafficRelief: 0, jobs: 0 },
-      subwayService: { stations: 0, connectedStations: 0, connectedSubwayTiles: 0, passengerCapacity: 0, roadTrafficRelief: 0, jobs: 0 },
+      facilities: [], buildings: [], population: 0, jobs: 0, cJobs: 0, iJobs: 0, demand: { r: 25, c: 0, i: 70 }, economyIndex: 0,
+      railService: { stations: 0, connectedStations: 0, connectedRailTiles: 0, passengerCapacity: 0, freightCapacity: 0, roadTrafficRelief: 0, jobs: 0, riders: 0 },
+      subwayService: { stations: 0, connectedStations: 0, connectedSubwayTiles: 0, passengerCapacity: 0, roadTrafficRelief: 0, jobs: 0, riders: 0 },
       busService: { depots: 0, capacity: 0, roadTrafficRelief: 0, jobs: 0 },
+      highwayService: { onramps: 0, connectedHighwayTiles: 0, roadTrafficRelief: 0 },
       things: [],
       funding: Object.fromEntries(FUNDING_SERVICES.map((service) => [service, 100])),
       budget: makeEmptyBudget(),
@@ -548,13 +720,16 @@ window.AISystem6BonsaiSimLoaded = true;
   }
 
   function syncCompatibility(state) {
-    for (let i = 0; i < tileCount(state); i += 1) {
-      state.over[i] = state.road[i] && state.wire[i] ? OVER_ROADWIRE : state.road[i] ? OVER_ROAD : state.wire[i] ? OVER_WIRE : state.park[i] ? OVER_PARK : OVER_NONE;
+    const road = state.road; const wire = state.wire; const park = state.park; const over = state.over;
+    for (let i = 0, n = tileCount(state); i < n; i += 1) {
+      over[i] = road[i] && wire[i] ? OVER_ROADWIRE : road[i] ? OVER_ROAD : wire[i] ? OVER_WIRE : park[i] ? OVER_PARK : OVER_NONE;
     }
     state.plants = state.facilities.filter((item) => PLANT_KINDS[item.kind]).map((item) => ({ kind: item.kind, x: item.x, y: item.y }));
     state.services = state.facilities.filter((item) => SERVICE_KINDS[item.kind]).map((item) => ({ kind: item.kind, x: item.x, y: item.y }));
   }
-  function markDerivedDirty(state) { state.derivedDirty = true; syncCompatibility(state); }
+  // Structural edits (and anything that cannot say what it touched) mark
+  // every derived system except the monthly environment.
+  function markDerivedDirty(state, flags = DIRTY_STRUCTURE) { state.dirty |= flags; syncCompatibility(state); }
 
   function rebuildFacilityLayers(state) {
     state.facilityAt.fill(-1); state.plantAt.fill(-1); state.serviceAt.fill(-1);
@@ -574,8 +749,24 @@ window.AISystem6BonsaiSimLoaded = true;
     }
   }
 
+  // Distance to the nearest water tile, capped at 4; recomputed only when
+  // the terrain changes. Land value reads it every month.
+  function recomputeWaterDistance(state) {
+    const size = state.size; const n = size * size; const water = state.water; const dist = state.waterDist;
+    dist.fill(255); const queue = new Int32Array(n); let tail = 0;
+    for (let i = 0; i < n; i += 1) if (water[i]) { dist[i] = 0; queue[tail++] = i; }
+    for (let head = 0; head < tail; head += 1) {
+      const i = queue[head]; const d = dist[i]; if (d >= 4) continue;
+      const x = i % size;
+      if (x > 0 && dist[i - 1] === 255) { dist[i - 1] = d + 1; queue[tail++] = i - 1; }
+      if (x < size - 1 && dist[i + 1] === 255) { dist[i + 1] = d + 1; queue[tail++] = i + 1; }
+      if (i >= size && dist[i - size] === 255) { dist[i - size] = d + 1; queue[tail++] = i - size; }
+      if (i + size < n && dist[i + size] === 255) { dist[i + size] = d + 1; queue[tail++] = i + size; }
+    }
+  }
+
   function recomputeRailService(state) {
-    state.railConnected.fill(0); state.railOk.fill(0);
+    state.railConnected.fill(0); state.railOk.fill(0); state.subwayConnected.fill(0);
     const stations = state.facilities.filter((facility) => facility.kind === "station");
     const queue = []; let connectedStations = 0;
     for (const station of stations) {
@@ -609,12 +800,13 @@ window.AISystem6BonsaiSimLoaded = true;
       freightCapacity: connectedStations * 60 + connectedRailTiles * 6,
       roadTrafficRelief: 0,
       jobs: connectedStations * 20,
+      riders: state.railService ? state.railService.riders || 0 : 0,
     };
 
     // Subway service: a station connects when it touches both a road and the
     // underground network; connected stations flood the subway layer.
     const subwayStations = state.facilities.filter((facility) => facility.kind === "subway-station");
-    const subwaySeen = new Uint8Array(tileCount(state));
+    const subwaySeen = state.subwayConnected;
     const subwayQueue = [];
     let connectedSubwayStations = 0;
     for (const station of subwayStations) {
@@ -643,28 +835,40 @@ window.AISystem6BonsaiSimLoaded = true;
       connectedStations: connectedSubwayStations,
       connectedSubwayTiles: subwayQueue.length,
       passengerCapacity: connectedSubwayStations * 90 + subwayQueue.length * 5,
-      roadTrafficRelief: connectedSubwayStations ? Math.min(40, connectedSubwayStations * 15 + Math.floor(subwayQueue.length / 2)) : 0,
+      roadTrafficRelief: 0,
       jobs: connectedSubwayStations * 8,
+      riders: state.subwayService ? state.subwayService.riders || 0 : 0,
     };
 
-    // Bus depots relieve road traffic when they can reach a road at all.
+    // A bus depot serves when it touches a road; each serving depot takes a
+    // quarter of the car trips off the roads within eight tiles (at most
+    // half, with two or more depots in reach).
     const depots = state.facilities.filter((facility) => facility.kind === "bus");
+    const relief = state.busRelief; relief.fill(0);
     let servingDepots = 0;
     for (const depot of depots) {
+      let serving = false;
       for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
-        if (inBounds(state, depot.x + dx, depot.y + dy) && state.road[indexOf(state, depot.x + dx, depot.y + dy)]) { servingDepots += 1; break; }
+        if (inBounds(state, depot.x + dx, depot.y + dy) && state.road[indexOf(state, depot.x + dx, depot.y + dy)]) { serving = true; break; }
+      }
+      if (!serving) continue;
+      servingDepots += 1;
+      for (let y = Math.max(0, depot.y - 8); y <= Math.min(state.size - 1, depot.y + 8); y += 1) {
+        for (let x = Math.max(0, depot.x - 8); x <= Math.min(state.size - 1, depot.x + 8); x += 1) {
+          const i = indexOf(state, x, y); if (relief[i] < 2) relief[i] += 1;
+        }
       }
     }
     state.busService = {
       depots: depots.length,
       capacity: servingDepots * 40,
-      roadTrafficRelief: Math.min(24, servingDepots * 8),
+      roadTrafficRelief: servingDepots ? 25 : 0,
       jobs: servingDepots * 5,
     };
 
     // Highways carry traffic only where onramps join them to the road
     // network: flood the highway layer from every onramp that touches both
-    // a road and a highway, then let relief follow the connected mileage.
+    // a road and a highway.
     const highwaySeen = new Uint8Array(tileCount(state));
     const highwayQueue = [];
     let connectedOnramps = 0;
@@ -689,44 +893,181 @@ window.AISystem6BonsaiSimLoaded = true;
         if (state.highway[ni] && !highwaySeen[ni]) { highwaySeen[ni] = 1; highwayQueue.push(ni); }
       }
     }
-    // A highway needs an entry and an exit before it carries anything.
+    // A highway needs an entrance and an exit before it carries anyone;
+    // roadTrafficRelief counts the commuter trips it took off the roads at
+    // the last routing pass.
     state.highwayService = {
       onramps: connectedOnramps,
       connectedHighwayTiles: highwayQueue.length,
-      roadTrafficRelief: connectedOnramps >= 2 ? Math.min(48, connectedOnramps * 6 + Math.floor(highwayQueue.length / 4)) : 0,
+      inService: connectedOnramps >= 2,
+      roadTrafficRelief: state.highwayService ? state.highwayService.roadTrafficRelief || 0 : 0,
     };
   }
 
-  function recomputeTraffic(state) {
-    recomputeRailService(state);
-    state.roadOk.fill(0); state.traffic.fill(0); state.congested.fill(0);
-    // Transit funding scales the relief a network can deliver; buses have
-    // no SC2K funding line and ride at full strength.
-    const railRelief = Math.floor((state.railService.connectedStations
-      ? Math.min(32, state.railService.connectedStations * 12 + Math.floor(state.railService.connectedRailTiles / 2))
-      : 0) * state.funding.rail / 100)
-      + Math.floor(state.subwayService.roadTrafficRelief * state.funding.subway / 100)
-      + Math.floor(state.highwayService.roadTrafficRelief * state.funding.highways / 100)
-      + state.busService.roadTrafficRelief;
-    let totalRelief = 0;
-    for (let y = 0; y < state.size; y += 1) for (let x = 0; x < state.size; x += 1) {
-      const i = indexOf(state, x, y); if (!state.road[i]) continue; paintReach(state, state.roadOk, x, y, ROAD_REACH); let pressure = 0;
-      for (let dy = -ROAD_REACH; dy <= ROAD_REACH; dy += 1) {
-        const span = ROAD_REACH - Math.abs(dy);
-        for (let dx = -span; dx <= span; dx += 1) {
-          const nx = x + dx; const ny = y + dy; if (!inBounds(state, nx, ny)) continue; const ni = indexOf(state, nx, ny);
-          if (state.zone[ni]) pressure += state.stage[ni] * (state.density[ni] === DENSITY_HIGH ? 4 : 2);
+  // Road access: a four-way breadth-first search out of every street tile
+  // (road, bridge, onramp), PORT_REACH steps deep. A highway is no way in to
+  // a building, as in SC2K: traffic reaches it from the streets through an
+  // onramp. accessRoad names the nearest street tile within ROAD_REACH (the
+  // lot rule); -1 means none. portOk marks tiles within PORT_REACH.
+  function recomputeAccess(state) {
+    const size = state.size; const n = size * size;
+    const road = state.road; const onramp = state.onramp;
+    const access = state.accessRoad; const dist = state.accessDist; const roadOk = state.roadOk;
+    access.fill(-1); dist.fill(255);
+    const queue = new Int32Array(n); let tail = 0;
+    for (let i = 0; i < n; i += 1) if (road[i] || onramp[i]) { access[i] = i; dist[i] = 0; queue[tail++] = i; }
+    for (let head = 0; head < tail; head += 1) {
+      const i = queue[head]; const d = dist[i]; if (d >= PORT_REACH) continue;
+      const x = i % size; const from = access[i];
+      if (x > 0 && dist[i - 1] === 255) { dist[i - 1] = d + 1; access[i - 1] = from; queue[tail++] = i - 1; }
+      if (x < size - 1 && dist[i + 1] === 255) { dist[i + 1] = d + 1; access[i + 1] = from; queue[tail++] = i + 1; }
+      if (i >= size && dist[i - size] === 255) { dist[i - size] = d + 1; access[i - size] = from; queue[tail++] = i - size; }
+      if (i + size < n && dist[i + size] === 255) { dist[i + size] = d + 1; access[i + size] = from; queue[tail++] = i + size; }
+    }
+    const portOk = state.portOk;
+    for (let i = 0; i < n; i += 1) {
+      portOk[i] = access[i] >= 0 ? 1 : 0;
+      if (dist[i] > ROAD_REACH) { access[i] = -1; dist[i] = 255; }
+      roadOk[i] = access[i] >= 0 ? 1 : 0;
+    }
+  }
+
+  // --- Commuting -------------------------------------------------------------
+  // The commute graph has three node layers over the map: roads (with train
+  // and subway stations as connectors), rail, and subway. Roads join onramps,
+  // onramps join highways; a train station joins road and rail, a subway
+  // station joins road and subway. Only rail and subway reached from a
+  // working station carry anyone.
+  const RK_ROAD = 1; const RK_HIGHWAY = 2; const RK_ONRAMP = 3; const RK_STATION = 4; const RK_SUBWAY_STATION = 5;
+  function routeLinks(a, b) {
+    if (a === RK_ROAD) return b === RK_ROAD || b === RK_ONRAMP || b === RK_STATION || b === RK_SUBWAY_STATION;
+    if (a === RK_ONRAMP) return b === RK_ROAD || b === RK_ONRAMP || b === RK_HIGHWAY;
+    if (a === RK_HIGHWAY) return b === RK_HIGHWAY || b === RK_ONRAMP;
+    if (a === RK_STATION) return b === RK_ROAD || b === RK_STATION;
+    if (a === RK_SUBWAY_STATION) return b === RK_ROAD;
+    return false;
+  }
+  function routeGraph(state) {
+    return { size: state.size, n: state.size * state.size, kinds: state.routeKind, rail: state.railConnected,
+      subway: state.subwayConnected, congested: state.congested, out: new Int32Array(8) };
+  }
+  function routeNeighbors(graph, node) {
+    const { size, n, kinds, rail, subway, out } = graph;
+    const layer = node < n ? 0 : node < 2 * n ? 1 : 2; const i = node - layer * n; const x = i % size;
+    let k = 0;
+    for (let d = 0; d < 4; d += 1) {
+      let ni;
+      if (d === 0) { if (i < size) continue; ni = i - size; }
+      else if (d === 1) { if (x === size - 1) continue; ni = i + 1; }
+      else if (d === 2) { if (i + size >= n) continue; ni = i + size; }
+      else { if (x === 0) continue; ni = i - 1; }
+      if (layer === 0) {
+        const a = kinds[i]; const b = kinds[ni];
+        if (b && routeLinks(a, b)) out[k++] = ni;
+        if (a === RK_STATION && rail[ni]) out[k++] = n + ni;
+        if (a === RK_SUBWAY_STATION && subway[ni]) out[k++] = 2 * n + ni;
+      } else if (layer === 1) {
+        if (rail[ni]) out[k++] = n + ni;
+        if (kinds[ni] === RK_STATION) out[k++] = ni;
+      } else {
+        if (subway[ni]) out[k++] = 2 * n + ni;
+        if (kinds[ni] === RK_SUBWAY_STATION) out[k++] = ni;
+      }
+    }
+    if (layer === 0 && kinds[i] === RK_SUBWAY_STATION && subway[i]) out[k++] = 2 * n + i;
+    if (layer === 2 && kinds[i] === RK_SUBWAY_STATION) out[k++] = i;
+    return k;
+  }
+  function routeCost(graph, node) {
+    const n = graph.n;
+    if (node >= n) return node >= 2 * n ? ROUTE_COST.subway : ROUTE_COST.rail;
+    const kind = graph.kinds[node];
+    if (kind === RK_ROAD) return graph.congested[node] ? ROUTE_COST.congested : ROUTE_COST.road;
+    if (kind === RK_HIGHWAY) return ROUTE_COST.highway;
+    if (kind === RK_ONRAMP) return ROUTE_COST.onramp;
+    return ROUTE_COST.station;
+  }
+  // Dial's bucket-queue Dijkstra from every source node at distance 0.
+  function routeField(graph, dist, sources) {
+    dist.fill(ROUTE_UNREACHED);
+    const buckets = [];
+    for (const node of sources) if (dist[node] !== 0) { dist[node] = 0; (buckets[0] ||= []).push(node); }
+    for (let d = 0; d < buckets.length; d += 1) {
+      const list = buckets[d]; if (!list) continue; buckets[d] = null;
+      for (let q = 0; q < list.length; q += 1) {
+        const node = list[q]; if (dist[node] !== d) continue;
+        const count = routeNeighbors(graph, node);
+        for (let k = 0; k < count; k += 1) {
+          const next = graph.out[k]; const nd = d + routeCost(graph, next);
+          if (nd < dist[next] && nd <= ROUTE_MAX) { dist[next] = nd; (buckets[nd] ||= []).push(next); }
         }
       }
-      const appliedRelief = Math.min(pressure, railRelief);
-      totalRelief += appliedRelief;
-      state.traffic[i] = Math.min(65535, pressure - appliedRelief);
     }
-    for (let y = 0; y < state.size; y += 1) for (let x = 0; x < state.size; x += 1) {
-      const i = indexOf(state, x, y);
-      if (state.road[i] && state.traffic[i] >= CONGESTION_THRESHOLD) { state.congested[i] = 1; paintReach(state, state.congested, x, y, ROAD_REACH); }
+  }
+  const lotOccupied = (buildingState) => buildingState === BUILDING_ACTIVE || buildingState === BUILDING_RECOVERING || buildingState === BUILDING_DECLINING;
+  function commuteOk(state, zone, access) {
+    if (access < 0) return false;
+    if (zone === ZONE_R) return !state.routeSources.jobs || state.distJobs[access] <= COMMUTE_LIMIT;
+    return !state.routeSources.homes || state.distHomes[access] <= COMMUTE_LIMIT;
+  }
+  // Two distance fields (to working C/I lots, to working homes) and the
+  // commuter flow: every occupied home lot sends residents/20 trips down the
+  // job field's gradient; each road tile counts the trips that cross it.
+  function recomputeRoutes(state) {
+    const size = state.size; const n = size * size; const kinds = state.routeKind;
+    const road = state.road; const highway = state.highway; const onramp = state.onramp;
+    kinds.fill(0);
+    for (let i = 0; i < n; i += 1) kinds[i] = road[i] ? RK_ROAD : onramp[i] ? RK_ONRAMP : highway[i] ? RK_HIGHWAY : 0;
+    for (const facility of state.facilities) {
+      const kind = facility.kind === "station" ? RK_STATION : facility.kind === "subway-station" ? RK_SUBWAY_STATION : 0;
+      if (!kind) continue;
+      const fp = footprintOf(facility);
+      for (let dy = 0; dy < fp.h; dy += 1) for (let dx = 0; dx < fp.w; dx += 1) {
+        if (inBounds(state, facility.x + dx, facility.y + dy)) kinds[indexOf(state, facility.x + dx, facility.y + dy)] = kind;
+      }
     }
-    state.railService.roadTrafficRelief = totalRelief;
+    const jobs = []; const homes = [];
+    for (const building of state.buildings) {
+      if (!lotOccupied(building.state) || building.access < 0) continue;
+      if (building.zone === ZONE_R) homes.push(building.access); else jobs.push(building.access);
+    }
+    state.routeSources = { jobs: jobs.length, homes: homes.length };
+    const graph = routeGraph(state);
+    routeField(graph, state.distJobs, jobs);
+    routeField(graph, state.distHomes, homes);
+    const traffic = state.traffic; const congested = state.congested; const dist = state.distJobs;
+    traffic.fill(0); congested.fill(0);
+    let railRiders = 0; let subwayRiders = 0; let highwayTrips = 0;
+    if (jobs.length) for (const building of state.buildings) {
+      if (building.zone !== ZONE_R || !lotOccupied(building.state) || building.access < 0 || building.population <= 0) continue;
+      let node = building.access; if (dist[node] >= ROUTE_UNREACHED) continue;
+      const trips = Math.max(1, Math.round(building.population * TRIPS_PER_RESIDENT));
+      let usedHighway = false; let usedRail = false; let usedSubway = false;
+      for (let guard = 0; guard < 4096; guard += 1) {
+        if (node < n) {
+          const kind = kinds[node];
+          if (kind !== RK_STATION && kind !== RK_SUBWAY_STATION) traffic[node] = Math.min(65535, traffic[node] + trips);
+          if (kind === RK_HIGHWAY) usedHighway = true;
+        } else if (node < 2 * n) usedRail = true; else usedSubway = true;
+        const here = dist[node]; if (!here) break;
+        const count = routeNeighbors(graph, node); let best = -1; let bestDist = here;
+        for (let k = 0; k < count; k += 1) { const next = graph.out[k]; if (dist[next] < bestDist) { bestDist = dist[next]; best = next; } }
+        if (best < 0) break; node = best;
+      }
+      if (usedHighway) highwayTrips += trips;
+      if (usedRail) railRiders += trips;
+      if (usedSubway) subwayRiders += trips;
+    }
+    const relief = state.busRelief;
+    for (let i = 0; i < n; i += 1) {
+      if (!traffic[i]) continue;
+      if (relief[i]) traffic[i] = Math.floor(traffic[i] * (1 - 0.25 * Math.min(2, relief[i])));
+      const capacity = kinds[i] === RK_HIGHWAY ? HIGHWAY_CAPACITY : CONGESTION_THRESHOLD;
+      if (traffic[i] > capacity) congested[i] = 1;
+    }
+    state.railService = { ...state.railService, riders: railRiders, roadTrafficRelief: railRiders };
+    state.subwayService = { ...state.subwayService, riders: subwayRiders, roadTrafficRelief: subwayRiders };
+    state.highwayService = { ...state.highwayService, roadTrafficRelief: highwayTrips };
   }
 
   function recomputeUtility(state, kind) {
@@ -735,18 +1076,19 @@ window.AISystem6BonsaiSimLoaded = true;
     const desalinated = state.facilities.some((item) => FACILITY_KINDS[item.kind].desalinates);
     state.facilities.forEach((facility) => {
       const spec = FACILITY_KINDS[facility.kind]; let amount = kind === "power" ? (spec.power || 0) : (spec.water || 0); if (!amount) return;
-      if (kind === "water" && facility.kind === "pump") {
-        // A pump on salt water alone produces nothing until desalination.
-        let usable = false;
+      if (kind === "water" && spec.perShore) {
+        // A pump draws from each fresh-water tile it touches; salt water
+        // counts only once the city runs a desalination plant.
+        let shores = 0;
         for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
           if (!inBounds(state, facility.x + dx, facility.y + dy)) continue;
           const ni = indexOf(state, facility.x + dx, facility.y + dy);
-          if (state.water[ni] && (!state.salt[ni] || desalinated)) usable = true;
+          if (state.water[ni] && (!state.salt[ni] || desalinated)) shores += 1;
         }
-        if (!usable) amount = 0;
+        amount *= shores;
       }
       if (!amount) return;
-      capacity += amount + (facility.kind === "wind" ? state.alt[indexOf(state, facility.x, facility.y)] * 2 : 0);
+      capacity += (amount + (facility.kind === "wind" ? state.alt[indexOf(state, facility.x, facility.y)] * 2 : 0)) * (kind === "power" ? POWER_UNITS_PER_MW : 1);
       const footprint = footprintOf(facility);
       for (let dy = 0; dy < footprint.h; dy += 1) for (let dx = 0; dx < footprint.w; dx += 1) {
         const i = indexOf(state, facility.x + dx, facility.y + dy); if (!seen[i]) { seen[i] = 1; queue.push(i); }
@@ -756,32 +1098,22 @@ window.AISystem6BonsaiSimLoaded = true;
     // lands before allocation so the meter and the served tiles agree.
     if (kind === "power" && ordinanceOn(state, "energyConservation")) capacity = Math.floor(capacity * 10 / 9);
     if (kind === "water" && ordinanceOn(state, "waterConservation")) capacity = Math.floor(capacity * 10 / 9);
-    const conducts = (i) => !!network[i] || state.zone[i] !== ZONE_NONE || state.facilityAt[i] >= 0; const reached = [];
+    const zone = state.zone; const density = state.density; const facilityAt = state.facilityAt; const size = state.size;
+    const conducts = (i) => !!network[i] || zone[i] !== ZONE_NONE || facilityAt[i] >= 0; const reached = [];
     for (let head = 0; head < queue.length; head += 1) {
-      const i = queue[head]; reached.push(i); const { x, y } = xyOf(state, i);
+      const i = queue[head]; reached.push(i); const x = i % size; const y = (i - x) / size;
       for (const [nx, ny] of [[x, y - 1], [x + 1, y], [x, y + 1], [x - 1, y]]) {
-        if (!inBounds(state, nx, ny)) continue; const ni = indexOf(state, nx, ny);
+        if (!inBounds(state, nx, ny)) continue; const ni = ny * size + nx;
         if (!seen[ni] && conducts(ni)) { seen[ni] = 1; queue.push(ni); }
       }
     }
-    // A block that went dark for want of supply keeps its place in the queue.
-    // Letting its draw fall to zero cleared the very shortage that emptied it,
-    // so it rebuilt, failed again, and the neighbourhood cycled forever
-    // instead of growing. The reservation is exactly what it draws once it
-    // comes back at stage 1, so restoring it cannot re-open the shortage.
-    const unitDraw = (i) => (state.density[i] === DENSITY_HIGH ? 2 : 1);
-    const draw = (i) => {
-      if (!state.zone[i]) return 0;
-      if (state.stage[i]) return state.stage[i] * unitDraw(i);
-      const building = state.buildingState[i];
-      return building === BUILDING_ABANDONED || building === BUILDING_DECLINING ? unitDraw(i) : 0;
-    };
-    // The grid is handed out against what each plot will draw once it stands.
-    // Empty land that needs nothing used to read as connected even on a full
-    // grid, so a saturated city kept starting blocks it could never carry and
-    // they died the day they opened. The meter reports the same figure it
+    // The grid is handed out against what each zoned tile will draw once
+    // its lot stands (one unit a tile, light or dense), whether or not it has
+    // grown yet. A saturated grid therefore refuses new blocks up front
+    // instead of starting lots it cannot carry, and a lot changing state
+    // never reshuffles who is lit. The meter reports the same figure it
     // allocates, so "supply 90 / demand 120" and the dark plots agree.
-    const need = (i) => (state.zone[i] ? Math.max(draw(i), unitDraw(i)) : draw(i));
+    const need = (i) => (zone[i] ? 1 : 0);
     let demand = 0; for (const i of reached) demand += need(i);
     let served = 0;
     for (const i of reached) {
@@ -792,12 +1124,40 @@ window.AISystem6BonsaiSimLoaded = true;
     else { state.waterCapacity = capacity; state.waterDemand = demand; state.waterShortage = demand > capacity; }
   }
 
-  function recomputeCoverageAndRisks(state) {
-    state.policeCovered.fill(0); state.fireCovered.fill(0); state.educationCovered.fill(0); state.healthCovered.fill(0); state.civicBonus.fill(0); state.pollution.fill(0);
-    const coverage = { police: state.policeCovered, fire: state.fireCovered, school: state.educationCovered, clinic: state.healthCovered };
-    state.facilities.forEach((facility) => {
-      const spec = FACILITY_KINDS[facility.kind];
-      if (coverage[facility.kind]) paintReach(state, coverage[facility.kind], facility.x, facility.y, Math.max(0, Math.round(spec.radius * state.funding[spec.group] / 100)));
+  // Service reach and civic land-value bonuses, recomputed when a facility
+  // or a funding level changes. Police and fire strength fade linearly to
+  // nothing at the station's radius and scale with funding.
+  function recomputeCoverage(state) {
+    const size = state.size;
+    for (const key of ["policeStrength", "fireStrength", "policeCovered", "fireCovered", "educationCovered", "healthCovered", "civicBonus", "parkNear"]) state[key].fill(0);
+    const police = state.policeStrength; const fire = state.fireStrength;
+    const stamp = (target, facility, radius, funding) => {
+      const fp = footprintOf(facility); const cx = facility.x + (fp.w - 1) / 2; const cy = facility.y + (fp.h - 1) / 2;
+      const r = Math.max(0, radius);
+      for (let y = Math.max(0, Math.floor(cy - r)); y <= Math.min(size - 1, Math.ceil(cy + r)); y += 1) {
+        for (let x = Math.max(0, Math.floor(cx - r)); x <= Math.min(size - 1, Math.ceil(cx + r)); x += 1) {
+          const d = Math.hypot(x - cx, y - cy); if (d > r) continue;
+          const strength = Math.round(100 * funding * Math.max(0, 1 - d / (r + 1)));
+          const i = y * size + x; if (strength > target[i]) target[i] = strength;
+        }
+      }
+    };
+    const paintNear = (target, facility, reach) => {
+      const fp = footprintOf(facility);
+      for (let y = Math.max(0, facility.y - reach); y <= Math.min(size - 1, facility.y + fp.h - 1 + reach); y += 1) {
+        for (let x = Math.max(0, facility.x - reach); x <= Math.min(size - 1, facility.x + fp.w - 1 + reach); x += 1) target[y * size + x] = 1;
+      }
+    };
+    for (const facility of state.facilities) {
+      const spec = FACILITY_KINDS[facility.kind]; if (!spec) continue;
+      const funding = spec.group && state.funding[spec.group] != null ? state.funding[spec.group] / 100 : 1;
+      if (facility.kind === "police") stamp(police, facility, spec.radius, funding);
+      else if (facility.kind === "fire") stamp(fire, facility, spec.radius, funding);
+      else if (facility.kind === "school" || facility.kind === "library" || facility.kind === "university" || facility.kind === "museum") {
+        const fp = footprintOf(facility); paintReach(state, state.educationCovered, facility.x + (fp.w >> 1), facility.y + (fp.h >> 1), Math.round(spec.radius * funding));
+      } else if (facility.kind === "clinic" || facility.kind === "hospital") {
+        const fp = footprintOf(facility); paintReach(state, state.healthCovered, facility.x + (fp.w >> 1), facility.y + (fp.h >> 1), Math.round(spec.radius * funding));
+      }
       if (spec.valueBonus) {
         for (let dy = -spec.radius; dy <= spec.radius; dy += 1) {
           const span = spec.radius - Math.abs(dy);
@@ -808,58 +1168,201 @@ window.AISystem6BonsaiSimLoaded = true;
           }
         }
       }
-      if (spec.pollution) for (let dy = -5; dy <= 5; dy += 1) for (let dx = -5; dx <= 5; dx += 1) {
-        const distance = Math.abs(dx) + Math.abs(dy); if (distance > 5 || !inBounds(state, facility.x + dx, facility.y + dy)) continue;
-        const i = indexOf(state, facility.x + dx, facility.y + dy); state.pollution[i] = Math.min(255, state.pollution[i] + Math.max(0, spec.pollution - distance * 10));
-      }
-    });
-    // Ordinance effects live at the same hooks the base rates use.
-    const industryPollution = ordinanceOn(state, "pollutionControls") ? 24 : 28;
-    const crimeShift = (ordinanceOn(state, "legalizedGambling") ? 5 : 0)
-      - (ordinanceOn(state, "antiDrug") ? 8 : 0) - (ordinanceOn(state, "neighborhoodWatch") ? 6 : 0);
-    const happinessShift = (ordinanceOn(state, "annualCarnival") ? 2 : 0) + (ordinanceOn(state, "juniorSports") ? 2 : 0);
-    for (let i = 0; i < tileCount(state); i += 1) {
-      if (state.zone[i] === ZONE_I && state.stage[i]) state.pollution[i] = Math.min(255, state.pollution[i] + state.stage[i] * industryPollution);
-      const activity = state.stage[i] * (state.density[i] === DENSITY_HIGH ? 8 : 4);
-      state.crime[i] = Math.max(0, Math.min(255, 18 + crimeShift + activity + (state.congested[i] ? 15 : 0) - (state.policeCovered[i] ? 32 : 0)));
-      state.fireRisk[i] = Math.max(0, Math.min(255, 8 + activity + Math.floor(state.pollution[i] / 5) - (state.fireCovered[i] ? 30 : 0)));
-      state.landValue[i] = Math.max(0, Math.min(255, 25 + state.civicBonus[i] + (state.roadOk[i] ? 12 : 0) + (state.railOk[i] ? 10 : 0) + (state.powered[i] ? 8 : 0) + (state.watered[i] ? 8 : 0)
-        + (state.park[i] ? 25 : 0) + (state.educationCovered[i] ? 8 : 0) + (state.healthCovered[i] ? 8 : 0) - Math.floor(state.pollution[i] / 3) - (state.congested[i] ? 20 : 0)));
-      state.happiness[i] = Math.max(0, Math.min(100, 58 + happinessShift + Math.floor(state.landValue[i] / 8) - Math.floor(state.crime[i] / 6)
-        - Math.floor(state.fireRisk[i] / 8) - Math.floor(state.pollution[i] / 7) - Math.max(0, state.taxRate - DEFAULT_TAX) * 3));
+      if (spec.park) paintNear(state.parkNear, facility, 2);
+    }
+    for (let i = 0, n = size * size; i < n; i += 1) {
+      state.policeCovered[i] = police[i] > 0 ? 1 : 0; state.fireCovered[i] = fire[i] > 0 ? 1 : 0;
+      if (!state.park[i]) continue;
+      const x = i % size; const y = (i - x) / size;
+      for (let yy = Math.max(0, y - 2); yy <= Math.min(size - 1, y + 2); yy += 1) for (let xx = Math.max(0, x - 2); xx <= Math.min(size - 1, x + 2); xx += 1) state.parkNear[yy * size + xx] = 1;
     }
   }
 
-  function canGroupBuilding(state, x, y, side, zone, stage) {
-    if (x + side > state.size || y + side > state.size) return false;
-    for (let dy = 0; dy < side; dy += 1) for (let dx = 0; dx < side; dx += 1) {
-      const i = indexOf(state, x + dx, y + dy);
-      if (state.buildingId[i] >= 0 || state.zone[i] !== zone || state.density[i] !== DENSITY_HIGH || state.stage[i] < stage || state.buildingState[i] !== BUILDING_ACTIVE) return false;
-    }
-    return true;
-  }
-  function rebuildBuildingsAndCounts(state) {
-    state.buildingId.fill(-1); state.buildingAnchor.fill(-1); state.buildings = []; let population = 0; let cJobs = 0; let iJobs = 0;
-    for (let y = 0; y < state.size; y += 1) for (let x = 0; x < state.size; x += 1) {
-      const i = indexOf(state, x, y);
-      if (!state.zone[i] || !state.stage[i] || state.buildingState[i] === BUILDING_ABANDONED || state.buildingId[i] >= 0) continue;
-      let side = 1;
-      if (state.stage[i] >= 3 && canGroupBuilding(state, x, y, 3, state.zone[i], 3)) side = 3;
-      else if (state.stage[i] >= 2 && canGroupBuilding(state, x, y, 2, state.zone[i], 2)) side = 2;
-      const id = state.buildings.length; const anchor = indexOf(state, x, y); let minStage = state.stage[i];
-      for (let dy = 0; dy < side; dy += 1) for (let dx = 0; dx < side; dx += 1) {
-        const ti = indexOf(state, x + dx, y + dy); state.buildingId[ti] = id; state.buildingAnchor[ti] = anchor; minStage = Math.min(minStage, state.stage[ti]);
+  // The sum of `values` over the (2r+1)-square around every cell, clipped at
+  // the map edge: two one-dimensional running sums instead of a nested loop.
+  function boxSum(size, values, r) {
+    const n = size * size; const rows = new Float32Array(n); const out = new Float32Array(n);
+    for (let y = 0; y < size; y += 1) {
+      const base = y * size; let acc = 0;
+      for (let x = 0; x <= Math.min(size - 1, r); x += 1) acc += values[base + x];
+      for (let x = 0; x < size; x += 1) {
+        rows[base + x] = acc;
+        const add = x + r + 1; const drop = x - r;
+        if (add < size) acc += values[base + add];
+        if (drop >= 0) acc -= values[base + drop];
       }
-      state.buildings.push({ id, x, y, w: side, h: side, zone: state.zone[i], stage: minStage, state: state.buildingState[i], variant: state.variant[i] });
-      const cells = side * side; const densityFactor = state.density[i] === DENSITY_HIGH ? 2 : 1;
-      if (state.zone[i] === ZONE_R) population += cells * minStage * 8 * densityFactor;
-      else if (state.zone[i] === ZONE_C) cJobs += cells * minStage * 6 * densityFactor;
-      else iJobs += cells * minStage * 8 * densityFactor;
     }
+    for (let x = 0; x < size; x += 1) {
+      let acc = 0;
+      for (let y = 0; y <= Math.min(size - 1, r); y += 1) acc += rows[y * size + x];
+      for (let y = 0; y < size; y += 1) {
+        out[y * size + x] = acc;
+        const add = y + r + 1; const drop = y - r;
+        if (add < size) acc += rows[add * size + x];
+        if (drop >= 0) acc -= rows[drop * size + x];
+      }
+    }
+    return out;
+  }
+
+  // Residents (R) or jobs (C, I) per cell of each occupied lot.
+  function lotDensityLayer(state) {
+    const size = state.size; const out = new Float32Array(size * size);
+    for (const building of state.buildings) {
+      const load = building.zone === ZONE_R ? building.population : building.jobs; if (!load) continue;
+      const perCell = load / (building.w * building.h);
+      for (let dy = 0; dy < building.h; dy += 1) for (let dx = 0; dx < building.w; dx += 1) out[(building.y + dy) * size + building.x + dx] = perCell;
+    }
+    return out;
+  }
+
+  // The monthly environment (3.4): pollution spreads from industry, plants,
+  // traffic and ports; land value rewards height, water, trees, parks,
+  // services and (for shops) the town centre; crime follows density, cheap
+  // land and unemployment, pushed back by police. Order matters: pollution,
+  // then land value (reading last month's crime), then crime.
+  function recomputeEnvironment(state) {
+    const size = state.size; const n = size * size;
+    const zone = state.zone; const density = state.density; const lot = state.lot; const buildingState = state.buildingState;
+    const water = state.water; const alt = state.alt; const tree = state.tree; const park = state.park;
+    const pollution = state.pollution; const landValue = state.landValue; const crime = state.crime;
+    const traffic = state.traffic; const kinds = state.routeKind; const accessRoad = state.accessRoad; const congested = state.congested;
+    // Pollution sources.
+    let field = new Float32Array(n);
+    const industry = ordinanceOn(state, "pollutionControls") ? 0.7 : 1;
+    for (let i = 0; i < n; i += 1) {
+      const z = zone[i];
+      if (z === ZONE_I && lot[i] && lotOccupied(buildingState[i])) field[i] += (density[i] === DENSITY_HIGH ? 35 : 20) * industry;
+      else if (z === ZONE_SEAPORT || z === ZONE_AIRPORT) field[i] += 15;
+      if (traffic[i] && kinds[i]) field[i] += Math.min(60, traffic[i] / 4);
+    }
+    for (const facility of state.facilities) {
+      const spec = FACILITY_KINDS[facility.kind]; if (!spec || !spec.pollution) continue;
+      const fp = footprintOf(facility);
+      for (let dy = 0; dy < fp.h; dy += 1) for (let dx = 0; dx < fp.w; dx += 1) if (inBounds(state, facility.x + dx, facility.y + dy)) field[indexOf(state, facility.x + dx, facility.y + dy)] += spec.pollution;
+    }
+    for (let pass = 0; pass < 2; pass += 1) {
+      const next = new Float32Array(n);
+      for (let i = 0; i < n; i += 1) {
+        const x = i % size;
+        const sum = field[i] + (x > 0 ? field[i - 1] : 0) + (x < size - 1 ? field[i + 1] : 0) + (i >= size ? field[i - size] : 0) + (i + size < n ? field[i + size] : 0);
+        next[i] = 0.9 * sum / 5;
+      }
+      field = next;
+    }
+    for (let i = 0; i < n; i += 1) {
+      let value = field[i];
+      const facility = state.facilityAt[i] >= 0 ? state.facilities[state.facilityAt[i]] : null;
+      if (tree[i] || park[i] || (facility && FACILITY_KINDS[facility.kind]?.park)) value -= 10;
+      pollution[i] = water[i] ? 0 : Math.max(0, Math.min(255, Math.round(value)));
+    }
+    // Land value.
+    const lotDensity = lotDensityLayer(state);
+    const center = state.cityCenter;
+    const waterDist = state.waterDist; const parkNear = state.parkNear; const civic = state.civicBonus;
+    const raw = new Float32Array(n);
+    const trees5 = boxSum(size, tree, 2);
+    for (let i = 0; i < n; i += 1) {
+      if (water[i]) continue;
+      const x = i % size; const y = (i - x) / size;
+      const trees = trees5[i];
+      const wd = waterDist[i];
+      let value = 40 + Math.min(20, 2 * alt[i]) + (wd === 1 ? 25 : wd === 2 ? 18 : wd === 3 ? 10 : 0) + Math.min(10, 2 * trees)
+        + (parkNear[i] ? 15 : 0) + civic[i]
+        + (state.policeCovered[i] ? 5 : 0) + (state.fireCovered[i] ? 5 : 0) + (state.educationCovered[i] ? 5 : 0) + (state.healthCovered[i] ? 5 : 0)
+        - pollution[i] / 2 - crime[i] / 3;
+      if (zone[i] === ZONE_C) { const dx = x - center.x; const dy = y - center.y; value += Math.max(0, 20 - Math.sqrt(dx * dx + dy * dy) / 3); }
+      if (zone[i] === ZONE_R && accessRoad[i] >= 0 && congested[accessRoad[i]]) value -= 10;
+      raw[i] = value;
+    }
+    // 3x3 smoothing over land only: the mean of the dry neighbours.
+    const land = new Float32Array(n);
+    for (let i = 0; i < n; i += 1) land[i] = water[i] ? 0 : 1;
+    const sums = boxSum(size, raw, 1); const counts = boxSum(size, land, 1);
+    for (let i = 0; i < n; i += 1) {
+      landValue[i] = water[i] ? 0 : Math.max(0, Math.min(255, Math.round(sums[i] / counts[i])));
+    }
+    state.towerLine = null;
+    // Crime.
+    const workforce = Math.max(1, Math.floor(state.population * state.workforcePercent / 100));
+    const unemploymentRate = Math.min(1, state.unemployed / workforce);
+    const crimeShift = (ordinanceOn(state, "legalizedGambling") ? 5 : 0)
+      - (ordinanceOn(state, "antiDrug") ? 8 : 0) - (ordinanceOn(state, "neighborhoodWatch") ? 6 : 0);
+    let prisonCapacity = 0;
+    for (const facility of state.facilities) if (facility.kind === "prison") prisonCapacity += FACILITY_KINDS.prison.capacity * state.funding.police / 100;
+    const inmates = Math.max(1, state.population / 40);
+    const prisonRelief = prisonCapacity ? Math.min(30, 30 * prisonCapacity / inmates) : 0;
+    const police = state.policeStrength;
+    for (let i = 0; i < n; i += 1) {
+      const z = zone[i];
+      if (z < ZONE_R || z > ZONE_I) { crime[i] = 0; continue; }
+      const value = lotDensity[i] / 8 + (255 - landValue[i]) / 6 + unemploymentRate * 40 - police[i] + crimeShift - prisonRelief;
+      crime[i] = Math.max(0, Math.min(255, Math.round(value)));
+    }
+  }
+
+  // Fire risk and happiness follow from the environment, coverage and lots;
+  // cheap, so they refresh whenever any of those changes.
+  function recomputeWellbeing(state) {
+    const n = tileCount(state); const lotDensity = lotDensityLayer(state);
+    const happinessShift = (ordinanceOn(state, "annualCarnival") ? 2 : 0) + (ordinanceOn(state, "juniorSports") ? 2 : 0);
+    let recreation = 0;
+    for (const facility of state.facilities) recreation += FACILITY_KINDS[facility.kind]?.happiness || 0;
+    recreation = Math.min(8, recreation);
+    const pollution = state.pollution; const crime = state.crime; const landValue = state.landValue;
+    const fireRisk = state.fireRisk; const happiness = state.happiness; const fireCovered = state.fireStrength;
+    const taxPenalty = Math.max(0, state.taxRate - DEFAULT_TAX) * 3;
+    for (let i = 0; i < n; i += 1) {
+      const activity = Math.min(24, Math.floor(lotDensity[i] / 5));
+      fireRisk[i] = Math.max(0, Math.min(255, 8 + activity + Math.floor(pollution[i] / 5) - Math.floor(fireCovered[i] * 0.3)));
+      happiness[i] = Math.max(0, Math.min(100, 58 + happinessShift + recreation + Math.floor(landValue[i] / 8) - Math.floor(crime[i] / 6)
+        - Math.floor(fireRisk[i] / 8) - Math.floor(pollution[i] / 7) - taxPenalty));
+    }
+  }
+
+  // --- Lots --------------------------------------------------------------------
+  function lotTier(variant) { return variant ? Math.max(1, Math.min(3, 1 + Math.floor((variant - 1) / LOT_VARIANTS_PER_TIER))) : 2; }
+  function lotCapacity(zone, size, variant, buildingState) {
+    if (zone < ZONE_R || zone > ZONE_I || size < 1 || size > 3) return 0;
+    const full = LOT_CAPACITY[size][zone] * LOT_TIER_MULTIPLIER[lotTier(variant)];
+    if (buildingState === BUILDING_ACTIVE || buildingState === BUILDING_RECOVERING) return Math.floor(full);
+    if (buildingState === BUILDING_DECLINING) return Math.floor(full / 2);
+    return 0;
+  }
+  // One pass over the lot anchors: the building list the renderers draw,
+  // population and jobs, the town centre, and each lot's best road access.
+  function rebuildLotStats(state) {
+    const size = state.size; const n = size * size;
+    const lot = state.lot; const stage = state.stage; const zone = state.zone; const buildingState = state.buildingState; const variant = state.variant;
+    const accessDist = state.accessDist; const accessRoad = state.accessRoad; const buildingId = state.buildingId; const buildingAnchor = state.buildingAnchor;
+    buildingId.fill(-1); buildingAnchor.fill(-1);
+    const buildings = []; let population = 0; let cJobs = 0; let iJobs = 0;
+    const counts = { total: 0, r: 0, c: 0, i: 0, working: 0, big: 0 };
+    let weight = 0; let sx = 0; let sy = 0;
+    for (let a = 0; a < n; a += 1) {
+      if (lot[a] !== a + 1) continue;
+      const s = stage[a]; const z = zone[a]; const st = buildingState[a];
+      const x = a % size; const y = (a - x) / size;
+      const id = buildings.length; let bestDist = 255; let access = -1;
+      for (let dy = 0; dy < s; dy += 1) for (let dx = 0; dx < s; dx += 1) {
+        const c = a + dy * size + dx; buildingId[c] = id; buildingAnchor[c] = a;
+        if (accessDist[c] < bestDist) { bestDist = accessDist[c]; access = accessRoad[c]; }
+      }
+      const load = lotCapacity(z, s, variant[a], st);
+      buildings.push({ id, x, y, w: s, h: s, zone: z, stage: s, state: st, variant: variant[a], tier: lotTier(variant[a]),
+        population: z === ZONE_R ? load : 0, jobs: z === ZONE_R ? 0 : load, access });
+      if (z === ZONE_R) population += load; else if (z === ZONE_C) cJobs += load; else iJobs += load;
+      counts.total += 1; counts[["", "r", "c", "i"][z] || "r"] += 1;
+      if (lotOccupied(st)) counts.working += 1;
+      if (s > 1) counts.big += 1;
+      if (load) { weight += load; sx += load * (x + (s - 1) / 2); sy += load * (y + (s - 1) / 2); }
+    }
+    state.buildings = buildings; state.lotCounts = counts;
+    state.cityCenter = weight ? { x: Math.round(sx / weight), y: Math.round(sy / weight) } : { ...state.spawnCenter };
     // Transit jobs count as commercial work; military tiles employ on the
     // industrial side; arcologies house their own population.
     let militaryTiles = 0;
-    for (let i = 0; i < tileCount(state); i += 1) if (state.zone[i] === ZONE_MILITARY) militaryTiles += 1;
+    for (let i = 0; i < n; i += 1) if (zone[i] === ZONE_MILITARY) militaryTiles += 1;
     state.population = population; state.cJobs = cJobs + state.railService.jobs + state.subwayService.jobs + state.busService.jobs; state.iJobs = iJobs + militaryTiles * 2;
     state.jobs = state.cJobs + state.iJobs;
     state.arcoPopulation = state.facilities.reduce((sum, item) => {
@@ -868,31 +1371,60 @@ window.AISystem6BonsaiSimLoaded = true;
     }, 0);
   }
 
+  // The problem a zoned tile shows, most blocking first: road, power, the
+  // commute, congestion, demand, pollution, then (low priority) water.
   function recomputeProblems(state) {
-    const problems = []; state.problemCode.fill(PROBLEM.NONE); const demandByZone = [0, state.demand.r, state.demand.c, state.demand.i];
-    for (let i = 0; i < tileCount(state); i += 1) {
-      if (!state.zone[i]) continue;
-      if (state.zone[i] > ZONE_I) { state.problemCode[i] = PROBLEM.NONE; continue; }
+    const problems = []; const n = tileCount(state);
+    const problemCode = state.problemCode; problemCode.fill(PROBLEM.NONE);
+    const demandByZone = [0, state.demand.r, state.demand.c, state.demand.i];
+    const zone = state.zone; const density = state.density; const lot = state.lot; const stage = state.stage;
+    const powered = state.powered; const watered = state.watered; const accessRoad = state.accessRoad; const congested = state.congested;
+    const buildingId = state.buildingId; const buildings = state.buildings; const pollution = state.pollution;
+    for (let i = 0; i < n; i += 1) {
+      const z = zone[i]; if (z < ZONE_R || z > ZONE_I) continue;
+      const building = lot[i] && buildingId[i] >= 0 ? buildings[buildingId[i]] : null;
+      const access = building ? building.access : accessRoad[i];
       let code = PROBLEM.NONE;
-      if (!state.roadOk[i]) code = PROBLEM.NO_ROAD; else if (!state.powered[i]) code = PROBLEM.NO_POWER; else if (!state.watered[i]) code = PROBLEM.NO_WATER;
-      else if (state.congested[i]) code = PROBLEM.CONGESTED; else if (demandByZone[state.zone[i]] <= 0) code = PROBLEM.NO_DEMAND;
-      else if (state.pollution[i] >= 100 && state.zone[i] === ZONE_R) code = PROBLEM.POLLUTION;
-      state.problemCode[i] = code;
-      if (code && problems.length < 64) { const pos = xyOf(state, i); problems.push({ code: PROBLEM_NAMES[code], x: pos.x, y: pos.y, action: PROBLEM_ACTIONS[code] }); }
+      if (access < 0) code = PROBLEM.NO_ROAD;
+      else if (!powered[i]) code = PROBLEM.NO_POWER;
+      else if (!commuteOk(state, z, access)) code = PROBLEM.NO_COMMUTE;
+      else if (congested[access]) code = PROBLEM.CONGESTED;
+      else if (demandByZone[z] <= 0 && !building) code = PROBLEM.NO_DEMAND;
+      else if (z === ZONE_R && pollution[i] >= LOT_RULES.pollutionProblem) code = PROBLEM.POLLUTION;
+      else if (density[i] === DENSITY_HIGH && !watered[i]) code = PROBLEM.NO_WATER;
+      problemCode[i] = code;
+      if (code && problems.length < 64) { const x = i % state.size; problems.push({ code: PROBLEM_NAMES[code], x, y: (i - x) / state.size, action: PROBLEM_ACTIONS[code] }); }
     }
     state.problems = problems;
   }
   function publishProblemChanges(state) {
-    for (let i = 0; i < tileCount(state); i += 1) if (state.problemCode[i] !== state.lastProblemCode[i]) {
-      const code = state.problemCode[i]; const pos = xyOf(state, i);
-      pushEvent(state, "problem-changed", { code: PROBLEM_NAMES[code], previousCode: PROBLEM_NAMES[state.lastProblemCode[i]], x: pos.x, y: pos.y, action: PROBLEM_ACTIONS[code] });
+    const problemCode = state.problemCode; const last = state.lastProblemCode;
+    for (let i = 0, n = tileCount(state); i < n; i += 1) if (problemCode[i] !== last[i]) {
+      const code = problemCode[i]; const pos = xyOf(state, i);
+      pushEvent(state, "problem-changed", { code: PROBLEM_NAMES[code], previousCode: PROBLEM_NAMES[last[i]], x: pos.x, y: pos.y, action: PROBLEM_ACTIONS[code] });
     }
-    state.lastProblemCode.set(state.problemCode);
+    last.set(problemCode);
   }
   function ensureDerived(state, emitProblemChanges = false) {
-    if (state.derivedDirty) {
-      rebuildFacilityLayers(state); recomputeTraffic(state); recomputeUtility(state, "power"); recomputeUtility(state, "water");
-      recomputeCoverageAndRisks(state); rebuildBuildingsAndCounts(state); recomputeProblems(state); state.derivedDirty = false;
+    let dirty = state.dirty | 0;
+    if (dirty) {
+      // What each system feeds: facilities are stations, plants and service
+      // reach; the network moves road access and so every lot's access.
+      if (dirty & DIRTY.FACILITIES) dirty |= DIRTY.NETWORK | DIRTY.POWER | DIRTY.WATER | DIRTY.COVERAGE | DIRTY.LOTS;
+      if (dirty & DIRTY.NETWORK) dirty |= DIRTY.LOTS | DIRTY.ROUTES;
+      dirty |= DIRTY.PROBLEMS;
+      if (dirty & DIRTY.TERRAIN) recomputeWaterDistance(state);
+      if (dirty & DIRTY.FACILITIES) rebuildFacilityLayers(state);
+      if (dirty & DIRTY.NETWORK) { recomputeRailService(state); recomputeAccess(state); }
+      if (dirty & DIRTY.POWER) recomputeUtility(state, "power");
+      if (dirty & DIRTY.WATER) recomputeUtility(state, "water");
+      if (dirty & DIRTY.COVERAGE) recomputeCoverage(state);
+      if (dirty & DIRTY.LOTS) rebuildLotStats(state);
+      if (dirty & DIRTY.ROUTES) recomputeRoutes(state);
+      if (dirty & DIRTY.ENV) recomputeEnvironment(state);
+      if (dirty & (DIRTY.ENV | DIRTY.COVERAGE | DIRTY.LOTS)) recomputeWellbeing(state);
+      recomputeProblems(state);
+      state.dirty = 0;
     }
     if (emitProblemChanges) publishProblemChanges(state);
   }
@@ -958,6 +1490,7 @@ window.AISystem6BonsaiSimLoaded = true;
     const tiles = plan && plan.tiles ? plan.tiles.map((tile) => ({ x: tile.x, y: tile.y })) : [];
     return { schemaVersion: 2, accepted: !!(plan && plan.accepted), code: plan ? plan.code : "schema", cost: plan ? plan.cost || 0 : 0,
       footprint: { tiles, bounds: footprintBounds(tiles) }, sequence: extra.sequence || 0, queued: !!extra.queued,
+      levelCost: plan && plan.data && plan.data.levelCost ? plan.data.levelCost : 0,
       transactionId: extra.transactionId || "", events: extra.events || [] };
   }
   function reject(code, tiles = []) { return { accepted: false, code, cost: 0, tiles }; }
@@ -984,6 +1517,9 @@ window.AISystem6BonsaiSimLoaded = true;
     if (command.type === "zone-area") {
       if (payload.zone === "seaport" || payload.zone === ZONE_SEAPORT) return PORT_ZONE_COST.seaport;
       if (payload.zone === "airport" || payload.zone === ZONE_AIRPORT) return PORT_ZONE_COST.airport;
+      // The nation places the base (planCommand bills it nothing); the tool
+      // palette shows the same price.
+      if (payload.zone === "military" || payload.zone === ZONE_MILITARY) return 0;
       return payload.density === "high" || payload.density === DENSITY_HIGH ? ZONE_COST.high : payload.density === "low" || payload.density == null || payload.density === DENSITY_LOW ? ZONE_COST.low : null;
     }
     if (command.type === "place-facility") return FACILITY_KINDS[payload.kind] ? FACILITY_KINDS[payload.kind].cost : null;
@@ -1004,7 +1540,10 @@ window.AISystem6BonsaiSimLoaded = true;
       const x = Number.isInteger(payload.x) ? payload.x : Math.floor(state.size / 2);
       const y = Number.isInteger(payload.y) ? payload.y : Math.floor(state.size / 2);
       if (!inBounds(state, x, y)) return reject("bounds");
-      return accept("trigger-disaster", 0, [], { kind: payload.kind, x, y });
+      ensureDerived(state);
+      const site = disasterSite(state, payload.kind, { x, y });
+      if (!site.ok) return reject(site.reason);
+      return accept("trigger-disaster", 0, [], { kind: payload.kind, x: site.x, y: site.y });
     }
     if (type === "build-path") {
       const network = payload.network; const layer = state[network];
@@ -1112,9 +1651,14 @@ window.AISystem6BonsaiSimLoaded = true;
         // needs dry, level ground.
         if (spec.needsWaterfall) { if (state.waterKind[i] !== 2) return reject("needs-waterfall", tiles); }
         else if (state.water[i]) return reject("water", tiles);
-        if (!spec.needsWaterfall && state.alt[i] !== baseAlt) return reject("uneven", tiles);
         if (state.facilityAt[i] >= 0 || state.zone[i] || state.road[i] || state.rail[i] || state.park[i]) return reject("occupied", tiles);
       }
+      // Uneven ground is levelled to the anchor's height (the SC2K way) and
+      // billed per tile at the terrain tool's level price; it is refused
+      // only when the new pad would leave a neighbour more than a step off.
+      const leveling = spec.needsWaterfall ? { code: "", cells: [] } : levelingFor(state, payload.x, payload.y, spec.w, spec.h, baseAlt);
+      if (leveling.code) return reject(leveling.code, tiles);
+      const levelCost = leveling.cells.length * TERRAFORM_COST.level;
       if (payload.kind === "pump") {
         // Pumps need adjacent water, and salt water counts only once the
         // city runs a desalination plant.
@@ -1127,6 +1671,8 @@ window.AISystem6BonsaiSimLoaded = true;
         }
         if (!nearUsableWater) return reject("needs-water", tiles);
       }
+      // A marina sits on the shore: at least one of its tiles touches water.
+      if (spec.needsShore && !tiles.some((tile) => state.shore[indexOf(state, tile.x, tile.y)])) return reject("needs-water", tiles);
       if (payload.kind === "station") {
         let nearRail = false; let nearRoad = false;
         for (let y = payload.y - 1; y <= payload.y + spec.h; y += 1) for (let x = payload.x - 1; x <= payload.x + spec.w; x += 1) if (inBounds(state, x, y)) {
@@ -1143,7 +1689,8 @@ window.AISystem6BonsaiSimLoaded = true;
         }
         if (!nearSubway || !nearRoad) return reject("needs-transport", tiles);
       }
-      return state.funds < spec.cost ? reject("funds", tiles) : accept("place-facility", spec.cost, tiles, { kind: payload.kind, x: payload.x, y: payload.y });
+      const total = spec.cost + levelCost;
+      return state.funds < total ? reject("funds", tiles) : accept("place-facility", total, tiles, { kind: payload.kind, x: payload.x, y: payload.y, level: leveling.cells, alt: baseAlt, levelCost });
     }
     if (type === "terraform-area") {
       const area = normalizeArea(payload); if (!area || !TERRAFORM_COST[payload.mode]) return reject("payload"); const tiles = areaTiles(area); const desired = new Map();
@@ -1174,11 +1721,17 @@ window.AISystem6BonsaiSimLoaded = true;
         if (state.facilityAt[i] >= 0) facilityIds.add(state.facilityAt[i]);
       }
       facilityIds.forEach((id) => { const facility = state.facilities[id]; const spec = footprintOf(facility); areaTiles({ x: facility.x, y: facility.y, width: spec.w, height: spec.h }).forEach((tile) => expanded.set(`${tile.x},${tile.y}`, tile)); });
+      // Bulldozing any tile of a building brings the whole building down;
+      // the rest of its lot stays zoned and empty.
+      const requestedKeys = new Set(expanded.keys()); const lotAnchors = new Set();
+      for (const tile of requested) { const i = indexOf(state, tile.x, tile.y); if (state.lot[i]) lotAnchors.add(state.lot[i] - 1); }
+      lotAnchors.forEach((anchor) => { const { x, y } = xyOf(state, anchor); const side = Math.max(1, state.stage[anchor]); areaTiles({ x, y, width: side, height: side }).forEach((tile) => { if (!expanded.has(`${tile.x},${tile.y}`)) expanded.set(`${tile.x},${tile.y}`, tile); }); });
       const tiles = Array.from(expanded.values()); const changed = tiles.filter((tile) => {
-        const i = indexOf(state, tile.x, tile.y); return state.facilityAt[i] >= 0 || state.road[i] || state.rail[i] || state.wire[i] || state.pipe[i] || state.park[i] || state.zone[i] || state.tree[i] || state.highway[i] || state.onramp[i];
+        const i = indexOf(state, tile.x, tile.y); return state.facilityAt[i] >= 0 || state.road[i] || state.rail[i] || state.wire[i] || state.pipe[i] || state.park[i] || state.zone[i] || state.tree[i] || state.highway[i] || state.onramp[i] || state.lot[i];
       });
       if (!changed.length) return reject("empty", tiles); const cost = changed.length * 3;
-      return state.funds < cost ? reject("funds", changed) : accept("demolish-area", cost, changed, { facilityIds: Array.from(facilityIds).sort((a, b) => a - b) });
+      const cleared = changed.filter((tile) => requestedKeys.has(`${tile.x},${tile.y}`)).map((tile) => indexOf(state, tile.x, tile.y));
+      return state.funds < cost ? reject("funds", changed) : accept("demolish-area", cost, changed, { facilityIds: Array.from(facilityIds).sort((a, b) => a - b), lotAnchors: Array.from(lotAnchors).sort((a, b) => a - b), cleared });
     }
     if (payload.policy === "tax-rate") {
       if (!Number.isInteger(payload.taxRate) || payload.taxRate < 0 || payload.taxRate > MAX_TAX_RATE) return reject("tax-rate");
@@ -1237,7 +1790,7 @@ window.AISystem6BonsaiSimLoaded = true;
     if (normalized.command.targetTick < state.tick) return receipt(reject("stale")); return receipt(planCommand(state, normalized.command));
   }
 
-  const UNDO_LAYERS = ["alt", "tree", "road", "rail", "wire", "pipe", "park", "zone", "density", "stage", "buildingState", "constructionTimer", "variant", "catalogId", "subway", "highway", "onramp"];
+  const UNDO_LAYERS = ["alt", "tree", "road", "rail", "wire", "pipe", "park", "zone", "density", "stage", "buildingState", "constructionTimer", "variant", "catalogId", "subway", "highway", "onramp", "lot"];
   function syncMeanTaxRate(state) { state.taxRate = Math.round((state.taxRates.r + state.taxRates.c + state.taxRates.i) / 3); }
   // A city already carrying debt, or broke, borrows at a worse rate.
   function bondRate(state) { return 5 + Math.floor(state.bonds.length / 4) + (state.funds < 0 ? 3 : 0); }
@@ -1250,28 +1803,37 @@ window.AISystem6BonsaiSimLoaded = true;
     snapshot.cells.forEach((cell) => { const i = indexOf(state, cell.x, cell.y); UNDO_LAYERS.forEach((key) => { state[key][i] = cell.values[key]; }); });
     state.funds = snapshot.funds; state.rngState = snapshot.rngState; state.taxRate = snapshot.taxRate; state.taxRates = { ...snapshot.taxRates }; state.funding = { ...snapshot.funding };
     state.ordinances = { ...snapshot.ordinances }; state.bonds = snapshot.bonds.map((item) => ({ ...item }));
-    state.facilities = snapshot.facilities.map((item) => ({ ...item })); markDerivedDirty(state); ensureDerived(state); state.rev += 1;
+    state.facilities = snapshot.facilities.map((item) => ({ ...item })); recomputeTerrainEdges(state); markDerivedDirty(state); repairLots(state); ensureDerived(state); state.rev += 1;
   }
 
   function applyPlan(state, plan, sequence, originalType, recordHistory = true) {
     const before = captureTransaction(state, plan.tiles); const domainEvents = []; state.funds -= plan.cost;
+    // Each action marks only the derived systems it can move.
+    let dirty = DIRTY.PROBLEMS;
     if (plan.action === "build-path") {
       const layer = state[plan.data.network]; plan.tiles.forEach((tile) => { const i = indexOf(state, tile.x, tile.y); layer[i] = 1; state.tree[i] = 0; });
+      const network = plan.data.network;
+      dirty |= network === "wire" ? DIRTY.POWER : network === "pipe" ? DIRTY.WATER : network === "park" ? DIRTY.COVERAGE : DIRTY.NETWORK;
       domainEvents.push(["infrastructure-built", { network: plan.data.network, tiles: plan.tiles.length }]);
     } else if (plan.action === "zone-area") {
       plan.tiles.forEach((tile) => { const i = indexOf(state, tile.x, tile.y); state.tree[i] = 0; state.zone[i] = plan.data.zone; state.density[i] = plan.data.density;
-        state.stage[i] = 0; state.buildingState[i] = 0; state.constructionTimer[i] = 0; state.catalogId[i] = 0; state.variant[i] = Math.floor(nextRandom(state) * 12); });
+        state.stage[i] = 0; state.buildingState[i] = 0; state.constructionTimer[i] = 0; state.catalogId[i] = 0; state.variant[i] = 0; state.lot[i] = 0; });
+      dirty |= DIRTY.POWER | DIRTY.WATER | DIRTY.LOTS;
       domainEvents.push(["zone-designated", { zone: plan.data.zone, density: plan.data.density, tiles: plan.tiles.length }]);
     } else if (plan.action === "place-facility") {
       plan.tiles.forEach((tile) => { state.tree[indexOf(state, tile.x, tile.y)] = 0; }); state.facilities.push(facilityRecord(plan.data.kind, plan.data.x, plan.data.y, state.tick));
+      dirty |= DIRTY.FACILITIES;
+      if (plan.data.level && plan.data.level.length) { plan.data.level.forEach((i) => { state.alt[i] = plan.data.alt; }); recomputeTerrainEdges(state); dirty |= DIRTY.TERRAIN; }
       domainEvents.push(["construction-started", { kind: plan.data.kind, x: plan.data.x, y: plan.data.y }], ["building-completed", { kind: plan.data.kind, x: plan.data.x, y: plan.data.y }]);
     } else if (plan.action === "terraform-area") {
       plan.tiles.forEach((tile) => { const i = indexOf(state, tile.x, tile.y); if (plan.data.mode === "tree") state.tree[i] = 1; else state.alt[i] = plan.data.desired.get(i); });
-      recomputeTerrainEdges(state); domainEvents.push(["terrain-changed", { mode: plan.data.mode, tiles: plan.tiles.length }]);
+      recomputeTerrainEdges(state); dirty |= DIRTY.TERRAIN; domainEvents.push(["terrain-changed", { mode: plan.data.mode, tiles: plan.tiles.length }]);
     } else if (plan.action === "demolish-area") {
       const ids = new Set(plan.data.facilityIds); state.facilities = state.facilities.filter((_, id) => !ids.has(id));
-      plan.tiles.forEach((tile) => { const i = indexOf(state, tile.x, tile.y); state.road[i] = 0; state.rail[i] = 0; state.wire[i] = 0; state.pipe[i] = 0; state.park[i] = 0;
-        state.zone[i] = 0; state.density[i] = 0; state.stage[i] = 0; state.buildingState[i] = 0; state.constructionTimer[i] = 0; state.tree[i] = 0; state.catalogId[i] = 0; state.highway[i] = 0; state.onramp[i] = 0; });
+      plan.data.lotAnchors.forEach((anchor) => clearLot(state, anchor));
+      plan.data.cleared.forEach((i) => { state.road[i] = 0; state.rail[i] = 0; state.wire[i] = 0; state.pipe[i] = 0; state.park[i] = 0;
+        state.zone[i] = 0; state.density[i] = 0; state.stage[i] = 0; state.buildingState[i] = 0; state.constructionTimer[i] = 0; state.tree[i] = 0; state.catalogId[i] = 0; state.highway[i] = 0; state.onramp[i] = 0; state.lot[i] = 0; state.variant[i] = 0; });
+      dirty |= DIRTY_STRUCTURE;
       domainEvents.push(["area-demolished", { tiles: plan.tiles.length }]);
     } else if (plan.action === "trigger-disaster") {
       startDisaster(state, plan.data.kind, plan.data.x, plan.data.y, "menu");
@@ -1279,9 +1841,9 @@ window.AISystem6BonsaiSimLoaded = true;
     } else {
       if (plan.data.policy === "tax-rate") { state.taxRates = { r: plan.data.taxRate, c: plan.data.taxRate, i: plan.data.taxRate }; syncMeanTaxRate(state); }
       else if (plan.data.policy === "tax-rates") { state.taxRates = { ...state.taxRates, ...plan.data.rates }; syncMeanTaxRate(state); }
-      else if (plan.data.policy === "funding") state.funding[plan.data.service] = plan.data.level;
+      else if (plan.data.policy === "funding") { state.funding[plan.data.service] = plan.data.level; dirty |= DIRTY.COVERAGE; }
       else if (plan.data.policy === "disasters") state.disastersOff = !plan.data.enabled;
-      else if (plan.data.policy === "ordinance") { state.ordinances = { ...state.ordinances, [plan.data.id]: plan.data.enacted }; if (plan.data.enacted) state.newsMemo.ordinance = plan.data.id; }
+      else if (plan.data.policy === "ordinance") { state.ordinances = { ...state.ordinances, [plan.data.id]: plan.data.enacted }; if (plan.data.enacted) state.newsMemo.ordinance = plan.data.id; dirty |= DIRTY.POWER | DIRTY.WATER | DIRTY.COVERAGE; }
       else if (plan.data.policy === "newspaper") state.paperDelivery = plan.data.enabled;
       else if (plan.data.policy === "found-city") { state.founded = true; pushNotice(state, "bonsai_msg_city_founded"); }
       else if (plan.data.policy === "bond" && plan.data.action === "issue") { state.bonds.push({ principal: BOND_PRINCIPAL, rate: bondRate(state), issuedTick: state.tick }); state.funds += BOND_PRINCIPAL; }
@@ -1289,7 +1851,7 @@ window.AISystem6BonsaiSimLoaded = true;
       else { state.bonds.push({ principal: plan.data.amount, rate: bondRate(state), issuedTick: state.tick }); state.funds += plan.data.amount; }
       domainEvents.push(["policy-changed", { ...plan.data }]);
     }
-    markDerivedDirty(state); ensureDerived(state); state.rev += 1;
+    markDerivedDirty(state, dirty); ensureDerived(state); state.rev += 1;
     const emitted = domainEvents.map(([type, payload]) => pushEvent(state, type, payload, sequence));
     emitted.push(pushEvent(state, "command-applied", { type: originalType || plan.action, commandType: plan.action, cost: plan.cost }, sequence));
     if (recordHistory) {
@@ -1334,38 +1896,67 @@ window.AISystem6BonsaiSimLoaded = true;
     return { ok: result.accepted, code: result.code, cost: result.cost, footprint: result.footprint };
   }
 
-  function recomputeDemand(state) {
-    ensureDerived(state); const month = Math.floor(state.tick / TICKS_PER_MONTH); state.economyIndex = Math.round((latticeHash(month, 0, state.seed) - 0.5) * 50);
-    let pollution = 0; let happiness = 0; let occupied = 0;
-    for (let i = 0; i < tileCount(state); i += 1) if (state.zone[i]) { pollution += state.pollution[i]; happiness += state.happiness[i]; occupied += 1; }
-    const avgPollution = occupied ? pollution / occupied : 0; const avgHappiness = occupied ? happiness / occupied : 60;
-    // Each market answers to its own tax rate.
-    const taxBiasR = (DEFAULT_TAX - state.taxRates.r) * 4;
-    const taxBiasC = (DEFAULT_TAX - state.taxRates.c) * 4;
-    const taxBiasI = (DEFAULT_TAX - state.taxRates.i) * 4;
-    const adBonus = (ordinanceOn(state, "touristAdvertising") ? 3 : 0) + (ordinanceOn(state, "businessAdvertising") ? 3 : 0);
-    const cPoints = state.buildings.filter((item) => item.zone === ZONE_C).reduce((sum, item) => sum + item.stage * item.w * item.h, 0);
-    const iPoints = state.buildings.filter((item) => item.zone === ZONE_I).reduce((sum, item) => sum + item.stage * item.w * item.h, 0);
-    // A working port opens the external market: powered, road-served port
-    // tiles lift industrial (seaport) and commercial (airport) demand.
-    let seaportTiles = 0; let airportTiles = 0;
-    for (let i = 0; i < tileCount(state); i += 1) {
-      if (!state.powered[i] || !state.roadOk[i]) continue;
-      if (state.zone[i] === ZONE_SEAPORT) seaportTiles += 1; else if (state.zone[i] === ZONE_AIRPORT) airportTiles += 1;
+  // Weighted links to the neighbouring cities: a road tile on the map edge
+  // counts 1, rail 2, highway 4, capped at 10 (3.2).
+  function edgeLinkWeight(state) {
+    const last = state.size - 1; let total = 0;
+    const weight = (i) => (state.highway[i] ? 4 : state.rail[i] ? 2 : state.road[i] ? 1 : 0);
+    for (let k = 0; k < state.size; k += 1) {
+      total += weight(indexOf(state, k, 0)) + weight(indexOf(state, k, last));
+      if (k > 0 && k < last) total += weight(indexOf(state, 0, k)) + weight(indexOf(state, last, k));
     }
-    const seaportBonus = Math.min(15, Math.floor(seaportTiles / 4));
-    const airportBonus = Math.min(15, Math.floor(airportTiles / 6));
-    state.demand = { r: Math.max(-100, Math.min(100, 45 + Math.floor((state.jobs * 2 - state.population) / 8) + taxBiasR + Math.floor((avgHappiness - 50) / 2))),
-      c: Math.max(-100, Math.min(100, 25 + Math.floor(state.population / 18) - cPoints * 3 + taxBiasC + Math.floor(state.economyIndex / 2) + airportBonus + adBonus)),
-      i: Math.max(-100, Math.min(100, 30 + Math.floor(state.population / 24) - iPoints * 2 + taxBiasI + state.economyIndex - Math.floor(avgPollution / 8) + seaportBonus)) };
-    state.derivedDirty = true;
+    return Math.min(10, total);
+  }
+  function workingPortTiles(state) {
+    let seaport = 0; let airport = 0;
+    for (let i = 0, n = tileCount(state); i < n; i += 1) {
+      if (!state.powered[i] || !state.portOk[i]) continue;
+      if (state.zone[i] === ZONE_SEAPORT) seaport += 1; else if (state.zone[i] === ZONE_AIRPORT) airport += 1;
+    }
+    return { seaport, airport };
+  }
+  // SC2K-scale demand (3.2): an internal -2000..+2000 per market, shown as
+  // -100..+100. Residents follow jobs against the workforce, taxes and the
+  // city's appeal; commerce follows residents, industry and trade; industry
+  // follows the outside market and residents. A city short of workers
+  // loses commercial and industrial demand.
+  const clampRange = (value, low, high) => Math.max(low, Math.min(high, value));
+  function demandInternals(state) {
+    ensureDerived(state);
+    let pollution = 0; let happiness = 0; let crime = 0; let occupied = 0;
+    for (let i = 0, n = tileCount(state); i < n; i += 1) if (state.zone[i]) { pollution += state.pollution[i]; happiness += state.happiness[i]; crime += state.crime[i]; occupied += 1; }
+    const avgPollution = occupied ? pollution / occupied : 0; const avgHappiness = occupied ? happiness / occupied : 60; const avgCrime = occupied ? crime / occupied : 0;
+    const workforce = state.population * state.workforcePercent / 100;
+    const jobs = state.cJobs + state.iJobs;
+    const links = edgeLinkWeight(state);
+    const ports = workingPortTiles(state);
+    const airport = ports.airport >= PORT_MIN_TILES.airport ? 400 : 0;
+    const seaport = ports.seaport >= PORT_MIN_TILES.seaport ? 400 : 0;
+    const advertising = (ordinanceOn(state, "touristAdvertising") ? 150 : 0) + (ordinanceOn(state, "businessAdvertising") ? 150 : 0);
+    const r = 400 + 1200 * clampRange((jobs - workforce) / Math.max(workforce, 200), -1.5, 1.5) - 60 * (state.taxRates.r - DEFAULT_TAX)
+      + 5 * (avgHappiness - 50) - 3 * avgCrime / 10 - 2 * avgPollution / 10 + 100;
+    const trade = 150 * links + airport + advertising;
+    const expectedC = 0.30 * state.population + 0.15 * state.iJobs + trade;
+    let c = 1400 * clampRange((expectedC - state.cJobs) / Math.max(expectedC, 200), -1.5, 1) - 60 * (state.taxRates.c - DEFAULT_TAX);
+    const market = 200 + state.economyIndex + 60 * links + seaport;
+    const expectedI = market + 0.25 * state.population;
+    let i = 1400 * clampRange((expectedI - state.iJobs) / Math.max(expectedI, 200), -1.5, 1) - 60 * (state.taxRates.i - DEFAULT_TAX);
+    if (workforce > 0 && jobs > 1.2 * workforce) { const shortage = 600 * (jobs / workforce - 1.2); c -= shortage; i -= shortage; }
+    return { r, c, i, workforce, jobs, expectedC, expectedI, trade, market, links, avgHappiness, avgCrime, avgPollution };
+  }
+  function recomputeDemand(state) {
+    const month = Math.floor(state.tick / TICKS_PER_MONTH); state.economyIndex = Math.round((latticeHash(month, 0, state.seed) - 0.5) * 50);
+    const inside = demandInternals(state);
+    const shown = (value) => clampRange(Math.round(clampRange(value, -2000, 2000) / 20), -100, 100);
+    state.demand = { r: shown(inside.r), c: shown(inside.c), i: shown(inside.i) };
+    state.dirty |= DIRTY.PROBLEMS;
   }
 
   // Oversupply must hold for three settled months before a working building
   // declines for it. Demand refreshes monthly and the stock terms answer
   // immediately, so one bad month used to empty a district: the two-hour
   // playthrough measured a serviced 6 000-resident city falling to 16 in
-  // two months and cycling for ever. Service failures keep their 10-day fuse.
+  // two months and cycling for ever. Service failures keep their fuse.
   function oversuppliedFor(state, zone, months) {
     const key = ["", "r", "c", "i"][zone];
     if (!key || state.history.length < months) return false;
@@ -1373,100 +1964,401 @@ window.AISystem6BonsaiSimLoaded = true;
     return true;
   }
 
-  function growthPass(state) {
-    ensureDerived(state); const demandByZone = [0, state.demand.r, state.demand.c, state.demand.i]; let changed = false;
-    for (let i = 0; i < tileCount(state); i += 1) {
-      const zone = state.zone[i]; if (!zone) continue;
-      // Port and military zones grow with the transport milestone, not here.
-      if (zone > ZONE_I) continue;
-      const pos = xyOf(state, i); const problem = state.problemCode[i];
-      // Growth needs a clean tile. Decay needs a real service failure: a
-      // satisfied market is not a reason to demolish a neighbourhood, and
-      // treating NO_DEMAND as one made the city oscillate instead of grow
-      // (stock rises -> demand turns negative -> every building declines ->
-      // stock falls -> demand rebounds). Sustained oversupply still bites
-      // through the demand < -40 rule in the ACTIVE branch below.
-      // Congestion is a reason to grow slowly, not a reason to be demolished.
-      // It counted as neither serviced nor supplied, so a congested tile fell
-      // into the decline branch below: it could never upgrade, and after ten
-      // ticks it declined. In a test city every one of 181 buildings sat at
-      // stage 1 for ever. It is a supply problem the road network causes, not a
-      // missing utility, so it slows the upgrade clock instead.
-      const congested = problem === PROBLEM.CONGESTED;
-      const serviced = !problem; const supplied = !problem || problem === PROBLEM.NO_DEMAND || congested;
-      const current = state.buildingState[i];
-      // Growth takes ownership of the tile's look: an explicit imported
-      // catalog id is cleared the moment the sim changes what stands here.
-      if (current === BUILDING_EMPTY && serviced && demandByZone[zone] > 0) { state.buildingState[i] = BUILDING_FOUNDATION; state.constructionTimer[i] = 0; state.catalogId[i] = 0; changed = true; pushEvent(state, "construction-started", { zone, x: pos.x, y: pos.y }); }
-      else if (current === BUILDING_FOUNDATION && serviced && ++state.constructionTimer[i] >= 2) { state.buildingState[i] = BUILDING_CONSTRUCTION; state.constructionTimer[i] = 0; changed = true; }
-      else if (current === BUILDING_CONSTRUCTION && serviced && ++state.constructionTimer[i] >= 5) {
-        state.buildingState[i] = BUILDING_ACTIVE; state.stage[i] = 1; state.constructionTimer[i] = 0; state.catalogId[i] = 0; changed = true; pushEvent(state, "building-completed", { zone, stage: 1, x: pos.x, y: pos.y });
-      } else if (current === BUILDING_ACTIVE) {
-        if (!supplied) { if (++state.constructionTimer[i] >= 10) { state.buildingState[i] = BUILDING_DECLINING; state.constructionTimer[i] = 0; changed = true; } }
-        else {
-          state.constructionTimer[i] += 1; const maxStage = state.density[i] === DENSITY_HIGH ? MAX_STAGE : 1;
-          const upgradeTicks = congested ? 90 : 45;
-          if (state.stage[i] < maxStage && demandByZone[zone] > 20 && state.constructionTimer[i] >= upgradeTicks) { state.stage[i] += 1; state.constructionTimer[i] = 0; state.catalogId[i] = 0; state.variant[i] = latticeInt(pos.x, pos.y, state.seed + state.tick) % 12; changed = true; pushEvent(state, "building-completed", { zone, stage: state.stage[i], x: pos.x, y: pos.y }); }
-          else if (demandByZone[zone] < -40 && state.constructionTimer[i] >= 30 && oversuppliedFor(state, zone, 3)) { state.buildingState[i] = BUILDING_DECLINING; state.constructionTimer[i] = 0; changed = true; }
-        }
-      } else if (current === BUILDING_DECLINING) {
-        // Hysteresis. Decline starts below -40 but recovery used to begin the
-        // moment demand crossed zero, and demand rebounds as soon as stock
-        // falls -- so a jobless district cycled full to empty and back. Leaving
-        // decline now needs the same clearly positive market an abandoned tile
-        // needs, which widens the band from [-40, 0] to [-40, 10] and stops the
-        // two recovery paths disagreeing about what "recovered" means.
-        if (serviced && demandByZone[zone] > 10) { state.buildingState[i] = BUILDING_RECOVERING; state.constructionTimer[i] = 0; changed = true; }
-        else if (++state.constructionTimer[i] >= 10) { state.stage[i] = Math.max(0, state.stage[i] - 1); state.constructionTimer[i] = 0; state.catalogId[i] = 0; changed = true; if (!state.stage[i]) state.buildingState[i] = BUILDING_ABANDONED; }
-      } else if (current === BUILDING_ABANDONED && serviced && demandByZone[zone] > 10) { state.buildingState[i] = BUILDING_RECOVERING; state.constructionTimer[i] = 0; changed = true; }
-      else if (current === BUILDING_RECOVERING && serviced && ++state.constructionTimer[i] >= 3) { state.buildingState[i] = BUILDING_ACTIVE; state.stage[i] = Math.max(1, state.stage[i]); state.constructionTimer[i] = 0; changed = true; }
+  function setLot(state, anchor, size, buildingState) {
+    const n = state.size; const lot = state.lot; const stage = state.stage; const bs = state.buildingState; const timer = state.constructionTimer; const catalog = state.catalogId;
+    for (let dy = 0; dy < size; dy += 1) for (let dx = 0; dx < size; dx += 1) {
+      const c = anchor + dy * n + dx; lot[c] = anchor + 1; stage[c] = size; bs[c] = buildingState; timer[c] = 0; catalog[c] = 0;
     }
-    if (changed) { markDerivedDirty(state); ensureDerived(state); state.rev += 1; }
+  }
+  function setLotState(state, anchor, buildingState) {
+    const n = state.size; const size = state.stage[anchor]; const bs = state.buildingState;
+    for (let dy = 0; dy < size; dy += 1) for (let dx = 0; dx < size; dx += 1) bs[anchor + dy * n + dx] = buildingState;
+    state.constructionTimer[anchor] = 0;
+  }
+  // Clears a lot back to empty zoned land (the zone stays).
+  function clearLot(state, anchor) {
+    const n = state.size; const size = Math.max(1, state.stage[anchor]);
+    for (let dy = 0; dy < size; dy += 1) for (let dx = 0; dx < size; dx += 1) {
+      const c = anchor + dy * n + dx; if (c >= state.lot.length || state.lot[c] !== anchor + 1) continue;
+      state.lot[c] = 0; state.stage[c] = 0; state.buildingState[c] = 0; state.constructionTimer[c] = 0; state.variant[c] = 0; state.catalogId[c] = 0;
+    }
+  }
+  function lotAverage(state, layer, anchor, size) {
+    const n = state.size; let sum = 0;
+    for (let dy = 0; dy < size; dy += 1) for (let dx = 0; dx < size; dx += 1) sum += layer[anchor + dy * n + dx];
+    return sum / (size * size);
+  }
+  // The look: land value picks the tier (low, middle, high), a stable hash
+  // picks one of its eight buildings.
+  // The land value at which the high tier starts in this city (see
+  // LOT_RULES): the value its dearest downtownShare of dry land reaches,
+  // never below tierHigh. It reads the saved land value layer alone, which
+  // only the monthly pass changes, so a city loaded mid-month draws the
+  // same line as one that kept running; never saved itself.
+  function towerLine(state) {
+    if (state.towerLine != null) return state.towerLine;
+    const counts = new Uint32Array(256); let total = 0;
+    for (let i = 0, n = tileCount(state); i < n; i += 1) {
+      if (!state.water[i]) { counts[state.landValue[i]] += 1; total += 1; }
+    }
+    let line = 255;
+    for (let v = 255, seen = 0; v >= 0; v -= 1) { seen += counts[v]; if (seen > total * LOT_RULES.downtownShare) { line = v; break; } }
+    state.towerLine = Math.max(LOT_RULES.tierHigh, total ? line : 255);
+    return state.towerLine;
+  }
+  function lotTierFor(state, value) { return value < LOT_RULES.tierLow ? 1 : value < towerLine(state) ? 2 : 3; }
+  function towerRank(state, value) { return Math.max(0, Math.min(LOT_VARIANTS_PER_TIER - 1, Math.floor((value - towerLine(state)) / LOT_RULES.towerValueStep))); }
+  function pickLotVariant(state, anchor, size) {
+    const value = lotAverage(state, state.landValue, anchor, size);
+    let tier = lotTierFor(state, value);
+    if (tier === 3 && !lotFrontsRoad(state, anchor, size)) tier = 2;
+    if (tier === 3) return 2 * LOT_VARIANTS_PER_TIER + 1 + towerRank(state, value);
+    const x = anchor % state.size; const y = (anchor - x) / state.size;
+    return (tier - 1) * LOT_VARIANTS_PER_TIER + 1 + (latticeInt(x, y, state.seed + state.tick) % LOT_VARIANTS_PER_TIER);
+  }
+  // Whether a lot's footprint has a road along any of its four sides.
+  function lotFrontsRoad(state, anchor, size) {
+    const n = state.size; const x = anchor % n; const y = (anchor - x) / n;
+    for (let k = 0; k < size; k += 1) {
+      for (const [tx, ty] of [[x + k, y - 1], [x + k, y + size], [x - 1, y + k], [x + size, y + k]]) {
+        if (tx >= 0 && ty >= 0 && tx < n && ty < n && state.road[ty * n + tx]) return true;
+      }
+    }
+    return false;
+  }
+  // A square of `size` at `anchor` that a new lot may take: same zone, dense,
+  // untouched, watered, and enough demand and land value for its size.
+  // Ground a step off the anchor is levelled (3.9) when the treasury can pay
+  // the terrain tool's price for it; the answer is the cells to level, or
+  // null when the square will not do.
+  function blockFree(state, anchor, size, zone, demand) {
+    const n = state.size; const x = anchor % n; const y = (anchor - x) / n;
+    if (x + size > n || y + size > n) return null;
+    if (size === 3 && demand <= LOT_RULES.bigDemand) return null;
+    if (size === 2 && demand <= LOT_RULES.midDemand) return null;
+    const base = state.alt[anchor];
+    for (let dy = 0; dy < size; dy += 1) for (let dx = 0; dx < size; dx += 1) {
+      const c = anchor + dy * n + dx;
+      if (state.zone[c] !== zone || state.density[c] !== DENSITY_HIGH || state.lot[c] || state.buildingState[c] || Math.abs(state.alt[c] - base) > 1 || !state.watered[c]) return null;
+    }
+    const value = lotAverage(state, state.landValue, anchor, size);
+    if (size === 3 && value < LOT_RULES.bigLandValue) return null;
+    if (size === 2 && value < LOT_RULES.midLandValue) return null;
+    return affordableLeveling(state, x, y, size, base);
+  }
+  function affordableLeveling(state, x, y, size, base) {
+    const leveling = levelingFor(state, x, y, size, size, base);
+    if (leveling.code || leveling.cells.length * TERRAFORM_COST.level > Math.max(0, state.funds)) return null;
+    return leveling.cells;
+  }
+  function applyLeveling(state, cells, alt) {
+    if (!cells || !cells.length) return;
+    for (const i of cells) state.alt[i] = alt;
+    const cost = cells.length * TERRAFORM_COST.level;
+    state.funds -= cost;
+    recomputeTerrainEdges(state); state.dirty |= DIRTY.TERRAIN;
+  }
+  // Which cells of a w x h pad at (x, y) must change height to sit at
+  // `target`, or why it cannot: every dry neighbour outside the pad has to
+  // stay within one step of the new level.
+  function levelingFor(state, x, y, w, h, target) {
+    const n = state.size; const cells = [];
+    for (let dy = 0; dy < h; dy += 1) for (let dx = 0; dx < w; dx += 1) {
+      const i = (y + dy) * n + x + dx; if (state.alt[i] !== target) cells.push(i);
+    }
+    if (!cells.length) return { code: "", cells };
+    for (let yy = y - 1; yy <= y + h; yy += 1) for (let xx = x - 1; xx <= x + w; xx += 1) {
+      if (xx < 0 || yy < 0 || xx >= n || yy >= n) continue;
+      if (xx >= x && xx < x + w && yy >= y && yy < y + h) continue;
+      if ((xx < x || xx >= x + w) && (yy < y || yy >= y + h)) continue; // corners do not touch
+      const i = yy * n + xx; if (!state.water[i] && Math.abs(state.alt[i] - target) > 1) return { code: "slope", cells: [] };
+    }
+    return { code: "", cells };
+  }
+  function levelEnough(state, i) {
+    const n = state.size; const x = i % n; const alt = state.alt[i];
+    const near = (j) => !state.water[j] && Math.abs(state.alt[j] - alt) > 1;
+    return !((x > 0 && near(i - 1)) || (x < n - 1 && near(i + 1)) || (i >= n && near(i - n)) || (i + n < state.alt.length && near(i + n)));
+  }
+  function tryStartLot(state, i, demand) {
+    const zone = state.zone[i];
+    if (demand <= 0 || state.accessRoad[i] < 0 || !state.powered[i] || !levelEnough(state, i)) return false;
+    if (!commuteOk(state, zone, state.accessRoad[i])) return false;
+    const chance = LOT_RULES.growthBase + LOT_RULES.growthSlope * clampRange(demand / 100, 0, 1);
+    if (nextRandom(state) >= chance) return false;
+    let size = 1; let leveling = null;
+    if (state.density[i] === DENSITY_HIGH) {
+      leveling = blockFree(state, i, 3, zone, demand);
+      if (leveling) size = 3; else { leveling = blockFree(state, i, 2, zone, demand); if (leveling) size = 2; }
+    }
+    applyLeveling(state, leveling, state.alt[i]);
+    setLot(state, i, size, BUILDING_FOUNDATION);
+    state.variant[i] = pickLotVariant(state, i, size);
+    const x = i % state.size;
+    pushEvent(state, "construction-started", { zone, x, y: (i - x) / state.size, size });
+    return true;
+  }
+  // What is wrong with a standing lot, as the number of days it may last so;
+  // 0 when nothing is.
+  function lotTrouble(state, anchor, building) {
+    const size = state.stage[anchor]; const zone = state.zone[anchor];
+    if (!building || building.access < 0) return LOT_RULES.roadFuseDays;
+    if (!state.powered[anchor]) return LOT_RULES.powerFuseDays;
+    let fuse = 0;
+    if (!commuteOk(state, zone, building.access)) fuse = LOT_RULES.commuteFuseDays;
+    if (size > 1 && lotAverage(state, state.watered, anchor, size) < 1) fuse = LOT_RULES.waterFuseDays;
+    if (zone === ZONE_R && state.pollution[anchor] > LOT_RULES.declinePollution) fuse = LOT_RULES.nuisanceFuseDays;
+    return fuse;
+  }
+  // Crime drives people out gradually: past the threshold, every look at a
+  // home or shop carries a chance of decline that grows with the excess,
+  // and a building in decline is not reoccupied until crime falls back.
+  function crimeExcess(state, anchor) {
+    return state.zone[anchor] === ZONE_I ? 0 : Math.max(0, state.crime[anchor] - LOT_RULES.declineCrime);
+  }
+  // The chance a building in decline is taken up again falls with the crime
+  // around it; past crimeRecoverSpan over the threshold nobody moves in.
+  function crimeLetsBack(state, anchor) {
+    const excess = crimeExcess(state, anchor);
+    return !excess || nextRandom(state) >= excess / LOT_RULES.crimeRecoverSpan;
+  }
+  // A dense working lot may be rebuilt as the next size up when a square
+  // around it holds only its own zone: empty cells, or smaller working lots
+  // wholly inside the square. The old buildings come down; the new one
+  // starts at construction, so its people are gone until it opens.
+  function tryUpgradeLot(state, anchor, demand) {
+    const n = state.size; const size = state.stage[anchor]; const zone = state.zone[anchor];
+    if (size >= 3 || state.density[anchor] !== DENSITY_HIGH || demand <= LOT_RULES.upgradeDemand) return false;
+    if (lotAverage(state, state.watered, anchor, size) < 1) return false;
+    const target = size + 1; const ax = anchor % n; const ay = (anchor - ax) / n; const base = state.alt[anchor];
+    for (let oy = 0; oy <= target - size; oy += 1) for (let ox = 0; ox <= target - size; ox += 1) {
+      const bx = ax - ox; const by = ay - oy;
+      if (bx < 0 || by < 0 || bx + target > n || by + target > n) continue;
+      let fits = true;
+      for (let dy = 0; dy < target && fits; dy += 1) for (let dx = 0; dx < target; dx += 1) {
+        const c = (by + dy) * n + bx + dx;
+        if (state.zone[c] !== zone || state.density[c] !== DENSITY_HIGH || Math.abs(state.alt[c] - base) > 1 || !state.watered[c]) { fits = false; break; }
+        if (!state.lot[c]) { if (state.buildingState[c]) { fits = false; break; } continue; }
+        const other = state.lot[c] - 1; const otherSize = state.stage[other]; const ox2 = other % n; const oy2 = (other - ox2) / n;
+        if (otherSize >= target || state.buildingState[other] !== BUILDING_ACTIVE
+          || ox2 < bx || oy2 < by || ox2 + otherSize > bx + target || oy2 + otherSize > by + target) { fits = false; break; }
+      }
+      if (!fits) continue;
+      // A bigger building needs the land value its size asks of new lots.
+      const value = lotAverage(state, state.landValue, by * n + bx, target);
+      if (value < (target === 3 ? LOT_RULES.bigLandValue : LOT_RULES.midLandValue)) continue;
+      const leveling = affordableLeveling(state, bx, by, target, base);
+      if (!leveling) continue;
+      if (nextRandom(state) >= LOT_RULES.upgradeChance) return false;
+      applyLeveling(state, leveling, base);
+      for (let dy = 0; dy < target; dy += 1) for (let dx = 0; dx < target; dx += 1) {
+        const c = (by + dy) * n + bx + dx; if (state.lot[c]) clearLot(state, state.lot[c] - 1);
+      }
+      const newAnchor = by * n + bx;
+      setLot(state, newAnchor, target, BUILDING_CONSTRUCTION);
+      state.variant[newAnchor] = pickLotVariant(state, newAnchor, target);
+      pushEvent(state, "construction-started", { zone, x: bx, y: by, size: target, rebuild: true });
+      return true;
+    }
+    return false;
+  }
+  // A working lot on a street whose land has risen over the tower line
+  // since it was built comes down and goes up again at the high tier, the
+  // same size; a tower whose land has risen two height ranks is rebuilt
+  // taller.
+  function tryRedevelopLot(state, anchor, demand) {
+    if (demand <= 0) return false;
+    const size = state.stage[anchor];
+    if (!lotFrontsRoad(state, anchor, size)) return false;
+    const value = lotAverage(state, state.landValue, anchor, size);
+    if (value < towerLine(state)) return false;
+    if (lotTier(state.variant[anchor]) >= 3 && towerRank(state, value) < state.variant[anchor] - 2 * LOT_VARIANTS_PER_TIER - 1 + 2) return false;
+    if (nextRandom(state) >= LOT_RULES.redevelopChance) return false;
+    const zone = state.zone[anchor]; const x = anchor % state.size; const y = (anchor - x) / state.size;
+    clearLot(state, anchor);
+    setLot(state, anchor, size, BUILDING_CONSTRUCTION);
+    state.variant[anchor] = pickLotVariant(state, anchor, size);
+    pushEvent(state, "construction-started", { zone, x, y, size, rebuild: true });
+    return true;
+  }
+  function stepLot(state, anchor, demand) {
+    const building = state.buildingId[anchor] >= 0 ? state.buildings[state.buildingId[anchor]] : null;
+    const size = state.stage[anchor]; const current = state.buildingState[anchor]; const zone = state.zone[anchor];
+    const days = Math.min(65535, state.constructionTimer[anchor] + DEV_SLICES);
+    const x = anchor % state.size; const y = (anchor - x) / state.size;
+    if (current === BUILDING_FOUNDATION) {
+      if (days >= LOT_RULES.foundationDays && state.powered[anchor]) { setLotState(state, anchor, BUILDING_CONSTRUCTION); return true; }
+      state.constructionTimer[anchor] = days; return false;
+    }
+    if (current === BUILDING_CONSTRUCTION) {
+      if (days >= LOT_CONSTRUCTION_DAYS[size]) {
+        setLotState(state, anchor, BUILDING_ACTIVE);
+        pushEvent(state, "building-completed", { zone, stage: size, size, x, y });
+        return true;
+      }
+      state.constructionTimer[anchor] = days; return false;
+    }
+    const trouble = lotTrouble(state, anchor, building);
+    if (current === BUILDING_ACTIVE) {
+      if (trouble) {
+        if (days >= trouble || (!state.powered[anchor] && nextRandom(state) < LOT_RULES.powerDeclineChance)) { setLotState(state, anchor, BUILDING_DECLINING); return true; }
+        state.constructionTimer[anchor] = days; return false;
+      }
+      state.constructionTimer[anchor] = 0;
+      if (demand < -40 && oversuppliedFor(state, zone, 3) && nextRandom(state) < LOT_RULES.oversupplyChance) { setLotState(state, anchor, BUILDING_DECLINING); return true; }
+      const excess = crimeExcess(state, anchor);
+      if (excess && nextRandom(state) < Math.min(LOT_RULES.crimeDeclineMax, excess * LOT_RULES.crimeDeclineSlope)) { setLotState(state, anchor, BUILDING_DECLINING); return true; }
+      if (tryUpgradeLot(state, anchor, demand)) return true;
+      return tryRedevelopLot(state, anchor, demand);
+    }
+    if (current === BUILDING_DECLINING) {
+      if (!trouble && demand > 10 && crimeLetsBack(state, anchor)) { setLotState(state, anchor, BUILDING_RECOVERING); return true; }
+      if (days >= LOT_RULES.declineDays) { setLotState(state, anchor, BUILDING_ABANDONED); return true; }
+      state.constructionTimer[anchor] = days; return false;
+    }
+    if (current === BUILDING_ABANDONED) {
+      if (!trouble && demand > 10 && crimeLetsBack(state, anchor)) { setLotState(state, anchor, BUILDING_RECOVERING); return true; }
+      if (days >= LOT_RULES.abandonedClearDays) { clearLot(state, anchor); return true; }
+      state.constructionTimer[anchor] = days; return false;
+    }
+    if (current === BUILDING_RECOVERING) {
+      if (days >= LOT_RULES.recoverDays) { setLotState(state, anchor, BUILDING_ACTIVE); return true; }
+      state.constructionTimer[anchor] = days; return false;
+    }
+    return false;
+  }
+  // One slice of the map per day: every fourth cell, so each cell is looked
+  // at every four days. Only empty zoned cells and lot anchors do anything.
+  function developmentPass(state, day) {
+    ensureDerived(state);
+    const n = tileCount(state); const zone = state.zone; const lot = state.lot; const buildingState = state.buildingState;
+    const demandByZone = [0, state.demand.r, state.demand.c, state.demand.i];
+    let changed = false;
+    for (let i = day % DEV_SLICES; i < n; i += DEV_SLICES) {
+      const z = zone[i]; if (z < ZONE_R || z > ZONE_I) continue;
+      const anchor = lot[i];
+      if (!anchor) { if (!buildingState[i] && tryStartLot(state, i, demandByZone[z])) changed = true; continue; }
+      if (anchor !== i + 1) continue;
+      if (stepLot(state, i, demandByZone[z])) changed = true;
+    }
+    if (changed) { state.dirty |= DIRTY.LOTS; state.rev += 1; }
   }
 
+  // Groups per-tile buildings into lots: the v4 migration and the imports
+  // that arrive without a lot layer. A 3x3 or 2x2 square of dense, working
+  // tiles of one zone at that growth stage becomes one lot of that size; any
+  // other standing tile becomes a 1x1 lot. Sizes are written back to stage.
+  function inferLots(size, layers) {
+    const n = size * size; const lot = new Uint16Array(n);
+    const { zone, density, stage, buildingState } = layers;
+    const canGroup = (x, y, side, z, level) => {
+      if (x + side > size || y + side > size) return false;
+      for (let dy = 0; dy < side; dy += 1) for (let dx = 0; dx < side; dx += 1) {
+        const i = (y + dy) * size + x + dx;
+        if (lot[i] || zone[i] !== z || density[i] !== DENSITY_HIGH || stage[i] < level || buildingState[i] !== BUILDING_ACTIVE) return false;
+      }
+      return true;
+    };
+    const stageOut = new Uint8Array(n);
+    for (let y = 0; y < size; y += 1) for (let x = 0; x < size; x += 1) {
+      const i = y * size + x; const z = zone[i];
+      if (lot[i] || z < ZONE_R || z > ZONE_I) continue;
+      if (!stage[i] && !buildingState[i]) continue;
+      let side = 1;
+      if (stage[i] >= 3 && canGroup(x, y, 3, z, 3)) side = 3;
+      else if (stage[i] >= 2 && canGroup(x, y, 2, z, 2)) side = 2;
+      for (let dy = 0; dy < side; dy += 1) for (let dx = 0; dx < side; dx += 1) { const c = (y + dy) * size + x + dx; lot[c] = i + 1; stageOut[c] = side; }
+    }
+    return { lot, stage: stageOut };
+  }
+  // Keeps the lot layer honest after a load or an import: an anchor must
+  // name itself, sit on R/C/I land, and own a whole square of its size.
+  // Anything else is cleared back to empty zoned land.
+  function repairLots(state) {
+    const n = state.size; const count = n * n; const lot = state.lot;
+    const valid = new Uint8Array(count);
+    for (let a = 0; a < count; a += 1) {
+      if (lot[a] !== a + 1) continue;
+      const s = state.stage[a]; const z = state.zone[a]; const x = a % n; const y = (a - x) / n;
+      let ok = s >= 1 && s <= 3 && z >= ZONE_R && z <= ZONE_I && x + s <= n && y + s <= n;
+      for (let dy = 0; dy < s && ok; dy += 1) for (let dx = 0; dx < s; dx += 1) {
+        const c = a + dy * n + dx; if (lot[c] !== a + 1 || state.zone[c] !== z) { ok = false; break; }
+      }
+      if (!ok) continue;
+      for (let dy = 0; dy < s; dy += 1) for (let dx = 0; dx < s; dx += 1) {
+        const c = a + dy * n + dx; valid[c] = 1; state.stage[c] = s; state.buildingState[c] = state.buildingState[a];
+      }
+    }
+    for (let i = 0; i < count; i += 1) {
+      if (valid[i]) continue;
+      if (lot[i] || ((state.zone[i] >= ZONE_R && state.zone[i] <= ZONE_I) && (state.stage[i] || state.buildingState[i]))) {
+        lot[i] = 0; state.stage[i] = 0; state.buildingState[i] = 0; state.constructionTimer[i] = 0;
+      }
+    }
+  }
+
+  // Ordinance money follows the ruleset-5 tax scale, about a tenth of the
+  // old per-resident figures; the per-ordinance divisors keep their ratios.
+  const ORDINANCE_MONEY_SCALE = 10;
+  // Monthly property tax per resident (R) or job (C, I) and per point of the
+  // rate, before the land-value weight (0.5 + value/255): about $1.5-2 a
+  // resident a year at 7% (spec 3.7).
+  const TAX_FACTOR = Object.freeze({ r: 0.026, c: 0.024, i: 0.024 });
+  // Network upkeep: tiles x funding% / divisor each month.
+  const NETWORK_UPKEEP_DIVISOR = Object.freeze({ roads: 300, highways: 100, bridges: 30, rail: 200, subway: 60 });
   function ordinanceBudget(state) {
     let income = 0; let cost = 0;
     for (const id of ORDINANCE_IDS) {
       if (!ordinanceOn(state, id)) continue;
       const spec = ORDINANCES[id];
-      if (spec.incomeDiv) income += Math.floor(state.population / spec.incomeDiv);
-      if (spec.base || spec.costDiv) cost += (spec.base || 0) + (spec.costDiv ? Math.floor(state.population / spec.costDiv) : 0);
+      if (spec.incomeDiv) income += Math.floor(state.population / (spec.incomeDiv * ORDINANCE_MONEY_SCALE));
+      if (spec.base || spec.costDiv) cost += (spec.base || 0) + (spec.costDiv ? Math.floor(state.population / (spec.costDiv * ORDINANCE_MONEY_SCALE)) : 0);
     }
     return { income, cost };
   }
+  // The monthly books (3.7): each market pays on its residents or jobs,
+  // weighted by the land they stand on; services and networks cost their
+  // upkeep scaled by funding. Power and water structures cost nothing.
   function settleBudget(state) {
     ensureDerived(state);
     let roadLand = 0; let railLand = 0; let bridgeTiles = 0; let subwayTiles = 0; let parkTiles = 0; let highwayLand = 0;
-    for (let i = 0; i < tileCount(state); i += 1) {
+    for (let i = 0, n = tileCount(state); i < n; i += 1) {
       if (state.water[i]) { if (state.road[i] || state.rail[i] || state.highway[i]) bridgeTiles += 1; }
       else { if (state.road[i]) roadLand += 1; if (state.rail[i]) railLand += 1; if (state.highway[i] || state.onramp[i]) highwayLand += 1; }
       if (state.subway[i]) subwayTiles += 1; if (state.park[i]) parkTiles += 1;
     }
-    // SC2K's income model: property taxes split across R, C, and I.
-    const taxes = { r: Math.floor(state.population * state.taxRates.r / 8),
-      c: Math.floor(state.cJobs * state.taxRates.c / 10), i: Math.floor(state.iJobs * state.taxRates.i / 10) };
+    let taxR = 0; let taxC = 0; let taxI = 0;
+    for (const building of state.buildings) {
+      const load = building.population + building.jobs; if (!load) continue;
+      const weight = 0.5 + lotAverage(state, state.landValue, indexOf(state, building.x, building.y), building.w) / 255;
+      if (building.zone === ZONE_R) taxR += load * weight * state.taxRates.r * TAX_FACTOR.r;
+      else if (building.zone === ZONE_C) taxC += load * weight * state.taxRates.c * TAX_FACTOR.c;
+      else taxI += load * weight * state.taxRates.i * TAX_FACTOR.i;
+    }
+    const taxes = { r: Math.floor(taxR), c: Math.floor(taxC), i: Math.floor(taxI) };
     const ordinances = ordinanceBudget(state);
     const budget = makeEmptyBudget();
     budget.taxes = taxes; budget.ordinanceIncome = ordinances.income; budget.ordinanceCost = ordinances.cost;
     budget.income = taxes.r + taxes.c + taxes.i + ordinances.income;
-    budget.roads = Math.floor((roadLand + parkTiles) * state.funding.roads / 200);
-    budget.highways = Math.floor(highwayLand * state.funding.highways / 150);
-    budget.bridges = Math.floor(bridgeTiles * state.funding.bridges / 100);
-    budget.rail = Math.floor(railLand * state.funding.rail / 300);
-    budget.subway = Math.floor(subwayTiles * state.funding.subway / 300);
+    budget.roads = Math.floor((roadLand + parkTiles) * state.funding.roads / NETWORK_UPKEEP_DIVISOR.roads);
+    budget.highways = Math.floor(highwayLand * state.funding.highways / NETWORK_UPKEEP_DIVISOR.highways);
+    budget.bridges = Math.floor(bridgeTiles * state.funding.bridges / NETWORK_UPKEEP_DIVISOR.bridges);
+    budget.rail = Math.floor(railLand * state.funding.rail / NETWORK_UPKEEP_DIVISOR.rail);
+    budget.subway = Math.floor(subwayTiles * state.funding.subway / NETWORK_UPKEEP_DIVISOR.subway);
     state.facilities.forEach((facility) => {
       const spec = FACILITY_KINDS[facility.kind];
       // SC2K power and water structures carry no monthly cost.
-      if (spec.group === "utility") return;
+      if (spec.group === "utility" || !spec.upkeep) return;
+      if (spec.group === "recreation") { budget.recreation += spec.upkeep; return; }
       const key = spec.group === "transport"
         ? (facility.kind === "station" ? "rail" : facility.kind === "subway-station" ? "subway" : "roads")
         : spec.group;
-      if (Object.prototype.hasOwnProperty.call(budget, key)) budget[key] += Math.floor(spec.upkeep * state.funding[key] / 100);
+      if (Object.prototype.hasOwnProperty.call(budget, key) && state.funding[key] != null) budget[key] += Math.floor(spec.upkeep * state.funding[key] / 100);
       else budget.roads += Math.floor(spec.upkeep * state.funding.roads / 100);
     });
     for (const bond of state.bonds) budget.bondInterest += Math.ceil(bond.principal * bond.rate / 100 / MONTHS_PER_YEAR);
     budget.expense = budget.roads + budget.highways + budget.bridges + budget.rail + budget.subway + budget.tunnels
-      + budget.police + budget.fire + budget.health + budget.schools + budget.colleges + budget.bondInterest + budget.ordinanceCost;
+      + budget.police + budget.fire + budget.health + budget.schools + budget.colleges + budget.recreation + budget.bondInterest + budget.ordinanceCost;
     state.budget = budget; state.lastIncome = budget.income; state.lastExpense = budget.expense; state.funds += budget.income - budget.expense;
     pushEvent(state, "budget-settled", { ...budget, funds: state.funds }); pushEvent(state, "budget", { tick: state.tick, income: budget.income, expense: budget.expense, funds: state.funds });
     if (state.funds < 0 && !state.wasBroke) { state.wasBroke = true; pushNotice(state, "bonsai_msg_broke"); } if (state.funds >= 0) state.wasBroke = false;
@@ -1478,27 +2370,36 @@ window.AISystem6BonsaiSimLoaded = true;
     if (state.budgetHistory.length > 60) state.budgetHistory.shift();
     state.rev += 1;
   }
-  // Monthly demographics: EQ follows school coverage, LE follows health
-  // coverage and pollution, both drifting one point toward their target.
-  // The workforce share follows EQ; unemployment is workforce minus jobs.
+  // Education and health by capacity (3.6): EQ and LE drift toward targets
+  // set by how much of the demand the schools, universities, clinics and
+  // hospitals can take at their funding; libraries and museums add a little.
+  function serviceCapacity(state) {
+    const out = { school: 0, university: 0, health: 0, eqBonus: 0 };
+    for (const facility of state.facilities) {
+      const spec = FACILITY_KINDS[facility.kind]; if (!spec) continue;
+      const funding = spec.group && state.funding[spec.group] != null ? state.funding[spec.group] / 100 : 1;
+      if (facility.kind === "school") out.school += spec.capacity * funding;
+      else if (facility.kind === "university") out.university += spec.capacity * funding;
+      else if (facility.kind === "clinic" || facility.kind === "hospital") out.health += spec.capacity * funding;
+      if (spec.eqBonus) out.eqBonus += spec.eqBonus;
+    }
+    out.eqBonus = Math.min(15, out.eqBonus);
+    return out;
+  }
   function updateDemographics(state) {
     ensureDerived(state);
-    let zoned = 0; let schooled = 0; let doctored = 0; let pollutionSum = 0;
-    for (let i = 0; i < tileCount(state); i += 1) {
-      if (!state.zone[i]) continue;
-      zoned += 1;
-      if (state.educationCovered[i]) schooled += 1;
-      if (state.healthCovered[i]) doctored += 1;
-      pollutionSum += state.pollution[i];
-    }
-    const schoolShare = zoned ? Math.floor(schooled * 100 / zoned) : 0;
-    const healthShare = zoned ? Math.floor(doctored * 100 / zoned) : 0;
+    let zoned = 0; let pollutionSum = 0;
+    for (let i = 0, n = tileCount(state); i < n; i += 1) if (state.zone[i]) { zoned += 1; pollutionSum += state.pollution[i]; }
     const avgPollution = zoned ? Math.floor(pollutionSum / zoned) : 0;
-    const eqTarget = Math.max(0, Math.min(150, 60 + Math.floor(schoolShare * 2 / 5) + (ordinanceOn(state, "proReading") ? 5 : 0)));
-    const leTarget = Math.max(20, Math.min(90, 55 + Math.floor(healthShare / 4) - Math.floor(avgPollution / 10)
-      + (ordinanceOn(state, "cprTraining") ? 2 : 0) + (ordinanceOn(state, "freeClinics") ? 3 : 0) + (ordinanceOn(state, "publicSmokingBan") ? 2 : 0)));
-    state.eq += Math.sign(eqTarget - state.eq);
-    state.le += Math.sign(leTarget - state.le);
+    const capacity = serviceCapacity(state); const people = Math.max(1, state.population);
+    const schoolShare = Math.min(1, capacity.school / (people * 0.18));
+    const collegeShare = Math.min(1, capacity.university / (people * 0.08));
+    const healthShare = Math.min(1, capacity.health / (people * 0.10));
+    const eqTarget = Math.max(0, Math.min(150, Math.round(40 + 50 * schoolShare + 30 * collegeShare + capacity.eqBonus + (ordinanceOn(state, "proReading") ? 5 : 0))));
+    const leTarget = Math.max(20, Math.min(90, Math.round(45 + 35 * healthShare - avgPollution / 10
+      + (ordinanceOn(state, "cprTraining") ? 2 : 0) + (ordinanceOn(state, "freeClinics") ? 3 : 0) + (ordinanceOn(state, "publicSmokingBan") ? 2 : 0))));
+    state.eq += Math.max(-2, Math.min(2, eqTarget - state.eq));
+    state.le += Math.max(-2, Math.min(2, leTarget - state.le));
     state.workforcePercent = Math.max(30, Math.min(70, 35 + Math.floor(state.eq / 10)));
     state.unemployed = Math.max(0, Math.floor(state.population * state.workforcePercent / 100) - state.jobs);
     // The nation grows on its own clock; the fed rate follows the economy.
@@ -1533,9 +2434,56 @@ window.AISystem6BonsaiSimLoaded = true;
       state.facilities = state.facilities.filter((_, index) => index !== id);
       rebuildFacilityLayers(state);
     }
+    // A building hit anywhere falls as a whole; the rest of its lot is left
+    // as empty zoned land.
+    if (state.lot[i]) clearLot(state, state.lot[i] - 1);
     state.zone[i] = 0; state.density[i] = 0; state.stage[i] = 0; state.buildingState[i] = 0;
     state.constructionTimer[i] = 0; state.tree[i] = 0; state.park[i] = 0;
     state.catalogId[i] = 1 + (i % 4);
+  }
+  // Where a disaster of this kind can happen, or why it cannot: a plant for
+  // a meltdown or microwave spill, high ground for a volcano, salt water for
+  // a hurricane, an airport for an air crash, a high-crime block for a riot.
+  // Other kinds happen at the hint. Ties go to the tile nearest the hint.
+  function disasterSite(state, kind, hint) {
+    const hx = hint.x; const hy = hint.y;
+    const nearest = (test) => {
+      let best = -1; let bestDistance = Infinity;
+      for (let i = 0, n = tileCount(state); i < n; i += 1) {
+        if (!test(i)) continue;
+        const { x, y } = xyOf(state, i); const distance = (x - hx) * (x - hx) + (y - hy) * (y - hy);
+        if (distance < bestDistance) { best = i; bestDistance = distance; }
+      }
+      return best < 0 ? null : xyOf(state, best);
+    };
+    const plant = (plantKind) => {
+      let best = null; let bestDistance = Infinity;
+      for (const facility of state.facilities) {
+        if (facility.kind !== plantKind) continue;
+        const spec = FACILITY_KINDS[plantKind];
+        const x = facility.x + (spec.w >> 1); const y = facility.y + (spec.h >> 1);
+        const distance = (x - hx) * (x - hx) + (y - hy) * (y - hy);
+        if (distance < bestDistance) { best = { x, y }; bestDistance = distance; }
+      }
+      return best;
+    };
+    let site = { x: hx, y: hy }; let reason = "";
+    if (kind === "meltdown") { site = plant("nuclear"); reason = "needs-nuclear"; }
+    else if (kind === "microwave-spill") { site = plant("microwave"); reason = "needs-microwave"; }
+    else if (kind === "volcano") {
+      let top = 0;
+      for (let i = 0, n = tileCount(state); i < n; i += 1) if (!state.water[i] && state.alt[i] > top) top = state.alt[i];
+      site = top >= DISASTER_RULES.volcanoAlt ? nearest((i) => !state.water[i] && state.alt[i] === top) : null;
+      reason = "needs-high-ground";
+    } else if (kind === "hurricane") { site = nearest((i) => state.water[i] && state.salt[i]); reason = "needs-coast"; }
+    else if (kind === "air-crash") { site = nearest((i) => state.zone[i] === ZONE_AIRPORT); reason = "needs-airport"; }
+    else if (kind === "riot") {
+      let worst = 0;
+      for (let i = 0, n = tileCount(state); i < n; i += 1) if (state.crime[i] > worst) worst = state.crime[i];
+      site = worst >= DISASTER_RULES.riotCrime ? nearest((i) => state.crime[i] === worst) : null;
+      reason = "needs-crime";
+    }
+    return site ? { ok: true, x: site.x, y: site.y } : { ok: false, reason };
   }
   function startDisaster(state, kind, x, y, cause) {
     const spec = DISASTER_KINDS[kind];
@@ -1600,8 +2548,14 @@ window.AISystem6BonsaiSimLoaded = true;
         if (!state.water[j]) state.blaze[j] = (Math.abs(dx) + Math.abs(dy) <= 2) ? 5 : 1;
       }
     } else if (kind === "firestorm") {
-      // A firestorm is fire over the whole map's flammable tiles.
-      for (let j = 0; j < tileCount(state); j += 1) if (!state.water[j] && isFlammable(state, j)) state.blaze[j] = 1;
+      // A firestorm lights every flammable tile within its radius, then
+      // burns and spreads like any fire; it no longer takes the whole map.
+      const radius = spec.radius;
+      for (let dy = -radius; dy <= radius; dy += 1) for (let dx = -radius; dx <= radius; dx += 1) {
+        if (dx * dx + dy * dy > radius * radius || !inBounds(state, x + dx, y + dy)) continue;
+        const j = indexOf(state, x + dx, y + dy);
+        if (!state.water[j] && isFlammable(state, j)) state.blaze[j] = 1;
+      }
     } else if (kind === "hurricane") {
       // A hurricane floods the shoreline and clears the coast.
       for (let j = 0; j < tileCount(state); j += 1) {
@@ -1627,7 +2581,7 @@ window.AISystem6BonsaiSimLoaded = true;
     if (!disaster) return;
     const count = tileCount(state);
     let changed = false;
-    if (disaster.kind === "fire" || disaster.kind === "earthquake") {
+    if (disaster.kind === "fire" || disaster.kind === "earthquake" || disaster.kind === "firestorm") {
       // Burning tiles age; young fires jump to flammable neighbours unless
       // fire coverage damps them; burnt-out tiles fall to rubble.
       const spreadFrom = [];
@@ -1761,10 +2715,12 @@ window.AISystem6BonsaiSimLoaded = true;
     if (state.disaster || state.disastersOff || state.population < 500) return;
     const month = Math.floor(state.tick / TICKS_PER_MONTH);
     if (latticeInt(month, 977, state.seed) % 72 !== 0) return;
-    const kinds = Object.keys(DISASTER_KINDS);
-    const kind = kinds[latticeInt(month, 431, state.seed) % kinds.length];
+    // Only a disaster whose cause is on the map can happen by itself.
     const i = Math.floor(nextRandom(state) * tileCount(state));
-    const { x, y } = xyOf(state, i);
+    const hint = xyOf(state, i);
+    const kinds = Object.keys(DISASTER_KINDS).filter((kind) => disasterSite(state, kind, hint).ok);
+    const kind = kinds[latticeInt(month, 431, state.seed) % kinds.length];
+    const { x, y } = disasterSite(state, kind, hint);
     startDisaster(state, kind, x, y, "emergent");
     pushEvent(state, "disaster-started", { kind, x, y, cause: "emergent" });
   }
@@ -1817,7 +2773,7 @@ window.AISystem6BonsaiSimLoaded = true;
     let airportTiles = 0; let seaportTiles = 0; let congested = 0; let congestedAt = -1;
     for (let i = 0; i < tileCount(state); i += 1) {
       if (state.road[i] && state.congested[i]) { congested += 1; if (congestedAt < 0) congestedAt = i; }
-      if (!state.powered[i] || !state.roadOk[i]) continue;
+      if (!state.powered[i] || !state.portOk[i]) continue;
       if (state.zone[i] === ZONE_AIRPORT) { airportTiles += 1; if (!anchors.airport) anchors.airport = xyOf(state, i); }
       else if (state.zone[i] === ZONE_SEAPORT) { seaportTiles += 1; if (!anchors.seaport) anchors.seaport = xyOf(state, i); }
     }
@@ -1905,9 +2861,19 @@ window.AISystem6BonsaiSimLoaded = true;
     if (!state.founded) return;
     if (count && (state.undoStack.length || state.redoStack.length)) { state.undoStack = []; state.redoStack = []; pushEvent(state, "history-cleared", { reason: "simulation-advanced" }); }
     for (let step = 0; step < count; step += 1) {
+      // Every tick: queued commands, disasters and moving things. Every day:
+      // one development slice, then whatever it dirtied. Every four days: the
+      // commute routing. Every month: environment, demand, books, charts.
       state.tick += 1; applyPendingCommands(state); advanceDisaster(state); advanceThings(state);
-      if (state.tick % TICKS_PER_DAY === 0) { ensureDerived(state, true); growthPass(state); serviceDispatch(state); checkMilestones(state); }
-      if (state.tick % TICKS_PER_MONTH === 0) { maybeStartEmergentDisaster(state); retirePlants(state); updateDemographics(state); updateMicrosims(state); updateThings(state); recomputeDemand(state); settleBudget(state); recordGraphs(state); composeNewspaper(state); advanceScenario(state); }
+      if (state.tick % TICKS_PER_DAY === 0) {
+        const day = state.tick / TICKS_PER_DAY;
+        if (day % ROUTE_DAYS === 0) state.dirty |= DIRTY.ROUTES;
+        developmentPass(state, day); ensureDerived(state, true); serviceDispatch(state); checkMilestones(state);
+      }
+      if (state.tick % TICKS_PER_MONTH === 0) {
+        state.dirty |= DIRTY.ENV; maybeStartEmergentDisaster(state); retirePlants(state); updateDemographics(state); updateMicrosims(state); updateThings(state);
+        recomputeDemand(state); settleBudget(state); recordGraphs(state); composeNewspaper(state); advanceScenario(state);
+      }
     }
   }
   function dateOf(state) {
@@ -2083,12 +3049,108 @@ window.AISystem6BonsaiSimLoaded = true;
     for (let y = 0; y < state.size; y += 1) { out.west += carries(indexOf(state, 0, y)); out.east += carries(indexOf(state, last, y)); }
     return out;
   }
+  // --- Advisors (3.12) ---------------------------------------------------------
+  // Six advisors each name the one or two things that matter most right now.
+  // The core only says which (a key), how bad (0 fine .. 3 urgent), the
+  // numbers behind it and where to look; the shell owns the words.
+  const ADVISOR_IDS = Object.freeze(["finance", "planning", "transport", "utilities", "safety", "health"]);
+  function advisorReport(state) {
+    ensureDerived(state);
+    const n = tileCount(state); const size = state.size;
+    const out = Object.fromEntries(ADVISOR_IDS.map((id) => [id, []]));
+    const say = (advisor, key, severity, values = {}, at = null) => out[advisor].push({ advisor, key, severity, values, at });
+    const where = (i) => (i >= 0 ? { x: i % size, y: Math.floor(i / size) } : null);
+    // Finance: this year's books from the monthly history.
+    const recent = state.budgetHistory.slice(-MONTHS_PER_YEAR);
+    const income = recent.reduce((sum, item) => sum + (item.income || 0), 0);
+    const expense = recent.reduce((sum, item) => sum + (item.expense || 0), 0);
+    const net = income - expense;
+    if (state.funds < 0) say("finance", "finance_in_debt", 3, { funds: state.funds, net });
+    else if (recent.length && net < 0 && state.funds < -net * 2) say("finance", "finance_deficit", 3, { net, funds: state.funds, months: Math.floor(state.funds / Math.max(1, -net / 12)) });
+    else if (recent.length && net < 0) say("finance", "finance_deficit", 2, { net, funds: state.funds, months: Math.floor(state.funds / Math.max(1, -net / 12)) });
+    else if (recent.length >= 6 && income > 0 && net > income * 0.25) say("finance", "finance_surplus", 1, { net, income, funds: state.funds });
+    const topTax = Math.max(state.taxRates.r, state.taxRates.c, state.taxRates.i);
+    if (topTax >= 12) say("finance", "finance_tax_high", 2, { rate: topTax });
+    if (state.bonds.length) say("finance", "finance_bonds", state.bonds.length >= 5 ? 2 : 1, { bonds: state.bonds.length, principal: state.bonds.reduce((sum, bond) => sum + bond.principal, 0) });
+    // Planning and the rest walk the zoned land once.
+    let zoned = 0; let empty = [0, 0, 0, 0]; let noRoad = 0; let noRoadAt = -1; let noCommute = 0; let noCommuteAt = -1;
+    let unpowered = 0; let unpoweredAt = -1; let dry = 0; let dryAt = -1; let crimeSum = 0; let pollutionSum = 0; let valueSum = 0;
+    let crimeWorst = -1; let crimeWorstAt = -1; let unpoliced = 0; let unpolicedAt = -1; let unfired = 0; let polluted = 0; let pollutedAt = -1;
+    for (let i = 0; i < n; i += 1) {
+      const z = state.zone[i]; if (z < ZONE_R || z > ZONE_I) continue;
+      zoned += 1; crimeSum += state.crime[i]; pollutionSum += state.pollution[i]; valueSum += state.landValue[i];
+      if (!state.lot[i]) empty[z] += 1;
+      const code = state.problemCode[i];
+      if (code === PROBLEM.NO_ROAD) { noRoad += 1; if (noRoadAt < 0) noRoadAt = i; }
+      else if (code === PROBLEM.NO_COMMUTE) { noCommute += 1; if (noCommuteAt < 0) noCommuteAt = i; }
+      else if (code === PROBLEM.NO_POWER) { unpowered += 1; if (unpoweredAt < 0) unpoweredAt = i; }
+      if (state.density[i] === DENSITY_HIGH && !state.watered[i]) { dry += 1; if (dryAt < 0) dryAt = i; }
+      if (state.crime[i] > crimeWorst) { crimeWorst = state.crime[i]; crimeWorstAt = i; }
+      if (state.lot[i] && !state.policeStrength[i]) { unpoliced += 1; if (unpolicedAt < 0) unpolicedAt = i; }
+      if (state.lot[i] && !state.fireStrength[i]) unfired += 1;
+      if (z === ZONE_R && state.pollution[i] >= LOT_RULES.pollutionProblem) { polluted += 1; if (pollutedAt < 0) pollutedAt = i; }
+    }
+    const built = state.buildings.length;
+    const avgCrime = zoned ? Math.round(crimeSum / zoned) : 0; const avgPollution = zoned ? Math.round(pollutionSum / zoned) : 0; const avgValue = zoned ? Math.round(valueSum / zoned) : 0;
+    const demandKeys = ["", "r", "c", "i"];
+    for (const z of [ZONE_R, ZONE_C, ZONE_I]) {
+      const demand = state.demand[demandKeys[z]];
+      if (demand >= 30 && empty[z] < 18) say("planning", `planning_zone_${demandKeys[z]}`, demand >= 60 ? 2 : 1, { demand, empty: empty[z] });
+    }
+    if (noCommute) say("planning", "planning_no_commute", noCommute >= 18 ? 3 : 2, { tiles: noCommute }, where(noCommuteAt));
+    if (noRoad) say("planning", "planning_no_road", 2, { tiles: noRoad }, where(noRoadAt));
+    if (built >= 20 && avgValue < LOT_RULES.midLandValue) say("planning", "planning_land_value_low", 1, { value: avgValue, needed: LOT_RULES.midLandValue });
+    // Transport.
+    let congestedRoads = 0; let congestedAt = -1; let roads = 0;
+    for (let i = 0; i < n; i += 1) { if (state.road[i]) roads += 1; if (state.congested[i]) { congestedRoads += 1; if (congestedAt < 0) congestedAt = i; } }
+    let homes = 0; let longCommutes = 0; let longAt = -1;
+    for (const building of state.buildings) {
+      if (building.zone !== ZONE_R || !lotOccupied(building.state) || building.access < 0) continue;
+      homes += 1; const distance = state.distJobs[building.access];
+      if (distance < ROUTE_UNREACHED && distance > COMMUTE_LIMIT * 0.75) { longCommutes += 1; if (longAt < 0) longAt = indexOf(state, building.x, building.y); }
+    }
+    if (congestedRoads) say("transport", "transport_congested", congestedRoads >= Math.max(12, roads / 10) ? 3 : 2, { roads: congestedRoads, share: roads ? Math.round(congestedRoads * 100 / roads) : 0 }, where(congestedAt));
+    if (homes && longCommutes * 5 >= homes) say("transport", "transport_long_commutes", 2, { homes: longCommutes, share: Math.round(longCommutes * 100 / homes) }, where(longAt));
+    const transit = state.busService.depots + state.railService.connectedStations + state.subwayService.connectedStations + (state.highwayService.inService ? 1 : 0);
+    if (state.population >= 10000 && !transit) say("transport", "transport_no_transit", 2, { population: state.population });
+    // Utilities.
+    // No plant at all: the grid reports neither supply nor demand, so this
+    // has to be told before "short" or "not connected" can mean anything.
+    if (!state.powerCapacity) { if (zoned) say("utilities", "utilities_no_plant", 3, { tiles: zoned }, where(unpoweredAt)); }
+    else if (state.powerDemand > state.powerCapacity) say("utilities", "utilities_power_short", 3, { demand: state.powerDemand, capacity: state.powerCapacity }, where(unpoweredAt));
+    else if (state.powerCapacity && state.powerDemand > state.powerCapacity * 0.9) say("utilities", "utilities_power_tight", 2, { demand: state.powerDemand, capacity: state.powerCapacity });
+    // Enough power, but some zones are not on the grid: SC2K's "some zones
+    // have no power" — a line is missing, not a plant.
+    if (unpowered && state.powerCapacity && state.powerDemand <= state.powerCapacity) say("utilities", "utilities_unconnected", unpowered >= 18 ? 3 : 2, { tiles: unpowered }, where(unpoweredAt));
+    if (state.waterDemand > state.waterCapacity && dry) say("utilities", "utilities_water_short", 2, { demand: state.waterDemand, capacity: state.waterCapacity }, where(dryAt));
+    else if (dry >= 9) say("utilities", "utilities_dense_dry", 1, { tiles: dry }, where(dryAt));
+    const aging = state.facilities.filter((facility) => FACILITY_KINDS[facility.kind].lifespan && state.tick - (facility.builtTick || 0) >= PLANT_LIFESPAN_TICKS - 5 * MONTHS_PER_YEAR * TICKS_PER_MONTH);
+    if (aging.length) say("utilities", "utilities_plant_aging", 2, { plants: aging.length }, { x: aging[0].x, y: aging[0].y });
+    // Safety.
+    if (built >= 10 && avgCrime >= 45) say("safety", "safety_crime_high", avgCrime >= 70 ? 3 : 2, { crime: avgCrime }, where(crimeWorstAt));
+    const zonedBuilt = state.buildings.reduce((sum, building) => sum + building.w * building.h, 0);
+    if (zonedBuilt >= 20 && unpoliced * 3 >= zonedBuilt) say("safety", "safety_no_police", 2, { share: Math.round(unpoliced * 100 / zonedBuilt) }, where(unpolicedAt));
+    if (zonedBuilt >= 20 && unfired * 3 >= zonedBuilt) say("safety", "safety_no_fire", 1, { share: Math.round(unfired * 100 / zonedBuilt) });
+    // Health and education.
+    const capacity = serviceCapacity(state); const people = state.population;
+    if (people >= 2000 && capacity.school < people * 0.18) say("health", "health_schools_short", people >= 8000 ? 2 : 1, { seats: Math.round(capacity.school), needed: Math.round(people * 0.18), eq: state.eq });
+    if (people >= 2000 && capacity.health < people * 0.10) say("health", "health_hospitals_short", people >= 8000 ? 2 : 1, { beds: Math.round(capacity.health), needed: Math.round(people * 0.10), le: state.le });
+    if (people >= 20000 && capacity.university < people * 0.08) say("health", "health_university_short", 1, { seats: Math.round(capacity.university), needed: Math.round(people * 0.08) });
+    if (polluted) say("health", "health_pollution", polluted >= 18 ? 2 : 1, { tiles: polluted, pollution: avgPollution }, where(pollutedAt));
+    const advisors = ADVISOR_IDS.map((id) => {
+      const items = out[id].sort((a, b) => b.severity - a.severity).slice(0, 2);
+      return { id, severity: items.length ? items[0].severity : 0, items: items.length ? items : [{ advisor: id, key: `${id}_ok`, severity: 0, values: {}, at: null }] };
+    });
+    const top = advisors.flatMap((advisor) => advisor.items).sort((a, b) => b.severity - a.severity)[0];
+    return { advisors, top, figures: { income, expense, net, population: people, avgCrime, avgPollution, avgValue, congestedRoads, longCommutes, homes } };
+  }
+
   function neighborsReport(state) {
     ensureDerived(state);
     const connections = edgeConnections(state);
     let seaportTiles = 0; let airportTiles = 0;
     for (let i = 0; i < tileCount(state); i += 1) {
-      if (!state.powered[i] || !state.roadOk[i]) continue;
+      if (!state.powered[i] || !state.portOk[i]) continue;
       if (state.zone[i] === ZONE_SEAPORT) seaportTiles += 1; else if (state.zone[i] === ZONE_AIRPORT) airportTiles += 1;
     }
     const portTrade = Math.floor(seaportTiles / 2) * 5 + Math.floor(airportTiles / 3) * 4;
@@ -2114,16 +3176,56 @@ window.AISystem6BonsaiSimLoaded = true;
       highway: !!state.highway[i], onramp: !!state.onramp[i],
       road: !!state.road[i], rail: !!state.rail[i], railConnected: !!state.railConnected[i], railOk: !!state.railOk[i], wire: !!state.wire[i], pipe: !!state.pipe[i], park: !!state.park[i], over: state.over[i], zone: state.zone[i], density: state.density[i],
       stage: state.stage[i], buildingState: state.buildingState[i], buildingId: state.buildingId[i], buildingAnchor: state.buildingAnchor[i], powered: !!state.powered[i], watered: !!state.watered[i], roadOk: !!state.roadOk[i],
-      traffic: state.traffic[i], congested: !!state.congested[i], policeCovered: !!state.policeCovered[i], fireCovered: !!state.fireCovered[i], educationCovered: !!state.educationCovered[i], healthCovered: !!state.healthCovered[i],
+      traffic: state.traffic[i], congested: !!state.congested[i], policeCovered: !!state.policeCovered[i], fireCovered: !!state.fireCovered[i],
+      policeStrength: state.policeStrength[i], fireStrength: state.fireStrength[i], educationCovered: !!state.educationCovered[i], healthCovered: !!state.healthCovered[i],
       landValue: state.landValue[i], pollution: state.pollution[i], crime: state.crime[i], fireRisk: state.fireRisk[i], happiness: state.happiness[i], facility: facility ? facility.kind : null,
       microsim: facility ? (state.microsims.find((record) => record.kind === facility.kind && record.x === facility.x && record.y === facility.y) || null) : null,
       plant: facility && PLANT_KINDS[facility.kind] ? facility.kind : null, service: facility && SERVICE_KINDS[facility.kind] ? facility.kind : null,
       facilityFootprint: facility ? { ...footprintOf(facility), legacy: !!(LEGACY_FOOTPRINTS[facility.kind] && !Number.isInteger(facility.w)) } : null,
+      lot: lotInfo(state, i),
       problem: code ? { code: PROBLEM_NAMES[code], x, y, action: PROBLEM_ACTIONS[code] } : null };
   }
 
+  // The query panel's view of the building on a tile (3.12): its size, tier,
+  // residents or jobs, and whether its commute reaches anyone.
+  function lotInfo(state, i) {
+    const zone = state.zone[i]; if (zone < ZONE_R || zone > ZONE_I) return null;
+    const building = state.lot[i] && state.buildingId[i] >= 0 ? state.buildings[state.buildingId[i]] : null;
+    const access = building ? building.access : state.accessRoad[i];
+    const distance = access < 0 ? null : zone === ZONE_R ? state.distJobs[access] : state.distHomes[access];
+    return { built: !!building, x: building ? building.x : i % state.size, y: building ? building.y : Math.floor(i / state.size),
+      size: building ? building.w : 0, tier: building ? building.tier : 0, state: building ? building.state : 0,
+      residents: building ? building.population : 0, jobs: building ? building.jobs : 0,
+      access: access >= 0, commute: commuteOk(state, zone, access), commuteDistance: distance === null || distance >= ROUTE_UNREACHED ? null : distance };
+  }
+
+  // Routes have memory: the next pass prices roads using the previous
+  // congestion, and development reads the last scheduled distance fields.
+  function serializeRouting(state) {
+    return { version: 1, traffic: Array.from(state.traffic), congested: Array.from(state.congested),
+      distJobs: Array.from(state.distJobs), distHomes: Array.from(state.distHomes), sources: { ...state.routeSources },
+      railRiders: state.railService.riders, subwayRiders: state.subwayService.riders,
+      highwayTrips: state.highwayService.roadTrafficRelief };
+  }
+  function restoreRouting(state, data) {
+    if (data === undefined) return; // Older v5 saves rebuild once, then retain routing on their next save.
+    const count = tileCount(state);
+    if (!data || data.version !== 1 || !data.sources) throw new Error("bonsai-import-invalid: routing");
+    for (const key of ["jobs", "homes"]) if (!Number.isInteger(data.sources[key]) || data.sources[key] < 0 || data.sources[key] > count) throw new Error("bonsai-import-invalid: routing-sources");
+    for (const key of ["railRiders", "subwayRiders", "highwayTrips"]) if (!Number.isSafeInteger(data[key]) || data[key] < 0) throw new Error("bonsai-import-invalid: routing-riders");
+    state.traffic = readLayer(data, "traffic", count, 65535, Uint16Array);
+    state.congested = readLayer(data, "congested", count, 1);
+    state.distJobs = readLayer(data, "distJobs", count * 3, ROUTE_UNREACHED, Uint16Array);
+    state.distHomes = readLayer(data, "distHomes", count * 3, ROUTE_UNREACHED, Uint16Array);
+    state.routeSources = { ...data.sources };
+    state.railService.riders = state.railService.roadTrafficRelief = data.railRiders;
+    state.subwayService.riders = state.subwayService.roadTrafficRelief = data.subwayRiders;
+    state.highwayService.roadTrafficRelief = data.highwayTrips;
+    recomputeProblems(state);
+  }
+
   function serialize(state) {
-    return { format: FORMAT, version: 4, rulesetVersion: 4, name: state.name, seed: state.seed, rngState: state.rngState | 0, size: state.size, terrainPreset: state.terrainPreset, yearFounded: state.yearFounded,
+    return { format: FORMAT, version: 5, rulesetVersion: 5, name: state.name, seed: state.seed, rngState: state.rngState | 0, size: state.size, terrainPreset: state.terrainPreset, yearFounded: state.yearFounded,
       tick: state.tick, funds: state.funds, taxRate: state.taxRate, taxRates: { ...state.taxRates }, bonds: state.bonds.map((item) => ({ ...item })), ordinances: { ...state.ordinances },
       eq: state.eq, le: state.le, workforcePercent: state.workforcePercent, unemployed: state.unemployed, nationalPopulation: state.nationalPopulation,
       demand: { ...state.demand }, economyIndex: state.economyIndex,
@@ -2139,7 +3241,11 @@ window.AISystem6BonsaiSimLoaded = true;
       road: Array.from(state.road), rail: Array.from(state.rail), wire: Array.from(state.wire), pipe: Array.from(state.pipe), park: Array.from(state.park), zone: Array.from(state.zone), density: Array.from(state.density),
       stage: Array.from(state.stage), buildingState: Array.from(state.buildingState), constructionTimer: Array.from(state.constructionTimer), variant: Array.from(state.variant),
       catalogId: Array.from(state.catalogId), subway: Array.from(state.subway), waterLevel: Array.from(state.waterLevel), salt: Array.from(state.salt),
-      highway: Array.from(state.highway), onramp: Array.from(state.onramp),
+      highway: Array.from(state.highway), onramp: Array.from(state.onramp), lot: Array.from(state.lot),
+      // The monthly environment is saved so a reopened city shows (and taxes)
+      // the same land value, crime and pollution it had.
+      landValue: Array.from(state.landValue), crime: Array.from(state.crime), pollution: Array.from(state.pollution),
+      routing: serializeRouting(state),
       rotate: Array.from(state.rotate), tunnel: Array.from(state.tunnel), waterKind: Array.from(state.waterKind), blaze: Array.from(state.blaze),
       disaster: state.disaster ? { ...state.disaster } : null, disastersOff: state.disastersOff,
       newspaper: cloneJson(state.newspaper), paperDelivery: state.paperDelivery, newsMemo: cloneJson(state.newsMemo),
@@ -2192,6 +3298,28 @@ window.AISystem6BonsaiSimLoaded = true;
       highway: zeros(), onramp: zeros(),
       waterKind: water.map((value) => (value ? 1 : 0)), sc2Sidecar: null };
   }
+  // v5 (ruleset 5) groups the per-tile buildings of v4 into lots with the
+  // old grouping rule; isolated tiles become 1x1 lots and the size is
+  // written back to stage. Funds and everything else carry over.
+  function migrateEngineV4To5(data) {
+    if (!data || data.format !== FORMAT || data.version !== 4) throw new Error("bonsai-import-invalid: v4");
+    if (!SUPPORTED_SIZES.includes(data.size)) throw new Error("bonsai-import-invalid: size");
+    const count = data.size * data.size;
+    const layer = (key) => (Array.isArray(data[key]) && data[key].length === count ? data[key] : new Array(count).fill(0));
+    const zone = layer("zone"); const density = layer("density"); const stage = layer("stage"); const buildingState = layer("buildingState");
+    // An importer that already knows its buildings (.sc2) hands the lots in.
+    const grouped = Array.isArray(data.lot) && data.lot.length === count
+      ? { lot: Uint16Array.from(data.lot), stage: Uint8Array.from(stage) }
+      : inferLots(data.size, { zone, density, stage, buildingState });
+    const outStage = stage.slice(); const outState = buildingState.slice(); const outTimer = layer("constructionTimer").slice();
+    for (let i = 0; i < count; i += 1) {
+      if (grouped.lot[i]) { outStage[i] = grouped.stage[i]; if (outState[i] === BUILDING_EMPTY) outState[i] = BUILDING_ACTIVE; outTimer[i] = 0; }
+      else if (zone[i] >= ZONE_R && zone[i] <= ZONE_I) { outStage[i] = 0; outState[i] = 0; outTimer[i] = 0; }
+    }
+    // A grouped lot takes its anchor's state on every cell.
+    for (let i = 0; i < count; i += 1) if (grouped.lot[i]) outState[i] = outState[grouped.lot[i] - 1];
+    return { ...cloneJson(data), version: 5, rulesetVersion: 5, lot: Array.from(grouped.lot), stage: outStage, buildingState: outState, constructionTimer: outTimer };
+  }
   function migrateEngineV3To4(data) {
     if (!data || data.format !== FORMAT || data.version !== 3) throw new Error("bonsai-import-invalid: v3");
     // v4 adds the saved camera, the month-by-month funding history, and the
@@ -2205,8 +3333,9 @@ window.AISystem6BonsaiSimLoaded = true;
     let data = input && input.version === 1 ? migrateEngineV1(input) : input;
     if (data && data.version === 2) data = migrateEngineV2To3(data);
     if (data && data.version === 3) data = migrateEngineV3To4(data);
-    if (!data || data.format !== FORMAT) throw new Error("bonsai-import-invalid: format"); if (data.version > 4) throw new Error("bonsai-import-version-too-new");
-    if (data.version !== 4 || data.rulesetVersion !== 4) throw new Error("bonsai-import-version"); if (!SUPPORTED_SIZES.includes(data.size)) throw new Error("bonsai-import-invalid: size");
+    if (data && data.version === 4) data = migrateEngineV4To5(data);
+    if (!data || data.format !== FORMAT) throw new Error("bonsai-import-invalid: format"); if (data.version > 5) throw new Error("bonsai-import-version-too-new");
+    if (data.version !== 5 || data.rulesetVersion !== 5) throw new Error("bonsai-import-version"); if (!SUPPORTED_SIZES.includes(data.size)) throw new Error("bonsai-import-invalid: size");
     if (!Number.isInteger(data.tick) || data.tick < 0 || !Number.isInteger(data.funds)) throw new Error("bonsai-import-invalid: scalar");
     const state = createCity({ seed: Number.isInteger(data.seed) ? data.seed : 0, size: data.size, terrainPreset: TERRAIN_PRESETS.includes(data.terrainPreset) ? data.terrainPreset : "balanced", name: typeof data.name === "string" ? data.name : "",
       yearFounded: Number.isInteger(data.yearFounded) && data.yearFounded >= 1000 && data.yearFounded <= 2999 ? data.yearFounded : START_YEAR });
@@ -2226,6 +3355,9 @@ window.AISystem6BonsaiSimLoaded = true;
     state.constructionTimer = readLayer(data, "constructionTimer", count, 65535, Uint16Array); state.variant = readLayer(data, "variant", count, 255);
     state.catalogId = readLayer(data, "catalogId", count, 255); state.subway = readLayer(data, "subway", count, 63); state.waterLevel = readLayer(data, "waterLevel", count, MAX_ALT);
     state.highway = readLayer(data, "highway", count, 1); state.onramp = readLayer(data, "onramp", count, 1);
+    state.lot = readLayer(data, "lot", count, count, Uint16Array);
+    const savedEnvironment = ["landValue", "crime", "pollution"].every((key) => Array.isArray(data[key]) && data[key].length === count);
+    if (savedEnvironment) { state.landValue = readLayer(data, "landValue", count, 255); state.crime = readLayer(data, "crime", count, 255); state.pollution = readLayer(data, "pollution", count, 255); }
     state.salt = readLayer(data, "salt", count, 1); state.rotate = readLayer(data, "rotate", count, 1); state.tunnel = readLayer(data, "tunnel", count, 63); state.waterKind = readLayer(data, "waterKind", count, 7);
     state.blaze = Array.isArray(data.blaze) && data.blaze.length === count ? readLayer(data, "blaze", count, 7) : new Uint8Array(count);
     state.disaster = data.disaster && typeof data.disaster === "object" && DISASTER_KINDS[data.disaster.kind]
@@ -2346,7 +3478,10 @@ window.AISystem6BonsaiSimLoaded = true;
       state.pendingCommands.push({ schemaVersion: 2, type: item.type, payload: { ...(item.payload || {}) }, targetTick: item.targetTick, clientCommandId: typeof item.clientCommandId === "string" ? item.clientCommandId : "", sequence: item.sequence, originalType: item.originalType || item.type });
     }
     state.pendingCommands.sort((a, b) => (a.targetTick - b.targetTick) || (a.sequence - b.sequence)); state.events = []; state.notices = []; state.undoStack = []; state.redoStack = [];
-    markDerivedDirty(state); ensureDerived(state); state.rev = 1; return state;
+    repairLots(state);
+    markDerivedDirty(state, savedEnvironment ? DIRTY_STRUCTURE : DIRTY_ALL); ensureDerived(state);
+    restoreRouting(state, data.routing);
+    state.rev = 1; return state;
   }
 
   async function sha256Hex(text) {
@@ -2366,7 +3501,7 @@ window.AISystem6BonsaiSimLoaded = true;
     const errors = [];
     if (!envelope || typeof envelope !== "object" || Array.isArray(envelope)) errors.push("envelope"); else {
       if (envelope.format !== FORMAT) errors.push("format"); if (!Number.isInteger(envelope.formatVersion) || envelope.formatVersion < 1 || envelope.formatVersion > SAVE_FORMAT_VERSION) errors.push("format-version");
-      if (!envelope.engine || ![1, 2, 3, 4].includes(envelope.engine.rulesetVersion)) errors.push("ruleset-version"); if (!envelope.simulation || typeof envelope.simulation.seed !== "number") errors.push("simulation-seed");
+      if (!envelope.engine || ![1, 2, 3, 4, 5].includes(envelope.engine.rulesetVersion)) errors.push("ruleset-version"); if (!envelope.simulation || typeof envelope.simulation.seed !== "number") errors.push("simulation-seed");
       if (!envelope.payload || typeof envelope.payload !== "object") errors.push("payload"); if (!envelope.integrity || envelope.integrity.algorithm !== INTEGRITY_ALGORITHM) errors.push("integrity-algorithm");
       if (!envelope.integrity || envelope.integrity.canonicalization !== CANONICALIZATION) errors.push("integrity-canonicalization"); if (!envelope.integrity || !/^[a-f0-9]{64}$/i.test(String(envelope.integrity.digest))) errors.push("integrity-digest");
     }
@@ -2376,12 +3511,13 @@ window.AISystem6BonsaiSimLoaded = true;
   function migrateSave(envelope) {
     if (!envelope || envelope.format !== FORMAT) throw new Error("bonsai-save-invalid: format"); if (envelope.formatVersion > SAVE_FORMAT_VERSION) throw new Error("bonsai-save-version-too-new");
     if (envelope.formatVersion === SAVE_FORMAT_VERSION) return envelope;
-    if (![1, 2].includes(envelope.formatVersion)) throw new Error("bonsai-save-version-unsupported");
+    if (![1, 2, 3, 4].includes(envelope.formatVersion)) throw new Error("bonsai-save-version-unsupported");
     const from = envelope.formatVersion; const out = cloneJson(envelope);
     if (out.formatVersion === 1) { out.formatVersion = 2; out.payload = migrateEngineV1(out.payload); }
     if (out.formatVersion === 2) { out.formatVersion = 3; out.payload = migrateEngineV2To3(out.payload); }
-    out.formatVersion = 4; out.payload = migrateEngineV3To4(out.payload);
-    out.engine = { rulesetVersion: 4, fixedTickHz: 20, ticksPerDay: 5, daysPerMonth: 25 };
+    if (out.formatVersion === 3) { out.formatVersion = 4; out.payload = migrateEngineV3To4(out.payload); }
+    out.formatVersion = 5; out.payload = migrateEngineV4To5(out.payload);
+    out.engine = { rulesetVersion: 5, fixedTickHz: 20, ticksPerDay: 5, daysPerMonth: 25 };
     out.simulation = { seed: out.payload.seed, rng: { algorithm: "mulberry32-v1", state: [out.payload.rngState | 0] } }; out.migratedFromFormatVersion = from; return out;
   }
   async function decodeSave(envelope) {
@@ -2471,7 +3607,7 @@ window.AISystem6BonsaiSimLoaded = true;
       catalogId: state.catalogId, subway: state.subway, waterLevel: state.waterLevel, salt: state.salt, rotate: state.rotate, tunnel: state.tunnel, waterKind: state.waterKind,
       highway: state.highway, onramp: state.onramp,
       blaze: state.blaze, disaster: state.disaster ? { ...state.disaster } : null,
-      facilityAt: state.facilityAt, plantAt: state.plantAt, serviceAt: state.serviceAt, facilities: state.facilities, plants: state.plants, services: state.services,
+      facilityAt: state.facilityAt, plantAt: state.plantAt, serviceAt: state.serviceAt, facilities: state.facilities.map((item) => ({ ...item, footprint: footprintOf(item) })), plants: state.plants, services: state.services, lot: state.lot,
       railService: { ...state.railService }, subwayService: { ...state.subwayService }, busService: { ...state.busService },
       things: state.things.map((item) => ({ kind: item.kind, x: item.x, y: item.y, z: item.z, dir: item.dir })),
       agents: derivedAgentFacts(state) };
@@ -2479,7 +3615,7 @@ window.AISystem6BonsaiSimLoaded = true;
 
   window.AISystem6BonsaiSim = Object.freeze({
     SIZE, DEFAULT_SIZE, SUPPORTED_SIZES, TERRAIN_PRESETS, MAX_ALT, MAX_STAGE, FORMAT, SAVE_VERSION, COMMAND_SCHEMA_VERSION, EVENT_SCHEMA_VERSION, ENGINE_RULESET_VERSION,
-    DAYS_PER_MONTH, MONTHS_PER_YEAR, YEAR_FOUNDED_CHOICES, ORDINANCES, ORDINANCE_IDS, BOND_PRINCIPAL, MAX_BONDS, GRAPH_SERIES, GRAPH_TIERS, REWARD_TIERS, MICROSIM_KINDS, DISASTER_KINDS, NEWS_STORY_KEYS, TECHS, ARCO_KINDS,
+    DAYS_PER_MONTH, MONTHS_PER_YEAR, YEAR_FOUNDED_CHOICES, ORDINANCES, ORDINANCE_IDS, BOND_PRINCIPAL, MAX_BONDS, GRAPH_SERIES, GRAPH_TIERS, REWARD_TIERS, MICROSIM_KINDS, DISASTER_KINDS, DISASTER_RULES, disasterSite, NEWS_STORY_KEYS, TECHS, ARCO_KINDS,
     FIXED_TICK_HZ, TICKS_PER_DAY, SAVE_FORMAT_VERSION, INTEGRITY_ALGORITHM, CANONICALIZATION, CONGESTION_THRESHOLD, COSTS, unitCost, TOOLS, FACILITY_KINDS, SERVICE_KINDS, PLANT_KINDS, FUNDING_SERVICES,
     OVER: Object.freeze({ NONE: 0, ROAD: 1, WIRE: 2, PARK: 3, ROADWIRE: 4 }), ZONE: Object.freeze({ NONE: 0, R: 1, C: 2, I: 3, MILITARY: 4, AIRPORT: 5, SEAPORT: 6 }), DENSITY: Object.freeze({ NONE: 0, LOW: 1, HIGH: 2 }),
     BUILDING_STATE: Object.freeze({ EMPTY: 0, FOUNDATION: 1, CONSTRUCTION: 2, ACTIVE: 3, DECLINING: 4, ABANDONED: 5, RECOVERING: 6 }), PROBLEM,
@@ -2487,5 +3623,10 @@ window.AISystem6BonsaiSimLoaded = true;
     cityReport, populationBreakdown, industryBreakdown, neighborsReport, INDUSTRY_SECTORS, NEIGHBOR_DIRECTIONS, NEIGHBOR_NAME_COUNT,
     tileInfo, footprintOf, LEGACY_FOOTPRINTS, sc2DerivedGrids, SC2_GRID_SIDES, ensureDerived, dateOf, drainNotices, derivedAgentFacts, buildRenderSnapshot, serialize, deserialize,
     weatherOf, WEATHER_TYPES,
+    ADVISOR_IDS, advisorReport,
+    LOT_CAPACITY, LOT_RULES, COMMUTE_LIMIT, ROAD_REACH, PORT_REACH, ROUTE_COST, HIGHWAY_CAPACITY, lotCapacity, demandReport: demandInternals,
+    // Marks every derived system stale, for tools and tests that edit layers
+    // directly; the next read recomputes them.
+    invalidateDerived: (state) => { markDerivedDirty(state, DIRTY_ALL); repairLots(state); },
   });
 })();

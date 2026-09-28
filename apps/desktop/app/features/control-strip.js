@@ -751,7 +751,7 @@ function controlStripGeometryBounds() {
   const gap = controlStripReadToken("--desk-edge-gap", 10);
   const thickness = controlStripThickness();
   const viewportHeight = window.innerHeight;
-  const available = Math.max(0, viewportHeight - menuBarHeight - thickness - gap);
+  const available = Math.max(0, viewportHeight - menuBarHeight - thickness - gap - (typeof deskDockReserve === "function" ? deskDockReserve() : 0));
   return { menuBarHeight, gap, thickness, viewportHeight, available };
 }
 

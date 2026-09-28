@@ -27,6 +27,17 @@
     return parts;
   }
 
+  // Blank-line blocks: the one paragraph rule shared by beats and storyboard rows.
+  function listenBlocks(source) {
+    const blocks = [];
+    const blockPattern = /[^\n]+(?:\n(?!\s*\n)[^\n]*)*/g;
+    let block;
+    while ((block = blockPattern.exec(source)) !== null) {
+      if (block[0].trim()) blocks.push({ start: block.index, text: block[0] });
+    }
+    return blocks;
+  }
+
   function segmentListenBeats(body = "") {
     const source = String(body || "");
     const beats = [];
@@ -35,12 +46,7 @@
       if (!text.trim()) return;
       beats.push({ index: beats.length, start, end, text });
     };
-    const blockPattern = /[^\n]+(?:\n(?!\s*\n)[^\n]*)*/g;
-    let block;
-    while ((block = blockPattern.exec(source)) !== null) {
-      const blockStart = block.index;
-      const blockText = block[0];
-      if (!blockText.trim()) continue;
+    for (const { start: blockStart, text: blockText } of listenBlocks(source)) {
       if (blockText.trim().length <= LONG_BEAT_CHARS) {
         pushBeat(blockStart, blockStart + blockText.length);
         continue;
@@ -150,8 +156,125 @@
     }).join("\n");
   }
 
+  // --- storyboard (分镜) rows -------------------------------------------------
+  // One row per paragraph, never per beat: a paragraph is one run of shots.
+  // A one-sentence transition ("内存正常了，我就想试点更过分的。") introduces
+  // the shots after it, so it folds forward into the next paragraph; Markdown
+  // headings are not shots and never become rows. Each row carries a q: anchor
+  // (its opening words) that findListenQuoteRange resolves back to the row's
+  // own start, and an estimate that sums the SRT's per-beat estimates, so the
+  // two exports share one clock (the SRT alone also reads a heading aloud). Visual cues are placed by quote; a cue
+  // whose sentence has left the body is dropped, never guessed onto a row.
+  const TRANSITION_MAX_CHARS = 60;
+  const ANCHOR_MAX_CHARS = 40;
+
+  function segmentListenParagraphs(body = "") {
+    const source = String(body || "");
+    const paragraphs = [];
+    let pendingStart = null;
+    const push = (start, end) => {
+      paragraphs.push({ index: paragraphs.length, start, end, text: source.slice(start, end) });
+    };
+    const blocks = listenBlocks(source);
+    blocks.forEach((block, position) => {
+      const trimmed = block.text.trim();
+      const end = block.start + block.text.length;
+      if (isHeadingBlock(block)) return;
+      const start = pendingStart ?? block.start;
+      const isTransition = trimmed.length <= TRANSITION_MAX_CHARS && splitSentences(trimmed).length === 1;
+      const next = blocks[position + 1];
+      // A transition never folds across a heading or past the last paragraph.
+      if (isTransition && next && !isHeadingBlock(next)) {
+        pendingStart = start;
+        return;
+      }
+      pendingStart = null;
+      push(start, end);
+    });
+    return paragraphs;
+  }
+
+  function isHeadingBlock(block) {
+    const trimmed = block.text.trim();
+    return /^#{1,6}\s/.test(trimmed) && !trimmed.includes("\n");
+  }
+
+  // The shortest opening that ends at a clause mark, reads as words, and
+  // resolves to this paragraph's own start. "" when none does: the row then
+  // carries no anchor rather than one that points somewhere else.
+  function listenParagraphAnchor(body = "", paragraph = {}) {
+    const source = String(body || "");
+    const opening = String(paragraph.text || "").trimStart();
+    const start = source.indexOf(opening, paragraph.start || 0);
+    if (!opening || start < 0) return "";
+    const head = opening.slice(0, ANCHOR_MAX_CHARS).split(/\n|\||--/)[0];
+    const cuts = [];
+    for (let i = 0; i < head.length; i += 1) {
+      if ("，、；：。！？,;:.!?".includes(head[i])) cuts.push(i);
+    }
+    cuts.push(head.length);
+    for (const cut of cuts) {
+      const candidate = head.slice(0, cut).trim();
+      if (candidate.length < 6 || !quoteCandidateUsable(candidate)) continue;
+      if (findListenQuoteRange(source, candidate)?.start === start) return candidate;
+    }
+    return "";
+  }
+
+  function buildStoryboardRows(body = "", { rate = 1, cues = [] } = {}) {
+    const source = String(body || "");
+    const beats = segmentListenBeats(source);
+    const rows = segmentListenParagraphs(source).map((paragraph) => ({
+      ...paragraph,
+      anchor: listenParagraphAnchor(source, paragraph),
+      seconds: beats
+        .filter((beat) => beat.start >= paragraph.start && beat.start < paragraph.end)
+        .reduce((sum, beat) => sum + estimateListenBeatSeconds(beat.text, rate), 0),
+      cues: [],
+    }));
+    for (const cue of cues || []) {
+      const range = findListenQuoteRange(source, cue?.quote);
+      const row = range && rows.find((item) => range.start >= item.start && range.start < item.end);
+      if (row) row.cues.push(cue);
+    }
+    return rows;
+  }
+
+  function formatStoryboardDuration(totalSeconds = 0) {
+    const whole = Math.round(Math.max(0, Number(totalSeconds) || 0));
+    return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
+  }
+
+  // The file is a plain GFM table plus a list; the machine's anchors ride in
+  // HTML comments. Footage and cuttable cells stay empty: only the writer
+  // knows what has been shot and what can go.
+  function buildStoryboardMarkdown(rows = [], { title = "", intro = "", columns = [], notesHeading = "", visual = () => "" } = {}) {
+    const cell = (value) => String(value || "").replace(/\|/g, "\\|").replace(/\s*\n\s*/g, " ").trim();
+    const lines = rows.map((row, position) => {
+      const anchor = row.anchor ? ` <!-- q:${row.anchor} -->` : "";
+      return `| ${position + 1}${anchor} | ${cell(visual(row))} |  | ${formatStoryboardDuration(row.seconds)} |  |`;
+    });
+    return [
+      `# ${title}`,
+      "",
+      intro,
+      "",
+      `| ${columns.map(cell).join(" | ")} |`,
+      `|${" --- |".repeat(columns.length)}`,
+      ...lines,
+      "",
+      notesHeading,
+      "",
+    ].join("\n");
+  }
+
   window.AISystem6ListenBeats = Object.freeze({
     segmentListenBeats,
+    segmentListenParagraphs,
+    listenParagraphAnchor,
+    buildStoryboardRows,
+    formatStoryboardDuration,
+    buildStoryboardMarkdown,
     listenBeatForOffset,
     findListenQuoteRange,
     estimateListenBeatSeconds,

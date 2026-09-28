@@ -26,15 +26,19 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
 
   const LAYERS = Object.freeze(["voxel"]);
   const CHUNK_SIZE = 16;
+  // Most street-traffic cars drawn at once, over the sim's own vehicles.
+  const TRAFFIC_CAP = 360;
   const OVER = Object.freeze({ NONE: 0, ROAD: 1, WIRE: 2, PARK: 3, ROADWIRE: 4 });
   const ZONE = Object.freeze({ NONE: 0, R: 1, C: 2, I: 3 });
   const OVERLAYS = Object.freeze(["none", "power", "water", "traffic", "pollution", "land-value", "police", "fire", "education", "health"]);
 
   // View constants shared with the Canvas backend (bonsai-renderer.js).
   const PX_PER_TILE = 64;
-  const MIN_ZOOM = 0.4;
-  const MAX_ZOOM = 2.5;
-  const DEFAULT_ZOOM = 0.7;
+  // The same four steps as the Canvas backend (16/32/64/128 px per tile);
+  // the default is the 32px overview.
+  const MIN_ZOOM = 0.25;
+  const MAX_ZOOM = 2;
+  const DEFAULT_ZOOM = 0.5;
   const ROTATIONS = 4;
 
   // Camera elevation of thirty degrees keeps the exact 2:1 ground ratio the
@@ -137,6 +141,10 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     return Boolean(gridValue(snapshot, ["pipe", "pipes", "waterPipes"], index, false));
   }
 
+  function isSubway(snapshot, index) {
+    return Boolean(gridValue(snapshot, ["subway", "subwayTiles"], index, false));
+  }
+
   function isTunnel(snapshot, index) {
     return Boolean(gridValue(snapshot, ["tunnel"], index, false));
   }
@@ -222,6 +230,15 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
   // Day/night gate shared with the Canvas backend: the sim clock carries a
   // time of day; night swaps wall textures to lit-window variants. It is a
   // binary renderer state so chunks rebuild only at dusk and dawn.
+  // The shell stamps the season the player chose to see (the seasons switch
+  // is off by default, so the stamp is summer); an unstamped snapshot keeps
+  // the clock-driven season. Mirrors the Canvas backend's shared helper.
+  function seasonOfSnapshot(snapshot) {
+    const stamped = Number(snapshot?.season);
+    if (Number.isInteger(stamped) && stamped >= 0 && stamped <= 3) return stamped;
+    return Math.floor(((Number(snapshot?.tick) || 0) % 1500) / 375);
+  }
+
   function isNight(snapshot) {
     const time = Number.isFinite(snapshot.timeOfDay)
       ? snapshot.timeOfDay
@@ -305,6 +322,14 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     };
   }
 
+  // Straight blend of two colours, alpha included; t is clamped to 0..1.
+  function mixColor(from, to, t) {
+    const k = Math.max(0, Math.min(1, t));
+    const a = Number.isFinite(from.a) ? from.a : 1;
+    const b = Number.isFinite(to.a) ? to.a : 1;
+    return { r: from.r + (to.r - from.r) * k, g: from.g + (to.g - from.g) * k, b: from.b + (to.b - from.b) * k, a: a + (b - a) * k };
+  }
+
   function hexColor(hex, alpha = 1) {
     const value = parseInt(String(hex).slice(1), 16) | 0;
     return { r: ((value >> 16) & 255) / 255, g: ((value >> 8) & 255) / 255, b: (value & 255) / 255, a: alpha };
@@ -342,6 +367,8 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       railAccent: color("metal"),
       wire: color("wire"),
       pipe: color("pipe"),
+      subway: color("subway"),
+      subwayAccent: color("subwayLight"),
       park: color("grassLight"),
     };
 
@@ -636,14 +663,22 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     const sun = Math.sin(time * Math.PI * 2 - Math.PI / 2) * 0.5 + 0.5;
     const dayFactor = Math.max(0.14, Math.min(1, sun * 1.15));
     const mix = (day, night) => night + (day - night) * dayFactor;
+    // Golden hour: the sun turns orange and the shade lavender as it nears
+    // the horizon; at night what light there is reads cool blue.
+    const warmth = Math.max(0, 1 - Math.abs(sun - 0.5) / 0.3);
+    const cool = Math.max(0, Math.min(1, (0.4 - sun) / 0.25));
+    const tone = (white, warm, night) => white + (warm - white) * warmth + (night - white) * cool;
     return {
       sunX: Math.cos(time * Math.PI * 2) * 0.8,
       sunY: 0.55 + sun * 0.65,
       sunZ: 0.45,
       sunIntensity: 0.25 + dayFactor * 0.7,
       ambientIntensity: 0.34 + dayFactor * 0.3,
-      skyR: mix(0.11, 0.043), skyG: mix(0.165, 0.059), skyB: mix(0.125, 0.094),
+      sunR: tone(1, 1, 0.62), sunG: tone(1, 0.62, 0.7), sunB: tone(1, 0.36, 0.95),
+      ambientR: tone(1, 0.86, 0.66), ambientG: tone(1, 0.8, 0.74), ambientB: tone(1, 0.96, 1),
+      skyR: mix(0.11, 0.043) + warmth * 0.05, skyG: mix(0.165, 0.059), skyB: mix(0.125, 0.094) + cool * 0.03,
       dayFactor,
+      warmth,
     };
   }
 
@@ -744,6 +779,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         hash = fnvUpdate(hash, isRail(snapshot, index));
         hash = fnvUpdate(hash, isWire(snapshot, index));
         hash = fnvUpdate(hash, isPipe(snapshot, index));
+        hash = fnvUpdate(hash, isSubway(snapshot, index));
         hash = fnvUpdate(hash, isTunnel(snapshot, index));
         hash = fnvUpdate(hash, isPark(snapshot, index));
         hash = fnvUpdate(hash, isTree(snapshot, index));
@@ -759,8 +795,20 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         hash = fnvUpdate(hash, Boolean(gridValue(snapshot, ["onramp"], index, false)));
       }
     }
+    // Water depth and surf read land up to SHORE_REACH tiles outside the
+    // chunk, and a lot on the chunk edge faces a road just outside it, so
+    // that ring belongs to the signature too.
+    for (let y = startY - SHORE_REACH; y < endY + SHORE_REACH; y += 1) {
+      for (let x = startX - SHORE_REACH; x < endX + SHORE_REACH; x += 1) {
+        if (x >= startX && x < endX && y >= startY && y < endY) continue;
+        if (x < 0 || y < 0 || x >= size || y >= size) continue;
+        hash = fnvUpdate(hash, isWater(snapshot, y * size + x));
+        hash = fnvUpdate(hash, isRoad(snapshot, y * size + x));
+      }
+    }
     hash = fnvUpdate(hash, isNight(snapshot) ? 1 : 0);
-    hash = fnvUpdate(hash, Math.floor(((Number(snapshot.tick) || 0) % 1500) / 375));
+    hash = fnvUpdate(hash, seasonOfSnapshot(snapshot));
+    hash = fnvUpdate(hash, state.underground ? 1 : 0);
     const inChunk = (object) => object.x >= startX && object.x < endX && object.y >= startY && object.y < endY;
     (sceneObjects?.buildings || []).filter(inChunk).forEach((object) => {
       hash = fnvUpdate(hash, object.x);
@@ -843,8 +891,11 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       normal = normal.map((v) => v / length);
       const top = normal[1] > .35;
       const xFace = Math.abs(normal[0]) > Math.abs(normal[2]);
+      // A block laid on a slope carries a vertical shear: its height rises by
+      // shearX per unit of x and shearZ per unit of z across it.
+      const gx = block.shearX || 0; const gz = block.shearZ || 0;
       return {
-        vertices: points.map(([x,y,z]) => [block.x + x * block.sx, block.y + y * block.sy, block.z + z * block.sz]),
+        vertices: points.map(([x,y,z]) => [block.x + x * block.sx, block.y + y * block.sy + gx * x * block.sx + gz * z * block.sz, block.z + z * block.sz]),
         normal,
         uv: points.map(([x,y,z]) => top ? [x + .5,z + .5] : [xFace ? z + .5 : x + .5,.5 - y]),
         surface: top ? "top" : "side",
@@ -897,6 +948,14 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     }
   }
 
+  // Two steel girders under the deck edges of a bridge, and a cap on its pier.
+  function pushBridgeGirders(list, cx, topY, cz, mask) {
+    const girder = { r: 0.36, g: 0.38, b: 0.4, a: 1 };
+    if (mask & (1 | 4)) for (const side of [-1, 1]) pushBlock(list, cx + side * 0.4, topY - 0.05, cz, 0.07, 0.1, 1, girder, "metal");
+    if (mask & (2 | 8)) for (const side of [-1, 1]) pushBlock(list, cx, topY - 0.05, cz + side * 0.4, 1, 0.1, 0.07, girder, "metal");
+    pushBlock(list, cx, topY - 0.11, cz, 0.3, 0.04, 0.3, shade(girder, 1.2), "metal");
+  }
+
   // A dark portal frame at each end of a road bore where it meets open air.
   function pushTunnelPortals(list, cx, topY, cz, tunnelMask, snapshot, x, y, size) {
     const frameColor = { r: 0.1, g: 0.1, b: 0.1, a: 1 };
@@ -947,6 +1006,48 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
   // SC2000 stepped-terrain depth: every lower land tile that borders a
   // higher tile casts a shadow band along that shared edge. Pure renderer
   // derivation; returns [{ x, y, dir, drop }] on the lower tile.
+  // How far a water tile lies from land, in tiles (Chebyshev), capped at
+  // SHORE_REACH: 1 is the surf line, SHORE_REACH is open water. Off the map
+  // counts as water, so the map edge is not a false shore.
+  const SHORE_REACH = 4;
+  function shoreDistance(snapshot, x, y, size) {
+    for (let r = 1; r < SHORE_REACH; r += 1) {
+      for (let dy = -r; dy <= r; dy += 1) {
+        for (let dx = -r; dx <= r; dx += 1) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
+          if (!isWater(snapshot, ny * size + nx)) return r;
+        }
+      }
+    }
+    return SHORE_REACH;
+  }
+
+  // The land squares within SHORE_REACH of a water tile, and the straight
+  // distance from a point on the water to the nearest of them (0 at the
+  // shore, SHORE_REACH - 1 or more on open water).
+  function nearbyLand(snapshot, x, y, size) {
+    const land = [];
+    for (let dy = -SHORE_REACH + 1; dy < SHORE_REACH; dy += 1) {
+      for (let dx = -SHORE_REACH + 1; dx < SHORE_REACH; dx += 1) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
+        if (!isWater(snapshot, ny * size + nx)) land.push([nx, ny]);
+      }
+    }
+    return land;
+  }
+  function shoreGap(land, px, pz) {
+    let best = SHORE_REACH - 1;
+    for (const [lx, ly] of land) {
+      const ex = Math.max(lx - px, 0, px - (lx + 1));
+      const ez = Math.max(ly - pz, 0, pz - (ly + 1));
+      best = Math.min(best, Math.hypot(ex, ez));
+    }
+    return best;
+  }
+
   function cliffEdges(snapshot) {
     const size = mapSize(snapshot);
     const edges = [];
@@ -968,16 +1069,117 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     return edges;
   }
 
-  // Roads read as paved corridors: a low curb along each edge of every
-  // connected arm, continuous across tile boundaries like the center strip.
+  // Roads read as paved corridors, SC3K-style: a raised sidewalk along both
+  // edges of every connected arm, continuous across tile boundaries; at a
+  // junction the walk turns the corner instead of crossing the street.
   function pushRoadCurbs(list, cx, topY, cz, mask) {
-    const color = { r: 0.62, g: 0.62, b: 0.58, a: 1 };
+    const walk = { r: 0.66, g: 0.66, b: 0.62, a: 1 };
+    const dirs = [[1, 0, -1], [2, 1, 0], [4, 0, 1], [8, -1, 0]];
+    const bitToward = (dx, dz) => dirs.find(([, ex, ez]) => ex === dx && ez === dz)[0];
+    for (const [bit, dx, dz] of dirs) {
+      if (!(mask & bit)) continue;
+      for (const side of [-1, 1]) {
+        // The side of this arm points along the perpendicular direction.
+        const sx = dz ? side : 0;
+        const sz = dx ? side : 0;
+        const from = mask & bitToward(sx, sz) ? 0.34 : 0;
+        const length = 0.5 - from;
+        pushBlock(list,
+          cx + dx * (from + length / 2) + sx * 0.34, topY + 0.045,
+          cz + dz * (from + length / 2) + sz * 0.34,
+          dx ? length : 0.12, 0.05, dz ? length : 0.12, walk, "concrete");
+      }
+    }
+    // A lone road end or a single tile still gets its walk around the pad.
+    if (!(mask & 15)) pushBlock(list, cx, topY + 0.045, cz, 0.8, 0.05, 0.8, walk, "concrete");
+  }
+
+  // Zebra crossings across every arm of a junction, a step in from the pad.
+  function pushCrosswalks(list, cx, topY, cz, mask) {
+    const paint = { r: 0.86, g: 0.86, b: 0.82, a: 1 };
     for (const [bit, dx, dz] of [[1,0,-1],[2,1,0],[4,0,1],[8,-1,0]]) {
       if (!(mask & bit)) continue;
-      for (const side of [-1,1]) pushBlock(list,
-        cx + dx * 0.39 + dz * side * 0.3, topY + 0.038,
-        cz + dz * 0.39 + dx * side * 0.3,
-        dx ? 0.22 : 0.035, 0.025, dz ? 0.22 : 0.035, color, "concrete");
+      for (let k = -2; k <= 2; k += 1) {
+        const across = k * 0.1;
+        pushBlock(list, cx + dx * 0.36 + dz * across, topY + 0.064, cz + dz * 0.36 + dx * across,
+          dx ? 0.1 : 0.05, 0.008, dz ? 0.1 : 0.05, paint, "metal");
+      }
+    }
+  }
+
+  // A street lamp on the sidewalk: a slim post, an arm over the kerb and a
+  // head that glows at night, with a pool of light on the street.
+  function pushStreetLamp(list, tint, cx, topY, cz, alongX, side, night) {
+    const post = { r: 0.3, g: 0.31, b: 0.3, a: 1 };
+    const px = alongX ? cx : cx + side * 0.36;
+    const pz = alongX ? cz + side * 0.36 : cz;
+    pushBlock(list, px, topY + 0.07 + 0.17, pz, 0.03, 0.34, 0.03, post, "metal");
+    const hx = alongX ? px : px - side * 0.07;
+    const hz = alongX ? pz - side * 0.07 : pz;
+    pushBlock(list, (px + hx) / 2, topY + 0.41, (pz + hz) / 2, alongX ? 0.03 : 0.1, 0.02, alongX ? 0.1 : 0.03, post, "metal");
+    pushBlock(list, hx, topY + 0.395, hz, 0.06, 0.03, 0.06, night ? { r: 1, g: 0.86, b: 0.52, a: 1 } : { r: 0.78, g: 0.78, b: 0.72, a: 1 }, "metal");
+    if (night) {
+      // A round pool from three overlapping sheets: a cross and a square
+      // stack up in the middle and thin out to an octagonal rim.
+      const pool = { r: 1, g: 0.8, b: 0.46 };
+      tint.push({ x: hx, y: topY + 0.074, z: hz, sx: 0.62, sy: 0.008, sz: 0.3, ...pool, a: 0.2 });
+      tint.push({ x: hx, y: topY + 0.077, z: hz, sx: 0.3, sy: 0.008, sz: 0.62, ...pool, a: 0.2 });
+      tint.push({ x: hx, y: topY + 0.08, z: hz, sx: 0.46, sy: 0.008, sz: 0.46, ...pool, a: 0.24 });
+    }
+  }
+
+  // Sleepers across the ballast under the twin rails.
+  function pushSleepers(list, cx, topY, cz, mask) {
+    const wood = { r: 0.3, g: 0.23, b: 0.18, a: 1 };
+    pushBlock(list, cx, topY, cz, 0.64, 0.02, 0.64, shade(wood, 0.9), "rail");
+    for (const [bit, dx, dz] of [[1,0,-1],[2,1,0],[4,0,1],[8,-1,0]]) {
+      if (!(mask & bit)) continue;
+      for (const along of [0.16, 0.29, 0.42]) {
+        pushBlock(list, cx + dx * along, topY, cz + dz * along, dx ? 0.06 : 0.64, 0.02, dz ? 0.06 : 0.64, wood, "rail");
+      }
+    }
+  }
+
+  // Power lines, SC3K-style: over open ground a steel lattice tower on every
+  // other tile (and at every bend or end) carrying two conductors on its
+  // crossarm; beside a street a slim pole on the kerb.
+  function pushPowerLine(list, cx, topY, cz, mask, pylon, besideRoad, color) {
+    const steel = { r: 0.56, g: 0.58, b: 0.6, a: 1 };
+    const alongX = (mask & 10) && !(mask & 5);
+    const wireY = besideRoad ? topY + 0.42 : topY + 0.78;
+    const px = besideRoad ? cx + (alongX ? 0 : 0.4) : cx;
+    const pz = besideRoad ? cz + (alongX ? 0.4 : 0) : cz;
+    if (besideRoad) {
+      pushBlock(list, px, topY + 0.21, pz, 0.035, 0.42, 0.035, { r: 0.42, g: 0.33, b: 0.24, a: 1 }, "wire");
+      pushBlock(list, px, wireY, pz, alongX ? 0.03 : 0.22, 0.025, alongX ? 0.22 : 0.03, { r: 0.42, g: 0.33, b: 0.24, a: 1 }, "wire");
+    } else if (pylon) {
+      // An open lattice: four slim legs that draw in as they rise, a waist
+      // frame, an upper mast and a wide crossarm.
+      const legs = shade(steel, 0.92);
+      for (const [lx, lz] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+        pushBlock(list, px + lx * 0.09, topY + 0.2, pz + lz * 0.09, 0.025, 0.4, 0.025, legs, "metal");
+        pushBlock(list, px + lx * 0.05, topY + 0.56, pz + lz * 0.05, 0.022, 0.32, 0.022, legs, "metal");
+      }
+      pushBlock(list, px, topY + 0.4, pz, 0.21, 0.025, 0.21, steel, "metal");
+      pushBlock(list, px, topY + 0.14, pz, 0.2, 0.02, 0.2, legs, "metal");
+      pushBlock(list, px, topY + 0.86, pz, 0.05, 0.1, 0.05, steel, "metal");
+      pushBlock(list, px, wireY, pz, alongX ? 0.05 : 0.5, 0.035, alongX ? 0.5 : 0.05, steel, "metal");
+      for (const side of [-1, 1]) {
+        pushBlock(list, alongX ? px : px + side * 0.21, wireY - 0.035, alongX ? pz + side * 0.21 : pz, 0.03, 0.05, 0.03, { r: 0.7, g: 0.75, b: 0.72, a: 1 }, "metal");
+      }
+    }
+    // The conductors: two thin lines, one under each crossarm end, running
+    // on to the neighbour along every connected arm.
+    for (const [bit, dx, dz] of [[1,0,-1],[2,1,0],[4,0,1],[8,-1,0]]) {
+      if (!(mask & bit)) continue;
+      for (const side of besideRoad ? [0] : [-1, 1]) {
+        const ox = dz ? side * 0.21 : 0;
+        const oz = dx ? side * 0.21 : 0;
+        const baseX = besideRoad ? px : cx;
+        const baseZ = besideRoad ? pz : cz;
+        pushBlock(list, baseX + ox + dx * 0.25, wireY - 0.06, baseZ + oz + dz * 0.25,
+          dx ? 0.5 : 0.012, 0.012, dz ? 0.5 : 0.012, color, "wire");
+      }
     }
   }
 
@@ -1561,6 +1763,52 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         roof: zone === "residential" && stage === 1 && usage === "main" ? "pitched" : usage === "hall" && variant%2 ? "sawtooth" : "flat" };
       masses.push(mass); return mass;
     };
+    // SC3K's skyline, as a planned downtown. A dear 2x2 or 3x3 lot on a
+    // street (the high tier, variants 17-24) carries a tower whose height
+    // rank is its variant: the core picks it from land value, so the city
+    // peaks where land is dearest and steps down to its edges. Every tower
+    // stands on a podium built out to the street line (the parcel's +z
+    // edge, turned toward the road by the renderer) with the shaft set back
+    // behind it, the street wall a planned block keeps. Three types by rank:
+    // a slab block low down, a podium tower in the middle, and a stepped
+    // landmark at the top. A one-tile lot never becomes a needle.
+    const tier = Math.ceil(variant / 8);
+    if (stage >= 2 && tier >= 3 && (zone === "commercial" || zone === "residential")) {
+      const rank = Math.max(0, Math.min(7, variant - 17));
+      const big = stage === 3;
+      if (zone === "commercial") {
+        const storeys = big ? 14 + Math.round(rank * 2.4) : 8 + rank * 2;
+        const base = big ? 3 : 2;
+        add(-.44,-.30,.44,.46,base,"podium");
+        if (rank <= 2) {
+          // Slab block: a long, shallow bar parallel to the street.
+          add(-.34,-.24,.34,.06,storeys,"upper",base);
+        } else if (rank <= 5) {
+          // Podium tower: a square shaft and a crown.
+          add(-.22,-.22,.22,.18,storeys,"upper",base);
+          add(-.15,-.15,.15,.11,3,"crown",base + storeys);
+        } else {
+          // Landmark: three setbacks narrowing to the crown, as tall as a
+          // podium tower of its rank with its crown.
+          const total = storeys + 3;
+          const low = Math.round(total * .45), mid = Math.round(total * .35), top = total - low - mid;
+          add(-.26,-.26,.26,.2,low,"upper",base);
+          add(-.2,-.2,.2,.14,mid,"upper",base + low);
+          add(-.13,-.13,.13,.07,top,"crown",base + low + mid);
+        }
+        return masses;
+      }
+      // Apartments: point towers over a row of maisonettes on the street.
+      const storeys = big ? 12 + Math.round(rank * 1.8) : 8 + Math.round(rank * 1.4);
+      add(-.42,.22,.42,.44,2,"shop");
+      if (big) {
+        add(-.38,-.36,-.06,-.02,storeys,"upper");
+        add(.08,-.2,.38,.14,Math.max(8, storeys - 3 - (rank % 3)),"upper");
+      } else {
+        add(-.24,-.26,.24,.14,storeys,"upper");
+      }
+      return masses;
+    }
     if (zone === "residential" && stage === 1) {
       if (form === "house-garage") {
         add(-.23,-.30,.34,.23); add(-.44,-.19,-.23,.18,1,"garage",0,2.8);
@@ -1604,7 +1852,23 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     const pave = {r:.64,g:.65,b:.60,a:1}, hedge = {r:.37,g:.46,b:.29,a:1};
     const block=(x,z,sx,sz,color=pave,height=.012,y=.006,tile="concrete",shape="box") =>
       pushBlock(list,cx+x,topY+y,cz+z,sx,height,sz,night?shade(color,.65):color,tile,shape);
-    const open=(x,z,sx,sz) => !masses.some((m)=>x+sx/2>m.u0-.025 && x-sx/2<m.u1+.025 && z+sz/2>m.v0-.025 && z-sz/2<m.v1+.025);
+    const reserved=[];
+    const open=(x,z,sx,sz) => ![...masses,...reserved].some((m)=>x+sx/2>m.u0-.025 && x-sx/2<m.u1+.025 && z+sz/2>m.v0-.025 && z-sz/2<m.v1+.025);
+    // SC3K parking takes the widest open strip beside or behind the
+    // building (the street front keeps its paths). It is reserved before
+    // trees and yards are placed, so nothing grows in a parking bay.
+    let lotStrip=null;
+    if (planning.zone !== "residential") {
+      const box={u0:Math.min(...masses.map((m)=>m.u0)),v0:Math.min(...masses.map((m)=>m.v0)),u1:Math.max(...masses.map((m)=>m.u1)),v1:Math.max(...masses.map((m)=>m.v1))};
+      const gap=.04,edge=.05;
+      lotStrip=[
+        {x:(box.u0+box.u1)/2,z:(-d/2+edge+box.v0-gap)/2,lw:box.u1-box.u0,ld:box.v0-gap-(-d/2+edge)},
+        {x:(-w/2+edge+box.u0-gap)/2,z:(box.v0+box.v1)/2,lw:box.u0-gap-(-w/2+edge),ld:box.v1-box.v0},
+        {x:(box.u1+gap+w/2-edge)/2,z:(box.v0+box.v1)/2,lw:w/2-edge-box.u1-gap,ld:box.v1-box.v0},
+      ].filter((r)=>Math.min(r.lw,r.ld)>=.13 && Math.max(r.lw,r.ld)>=.3)
+        .sort((a,b)=>b.lw*b.ld-a.lw*a.ld)[0]||null;
+      if (lotStrip) reserved.push({u0:lotStrip.x-lotStrip.lw/2,u1:lotStrip.x+lotStrip.lw/2,v0:lotStrip.z-lotStrip.ld/2,v1:lotStrip.z+lotStrip.ld/2});
+    }
     const tree=(x,z) => {
       if (!open(x,z,.18,.18)) return;
       block(x,z,.028,.028,palette.brick,.18,.09,"tree.trunk");
@@ -1644,6 +1908,45 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       tree(w*.42,-d*.40);
     }
     if (stateName!=="normal" && stateName!=="recovering") return;
+    // SC3K parking: a striped lot with cars in some of its bays wherever a
+    // shop or a works has open ground beside or behind its building.
+    const carColors = [{r:.72,g:.2,b:.18,a:1},{r:.2,g:.33,b:.55,a:1},{r:.82,g:.8,b:.74,a:1},{r:.22,g:.24,b:.25,a:1},{r:.55,g:.6,b:.3,a:1},{r:.78,g:.62,b:.2,a:1}];
+    const car=(x,z,alongX,color) => {
+      block(x,z,alongX?.21:.1,alongX?.1:.21,color,.05,.04,"metal");
+      block(x,z,alongX?.1:.085,alongX?.085:.1,shade(color,.7),.035,.08,"metal");
+    };
+    if (planning.zone !== "residential") {
+      if (lotStrip) {
+        const {x,z,lw,ld}=lotStrip;
+        block(x,z,lw,ld,{r:.33,g:.34,b:.35,a:1},.014,.007,"road");
+        // Bays run along the strip; a deep strip parks nose-in, a shallow
+        // one parks nose-to-tail.
+        const along = lw >= ld;
+        const depth = along ? ld : lw;
+        const noseIn = depth >= .2;
+        const bay = noseIn ? .13 : .25;
+        const bays = Math.max(2, Math.floor((along ? lw : ld) / bay));
+        for (let b = 0; b <= bays; b += 1) {
+          const t = -0.5 + b / bays;
+          block(along ? x + t * lw : x, along ? z : z + t * ld, along ? .008 : lw * .9, along ? ld * .9 : .008, {r:.82,g:.82,b:.76,a:1}, .004, .016, "metal");
+        }
+        for (let b = 0; b < bays; b += 1) {
+          const t = -0.5 + (b + 0.5) / bays;
+          if ((variant * 7 + b * 3) % 5 < 3) car(along ? x + t * lw : x, along ? z : z + t * ld, noseIn ? !along : along, carColors[(variant + b * 5) % carColors.length]);
+        }
+      }
+      if (planning.zone === "industrial") {
+        // A lorry backed onto the loading apron.
+        const tx = w * .16, tz = d * .37;
+        if (open(tx, tz - .05, .12, .3)) {
+          block(tx, tz - .03, .12, .22, {r:.8,g:.8,b:.76,a:1}, .1, .06, "metal");
+          block(tx, tz + .12, .11, .08, carColors[variant % carColors.length], .08, .05, "metal");
+        }
+      }
+    } else if (planning.stage === 1) {
+      const garage = masses.find((m) => m.usage === "garage");
+      if (garage && variant % 2 === 0) car((garage.u0 + garage.u1) / 2, garage.v1 + .12, false, carColors[variant % carColors.length]);
+    }
     // A correctly scaled parked car occupies a real bay, never a random lawn.
     const x=planning.zone==="residential" ? -w*.34 : w*.30;
     const z=d*.36;
@@ -1746,7 +2049,10 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
   // one storey per row, so a column of one-unit blocks shows whole floors,
   // and the top block is cropped to k/rows rows so the height ends on a
   // floor line. Returns the built top of the mass (may round up).
-  function pushWallMass(opaque, cx, cz, topY, mass, color, tile, rows) {
+  // litSeed (night only): each storey bay is lit or dark by hash, so a
+  // night city shows the SC3K patchwork of occupied and empty rooms rather
+  // than every window on at once. About three bays in five are lit.
+  function pushWallMass(opaque, cx, cz, topY, mass, color, tile, rows, litSeed = null) {
     const width = Math.max(0.05, mass.u1 - mass.u0);
     const depth = Math.max(0.05, mass.v1 - mass.v0);
     if (Number.isFinite(mass.storeyHeight) && Number.isInteger(mass.stories)) {
@@ -1760,6 +2066,9 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
           const y0 = topY + mass.y0 + level * mass.storeyHeight;
           pushBlock(opaque, bx, y0 + mass.storeyHeight / 2, bz, cw - 0.012, mass.storeyHeight, cd - 0.012,
             color, `${tile}#1/${rows}`);
+          if (litSeed !== null && hashTile(litSeed * 7919 + Math.round(mass.y0 * 97) * 131 + level * 31 + i * 7 + j * 3) % 5 >= 3) {
+            opaque[opaque.length - 1].unlit = true;
+          }
         }
       }
       return mass.y1;
@@ -1901,8 +2210,25 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         pushBlock(opaque, c.x, y + lift + h / 2, c.z, w * 0.6, h, 0.06, signColor, "metal");
         pushBlock(opaque, c.x - w * 0.25, y + lift / 2, c.z, 0.03, lift, 0.03, palette.metal, "metal");
         pushBlock(opaque, c.x + w * 0.25, y + lift / 2, c.z, 0.03, lift, 0.03, palette.metal, "metal");
-      } else if (item === "antenna") {
+      } else if (item === "watertank") {
+        // The city roof's timber tank: four legs, a drum and a conical cap.
+        const c = at(0.68 - jitterA * 0.3, 0.3 + jitterB * 0.4);
+        const legs = palette.metal;
+        for (const [lx, lz] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) pushBlock(opaque, c.x + lx * 0.045, y + 0.05, c.z + lz * 0.045, 0.018, 0.1, 0.018, legs, "metal");
+        pushBlock(opaque, c.x, y + 0.16, c.z, 0.13, 0.12, 0.13, { r: 0.52, g: 0.4, b: 0.3, a: 1 }, "tree.trunk");
+        pushBlock(opaque, c.x, y + 0.25, c.z, 0.14, 0.06, 0.14, shade(palette.metal, 0.8), "metal", "hip");
+      } else if (item === "helipad") {
         const c = at(0.5, 0.5);
+        const pad = Math.min(0.34, w * 0.7);
+        // A raised deck above the roof membrane (whose top is y + 0.03).
+        pushBlock(opaque, c.x, y + 0.04, c.z, pad, 0.03, pad, { r: 0.46, g: 0.48, b: 0.48, a: 1 }, "concrete");
+        const paint = { r: 0.94, g: 0.92, b: 0.84, a: 1 };
+        pushBlock(opaque, c.x - pad * 0.18, y + 0.057, c.z, pad * 0.07, 0.006, pad * 0.5, paint, "metal");
+        pushBlock(opaque, c.x + pad * 0.18, y + 0.057, c.z, pad * 0.07, 0.006, pad * 0.5, paint, "metal");
+        pushBlock(opaque, c.x, y + 0.057, c.z, pad * 0.36, 0.006, pad * 0.07, paint, "metal");
+      } else if (item === "antenna") {
+        // Beside a helipad the mast stands in a corner, clear of the pad.
+        const c = items.includes("helipad") ? at(0.86, 0.14) : at(0.5, 0.5);
         const h = pxToWorld(15);
         pushBlock(opaque, c.x, y + h / 2, c.z, 0.03, h, 0.03, palette.metal, "metal");
         pushBlock(opaque, c.x, y + h + 0.03, c.z, 0.06, 0.06, 0.06, palette.red);
@@ -1950,6 +2276,32 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
   // roof furniture. States follow the 2D composer: foundation is a slab,
   // construction is a short striped body with scaffold poles, abandoned
   // keeps its masses under a dark deck and no furniture.
+  // Which way a lot faces (shared rule, bonsai-renderer.js). Without the
+  // shared module, as in the atlas composer, a parcel keeps its composed
+  // front.
+  function streetQuarter(snapshot, x, y, footprint, size) {
+    const shared = typeof window !== "undefined" ? window.AISystem6BonsaiRenderer : null;
+    if (!shared || typeof shared.streetQuarter !== "function") return 0;
+    return shared.streetQuarter((tx, ty) => tx >= 0 && ty >= 0 && tx < size && ty < size && isRoad(snapshot, ty * size + tx), x, y, footprint);
+  }
+  // Turns the blocks from `start` on a quarter turn at a time about the
+  // parcel centre, so what faced +z faces the given side.
+  function turnBlocks(list, start, cx, cz, quarter) {
+    if (!quarter) return;
+    for (let i = start; i < list.length; i += 1) {
+      const block = list[i];
+      const dx = block.x - cx, dz = block.z - cz;
+      if (quarter === 1) { block.x = cx + dz; block.z = cz - dx; }
+      else if (quarter === 2) { block.x = cx - dx; block.z = cz - dz; }
+      else { block.x = cx - dz; block.z = cz + dx; }
+      if (quarter % 2) {
+        const sx = block.sx; block.sx = block.sz; block.sz = sx;
+        if (block.shape === "roof-x") block.shape = "roof-z";
+        else if (block.shape === "roof-z") block.shape = "roof-x";
+      }
+    }
+  }
+
   function pushGrammarBuilding(opaque, recipes, palette, options) {
     const { cx, cz, topY, footprint, grammar, variant, night, stateName, wallTile, wallColor, heightPx, seed, rows } = options;
     const parapetColor = options.parapetColor || wallColor;
@@ -1958,7 +2310,16 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       return;
     }
     const masses = buildingMasses(footprint, heightPx, grammar, variant, seed);
-    const built = masses.map((mass) => ({ mass, top: pushWallMass(opaque, cx, cz, topY, mass, wallColor, wallTile, rows) }));
+    const litSeed = night && stateName !== "abandoned" ? (seed >>> 0) % 100003 : null;
+    const built = masses.map((mass) => ({ mass, top: pushWallMass(opaque, cx, cz, topY, mass, wallColor, wallTile, rows, litSeed) }));
+    // A tower shaft is not one uninterrupted grid: every eighth storey is a
+    // plant floor, a dark band standing a hair proud of the glass.
+    masses.filter((mass) => mass.usage === "upper" && mass.stories >= 12 && stateName !== "abandoned").forEach((mass) => {
+      for (let storey = 8; storey < mass.stories - 2; storey += 8) {
+        pushBlock(opaque, cx + (mass.u0 + mass.u1) / 2, topY + mass.y0 + storey * mass.storeyHeight, cz + (mass.v0 + mass.v1) / 2,
+          mass.u1 - mass.u0 + 0.02, mass.storeyHeight * 0.45, mass.v1 - mass.v0 + 0.02, shade(wallColor, 0.62), "metal");
+      }
+    });
     const tallest = Math.max(...built.map((entry) => entry.top));
     if (grammar.planning) pushParcelGround(opaque, cx, cz, topY, footprint, masses, grammar.planning, palette, variant, night, stateName);
     const construction = stateName === "construction";
@@ -1992,34 +2353,135 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       pushGroundFloor(opaque, cx, cz, topY, mass, grammar.groundFloor, palette, variant, options.prefix || "");
       if (construction || !Array.isArray(grammar.clutter) || !grammar.clutter.length) return;
       const massHeightPx = (mass.y1 - mass.y0) * PX_PER_WORLD_Y;
+      // A tower's crown is short, but the building under it is not: what a
+      // roof may carry follows the whole height, the size of a drum or a
+      // stack follows its own mass.
+      const standPx = top * PX_PER_WORLD_Y;
       const massWidth = Math.min(mass.u1 - mass.u0, mass.v1 - mass.v0);
       // Tall furniture needs a tall building under it; a small roof gets
       // vents and a chimney and nothing more.
+      // A helipad needs its whole roof: only a corner mast shares it.
+      const landing = grammar.clutter.includes("helipad");
       const allowed = grammar.clutter.filter((item) => {
-        if (item === "stack" || item === "coolingTower") return massHeightPx >= 26;
-        if (item === "tank") return massHeightPx >= 34 && massWidth >= 0.9;
-        if (item === "antenna") return massHeightPx >= 44;
+        if (landing) return item === "helipad" || (item === "antenna" && standPx >= 44);
+        if (item === "stack" || item === "coolingTower") return standPx >= 26;
+        if (item === "tank") return standPx >= 34 && massWidth >= 0.9;
+        if (item === "antenna") return standPx >= 44;
         if (item === "sign") return massWidth >= 0.9;
-        if (item === "bulkhead") return massHeightPx >= 22;
+        if (item === "bulkhead") return standPx >= 22;
         return true;
       });
       if (!allowed.length) return;
       const identity = allowed.some((item) => item === "stack" || item === "coolingTower");
-      const cap = identity ? allowed.length : massHeightPx >= 44 ? allowed.length : massHeightPx >= 26 ? 2 : 1;
+      const cap = identity ? allowed.length : standPx >= 44 ? allowed.length : standPx >= 26 ? 2 : 1;
       const count = identity
         ? Math.min(allowed.length, 3)
         : 1 + ((seed >>> 3) % Math.max(1, Math.min(cap, allowed.length)));
       const items = [];
-      for (let i = 0; i < count; i += 1) items.push(allowed[(Math.max(1, variant | 0) - 1 + i) % allowed.length]);
+      // A tower always lands its helipad; the rest of the roof is chosen.
+      if (allowed.includes("helipad")) items.push("helipad");
+      for (let i = 0; items.length < count; i += 1) {
+        const item = allowed[(Math.max(1, variant | 0) - 1 + i) % allowed.length];
+        if (!items.includes(item) || i >= allowed.length) items.push(item);
+      }
       pushRoofClutter(opaque, cx, cz, y, mass, items, palette, wallColor, seed, massHeightPx);
     });
+  }
+
+  // --- networks on the ground, SC2K-style --------------------------------------
+  // A slope tile's wedge lifts the corners on its higher edges by one
+  // ALT_STEP and is cut along the A-C diagonal (see blockFaces "slope-").
+  // Network pieces on such a tile are laid on that surface: each block is
+  // raised by the ground height at its centre and sheared by the slope of
+  // the triangle it stands in.
+  function surfaceAt(mask, s, t) {
+    const a = (mask & 9) ? ALT_STEP : 0;
+    const b = (mask & 3) ? ALT_STEP : 0;
+    const c = (mask & 6) ? ALT_STEP : 0;
+    const d = (mask & 12) ? ALT_STEP : 0;
+    if (s >= t) return { h: a + (b - a) * s + (c - b) * t, gx: b - a, gz: c - b };
+    return { h: a + (c - d) * s + (d - a) * t, gx: c - d, gz: d - a };
+  }
+  function tiltBlock(block, x, y, mask) {
+    if (!mask) return block;
+    const surface = surfaceAt(mask, Math.max(0, Math.min(1, block.x - x)), Math.max(0, Math.min(1, block.z - y)));
+    block.y += surface.h;
+    block.shearX = (block.shearX || 0) + surface.gx;
+    block.shearZ = (block.shearZ || 0) + surface.gz;
+    return block;
+  }
+  // A bridge deck rides at the height of its banks: the highest dry tile at
+  // the end of each connected arm, one step over the water without a bank.
+  function bridgeDeckAltitude(snapshot, x, y, size, predicate) {
+    let bank = -Infinity;
+    for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
+      for (let nx = x + dx, ny = y + dy, steps = 0; nx >= 0 && ny >= 0 && nx < size && ny < size && steps < size; nx += dx, ny += dy, steps += 1) {
+        const i = ny * size + nx;
+        if (!predicate(snapshot, i)) break;
+        if (!isWater(snapshot, i)) { bank = Math.max(bank, altitudeAt(snapshot, i)); break; }
+      }
+    }
+    const here = altitudeAt(snapshot, y * size + x);
+    return Number.isFinite(bank) ? Math.max(bank, here + 1) : here + 1;
+  }
+  const isHighwayTile = (snapshot, index) => Boolean(gridValue(snapshot, ["highway"], index, false));
+  const isOnrampTile = (snapshot, index) => Boolean(gridValue(snapshot, ["onramp"], index, false));
+  // Two highways that both run on past a crossing make an interchange; the
+  // world-x run passes over the world-y run (as the Canvas backend draws it).
+  function highwayRun(snapshot, x, y, dx, dy, size, limit) {
+    let length = 0;
+    for (let nx = x + dx, ny = y + dy; length < limit && nx >= 0 && ny >= 0 && nx < size && ny < size && isHighwayTile(snapshot, ny * size + nx); nx += dx, ny += dy) length += 1;
+    return length;
+  }
+  function isInterchange(snapshot, x, y, size) {
+    if (x < 0 || y < 0 || x >= size || y >= size || !isHighwayTile(snapshot, y * size + x)) return false;
+    return [[0, -1], [1, 0], [0, 1], [-1, 0]].every(([dx, dy]) => highwayRun(snapshot, x, y, dx, dy, size, 2) >= 2);
+  }
+  const INTERCHANGE_RAMP_TILES = 2;
+  function interchangeApproach(snapshot, x, y, size) {
+    for (const dx of [1, -1]) {
+      for (let d = 1; d <= INTERCHANGE_RAMP_TILES; d += 1) {
+        const nx = x + dx * d;
+        if (nx < 0 || nx >= size || !isHighwayTile(snapshot, y * size + nx)) break;
+        if (isInterchange(snapshot, nx, y, size)) return { d, dx };
+      }
+    }
+    return null;
   }
 
   function terrainTopY(snapshot, index) {
     return altitudeAt(snapshot, index) * ALT_STEP;
   }
 
+  // SC2K's underground view: the surface is lifted away and only what lies
+  // below it shows — water pipes and subway lines over a dark ground.
+  function collectUndergroundBlocks(snapshot, recipes, chunkX, chunkY) {
+    const size = mapSize(snapshot);
+    const opaque = [];
+    const ground = { r: 0.07, g: 0.09, b: 0.1, a: 1 };
+    for (let y = chunkY * CHUNK_SIZE; y < Math.min(size, (chunkY + 1) * CHUNK_SIZE); y += 1) {
+      for (let x = chunkX * CHUNK_SIZE; x < Math.min(size, (chunkX + 1) * CHUNK_SIZE); x += 1) {
+        const index = y * size + x;
+        const cx = x + 0.5;
+        const cz = y + 0.5;
+        pushBlock(opaque, cx, -0.03, cz, 1, 0.06, 1, isWater(snapshot, index) ? shade(ground, 1.6) : ground);
+        if (isPipe(snapshot, index)) {
+          const mask = networkMask(snapshot, x, y, size, isPipe);
+          pushPathStrip(opaque, cx, 0.03, cz, mask, recipes.connectors.pipe, 0.16, 0.06, "pipe");
+          pushPathStrip(opaque, cx, 0.065, cz, mask, shade(recipes.connectors.pipe, 1.2), 0.05, 0.02, "pipe");
+        }
+        if (isSubway(snapshot, index)) {
+          const mask = networkMask(snapshot, x, y, size, isSubway);
+          pushPathStrip(opaque, cx, 0.05, cz, mask, recipes.connectors.subway, 0.34, 0.1, "tunnel");
+          pushTwinRails(opaque, cx, 0.11, cz, mask, recipes.connectors.subwayAccent, "metal");
+        }
+      }
+    }
+    return { opaque, water: [], tint: [] };
+  }
+
   function collectChunkBlocks(snapshot, recipes, chunkX, chunkY, sceneObjects, objectsOnly = false) {
+    if (state.underground && !objectsOnly) return collectUndergroundBlocks(snapshot, recipes, chunkX, chunkY);
     const size = mapSize(snapshot);
     const startX = chunkX * CHUNK_SIZE;
     const startY = chunkY * CHUNK_SIZE;
@@ -2028,6 +2490,13 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     const opaque = [];
     const water = [];
     const tint = [];
+    // Facilities and catalog objects stand on tiles the building cover
+    // set does not list; ground detail keeps off them too.
+    const occupied = new Set();
+    [...(sceneObjects.facilities || []), ...(sceneObjects.catalogTiles || [])].forEach((object) => {
+      const footprint = object.footprint || { w: 1, h: 1 };
+      for (let dy = 0; dy < (footprint.h || 1); dy += 1) for (let dx = 0; dx < (footprint.w || 1); dx += 1) occupied.add(`${object.x + dx}:${object.y + dy}`);
+    });
     const cliffs = new Map();
     cliffEdges(snapshot).forEach((edge) => {
       const key = `${edge.x}:${edge.y}`;
@@ -2048,6 +2517,8 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         const alt = altitudeAt(snapshot, index);
         const kind = terrainKindAt(snapshot, index);
         const topY = alt * ALT_STEP;
+        // The slope mask of the wedge this tile's ground wears, 0 when level.
+        let tileSlope = 0;
         // Kept gentle: instance colors now convert through sRGB, which
         // widens multiplicative steps, so ±6% here read as a checkerboard.
         const jitter = 0.995 + Math.sin(x * 0.21 + y * 0.13) * 0.005;
@@ -2055,14 +2526,25 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         if (kind === "water") {
           // Bed column below, translucent surface on top. A future v3
           // waterLevel layer lifts the surface defensively.
-          const bed = recipes.terrain.water.bed;
+          // SC3K water has depth: a sandy, turquoise shelf along the shore
+          // that darkens to open blue three tiles out.
+          const reach = shoreDistance(snapshot, x, y, size);
+          const depth = (reach - 1) / (SHORE_REACH - 1);
+          const sandBed = recipes.terrain.coast.top;
+          const bed = mixColor(shade(sandBed, 0.82), recipes.terrain.water.bed, Math.min(1, depth * 1.5));
           pushBlock(opaque, x + 0.5, topY - ALT_STEP / 2, y + 0.5, 1, ALT_STEP, 1, shade(bed, jitter));
           const level = Number(gridValue(snapshot, ["waterLevel"], index, NaN));
           const surfaceY = Number.isFinite(level) && level > alt ? level * ALT_STEP : topY;
           const salt = Boolean(gridValue(snapshot, ["salt"], index, false));
-          const surface = salt ? shade(recipes.terrain.water.lit, 1.05) : recipes.terrain.water.surface;
+          const open = salt ? shade(recipes.terrain.water.lit, 1.05) : recipes.terrain.water.surface;
+          const shelf = { r: 0.34, g: 0.62, b: 0.63, a: Math.max(0.6, open.a - 0.16) };
+          // The tone follows the straight distance from the tile's centre to
+          // the nearest land square, which rounds the shelf's outline where
+          // ring counting would draw it as stepped squares.
+          const gap = reach === SHORE_REACH ? SHORE_REACH - 1 : shoreGap(nearbyLand(snapshot, x, y, size), x + 0.5, y + 0.5);
+          const surface = mixColor(shelf, shade(open, 0.86), (gap - 0.5) / (SHORE_REACH - 1.5));
           // Seasonal water: winter freezes to a pale ice, spring brightens.
-          const season = Math.floor(((Number(snapshot.tick) || 0) % 1500) / 375);
+          const season = seasonOfSnapshot(snapshot);
           const seasonalSurface = season === 3
             ? {
                 r: Math.min(1, surface.r + 0.12), g: Math.min(1, surface.g + 0.14), b: Math.min(1, surface.b + 0.18), a: 0.92,
@@ -2076,6 +2558,41 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
             r: seasonalSurface.r, g: seasonalSurface.g, b: seasonalSurface.b, a: seasonalSurface.a,
             tile: "water",
           });
+          if (season !== 3) {
+            // Surf: a white line where the water meets each land edge, a
+            // broken second line further out, and a fleck at an outer corner.
+            const foamY = surfaceY + 0.056;
+            const foam = { r: 0.95, g: 0.97, b: 0.97, a: 0.62 };
+            const swell = { ...foam, a: 0.32 };
+            const land = (dx, dy) => {
+              const nx = x + dx, ny = y + dy;
+              return nx >= 0 && ny >= 0 && nx < size && ny < size && !isWater(snapshot, ny * size + nx);
+            };
+            const edges = [[0, -1, 0.5, 0.04, 1, 0.08], [1, 0, 0.96, 0.5, 0.08, 1], [0, 1, 0.5, 0.96, 1, 0.08], [-1, 0, 0.04, 0.5, 0.08, 1]];
+            edges.forEach(([dx, dy, fx, fz, sx, sz], side) => {
+              if (!land(dx, dy)) return;
+              pushBlock(tint, x + fx, foamY, y + fz, sx, 0.01, sz, foam);
+              const along = sx > sz;
+              for (let dash = 0; dash < 3; dash += 1) {
+                if ((hashTile(index * 4 + side) >>> dash) & 1) continue;
+                const t = 0.18 + dash * 0.32;
+                pushBlock(tint, x + (along ? t : fx - dx * 0.16), foamY, y + (along ? fz - dy * 0.16 : t), along ? 0.2 : 0.05, 0.01, along ? 0.05 : 0.2, swell);
+              }
+            });
+            [[1, -1], [1, 1], [-1, 1], [-1, -1]].forEach(([dx, dy]) => {
+              if (!land(dx, dy) || land(dx, 0) || land(0, dy)) return;
+              pushBlock(tint, x + 0.5 + dx * 0.44, foamY, y + 0.5 + dy * 0.44, 0.12, 0.01, 0.12, foam);
+            });
+            // Whitecaps on open sea, deterministic per tile.
+            if (salt && reach === SHORE_REACH && hashTile(index * 31) % 4 === 0) {
+              const h = hashTile(index * 37);
+              for (let cap = 0; cap < 2; cap += 1) {
+                const fx = 0.2 + ((h >>> (cap * 8)) & 15) / 25;
+                const fz = 0.2 + ((h >>> (cap * 8 + 4)) & 15) / 25;
+                pushBlock(tint, x + fx, foamY, y + fz, 0.14, 0.01, 0.035, { ...foam, a: 0.5 });
+              }
+            }
+          }
         } else {
           const style = (alt < 24 && (kind === "soil" || kind === "rock")) ? recipes.terrain.grass : recipes.terrain[kind] || recipes.terrain.grass;
           const minNeighbor = Math.min(
@@ -2089,9 +2606,12 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
             // Snow: peaks above the snow line always wear a white cap, and
             // in winter the whole lowland snows over — the OpenTTD-principled
             // terrain read, driven by the snapshot calendar.
-            const winter = Math.floor(((Number(snapshot.tick) || 0) % 1500) / 375) === 3;
+            const winter = seasonOfSnapshot(snapshot) === 3;
             const snow = (kind === "grass" || kind === "slope") && (alt >= 24 || winter);
-            const color = shade(snow && top ? { r: 0.92, g: 0.94, b: 0.96, a: 1 } : (top ? style.top : style.side), jitter);
+            // Higher ground is drier: grass leans toward straw with altitude.
+            const dry = (kind === "grass" || kind === "slope") && top && !snow ? Math.max(0, Math.min(1, (alt - 4) / 16)) * 0.3 : 0;
+            const ground = top ? (dry ? mixColor(style.top, { r: 0.64, g: 0.6, b: 0.38, a: style.top.a }, dry) : style.top) : style.side;
+            const color = shade(snow && top ? { r: 0.92, g: 0.94, b: 0.96, a: 1 } : ground, jitter);
             // Natural soil and rock in the lowland keep the grass texture
             // under their leaned colour: three ground textures scattered
             // tile by tile read as camouflage, one texture reads as ground.
@@ -2103,7 +2623,8 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
             const slopeMask = (altOf(x, y - 1, alt) > alt ? 1 : 0) | (altOf(x + 1, y, alt) > alt ? 2 : 0)
               | (altOf(x, y + 1, alt) > alt ? 4 : 0) | (altOf(x - 1, y, alt) > alt ? 8 : 0);
             const slopeShape = top && slopeMask && gridValue(snapshot, ["slope"], index, false)
-              && !isRoad(snapshot, index) && !sceneObjects.covered.has(`${x}:${y}`) ? `slope-${slopeMask}` : "box";
+              && !sceneObjects.covered.has(`${x}:${y}`) ? `slope-${slopeMask}` : "box";
+            if (slopeShape !== "box") tileSlope = slopeMask;
             pushBlock(opaque, x + 0.5, level * ALT_STEP - ALT_STEP / 2, y + 0.5, 1, ALT_STEP, 1, color, top ? terrainTile : (kind === "grass" || kind === "slope" ? "terrain.grass" : `terrain.${kind}`), slopeShape);
           }
           // Cliff shadow bands: the lower tile carries a dark edge toward
@@ -2132,97 +2653,153 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         }
 
         const masks = {
-          road: isRoad(snapshot, index) ? networkMask(snapshot, x, y, size, isRoad) : 0,
+          road: isRoad(snapshot, index) ? networkMask(snapshot, x, y, size, (snap, i) => isRoad(snap, i) || isOnrampTile(snap, i)) : 0,
           rail: isRail(snapshot, index) ? networkMask(snapshot, x, y, size, isRail) : 0,
           wire: isWire(snapshot, index) ? networkMask(snapshot, x, y, size, isWire) : 0,
-          pipe: isPipe(snapshot, index) ? networkMask(snapshot, x, y, size, isPipe) : 0,
-          highway: gridValue(snapshot, ["highway"], index, false)
-            ? networkMask(snapshot, x, y, size, (snap, i) => Boolean(gridValue(snap, ["highway"], i, false)))
-            : 0,
+          highway: isHighwayTile(snapshot, index) ? networkMask(snapshot, x, y, size, isHighwayTile) : 0,
         };
         const tunnel = isTunnel(snapshot, index);
         const cx = x + 0.5;
         const cz = y + 0.5;
-
-        if (masks.pipe) {
-          pushBlock(opaque, cx, topY + 0.015, cz, 0.94, 0.04, 0.94, recipes.connectors.pipe, "pipe");
-          pushPathStrip(opaque, cx, topY + 0.04, cz, masks.pipe, shade(recipes.connectors.pipe, 1.12), 0.12, 0.03, "pipe");
-        }
+        const wet = isWater(snapshot, index);
+        const night = isNight(snapshot);
+        // Every network block from here on lies on this tile's ground.
+        const networkStart = opaque.length;
+        // Water pipes are buried: like the subway they show on the
+        // underground view only, as in SC2K.
         if (masks.rail) {
-          pushBlock(opaque, cx, topY + 0.04, cz, 0.96, 0.08, 0.96, recipes.connectors.rail, "rail");
-          pushTwinRails(opaque, cx, topY + 0.1, cz, masks.rail, recipes.connectors.railAccent, "metal");
+          // Over water the track runs level with its banks, on a pier.
+          const railY = wet ? bridgeDeckAltitude(snapshot, x, y, size, isRail) * ALT_STEP : topY;
+          if (wet) pushBlock(opaque, cx, (topY + railY) / 2, cz, 0.16, Math.max(0.02, railY - topY), 0.16, shade(recipes.connectors.rail, 0.8), "metal");
+          pushBlock(opaque, cx, railY + 0.04, cz, 0.96, 0.08, 0.96, recipes.connectors.rail, "rail");
+          pushSleepers(opaque, cx, railY + 0.09, cz, masks.rail);
+          pushTwinRails(opaque, cx, railY + 0.11, cz, masks.rail, recipes.connectors.railAccent, "metal");
+          if (wet) pushBridgeGuards(opaque, cx, railY, cz, masks.rail);
         }
         if (masks.road) {
-          if (isWater(snapshot, index) || tunnel) {
-            pushBlock(opaque, cx, topY + 0.03, cz, 1, 0.06, 1, recipes.connectors.road, tunnel ? "tunnel" : "road");
+          // A bridge deck rides level with its banks and stands on a pier.
+          const roadY = wet ? bridgeDeckAltitude(snapshot, x, y, size, isRoad) * ALT_STEP : topY;
+          if (wet) pushBlock(opaque, cx, (topY + roadY) / 2, cz, 0.16, Math.max(0.02, roadY - topY), 0.16, shade(recipes.connectors.road, 0.8), "metal");
+          if (wet || tunnel) {
+            pushBlock(opaque, cx, roadY + 0.03, cz, 1, 0.06, 1, recipes.connectors.road, tunnel ? "tunnel" : "road");
           } else {
-            pushPathStrip(opaque, cx, topY + 0.03, cz, masks.road, recipes.connectors.road, 0.56, 0.06, "road");
+            pushPathStrip(opaque, cx, roadY + 0.03, cz, masks.road, recipes.connectors.road, 0.56, 0.06, "road");
           }
           if (tunnel) {
             const tunnelMask = networkMask(snapshot, x, y, size, (snap, i) => isTunnel(snap, i));
-            pushTunnelPortals(opaque, cx, topY, cz, tunnelMask, snapshot, x, y, size);
+            pushTunnelPortals(opaque, cx, roadY, cz, tunnelMask, snapshot, x, y, size);
           }
-          pushPathStrip(opaque, cx, topY + 0.062, cz, masks.road, recipes.connectors.roadAccent, 0.025, 0.02, "metal");
-          if (isWater(snapshot, index)) pushBridgeGuards(opaque, cx, topY, cz, masks.road);
-          else if (!tunnel) pushRoadCurbs(opaque, cx, topY, cz, masks.road);
+          const arms = [1, 2, 4, 8].filter((bit) => masks.road & bit).length;
+          pushPathStrip(opaque, cx, roadY + 0.062, cz, arms >= 3 ? 0 : masks.road, recipes.connectors.roadAccent, 0.025, 0.02, "metal");
+          if (wet) {
+            pushBridgeGuards(opaque, cx, roadY, cz, masks.road);
+            pushBridgeGirders(opaque, cx, roadY, cz, masks.road);
+          } else if (!tunnel) {
+            pushRoadCurbs(opaque, cx, roadY, cz, masks.road);
+            if (arms >= 3) pushCrosswalks(opaque, cx, roadY, cz, masks.road);
+            const straight = masks.road === 5 || masks.road === 10;
+            if (straight && hashTile(index * 31) % 3 === 0) pushStreetLamp(opaque, tint, cx, roadY, cz, masks.road === 10, hashTile(index) & 1 ? 1 : -1, night);
+          }
         }
-        if (masks.highway) {
-          // An elevated deck on piers, not a painted slab: the deck rides
-          // clear of the ground, every edge that does not continue onto
-          // another highway tile carries a concrete parapet, and a support
-          // pier drops to the ground so the elevation reads from the side.
-          // Worn concrete-grey, clearly lighter than a street, matching the
-          // 2D deck (shade +22 over the highway base colour).
-          const deckColor = shade(recipes.catalogCategories.highway, 1.3);
-          const deckTop = topY + 0.3;
+        // Highways stand on piers one height step over the ground (over the
+        // banks on a bridge); streets and railways pass underneath. Where two
+        // highways cross, the world-x run eases up over two tiles and passes
+        // over the world-y run.
+        const deckColor = shade(recipes.catalogCategories.highway, 1.3);
+        const deckRise = ALT_STEP + 0.05;
+        const pushDeck = (baseY, mask, rise, list = opaque) => {
+          const deckTop = baseY + rise;
           const parapet = shade(recipes.catalogCategories.infrastructure, 1.16);
-          pushBlock(opaque, cx, deckTop, cz, 1, 0.1, 1, deckColor, "road");
+          const first = list.length;
+          pushBlock(list, cx, deckTop, cz, 1, 0.1, 1, deckColor, "road");
           // Lane strips follow the run axis only. An interior tile of a
           // two-wide run has a third connection toward its sibling
           // carriageway, and striping that arm too covered the deck in
           // bracket shapes instead of lanes (the 2D deck applies the same
           // full-pair rule).
-          const fullNS = (masks.highway & 5) === 5;
-          const fullEW = (masks.highway & 10) === 10;
-          const runMask = fullNS && !fullEW ? masks.highway & 5
-            : fullEW && !fullNS ? masks.highway & 10
-              : masks.highway;
-          pushPathStrip(opaque, cx, deckTop + 0.065, cz, runMask, recipes.connectors.roadAccent, 0.08, 0.02, "metal");
-          if (!(masks.highway & 1)) pushBlock(opaque, cx, deckTop + 0.09, cz - 0.46, 1, 0.08, 0.08, parapet, "metal");
-          if (!(masks.highway & 4)) pushBlock(opaque, cx, deckTop + 0.09, cz + 0.46, 1, 0.08, 0.08, parapet, "metal");
-          if (!(masks.highway & 2)) pushBlock(opaque, cx + 0.46, deckTop + 0.09, cz, 0.08, 0.08, 1, parapet, "metal");
-          if (!(masks.highway & 8)) pushBlock(opaque, cx - 0.46, deckTop + 0.09, cz, 0.08, 0.08, 1, parapet, "metal");
-          if (!isWater(snapshot, index)) {
-            pushBlock(opaque, cx, topY + 0.125, cz, 0.16, 0.25, 0.16, shade(deckColor, 0.86), "metal");
+          const fullNS = (mask & 5) === 5;
+          const fullEW = (mask & 10) === 10;
+          const runMask = fullNS && !fullEW ? mask & 5 : fullEW && !fullNS ? mask & 10 : mask;
+          pushPathStrip(list, cx, deckTop + 0.065, cz, runMask, recipes.connectors.roadAccent, 0.08, 0.02, "metal");
+          if (!(mask & 1)) pushBlock(list, cx, deckTop + 0.09, cz - 0.46, 1, 0.08, 0.08, parapet, "metal");
+          if (!(mask & 4)) pushBlock(list, cx, deckTop + 0.09, cz + 0.46, 1, 0.08, 0.08, parapet, "metal");
+          if (!(mask & 2)) pushBlock(list, cx + 0.46, deckTop + 0.09, cz, 0.08, 0.08, 1, parapet, "metal");
+          if (!(mask & 8)) pushBlock(list, cx - 0.46, deckTop + 0.09, cz, 0.08, 0.08, 1, parapet, "metal");
+          return first;
+        };
+        if (masks.highway) {
+          const baseY = wet ? bridgeDeckAltitude(snapshot, x, y, size, (snap, i) => isHighwayTile(snap, i) || isOnrampTile(snap, i)) * ALT_STEP : topY;
+          const crossing = isInterchange(snapshot, x, y, size);
+          const approach = crossing ? null : interchangeApproach(snapshot, x, y, size);
+          const upper = deckRise + ALT_STEP;
+          const topRise = crossing ? upper : deckRise;
+          pushBlock(opaque, cx, (topY + baseY + topRise) / 2, cz, 0.2, Math.max(0.02, baseY + topRise - topY), 0.2, shade(deckColor, 0.86), "metal");
+          // A capital spreads the load under the deck.
+          const along = (masks.highway & 10) && !((masks.highway & 5) === 5);
+          pushBlock(opaque, cx, baseY + topRise - 0.08, cz, along ? 0.24 : 0.62, 0.06, along ? 0.62 : 0.24, shade(deckColor, 0.8), "metal");
+          if (crossing) {
+            const lowerMask = 5 | (isInterchange(snapshot, x + 1, y, size) ? 2 : 0) | (isInterchange(snapshot, x - 1, y, size) ? 8 : 0);
+            const upperMask = 10 | (isInterchange(snapshot, x, y - 1, size) ? 1 : 0) | (isInterchange(snapshot, x, y + 1, size) ? 4 : 0);
+            pushDeck(baseY, lowerMask, deckRise);
+            pushDeck(baseY, upperMask, upper);
+          } else if (approach) {
+            // On the ramp up to the crossing the deck climbs toward it:
+            // ALT_STEP higher at the crossing, level with the rest two tiles
+            // out.
+            const riseAt = (e) => deckRise + ALT_STEP * Math.max(0, 1 - e / INTERCHANGE_RAMP_TILES);
+            const inner = riseAt(approach.d - 1);
+            const outer = riseAt(approach.d);
+            const first = pushDeck(baseY, masks.highway, (inner + outer) / 2);
+            for (let i = first; i < opaque.length; i += 1) {
+              const block = opaque[i];
+              const gradient = (inner - outer) * approach.dx;
+              block.y += gradient * (block.x - cx);
+              block.shearX = (block.shearX || 0) + gradient;
+            }
+          } else {
+            pushDeck(baseY, masks.highway, deckRise);
           }
-          if (isWater(snapshot, index)) pushBridgeGuards(opaque, cx, deckTop, cz, masks.highway);
+          if (wet) pushBridgeGuards(opaque, cx, baseY + topRise, cz, masks.highway);
         }
-        if (gridValue(snapshot, ["onramp"], index, false)) {
-          pushBlock(opaque, cx, topY + 0.07, cz, 0.9, 0.14, 0.9, recipes.catalogCategories.onramp, "road");
+        if (isOnrampTile(snapshot, index)) {
           // A real ramp: a wide highway-end slab and a narrow road-end slab
-          // tapering through the tile centre, by neighbour directions.
-          const hMask = networkMask(snapshot, x, y, size, (s, i) => Boolean(gridValue(s, ["highway"], i, false)) || Boolean(gridValue(s, ["onramp"], i, false)));
+          // tapering through the tile centre, by neighbour directions, laid
+          // on a plane that climbs from the street to the deck.
+          const hMask = networkMask(snapshot, x, y, size, isHighwayTile);
           const rMask = networkMask(snapshot, x, y, size, isRoad);
+          const rampColor = recipes.catalogCategories.onramp;
+          const first = opaque.length;
+          pushBlock(opaque, cx, topY + 0.03, cz, 0.9, 0.06, 0.9, rampColor, "road");
           const dirsOf = (mask) => [["n", 1], ["e", 2], ["s", 4], ["w", 8]].filter(([, bit]) => mask & bit).map(([dir]) => dir);
           const hDirs = dirsOf(hMask);
           const rDirs = dirsOf(rMask);
           if (hDirs.length === 1 && rDirs.length === 1) {
-            const rampColor = recipes.catalogCategories.onramp;
-            const wide = 0.82;
-            const narrow = 0.4;
             const [h, r] = [hDirs[0], rDirs[0]];
-            // The highway half of the ramp steps up toward the raised deck
-            // so the climb reads even without a sloped block.
-            if (h === "n" || h === "s") pushBlock(opaque, cx, topY + 0.21, h === "n" ? cz - 0.25 : cz + 0.25, wide, 0.13, 0.5, rampColor, "road");
-            else pushBlock(opaque, h === "e" ? cx + 0.25 : cx - 0.25, topY + 0.21, cz, 0.5, 0.13, wide, rampColor, "road");
-            if (r === "n" || r === "s") pushBlock(opaque, cx, topY + 0.075, r === "n" ? cz - 0.25 : cz + 0.25, narrow, 0.13, 0.5, rampColor, "road");
-            else pushBlock(opaque, r === "e" ? cx + 0.25 : cx - 0.25, topY + 0.075, cz, 0.5, 0.13, narrow, rampColor, "road");
+            if (h === "n" || h === "s") pushBlock(opaque, cx, topY + 0.07, h === "n" ? cz - 0.25 : cz + 0.25, 0.82, 0.06, 0.5, rampColor, "road");
+            else pushBlock(opaque, h === "e" ? cx + 0.25 : cx - 0.25, topY + 0.07, cz, 0.5, 0.06, 0.82, rampColor, "road");
+            if (r === "n" || r === "s") pushBlock(opaque, cx, topY + 0.07, r === "n" ? cz - 0.25 : cz + 0.25, 0.4, 0.06, 0.5, rampColor, "road");
+            else pushBlock(opaque, r === "e" ? cx + 0.25 : cx - 0.25, topY + 0.07, cz, 0.5, 0.06, 0.4, rampColor, "road");
           }
+          // Climb toward the highway side: zero at the street edge, the deck
+          // at the highway edge.
+          const toward = { n: [0, -1], e: [1, 0], s: [0, 1], w: [-1, 0] }[hDirs[0]] || [0, 0];
+          for (let i = first; i < opaque.length; i += 1) {
+            const block = opaque[i];
+            const gx = deckRise * toward[0];
+            const gz = deckRise * toward[1];
+            block.y += deckRise / 2 + gx * (block.x - cx) + gz * (block.z - cz);
+            block.shearX = gx;
+            block.shearZ = gz;
+          }
+          pushBlock(opaque, cx + toward[0] * 0.3, topY + deckRise * 0.4, cz + toward[1] * 0.3, 0.14, deckRise * 0.8, 0.14, shade(rampColor, 0.86), "metal");
         }
         if (masks.wire) {
-          pushBlock(opaque, cx, topY + 0.26, cz, 0.08, 0.52, 0.08, recipes.connectors.wire, "wire");
-          pushPathStrip(opaque, cx, topY + 0.46, cz, masks.wire, shade(recipes.connectors.wire, 1.18), 0.02, 0.02, "wire");
+          const straightWire = masks.wire === 5 || masks.wire === 10;
+          const pylon = !straightWire || (x + y) % 2 === 0;
+          pushPowerLine(opaque, cx, topY, cz, masks.wire, pylon, Boolean(masks.road || masks.rail), shade(recipes.connectors.wire, 0.8));
         }
+        // On a slope the whole set climbs with the hill.
+        if (tileSlope) for (let i = networkStart; i < opaque.length; i += 1) tiltBlock(opaque[i], x, y, tileSlope);
         if (isPark(snapshot, index)) {
           pushBlock(opaque, x + 0.5, topY + 0.025, y + 0.5, 0.94, 0.05, 0.94, recipes.connectors.park, "park");
           const canopy = (hashTile(index) & 1) ? recipes.tree.canopy : recipes.tree.canopyLight;
@@ -2232,7 +2809,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
           // The four-season canopy: sakura in spring, deep green in summer,
           // maples in autumn, snow-dusted crowns in winter — deterministic
           // per tile and snapshot clock.
-          const season = Math.floor(((Number(snapshot.tick) || 0) % 1500) / 375);
+          const season = seasonOfSnapshot(snapshot);
           // One tree in eight blossoms; at one in three the spring forest
           // read as pink confetti instead of woods with sakura in them.
           const blossom = season === 0 && hashTile(index * 29) % 8 === 0;
@@ -2277,10 +2854,10 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         const zone = zonePrefix(gridValue(snapshot, ["zone", "zoneType"], index, ZONE.NONE));
         const stage = Number(gridValue(snapshot, ["stage", "buildingStage"], index, 0)) | 0;
         if (zone && !stage && !sceneObjects.covered.has(`${x}:${y}`)) {
-          tint.push({
+          tint.push(tiltBlock({
             x: x + 0.5, y: topY + 0.012, z: y + 0.5, sx: 0.96, sy: 0.024, sz: 0.96,
             ...recipes.zoneTint[zone],
-          });
+          }, x, y, tileSlope));
         }
         // Military, airport, and seaport zones (4/5/6) get real ground slabs
         // — olive installation, runway pad, and dock — so port zones read as
@@ -2304,6 +2881,29 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
             pushBlock(opaque, cx + 0.16, topY + 0.22, cz, 0.05, 0.44, 0.05, { r: 0.54, g: 0.54, b: 0.5, a: 1 }, "metal");
             pushBlock(opaque, cx, topY + 0.44, cz, 0.36, 0.05, 0.05, { r: 0.54, g: 0.54, b: 0.5, a: 1 }, "metal");
             pushBlock(opaque, cx + 0.14, topY + 0.3, cz, 0.05, 0.08, 0.05, { r: 0.82, g: 0.28, b: 0.22, a: 1 }, "metal");
+          }
+        }
+        // Open grass is not a flat green: one tile in three carries tufts,
+        // and now and then a few flowers, placed by hash so a city looks
+        // the same every time it loads.
+        if (kind === "grass" && !wet && !rawZone && !tunnel && !masks.road && !masks.rail && !masks.wire && !masks.highway
+          && !isOnrampTile(snapshot, index) && !isPark(snapshot, index) && !isTree(snapshot, index)
+          && !sceneObjects.covered.has(`${x}:${y}`) && !occupied.has(`${x}:${y}`)) {
+          const h = hashTile(index * 43);
+          const season = seasonOfSnapshot(snapshot);
+          if (h % 3 === 0 && season !== 3) {
+            const tuftStart = opaque.length;
+            const green = recipes.terrain.grass.top;
+            const tuft = season === 2 ? mixColor(green, { r: 0.72, g: 0.6, b: 0.3, a: 1 }, 0.5) : shade(green, 0.82);
+            const flowers = [{ r: 0.96, g: 0.94, b: 0.86, a: 1 }, { r: 0.95, g: 0.82, b: 0.3, a: 1 }, { r: 0.9, g: 0.6, b: 0.68, a: 1 }];
+            const count = 2 + ((h >>> 4) % 3);
+            for (let i = 0; i < count; i += 1) {
+              const fx = 0.12 + ((h >>> (6 + i * 5)) & 31) / 40;
+              const fz = 0.12 + ((h >>> (8 + i * 5)) & 31) / 40;
+              const bloom = season !== 2 && ((h >>> (20 + i)) & 7) === 0;
+              pushBlock(opaque, x + fx, topY + 0.02, y + fz, 0.05, 0.04, 0.05, bloom ? flowers[(h >>> 28) % flowers.length] : tuft);
+            }
+            if (tileSlope) for (let i = tuftStart; i < opaque.length; i += 1) tiltBlock(opaque[i], x, y, tileSlope);
           }
         }
       }
@@ -2340,8 +2940,18 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         const wallTile = stateName === "abandoned"
           ? "abandoned"
           : night ? `wall.${prefix}.night` : `wall.${prefix}.day`;
+        const tier = Math.ceil(variant / 8);
+        // An office tower wears blue-grey glass.
+        if (prefix === "c" && stage >= 2 && tier >= 3 && stateName !== "abandoned") wallColor = shade({ r: 0.55, g: 0.66, b: 0.74, a: 1 }, night ? 0.6 : 1.05);
+        // The roof furniture SC3K puts on every kind of building: tanks on
+        // apartment roofs, signs and masts on shops, stacks and drums on works.
+        const extra = prefix === "r" ? (stage > 1 ? ["watertank"] : [])
+          : prefix === "c" ? (stage >= 2 && tier >= 3 ? ["helipad", "antenna"] : stage > 1 ? ["sign"] : [])
+            : ["stack", "tank"];
+        const voxelGrammar = extra.length ? { ...grammar, clutter: [...(grammar.clutter || []), ...extra] } : grammar;
+        const turnStart = opaque.length;
         pushGrammarBuilding(opaque, recipes, clutterPalette, {
-          cx, cz, topY, footprint, grammar, variant, night, stateName, wallTile, wallColor,
+          cx, cz, topY, footprint, grammar: voxelGrammar, variant, night, stateName, wallTile, wallColor,
           heightPx: building.derived && stage > 1
             ? Math.min(stageRecipe.heightPx || 24, 22 + stage * 12)
             : (stageRecipe.heightPx || stageRecipe.height * PX_PER_TILE),
@@ -2349,6 +2959,8 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
           rows: WALL_ROWS[prefix] || 3,
           parapetColor: wallColor,
         });
+        // The parcel is composed facing +z; turn it to face its street.
+        turnBlocks(opaque, turnStart, cx, cz, streetQuarter(snapshot, building.x, building.y, footprint, size));
         return;
       }
       // No grammar loaded (offline fallback recipes): one tinted box with a
@@ -2457,7 +3069,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     const opaque = [];
     const smoke = [];
     const agents = snapshot?.agents && typeof snapshot.agents === "object" ? snapshot.agents : null;
-    if (!agents) return { opaque, smoke };
+    if (!agents) return { opaque, smoke, glow: [] };
     const topAt = (agent) => {
       const tileX = Math.max(0, Math.min(size - 1, Math.floor(agent.x)));
       const tileY = Math.max(0, Math.min(size - 1, Math.floor(agent.y)));
@@ -2468,36 +3080,228 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       if (gridValue(snapshot, ["highway"], index, false)) return ground + 0.35;
       return ground;
     };
-    const place = (list, palette, sizeX, sizeY, sizeZ, lift = 0) => {
-      (Array.isArray(list) ? list : []).forEach((agent, index) => {
-        if (!Number.isFinite(agent?.x) || !Number.isFinite(agent?.y)) return;
-        const phase = (Number(agent.phase) || 0) - 0.5;
-        const color = palette[index % palette.length];
-        pushBlock(
-          opaque,
-          agent.x + 0.5 + phase * 0.5, topAt(agent) + sizeY / 2 + lift, agent.y + 0.5 + phase * 0.18,
-          sizeX, sizeY, sizeZ, color
-        );
-      });
+    // --- SC3K traffic --------------------------------------------------------
+    // The sim hands out facts, not trips: a road tile and a phase for each
+    // car, re-dealt every five ticks. The renderer turns each fact into a
+    // vehicle driving along that tile's street in its right-hand lane, and
+    // lets it roll forward over the five ticks until the next deal. A
+    // snapshot without a road layer (the atlas sprite composer) keeps the
+    // old placement: one vehicle standing at the tile centre.
+    const tick = Number(snapshot.tick) | 0;
+    const night = isNight(snapshot);
+    const glow = [];
+    const streets = Boolean(snapshot?.road);
+    const inMap = (tx, ty) => tx >= 0 && ty >= 0 && tx < size && ty < size;
+    const slopeMaskAt = (tx, ty) => {
+      const i = ty * size + tx;
+      if (!gridValue(snapshot, ["slope"], i, false)) return 0;
+      const alt = altitudeAt(snapshot, i);
+      const up = (nx, ny) => inMap(nx, ny) && altitudeAt(snapshot, ny * size + nx) > alt;
+      return (up(tx, ty - 1) ? 1 : 0) | (up(tx + 1, ty) ? 2 : 0) | (up(tx, ty + 1) ? 4 : 0) | (up(tx - 1, ty) ? 8 : 0);
     };
-    // A car is roughly 1.8×4.3 m on the 16 m tile, with a low body and cabin.
-    place(agents.vehicles, recipes.agents.car, 0.112, 0.065, 0.27, 0.035);
-    // A darker cabin block on top of each car body makes vehicles read as
-    // cars from above, the way SC2000's two-tone sprites do.
-    (Array.isArray(agents.vehicles) ? agents.vehicles : []).forEach((agent, index) => {
+    const drivable = (snap, i) => isRoad(snap, i) || isOnrampTile(snap, i) || isHighwayTile(snap, i);
+    // Where a wheel or a foot touches down on a tile, and the slope to lean on.
+    const travelBase = (tx, ty, predicate) => {
+      const i = ty * size + tx;
+      const ground = terrainTopY(snapshot, i);
+      if (isHighwayTile(snapshot, i)) {
+        const base = isWater(snapshot, i) ? bridgeDeckAltitude(snapshot, tx, ty, size, (snap, j) => isHighwayTile(snap, j) || isOnrampTile(snap, j)) * ALT_STEP : ground;
+        return { y: base + ALT_STEP + 0.1, mask: 0 };
+      }
+      if (isWater(snapshot, i)) return { y: bridgeDeckAltitude(snapshot, tx, ty, size, predicate) * ALT_STEP + 0.06, mask: 0 };
+      return { y: ground + 0.06, mask: slopeMaskAt(tx, ty) };
+    };
+    // A heading on a tile: the axis its network runs along, a direction
+    // sign, and the lane offset to the right of travel.
+    const heading = (tx, ty, predicate, seed, laneOffset, index) => {
+      const mask = streets ? networkMask(snapshot, tx, ty, size, predicate) : 0;
+      const ew = Boolean(mask & 10), ns = Boolean(mask & 5);
+      const alongX = ew && ns ? Boolean(seed & 1) : ew;
+      // Neighbouring facts alternate, so both directions carry traffic.
+      const sign = streets ? ((index + (seed >>> 5)) & 1 ? 1 : -1) : 1;
+      return { alongX, sign, lane: streets ? laneOffset * sign : 0 };
+    };
+    // A box in a vehicle's own frame: f forward along travel, r to its right.
+    const vehicleBox = (list, frame, f, r, y, length, width, height, color, tile) => {
+      const x = frame.alongX ? frame.x + f * frame.sign : frame.x - r * frame.sign;
+      const z = frame.alongX ? frame.z + r * frame.sign : frame.z + f * frame.sign;
+      const block = pushBlock(list, x, frame.y + y, z, frame.alongX ? length : width, height, frame.alongX ? width : length, color, tile);
+      if (frame.mask) tiltBlock(list[list.length - 1], frame.tx, frame.ty, frame.mask);
+      return block;
+    };
+    const frameFor = (agent, index, predicate, lane, travel) => {
+      const tx = Math.max(0, Math.min(size - 1, Math.floor(agent.x)));
+      const ty = Math.max(0, Math.min(size - 1, Math.floor(agent.y)));
+      const seed = hashTile(index * 977 + 13);
+      const h = heading(tx, ty, predicate, seed, lane, index);
+      const base = streets ? travelBase(tx, ty, predicate) : { y: terrainTopY(snapshot, ty * size + tx), mask: 0 };
+      // Rolls forward through the five ticks between deals.
+      const along = streets ? (((Number(agent.phase) || 0) + (tick % 5) * travel) % 1) - 0.5 : 0;
+      const cx = tx + 0.5 + (h.alongX ? along * 0.9 * h.sign : -h.lane);
+      const cz = ty + 0.5 + (h.alongX ? h.lane : along * 0.9 * h.sign);
+      return { ...h, x: cx, z: cz, y: base.y, mask: base.mask, tx, ty };
+    };
+    const headlight = { r: 1, g: 0.95, b: 0.72, a: 1 };
+    const taillight = { r: 0.95, g: 0.16, b: 0.12, a: 1 };
+    const lamps = (frame, length, width, lift) => {
+      if (!night) return;
+      for (const side of [-1, 1]) {
+        vehicleBox(glow, frame, length / 2 + 0.006, side * width * 0.3, lift, 0.012, 0.024, 0.018, headlight);
+        vehicleBox(glow, frame, -length / 2 - 0.006, side * width * 0.3, lift, 0.012, 0.024, 0.018, taillight);
+      }
+    };
+    const windowTone = { r: 0.2, g: 0.26, b: 0.3, a: 1 };
+    // SC3K shows traffic as it is: besides the sim's own vehicle facts,
+    // every street carries cars in proportion to its traffic count (one per
+    // 40, up to three a tile), thinned evenly by hash past TRAFFIC_CAP.
+    const flow = [];
+    if (streets && snapshot.traffic) {
+      const wanted = [];
+      let total = 0;
+      for (let i = 0; i < size * size; i += 1) {
+        if (!drivable(snapshot, i) || isTunnel(snapshot, i)) continue;
+        const count = Math.min(3, Math.floor((Number(snapshot.traffic[i]) || 0) / 40));
+        if (count) { wanted.push([i, count]); total += count; }
+      }
+      const keep = Math.min(1, TRAFFIC_CAP / Math.max(1, total));
+      wanted.forEach(([i, count]) => {
+        for (let j = 0; j < count; j += 1) {
+          const h = hashTile(i * 13 + j * 7 + 1);
+          if ((h % 1000) / 1000 >= keep) continue;
+          flow.push({ x: i % size, y: Math.floor(i / size), phase: (j + ((h >>> 10) % 100) / 100) / count });
+        }
+      });
+    }
+    const simVehicles = (Array.isArray(agents.vehicles) ? agents.vehicles : [])
+      .filter((agent) => !streets || !isTunnel(snapshot, Math.floor(agent.y) * size + Math.floor(agent.x)));
+    [...simVehicles, ...flow].forEach((agent, index) => {
       if (!Number.isFinite(agent?.x) || !Number.isFinite(agent?.y)) return;
-      const phase = (Number(agent.phase) || 0) - 0.5;
-      const cabin = recipes.agents.car[(index + 1) % recipes.agents.car.length];
-      pushBlock(
-        opaque,
-        agent.x + 0.5 + phase * 0.5, topAt(agent) + 0.24, agent.y + 0.5 + phase * 0.18,
-        0.075, 0.04, 0.13, shade(cabin, 0.82), "metal"
-      );
+      const frame = frameFor(agent, index, drivable, 0.12, 0.18);
+      const paint = recipes.agents.car[index % recipes.agents.car.length];
+      // One vehicle in ten is a bus and two are lorries; the first is
+      // always a car, which is what the atlas sprite shows.
+      const kind = index % 10 === 9 ? "bus" : index % 10 === 4 || index % 10 === 7 ? "lorry" : "car";
+      if (kind === "bus") {
+        // A 12 m bus: a tall cream-and-colour body with a band of windows.
+        vehicleBox(opaque, frame, 0, 0, 0.07, 0.72, 0.15, 0.13, { r: 0.93, g: 0.9, b: 0.8, a: 1 });
+        vehicleBox(opaque, frame, 0, 0, 0.032, 0.724, 0.154, 0.035, paint);
+        vehicleBox(opaque, frame, 0.02, 0, 0.1, 0.62, 0.156, 0.035, windowTone);
+        lamps(frame, 0.72, 0.15, 0.03);
+      } else if (kind === "lorry") {
+        // A cab and a white box trailer.
+        vehicleBox(opaque, frame, 0.17, 0, 0.055, 0.13, 0.13, 0.1, paint);
+        vehicleBox(opaque, frame, 0.19, 0, 0.085, 0.07, 0.132, 0.03, windowTone);
+        vehicleBox(opaque, frame, -0.08, 0, 0.075, 0.34, 0.14, 0.13, { r: 0.88, g: 0.88, b: 0.84, a: 1 });
+        lamps(frame, 0.5, 0.14, 0.03);
+      } else {
+        // A 4.3 m car: a low body and a darker cabin set back from the nose.
+        vehicleBox(opaque, frame, 0, 0, 0.0675, 0.27, 0.112, 0.065, paint);
+        vehicleBox(opaque, frame, -0.02, 0, 0.12, 0.13, 0.075, 0.04, shade(recipes.agents.car[(index + 1) % recipes.agents.car.length], 0.82), "metal");
+        lamps(frame, 0.27, 0.112, 0.06);
+      }
     });
-    // Pedestrians are about 1.7 m tall, never tower over a house.
-    place(agents.pedestrians, recipes.agents.pedestrian, 0.028, 0.105, 0.028, 0.02);
-    place(agents.trains, recipes.agents.train, 0.4, 0.3, 0.88, 0.08);
-    place(agents.serviceVehicles, recipes.agents.service, 0.34, 0.18, 0.52, 0.06);
+
+    // Pedestrians walk the sidewalk of the street nearest their building,
+    // on the building's side. Where no street is near they stay home; the
+    // atlas composer (no road layer) draws one standing at the tile centre.
+    const skin = { r: 0.86, g: 0.7, b: 0.58, a: 1 };
+    (Array.isArray(agents.pedestrians) ? agents.pedestrians : []).forEach((agent, index) => {
+      if (!Number.isFinite(agent?.x) || !Number.isFinite(agent?.y)) return;
+      const color = recipes.agents.pedestrian[index % recipes.agents.pedestrian.length];
+      const ax = Math.floor(agent.x), ay = Math.floor(agent.y);
+      let spot = null;
+      if (streets) {
+        // The nearest street tile by straight distance, first found on a tie.
+        let best = Infinity;
+        for (let dy = -3; dy <= 3; dy += 1) for (let dx = -3; dx <= 3; dx += 1) {
+          if ((!dx && !dy) || !inMap(ax + dx, ay + dy)) continue;
+          const i = (ay + dy) * size + ax + dx;
+          const d = Math.hypot(dx, dy);
+          if (d < best && isRoad(snapshot, i) && !isWater(snapshot, i)) { best = d; spot = { tx: ax + dx, ty: ay + dy, dx, dy }; }
+        }
+        if (!spot) return;
+      }
+      const walk = streets ? (((Number(agent.phase) || 0) + (tick % 5) * 0.06) % 1) - 0.5 : 0;
+      let px = ax + 0.5, pz = ay + 0.5, base = { y: terrainTopY(snapshot, ay * size + ax), mask: 0 };
+      if (spot) {
+        // The sidewalk runs beside the street, on the building's side of it.
+        const mask = networkMask(snapshot, spot.tx, spot.ty, size, isRoad);
+        const ew = Boolean(mask & 10), ns = Boolean(mask & 5);
+        const alongX = ew && ns ? Math.abs(spot.dy) >= Math.abs(spot.dx) : ew || !ns;
+        const side = (delta) => (delta ? -Math.sign(delta) : ((hashTile(index * 31) & 1) ? 1 : -1)) * 0.38;
+        px = spot.tx + 0.5 + (alongX ? walk * 0.8 : side(spot.dx));
+        pz = spot.ty + 0.5 + (alongX ? side(spot.dy) : walk * 0.8);
+        base = travelBase(spot.tx, spot.ty, isRoad);
+        base.y -= 0.02;
+      }
+      const people = index % 3 === 0 ? [0, 0.05] : [0];
+      people.forEach((offset) => {
+        const start = opaque.length;
+        pushBlock(opaque, px + offset, base.y + 0.02 + 0.04, pz + offset * 0.4, 0.03, 0.08, 0.03, color);
+        pushBlock(opaque, px + offset, base.y + 0.02 + 0.094, pz + offset * 0.4, 0.024, 0.026, 0.024, skin);
+        if (spot && base.mask) for (let i = start; i < opaque.length; i += 1) tiltBlock(opaque[i], spot.tx, spot.ty, base.mask);
+      });
+    });
+
+    // Trains run along the track: a locomotive with a cab and a coach with
+    // a window band, coupled nose to tail.
+    (Array.isArray(agents.trains) ? agents.trains : []).forEach((agent, index) => {
+      if (!Number.isFinite(agent?.x) || !Number.isFinite(agent?.y)) return;
+      const frame = frameFor(agent, index, isRail, 0, 0.1);
+      frame.y += streets ? 0.07 : 0.08;
+      const body = recipes.agents.train[index % recipes.agents.train.length];
+      vehicleBox(opaque, frame, 0.23, 0, 0.1, 0.42, 0.18, 0.16, shade(body, 0.78));
+      vehicleBox(opaque, frame, 0.36, 0, 0.2, 0.12, 0.16, 0.05, windowTone);
+      vehicleBox(opaque, frame, -0.23, 0, 0.1, 0.42, 0.18, 0.16, body);
+      vehicleBox(opaque, frame, -0.23, 0, 0.13, 0.36, 0.184, 0.04, windowTone);
+      lamps(frame, 0.88, 0.18, 0.06);
+    });
+
+    // Police cars, fire engines and ambulances drive out to the street
+    // nearest their station, at their real sizes and with their roof gear.
+    const services = ["police", "fire", "medical"];
+    (Array.isArray(agents.serviceVehicles) ? agents.serviceVehicles : []).forEach((agent, index) => {
+      if (!Number.isFinite(agent?.x) || !Number.isFinite(agent?.y)) return;
+      let placed = agent;
+      if (streets) {
+        const ax = Math.floor(agent.x), ay = Math.floor(agent.y);
+        placed = null;
+        for (let r = 0; r <= 3 && !placed; r += 1) {
+          for (let dy = -r; dy <= r && !placed; dy += 1) for (let dx = -r; dx <= r && !placed; dx += 1) {
+            if (Math.max(Math.abs(dx), Math.abs(dy)) !== r || !inMap(ax + dx, ay + dy)) continue;
+            if (isRoad(snapshot, (ay + dy) * size + ax + dx)) placed = { ...agent, x: ax + dx, y: ay + dy };
+          }
+        }
+        if (!placed) return;
+      }
+      const frame = frameFor(placed, index + 5, drivable, 0.12, 0.2);
+      const kind = agent.kind || services[index % services.length];
+      const paint = recipes.agents.service[index % recipes.agents.service.length];
+      const white = { r: 0.94, g: 0.94, b: 0.92, a: 1 };
+      const bar = [{ r: 0.2, g: 0.4, b: 0.95, a: 1 }, { r: 0.95, g: 0.18, b: 0.15, a: 1 }];
+      if (kind === "fire") {
+        vehicleBox(opaque, frame, 0, 0, 0.08, 0.44, 0.15, 0.13, paint);
+        vehicleBox(opaque, frame, 0.17, 0, 0.12, 0.08, 0.152, 0.04, windowTone);
+        vehicleBox(opaque, frame, -0.04, 0, 0.155, 0.34, 0.06, 0.02, white, "metal");
+        lamps(frame, 0.44, 0.15, 0.04);
+      } else if (kind === "medical") {
+        vehicleBox(opaque, frame, 0, 0, 0.08, 0.34, 0.13, 0.13, white);
+        vehicleBox(opaque, frame, 0, 0, 0.07, 0.344, 0.134, 0.025, paint);
+        vehicleBox(opaque, frame, 0.14, 0, 0.12, 0.05, 0.132, 0.04, windowTone);
+        lamps(frame, 0.34, 0.13, 0.04);
+      } else {
+        vehicleBox(opaque, frame, 0, 0, 0.0675, 0.28, 0.115, 0.065, white);
+        vehicleBox(opaque, frame, 0, 0, 0.055, 0.284, 0.119, 0.02, paint);
+        vehicleBox(opaque, frame, -0.02, 0, 0.12, 0.13, 0.078, 0.04, windowTone, "metal");
+        lamps(frame, 0.28, 0.115, 0.06);
+      }
+      // The light bar flashes by tick: lit on the glow list, dark otherwise.
+      const flash = (tick + index) % 2 === 0;
+      bar.forEach((color, side) => {
+        const list = flash ? glow : opaque;
+        vehicleBox(list, frame, kind === "fire" ? 0.17 : 0, (side ? 1 : -1) * 0.025, kind === "police" ? 0.15 : 0.16, 0.04, 0.045, 0.02, flash ? color : shade(color, 0.6));
+      });
+    });
     (Array.isArray(agents.smoke) ? agents.smoke : []).forEach((agent, index) => {
       if (!Number.isFinite(agent?.x) || !Number.isFinite(agent?.y)) return;
       const phase = Number(agent.phase) || 0;
@@ -2530,7 +3334,6 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     // Waterfalls: white falling curtains on the water side of high edges,
     // with a splash at the foot. The tick sways the curtain so the per-tick
     // agents redraw animates it.
-    const tick = Number(snapshot.tick) | 0;
     waterfallEdges(snapshot).forEach((edge, index) => {
       const cx = edge.x + 0.5;
       const cz = edge.y + 0.5;
@@ -2562,7 +3365,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
 
     // Spring sakura petals: tiny pink flakes drift from blossom trees, a
     // gentle deterministic fall that stays sparse for the zen cleanliness.
-    const season = Math.floor(((Number(snapshot.tick) || 0) % 1500) / 375);
+    const season = seasonOfSnapshot(snapshot);
     if (season === 0) {
       for (let index = 0; index < size * size; index += 1) {
         if (!isTree(snapshot, index)) continue;
@@ -2600,7 +3403,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         pushBlock(opaque, cx - 0.24, base + 0.95, cz + 0.36, 0.1, 0.1, 0.06, { r: 1, g: 0.28, b: 0.2, a: 1 });
       }
     }
-    return { opaque, smoke };
+    return { opaque, smoke, glow };
   }
 
   function collectOverlayBlocks(snapshot, overlay) {
@@ -2704,7 +3507,8 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     if (frame.category === "building") {
       scene.buildings.push({ ...frame, x: 0, y: 0, footprint, state: frame.state === "night" ? "normal" : frame.state });
     } else if (frame.category === "facility") {
-      scene.facilities.push({ x: 0, y: 0, footprint, kind: frame.id.replace(/\.night$/, "").split(".").pop() });
+      // "facility.coal-2x2" is the coal plant at an older footprint.
+      scene.facilities.push({ x: 0, y: 0, footprint, kind: frame.id.replace(/\.night$/, "").split(".").pop().replace(/-\dx\d$/, "") });
     } else if (frame.category === "catalog") {
       scene.catalogTiles.push({ x: 0, y: 0, label: frame.id.replace(/\.night$/, "").split(".").pop(), category: frame.kind, footprint });
     } else if (frame.category === "agent") {
@@ -2713,7 +3517,9 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       const palettes = { car: "car", pedestrian: "pedestrian", train: "train", service: "service", smoke: "smoke" };
       const colors = recipes.agents[palettes[frame.kind]];
       if (colors) recipes.agents[palettes[frame.kind]] = [colors[((frame.variant || 1) - 1) % colors.length]];
-      snapshot.agents = { [key]: [{ x: 0, y: 0, phase: frame.kind === "smoke" ? ((frame.variant || 1) - 1) / 3 : 0.5 }] };
+      // "agent.service.fire" names which service vehicle the sprite shows.
+      const serviceKind = frame.kind === "service" ? String(frame.id || "").split(".").pop() : undefined;
+      snapshot.agents = { [key]: [{ x: 0, y: 0, phase: frame.kind === "smoke" ? ((frame.variant || 1) - 1) / 3 : 0.5, kind: serviceKind }] };
       const result = collectAgentBlocks(snapshot, recipes);
       blocks = [...result.opaque, ...result.smoke];
       centerX = centerZ = 0.5;
@@ -2745,6 +3551,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     TILE_METERS,
     measureParcelPlan,
     plannedBuildingMasses,
+    streetQuarter,
     assetSeed,
     createAssetBlocks,
     blockFaces,
@@ -2787,6 +3594,8 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     collectSceneObjects,
     chunkSignature,
     collectChunkBlocks,
+    collectUndergroundBlocks,
+    surfaceAt,
     collectAgentBlocks,
     collectOverlayBlocks,
     previewTiles,
@@ -2824,6 +3633,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     mounted: false,
     ready: false,
     disposed: false,
+    underground: false,
     THREE: null,
     stack: null,
     canvas: null,
@@ -2842,6 +3652,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     texture: null,
     texturedMaterial: null,
     wallMaterial: null,
+    wallDarkMaterial: null,
     waterTexture: null,
     tileGeometries: new Map(),
     recipes: buildRecipes(null),
@@ -2859,7 +3670,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     view: { zoom: DEFAULT_ZOOM, rotation: 0, panX: 0, panY: 0 },
     chunks: new Map(),
     chunkBuildCount: 0,
-    dynamicMeshes: { agents: null, smoke: null, overlay: null, preview: null },
+    dynamicMeshes: { agents: null, smoke: null, glow: null, overlay: null, preview: null },
     lastKeys: {},
     activeRaf: 0,
     instanceCount: 0,
@@ -3006,7 +3817,9 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     const preview = state.ledger.track(new THREE.MeshBasicMaterial({
       color: 0xffffff, transparent: true, opacity: 0.42, depthWrite: false,
     }));
-    return { opaque, water, tint, smoke, preview, textured: state.texturedMaterial || opaque };
+    // Headlights, tail lights and light bars: unlit, so they shine at night.
+    const glow = state.ledger.track(new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    return { opaque, water, tint, smoke, preview, glow, textured: state.texturedMaterial || opaque };
   }
 
   // shadows: "both" for solid blocks (cast and receive), "receive" for the
@@ -3020,8 +3833,18 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     const matrix = new THREE.Matrix4();
     const color = new THREE.Color();
     blocks.forEach((block, index) => {
-      matrix.makeScale(block.sx, block.sy, block.sz);
-      matrix.setPosition(block.x, block.y, block.z);
+      if (block.shearX || block.shearZ) {
+        // Scale plus the vertical shear of a block laid on a slope.
+        matrix.set(
+          block.sx, 0, 0, block.x,
+          (block.shearX || 0) * block.sx, block.sy, (block.shearZ || 0) * block.sz, block.y,
+          0, 0, block.sz, block.z,
+          0, 0, 0, 1,
+        );
+      } else {
+        matrix.makeScale(block.sx, block.sy, block.sz);
+        matrix.setPosition(block.x, block.y, block.z);
+      }
       mesh.setMatrixAt(index, matrix);
       // Palette values are sRGB measurements. three r152+ reads bare setRGB
       // components in the linear working space, so feeding them unconverted
@@ -3139,7 +3962,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         flat.push(block);
         return;
       }
-      const key = `${block.tile || "flat"}:${block.shape || "box"}`;
+      const key = `${block.tile || "flat"}:${block.shape || "box"}${block.unlit ? ":unlit" : ""}`;
       let group = byTile.get(key);
       if (!group) {
         group = [];
@@ -3153,7 +3976,10 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       const tile = group[0].tile;
       const shape = group[0].shape || "box";
       const textured = tile && state.textures?.materials[tileMaterialId(tile)];
-      const material = !textured ? state.materials.opaque : state.wallMaterial && (tileMaterialId(tile).startsWith("wall.") || tileMaterialId(tile) === "facility.school") ? state.wallMaterial : state.materials.textured;
+      const wall = state.wallMaterial && (tileMaterialId(tile).startsWith("wall.") || tileMaterialId(tile) === "facility.school");
+      const material = !textured ? state.materials.opaque
+        : wall ? (group[0].unlit && state.wallDarkMaterial ? state.wallDarkMaterial : state.wallMaterial)
+          : state.materials.textured;
       const mesh = buildInstancedMesh(group, material, 0, tileGeometry(state.THREE, tile, shape), "both");
       if (mesh) {
         mesh.userData.tileKey = tile;
@@ -3215,15 +4041,17 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
   }
 
   function syncDynamic(snapshot) {
-    const agentsKey = `${Number(snapshot.tick) | 0}:${snapshot.rev ?? "x"}:${state.recipeRev}`;
+    const agentsKey = `${Number(snapshot.tick) | 0}:${snapshot.rev ?? "x"}:${state.recipeRev}:${state.underground ? "u" : "-"}`;
     if (state.lastKeys.agents !== agentsKey) {
       state.lastKeys.agents = agentsKey;
       disposeMesh(state.dynamicMeshes.agents);
       disposeMesh(state.dynamicMeshes.smoke);
-      const blocks = collectAgentBlocks(snapshot, state.recipes);
+      disposeMesh(state.dynamicMeshes.glow);
+      const blocks = state.underground ? { opaque: [], smoke: [], glow: [] } : collectAgentBlocks(snapshot, state.recipes);
       state.dynamicMeshes.agents = buildInstancedMesh(blocks.opaque, state.materials.opaque, 0, state.sharedGeometry, "both");
       state.dynamicMeshes.smoke = buildInstancedMesh(blocks.smoke, state.materials.smoke, 3);
-      [state.dynamicMeshes.agents, state.dynamicMeshes.smoke].forEach((mesh) => {
+      state.dynamicMeshes.glow = buildInstancedMesh(blocks.glow || [], state.materials.glow || state.materials.opaque, 1);
+      [state.dynamicMeshes.agents, state.dynamicMeshes.smoke, state.dynamicMeshes.glow].forEach((mesh) => {
         if (mesh) state.dynamicGroup.add(mesh);
       });
     }
@@ -3278,6 +4106,8 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     }
     state.sun.intensity = light.sunIntensity;
     state.ambient.intensity = light.ambientIntensity;
+    state.sun.color.setRGB(light.sunR, light.sunG, light.sunB);
+    state.ambient.color.setRGB(light.ambientR, light.ambientG, light.ambientB);
     if (state.fill) {
       state.fill.position.set(-light.sunX, 0.6, -light.sunZ);
       state.fill.intensity = 0.12 + light.dayFactor * 0.3;
@@ -3292,6 +4122,13 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       const mix = (a, b) => a + (b - a) * nightMix;
       uniforms.uGlassColor.value.setRGB(mix(glass.r, lit.r), mix(glass.g, lit.g), mix(glass.b, lit.b), state.THREE.SRGBColorSpace);
       uniforms.uGlassGlow.value.setRGB(lit.r * 0.7 * nightMix, lit.g * 0.7 * nightMix, lit.b * 0.7 * nightMix, state.THREE.SRGBColorSpace);
+      if (state.wallDarkMaterial) {
+        // Dark rooms: the glass only dims toward a night blue-black.
+        const dark = state.wallDarkMaterial.userData.uniforms;
+        const dim = (a, b) => a + (b - a) * nightMix;
+        dark.uGlassColor.value.setRGB(dim(glass.r, 0.16), dim(glass.g, 0.19), dim(glass.b, 0.26), state.THREE.SRGBColorSpace);
+        dark.uGlassGlow.value.setRGB(0, 0, 0);
+      }
     }
     state.scene.background.setRGB(light.skyR, light.skyG, light.skyB, state.THREE.SRGBColorSpace);
     const bob = waterBob(snapshot.timeOfDay);
@@ -3402,6 +4239,8 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         maskTexture.needsUpdate = true;
       }
       state.wallMaterial = state.ledger.track(createWallMaterial(THREE, texture, maskTexture));
+      // The same walls with their rooms dark: glass that never glows.
+      state.wallDarkMaterial = state.ledger.track(createWallMaterial(THREE, texture, maskTexture));
       const waterRect = state.textures.tiles.water;
       if (waterRect && typeof document !== "undefined") {
         const tileCanvas = document.createElement("canvas");
@@ -3502,6 +4341,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     if (Number.isFinite(viewState.panX)) state.view.panX = viewState.panX;
     if (Number.isFinite(viewState.panY)) state.view.panY = viewState.panY;
     if (viewState.overlay !== undefined) state.overlay = normalizeOverlay(viewState.overlay);
+    if (viewState.display && typeof viewState.display === "object") state.underground = Boolean(viewState.display.underground);
   }
 
   function render(snapshot, viewState) {
@@ -3514,7 +4354,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     // which stays correct, only slower.
     const staticKey = snapshot.rev === undefined
       ? null
-      : `${snapshot.rev}:${mapSize(snapshot)}:${state.recipeRev}`;
+      : `${snapshot.rev}:${mapSize(snapshot)}:${state.recipeRev}:${state.underground ? "u" : "-"}`;
     if (staticKey === null || state.lastKeys.static !== staticKey) {
       state.lastKeys.static = staticKey;
       const sceneObjects = collectSceneObjects(snapshot, state.recipes);
@@ -3611,10 +4451,10 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     return state.view.zoom;
   }
 
-  function panByScreen(dx, dy) {
+  function panByScreen(dx, dy, options = {}) {
     if (Number.isFinite(dx)) state.view.panX += dx;
     if (Number.isFinite(dy)) state.view.panY += dy;
-    if (state.snapshot) render(state.snapshot);
+    if (!options.defer && state.snapshot) render(state.snapshot);
     return { x: state.view.panX, y: state.view.panY };
   }
 
@@ -3723,6 +4563,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     state.texture = null;
     state.texturedMaterial = null;
     state.wallMaterial = null;
+    state.wallDarkMaterial = null;
     state.waterTexture = null;
     state.tileGeometries.clear();
     state.stack = null;

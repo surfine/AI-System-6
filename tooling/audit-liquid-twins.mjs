@@ -4,7 +4,7 @@
 // Categories
 //   easy        — only color/background/border/shadow/radius props.
 //                 These can be moved to a CSS variable in :root with a
-//                 body.use-liquid-glass override, deleting the twin entirely.
+//                 body[data-theme="liquid-glass"] override, deleting the twin entirely.
 //   mixed       — has at least one "easy" prop and at least one structural
 //                 prop. Tokenize the easy parts first; collocate the rest.
 //   structural  — only structural props (top/left/width/height/padding/
@@ -190,7 +190,7 @@ function extractRules(text) {
   return rules;
 }
 
-const TWIN_PREFIX = /^(html:lang\([^)]+\)\s+)?body\.use-liquid-glass(\s|$)/;
+const TWIN_PREFIX = /^(html:lang\([^)]+\)\s+)?body\[data-theme="liquid-glass"\](\s|$)/;
 const LIQUID_ONLY_BASE_PATTERNS = [
   /#liquid-glass-overlay\b/,
   /\.sys-icon-liquid\b/,
@@ -300,7 +300,7 @@ function printBucket(name, items, opts = {}) {
       const propSummary = e.props.length <= 4
         ? e.props.join(", ")
         : `${e.props.slice(0, 3).join(", ")}, +${e.props.length - 3} more`;
-      console.log(`  body.use-liquid-glass ${e.base}`);
+      console.log(`  body[data-theme="liquid-glass"] ${e.base}`);
       console.log(`    → ${propSummary}`);
     }
   }
@@ -312,7 +312,7 @@ console.log(`Total rule-selector pairs analyzed: ${entries.length}`);
 console.log(`  twins: ${entries.filter((e) => e.kind === "twin").length}`);
 console.log(`  liquid-only (not a twin): ${buckets["liquid-only"].length}`);
 
-printBucket("EASY — pure value overrides (migrate to :root + body.use-liquid-glass value swap)", buckets.easy);
+printBucket("EASY — pure value overrides (migrate to :root + body[data-theme="liquid-glass"] value swap)", buckets.easy);
 printBucket("MIXED — value + structural; tokenize the value props, collocate the rest", buckets.mixed);
 printBucket("STRUCTURAL — cannot tokenize as pure values; collocate next to base rule", buckets.structural);
 printBucket("LOCALE — html:lang(...) qualified; theme × locale axis", buckets.locale);

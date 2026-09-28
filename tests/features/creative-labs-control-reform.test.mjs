@@ -60,7 +60,7 @@ test.assertMatches(
   "Meme workbench lets the caption column retain its bottom breathing room"
 );
 test.assertIncludes(bureaucracyStyles, "min-height: var(--bureaucracy-copy-min-height)", "Meme caption panel consumes the shared narrow-height contract");
-test.assertNotIncludes(bureaucracyStyles, "body:not(.use-liquid-glass)", "Meme geometry no longer forks between themes");
+test.assertNotIncludes(bureaucracyStyles, "body:not([data-theme=\"liquid-glass\"])", "Meme geometry no longer forks between themes");
 test.assertNotIncludes(bureaucracyStyles, "!important", "Meme workbench adds no priority overrides");
 test.assertIncludes(bureaucracyStyles, "color: var(--bureaucracy-ink)", "Meme workbench preserves its subject palette without forking geometry");
 test.assertIncludes(liquidStyles, "--bureaucracy-pane-bg:", "Liquid Glass retains the dark institutional meme scene");

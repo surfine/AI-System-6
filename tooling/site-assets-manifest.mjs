@@ -27,6 +27,7 @@ export const SITE_ICON_NAMES = [
 // would smooth away the pixels that are the point. Classic stays vector.
 export const SITE_ICON_ERAS = {
   classic: { pattern: (name) => `classic/icons/${name}-32.svg`, ext: "svg" },
+  "system-7": { pattern: (name) => `system-7/icons/${name}-32.png`, ext: "png" },
   platinum: { pattern: (name) => `platinum/icons/${name}-32.png`, ext: "png" },
   aqua: { pattern: (name) => `aqua/icons/${name}-128.png`, ext: "png" },
   "snow-leopard": { pattern: (name) => `snow-leopard/icons/${name}-128.png`, ext: "png" },

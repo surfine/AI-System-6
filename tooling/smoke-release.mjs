@@ -161,9 +161,6 @@ if (
   "teachtext-source-count",
   "teachtext-selection-state",
   "teachtext-export-state",
-  "rebuild-flow-source",
-  "rebuild-flow-source-meta",
-  "rebuild-flow-status",
   "draft-section-source",
   "draft-title",
   "reader-clip-translate-button",
@@ -204,8 +201,7 @@ if (
   "renderProjectSwitcher",
   "openRebuildFlow",
   "runRebuildFlow",
-  "rebuildProjectDiskName",
-  "useSampleArticleForRebuildFlow",
+  "handInRebuildFlow",
   "clipTeachTextSelectionToScrapbook",
   "runClaimCheck",
   "sourceContractForContextItem",
@@ -244,10 +240,10 @@ if (
 
 [
   [".jspace/WORKSPACE.md", "phase checkpoints survive compaction"],
-  ["Never pour a full", "large command output stays out of model context"],
+  ["keep full logs on disk", "large command output stays out of model context"],
   ["one final full gate", "expensive verification runs once after scoped fixes"],
-  ["do not fork full task history by default", "subagents receive minimal context"],
-  ["recommend a fresh task", "materially different follow-up work starts fresh"],
+  ["do not fork full task history", "subagents receive minimal context"],
+  ["use a fresh task for materially unrelated", "materially different follow-up work starts fresh"],
 ].forEach(([token, purpose]) => {
   if (claudeDoc.includes(token)) ok(`CLAUDE.md context economy: ${purpose}`);
   else fail(`CLAUDE.md context economy missing: ${token}`);

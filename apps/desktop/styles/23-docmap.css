@@ -114,7 +114,7 @@
 
 /* The shared mini-button height; it lived in 60-responsive.css beside
    .mini-btn while this sheet loaded before it. */
-.docmap-map-toolbar .btn {
+body .docmap-map-toolbar .btn {
   min-height: calc(var(--system-button-min-height) - 2px);
   padding: 3px 10px;
 }
@@ -129,10 +129,15 @@
   min-height: 0;
   height: 100%;
   overflow: auto;
-  border: var(--system-control-line) solid var(--ink);
   background: var(--paper);
   padding: 10px;
   scrollbar-gutter: stable both-edges;
+}
+
+/* A tree the window frame adopts as its scroller takes the frame's border:
+   0 (.window .window-frame-scroller); only the print tree draws its own. */
+.docmap-tree:where(:not(.window-frame-scroller)) {
+  border: var(--system-control-line) solid var(--ink);
 }
 
 .docmap-empty-note {
@@ -379,7 +384,7 @@
     display: none;
   }
 
-  .docmap-map-toolbar .btn,
+  body .docmap-map-toolbar .btn,
   .docmap-map-toolbar .view-switch-option {
     min-width: 0;
     min-height: 44px;
@@ -398,9 +403,12 @@
     overflow: hidden;
   }
 
+  .docmap-tree:where(:not(.window-frame-scroller)) {
+    border-width: 1px;
+  }
+
   .docmap-tree {
     padding: 0;
-    border-width: 1px;
     overflow: hidden;
     overscroll-behavior: contain;
     scrollbar-gutter: auto;

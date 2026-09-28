@@ -137,7 +137,7 @@ test.assertIncludes(windows, ".system-select-option:not(.is-selected):hover", "S
 test.assertIncludes(windows, ".system-select-option:focus-visible", "System Select option focus is an independent layer");
 test.assertIncludes(windows, ".view-btn:hover:not(.is-active)", "Classic view button hover does not override the active view");
 test.assertIncludes(windows, ".view-btn.is-active:hover", "Classic active view button keeps active styling on hover");
-test.assertMatches(windows, /\.details-bar \{[\s\S]*calc\(4px - var\(--details-bar-optical-rise\)\)[\s\S]*calc\(4px \+ var\(--details-bar-optical-rise\)\)/, "Status-bar content is optically centered without changing the row height");
+test.assertMatches(windows, /\.details-bar \{[\s\S]*calc\(4px - var\(--details-bar-optical-rise(?:, 0px)?\)(?: - var\(--details-bar-padding-y, 0px\))?\)[\s\S]*calc\(4px \+ var\(--details-bar-optical-rise(?:, 0px)?\)(?: \+ var\(--details-bar-padding-y, 0px\))?\)/, "Status-bar content is optically centered without changing the row height (the rise and an era padding move together)");
 test.assertIncludes(windows, ".view-controls {\n  display: flex;\n  align-items: center;\n  position: static;", "The centered Finder view switch shares the status-bar grid and its optical padding");
 test.assertNotIncludes(windows, "top: calc(50% - var(--details-bar-optical-rise))", "Finder view controls no longer overlap status labels from an absolute center");
 test.assertMatches(responsive, /\.details-bar \{[^}]*calc\(4px - var\(--details-bar-optical-rise\)\)[^}]*calc\(4px \+ var\(--details-bar-optical-rise\)\)/, "Responsive styles preserve status-bar optical centering");
@@ -206,9 +206,9 @@ test.assertIncludes(
 );
 test.assertIncludes(liquid, "--btn-active-bg:", "Liquid Glass overrides the shared active-state token");
 test.assertIncludes(liquid, "--btn-radius: var(--r-md)", "Liquid Glass keeps role-specific button geometry instead of universal pills");
-test.assertNotIncludes(liquid, "body.use-liquid-glass .btn {\n  border: 1px solid var(--btn-border-color);\n  border-radius: 999px", "Liquid Glass shared buttons are not generic pills");
+test.assertNotIncludes(liquid, "body[data-theme=\"liquid-glass\"] .btn {\n  border: 1px solid var(--btn-border-color);\n  border-radius: 999px", "Liquid Glass shared buttons are not generic pills");
 test.assertIncludes(liquid, "background: var(--btn-bg)", "Liquid Glass buttons consume shared state tokens");
-test.assertIncludes(liquid, "body.use-liquid-glass .btn:active:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected)", "Liquid Glass pressed state does not override selected controls");
+test.assertIncludes(liquid, "body[data-theme=\"liquid-glass\"] .btn:active:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected)", "Liquid Glass pressed state does not override selected controls");
 test.assertIncludes(liquid, "button:hover:not(.menu-bar button)", "Liquid Glass generic button hover does not override menu bar open/hover states");
 test.assertIncludes(liquid, "--menu-item-active-bg: var(--liquid-menu-active)", "Liquid Glass menu hover uses the shared guarded menu-item active token");
 test.assertIncludes(liquid, "background: var(--menu-item-bg)", "Liquid Glass menu items consume the guarded base hover token instead of duplicating the selector");
@@ -216,26 +216,26 @@ test.assertIncludes(foundation, "color: var(--menu-shortcut-color)", "Menu short
 test.assertIncludes(foundation, "--menu-chip-bg: transparent", "Menu bar status controls stay unframed until interaction");
 test.assertIncludes(liquid, "--liquid-menu-alpha: calc(0.76 + 0.24 * var(--liquid-tint-level, 0.5));", "the default tint still resolves the menu opacity to the shipped 0.88 floor");
 test.assertIncludes(liquid, "rgba(248, 251, 252, var(--liquid-menu-alpha))", "Liquid Glass menu panels consume the shared opacity parameter instead of a dead literal");
-test.assert(!liquid.includes("body.use-liquid-glass .menu-bar > :is(.cloud-switcher-menu, .project-switcher-menu, .multifinder-menu) > button"), "Liquid Glass does not add an idle capsule around right-side menu controls");
-test.assertIncludes(responsive, "body.use-liquid-glass .menu-bar", "the frosted menu bar rule is collocated with its base rule in the responsive layer");
+test.assert(!liquid.includes("body[data-theme=\"liquid-glass\"] .menu-bar > :is(.cloud-switcher-menu, .project-switcher-menu, .multifinder-menu) > button"), "Liquid Glass does not add an idle capsule around right-side menu controls");
+test.assertIncludes(responsive, "body[data-theme=\"liquid-glass\"] .menu-bar", "the frosted menu bar rule is collocated with its base rule in the responsive layer");
 // The bar keeps the era's translucent tint and gives up the frost: a
 // backdrop-filter makes WebKit rasterise the strip together with its 13px
 // labels, and on a phone — worst once the desk is added to the Home Screen and
 // the bar runs under the status area — the menu read as a blurred smear. The
 // material's own tint is what keeps it from being a flat white slab.
-test.assertIncludes(responsive, "body.use-liquid-glass .menu-bar {", "the Liquid Glass menu bar is styled where its base rule lives");
+test.assertIncludes(responsive, "body[data-theme=\"liquid-glass\"] .menu-bar {", "the Liquid Glass menu bar is styled where its base rule lives");
 test.assertIncludes(responsive, "backdrop-filter: none;", "the phone's menu bar keeps its tint without the frost");
 test.assertIncludes(liquid, "--menu-bar-bg:", "and the era still supplies that tint");
 test.assertIncludes(liquid, "backdrop-filter: blur(34px) saturate(160%) brightness(1.04)", "Liquid Glass menu popovers blur the desktop strongly enough to protect menu readability");
 test.assertIncludes(liquid, "inset 0 2px 5px rgba(0, 0, 0, 0.22)", "Liquid Glass top-level menu buttons keep a visible pressed state without changing their hit model");
-test.assertIncludes(liquid, "body.use-liquid-glass .view-btn:hover:not(.is-active)", "Liquid Glass view button hover does not override active view");
+test.assertIncludes(liquid, "body[data-theme=\"liquid-glass\"] .view-btn:hover:not(.is-active)", "Liquid Glass view button hover does not override active view");
 test.assertIncludes(
   liquid,
   "button:hover:not(.menu-bar button):not(:disabled):not(.is-disabled):not(.is-active)",
   "Liquid Glass generic button hover excludes active mini presets"
 );
 test.assertIncludes(surfaces, ".drop-target.is-dragging::after", "one drop-target overlay serves every drop surface");
-test.assertNotIncludes(liquid, "body.use-liquid-glass .docmap-drop-zone.is-dragging::after", "the DocMap drop overlay is themed by token, not by a second glass rule");
+test.assertNotIncludes(liquid, "body[data-theme=\"liquid-glass\"] .docmap-drop-zone.is-dragging::after", "the DocMap drop overlay is themed by token, not by a second glass rule");
 test.assertIncludes(liquid, "-webkit-backdrop-filter: blur(8px) saturate(140%)", "Liquid Glass DocMap import overlay blurs the empty state behind it so old paper text does not ghost through");
 
 test.assertIncludes(app, 'button.setAttribute("aria-expanded", "false")', "System Select exposes reliable open state");

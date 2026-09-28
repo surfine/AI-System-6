@@ -358,12 +358,6 @@ const {
   claimSectionPreviousButton,
   claimSectionNextButton,
   claimResultsEl,
-  rebuildFlowProjectEl,
-  rebuildFlowSourceMetaEl,
-  rebuildFlowSourceInput,
-  rebuildFlowStatusEl,
-  rebuildFlowProgressBarEl,
-  rebuildFlowStepsEl,
   docMapCountEl,
   docMapTabsEl,
   docMapTreeEl,
@@ -508,6 +502,15 @@ window.AISystem6Theme?.registerPreparation((theme) => {
   if (!window.AISystem6WindowMinimizeLoaded
     && (theme.id === "nextstep" || window.AISystem6Theme.hasCapability("minimize-lamp", theme.id))) {
     modules.push(ensureLazySystemModule("app/core/window-minimize.js", "AISystem6WindowMinimizeLoaded"));
+  }
+  // A Mac OS X era's Dock renders after the miniaturize module it reads its
+  // put-away windows from, so it chains rather than racing it.
+  // Lion's title-bar arrows are real full screen (owner, 2026-09-25).
+  if (!window.AISystem6WindowFullscreenLoaded && window.AISystem6Theme.hasCapability("full-screen", theme.id)) {
+    modules.push(ensureLazySystemModule("app/core/window-fullscreen.js", "AISystem6WindowFullscreenLoaded"));
+  }
+  if (!window.AISystem6DeskDockLoaded && window.AISystem6Theme.hasCapability("dock", theme.id)) {
+    modules.push(Promise.all(modules.slice()).then(() => ensureLazySystemModule("app/core/desk-dock.js", "AISystem6DeskDockLoaded")));
   }
   return modules.length ? Promise.all(modules) : null;
 });
@@ -1197,17 +1200,15 @@ function renderStaticFinderWindow(winName) {
     const renderListRow = (item) => `
       <button class="finder-list-row${selected?.action === item.action ? " is-selected" : ""}" data-static-finder-window="${escapeHtml(winName)}" data-static-finder-action="${escapeHtml(item.action)}"${controlStripModuleDragAttributes(item)}${dropletDropAttributes(item)}>
         <span class="finder-list-name-cell">${renderFinderItemIcon(item, mode)}<span class="finder-item-label">${escapeHtml(item.name)}</span></span>
-        <span>${escapeHtml(item.kind)}</span>
-        <span>${escapeHtml(item.sizeLabel || "--")}</span>
-        <span>${escapeHtml(item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : "--")}</span>
+        ${(item.listCells || [item.kind, item.sizeLabel || "--", item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : "--"]).map((cell) => `<span>${escapeHtml(cell)}</span>`).join("")}
       </button>
     `;
+    // A folder whose rows all share a kind and a size may name its own columns
+    // (the demonstration disks do); every other folder keeps the Finder's.
+    const heads = window.AISystem6FinderListHeads?.[winName]?.() || [t("kind"), t("size"), t("modified")];
     grid.innerHTML = `
       <div class="finder-list-header">
-        <span>${escapeHtml(t("file_name"))}</span>
-        <span>${escapeHtml(t("kind"))}</span>
-        <span>${escapeHtml(t("size"))}</span>
-        <span>${escapeHtml(t("modified"))}</span>
+        ${[t("file_name"), ...heads].map((head) => `<span>${escapeHtml(head)}</span>`).join("")}
       </div>
       ${apps.map(renderListRow).join("")}
       ${dropletListLabel}

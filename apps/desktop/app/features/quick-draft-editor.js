@@ -228,6 +228,9 @@ function quickDraftMarkdownPreview(text = "") {
 }
 
 function renderQuickDraftPreviewPane() {
+  // While a film frame is held the paper shows that version; a save landing
+  // mid-hold must not paint the current proof over it. Letting go repaints.
+  if (typeof lightroomPeekFrame !== "undefined" && lightroomPeekFrame) return;
   if (quickDraftDisplayMode === "grain") renderQuickDraftGrain();
   else if (quickDraftDisplayMode === "listen") window.AISystem6QuickDraftListen?.renderQuickDraftListenView?.();
   else renderQuickDraftReadingView();
@@ -295,6 +298,9 @@ function showQuickDraftDisplayMode(mode) {
   const container = quickDraftPreviewHost();
   if (quickDraftDisplayMode === "listen" && mode !== "listen") window.AISystem6QuickDraftListen?.stop?.();
   quickDraftDisplayMode = mode === "grain" ? "grain" : mode === "listen" ? "listen" : "read";
+  // 听众 belongs to the listen view only; above 痕迹 and 阅读 it was a strip
+  // of controls that had nothing to act on.
+  if (typeof syncQuickDraftEli5Ui === "function") syncQuickDraftEli5Ui();
   container?.classList.add("is-previewing");
   container?.classList.toggle("is-graining", quickDraftDisplayMode === "grain");
   container?.classList.toggle("is-listening", quickDraftDisplayMode === "listen");
@@ -444,7 +450,16 @@ function restoreDumpToBody() {
 function quickDraftVersionRow({ label, meta, id, kind }) {
   const row = document.createElement("div");
   row.className = "draft-desk-version-row";
+  // The frame itself is the peek target: hold it and the paper shows that
+  // version; let go and the paper comes back. Restore stays a separate button,
+  // because looking and going back are two different acts.
   const text = document.createElement("span");
+  text.className = "draft-desk-version-frame";
+  text.dataset.quickDraftVersionPeek = String(id || "");
+  if (kind) text.dataset.quickDraftVersionPeekKind = kind;
+  text.tabIndex = 0;
+  text.setAttribute("role", "button");
+  text.setAttribute("aria-label", t("lightroom_version_peek", label));
   const name = document.createElement("b");
   name.textContent = label;
   text.append(name);

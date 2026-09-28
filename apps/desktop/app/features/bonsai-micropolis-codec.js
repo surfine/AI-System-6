@@ -152,6 +152,11 @@ window.AISystem6BonsaiMicropolisCodecLoaded = true;
       highway: zeros(), onramp: zeros(),
     };
     const facilities = [];
+    // Where each grown tile sits in its nine-tile family block (0..8, -1 for
+    // anything else), so whole blocks can become 3x3 lots afterwards.
+    const blockBase = new Int32Array(BONSAI_TILES).fill(-1);
+    const blockPos = new Int8Array(BONSAI_TILES).fill(-1);
+    const markGrown = (bi, id, base) => { blockPos[bi] = (id - base) % 9; blockBase[bi] = id - blockPos[bi]; };
 
     for (let by = 0; by < BONSAI_SIZE; by += 1) for (let bx = 0; bx < BONSAI_SIZE; bx += 1) {
       const bi = by * BONSAI_SIZE + bx;
@@ -218,6 +223,7 @@ window.AISystem6BonsaiMicropolisCodecLoaded = true;
           layers.stage[bi] = stageOfLevel(level % 8);
           layers.buildingState[bi] = 3;
           layers.variant[bi] = variantOfLevel(level);
+          markGrown(bi, id, T.RES_GROWN_LOW);
         } else if (inRange(id, T.HOUSE_LOW, T.HOUSE_HIGH)) {
           layers.density[bi] = 1; layers.stage[bi] = 1; layers.buildingState[bi] = 3;
           layers.variant[bi] = variantOfLevel(id - T.HOUSE_LOW);
@@ -239,6 +245,7 @@ window.AISystem6BonsaiMicropolisCodecLoaded = true;
           layers.stage[bi] = stageOfLevel(level % 10);
           layers.buildingState[bi] = 3;
           layers.variant[bi] = variantOfLevel(level);
+          markGrown(bi, id, T.COM_GROWN_LOW);
         } else {
           layers.density[bi] = 1;
         }
@@ -252,6 +259,7 @@ window.AISystem6BonsaiMicropolisCodecLoaded = true;
           layers.stage[bi] = stageOfLevel(level % 8);
           layers.buildingState[bi] = 3;
           layers.variant[bi] = variantOfLevel(level);
+          markGrown(bi, id, T.IND_GROWN_LOW);
         } else {
           layers.density[bi] = 1;
         }
@@ -285,6 +293,32 @@ window.AISystem6BonsaiMicropolisCodecLoaded = true;
       }
       if (id > 1) droppedTiles += 1;
     }
+
+    // Bonsai ruleset 5 grows whole buildings on lots. A complete nine-tile
+    // grown block is one 3x3 building; a single house, or any grown tile
+    // whose block does not close, is a one-tile building. Every tile of a
+    // block keeps its family in `variant`, so the exporter can send the same
+    // block back.
+    const lot = zeros();
+    for (let by = 0; by + 2 < BONSAI_SIZE; by += 1) for (let bx = 0; bx + 2 < BONSAI_SIZE; bx += 1) {
+      const bi = by * BONSAI_SIZE + bx;
+      if (blockPos[bi] !== 0 || lot[bi]) continue;
+      let whole = true;
+      for (let k = 0; k < 9 && whole; k += 1) {
+        const ci = (by + Math.floor(k / 3)) * BONSAI_SIZE + bx + (k % 3);
+        if (lot[ci] || blockBase[ci] !== blockBase[bi] || blockPos[ci] !== k) whole = false;
+      }
+      if (!whole) continue;
+      for (let k = 0; k < 9; k += 1) {
+        const ci = (by + Math.floor(k / 3)) * BONSAI_SIZE + bx + (k % 3);
+        lot[ci] = bi + 1; layers.stage[ci] = 3;
+      }
+    }
+    for (let bi = 0; bi < BONSAI_TILES; bi += 1) {
+      if (lot[bi] || !layers.stage[bi] || layers.zone[bi] < 1 || layers.zone[bi] > 3) continue;
+      lot[bi] = bi + 1; layers.stage[bi] = 1;
+    }
+    layers.lot = lot;
 
     // Facility coordinates move into the embedded frame.
     for (const facility of facilities) {

@@ -86,7 +86,7 @@
   --action-row-divider: var(--system-secondary-divider);
   /* The shared Ask-bar scope chip names the object being asked. */
   /* Dotted separators are a System 6 idiom; Liquid swaps each for a hairline
-     (values overridden in the body.use-liquid-glass token block). */
+     (values overridden in the body[data-theme="liquid-glass"] token block). */
   --message-divider: var(--system-secondary-divider);
   --context-panel-budget-border-top: 1px dotted var(--shade);
   --clio-file-chip-disabled-border: 1px dotted var(--shade-dark);
@@ -1033,7 +1033,7 @@
   );
 
   /* Theme-overridable component tokens.
-     Each pairs with an override in body.use-liquid-glass {} at the top of
+     Each pairs with an override in body[data-theme="liquid-glass"] {} at the top of
      styles/70-liquid-glass.css. Add new tokens here as twins get migrated. */
   --menu-divider-color: var(--rule);
   --menu-shortcut-color: currentColor;
@@ -2091,7 +2091,6 @@ body.use-modern-fonts {
   --menu-system-icon-pixel-run-expansion: 1.25;
 }
 
-body.use-modern-fonts .teachtext-preview,
 body.use-modern-fonts .print-directory-preview,
 body.use-modern-fonts .reader-content {
   font-family: var(--text-font);
@@ -2166,6 +2165,59 @@ textarea {
   border-radius: var(--control-shape-radius, revert);
 }
 
+/* The field recipe: text fields and select menus (moved from
+   60-responsive.css). It is the earliest rule of its kind, so every window,
+   surface and appearance rule that refines a field comes after it and wins by
+   specificity today and by file order under a per-file @layer order. The
+   older copies in 10-windows.css and 60-responsive.css that it has always
+   overridden were removed with the move. */
+textarea,
+input[type="url"],
+input[type="text"],
+input[type="password"],
+input[type="search"],
+input[type="number"] {
+  min-height: var(--system-control-min-height);
+  padding: 6px 9px;
+  border: var(--system-control-line) solid var(--ink);
+  border-radius: var(--item-radius);
+  background: var(--paper);
+  box-shadow: var(--system-inset);
+  color: var(--ink);
+  font-family: var(--text-font);
+  font-size: var(--system-control-size);
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+textarea {
+  line-height: 1.55;
+}
+
+select {
+  min-height: var(--system-control-min-height);
+  padding: 6px 30px 6px 9px;
+  border: var(--system-control-line) solid var(--ink);
+  border-radius: var(--system-select-radius);
+  background: var(--paper);
+  box-shadow: var(--system-inset);
+  color: var(--ink);
+  font-family: var(--ui-font);
+  font-size: var(--system-control-size);
+  font-weight: 400;
+  line-height: 1.35;
+  padding-right: 30px;
+  background-color: var(--paper);
+  background-image: url("./assets/select-arrow.svg");
+  background-position: right 6px center;
+  background-repeat: no-repeat;
+  background-size: 17px 17px;
+  color-scheme: light;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
 /* Desk furniture is not text. A drag that starts on a control (the marquee
    bows out of those, see finderMarqueeContext) or any touch long-press used to
    paint a text selection across the menu bar, the Writing Flow strip, control
@@ -2195,7 +2247,7 @@ label,
    spine's real visibility class — the same signal the window manager's
    desktop-avoidance insets use; writer mode and Quick Draft focus hide the
    spine with body classes instead, so they keep the base token. */
-body:has(.writing-spine-panel:not(.is-hidden)):not(.is-writer-mode):not(.quick-draft-focus) {
+body:has(.writing-spine-panel:not(.is-hidden, .is-closed)):not(.is-writer-mode):not(.quick-draft-focus) {
   --bonsai-window-width: min(1040px, calc(100vw - 180px));
 }
 
@@ -2279,6 +2331,11 @@ body.has-system-modal .menu-bar {
   top: 23px;
   left: 0;
   min-width: 180px;
+  /* C1: the panel is as wide as its longest command ("Open Demonstration
+     Project Disks..." ran past the right border at 180px), never wider than
+     the screen. */
+  width: max-content;
+  max-width: calc(100vw - 16px);
   /* Panel and item metrics are era-owned on the same pattern as the panel's
      colours. Theme Lab used to hold this wardrobe on a menu of its own --
      Platinum's item padding and its masked check glyph were measured against
@@ -2370,6 +2427,8 @@ body.has-system-modal .menu-bar {
 }
 
 .menu-submenu-popover {
+  /* A panel inside a menu-bar panel does not inherit its overflow. */
+  --menu-popover-overflow: initial;
   display: none;
   position: absolute;
   top: -4px;
@@ -2414,6 +2473,8 @@ body.has-system-modal .menu-bar {
 }
 
 .menu-sub-popover {
+  /* A panel inside a menu-bar panel does not inherit its overflow. */
+  --menu-popover-overflow: initial;
   display: none;
   position: absolute;
   left: 100%;
@@ -2510,15 +2571,6 @@ body.has-system-modal .menu-bar {
   margin-left: 24px;
   color: var(--menu-shortcut-color);
   opacity: var(--menu-shortcut-opacity);
-}
-
-.menu-bar > .menu > .apple {
-  width: var(--apple-menu-slot-width, 34px);
-  padding: 0;
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .apple::before,
@@ -2621,15 +2673,6 @@ body[data-menu-bar-model="system-owned"] {
   flex: 1;
 }
 
-.multifinder-menu .menu-popover {
-  left: auto;
-  right: 0;
-  min-width: 220px;
-  max-width: min(320px, calc(100vw - 18px));
-  max-height: min(420px, calc(100vh - 38px));
-  overflow: auto;
-}
-
 .multifinder-button {
   display: inline-flex;
   align-items: center;
@@ -2667,15 +2710,6 @@ body[data-menu-bar-model="system-owned"] {
     var(--ink);
 }
 
-.project-switcher-menu .menu-popover {
-  left: auto;
-  right: 0;
-  min-width: 250px;
-  max-width: min(360px, calc(100vw - 18px));
-  max-height: min(420px, calc(100vh - 38px));
-  overflow: auto;
-}
-
 .project-switcher-button {
   display: inline-flex;
   align-items: center;
@@ -2705,8 +2739,8 @@ body[data-menu-bar-model="system-owned"] {
   justify-content: center;
   gap: 4px;
   border: 0;
-  border-left: 1px solid var(--ink);
-  border-right: 1px solid var(--ink);
+  border-left: var(--notification-button-divider, 1px solid var(--ink));
+  border-right: var(--notification-button-divider, 1px solid var(--ink));
   background: transparent;
   color: var(--ink);
   font: inherit;
@@ -2715,8 +2749,8 @@ body[data-menu-bar-model="system-owned"] {
 .notification-center-button:hover,
 .notification-center-button:focus-visible,
 .notification-center-button.has-unread {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--notification-button-active-bg, var(--ink));
+  color: var(--notification-button-active-fg, var(--paper));
   outline: 0;
 }
 
@@ -2743,19 +2777,6 @@ body[data-menu-bar-model="system-owned"] {
   justify-content: flex-start;
   gap: 8px;
   white-space: normal;
-}
-
-.project-switcher-popover button.project-switcher-item {
-  min-height: 38px;
-  display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
-  align-items: start;
-  padding: 4px 12px 5px 8px;
-  line-height: 1.15;
-}
-
-.project-switcher-popover button.is-current {
-  font-weight: var(--system-strong-weight);
 }
 
 .project-switcher-mark {
@@ -3279,9 +3300,9 @@ body[data-menu-bar-model="system-owned"] {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: var(--paper);
-  border: var(--system-border);
-  box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink);
+  background: var(--modal-bg, var(--paper));
+  border: var(--modal-border, var(--system-border));
+  box-shadow: var(--modal-shadow, 0 0 0 2px var(--paper), 0 0 0 4px var(--ink));
   padding: 18px 18px 16px;
   width: 320px;
   max-width: 90vw;
@@ -3325,9 +3346,9 @@ body[data-menu-bar-model="system-owned"] {
   left: 50%;
   transform: translate(-50%, -50%);
   width: min(540px, calc(100vw - 32px));
-  background: var(--paper);
-  border: var(--system-border);
-  box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink);
+  background: var(--modal-bg, var(--paper));
+  border: var(--modal-border, var(--system-border));
+  box-shadow: var(--modal-shadow, 0 0 0 2px var(--paper), 0 0 0 4px var(--ink));
   padding: var(--startup-settings-modal-padding);
   font-family: var(--ui-font);
   font-size: 13px;
@@ -3501,10 +3522,6 @@ body[data-menu-bar-model="system-owned"] {
   border-bottom: var(--balloon-help-border);
 }
 
-body.is-balloon-help [data-balloon-help] {
-  cursor: help;
-}
-
 /* --modal-bg, not --paper directly: an era can research a modal's own surface
    without moving the paper every other window sits on. Yosemite's alert sheet
    is a near-white translucency measured off the 10.10 capture, which Theme Lab
@@ -3518,8 +3535,8 @@ body.is-balloon-help [data-balloon-help] {
   max-height: min(620px, calc(100vh - 36px));
   padding: 0;
   margin: 0;
-  border: 3px solid var(--ink);
-  box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--ink);
+  border: var(--modal-border, 3px solid var(--ink));
+  box-shadow: var(--modal-shadow, 0 0 0 3px var(--paper), 0 0 0 5px var(--ink));
   background: var(--modal-bg, var(--paper));
   color: var(--ink);
   font-family: var(--ui-font);
@@ -3843,4 +3860,45 @@ body.is-balloon-help [data-balloon-help] {
   .system-select-menu {
     transform: none;
   }
+}
+
+/* A hint: the small secondary line under a control or in a status area
+   (moved from 50-apps.css, with its face from 60-responsive.css's chrome
+   list). It is a primitive every window refines, so it sits in the earliest
+   sheet and each refinement (.chooser-panel .hint, .info-main p ...) follows it. */
+.hint {
+  margin: 6px 0 0;
+  font-family: var(--text-font);
+  font-size: var(--system-text-size);
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+/* The system icon cell and its SVG (moved from 50-apps.css). They are the
+   primitive every context refines (the Help list's rows, the Finder sidebar,
+   Chooser, the menu bar's cloud mark), so they sit in the earliest sheet. */
+.sys-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+  background: var(--paper);
+  border: 0;
+  position: relative;
+  overflow: visible;
+  flex: 0 0 auto;
+}
+
+.sys-icon-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+  stroke: currentColor;
+  stroke-width: var(--system-icon-stroke-width);
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  shape-rendering: crispEdges;
 }

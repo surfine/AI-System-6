@@ -241,6 +241,10 @@ if (smokeRelease.status === 0) {
   fail(`release smoke verification failed\n${smokeRelease.stderr || smokeRelease.stdout}`);
 }
 
+// Timing evidence belongs to the shared quiet-machine ship lane, not this
+// general check alongside interactive desktop work. Keep its deferral visible.
+console.log("-- Bonsai simulation cost: deferred to the quiet ship gate (verify:bonsai-sim-cost)");
+
 // The contract suite is 105 s of the release's first two minutes, and the
 // published repository's CI runs exactly this command on every push. A fast
 // release defers it and SAYS SO in the receipt; `release:prepare --batch` (or
@@ -413,6 +417,7 @@ const appDataSource = [
 const thirdPartyRuntimePaths = new Set([
   "app/vendor/marked.umd.js",
   "app/vendor/stream-markdown-parser.global.js",
+  "app/vendor/writing-editor.js",
 ]);
 
 const escapeHtmlDefinitions = [...appSourceByPath.entries()]

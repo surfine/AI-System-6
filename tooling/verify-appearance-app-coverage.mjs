@@ -36,7 +36,8 @@ const THEME_IDS = Object.freeze([
 ]);
 // Preview-only appearances are registered and isolated here; they are not
 // production styles until their independent acceptance is complete.
-const EXPERIMENTAL_THEME_IDS = Object.freeze(["system-7", "drawing-board", "tiger", "lion"]);
+// System 7, Drawing Board, Tiger and Lion left the research gate on 2026-09-25.
+const EXPERIMENTAL_THEME_IDS = Object.freeze([]);
 
 const REGISTERED_WINDOWS = Object.freeze(Object.entries(windowInterfaceRegistry).map(([id, contract]) => Object.freeze({
   id,
@@ -187,10 +188,39 @@ const ALARM_CLOCK_NATIVE_STRIP_HEIGHT = 18;
 // macOS 11's one-row bar is 52px. It still shares every other title metric.
 const TOOLBAR_WINDOW_EXCEPTIONS = ["height"];
 
-function titleSignature(titleBar, windowId, toolbarWindow = false) {
+// Differences an era decided on purpose, each with its evidence. Only the
+// named keys are dropped, and from both sides, so everything else about the
+// bar is still compared.
+const ERA_TITLE_EXCEPTIONS = [
+  {
+    // Apple HIG 2005-09-08 "Window Appearance" pp. 180-181: the Finder's
+    // windows are brushed metal while document windows stay standard, "as the
+    // Finder does". The metal sheet carries no bar highlight
+    // (67-tiger-appearance.css sets --titlebar-shadow: none for it).
+    theme: "tiger",
+    applies: (windowResult) => windowResult.app === "finder",
+    keys: ["boxShadow"],
+  },
+  {
+    // Bonsai City drops the title-bar blur under Liquid Glass so the city
+    // keeps its frame rate (814eced5, BONSAI-PLAYABLE-ACCEPTANCE B1).
+    theme: "liquid-glass",
+    applies: (windowResult) => windowResult.id === "bonsaiCity",
+    keys: ["backdropFilter"],
+  },
+];
+
+function eraTitleExceptions(themeId, windowResult) {
+  return ERA_TITLE_EXCEPTIONS
+    .filter((rule) => rule.theme === themeId && rule.applies(windowResult))
+    .flatMap((rule) => rule.keys);
+}
+
+function titleSignature(titleBar, windowId, toolbarWindow = false, eraKeys = []) {
   const exceptions = [
     ...(TITLE_METRIC_EXCEPTIONS.get(windowId) || []),
     ...(toolbarWindow ? TOOLBAR_WINDOW_EXCEPTIONS : []),
+    ...eraKeys,
   ];
   const signature = {
     height: titleBar.rect.height,
@@ -245,6 +275,13 @@ try {
     // The console twin of the request above arrives without a URL, so it cannot
     // be filtered by target; the requestfailed handler is the one that reports.
     if (message.text().includes("Failed to load resource")) return;
+    // A local model server that IS running but answers without CORS headers
+    // makes the browser refuse the same boot probe. The product still says
+    // "Model not connected" and carries on, so it is the same non-finding as
+    // the absent case below; only a loopback target that is not the app's own
+    // origin qualifies.
+    const blocked = /Access to (?:fetch|XMLHttpRequest) at '([^']+)'/.exec(message.text());
+    if (blocked && isAbsentLocalModel(blocked[1])) return;
     diagnostics.push(`console: ${message.text()}`);
   });
   // A console error says a request failed; only the request event says which.
@@ -525,6 +562,7 @@ try {
           window: capture(target),
           titleBar: capture(target.querySelector(":scope > .title-bar")),
           toolbarWindow: target.classList.contains("is-toolbar-window"),
+          app: target.dataset.app || "",
           sample: capture(sampleElement),
           sampleClassName: sampleElement?.className || "",
           sampleModernDisplaySize: Number(sampleElement?.querySelector(".sys-icon-svg")?.dataset.modernDisplaySize || 0),
@@ -620,8 +658,8 @@ try {
       assert(
         systemTitleBar
           && windowResult.titleBar
-          && titleSignature(windowResult.titleBar, windowResult.id, windowResult.toolbarWindow)
-            === titleSignature(systemTitleBar, windowResult.id, windowResult.toolbarWindow),
+          && titleSignature(windowResult.titleBar, windowResult.id, windowResult.toolbarWindow, eraTitleExceptions(theme.id, windowResult))
+            === titleSignature(systemTitleBar, windowResult.id, windowResult.toolbarWindow, eraTitleExceptions(theme.id, windowResult)),
         `${theme.id}/${windowResult.id}: app stylesheet overrode the shared system title-bar painter`,
       );
       // What the Alarm Clock gives up above, it owes here: its strip stays the

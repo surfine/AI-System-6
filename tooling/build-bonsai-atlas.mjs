@@ -25,8 +25,8 @@ const directions = ["north", "east", "south", "west"];
 const ISO_U = geometry.tileWidth / 2; // 32
 const ISO_V = geometry.tileHeight / 2; // 16
 const CELL_W = 320; // generous offline canvas; final frames are trimmed
-const CELL_H = 320;
-const ANCHOR_Y = 240;
+const CELL_H = 440;
+const ANCHOR_Y = 360;
 const ANCHOR_X = 160;
 
 function invariant(condition, message) {
@@ -121,21 +121,26 @@ function expandSprites() {
         });
       }
     });
-    source.buildingStates.filter((state) => state !== "normal").forEach((state, index) => {
-      add({
-        id: `building.${family.prefix}.2.1.${state}`,
-        category: "building",
-        kind: "building",
-        zone: family.zone,
-        stage: 2,
-        density: "high",
-        footprint: [2, 2],
-        height: state === "foundation" ? 6 : state === "construction" ? 34 : 42,
-        state,
-        variant: index + 1,
-        base: family.base,
-        light: family.light,
-        animation: state === "construction" ? "construction-2" : null,
+    // State frames at every lot size (ruleset 5 lots are 1x1, 2x2 or 3x3),
+    // scaled from the 2x2 set, which keeps its original heights.
+    source.buildingStages.forEach((stage) => {
+      const scale = stage.height / 44;
+      source.buildingStates.filter((state) => state !== "normal").forEach((state, index) => {
+        add({
+          id: `building.${family.prefix}.${stage.stage}.1.${state}`,
+          category: "building",
+          kind: "building",
+          zone: family.zone,
+          stage: stage.stage,
+          density: stage.density,
+          footprint: stage.footprint,
+          height: state === "foundation" ? 6 : Math.round((state === "construction" ? 34 : 42) * scale),
+          state,
+          variant: index + 1,
+          base: family.base,
+          light: family.light,
+          animation: state === "construction" ? `construction-${stage.stage}` : null,
+        });
       });
     });
   });
@@ -518,9 +523,11 @@ function drawConnector(buffer, frame, cx, cy, directionIndex) {
     const [px, py] = points[port];
     const startX = cx + (px - cx) * markFrom;
     const startY = cy + (py - cy) * markFrom;
-    if (kind === "road") {
+    if (kind === "road" || kind === "bridge-road") {
       // Centre marking plus quiet curb edges, matching the 3D backend's
-      // road curbs so streets read as paved corridors in both views.
+      // road curbs so streets read as paved corridors in both views. A
+      // bridge carries the same markings, so the street runs on across the
+      // water without a seam.
       drawLine(buffer, atlasWidth, atlasHeight, startX, startY, px, py, accent, 1);
       const ox = (cy - py) / 2;
       const oy = (px - cx) / 2;
@@ -531,20 +538,24 @@ function drawConnector(buffer, frame, cx, cy, directionIndex) {
           shade(accent, -20), 1);
       }
     } else if (kind === "bridge-rail") {
-      // Twin rails on the deck, like the land rails.
-      const ox = (cy - py) / 2;
-      const oy = (px - cx) / 2;
-      for (const side of [-1, 1]) {
-        drawLine(buffer, atlasWidth, atlasHeight,
-          startX + ox * side * 0.27, startY + oy * side * 0.27,
-          px + ox * side * 0.27, py + oy * side * 0.27,
-          accent, 2);
-      }
+      // The track runs on across the deck exactly as it lies on land.
+      drawLine(buffer, atlasWidth, atlasHeight, startX, startY, px, py, accent, 2);
     } else if (kind === "onramp") {
       drawLine(buffer, atlasWidth, atlasHeight, startX, startY, px, py, accent, 1);
     } else {
       drawLine(buffer, atlasWidth, atlasHeight, startX, startY, px, py,
         accent, kind === "road" ? 1 : 2);
+    }
+    if (kind === "bridge-road" || kind === "bridge-rail") {
+      // Parapets along both edges of the deck.
+      const ox = (cy - py) / 2;
+      const oy = (px - cx) / 2;
+      for (const side of [-1, 1]) {
+        drawLine(buffer, atlasWidth, atlasHeight,
+          startX + ox * side * 0.92, startY + oy * side * 0.92,
+          px + ox * side * 0.92, py + oy * side * 0.92,
+          shade(accent, 18), 1);
+      }
     }
   });
 }
@@ -1247,13 +1258,18 @@ function drawBuilding(buffer, frame, cx, cy, directionIndex) {
     }
   });
 
+  // Scaffold poles and the recovery bar keep their 2x2 proportions on a
+  // lot of any size.
+  const reach = (frame.footprint?.[0] || 2) / 2;
   if (frame.state === "construction") {
     const height = Math.min(70, frame.height);
-    drawLine(buffer, atlasWidth, atlasHeight, cx - 22, cy + 2, cx - 12, cy - height, rgba("construction"), 2);
-    drawLine(buffer, atlasWidth, atlasHeight, cx + 22, cy + 2, cx + 12, cy - height, rgba("construction"), 2);
+    const outer = Math.round(22 * reach); const inner = Math.round(12 * reach);
+    drawLine(buffer, atlasWidth, atlasHeight, cx - outer, cy + 2, cx - inner, cy - height, rgba("construction"), 2);
+    drawLine(buffer, atlasWidth, atlasHeight, cx + outer, cy + 2, cx + inner, cy - height, rgba("construction"), 2);
   }
   if (frame.state === "recovering") {
-    fillRect(buffer, atlasWidth, atlasHeight, cx - 10, cy - Math.min(70, frame.height) - 6, 20, 4, rgba("treeLight"));
+    const half = Math.round(10 * reach);
+    fillRect(buffer, atlasWidth, atlasHeight, cx - half, cy - Math.min(70, frame.height) - 6, half * 2, 4, rgba("treeLight"));
   }
 }
 

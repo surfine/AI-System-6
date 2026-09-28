@@ -1,0 +1,811 @@
+/* Writing Flow as a Mac OS 8/9 Platinum utility window (floating palette).
+
+   A lazy sheet, styles.platinum.css, whose source is listed first in
+   styles.drawing-board.css as well so the child inherits it. Nothing here is
+   in the boot payload.
+
+   Every value is measured 1:1 from Mac OS 9.0's torn-off Application Switcher
+   (Infinite Mac capture native/07-switcher-clean.png, window x464-622
+   y470-538; 13 = a button held; 14c = the other button front; 11 = WindowShade;
+   08 = close box held) unless a comment says otherwise.
+
+   The sheet is loaded for the whole Platinum lineage and stays loaded after a
+   switch away, so every selector is scoped by [data-lineage~="platinum"].
+   Drawing Board is a child of Platinum (recipeBase "platinum"), so its
+   lineage carries the token too and it inherits these rules; its derived
+   colour tokens (65-drawing-board-appearance.css) turn the Platinum greys into
+   pencil on drafting paper without a second recipe here. */
+
+body[data-lineage~="platinum"] .writing-spine-panel {
+  /* Named for their role, resolved from Platinum's own tokens so an
+     Appearance Manager child (Drawing Board) picks up the derived value.
+     A literal stays only where no Platinum token carries that exact value. */
+  --pu-hi: var(--surface-inset);
+  --pu-face: var(--panel);
+  --pu-light: var(--quiet-panel);
+  --pu-shade: var(--shade);
+  --pu-ring: var(--rule);
+  --pu-glyph: var(--drawing-board-pencil, #222222);
+  --pu-btn-out-tl: var(--btn-active-bg);
+  --pu-btn-out-br: #333333;
+  --pu-btn-in-br: var(--window-frame-track-bg);
+  --pu-pr-face: var(--rule);
+  --pu-pr-out-tl: #111111;
+  --pu-pr-out-br: #444444;
+  --pu-pr-in-tl: #555555;
+  --pu-pr-in-br: var(--window-frame-track-bg);
+  --pu-disabled-fg: #777777;
+  /* Platinum's focus ring colour (platinum-native/10b-fonts-tab.png, 2px
+     #6666cc around a focused field). Bevel buttons never took focus on
+     Mac OS 9; the ring is the era's colour for a web-only need. */
+  --pu-focus: #6666cc;
+  /* The drag region's dimple: a 3x3 tile, white at (0,0), #777 at (1,1). */
+  --pu-grip: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='3' height='3' shape-rendering='crispEdges'%3E%3Crect width='1' height='1' fill='%23fff'/%3E%3Crect x='1' y='1' width='1' height='1' fill='%23777'/%3E%3C/svg%3E");
+  /* The narrow-screen WindowShade rule reads this, falling back to 116px. */
+  --window-shade-width: 144px;
+  width: 144px;
+}
+
+/* ---- Frame ------------------------------------------------------------
+   1px black outline and a 1px black drop shadow (x622, y538); a 2px raised
+   strip - white outside and #999 inside on the left, white inside and #999
+   outside on the right and bottom; then the black content line. */
+body[data-lineage~="platinum"] .writing-spine-panel .spine-toolbox-panel {
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  box-shadow: 1px 1px 0 var(--ink);
+  background: var(--pu-face);
+  overflow: visible;
+}
+
+body[data-lineage~="platinum"] .writing-spine-panel .spine-shade-body {
+  padding: 0 2px 2px;
+  overflow: visible;
+  background: var(--pu-face);
+  box-shadow:
+    inset 1px 0 0 var(--pu-hi),
+    inset -1px 0 0 var(--pu-shade),
+    inset 0 -1px 0 var(--pu-shade),
+    inset 2px 0 0 var(--pu-shade),
+    inset -2px 0 0 var(--pu-hi),
+    inset 0 -2px 0 var(--pu-hi);
+}
+
+body[data-lineage~="platinum"] .writing-spine-panel .spine-actions {
+  display: block;
+  border: 1px solid var(--ink);
+  background: var(--pu-face);
+}
+
+body[data-lineage~="platinum"] .writing-spine-panel .spine-section-main {
+  display: grid;
+  grid-template-columns: 1fr;
+  width: 100%;
+  margin: 0;
+  gap: 0;
+}
+
+/* ---- Title bar --------------------------------------------------------
+   14 rows between the outline and the content line (y471-484): a white row,
+   a #ccc row, ten rows for the boxes and the title, a #ccc row, a #999 row.
+   Left column white, right column #999: the frame strip running through. */
+body[data-lineage~="platinum"] .writing-spine-panel .spine-title-row {
+  box-sizing: content-box;
+  height: 10px;
+  min-height: 0;
+  margin: 0;
+  padding: 2px 1px;
+  display: grid;
+  grid-template-columns: 10px minmax(4px, 1fr) minmax(0, max-content) minmax(4px, 1fr) 10px;
+  align-items: center;
+  column-gap: 0;
+  border: 0;
+  box-shadow: none;
+  background:
+    linear-gradient(var(--pu-hi), var(--pu-hi)) 0 0 / calc(100% - 1px) 1px no-repeat,
+    linear-gradient(var(--pu-hi), var(--pu-hi)) 0 0 / 1px 100% no-repeat,
+    linear-gradient(var(--pu-shade), var(--pu-shade)) 100% 1px / 1px 100% no-repeat,
+    linear-gradient(var(--pu-shade), var(--pu-shade)) 1px 100% / 100% 1px no-repeat,
+    var(--pu-face);
+  background-origin: padding-box;
+  background-clip: padding-box;
+  cursor: default;
+}
+
+/* The close box and the collapse box carry the `hidden` attribute in the
+   shared markup, so the era that draws them must set an explicit display.
+   No priority override: the base rule this beats is [hidden]'s own display, which
+   has not been authored. */
+body[data-lineage~="platinum"] .writing-spine-panel .spine-title-row > :is(.spine-close-box, .spine-shade-toggle) {
+  display: block;
+}
+
+/* Grip: rows y474-481; it starts 2px after the close box and stops 3px short
+   of the title on both sides. */
+body[data-lineage~="platinum"] .writing-spine-panel .spine-title-row > span[aria-hidden="true"] {
+  grid-column: 2;
+  align-self: center;
+  height: 8px;
+  margin: 0 3px 0 2px;
+  background: var(--pu-grip) 0 0 / 3px 3px repeat;
+}
+
+body[data-lineage~="platinum"] .writing-spine-panel .spine-title-row > span[aria-hidden="true"]:last-of-type {
+  grid-column: 4;
+  margin: 0 2px 0 3px;
+}
+
+/* Title: the bold small system font, black, centred; cap height 8 rows. The
+   size is the Platinum title-bar font (--system-titlebar-font-size, 12px),
+   not the prototype's 11px, and the 10px line box keeps the bar at its 14
+   rows -- the glyphs overhang into the #ccc rows rather than growing the bar. */
+body[data-lineage~="platinum"] .writing-spine-panel .spine-title-row h2 {
+  grid-column: 3;
+  min-height: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: var(--system-titlebar-font-size);
+  font-weight: 700;
+  font-variation-settings: "wdth" 123;
+  line-height: 10px;
+  letter-spacing: 0;
+  transform: translateY(1px);
+  white-space: nowrap;
+}
+
+/* Close box (left) and collapse box (right). The button is only the hit
+   area; the drawn box is ::before, 10x10: an etched ring (#888 top/left,
+   white bottom/right), an 8x8 #222 square, and a 6x6 face - white top-left
+   pixel, #ccc top row and left column, #888 bottom row and right column,
+   and a 4x4 middle running #999 -> #fff. */
+body[data-lineage~="platinum"] .writing-spine-panel .spine-title-row > button {
+  display: block;
+  position: relative;
+  width: 10px;
+  height: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: transparent;
+  font-size: 0;
+  cursor: default;
+}
+
+body[data-lineage~="platinum"] .writing-spine-panel .spine-title-row > .spine-close-box {
+  grid-column: 1;
+}
+
+body[data-lineage~="platinum"] .writing-spine-panel .spine-title-row > .spine-shade-toggle {
+  grid-column: 5;
+}
+
+body[data-lineage~="platinum"] .writing-spine-panel .spine-title-row > button::before {
+  content: "";
+  position: absolute;
+  left: calc(50% - 5px);
+  top: calc(50% - 5px);
+  box-sizing: border-box;
+  width: 10px;
+  height: 10px;
+  border: 1px solid;
+  border-color: var(--pu-ring) var(--pu-hi) var(--pu-hi) var(--pu-ring);
+  background:
+    linear-gradient(var(--pu-hi), var(--pu-hi)) 1px 1px / 1px 1px no-repeat,
+    linear-gradient(var(--pu-face), var(--pu-face)) 1px 1px / 6px 1px no-repeat,
+    linear-gradient(var(--pu-face), var(--pu-face)) 1px 1px / 1px 6px no-repeat,
+    linear-gradient(var(--pu-ring), var(--pu-ring)) 2px 6px / 5px 1px no-repeat,
+    linear-gradient(var(--pu-ring), var(--pu-ring)) 6px 2px / 1px 5px no-repeat,
+    linear-gradient(to bottom right, var(--pu-shade), var(--pu-hi)) 2px 2px / 4px 4px no-repeat,
+    var(--pu-face);
+  background-origin: padding-box;
+  box-shadow: inset 0 0 0 1px var(--pu-glyph);
+}
+
+/* Collapse glyph: two full-width #222 rules on the box's rows 3 and 5
+   (y476, y478). */
+body[data-lineage~="platinum"] .writing-spine-panel .spine-title-row > .spine-shade-toggle::after {
+  content: "";
+  position: absolute;
+  left: calc(50% - 4px);
+  top: calc(50% - 2px);
+  box-sizing: border-box;
+  width: 8px;
+  height: 3px;
+  border-top: 1px solid var(--pu-glyph);
+  border-bottom: 1px solid var(--pu-glyph);
+}
+
+/* Held: the face darkens, #444 at the top-left to #999 (08, row y475). */
+body[data-lineage~="platinum"] .writing-spine-panel .spine-title-row > button:active::before {
+  background: linear-gradient(to bottom right, #444444, var(--pu-shade)) padding-box;
+}
+
+body[data-lineage~="platinum"] .writing-spine-panel .spine-title-row > button:focus-visible {
+  outline: 2px solid var(--pu-focus);
+  outline-offset: 0;
+}
+
+/* WindowShade needs nothing of its own: with the body gone, the title bar's
+   #999 row meets the outline and the shadow, as in 11-collapsed. */
+
+/* ---- Stops ------------------------------------------------------------
+   One bevel button per stop, 24px tall, edge to edge with no separator:
+   outer #666 top/left, #333 bottom/right; inner white top/left, #888
+   bottom/right; face #ccc (07 rows y510-533). A 16px small icon 4px in,
+   the name 4px after it (x472 icon, x492 text). */
+body[data-lineage~="platinum"] .writing-spine-panel .spine-actions button {
+  display: grid;
+  grid-template-columns: 13px 16px minmax(0, 1fr) 8px;
+  grid-template-areas: "num icon label mark";
+  align-items: center;
+  justify-items: start;
+  gap: 0;
+  width: 100%;
+  min-height: 24px;
+  margin: 0;
+  padding: 3px;
+  border: 0;
+  border-radius: 0;
+  background: var(--pu-face);
+  box-shadow:
+    inset 1px 1px 0 var(--pu-btn-out-tl),
+    inset -1px -1px 0 var(--pu-btn-out-br),
+    inset 2px 2px 0 var(--pu-hi),
+    inset -2px -2px 0 var(--pu-btn-in-br);
+  color: var(--ink);
+  text-align: left;
+  cursor: default;
+}
+
+/* The current stop is the switcher's front application: pressed in. Face
+   #888; outer #111 top/left, #444 bottom/right; inner #555 top/left, #aaa
+   bottom/right; the name stays black (07 rows y486-509, 14c). */
+body[data-lineage~="platinum"] .writing-spine-panel .spine-actions button:is(.is-selected, :active:not(:disabled)) {
+  background: var(--pu-pr-face);
+  box-shadow:
+    inset 1px 1px 0 var(--pu-pr-out-tl),
+    inset -1px -1px 0 var(--pu-pr-out-br),
+    inset 2px 2px 0 var(--pu-pr-in-tl),
+    inset -2px -2px 0 var(--pu-pr-in-br);
+}
+
+/* Platinum has no hover state; the desk's reversed 1-bit label gives way
+   to the pressed bevel. */
+body[data-lineage~="platinum"] .writing-spine-panel .spine-actions button:is(:hover, :focus-visible, .is-selected) b {
+  background: transparent;
+  color: var(--ink);
+}
+
+/* While the mouse is down the name turns white and the icon darkens by half
+   (13: #ffff00 -> #7f7f00). */
+body[data-lineage~="platinum"] .writing-spine-panel .spine-actions button:active:not(:disabled) :is(b, .spine-step-number) {
+  color: var(--pu-hi);
+}
+
+body[data-lineage~="platinum"] .writing-spine-panel .spine-actions button:active:not(:disabled) .sys-icon {
+  filter: brightness(0.5);
+}
+
+body[data-lineage~="platinum"] .writing-spine-panel .spine-actions button:focus-visible {
+  outline: 2px solid var(--pu-focus);
+  outline-offset: -4px;
+}
+
+/* Icons: each stop names its 16px and 32px Platinum artwork once. */
+body[data-lineage~="platinum"] .writing-spine-panel .sys-icon[data-system-icon="questionSheet"] { --pu-icon-16: url("./assets/themes/platinum/icons/questionSheet-16.png"); --pu-icon-32: url("./assets/themes/platinum/icons/questionSheet-32.png"); }
+body[data-lineage~="platinum"] .writing-spine-panel .sys-icon[data-system-icon="outline"] { --pu-icon-16: url("./assets/themes/platinum/icons/outline-16.png"); --pu-icon-32: url("./assets/themes/platinum/icons/outline-32.png"); }
+body[data-lineage~="platinum"] .writing-spine-panel .sys-icon[data-system-icon="sectionDrafts"] { --pu-icon-16: url("./assets/themes/platinum/icons/sectionDrafts-16.png"); --pu-icon-32: url("./assets/themes/platinum/icons/sectionDrafts-32.png"); }
+body[data-lineage~="platinum"] .writing-spine-panel .sys-icon[data-system-icon="manuscript"] { --pu-icon-16: url("./assets/themes/platinum/icons/manuscript-16.png"); --pu-icon-32: url("./assets/themes/platinum/icons/manuscript-32.png"); }
+body[data-lineage~="platinum"] .writing-spine-panel .sys-icon[data-system-icon="reviewDesk"] { --pu-icon-16: url("./assets/themes/platinum/icons/reviewDesk-16.png"); --pu-icon-32: url("./assets/themes/platinum/icons/reviewDesk-32.png"); }
+body[data-lineage~="platinum"] .writing-spine-panel .sys-icon[data-system-icon="projectDisc"] { --pu-icon-16: url("./assets/themes/platinum/icons/projectDisc-16.png"); --pu-icon-32: url("./assets/themes/platinum/icons/projectDisc-32.png"); }
+body[data-lineage~="platinum"] .writing-spine-panel .sys-icon[data-system-icon="fileFloppy"] { --pu-icon-16: url("./assets/themes/platinum/icons/fileFloppy-16.png"); --pu-icon-32: url("./assets/themes/platinum/icons/fileFloppy-32.png"); }
+
+/* The desk's 42px painter gives way to the small icon. The selector has to
+   outrank the Platinum icon family's own :has() rule (0,7,1). */
+body[data-lineage~="platinum"] .writing-spine-panel .spine-actions .sys-icon[data-system-icon]:has(.sys-icon-svg.has-platinum-core) .sys-icon-svg.has-platinum-core {
+  display: none;
+}
+
+body[data-lineage~="platinum"] .writing-spine-panel .spine-actions .sys-icon[data-system-icon] {
+  grid-area: icon;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  background: var(--pu-icon-16) center / 16px 16px no-repeat;
+  image-rendering: pixelated;
+}
+
+body[data-lineage~="platinum"] .writing-spine-panel .spine-actions b {
+  grid-area: label;
+  max-width: 100%;
+  margin: 0;
+  padding: 0 0 0 4px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 400;
+  font-variation-settings: "wdth" 100;
+  line-height: 14px;
+  text-align: left;
+  overflow-wrap: normal;
+}
+
+/* The floppy row has no number and no content mark: its name uses both. */
+body[data-lineage~="platinum"] .writing-spine-panel #spine-file-floppy-button b {
+  grid-column: 3 / 5;
+}
+
+/* Step number: a plain numeral in its own column. The stop that holds the
+   manuscript text keeps the desk's filled badge. (No native counterpart:
+   the switcher lists applications, not steps.) */
+body[data-lineage~="platinum"] .writing-spine-panel .spine-step-number {
+  position: static;
+  grid-area: num;
+  justify-self: start;
+  width: 11px;
+  height: 12px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--theme-ui-font);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 12px;
+  text-align: center;
+}
+
+body[data-lineage~="platinum"] .writing-spine-panel .spine-actions button:is(:hover, :focus-visible) .spine-step-number {
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+}
+
+/* N4 (owner decision): the "holds-pen" step number is an owner-set mark, so it
+   wears the native #333399 highlight with white text instead of a solid black
+   inversion (Mac OS 8/9 selection blue). */
+body[data-lineage~="platinum"] .writing-spine-panel .spine-actions button.holds-pen .spine-step-number {
+  background: #333399;
+  color: #ffffff;
+}
+
+/* Has-content: the Application menu's diamond, in the row's last column. */
+body[data-lineage~="platinum"] .writing-spine-panel .spine-step-mark {
+  position: static;
+  grid-area: mark;
+  justify-self: center;
+  width: 5px;
+  height: 5px;
+  background: var(--ink);
+  transform: rotate(45deg);
+}
+
+/* A stop that cannot be used yet (Project CD). Not observed on a bevel
+   button; extrapolated from the disabled push button (20-view-options-icon:
+   flat, #777 label). The desk's 2px checker on the icon is kept. */
+body[data-lineage~="platinum"] .writing-spine-panel .spine-actions button:disabled {
+  background: var(--pu-face);
+  box-shadow:
+    inset 1px 1px 0 var(--pu-btn-out-tl),
+    inset -1px -1px 0 var(--pu-btn-out-br);
+}
+
+body[data-lineage~="platinum"] .writing-spine-panel .spine-actions button:disabled :is(b, .spine-step-number) {
+  color: var(--pu-disabled-fg);
+}
+
+/* ---- Chinese ----------------------------------------------------------
+   The Mac OS 8 HIG (thig-60): a titled utility bar must be at least the 19px
+   document height, because a script whose system font never goes below 12pt
+   cannot fit the small title. Boxes keep their utility size; the grip grows
+   to four dimple rows (an extrapolation). */
+html:lang(zh-Hans) body[data-lineage~="platinum"] .writing-spine-panel .spine-title-row {
+  height: 15px;
+}
+
+html:lang(zh-Hans) body[data-lineage~="platinum"] .writing-spine-panel .spine-title-row > span[aria-hidden="true"] {
+  height: 11px;
+}
+
+html:lang(zh-Hans) body[data-lineage~="platinum"] .writing-spine-panel .spine-title-row h2 {
+  font-size: var(--system-titlebar-font-size);
+  line-height: 15px;
+  transform: none;
+}
+
+/* ---- Room on the desk -------------------------------------------------
+   Window placement measures the palette already; these two reserves are
+   fixed numbers written for the 116px rail (22 + 144 + 18 + 24 = 208;
+   14 + 144 + 18 = 176). A closed palette takes no room. */
+body[data-lineage~="platinum"]:has(.writing-spine-panel:not(.is-hidden, .is-closed)):not(.is-writer-mode):not(.quick-draft-focus) {
+  --bonsai-window-width: min(1040px, calc(100vw - 208px));
+}
+
+@media (max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px) {
+  body[data-lineage~="platinum"] .desktop {
+    --mobile-work-left: 176px;
+  }
+}
+
+/* ---- Touch ------------------------------------------------------------
+   The desk gives every title bar a 44px finger height in the browser; the
+   palette's boxes take the whole height as their hit area, 40px wide, and
+   the drawn 10px box does not move - Platinum's document boxes do the same. */
+@media (hover: none) and (pointer: coarse) {
+  body[data-lineage~="platinum"] .writing-spine-panel .spine-title-row {
+    box-sizing: border-box;
+    grid-template-columns: 40px minmax(4px, 1fr) minmax(0, max-content) minmax(4px, 1fr) 40px;
+  }
+
+  body[data-lineage~="platinum"] .writing-spine-panel .spine-title-row > button {
+    width: 40px;
+    height: 100%;
+    min-height: 40px;
+  }
+
+  body[data-lineage~="platinum"] .writing-spine-panel .spine-title-row > .spine-close-box::before {
+    left: 0;
+  }
+
+  body[data-lineage~="platinum"] .writing-spine-panel .spine-title-row > .spine-shade-toggle::before {
+    left: auto;
+    right: 0;
+  }
+
+  body[data-lineage~="platinum"] .writing-spine-panel .spine-title-row > .spine-shade-toggle::after {
+    left: auto;
+    right: 1px;
+  }
+
+  body[data-lineage~="platinum"] .writing-spine-panel .spine-title-row > span[aria-hidden="true"] {
+    margin: 0 3px;
+  }
+}
+
+/* ---- Platinum's icon family -----------------------------------------------
+   Moved here from 65-appearance-themes.css (2026-09-25) so the boot bundle
+   stops carrying Platinum's per-object painters: this sheet loads with the
+   Platinum and Drawing Board appearances (tooling/style-manifest.mjs), in a
+   later layer, so the section keeps its own internal order and still outranks
+   everything it outranked before. tooling/build-theme-icon-css.mjs checks the
+   mapping here. */
+/* Platinum icon family: 56 Mac OS 9-era object painters with dedicated 32 px
+   and 16 px artwork. Integer silhouettes, selective keylines, and one-pixel
+   light/shade live in the asset; CSS owns only placement and state. */
+body[data-lineage~="platinum"] .sys-icon[data-system-icon]:not(:where([data-system-icon="play"], [data-system-icon="pause"], [data-system-icon="previousTrack"], [data-system-icon="nextTrack"], [data-system-icon="shuffleTracks"], [data-system-icon="repeatTracks"], [data-system-icon="speaker"])) {
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  /* none, except that a selected icon darkens (P13): the selected item sets
+     --sys-icon-state-filter for its own icon (40-icons.css). */
+  filter: var(--sys-icon-state-filter, none);
+}
+
+/* Reviewed Platinum PNGs are native 32/16 px pixel art. Preserve each
+   authored pixel as an integer device-pixel block on Retina displays. */
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="startupDisk"] {
+  background-image: url("./assets/themes/platinum/startup-disk-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="applications"] {
+  background-image: url("./assets/themes/platinum/applications-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="trashFull"] {
+  background-image: url("./assets/themes/platinum/trashFull-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="assistant"] {
+  background-image: url("./assets/themes/platinum/assistant-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="quickDraft"] {
+  background-image: url("./assets/themes/platinum/quickDraft-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="writingStudio"] {
+  background-image: url("./assets/themes/platinum/writingStudio-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="projectDisk"] {
+  background-image: url("./assets/themes/platinum/projectDisk-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="cloudModel"] {
+  background-image: url("./assets/themes/platinum/cloudModel-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="cloudModelOff"] {
+  background-image: url("./assets/themes/platinum/cloudModelOff-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="questionSheet"] {
+  background-image: url("./assets/themes/platinum/questionSheet-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="outline"] {
+  background-image: url("./assets/themes/platinum/outline-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="sectionDrafts"] {
+  background-image: url("./assets/themes/platinum/sectionDrafts-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="manuscript"] {
+  background-image: url("./assets/themes/platinum/manuscript-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="reviewDesk"] {
+  background-image: url("./assets/themes/platinum/reviewDesk-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="searcher"] {
+  background-image: url("./assets/themes/platinum/searcher-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="reader"] {
+  background-image: url("./assets/themes/platinum/reader-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="timeMachine"] {
+  background-image: url("./assets/themes/platinum/timeMachine-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="docMap"] {
+  background-image: url("./assets/themes/platinum/docMap-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="clioStage"] {
+  background-image: url("./assets/themes/platinum/clioStage-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="clioChart"] {
+  background-image: url("./assets/themes/platinum/clioChart-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="liquidCover"] {
+  background-image: url("./assets/themes/platinum/liquidCover-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="cmfStudio"] {
+  background-image: url("./assets/themes/platinum/cmfStudio-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="soundscape"] {
+  background-image: url("./assets/themes/platinum/soundscape-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="systemFolder"] {
+  background-image: url("./assets/themes/platinum/systemFolder-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="helpFolder"] {
+  background-image: url("./assets/themes/platinum/helpFolder-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="importUtility"] {
+  background-image: url("./assets/themes/platinum/importUtility-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="chooser"] {
+  background-image: url("./assets/themes/platinum/chooser-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="systemHelp"] {
+  background-image: url("./assets/themes/platinum/systemHelp-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="dictionary"] {
+  background-image: url("./assets/themes/platinum/dictionary-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="teachText"] {
+  background-image: url("./assets/themes/platinum/teachText-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="writingDemo"] {
+  background-image: url("./assets/themes/platinum/writingDemo-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="chatFile"] {
+  background-image: url("./assets/themes/platinum/chatFile-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="chatImport"] {
+  background-image: url("./assets/themes/platinum/chatImport-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="systemStatus"] {
+  background-image: url("./assets/themes/platinum/systemStatus-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="contextPanel"] {
+  background-image: url("./assets/themes/platinum/contextPanel-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="rebuildArticle"] {
+  background-image: url("./assets/themes/platinum/rebuildArticle-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="bureaucracyMeme"] {
+  background-image: url("./assets/themes/platinum/bureaucracyMeme-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="endfieldTerminal"] {
+  background-image: url("./assets/themes/platinum/endfieldTerminal-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="documents"] {
+  background-image: url("./assets/themes/platinum/documents-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="alias"] {
+  background-image: url("./assets/themes/platinum/alias-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="multiFinderApp"] {
+  background-image: url("./assets/themes/platinum/multiFinderApp-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="writingBell"] {
+  background-image: url("./assets/themes/platinum/writingBell-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon]:not(:where([data-system-icon="play"], [data-system-icon="pause"], [data-system-icon="previousTrack"], [data-system-icon="nextTrack"], [data-system-icon="shuffleTracks"], [data-system-icon="repeatTracks"], [data-system-icon="speaker"])) .sys-icon-svg {
+  display: none;
+}
+
+body[data-lineage~="platinum"] .sys-icon:has(.sys-icon-svg.has-platinum-core) {
+  background-image: none;
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon]:has(.sys-icon-svg.has-platinum-core) .sys-icon-svg.has-platinum-core {
+  display: block;
+}
+
+body[data-lineage~="platinum"] .sys-icon-svg.has-platinum-core[data-platinum-source-size="42"] {
+  width: 42px;
+  height: 42px;
+}
+
+body[data-lineage~="platinum"] .sys-icon-svg.has-platinum-core[data-platinum-source-size="32"] {
+  width: 32px;
+  height: 32px;
+}
+
+body[data-lineage~="platinum"] .sys-icon-svg.has-platinum-core[data-platinum-source-size="16"] {
+  width: 16px;
+  height: 16px;
+}
+
+body[data-lineage~="platinum"] .sys-icon-svg.has-platinum-core :is(.sys-icon-classic, .sys-icon-liquid) {
+  display: none;
+}
+
+body[data-lineage~="platinum"] .sys-icon-svg.has-platinum-core .sys-icon-platinum-core {
+  display: block;
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="control"] {
+  background-image: url("./assets/themes/platinum/control-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="localModel"] {
+  background-image: url("./assets/themes/platinum/localModel-32.svg");
+}
+
+body[data-lineage~="platinum"] .sys-icon[data-system-icon="controlStrip"] {
+  background-image: url("./assets/themes/platinum/controlStrip-32.svg");
+}
+
+body[data-lineage~="platinum"] :is(.menu-bar, .control-strip) .sys-icon {
+  background-color: var(--paper);
+  background-image: none;
+  filter: none;
+}
+
+body[data-lineage~="platinum"] :is(.menu-bar, .control-strip) .sys-icon .sys-icon-svg {
+  display: block;
+}
+
+/* ---- Platinum's own title-bar marks, grow box and control extras ----------
+   Moved from 65-appearance-themes.css with the icon family (2026-09-25): no
+   other rule in the appearance layers answers these selectors, so the later
+   layer changes nothing but where the bytes load. */
+body[data-lineage~="platinum"] .title-bar .resize-box::after {
+  content: "";
+  position: absolute;
+  /* GUIdebook Mac OS 9, 1x pixels: inside the 11px frame the Zoom mark is
+     a six-pixel lower-left corner — x=1..6 on y=6, and y=1..6 on x=6. */
+  left: calc(var(--system-titlebar-control-art-offset-x) + 1px);
+  top: calc(var(--system-titlebar-control-art-offset-y) + 1px);
+  width: 6px;
+  height: 6px;
+  background:
+    linear-gradient(#222222, #222222) right top / 1px 6px no-repeat,
+    linear-gradient(#222222, #222222) left bottom / 6px 1px no-repeat;
+  opacity: 1;
+}
+
+/* Mac OS 8/9 collapse box: the WindowShade control at the far right of the
+   title bar. The real 1x glyph is two nine-pixel horizontal rules at y=4
+   and y=6, not a generic centered minus. It remains separate from Zoom
+   (see DESIGN.md, Historical Vocabulary). */
+body[data-lineage~="platinum"] .title-bar .shade-box::after {
+  content: "";
+  position: absolute;
+  left: calc(var(--system-titlebar-control-art-offset-x) + 1px);
+  top: calc(var(--system-titlebar-control-art-offset-y) + 4px);
+  width: 9px;
+  height: 3px;
+  background:
+    linear-gradient(#222222, #222222) left top / 9px 1px no-repeat,
+    linear-gradient(#222222, #222222) left bottom / 9px 1px no-repeat;
+  opacity: 1;
+}
+
+/* Mac OS 9 grow box: the native-cut 15x15 art from capture 16 (x390-404,
+   y278-292), drawn 1:1 in the 16px corner lane over the #ccc face. P15: this
+   replaces the era's earlier repeating-gradient approximation, which filled the
+   whole cell with a hatch and drew its own four black borders. The token was
+   read here but never set, so the corner drew blank until 2026-09-25; the
+   15x15 art sits inside the lane's 1px track borders. */
+body[data-lineage~="platinum"] .grow-box {
+  --window-frame-grow-art: url("./assets/themes/platinum/chrome/grow-box-15.svg") left top / 15px 15px no-repeat, #cccccc;
+  background: var(--window-frame-grow-art);
+  cursor: se-resize;
+}
+
+body[data-lineage~="platinum"] .window:not(.is-active) .grow-box {
+  /* The corner cell stays (the scrollbar lanes end there); only the icon
+     goes away on a background window, exactly like Mac OS 9. */
+  background-image: none;
+  background-color: #cccccc;
+  pointer-events: none;
+}
+
+body[data-lineage~="platinum"] .btn.default::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  box-sizing: border-box;
+  border-radius: 3px;
+  box-shadow: var(--btn-default-ring-shadow,
+    0 0 0 1px #000000,
+    inset 1px 1px 0 #dddddd,
+    inset -1px -1px 0 #777777,
+    inset 0 0 0 2px #aaaaaa);
+  pointer-events: none;
+}
+
+body[data-lineage~="platinum"] .theme-lab-focus-demo {
+  border: 1px solid #000000;
+  box-shadow: -1px -1px 0 #888888;
+  outline: 2px solid #6666cc;
+  outline-offset: 0;
+}
+
+body[data-lineage~="platinum"] input[type="radio"]:checked:disabled {
+  background-color: #dddddd;
+  background-image: radial-gradient(circle, #888888 0 3px, transparent 3px);
+  background-size: 6px 6px;
+}
+
+/* Mac OS 9's list view carries its sort-direction button at the right end of
+   the header row, a bevel button like the column headers. */
+body[data-lineage~="platinum"] .finder-sort-direction {
+  --finder-sort-direction-size: 13px;
+  --finder-sort-direction-right: 3px;
+  --finder-sort-direction-bg: #cccccc;
+  --finder-sort-direction-shadow: inset 1px 1px 0 #666666, inset 2px 2px 0 #ffffff, inset -1px -1px 0 #333333, inset -2px -2px 0 #888888;
+  --finder-sort-direction-active-bg: #888888;
+  --finder-sort-direction-active-shadow: inset 1px 1px 0 #111111, inset 2px 2px 0 #555555, inset -1px -1px 0 #222222, inset -2px -2px 0 #444444;
+  color: #000000;
+}

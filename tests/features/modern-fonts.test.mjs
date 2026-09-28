@@ -22,7 +22,7 @@ test.assertIncludes(responsive, "--system-caption-size: 12px", "Modern secondary
 test.assertIncludes(responsive, "--system-title-weight: 500", "Modern compact chrome stays optically balanced with one-bit menu art");
 test.assertMatches(foundation, /body\.use-modern-fonts \{[\s\S]*--system-icon-stroke-width: 1\.5;[\s\S]*--system-icon-pixel-run-expansion: 0\.5;/, "Modern typography balances outlined and filled Classic icon runs at one-and-a-half grid units");
 test.assertMatches(foundation, /body\.use-modern-fonts \{[\s\S]*--menu-system-icon-stroke-width: 2\.25;[\s\S]*--menu-system-icon-pixel-run-expansion: 1\.25;/, "Modern menu icons compensate for their smaller 17-pixel rendering box");
-test.assertIncludes(apps, "stroke-width: var(--system-icon-stroke-width)", "System icons consume the theme-owned stroke weight");
+test.assertIncludes(foundation, "stroke-width: var(--system-icon-stroke-width)", "System icons consume the theme-owned stroke weight");
 test.assertMatches(apps, /\.menu-bar \.sys-icon-svg \{[\s\S]*stroke-width: var\(--menu-system-icon-stroke-width\)/, "Menu-bar system icons consume their size-aware stroke token");
 test.assertMatches(apps, /\.menu-bar \.sys-icon-classic \.classic-ink \{[\s\S]*stroke-width: var\(--menu-system-icon-pixel-run-expansion\)/, "Menu-bar native pixel runs receive the matching size-aware expansion");
 test.assertMatches(apps, /\.sys-icon-classic \.classic-ink \{[\s\S]*stroke-width: var\(--system-icon-pixel-run-expansion\)/, "Modern typography can expand native one-bit runs without redrawing their geometry");

@@ -261,8 +261,13 @@ function windowFrameValue(value, fallback = "") {
   return fallback;
 }
 
+// Bumped each time an explicit layout writes a window's frame. A title
+// alignment scheduled before that write belongs to the frame it replaced.
+const explicitLayoutGeneration = new WeakMap();
+
 function placeWindowForExplicitLayout(win, frame = {}, options = {}) {
   if (!win) return;
+  explicitLayoutGeneration.set(win, (explicitLayoutGeneration.get(win) || 0) + 1);
   clearFinderContentFit(win);
   const height = windowFrameValue(frame.height);
   win.classList.remove("is-collapsed", "is-desklet");
@@ -295,7 +300,7 @@ function clampWindowToViewport(win, margin = 16) {
   const vw = window.innerWidth || document.documentElement.clientWidth;
   // The keyboard owns the bottom; --keyboard-inset is 0 at rest.
   const keyboardInset = keyboardInsetValue();
-  const vh = (window.innerHeight || document.documentElement.clientHeight) - keyboardInset;
+  const vh = (window.innerHeight || document.documentElement.clientHeight) - keyboardInset - deskDockReserve();
   const horizontalMargin = Math.min(margin, Math.max(0, Math.floor((vw - r.width) / 2)));
   const verticalMargin = Math.min(margin, Math.max(0, Math.floor((vh - r.height) / 2)));
   // The menu bar is not part of the work area. Clamping to a plain margin put
@@ -438,6 +443,23 @@ function controlStripPlacementReserve() {
     : 0;
 }
 
+// The Dock's band along the bottom edge: written by the Dock module while the
+// Dock is on screen, and 0 whenever it is hidden or not loaded, so a desk
+// without a Dock places, zooms and lays out every window exactly as before.
+// Only system placement reads it; a window the writer drags may sit over the
+// Dock, as on the Mac.
+function deskDockReserve() {
+  if (!document.body?.classList.contains("desk-dock-shown")) return 0;
+  const value = Number.parseFloat(getComputedStyle(document.body).getPropertyValue("--desk-dock-reserve"));
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+// What default placement keeps clear at the bottom: the taller of the expanded
+// Control Strip and the Dock.
+function deskBottomReserve() {
+  return Math.max(controlStripPlacementReserve(), deskDockReserve());
+}
+
 function windowPlacementOverlapArea(rect, obstacle, gap = 0) {
   const width = Math.max(0, Math.min(rect.right, obstacle.right + gap) - Math.max(rect.left, obstacle.left - gap));
   const height = Math.max(0, Math.min(rect.bottom, obstacle.bottom + gap) - Math.max(rect.top, obstacle.top - gap));
@@ -487,9 +509,7 @@ function placeNewWindowAvoidingVisibleWindows(win) {
   const rect = win.getBoundingClientRect();
   const width = rect.width || 360;
   const height = rect.height || 280;
-  const stripReserve = (typeof document !== "undefined" && document.body?.classList.contains("control-strip-expanded"))
-    ? windowPlacementMetric("--control-strip-thickness", 26)
-    : 0;
+  const stripReserve = deskBottomReserve();
   const minLeft = Math.max(edge, avoidance.left);
   const minTop = Math.max(edge, writingSpineAlignedTopForWindow(win, edge));
   const maxLeft = Math.max(minLeft, desktopRect.width - avoidance.right - edge - width);
@@ -583,6 +603,9 @@ function placeNewWindowAvoidingVisibleWindows(win) {
 
 async function prepareFinderModeForApp(appId) {
   if (isMultiFinderMode()) return true;
+  // NeXTSTEP is a multitasking system: launching an application never quits
+  // another one, and a miniwindow stays on the desk (owner, 2026-09-25).
+  if (typeof getCurrentTheme === "function" && getCurrentTheme() === "nextstep") return true;
   const writerModeCompatible = writerModeCompatibleAppIds.has(appId)
     || (sideAskEnabled && isSideAskPairApp(appId));
   if (writerMode && !writerModeCompatible) {
@@ -1017,10 +1040,10 @@ function syncWindowMinimizeLamps(root) {
   window.AISystem6WindowMinimize?.syncLamps(root);
 }
 
-// A miniaturized window needs a way back: an appearance that draws the control
-// (the NeXTSTEP miniwindow, or the lamp of an era whose Dock ships with it), or
-// the switcher's list of put-away windows, which only MultiFinder under a
-// system-owned menu bar draws. A desk with neither -- minimize in NeXTSTEP,
+// A miniaturized window needs a way back, and the lists of put-away windows
+// (the Apple menu's, the switcher's, the Dock's) all live in the miniaturize
+// module, which loads only with an appearance that draws the control: NeXTSTEP,
+// or an era whose lamp ships with its Dock. A desk without it -- minimize in NeXTSTEP,
 // switch to Classic, reload -- would otherwise keep the manuscript open on no
 // screen and in no list.
 //
@@ -1031,8 +1054,9 @@ function syncWindowMinimizeLamps(root) {
 // (the shell outranks the put-away rule), so there only the flag is cleared.
 function appearanceHoldsMiniwindows() {
   const theme = window.AISystem6Theme;
-  return (isMultiFinderMode() && !usesApplicationOwnedMenuBar())
-    || theme?.getCurrentTheme?.() === "nextstep" || theme?.hasCapability?.("minimize-lamp") === true;
+  // The writer can switch the verb off (Control Panel); then no era holds one.
+  if (window.AISystem6WindowMinimize?.minimizeEnabled?.() === false) return false;
+  return theme?.getCurrentTheme?.() === "nextstep" || theme?.hasCapability?.("minimize-lamp") === true;
 }
 
 function releaseOrphanedMiniwindows() {
@@ -2004,9 +2028,19 @@ function foregroundMobileApp(appId) {
   else syncMobileAppForeground();
 }
 
+// NeXTSTEP floats the Writing Flow as a panel (Window Order tier 6): it sits
+// above the documents, which slide under it and are neither pushed away from
+// it nor aligned to it. The column the desk keeps free on the left is then the
+// main menu's. nextstep-shell.js sets the attribute only while the panel
+// floats, so every other era reads the palette as the desk column it is.
+function writingSpineFloats(spine) {
+  return Boolean(spine?.hasAttribute?.("data-nextstep-panel"));
+}
+
 function writingSpineAlignedTop(fallback = 18) {
   const desktop = document.querySelector(".desktop");
   const spine = document.querySelector(".writing-spine-panel") || document.querySelector(".spine-flow-toolbox");
+  if (writingSpineFloats(spine)) return fallback;
   const titleBar = spine?.querySelector?.(".spine-title-row, .title-bar");
   const desktopRect = desktop?.getBoundingClientRect();
   const spineRect = titleBar?.getBoundingClientRect?.() || spine?.getBoundingClientRect();
@@ -2025,6 +2059,7 @@ function writingSpineAlignedTop(fallback = 18) {
 function writingSpineAlignedTopForWindow(win, fallback = 18) {
   const desktop = document.querySelector(".desktop");
   const spine = document.querySelector(".writing-spine-panel") || document.querySelector(".spine-flow-toolbox");
+  if (writingSpineFloats(spine)) return fallback;
   const spineTitle = spine?.querySelector?.(".spine-title-row, .title-bar");
   const spineDivider = spine?.querySelector?.(".spine-shade-body");
   const winTitle = win?.querySelector?.(":scope > .title-bar");
@@ -2074,7 +2109,14 @@ function alignWindowTitleBottomToWritingSpine(win) {
 
 function scheduleWritingSpineTitleAlignment(win) {
   if (!win || writerMode || isPortraitDocumentFlow()) return;
+  // The writing route lays its windows out right after this is scheduled
+  // (Section Drafts over TeachText, one paper width apart). An alignment that
+  // then pulled the lower window back to the spine line put TeachText exactly
+  // on top of Section Drafts in every appearance, so an explicit layout
+  // written since scheduling wins.
+  const generation = explicitLayoutGeneration.get(win) || 0;
   const align = () => {
+    if ((explicitLayoutGeneration.get(win) || 0) !== generation) return;
     alignWindowTitleBottomToWritingSpine(win);
     // Alignment is delayed until content strips have their final height. Run
     // collision placement after that shift as well, or a clear lower slot can
@@ -2206,7 +2248,7 @@ function placeClioStageDefaultWindow(win) {
   const workLeft = Math.max(margin, avoidance.left || margin);
   const workTop = Math.max(margin, writingSpineAlignedTopForWindow(win, margin));
   const workRight = Math.max(workLeft + 560, desktopRect.width - Math.max(132, avoidance.right || 132));
-  const workBottom = Math.max(workTop + 360, desktopRect.height - margin);
+  const workBottom = Math.max(workTop + 360, desktopRect.height - deskDockReserve() - margin);
   const availableWidth = Math.max(560, workRight - workLeft);
   const availableHeight = Math.max(360, workBottom - workTop);
   const width = Math.min(1024, availableWidth);
@@ -2306,7 +2348,7 @@ function fitFinderWindowToContents(win, options = {}) {
       ? desktopRect.right - openingRect.left - margin
       : desktopRect.width - avoidance.left - avoidance.right - margin,
   );
-  const maxHeight = Math.max(220, desktopRect.height - openingTop - margin);
+  const maxHeight = Math.max(220, desktopRect.height - deskDockReserve() - openingTop - margin);
   const minWidth = Math.min(maxWidth, Number.parseInt(getComputedStyle(win).minWidth, 10) || 320);
   const initialWidth = Math.min(maxWidth, Math.max(minWidth, openingRect.width || 420));
 
@@ -2374,7 +2416,7 @@ function placeFinderCascadeWindow(win, options = {}) {
   const baseLeft = Math.max(avoidance.left, margin);
   const baseTop = options.baseTop || writingSpineAlignedTopForWindow(win, 18);
   const workRight = Math.max(baseLeft + width, desktopRect.width - avoidance.right - margin);
-  const workBottom = Math.max(baseTop + height, desktopRect.height - margin);
+  const workBottom = Math.max(baseTop + height, desktopRect.height - deskDockReserve() - margin);
   const maxLeft = Math.max(baseLeft, workRight - width);
   const maxTop = Math.max(baseTop, workBottom - height);
   const horizontalStep = Math.min(190, Math.max(96, Math.round(width * 0.34)));
@@ -2546,17 +2588,6 @@ function getActionAvailability() {
   // Wider than reviewDeskReady on purpose: the command promotes a saved "final"
   // file into review rather than refusing it, so the row must stay black there.
   const canViewReviewManuscript = canEnterTeachTextReviewState({ promoteSavedFinal: true });
-  // Rebuild Flow asks its own refusals before the click instead of after. The
-  // flow is a lazy module, but every source it reads is eager — the window
-  // markup ships in index.html and the Reader page is a top-level variable — so
-  // a menu redraw answers these without summoning the module.
-  const rebuildFlowWin = getWindow("rebuildFlow");
-  const rebuildFlowOpen = !!rebuildFlowWin && !rebuildFlowWin.classList.contains("is-hidden");
-  const rebuildSourceLength = rebuildFlowOpen ? (rebuildFlowSourceInput?.value || "").trim().length : 0;
-  const hasReaderTextForRebuild = rebuildFlowOpen && !!currentReaderPage?.text?.trim();
-  // Not hasTeachTextBody: that one also requires the TeachText window to be
-  // visible, and the rebuild command reads the manuscript whether or not it is.
-  const hasTeachTextTextForRebuild = rebuildFlowOpen && !!teachTextBodyInput?.value.trim();
   const activeControlEnabled = (selector) => {
     const control = document.querySelector(selector);
     return !!control && !control.disabled && !control.classList.contains("is-disabled") && !control.hidden;
@@ -2876,18 +2907,13 @@ function getActionAvailability() {
     // would grey a button that works; the sample article ships in the same lazy
     // bundle as the flow, so it is never missing; and Cancel is reachable only
     // from inside the window it closes.
-    "rebuild-use-reader": hasReaderTextForRebuild,
-    "rebuild-use-teachtext": hasTeachTextTextForRebuild,
-    "rebuild-use-clipboard": true,
-    "rebuild-use-sample": true,
-    "run-rebuild-flow": rebuildSourceLength >= rebuildMinSourceChars,
-    "close-rebuild-flow": true,
     "open-context-panel": true,
     "focus-sideask-source": sideAskEnabled && !isMultiFinderMode(),
     "open-model-meter": performanceMeterInput.checked && !!lastModelMetrics,
     // The Dictation Pad names the Note Pad as its destination when no field is
     // open, so it has no state to refuse on.
     "open-dictation": true,
+    "open-heading-navigator": !!mdeFormatTarget(false),
     "open-rag": true,
     "open-text-disk": getMountedTextDiskChunks().length > 0,
     "insert-text-disk": isProjectMounted,
@@ -2923,6 +2949,9 @@ function getActionAvailability() {
     // the menu belongs to; a condition nobody produces reads as falsy and
     // hides its menu forever, which is how both of these menus were lost.
     "quick-draft-menu": winName === "quickDraft",
+    // Format belongs to the writing surfaces, so it is on the bar only while
+    // one of them is in front.
+    "writing-format-menu": !!MDE_FORMAT_SURFACES[winName],
     // The stack menu stands down while the paper is being listened to, so the
     // darkroom's two contextual menus never both apply and the bar stays at
     // five.
@@ -3541,7 +3570,7 @@ function arrangeOutlineTeachTextSplit() {
   const top = Math.max(18, writingSpineAlignedTop?.(18) || 18);
   const right = Math.max(132, avoidance.right || 132);
   const totalWidth = Math.max(620, (desktopRect?.width || window.innerWidth) - left - right - gap);
-  const totalHeight = Math.max(420, (desktopRect?.height || window.innerHeight) - top - 36);
+  const totalHeight = Math.max(420, (desktopRect?.height || window.innerHeight) - deskDockReserve() - top - 36);
   const stacked = window.matchMedia("(orientation: portrait), (max-width: 980px)").matches;
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -3602,7 +3631,7 @@ function arrangeWritingPairSplit(leftName, rightName) {
   const top = Math.max(18, writingSpineAlignedTop?.(18) || 18);
   const right = Math.max(132, avoidance.right || 132);
   const available = Math.max(560, (desktopRect?.width || window.innerWidth) - left - right);
-  const totalHeight = Math.max(420, (desktopRect?.height || window.innerHeight) - top - 36);
+  const totalHeight = Math.max(420, (desktopRect?.height || window.innerHeight) - deskDockReserve() - top - 36);
 
   // Paper-driven minimum width is load-bearing; never set a width below it.
   const minW = Math.max(
@@ -3833,7 +3862,7 @@ function arrangeSoloWritingWindow() {
   const top = Math.max(18, writingSpineAlignedTop?.(18) || 18);
   const right = Math.max(132, avoidance.right || 132);
   const available = Math.max(360, (desktopRect?.width || window.innerWidth) - left - right);
-  const height = Math.max(320, (desktopRect?.height || window.innerHeight) - top - 36);
+  const height = Math.max(320, (desktopRect?.height || window.innerHeight) - deskDockReserve() - top - 36);
   // Paper-driven minimum width is load-bearing; a solo window may be wider than
   // one paper measure but never narrower. Clamp to the available room first and
   // apply the floor last: the other order let a desktop narrower than one paper
@@ -4171,7 +4200,7 @@ function arrangeDeskAccessories(frontWin = null) {
     }
   }
   const rightMax = Math.max(leftMin + 220, (desktopRect?.width || innerWidth) - avoidance.right - margin);
-  const bottomMax = Math.max(topMin + 220, (desktopRect?.height || innerHeight) - margin);
+  const bottomMax = Math.max(topMin + 220, (desktopRect?.height || innerHeight) - deskDockReserve() - margin);
   const ordered = visibleDeskAccessories()
     .sort((a, b) => Number(a.style.zIndex || 0) - Number(b.style.zIndex || 0))
     .filter((candidate) => candidate !== frontWin && candidate.dataset.userPositioned !== "true");
@@ -4342,7 +4371,7 @@ function placeAssistantSidecarWindow(name, win) {
   const desktopRect = desktop?.getBoundingClientRect();
   const avoidance = getDesktopAvoidanceInsets({ margin, spineGap: 18, iconGap: 48 });
   const desktopWidth = desktopRect?.width || window.innerWidth;
-  const desktopHeight = desktopRect?.height || Math.max(260, window.innerHeight - 25);
+  const desktopHeight = (desktopRect?.height || Math.max(260, window.innerHeight - 25)) - deskDockReserve();
   const workLeft = mobile ? margin : avoidance.left;
   const workTop = mobile ? margin : writingSpineAlignedTopForWindow(win, 18);
   const workRight = Math.max(workLeft + 220, desktopWidth - (mobile ? margin : avoidance.right + margin));
@@ -5114,7 +5143,14 @@ function getDesktopAvoidanceInsets({ margin = 18, spineGap = 18, iconGap = 34 } 
   const spineRect = spine?.getBoundingClientRect();
   const iconColumn = document.querySelector(".nextstep-dock") || document.querySelector(".icon-column");
   const iconRect = iconColumn?.getBoundingClientRect();
+  // NeXTSTEP's main menu owns the left column in every workspace profile, not
+  // only while the Writing Flow floats under it: in the desktop profile a
+  // window used to open at x=24 with 126px of it under the menu.
+  const nextstep = typeof getCurrentTheme === "function" && getCurrentTheme() === "nextstep";
+  const menuRect = nextstep || writingSpineFloats(spine) ? window.AISystem6NextstepMenus?.rootRect?.() : null;
   const spineVisible = spine
+    && !nextstep
+    && !writingSpineFloats(spine)
     && !spine.classList.contains("is-hidden")
     && spineRect
     && spineRect.width > 0
@@ -5128,7 +5164,9 @@ function getDesktopAvoidanceInsets({ margin = 18, spineGap = 18, iconGap = 34 } 
   return {
     left: spineVisible
       ? Math.max(margin, Math.ceil(spineRect.right - (desktopRect?.left || 0) + spineGap))
-      : margin,
+      : menuRect?.width > 0
+        ? Math.max(margin, Math.ceil(menuRect.right - (desktopRect?.left || 0) + spineGap))
+        : margin,
     // Measured from where the column IS, not from how wide it is. The two were
     // the same number while the column was glued to the display's right edge;
     // once it follows the composition inset (2026-09-05) a width-based figure
@@ -5137,6 +5175,8 @@ function getDesktopAvoidanceInsets({ margin = 18, spineGap = 18, iconGap = 34 } 
     right: iconsVisible
       ? Math.max(margin, Math.ceil((desktopRect?.right || 0) - iconRect.left + iconGap))
       : 0,
+    // The Dock's band along the bottom edge; 0 without a Dock.
+    bottom: deskDockReserve(),
   };
 }
 
@@ -5156,6 +5196,7 @@ function avoidWritingSpineOverlap(win, { gap = 18 } = {}) {
 
   const desktop = document.querySelector(".desktop");
   const spine = document.querySelector(".writing-spine-panel") || document.querySelector(".spine-flow-toolbox");
+  if (writingSpineFloats(spine)) return false;
   const desktopRect = desktop?.getBoundingClientRect();
   const spineRect = spine?.getBoundingClientRect();
   const winRect = win.getBoundingClientRect();
@@ -5272,7 +5313,7 @@ function zoomWindow(win) {
         minWidth,
         minHeight: 160,
         maxWidth: Math.max(minWidth, (desktopRect?.right || window.innerWidth) - rect.left - 18),
-        maxHeight: Math.max(160, (desktopRect?.bottom || window.innerHeight) - rect.top - 18),
+        maxHeight: Math.max(160, (desktopRect?.bottom || window.innerHeight) - deskDockReserve() - rect.top - 18),
       });
       win.style.width = `${size.width}px`;
       win.style.height = `${size.height}px`;
@@ -5301,7 +5342,7 @@ function zoomWindow(win) {
   win.style.left = `${avoidance.left + (fixedPosition ? desktopRect.left : 0)}px`;
   win.style.top = `${margin + (fixedPosition ? desktopRect.top : 0)}px`;
   const availableWidth = Math.max(1, desktopRect.width - avoidance.left - avoidance.right - margin);
-  const availableHeight = Math.max(1, desktopRect.height - margin * 2);
+  const availableHeight = Math.max(1, desktopRect.height - deskDockReserve() - margin * 2);
   const minWidth = Math.min(320, Math.max(240, availableWidth));
   const minHeight = Math.min(180, Math.max(140, availableHeight));
   const maxWidth = Math.max(minWidth, availableWidth);
@@ -5344,7 +5385,7 @@ function maximizeWindow(win, options = {}) {
   win.style.left = `${avoidance.left}px`;
   win.style.top = `${top}px`;
   const maxWidth = Math.max(320, desktopRect.width - avoidance.left - avoidance.right - margin);
-  const maxHeight = Math.max(260, desktopRect.height - top - margin);
+  const maxHeight = Math.max(260, desktopRect.height - deskDockReserve() - top - margin);
   const maxSize = lockedAspectSize(win, maxWidth, maxHeight, {
     minWidth: 320,
     minHeight: 180,
@@ -5438,7 +5479,7 @@ function startWindowResize(event, win, edge = "right") {
     : Math.max(minWidth, edge === "left" ? rect.right - desktopRect.left - 18 : desktopRect.right - rect.left - 18);
   const maxHeight = portraitFlow
     ? Math.max(minHeight, window.innerHeight - 80)
-    : Math.max(minHeight, desktopRect.bottom - rect.top - 18);
+    : Math.max(minHeight, desktopRect.bottom - deskDockReserve() - rect.top - 18);
 
   if (event.pointerId != null && handle.setPointerCapture) {
     try {

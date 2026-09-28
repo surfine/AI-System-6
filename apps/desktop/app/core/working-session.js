@@ -934,6 +934,7 @@ function captureWritingFlowWorkingSession() {
   return {
     projectId: activeProjectId,
     toolsShaded: writingToolsPanelEl?.classList.contains("is-shaded") || false,
+    toolsClosed: writingToolsPanelEl?.classList.contains("is-closed") || false,
     toolsViewMode: writingToolsViewMode,
     selectedDraftIndex,
     questionSheet: questionSheetBodyInput?.value || "",
@@ -950,6 +951,8 @@ function captureWritingFlowWorkingSession() {
 function restoreWritingFlowWorkingSession(state = {}) {
   if (state.projectId && state.projectId !== activeProjectId) return false;
   writingToolsPanelEl?.classList.toggle("is-shaded", !!state.toolsShaded);
+  writingToolsPanelEl?.classList.toggle("is-closed", !!state.toolsClosed);
+  if (typeof syncWritingFlowClosed === "function") syncWritingFlowClosed();
   if (["small-icon", "icon"].includes(state.toolsViewMode)) writingToolsViewMode = state.toolsViewMode;
   if (typeof applyWritingToolsViewMode === "function") applyWritingToolsViewMode();
   if (typeof syncWritingToolsShadeToggle === "function") syncWritingToolsShadeToggle();

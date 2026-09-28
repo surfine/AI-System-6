@@ -3,7 +3,7 @@
 // Capture the official site's master frames from the real app.
 //
 // One deterministic desk — real files, real windows, arranged once — is
-// captured in all eight release appearances as pixel-aligned frames. The site
+// captured in every release appearance as pixel-aligned frames. The site
 // shows product pixels only from these captures, so the site can never show
 // an interface the product does not have. Rerun after visual releases:
 //
@@ -24,7 +24,7 @@ const outDir = path.join(root, "site", "img", "frames");
 const appUrl = process.env.APP_URL || "http://localhost:4173/";
 
 const VIEW = { width: 1440, height: 900 };
-const ERAS = ["classic", "nextstep", "platinum", "aqua", "snow-leopard", "yosemite", "big-sur", "liquid-glass"];
+const ERAS = ["classic", "system-7", "nextstep", "drawing-board", "platinum", "aqua", "tiger", "snow-leopard", "lion", "yosemite", "big-sur", "liquid-glass"];
 
 const MANUSCRIPT_TITLE = "The Tide Comes In Twice";
 const MANUSCRIPT_BODY = `# The Tide Comes In Twice
@@ -224,7 +224,9 @@ for (const era of ERAS) {
     const webp = path.join(outDir, `${era}.webp`);
     const lossless = path.join(outDir, `${era}.lossless.webp`);
     try {
-      execFileSync("cwebp", ["-quiet", "-q", "88", "-sharp_yuv", png, "-o", webp]);
+      // q76: twelve eras had to fit the 4 MiB site budget (2026-09-25); in a
+      // 2x text crop q78 was indistinguishable from the old q88.
+      execFileSync("cwebp", ["-quiet", "-q", "76", "-sharp_yuv", png, "-o", webp]);
       execFileSync("cwebp", ["-quiet", "-lossless", "-z", "9", png, "-o", lossless]);
       if (statSync(lossless).size < statSync(webp).size) renameSync(lossless, webp);
       else rmSync(lossless);

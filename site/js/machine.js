@@ -1,9 +1,9 @@
 // The machine: every product pixel on this site comes from these frames,
 // captured from the real app by tooling/capture-site-frames.mjs. One desk,
-// six release appearances, pixel-aligned. Each viewer instance is a viewport
+// every release appearance, pixel-aligned. Each viewer instance is a viewport
 // onto the same frame: full desk, one window, or one icon.
 
-import { currentEra, onEraChange } from "./eras.js?v=20260820a";
+import { currentEra, onEraChange } from "./eras.js?v=20260925a";
 import { L } from "./copy.js?v=20260820a";
 
 const doc = document;
@@ -15,7 +15,7 @@ const warmed = new Set();
 const viewers = [];
 
 export async function loadMachine() {
-  const res = await fetch(BASE + "manifest.json?v=20260814i");
+  const res = await fetch(BASE + "manifest.json?v=20260925a");
   if (!res.ok) throw new Error(`machine manifest returned ${res.status}`);
   manifest = await res.json();
   if (!manifest?.viewport?.width || !manifest?.viewport?.height || !manifest?.files) {

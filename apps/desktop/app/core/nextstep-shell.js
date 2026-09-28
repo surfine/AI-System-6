@@ -32,6 +32,10 @@
     button.setAttribute("aria-label", t("window_miniaturize"));
     button.addEventListener("pointerdown", (event) => event.preventDefault());
     button.addEventListener("click", () => minimize(win));
+    // A panel -- a desk accessory here -- has only a close button in 3.3
+    // (UI Guidelines ch.5: panels rarely miniaturize); the slot stays so the
+    // title stays centred between the two ends.
+    if (typeof getWindowAppId === "function" && getWindowAppId(win) === "accessories") button.hidden = true;
     bar.prepend(button);
     bar.append(close);
     const strip = document.createElement("div");
@@ -78,6 +82,9 @@
       });
       chrome.clear();
     }
+    // The Writing Flow panel is another NeXTSTEP-only object; its own module
+    // re-places itself on the shell's theme-change/sync path.
+    window.AISystem6NextstepWritingFlow?.sync();
   }
 
   function frameTrack({ event, vertical, scroller, track, thumb }) {
@@ -113,4 +120,173 @@
   window.AISystem6NextstepShell = Object.freeze({ wire, sync, syncMain, minimize, restore, restoreFocus, frameTrack });
   window.AISystem6NextstepShellLoaded = true;
   sync();
+})();
+
+// NeXTSTEP 3.3: Writing Flow as a floating panel (Window Order tier 6). The
+// presentation only: the panel keeps the shared DOM, the shared state classes
+// and the shared two-verb state. `.is-shaded` is WindowShade and, as in every
+// era, keeps the title bar on the desk. `.is-closed` is the close box putting
+// the panel away altogether, reopened by Tools ▸ Writing Flow.... This section
+// adds the era's placement, drag and hide-on-deactivate.
+(() => {
+  if (window.AISystem6NextstepWritingFlowLoaded) return;
+  const KEY = "ai-system-6-nextstep-writing-flow";
+  const WIDTH = 150;  // the main menu's own minimum width: the two stack as one column
+  const TITLE = 23;   // title bar rows including the frame's top line
+  const ROW = 35;     // Draw.app Tools cell: white, 32 face, #555555, black
+  const GAP = 15;     // Draw: main menu ends at y241, Tools palette starts at y257
+  const EDGE = 4;     // keep a default frame this far inside the screen
+  const wired = new WeakSet();
+  const active = () => window.AISystem6Theme.getCurrentTheme() === "nextstep";
+  const panel = () => document.querySelector(".writing-spine-panel");
+  const owner = () => menuOwnerAppId || activeAppId || "finder";
+  let frame = read();
+  let drag = null;
+  let queued = false;
+
+  function read() {
+    try {
+      const value = JSON.parse(localStorage.getItem(KEY));
+      return Number.isFinite(value?.x) && Number.isFinite(value?.y) ? { x: value.x, y: value.y } : null;
+    } catch { return null; }
+  }
+  function write() {
+    try { if (frame) localStorage.setItem(KEY, JSON.stringify(frame)); else localStorage.removeItem(KEY); } catch { /* frame lasts the session */ }
+  }
+
+  // A floating panel needs a desk: any screen wider than the phone line, and a
+  // small desk too (an 800x600 display with a mouse) -- NeXTSTEP ran at 832px
+  // tall. Only a touch screen keeps the shared one-document presentation.
+  function floats() {
+    const body = document.body.classList;
+    if (body.contains("is-writer-mode") || body.contains("quick-draft-focus")) return false;
+    const fine = typeof matchMedia === "function" && matchMedia("(hover: hover) and (pointer: fine)").matches;
+    if (body.contains("mobile-app-foreground") || body.contains("mobile-landscape-shell")) {
+      return fine && innerWidth >= 640 && innerHeight >= 540;
+    }
+    return innerWidth > 860;
+  }
+
+  // The main menu palette measured from the alive registry, not guessed from
+  // whatever palette happens to sit furthest left.
+  function menuRect() {
+    return window.AISystem6NextstepMenus?.rootRect?.() || null;
+  }
+
+  function place(el) {
+    const rows = Array.from(el.querySelectorAll(".spine-section-main > button")).filter((b) => !b.hidden).length || 6;
+    const menu = menuRect();
+    const dock = document.querySelector(".nextstep-dock")?.getBoundingClientRect();
+    const dockLeft = dock?.width ? dock.left : innerWidth;
+    const dockReserve = typeof deskDockReserve === "function" ? deskDockReserve() : 0;
+    let row = ROW;
+    let x; let y;
+    if (frame) {
+      // Wherever the writer left it, with the title bar kept on screen.
+      x = Math.min(Math.max(0, frame.x), innerWidth - WIDTH);
+      y = Math.min(Math.max(0, frame.y), innerHeight - TITLE);
+    } else {
+      // The root menu sits at x=-1 so its border is off-screen; the panel must
+      // still start on screen, so the menu's left edge is clamped at 0.
+      x = Math.min(menu ? Math.max(0, menu.left) : 8, dockLeft - WIDTH - EDGE);
+      y = menu ? menu.bottom + GAP : 32;
+      const need = TITLE + rows * ROW;
+      if (y + need > innerHeight - EDGE - dockReserve) {
+        // Give back the gap first (never under the menu), then shorten the cells.
+        y = Math.max(menu ? menu.bottom + 6 : 0, innerHeight - EDGE - dockReserve - need);
+        const room = innerHeight - EDGE - dockReserve - y;
+        if (need > room) row = Math.max(24, Math.floor((room - TITLE) / rows));
+      }
+    }
+    if (menu) document.body.style.setProperty("--nextstep-column-right", `${Math.round(menu.right)}px`);
+    // The narrow shell keeps its foreground window clear of the panel too.
+    document.body.style.setProperty("--nextstep-panel-right", `${Math.round(x + WIDTH)}px`);
+    el.style.setProperty("--nextstep-flow-x", `${Math.round(x)}px`);
+    el.style.setProperty("--nextstep-flow-y", `${Math.round(y)}px`);
+    if (row === ROW) { el.style.removeProperty("--nsf-row"); el.style.removeProperty("--nsf-icon"); }
+    else { el.style.setProperty("--nsf-row", `${row}px`); el.style.setProperty("--nsf-icon", `${row >= 27 ? 24 : 16}px`); }
+  }
+
+  function wire(el) {
+    const closeBox = el.querySelector(".spine-close-box");
+    // A panel never becomes key: no press on its close box may take focus from
+    // the document. The shared [data-action] delegate does the closing.
+    if (closeBox && !wired.has(closeBox)) {
+      wired.add(closeBox);
+      closeBox.addEventListener("pointerdown", (event) => event.preventDefault());
+    }
+  }
+
+  function teardown(el) {
+    if (!el) return;
+    delete el.dataset.nextstepPanel;
+    ["--nextstep-flow-x", "--nextstep-flow-y", "--nsf-row", "--nsf-icon"].forEach((name) => el.style.removeProperty(name));
+    const closeBox = el.querySelector(".spine-close-box");
+    if (closeBox) closeBox.hidden = true;
+    document.body.style.removeProperty("--nextstep-column-right");
+    document.body.style.removeProperty("--nextstep-panel-right");
+  }
+
+  function sync() {
+    queued = false;
+    const el = panel();
+    if (!el) return;
+    // The desktop profile withholds the route (.is-hidden): nothing to float.
+    if (!active() || !floats() || el.classList.contains("is-hidden")) { teardown(el); return; }
+    wire(el);
+    const closeBox = el.querySelector(".spine-close-box");
+    if (closeBox) closeBox.hidden = false;
+    const state = window.AISystem6NextstepMenus?.writingFamily?.has(owner()) ? "open" : "away";
+    if (el.dataset.nextstepPanel !== state) el.dataset.nextstepPanel = state;
+    place(el);
+  }
+  function schedule() { if (!queued) { queued = true; requestAnimationFrame(sync); } }
+
+  // Drag by the title bar; the frame is remembered from then on.
+  document.addEventListener("pointerdown", (event) => {
+    const bar = event.target.closest?.(".writing-spine-panel[data-nextstep-panel] .spine-title-row");
+    if (!bar || event.button !== 0 || event.target.closest("button") || !active()) return;
+    event.preventDefault();
+    const rect = panel().getBoundingClientRect();
+    drag = { id: event.pointerId, bar, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, moved: false };
+    bar.setPointerCapture(event.pointerId);
+  });
+  document.addEventListener("pointermove", (event) => {
+    if (drag?.id !== event.pointerId) return;
+    const dx = event.clientX - drag.x; const dy = event.clientY - drag.y;
+    if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 4) return;
+    drag.moved = true;
+    frame = { x: Math.round(drag.left + dx), y: Math.round(drag.top + dy) };
+    place(panel());
+  });
+  const endDrag = (event) => {
+    if (drag?.id !== event.pointerId) return;
+    if (drag.bar.hasPointerCapture(event.pointerId)) drag.bar.releasePointerCapture(event.pointerId);
+    if (drag.moved) write();
+    drag = null;
+  };
+  document.addEventListener("pointerup", endDrag);
+  document.addEventListener("pointercancel", endDrag);
+  // Stage buttons open their window as key; the panel itself never takes focus
+  // from a mouse press.
+  document.addEventListener("pointerdown", (event) => {
+    if (active() && event.target.closest?.(".writing-spine-panel[data-nextstep-panel] .spine-actions button")) event.preventDefault();
+  }, true);
+
+  // Tools ▸ Writing Flow...: shows the panel (never toggles its shade) where it
+  // was. Closing is the shared close box, so this only reopens.
+  window.AISystem6Runtime.registerCommand("nextstep-writing-flow", {
+    handler: () => { setWritingFlowClosed(false); schedule(); },
+    isAvailable: () => true,
+  });
+
+  document.addEventListener("ai-system6-themechange", schedule);
+  window.addEventListener("resize", schedule);
+  window.AISystem6NextstepWritingFlow = Object.freeze({
+    sync: schedule,
+    reset() { frame = null; write(); schedule(); },
+    frame: () => frame && { ...frame },
+  });
+  window.AISystem6NextstepWritingFlowLoaded = true;
+  schedule();
 })();

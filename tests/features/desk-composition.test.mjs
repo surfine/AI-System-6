@@ -155,10 +155,16 @@ test.assertIncludes(
 //
 // So the real function is lifted out of the shipped source and run.
 
-const avoidanceSource = windowManager.slice(
+// The two helpers it now reads (the floating NeXTSTEP panel, the Dock's band)
+// are shipped source too, lifted the same way.
+const helperSource = (name) => {
+  const start = windowManager.indexOf(`function ${name}(`);
+  return windowManager.slice(start, windowManager.indexOf("\n}\n", start) + 3);
+};
+const avoidanceSource = [helperSource("writingSpineFloats"), helperSource("deskDockReserve"), windowManager.slice(
   windowManager.indexOf("function getDesktopAvoidanceInsets("),
   windowManager.indexOf("// The Writing Flow toolbox is part of the usable desk"),
-);
+)].join("\n");
 test.assert(
   avoidanceSource.length > 200 && avoidanceSource.trimEnd().endsWith("}"),
   "the avoidance function was located whole in the shipped source"
@@ -186,7 +192,10 @@ function avoidance({ display, spine, icons, margin = 18, spineGap = 18, iconGap 
   const iconElement = element(icons);
   const context = vm.createContext({
     Math,
+    window: {},
     document: {
+      // No Dock on this desk: its reserve reads 0.
+      body: { classList: { contains: () => false } },
       querySelector: (selector) => {
         if (selector === ".desktop") return desktop;
         if (selector === ".writing-spine-panel") return spineElement;

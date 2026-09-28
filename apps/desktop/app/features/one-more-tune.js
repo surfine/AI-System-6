@@ -2114,38 +2114,29 @@ function oneMoreTuneAudioElement() {
   return oneMoreTuneAudio.gate;
 }
 
-// --- The record ---------------------------------------------------------
+// --- The radio -----------------------------------------------------------
 //
-// A round is played on a white label: an unprinted test pressing, the record a
-// DJ is handed before anybody has told them what it is. Before the answer its
-// paper label carries the track code (A3) and 33⅓ and nothing else, so the
-// question prints no hint — not even an era colour. The record does the jobs the
-// disc did, in a shape a person already knows:
+// "One more tune" is a radio's phrase, so the round is played on one. The set
+// has two parts that do two jobs:
 //
-//   the platter   turns at 33⅓ while there is sound, and coasts to a stop
-//   the tonearm   sits on THIS question's band — side A's five tracks run from
-//                 the rim inward, side B's the same — and moves inward with the
-//                 cue's own clock
-//   the rim       how far into THIS recording we are, in the room's ink
+//   the station card  a plain kraft card with the track number and a row of
+//                     ticks that light with THIS cue's own clock; at the answer
+//                     it turns over, and its back is the tune's cover: the
+//                     era's colour, the year, the song
+//   the dial          1984 to 2026 with the six appearance eras under it; while
+//                     the sound plays the needle searches, and at the answer it
+//                     lands on the card's year and that era's band lights
 //
-// At the answer the label prints: the era's colour and the year, or plain paper
-// and "year unknown" for a card nobody dated. Colour is identity and arrives only
-// with the answer; right and wrong are marks, never an era's hue. The drawn
-// design and its one-screen measurements are in
-// internal/evidence/drafts/one-more-tune-redesign/white-label/.
+// Before the answer nothing on the set is a hint — no year, no colour, no name.
+// A card nobody dated parks the needle off the scale and lights no band: an
+// unknown stays unknown. Right and wrong are marks, never an era's hue. The
+// design and its three-way comparison are in
+// internal/evidence/drafts/one-more-tune-redesign/three-directions/.
 
 const ONE_MORE_TUNE_DISC_ARC_MS = 250;
-// 33⅓ rpm is 1.8 seconds a turn. A platter is a heavy thing: it spins up and
-// coasts down rather than jumping between rates.
-const ONE_MORE_TUNE_SPIN_TURN_MS = 1800;
-const ONE_MORE_TUNE_SPIN_UP_S = 0.28;
-const ONE_MORE_TUNE_SPIN_DOWN_S = 0.55;
-const ONE_MORE_TUNE_SIDE_TRACKS = 5;
-// The tonearm, in units of the record's diameter: the pivot's offset from the
-// spindle, the stylus's place along the arm, and the five bands of a side.
-const ONE_MORE_TUNE_ARM = Object.freeze({ pivotX: 0.6, pivotY: 0.4, tipX: -0.045, tipY: 0.771, outer: 0.47, band: 0.05, groove: 0.045 });
-// The rim is drawn in a 100-unit box, so one set of numbers holds at any size.
-const ONE_MORE_TUNE_RIM_STROKE = 1.2;
+// The dial's own scale: the first appearance's year to the newest's.
+const ONE_MORE_TUNE_DIAL = Object.freeze({ from: 1984, to: 2026 });
+const ONE_MORE_TUNE_CARD_TICKS = 24;
 
 function oneMoreTuneDiscClamp(value, low, high) {
   const number = Number(value);
@@ -2197,65 +2188,33 @@ function oneMoreTuneDiscFrame(input) {
 }
 
 /**
- * The rim's numbers, computed from whatever diameter the disc has, so one
- * component works at 132px and at 296px. What it replaces was a
- * `stroke-dasharray="817"` typed into a mockup and a `width:22%` typed into
- * this window's sheet, each true at exactly one size.
+ * Where a year sits on the dial, as a fraction of its width — or null for a
+ * card nobody dated, or a year the dial does not reach. Null is not the left
+ * edge: the needle is parked off the scale for it, never on 1984.
  */
-function oneMoreTuneDiscRim(size, stroke) {
-  const width = oneMoreTuneDiscClamp(stroke ?? ONE_MORE_TUNE_RIM_STROKE, 1, 8);
-  const radius = Math.max(1, (Number(size) || 0) / 2 - width / 2 - 1);
-  const length = 2 * Math.PI * radius;
-  const box = radius * 2 + width + 2;
-  return {
-    box,
-    radius,
-    stroke: width,
-    length,
-    lead: (value) => {
-      const angle = ((oneMoreTuneDiscClamp(value, 0, 1) * 360) - 90) * (Math.PI / 180);
-      const scale = 100 / box;
-      return {
-        x: (box / 2 + radius * Math.cos(angle)) * scale,
-        y: (box / 2 + radius * Math.sin(angle)) * scale,
-      };
-    },
-  };
+function oneMoreTuneDialPosition(year) {
+  if (typeof year !== "number" || !Number.isInteger(year)) return null;
+  const { from, to } = ONE_MORE_TUNE_DIAL;
+  if (year < from || year > to) return null;
+  return (year - from) / (to - from);
 }
 
-/** The side and track a question sits on: A1–A5, then B1–B5. */
-function oneMoreTuneTrackCode(index) {
-  const at = Math.max(0, Math.floor(Number(index) || 0));
-  return `${at < ONE_MORE_TUNE_SIDE_TRACKS ? "A" : "B"}${(at % ONE_MORE_TUNE_SIDE_TRACKS) + 1}`;
+/** The six eras as bands of the dial: where each starts and how wide it is. */
+function oneMoreTuneDialBands() {
+  const { from, to } = ONE_MORE_TUNE_DIAL;
+  const span = to - from + 1;
+  return ONE_MORE_TUNE_ERAS.map((era) => {
+    const start = Math.max(era.from, from);
+    const end = Math.min(Number.isFinite(era.until) ? era.until : to, to);
+    return { id: era.id, name: era.name, start: (start - from) / span, width: (end - start + 1) / span };
+  });
 }
 
 /**
- * The tonearm's swing, in degrees, that puts the stylus at `radius` (a fraction
- * of the record's diameter). The stylus travels a circle round the pivot, the
- * band is a circle round the spindle, and the arm swings to where they cross.
- */
-function oneMoreTuneArmAngle(radius) {
-  const { pivotX, pivotY, tipX, tipY } = ONE_MORE_TUNE_ARM;
-  const arm = Math.hypot(tipX, tipY);
-  const reach = Math.hypot(pivotX, pivotY);
-  const along = (pivotX * pivotX + pivotY * pivotY + arm * arm - radius * radius) / (2 * arm * reach);
-  const swing = Math.asin(oneMoreTuneDiscClamp(along, -1, 1)) - Math.atan2(pivotY, pivotX) - Math.atan2(-tipX, tipY);
-  return swing * 180 / Math.PI;
-}
-
-/** Where the arm lands for one question, and where it has reached when the cue ends. */
-function oneMoreTuneArmBand(index) {
-  const { outer, band, groove } = ONE_MORE_TUNE_ARM;
-  const track = Math.max(0, Math.floor(Number(index) || 0)) % ONE_MORE_TUNE_SIDE_TRACKS;
-  const from = outer - band * track;
-  return { from: oneMoreTuneArmAngle(from), to: oneMoreTuneArmAngle(from - groove) };
-}
-
-/**
- * The reveal's naming, as a record's liner notes. These are ad tunes and sound
- * logos, so there are no lines to sync: what a sleeve can honestly print is the
- * thing a person would hum, who played it, and where it aired. A missing field
- * is left out rather than filled in, and a card with no year has no era.
+ * The reveal's naming, as the back of the station card. These are ad tunes and
+ * sound logos, so there are no lines to sync: what a card can honestly print is
+ * the thing a person would hum, who played it, and where it aired. A missing
+ * field is left out rather than filled in, and a card with no year has no era.
  */
 function oneMoreTuneLinerNotes(reveal) {
   if (!reveal) return null;
@@ -2269,78 +2228,58 @@ function oneMoreTuneLinerNotes(reveal) {
   };
 }
 
-/**
- * The record, on every face of one question.
- *
- * The button is the whole record — pressing the record is the gesture a phone
- * wants for the sound — and it keeps `.playbutton`, the name the contracts and
- * the menu wiring were written with. The rim is the stage's sibling of the
- * button rather than its child, because a button's children are presentational
- * to assistive technology and the rim is a progressbar somebody may need to read.
- */
-function oneMoreTuneRoundStage(question, { idle = false } = {}) {
-  const reveal = !idle && question?.submitted ? question.reveal || null : null;
-  const index = oneMoreTuneRound?.index ?? 0;
-  const code = idle ? "?" : oneMoreTuneTrackCode(index);
-  const side = t(index < ONE_MORE_TUNE_SIDE_TRACKS ? "one_more_tune_side_a" : "one_more_tune_side_b");
-  const era = reveal ? oneMoreTuneEra(reveal) : null;
-  const known = Boolean(era && era.id !== "none");
-  const band = oneMoreTuneArmBand(index);
-  const printed = reveal
-    ? `<span class="omt-label omt-label-print"${known ? ` data-era="${era.id}"` : ""}><small>${code}</small><b>${known ? oneMoreTuneEscape(String(reveal.year)) : "—"}</b><small>${oneMoreTuneEscape(known ? era.name : t("one_more_tune_era_unknown"))}</small></span>`
-    : "";
-  const command = idle ? "one-more-tune-start-round" : "one-more-tune-hear";
-  const label = idle ? t("one_more_tune_start_round") : t("one_more_tune_hear");
-  return `<div class="omt-stage" data-disc-stage data-token="${oneMoreTuneEscape(question?.token || "")}" data-playback="idle"${reveal ? " data-printed" : ""}${question?.mediaFailed ? " data-failed" : ""} style="--omt-arm-from:${band.from.toFixed(2)}deg;--omt-arm-to:${band.to.toFixed(2)}deg">
-          <button class="omt-deck playbutton" type="button" data-disc data-one-more-tune-command="${command}" aria-label="${oneMoreTuneEscape(label)}" data-unknown="true" data-reveal="${reveal ? "true" : "false"}"${known ? ` data-era="${era.id}"` : ""}>
-            <span class="omt-flip" aria-hidden="true"><span class="omt-spin" data-disc-platter>
-              <span class="omt-grooves"></span>
-              <span class="omt-label omt-label-white"><b>${code}</b><small>${idle ? "33⅓" : `33⅓ · ${oneMoreTuneEscape(side)}`}</small></span>
-              ${printed}
-              <span class="omt-hole"></span>
-            </span></span>
-            <span class="omt-sheen" aria-hidden="true"></span>
-          </button>
-          <svg class="omt-rim" data-disc-rim data-disc-progress role="progressbar" aria-label="${oneMoreTuneEscape(t("one_more_tune_disc_progress"))}" focusable="false" viewBox="0 0 100 100">
-            <circle class="omt-rim-bed" data-disc-bed cx="50" cy="50" r="48.4"></circle>
-            <circle class="omt-rim-arc" data-disc-arc cx="50" cy="50" r="48.4" transform="rotate(-90 50 50)"></circle>
-          </svg>
-          <span class="omt-arm" aria-hidden="true"><span class="omt-arm-base"></span><span class="omt-arm-swing"><span class="omt-arm-track"><span class="omt-arm-cw"></span><span class="omt-arm-tube"></span><span class="omt-arm-head"></span></span></span><span class="omt-arm-cap"></span></span>
-        </div>`;
+/** Two digits for a track, the way a set's display counts them. */
+function oneMoreTuneTrackNumber(index) {
+  return String(Math.max(0, Math.floor(Number(index) || 0)) + 1).padStart(2, "0");
 }
 
 /**
- * Keep the record that is already turning.
+ * The radio, on every face of one question.
  *
- * A face re-renders when the answer arrives, when a replay finishes and when a
- * link upgrades; a record rebuilt each time would jump back to 0° and drop its
- * arm in one frame. The platter (with its angle and its spin) and the arm (with
- * its place on the band) move into the fresh stage; everything else — the
- * printed label, the state attributes — comes from the fresh markup.
+ * The knob is the button — `.playbutton`, the name the contracts and the menu
+ * wiring were written with — and pressing the station card does the same. The
+ * card's tick row is the progressbar: a button's children are presentational
+ * to assistive technology, so the meter is a sibling of the knob, not inside it.
  */
-function oneMoreTuneCarryRecord(body, token, paint) {
-  const find = (root) => (typeof root?.querySelectorAll === "function"
-    ? [...root.querySelectorAll("[data-disc-stage]")].find((stage) => stage.dataset.token === token) || null
-    : null);
-  const old = token ? find(body) : null;
-  paint();
-  if (!old) return;
-  const fresh = find(body);
-  if (!fresh || fresh === old) return;
-  const oldPlatter = old.querySelector("[data-disc-platter]");
-  const freshPlatter = fresh.querySelector("[data-disc-platter]");
-  if (oldPlatter && freshPlatter) {
-    oldPlatter.querySelector(".omt-label-print")?.remove();
-    const print = freshPlatter.querySelector(".omt-label-print");
-    if (print) oldPlatter.querySelector(".omt-hole")?.before(print);
-    freshPlatter.replaceWith(oldPlatter);
-  }
-  const oldArm = old.querySelector(".omt-arm");
-  const freshArm = fresh.querySelector(".omt-arm");
-  if (oldArm && freshArm) freshArm.replaceWith(oldArm);
-  // The stage the arm and platter just left said "playing"; the fresh one starts
-  // from what the audio says now, so the arm lifts or stays in one transition.
-  fresh.dataset.playback = old.dataset.playback || "idle";
+function oneMoreTuneRoundStage(question, { idle = false, status = "" } = {}) {
+  const reveal = !idle && question?.submitted ? question.reveal || null : null;
+  const index = oneMoreTuneRound?.index ?? 0;
+  const total = oneMoreTuneRound?.questions?.length || 10;
+  const number = idle ? "?" : oneMoreTuneTrackNumber(index);
+  const notes = oneMoreTuneLinerNotes(reveal);
+  const at = reveal ? oneMoreTuneDialPosition(reveal.year) : null;
+  const eraId = notes?.era ? notes.era.id : "";
+  const bands = oneMoreTuneDialBands().map((band) => `<i class="omt-band" data-era="${band.id}"${band.id === eraId ? " data-me" : ""} style="--omt-band-at:${band.start.toFixed(4)};--omt-band-w:${band.width.toFixed(4)}"></i>`).join("");
+  const years = [1984, 1995, 2001, 2007, 2012, 2020].map((year) => `<span style="--omt-at:${oneMoreTuneDialPosition(year).toFixed(4)}">${year}</span>`).join("");
+  const ticks = Array.from({ length: ONE_MORE_TUNE_CARD_TICKS }, () => "<i></i>").join("");
+  const back = reveal
+    ? `<div class="omt-face omt-face-back"${eraId ? ` data-era="${eraId}"` : ""}>
+              <span class="omt-stamp">${status || number}</span>
+              <span class="omt-year">${oneMoreTuneEscape(notes.year || "—")}</span>
+              <span class="omt-cover"><b${notes.song.length > 22 ? " data-long" : ""}>${oneMoreTuneEscape(notes.song)}</b><span>${oneMoreTuneEscape([notes.artist, notes.era ? notes.era.name : t("one_more_tune_era_unknown")].filter(Boolean).join(" · "))}</span></span>
+            </div>`
+    : "";
+  const lcd = idle
+    ? `<span class="omt-lcd-no" data-i18n="one_more_tune_feature_ten">${oneMoreTuneEscape(t("one_more_tune_feature_ten"))}</span>`
+    : `<span class="omt-lcd-no">${oneMoreTuneEscape(t("one_more_tune_track_no").replace("{n}", number).replace("{total}", String(total).padStart(2, "0")))}</span>${oneMoreTuneTrackList(oneMoreTuneRound)}`;
+  return `<div class="omt-radio" data-disc-stage data-token="${oneMoreTuneEscape(question?.token || "")}" data-playback="idle"${reveal ? " data-flipped" : ""}${at === null && reveal ? " data-offscale" : ""}${question?.mediaFailed ? " data-failed" : ""} style="--omt-tune:${at === null ? "0.5" : at.toFixed(4)}">
+          <div class="omt-lcd">${lcd}</div>
+          <div class="omt-card" data-omt-card><div class="omt-card-in">
+            <div class="omt-face omt-face-front">
+              <span class="omt-stamp">${number}</span>
+              <span class="omt-hint">${!reveal && status ? `${status}<br>` : ""}<span class="omt-hint-sub">${oneMoreTuneEscape(t(idle ? "one_more_tune_start_round" : "one_more_tune_replay_hint"))}</span></span>
+              <span class="omt-ticks" data-disc-rim data-disc-progress role="progressbar" aria-label="${oneMoreTuneEscape(t("one_more_tune_disc_progress"))}">${ticks}</span>
+            </div>
+            ${back}
+          </div></div>
+          <div class="omt-dial" aria-hidden="true">
+            <div class="omt-scale"></div>
+            <div class="omt-years">${years}</div>
+            <div class="omt-bands">${bands}</div>
+            <i class="omt-needle"></i>
+          </div>
+          <button class="omt-knob playbutton" type="button" data-disc data-one-more-tune-command="${idle ? "one-more-tune-start-round" : "one-more-tune-hear"}" aria-label="${oneMoreTuneEscape(t(idle ? "one_more_tune_start_round" : "one_more_tune_hear"))}" data-unknown="true" data-reveal="${reveal ? "true" : "false"}"${eraId ? ` data-era="${eraId}"` : ""}><svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M15.5 10a5.5 5.5 0 1 1-1.6-3.9M15.5 3.5v3.2h-3.2"></path></svg></button>
+        </div>`;
 }
 
 /** Where we are inside THIS cue — the segment, not the film it came from. */
@@ -2377,13 +2316,13 @@ function oneMoreTuneDiscFrameNow() {
 }
 
 /**
- * Paint the record that is on screen, from the live audio state.
+ * Paint the radio that is on screen, from the live audio state.
  *
- * The rim and the arm are drawn against the clock four times a second with a
- * 250ms linear transition, which turns four samples a second into continuous
- * motion; the platter's rate is stepped every frame by the ticker. The size is
- * the sheet's business — container queries on the room — so nothing here
- * measures layout.
+ * The card's ticks and the time are drawn against the clock four times a
+ * second with a 250ms linear transition, which turns four samples a second
+ * into continuous motion. The needle's search is the sheet's own animation,
+ * and it runs only while the radio says "playing". Nothing here measures
+ * layout: the size is the sheet's, by container queries on the room.
  */
 function paintOneMoreTuneDisc() {
   const el = document.querySelector(".one-more-tune-window [data-disc]");
@@ -2393,98 +2332,52 @@ function paintOneMoreTuneDisc() {
   const frame = oneMoreTuneDiscFrameNow();
   for (const [name, value] of Object.entries(frame.attrs)) el.setAttribute(name, value);
   const question = oneMoreTuneQuestion();
-  // Four states the arm can show: resting, cued over the band while the sound
-  // is fetched, down on the record, and left in mid-air when the sound refused
-  // to start — a question that cannot play says so before anybody reads a word.
+  // Four states: at rest, tuning while the sound is fetched, playing, and a
+  // sound that refused to start — a question that cannot play says so before
+  // anybody reads a word.
   const playback = frame.playing ? "playing"
     : oneMoreTuneAudio.pendingCue ? "loading"
       : question?.mediaFailed && !question?.submitted ? "failed" : "idle";
   if (stage.dataset && stage.dataset.playback !== playback) stage.dataset.playback = playback;
-  stage.style?.setProperty?.("--omt-arm-p", frame.progress === null ? "0" : frame.progress.toFixed(3));
-  const rim = oneMoreTuneDiscRim(100, ONE_MORE_TUNE_RIM_STROKE);
-  const arc = stage.querySelector?.("[data-disc-arc]");
-  if (arc) {
-    const drawn = frame.progress === null ? 0 : frame.progress * rim.length;
-    arc.setAttribute("stroke-dasharray", rim.length.toFixed(2));
-    arc.setAttribute("stroke-dashoffset", (rim.length - drawn).toFixed(2));
-  }
+  stage.style?.setProperty?.("--omt-p", frame.progress === null ? "0" : frame.progress.toFixed(3));
   const elapsed = room.querySelector?.("[data-disc-elapsed]");
   if (elapsed) elapsed.textContent = frame.elapsed;
   const total = room.querySelector?.("[data-disc-total]");
   if (total) total.textContent = frame.total;
-  // The meter is the rim, which is the thing a reader can see: its accessible
-  // value follows the same frame, and an unknown position leaves `aria-valuenow`
-  // off rather than calling it zero.
-  const svg = stage.querySelector?.("[data-disc-rim]");
-  if (svg) {
-    svg.setAttribute("aria-valuemin", "0");
-    svg.setAttribute("aria-valuemax", "100");
-    if (frame.aria.now === null) svg.removeAttribute("aria-valuenow");
-    else svg.setAttribute("aria-valuenow", String(frame.aria.now));
-    svg.setAttribute("aria-valuetext", frame.aria.text);
+  // The meter is the card's tick row, which is the thing a reader can see: its
+  // accessible value follows the same frame, and an unknown position leaves
+  // `aria-valuenow` off rather than calling it zero.
+  const meter = stage.querySelector?.("[data-disc-rim]");
+  if (meter) {
+    meter.setAttribute("aria-valuemin", "0");
+    meter.setAttribute("aria-valuemax", "100");
+    if (frame.aria.now === null) meter.removeAttribute("aria-valuenow");
+    else meter.setAttribute("aria-valuenow", String(frame.aria.now));
+    meter.setAttribute("aria-valuetext", frame.aria.text);
   }
   el.setAttribute("aria-pressed", frame.playing ? "true" : "false");
   return true;
 }
 
-/**
- * Step the platter's speed toward what the audio says: up to 33⅓ while there is
- * sound, down to a stop when it ends. An exponential approach, so a pause or a
- * submission coasts instead of braking in one frame. Reduced motion keeps the
- * platter still; the rim and the arm still move, because they carry information.
- * Returns whether the platter is still turning.
- */
-function stepOneMoreTuneSpin(seconds) {
-  const platter = document.querySelector(".one-more-tune-window [data-disc-platter]");
-  if (!platter || typeof platter.animate !== "function") return false;
-  if (!platter.__omtSpin) {
-    platter.__omtSpin = platter.animate([{ transform: "rotate(0deg)" }, { transform: "rotate(360deg)" }], {
-      duration: ONE_MORE_TUNE_SPIN_TURN_MS,
-      iterations: Infinity,
-    });
-    platter.__omtSpin.playbackRate = 0;
-    platter.__omtRate = 0;
-  }
-  const still = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const target = oneMoreTuneAudio.playingCardId && !still ? 1 : 0;
-  const current = platter.__omtRate || 0;
-  const settle = target > current ? ONE_MORE_TUNE_SPIN_UP_S : ONE_MORE_TUNE_SPIN_DOWN_S;
-  let next = current + (target - current) * (1 - Math.exp(-seconds / settle));
-  if (target === 0 && next < 0.01) next = 0;
-  if (target === 1 && next > 0.995) next = 1;
-  platter.__omtRate = next;
-  platter.__omtSpin.playbackRate = next;
-  return next > 0;
-}
-
-/** Repaint the record after a face is painted, and bind its ticker. */
+/** Repaint the radio after a face is painted, and bind its ticker. */
 function syncOneMoreTuneDisc() {
   const painted = paintOneMoreTuneDisc();
-  if (painted) startOneMoreTuneDiscTicker();
+  if (painted && oneMoreTuneAudio.playingCardId) startOneMoreTuneDiscTicker();
   return painted;
 }
 
-/**
- * One clock for the record: the platter's rate every frame, the rim and the
- * arm four times a second, and nothing at all once the sound has stopped and
- * the platter has coasted to rest.
- */
+/** Four paints a second while there is sound, and none once it stops. */
 function startOneMoreTuneDiscTicker() {
   if (oneMoreTuneAudio.discFrame || typeof requestAnimationFrame !== "function") return;
-  let last = 0;
   const tick = (now) => {
     oneMoreTuneAudio.discFrame = 0;
-    const seconds = last ? Math.min(0.05, (now - last) / 1000) : 1 / 60;
-    last = now;
-    const turning = stepOneMoreTuneSpin(seconds);
-    const sounding = Boolean(oneMoreTuneAudio.playingCardId);
-    if (sounding && now - oneMoreTuneAudio.discAt >= ONE_MORE_TUNE_DISC_ARC_MS) {
-      oneMoreTuneAudio.discAt = now;
-      paintOneMoreTuneDisc();
-    }
-    if (!sounding && !turning) {
+    if (!oneMoreTuneAudio.playingCardId) {
       paintOneMoreTuneDisc();
       return;
+    }
+    if (now - oneMoreTuneAudio.discAt >= ONE_MORE_TUNE_DISC_ARC_MS) {
+      oneMoreTuneAudio.discAt = now;
+      paintOneMoreTuneDisc();
     }
     oneMoreTuneAudio.discFrame = requestAnimationFrame(tick);
   };
@@ -2526,10 +2419,8 @@ function stopOneMoreTuneAudio() {
   oneMoreTuneAudio.cueEnd = null;
   oneMoreTuneAudio.cueClockAt = null;
   oneMoreTuneAudio.pendingCue = false;
-  // The platter coasts to a stop and the arm lifts: the ticker runs until the
-  // record is at rest, then ends itself.
+  stopOneMoreTuneDiscTicker();
   paintOneMoreTuneDisc();
-  startOneMoreTuneDiscTicker();
 }
 
 function chooseOneMoreTuneAudioFile(cardId) {
@@ -4485,30 +4376,19 @@ async function reportOneMoreTuneQuestion() {
   }
 }
 
-/**
- * The round's room: one surface for the start, the question, the reveal and
- * the back cover.
- *
- * It is always dark — a listening room, whatever the desk's appearance — so the
- * answer's colour has somewhere to arrive, and the 1-bit desk gets the same
- * room in black and white. `data-omt-enter` marks the first paint of a face,
- * which is the only paint its entrance plays on: a reveal re-rendered by a
- * replay or a link upgrade must not shake the wrong answer a second time.
- */
-function oneMoreTuneRoom(phase, inner, { era = "", enter = false } = {}) {
-  return `<section class="omt-room" data-omt-phase="${phase}"${era ? ` data-lit data-era="${era}"` : ""}${enter ? " data-omt-enter" : ""} aria-labelledby="one-more-tune-step-title">
-        <div class="omt-light" aria-hidden="true"></div><div class="omt-wash" aria-hidden="true"></div>
+function oneMoreTuneRoom(phase, inner, { enter = false } = {}) {
+  return `<section class="omt-room" data-omt-phase="${phase}"${enter ? " data-omt-enter" : ""} aria-labelledby="one-more-tune-step-title">
         <div class="omt-in">${inner}</div>
       </section>`;
 }
 
 /**
- * The round as a track list: side A, side B, five each. An empty slot is still
- * to come, the dotted one is playing, and a heard one carries its card's era —
- * identity, which the answer has already disclosed — and a mark for the
- * verdict, so colour never says right or wrong on its own.
+ * The round as the set's ten segments. An empty one is still to come, the
+ * outlined one is playing, and a heard one carries its card's era — identity,
+ * which the answer has already disclosed — and a mark for the verdict, so
+ * colour never says right or wrong on its own.
  */
-function oneMoreTuneTrackList(round, { enter = false } = {}) {
+function oneMoreTuneTrackList(round) {
   const questions = round?.questions || [];
   const now = round?.index ?? 0;
   const right = questions.filter((question) => question.correct).length;
@@ -4517,18 +4397,16 @@ function oneMoreTuneTrackList(round, { enter = false } = {}) {
     .replace("{total}", String(questions.length))
     .replace("{right}", String(right));
   const slots = questions.map((question, index) => {
-    const side = index === 0 ? '<span class="omt-side">A</span>'
-      : index === ONE_MORE_TUNE_SIDE_TRACKS ? '<span class="omt-side is-b">B</span>' : "";
     const heard = index < now || (index === now && question.submitted);
-    if (!heard) return `${side}<span class="omt-slot"${index === now ? " data-now" : ""}></span>`;
+    if (!heard) return `<span class="omt-slot"${index === now ? " data-now" : ""}></span>`;
     const era = question.reveal ? oneMoreTuneEra(question.reveal) : null;
     const state = question.correct ? "right"
       : question.answerFailed || (question.mediaFailed && !question.correct) ? "broken"
         : question.outcome === "skipped" ? "skip" : "wrong";
     const mark = { right: "✓", wrong: "✕", skip: "–", broken: "!" }[state];
-    return `${side}<span class="omt-slot" data-s="${state}"${era && era.id !== "none" ? ` data-era="${era.id}"` : ""}${enter && index === now ? " data-fresh" : ""}>${mark}</span>`;
+    return `<span class="omt-slot" data-s="${state}"${era && era.id !== "none" ? ` data-era="${era.id}"` : ""}>${mark}</span>`;
   }).join("");
-  return `<p class="omt-slots" role="img" aria-label="${oneMoreTuneEscape(label)}">${slots}</p>`;
+  return `<span class="omt-slots" role="img" aria-label="${oneMoreTuneEscape(label)}">${slots}</span>`;
 }
 
 /**
@@ -4549,11 +4427,34 @@ function oneMoreTuneCorrectChoiceId(question) {
 const ONE_MORE_TUNE_TICK = '<svg class="omt-mark" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M4.5 10.5l3.6 3.6 7.4-8"></path></svg>';
 const ONE_MORE_TUNE_CROSS = '<svg class="omt-mark" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5.5 5.5l9 9M14.5 5.5l-9 9"></path></svg>';
 
+/** The four answers as the set's preset keys, numbered like the keys that press them. */
+function oneMoreTuneChoiceKeys(question, { reveal = false } = {}) {
+  const correctId = reveal ? oneMoreTuneCorrectChoiceId(question) : "";
+  const picked = reveal && question.outcome === "answered" ? question.chosen : "";
+  return (question.choices || []).map((choice, index) => {
+    const text = `<span class="omt-key" aria-hidden="true">${index + 1}</span><span class="omt-opt-label">${oneMoreTuneEscape(choice.label)}</span>`;
+    if (!reveal) {
+      return `<button class="omt-opt" type="button" data-one-more-tune-submit="${oneMoreTuneEscape(choice.id)}">${text}</button>`;
+    }
+    // The keys stay where they were pressed. The right one latches down and is
+    // ticked, a wrong pick is struck through, and the two that had nothing to
+    // do with it dim — nothing moves, so the eye does not have to find its
+    // place again.
+    const isRight = choice.id === correctId;
+    const isPick = choice.id === picked && !isRight;
+    const state = isRight ? "right" : isPick ? "wrong" : "idle";
+    const role = isRight ? `<span class="omt-sr">${oneMoreTuneEscape(t("one_more_tune_row_answer"))}</span>`
+      : isPick ? `<span class="omt-sr">${oneMoreTuneEscape(t("one_more_tune_row_yours"))}</span>` : "";
+    const mark = isRight ? ONE_MORE_TUNE_TICK : isPick ? ONE_MORE_TUNE_CROSS : "";
+    return `<div class="omt-opt" data-state="${state}"${state === "idle" ? ' aria-hidden="true"' : ""}>${text}${role}${mark}</div>`;
+  }).join("");
+}
+
 /**
  * The challenge faces.
  *
- * A question face may show the progress, the record, the question and the four
- * choices, and nothing else: the reveal comes back from the server with the
+ * A question face may show the progress, the radio, the question and the four
+ * keys, and nothing else: the reveal comes back from the server with the
  * submission, so there is no answer in the page to hide in the first place.
  */
 function renderOneMoreTuneChallenge(body) {
@@ -4568,7 +4469,6 @@ function renderOneMoreTuneChallenge(body) {
       ? `<button class="omt-next" type="button" data-one-more-tune-command="one-more-tune-resume-round">${oneMoreTuneEscape(t("one_more_tune_continue_round").replace("{n}", String(resumable.index + 1)))}</button>`
       : "";
     body.innerHTML = oneMoreTuneRoom("idle", `
-          <div class="omt-track"><p class="omt-kicker"><span data-i18n="one_more_tune_feature_ten">Every round is ten</span><span data-i18n="one_more_tune_feature_untimed">No clock</span><span data-i18n="one_more_tune_feature_reveal">The reveal opens the original</span></p></div>
           ${oneMoreTuneRoundStage(null, { idle: true })}
           <div class="omt-gap"></div>
           <div class="omt-q"><h2 class="omt-step-title" id="one-more-tune-step-title">${t("one_more_tune_hero_line")}</h2><p class="omt-intro">${t("one_more_tune_hero_intro")}</p></div>
@@ -4597,7 +4497,7 @@ function renderOneMoreTuneChallenge(body) {
       return;
     }
     // An answer sent and not yet scored: the face stays as it is, with the
-    // chosen row held down, until the authority answers.
+    // chosen key held down, until the authority answers.
     if (question.pending) return;
     const reveal = question.reveal || {};
     // The reveal is the only challenge render that names anything.
@@ -4605,60 +4505,31 @@ function renderOneMoreTuneChallenge(body) {
     const verdictKey = question.correct ? "one_more_tune_right"
       : question.outcome === "skipped" ? "one_more_tune_skipped"
         : "one_more_tune_wrong";
+    const verdict = question.correct ? "right" : question.outcome === "skipped" ? "skip" : "wrong";
     const enter = !question.revealPainted;
     question.revealPainted = true;
     const notes = oneMoreTuneLinerNotes(reveal) || { song: "", artist: "", film: "", year: "", era: null };
     const last = oneMoreTuneRound.index + 1 >= oneMoreTuneRound.questions.length;
-    const correctId = oneMoreTuneCorrectChoiceId(question);
-    const picked = question.outcome === "answered" ? question.chosen : "";
-    // The four answers stay where they were asked. The right one fills and is
-    // ticked, a wrong pick is struck through, and the two that had nothing to
-    // do with it fold away — on the first paint only; later paints omit them.
-    const rows = (question.choices || []).map((choice, index) => {
-      const isRight = choice.id === correctId;
-      const isPick = choice.id === picked && !isRight;
-      const text = `<span class="omt-key" aria-hidden="true">${index + 1}</span><span class="omt-opt-label">${oneMoreTuneEscape(choice.label)}</span>`;
-      if (!isRight && !isPick) {
-        return enter ? `<div class="omt-ow" data-gone aria-hidden="true"><div class="omt-opt"><span class="omt-opt-in">${text}</span></div></div>` : "";
-      }
-      const role = isRight ? t("one_more_tune_row_answer") : t("one_more_tune_row_yours");
-      return `<div class="omt-ow"><div class="omt-opt" data-state="${isRight ? "right" : "wrong"}"${enter && !isRight ? " data-shake" : ""}><span class="omt-opt-in">${text}<span class="omt-sr">${oneMoreTuneEscape(role)}</span>${isRight ? ONE_MORE_TUNE_TICK : ONE_MORE_TUNE_CROSS}</span></div></div>`;
-    }).join("");
-    // The two doors stay in the record's notes, on the line that says where the
-    // music came from: the whole song, and the original in its own window.
+    // The two doors sit on the line that says where the music came from: the
+    // whole song, and the original in its own window.
     const watch = oneMoreTuneWatchLink(reveal);
     const film = watch
       ? `<button class="omt-link" type="button" data-one-more-tune-command="one-more-tune-play-film" data-one-more-tune-video-id="${oneMoreTuneEscape(reveal.videoId)}" data-one-more-tune-start="${watch.anchor === null ? "" : Math.floor(watch.anchor)}" data-i18n="one_more_tune_watch_plain">Watch the original</button>`
       : "";
     const listen = reveal.song ? oneMoreTuneListenLink(reveal) : "";
     const links = listen || film ? `<span class="omt-links">${listen}${film}</span>` : "";
-    const where = [
-      notes.film ? `<span>${oneMoreTuneEscape(notes.film)}</span>` : "",
-      `<span>${oneMoreTuneEscape(notes.year || t("one_more_tune_era_unknown"))}</span>`,
-      notes.era ? `<span class="omt-era-name" data-era="${notes.era.id}"><i aria-hidden="true"></i>${oneMoreTuneEscape(notes.era.name)}</span>` : "",
-    ].join("");
-    oneMoreTuneCarryRecord(body, question.token, () => {
-      body.innerHTML = oneMoreTuneRoom("reveal", `
-          <div class="omt-track">${oneMoreTuneTrackList(oneMoreTuneRound, { enter })}<span class="omt-verdict" data-s="${question.correct ? "right" : question.outcome === "skipped" ? "skip" : "wrong"}"><span aria-hidden="true">${question.correct ? "✓" : question.outcome === "skipped" ? "–" : "✕"}</span><span data-i18n="${verdictKey}">${oneMoreTuneEscape(t(verdictKey))}</span></span></div>
-          ${oneMoreTuneRoundStage(question)}
+    body.innerHTML = oneMoreTuneRoom("reveal", `
+          ${oneMoreTuneRoundStage(question, { status: `<span class="omt-verdict" data-s="${verdict}"><span aria-hidden="true">${verdict === "right" ? "✓" : verdict === "skip" ? "–" : "✕"}</span><span data-i18n="${verdictKey}">${oneMoreTuneEscape(t(verdictKey))}</span></span>` })}
           <div class="omt-gap"></div>
           <div class="omt-q"><div class="omt-notes">
-            <h2 class="omt-song" id="one-more-tune-step-title">${oneMoreTuneEscape(notes.song)}</h2>
-            ${notes.artist ? `<p class="omt-artist">${oneMoreTuneEscape(notes.artist)}</p>` : ""}
-            <p class="omt-meta">${where}${links}</p>
+            <h2 class="omt-sr" id="one-more-tune-step-title">${oneMoreTuneEscape([notes.song, notes.artist].filter(Boolean).join(" — "))}</h2>
+            <p class="omt-meta">${notes.film ? `<span>${oneMoreTuneEscape(notes.film)}</span>` : ""}${links}</p>
             ${question.mediaFailed ? `<p class="omt-note" data-i18n="one_more_tune_result_broken">${oneMoreTuneEscape(t("one_more_tune_result_broken"))}</p>` : ""}
           </div></div>
           <div class="omt-opts">
-            <div class="omt-grid">${rows}</div>
+            <div class="omt-grid">${oneMoreTuneChoiceKeys(question, { reveal: true })}</div>
             <div class="omt-act"><button class="omt-next" type="button" data-one-more-tune-command="one-more-tune-round-next" data-i18n="${last ? "one_more_tune_see_result" : "one_more_tune_next"}">${oneMoreTuneEscape(t(last ? "one_more_tune_see_result" : "one_more_tune_next"))}</button></div>
-          </div>`, { era: notes.era ? notes.era.id : "", enter });
-    });
-    // The fold is the motion; the removal is the fact. Once the two rows have
-    // had their 260ms they leave the page, so a fold interrupted by the desk
-    // changing appearance mid-reveal cannot leave them holding their space.
-    if (enter && typeof setTimeout === "function") {
-      setTimeout(() => body.querySelectorAll?.(".omt-room [data-gone]").forEach((row) => row.remove()), 300);
-    }
+          </div>`, { enter });
     return;
   }
   clearOneMoreTuneNowPlaying();
@@ -4667,22 +4538,17 @@ function renderOneMoreTuneChallenge(body) {
   preloadOneMoreTuneQuestion(question);
   // The one state that still has to be said out loud is a cue that could not
   // play, because that is the moment the player has to act on it. Skip, give
-  // up, leave and replay are menu rows; the record itself is the replay.
+  // up and leave are menu rows; the knob and the card are the replay.
   const notice = question.mediaFailed
     ? `<p class="omt-note" role="status"><span data-i18n="one_more_tune_media_failed">${oneMoreTuneEscape(t("one_more_tune_media_failed"))}</span> <span data-i18n="one_more_tune_media_failed_hint">${oneMoreTuneEscape(t("one_more_tune_media_failed_hint"))}</span></p>`
     : oneMoreTuneArrivedFromLink && !question.everHeard
       ? `<p class="omt-note"><span data-i18n="one_more_tune_tap_to_hear">${oneMoreTuneEscape(t("one_more_tune_tap_to_hear"))}</span> <span data-i18n="one_more_tune_tap_to_hear_hint">${oneMoreTuneEscape(t("one_more_tune_tap_to_hear_hint"))}</span></p>`
       : "";
-  oneMoreTuneCarryRecord(body, question.token, () => {
-    body.innerHTML = oneMoreTuneRoom("question", `
-          <div class="omt-track">${oneMoreTuneTrackList(oneMoreTuneRound)}<span class="omt-aux mono" aria-hidden="true"><span data-disc-elapsed>— : —</span><span class="omt-sep">/</span><span data-disc-total>— : —</span></span></div>
-          ${oneMoreTuneRoundStage(question)}
+  body.innerHTML = oneMoreTuneRoom("question", `
+          ${oneMoreTuneRoundStage(question, { status: '<span class="omt-aux mono" aria-hidden="true"><span data-disc-elapsed>— : —</span><span class="omt-sep">/</span><span data-disc-total>— : —</span></span>' })}
           <div class="omt-gap"></div>
           <div class="omt-q"><h2 class="omt-qtext" id="one-more-tune-step-title" data-i18n="${question.prompt}">Which one does this belong to?</h2>${notice}${oneMoreTuneSongEmbed(question)}</div>
-          <div class="omt-opts"><div class="omt-grid">
-            ${question.choices.map((choice, index) => `<div class="omt-ow"><button class="omt-opt" type="button" data-one-more-tune-submit="${oneMoreTuneEscape(choice.id)}"><span class="omt-opt-in"><span class="omt-key" aria-hidden="true">${index + 1}</span><span class="omt-opt-label">${oneMoreTuneEscape(choice.label)}</span></span></button></div>`).join("")}
-          </div></div>`);
-  });
+          <div class="omt-opts"><div class="omt-grid">${oneMoreTuneChoiceKeys(question)}</div></div>`);
 }
 
 /**
@@ -4962,10 +4828,8 @@ function renderOneMoreTuneLine(body) {
 function renderOneMoreTuneAnswerUnaccepted(body) {
   clearOneMoreTuneNowPlaying();
   const question = oneMoreTuneQuestion();
-  oneMoreTuneCarryRecord(body, question?.token || "", () => {
-    body.innerHTML = oneMoreTuneRoom("refused", `
-          <div class="omt-track">${oneMoreTuneTrackList(oneMoreTuneRound)}<span class="omt-verdict" data-s="broken"><span aria-hidden="true">!</span><span data-i18n="one_more_tune_answer_unaccepted">${oneMoreTuneEscape(t("one_more_tune_answer_unaccepted"))}</span></span></div>
-          ${oneMoreTuneRoundStage(question)}
+  body.innerHTML = oneMoreTuneRoom("refused", `
+          ${oneMoreTuneRoundStage(question, { status: `<span class="omt-verdict" data-s="broken"><span aria-hidden="true">!</span><span data-i18n="one_more_tune_answer_unaccepted">${oneMoreTuneEscape(t("one_more_tune_answer_unaccepted"))}</span></span>` })}
           <div class="omt-gap"></div>
           <div class="omt-q"><h2 class="omt-qtext" id="one-more-tune-step-title" data-i18n="one_more_tune_answer_failed">${oneMoreTuneEscape(t("one_more_tune_answer_failed"))}</h2>
             <p class="omt-note" data-i18n="one_more_tune_answer_unaccepted_hint">${oneMoreTuneEscape(t("one_more_tune_answer_unaccepted_hint"))}</p></div>
@@ -4973,17 +4837,17 @@ function renderOneMoreTuneAnswerUnaccepted(body) {
             <button class="omt-next" type="button" data-one-more-tune-command="one-more-tune-answer-retry" data-i18n="one_more_tune_answer_retry">${oneMoreTuneEscape(t("one_more_tune_answer_retry"))}</button>
             <button class="omt-2nd" type="button" data-one-more-tune-command="one-more-tune-round-next" data-i18n="one_more_tune_next">${oneMoreTuneEscape(t("one_more_tune_next"))}</button>
           </div></div>`);
-  });
 }
 
 /**
- * The back cover: the round as the record it was.
+ * The end of a round: where the ten landed.
  *
- * A small record whose ten rings are the ten cards' eras — the round's own
- * fingerprint, and colour only where every answer is already out — the score
- * on its label, the ten tracks in one column (two on a wide window), and the
- * two things a finished round is for: another ten, or sending this one on.
- * Reviewing the misses lives in the Study menu.
+ * One dial again, forty years wide, with a mark for every tune at its year in
+ * its era's colour — the round's own spread across the desk's history, and
+ * colour only where every answer is already out. Then the score, the ten tunes
+ * in one column (two on a wide window), and the two things a finished round is
+ * for: another ten, or sending this one on. Reviewing the misses is a Study
+ * menu row.
  */
 function renderOneMoreTuneRoundResult(body) {
   const questions = oneMoreTuneRound.questions;
@@ -4991,21 +4855,25 @@ function renderOneMoreTuneRoundResult(body) {
   const broken = questions.filter((question) => (question.mediaFailed || question.answerFailed) && !question.correct).length;
   const skipped = questions.filter((question) => question.outcome === "skipped" && !question.mediaFailed).length;
   const wrong = questions.length - right - broken - skipped;
-  // One custom property per ring, named for its track; the sheet owns the
-  // gradient, and the 1-bit desk swaps every era for its own ink.
-  const rings = questions.slice(0, 10).map((question, index) => {
-    const era = question.reveal ? oneMoreTuneEra(question.reveal) : null;
-    return `--omt-r${index + 1}:var(--omt-ring-${era && era.id !== "none" ? era.id : "none"})`;
-  }).join(";");
   const counts = t("one_more_tune_round_counts")
     .replace("{right}", String(right))
     .replace("{wrong}", String(wrong))
     .replace("{skipped}", String(skipped + broken));
   const setLine = oneMoreTuneRound.setId
-    ? ` · ${oneMoreTuneEscape(t("one_more_tune_share_card_set")
+    ? `<span class="omt-set-no"> · ${oneMoreTuneEscape(t("one_more_tune_share_card_set")
       .replace("{setId}", oneMoreTuneSetNumber())
-      .replace("{version}", String(oneMoreTuneRound.deckVersion || 1)))}`
+      .replace("{version}", String(oneMoreTuneRound.deckVersion || 1)))}</span>`
     : "";
+  // A tune nobody dated has no place on the dial, so it has no mark there; it
+  // is still in the list below, with its era said to be unknown.
+  const marks = questions.map((question, index) => {
+    const at = question.reveal ? oneMoreTuneDialPosition(question.reveal.year) : null;
+    if (at === null) return "";
+    const era = oneMoreTuneEra(question.reveal);
+    return `<i class="omt-pin" data-era="${era.id}"${question.correct ? " data-right" : ""} style="--omt-at:${at.toFixed(4)}"><span>${oneMoreTuneTrackNumber(index)}</span></i>`;
+  }).join("");
+  const bands = oneMoreTuneDialBands().map((band) => `<i class="omt-band" data-era="${band.id}" style="--omt-band-at:${band.start.toFixed(4)};--omt-band-w:${band.width.toFixed(4)}"></i>`).join("");
+  const years = [1984, 1995, 2001, 2007, 2012, 2020].map((year) => `<span style="--omt-at:${oneMoreTuneDialPosition(year).toFixed(4)}">${year}</span>`).join("");
   const rows = questions.map((question, index) => {
     const reveal = question.reveal || {};
     const era = question.reveal ? oneMoreTuneEra(reveal) : null;
@@ -5023,13 +4891,13 @@ function renderOneMoreTuneRoundResult(body) {
       ? `<b>${oneMoreTuneEscape(reveal.song)}</b>${reveal.artist ? `<span>${oneMoreTuneEscape(reveal.artist)}</span>` : ""}`
       : `<b>${oneMoreTuneEscape(stateLabel)}</b>`;
     const rowLabel = reveal.song ? `${reveal.song} — ${reveal.artist || ""}, ${stateLabel}` : stateLabel;
-    return `<li data-s="${state}" aria-label="${oneMoreTuneEscape(rowLabel)}"><span class="omt-no" aria-hidden="true">${oneMoreTuneTrackCode(index)}</span><i class="omt-dot"${era && era.id !== "none" ? ` data-era="${era.id}"` : ""} aria-hidden="true"></i><span class="omt-t" aria-hidden="true">${named}</span><span class="omt-mark-text" aria-hidden="true">${mark}</span></li>`;
+    return `<li data-s="${state}" aria-label="${oneMoreTuneEscape(rowLabel)}"><span class="omt-no" aria-hidden="true">${oneMoreTuneTrackNumber(index)}</span><i class="omt-dot"${era && era.id !== "none" ? ` data-era="${era.id}"` : ""} aria-hidden="true"></i><span class="omt-t" aria-hidden="true">${named}</span><span class="omt-mark-text" aria-hidden="true">${mark}</span></li>`;
   }).join("");
   body.innerHTML = oneMoreTuneRoom("result", `
           <header class="omt-rhead">
-            <span class="omt-mini" style="${rings}" aria-hidden="true"><span class="omt-label omt-label-white"><b>${right}/${questions.length}</b></span></span>
-            <div><h2 class="omt-score" id="one-more-tune-step-title"><span class="omt-sr" data-i18n="one_more_tune_round_done">Round finished</span>${right}<span class="omt-of">/${questions.length}</span></h2>
+            <div class="omt-score-line"><h2 class="omt-score" id="one-more-tune-step-title"><span class="omt-sr" data-i18n="one_more_tune_round_done">Round finished</span>${right}<span class="omt-of">/${questions.length}</span></h2>
             <p class="omt-rsub">${oneMoreTuneEscape(counts)}${setLine}</p></div>
+            <div class="omt-dial omt-spread" aria-hidden="true"><div class="omt-scale"></div><div class="omt-years">${years}</div><div class="omt-bands">${bands}</div>${marks}</div>
           </header>
           <ol class="omt-list">${rows}</ol>
           <div class="omt-gap"></div>
@@ -5044,14 +4912,15 @@ function renderOneMoreTuneRoundResult(body) {
 /**
  * The share card: what actually leaves the desk.
  *
- * It is the round's own object — the white label — at 1200×1200: ten bands on
- * the record, solid for a tune named, hollow for a miss, a hairline for a skip
- * and a dashed one for a cue that never played. It names no song and paints no
- * band in an era's colour, because a friend is about to play the same ten. Two
- * places take colour: the six-bar mark, and the label, which wears the era the
- * round ended in (the owner's rule: the last card decides). 9:41 is the card's
- * private joke — every device on an Apple keynote screen is stopped at that
- * minute — and the card does not explain it.
+ * It is the round's own object — the radio — at 1200×1200: the station card
+ * with the score stamped on it and ten segments, solid for a tune named,
+ * hollow for a miss, a hairline for a skip and dashed for a cue that never
+ * played; under it the forty-year dial. It names no song and marks no question
+ * in its era's colour, because a friend is about to play the same ten. Colour
+ * goes to two places: the six-bar mark, and the one band of the era the round
+ * ended in, with the needle at that card's year (the owner's rule: the last
+ * card decides). 9:41 is the card's private joke — every device on an Apple
+ * keynote screen is stopped at that minute — and the card does not explain it.
  */
 function oneMoreTuneShareCardCanvas() {
   const round = oneMoreTuneRound;
@@ -5071,9 +4940,8 @@ function oneMoreTuneShareCardCanvas() {
   const eras = ["1", "2", "3", "4", "5", "6"];
   const closingEra = oneMoreTuneRoundEra(round);
   const eraColor = closingEra ? oneMoreTuneEraColor(closingEra.id) : "";
-  const ink = "#F5F5F7";
-  const soft = "#AEAEB4";
-  const hair = "#8A8A90";
+  const ink = "#1D1D1F";
+  const soft = "#55555A";
   const text = (value, x, y, style, color, align = "left") => {
     ctx.font = style;
     ctx.fillStyle = color;
@@ -5081,8 +4949,17 @@ function oneMoreTuneShareCardCanvas() {
     ctx.fillText(value, x, y);
     ctx.textAlign = "left";
   };
+  const box = (x, y, w, h, r) => {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  };
 
-  ctx.fillStyle = "#111113";
+  ctx.fillStyle = "#F4F4F6";
   ctx.fillRect(0, 0, size, size);
   ctx.textBaseline = "alphabetic";
 
@@ -5113,91 +4990,86 @@ function oneMoreTuneShareCardCanvas() {
     .replace("{version}", String(round.deckVersion || 1)), 72, 150, `400 22px ${mono}`, soft);
   text("9:41", 1128, 108, `500 30px ${mono}`, soft, "right");
 
-  // The record, and one band per question from the rim inward.
-  const cx = 600;
-  const cy = 525;
-  const radius = 320;
-  const circle = (r) => {
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  };
-  circle(radius);
-  ctx.fillStyle = "#0B0B0C";
+  // The set.
+  box(72, 190, 1056, 620, 44);
+  ctx.fillStyle = "#EDEDF0";
   ctx.fill();
-  ctx.strokeStyle = "#1A1A1C";
-  ctx.lineWidth = 1;
-  for (let r = radius * 0.36; r <= radius * 0.95; r += 3) {
-    circle(r);
-    ctx.stroke();
-  }
+  ctx.strokeStyle = "rgba(0,0,0,.1)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // The station card: the score stamped where the track number was, and ten
+  // segments, one per question.
+  box(108, 226, 984, 330, 18);
+  ctx.fillStyle = "#E7E2D4";
+  ctx.fill();
+  text(`${right}/${questions.length}`, 148, 400, `800 150px ${font}`, "#2B261C");
+  const cell = 76;
+  const gap = 18;
   questions.slice(0, 10).forEach((question, index) => {
-    const outer = radius * (0.955 - 0.06 * index);
-    const inner = outer - radius * 0.05;
-    const mid = (outer + inner) / 2;
+    const x = 148 + index * (cell + gap);
+    const y = 452;
     if (question.correct) {
-      ctx.beginPath();
-      ctx.arc(cx, cy, outer, 0, Math.PI * 2);
-      ctx.arc(cx, cy, inner, 0, Math.PI * 2, true);
-      ctx.fillStyle = ink;
+      box(x, y, cell, 56, 8);
+      ctx.fillStyle = "#2B261C";
       ctx.fill();
       return;
     }
     // Four outcomes, four weights: a miss is hollow, a skip is a hairline, and
     // a cue that never played is dashed. A skip is not a miss, so it must not
     // read like one at a glance.
-    if (question.mediaFailed || question.answerFailed) {
-      ctx.setLineDash([8, 8]);
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = hair;
-      circle(mid);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      return;
-    }
-    if (question.outcome === "skipped") {
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = hair;
-      circle(mid);
-      ctx.stroke();
-      return;
-    }
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = ink;
-    circle(outer - 1.5);
+    ctx.strokeStyle = "#2B261C";
+    ctx.lineWidth = question.mediaFailed || question.answerFailed ? 2 : question.outcome === "skipped" ? 1 : 4;
+    if (question.mediaFailed || question.answerFailed) ctx.setLineDash([8, 8]);
+    box(x + 2, y + 2, cell - 4, 52, 8);
     ctx.stroke();
-    circle(inner + 1.5);
-    ctx.stroke();
+    ctx.setLineDash([]);
   });
-  // The label wears the era the round ended in — paper on the 1-bit desk, and
-  // paper for a last card nobody dated.
-  circle(radius * 0.31);
-  ctx.fillStyle = eraColor || "#EFEBE1";
+
+  // The dial: forty years, the six eras as dim bands, and the one the round
+  // ended in lit, with the needle at that card's year.
+  box(108, 588, 984, 186, 22);
+  ctx.fillStyle = "#1C1C1E";
   ctx.fill();
-  const labelInk = eraColor && ["4", "5", "6"].includes(closingEra?.id) ? "#FFFFFF" : "#1D1D1F";
-  text(`${right}/${questions.length}`, cx, 548, `700 88px ${font}`, labelInk, "center");
-  ctx.globalAlpha = 0.65;
-  text("33⅓", cx, 590, `500 24px ${font}`, labelInk, "center");
+  const left = 148;
+  const width = 904;
+  ctx.fillStyle = "rgba(255,255,255,.5)";
+  for (let year = ONE_MORE_TUNE_DIAL.from; year <= ONE_MORE_TUNE_DIAL.to; year += 1) {
+    const x = left + oneMoreTuneDialPosition(year) * width;
+    const major = [1984, 1995, 2001, 2007, 2012, 2020].includes(year);
+    ctx.fillRect(x, 612, major ? 3 : 2, major ? 48 : 28);
+    if (major) text(String(year), x, 692, `600 20px ${mono}`, "rgba(255,255,255,.7)", year === 1984 ? "left" : "center");
+  }
+  oneMoreTuneDialBands().forEach((band) => {
+    const lit = closingEra && band.id === closingEra.id;
+    ctx.globalAlpha = lit ? 1 : 0.22;
+    ctx.fillStyle = lit && eraColor ? eraColor : "#FFFFFF";
+    ctx.fillRect(left + band.start * width + 2, 736, band.width * width - 4, 12);
+  });
   ctx.globalAlpha = 1;
-  circle(7);
-  ctx.fillStyle = "#0B0B0C";
-  ctx.fill();
+  const closingYear = round.questions.slice().reverse().find((question) => question.reveal)?.reveal?.year;
+  const at = oneMoreTuneDialPosition(closingYear);
+  if (at !== null) {
+    ctx.fillStyle = "#FF3B30";
+    ctx.fillRect(left + at * width - 2, 600, 4, 162);
+  }
 
   t("one_more_tune_share_card_headline").split("\n")
-    .forEach((line, index) => text(line, 72, 940 + index * 62, `700 50px ${font}`, ink));
-  text(t("one_more_tune_share_card_invite"), 72, 1068, `600 34px ${font}`, ink);
-  text(oneMoreTuneShareCode() || "", 1128, 1068, `400 28px ${mono}`, soft, "right");
+    .forEach((line, index) => text(line, 72, 900 + index * 62, `700 50px ${font}`, ink));
+  text(t("one_more_tune_share_card_invite"), 72, 1060, `600 34px ${font}`, ink);
+  text(oneMoreTuneShareCode() || "", 1128, 1060, `400 28px ${mono}`, soft, "right");
   const footer = `400 20px ${mono}`;
   text([
     `${t("one_more_tune_right")} ${right}`,
     `${t("one_more_tune_wrong")} ${wrong}`,
     `${t("one_more_tune_skipped")} ${skipped}`,
-  ].join("   "), 72, 1122, footer, soft);
+  ].join("   "), 72, 1118, footer, soft);
   // The era the round ended in, in words: a colour is never the only thing that
   // says anything on this card.
-  if (closingEra) text(t("one_more_tune_share_card_era").replace("{era}", closingEra.name), 1128, 1122, footer, soft, "right");
+  if (closingEra) text(t("one_more_tune_share_card_era").replace("{era}", closingEra.name), 1128, 1118, footer, soft, "right");
   // The desk the quiz is an app on, and where to follow the person who made it:
   // a card is the one thing here that travels without the link around it.
-  text(t("one_more_tune_share_card_desk").replace("{host}", String(window.location?.host || "system6.aaronlau.me")), 72, 1156, footer, soft);
+  text(t("one_more_tune_share_card_desk").replace("{host}", String(window.location?.host || "system6.aaronlau.me")), 72, 1152, footer, soft);
   text(t("one_more_tune_share_card_bilibili").replace("{handle}", ONE_MORE_TUNE_BILIBILI), 72, 1184, footer, soft);
   return canvas;
 }
@@ -5892,6 +5764,12 @@ function handleOneMoreTuneClick(event) {
     const id = row.dataset.oneMoreTuneSourceRow;
     oneMoreTuneSourceOpen = oneMoreTuneSourceOpen === id ? "" : id;
     return void renderOneMoreTune();
+  }
+  // The station card is the knob's larger target: a press on it is a press on
+  // the knob, so the face keeps one command and the card keeps its reach.
+  if (target.closest("[data-omt-card]")) {
+    target.closest(".omt-radio")?.querySelector("[data-disc]")?.click();
+    return;
   }
   const submit = target.closest("[data-one-more-tune-submit]");
   if (submit) return void submitOneMoreTuneAnswer(submit.dataset.oneMoreTuneSubmit);

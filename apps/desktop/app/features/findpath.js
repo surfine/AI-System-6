@@ -709,7 +709,7 @@ function getFindFileCandidates() {
       kind: t("kind_scrap"),
       path: [projectDisplayName(project), t("scrapbook_label")].join(" / "),
       modifiedAt: scrap.updatedAt || scrap.createdAt,
-      text: scrap.body || scrap.selectedText || "",
+      text: scrapDocumentText(scrap) || scrap.selectedText || "",
       open: () => {
         selectedScrapId = scrap.id;
         selectedScrapIds.clear();

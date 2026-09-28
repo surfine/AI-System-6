@@ -11,18 +11,18 @@
     <!-- Let the system choose status glyph contrast. -->
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260925.1" />
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260925.1" />
-    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260925.1" />
-    <script src="app/core/theme-registry.js?v=20260925.1"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260925.1" />
+    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260927.1" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260927.1" />
+    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260927.1" />
+    <script src="app/core/theme-registry.js?v=20260927.1"></script>
+    <link rel="stylesheet" href="styles.bundle.css?v=20260927.1" />
     <!-- Preload the application while parsing the desktop. -->
-    <link rel="preload" as="script" href="app.bundle.js?v=20260925.1" />
+    <link rel="preload" as="script" href="app.bundle.js?v=20260927.1" />
   </head>
   <body class="is-booting">
-    <script src="app/core/theme-body-init.js?v=20260925.1"></script>
+    <script src="app/core/theme-body-init.js?v=20260927.1"></script>
     <!-- Register crash recovery before the application bundle. -->
-    <script src="app/core/boot-safety-net.js?v=20260925.1"></script>
+    <script src="app/core/boot-safety-net.js?v=20260927.1"></script>
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
         <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
@@ -39,6 +39,7 @@
           <button data-action="replay-clio-introduction" data-i18n="replay_clio_introduction">Replay Clio Introduction</button>
           <button data-action="open-system-help" data-i18n="system_help" data-balloon-help="balloon_system_help">System Help</button>
           <button data-workspace-capability="studio" data-action="guide-start-route" data-i18n="guide_start_route">Start Writing Route</button>
+          <button class="is-hidden" data-action="show-writing-flow" data-i18n="show_writing_flow">Show Writing Flow</button>
 <!-- Start remains available in both workspace profiles. -->
           <hr />
           <!-- Capture context before opening; Escape restores the previous place. -->
@@ -46,6 +47,8 @@
           <button data-action="hold-that-thought" data-i18n="hold_that_thought">Hold That Thought</button>
           <button data-action="resume-my-place" data-i18n="held_place_resume">Where I Left Off</button>
           <button data-action="open-hold-thought" data-i18n="held_thought_pile_open">Held Thoughts…</button>
+          <!-- Minimized windows: filled by window-minimize.js, and only while a window is put away. -->
+          <div id="apple-minimized-windows" class="apple-minimized-windows is-hidden"></div>
           <hr />
           <div class="menu-section-label" data-i18n="apple_menu_writing_da">Writing DA</div>
           <!-- Writing accessories follow the order of use. -->
@@ -169,9 +172,11 @@
       <section class="writing-spine-panel" data-workspace-capability="studio" aria-label="Writing tools" data-i18n-aria-label="writing_tools" aria-expanded="true">
         <section class="spine-toolbox-panel spine-flow-toolbox" aria-labelledby="writing-flow-title">
           <div class="title-bar spine-title-row">
+            <button class="spine-close-box" type="button" data-action="close-writing-flow" aria-label="Close Writing Flow" data-i18n-aria-label="close_writing_flow" hidden></button>
             <span aria-hidden="true"></span>
             <h2 id="writing-flow-title" data-i18n="writing_flow">Writing Flow</h2>
             <span aria-hidden="true"></span>
+            <button class="spine-shade-toggle" type="button" data-action="toggle-writing-flow-shade" aria-label="Collapse Writing Tools" data-i18n-aria-label="collapse_tools" aria-expanded="true" hidden></button>
           </div>
           <div class="spine-shade-body">
           <div class="spine-actions" aria-label="Writing path" data-i18n-aria-label="writing_path" data-action-availability="independent">
@@ -1312,7 +1317,6 @@
             <footer class="draft-desk-actions">
               <span class="draft-desk-drawer-switch" role="group" data-i18n-aria-label="quick_draft_panels">
                 <button class="btn mini-btn" type="button" data-quick-draft-drawer="shelf" aria-controls="quick-draft-materials-drawer" aria-expanded="false" data-i18n="quick_draft_materials_label">Materials</button>
-                <button class="btn mini-btn" type="button" data-quick-draft-drawer="inspector" aria-controls="quick-draft-adjustments-drawer" aria-expanded="false" data-i18n="quick_draft_adjustments_label">Adjustments</button>
               </span>
               <span class="draft-desk-action-gap"></span>
               <button class="btn" type="button" data-action="open-lightroom" data-i18n="quick_draft_open_lightroom" data-balloon-help="balloon_qd_lightroom">Lightroom</button>
@@ -1326,7 +1330,7 @@
               </details>
               <details id="quick-draft-deliver" class="teachtext-command-menu draft-desk-command-menu draft-desk-deliver-menu">
                 <summary class="btn" role="button" aria-haspopup="menu" aria-expanded="false" aria-controls="quick-draft-deliver-menu"><span data-i18n="quick_draft_deliver">Deliver…</span></summary>
-                <div id="quick-draft-deliver-menu" class="teachtext-command-popover draft-desk-command-popover" role="menu"><section class="draft-desk-command-section"><b data-i18n="quick_draft_command_delivery">Delivery</b><button class="btn" type="button" data-requires-write id="quick-draft-save-project-doc" data-i18n="quick_draft_save_project_doc" data-balloon-help="balloon_qd_save_project">Save to Project Hard Disk</button><button class="btn" type="button" data-quick-draft-delivery="export-markdown" data-i18n="quick_draft_download_markdown" data-balloon-help="balloon_qd_export_md">Download Markdown</button><button class="btn" type="button" data-quick-draft-delivery="export-srt" data-i18n="quick_draft_export_srt">Subtitles (SRT)</button><button class="btn" type="button" data-quick-draft-delivery="export-shot-list" data-i18n="quick_draft_export_shot_list">Shot List</button><button class="btn" type="button" data-quick-draft-delivery="share-markdown" data-i18n="share_ellipsis" hidden>Share…</button><hr /><button class="btn" type="button" data-quick-draft-delivery="teachtext" data-i18n="quick_draft_continue_teachtext" data-balloon-help="balloon_qd_teachtext">Continue in TeachText</button><button class="btn" type="button" id="quick-draft-send-review" data-i18n="quick_draft_review_in_review_desk" data-balloon-help="balloon_qd_review">Review in Review Desk</button><button class="btn" type="button" data-quick-draft-delivery="copy-markdown" data-i18n="copy_markdown">Copy Markdown</button></section></div>
+                <div id="quick-draft-deliver-menu" class="teachtext-command-popover draft-desk-command-popover" role="menu"><section class="draft-desk-command-section"><b data-i18n="quick_draft_command_delivery">Delivery</b><button class="btn" type="button" data-requires-write id="quick-draft-save-project-doc" data-i18n="quick_draft_save_project_doc" data-balloon-help="balloon_qd_save_project">Save to Project Hard Disk</button><button class="btn" type="button" data-quick-draft-delivery="export-markdown" data-i18n="quick_draft_download_markdown" data-balloon-help="balloon_qd_export_md">Download Markdown</button><button class="btn" type="button" data-quick-draft-delivery="export-srt" data-i18n="quick_draft_export_srt">Subtitles (SRT)</button><button class="btn" type="button" data-quick-draft-delivery="export-shot-list" data-i18n="quick_draft_export_shot_list">Storyboard</button><button class="btn" type="button" data-quick-draft-delivery="share-markdown" data-i18n="share_ellipsis" hidden>Share…</button><hr /><button class="btn" type="button" data-quick-draft-delivery="teachtext" data-i18n="quick_draft_continue_teachtext" data-balloon-help="balloon_qd_teachtext">Continue in TeachText</button><button class="btn" type="button" id="quick-draft-send-review" data-i18n="quick_draft_review_in_review_desk" data-balloon-help="balloon_qd_review">Review in Review Desk</button><button class="btn" type="button" data-quick-draft-delivery="copy-markdown" data-i18n="copy_markdown">Copy Markdown</button></section></div>
               </details>
               <button class="btn default" type="button" data-requires-write id="quick-draft-save" data-i18n="quick_draft_start_writing">Draft</button>
             </footer>
@@ -1894,11 +1898,12 @@
 
           <div class="teachtext-actions teachtext-surface-actions">
             <div class="teachtext-command-group" aria-label="Writing commands" data-i18n-aria-label="writing_commands">
-              <button class="btn" type="button" id="teachtext-toggle-preview" data-i18n="preview">Preview</button>
+              <button class="btn writing-mode-toggle" type="button" id="teachtext-toggle-preview" data-i18n="preview">Preview</button>
               <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#teachtext-body" data-i18n="teachtext_focus_off">Focus: Off</button>
               <details class="teachtext-command-menu">
                 <summary class="btn"><span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span><span class="mobile-control-short" data-i18n="commands_short">Cmds</span></summary>
                 <div class="teachtext-command-popover">
+                  <button class="btn" type="button" data-action="open-heading-navigator" data-i18n="heading_navigator_ellipsis">Go to Heading…</button>
                   <button class="btn" type="button" id="teachtext-docmap" data-i18n="docmap">DocMap</button>
                   <button class="btn" type="button" data-action="make-docmap-selection" data-i18n="docmap_from_selection">Map Selection</button>
                   <button class="btn" type="button" data-action="make-docmap-source" data-i18n="docmap_from_source">Map Entire Source</button>
@@ -1979,7 +1984,7 @@
           <div id="review-desk-empty-note" class="empty-folder-note review-desk-empty-note is-hidden"><p data-i18n="review_desk_requires_final">The Review Desk reviews a finished manuscript. Mark the Manuscript as Final to start.</p><button class="btn default" type="button" data-action="advance-manuscript-to-review" data-i18n="to_review">To Review</button></div>
           <div class="teachtext-actions teachtext-surface-actions review-desk-actions">
             <div class="teachtext-command-group" aria-label="Review commands" data-i18n-aria-label="review_commands">
-              <button class="btn" type="button" data-action="toggle-review-preview" data-i18n="preview">Preview</button>
+              <button class="btn writing-mode-toggle" type="button" data-action="toggle-review-preview" data-i18n="preview">Preview</button>
               <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#review-desk-body" data-i18n="teachtext_focus_off">Focus: Off</button>
               <details class="teachtext-command-menu specialized-command-menu">
                 <summary class="btn"><span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span><span class="mobile-control-short" data-i18n="commands_short">Cmds</span></summary>
@@ -2064,13 +2069,13 @@
         <div class="details-bar scrapbook-details-bar">
           <span id="scrap-count">0 scraps</span>
           <button class="btn mini-btn" type="button" data-action="new-note" data-i18n="new_scrap">New Scrap</button>
-          <select id="scrap-stack" class="mini-select" aria-label="Scrap stack" data-i18n-aria-label="scrap_stack" hidden>
+          <div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
+          <div class="select-wrap select-wrap-inline scrap-stack-wrap"><select id="scrap-stack" class="mini-select" aria-label="Scrap stack" data-i18n-aria-label="scrap_stack">
             <option value="all" data-i18n="stack_all">All Stacks</option>
             <option value="sources" data-i18n="stack_sources">Sources</option>
             <option value="assistant" data-i18n="stack_assistant">ClioTalk</option>
             <option value="ideas" data-i18n="stack_ideas">Ideas</option>
-          </select>
-          <div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
+          </select></div>
           <input id="scrap-filter" class="scrap-filter" type="text" inputmode="search" enterkeyhint="search" autocomplete="off" aria-label="Filter scraps" data-i18n-aria-label="scrap_filter_label" placeholder="Filter" data-i18n-placeholder="scrap_filter_hint" />
         </div>
         <div class="window-pane scrapbook-pane">
@@ -2367,7 +2372,7 @@
           <div id="question-sheet-photos" class="question-sheet-photos is-hidden" aria-label="Photographed notes" data-i18n-aria-label="question_sheet_photos"></div>
           <div class="teachtext-actions teachtext-surface-actions">
             <div class="teachtext-command-group" aria-label="Question Sheet commands" data-i18n-aria-label="question_sheet_commands">
-              <button class="btn" type="button" data-action="toggle-question-preview" data-i18n="preview">Preview</button>
+              <button class="btn writing-mode-toggle" type="button" data-action="toggle-question-preview" data-i18n="preview">Preview</button>
               <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#question-sheet-body" data-i18n="teachtext_focus_off">Focus: Off</button>
               <details class="teachtext-command-menu specialized-command-menu">
                 <summary class="btn"><span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span><span class="mobile-control-short" data-i18n="commands_short">Cmds</span></summary>
@@ -2412,7 +2417,7 @@
           </div>
           <div class="teachtext-actions teachtext-surface-actions">
             <div class="teachtext-command-group" aria-label="Outline commands" data-i18n-aria-label="outline_commands">
-              <button class="btn" type="button" data-action="toggle-outline-preview" data-i18n="preview">Preview</button>
+              <button class="btn writing-mode-toggle" type="button" data-action="toggle-outline-preview" data-i18n="preview">Preview</button>
               <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#outline-content" data-i18n="teachtext_focus_off">Focus: Off</button>
               <details class="teachtext-command-menu specialized-command-menu">
                 <summary class="btn"><span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span><span class="mobile-control-short" data-i18n="commands_short">Cmds</span></summary>
@@ -2467,7 +2472,7 @@
             </div>
             <div class="teachtext-actions teachtext-surface-actions">
               <div class="teachtext-command-group" aria-label="Section Draft commands" data-i18n-aria-label="section_draft_commands">
-                <button class="btn" type="button" data-action="toggle-draft-preview" data-i18n="preview">Preview</button>
+                <button class="btn writing-mode-toggle" type="button" data-action="toggle-draft-preview" data-i18n="preview">Preview</button>
                 <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#draft-body" data-i18n="teachtext_focus_off">Focus: Off</button>
                 <details class="teachtext-command-menu specialized-command-menu">
                   <summary class="btn"><span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span><span class="mobile-control-short" data-i18n="commands_short">Cmds</span></summary>
@@ -2567,38 +2572,6 @@
         </div>
       </section>
 
-      <section class="window rebuild-flow-window is-hidden" data-window="rebuildFlow" aria-labelledby="rebuild-flow-title">
-        <div class="title-bar">
-          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
-          <h2 id="rebuild-flow-title" data-i18n="rebuild_writing_flow_title">Rebuild Article</h2>
-        </div>
-        <div class="details-bar compact-status-bar">
-          <span class="status-bar-leading" id="rebuild-flow-project">Project Hard Disk</span>
-          <span class="status-bar-trailing" id="rebuild-flow-source-meta" data-i18n="rebuild_no_source">No source article</span>
-        </div>
-        <div class="window-pane rebuild-flow-pane">
-          <p class="hint" data-i18n="rebuild_flow_intro">Give AI System 6 a finished article. It will rebuild the normal writing objects behind it.</p>
-          <div class="button-row rebuild-source-row">
-            <button class="btn mini-btn" type="button" data-action="rebuild-use-reader" data-i18n="use_reader">Use Reader</button>
-            <button class="btn mini-btn" type="button" data-action="rebuild-use-teachtext" data-i18n="use_teachtext">Use TeachText</button>
-            <button class="btn mini-btn" type="button" data-action="rebuild-use-clipboard" data-i18n="use_clipboard">Use Clipboard</button>
-            <button class="btn mini-btn" type="button" data-action="rebuild-use-sample" data-i18n="use_sample_article">Use Sample Article</button>
-          </div>
-          <label for="rebuild-flow-source" data-i18n="source_article">Source Article</label>
-          <textarea id="rebuild-flow-source" rows="10" data-i18n-placeholder="rebuild_source_hint" placeholder="Paste a finished article here..."></textarea>
-          <div class="rebuild-progress" aria-live="polite">
-            <div class="rebuild-progress-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Rebuild progress" data-i18n-aria-label="rebuild_progress">
-              <span id="rebuild-flow-progress-bar"></span>
-            </div>
-            <ol id="rebuild-flow-steps" class="rebuild-progress-steps"></ol>
-          </div>
-          <p id="rebuild-flow-status" class="hint" data-i18n="rebuild_flow_status_ready">Ready to rebuild into a new Project Hard Disk.</p>
-          <div class="button-row">
-            <button class="btn" type="button" data-action="close-rebuild-flow" data-i18n="cancel">Cancel</button>
-            <button class="btn default" type="button" data-action="run-rebuild-flow" data-i18n="rebuild">Rebuild</button>
-          </div>
-        </div>
-      </section>
 
       <section class="window docmap-window is-hidden" data-window="docMap" aria-labelledby="docmap-title">
         <div class="title-bar" data-standard-controls>
@@ -3403,9 +3376,9 @@
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260925.1"></script>
+    <script src="app/generated/build-info.js?v=20260927.1"></script>
     <template id="standard-window-controls"><button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button><button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button><button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button></template>
-    <script src="app.bundle.js?v=20260925.1"></script>
+    <script src="app.bundle.js?v=20260927.1"></script>
 
   </body>
 </html>

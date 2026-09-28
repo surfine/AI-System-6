@@ -321,7 +321,7 @@ async function translateTeachTextDocument() {
     selectedChatFileId = file.id;
     teachTextPreviewEl.classList.add("is-hidden");
     teachTextBodyInput.classList.remove("is-hidden");
-    teachTextTogglePreviewButton.textContent = t("preview");
+    mdeSyncModeToggle(teachTextTogglePreviewButton, false);
     renderDocuments();
     // The translated file above is only in memory until the desk save
     // actually lands - don't claim "saved" over a refused write.

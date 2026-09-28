@@ -46,7 +46,7 @@
         "projection": "2-to-1-isometric",
         "tilePixels": [64, 32],
         "heightStepPixels": 10,
-        "defaultZoom": 0.7,
+        "defaultZoom": 0.5,
         "rotationQuarterTurns": true,
         "visibleDiagonalCulling": true,
         "chunkSizeTiles": 16,
@@ -235,14 +235,58 @@
   },
   "saveFormat": {
     "format": "bonsai-city",
-    "formatVersion": 4,
-    "currentEngineSaveVersion": 4,
-    "derivedLayersNeverSaved": true,
+    "formatVersion": 5,
+    "currentEngineSaveVersion": 5,
+    "derivedLayersNeverSaved": false,
     "buildingOccupancyDerivedFromDurableDevelopmentLayers": true,
     "v3DurableLayers": ["catalogId", "subway", "waterLevel", "salt", "rotate", "tunnel", "waterKind"],
+    "v5DurableLayers": ["lot"],
+    "v5SavedMonthlyEnvironment": ["landValue", "crime", "pollution"],
+    "v5SavedRouting": { "version": 1, "optionalForLegacySaves": true, "fields": ["traffic", "congested", "distJobs", "distHomes", "sources", "railRiders", "subwayRiders", "highwayTrips"] },
+    "v5LotModel": "lot = anchor index + 1 on every cell; anchor stage = size 1..3; cells mirror stage and buildingState",
+    "v4ToV5Migration": "per-tile buildings grouped into lots by the v4 grouping rule; isolated tiles become 1x1 lots; funds unchanged",
     "sc2SidecarOptional": true,
     "integrity": "SHA-256/sorted-json-v1",
     "migration": "pure-chain-vN-to-vN+1-input-never-mutated"
+  },
+  "ruleset5": {
+    "spec": "internal/plans/BONSAI-PLAYABLE-SPEC.zh-CN.md",
+    "lotSizes": [1, 2, 3],
+    "lotCapacityBySize": {
+      "comment": "residents (r) or jobs (c, i) of a lot before its tier multiplier (lotTiers)",
+      "1": { "r": 24, "c": 16, "i": 24 },
+      "2": { "r": 220, "c": 160, "i": 200 },
+      "3": { "r": 1100, "c": 800, "i": 700 }
+    },
+    "lotTiers": {
+      "comment": "land value picks a lot's look when it is built: under tierLow low, under the city's tower line middle, else high. The tower line is the land value the dearest downtownShare of dry land reaches, never below tierHigh; only a lot with a road along a side reaches the high tier (towers on 2x2 and 3x3), and each towerValueStep over the line is one of the eight high variants taller. A working lot whose land rises over the line, or a tower whose land rises two steps, is rebuilt with redevelopChance per look while its zone has demand; every tier runs at the same capacity multiplier",
+      "tierLow": 58,
+      "tierHigh": 66,
+      "downtownShare": 0.03,
+      "towerValueStep": 1.5,
+      "capacityMultipliers": [0.7, 0.7, 0.7],
+      "redevelopChance": 0.01
+    },
+    "roadReach": {
+      "comment": "every building stands on a street: a lot works only while a street tile (road, bridge or onramp, never a highway) lies along its footprint; an airport or seaport tile works within the port reach of one",
+      "lot": 1,
+      "port": 3
+    },
+    "commuteLimit": 200,
+    "developmentSlices": 4,
+    "lotFuseDays": { "power": 90, "road": 30, "commute": 60, "water": 60, "nuisance": 60 },
+    "powerDeclineChance": { "comment": "per four-day look at a dark working lot; powerFuseDays in the dark is certain decline", "value": 0.03 },
+    "disasterCauses": {
+      "meltdown": "a nuclear plant",
+      "microwave-spill": "a microwave plant",
+      "volcano": "land at altitude >= volcanoAlt",
+      "hurricane": "salt water",
+      "air-crash": "an airport zone",
+      "riot": "a block with crime >= riotCrime",
+      "firestorm": "burns a radius of 12, not the whole map"
+    },
+    "disasterRules": { "volcanoAlt": 8, "riotCrime": 60 },
+    "simCostBudgetMs": { "meanTick": 0.5, "monthPeak": 15, "maxTick": 30 }
   },
   "phase0Invariants": {
     "noWindowRegistration": true,

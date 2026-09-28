@@ -1307,6 +1307,18 @@
       "id": "facility.coal",
       "kind": "facility",
       "footprint": [
+        4,
+        4
+      ],
+      "height": 66,
+      "base": "abandoned",
+      "light": "metal",
+      "variant": 1
+    },
+    {
+      "id": "facility.coal-2x2",
+      "kind": "facility",
+      "footprint": [
         2,
         2
       ],
@@ -2764,6 +2776,25 @@
   },
   "facilityGrammar": {
     "facility.coal": {
+      "massing": [
+        "wing"
+      ],
+      "roof": [
+        "flat"
+      ],
+      "clutter": [
+        "stack",
+        "stack",
+        "stack"
+      ],
+      "floorHeight": 11,
+      "columnPitch": 10,
+      "windowWidth": 5,
+      "windowHeight": 4,
+      "sparseWindows": true,
+      "banding": false
+    },
+    "facility.coal-2x2": {
       "massing": [
         "wing"
       ],

@@ -154,7 +154,7 @@ test.assertIncludes(icons, "const liquidPaths = liquidGlassSystemIconArt(id, mod
 const liquidCss = read("styles/70-liquid-glass.css");
 test.assertMatches(
   liquidCss,
-  /body\.use-liquid-glass \.sys-icon \{[\s\S]*?border: 0;[\s\S]*?background: transparent;[\s\S]*?box-shadow: none;[\s\S]*?padding: 0;/,
+  /body\[data-theme="liquid-glass"\] \.sys-icon \{[\s\S]*?border: 0;[\s\S]*?background: transparent;[\s\S]*?box-shadow: none;[\s\S]*?padding: 0;/,
   "Liquid Glass does not wrap every semantic object in a shared glass tile"
 );
 

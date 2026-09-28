@@ -175,7 +175,9 @@ test.assert(state.pipe[at(20, 16)] === 1 && state.subway[at(20, 18)] === 1 && st
 test.assert(state.zone[at(20, 20)] === 1 && state.density[at(20, 20)] === 1 && state.stage[at(20, 20)] === 1
   && state.buildingState[at(20, 20)] === 3, "a light 1x1 residential building imports active at stage 1");
 test.assert(state.zone[at(24, 20)] === 1 && state.density[at(24, 20)] === 2 && state.stage[at(25, 21)] === 2, "a dense 2x2 building imports at stage 2");
-test.assert(state.buildingState[at(30, 24)] === 2 && state.stage[at(30, 24)] === 0, "a construction id imports as under construction");
+// Ruleset 5: growable buildings land as whole lots of their catalog size.
+test.assert(state.lot[at(25, 21)] === at(24, 20) + 1 && state.lot[at(24, 20)] === at(24, 20) + 1, "a dense 2x2 building imports as one 2x2 lot anchored at its corner");
+test.assert(state.buildingState[at(30, 24)] === 2 && state.stage[at(30, 24)] === 1 && state.lot[at(30, 24)] === at(30, 24) + 1, "a construction id imports as a one-tile lot under construction");
 test.assert(state.buildingState[at(32, 24)] === 5, "an abandoned id imports as abandoned");
 test.assert(state.zone[at(40, 24)] === 6, "a seaport zone nibble maps to the seaport zone value");
 test.assert(state.catalogId[at(40, 40)] === 0xcf && state.catalogId[at(43, 43)] === 0xcf, "catalogId preserves the raw XBLD id on every tile");

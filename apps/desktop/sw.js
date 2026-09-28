@@ -81,6 +81,9 @@ const STAMPED_SHELL = [
 //   liquid-glass-overlay    the appearance the writer chose, painted at wireup
 //   marked.umd.js           restored chat and Markdown panes; without it every
 //                           restored message falls back to escaped plain text
+//   writing-editor.js       every restored writing surface mounts its editor
+//                           at boot; offline without it the page stays a bare
+//                           textarea
 //   time-machine (+ CSS)    restoreWorkingSession() loads it unconditionally
 //   writing-tools-prompts   109 KB of prompt text that no offline session can
 //   + ai-prompt-files       send anywhere -- kept anyway, because they load
@@ -105,6 +108,7 @@ const BOOT_LAZY = [
   "app/core/document-role-policy.js",
   "app/core/liquid-glass-overlay.js",
   "app/vendor/marked.umd.js",
+  "app/vendor/writing-editor.js",
   "app/features/time-machine.js",
   "styles.time-machine.css",
   "app/core/writing-tools-prompts.js",
@@ -121,13 +125,34 @@ const LANGUAGE_TABLES = {
   en: "app/data/translations-en.js",
 };
 
-// Only selected appearances with a separate stylesheet need another file.
-// Messages carry an appearance id; this worker owns the URL allowlist.
-const APPEARANCE_STYLES = Object.freeze({ "big-sur": "styles.big-sur.css", "nextstep": "styles.nextstep.css", tiger: "styles.tiger.css", "system-7": "styles.system-7.css", "drawing-board": "styles.drawing-board.css", lion: "styles.lion.css" });
+// Only selected appearances with a separate stylesheet need more files: the
+// sheets theme-registry.js derives from the appearance's recipe chain and
+// capabilities (tests/features/appearance-offline-cache.test.mjs holds the two
+// equal). Messages carry an appearance id; this worker owns the URL allowlist.
+const APPEARANCE_STYLES = Object.freeze({
+  "system-7": ["styles.system-7.css"],
+  platinum: ["styles.platinum.css"],
+  "drawing-board": ["styles.platinum.css", "styles.drawing-board.css"],
+  aqua: ["styles.aqua.css", "styles.desk-dock.css"],
+  "snow-leopard": ["styles.aqua.css", "styles.desk-dock.css"],
+  tiger: ["styles.aqua.css", "styles.desk-dock.css", "styles.tiger.css"],
+  lion: ["styles.aqua.css", "styles.desk-dock.css", "styles.lion.css"],
+  "liquid-glass": ["styles.liquid-glass.css", "styles.desk-dock.css"],
+  yosemite: ["styles.liquid-glass.css", "styles.desk-dock.css"],
+  "big-sur": ["styles.liquid-glass.css", "styles.desk-dock.css", "styles.big-sur.css"],
+  nextstep: ["styles.nextstep.css"],
+});
 // The miniaturize state machine travels with the era that draws its control.
 // Only NeXTSTEP does today; a Mac OS X era joins this list together with its
 // Dock (owner decision 2026-09-25), never with a lamp alone.
 const APPEARANCE_MODULES = Object.freeze({
+  "aqua": ["app/core/window-minimize.js", "app/core/desk-dock.js"],
+  "tiger": ["app/core/window-minimize.js", "app/core/desk-dock.js"],
+  "snow-leopard": ["app/core/window-minimize.js", "app/core/desk-dock.js"],
+  "lion": ["app/core/window-minimize.js", "app/core/desk-dock.js", "app/core/window-fullscreen.js"],
+  "yosemite": ["app/core/window-minimize.js", "app/core/desk-dock.js"],
+  "big-sur": ["app/core/window-minimize.js", "app/core/desk-dock.js"],
+  "liquid-glass": ["app/core/window-minimize.js", "app/core/desk-dock.js"],
   nextstep: [
     "app/core/window-minimize.js", "app/core/nextstep-shell.js", "app/core/nextstep-dock.js",
     "app/core/nextstep-menus.js", "app/features/finder-columns.js",
@@ -269,7 +294,7 @@ self.addEventListener("message", (event) => {
   if (data?.type === "keep-appearance") {
     const appearance = String(data.appearance || "");
     if (Object.hasOwn(APPEARANCE_STYLES, appearance)) {
-      event.waitUntil(Promise.all([APPEARANCE_STYLES[appearance], ...(APPEARANCE_MODULES[appearance] || [])]
+      event.waitUntil(Promise.all([...APPEARANCE_STYLES[appearance], ...(APPEARANCE_MODULES[appearance] || [])]
         .map((path) => keepOne(SHELL_CACHE, stampedUrl(path), "default"))));
     }
     return;

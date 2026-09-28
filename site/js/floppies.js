@@ -5,7 +5,7 @@
 // piles, so we count the disks out in the product's own File Floppy icon and
 // let the second pile run off the edge of the page.
 
-import { iconImg } from "./eras.js?v=20260820a";
+import { iconImg } from "./eras.js?v=20260925a";
 import { L, formatNumber } from "./copy.js?v=20260820a";
 
 const FLOPPY_BYTES = 1_474_560;       // one 1.44 MB disk

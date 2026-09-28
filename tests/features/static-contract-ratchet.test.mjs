@@ -66,6 +66,9 @@ const suiteInfrastructure = new Set([
   "gate-self-proof.test.mjs",
   "development-feedback.test.mjs",
   "generated-assets-cache.test.mjs",
+  // Executes the snapshot retry helper and checks its wiring: tooling
+  // infrastructure, like the generator-cache contract above.
+  "appearance-snapshot-retry.test.mjs",
 ]);
 
 /** Every module specifier the file imports, static or dynamic. */

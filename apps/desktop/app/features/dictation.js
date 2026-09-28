@@ -251,7 +251,10 @@ function dictationButtonWouldCoverControl(candidate, target) {
   const controls = [target, ...document.querySelectorAll("button, [role='button'], summary, select, input[type='button'], input[type='submit'], .da-origin")];
   return controls.some((control) => {
     if (control === dictationFieldButton || (control !== target && target.contains?.(control))) return false;
-    if (control.closest?.(".is-hidden") || control.hidden || control.disabled) return false;
+    // A disabled button still occupies its place: Section Drafts' "Next
+    // section" is disabled until there is a next section, and the button used
+    // to land on top of it and stay there once it was enabled.
+    if (control.closest?.(".is-hidden") || control.hidden) return false;
     const rect = control.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return false;
     return dictationRectsOverlap(candidateRect, rect, 2);
@@ -297,7 +300,10 @@ function dictationToolbarRowAbove(textTarget, fieldRect) {
 
 function positionDictationFieldButton(target = dictationFieldButtonTarget) {
   const textTarget = getVisibleEditableTextTarget(target);
-  if (!textTarget || textTarget.closest(".is-hidden")) {
+  // The writing surfaces keep 听写 in fixed places instead: Edit › Dictation
+  // Pad on the desk, and the format bar beside a phone's keyboard. A floating
+  // button over their header only ever covered "Saved" or the status pop-up.
+  if (!textTarget || textTarget.closest(".is-hidden") || textTarget.closest(".mde-surface.is-cm")) {
     hideDictationFieldButton();
     return;
   }

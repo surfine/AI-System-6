@@ -215,7 +215,7 @@ body.is-resizing-tdi .clio-chart-view-pane {
   color: var(--clio-chart-muted);
 }
 
-.clio-chart-projection-switcher .btn {
+body .clio-chart-projection-switcher .btn {
   padding-left: 8px;
   padding-right: 8px;
   white-space: nowrap;
@@ -826,7 +826,7 @@ body.is-resizing-tdi .clio-chart-view-pane {
     gap: 4px;
   }
 
-  .clio-chart-projection-switcher .btn {
+  body .clio-chart-projection-switcher .btn {
     min-width: 0;
     min-height: 44px;
     padding-inline: 3px;
@@ -854,7 +854,7 @@ body.is-resizing-tdi .clio-chart-view-pane {
     display: inline;
   }
 
-  .clio-chart-details-bar .details-bar-button {
+  body .clio-chart-details-bar .details-bar-button {
     min-width: 64px;
     padding-inline: 7px;
   }

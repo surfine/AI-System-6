@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: 83a05dad36f9d58ae0fd5fe98c2125e6f699615357b3a9c3c4387a7980c885fe -->
+<!-- source-sha256: fd2af2321ca1837c4c88a77a14e7bfd94c44fd525d6814863e08545387fd2f1e -->
 
 > 英文版为准 / 仅供人类参考
 
@@ -36,9 +36,9 @@
 
 **直接打开一个窗口：** [配色工作台](https://system6.aaronlau.me/go/cmf-studio) · [盆景城市](https://system6.aaronlau.me/go/bonsai-city) · [终末地终端](https://system6.aaronlau.me/go/endfield-terminal) · [时间机器](https://system6.aaronlau.me/go/time-machine) · [OpenTTD](https://system6.aaronlau.me/go/openttd) · [DOOM](https://system6.aaronlau.me/go/doom)
 
-**或者打开一整块写完之后留下的盘：** [未来通车之后](https://system6.aaronlau.me/go/dtk) · [初代 iPad 为什么只有 256MB](https://system6.aaronlau.me/go/ipad1) · [M5 iPad Pro](https://system6.aaronlau.me/go/m5ipad) · [iPhone 17e 浅粉色](https://system6.aaronlau.me/go/iphone17e) · [走向一整块玻璃](https://system6.aaronlau.me/go/bongo) · [玻璃与他们的产地](https://system6.aaronlau.me/go/glass) · [iPad Pro 9.7](https://system6.aaronlau.me/go/ipad97) · [iPhone Air MagSafe 电池](https://system6.aaronlau.me/go/airbattery) · [iPhone 17 Pro Max](https://system6.aaronlau.me/go/pm17) · [Project Sympathy](https://system6.aaronlau.me/go/sympathy) · [陶瓷 Apple Watch](https://system6.aaronlau.me/go/ceramic) · [Mac Pro (2019)](https://system6.aaronlau.me/go/macpro19) · [iPhone Pocket](https://system6.aaronlau.me/go/pocket) · [iPhone 6s Plus](https://system6.aaronlau.me/go/iphone6sp) · [MagSafe 皮革保护套](https://system6.aaronlau.me/go/sleeve) · [iPhone 12 Pro Max](https://system6.aaronlau.me/go/pm12) · [iPhone 17 标准版](https://system6.aaronlau.me/go/iphone17) · [收起窗口，留下位置](https://system6.aaronlau.me/go/windowshade) · [CDMA iPhone 4](https://system6.aaronlau.me/go/cdma4) · [无接口 Apple Watch](https://system6.aaronlau.me/go/noport) · [touch 2 工程板](https://system6.aaronlau.me/go/touch2) · [iPhone Air](https://system6.aaronlau.me/go/airact) · [iPhone 4S Demo](https://system6.aaronlau.me/go/ip4sdemo) · [透明探索版 Air](https://system6.aaronlau.me/go/airtrans) · [T2 网卡](https://system6.aaronlau.me/go/t2nic) · [MagSafe 废案](https://system6.aaronlau.me/go/mgscrap) · [iPhone 16 工程机](https://system6.aaronlau.me/go/ip16p) · [iPad Air 4 工程机](https://system6.aaronlau.me/go/ipada4) · [WWDC2099](https://system6.aaronlau.me/go/ios19) · [Studio Display](https://system6.aaronlau.me/go/sd) · [Magic Keyboard](https://system6.aaronlau.me/go/mkb) · [iPad mini (A17 Pro)](https://system6.aaronlau.me/go/mini7) · [MacBook Neo](https://system6.aaronlau.me/go/mbneo) · [M5 MacBook Air](https://system6.aaronlau.me/go/m5mba) · [iPhone 11 Pro Max](https://system6.aaronlau.me/go/pm11)
+**或者读一块写完的盘：** [整个书架，停在最新一块](https://system6.aaronlau.me/go/disks) · [未来通车之后](https://system6.aaronlau.me/go/dtk) · [初代 iPad 为什么只有 256MB 内存](https://system6.aaronlau.me/go/ipad1) · [iPhone 12 Pro Max](https://system6.aaronlau.me/go/pm12)
 
-<sub>每个应用都有唯一一个可分享的地址 <code>/go/&lt;app-id&gt;</code>。桌面围绕它打开；三十五块演示用项目硬盘用的是同一条地址规则，<b>启动磁盘上的「演示用项目硬盘」文件夹（File 菜单的同一项）</b>会把它们全部列出来。</sub>
+<sub>每个应用都有唯一一个可分享的地址 <code>/go/&lt;app-id&gt;</code>。桌面围绕它打开；三十六块演示用项目硬盘用的是同一条地址规则，<b>启动磁盘上的「演示用项目硬盘」文件夹（File 菜单的同一项）</b>会把它们全部列出来，<code>/go/disks</code> 打开它时停在最新一块的正文上。</sub>
 
 </div>
 
@@ -50,17 +50,38 @@
 - [路线就是产品](#路线就是产品)
 - [聊天是一个应用，不是整台计算机](#聊天是一个应用不是整台计算机)
 - [约束仍然容得下什么](#约束仍然容得下什么)
+- [盆景城市](#盆景城市)
+- [One More Tune](#one-more-tune)
 - [它还能跑 DOOM](#它还能跑-doom)
-- [一张桌子，八个系统](#一张桌子八个系统)
+- [一张桌子，十二个系统](#一张桌子十二个系统)
 - [在一个 1988 年的约束下建造](#在一个-1988-年的约束下建造)
 - [自带模型](#自带模型)
 - [这个仓库如何让自己保持诚实](#这个仓库如何让自己保持诚实)
 - [仓库是怎么摆的](#仓库是怎么摆的)
 - [参与贡献](#参与贡献)
 
+## 1.0.55 之后（已在 main，尚未发布）
+
+- **十二套外观。** System 7、Tiger 与 Lion 加入 1988–2026 这条线；没有发布过的
+  Mac OS 8.5 主题 Drawing Board 与 NeXTSTEP 一起作为岔路。十二套都是「特别」菜单和
+  控制面板里的正式选项。
+- **最小化是真的，而且有去处。** 每个 Mac OS X 时代都能在关闭灯旁边画出黄灯，并带上
+  自己的 Dock，逐项对照各时代截图量出来：Jaguar 素净的半透明面板、Snow Leopard 的
+  玻璃搁架、Big Sur 悬浮的圆角板。两者默认都关着，需要时在控制面板的「通用」页打开
+  「显示 Dock」和最小化。任何一个关掉都不会困住窗口（苹果菜单列出收起的窗口，关掉
+  最小化时它们会原地收起）。NeXTSTEP 的 Dock 与 miniaturize 属于它自己的外壳，默认
+  开着：Dock 只放固定程序，miniwindow 沿底边排开。各时代双击标题栏仍是 WindowShade。
+- **Platinum 就是 Mac OS 9，NeXTSTEP 就是 3.3，一个部件一个部件地对。** 标签页、
+  斜面按钮、列表表头、窗框、滚动条、滑块、对话框和选中的图标都重新对照真机量过；
+  NeXTSTEP 的主菜单、窗框、控件、警告面板和 File Viewer 也一样，而且即使在单 Finder
+  模式下它也保持多任务。
+- **Lion 的全屏箭头就是全屏。** 窗口占满屏幕，Dock 让开，菜单栏在屏幕顶端等着。
+- **写作流程贴合各自的时代。** NeXTSTEP 把它挂在主菜单下方，做成 3.3 的面板；
+  Platinum 画成 Mac OS 9 的程序切换器；两者都能关闭，每个时代都能取回。
+
 ## 1.0.55 有什么新东西
 
-另附 System 7、Drawing Board、Tiger 与 Lion 四套实验外观；常规外观仍为原来的八套。
+另附 System 7、Drawing Board、Tiger 与 Lion 四套实验外观；常规外观当时仍为原来的八套。
 
 - **NeXTSTEP 成为第八套外观。** Mac OS X 的来处，按 3.3 版界面规范做：角落里的主菜单、
   左侧滚动条、右侧 Dock，每个对象都有自己的图标。从 Special 菜单选它。
@@ -83,7 +104,53 @@
   原始壁纸一个按钮就能恢复，折叠视频在你的机器上渲染完成。
 - **每个应用只有一个地址。** `/go/cmf-studio`、`/go/bonsai-city`、`/go/doom`
   等是把这个窗口交给别人的唯一方式；服务器上那些旧的裸目录由安装器自己退役。
-- **写完之后的作品以整块盘旅行，不是截图。** `/go/dtk`、`/go/ipad1` 等挂载的是一整块项目硬盘：问题单、大纲、分节草稿、正文、审校记录。读者拿到的是自己能改的副本；三十五块盘收在启动磁盘的**「演示用项目硬盘」文件夹**里，也就是 File 菜单打开的那一个窗口——每块盘都有自己的名字，「简介」里用作者写在问题单上的话说明它是什么，而打开这个文件夹读的是 16KB 的清单，不是背后 3.7MB 的正文。加一块新盘＝在 `tooling/build-shared-project-disks.mjs` 加一条登记、在三张 `LAUNCH_ROUTES` 表里加一条路由，`tests/features/launch-intent.test.mjs` 会盯着源盘和发布出去的副本保持一致。
+- **写完之后的作品以整块盘旅行，不是截图。** 三十六块演示盘，每一块都是完整的项目硬盘：问题单、大纲、分节草稿、正文、审校记录。每块都有一个地址 `/go/<route>`，打开即挂载，停在排好版的正文上；[`/go/disks`](https://system6.aaronlau.me/go/disks) 则打开启动磁盘上的**「演示用项目硬盘」文件夹**，停在最新一块。文件夹里的盘以器物命名；双击（或按空格）先打开只读的「现场」窗口，按路线列出作者在每一站留下的东西，默认显示正文，方向键逐块翻看。**「打开副本」**才在这台电脑上建一份可以改的副本，演示盘本身不变。打开文件夹只读一份 37KB 的清单，看某一块只下载那一块。加一块新盘＝在 `tooling/lib/project-disk-integrity.mjs` 登记（名字和成片月份），运行 `node tooling/build-shared-project-disks.mjs`，在三张 `LAUNCH_ROUTES` 表里加一条路由，`tests/features/launch-intent.test.mjs` 会盯着源盘和发布出去的副本保持一致。
+
+  <img src="docs/images/demo-disks.webp" alt="「演示用项目硬盘」文件夹选中 iPad Pro 9.7，右边是它的只读窗口：左栏列出问题单、大纲、正文、审校台，右侧是排好版的正文；最右是同一个窗口在手机上的样子。">
+
+  <details>
+  <summary>全部三十六块，新的在前</summary>
+
+  | 盘 | 文章 | 成片 |
+  | --- | --- | --- |
+  | [iPad Pro 9.7](https://system6.aaronlau.me/go/ipad97) | iPad Pro 9.7：叛逆的另一种尺寸 | 2026/07 |
+  | [iPhone 17e](https://system6.aaronlau.me/go/iphone17e) | iPhone 17e 浅粉色：其貌不扬，但很有料 | 2026/06 |
+  | [初代 iPad](https://system6.aaronlau.me/go/ipad1) | 初代 iPad 为什么只有 256MB 内存 | 2026/06 |
+  | [M5 iPad Pro](https://system6.aaronlau.me/go/m5ipad) | 杀掉那个键盘 | 2026/05 |
+  | [M5 MacBook Air](https://system6.aaronlau.me/go/m5mba) | M5 MacBook Air：这一次的牙膏，挤在硬盘上 | 2026/03 |
+  | [MacBook Neo](https://system6.aaronlau.me/go/mbneo) | MacBook Neo：苹果把 iPhone 芯片放进 Mac 的那一天 | 2026/03 |
+  | [Mac Pro 2019](https://system6.aaronlau.me/go/macpro19) | 大学时的白月光 · Mac Pro (2019) | 2026/03 |
+  | [Magic Keyboard](https://system6.aaronlau.me/go/mkb) | Magic Keyboard (USB-C)：确定性也是一种硬件规格 | 2026/01 |
+  | [Studio Display](https://system6.aaronlau.me/go/sd) | Studio Display：买断一份安心 | 2026/01 |
+  | [透明 Air 工程机](https://system6.aaronlau.me/go/airtrans) | 透明探索版 Air：透明不是配色，是工作方法 | 2025/12 |
+  | [iPad mini A17 Pro](https://system6.aaronlau.me/go/mini7) | iPad mini (A17 Pro)：每天跟着你出门的那一台 | 2025/12 |
+  | [iPhone 4S 展示机](https://system6.aaronlau.me/go/ip4sdemo) | iPhone 4S Demo：回到过去的钥匙 | 2025/12 |
+  | [iPhone Pocket](https://system6.aaronlau.me/go/pocket) | 当 iPhone 穿上三宅一生：一块布，一个口袋，你就是独一无二的你 | 2025/11 |
+  | [CDMA iPhone 4](https://system6.aaronlau.me/go/cdma4) | CDMA 版 iPhone 4：最早的「国行 eSIM」iPhone | 2025/10 |
+  | [iPhone 17 Pro Max](https://system6.aaronlau.me/go/pm17) | 形式追随功能的一代 · iPhone 17 Pro Max | 2025/10 |
+  | [MagSafe 电池 · Air](https://system6.aaronlau.me/go/airbattery) | iPhone Air 专用 MagSafe 电池：三代电池，改的是谁给谁充 | 2025/10 |
+  | [iPhone 17](https://system6.aaronlau.me/go/iphone17) | iPhone 17 标准版：诚意不是心情，是价格行为 | 2025/10 |
+  | [iPhone Air](https://system6.aaronlau.me/go/airact) | iPhone Air：165 克本该是正常手机的重量 | 2025/09 |
+  | [MagSafe 皮革保护套](https://system6.aaronlau.me/go/sleeve) | MagSafe 皮革保护套：苹果是怎么看待手机依赖的？ | 2025/09 |
+  | [iPhone 12 Pro Max](https://system6.aaronlau.me/go/pm12) | iPhone 12 Pro Max：开箱一台未激活的，还有苹果最奇葩的手机壳 | 2025/09 |
+  | [无接口 Apple Watch](https://system6.aaronlau.me/go/noport) | 无接口 Apple Watch：先有安全网，才敢拆掉那个口 | 2025/08 |
+  | [iPhone 6s Plus](https://system6.aaronlau.me/go/iphone6sp) | 还有人记得 3D Touch 吗 · iPhone 6s Plus | 2025/08 |
+  | [touch 2 工程板](https://system6.aaronlau.me/go/touch2) | touch 2 工程板：一块不是设备的设备 | 2025/08 |
+  | [iPhone 11 Pro Max](https://system6.aaronlau.me/go/pm11) | iPhone 11 Pro Max：我觉得最丑的一代 iPhone | 2025/08 |
+  | [陶瓷 Apple Watch](https://system6.aaronlau.me/go/ceramic) | 陶瓷 Apple Watch：我的白月光 | 2025/07 |
+  | [Project Sympathy](https://system6.aaronlau.me/go/sympathy) | Project Sympathy：iPod 消失了，音乐没有 | 2025/07 |
+  | [MagSafe 废案](https://system6.aaronlau.me/go/mgscrap) | MagSafe 废案：苹果怎么对待失败的作品 | 2025/06 |
+  | [iPhone 16 工程机](https://system6.aaronlau.me/go/ip16p) | iPhone 16 工程机：竟然有未来产品的细节？ | 2025/06 |
+  | [iPad Air 4 工程机](https://system6.aaronlau.me/go/ipada4) | iPad Air 4 工程机：挖挖苹果内部的工程系统 | 2025/05 |
+  | [DTK 过渡机](https://system6.aaronlau.me/go/dtk) | 未来通车之后 | 2024/12 |
+  | [WindowShade](https://system6.aaronlau.me/go/windowshade) | 收起窗口，留下位置：一个比 Mac 还老的双击 | — |
+  | [iPad Pro 2018](https://system6.aaronlau.me/go/ipadpro18) | A12X，桌面级性能的预演 | — |
+  | [Project Bongo](https://system6.aaronlau.me/go/bongo) | 走向一整块玻璃：从 Project Bongo 看 iPhone 的终极演进 | — |
+  | [Liquid Glass](https://system6.aaronlau.me/go/glass) | 玻璃与他们的产地 | — |
+  | [WWDC2099](https://system6.aaronlau.me/go/ios19) | WWDC2099：苹果最诚实的标签 | — |
+  | [T2 网卡](https://system6.aaronlau.me/go/t2nic) | Apple T2 网卡：一块卡上的两台设备 | — |
+
+  </details>
 - **公网可以接待一位访客。** 打开访客桥之后，另一个 agent 可以经由指名你这张
   桌面的邀请，从互联网连上来；工具契约、权限和在审校台等待你确认的方式，
   与你在 Mac 上使用时完全一致。
@@ -241,15 +308,48 @@ flowchart LR
 
 <div align="center"><sub>运行中应用的五个窗口，离线拍摄。没有模型，没有网络，没有摆拍。</sub></div>
 
+## 盆景城市
+
+盆景城市（Bonsai City）是这张桌面自己的城市建造游戏，为 AI System 6 而写，
+不是从别处移植来的。铺路、架铁路和地铁、划分街区，城市就围着它们长起来。
+
+- **三种地图尺寸。** 64²、96²、128²，节奏按尺寸分别调过。
+- **城市真的在运转。** 交通和公共服务会把人运来运去；电力、警察、消防、学校和诊所各管周围的街区，数据视图会标出哪里覆盖不到。
+- **顾问提醒，不替你玩。** 他们告诉你城市还缺什么，决定仍然是你的。
+- **存档留在你手里。** 城市保存在你自己的浏览器里，也可以把 Micropolis 里的城市带进来。
+- **3D 里有昼夜。** 3D 视图会从白天变到夜晚，一个开关就能回到 2D 地图。
+
+<p align="center">
+  <img src="site/img/proofs/bonsai-city.webp" alt="Platinum 外观下的盆景城市：3D 视图里的示例中型城市，有街道、铁路、车流、交通工具栏和小地图。" width="820">
+</p>
+
+<div align="center"><sub>示例中型城市，1903 年，人口 1,245，拍摄自运行中的应用。<a href="https://system6.aaronlau.me/go/bonsai-city">建一座城</a></sub></div>
+
+## One More Tune
+
+一个关于苹果广告配乐的问答游戏。每道题都会自己响起来，因为声音本身就是题目：听几小节，猜出是哪支广告。
+
+- **一张唱片，十个曲目。** 一局放在一张白标唱片上，有十个曲目位置，手机上一屏就放得下；继续一局存档时，十道题都停在你离开的地方。
+- **揭晓时回到那个年代。** 答完，原版广告在自己的窗口里打开，整张桌面换上这张卡片所属年份的外观，看完再把你的外观还给你。
+- **两轮发布会题。** Relay 讲在台上交棒的人；Next Act 问一句名言当时在做什么、后来发生了什么。
+- **声音来源清楚。** 音乐来自商店的官方推广试听。这是一个粉丝做的非官方问答。
+
+<p align="center">
+  <img src="site/img/proofs/one-more-tune-2026.webp" alt="Liquid Glass 外观下的 One More Tune：一张唱片、十个曲目位置、揭晓的答案和下一首。" width="820">
+</p>
+
+<div align="center"><sub>Liquid Glass 外观下的一局，拍摄自运行中的应用。<a href="https://system6.aaronlau.me/?launch=one-more-tune">玩一局</a></sub></div>
+
 ## 它还能跑 DOOM
 
-三个真正的游戏就装在这台桌面上，各有各的窗口，就在你刚才写的稿子旁边。
+四个游戏装在这台桌面上，各有各的窗口，就在你刚才写的稿子旁边：三款开源经典，加上我们自己做的城市建造游戏盆景城市。
 
 | 游戏 | 它是什么 |
 | --- | --- |
 | **Micropolis** | 初代 SimCity 的开源发行版 |
 | **OpenTTD** | 开源版《运输大亨豪华版》，中文，带触控操作 |
 | **DOOM** | DOOM |
+| **盆景城市** | 我们自己做的城市建造游戏：64²、96²、128² 地图，参与城市发展的交通与公共服务，本地存档，以及昼夜变化的 3D 城市 |
 
 <table>
   <tr>
@@ -263,28 +363,34 @@ flowchart LR
 同一个 MultiFinder 里。它们证明这套约束装得下真正的软件；写作路线的可信，则来自可见对象、
 明确保存，以及每一件真正发生过的事都有回执。
 
-## 一张桌子。八个系统。
+## 一张桌子。十二个系统。
 
 文件和打开的窗口留在原地。整台计算机在它们周围换了时代。
 
 <table>
   <tr>
     <td width="33%" align="center"><img src="site/img/frames/classic.webp" alt="System 6 外观"><br><code>1988 / SYSTEM 6</code></td>
+    <td width="33%" align="center"><img src="site/img/frames/system-7.webp" alt="System 7 外观"><br><code>1991 / SYSTEM 7</code></td>
     <td width="33%" align="center"><img src="site/img/frames/platinum.webp" alt="Platinum 外观"><br><code>1999 / PLATINUM</code></td>
-    <td width="33%" align="center"><img src="site/img/frames/aqua.webp" alt="Aqua 外观"><br><code>2002 / AQUA</code></td>
   </tr>
   <tr>
+    <td width="33%" align="center"><img src="site/img/frames/aqua.webp" alt="Aqua 外观"><br><code>2002 / AQUA</code></td>
+    <td width="33%" align="center"><img src="site/img/frames/tiger.webp" alt="Tiger 外观"><br><code>2005 / TIGER</code></td>
     <td width="33%" align="center"><img src="site/img/frames/snow-leopard.webp" alt="Snow Leopard 外观"><br><code>2009 / SNOW LEOPARD</code></td>
+  </tr>
+  <tr>
+    <td width="33%" align="center"><img src="site/img/frames/lion.webp" alt="Lion 外观"><br><code>2011 / LION</code></td>
     <td width="33%" align="center"><img src="site/img/frames/yosemite.webp" alt="Yosemite 外观"><br><code>2014 / YOSEMITE</code></td>
     <td width="33%" align="center"><img src="site/img/frames/big-sur.webp" alt="Big Sur 外观"><br><code>2020 / BIG SUR</code></td>
   </tr>
   <tr>
     <td width="33%" align="center"><img src="site/img/frames/liquid-glass.webp" alt="Liquid Glass 外观"><br><code>2026 / LIQUID GLASS</code></td>
     <td width="33%" align="center"><img src="site/img/frames/nextstep.webp" alt="NeXTSTEP 外观"><br><code>1995 / NEXTSTEP · 岔路</code></td>
+    <td width="33%" align="center"><img src="site/img/frames/drawing-board.webp" alt="Drawing Board 外观"><br><code>1998 / DRAWING BOARD · 岔路</code></td>
   </tr>
 </table>
 
-八帧画面，一台活的桌面，由 `npm run site:capture-frames` 拍下。System 6 从真实的
+十二帧画面，一台活的桌面，由 `npm run site:capture-frames` 拍下。System 6 从真实的
 System 6.0.8 资源和实际观察到的 Macintosh 行为出发；后面几个时代各有独立的、
 适配 Retina 的图标家族。这里没有一张是摆拍，因为有一个脚本会从运行中的应用里
 把它们全部重拍一遍。
@@ -298,7 +404,7 @@ System 6.0.8 资源和实际观察到的 Macintosh 行为出发；后面几个�
 ## 在一个 1988 年的约束下建造
 
 ```text
-启动关键载荷            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,949,829 字节
+启动关键载荷            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,719,857 字节
 两张 1.44 MB 软盘       ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 字节
 重型工具                按需懒加载，从第三张盘上来
 ```

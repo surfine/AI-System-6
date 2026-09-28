@@ -125,6 +125,9 @@
     node.dataset.refKey = refKey(reference);
     node.dataset.objectId = reference.id;
     node.className = "nextstep-column-item";
+    // A row that opens another column carries 3.3's branch mark (the style
+    // sheet draws the triangle at its right end).
+    node.classList.toggle("is-branch", reference.kind === "project" || reference.kind === "folder");
     node.classList.toggle("is-selected", !!selected && refKey(selected) === refKey(reference));
     node.setAttribute("aria-pressed", String(!!selected && refKey(selected) === refKey(reference)));
     if (!item) { node.classList.add("is-stale"); node.title = t("nextstep_shelf_missing"); }

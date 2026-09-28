@@ -9,6 +9,15 @@
 
    The rows inside the Import Utility reuse .import-row's grid on purpose, so a
    fourth disk needs no CSS at all. */
+/* A copy of a boot rule that must keep beating this sheet's own rule below:
+   the same selector and specificity, scoped by :where() to this surface, and
+   first in the sheet so every rule after it keeps its place. Under a per-file
+   @layer order the boot rule alone would lose; here specificity decides. */
+.window.is-finder-content-fit:where(.project-disks-window) {
+  width: var(--finder-fit-width, 420px);
+  max-height: var(--finder-fit-max-height, none);
+}
+
 .project-disks-window {
   width: min(560px, calc(100vw - 48px));
   max-height: calc(100vh - 72px);
@@ -35,6 +44,84 @@
   overflow-wrap: anywhere;
 }
 
+/* projectPeek's own frame and list. The window module is lazy, and so is this
+   sheet: the peek and its overview mode load it, so it no longer rides every
+   boot for a window most boots never open (moved from 10-windows.css to pay
+   for the disk-peek window's registration). */
+/* Looking inside a disk you have not mounted. Same list-over-detail figure as
+   Hold That Thought's pile, because both are ways of going through something
+   rather than working in it. The read-only state is the window's, not a
+   property each control has to remember. */
+.project-peek-window {
+  top: 96px;
+  right: 132px;
+  width: 420px;
+}
+
+.project-peek-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.project-peek-list {
+  max-height: 150px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--shade-dark);
+}
+
+.project-peek-row {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  width: 100%;
+  padding: 2px 5px;
+  border: 0;
+  border-radius: var(--item-radius);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+}
+
+/* A developed document carries a second label beside its kind, and
+   space-between would spread the two apart -- the kind label drifting to the
+   middle on exactly the rows that have a darkroom mark, and staying at the edge
+   everywhere else. Pushing the first label right keeps them together, and a row
+   with only one label lands where it always did. */
+.project-peek-row small:first-of-type {
+  margin-left: auto;
+}
+
+.project-peek-row b {
+  overflow: hidden;
+  font-weight: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-peek-row small {
+  flex: none;
+  color: var(--shade-dark);
+}
+
+.project-peek-row.is-current {
+  background: var(--system-selection-bg, var(--selection-bg));
+  color: var(--system-selection-fg, var(--selection-fg));
+}
+
+.project-peek-row.is-current small {
+  color: inherit;
+}
+
+.project-peek-body {
+  min-height: 120px;
+  resize: none;
+}
+
 /* 项目一览 rows carry a second line -- the risk diamond, the handoff in the
    writer's own words, and the one thing still missing. The row is a flex line
    in the boot sheet; here it wraps, and the second line takes the full width.
@@ -47,4 +134,216 @@
 .project-peek-row .project-peek-next {
   flex: 1 0 100%;
   margin-left: 0;
+}
+
+/* The list view of the demonstration folder names its own columns (title,
+   length, release month) through AISystem6FinderListHeads; the title is the
+   one that needs room, so it takes the flexible track. */
+.project-disks-window .finder-list-header,
+.project-disks-window .finder-list-row {
+  grid-template-columns: minmax(118px, 0.9fr) minmax(0, 1.6fr) 72px 64px;
+}
+
+.project-disks-window .finder-list-row > span:nth-child(n + 3) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Looking inside a disk (app/features/disk-peek.js). A rail of what the writer
+   left at each stop, and the stop's document read on TeachText's own preview
+   sheet, which brings each appearance's face and measure with it. Geometry
+   only: every colour is a token the appearances already set. */
+.disk-peek-window {
+  width: min(900px, calc(100vw - 48px));
+  height: min(740px, calc(100vh - 72px));
+  container: disk-peek / inline-size;
+}
+
+.disk-peek-toolbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-bottom: var(--system-control-line) solid var(--ink);
+  white-space: nowrap;
+}
+
+.disk-peek-toolbar .spacer {
+  flex: 1;
+}
+
+.disk-peek-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.disk-peek-toolbar .btn.disk-peek-step {
+  min-width: 0;
+  width: 30px;
+  padding: 0;
+}
+
+.disk-peek-count {
+  min-width: 4.5em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.disk-peek-pane {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 176px minmax(0, 1fr);
+  padding: 0;
+  overflow: hidden;
+}
+
+.disk-peek-rail {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0 0;
+  overflow: auto;
+  border-right: var(--system-control-line) solid var(--ink);
+}
+
+.disk-peek-caption,
+.disk-peek-note {
+  margin: 0;
+  padding: 2px 10px 6px;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.disk-peek-note {
+  color: var(--shade-dark);
+}
+
+.disk-peek-docs {
+  display: flex;
+  flex-direction: column;
+}
+
+.disk-peek-doc {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 3px 10px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: default;
+}
+
+/* The Finder's small-icon view draws the 34px art at half size the same way. */
+.disk-peek-doc .mini-icon {
+  flex: none;
+  margin: -8px;
+  transform: scale(0.5);
+}
+
+.disk-peek-doc.is-selected {
+  background: var(--system-selection-bg, var(--selection-bg));
+  color: var(--system-selection-fg, var(--selection-fg));
+}
+
+.disk-peek-facts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 8px;
+  margin: auto 0 0;
+  padding: 8px 10px;
+  border-top: var(--system-control-line) solid var(--ink);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.disk-peek-facts dd {
+  margin: 0;
+  text-align: right;
+}
+
+.disk-peek-reader {
+  min-height: 0;
+  padding: 28px clamp(18px, 5cqi, 56px) 56px;
+}
+
+.disk-peek-reader:focus-visible {
+  outline: none;
+}
+
+.disk-peek-message {
+  margin: 4em auto 0;
+  text-align: center;
+}
+
+/* A narrow window turns the rail into the row of tabs a phone expects and puts
+   the actions under the thumb, below the text. */
+@container disk-peek (max-width: 600px) {
+  .disk-peek-pane {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .disk-peek-rail {
+    padding: 8px 10px;
+    border-right: 0;
+    border-bottom: var(--system-control-line) solid var(--ink);
+    overflow: visible;
+  }
+
+  .disk-peek-caption,
+  .disk-peek-facts,
+  .disk-peek-note {
+    display: none;
+  }
+
+  .disk-peek-docs {
+    flex-direction: row;
+    border: var(--system-control-line) solid var(--ink);
+    border-radius: 7px;
+    overflow: hidden;
+  }
+
+  .disk-peek-doc {
+    flex: 1;
+    justify-content: center;
+    padding: 6px 4px;
+  }
+
+  .disk-peek-doc + .disk-peek-doc {
+    border-left: var(--system-control-line) solid var(--ink);
+  }
+
+  .disk-peek-doc .mini-icon {
+    display: none;
+  }
+
+  .disk-peek-actions {
+    gap: 6px;
+  }
+
+  .disk-peek-toolbar {
+    order: 3;
+    border-top: var(--system-control-line) solid var(--ink);
+    border-bottom: 0;
+    padding-bottom: calc(6px + var(--safe-area-bottom, 0px));
+  }
+
+  .disk-peek-reader {
+    padding: 20px 18px 40px;
+  }
+}
+
+/* On a phone a desk accessory floats but the screen is its limit; this one is
+   read, so it takes the most of the screen the accessory role allows. */
+body:not(.is-writer-mode) .window.disk-peek-window.is-mobile-accessory:not(.is-hidden):not(.is-collapsed) {
+  width: calc(100vw - 16px);
+  height: calc(100vh - var(--menu-bar-height) - var(--safe-area-top) - var(--safe-area-bottom) - 16px);
 }

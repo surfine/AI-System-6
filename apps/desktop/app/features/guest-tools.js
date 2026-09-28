@@ -24,8 +24,9 @@
     "list_writing_route", "list_desk_applications", "list_projects", "map_document",
     "list_document_revisions", "read_document_revision", "read_darkroom_record",
     "list_dictionary_terms", "read_write_lease", "list_guests",
+    "open_rebuild_context", "validate_rebuild_pack",
   ]);
-  const PROPOSE_TOOLS = Object.freeze(["put_on_file_floppy", "submit_review", "submit_proposal", "deliver_lens_result", "deliver_quick_draft_result", "propose_scrapbook_clip", "annotate_section"]);
+  const PROPOSE_TOOLS = Object.freeze(["put_on_file_floppy", "submit_review", "submit_proposal", "deliver_lens_result", "deliver_quick_draft_result", "propose_scrapbook_clip", "annotate_section", "submit_rebuild_pack"]);
   const CHANGE_TOOLS = Object.freeze([
     "dispatch_intent", "open_application", "switch_project",
     "eject_file_floppy", "commit_receipt", "restore_document_revision",
@@ -516,7 +517,7 @@
       .map((scrap) => ({
         id: scrap.id,
         title: scrap.title || "",
-        body: clip(scrap.body, 1400),
+        body: clip((typeof scrapDocumentText === "function" ? scrapDocumentText(scrap) : scrap.body), 1400),
         tags: Array.isArray(scrap.tags) ? scrap.tags : [],
         sourceTitle: scrap.sourceTitle || "",
         sourceKind: scrap.sourceKind || "",
@@ -755,6 +756,345 @@
     };
   }
 
+  // ---------------------------------------------------------------------
+  // Rebuild packs (「还原写作对象」). The rules live in app/core/rebuild-pack.js;
+  // this is the desk's side: what the guest is shown, what it may hand in,
+  // and — only when the writer says so — how an adopted pack lands.
+  // ---------------------------------------------------------------------
+
+  async function rebuildModule() {
+    if (typeof ensureRebuildPackModule === "function") await ensureRebuildPackModule();
+    const module = window.AISystem6RebuildPack;
+    if (!module) throw new Error("The rebuild module is not available on this desk.");
+    return module;
+  }
+
+  function manuscriptFileFor(project) {
+    const projectId = String(project?.id || "");
+    const files = projectArray("chatFiles").filter((file) => String(file?.projectId || "") === projectId);
+    return files.find((file) => file.label === "final")
+      || files.find((file) => String(file.name || "") === String(project?.name || ""))
+      || files.find((file) => String(file.id || "") === String(project?.documentTabs?.[0]?.state?.activeTextFileId || ""))
+      || null;
+  }
+
+  // The manuscript as the writer sees it now: the open editor wins over the
+  // stored file, because the editor is where unsaved words live.
+  function currentManuscriptText(project, file) {
+    const open = typeof activeTextFileId !== "undefined" && file && String(activeTextFileId) === String(file.id);
+    const editor = typeof teachTextBodyInput !== "undefined" ? teachTextBodyInput : null;
+    if (open && editor && typeof editor.value === "string") return editor.value;
+    return String(file?.body || "");
+  }
+
+  function rebuildSnapshot(project) {
+    const projectId = String(project.id);
+    const mine = (name) => projectArray(name).filter((entry) => String(entry?.projectId || "") === projectId);
+    const file = manuscriptFileFor(project);
+    const baseManuscript = currentManuscriptText(project, file);
+    const scrapsHere = mine("scraps");
+    const referencesHere = mine("projectReferences");
+    // The route stamps `{#id}` record ids onto headings the first time the
+    // outline is opened; that is bookkeeping, not a change of the writer's
+    // work, so it must not make a waiting pack stale.
+    const unstamped = (value) => String(value || "").replace(/\s*\{#[0-9a-f]{6}\}/g, "");
+    // Once the manuscript owns the draft, the outline is the manuscript (one
+    // document) and the route copies it into project.outline on its next save;
+    // counting both would call that save a change.
+    const outline = project.manuscriptOwnsDraft ? "" : unstamped(project.outline);
+    const sourceRevision = textRevision([
+      projectId,
+      unstamped(baseManuscript),
+      project.questionSheet || "",
+      outline,
+      scrapsHere.map((scrap) => `${scrap.id}:${scrap.title}`).join("|"),
+      referencesHere.map((reference) => reference.id).join("|"),
+    ]);
+    return { project, scraps: scrapsHere, references: referencesHere, files: mine("chatFiles"), baseManuscript, manuscriptFile: file, sourceRevision };
+  }
+
+  // Everything the desk would change, gathered from its own collections into
+  // the backup shape the pure transform reads.
+  function rebuildView(project) {
+    const projectId = String(project.id);
+    const mine = (list) => (Array.isArray(list) ? list : []).filter((entry) => String(entry?.projectId || "") === projectId);
+    return detached({
+      project,
+      folders: mine(typeof chatFolders !== "undefined" ? chatFolders : []),
+      files: mine(projectArray("chatFiles")),
+      scraps: mine(projectArray("scraps")),
+      references: mine(projectArray("projectReferences")),
+      projectCdItems: mine(projectArray("projectCdItems")),
+      documentRevisions: [],
+      trash: [],
+    }, {});
+  }
+
+  function rebuildPackSummary(pack) {
+    const sections = Array.isArray(pack?.sections) ? pack.sections : [];
+    const dossiers = Array.isArray(pack?.dossiers) ? pack.dossiers : [];
+    const retired = (pack?.retire?.scrapIds || []).length + (pack?.retire?.referenceIds || []).length;
+    const changes = Array.isArray(pack?.manuscript?.changes) ? pack.manuscript.changes.length : 0;
+    return { sections: sections.map((section) => String(section.title || "")), dossiers: dossiers.length, retired, changes, facts: (pack?.factLedger || []).length };
+  }
+
+  // Owner decision D4 (2026-09-26): a rebuild rewrites the manuscript's
+  // surroundings in one go, so it always waits for the writer's own click —
+  // a 可改动 grant does not stand in for it.
+  async function adoptRebuildPack(receiptId) {
+    const receipts = window.AISystem6RunReceipts;
+    const file = receipts?.getReceipt?.(receiptId);
+    const pack = file?.rebuildPack;
+    if (!file || !pack) return null;
+    const project = requireProject();
+    if (String(file.projectId || "") !== String(project.id)) throw new Error("This rebuild belongs to another project.");
+    const module = await rebuildModule();
+    const snapshot = rebuildSnapshot(project);
+    const held = String(file.guestRebuild?.sourceRevision || "");
+    if (held && held !== snapshot.sourceRevision) {
+      setStatus(t("guest_rebuild_stale"));
+      return null;
+    }
+    const verdict = module.validateRebuildPack(pack, snapshot);
+    if (!verdict.ok) {
+      setStatus(t("guest_rebuild_invalid", verdict.errors.length));
+      return null;
+    }
+    const summary = rebuildPackSummary(pack);
+    const answer = typeof showSystemModal === "function"
+      ? await showSystemModal(t("guest_rebuild_confirm", summary.sections.length, summary.dossiers, summary.retired), "confirm")
+      : "yes";
+    if (answer !== "yes") return null;
+    // Landing and saving can take a while on a large desk; the card says so
+    // and its buttons wait, wherever it is shown.
+    adoptingRebuilds.add(String(receiptId));
+    renderGuestReviews();
+    try {
+      return await landAdoptedRebuild(receiptId, file, pack, project, module, receipts);
+    } finally {
+      adoptingRebuilds.delete(String(receiptId));
+      renderGuestReviews();
+    }
+  }
+
+  const adoptingRebuilds = new Set();
+
+  async function landAdoptedRebuild(receiptId, file, pack, project, module, receipts) {
+    const now = new Date().toISOString();
+    // The desk's own window hands in rounds too; its words are the model's.
+    const fromDesk = String(file.runReceipt?.sourceAppId || "") === DESK_REBUILD_APP_ID;
+    const agentName = fromDesk ? String(file.runReceipt?.model || "desk") : String(file.runReceipt?.sourceAppId || "").replace(/^guest:/, "") || "guest";
+    const origin = fromDesk ? "model" : "guest";
+    const applied = module.applyRebuildPackToBackup(rebuildView(project), pack, {
+      now,
+      uuid: () => crypto.randomUUID(),
+      agentName,
+      origin,
+      skipReceipt: true,
+      skipRevisions: true,
+      receiptId,
+    });
+    const facts = applied.summary;
+    if (!await landRebuildPack(project, applied, { receiptId, origin, now, module })) return null;
+    await receipts.updateReceipt(receiptId, { checkpointState: "none" });
+    await receipts.recordUserAction(receiptId, { action: "accept", finalBodyHash: facts.manuscript ? module.revisionContentHash(facts.manuscript) : "" });
+    await receipts.finishReceipt(receiptId, { status: "completed", outputObjectIds: facts.outputObjectIds, destination: "projectDisk" });
+    renderGuestReviews();
+    setStatus(t("guest_rebuild_adopted", project.name));
+    return { receiptId, projectId: project.id, outputObjectIds: facts.outputObjectIds };
+  }
+
+  // Where an applied pack lands in the live stores: a guest's adopted round and
+  // a new disk from the desk's own window take the same doors.
+  async function landRebuildPack(project, applied, { receiptId, origin, now, module }) {
+    const after = applied.backup;
+    const facts = applied.summary;
+
+    // The text that was there first (Time Machine keeps it), then the round;
+    // not twice when the latest revision already holds it (the same rule the
+    // offline tool applies).
+    const history = typeof listDocumentRevisions === "function" && facts.manuscriptFileId
+      ? await listDocumentRevisions(facts.manuscriptFileId, project.id)
+      : [];
+    if (typeof createDocumentRevision === "function" && facts.manuscriptFileId && module.restoreBeforeNeeded(history[0], facts.previousManuscript)) {
+      await createDocumentRevision({ projectId: project.id, documentId: facts.manuscriptFileId, body: facts.previousManuscript, phase: "final", origin: "system", operation: "restore-before", runRecordId: receiptId });
+    }
+
+    // Project record: route documents through their own doors.
+    Object.assign(project, {
+      name: after.project.name,
+      questionSheet: after.project.questionSheet,
+      outlineSections: after.project.outlineSections,
+      drafts: after.project.drafts,
+      documentTabs: after.project.documentTabs,
+      updatedAt: now,
+    });
+    if (typeof setProjectOutlineMarkdown === "function") setProjectOutlineMarkdown(project, after.project.outline);
+    else project.outline = after.project.outline;
+    markDeskDirty("projects", project.id);
+
+    // Folders and files.
+    (after.folders || []).forEach((folder) => {
+      if (typeof chatFolders === "undefined") return;
+      if (!chatFolders.some((entry) => entry.id === folder.id)) chatFolders.push(folder);
+      markDeskDirty("chatFolders", folder.id);
+    });
+    (after.files || []).forEach((next) => {
+      const existing = chatFiles.find((entry) => entry.id === next.id);
+      if (existing) Object.assign(existing, next);
+      else chatFiles.push(next);
+      markDeskDirty("chatFiles", next.id);
+    });
+
+    // Dossiers: retired ones go to the Trash (D7), the rest follow the pack.
+    const retiredScraps = new Set(facts.retired.filter((entry) => entry.type === "scrap").map((entry) => String(entry.id)));
+    for (let index = scraps.length - 1; index >= 0; index -= 1) {
+      if (retiredScraps.has(String(scraps[index].id))) {
+        const [gone] = scraps.splice(index, 1);
+        markDeskDeleted("scraps", gone.id);
+      }
+    }
+    (after.scraps || []).forEach((next) => {
+      const existing = scraps.find((entry) => entry.id === next.id);
+      if (existing) Object.assign(existing, next);
+      else scraps.push(next);
+      markDeskDirty("scraps", next.id);
+    });
+    (facts.trash || []).forEach((item) => trashItems.unshift(item));
+    if ((facts.trash || []).length) markDeskDirty("trash");
+
+    // References live in their own store.
+    const retiredReferences = facts.retired.filter((entry) => entry.type === "reference").map((entry) => String(entry.id));
+    for (const id of retiredReferences) {
+      const index = projectReferences.findIndex((reference) => String(reference.id) === id);
+      if (index >= 0) projectReferences.splice(index, 1);
+      if (typeof deleteStoredProjectReference === "function") await deleteStoredProjectReference(id);
+    }
+
+    // Project CD items ride in the settings snapshot.
+    (after.projectCdItems || []).forEach((next) => {
+      const existing = projectCdItems.find((entry) => entry.id === next.id);
+      if (existing) Object.assign(existing, next);
+    });
+    markDeskDirty("settings");
+
+    // Open surfaces take the new text through their own input events, so the
+    // editor's next save carries the round instead of the old words.
+    const editor = typeof teachTextBodyInput !== "undefined" ? teachTextBodyInput : null;
+    if (editor && typeof activeTextFileId !== "undefined" && String(activeTextFileId) === String(facts.manuscriptFileId)) {
+      editor.value = facts.manuscript;
+      editor.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    const sheet = typeof questionSheetBodyInput !== "undefined" ? questionSheetBodyInput : null;
+    if (sheet) {
+      sheet.value = project.questionSheet;
+      sheet.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    if (typeof syncOutlineDomFromProject === "function") syncOutlineDomFromProject();
+
+    if (typeof createDocumentRevision === "function" && facts.manuscriptFileId) {
+      await createDocumentRevision({ projectId: project.id, documentId: facts.manuscriptFileId, body: facts.manuscript, phase: "final", origin, operation: "rebuild-round", runRecordId: receiptId });
+    }
+    const saved = typeof saveDeskState === "function" ? await saveDeskState() : true;
+    if (!saved) {
+      setStatus(t("guest_rebuild_save_failed"));
+      return false;
+    }
+    if (typeof renderScraps === "function") renderScraps();
+    if (typeof renderTrash === "function") renderTrash();
+    if (typeof scheduleWorkspaceRender === "function") scheduleWorkspaceRender({ projectReferences: true, mountedTextDisk: true, menuState: true });
+    return true;
+  }
+
+  // 「还原写作对象」 on the desk itself. Its packs pass the same validator and
+  // land through the same doors as a guest's, under their own app id.
+  const DESK_REBUILD_APP_ID = "rebuildFlow";
+
+  async function deskRebuildContext() {
+    const module = await rebuildModule();
+    const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+    return { module, project, snapshot: project ? rebuildSnapshot(project) : { project: null, scraps: [], references: [], files: [], baseManuscript: "", sourceRevision: "" } };
+  }
+
+  // A round of the writer's own project waits in Review Desk for the writer's
+  // click, exactly as a guest's does (owner decision D4).
+  async function submitDeskRebuildPack(pack, meta = {}) {
+    const project = requireProject();
+    const module = await rebuildModule();
+    const snapshot = rebuildSnapshot(project);
+    const verdict = module.validateRebuildPack(pack, snapshot);
+    if (!verdict.ok) return { ok: false, errors: verdict.errors, warnings: verdict.warnings };
+    const summary = rebuildPackSummary(pack);
+    const receiptId = await writeGuestReceipt(project, null, {
+      sourceAppId: DESK_REBUILD_APP_ID,
+      provider: meta.provider || "local",
+      model: meta.model || "",
+      intent: "rebuild",
+      name: `${t("rebuild_writing_flow_title")} · ${String(pack.roundTitle || "").slice(0, 60)}`,
+      proposal: t("guest_rebuild_proposal", summary.sections.join(" / "), summary.dossiers, summary.retired, summary.changes),
+      toolName: "rebuild-flow",
+      inputObjectIds: snapshot.manuscriptFile ? [snapshot.manuscriptFile.id] : [],
+      checkpointState: "awaitingCommit",
+      extraFields: {
+        rebuildPack: pack,
+        guestRebuild: { guestName: t("rebuild_writing_flow_title"), submittedAt: new Date().toISOString(), sourceRevision: snapshot.sourceRevision, warnings: verdict.warnings },
+      },
+    });
+    renderGuestReviews();
+    return { ok: true, receiptId, warnings: verdict.warnings };
+  }
+
+  // A new disk has nothing of the writer's to overwrite, so it is built at once
+  // (the spec keeps new-project targets on the ordinary doctrine) and its
+  // receipt is recorded as adopted by the click that made it.
+  async function createProjectFromRebuildPack(pack, meta = {}) {
+    const module = await rebuildModule();
+    const empty = { project: null, scraps: [], references: [], files: [], baseManuscript: "", sourceRevision: "" };
+    const verdict = module.validateRebuildPack(pack, empty);
+    if (!verdict.ok) return { ok: false, errors: verdict.errors, warnings: verdict.warnings };
+    const receipts = window.AISystem6RunReceipts;
+    if (!receipts) throw new Error("Run receipts are not available.");
+    const project = createProjectRecord(String(pack.target?.name || "").trim());
+    projects.unshift(project);
+    mountProject(project);
+    if (typeof closeProjectScopedWindows === "function") closeProjectScopedWindows();
+    const now = new Date().toISOString();
+    const created = await receipts.createReceipt({
+      projectId: project.id,
+      sourceAppId: DESK_REBUILD_APP_ID,
+      intent: "rebuild",
+      provider: meta.provider || "local",
+      model: meta.model || "",
+      inputObjectIds: [],
+      name: `${t("rebuild_writing_flow_title")} · ${String(pack.roundTitle || "").slice(0, 60)}`,
+      extraFields: { rebuildPack: pack },
+    });
+    if (!created?.ok) throw new Error(`The receipt could not be written (${created?.reason || "unknown"}).`);
+    const receiptId = created.receiptId;
+    const applied = module.applyRebuildPackToBackup(rebuildView(project), pack, {
+      now,
+      uuid: () => crypto.randomUUID(),
+      agentName: meta.model || "desk",
+      origin: "model",
+      skipReceipt: true,
+      skipRevisions: true,
+      receiptId,
+    });
+    if (!await landRebuildPack(project, applied, { receiptId, origin: "model", now, module })) return { ok: false, errors: [], warnings: verdict.warnings };
+    const facts = applied.summary;
+    const summary = rebuildPackSummary(pack);
+    await receipts.updateReceipt(receiptId, {
+      proposal: t("guest_rebuild_proposal", summary.sections.join(" / "), summary.dossiers, summary.retired, summary.changes),
+      toolCalls: [{ name: "rebuild-flow", effect: "write", ok: true }],
+      affectedObjectIds: facts.outputObjectIds,
+    });
+    await receipts.recordUserAction(receiptId, { action: "accept", finalBodyHash: facts.manuscript ? module.revisionContentHash(facts.manuscript) : "" });
+    await receipts.finishReceipt(receiptId, { status: "completed", outputObjectIds: facts.outputObjectIds, destination: "projectDisk" });
+    if (typeof resetAssistantForProject === "function") resetAssistantForProject(project.name);
+    if (typeof loadActiveProjectReferences === "function") loadActiveProjectReferences();
+    return { ok: true, projectId: project.id, receiptId, warnings: verdict.warnings };
+  }
+
   const tools = {
     get_desk_state() {
       const project = requireProject();
@@ -952,7 +1292,7 @@
         clips: clips.slice(0, limit).map((scrap) => ({
           id: scrap.id,
           title: scrap.title || "",
-          body: clip(scrap.body, 1200),
+          body: clip((typeof scrapDocumentText === "function" ? scrapDocumentText(scrap) : scrap.body), 1200),
           tags: Array.isArray(scrap.tags) ? scrap.tags : [],
           sourceTitle: scrap.sourceTitle || "",
           sourceKind: scrap.sourceKind || "",
@@ -1327,6 +1667,71 @@
       return { ...deskStamp(project), receiptId, status: "awaiting the writer" };
     },
 
+    async open_rebuild_context() {
+      const project = requireProject();
+      const module = await rebuildModule();
+      const snapshot = rebuildSnapshot(project);
+      return {
+        ...deskStamp(project),
+        sourceRevision: snapshot.sourceRevision,
+        contract: {
+          packVersion: module.PACK_VERSION,
+          sections: { min: module.MIN_SECTIONS },
+          confidenceLabels: module.CONFIDENCE_LABELS,
+          originKinds: module.ORIGIN_KINDS,
+          rules: [
+            "own mode: the manuscript is the author's text; every difference from the base is a declared change (correction → a fact-ledger key, author-instruction, author-quote, removal with a reason) plus at most one dated addendum.",
+            "The article sets the section count (at least two): sections split the manuscript in order, one per ## heading or several neighbouring headings merged (covers), or for a manuscript without headings the words each section's first paragraph starts with (startQuote).",
+            "Private chats are background only: never a dossier, a reference or a quote. No device provenance, no collaborator identities.",
+            "official / public / measured dossiers need an https URL and a date; every fact-ledger row needs a source and a label.",
+            "The pack is a proposal: it lands only when the writer adopts it in Review Desk.",
+          ],
+        },
+        manuscript: { fileId: snapshot.manuscriptFile ? snapshot.manuscriptFile.id : "", markdown: snapshot.baseManuscript },
+        questionSheet: String(project.questionSheet || ""),
+        outline: String(project.outline || ""),
+        drafts: (project.drafts || []).map((draft) => ({ id: draft.id, title: draft.title || draft.sectionTitle || "" })),
+        dossiers: snapshot.scraps.map((scrap) => ({ id: scrap.id, title: scrap.title, originKind: scrap.source?.originKind || "", url: scrap.source?.url || "" })),
+        // Names and kinds only: a reference's text is read through
+        // read_project_object, which the writer's grant already governs.
+        references: snapshot.references.map((reference) => ({ id: reference.id, name: reference.name, originKind: reference.originKind || "" })),
+      };
+    },
+
+    async validate_rebuild_pack(args) {
+      const project = requireProject();
+      const module = await rebuildModule();
+      const verdict = module.validateRebuildPack(args?.pack, rebuildSnapshot(project));
+      return { ...deskStamp(project), ok: verdict.ok, errors: verdict.errors, warnings: verdict.warnings };
+    },
+
+    async submit_rebuild_pack(args, guest) {
+      const project = requireProject();
+      const module = await rebuildModule();
+      const pack = args?.pack;
+      const snapshot = rebuildSnapshot(project);
+      const verdict = module.validateRebuildPack(pack, snapshot);
+      if (!verdict.ok) return { ...deskStamp(project), ok: false, errors: verdict.errors, warnings: verdict.warnings };
+      if (textBytes(JSON.stringify(pack)) > MAX_TEXT_BYTES) throw new Error("The pack is larger than this desk accepts.");
+      const name = guestName(guest);
+      const summary = rebuildPackSummary(pack);
+      const receiptId = await writeGuestReceipt(project, guest, {
+        intent: "rebuild",
+        name: `${t("guest_rebuild_label")} · ${name} · ${String(pack.roundTitle || "").slice(0, 60)}`,
+        proposal: t("guest_rebuild_proposal", summary.sections.join(" / "), summary.dossiers, summary.retired, summary.changes),
+        toolName: "submit_rebuild_pack",
+        inputObjectIds: snapshot.manuscriptFile ? [snapshot.manuscriptFile.id] : [],
+        checkpointState: "awaitingCommit",
+        extraFields: {
+          rebuildPack: pack,
+          guestRebuild: { guestName: name, submittedAt: new Date().toISOString(), sourceRevision: snapshot.sourceRevision, warnings: verdict.warnings },
+        },
+      });
+      notify(t("guest_rebuild_received", name), { actionId: "open-guest-reviews", windowName: "reviewDesk" });
+      renderGuestReviews();
+      return { ...deskStamp(project), ok: true, receiptId, warnings: verdict.warnings, status: "awaiting the writer" };
+    },
+
     async propose_scrapbook_clip(args, guest) {
       const project = requireProject();
       const title = clip(String(args?.title || "").trim(), 200);
@@ -1470,6 +1875,10 @@
       const file = window.AISystem6RunReceipts?.getReceipt?.(receiptId);
       if (!file || String(file.projectId || "") !== String(project.id)) throw new Error("No such receipt in the open project.");
       const record = file.runReceipt || {};
+      if (file.rebuildPack) {
+        const adopted = await adoptRebuildPack(receiptId);
+        return { ...deskStamp(project), receiptId, kind: "rebuild", ok: Boolean(adopted), reason: adopted ? "" : "declined-stale-or-invalid" };
+      }
       // Two kinds of parked work sit in the same folder, and they commit
       // through different doors. An intent receipt carries a replay contract
       // and re-runs its application (Run Records → Get Info → Repeat). A
@@ -1547,8 +1956,10 @@
       }
       if (document === "outline") {
         const before = String(project.outline || "");
-        // setProjectOutlineMarkdown is the one road into that record: it stamps
-        // record ids on the way in, which is what the section tools then use.
+        // setProjectOutlineMarkdown is the one road into that record. It stores
+        // the outline and its titles; record ids are stamped by the writing
+        // route when the outline opens there, so only ids already present in
+        // the markdown come back here.
         if (typeof setProjectOutlineMarkdown === "function") setProjectOutlineMarkdown(project, markdown);
         else project.outline = markdown;
         project.updatedAt = new Date().toISOString();
@@ -1560,7 +1971,7 @@
           charactersBefore: before.length,
           charactersAfter: markdown.length,
           recordIds: recordIds(markdown),
-          note: "Record ids were stamped on the way in; hand them to open_writing_lens and annotate_section. 记录 id 已在写入时盖章，可直接交给镜头与批注工具。",
+          note: "recordIds lists the section ids this markdown already carries; new sections get theirs when the writing route opens the outline. recordIds 列出这段文字里已有的章节 id；新章节的 id 在写作路线打开大纲时盖上。",
         };
       }
       if (document === "section_draft") {
@@ -2099,7 +2510,7 @@
       const project = requireProject();
       const scrap = (typeof scraps !== "undefined" ? scraps : []).find((entry) => entry.id === rest && entry.projectId === project.id);
       if (!scrap) throw new Error(`No such clip: ${rest}`);
-      return text(`# ${scrap.title || ""}\n\n${scrap.body || ""}`);
+      return text(`# ${scrap.title || ""}\n\n${(typeof scrapDocumentText === "function" ? scrapDocumentText(scrap) : scrap.body) || ""}`);
     }
     if (kind === "docmap") {
       const project = requireProject();
@@ -2161,10 +2572,10 @@
     if (!receipts) throw new Error("Run receipts are not available.");
     const created = await receipts.createReceipt({
       projectId: project.id,
-      sourceAppId: guestAppId(guest),
+      sourceAppId: spec.sourceAppId || guestAppId(guest),
       intent: spec.intent,
-      provider: "guest",
-      model: guestName(guest),
+      provider: spec.provider || "guest",
+      model: spec.model ?? guestName(guest),
       inputObjectIds: spec.inputObjectIds || (typeof activeTextFileId !== "undefined" && activeTextFileId ? [activeTextFileId] : []),
       replayContract: spec.replayContract || null,
       name: spec.name,
@@ -2491,7 +2902,7 @@
     const receipts = window.AISystem6RunReceipts;
     if (!receipts?.queryReceipts) return [];
     return receipts.queryReceipts({ projectId: typeof activeProjectId !== "undefined" ? activeProjectId : "", limit: 50, includeRunning: true })
-      .filter((file) => String(file.runReceipt?.sourceAppId || "").startsWith("guest:")
+      .filter((file) => (String(file.runReceipt?.sourceAppId || "").startsWith("guest:") || (file.runReceipt?.sourceAppId === DESK_REBUILD_APP_ID && file.rebuildPack))
         && (file.guestReview || file.guestProposal || file.runReceipt?.checkpointState === "awaitingCommit"));
   }
 
@@ -2504,6 +2915,7 @@
   }
 
   function renderGuestReviews() {
+    renderLockedRebuildCards();
     const container = document.getElementById("guest-review-results");
     if (!container) return;
     const files = guestReviewReceipts();
@@ -2515,145 +2927,217 @@
       container.append(note);
       return;
     }
-    files.forEach((file) => {
-      const record = file.runReceipt || {};
-      const review = file.guestReview || null;
-      const proposal = file.guestProposal || null;
-      const adopted = typeof runReceiptIsAdopted === "function" && runReceiptIsAdopted(record);
-      const card = document.createElement("article");
-      card.className = "guest-review-card";
-      card.dataset.receiptId = file.id;
-      const head = document.createElement("h4");
-      head.textContent = `${t("guest_receipt_label", String(record.sourceAppId || "").slice("guest:".length))} · ${String(record.startedAt || "").replace("T", " ").replace(/\.\d{3}Z$/, "")}`;
-      card.append(head);
-      if (review) {
-        if (review.summary) {
-          const summary = document.createElement("p");
-          summary.textContent = review.summary;
-          card.append(summary);
+    files.forEach((file) => container.append(guestReviewCard(file)));
+  }
+
+  function guestReviewCard(file) {
+    const record = file.runReceipt || {};
+    const review = file.guestReview || null;
+    const proposal = file.guestProposal || null;
+    const adopted = typeof runReceiptIsAdopted === "function" && runReceiptIsAdopted(record);
+    const card = document.createElement("article");
+    card.className = "guest-review-card";
+    card.dataset.receiptId = file.id;
+    const head = document.createElement("h4");
+    const author = record.sourceAppId === DESK_REBUILD_APP_ID ? t("rebuild_writing_flow_title") : t("guest_receipt_label", String(record.sourceAppId || "").slice("guest:".length));
+    head.textContent = `${author} · ${String(record.startedAt || "").replace("T", " ").replace(/\.\d{3}Z$/, "")}`;
+    card.append(head);
+    if (review) {
+      if (review.summary) {
+        const summary = document.createElement("p");
+        summary.textContent = review.summary;
+        card.append(summary);
+      }
+      const list = document.createElement("ul");
+      list.className = "guest-review-findings";
+      // Grounding marks: which findings hold on to the writer's own text, and
+      // which only add pressure. The check is deterministic and runs here, so
+      // the writer reads the marks before deciding, not after adopting.
+      const manuscript = teachTextBodyInput?.value || "";
+      const checks = checkReview(review, manuscript).findings;
+      (review.findings || []).forEach((finding, findingIndex) => {
+        const check = checks[findingIndex] || null;
+        const item = document.createElement("li");
+        const severity = document.createElement("b");
+        severity.textContent = t(`guest_severity_${finding.severity || "info"}`);
+        item.append(severity, document.createTextNode(" "));
+        if (finding.quote) {
+          const quote = document.createElement("q");
+          quote.textContent = finding.quote;
+          item.append(quote, document.createTextNode(" "));
         }
-        const list = document.createElement("ul");
-        list.className = "guest-review-findings";
-        // Grounding marks: which findings hold on to the writer's own text, and
-        // which only add pressure. The check is deterministic and runs here, so
-        // the writer reads the marks before deciding, not after adopting.
-        const manuscript = teachTextBodyInput?.value || "";
-        const checks = checkReview(review, manuscript).findings;
-        (review.findings || []).forEach((finding, findingIndex) => {
-          const check = checks[findingIndex] || null;
-          const item = document.createElement("li");
-          const severity = document.createElement("b");
-          severity.textContent = t(`guest_severity_${finding.severity || "info"}`);
-          item.append(severity, document.createTextNode(" "));
-          if (finding.quote) {
-            const quote = document.createElement("q");
-            quote.textContent = finding.quote;
-            item.append(quote, document.createTextNode(" "));
-          }
-          item.append(document.createTextNode(finding.note || ""));
-          if (check) {
-            const marks = document.createElement("span");
-            marks.className = "guest-finding-marks";
-            const mark = (ok, key) => {
-              const tag = document.createElement("span");
-              tag.className = `guest-mark${ok ? " is-on" : ""}`;
-              tag.textContent = t(key);
-              marks.append(tag);
-            };
-            mark(check.pinned, "guest_mark_pinned");
-            mark(check.quoted, "guest_mark_quoted");
-            if (check.pressure) mark(true, "guest_mark_pressure");
-            item.append(document.createTextNode(" "), marks);
-          }
-          const index = guestReviewRecordIndex(finding.recordId);
-          if (index >= 0) {
-            const jump = document.createElement("button");
-            jump.type = "button";
-            jump.className = "btn mini-btn";
-            jump.textContent = t("guest_jump_record");
-            jump.addEventListener("click", () => revealReviewDeskSection(index));
-            item.append(document.createTextNode(" "), jump);
-          }
-          list.append(item);
-        });
-        card.append(list);
-      } else if (proposal) {
-        const body = document.createElement("div");
-        body.className = "guest-review-proposal";
-        body.innerHTML = markdownToSystemHtml(String(record.proposal || ""));
-        card.append(body);
-      } else if (record.checkpointState === "awaitingCommit") {
+        item.append(document.createTextNode(finding.note || ""));
+        if (check) {
+          const marks = document.createElement("span");
+          marks.className = "guest-finding-marks";
+          const mark = (ok, key) => {
+            const tag = document.createElement("span");
+            tag.className = `guest-mark${ok ? " is-on" : ""}`;
+            tag.textContent = t(key);
+            marks.append(tag);
+          };
+          mark(check.pinned, "guest_mark_pinned");
+          mark(check.quoted, "guest_mark_quoted");
+          if (check.pressure) mark(true, "guest_mark_pressure");
+          item.append(document.createTextNode(" "), marks);
+        }
+        const index = guestReviewRecordIndex(finding.recordId);
+        if (index >= 0) {
+          const jump = document.createElement("button");
+          jump.type = "button";
+          jump.className = "btn mini-btn";
+          jump.textContent = t("guest_jump_record");
+          jump.addEventListener("click", () => revealReviewDeskSection(index));
+          item.append(document.createTextNode(" "), jump);
+        }
+        list.append(item);
+      });
+      card.append(list);
+    } else if (proposal) {
+      const body = document.createElement("div");
+      body.className = "guest-review-proposal";
+      body.innerHTML = markdownToSystemHtml(String(record.proposal || ""));
+      card.append(body);
+    } else if (file.rebuildPack) {
+      const summary = rebuildPackSummary(file.rebuildPack);
+      const line = document.createElement("p");
+      line.textContent = t("guest_rebuild_card", summary.sections.length, summary.dossiers, summary.retired, summary.changes, summary.facts);
+      const sections = document.createElement("ol");
+      sections.className = "guest-rebuild-sections";
+      summary.sections.forEach((title) => {
+        const item = document.createElement("li");
+        item.textContent = title;
+        sections.append(item);
+      });
+      card.append(line, sections);
+      const warnings = file.guestRebuild?.warnings || [];
+      if (warnings.length) {
+        const note = document.createElement("p");
+        note.className = "hint";
+        note.textContent = t("guest_rebuild_warnings", warnings.length);
+        card.append(note);
+      }
+    } else if (record.checkpointState === "awaitingCommit") {
+      const line = document.createElement("p");
+      line.textContent = t("guest_intent_parked_card", record.intent, (record.inputObjectIds || []).length);
+      card.append(line);
+      if (record.proposal) {
+        const note = document.createElement("p");
+        note.className = "hint";
+        note.textContent = record.proposal;
+        card.append(note);
+      }
+    }
+    if (review) {
+      const summary = checkReview(review, teachTextBodyInput?.value || "");
+      if (summary?.total) {
         const line = document.createElement("p");
-        line.textContent = t("guest_intent_parked_card", record.intent, (record.inputObjectIds || []).length);
+        line.className = "hint guest-review-grounding";
+        line.textContent = summary.pressure
+          ? t("guest_grounding_with_pressure", summary.grounded, summary.total, summary.pressure)
+          : t("guest_grounding", summary.grounded, summary.total);
         card.append(line);
-        if (record.proposal) {
-          const note = document.createElement("p");
-          note.className = "hint";
-          note.textContent = record.proposal;
-          card.append(note);
-        }
       }
-      if (review) {
-        const summary = checkReview(review, teachTextBodyInput?.value || "");
-        if (summary?.total) {
-          const line = document.createElement("p");
-          line.className = "hint guest-review-grounding";
-          line.textContent = summary.pressure
-            ? t("guest_grounding_with_pressure", summary.grounded, summary.total, summary.pressure)
-            : t("guest_grounding", summary.grounded, summary.total);
-          card.append(line);
-        }
-      }
-      const row = document.createElement("div");
-      row.className = "button-row";
-      if (adopted || record.userAction === "reject") {
-        const state = document.createElement("span");
-        state.className = "hint";
-        state.textContent = adopted ? t("guest_adopted") : t("guest_rejected");
-        row.append(state);
-      } else if (record.checkpointState === "awaitingCommit") {
-        const commit = document.createElement("button");
-        commit.type = "button";
-        commit.className = "btn default mini-btn";
-        commit.textContent = t("guest_commit");
-        commit.addEventListener("click", async () => {
-          await ensureGuestToolsModule();
-          await window.AISystem6GuestTools?.commitGuestIntent?.(file.id);
-        });
-        const reject = document.createElement("button");
-        reject.type = "button";
-        reject.className = "btn mini-btn";
-        reject.textContent = t("guest_reject");
-        reject.addEventListener("click", async () => {
-          await ensureGuestToolsModule();
-          await window.AISystem6GuestTools?.rejectGuestReview?.(file.id);
-        });
-        row.append(commit, reject);
-      } else {
-        const adopt = document.createElement("button");
-        adopt.type = "button";
-        adopt.className = "btn default mini-btn";
-        adopt.textContent = t("guest_adopt");
-        adopt.addEventListener("click", async () => {
-          await ensureGuestToolsModule();
-          await window.AISystem6GuestTools?.adoptGuestReview?.(file.id);
-        });
-        const reject = document.createElement("button");
-        reject.type = "button";
-        reject.className = "btn mini-btn";
-        reject.textContent = t("guest_reject");
-        reject.addEventListener("click", async () => {
-          await ensureGuestToolsModule();
-          await window.AISystem6GuestTools?.rejectGuestReview?.(file.id);
-        });
-        row.append(adopt, reject);
-      }
-      card.append(row);
-      container.append(card);
-    });
+    }
+    const row = document.createElement("div");
+    row.className = "button-row";
+    if (adopted || record.userAction === "reject") {
+      const state = document.createElement("span");
+      state.className = "hint";
+      state.textContent = adopted ? t("guest_adopted") : t("guest_rejected");
+      row.append(state);
+    } else if (file.rebuildPack) {
+      const adopt = document.createElement("button");
+      adopt.type = "button";
+      adopt.className = "btn default mini-btn";
+      const adopting = adoptingRebuilds.has(String(file.id));
+      adopt.textContent = adopting ? t("guest_rebuild_adopting") : t("guest_rebuild_adopt");
+      adopt.disabled = adopting;
+      adopt.addEventListener("click", async () => {
+        await ensureGuestToolsModule();
+        await window.AISystem6GuestTools?.adoptRebuildPack?.(file.id);
+      });
+      const reject = document.createElement("button");
+      reject.type = "button";
+      reject.className = "btn mini-btn";
+      reject.textContent = t("guest_reject");
+      reject.disabled = adopting;
+      reject.addEventListener("click", async () => {
+        await ensureGuestToolsModule();
+        await window.AISystem6GuestTools?.rejectGuestReview?.(file.id);
+      });
+      row.append(adopt, reject);
+    } else if (record.checkpointState === "awaitingCommit") {
+      const commit = document.createElement("button");
+      commit.type = "button";
+      commit.className = "btn default mini-btn";
+      commit.textContent = t("guest_commit");
+      commit.addEventListener("click", async () => {
+        await ensureGuestToolsModule();
+        await window.AISystem6GuestTools?.commitGuestIntent?.(file.id);
+      });
+      const reject = document.createElement("button");
+      reject.type = "button";
+      reject.className = "btn mini-btn";
+      reject.textContent = t("guest_reject");
+      reject.addEventListener("click", async () => {
+        await ensureGuestToolsModule();
+        await window.AISystem6GuestTools?.rejectGuestReview?.(file.id);
+      });
+      row.append(commit, reject);
+    } else {
+      const adopt = document.createElement("button");
+      adopt.type = "button";
+      adopt.className = "btn default mini-btn";
+      adopt.textContent = t("guest_adopt");
+      adopt.addEventListener("click", async () => {
+        await ensureGuestToolsModule();
+        await window.AISystem6GuestTools?.adoptGuestReview?.(file.id);
+      });
+      const reject = document.createElement("button");
+      reject.type = "button";
+      reject.className = "btn mini-btn";
+      reject.textContent = t("guest_reject");
+      reject.addEventListener("click", async () => {
+        await ensureGuestToolsModule();
+        await window.AISystem6GuestTools?.rejectGuestReview?.(file.id);
+      });
+      row.append(adopt, reject);
+    }
+    card.append(row);
+    return card;
+  }
+
+  // Review Desk locks its results until the manuscript is marked final. A
+  // rebuild waiting for the writer is not a review of a final manuscript: it
+  // is the round that produces one, so its card shows inside the lock note
+  // (owner decision 2026-09-26). Everything else stays behind the lock.
+  function renderLockedRebuildCards() {
+    const note = document.getElementById("review-desk-empty-note");
+    if (!note) return;
+    const waiting = guestReviewReceipts().filter((file) => file.rebuildPack
+      && file.runReceipt?.checkpointState === "awaitingCommit"
+      && file.runReceipt?.userAction !== "reject");
+    let slot = note.querySelector(".review-desk-waiting-rebuilds");
+    if (!waiting.length) {
+      slot?.remove();
+      return;
+    }
+    if (!slot) {
+      slot = document.createElement("section");
+      slot.className = "review-desk-waiting-rebuilds";
+      note.append(slot);
+    }
+    const heading = document.createElement("h3");
+    heading.textContent = t("review_waiting_rebuilds");
+    slot.replaceChildren(heading, ...waiting.map(guestReviewCard));
   }
 
   window.AISystem6GuestTools = Object.freeze({
+    adoptRebuildPack,
+    deskRebuildContext,
+    submitDeskRebuildPack,
+    createProjectFromRebuildPack,
     READ_TOOLS,
     PROPOSE_TOOLS,
     CHANGE_TOOLS,

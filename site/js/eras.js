@@ -27,6 +27,12 @@ export const ERAS = [
     claim: L("Files, windows, disks, and Trash make responsibility visible.", "文件、窗口、磁盘与废纸篓，让每项责任都看得见。"),
   },
   {
+    id: "system-7", year: 1991, label: "System 7", ext: "png", page: "classic",
+    font: "Chicago", substitutes: [],
+    role: L("Color at the edges", "边框有了颜色"),
+    claim: L("Color reaches the window frame; the files, folders and disks keep their places.", "颜色来到窗框上，文件、文件夹与磁盘仍在原处。"),
+  },
+  {
     id: "platinum", year: 1999, label: "Platinum", ext: "png",
     font: "Charcoal", alias: ["Charcoal CY"],
     substitutes: ["Platinum Asap", "Geneva", "Tahoma", "Verdana"],
@@ -40,10 +46,22 @@ export const ERAS = [
     claim: L("Aqua changes the controls and light, while the manuscript stays the manuscript.", "Aqua 改变控件与光线，正文仍然是同一份正文。"),
   },
   {
+    id: "tiger", year: 2005, label: "Tiger", ext: "png", art: "snow-leopard", page: "aqua",
+    font: "Lucida Grande", substitutes: ["Lucida Sans Unicode", "Lucida Sans", "DejaVu Sans"],
+    role: L("Metal for the Finder", "金属只给 Finder"),
+    claim: L("Brushed metal wraps the Finder while a document keeps plain paper.", "拉丝金属只裹住 Finder，文稿仍是一张白纸。"),
+  },
+  {
     id: "snow-leopard", year: 2009, label: "Snow Leopard", ext: "png",
     font: "Lucida Grande", substitutes: ["Lucida Sans Unicode", "Lucida Sans", "DejaVu Sans"],
     role: L("The working year", "安静工作的一年"),
     claim: L("A mature source list and toolbar step back so the day's work can come forward.", "成熟的来源列表与工具栏退到后面，让一天的工作走到前面。"),
+  },
+  {
+    id: "lion", year: 2011, label: "Lion", ext: "png", art: "snow-leopard", page: "snow-leopard",
+    font: "Lucida Grande", substitutes: ["Lucida Sans Unicode", "Lucida Sans", "DejaVu Sans"],
+    role: L("Content to the edge", "内容铺到边缘"),
+    claim: L("Scroll bars step back and a window can take the whole screen; the manuscript still saves the same way.", "滚动条退到后面，窗口可以占满整块屏幕；正文的保存方式没有变。"),
   },
   {
     id: "yosemite", year: 2014, label: "Yosemite", ext: "png",
@@ -78,6 +96,13 @@ export const BRANCHES = [
     font: "Helvetica", substitutes: ["Arial", "Liberation Sans"],
     role: L("The branch", "岔路"),
     claim: L("The desk Mac OS X grew from. The objects keep their jobs here too.", "Mac OS X 从这张桌子长出来；对象在这里也守着同样的职责。"),
+  },
+  {
+    id: "drawing-board", year: 1998, label: "Drawing Board", ext: "png", art: "platinum", page: "platinum",
+    font: "Charcoal", alias: ["Charcoal CY"],
+    substitutes: ["Platinum Asap", "Geneva", "Tahoma", "Verdana"],
+    role: L("The road not taken", "没走的那条路"),
+    claim: L("An unreleased Mac OS 8.5 theme: pencil lines on drafting paper, the same objects underneath.", "一套没有发布的 Mac OS 8.5 主题：制图纸上的铅笔线，底下还是同样的对象。"),
   },
 ];
 const ALL = [...ERAS, ...BRANCHES];
@@ -144,8 +169,13 @@ if (doc.fonts) {
   )).then(() => listeners.forEach((fn) => fn(currentEra())));
 }
 
+// An era the page has no stylesheet of its own for wears its parent's page
+// (`page`): System 7 the System 6 page, Tiger Aqua's, Lion Snow Leopard's,
+// Drawing Board Platinum's. The era itself is kept in data-era, so its icons,
+// typeface and words stay its own.
 export function currentEra() {
-  const id = doc.documentElement.getAttribute("data-theme") || "classic";
+  const id = doc.documentElement.getAttribute("data-era")
+    || doc.documentElement.getAttribute("data-theme") || "classic";
   return ALL.find((e) => e.id === id) || ERAS[0];
 }
 
@@ -156,11 +186,13 @@ export function iconSrc(name, era) {
 
 export function setEra(id, store) {
   const era = ALL.find((e) => e.id === id) || ERAS[0];
-  if (era.id === "classic") {
+  const page = era.page || era.id;
+  if (page === "classic") {
     doc.documentElement.removeAttribute("data-theme");
   } else {
-    doc.documentElement.setAttribute("data-theme", era.id);
+    doc.documentElement.setAttribute("data-theme", page);
   }
+  doc.documentElement.setAttribute("data-era", era.id);
   if (store) {
     try { localStorage.setItem("s6-site-theme", era.id); } catch (e) {}
   }

@@ -68,7 +68,6 @@ test.assertIncludes(voxelSource, "arcology", "landmarks include domes");
 test.assertIncludes(voxelSource, "waterTexture.offset", "water shimmers from the snapshot clock");
 test.assertIncludes(voxelSource, "Beach ring", "coastlines gain a sand lip");
 test.assertIncludes(voxelSource, "pushRoadCurbs", "roads carry continuous curbs");
-test.assertIncludes(voxelSource, "cabin block on top", "cars are two-tone with a cabin");
 test.assertIncludes(voxelSource, "Waterfalls: white falling curtains", "the voxel world renders waterfall curtains");
 test.assertIncludes(voxelSource, "Active tornado and monster disasters", "the voxel world renders active disasters");
 test.assertIncludes(voxelSource, '"zone.airport"', "airport zones render a runway ground slab");
@@ -84,7 +83,7 @@ test.assertIncludes(voxelSource, "Airport control tower", "airport zones gain co
 test.assertIncludes(voxelSource, "Dock crane", "seaport zones gain dock cranes");
 test.assertIncludes(voxelSource, "sakura in spring", "spring scatters sakura crowns");
 test.assertIncludes(voxelSource, "in winter the whole lowland snows over", "winter snows over the lowland");
-test.assertIncludes(voxelSource, "Math.floor(((Number(snapshot.tick) || 0) % 1500) / 375)", "the chunk signature carries the season");
+test.assertIncludes(voxelSource, "hash = fnvUpdate(hash, seasonOfSnapshot(snapshot));", "the chunk signature carries the season the shell stamped");
 test.assertIncludes(voxelSource, "facility.${facility.kind}", "facilities resolve their own texture tile");
 
 // --- the module runs headless and installs a frozen surface -------------------
@@ -135,13 +134,13 @@ if (exists("app/features/bonsai-renderer.js")) {
   const canvasFrame = shared.measureFrame();
   test.assert(Math.abs(voxelFrame.tilesAcross - canvasFrame.tilesAcross) < 1e-9 && Math.abs(voxelFrame.tilesDown - canvasFrame.tilesDown) < 1e-9,
     `both backends count the same tiles in a 1024x640 frame (${voxelFrame.tilesAcross.toFixed(2)} x ${voxelFrame.tilesDown.toFixed(2)})`);
-  test.assert(Math.abs(voxelFrame.tilesAcross - 1024 / (64 * 0.7)) < 1e-9, "tiles across = viewport width over the diamond width at zoom 1");
-  test.assert(Math.abs(voxelFrame.tilesDown - 640 / (32 * 0.7)) < 1e-9, "tiles down = viewport height over the diamond-row advance at zoom 1");
+  test.assert(Math.abs(voxelFrame.tilesAcross - 1024 / (64 * 0.5)) < 1e-9, "tiles across = viewport width over the diamond width at the default step");
+  test.assert(Math.abs(voxelFrame.tilesDown - 640 / (32 * 0.5)) < 1e-9, "tiles down = viewport height over the diamond-row advance at the default step");
 }
 
 // --- view math parity: project and pick agree on every rotation ---------------
 
-test.assert(pure.clampZoom(99) === 2.5 && pure.clampZoom(0.01) === 0.4 && pure.DEFAULT_ZOOM === 0.7, "zoom clamps to the Canvas backend range");
+test.assert(pure.clampZoom(99) === 2 && pure.clampZoom(0.01) === 0.25 && pure.DEFAULT_ZOOM === 0.5, "zoom clamps to the Canvas backend range");
 test.assert(pure.normalizeRotation(-1) === 3 && pure.normalizeRotation(5) === 1, "rotation normalizes to four quarter-turns");
 
 for (let rotation = 0; rotation < 4; rotation += 1) {
@@ -333,7 +332,9 @@ test.assert(
 
 const blocks = pure.collectChunkBlocks(snapshot, fallbackRecipes, 0, 0, sceneObjects);
 test.assert(blocks.opaque.length > 0, "the chunk collector emits opaque voxel blocks");
-test.assert(blocks.water.length === 1, "the water tile emits one translucent surface block");
+const surfaceArea = (list) => list.reduce((sum, block) => sum + block.sx * block.sz, 0);
+test.assert(Math.abs(surfaceArea(blocks.water) - 1) < 1e-9 && blocks.water.every((block) => block.sx <= 1 && block.sz <= 1),
+  "the water tile's translucent surface covers exactly its own tile");
 test.assert(Math.abs(blocks.water[0].y - (3 * pure.ALT_STEP + 0.02)) < 1e-9, "a waterLevel layer lifts the water surface, which rides just above the bed top");
 test.assert(blocks.tint.filter((block) => block.sx === 0.96 && block.sy === 0.024).length === 1, "an empty zoned tile emits one zone tint slab");
 test.assert(blocks.tint.some((block) => block.sy === 0.02 && (block.sx === 1 || block.sz === 1)), "cliff shadows join the translucent tint pass");
@@ -395,7 +396,10 @@ test.assert(
   catalogBlocks.opaque.some((block) => Math.abs(block.r - fireColor.r) < 1e-9 && Math.abs(block.b - fireColor.b) < 1e-9),
   "a young fire draws in the Canvas backend's flame color"
 );
-test.assert(catalogBlocks.water.length === 2, "the flood tile adds a translucent slab beside the sea tile");
+const floodColor = atlasRecipes.blaze.flood;
+const floodSlabs = catalogBlocks.water.filter((block) => Math.abs(block.r - floodColor.r) < 1e-9 && Math.abs(block.b - floodColor.b) < 1e-9);
+test.assert(floodSlabs.length === 1 && Math.abs(surfaceArea(catalogBlocks.water) - floodSlabs[0].sx * floodSlabs[0].sz - 1) < 1e-9,
+  "the flood tile adds one translucent slab beside the sea tile's surface");
 const catalogOnly = pure.collectChunkBlocks(catalogSnapshot, atlasRecipes, 0, 0, {
   buildings: [], facilities: [], covered: new Set(), catalogTiles: catalogObjects.catalogTiles.filter((object) => !object.fragment),
 }, true).opaque;
@@ -458,6 +462,266 @@ if (exists("app/features/bonsai-city-sim.js")) {
   const realObjects = pure.collectSceneObjects(realSnapshot, fallbackRecipes);
   const realBlocks = pure.collectChunkBlocks(realSnapshot, fallbackRecipes, 0, 0, realObjects);
   test.assert(realBlocks.opaque.length > 0, "a real city chunk produces voxel blocks");
+}
+
+// --- networks follow the ground, SC2K-style ---------------------------------------
+{
+  const n = 8;
+  const layer = (fill = 0) => new Uint8Array(n * n).fill(fill);
+  const scene = (edit) => {
+    const snapshot = { size: n, tick: 12, seed: 5, rev: 1, timeOfDay: 0.5, alt: layer(1), water: layer(), slope: layer(),
+      road: layer(), rail: layer(), wire: layer(), pipe: layer(), subway: layer(), highway: layer(), onramp: layer() };
+    edit(snapshot);
+    return { snapshot, blocks: pure.collectChunkBlocks(snapshot, fallbackRecipes, 0, 0, pure.collectSceneObjects(snapshot, fallbackRecipes)) };
+  };
+  // A road up a hillside: x = 3 is the slope tile below the plateau at x >= 4.
+  const hill = scene((snapshot) => {
+    for (let y = 0; y < n; y += 1) { for (let x = 4; x < n; x += 1) snapshot.alt[y * n + x] = 2; snapshot.slope[y * n + 3] = 1; }
+    for (let x = 1; x < 7; x += 1) snapshot.road[3 * n + x] = 1;
+  });
+  const onSlope = hill.blocks.opaque.filter((block) => block.tile === "road" && block.x > 3 && block.x < 4 && Math.abs(block.z - 3.5) < 0.5);
+  const wedge = hill.blocks.opaque.find((block) => block.shape === "slope-2" && Math.abs(block.x - 3.5) < 0.01 && Math.abs(block.z - 3.5) < 0.01);
+  test.assert(wedge && onSlope.length > 0 && onSlope.every((block) => block.shearX > 0),
+    `a road on a slope tile rides a wedge of ground and climbs with it (${onSlope.length} road blocks sheared up the slope)`);
+  const surface = pure.surfaceAt(2, 1, 0.5);
+  test.assert(Math.abs(surface.h - pure.ALT_STEP) < 1e-9 && Math.abs(pure.surfaceAt(2, 0, 0.5).h) < 1e-9,
+    "the slope surface is level with the tile below at one edge and the plateau at the other");
+  // A bridge rides level with its banks.
+  const bridge = scene((snapshot) => {
+    for (let y = 0; y < n; y += 1) { snapshot.water[y * n + 4] = 1; snapshot.alt[y * n + 4] = 0; }
+    for (let x = 1; x < 7; x += 1) snapshot.road[3 * n + x] = 1;
+  });
+  const deck = bridge.blocks.opaque.find((block) => block.tile === "road" && Math.abs(block.x - 4.5) < 0.01 && Math.abs(block.z - 3.5) < 0.01);
+  test.assert(deck && Math.abs(deck.y - (pure.ALT_STEP + 0.03)) < 1e-6, "a bridge deck rides at the height of its banks, not on the water");
+  // Water pipes are buried: the surface view has none; the underground view does.
+  const piped = scene((snapshot) => { for (let x = 1; x < 7; x += 1) { snapshot.pipe[3 * n + x] = 1; snapshot.subway[5 * n + x] = 1; } });
+  test.assert(!piped.blocks.opaque.some((block) => block.tile === "pipe"), "the surface view draws no water pipes");
+  const below = pure.collectUndergroundBlocks(piped.snapshot, fallbackRecipes, 0, 0);
+  test.assert(below.opaque.some((block) => block.tile === "pipe") && below.opaque.some((block) => block.tile === "tunnel"),
+    "the underground view draws the pipes and the subway");
+  // Highways stand on piers above the street and an interchange stacks.
+  const raised = scene((snapshot) => { for (let x = 0; x < n; x += 1) { snapshot.highway[2 * n + x] = 1; snapshot.highway[3 * n + x] = 1; } });
+  const deckTop = Math.max(...raised.blocks.opaque.filter((block) => block.tile === "road").map((block) => block.y));
+  test.assert(deckTop > pure.ALT_STEP * 2, "a highway deck stands one height step over its ground");
+
+  // SC3K street furniture: sidewalks on both sides, zebra crossings at a
+  // junction, lamps along straight streets, sleepers under rails, lattice
+  // towers carrying power over open ground.
+  const street = scene((snapshot) => {
+    for (let x = 0; x < n; x += 1) snapshot.road[3 * n + x] = 1;
+    for (let y = 0; y < n; y += 1) snapshot.road[y * n + 3] = 1;
+    for (let x = 0; x < n; x += 1) snapshot.rail[6 * n + x] = 1;
+    for (let y = 0; y < n; y += 1) snapshot.wire[y * n + 6] = 1;
+  });
+  const walks = street.blocks.opaque.filter((block) => block.tile === "concrete" && Math.abs(block.z - 1.5) < 0.5 && Math.abs(Math.abs(block.x - 3.5) - 0.34) < 0.01);
+  test.assert(walks.length >= 2, `a street carries a sidewalk along each edge (${walks.length} walk strips on one tile)`);
+  const zebra = street.blocks.opaque.filter((block) => Math.abs(block.x - 3.5) < 0.5 && Math.abs(block.z - 3.5) < 0.5 && block.sy < 0.01);
+  test.assert(zebra.length >= 20, `a crossroads carries zebra crossings on all four arms (${zebra.length} stripes)`);
+  const posts = street.blocks.opaque.filter((block) => block.tile === "metal" && Math.abs(block.sy - 0.34) < 1e-9);
+  test.assert(posts.length > 0, `straight streets carry lamp posts (${posts.length})`);
+  const sleepers = street.blocks.opaque.filter((block) => block.tile === "rail" && Math.abs(block.z - 6.5) < 0.5 && block.sy === 0.02);
+  test.assert(sleepers.length >= 6, `rails lie on sleepers (${sleepers.length})`);
+  const legs = street.blocks.opaque.filter((block) => block.tile === "metal" && Math.abs(block.x - 6.5) < 0.5 && Math.abs(block.sy - 0.4) < 1e-9);
+  test.assert(legs.length >= 4, `power crosses open ground on lattice towers (${legs.length} legs)`);
+}
+
+// --- SC3K buildings: skyline, roof furniture, parking ---------------------------
+{
+  const source = JSON.parse(read("assets/bonsai/atlas-source.json"));
+  const lot = (zone, stage, variant, size) => pure.createAssetBlocks({ category: "building", zone, stage, variant, footprint: [size, size], state: "normal" }, source);
+  const topOf = (blocks) => Math.max(...blocks.map((block) => block.y + block.sy / 2));
+  const office = lot("commercial", 3, 20, 3);
+  const plainOffice = lot("commercial", 3, 4, 3);
+  test.assert(topOf(office) > 4 && topOf(plainOffice) < 2,
+    `a dear 3x3 commercial lot carries a tower (${topOf(office).toFixed(2)} vs ${topOf(plainOffice).toFixed(2)} world units)`);
+  const smallOffice = lot("commercial", 2, 20, 2);
+  const cornerShop = lot("commercial", 1, 20, 1);
+  test.assert(topOf(smallOffice) > 2.5 && topOf(smallOffice) < topOf(office) && topOf(cornerShop) < 1.5,
+    `a dear 2x2 lot carries a shorter tower (${topOf(smallOffice).toFixed(2)}), a dear one-tile lot never a needle (${topOf(cornerShop).toFixed(2)})`);
+  const flats = lot("residential", 3, 20, 3);
+  test.assert(topOf(flats) > 2.5, `a dear 3x3 residential lot carries apartment towers (${topOf(flats).toFixed(2)})`);
+  const pad = office.filter((block) => block.tile === "concrete" && Math.abs(block.sy - 0.03) < 1e-9 && block.y > 4);
+  test.assert(pad.length === 1 && pad[0].y + pad[0].sy / 2 > topOf(office.filter((block) => block.tile === "roof.deck")),
+    "an office tower lands a helipad above its roof deck");
+  const deck = office.filter((block) => block.tile === "roof.deck").sort((a, b) => b.y - a.y)[0];
+  const onRoof = office.filter((block) => block.y > deck.y && block !== pad[0] && block.sy > 0.01);
+  test.assert(onRoof.every((block) => block.tile === "concrete" || block.sx <= 0.06),
+    "nothing but the parapet and a slim mast shares the helipad roof");
+  const bands = office.filter((block) => block.tile === "metal" && block.sx > 1 && block.sz > 1);
+  test.assert(bands.length >= 1, `a tower shaft is broken by plant-floor bands (${bands.length})`);
+  const works = [];
+  for (const zone of ["industrial", "commercial"]) for (let stage = 1; stage <= 3; stage += 1) for (let variant = 1; variant <= 8; variant += 1) {
+    const blocks = lot(zone, stage, variant, 2);
+    if (blocks.some((block) => block.tile === "road" && Math.abs(block.sy - 0.014) < 1e-9)) works.push(blocks);
+  }
+  test.assert(works.length === 48, `every two-tile shop and works lays striped parking (${works.length} of 48)`);
+  test.assert(works.every((blocks) => blocks.filter((block) => Math.abs(block.sy - 0.004) < 1e-9).length >= 2),
+    "every parking lot is marked out in bays");
+  const roofs = [2, 3].map((stage) => lot("residential", stage, 1, 2)).concat([2, 3].map((stage) => lot("residential", stage, 2, 2)));
+  test.assert(roofs.some((blocks) => blocks.some((block) => block.tile === "tree.trunk" && Math.abs(block.sy - 0.12) < 1e-9)),
+    "apartment roofs carry timber water tanks");
+}
+
+// --- a planned downtown: towers ranked by height, parcels facing their street ----
+{
+  const source = JSON.parse(read("assets/bonsai/atlas-source.json"));
+  const lot = (zone, stage, variant, size) => pure.createAssetBlocks({ category: "building", zone, stage, variant, footprint: [size, size], state: "normal" }, source);
+  const topOf = (blocks) => Math.max(...blocks.map((block) => block.y + block.sy / 2));
+  const heights = [17, 18, 19, 20, 21, 22, 23, 24].map((variant) => topOf(lot("commercial", 3, variant, 3)));
+  test.assert(heights.every((height, index) => index === 0 || height >= heights[index - 1]) && heights[7] > heights[0] * 1.6,
+    `the eight high variants rise with their rank (${heights.map((height) => height.toFixed(1)).join(" ")})`);
+  const planning = { zone: "commercial", stage: 3, forms: ["shop"], stories: [1, 1], storeyMeters: 3.6 };
+  const forms = [17, 20, 24].map((variant) => pure.plannedBuildingMasses({ w: 3, h: 3 }, planning, variant).filter((mass) => mass.usage !== "podium").length);
+  test.assert(forms[0] === 1 && forms[1] === 2 && forms[2] === 3,
+    `towers come as a slab, a podium tower with a crown, and a stepped landmark (${forms.join(", ")} masses over the podium)`);
+  const shared = context.window.AISystem6BonsaiRenderer;
+  const along = (roads) => (tx, ty) => roads.some(([rx, ry]) => rx === tx && ry === ty);
+  test.assert(shared.streetQuarter(along([[4, 6], [5, 6]]), 4, 4, { w: 2, h: 2 }) === 0
+    && shared.streetQuarter(along([[6, 4], [6, 5]]), 4, 4, { w: 2, h: 2 }) === 1
+    && shared.streetQuarter(along([[4, 3]]), 4, 4, { w: 2, h: 2 }) === 2
+    && shared.streetQuarter(along([[3, 5]]), 4, 4, { w: 2, h: 2 }) === 3
+    && shared.streetQuarter(along([]), 4, 4, { w: 2, h: 2 }) === 0,
+    "a lot faces the side of its footprint with the most road along it");
+  const n = 16;
+  const street = (edit) => {
+    const snapshot = { size: n, tick: 12, seed: 5, rev: 1, timeOfDay: 0.5, alt: new Uint8Array(n * n).fill(1), water: new Uint8Array(n * n), road: new Uint8Array(n * n),
+      buildings: [{ x: 4, y: 4, w: 2, h: 2, footprint: { w: 2, h: 2 }, zone: "commercial", stage: 2, variant: 20, state: 3 }] };
+    edit(snapshot);
+    return pure.collectChunkBlocks(snapshot, atlasRecipes, 0, 0, pure.collectSceneObjects(snapshot, atlasRecipes)).opaque
+      .filter((block) => String(block.tile).startsWith("wall.") && block.x > 3.9 && block.x < 6.1 && block.z > 3.9 && block.z < 6.1);
+  };
+  const reach = (blocks) => ({ x: Math.max(...blocks.map((block) => block.x + block.sx / 2)) - 5, z: Math.max(...blocks.map((block) => block.z + block.sz / 2)) - 5 });
+  const south = reach(street((snapshot) => { for (let x = 0; x < n; x += 1) snapshot.road[6 * n + x] = 1; }));
+  const east = reach(street((snapshot) => { for (let y = 0; y < n; y += 1) snapshot.road[y * n + 6] = 1; }));
+  test.assert(south.z > south.x && east.x > east.z && Math.abs(south.z - east.x) < 1e-9,
+    `a tower's podium is built out to its street line, whichever side the street runs (south ${south.z.toFixed(2)}/${south.x.toFixed(2)}, east ${east.x.toFixed(2)}/${east.z.toFixed(2)})`);
+}
+
+// --- SC3K terrain and water: shelf, surf, whitecaps, grass detail ---------------
+{
+  const n = 32;
+  const layer = (value = 0) => new Uint8Array(n * n).fill(value);
+  const make = (edit) => {
+    const snapshot = { size: n, tick: 12, seed: 5, rev: 1, timeOfDay: 0.5, alt: layer(1), water: layer(), salt: layer(), zone: layer() };
+    edit(snapshot);
+    return snapshot;
+  };
+  const collect = (snapshot) => pure.collectChunkBlocks(snapshot, fallbackRecipes, 0, 0, pure.collectSceneObjects(snapshot, fallbackRecipes));
+  // Land for x < 4, open sea from x = 4 on.
+  const seaEdit = (snapshot) => { for (let y = 0; y < n; y += 1) for (let x = 4; x < n; x += 1) { snapshot.water[y * n + x] = 1; snapshot.salt[y * n + x] = 1; snapshot.alt[y * n + x] = 0; } };
+  const sea = collect(make(seaEdit));
+  const surfaceAt = (x, y) => sea.water.find((block) => Math.abs(block.x - x - 0.5) < 1e-9 && Math.abs(block.z - y - 0.5) < 1e-9);
+  const shelf = surfaceAt(4, 8);
+  const open = surfaceAt(12, 8);
+  test.assert(shelf && open && shelf.g > open.g && shelf.g / shelf.b > open.g / open.b,
+    "water beside the shore is a lighter, greener shelf than open water");
+  test.assert(surfaceAt(5, 8).g < shelf.g && surfaceAt(6, 8).g < surfaceAt(5, 8).g,
+    "the shelf darkens tile by tile away from the shore");
+  const white = (block) => block.r > 0.9 && block.g > 0.9 && block.b > 0.9 && block.a < 1;
+  const surf = sea.tint.filter((block) => white(block) && Math.abs(block.x - 4.04) < 1e-9 && block.sz === 1);
+  test.assert(surf.length === 16, `a surf line runs along every shore tile of the chunk (${surf.length} of 16)`);
+  const caps = sea.tint.filter((block) => white(block) && block.x > 7 && Math.abs(block.sz - 0.035) < 1e-9);
+  test.assert(caps.length > 0, `open sea carries whitecaps (${caps.length})`);
+  const again = collect(make(seaEdit));
+  test.assert(JSON.stringify(again.tint) === JSON.stringify(sea.tint), "surf and whitecaps are the same on every build");
+  const tufts = (blocks) => blocks.opaque.filter((block) => block.x < 4 && Math.abs(block.sx - 0.05) < 1e-9 && Math.abs(block.sy - 0.04) < 1e-9);
+  test.assert(tufts(sea).length > 0, `open grass carries tufts (${tufts(sea).length})`);
+  const zoned = collect(make((snapshot) => { seaEdit(snapshot); for (let y = 0; y < n; y += 1) for (let x = 0; x < 4; x += 1) snapshot.zone[y * n + x] = 1; }));
+  test.assert(tufts(zoned).length === 0, "zoned ground carries no tufts");
+  // Land two tiles outside a chunk still changes that chunk's shelf.
+  const base = make(seaEdit);
+  const filled = make((snapshot) => { seaEdit(snapshot); snapshot.water[8 * n + 17] = 0; snapshot.alt[8 * n + 17] = 1; });
+  test.assert(pure.chunkSignature(base, 0, 0, pure.collectSceneObjects(base, fallbackRecipes))
+    !== pure.chunkSignature(filled, 0, 0, pure.collectSceneObjects(filled, fallbackRecipes)),
+    "land just outside a chunk dirties that chunk, whose shelf it shapes");
+}
+
+// --- SC3K light: golden hour, patchwork windows, round lamp pools ---------------
+{
+  const noon = pure.lightingFor(0.5);
+  const golden = pure.lightingFor(0.25);
+  const midnight = pure.lightingFor(0);
+  test.assert(noon.sunR === 1 && noon.sunG === 1 && noon.sunB === 1, "noon sunlight is white");
+  test.assert(golden.warmth > 0.8 && golden.sunB < golden.sunG && golden.sunG < golden.sunR,
+    `the low sun turns orange (${golden.sunR.toFixed(2)}, ${golden.sunG.toFixed(2)}, ${golden.sunB.toFixed(2)})`);
+  test.assert(midnight.sunB > midnight.sunR && midnight.ambientB > midnight.ambientR, "night light reads cool blue");
+  const source = JSON.parse(read("assets/bonsai/atlas-source.json"));
+  const flats = (state) => pure.createAssetBlocks({ category: "building", zone: "residential", stage: 3, variant: 3, footprint: [2, 2], state }, source);
+  const bays = (blocks) => blocks.filter((block) => String(block.tile).startsWith("wall.r."));
+  const nightBays = bays(flats("night"));
+  const dark = nightBays.filter((block) => block.unlit).length;
+  test.assert(dark / nightBays.length > 0.25 && dark / nightBays.length < 0.55,
+    `at night some rooms are dark and most are lit (${dark} of ${nightBays.length} bays dark)`);
+  test.assert(bays(flats("normal")).every((block) => !block.unlit), "by day no bay is marked dark");
+  test.assert(JSON.stringify(nightBays.map((block) => Boolean(block.unlit))) === JSON.stringify(bays(flats("night")).map((block) => Boolean(block.unlit))),
+    "which rooms are lit is the same on every build");
+  const n = 16;
+  const street = { size: n, tick: 12, seed: 5, rev: 1, timeOfDay: 0, alt: new Uint8Array(n * n).fill(1), water: new Uint8Array(n * n), road: new Uint8Array(n * n) };
+  for (let x = 0; x < n; x += 1) street.road[3 * n + x] = 1;
+  const lit = pure.collectChunkBlocks(street, fallbackRecipes, 0, 0, pure.collectSceneObjects(street, fallbackRecipes));
+  const pools = lit.tint.filter((block) => block.r === 1 && block.g === 0.8 && block.b === 0.46);
+  test.assert(pools.length > 0 && pools.length % 3 === 0 && pools.every((block) => block.a <= 0.25),
+    `a street lamp throws a soft layered pool, not one square (${pools.length / 3} lamps)`);
+}
+
+// --- SC3K traffic: lanes, vehicle kinds, lights, sidewalks, trains ---------------
+{
+  const n = 16;
+  const layer = () => new Uint8Array(n * n);
+  const city = (edit, timeOfDay = 0.5, tick = 10) => {
+    const snapshot = { size: n, tick, seed: 5, rev: 1, timeOfDay, alt: layer().fill(1), water: layer(), road: layer(), rail: layer(), agents: {} };
+    for (let x = 0; x < n; x += 1) snapshot.road[3 * n + x] = 1;
+    for (let y = 0; y < n; y += 1) snapshot.road[y * n + 12] = 1;
+    for (let x = 0; x < n; x += 1) snapshot.rail[9 * n + x] = 1;
+    edit(snapshot);
+    return pure.collectAgentBlocks(snapshot, fallbackRecipes);
+  };
+  const bodies = (blocks, length) => blocks.opaque.filter((block) => Math.abs(Math.max(block.sx, block.sz) - length) < 1e-9);
+  const cars = city((snapshot) => { snapshot.agents.vehicles = Array.from({ length: 4 }, (_, i) => ({ x: 2 + i * 2, y: 3, phase: 0.3 })); });
+  const carBodies = bodies(cars, 0.27);
+  test.assert(carBodies.length === 4 && carBodies.every((block) => block.sx > block.sz),
+    "a car on an east-west street points along it");
+  test.assert(carBodies.every((block) => Math.abs(Math.abs(block.z - 3.5) - 0.12) < 1e-9)
+    && carBodies.some((block) => block.z > 3.5) && carBodies.some((block) => block.z < 3.5),
+    "cars keep to the right-hand lane of their direction, both directions in use");
+  const cabins = cars.opaque.filter((block) => block.tile === "metal" && Math.abs(Math.max(block.sx, block.sz) - 0.13) < 1e-9);
+  test.assert(cabins.length === 4, "every car is two-tone: a body with a darker cabin on it");
+  const crossing = city((snapshot) => { snapshot.agents.vehicles = [{ x: 12, y: 7, phase: 0.2 }]; });
+  test.assert(bodies(crossing, 0.27).every((block) => block.sz > block.sx), "a car on a north-south street points north-south");
+  const later = city((snapshot) => { snapshot.agents.vehicles = [{ x: 4, y: 3, phase: 0.3 }]; }, 0.5, 11);
+  const earlier = city((snapshot) => { snapshot.agents.vehicles = [{ x: 4, y: 3, phase: 0.3 }]; }, 0.5, 10);
+  test.assert(Math.abs(Math.abs(bodies(later, 0.27)[0].x - bodies(earlier, 0.27)[0].x) - 0.18 * 0.9) < 1e-9,
+    "a car rolls along its lane from tick to tick until the next deal");
+  const fleet = city((snapshot) => { snapshot.agents.vehicles = Array.from({ length: 10 }, (_, i) => ({ x: i + 1, y: 3, phase: 0.5 })); });
+  test.assert(bodies(fleet, 0.72).length === 1 && bodies(fleet, 0.34).length === 2, "traffic mixes in a bus and lorries");
+  const dark = city((snapshot) => { snapshot.agents.vehicles = [{ x: 4, y: 3, phase: 0.3 }]; }, 0);
+  test.assert(dark.glow.length === 4 && dark.glow.filter((block) => block.r > 0.9 && block.b < 0.2).length === 2,
+    "at night a car shows two headlights and two red tail lights");
+  test.assert(cars.glow.length === 0, "by day vehicles show no lights");
+  const walkers = city((snapshot) => { snapshot.agents.pedestrians = [{ x: 5, y: 5, phase: 0.5 }, { x: 5, y: 14, phase: 0.5 }]; });
+  const heads = walkers.opaque.filter((block) => Math.abs(block.sx - 0.024) < 1e-9);
+  test.assert(heads.length >= 1 && heads.every((block) => Math.abs(block.z - 3.88) < 0.06),
+    "a pedestrian walks the sidewalk on the building's side of the nearest street");
+  test.assert(heads.every((block) => Math.abs(block.z - 14.5) > 1), "a pedestrian with no street near stays at home");
+  const train = city((snapshot) => { snapshot.agents.trains = [{ x: 6, y: 9, phase: 0.5 }]; });
+  test.assert(bodies(train, 0.42).length === 2 && bodies(train, 0.42).every((block) => block.sx > block.sz),
+    "a train is a locomotive and a coach running along the track");
+  const station = city((snapshot) => { snapshot.agents.serviceVehicles = [{ x: 6, y: 5, phase: 0.5 }, { x: 8, y: 5, phase: 0.5 }]; });
+  test.assert(bodies(station, 0.28).length === 1 && bodies(station, 0.44).length === 1
+    && station.opaque.every((block) => Math.abs(block.z - 3.5) < 0.4),
+    "a police car and a fire engine drive out onto the street by their station");
+  const busy = city((snapshot) => { snapshot.traffic = new Uint16Array(n * n); snapshot.traffic[3 * n + 5] = 130; snapshot.traffic[3 * n + 6] = 45; snapshot.traffic[3 * n + 7] = 20; });
+  const onTile = (x) => busy.opaque.filter((block) => block.x >= x && block.x < x + 1 && Math.abs(block.z - 3.5) < 0.2 && block.y < 0.5 && block.sy >= 0.065 && block.sy <= 0.13).length;
+  test.assert(onTile(5) > onTile(6) && onTile(6) > 0 && onTile(7) === 0,
+    `streets carry cars in proportion to their traffic (${onTile(5)}, ${onTile(6)}, ${onTile(7)} vehicle blocks at traffic 130, 45, 20)`);
+  const jammed = (() => {
+    const size = 64;
+    const snapshot = { size, tick: 10, seed: 5, rev: 1, timeOfDay: 0.5, alt: new Uint8Array(size * size).fill(1), water: new Uint8Array(size * size), road: new Uint8Array(size * size).fill(1), traffic: new Uint16Array(size * size).fill(900), agents: {} };
+    return pure.collectAgentBlocks(snapshot, fallbackRecipes).opaque.length;
+  })();
+  test.assert(jammed < 360 * 4.5, `street traffic stays within its cap on a jammed map (${jammed} blocks)`);
+  const sprite = pure.createAssetBlocks({ category: "agent", kind: "car", variant: 1, state: "normal" }, JSON.parse(read("assets/bonsai/atlas-source.json")));
+  test.assert(sprite && sprite.length >= 2, "the atlas car sprite still composes from a snapshot with no streets");
 }
 
 test.finish();

@@ -134,6 +134,21 @@ window.AISystem6BonsaiCityLoaded = true;
         { id: "fire", icon: "F", shortcut: "F", gesture: "point", command: "place-facility", kind: "fire" },
         { id: "education", icon: "E", shortcut: "J", gesture: "point", command: "place-facility", kind: "school" },
         { id: "healthcare", icon: "+", shortcut: "H", gesture: "point", command: "place-facility", kind: "clinic" },
+        { id: "hospital", icon: "✚", gesture: "point", command: "place-facility", kind: "hospital" },
+        { id: "university", icon: "U", gesture: "point", command: "place-facility", kind: "university" },
+        { id: "library", icon: "L", gesture: "point", command: "place-facility", kind: "library" },
+        { id: "museum", icon: "M", gesture: "point", command: "place-facility", kind: "museum" },
+        { id: "prison", icon: "#", gesture: "point", command: "place-facility", kind: "prison" },
+      ],
+    },
+    {
+      id: "recreation",
+      tools: [
+        { id: "park", icon: "♠", shortcut: "G", gesture: "path", command: "build-path", network: "park" },
+        { id: "park-big", icon: "♧", gesture: "point", command: "place-facility", kind: "park-big" },
+        { id: "zoo", icon: "Z", gesture: "point", command: "place-facility", kind: "zoo" },
+        { id: "stadium", icon: "◯", gesture: "point", command: "place-facility", kind: "stadium" },
+        { id: "marina", icon: "⛵", gesture: "point", command: "place-facility", kind: "marina" },
       ],
     },
     {
@@ -162,6 +177,7 @@ window.AISystem6BonsaiCityLoaded = true;
     { id: "zones", labelKey: "bonsai_tool_group_zones" },
     { id: "utilities", labelKey: "bonsai_tool_group_utilities" },
     { id: "services", labelKey: "bonsai_tool_group_services" },
+    { id: "recreation", labelKey: "bonsai_tool_group_recreation" },
     { id: "rewards", labelKey: "bonsai_tool_group_rewards" },
     { id: "inspect", labelKey: "bonsai_tool_group_inspect" },
     { id: "pan", labelKey: "bonsai_tool_pan" },
@@ -243,7 +259,10 @@ window.AISystem6BonsaiCityLoaded = true;
     // M4 display toggles: the four 选项 view switches (buildings /
     // infrastructure / zones / underground). Session state only — never part
     // of a city save.
-    display: { buildings: true, infrastructure: true, zones: true, underground: false },
+    // Night and the seasons are shown only when asked for: SimCity 2000 has
+    // neither, and a city that went dark every 7.5 seconds and repainted its
+    // forest every 18 was harder to read than it was pretty.
+    display: { buildings: true, infrastructure: true, zones: true, underground: false, night: false, seasons: false },
     // 自动预算 (auto-budget): off by default, as in the original game, so
     // January holds the clock with the budget pane open. Session state,
     // never part of a city save. yearEndHold marks that pause.
@@ -327,9 +346,12 @@ window.AISystem6BonsaiCityLoaded = true;
     // On phones the same element is a transient toast; restarting its CSS
     // animation is the only way a new message shows again without replacing
     // the element or touching its aria-live contract.
-    target.style.animation = "none";
-    void target.offsetWidth;
-    target.style.animation = "";
+    if (window.matchMedia?.("(max-width: 560px)").matches
+      && !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      target.style.animation = "none";
+      void target.offsetWidth;
+      target.style.animation = "";
+    }
   }
 
   // Message key -> the demand bar it names. A city that needs more of one kind
@@ -691,7 +713,7 @@ window.AISystem6BonsaiCityLoaded = true;
       const setup = query("[data-bonsai-map-setup]");
       if (setup) setup.hidden = true;
       selectTool("road");
-      renderer()?.resetView?.({ center: state.current.spawnCenter || null, size: state.current.size, zoom: 0.82 });
+      renderer()?.resetView?.({ center: state.current.spawnCenter || null, size: state.current.size, zoom: window.AISystem6BonsaiRenderer?.DEFAULT_ZOOM ?? 0.5 });
       setMessage("bonsai_status_ready");
       showFirstHint();
       renderAll();
@@ -847,6 +869,8 @@ window.AISystem6BonsaiCityLoaded = true;
   function renderStatus() {
     const win = bonsaiWindow();
     if (!win) return;
+    // Read gauge colors before changing status text, avoiding an immediate layout flush.
+    if (state.current) renderDemandGauges();
     const date = currentDate();
     const tool = TOOLS.get(state.tool) || TOOLS.get("road");
     const cost = state.tool === "pan" ? 0 : Number(state.previewReceipt?.cost ?? unitCost(tool)) || 0;
@@ -858,24 +882,28 @@ window.AISystem6BonsaiCityLoaded = true;
       funds: state.current ? `$${formatMoney(state.current.funds)}` : "—",
       population: state.current ? String(Math.floor(Number(state.current.population) || 0)) : "—",
       tool: t(`bonsai_tool_${tool.id.replaceAll("-", "_")}`),
-      cost: state.tool === "pan" ? "—" : `$${formatMoney(cost)}`,
+      // A pad on uneven ground is levelled first; the preview shows that part.
+      cost: state.tool === "pan" ? "—" : Number(state.previewReceipt?.levelCost) > 0
+        ? `$${formatMoney(cost)} ${t("bonsai_status_level_cost", `$${formatMoney(state.previewReceipt.levelCost)}`)}`
+        : `$${formatMoney(cost)}`,
       overlay: state.overlay && state.overlay !== "none" ? t(`bonsai_overlay_${state.overlay.replaceAll("-", "_")}`) : "",
       saved: !state.current ? "" : state.lastSavedAt ? t("bonsai_status_saved_ago", Math.max(0, Math.round((Date.now() - state.lastSavedAt) / 1000))) : t("bonsai_status_unsaved"),
     };
     Object.entries(values).forEach(([name, value]) => {
       const target = win.querySelector(`[data-bonsai-status-${name}]`);
       if (!target) return;
-      target.textContent = name === "date" || name === "city" || name === "overlay" || name === "saved" ? value : `${t(`bonsai_status_label_${name}`)} ${value}`;
+      const text = name === "date" || name === "city" || name === "overlay" || name === "saved" ? value : `${t(`bonsai_status_label_${name}`)} ${value}`;
+      if (target.textContent !== text) target.textContent = text;
     });
     if (state.current) {
-      renderDemandGauges();
       // Deterministic weather (clean-room SC2K MISC): a pure function of the
       // city seed + calendar, shown live in the gauge bar.
       const weatherEl = win.querySelector("[data-bonsai-weather]");
       if (weatherEl) {
-        const weather = sim().buildRenderSnapshot(state.current)?.weather;
+        const weather = sim().weatherOf?.(state.current);
         if (weather) {
-          weatherEl.textContent = t(`bonsai_weather_${weather.type}`) || weather.type;
+          const text = t(`bonsai_weather_${weather.type}`) || weather.type;
+          if (weatherEl.textContent !== text) weatherEl.textContent = text;
           weatherEl.setAttribute("title", `${weather.temperature}°F · wind ${weather.wind}mph · humidity ${weather.humidity}%`);
         }
       }
@@ -883,10 +911,105 @@ window.AISystem6BonsaiCityLoaded = true;
     setMessage(state.latestMessage.key, ...state.latestMessage.args);
   }
 
+  // The snapshot says what the player chose to see: daylight unless the
+  // night view is on, and summer unless the seasons are on — then the season
+  // follows the city's own calendar (spring from March).
+  function stampedSnapshot(city) {
+    const snapshot = sim().buildRenderSnapshot(city);
+    snapshot.timeOfDay = state.display.night ? 0 : 0.5;
+    const month = Number(sim().dateOf?.(city)?.month) || 0;
+    snapshot.season = state.display.seasons ? [3, 3, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3][month] : 1;
+    // Problem signs blink at 1 Hz on the shell's clock (the renderer reads
+    // no clock of its own).
+    snapshot.flagPhase = Math.floor(performance.now() / 500) % 2;
+    return snapshot;
+  }
+
   function renderCity(city = state.current) {
     const active = renderer();
     if (!city || !state.rendererMounted || !active?.render) return;
-    active.render(sim().buildRenderSnapshot(city), { overlay: state.overlay, display: state.display });
+    active.render(stampedSnapshot(city), { overlay: state.overlay, display: state.display });
+  }
+
+  // One frame scheduler for the window. The simulation ticks at 20 Hz, but a
+  // tick used to redraw the map, the whole minimap, the gauge bar and the open
+  // panel's HTML every time — the panel's selects could not even be opened
+  // while the city ran. Now a tick only asks for a frame: the map draws once
+  // per animation frame, and while the clock runs the gauge bar refreshes at
+  // most four times a second, the minimap twice, and a panel only when the
+  // player is not working one of its controls.
+  const RUNNING_PANEL_MS = 250;
+  const RUNNING_MINIMAP_MS = 500;
+  const renderQueue = { city: false, panels: false, minimap: false, raf: 0, auxiliary: 0, lastPanels: 0, lastMinimap: 0 };
+
+  function requestRender(parts = { city: true, panels: true, minimap: true }) {
+    if (parts.city) renderQueue.city = true;
+    if (parts.panels) renderQueue.panels = true;
+    if (parts.minimap) renderQueue.minimap = true;
+    if (renderQueue.raf) return;
+    if (typeof requestAnimationFrame !== "function") {
+      flushRender(Date.now());
+      return;
+    }
+    renderQueue.raf = requestAnimationFrame(flushRender);
+  }
+
+  function cancelRenderQueue() {
+    if (renderQueue.raf && typeof cancelAnimationFrame === "function") cancelAnimationFrame(renderQueue.raf);
+    if (renderQueue.auxiliary) clearTimeout(renderQueue.auxiliary);
+    renderQueue.auxiliary = 0;
+    renderQueue.raf = 0;
+    renderQueue.city = false;
+    renderQueue.panels = false;
+    renderQueue.minimap = false;
+  }
+
+  function panelHasFocus() {
+    const panel = query("[data-bonsai-inspector]");
+    const active = document.activeElement;
+    return !!(panel && active && panel.contains(active) && /^(SELECT|INPUT|TEXTAREA|BUTTON)$/.test(active.tagName));
+  }
+
+  function flushRender(now) {
+    renderQueue.raf = 0;
+    if (!bonsaiWindow()) return;
+    const clock = Number.isFinite(now) ? now : Date.now();
+    if (renderQueue.city) {
+      renderQueue.city = false;
+      renderCity();
+    }
+    // Yield after the map paint: DOM panels and the minimap need not share
+    // its animation-frame task. One pending callback coalesces newer ticks.
+    if (typeof requestAnimationFrame === "function") {
+      if (!renderQueue.auxiliary && (renderQueue.panels || renderQueue.minimap)) {
+        renderQueue.auxiliary = setTimeout(() => {
+          renderQueue.auxiliary = 0;
+          if (bonsaiWindow()) flushAuxiliary(performance.now());
+        }, 0);
+      }
+    } else flushAuxiliary(clock);
+  }
+
+  function flushAuxiliary(clock) {
+    let pending = false;
+    if (renderQueue.panels) {
+      if (!state.playing || clock - renderQueue.lastPanels >= RUNNING_PANEL_MS) {
+        renderQueue.panels = false;
+        renderQueue.lastPanels = clock;
+        renderStatus();
+        if (!state.playing || !panelHasFocus()) renderInspector();
+        syncUndoButtons();
+        syncNewspaperMenu();
+      } else pending = true;
+    }
+    if (renderQueue.minimap) {
+      if (!state.playing || clock - renderQueue.lastMinimap >= RUNNING_MINIMAP_MS) {
+        renderQueue.minimap = false;
+        renderQueue.lastMinimap = clock;
+        renderMiniMap();
+      } else pending = true;
+    }
+    if (pending && !renderQueue.raf && typeof requestAnimationFrame === "function") renderQueue.raf = requestAnimationFrame(flushRender);
   }
 
   function renderAll() {
@@ -960,7 +1083,7 @@ window.AISystem6BonsaiCityLoaded = true;
     if (Math.floor(tickAfter / ticksPerMonth) !== monthBefore) scheduleAutosave();
     sim().drainEvents?.(state.current)?.forEach(handleSimEvent);
     if (Math.floor(tickAfter / ticksPerYear) !== Math.floor(tickBefore / ticksPerYear)) holdForYearEndBudget();
-    renderAll();
+    requestRender();
   }
 
   // January stops the clock for the budget review, as in the original game,
@@ -1112,15 +1235,34 @@ window.AISystem6BonsaiCityLoaded = true;
     return Number.isInteger(tile?.x) && Number.isInteger(tile?.y) ? tile : null;
   }
 
-  function zoomAt(factor) {
-    renderer()?.zoomBy?.(factor);
+  // Zoom steps between the fixed levels and keeps the ground under the
+  // pointer where it is; without a pointer it zooms about the map's middle.
+  function zoomAt(factor, clientPoint = null) {
+    const stack = query("[data-bonsai-map-stack]");
+    const rect = stack?.getBoundingClientRect?.();
+    const anchor = clientPoint && rect ? { x: clientPoint.x - rect.left, y: clientPoint.y - rect.top } : null;
+    renderer()?.zoomBy?.(factor, anchor);
     renderCity();
+    renderMiniMap();
     scheduleSessionCommit();
   }
 
-  function panBy(dx, dy) {
-    renderer()?.panByScreen?.(dx, dy);
+  function rotateView(quarterTurns) {
+    renderer()?.rotateBy?.(quarterTurns);
     renderCity();
+    renderMiniMap();
+    scheduleSessionCommit();
+  }
+
+  function centerOnCity() {
+    if (!state.current) return;
+    const center = builtViewCenter(state.current) || state.current.spawnCenter || null;
+    if (center) centerViewOnTile(center);
+  }
+
+  function panBy(dx, dy) {
+    renderer()?.panByScreen?.(dx, dy, { defer: true });
+    requestRender({ city: true });
     scheduleSessionCommit();
   }
 
@@ -1383,9 +1525,18 @@ window.AISystem6BonsaiCityLoaded = true;
       const distance = Math.max(1, Math.hypot(points[1].x - points[0].x, points[1].y - points[0].y));
       if (state.multiTouch) {
         panBy(centerX - state.multiTouch.centerX, centerY - state.multiTouch.centerY);
-        zoomAt(distance / Math.max(1, state.multiTouch.distance));
+        const base = state.multiTouch.baseDistance || state.multiTouch.distance;
+        const ratio = distance / Math.max(1, base);
+        if (ratio > 1.5 || ratio < 0.67) {
+          zoomAt(ratio > 1 ? 2 : 0.5, { x: centerX, y: centerY });
+          state.multiTouch = { centerX, centerY, distance, baseDistance: distance };
+          event.preventDefault();
+          return;
+        }
+        state.multiTouch = { centerX, centerY, distance, baseDistance: base };
+      } else {
+        state.multiTouch = { centerX, centerY, distance, baseDistance: distance };
       }
-      state.multiTouch = { centerX, centerY, distance };
       event.preventDefault();
       return;
     }
@@ -1453,12 +1604,13 @@ window.AISystem6BonsaiCityLoaded = true;
     const key = event.key.toUpperCase();
     if (key === "Q" && !event.metaKey && !event.ctrlKey) renderer()?.rotateBy?.(-1);
     else if (key === "E" && !event.metaKey && !event.ctrlKey) renderer()?.rotateBy?.(1);
+    else if (event.key === "Home") centerOnCity();
     else if (event.key === "ArrowLeft") panBy(-24, 0);
     else if (event.key === "ArrowRight") panBy(24, 0);
     else if (event.key === "ArrowUp") panBy(0, -24);
     else if (event.key === "ArrowDown") panBy(0, 24);
-    else if (event.key === "+" || event.key === "=") zoomAt(1.1);
-    else if (event.key === "-") zoomAt(0.9);
+    else if (event.key === "+" || event.key === "=") zoomAt(2);
+    else if (event.key === "-") zoomAt(0.5);
     else {
       const match = [...TOOLS.values()].find((tool) => tool.shortcut === key);
       if (match) selectTool(match.id);
@@ -1484,7 +1636,23 @@ window.AISystem6BonsaiCityLoaded = true;
     }, undefined, true);
     listen(stack, "wheel", (event) => {
       event.preventDefault();
-      zoomAt(event.deltaY < 0 ? 1.1 : 0.9);
+      const pinch = event.ctrlKey || event.metaKey;
+      const trackpadScroll = !pinch && (Math.abs(event.deltaX) > 0 || (event.deltaMode === 0 && Math.abs(event.deltaY) < 40));
+      if (trackpadScroll) {
+        panBy(-event.deltaX, -event.deltaY);
+        return;
+      }
+      // Wheel notches and pinch deltas accumulate until they add up to one
+      // step, and a short rest after a step stops one flick skipping levels.
+      const now = Date.now();
+      state.wheelZoom = state.wheelZoom || { sum: 0, until: 0 };
+      if (now < state.wheelZoom.until) return;
+      state.wheelZoom.sum += event.deltaY;
+      const threshold = pinch ? 24 : 40;
+      if (Math.abs(state.wheelZoom.sum) < threshold) return;
+      const factor = state.wheelZoom.sum < 0 ? 2 : 0.5;
+      state.wheelZoom = { sum: 0, until: now + 180 };
+      zoomAt(factor, { x: event.clientX, y: event.clientY });
     }, { passive: false }, true);
     listen(stack, "contextmenu", (event) => event.preventDefault(), undefined, true);
     listen(stack, "keydown", handleMapKey, undefined, true);
@@ -1545,7 +1713,17 @@ window.AISystem6BonsaiCityLoaded = true;
       bonsai_tile_altitude: info.altitude ?? info.alt,
       bonsai_tile_zone: t(zoneKeys[info.zone] || zoneKeys[0]),
       bonsai_tile_density: t(densityKeys[info.density] || densityKeys[0]),
-      bonsai_tile_building: info.building ?? info.stage,
+      // Ruleset 5: the building standing on this tile's lot, what it holds,
+      // and the ground it stands on.
+      bonsai_tile_building: info.lot?.built
+        ? t("bonsai_lot_summary", info.lot.size, t(`bonsai_lot_tier_${info.lot.tier}`), t(`bonsai_lot_state_${info.lot.state}`))
+        : (info.lot ? t("bonsai_lot_empty") : "—"),
+      ...(info.lot?.built ? { [info.zone === 1 ? "bonsai_tile_residents" : "bonsai_tile_jobs"]: info.zone === 1 ? info.lot.residents : info.lot.jobs } : {}),
+      bonsai_tile_land_value: info.landValue ?? "—",
+      bonsai_tile_crime: info.crime ?? "—",
+      bonsai_tile_pollution: info.pollution ?? "—",
+      bonsai_tile_traffic: info.traffic ?? "—",
+      ...(info.lot ? { bonsai_tile_commute: info.lot.commuteDistance == null ? t("bonsai_value_no") : t("bonsai_tile_commute_value", info.lot.commuteDistance) } : {}),
       bonsai_catalog_label: info.catalogId
         ? t(window.AISystem6BonsaiCatalog?.entryOf?.(info.catalogId)?.labelKey || "bonsai_catalog_infrastructure")
         : "—",
@@ -1647,6 +1825,37 @@ window.AISystem6BonsaiCityLoaded = true;
     state.inspectorMode = "neighbors";
     renderInspector();
     scheduleSessionCommit();
+  }
+
+  // The advisors (spec 3.12): six voices, each naming the one or two things
+  // that matter now; the core says which and where, the words are ours.
+  function openAdvisors() {
+    if (!state.current) return;
+    state.inspectorMode = "advisors";
+    renderInspector();
+    scheduleSessionCommit();
+  }
+
+  function advisorsMarkup() {
+    const report = sim().advisorReport?.(state.current);
+    if (!report) return "";
+    const severity = ["ok", "note", "warn", "urgent"];
+    return `<div class="bonsai-advisors">${report.advisors.map((advisor) => `
+      <section class="bonsai-advisor" data-bonsai-advisor="${advisor.id}">
+        <h4>${t(`bonsai_advisor_${advisor.id}`)}</h4>
+        <ul>${advisor.items.map((item) => `
+          <li class="bonsai-advice is-${severity[item.severity] || "ok"}" data-bonsai-advice="${item.key}">
+            <span>${t(`bonsai_advice_${item.key}`, item.values || {})}</span>
+            ${item.at ? `<button class="btn mini-btn" type="button" data-bonsai-advisor-locate="${item.at.x},${item.at.y}">${t("bonsai_advisor_locate")}</button>` : ""}
+          </li>`).join("")}</ul>
+      </section>`).join("")}</div>`;
+  }
+
+  function locateAdvice(button) {
+    const [x, y] = String(button.dataset.bonsaiAdvisorLocate || "").split(",").map(Number);
+    if (!Number.isInteger(x) || !Number.isInteger(y)) return;
+    centerViewOnTile({ x, y });
+    openTileBalloon({ x, y });
   }
 
   function setOverlay(value) {
@@ -2026,7 +2235,7 @@ window.AISystem6BonsaiCityLoaded = true;
   function renderMiniMap() {
     const canvas = query("[data-bonsai-minimap]");
     if (!canvas || !state.current || typeof renderer()?.renderMiniMap !== "function") return;
-    renderer().renderMiniMap(canvas, sim().buildRenderSnapshot(state.current), {
+    renderer().renderMiniMap(canvas, stampedSnapshot(state.current), {
       overlay: state.overlay,
       // What the camera is looking at, so the map can show it.
       viewport: miniMapViewportBounds(),
@@ -2519,6 +2728,10 @@ window.AISystem6BonsaiCityLoaded = true;
           <button class="btn" type="button" data-bonsai-departure-cancel>${t("cancel")}</button>
           <button class="btn default" type="button" data-bonsai-departure-confirm>${t(pending.kind === "cty" ? "bonsai_micropolis_departure_export" : "bonsai_micropolis_departure_send")}</button>
         </div>` : "";
+    } else if (state.inspectorMode === "advisors") {
+      titleKey = "bonsai_advisors";
+      rows = {};
+      controls = advisorsMarkup();
     } else if (state.inspectorMode === "neighbors") {
       titleKey = "bonsai_neighbors";
       const report = sim().neighborsReport?.(state.current) || null;
@@ -2768,7 +2981,7 @@ window.AISystem6BonsaiCityLoaded = true;
       const id = makeId(decodedState?.seed);
       const createdAt = new Date().toISOString();
       const name = imported.name || t("bonsai_city_unnamed");
-      const saveData = await saveCodec().encode(decodedState, { cityId: id, name, createdAt, updatedAt: createdAt });
+      const saveData = await saveCodec().encodeForStorage(decodedState, { cityId: id, name, createdAt, updatedAt: createdAt });
       await writeCityRecord({ id, name, createdAt, updatedAt: createdAt, saveData });
       clearHistory("bonsai_history_cleared_import");
       setMessage("bonsai_status_imported_micropolis");
@@ -2824,7 +3037,7 @@ window.AISystem6BonsaiCityLoaded = true;
     state.saving = (async () => {
       setMessage("bonsai_status_saving");
       try {
-        const saveData = await saveCodec().encode(cityAtStart, metadata);
+        const saveData = await saveCodec().encodeForStorage(cityAtStart, metadata);
         await writeCityRecord({
           id: metadata.cityId,
           name: metadata.name,
@@ -2873,7 +3086,7 @@ window.AISystem6BonsaiCityLoaded = true;
     state.saving = (async () => {
       setMessage("bonsai_status_saving_copy");
       try {
-        const saveData = await saveCodec().encode(cityAtStart, metadata);
+        const saveData = await saveCodec().encodeForStorage(cityAtStart, metadata);
         await writeCityRecord({
           id: metadata.cityId,
           name: metadata.name,
@@ -2968,7 +3181,7 @@ window.AISystem6BonsaiCityLoaded = true;
       hideCityBrowser();
       const setup = query("[data-bonsai-map-setup]");
       if (setup) setup.hidden = true;
-      renderer()?.resetView?.({ center: builtViewCenter(state.current) || state.current.spawnCenter || null, size: state.current.size, zoom: 0.82 });
+      renderer()?.resetView?.({ center: builtViewCenter(state.current) || state.current.spawnCenter || null, size: state.current.size, zoom: window.AISystem6BonsaiRenderer?.DEFAULT_ZOOM ?? 0.5 });
       setMessage("bonsai_status_loaded");
       renderAll();
       scheduleSessionCommit();
@@ -3139,7 +3352,7 @@ window.AISystem6BonsaiCityLoaded = true;
     if (action === "open") return openSavedRecord(target);
     if (action === "export") {
       const ok = window.AISystem6WebPlatform?.saveArtifact?.({
-        text: JSON.stringify(target.saveData, null, 2),
+        text: typeof target.saveData === "string" ? target.saveData : JSON.stringify(target.saveData, null, 2),
         fileName: `${String(target.name || "bonsai-city").replace(/[^a-z0-9_-]+/gi, "-")}.bonsai-city.json`,
         mimeType: "application/json",
       });
@@ -3205,7 +3418,7 @@ window.AISystem6BonsaiCityLoaded = true;
       const setup = query("[data-bonsai-map-setup]");
       if (setup) setup.hidden = true;
       selectTool("road");
-      renderer()?.resetView?.({ center: builtViewCenter(city) || city.spawnCenter || null, size: city.size, zoom: city.view?.zoom ?? 0.82 });
+      renderer()?.resetView?.({ center: builtViewCenter(city) || city.spawnCenter || null, size: city.size, zoom: city.view?.zoom ?? window.AISystem6BonsaiRenderer?.DEFAULT_ZOOM ?? 0.5 });
       setMessage("bonsai_status_scenario_started");
       openReport();
       renderAll();
@@ -3290,7 +3503,7 @@ window.AISystem6BonsaiCityLoaded = true;
       const setup = query("[data-bonsai-map-setup]");
       if (setup) setup.hidden = true;
       selectTool("road");
-      renderer()?.resetView?.({ center: builtViewCenter(city) || city.spawnCenter || null, size: city.size, zoom: city.view?.zoom ?? 0.82 });
+      renderer()?.resetView?.({ center: builtViewCenter(city) || city.spawnCenter || null, size: city.size, zoom: city.view?.zoom ?? window.AISystem6BonsaiRenderer?.DEFAULT_ZOOM ?? 0.5 });
       setMessage("bonsai_status_ready");
       renderAll();
       scheduleSessionCommit();
@@ -3338,7 +3551,7 @@ window.AISystem6BonsaiCityLoaded = true;
       const id = makeId(decodedState?.seed);
       const createdAt = new Date().toISOString();
       const name = importedName || file.name.replace(/\.bonsai-city\.json$|\.json$|\.sc2$|\.scn$/i, "") || t("bonsai_city_unnamed");
-      const saveData = await saveCodec().encode(decodedState, { cityId: id, name, createdAt, updatedAt: createdAt });
+      const saveData = await saveCodec().encodeForStorage(decodedState, { cityId: id, name, createdAt, updatedAt: createdAt });
       await writeCityRecord({ id, name, createdAt, updatedAt: createdAt, saveData });
       clearHistory("bonsai_history_cleared_import");
       setMessage(isSc2 ? "bonsai_status_imported_sc2" : isMicropolis ? "bonsai_status_imported_micropolis" : "bonsai_status_imported");
@@ -3481,6 +3694,8 @@ window.AISystem6BonsaiCityLoaded = true;
       const toolButton = event.target.closest("[data-bonsai-tool]");
       if (toolButton) return selectTool(toolButton.dataset.bonsaiTool);
       if (event.target.closest("[data-bonsai-open-graphs]")) return openGraphs();
+      const adviceLocate = event.target.closest("[data-bonsai-advisor-locate]");
+      if (adviceLocate) return locateAdvice(adviceLocate);
       if (event.target.closest("[data-bonsai-open-demographic-graphs]")) return openDemographicGraphs();
       const overlayChip = event.target.closest("[data-bonsai-overlay-chip]");
       if (overlayChip) return setOverlay(overlayChip.dataset.bonsaiOverlayChip);
@@ -3781,6 +3996,7 @@ window.AISystem6BonsaiCityLoaded = true;
       return false;
     }
     clearAutosaveTimer();
+    cancelRenderQueue();
     clearTimeout(state.firstHintTimer);
     state.firstHintTimer = null;
     clearCleanupList(state.pointerCleanups);
@@ -3857,6 +4073,9 @@ window.AISystem6BonsaiCityLoaded = true;
         resizeObservers: Number(rendererStats.resizeObserverCount) || 0,
       }),
       overlay: state.overlay,
+      // What the map is looking at is user-visible state too: zoom, rotation
+      // and pan are how a camera command proves it did something.
+      view: Object.freeze({ ...(rendererStats.view || {}) }),
       renderer: Object.freeze({
         ready: !!renderer()?.isReady?.(),
         width: Number(rendererStats.cssWidth ?? rendererStats.width) || 0,
@@ -3925,6 +4144,7 @@ window.AISystem6BonsaiCityLoaded = true;
     "open-population": () => openPopulation(),
     "open-industry": () => openIndustry(),
     "open-neighbors": () => openNeighbors(),
+    "open-advisors": () => openAdvisors(),
     "open-goals": () => openGoals(),
     "ordinances": () => openBudget(),
     "toggle-renderer": () => setRendererBackend(state.rendererBackend === "three-voxel" ? "canvas-2d" : "three-voxel"),
@@ -3934,6 +4154,13 @@ window.AISystem6BonsaiCityLoaded = true;
     "display-infrastructure": () => setDisplay("infrastructure"),
     "display-zones": () => setDisplay("zones"),
     "display-underground": () => setDisplay("underground"),
+    "display-night": () => setDisplay("night"),
+    "display-seasons": () => setDisplay("seasons"),
+    "zoom-in": () => zoomAt(2),
+    "zoom-out": () => zoomAt(0.5),
+    "rotate-cw": () => rotateView(1),
+    "rotate-ccw": () => rotateView(-1),
+    "center-city": () => centerOnCity(),
     "sound-music": () => setAudioMode("music"),
     "sound-sfx": () => setAudioMode("sfx"),
     "sound-off": () => setAudioMode("off"),
@@ -3955,8 +4182,9 @@ window.AISystem6BonsaiCityLoaded = true;
     // black and did nothing when chosen.
     ...SPEEDS.map((speed) => `speed-${speed.value}`),
     "save", "save-as", "export-sc2", "export-cty", "send-micropolis", "undo", "redo", "report", "budget", "news", "subscribe", "extra", "ordinances", "minimap", "disasters-off",
-    "open-graphs", "open-population", "open-industry", "open-neighbors", "open-goals",
+    "open-graphs", "open-population", "open-industry", "open-neighbors", "open-goals", "open-advisors",
     "display-buildings", "display-infrastructure", "display-zones", "display-underground",
+    "display-night", "display-seasons", "zoom-in", "zoom-out", "rotate-cw", "rotate-ccw", "center-city",
     ...OVERLAYS.map((overlay) => `overlay-${overlay}`),
     ...DISASTER_MENU.map((kind) => `disaster-${kind}`),
   ]);
@@ -4035,6 +4263,15 @@ window.AISystem6BonsaiCityLoaded = true;
           displayItem("infrastructure"),
           displayItem("zones"),
           displayItem("underground"),
+          separator,
+          item("zoom-in", "bonsai_zoom_in"),
+          item("zoom-out", "bonsai_zoom_out"),
+          item("rotate-cw", "bonsai_rotate_cw"),
+          item("rotate-ccw", "bonsai_rotate_ccw"),
+          item("center-city", "bonsai_center"),
+          separator,
+          displayItem("night"),
+          displayItem("seasons"),
         ],
       },
       {
@@ -4054,6 +4291,7 @@ window.AISystem6BonsaiCityLoaded = true;
           item("open-population", "bonsai_population"),
           item("open-industry", "bonsai_industry"),
           item("open-neighbors", "bonsai_neighbors"),
+          item("open-advisors", "bonsai_advisors"),
           { type: "separator" },
           item("open-goals", "bonsai_opening_goals"),
         ],

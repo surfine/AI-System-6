@@ -31,6 +31,11 @@ window.AISystem6LaunchIntent = {
       // so this route lands on the challenge rather than the card shelf, and
       // a `set` beside it opens that exact ten.
       "one-more-tune": { command: "open-one-more-tune", window: "oneMoreTune" },
+      // The folder the thirty-five shared disks live in, so a video description
+      // or a README can hand over the whole shelf in one link. It opens on the
+      // newest disk's manuscript, so the visitor reads before choosing; the
+      // folder is a Finder page on the desk, so it keeps the desktop view.
+      disks: { command: "open-demo-disks-latest", window: "diskPeek" },
       // A shared Project Hard Disk. The window it stops on is TeachText,
       // because the manuscript is what such a link is shared for, and it opens
       // in the Writing view: the disk is a finished trip along the writing
@@ -70,6 +75,7 @@ window.AISystem6LaunchIntent = {
       cdma4: { command: "open-shared-disk-cdma4", window: "teachText", profile: "writing" },
       iphone17: { command: "open-shared-disk-iphone17", window: "teachText", profile: "writing" },
       windowshade: { command: "open-shared-disk-windowshade", window: "teachText", profile: "writing" },
+      ipadpro18: { command: "open-shared-disk-ipadpro18", window: "teachText", profile: "writing" },
     };
     const param = (name) => {
       const match = String(search || "").match(new RegExp(`[?&]${name}=([^&#]+)`, "i"));

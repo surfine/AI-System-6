@@ -2778,6 +2778,9 @@ function buildDocMapPrintHtml(map = currentDocMap) {
   const title = docMapPrintTitle(map);
   const svgHtml = cloneDocMapSvgForPrint(map);
   const markmapCss = docMapPrintMarkmapCss();
+  // The print page copies DocMap's rules out of the live sheets; Liquid
+  // Glass's select body[data-theme="liquid-glass"], and the class stays for
+  // anything that still reads it.
   const bodyClass = getCurrentTheme() === "liquid-glass" ? "use-liquid-glass" : "";
   const markdownFallback = escapeHtml(formatDocMapMarkdown(map || {}));
   const lang = currentLanguage === "zh" ? "zh-Hans" : "en";
@@ -2817,7 +2820,7 @@ function buildDocMapPrintHtml(map = currentDocMap) {
     }
   </style>
 </head>
-<body class="${bodyClass}" data-docmap-layout="${layout}">
+<body class="${bodyClass}"${bodyClass ? ' data-theme="liquid-glass"' : ""} data-docmap-layout="${layout}">
   <main aria-label="${escapeHtml(title)}">
     <section class="docmap-tree docmap-print-tree">
       <div class="docmap-markmap-frame">${svgHtml || `<pre>${markdownFallback}</pre>`}</div>

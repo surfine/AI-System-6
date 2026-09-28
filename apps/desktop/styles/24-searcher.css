@@ -1,0 +1,356 @@
+/* Searcher: the web-search window. Its module (findpath.js) has always been
+   lazy, and every selector here is .find-path-*, so the sheet now travels with
+   ensureFindPathModule instead of riding every boot (owner decision D5,
+   2026-09-25). The era looks stay tokens in the appearance sheets
+   (--find-path-*); the phone rules keep their media query below and still
+   come after the base rules, as they did in 60-responsive.css. Moving this
+   sheet later in the cascade was checked by computed style for all eleven
+   appearances at desk and phone width. Find File shares the module but keeps
+   its rules in 10-windows.css. */
+
+/* Wide enough for a query, a title on one line and the four handoff
+   controls in one row; at 420px the query clipped and Insert wrapped alone. */
+.find-path-window {
+  top: 34px;
+  right: 120px;
+  width: min(560px, calc(100vw - 24px));
+  height: min(620px, calc(100vh - 65px));
+}
+
+.find-path-window .window-pane.find-path-pane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--find-path-pane-gap);
+  align-items: stretch;
+  padding: var(--find-path-pane-padding);
+  background: var(--find-path-pane-bg);
+}
+
+.find-path-pane label {
+  font-weight: bold;
+}
+
+/* The query row and field carry era search chrome through tokens: Snow
+   Leopard lifts the row onto full-bleed toolbar material, and the Aqua
+   branch swaps the field for its measured rounded search-field recipe.
+   Every default repeats the shared field/row values, so Classic, Yosemite,
+   and Liquid Glass stay untouched. */
+.find-path-query-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  width: var(--find-path-query-row-width, 100%);
+  margin: var(--find-path-query-row-margin, 0);
+  padding: var(--find-path-query-row-padding, 0);
+  background: var(--find-path-query-row-bg, none);
+  border-bottom: var(--find-path-query-row-border-bottom, 0);
+}
+
+.find-path-query-row input {
+  min-width: 0;
+}
+
+/* Two classes: the era tokens must win over the theme layers' one-class
+   generic field recipes (Aqua/SL load later), while the theme layers'
+   stronger own-field recipes (Platinum, Yosemite family, Liquid Glass)
+   still win over this rule. Defaults mirror the shared field recipe, so
+   themes without tokens render unchanged. */
+.find-path-window .find-path-query-row input {
+  min-height: var(--find-path-query-min-height, auto);
+  padding: var(--find-path-query-padding, 6px);
+  border-radius: var(--find-path-query-radius, var(--field-radius));
+  background: var(--find-path-query-bg, var(--field-bg));
+}
+
+.find-path-query-row input:focus {
+  outline: 0;
+}
+
+.find-path-pane input {
+  width: 100%;
+}
+
+.find-path-pane .find-path-query-row input {
+  width: auto;
+}
+
+.find-path-summary,
+.find-path-results {
+  width: 100%;
+}
+
+.find-path-summary {
+  margin-top: 4px;
+  padding: 10px;
+  border: var(--find-path-summary-border);
+  background: var(--paper);
+  font-family: var(--text-font);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  max-height: 140px;
+  overflow-y: auto;
+  font-size: 13px;
+  box-shadow: inset 1px 1px 0 var(--shade);
+}
+
+.find-path-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--find-path-results-gap);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--find-path-results-padding);
+  border: var(--find-path-results-border);
+  border-radius: var(--find-path-results-radius);
+  margin-top: 4px;
+  background: var(--find-path-results-bg);
+  box-shadow: var(--find-path-results-shadow);
+}
+
+.find-path-window .find-path-results > .empty-folder-note {
+  max-width: var(--find-path-empty-note-max-width);
+  margin: var(--find-path-empty-note-margin);
+  padding: var(--find-path-empty-note-padding);
+  border: var(--find-path-empty-note-border);
+  border-radius: var(--find-path-empty-note-radius);
+  background: var(--find-path-empty-note-bg);
+  box-shadow: var(--find-path-empty-note-shadow);
+  color: var(--find-path-empty-note-fg);
+}
+
+.find-path-notice.is-error {
+  color: var(--ink);
+  border-style: solid;
+  background:
+    repeating-linear-gradient(135deg, transparent 0 8px, rgba(0, 0, 0, 0.04) 8px 16px),
+    var(--paper);
+}
+
+/* Era result-table chrome (Sherlock idiom). The header row and per-result
+   relevance bar are always in the DOM; every visual decision rides on
+   --find-path-* tokens so the historical appearance layers stay app-free.
+   Classic keeps both display tokens at none, which makes the rest of the
+   recipe inert. Sticky keeps the header over the scrolling rows. */
+.find-path-results-header {
+  display: var(--find-path-header-display);
+  grid-template-columns: var(--find-path-table-columns);
+  column-gap: 10px;
+  position: sticky;
+  top: 0;
+  padding: var(--find-path-header-padding, 2px 10px);
+  border-bottom: var(--find-path-header-border-bottom, 1px solid var(--shade));
+  background: var(--find-path-header-bg, var(--paper));
+  font-family: var(--ui-font);
+  font-size: var(--find-path-header-font-size, 11px);
+}
+
+.find-path-header-relevance,
+.find-path-result-relevance {
+  display: var(--find-path-relevance-display);
+}
+
+.find-path-result-relevance {
+  align-self: center;
+  height: 8px;
+  border: 1px solid currentColor;
+  border-radius: var(--find-path-relevance-radius, 0);
+  background: linear-gradient(to right, currentColor 0 var(--find-path-relevance, 0%), transparent var(--find-path-relevance, 0%));
+}
+
+.find-path-result {
+  border: var(--find-path-result-border);
+  border-bottom: var(--find-path-result-border-bottom);
+  border-radius: var(--find-path-result-radius);
+  background: var(--find-path-result-bg);
+  color: var(--find-path-result-fg);
+  box-shadow: var(--find-path-result-shadow);
+  cursor: pointer;
+  display: var(--find-path-result-display, flex);
+  flex-direction: column;
+  grid-template-columns: var(--find-path-table-columns);
+  align-items: var(--find-path-result-align, stretch);
+  gap: var(--find-path-result-gap);
+  column-gap: var(--find-path-result-column-gap, var(--find-path-result-gap));
+  padding: var(--find-path-result-padding);
+  text-align: left;
+}
+
+/* Inert in the Classic flex layout; in era grid mode these children span
+   the full row under the name / relevance / site line. */
+.find-path-result > :is(p, .find-path-result-actions, .find-path-translation) {
+  grid-column: 1 / -1;
+}
+
+/* Zebra rows for eras that stripe lists (Aqua). :where keeps specificity at
+   one class so hover and selection still win; the fallback repeats the
+   normal row background everywhere else. */
+.find-path-result:where(:nth-child(even of .find-path-result)) {
+  background: var(--find-path-result-even-bg, var(--find-path-result-bg));
+}
+
+.find-path-result:hover {
+  border: var(--find-path-result-hover-border);
+  border-bottom: var(--find-path-result-hover-border-bottom);
+  background: var(--find-path-result-hover-bg);
+  color: var(--find-path-result-hover-fg);
+  box-shadow: var(--find-path-result-hover-shadow);
+}
+
+.find-path-result.is-selected {
+  border: var(--find-path-result-selected-border);
+  border-bottom: var(--find-path-result-selected-border-bottom);
+  background: var(--find-path-result-selected-bg);
+  color: var(--find-path-result-selected-fg);
+  box-shadow: var(--find-path-result-selected-shadow);
+}
+
+.find-path-result:hover span,
+.find-path-result:hover p,
+.find-path-result:hover .find-path-translation {
+  color: var(--find-path-result-hover-detail-color);
+}
+
+.find-path-result.is-selected span,
+.find-path-result.is-selected p,
+.find-path-result.is-selected .find-path-translation {
+  color: var(--find-path-result-selected-detail-color);
+}
+
+.find-path-result-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.find-path-translation {
+  margin-top: 6px;
+  padding: 7px;
+  border: var(--find-path-translation-border);
+  border-radius: var(--find-path-translation-radius);
+  background: var(--find-path-translation-bg);
+  box-shadow: var(--find-path-translation-shadow);
+  color: var(--find-path-result-body-color);
+}
+
+.find-path-translation b {
+  display: block;
+  margin-bottom: 4px;
+  font-family: var(--title-font);
+}
+
+.find-path-translation p {
+  margin: 0;
+}
+
+.find-path-result:last-child {
+  border-bottom: var(--find-path-result-last-border-bottom);
+}
+
+.find-path-result:last-child:hover {
+  border-bottom: var(--find-path-result-last-hover-border-bottom);
+}
+
+.find-path-result strong {
+  color: var(--find-path-result-title-color);
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.find-path-result span {
+  font-family: var(--mono-font);
+  font-size: 10px;
+  color: var(--find-path-result-detail-color);
+}
+
+/* Two lines of snippet per row so a list is scannable; the selected row
+   shows the whole snippet. */
+.find-path-result p {
+  display: -webkit-box;
+  margin: 3px 0 0;
+  overflow: hidden;
+  color: var(--find-path-result-body-color);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.find-path-result.is-selected p {
+  display: block;
+}
+
+/* Synthesize reads all the results, so it stands apart from the verbs that
+   hand one result on. */
+.find-path-actions > #synthesize-find-path {
+  margin-inline-end: auto;
+}
+
+.find-path-send-menu {
+  position: relative;
+}
+
+.find-path-result:hover strong {
+  color: var(--find-path-result-hover-title-color);
+}
+
+.find-path-result.is-selected strong {
+  color: var(--find-path-result-selected-title-color);
+}
+
+.find-path-result.is-selected:hover {
+  border: var(--find-path-result-selected-hover-border);
+  border-bottom: var(--find-path-result-selected-hover-border-bottom);
+  background: var(--find-path-result-selected-hover-bg);
+  color: var(--find-path-result-selected-hover-fg);
+  box-shadow: var(--find-path-result-selected-hover-shadow);
+}
+
+.find-path-more-btn {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 12px;
+  color: var(--ink);
+  font-family: var(--ui-font);
+  font-style: italic;
+  text-align: center;
+  cursor: pointer;
+  border-top: 1px dashed var(--shade);
+}
+
+.find-path-more-btn:hover {
+  background: #f5f5f5;
+  text-decoration: underline;
+}
+
+@media (max-width: 430px) and (orientation: portrait) {
+  .find-path-pane > label {
+    display: none;
+  }
+
+  /* Two classes on the input: the touch minimum must outrank the era
+     search-field recipe in 10-windows (also two classes, earlier file). */
+  .find-path-window .find-path-query-row input,
+  .find-path-query-row .btn {
+    min-height: 44px;
+  }
+
+  /* One equal column per visible control: Synthesize only exists once there
+     are results, so a fixed four-column grid left a hole before it did. */
+  .find-path-pane > .button-row:last-child {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 6px;
+  }
+
+  .find-path-send-menu > summary {
+    width: 100%;
+  }
+
+  .find-path-pane > .button-row:last-child .btn {
+    min-width: 0;
+    min-height: 44px;
+    padding-inline: 5px;
+  }
+}

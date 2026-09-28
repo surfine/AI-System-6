@@ -42,6 +42,7 @@ window.AISystem6Admissions = (() => {
     micropolis: { app: "micropolis", load: ensureMicropolisModule, command: "open-micropolis" , multiFinder: "Micropolis" , applicationGroup: "games", appLabel: "micropolis_label", appIcon: "micropolis", appDesc: "app_desc_micropolis" },
     oneMoreTune: { app: "oneMoreTune", load: ensureOneMoreTuneModule, command: "open-one-more-tune" , multiFinder: "One More Tune" , applicationGroup: "extras", appLabel: "one_more_tune_label", appIcon: "oneMoreTune", appIconClass: "tools-icon", appDesc: "app_desc_one_more_tune", repaint: "renderOneMoreTune" },
     openttd: { app: "openttd", load: ensureOpenTTDModule, command: "open-openttd" , multiFinder: "OpenTTD" , applicationGroup: "games", appLabel: "openttd_label", appIcon: "openttd", appDesc: "app_desc_openttd" },
+    diskPeek: { app: "accessories", load: ensureDiskPeekModule },
     projectDisks: { app: "finder", load: ensureSharedProjectDisksIndexModule, command: "open-demo-disks", repaint: "renderDemoDisksPanel" },
     soundscape: { app: "soundscape", load: ensureSoundscapeModule, command: "open-soundscape" , multiFinder: "Soundscape" , applicationGroup: "create", appLabel: "soundscape_label", appIcon: "soundscape", appIconClass: "tools-icon", appDesc: "app_desc_soundscape" },
     themeLab: { app: "themeLab", load: ensureThemeLabModule, command: "open-theme-lab" , multiFinder: "Theme Lab" },
@@ -72,6 +73,8 @@ window.AISystem6Admissions = (() => {
     "open-system-help": ensureDictionaryHelpModule,
     "open-sideask-pad": ensureSideAskPadModule,
     "open-docmap": ensureDocMapModule,
+    // /go/disks: the folder, opened on its newest disk.
+    "open-demo-disks-latest": ensureSharedProjectDisksIndexModule,
   };
 
   // Every command the table admits: the windows' openers and the aliases that

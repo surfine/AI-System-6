@@ -52,7 +52,7 @@
      centre travels from half a thumb inside each end, so the tick axis
      takes the same inset — otherwise the circle never lands on the mark
      it selects, and the error is worst at 1988 and 2026. */
-  --theme-lab-era-thumb: 13px;
+  --theme-lab-era-thumb: var(--theme-lab-era-thumb-width, 13px);
 
   position: relative;
   display: grid;
@@ -71,37 +71,39 @@
 }
 
 .theme-lab-era-range::-webkit-slider-runnable-track {
-  height: 4px;
-  border: 1px solid var(--rule);
-  border-radius: var(--control-radius);
-  background: var(--surface-inset);
+  height: var(--theme-lab-era-track-height, 4px);
+  border: var(--theme-lab-era-track-border, 1px solid var(--rule));
+  border-radius: var(--theme-lab-era-track-radius, var(--control-radius));
+  background: var(--theme-lab-era-track-bg, var(--surface-inset));
+  box-shadow: var(--theme-lab-era-track-shadow, none);
 }
 
 .theme-lab-era-range::-moz-range-track {
-  height: 4px;
-  border: 1px solid var(--rule);
-  border-radius: var(--control-radius);
-  background: var(--surface-inset);
+  height: var(--theme-lab-era-track-height, 4px);
+  border: var(--theme-lab-era-track-border, 1px solid var(--rule));
+  border-radius: var(--theme-lab-era-track-radius, var(--control-radius));
+  background: var(--theme-lab-era-track-bg, var(--surface-inset));
+  box-shadow: var(--theme-lab-era-track-shadow, none);
 }
 
 .theme-lab-era-range::-webkit-slider-thumb {
   width: var(--theme-lab-era-thumb);
-  height: var(--theme-lab-era-thumb);
-  margin-top: -6px;
+  height: var(--theme-lab-era-thumb-height, var(--theme-lab-era-thumb));
+  margin-top: var(--theme-lab-era-thumb-offset, -6px);
   appearance: none;
-  border: 1px solid var(--ink);
-  border-radius: 50%;
-  background: var(--paper);
-  box-shadow: var(--system-inset);
+  border: var(--theme-lab-era-thumb-border, 1px solid var(--ink));
+  border-radius: var(--theme-lab-era-thumb-radius, 50%);
+  background: var(--theme-lab-era-thumb-bg, var(--paper));
+  box-shadow: var(--theme-lab-era-thumb-shadow, var(--system-inset));
 }
 
 .theme-lab-era-range::-moz-range-thumb {
   width: var(--theme-lab-era-thumb);
-  height: var(--theme-lab-era-thumb);
-  border: 1px solid var(--ink);
-  border-radius: 50%;
-  background: var(--paper);
-  box-shadow: var(--system-inset);
+  height: var(--theme-lab-era-thumb-height, var(--theme-lab-era-thumb));
+  border: var(--theme-lab-era-thumb-border, 1px solid var(--ink));
+  border-radius: var(--theme-lab-era-thumb-radius, 50%);
+  background: var(--theme-lab-era-thumb-bg, var(--paper));
+  box-shadow: var(--theme-lab-era-thumb-shadow, var(--system-inset));
 }
 
 .theme-lab-era-range:focus-visible {
@@ -218,16 +220,50 @@
   /* Content width is the basis here, not zero: the rail's names differ in
      length and an era's wider tab padding clipped "Surfaces" at every window
      width. Furniture, so it stays out of the shipping tab's default. */
-  --tab-flex: 1 1 auto;
-  --tab-width: auto;
-  --tab-min-width: 0;
-  --tab-min-height: 28px;
-  --tab-height: auto;
-  --tab-padding: 4px 10px;
-  --tab-margin: 0;
-  --tab-strip-padding: 0;
-  --tab-strip-overflow: visible;
-  --tab-edge-content: none;
+  --tab-flex: var(--theme-lab-rail-tab-flex, 1 1 auto);
+  --tab-width: var(--theme-lab-rail-tab-width, auto);
+  --tab-min-width: var(--theme-lab-rail-tab-min-width, 0);
+  --tab-min-height: var(--theme-lab-rail-tab-min-height, 28px);
+  --tab-height: var(--theme-lab-rail-tab-height, auto);
+  --tab-padding: var(--theme-lab-rail-tab-padding, 4px 10px);
+  --tab-margin: var(--theme-lab-rail-tab-margin, 0);
+  --tab-strip-padding: var(--theme-lab-rail-strip-padding, 0);
+  --tab-strip-overflow: var(--theme-lab-rail-strip-overflow, visible);
+  --tab-edge-content: var(--theme-lab-rail-edge-content, none);
+}
+
+/* P03 / C5: Platinum's rail is the real Mac OS 9 tab (P01 metrics), not the
+   Lab's base metrics. Same tokens as the shipping tab, so the native-cut caps
+   come in and the 2-row seam under the active tab goes away with them.
+   The Lab answers the era through its own token family; this one selector is
+   the sheet's only theme selector (explicit budget in tooling/css-budget.json). */
+body[data-lineage~="platinum"] {
+  --theme-lab-rail-tab-flex: 0 0 auto;
+  --theme-lab-rail-tab-min-height: 22px;
+  --theme-lab-rail-tab-height: 22px;
+  --theme-lab-rail-tab-padding: 1px 16px 0;
+  --theme-lab-rail-strip-padding: 0 4px;
+  --theme-lab-rail-edge-content: "";
+
+  /* P23: the era slider wears the same Mac OS 9 slider as P07 (capture 35) —
+     a 5px etched groove and the 15x16 downward lavender thumb. */
+  --theme-lab-era-track-height: 5px;
+  --theme-lab-era-track-border: 1px solid #222222;
+  --theme-lab-era-track-radius: 3px;
+  --theme-lab-era-track-bg: #aaaaaa;
+  --theme-lab-era-track-shadow: -1px -1px 0 #aaaaaa, 0 1px 0 #ffffff;
+  --theme-lab-era-thumb: 16px;
+  --theme-lab-era-thumb-width: 15px;
+  --theme-lab-era-thumb-height: 16px;
+  --theme-lab-era-thumb-offset: -6px;
+  --theme-lab-era-thumb-border: 0;
+  --theme-lab-era-thumb-radius: 0;
+  --theme-lab-era-thumb-bg: url("./assets/themes/platinum/chrome/slider-thumb-15x16.svg") center / 15px 16px no-repeat;
+  --theme-lab-era-thumb-shadow: none;
+  /* P18/P19: the specimens' checked box keeps its bevel and the radio uses
+     the native art, not the Lab's drawn dot. */
+  --theme-lab-checkbox-mark-shadow: none;
+  --theme-lab-radio-dot-content: none;
 }
 
 .theme-lab-sheet-shell {
@@ -305,11 +341,19 @@
   background-color: transparent;
 }
 
+/* C13: a lab tile label may wrap to two lines. The tile grid is 76px wide and
+   names like "Control Pa…" and "Multi Finder App" ellipsised at one line, which
+   hid which object was which. Two lines is a lab layout fix for every era. */
 .theme-lab-icon-tile b {
   max-width: 100%;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  text-align: center;
   font-weight: normal;
 }
 
@@ -1626,8 +1670,12 @@
   transform: translateY(-50%);
 }
 
+/* AUDIT1-72: the Surfaces About/Calculator fixture is 273px wide and used to
+   run past its two-column group (right edge 1079) and get clipped by the
+   window. Cap it against the cell instead. */
 .theme-lab-about-capture {
   width: 273px;
+  max-width: 100%;
   height: 110px;
   grid-column: 2;
   grid-row: 2;
@@ -2013,7 +2061,9 @@ so the base is where the state
 }
 
 .theme-lab-scroll-specimen > .window > .window-pane {
-  padding: 5px 8px;
+  /* An era whose vertical scroller sits on the LEFT (NeXTSTEP) answers
+     --window-frame-lane-start, so the list text starts clear of it (C9). */
+  padding: 5px 8px 5px calc(8px + var(--window-frame-lane-start, 0px));
   overflow: hidden;
 }
 

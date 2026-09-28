@@ -125,6 +125,32 @@
 /* One bar under the paper: the document's four state cells, then the status
    message. It used to be two stacked boxes pulled together with a negative
    margin so they would read as one instrument -- so they are one now. */
+/* Cells with nothing to say are hidden (teachtext-accessories.js), so the
+   message is pinned to the last track rather than to whatever column the
+   surviving cells leave it. */
+.teachtext-desk-strip > .window-status-slot {
+  grid-column: -2;
+}
+
+/* 写 | 读 (| 并排): one button drawn as a two- or three-way switch. */
+.writing-mode-toggle {
+  display: inline-flex;
+  align-items: stretch;
+  overflow: hidden;
+}
+.writing-mode-seg {
+  display: flex;
+  align-items: center;
+  padding: 0 0.9em;
+}
+.writing-mode-seg + .writing-mode-seg {
+  border-left: 1px solid currentColor;
+}
+.writing-mode-seg.is-on {
+  background: var(--ink);
+  color: var(--window-bg);
+}
+
 .teachtext-desk-strip {
   display: grid;
   /* The state cells take the width their words need; the message takes what is
@@ -156,6 +182,21 @@
 
 .teachtext-body-label {
   display: none;
+}
+
+/* Copies of 10-windows.css's .window .window-frame-scroller for the content
+   areas below that are window frame scrollers: the same selector and
+   specificity, scoped by :where(), so the frame keeps beating each area's own
+   rule under a per-file layer order as it does today by specificity. */
+.window .window-frame-scroller:where(.teachtext-editor-container, .project-cd-grid, .image-manager-list) {
+  overflow: auto;
+  border: 0;
+  box-shadow: none;
+  min-height: 0;
+}
+
+.project-cd-grid.window-frame-scroller {
+  padding: 12px;
 }
 
 .teachtext-editor-container {
@@ -440,6 +481,12 @@
   word-break: break-word;
 }
 
+/* The optional modern face (moved from 00-foundation.css's use-modern-fonts
+   list) follows the preview's own face, which it replaces. */
+body.use-modern-fonts .teachtext-preview {
+  font-family: var(--text-font);
+}
+
 /* The reading column is the writing measure. A help document overrides this
    with its own wider column further down: it is a manual, not the writer's
    paper. */
@@ -466,10 +513,15 @@
   padding-left: 12px;
 }
 
+/* Start-aligned, not justified: a Chinese line that carries an unbreakable
+   Latin run ("Developer Transition Kit") was stretched by pulling its Han
+   characters apart -- "DTK 封 面 卡 ：". The space between the scripts is the
+   type engine's job where it can do it. */
 .teachtext-preview p {
   margin: 1.2em 0;
   text-indent: 2em;
-  text-align: justify;
+  text-align: start;
+  text-autospace: ideograph-alpha ideograph-numeric;
 }
 
 .teachtext-window.is-help-document .teachtext-editor-container.is-previewing {
@@ -906,11 +958,19 @@ body[data-line-spacing="relaxed"] {
   min-width: 0;
 }
 
+/* A locked Review Desk hides its action row, which is a .teachtext-actions row;
+   the hide follows the row's own rule (moved from 30-surfaces.css). */
+.review-desk-window.is-review-locked .review-desk-actions {
+  display: none;
+}
+
 /* Left cluster: three equal-role controls (Preview / Focus / Commands). */
 .teachtext-command-group {
   display: grid;
+  /* The first track is the 写 | 读 switch: it takes the width its words need
+     (a third segment appears when there is room for 并排). */
   grid-template-columns:
-    minmax(0, var(--teachtext-action-side-width))
+    minmax(var(--teachtext-action-side-width), max-content)
     minmax(0, var(--teachtext-action-focus-width))
     minmax(0, var(--teachtext-action-side-width));
   gap: var(--teachtext-action-gap);
@@ -1829,22 +1889,22 @@ body[data-line-spacing="relaxed"] {
   overflow-wrap: anywhere;
 }
 
-body:not(.use-liquid-glass) .scrap-list button:hover,
-body:not(.use-liquid-glass) .scrap-list button.is-selected,
-body:not(.use-liquid-glass) .scrap-list button.is-multi-selected {
+body:not([data-theme="liquid-glass"]) .scrap-list button:hover,
+body:not([data-theme="liquid-glass"]) .scrap-list button.is-selected,
+body:not([data-theme="liquid-glass"]) .scrap-list button.is-multi-selected {
   border-radius: var(--scrap-list-item-selected-radius);
   background: var(--scrap-list-item-selected-bg);
   color: var(--scrap-list-item-selected-fg);
   box-shadow: var(--scrap-list-item-selected-shadow);
 }
 
-body:not(.use-liquid-glass) .trash-list button:hover,
-body:not(.use-liquid-glass) .trash-list button.is-selected {
+body:not([data-theme="liquid-glass"]) .trash-list button:hover,
+body:not([data-theme="liquid-glass"]) .trash-list button.is-selected {
   background: var(--ink);
   color: var(--paper);
 }
 
-body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selected) {
+body:not([data-theme="liquid-glass"]) .scrap-list button.is-multi-selected:not(.is-selected) {
   outline: 2px dotted var(--ink);
   outline-offset: -4px;
 }
@@ -2129,6 +2189,8 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
 
 .scrap-editor .button-row .btn {
   min-width: min(88px, 100%);
+  /* The same value, handed to the era button recipe that reads it. */
+  --theme-button-min-width: min(88px, 100%);
 }
 
 .scrap-actions > #delete-scrap {
@@ -2169,11 +2231,17 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
 
 /* The filter sits at the end of the Scrapbook's bar and narrows the list and
    the page rail alike. */
+/* The stack chooser (All / Sources / ClioTalk / Ideas) sits beside the filter:
+   one narrows by kind, the other by words, and both feed scrapbookPageScraps(). */
+.scrap-stack-wrap {
+  flex: none;
+}
+
+/* Height and vertical padding come from the field recipe
+   (00-foundation.css), which has always outranked this class rule. */
 .scrap-filter {
   flex: 0 1 160px;
   min-width: 90px;
-  min-height: 22px;
-  padding-block: 2px;
 }
 
 /* The Scrapbook pane is a two-column grid; the ask bar spans it. */
@@ -2181,7 +2249,6 @@ body:not(.use-liquid-glass) .scrap-list button.is-multi-selected:not(.is-selecte
   grid-column: 1 / -1;
 }
 
-#scrap-stack[hidden],
 #attach-scrap-to-assistant[hidden] {
   display: none;
 }
@@ -2477,11 +2544,6 @@ input[type="radio"]:checked:disabled {
       var(--radio-disabled-checked-size, var(--system-radio-size));
 }
 
-.hint {
-  margin: 6px 0 0;
-  line-height: 1.35;
-}
-
 .icon-column {
   position: absolute;
   /* The launcher belongs to the right edge of the display, the way the writing
@@ -2534,6 +2596,12 @@ input[type="radio"]:checked:disabled {
   grid-template-columns: minmax(0, 1fr);
   justify-items: center;
   gap: 4px;
+}
+
+/* Moved from 10-windows.css: a hidden icon must keep beating the grid above. */
+.desktop-icon.is-hidden,
+.desktop-icon[hidden] {
+  display: none;
 }
 
 /* A project disk at risk of stalling carries the diamond — the classic
@@ -2635,31 +2703,36 @@ input[type="radio"]:checked:disabled {
      rather than splitting the name into 创作 / 坊. The label box may run
      wider than the icon so "Applications" never becomes "Applicati/ons";
      the native Finder widened labels the same way. */
-  word-break: keep-all;
-  overflow-wrap: normal;
+  /* P12: an era hook with today's values as defaults. Platinum answers with
+     Geneva-view weight/width and a single line (native 02-desktop-clean). */
+  word-break: var(--desktop-label-word-break, keep-all);
+  overflow-wrap: var(--desktop-label-wrap, normal);
+  font-weight: var(--desktop-label-font-weight, 600);
+  font-variation-settings: var(--desktop-label-font-variation, "wdth" 113);
+  white-space: var(--desktop-label-white-space, normal);
   box-decoration-break: clone;
 }
 
-html:lang(zh-Hans) body:not(.use-liquid-glass) .desktop-app-icon span[data-retro-label-main] {
+html:lang(zh-Hans) body:not([data-theme="liquid-glass"]) .desktop-app-icon span[data-retro-label-main] {
   font-size: 0;
   line-height: 1.12;
 }
 
-html:lang(zh-Hans) body:not(.use-liquid-glass) .desktop-app-icon span[data-retro-label-main]::before,
-html:lang(zh-Hans) body:not(.use-liquid-glass) .desktop-app-icon span[data-retro-label-sub]::after {
+html:lang(zh-Hans) body:not([data-theme="liquid-glass"]) .desktop-app-icon span[data-retro-label-main]::before,
+html:lang(zh-Hans) body:not([data-theme="liquid-glass"]) .desktop-app-icon span[data-retro-label-sub]::after {
   display: block;
   font-size: var(--system-readable-min);
 }
 
-html:lang(zh-Hans) body:not(.use-liquid-glass) .desktop-app-icon span[data-retro-label-main]::before {
+html:lang(zh-Hans) body:not([data-theme="liquid-glass"]) .desktop-app-icon span[data-retro-label-main]::before {
   content: attr(data-retro-label-main);
 }
 
-html:lang(zh-Hans) body:not(.use-liquid-glass) .desktop-app-icon span[data-retro-label-sub]::after {
+html:lang(zh-Hans) body:not([data-theme="liquid-glass"]) .desktop-app-icon span[data-retro-label-sub]::after {
   content: attr(data-retro-label-sub);
 }
 
-body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"] {
+body:not([data-theme="liquid-glass"]) .desktop-app-icon span[data-liquid-label="DAA Meme"] {
   width: max-content;
   max-width: none;
   white-space: nowrap;
@@ -2673,19 +2746,22 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
   border: var(--icon-border);
   position: relative;
 }
-
-.sys-icon {
-  width: 34px;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ink);
-  background: var(--paper);
-  border: 0;
-  position: relative;
-  overflow: visible;
+/* The Control Panel chooser's icon cell (moved from 30-surfaces.css). It must
+   keep beating the .sys-icon primitive above, so it sits after it: in one
+   file specificity decides, and a per-file @layer order cannot flip it. */
+.control-chooser .sys-icon {
+  display: var(--control-chooser-icon-display);
+  width: var(--control-chooser-icon-size);
+  height: var(--control-chooser-icon-size);
   flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  /* background-color only: an era painter may carry the icon art in
+     background-image (Aqua/Snow Leopard sprite cells). */
+  background-color: transparent;
+  box-shadow: none;
+  color: inherit;
 }
 
 .sys-icon::before,
@@ -2696,20 +2772,7 @@ body:not(.use-liquid-glass) .desktop-app-icon span[data-liquid-label="DAA Meme"]
 /* Classic icons share a 32×32 vector grid. One viewBox unit is the common
    1-bit line: it scales with the icon instead of becoming disproportionately
    heavy in the 22px and 42px renderings. Liquid owns its separate rounded,
-   non-scaling stroke contract in 70-liquid-glass.css. */
-.sys-icon-svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-  overflow: visible;
-  stroke: currentColor;
-  stroke-width: var(--system-icon-stroke-width);
-  stroke-linecap: square;
-  stroke-linejoin: miter;
-  shape-rendering: crispEdges;
-}
-
-/* Liquid Glass narrows this shared marker to a runtime rounded mask. The base
+   non-scaling stroke contract in 70-liquid-glass.css. *//* Liquid Glass narrows this shared marker to a runtime rounded mask. The base
    rule keeps the marker visible and unclipped in the other appearances. */
 .sys-icon-svg.liquid-glass-rounded {
   overflow: visible;

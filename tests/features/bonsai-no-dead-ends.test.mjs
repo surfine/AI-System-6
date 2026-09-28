@@ -83,9 +83,11 @@ const preconditions = {
   "bonsai-speed-0": ["bonsai-speed-1"],
   "bonsai-overlay-none": ["bonsai-overlay-power"],
   "bonsai-sound-music": ["bonsai-sound-off"],
+  // Centring is only a change when the view is somewhere else first.
+  "bonsai-center-city": [() => ctx.window.AISystem6BonsaiCanvasRenderer.panByScreen(160, 90)],
 };
 async function invoke(action) {
-  const result = commands.get(action).handler();
+  const result = typeof action === "function" ? action() : commands.get(action).handler();
   if (result && typeof result.then === "function") await result;
   await vmw.waitFor(() => false, { tries: 8 });
 }
@@ -202,6 +204,24 @@ for (const key of sim.NEWS_STORY_KEYS) required.add(`bonsai_news_${key}`);
 for (const id of sim.ORDINANCE_IDS) required.add(`bonsai_ordinance_${id}`);
 for (const service of sim.FUNDING_SERVICES) required.add(`bonsai_funding_${service}`);
 for (const kind of Object.keys(sim.DISASTER_KINDS)) required.add(`bonsai_tool_disaster_${kind.replaceAll("-", "_")}`);
+// Keys spelled by a template over a literal list — `["open", "export-cty"]
+// .forEach((action) => t(`bonsai_city_${action.replaceAll("-", "_")}`))` —
+// never appear whole in the source, so the scan above cannot see them. That
+// is how a button came to read "bonsai_city_export_cty". Expand each such
+// list through its own template and require every key it spells.
+let templateKeys = 0;
+for (const match of shellSource.matchAll(/\[((?:\s*"[a-z0-9-]+",?)+)\s*\]\.forEach\(\((\w+)\) => \{([\s\S]{0,900}?)\n {6,8}\}\);/g)) {
+  const values = [...match[1].matchAll(/"([a-z0-9-]+)"/g)].map((m) => m[1]);
+  const name = match[2];
+  const template = new RegExp("t\\(`(bonsai_[a-z0-9_]*)\\$\\{" + name + "(\\.replaceAll\\(\"-\", \"_\"\\))?\\}([a-z0-9_]*)`", "g");
+  for (const use of match[3].matchAll(template)) {
+    for (const value of values) {
+      required.add(`${use[1]}${use[2] ? value.replaceAll("-", "_") : value}${use[3]}`);
+      templateKeys += 1;
+    }
+  }
+}
+test.assert(templateKeys >= 6, `template-spelled keys are expanded from their literal lists (${templateKeys})`);
 const missing = [...required].filter((key) => !Object.prototype.hasOwnProperty.call(en, key) || !Object.prototype.hasOwnProperty.call(zh, key)).sort();
 test.assert(missing.length === 0, missing.length ? `keys missing in a language: ${missing.join(", ")}` : `all ${required.size} reachable bonsai_* keys exist in English and Chinese`);
 const enKeys = Object.keys(en).filter((key) => key.startsWith("bonsai_")).sort();

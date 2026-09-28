@@ -76,7 +76,7 @@ try {
   // Execute the actual orchestrator against lightweight fixture generators:
   // dependency ordering and early failure are observable, without real assets.
   mkdirSync(join(root, "tooling"));
-  const names = ["stream-markdown-vendor", "cmf-renderer-vendor", "embed-vendor", "ai-prompt-files", "bonsai-textures", "bonsai-atlas", "bonsai-renderer-vendor", "fsrs-vendor"];
+  const names = ["stream-markdown-vendor", "cmf-renderer-vendor", "embed-vendor", "ai-prompt-files", "bonsai-textures", "bonsai-atlas", "bonsai-renderer-vendor", "fsrs-vendor", "writing-editor-vendor"];
   // A step with no declared inputs runs on every single build, which is how
   // three vendor builders (including the esbuild pass over Three.js) used to
   // cost every ordinary `build:app`. Declaring inputs and outputs is what makes

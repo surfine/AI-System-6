@@ -55,47 +55,45 @@
   --omt-ease-drawer:cubic-bezier(.32,.72,0,1);
   --omt-disc-arc-ms:250ms;
   --omt-disc-press-ms:100ms;
-  /* The round's room. It is dark in every appearance — a listening room, where
-     the answer's colour has somewhere to arrive — so these are the deck's own
-     values, not the appearance's paper. The 1-bit desk re-values them below. */
-  --omt-room:#111113;
-  --omt-room-ink:#F5F5F7;
-  --omt-room-ink-2:#AEAEB4;
-  --omt-room-ink-3:#8A8A90;
-  --omt-room-hair:rgba(255,255,255,.1);
-  --omt-room-chip:rgba(255,255,255,.055);
-  --omt-room-chip-line:rgba(255,255,255,.12);
-  --omt-room-chip-press:rgba(255,255,255,.15);
-  --omt-room-glow:rgba(255,255,255,.085);
-  --omt-room-wash:44%;
-  --omt-button:#F5F5F7;
-  --omt-button-ink:#111113;
-  --omt-opt-radius:16px;
-  /* The record: vinyl, its grooves, a paper label, and a tonearm. */
-  --omt-vinyl:#0B0B0C;
-  --omt-vinyl-shadow:rgba(0,0,0,.55);
-  --omt-groove:#1A1A1C;
-  --omt-groove-gap:rgba(255,255,255,.085);
-  --omt-groove-land:.9%;
-  --omt-groove-pitch:1.35%;
-  --omt-sheen:conic-gradient(from 210deg,transparent 0 14deg,rgba(255,255,255,.11) 30deg,transparent 46deg 180deg,rgba(255,255,255,.07) 204deg,transparent 222deg);
-  --omt-label:#EFEBE1;
-  --omt-label-ink:#1D1D1F;
-  --omt-label-type-bg:transparent;
-  --omt-arm-base:radial-gradient(circle at 38% 32%,#4B4C51,#18181B 72%);
-  --omt-arm-weight:linear-gradient(90deg,#36373C,#6E6F75 45%,#303136);
-  --omt-arm-tube:linear-gradient(90deg,#85878D,#ECEDF0 45%,#85878D);
-  --omt-arm-head:linear-gradient(90deg,#1F1F22,#2C2C30 50%,#1F1F22);
-  --omt-arm-cap:radial-gradient(circle at 35% 30%,#F2F3F5,#96989E 70%);
-  /* A ring is an era as a solid colour — the track list, the back cover's
-     record, the room's wash — and its ink is what reads on top of it. */
+  /* The round's room and its radio. The room is the desk's own light; the set
+     is the deck's object, drawn in its own values, so it reads the same in
+     every appearance that has colour. The 1-bit desk re-values them below. */
+  --omt-room:#F2F2F4;
+  --omt-room-ink:#1D1D1F;
+  --omt-room-ink-2:#55555A;
+  --omt-room-ink-3:#76767C;
+  --omt-room-hair:rgba(0,0,0,.1);
+  --omt-set:linear-gradient(#FBFBFC,#EAEAED);
+  --omt-set-edge:rgba(0,0,0,.09);
+  --omt-set-shadow:0 14px 30px -18px rgba(0,0,0,.4);
+  --omt-kraft:#E7E2D4;
+  --omt-kraft-ink:#2B261C;
+  --omt-kraft-edge:rgba(60,50,30,.16);
+  --omt-type-box:transparent;
+  --omt-dial:#1C1C1E;
+  --omt-dial-ink:rgba(255,255,255,.66);
+  --omt-dial-tick:rgba(255,255,255,.42);
+  --omt-needle-ink:#FF3B30;
+  --omt-needle-glow:0 0 10px rgba(255,59,48,.8);
+  --omt-band-dim:.3;
+  --omt-key:#FFFFFF;
+  --omt-key-edge:rgba(0,0,0,.09);
+  --omt-key-press:#F0F0F2;
+  --omt-key-down:#1D1D1F;
+  --omt-key-down-ink:#FFFFFF;
+  --omt-button:#1D1D1F;
+  --omt-button-ink:#FFFFFF;
+  --omt-chip:rgba(0,0,0,.05);
+  --omt-opt-radius:14px;
+  /* An era as a solid colour — the set's segments, the back cover's pins, the
+     dots in the list — and the ink that reads on top of it. */
   --omt-ring-1:var(--omt-era-1);
   --omt-ring-2:var(--omt-era-2);
   --omt-ring-3:var(--omt-era-3);
   --omt-ring-4:var(--omt-era-4);
   --omt-ring-5:var(--omt-era-5);
   --omt-ring-6:var(--omt-era-6);
-  --omt-ring-none:#EFEBE1;
+  --omt-ring-none:#D8D5CC;
   --omt-ring-ink-1:#08250F;
   --omt-ring-ink-2:#2A2100;
   --omt-ring-ink-3:#2C1500;
@@ -118,9 +116,9 @@
   font-family:var(--ui-font);
 }
 .one-more-tune-window button, .one-more-tune-window input, .one-more-tune-window select { font:inherit }
-.one-more-tune-window button, .one-more-tune-window a, .one-more-tune-window input, .one-more-tune-window select { touch-action:manipulation }
+.one-more-tune-window button:where(:not(.grow-box, .nextstep-resize-strip > *)), .one-more-tune-window a, .one-more-tune-window input, .one-more-tune-window select { touch-action:manipulation }
 .one-more-tune-window button, .one-more-tune-window a { -webkit-tap-highlight-color:transparent }
-.one-more-tune-window button { cursor:pointer }
+.one-more-tune-window button:where(:not(.grow-box, .nextstep-resize-strip > *)) { cursor:pointer }
 .one-more-tune-window button:disabled { cursor:not-allowed;opacity:.5 }
 .one-more-tune-window button:focus-visible, .one-more-tune-window a:focus-visible, .one-more-tune-window input:focus-visible, .one-more-tune-window select:focus-visible { outline:var(--control-focus-outline);outline-offset:var(--control-focus-offset) }
 .one-more-tune-window a { color:inherit;text-underline-offset:4px }
@@ -928,7 +926,7 @@
    record disc, the lesson card's top and end strips, the unit grid with its
    progress dots. Rules whose selectors the game's design already defines are
    left alone, so both mocks agree here instead of fighting. */
-.one-more-tune-window button, .one-more-tune-window a, .one-more-tune-window input { touch-action:manipulation }
+.one-more-tune-window button:where(:not(.grow-box, .nextstep-resize-strip > *)), .one-more-tune-window a, .one-more-tune-window input { touch-action:manipulation }
 .one-more-tune-window [hidden] { display:none }
 .one-more-tune-window header { display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:98px;border-bottom:1px solid var(--separator) }
 .one-more-tune-window nav { display:flex;gap:5px }
@@ -1439,40 +1437,39 @@ body[data-theme="classic"] .one-more-tune-window {
   --omt-era-5:repeating-linear-gradient(45deg,var(--ink) 0 1px,var(--paper) 1px 3px);
   --omt-era-6:repeating-linear-gradient(45deg,var(--ink) 0 2px,var(--paper) 2px 3px);
   --omt-era-none:repeating-linear-gradient(0deg,var(--ink) 0 1px,var(--paper) 1px 9px);
-  /* The round's room in one bit, as values rather than as rules: this block is
+  /* The round's radio in one bit, as values rather than as rules: this block is
      the one place in the sheet that names an appearance, and the theme-fork gate
-     holds it to that. Black room, white ink; grooves as rings of paper on ink;
-     no glow and no wash, because a gradient is not a colour this desk has. The
-     printed label takes the era's dither (a type box keeps its words readable
-     on it), every ring is plain paper, and the era is named in words. */
-  --omt-room:var(--ink);
-  --omt-room-ink:var(--paper);
-  --omt-room-ink-2:var(--paper);
-  --omt-room-ink-3:var(--paper);
-  --omt-room-hair:var(--paper);
-  --omt-room-chip:var(--ink);
-  --omt-room-chip-line:var(--paper);
-  --omt-room-chip-press:var(--ink);
-  --omt-room-glow:transparent;
-  --omt-room-wash:0%;
-  --omt-button:var(--paper);
-  --omt-button-ink:var(--ink);
+     holds it to that. White room and set, a black dial with white ticks, a white
+     needle; the eras stay the six dithers above on the dial's bands and the
+     card's back (a type box keeps the words readable on them), and every solid
+     ring is plain paper, with the era named in words. */
+  --omt-room:var(--paper);
+  --omt-room-ink:var(--ink);
+  --omt-room-ink-2:var(--ink);
+  --omt-room-ink-3:var(--ink);
+  --omt-room-hair:var(--ink);
+  --omt-set:var(--paper);
+  --omt-set-edge:var(--ink);
+  --omt-set-shadow:2px 2px 0 var(--ink);
+  --omt-kraft:var(--paper);
+  --omt-kraft-ink:var(--ink);
+  --omt-kraft-edge:var(--ink);
+  --omt-type-box:var(--paper);
+  --omt-dial:var(--ink);
+  --omt-dial-ink:var(--paper);
+  --omt-dial-tick:var(--paper);
+  --omt-needle-ink:var(--paper);
+  --omt-needle-glow:none;
+  --omt-band-dim:1;
+  --omt-key:var(--paper);
+  --omt-key-edge:var(--ink);
+  --omt-key-press:var(--paper);
+  --omt-key-down:var(--ink);
+  --omt-key-down-ink:var(--paper);
+  --omt-button:var(--ink);
+  --omt-button-ink:var(--paper);
+  --omt-chip:var(--paper);
   --omt-opt-radius:7px;
-  --omt-vinyl:var(--ink);
-  --omt-vinyl-shadow:transparent;
-  --omt-groove:var(--paper);
-  --omt-groove-gap:var(--paper);
-  --omt-groove-land:3%;
-  --omt-groove-pitch:3.6%;
-  --omt-sheen:none;
-  --omt-label:var(--paper);
-  --omt-label-ink:var(--ink);
-  --omt-label-type-bg:var(--paper);
-  --omt-arm-base:var(--ink);
-  --omt-arm-weight:var(--paper);
-  --omt-arm-tube:var(--paper);
-  --omt-arm-head:var(--paper);
-  --omt-arm-cap:var(--ink);
   --omt-ring-1:var(--paper);
   --omt-ring-2:var(--paper);
   --omt-ring-3:var(--paper);
@@ -1593,22 +1590,22 @@ body[data-theme="classic"] .one-more-tune-window {
   }
 }
 
-/* --- The round's room: a white label ----------------------------------------
-   The challenge is played in a listening room: always dark, whatever the desk's
-   appearance, so the answer's colour has somewhere to arrive (2026-09-24 design,
-   internal/evidence/drafts/one-more-tune-redesign/white-label/). The question is
-   an unprinted test pressing — a paper label with a track code and 33⅓ — and
-   only the reveal prints the era's colour onto it and into the room. Right and
-   wrong are marks, never an era's hue.
+/* --- The round's room: a radio -----------------------------------------------
+   "One more tune" is a radio's phrase, so the round is played on one (2026-09-25
+   design, internal/evidence/drafts/one-more-tune-redesign/three-directions/, B
+   with A's turn-over). A kraft station card sits over a forty-year dial: while
+   the cue plays the card's ticks light with its clock and the needle searches;
+   at the answer the card turns over to the tune's cover and the needle lands on
+   the year, lighting that era's band. Colour arrives only with the answer, and
+   right and wrong are marks, never an era's hue.
 
    The room is a size container, and its three arrangements are chosen by its
    own shape rather than by a device's name: tall (a phone upright, the Duo's
-   inner display upright, a 680px desk window), compact (an upright room under
-   600px — the Duo's outer display, a phone under Safari's or WeChat's bars) and
-   wide (a phone on its side, the Duo unfolded, a wide window). The record's
-   diameter is what the room has left once the question and its four answers
-   are placed, so every face of a round fits one screen: measured on eleven
-   screens, four states and two appearances before this was built.
+   inner display upright, a desk window), compact (an upright room under 600px —
+   the Duo's outer display, a phone under Safari's or WeChat's bars) and wide
+   (a phone on its side, the Duo unfolded, a wide window). The card's height is
+   what the room has left once the four keys and the dial are placed, so every
+   face of a round fits one screen.
 
    Every colour below is a token declared on the window, and the 1-bit desk
    re-values those tokens in the one block that names an appearance. */
@@ -1625,51 +1622,46 @@ body[data-theme="classic"] .one-more-tune-window {
 .one-more-tune-window .omt-room {
   container:omt/size;position:relative;flex:1 1 auto;min-width:0;min-height:0;overflow:hidden;
   background:var(--omt-room);color:var(--omt-room-ink);font-family:var(--ui-font);font-size:17px;line-height:1.3;text-align:left;
-  --omt-wash:var(--omt-ring-none);
 }
-.one-more-tune-window .omt-light,
-.one-more-tune-window .omt-wash { position:absolute;inset:0;pointer-events:none }
-.one-more-tune-window .omt-light { background:radial-gradient(85% 52% at 46% 25%,var(--omt-room-glow),transparent 70%) }
-.one-more-tune-window .omt-wash { opacity:0;transition:opacity 620ms ease;background:radial-gradient(118% 76% at 46% 22%,color-mix(in srgb,var(--omt-wash) var(--omt-room-wash),transparent),transparent 72%) }
-.one-more-tune-window .omt-room[data-lit] .omt-wash { opacity:1 }
-.one-more-tune-window .omt-room[data-era="1"] { --omt-wash:var(--omt-ring-1) }
-.one-more-tune-window .omt-room[data-era="2"] { --omt-wash:var(--omt-ring-2) }
-.one-more-tune-window .omt-room[data-era="3"] { --omt-wash:var(--omt-ring-3) }
-.one-more-tune-window .omt-room[data-era="4"] { --omt-wash:var(--omt-ring-4) }
-.one-more-tune-window .omt-room[data-era="5"] { --omt-wash:var(--omt-ring-5) }
-.one-more-tune-window .omt-room[data-era="6"] { --omt-wash:var(--omt-ring-6) }
+/* A desk window grows to its content, and a size container has none, so a room
+   outside the phone shell takes the height the desk can spare. It is a height,
+   not a min-height: a room whose height only came from min-height measured its
+   own container units as zero. */
+.one-more-tune-window[data-omt-room]:not(.is-mobile-fullscreen) .omt-room { flex:none;height:clamp(480px,calc(100dvh - 190px),760px) }
+.one-more-tune-window[data-omt-room]:not(.is-mobile-fullscreen) .one-more-tune-body { overflow:visible }
 .one-more-tune-window .omt-in {
   position:relative;box-sizing:border-box;height:100%;overflow:hidden;display:grid;
-  grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto auto;
-  grid-template-areas:"track" "stage" "gap" "q" "opts";row-gap:14px;column-gap:16px;padding:14px 16px 16px;
-  --omt-d:clamp(140px,min(100cqh - 440px,(100cqw - 32px) / 1.26),330px);
+  grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto;
+  grid-template-areas:"stage" "gap" "q" "opts";row-gap:14px;column-gap:16px;padding:14px 16px 16px;
+  --omt-card-h:clamp(84px,100cqh - 560px,200px);--omt-dial-h:72px;
 }
-.one-more-tune-window .omt-track { grid-area:track;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:26px;min-width:0 }
-.one-more-tune-window .omt-stage { grid-area:stage;position:relative;width:calc(var(--omt-d) * 1.24);height:var(--omt-d);justify-self:center;align-self:center }
+.one-more-tune-window .omt-radio { grid-area:stage }
 .one-more-tune-window .omt-gap { grid-area:gap;min-height:0 }
 .one-more-tune-window .omt-q { grid-area:q;min-width:0 }
 .one-more-tune-window .omt-opts { grid-area:opts;min-width:0 }
 .one-more-tune-window .omt-sr { position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap }
 
-/* A desk window grows to its content, and a size container has none, so a room
-   outside the phone shell takes the height the desk can spare. It is a height,
-   not a min-height: a room whose height only came from min-height measured its
-   own container units as zero, and the record fell to its floor. */
-.one-more-tune-window[data-omt-room]:not(.is-mobile-fullscreen) .omt-room { flex:none;height:clamp(480px,calc(100dvh - 190px),760px) }
-.one-more-tune-window[data-omt-room]:not(.is-mobile-fullscreen) .one-more-tune-body { overflow:visible }
-/* The start has less under the record than a question, so an upright room
-   gives the record more of itself there. */
-@container omt (max-aspect-ratio:13/10) and (min-height:601px) {
-  .one-more-tune-window .omt-room[data-omt-phase="idle"] .omt-in { --omt-d:clamp(140px,min(100cqh - 400px,(100cqw - 32px) / 1.26),330px) }
+/* The set. */
+.one-more-tune-window .omt-radio {
+  position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto;
+  grid-template-areas:"lcd knob" "card card" "dial dial";gap:10px 12px;padding:12px 14px 14px;min-width:0;
+  border-radius:var(--container-radius);background:var(--omt-set);box-shadow:inset 0 0 0 1px var(--omt-set-edge),var(--omt-set-shadow);
 }
+.one-more-tune-window .omt-lcd { grid-area:lcd;display:flex;align-items:center;gap:10px;min-width:0;font-size:13px;font-weight:600;color:var(--omt-room-ink-2) }
+.one-more-tune-window .omt-lcd-no { white-space:nowrap;color:var(--omt-room-ink);font-variant-numeric:tabular-nums }
+.one-more-tune-window .omt-lcd-state { margin-left:auto;white-space:nowrap }
+.one-more-tune-window .omt-aux { display:inline-flex;gap:4px;font-size:13px;color:var(--omt-room-ink-3);font-variant-numeric:tabular-nums }
+.one-more-tune-window .omt-verdict { display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:650;color:var(--omt-room-ink) }
+.one-more-tune-window .omt-knob { grid-area:knob;width:44px;height:44px;padding:0;border:0;border-radius:50%;display:grid;place-items:center;color:var(--omt-room-ink);
+  background:radial-gradient(circle at 40% 32%,var(--omt-key),var(--omt-key-press) 72%);box-shadow:0 2px 4px rgba(0,0,0,.18),inset 0 0 0 1px var(--omt-key-edge);transition:transform var(--omt-disc-press-ms) var(--omt-ease-out) }
+.one-more-tune-window .omt-knob svg { width:20px;height:20px }
+.one-more-tune-window .omt-knob path { fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round }
+.one-more-tune-window .omt-knob:active { transform:scale(.94) rotate(-40deg) }
 
-/* The track list: A, then five; B, then five. */
-.one-more-tune-window .omt-slots { display:flex;align-items:center;gap:4px;margin:0;min-width:0 }
-.one-more-tune-window .omt-side { width:12px;text-align:center;font-size:11px;font-weight:700;color:var(--omt-room-ink-3) }
-.one-more-tune-window .omt-side.is-b { margin-left:6px }
-.one-more-tune-window .omt-slot { width:18px;height:18px;flex:none;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--omt-room-hair);display:grid;place-items:center;font-size:10px;font-weight:800;line-height:1;color:var(--omt-ring-ink-none) }
+/* The ten segments of the round, in the display. */
+.one-more-tune-window .omt-slots { display:flex;gap:3px;min-width:0 }
+.one-more-tune-window .omt-slot { width:14px;height:14px;flex:none;border-radius:3px;box-shadow:inset 0 0 0 1.5px var(--omt-room-hair);display:grid;place-items:center;font-size:9px;font-weight:800;line-height:1;color:var(--omt-ring-ink-none) }
 .one-more-tune-window .omt-slot[data-now] { box-shadow:inset 0 0 0 1.5px var(--omt-room-ink) }
-.one-more-tune-window .omt-slot[data-now]::after { content:"";width:6px;height:6px;border-radius:50%;background:var(--omt-room-ink) }
 .one-more-tune-window .omt-slot[data-s] { background:var(--omt-ring-none);box-shadow:none }
 .one-more-tune-window .omt-slot[data-s="skip"],
 .one-more-tune-window .omt-slot[data-s="broken"] { background:transparent;box-shadow:inset 0 0 0 1.5px var(--omt-room-ink-3);color:var(--omt-room-ink-2) }
@@ -1679,129 +1671,115 @@ body[data-theme="classic"] .one-more-tune-window {
 .one-more-tune-window .omt-slot[data-era="4"] { background:var(--omt-ring-4);color:var(--omt-ring-ink-4) }
 .one-more-tune-window .omt-slot[data-era="5"] { background:var(--omt-ring-5);color:var(--omt-ring-ink-5) }
 .one-more-tune-window .omt-slot[data-era="6"] { background:var(--omt-ring-6);color:var(--omt-ring-ink-6) }
-.one-more-tune-window .omt-room[data-omt-enter] .omt-slot[data-fresh] { animation:omt-pop 220ms var(--omt-ease-out) }
-@keyframes omt-pop { from { transform:scale(.6) } }
-.one-more-tune-window .omt-aux { display:inline-flex;gap:4px;font-size:13px;color:var(--omt-room-ink-3);white-space:nowrap }
-.one-more-tune-window .omt-verdict { display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:99px;background:var(--omt-room-chip);box-shadow:inset 0 0 0 1px var(--omt-room-chip-line);font-size:13px;font-weight:600;line-height:1;white-space:nowrap }
-.one-more-tune-window .omt-kicker { display:flex;flex-wrap:wrap;gap:4px 12px;margin:0;font-size:13px;color:var(--omt-room-ink-3) }
 
-/* The record. The button is the whole record; the rim and the arm are its
-   siblings on the stage. */
-.one-more-tune-window .omt-deck { position:absolute;left:0;top:0;width:var(--omt-d);height:var(--omt-d);padding:0;border:0;border-radius:50%;background:none;color:inherit;cursor:pointer;transition:transform var(--omt-disc-press-ms) var(--omt-ease-out) }
-.one-more-tune-window .omt-deck:active { transform:scale(.985) }
-.one-more-tune-window .omt-deck:focus-visible { outline:var(--control-focus-outline);outline-offset:calc(var(--omt-d) * .06) }
-.one-more-tune-window .omt-flip,
-.one-more-tune-window .omt-spin,
-.one-more-tune-window .omt-grooves { position:absolute;inset:0;border-radius:50% }
-/* Round, and clipped: a turning square's corners would otherwise count as the
-   room's overflow even though nobody can see them. */
-.one-more-tune-window .omt-flip { overflow:hidden;box-shadow:0 calc(var(--omt-d) * .05) calc(var(--omt-d) * .12) var(--omt-vinyl-shadow) }
-.one-more-tune-window .omt-grooves {
-  background:
-    radial-gradient(circle closest-side,transparent 0 45%,var(--omt-groove-gap) 45% 46.2%,transparent 46.2% 54.4%,var(--omt-groove-gap) 54.4% 55.6%,transparent 55.6% 64.4%,var(--omt-groove-gap) 64.4% 65.6%,transparent 65.6% 74.4%,var(--omt-groove-gap) 74.4% 75.6%,transparent 75.6% 84.4%,var(--omt-groove-gap) 84.4% 85.6%,transparent 85.6% 94%,var(--omt-groove-gap) 94% 95.5%,transparent 95.5%),
-    repeating-radial-gradient(circle closest-side,var(--omt-vinyl) 0 var(--omt-groove-land),var(--omt-groove) var(--omt-groove-land) var(--omt-groove-pitch)),
-    var(--omt-vinyl);
-  box-shadow:inset 0 0 0 1px var(--omt-room-hair);
-}
-.one-more-tune-window .omt-label { position:absolute;inset:34%;border-radius:50%;display:grid;place-content:center;justify-items:center;gap:calc(var(--omt-d) * .008);overflow:hidden;text-align:center;line-height:1 }
-.one-more-tune-window .omt-label b { font-size:calc(var(--omt-d) * .074);font-weight:800;letter-spacing:-.02em;background:var(--omt-label-type-bg);padding:0 2px }
-.one-more-tune-window .omt-label small { font-size:calc(var(--omt-d) * .03);font-weight:600;opacity:.66;max-width:calc(var(--omt-d) * .24);background:var(--omt-label-type-bg) }
-.one-more-tune-window .omt-label-white { background:var(--omt-label);color:var(--omt-label-ink) }
-.one-more-tune-window .omt-label-print { background:var(--omt-label);color:var(--omt-label-ink);opacity:0;filter:blur(6px);transform:scale(1.06);transition:opacity 380ms var(--omt-ease-out),filter 380ms var(--omt-ease-out),transform 380ms var(--omt-ease-out) }
-.one-more-tune-window .omt-label-print b { font-size:calc(var(--omt-d) * .064) }
-.one-more-tune-window .omt-stage[data-printed] .omt-label-print { opacity:1;filter:none;transform:none }
-.one-more-tune-window .omt-label-print[data-era="1"] { background:var(--omt-era-1);color:var(--omt-ring-ink-1) }
-.one-more-tune-window .omt-label-print[data-era="2"] { background:var(--omt-era-2);color:var(--omt-ring-ink-2) }
-.one-more-tune-window .omt-label-print[data-era="3"] { background:var(--omt-era-3);color:var(--omt-ring-ink-3) }
-.one-more-tune-window .omt-label-print[data-era="4"] { background:var(--omt-era-4);color:var(--omt-ring-ink-4) }
-.one-more-tune-window .omt-label-print[data-era="5"] { background:var(--omt-era-5);color:var(--omt-ring-ink-5) }
-.one-more-tune-window .omt-label-print[data-era="6"] { background:var(--omt-era-6);color:var(--omt-ring-ink-6) }
-.one-more-tune-window .omt-hole { position:absolute;left:50%;top:50%;width:calc(var(--omt-d) * .028);height:calc(var(--omt-d) * .028);border-radius:50%;background:var(--omt-vinyl);transform:translate(-50%,-50%);box-shadow:0 0 0 1px var(--omt-room-hair) }
-.one-more-tune-window .omt-sheen { position:absolute;inset:0;border-radius:50%;pointer-events:none;background:var(--omt-sheen);
-  -webkit-mask:radial-gradient(circle closest-side,transparent 0 33%,#000 34% 95%,transparent 96%);mask:radial-gradient(circle closest-side,transparent 0 33%,#000 34% 95%,transparent 96%) }
-.one-more-tune-window .omt-rim { position:absolute;left:calc(var(--omt-d) * -.045);top:calc(var(--omt-d) * -.045);width:calc(var(--omt-d) * 1.09);height:calc(var(--omt-d) * 1.09);overflow:visible;pointer-events:none }
-.one-more-tune-window .omt-rim circle { fill:none;stroke-width:1.2 }
-.one-more-tune-window .omt-rim-bed { stroke:var(--omt-room-hair) }
-.one-more-tune-window .omt-rim-arc { stroke:var(--omt-room-ink);stroke-linecap:round;opacity:.9;transition:stroke-dashoffset var(--omt-disc-arc-ms) linear }
-.one-more-tune-window .omt-deck[data-unknown="true"] ~ .omt-rim .omt-rim-arc { opacity:0 }
-.one-more-tune-window .omt-stage[data-playback="idle"] .omt-rim-bed { stroke-dasharray:.6 2.4 }
-/* The tonearm: the swing picks the band, the track follows the cue inward. */
-.one-more-tune-window .omt-arm { position:absolute;left:calc(var(--omt-d) * 1.1);top:calc(var(--omt-d) * .1);width:0;height:0;pointer-events:none }
-.one-more-tune-window .omt-arm-base { position:absolute;left:calc(var(--omt-d) * -.075);top:calc(var(--omt-d) * -.075);width:calc(var(--omt-d) * .15);height:calc(var(--omt-d) * .15);border-radius:50%;background:var(--omt-arm-base);box-shadow:0 calc(var(--omt-d) * .02) calc(var(--omt-d) * .05) var(--omt-vinyl-shadow),inset 0 0 0 1px var(--omt-room-hair) }
-.one-more-tune-window .omt-arm-swing,
-.one-more-tune-window .omt-arm-track { position:absolute;left:0;top:0;transform:rotate(0deg);transition:transform 440ms var(--omt-ease-drawer) }
-.one-more-tune-window .omt-stage:is([data-playback="loading"],[data-playback="playing"],[data-playback="failed"]) .omt-arm-swing { transform:rotate(var(--omt-arm-from)) }
-.one-more-tune-window .omt-stage[data-playback="playing"] .omt-arm-track { transform:rotate(calc((var(--omt-arm-to) - var(--omt-arm-from)) * var(--omt-arm-p,0)));transition:transform var(--omt-disc-arc-ms) linear }
-.one-more-tune-window .omt-arm-cw { position:absolute;left:calc(var(--omt-d) * -.032);top:calc(var(--omt-d) * -.13);width:calc(var(--omt-d) * .064);height:calc(var(--omt-d) * .07);border-radius:calc(var(--omt-d) * .012);background:var(--omt-arm-weight) }
-.one-more-tune-window .omt-arm-tube { position:absolute;left:calc(var(--omt-d) * -.009);top:calc(var(--omt-d) * -.07);width:calc(var(--omt-d) * .018);height:calc(var(--omt-d) * .76);border-radius:99px;background:var(--omt-arm-tube);box-shadow:calc(var(--omt-d) * .012) calc(var(--omt-d) * .02) calc(var(--omt-d) * .02) var(--omt-vinyl-shadow) }
-.one-more-tune-window .omt-arm-head { position:absolute;left:calc(var(--omt-d) * -.03);top:calc(var(--omt-d) * .66);width:calc(var(--omt-d) * .06);height:calc(var(--omt-d) * .12);border-radius:calc(var(--omt-d) * .01);background:var(--omt-arm-head);box-shadow:0 calc(var(--omt-d) * .01) calc(var(--omt-d) * .015) var(--omt-vinyl-shadow);transform-origin:50% 0;transform:rotate(22deg);transition:transform 90ms var(--omt-ease-out),box-shadow 90ms var(--omt-ease-out) }
-/* Cued, not down: fetching the sound, or a sound that would not start. */
-.one-more-tune-window .omt-stage:is([data-playback="loading"],[data-playback="failed"]) .omt-arm-head { transform:rotate(22deg) translateY(calc(var(--omt-d) * -.014)) scale(1.06);box-shadow:0 calc(var(--omt-d) * .045) calc(var(--omt-d) * .04) var(--omt-vinyl-shadow) }
-.one-more-tune-window .omt-arm-cap { position:absolute;left:calc(var(--omt-d) * -.028);top:calc(var(--omt-d) * -.028);width:calc(var(--omt-d) * .056);height:calc(var(--omt-d) * .056);border-radius:50%;background:var(--omt-arm-cap) }
+/* The station card: kraft on its front, the tune's cover on its back. */
+.one-more-tune-window .omt-card { grid-area:card;height:var(--omt-card-h);perspective:1000px;cursor:pointer;-webkit-tap-highlight-color:transparent }
+.one-more-tune-window .omt-card-in { position:relative;height:100%;transform-style:preserve-3d }
+.one-more-tune-window .omt-radio[data-flipped] .omt-card-in { transform:rotateY(180deg) }
+.one-more-tune-window .omt-room[data-omt-enter] .omt-radio[data-flipped] .omt-card-in { animation:omt-turn 640ms var(--omt-ease-drawer) both }
+@keyframes omt-turn { from { transform:rotateY(0deg) } }
+.one-more-tune-window .omt-face { position:absolute;inset:0;border-radius:var(--item-radius);overflow:hidden;-webkit-backface-visibility:hidden;backface-visibility:hidden;padding:12px 14px }
+.one-more-tune-window .omt-face-front { background:var(--omt-kraft);color:var(--omt-kraft-ink);box-shadow:inset 0 0 0 1px var(--omt-kraft-edge),inset 0 1px 0 rgba(255,255,255,.5) }
+.one-more-tune-window .omt-stamp { position:absolute;left:14px;top:8px;font-size:clamp(28px,calc(var(--omt-card-h) * .36),56px);font-weight:800;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;background:var(--omt-type-box) }
+.one-more-tune-window .omt-hint { position:absolute;right:14px;top:11px;text-align:right;font-size:14px;font-weight:650;line-height:1.35;background:var(--omt-type-box) }
+.one-more-tune-window .omt-hint-sub { font-size:12px;font-weight:600;opacity:.62 }
+.one-more-tune-window .omt-hint .omt-aux { color:inherit;font-size:14px }
+/* The ticks are this cue's clock, not a level meter: there is no BPM here, so
+   nothing on the card pretends to follow a beat. */
+.one-more-tune-window .omt-ticks { position:absolute;left:14px;right:14px;bottom:12px;height:22px;display:flex;gap:3px;align-items:flex-end }
+.one-more-tune-window .omt-ticks i { flex:1;height:100%;background:currentColor;opacity:.16 }
+.one-more-tune-window .omt-ticks::after { content:"";position:absolute;inset:0;background:currentColor;transform-origin:0 50%;transform:scaleX(var(--omt-p,0));transition:transform var(--omt-disc-arc-ms) linear;
+  -webkit-mask:repeating-linear-gradient(90deg,#000 0 calc((100% - 69px) / 24),transparent 0 calc((100% - 69px) / 24 + 3px));mask:repeating-linear-gradient(90deg,#000 0 calc((100% - 69px) / 24),transparent 0 calc((100% - 69px) / 24 + 3px)) }
+.one-more-tune-window .omt-face-back { transform:rotateY(180deg);background:var(--omt-ring-none);color:var(--omt-ring-ink-none) }
+.one-more-tune-window .omt-face-back[data-era="1"] { background:var(--omt-era-1);color:var(--omt-ring-ink-1) }
+.one-more-tune-window .omt-face-back[data-era="2"] { background:var(--omt-era-2);color:var(--omt-ring-ink-2) }
+.one-more-tune-window .omt-face-back[data-era="3"] { background:var(--omt-era-3);color:var(--omt-ring-ink-3) }
+.one-more-tune-window .omt-face-back[data-era="4"] { background:var(--omt-era-4);color:var(--omt-ring-ink-4) }
+.one-more-tune-window .omt-face-back[data-era="5"] { background:var(--omt-era-5);color:var(--omt-ring-ink-5) }
+.one-more-tune-window .omt-face-back[data-era="6"] { background:var(--omt-era-6);color:var(--omt-ring-ink-6) }
+.one-more-tune-window .omt-face-back .omt-stamp { font-size:14px;top:12px;letter-spacing:0 }
+.one-more-tune-window .omt-face-back .omt-verdict { color:inherit;font-size:14px }
+.one-more-tune-window .omt-year { position:absolute;right:14px;top:10px;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;background:var(--omt-type-box) }
+.one-more-tune-window .omt-cover { position:absolute;left:14px;right:14px;bottom:11px;display:grid;gap:2px }
+.one-more-tune-window .omt-cover b { font-size:clamp(20px,calc(var(--omt-card-h) * .22),32px);font-weight:800;line-height:1.05;letter-spacing:-.025em;background:var(--omt-type-box);justify-self:start }
+/* A long title gets a smaller face rather than an ellipsis: the name is the answer. */
+.one-more-tune-window .omt-cover b[data-long] { font-size:clamp(16px,calc(var(--omt-card-h) * .15),24px) }
+.one-more-tune-window .omt-cover span { font-size:14px;font-weight:600;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--omt-type-box);justify-self:start;max-width:100% }
 
-/* The question and its four answers. */
+/* The dial: forty years, six bands, one needle. */
+.one-more-tune-window .omt-dial { grid-area:dial;position:relative;height:var(--omt-dial-h);border-radius:var(--item-radius);background:var(--omt-dial);overflow:hidden;box-shadow:inset 0 2px 8px rgba(0,0,0,.5);--omt-inset:14px }
+.one-more-tune-window .omt-scale { position:absolute;left:var(--omt-inset);right:var(--omt-inset);top:10px;height:22%;background:repeating-linear-gradient(90deg,var(--omt-dial-tick) 0 1px,transparent 1px calc(100% / 42.05)) }
+.one-more-tune-window .omt-years { position:absolute;left:var(--omt-inset);right:var(--omt-inset);top:10px;bottom:0 }
+.one-more-tune-window .omt-years span { position:absolute;left:calc(var(--omt-at) * 100%);top:0;padding-top:calc(var(--omt-dial-h) * .3 + 6px);font-size:10px;font-weight:600;color:var(--omt-dial-ink);font-variant-numeric:tabular-nums;transform:translateX(-50%) }
+.one-more-tune-window .omt-years span:first-child { transform:none }
+.one-more-tune-window .omt-years span::before { content:"";position:absolute;left:50%;top:0;width:1.5px;height:calc(var(--omt-dial-h) * .3);background:var(--omt-dial-ink) }
+.one-more-tune-window .omt-years span:first-child::before { left:0 }
+.one-more-tune-window .omt-bands { position:absolute;left:var(--omt-inset);right:var(--omt-inset);bottom:9px;height:5px }
+.one-more-tune-window .omt-band { position:absolute;top:0;bottom:0;left:calc(var(--omt-band-at) * 100%);width:calc(var(--omt-band-w) * 100% - 2px);border-radius:2px;opacity:var(--omt-band-dim);background:var(--omt-ring-none) }
+.one-more-tune-window .omt-band[data-era="1"] { background:var(--omt-era-1) }
+.one-more-tune-window .omt-band[data-era="2"] { background:var(--omt-era-2) }
+.one-more-tune-window .omt-band[data-era="3"] { background:var(--omt-era-3) }
+.one-more-tune-window .omt-band[data-era="4"] { background:var(--omt-era-4) }
+.one-more-tune-window .omt-band[data-era="5"] { background:var(--omt-era-5) }
+.one-more-tune-window .omt-band[data-era="6"] { background:var(--omt-era-6) }
+.one-more-tune-window .omt-radio[data-flipped] .omt-band[data-me] { opacity:1;box-shadow:0 0 0 1.5px var(--omt-dial-ink) }
+.one-more-tune-window .omt-room[data-omt-enter] .omt-radio[data-flipped] .omt-band[data-me] { animation:omt-light 300ms 520ms var(--omt-ease-out) both }
+@keyframes omt-light { from { opacity:var(--omt-band-dim);box-shadow:none } }
+.one-more-tune-window .omt-needle { position:absolute;top:6px;bottom:6px;left:calc(var(--omt-inset) + (100% - 2 * var(--omt-inset)) * .5);width:2px;margin-left:-1px;background:var(--omt-needle-ink);box-shadow:var(--omt-needle-glow) }
+/* Searching while there is sound: decoration that means "listening", and it
+   claims nothing — it is not a beat and not a year. */
+.one-more-tune-window .omt-radio[data-playback="playing"]:not([data-flipped]) .omt-needle { animation:omt-search 2.8s ease-in-out infinite alternate }
+@keyframes omt-search { from { left:calc(var(--omt-inset) + (100% - 2 * var(--omt-inset)) * .06) } to { left:calc(var(--omt-inset) + (100% - 2 * var(--omt-inset)) * .94) } }
+.one-more-tune-window .omt-radio[data-playback="loading"] .omt-needle { opacity:.5 }
+.one-more-tune-window .omt-radio[data-playback="failed"]:not([data-flipped]) .omt-needle { left:var(--omt-inset);opacity:.35 }
+.one-more-tune-window .omt-radio[data-flipped] .omt-needle { left:calc(var(--omt-inset) + (100% - 2 * var(--omt-inset)) * var(--omt-tune)) }
+.one-more-tune-window .omt-room[data-omt-enter] .omt-radio[data-flipped] .omt-needle { animation:omt-land 720ms cubic-bezier(.34,1.3,.64,1) both }
+@keyframes omt-land { from { left:calc(var(--omt-inset) + (100% - 2 * var(--omt-inset)) * .5) } }
+/* A card nobody dated has no year to land on: the needle leaves the scale. */
+.one-more-tune-window .omt-radio[data-offscale] .omt-needle { opacity:0 }
+
+/* The question and its four preset keys. */
 .one-more-tune-window .omt-qtext { margin:0;font-size:22px;font-weight:650;line-height:1.25;letter-spacing:-.01em;text-wrap:balance }
 .one-more-tune-window .omt-note { margin:8px 0 0;font-size:13px;line-height:1.4;color:var(--omt-room-ink-2) }
-.one-more-tune-window .omt-grid { display:flex;flex-direction:column }
-.one-more-tune-window .omt-ow { display:grid;grid-template-rows:1fr }
-.one-more-tune-window .omt-ow + .omt-ow { margin-top:8px }
-.one-more-tune-window .omt-opt { display:block;width:100%;min-height:0;overflow:hidden;padding:0 16px;border:0;border-radius:var(--omt-opt-radius);background:var(--omt-room-chip);box-shadow:inset 0 0 0 1px var(--omt-room-chip-line);color:var(--omt-room-ink);font-size:17px;font-weight:500;line-height:1.28;text-align:left;transition:transform var(--omt-disc-press-ms) var(--omt-ease-out),background-color 140ms ease }
-.one-more-tune-window .omt-opt-in { display:flex;align-items:center;gap:12px;min-height:54px;padding-block:8px }
-.one-more-tune-window .omt-key { display:none;flex:none;width:14px;font-size:13px;font-weight:600;color:var(--omt-room-ink-3) }
-.one-more-tune-window .omt-opt-label { flex:1;min-width:0 }
-.one-more-tune-window .omt-mark { flex:none;width:20px;height:20px }
+.one-more-tune-window .omt-grid { display:grid;grid-template-columns:1fr 1fr;gap:10px }
+.one-more-tune-window .omt-opt { position:relative;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;gap:6px;min-width:0;min-height:76px;padding:10px 12px 11px;border:0;border-radius:var(--omt-opt-radius);
+  background:var(--omt-key);box-shadow:inset 0 0 0 1px var(--omt-key-edge),inset 0 -3px 0 rgba(0,0,0,.06),0 1px 1px rgba(0,0,0,.04);color:var(--omt-room-ink);font-size:16.5px;font-weight:600;line-height:1.22;text-align:left;
+  transition:transform var(--omt-disc-press-ms) var(--omt-ease-out),background-color 140ms ease }
+.one-more-tune-window .omt-key { display:inline-grid;place-items:center;width:22px;height:22px;border-radius:var(--inset-radius);background:var(--omt-key-down);color:var(--omt-key-down-ink);font-size:12px;font-weight:700;line-height:1 }
+.one-more-tune-window .omt-opt-label { min-width:0;overflow-wrap:anywhere }
+.one-more-tune-window .omt-mark { position:absolute;right:10px;top:10px;width:20px;height:20px }
 .one-more-tune-window .omt-mark path { fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:24;stroke-dashoffset:0 }
-.one-more-tune-window button.omt-opt:active { transform:scale(.97);background:var(--omt-room-chip-press) }
-.one-more-tune-window .omt-opt[data-state="pending"] { background:var(--omt-room-chip-press);box-shadow:inset 0 0 0 1.5px var(--omt-room-ink) }
+.one-more-tune-window button.omt-opt:active { transform:translateY(1px) scale(.98);background:var(--omt-key-press);box-shadow:inset 0 0 0 1px var(--omt-key-edge),inset 0 2px 3px rgba(0,0,0,.1) }
+.one-more-tune-window .omt-opt[data-state="pending"] { background:var(--omt-key-press);box-shadow:inset 0 0 0 2px var(--omt-room-ink),inset 0 2px 3px rgba(0,0,0,.1) }
 .one-more-tune-window .omt-room[data-omt-waiting] button.omt-opt:not([data-state]) { opacity:.45 }
-.one-more-tune-window .omt-opt[data-state="right"] { background:var(--omt-button);color:var(--omt-button-ink);box-shadow:none }
-.one-more-tune-window .omt-opt[data-state="wrong"] { background:transparent;color:var(--omt-room-ink-2);box-shadow:inset 0 0 0 1px var(--omt-room-hair) }
+.one-more-tune-window .omt-opt[data-state="right"] { background:var(--omt-key-down);color:var(--omt-key-down-ink);box-shadow:inset 0 2px 4px rgba(0,0,0,.25) }
+.one-more-tune-window .omt-opt[data-state="right"] .omt-key { background:var(--omt-key-down-ink);color:var(--omt-key-down) }
+.one-more-tune-window .omt-opt[data-state="wrong"] { background:transparent;color:var(--omt-room-ink-2);box-shadow:inset 0 0 0 1px var(--omt-key-edge),inset 0 2px 3px rgba(0,0,0,.06) }
 .one-more-tune-window .omt-opt[data-state="wrong"] .omt-opt-label { text-decoration:line-through;text-decoration-thickness:1.5px }
-.one-more-tune-window .omt-room[data-omt-enter] .omt-opt[data-state="right"] .omt-mark path { animation:omt-draw 300ms 120ms var(--omt-ease-out) both }
+.one-more-tune-window .omt-opt[data-state="idle"] { opacity:.35 }
+.one-more-tune-window .omt-room[data-omt-enter] .omt-opt[data-state="right"] .omt-mark path { animation:omt-draw 300ms 520ms var(--omt-ease-out) both }
 @keyframes omt-draw { from { stroke-dashoffset:24 } }
-.one-more-tune-window .omt-room[data-omt-enter] .omt-opt[data-shake] { animation:omt-shake 320ms var(--omt-ease-out) }
+.one-more-tune-window .omt-room[data-omt-enter] .omt-opt[data-state="wrong"] { animation:omt-shake 320ms var(--omt-ease-out) }
 @keyframes omt-shake { 20% { transform:translateX(-6px) } 40% { transform:translateX(5px) } 60% { transform:translateX(-3px) } 80% { transform:translateX(2px) } }
-/* The two answers that had nothing to do with it fold away on the reveal's
-   first paint; later paints leave them out. */
-.one-more-tune-window .omt-ow[data-gone] { animation:omt-fold 260ms var(--omt-ease-out) forwards }
-@keyframes omt-fold { to { grid-template-rows:0fr;opacity:0;margin-top:0 } }
+.one-more-tune-window .omt-room[data-omt-enter] .omt-opt[data-state="idle"] { animation:omt-dim 260ms var(--omt-ease-out) both }
+@keyframes omt-dim { from { opacity:1 } }
 .one-more-tune-window .omt-act,
 .one-more-tune-window .omt-racts { display:flex;gap:10px;margin-top:12px }
 .one-more-tune-window .omt-racts { grid-area:acts;margin-top:0 }
 .one-more-tune-window .omt-next,
 .one-more-tune-window .omt-2nd { min-height:50px;padding:0 22px;border:0;border-radius:99px;font-size:17px;font-weight:600;line-height:1;transition:transform var(--omt-disc-press-ms) var(--omt-ease-out) }
 .one-more-tune-window .omt-next { flex:1;background:var(--omt-button);color:var(--omt-button-ink) }
-.one-more-tune-window .omt-2nd { background:var(--omt-room-chip);color:var(--omt-room-ink);box-shadow:inset 0 0 0 1px var(--omt-room-chip-line) }
+.one-more-tune-window .omt-2nd { background:var(--omt-chip);color:var(--omt-room-ink);box-shadow:inset 0 0 0 1px var(--omt-room-hair) }
 .one-more-tune-window .omt-racts .omt-2nd { flex:1 }
 .one-more-tune-window :is(.omt-next,.omt-2nd):active { transform:scale(.97) }
-.one-more-tune-window .omt-room[data-omt-enter] .omt-act { animation:omt-rise 260ms 200ms var(--omt-ease-out) both }
+.one-more-tune-window .omt-room[data-omt-enter] .omt-act { animation:omt-rise 260ms 380ms var(--omt-ease-out) both }
 
-/* The reveal's liner notes. */
+/* Where the music came from, and the two doors. */
 .one-more-tune-window .omt-notes { display:grid;gap:3px }
-.one-more-tune-window .omt-song { margin:0;font-size:23px;font-weight:700;line-height:1.18;letter-spacing:-.015em;text-wrap:balance }
-.one-more-tune-window .omt-artist { margin:0;font-size:16px;font-weight:500;color:var(--omt-room-ink-2) }
-.one-more-tune-window .omt-meta { display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin:5px 0 0;font-size:13px;font-weight:500;line-height:1.4;color:var(--omt-room-ink-3) }
-.one-more-tune-window .omt-era-name { display:inline-flex;align-items:center;gap:6px }
-.one-more-tune-window .omt-era-name i,
-.one-more-tune-window .omt-dot { width:9px;height:9px;flex:none;border-radius:50%;background:var(--omt-ring-none);box-shadow:inset 0 0 0 1px var(--omt-room-hair) }
-.one-more-tune-window .omt-era-name[data-era="1"] i,
-.one-more-tune-window .omt-dot[data-era="1"] { background:var(--omt-ring-1) }
-.one-more-tune-window .omt-era-name[data-era="2"] i,
-.one-more-tune-window .omt-dot[data-era="2"] { background:var(--omt-ring-2) }
-.one-more-tune-window .omt-era-name[data-era="3"] i,
-.one-more-tune-window .omt-dot[data-era="3"] { background:var(--omt-ring-3) }
-.one-more-tune-window .omt-era-name[data-era="4"] i,
-.one-more-tune-window .omt-dot[data-era="4"] { background:var(--omt-ring-4) }
-.one-more-tune-window .omt-era-name[data-era="5"] i,
-.one-more-tune-window .omt-dot[data-era="5"] { background:var(--omt-ring-5) }
-.one-more-tune-window .omt-era-name[data-era="6"] i,
-.one-more-tune-window .omt-dot[data-era="6"] { background:var(--omt-ring-6) }
+.one-more-tune-window .omt-meta { display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin:0;font-size:13px;font-weight:500;line-height:1.4;color:var(--omt-room-ink-3) }
 .one-more-tune-window .omt-links { display:flex;gap:14px;margin-left:auto }
-.one-more-tune-window .omt-links :is(a,.omt-link) { padding:0;border:0;background:none;color:var(--omt-room-ink);font-size:14px;font-weight:600;line-height:1.4;text-decoration:underline;text-decoration-color:var(--omt-room-chip-line);text-decoration-thickness:1px;text-underline-offset:4px }
-.one-more-tune-window .omt-room[data-omt-enter] .omt-notes > * { animation:omt-rise 280ms var(--omt-ease-out) both }
-.one-more-tune-window .omt-room[data-omt-enter] .omt-notes > :nth-child(2) { animation-delay:50ms }
-.one-more-tune-window .omt-room[data-omt-enter] .omt-notes > :nth-child(3) { animation-delay:100ms }
-.one-more-tune-window .omt-room[data-omt-enter] .omt-notes > :nth-child(4) { animation-delay:150ms }
+.one-more-tune-window .omt-links :is(a,.omt-link) { padding:0;border:0;background:none;color:var(--omt-room-ink);font-size:14px;font-weight:600;line-height:1.4;text-decoration:underline;text-decoration-color:var(--omt-room-hair);text-decoration-thickness:1px;text-underline-offset:4px }
+.one-more-tune-window .omt-room[data-omt-enter] .omt-notes > * { animation:omt-rise 280ms 440ms var(--omt-ease-out) both }
 @keyframes omt-rise { from { opacity:0;transform:translateY(6px) } }
 
 /* The start. */
@@ -1810,23 +1788,35 @@ body[data-theme="classic"] .one-more-tune-window {
 .one-more-tune-window .omt-start { display:grid;gap:8px }
 .one-more-tune-window .omt-code { display:flex;align-items:center;gap:8px;margin-top:10px }
 .one-more-tune-window .omt-code-label { flex:none;font-size:13px;color:var(--omt-room-ink-3) }
-.one-more-tune-window .omt-code input { flex:1;min-width:0;height:44px;padding:0 12px;border:0;border-radius:var(--omt-opt-radius);background:var(--omt-room-chip);box-shadow:inset 0 0 0 1px var(--omt-room-chip-line);color:var(--omt-room-ink);font-size:16px }
+.one-more-tune-window .omt-code input { flex:1;min-width:0;height:44px;padding:0 12px;border:0;border-radius:var(--omt-opt-radius);background:var(--omt-key);box-shadow:inset 0 0 0 1px var(--omt-key-edge);color:var(--omt-room-ink);font-size:16px }
 .one-more-tune-window .omt-code input::placeholder { color:var(--omt-room-ink-3) }
 .one-more-tune-window .omt-code .omt-2nd { min-height:44px;padding:0 16px;font-size:15px }
 
-/* The back cover. */
+/* The end of a round: the score, the spread of ten years, the ten tunes. */
 .one-more-tune-window .omt-room[data-omt-phase="result"] .omt-in { grid-template-rows:auto auto minmax(0,1fr) auto auto;grid-template-areas:"head" "list" "gap" "acts" "desk" }
-.one-more-tune-window .omt-rhead { grid-area:head;display:flex;align-items:center;gap:16px }
-.one-more-tune-window .omt-mini { position:relative;flex:none;width:96px;height:96px;border-radius:50%;box-shadow:0 8px 22px var(--omt-vinyl-shadow);
-  background:radial-gradient(circle closest-side,transparent 0 35%,var(--omt-r10,transparent) 36% 41%,transparent 41% 42%,var(--omt-r9,transparent) 42% 47%,transparent 47% 48%,var(--omt-r8,transparent) 48% 53%,transparent 53% 54%,var(--omt-r7,transparent) 54% 59%,transparent 59% 60%,var(--omt-r6,transparent) 60% 65%,transparent 65% 66%,var(--omt-r5,transparent) 66% 71%,transparent 71% 72%,var(--omt-r4,transparent) 72% 77%,transparent 77% 78%,var(--omt-r3,transparent) 78% 83%,transparent 83% 84%,var(--omt-r2,transparent) 84% 89%,transparent 89% 90%,var(--omt-r1,transparent) 90% 95%,transparent 95%),var(--omt-vinyl) }
-.one-more-tune-window .omt-mini .omt-label { inset:31% }
-.one-more-tune-window .omt-mini .omt-label b { font-size:15px }
+.one-more-tune-window .omt-rhead { grid-area:head;display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0 }
 .one-more-tune-window .omt-score { margin:0;font-size:46px;font-weight:800;line-height:1;letter-spacing:-.035em;font-variant-numeric:tabular-nums }
 .one-more-tune-window .omt-of { margin-left:3px;font-size:22px;font-weight:700;letter-spacing:0;color:var(--omt-room-ink-3) }
-.one-more-tune-window .omt-rsub { margin:7px 0 0;font-size:14px;color:var(--omt-room-ink-2) }
+.one-more-tune-window .omt-rsub { margin:6px 0 0;font-size:14px;color:var(--omt-room-ink-2) }
+.one-more-tune-window .omt-spread { grid-area:auto;width:100%;--omt-dial-h:64px }
+.one-more-tune-window .omt-pin { position:absolute;top:calc(var(--omt-dial-h) * .3 - 4px);left:calc(var(--omt-inset) + (100% - 2 * var(--omt-inset)) * var(--omt-at));width:10px;height:10px;margin-left:-5px;border-radius:50%;background:var(--omt-ring-none);box-shadow:0 0 0 1.5px var(--omt-dial) }
+.one-more-tune-window .omt-pin span { display:none }
+.one-more-tune-window .omt-pin[data-era="1"] { background:var(--omt-ring-1) }
+.one-more-tune-window .omt-pin[data-era="2"] { background:var(--omt-ring-2) }
+.one-more-tune-window .omt-pin[data-era="3"] { background:var(--omt-ring-3) }
+.one-more-tune-window .omt-pin[data-era="4"] { background:var(--omt-ring-4) }
+.one-more-tune-window .omt-pin[data-era="5"] { background:var(--omt-ring-5) }
+.one-more-tune-window .omt-pin[data-era="6"] { background:var(--omt-ring-6) }
 .one-more-tune-window .omt-list { grid-area:list;display:grid;min-width:0;margin:0;padding:0;list-style:none }
-.one-more-tune-window .omt-list li { display:grid;grid-template-columns:22px 10px minmax(0,1fr) 16px;align-items:center;gap:10px;min-width:0;min-height:34px;border-bottom:1px solid var(--omt-room-hair) }
+.one-more-tune-window .omt-list li { display:grid;grid-template-columns:22px 10px minmax(0,1fr) 16px;align-items:center;gap:10px;min-width:0;min-height:32px;border-bottom:1px solid var(--omt-room-hair) }
 .one-more-tune-window .omt-no { font-size:11px;font-weight:700;color:var(--omt-room-ink-3);font-variant-numeric:tabular-nums }
+.one-more-tune-window .omt-dot { width:10px;height:10px;border-radius:50%;background:var(--omt-ring-none);box-shadow:inset 0 0 0 1px var(--omt-room-hair) }
+.one-more-tune-window .omt-dot[data-era="1"] { background:var(--omt-ring-1) }
+.one-more-tune-window .omt-dot[data-era="2"] { background:var(--omt-ring-2) }
+.one-more-tune-window .omt-dot[data-era="3"] { background:var(--omt-ring-3) }
+.one-more-tune-window .omt-dot[data-era="4"] { background:var(--omt-ring-4) }
+.one-more-tune-window .omt-dot[data-era="5"] { background:var(--omt-ring-5) }
+.one-more-tune-window .omt-dot[data-era="6"] { background:var(--omt-ring-6) }
 .one-more-tune-window .omt-t { overflow:hidden;font-size:15px;white-space:nowrap;text-overflow:ellipsis }
 .one-more-tune-window .omt-t b { font-weight:600 }
 .one-more-tune-window .omt-t span { margin-left:8px;font-size:13px;color:var(--omt-room-ink-2) }
@@ -1835,108 +1825,81 @@ body[data-theme="classic"] .one-more-tune-window {
 .one-more-tune-window .omt-desk { grid-area:desk;margin:0;font-size:13px;text-align:center }
 .one-more-tune-window .omt-desk a { color:var(--omt-room-ink-2) }
 
-/* Compact: an upright room under 600px. The record steps to the left and the
-   question stands beside it. */
+/* Compact: an upright room under 600px. The card gives up height first, then
+   the dial, then the keys. */
 @container omt (max-aspect-ratio:13/10) and (max-height:600px) {
-  .one-more-tune-window .omt-in { grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto;grid-template-areas:"track track" "stage q" "gap gap" "opts opts";row-gap:12px;column-gap:14px;
-    --omt-d:clamp(104px,min(100cqh - 350px,(100cqw - 32px) * .4),200px) }
-  .one-more-tune-window .omt-q { align-self:center }
-  .one-more-tune-window .omt-qtext,
-  .one-more-tune-window .omt-song { font-size:20px }
-  .one-more-tune-window .omt-artist { font-size:15px }
-  .one-more-tune-window .omt-links { margin-left:0 }
+  .one-more-tune-window .omt-in { row-gap:10px;--omt-card-h:clamp(76px,100cqh - 470px,120px);--omt-dial-h:56px }
+  /* A short room keeps the answer and the miss and lets the other two go. */
+  .one-more-tune-window .omt-opt[data-state="idle"] { display:none }
+  .one-more-tune-window .omt-qtext { font-size:19px }
+  .one-more-tune-window .omt-opt { min-height:64px;font-size:15.5px }
   .one-more-tune-window .omt-step-title { font-size:21px }
   .one-more-tune-window .omt-step-title br,
   .one-more-tune-window .omt-intro { display:none }
-  .one-more-tune-window .omt-opt-in { min-height:50px }
-  .one-more-tune-window .omt-room[data-omt-phase="result"] .omt-in { grid-template-columns:minmax(0,1fr) }
   .one-more-tune-window .omt-list li { min-height:28px }
-  .one-more-tune-window .omt-mini { width:72px;height:72px }
   .one-more-tune-window .omt-score { font-size:36px }
   .one-more-tune-window .omt-rsub { margin-top:4px;font-size:13px }
+  .one-more-tune-window .omt-spread { --omt-dial-h:52px }
 }
-/* Upright and wide enough for two columns of answers (the Duo unfolded). */
-@container omt (min-width:560px) and (max-aspect-ratio:13/10) {
-  .one-more-tune-window .omt-grid { display:grid;grid-template-columns:1fr 1fr;gap:10px }
-  .one-more-tune-window .omt-ow + .omt-ow { margin-top:0 }
-  .one-more-tune-window .omt-ow[data-gone] { order:9 }
-  .one-more-tune-window .omt-in { --omt-d:clamp(140px,min(100cqh - 420px,(100cqw - 32px) / 1.26),380px) }
+/* A phone-height upright room keeps the answer and the miss on the reveal, as
+   the short rooms do: two more rows of long product names do not fit under a
+   card, a dial and the way onward. */
+@container omt (max-aspect-ratio:13/10) and (max-height:720px) {
+  .one-more-tune-window .omt-opt[data-state="idle"] { display:none }
 }
-/* Wide: the record takes the left column; the track list, the question and the
-   answers stack on the right, and the way onward comes back where the answers
-   were, so a pointer never crosses the window for it. */
+/* The set's number is for sending, and the share card carries it; a phone-height
+   back cover gives the line up before it gives up a tune. */
+@container omt (max-aspect-ratio:13/10) and (max-height:720px) {
+  .one-more-tune-window .omt-set-no { display:none }
+}
+/* Wide: the set takes the left column; the question and the keys stack on the
+   right, and the way onward comes back where the keys were, so a pointer never
+   crosses the window for it. */
 @container omt (min-aspect-ratio:13/10) {
-  .one-more-tune-window .omt-light { background:radial-gradient(52% 88% at 24% 52%,var(--omt-room-glow),transparent 70%) }
-  .one-more-tune-window .omt-wash { background:radial-gradient(70% 115% at 22% 50%,color-mix(in srgb,var(--omt-wash) var(--omt-room-wash),transparent),transparent 72%) }
-  .one-more-tune-window .omt-in { grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto;grid-template-areas:"stage track" "stage q" "stage gap" "stage opts";column-gap:clamp(20px,4cqw,48px);padding-top:18px;
-    --omt-d:clamp(160px,min(100cqh - 60px,38cqw),380px) }
-  .one-more-tune-window .omt-stage { margin-left:calc(var(--omt-d) * .05) }
-  .one-more-tune-window .omt-key { display:block }
-  .one-more-tune-window .omt-room[data-omt-phase="result"] .omt-in { grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto;grid-template-areas:"head list" "head gap" "head acts" "head desk" }
-  .one-more-tune-window .omt-rhead { flex-direction:column;align-items:flex-start;align-self:center }
-  .one-more-tune-window .omt-mini { width:calc(var(--omt-d) * .72);height:calc(var(--omt-d) * .72) }
+  .one-more-tune-window .omt-in { grid-template-columns:minmax(0,min(46cqw,460px)) minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto auto;grid-template-areas:"stage gap" "stage q" "stage opts";column-gap:clamp(20px,4cqw,44px);padding-top:18px;
+    --omt-card-h:clamp(110px,100cqh - 280px,240px) }
+  .one-more-tune-window .omt-radio { align-self:center }
+  .one-more-tune-window .omt-room[data-omt-phase="result"] .omt-in { grid-template-columns:minmax(0,min(44cqw,420px)) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto;grid-template-areas:"head list" "head gap" "head acts" "head desk" }
+  .one-more-tune-window .omt-rhead { align-self:center }
   .one-more-tune-window .omt-list { grid-template-rows:repeat(5,auto);grid-auto-flow:column;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:22px }
 }
 @container omt (min-aspect-ratio:13/10) and (max-height:430px) {
-  .one-more-tune-window .omt-in { row-gap:8px;padding-top:10px;padding-bottom:10px;
-    --omt-d:clamp(130px,min(100cqh - 36px,30cqw),300px) }
+  .one-more-tune-window .omt-in { row-gap:8px;padding-top:10px;padding-bottom:10px;--omt-card-h:clamp(60px,100cqh - 176px,150px);--omt-dial-h:52px }
+  .one-more-tune-window .omt-radio { padding:10px 12px 12px;gap:8px 10px }
   .one-more-tune-window .omt-qtext { font-size:19px }
-  .one-more-tune-window .omt-song { font-size:19px;line-height:1.14 }
-  .one-more-tune-window .omt-artist { font-size:15px }
-  .one-more-tune-window .omt-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px }
-  .one-more-tune-window .omt-ow + .omt-ow { margin-top:0 }
-  .one-more-tune-window .omt-ow[data-gone] { order:9 }
-  .one-more-tune-window .omt-opt { font-size:16px }
-  .one-more-tune-window .omt-opt-in { min-height:48px;padding-block:6px }
+  .one-more-tune-window .omt-opt { min-height:52px;font-size:15.5px;flex-direction:row;justify-content:flex-start;align-items:center;gap:10px }
   .one-more-tune-window .omt-act { margin-top:8px }
   .one-more-tune-window :is(.omt-next,.omt-2nd) { min-height:46px }
-  .one-more-tune-window .omt-step-title { font-size:22px }
+  .one-more-tune-window .omt-step-title { font-size:20px }
   .one-more-tune-window .omt-step-title br,
   .one-more-tune-window .omt-intro { display:none }
   .one-more-tune-window .omt-start { grid-template-columns:1fr 1fr }
-  .one-more-tune-window .omt-code { margin-top:8px }
+  .one-more-tune-window .omt-code { margin-top:6px }
+  .one-more-tune-window .omt-start :is(.omt-next,.omt-2nd) { min-height:44px }
+  .one-more-tune-window .omt-room[data-omt-phase="idle"] .omt-in { --omt-card-h:clamp(56px,100cqh - 196px,150px) }
+  .one-more-tune-window .omt-opt[data-state="idle"] { display:none }
   .one-more-tune-window .omt-list li { min-height:30px }
-  .one-more-tune-window .omt-mini { width:calc(var(--omt-d) * .5);height:calc(var(--omt-d) * .5) }
-  .one-more-tune-window .omt-score { font-size:38px }
+  .one-more-tune-window .omt-score { font-size:36px }
   .one-more-tune-window .omt-rsub { font-size:13px }
-  .one-more-tune-window .omt-room[data-omt-phase="idle"] .omt-track { display:none }
-  .one-more-tune-window .omt-room[data-omt-phase="idle"] .omt-in { grid-template-areas:"stage q" "stage q" "stage gap" "stage opts" }
-  /* The reveal on a phone held sideways: the answer rows stack in one column,
-     at full width so a long product name keeps its line, and the way onward
-     stands beside them rather than under them. */
-  .one-more-tune-window .omt-room[data-omt-phase="reveal"] .omt-opts { display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px }
-  .one-more-tune-window .omt-room[data-omt-phase="reveal"] .omt-grid { display:flex;flex-direction:column }
-  .one-more-tune-window .omt-room[data-omt-phase="reveal"] .omt-ow + .omt-ow { margin-top:6px }
-  .one-more-tune-window .omt-room[data-omt-phase="reveal"] .omt-opt-in { min-height:44px;padding-block:4px }
-  /* A sideways phone has room for the answer, not for the miss as well: the
-     verdict and the track list already say it was missed. */
-  .one-more-tune-window .omt-room[data-omt-phase="reveal"] .omt-ow:has(.omt-opt[data-state="wrong"]) { display:none }
-  .one-more-tune-window .omt-room[data-omt-phase="reveal"] .omt-act { margin-top:0 }
-  .one-more-tune-window .omt-room[data-omt-phase="reveal"] .omt-next { padding:0 18px }
-  .one-more-tune-window .omt-notes { display:flex;flex-wrap:wrap;align-items:baseline;column-gap:10px }
-  .one-more-tune-window .omt-notes > :is(.omt-meta,.omt-note) { flex-basis:100% }
+  .one-more-tune-window .omt-spread { --omt-dial-h:52px }
 }
-/* The two links in the liner notes are words, not buttons, but a finger still
-   needs 44pt to land on one: the hit area grows and the line does not move. */
+/* The two links are words, not buttons, but a finger still needs 44pt to land
+   on one: the hit area grows and the line does not move. */
 @media (hover:none) and (pointer:coarse) {
   .one-more-tune-window .omt-links :is(a,.omt-link) { padding-block:12px;margin-block:-12px }
 }
-/* A pointer is a keyboard's neighbour: the four answers show the number that
-   picks them wherever there is a fine pointer, in any arrangement. */
 @media (hover:hover) and (pointer:fine) {
-  .one-more-tune-window .omt-key { display:block }
-  .one-more-tune-window button.omt-opt:not([data-state]):hover { background:var(--omt-room-chip-press) }
+  .one-more-tune-window button.omt-opt:not([data-state]):hover { background:var(--omt-key-press) }
 }
-/* Reduced motion is gentler, not absent: the platter keeps still (the ticker
-   holds its rate at zero), the arm and the rows arrive without travelling, no
-   answer shakes, and the label and notes fade instead of rising. The rim still
-   moves, because it is information. */
+/* Reduced motion is gentler, not absent: the needle rests instead of
+   searching, the card shows its back without turning, no key shakes, and the
+   notes fade instead of rising. The card's ticks still fill, because they are
+   information. */
 @media (prefers-reduced-motion: reduce) {
-  .one-more-tune-window :is(.omt-arm-swing,.omt-arm-track,.omt-arm-head,.omt-opt,.omt-deck,.omt-next,.omt-2nd) { transition:none }
-  .one-more-tune-window .omt-room[data-omt-enter] :is(.omt-opt[data-shake],.omt-slot[data-fresh]) { animation:none }
-  .one-more-tune-window .omt-ow[data-gone] { animation:omt-fade-out 1ms forwards }
-  .one-more-tune-window .omt-label-print { filter:none;transform:none;transition:opacity 220ms ease }
+  .one-more-tune-window .omt-radio[data-playback="playing"]:not([data-flipped]) .omt-needle { animation:none }
+  .one-more-tune-window .omt-room[data-omt-enter] :is(.omt-card-in,.omt-needle,.omt-opt,.omt-band) { animation:none }
+  .one-more-tune-window .omt-room[data-omt-enter] .omt-face-back { animation:omt-fade 220ms ease both }
+  .one-more-tune-window :is(.omt-opt,.omt-next,.omt-2nd,.omt-knob) { transition:none }
   .one-more-tune-window .omt-room[data-omt-enter] :is(.omt-notes > *,.omt-act) { animation:omt-fade 220ms ease both }
 }
 @keyframes omt-fade { from { opacity:0 } }
-@keyframes omt-fade-out { to { grid-template-rows:0fr;opacity:0;margin-top:0 } }

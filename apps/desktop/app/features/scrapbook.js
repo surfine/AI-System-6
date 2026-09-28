@@ -64,6 +64,95 @@ function refreshScrapMetadata(scrap, { updateTitle = true } = {}) {
   scrap.tags = [...new Set([...sourceTags, ...existingTags.filter((tag) => tag === "reader-clip" || tag === "reader-note" || tag === "document-clip" || tag === "search-result" || tag === "web" || tag === "translation" || tag === "video-transcript"), ...generatedTags])].slice(0, 8);
 }
 
+// --- A clip is the passage ------------------------------------------------
+//
+// A clip's body is the words that were clipped. Where they came from lives on
+// the record (source, context, capturedAt) and is drawn by the citation line.
+// Clips used to write that record into the body as a block of Source:/URL:/
+// Context lines the writer then had to edit around. Everything that carries a
+// scrap out of the Scrapbook -- project context, the index, exports, ClioTalk
+// attachments, guests -- reads scrapDocumentText(), which puts the source back
+// beside the passage, so other people's words never travel without their
+// source.
+
+const CLIP_RECORD_LINE = /^(Source|Site|URL|File|Origin|Author|Date|Time|Source kind|Time range|Original SRT blocks|Archive provider|Snapshot|Snapshot time|Target date|Readable text)\s*:/;
+
+// A clip, as opposed to a note the writer wrote: every clip path stamps its
+// source type "...-clip". A hand-written dossier can carry a quoted passage
+// too, and stays a note -- with its own 来源与日期 lines, nothing is added.
+function isClipScrap(scrap) {
+  return /-clip$/.test(String(scrap?.source?.type || ""));
+}
+
+function scrapSourceLines(scrap) {
+  const source = scrap?.source || {};
+  const title = source.title || scrap?.sourceTitle || "";
+  const url = source.url || source.originalUrl || "";
+  const timeRange = scrap?.timeStart && scrap?.timeEnd ? `${scrap.timeStart} --> ${scrap.timeEnd}` : "";
+  return [
+    title ? `Source: ${title}` : "",
+    source.site ? `Site: ${source.site}` : "",
+    url ? `URL: ${url}` : source.fileName ? `File: ${source.fileName}` : "",
+    source.origin ? `Origin: ${source.origin}` : "",
+    source.snapshotUrl ? `Snapshot: ${source.snapshotUrl}${source.snapshotTimestamp ? ` (${source.snapshotTimestamp})` : ""}` : "",
+    source.author ? `Author: ${source.author}` : "",
+    source.date ? `Date: ${source.date}` : "",
+    timeRange ? `Time range: ${timeRange}` : "",
+  ].filter(Boolean);
+}
+
+function scrapDocumentText(scrap) {
+  const body = String(scrap?.body || "");
+  if (!isClipScrap(scrap) || /\n---\nSource:/.test(body)) return body;
+  const lines = scrapSourceLines(scrap);
+  return lines.length ? `${body.trim()}\n\n---\n${lines.join("\n")}` : body;
+}
+
+// Clips written before the body became the passage. Only a body that is
+// exactly the old template is rewritten: one "Selected passage:" head, the
+// record lines, one line per context section. Anything else -- a note the
+// writer typed into it, an edited record line -- leaves the scrap as it is.
+function migrateMachineClipBody(scrap) {
+  const text = String(scrap?.body || "");
+  const lead = "Selected passage:\n";
+  if (!text.startsWith(lead)) return false;
+  const cut = text.indexOf("\n---\n");
+  if (cut < 0) return false;
+  let passage = text.slice(lead.length, cut).trim();
+  const translated = String(scrap.translatedText || "").trim();
+  if (translated && passage.endsWith(translated)) {
+    const withoutTranslation = passage.slice(0, -translated.length).trimEnd();
+    const labelBreak = withoutTranslation.lastIndexOf("\n\n");
+    if (labelBreak < 0) return false;
+    passage = withoutTranslation.slice(0, labelBreak).trim();
+  }
+  if (!passage) return false;
+  const context = { before: "", after: "" };
+  let section = "";
+  for (const line of text.slice(cut + 5).split("\n")) {
+    if (!line.trim()) continue;
+    if (/^Context( before)?:$/.test(line)) { section = "before"; continue; }
+    if (line === "Context after:") { section = "after"; continue; }
+    if (!section && CLIP_RECORD_LINE.test(line)) continue;
+    if (!section || context[section]) return false;
+    context[section] = /^\[(start|end) of [a-z ]+\]$/.test(line) ? " " : line;
+  }
+  scrap.body = passage;
+  if (!String(scrap.selectedText || "").trim()) scrap.selectedText = passage;
+  if (!scrap.context && !scrap.nearbyContext) {
+    scrap.context = { before: context.before.trim(), after: context.after.trim() };
+  }
+  return true;
+}
+
+function migrateMachineClipBodies(list = scraps) {
+  const changed = (Array.isArray(list) ? list : []).filter((scrap) => migrateMachineClipBody(scrap));
+  if (changed.length && typeof markDeskDirty === "function") {
+    changed.forEach((scrap) => markDeskDirty("scraps", scrap.id));
+  }
+  return changed.length;
+}
+
 /**
  * A scrap that is already on disk was just written to again.
  *
@@ -80,7 +169,7 @@ function noteScrapChanged(scrap) {
 function getScrapStack(scrap) {
   const body = scrap?.body || "";
   const tags = scrap?.tags || [];
-  if (scrap?.source?.type === "reader-clip" || tags.includes("reader-clip") || tags.includes("search-result") || /\b(URL|Source|Site):/i.test(body)) {
+  if (isClipScrap(scrap) || tags.includes("reader-clip") || tags.includes("search-result") || /\b(URL|Source|Site):/i.test(body)) {
     return "sources";
   }
   if (/Source:\s*(Assistant|ClioTalk)/i.test(body) || body.startsWith("> ")) {
@@ -240,21 +329,7 @@ function clipTeachTextSelectionToScrapbook() {
   const fullText = teachTextBodyInput.value;
   const contextBefore = fullText.slice(Math.max(0, start - 260), start).replace(/\s+/g, " ").trim();
   const contextAfter = fullText.slice(end, Math.min(fullText.length, end + 260)).replace(/\s+/g, " ").trim();
-  const body = [
-    "Selected passage:",
-    selectedText,
-    "",
-    "---",
-    `Source: ${fileName}`,
-    source ? `Origin: ${source}` : "",
-    `Time: ${new Date(capturedAt).toLocaleString()}`,
-    "",
-    "Context before:",
-    contextBefore || "[start of document]",
-    "",
-    "Context after:",
-    contextAfter || "[end of document]",
-  ].filter(Boolean).join("\n");
+  const body = selectedText;
 
   const scrap = createScrap(`Clip: ${selectedText.slice(0, 30)}...`, body, {
     source: {
@@ -443,7 +518,7 @@ function formatScrapForQuestionSheet(scrap, index) {
 
 function formatScrapsForTransfer(selectedScraps) {
   return selectedScraps
-    .map((scrap, index) => `## S${index + 1}. ${scrap.title}\n${scrap.body}`)
+    .map((scrap, index) => `## S${index + 1}. ${scrap.title}\n${scrapDocumentText(scrap)}`)
     .join("\n\n");
 }
 

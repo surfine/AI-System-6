@@ -1372,27 +1372,7 @@ function createTimeMachineClip(text, translatedText = "", translationMeta = {}) 
     `Target date: ${source.targetDate || "unknown"}`,
     source.readerCompleteness === "partial" ? "Readable text: preview only" : "",
   ] : [];
-  const body = [
-    "Selected passage:",
-    text,
-    translatedText ? "" : null,
-    translatedText ? `${formatTranslationMeta(translationMeta.language, translationMeta.createdAt, "Time Machine", translationMeta.model)}:` : null,
-    translatedText || null,
-    "",
-    "---",
-    `Source: ${source.title}`,
-    `URL: ${source.originalUrl}`,
-    ...archiveRows,
-    source.author ? `Author: ${source.author}` : "",
-    source.date ? `Date: ${source.date}` : "",
-    `Time: ${new Date(capturedAt).toLocaleString()}`,
-    "",
-    "Context before:",
-    context.before || "[start of readable text]",
-    "",
-    "Context after:",
-    context.after || "[end of readable text]",
-  ].filter((item) => item !== null && item !== "").join("\n");
+  const body = text;
   const scrap = createScrap(`Clip: ${text.slice(0, 20)}...`, body, {
     source,
     selectedText: text,

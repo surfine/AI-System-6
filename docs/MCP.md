@@ -1,6 +1,6 @@
 # Desk Port: MCP for AI System 6
 
-<!-- doc-claims: mixed | audited: 2026-09-18 -->
+<!-- doc-claims: mixed | audited: 2026-09-28 -->
 
 Status: design proposal, not implemented. This document exists so the
 architecture cost is visible before any code lands, as
@@ -239,6 +239,50 @@ Consent is layered:
    a Zotero, filesystem, or note server can be mounted as a source. Server
    holds the client connections; credentials stay in the vault.
 
+## Frontier models through the port (checked 2026-09-28)
+
+The question was whether the desk's own features (ClioTalk, the writing tools,
+Review Desk) could reach Claude and GPT frontier models through MCP
+**sampling**: the desk, as the MCP server, asks the connected guest's host to
+run one generation on the model the writer already pays for, so the desk holds
+no Anthropic or OpenAI key. The answer today is no, for three independent
+reasons, so nothing was built.
+
+| Check | Finding | Source |
+| --- | --- | --- |
+| Spec status | Sampling is **deprecated** in revision 2026-07-28 (SEP-2577): "new implementations should not add support"; suggested migration "integrate directly with LLM provider APIs instead of Sampling". Earliest removal: the first revision on or after 2027-07-28 | modelcontextprotocol.io/specification/2026-07-28/changelog, …/deprecated |
+| When a server may ask | Under 2026-07-28 a server-to-client request travels only inside an `InputRequiredResult` answering the client's own `tools/call`, `prompts/get` or `resources/read` (MRTR). The desk can borrow a model only while a guest is in the middle of a call, never when the writer opens ClioTalk | …/2026-07-28/basic/patterns/mrtr |
+| Claude hosts | "Claude doesn't yet support these MCP features … Sampling", for claude.ai, Claude Desktop, mobile, Cowork and Claude Code. Claude Code 2.1.283's own `initialize` declares `roots` and `elicitation` only (probed on this Mac, no model call) | claude.com/docs/connectors/building |
+| GPT hosts | Codex lists STDIO, Streamable HTTP and server instructions; ChatGPT developer mode and the Apps SDK document tools and elicitation. Neither mentions sampling | learn.chatgpt.com/docs/extend/mcp, developers.openai.com/api/docs/guides/developer-mode |
+| Other hosts | VS Code with GitHub Copilot implements sampling ("still preliminary" at launch), answered by whichever model the writer's Copilot plan allows; the server's `modelPreferences` are not documented as honored | code.visualstudio.com/docs/agents/reference/mcp-configuration |
+
+What already holds without sampling: a guest such as Claude Code or Codex can
+work at the desk on its own model and subscription through the Guest Bridge,
+and its reviews and drafts arrive as receipts the writer adopts. That is the
+direction the protocol still supports.
+
+Options for the writer to choose between (none is implemented):
+
+1. **Direct provider APIs.** Add Anthropic and OpenAI as cloud providers beside
+   DeepSeek, behind the existing `cloud-models` and task-policy tables, with the
+   writer's own key in `credential-vault.js`. Reliable on the Mac app and the
+   local server; costs are billed to the writer's key; manuscripts go to that
+   provider. The promise "the port never runs a model on the writer's key"
+   stays true for the port, but the desk's provider list then includes keys
+   the writer entered for these providers, and the settings copy must say so.
+2. **Local subscription CLIs.** On the local deployment only, run the
+   installed `claude` or `codex` CLI headless for one generation, on the
+   subscription the writer is signed in to, with tools disabled. No key in the
+   product; latency includes CLI start-up; quota is the subscription's; the
+   provider's terms for scripted use must be checked before shipping.
+3. **Sampling where it exists.** Implement MRTR sampling for guests that
+   declare it (today only VS Code Copilot), as an experiment bound to a guest's
+   own call. Deprecated upstream, so not a basis for a product feature.
+
+In every option the task contracts, humanizer guardrail and "AI output is
+temporary" rule apply unchanged, and each generation shows which provider and
+model answered.
+
 ## Open questions to settle before code
 
 - Should mounted-project reads include the working session (cursor, open
@@ -252,3 +296,4 @@ Consent is layered:
   scope here.
 
 <!-- claim-check: https://modelcontextprotocol.io/specification/2026-07-28/changelog (revision exists; tools/list, tools/call, subscriptions/listen, io.modelcontextprotocol/tasks) | status line says design proposal, not implemented -->
+<!-- claim-check: https://modelcontextprotocol.io/specification/2026-07-28/changelog (Deprecated: Sampling, SEP-2577) | https://modelcontextprotocol.io/specification/2026-07-28/basic/patterns/mrtr | https://claude.com/docs/connectors/building ("doesn't yet support … Sampling") | Claude Code 2.1.283 initialize capabilities {roots, elicitation}, probed 2026-09-28 -->

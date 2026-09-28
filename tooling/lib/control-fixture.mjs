@@ -36,6 +36,10 @@ export async function installControlFixture(context) {
     if (url.pathname === "/") return route.fulfill({ contentType: "text/html", body: html });
     if (url.pathname === "/fixture.css") return route.fulfill({ contentType: "text/css", body: css });
     if (url.pathname === "/fixture.js") return route.fulfill({ contentType: "text/javascript", body: scripts });
+    // An appearance's own lazy sheet (styles.<bundle>.css): its rules are
+    // already in /fixture.css, which concatenates every source, so the
+    // registry's request only has to succeed for the appearance to apply.
+    if (/^\/styles\.[a-z0-9-]+\.css$/.test(url.pathname)) return route.fulfill({ contentType: "text/css", body: "" });
     const prefix = url.pathname.startsWith("/system.css-reference/") ? "system.css-reference" : "assets";
     const base = resolve(prefix === "assets" ? desktopRoot : repositoryRoot, prefix);
     const path = resolve(base, decodeURIComponent(url.pathname).slice(prefix.length + 2));

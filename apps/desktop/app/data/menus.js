@@ -61,6 +61,7 @@ const editWithWriting = [
   ...editBasics,
   menuSeparator,
   ...findCommands,
+  menuItem("open-dictation", "dictation_pad"),
   menuSeparator,
   submenu("writing_tools", writingTools),
   menuSeparator,
@@ -177,6 +178,18 @@ const teachTextMenus = [
     menuItem("print-current", "print"),
   ]),
   menu("edit", "menu_edit", editWithWriting),
+  // Markdown, made visible. Every row names its key equivalent, which is how
+  // the keys are learned; the editor itself answers the keys.
+  menu("format", "menu_format", [
+    "heading-0:body", "heading-1", "heading-2", "heading-3", "",
+    "bold", "italic", "strike", "code", "link", "",
+    "quote", "bullet", "numbered", "task", "indent", "outdent", "",
+    "table", "rule", "code-block",
+  ].map((row) => {
+    if (!row) return menuSeparator;
+    const [command, label = command] = row.split(":");
+    return menuItem(`format-${command}`, `format_${label.replace(/-/g, "_")}`, command === "rule" ? "" : `format-${command}`);
+  }).concat(menuItem("open-image-manager", "image_manager")), { menuCondition: "writing-format-menu" }),
   menu("writing", "menu_writing", [
     submenu("menu_go_to", [
       menuItem("open-question-sheet", "question_sheet", "route-question-sheet"),
@@ -187,6 +200,7 @@ const teachTextMenus = [
     ]),
     menuItem("advance-writing-route", "advance_writing_route", "route-advance"),
     menuItem("toggle-writing-preview", "preview", "writing-preview"),
+    menuItem("open-heading-navigator", "heading_navigator_ellipsis"),
     menuItem("cycle-writing-focus", "focus_mode_cycle", "writing-focus"),
     // MacWrite's ruler, narrowed to the one setting Aaron kept: line spacing.
     // Applies to the editing paper and the preview alike, on every writing
@@ -269,9 +283,9 @@ const teachTextMenus = [
 // 文字亮室 is its own application, so it carries its own menu bar. The views
 // belong to it now, and so does Develop; what writes the draft stays with the
 // desk that writes it.
-const lightroomLayerKinds = ["mingming", "luoluo", "hkrr", "density"];
-const lightroomLayerLabelKey = (kind) => (kind === "density"
-  ? "quick_draft_adjustment_density"
+const lightroomLayerKinds = ["clean", "mingming", "luoluo", "hkrr", "density"];
+const lightroomLayerLabelKey = (kind) => (kind === "density" || kind === "clean"
+  ? `quick_draft_adjustment_${kind}`
   : `quick_draft_chip_${kind}`);
 const lightroomStrengthKeys = (kind) => (kind === "density"
   ? ["quick_draft_adjustment_density_light", "quick_draft_adjustment_density_standard", "quick_draft_adjustment_density_heavy"]
@@ -284,13 +298,13 @@ const lightroomLayerSubmenu = (kind) => submenu(lightroomLayerLabelKey(kind), [
     dataset: { lightroomLayer: kind, lightroomLayerRow: "enabled" },
   }),
   menuSeparator,
-  ...lightroomStrengthKeys(kind).map((labelKey, index) => menuItem(
+  // 清稿 has no strength: all four clean-up operations, as one switch.
+  ...(kind === "clean" ? [] : [...lightroomStrengthKeys(kind).map((labelKey, index) => menuItem(
     `lightroom-layer-strength:${kind}:${[25, 50, 75][index]}`,
     labelKey,
     "",
     { dataset: { lightroomLayer: kind, lightroomLayerStrength: String([25, 50, 75][index]) } }
-  )),
-  menuSeparator,
+  )), menuSeparator]),
   menuItem(`lightroom-layer-move:${kind}:-1`, "quick_draft_adjustment_move_up", "", {
     dataset: { lightroomLayer: kind, lightroomLayerRow: "move" },
   }),
@@ -413,7 +427,6 @@ const quickDraftMenus = [
     menuItem("open-lightroom", "lightroom_title"),
     menuSeparator,
     menuItem("quick-draft-toggle-materials", "quick_draft_hide_materials"),
-    menuItem("quick-draft-toggle-adjustments", "quick_draft_hide_adjustments"),
   ]),
   menu("quickDraft", "quick_draft_label", [
     menuItem("quick-draft-compose", "quick_draft_start_writing"),
@@ -911,6 +924,7 @@ function syncCurrentApplicationMenu(appId = "finder") {
     applicationOwned ? "application-owned" : "system-owned",
     typeof activeAppLabel === "function" ? activeAppLabel() : "",
     typeof currentLanguage === "undefined" ? "" : currentLanguage,
+    window.AISystem6WindowMinimize?.lampEnabled?.() ? "minimize" : "",
   ].join("|");
   if (signature === renderedCurrentApplicationSignature) return;
   renderedCurrentApplicationSignature = signature;

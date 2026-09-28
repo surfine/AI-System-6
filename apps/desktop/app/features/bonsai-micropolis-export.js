@@ -93,7 +93,7 @@ window.AISystem6BonsaiMicropolisExportLoaded = true;
   const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
 
   function looksLikeBonsaiPayload(payload) {
-    return !!payload && payload.format === "bonsai-city" && (payload.version === 3 || payload.version === 4)
+    return !!payload && payload.format === "bonsai-city" && (payload.version === 3 || payload.version === 4 || payload.version === 5)
       && isInt(payload.size) && Array.isArray(payload.zone) && payload.zone.length === payload.size * payload.size;
   }
 
@@ -111,8 +111,21 @@ window.AISystem6BonsaiMicropolisExportLoaded = true;
   function cropWindowFor(payload, options = {}) {
     if (!looksLikeBonsaiPayload(payload)) fail("payload-shape");
     const size = payload.size;
-    const spawn = payload.spawnCenter && isInt(payload.spawnCenter.x) && isInt(payload.spawnCenter.y)
-      ? payload.spawnCenter : { x: Math.floor(size / 2), y: Math.floor(size / 2) };
+    // The default window centres on what the player built (the bounding box
+    // of zones, networks and landmarks); an empty map falls back to the
+    // spawn point. On wide plains the spawn can sit far from the town.
+    let minX = size; let minY = size; let maxX = -1; let maxY = -1;
+    for (const name of CONTENT_LAYERS) {
+      const raw = payload[name]; if (!Array.isArray(raw) || raw.length !== size * size) continue;
+      for (let i = 0; i < raw.length; i += 1) {
+        if (!raw[i] || (name === "tree")) continue;
+        const bx = i % size; const by = (i - bx) / size;
+        if (bx < minX) minX = bx; if (bx > maxX) maxX = bx; if (by < minY) minY = by; if (by > maxY) maxY = by;
+      }
+    }
+    const spawn = maxX >= 0 ? { x: Math.floor((minX + maxX) / 2), y: Math.floor((minY + maxY) / 2) }
+      : payload.spawnCenter && isInt(payload.spawnCenter.x) && isInt(payload.spawnCenter.y)
+        ? payload.spawnCenter : { x: Math.floor(size / 2), y: Math.floor(size / 2) };
     const wanted = options.window || {};
     const x = cropAxis(size, CLASSIC_WIDTH, spawn.x, wanted.x);
     const y = cropAxis(size, CLASSIC_HEIGHT, spawn.y, wanted.y);
@@ -172,6 +185,12 @@ window.AISystem6BonsaiMicropolisExportLoaded = true;
     const T = codec.TILE_FACTS;
     const levels = zone === ZONE_R ? T.RES_GROWN_LEVELS : zone === ZONE_C ? T.COM_GROWN_LEVELS : T.IND_GROWN_LEVELS;
     const remembered = variant - 1;
+    // A whole 3x3 lot that still carries its imported family goes back as
+    // that family (ruleset 5 keeps the block's size in stage, not its level).
+    if (remembered >= 0 && remembered < levels && stage === 3) {
+      const densityMatches = zone === ZONE_C ? codec.densityOfLevel(Math.floor(remembered / 2)) === density : codec.densityOfLevel(remembered) === density;
+      if (densityMatches) return remembered;
+    }
     if (remembered >= 0 && remembered < levels && levelMatches(codec, zone, remembered, stage, density)) return remembered;
     for (let level = 0; level < levels; level += 1) if (levelMatches(codec, zone, level, stage, density)) return level;
     return 0;

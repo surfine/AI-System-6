@@ -12,7 +12,7 @@
 // Run it before a drain and after: identical records mean the drain changed
 // nothing anywhere the selector reaches, not merely in the cells we screenshot.
 //
-//   node tooling/computed-style-probe.mjs --targets <file.json> --out <file.json>
+//   node tooling/computed-style-probe.mjs --targets <file.json> --out <file.json> [--themes a,b]
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
@@ -24,7 +24,13 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 
-const THEMES = ["classic", "platinum", "aqua", "snow-leopard", "yosemite", "liquid-glass"];
+// --themes a,b,c widens the sweep to the appearances an edit reaches: a rule
+// scoped by [data-lineage~="snow-leopard"] also paints Tiger and Lion, which
+// the default six do not visit.
+const themesArg = process.argv.indexOf("--themes");
+const THEMES = themesArg === -1
+  ? ["classic", "platinum", "aqua", "snow-leopard", "yosemite", "liquid-glass"]
+  : process.argv[themesArg + 1].split(",");
 const WIDTHS = [{ id: "phone", width: 375, height: 812 }, { id: "desktop", width: 1280, height: 820 }];
 
 const args = process.argv.slice(2);

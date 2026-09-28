@@ -158,7 +158,6 @@ function textControlContextFromElement(element) {
   if (element === promptInput) return textControlSelectionContext(element, "assistant", () => t("assistant"));
   if (element === clipboardTextInput || element === clipboardTranslationTextInput) return textControlSelectionContext(element, "clipboard", () => clipboardSource || t("clipboard"));
   if (element === notePadTextInput) return textControlSelectionContext(element, "notePad", () => t("note_pad"));
-  if (element === rebuildFlowSourceInput) return textControlSelectionContext(element, "documents", () => t("rebuild_writing_flow"));
   if (element === dictationRawInput || element === dictationCleanedInput) return textControlSelectionContext(element, "notePad", () => t("dictation_pad"));
   return genericTextControlSelectionContext(element);
 }
@@ -172,7 +171,6 @@ function activeWindowTextControlContext(activeName) {
     assistant: [promptInput],
     clipboard: [clipboardTextInput, clipboardTranslationTextInput],
     notePad: [notePadTextInput],
-    rebuildFlow: [rebuildFlowSourceInput],
     dictation: [dictationRawInput, dictationCleanedInput],
   };
   for (const control of controlsByWindow[activeName] || []) {
@@ -385,18 +383,7 @@ function runSelectionClip(context = getSelectionServiceContext()) {
     return;
   }
   const label = selectionLabelForContext(context) || t("selection_services");
-  const body = [
-    "Selected passage:",
-    context.text,
-    "",
-    "---",
-    `Source: ${label}`,
-    context.source?.url ? `URL: ${context.source.url}` : "",
-    `Time: ${new Date().toLocaleString()}`,
-    "",
-    "Context:",
-    sourceContextText(context) || label,
-  ].filter(Boolean).join("\n");
+  const body = context.text;
   const scrap = createScrap(`Clip: ${context.text.slice(0, 30)}...`, body, {
     source: {
       type: `${context.surface || "selection"}-clip`,

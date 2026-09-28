@@ -7,16 +7,23 @@
 // a private button. That page is markup (index.html) drawn from data
 // (getDemonstrationDiskItems in app.js).
 //
-// What is left for this file is what the Finder cannot own: the command behind
-// the File menu row and the Startup Disk row, and the copy of the list inside
-// the Import Utility, where someone already choosing a backup file should see
-// that ready-made disks exist. Opening a row there and opening a row in the
-// folder are the same command, so the two doors cannot disagree.
+// Opening a disk here means looking inside it. A visitor from a video or a
+// README comes to read, and a copy on this computer is a second, deliberate
+// step, so a double click (or the space bar, the way Quick Look answers it)
+// opens the disk's read-only window, app/features/disk-peek.js, and that
+// window carries the button that makes the copy. A /go/<route> link still
+// mounts its disk straight away: whoever shares one has already chosen it.
+//
+// What is left for this file is what the Finder cannot own: the rows and their
+// columns, the keys that walk them, the command behind the File menu row and
+// the Startup Disk row, and the copy of the list inside the Import Utility,
+// where someone already choosing a backup file should see that ready-made
+// disks exist.
 //
 // Why it ships here: tooling/build-shared-project-disks.mjs appends this file
 // to the generated index module, so the first look at the disks costs the boot
-// payload nothing and fetches ~20 KB of names rather than 3.7 MB of
-// manuscripts. The backups load when a row is actually opened.
+// payload nothing and fetches ~20 KB of names rather than every manuscript.
+// A backup loads when its disk is actually looked into or opened.
 
 function installDemoDisksPanel() {
   const WINDOW_NAME = "projectDisks";
@@ -52,6 +59,39 @@ function installDemoDisksPanel() {
     return list.find((project) => project.id === id) || null;
   }
 
+  // A disk wears the object on it -- "iPhone 12 Pro Max" -- and the article
+  // it holds is the second column, because thirty-five article titles folded
+  // into six-line icon labels named nothing. The label comes from the disk
+  // registry, in both languages.
+  function diskLabel(disk, route) {
+    const label = disk?.label || {};
+    return (isZh() ? label.zh : label.en) || label.zh || disk?.name || route;
+  }
+
+  // The month the finished piece came out. The video folders record a month,
+  // not a day, so a month is all the column claims; a disk written ahead of its
+  // video has none and says so with the Finder's own blank.
+  function releasedLabel(disk) {
+    const match = /^(\d{4})-(\d{2})$/.exec(String(disk?.released || ""));
+    return match ? `${match[1]}/${match[2]}` : "--";
+  }
+
+  function wordsLabel(disk) {
+    return t("demo_disk_words", Number(disk?.words) || 0);
+  }
+
+  // Newest piece first; within a month, the project that began later; a disk
+  // with no release yet goes after every one that has one.
+  function orderedRoutes() {
+    const index = window.AISystem6SharedProjectDisksIndex || {};
+    return Object.keys(index).sort((a, b) => {
+      const left = index[a] || {};
+      const right = index[b] || {};
+      return String(right.released || "").localeCompare(String(left.released || ""))
+        || String(right.createdAt || "").localeCompare(String(left.createdAt || ""));
+    });
+  }
+
   // The rows the Startup Disk's folder draws. They live here rather than in
   // app.js because this module is where the index they read arrives: the boot
   // bundle then carries one guarded call instead of a mapper for data it never
@@ -59,17 +99,22 @@ function installDemoDisksPanel() {
   // ensures this module first.
   function finderItems() {
     const index = window.AISystem6SharedProjectDisksIndex || {};
-    return Object.keys(index).map((route) => {
+    return orderedRoutes().map((route) => {
       const disk = index[route] || {};
+      const size = wordsLabel(disk);
       return {
-        name: disk.name || route,
+        name: diskLabel(disk, route),
         iconId: "projectDisk",
         icon: "project-disk-icon",
-        action: `open-shared-disk-${route}`,
+        action: `look-shared-disk-${route}`,
         kind: t("project_disk"),
         description: disk.subject || "",
-        createdAt: disk.exportedAt || "",
-        updatedAt: disk.exportedAt || "",
+        sizeLabel: size,
+        createdAt: disk.createdAt || disk.exportedAt || "",
+        // Sorting by date follows the release month; a disk without one sorts
+        // by the day its project began, which is the only date it has.
+        updatedAt: disk.released ? `${disk.released}-01T00:00:00.000Z` : (disk.createdAt || ""),
+        listCells: [disk.name || route, size, releasedLabel(disk)],
       };
     });
   }
@@ -81,6 +126,18 @@ function installDemoDisksPanel() {
       ? withStaticFinderMetadata(finderItems(), t("demo_disks_title"))
       : finderItems()
   );
+  // The list view's columns for this folder: kind and size say the same thing
+  // on all thirty-five rows, so the columns carry what differs -- the article,
+  // its length and when it came out. A function, so a language switch redraws
+  // the headings with the rows.
+  window.AISystem6FinderListHeads = {
+    ...(window.AISystem6FinderListHeads || {}),
+    [WINDOW_NAME]: () => [
+      t("demo_disk_column_title"),
+      t("demo_disk_column_words"),
+      t("demo_disk_column_released"),
+    ],
+  };
 
   // One line per disk, straight from the generated index. The subject is the
   // writer's own first line under "## 主题", so a row cannot drift away from
@@ -194,16 +251,110 @@ function installDemoDisksPanel() {
   // the window's admission row, which persistence-status.js iterates.
   function renderDemoDisksPanel() {
     renderInline();
+    window.AISystem6DiskPeek?.render?.();
   }
   window.renderDemoDisksPanel = renderDemoDisksPanel;
 
+  // Looking inside a disk. The window is its own lazy module; this is the one
+  // door to it, so a double click, the space bar and the /go/disks link all
+  // arrive at the same place with the same disk.
+  async function look(route) {
+    if (!route || typeof ensureDiskPeekModule !== "function") return;
+    await ensureDiskPeekModule();
+    await window.AISystem6DiskPeek?.open?.(route, { from: rowElement(route) });
+  }
+
+  function rowElement(route) {
+    return document.querySelector(
+      `[data-window="${WINDOW_NAME}"] [data-static-finder-action="look-shared-disk-${route}"]`,
+    );
+  }
+
+  function selectedRoute() {
+    const item = typeof getSelectedStaticFinderItem === "function" ? getSelectedStaticFinderItem(WINDOW_NAME) : null;
+    const match = /^look-shared-disk-([a-z0-9-]+)$/.exec(item?.action || "");
+    return match ? match[1] : "";
+  }
+
+  // Select a disk in the folder the way a click would, and keep it in view. The
+  // peek window calls this when its arrows walk the shelf, so the folder behind
+  // it always shows which disk is being read.
+  function selectRoute(route) {
+    if (!route || typeof selectStaticFinderItem !== "function") return;
+    selectStaticFinderItem(WINDOW_NAME, `look-shared-disk-${route}`);
+    rowElement(route)?.scrollIntoView?.({ block: "nearest" });
+  }
+
+  // The newest finished piece: what /go/disks opens on, so a visitor arriving
+  // from a video sees an article at once instead of thirty-five icons.
+  async function openLatest() {
+    if (typeof openWindow !== "function") return;
+    await openWindow(WINDOW_NAME);
+    const route = orderedRoutes()[0];
+    if (!route) return;
+    selectRoute(route);
+    await look(route);
+  }
+
+  // Walking the folder with the keyboard. The Finder has no arrow keys of its
+  // own, and this folder is the one place a person goes through items one by
+  // one to read them, so the keys live with it. Icon view moves by a row with
+  // up and down, list view by one; the space bar and Return look inside.
+  function gridColumns() {
+    const cells = [...document.querySelectorAll(`[data-window="${WINDOW_NAME}"] .finder-item`)];
+    if (cells.length < 2) return 1;
+    const top = cells[0].offsetTop;
+    const index = cells.findIndex((cell) => cell.offsetTop !== top);
+    return index === -1 ? cells.length : index;
+  }
+
+  function step(route, delta) {
+    const routes = orderedRoutes();
+    const at = routes.indexOf(route);
+    if (at < 0) return routes[0] || "";
+    return routes[Math.max(0, Math.min(routes.length - 1, at + delta))];
+  }
+
+  function onKeydown(event) {
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
+    const active = document.querySelector(".window.is-active:not(.is-hidden)");
+    if (active?.dataset.window !== WINDOW_NAME) return;
+    if (document.querySelector(".menu.is-open")) return;
+    if (typeof getActiveEditableElement === "function" && getActiveEditableElement()) return;
+    const route = selectedRoute();
+    const list = active.querySelector(".finder-list-row") !== null;
+    const moves = {
+      ArrowLeft: -1,
+      ArrowRight: 1,
+      ArrowUp: list ? -1 : -gridColumns(),
+      ArrowDown: list ? 1 : gridColumns(),
+    };
+    if (event.key in moves) {
+      event.preventDefault();
+      selectRoute(route ? step(route, moves[event.key]) : orderedRoutes()[0]);
+      return;
+    }
+    if (event.key === " " || event.key === "Enter") {
+      if (event.target?.closest?.("button, a, input, textarea, select") && !event.target.closest("[data-static-finder-action]")) return;
+      event.preventDefault();
+      const target = route || orderedRoutes()[0];
+      selectRoute(target);
+      look(target);
+    }
+  }
+  document.addEventListener("keydown", onKeydown);
+
   window.AISystem6Runtime?.registerCommand?.("open-demo-disks", { handler: open, isAvailable: () => true });
+  window.AISystem6Runtime?.registerCommand?.("open-demo-disks-latest", { handler: openLatest, isAvailable: () => true });
+  Object.keys(window.AISystem6SharedProjectDisksIndex || {}).forEach((route) => {
+    window.AISystem6Runtime?.registerCommand?.(`look-shared-disk-${route}`, { handler: () => look(route), isAvailable: () => true });
+  });
 
   const section = document.querySelector(inlineSectionSelector);
   if (section) section.addEventListener("toggle", renderInline);
   renderInline();
 
-  return Object.freeze({ open, renderInline, disks });
+  return Object.freeze({ open, openLatest, look, selectRoute, selectedRoute, step, orderedRoutes, diskLabel, releasedLabel, wordsLabel, renderInline, disks });
 }
 
 window.AISystem6DemoDisksPanel = installDemoDisksPanel();

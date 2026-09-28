@@ -182,7 +182,7 @@ test.assertIncludes(source, "const legacyStyleAxis", "saved styles migrate when 
 test.assertIncludes(source, "invertLegacyY ? 100 - y : y", "legacy calm and tension do not silently reverse");
 test.assertNotIncludes(css, "rgba(31, 36, 47, 0.54)", "calm reads as low contrast without being darkened");
 test.assertNotIncludes(css, "!important", "the new surface adds no important overrides");
-test.assertNotIncludes(css, "body.use-liquid-glass", "Classic and Liquid Glass share one token-driven structure");
+test.assertNotIncludes(css, "body[data-theme=\"liquid-glass\"]", "Classic and Liquid Glass share one token-driven structure");
 test.assertIncludes(styleManifest, '"styles/88-soundscape.css"', "the component stylesheet is in the style manifest");
 
 // Mini Player first: one persistent listening surface and one tabbed drawer at

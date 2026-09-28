@@ -71,8 +71,10 @@ export const LAUNCH_ROUTES = Object.freeze([
   "cdma4",
   "iphone17",
   "windowshade",
+  "ipadpro18",
   "cmf-studio",
   "one-more-tune",
+  "disks",
 ]);
 
 function page(route) {

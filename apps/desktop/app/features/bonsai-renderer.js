@@ -11,13 +11,63 @@ window.AISystem6BonsaiRendererLoaded = true;
   const TILE_W = 64;
   const TILE_H = 32;
   const HEIGHT_STEP = 10;
-  const MIN_ZOOM = 0.4;
-  const MAX_ZOOM = 2.5;
-  const DEFAULT_ZOOM = 0.7;
+  // SC2K zooms in fixed steps, and pixel art only stays crisp at whole-number
+  // scales: at 0.5 a 64px sprite lands on exactly one device pixel per
+  // artwork pixel on a 2x screen. Four steps, 16/32/64/128 px per tile; the
+  // default is the 32px overview the original opens at.
+  const ZOOM_LEVELS = Object.freeze([0.25, 0.5, 1, 2]);
+  const MIN_ZOOM = ZOOM_LEVELS[0];
+  const MAX_ZOOM = ZOOM_LEVELS[ZOOM_LEVELS.length - 1];
+  const DEFAULT_ZOOM = 0.5;
   const ROTATIONS = 4;
 
   function clampZoom(zoom) {
     return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom));
+  }
+
+  // The nearest step, measured in doublings rather than in raw scale, so 0.7
+  // snaps to 0.5 and 0.75 to 1 the way the eye reads them.
+  function snapZoom(zoom) {
+    const target = Math.log2(clampZoom(Number.isFinite(zoom) ? zoom : DEFAULT_ZOOM));
+    let best = ZOOM_LEVELS[0];
+    for (const level of ZOOM_LEVELS) {
+      if (Math.abs(Math.log2(level) - target) < Math.abs(Math.log2(best) - target)) best = level;
+    }
+    return best;
+  }
+
+  function stepZoom(zoom, steps) {
+    const index = ZOOM_LEVELS.indexOf(snapZoom(zoom));
+    const next = Math.max(0, Math.min(ZOOM_LEVELS.length - 1, index + Math.trunc(Number(steps) || 0)));
+    return ZOOM_LEVELS[next];
+  }
+
+  // Keep the ground under the anchor where it is while the scale changes.
+  // The renderers place a point at centre + pan + zoom x (its offset from the
+  // map centre), so the pan that holds the anchored point still is
+  // anchor - centre - (to / from) x (anchor - centre - pan). Zooming used to
+  // keep the pan fixed instead, and a few notches of the wheel carried the
+  // whole city off the screen.
+  function anchoredPan(view, fromZoom, toZoom, anchorX, anchorY, cssWidth, cssHeight) {
+    const panX = Number(view?.panX) || 0;
+    const panY = Number(view?.panY) || 0;
+    if (!(fromZoom > 0) || !(toZoom > 0)) return { panX, panY };
+    const ratio = toZoom / fromZoom;
+    const offsetX = (Number.isFinite(anchorX) ? anchorX : cssWidth / 2) - cssWidth / 2;
+    const offsetY = (Number.isFinite(anchorY) ? anchorY : cssHeight / 2) - cssHeight / 2;
+    return {
+      panX: offsetX - ratio * (offsetX - panX),
+      panY: offsetY - ratio * (offsetY - panY),
+    };
+  }
+
+  // Night and the seasons are display choices, not the city's clock: the
+  // shell stamps the snapshot with what the player asked to see, and both
+  // renderers read the stamp. An unstamped snapshot keeps the old clock.
+  function seasonOf(snapshot) {
+    const stamped = Number(snapshot?.season);
+    if (Number.isInteger(stamped) && stamped >= 0 && stamped <= 3) return stamped;
+    return Math.floor(((Number(snapshot?.tick) || 0) % 1500) / 375);
   }
 
   // How much city a viewport shows at a zoom: the screen length of one tile
@@ -281,10 +331,10 @@ window.AISystem6BonsaiRendererLoaded = true;
     const claimed = new Uint8Array(size * size);
     const result = [];
     for (let index = 0; index < size * size; index += 1) {
-      if (claimed[index] || !eligible(index)) continue;
+      if (claimed[index]) continue;
       const id = Number(snapshot.catalogId[index]) || 0;
       const entry = id && catalog.entryOf(id);
-      if (!entry || entry.category === "clear" || entry.category === "trees") continue;
+      if (!entry || entry.category === "clear" || entry.category === "trees" || !eligible(index)) continue;
       const x = index % size, y = Math.floor(index / size);
       const declared = Math.max(1, Math.floor(Number(entry.size) || 1));
       let complete = x + declared <= size && y + declared <= size;
@@ -304,16 +354,40 @@ window.AISystem6BonsaiRendererLoaded = true;
     return result;
   }
 
+  // Which way a lot faces: the side of its footprint with the most road
+  // along it, as quarter turns from the composed front (+z): 0 south (+z),
+  // 1 east (+x), 2 north (-z), 3 west (-x). A lot with no road beside it
+  // keeps the composed front. The voxel backend turns the whole parcel; the
+  // Canvas backend, holding one direction of art at a time, mirrors the
+  // sprite when the turn is odd against the view, so a building's long
+  // side runs along its street and its door faces it on the two sides the
+  // camera sees.
+  function streetQuarter(roadAt, x, y, footprint) {
+    const w = (footprint && footprint.w) || 1, h = (footprint && footprint.h) || 1;
+    const sides = [0, 0, 0, 0];
+    for (let k = 0; k < w; k += 1) { sides[0] += roadAt(x + k, y + h) ? 1 : 0; sides[2] += roadAt(x + k, y - 1) ? 1 : 0; }
+    for (let k = 0; k < h; k += 1) { sides[1] += roadAt(x + w, y + k) ? 1 : 0; sides[3] += roadAt(x - 1, y + k) ? 1 : 0; }
+    let best = 0;
+    for (let q = 1; q < 4; q += 1) if (sides[q] > sides[best]) best = q;
+    return sides[best] ? best : 0;
+  }
+
   window.AISystem6BonsaiRenderer = Object.freeze({
     collectCatalogObjects,
+    streetQuarter,
     TILE_W,
     TILE_H,
     HEIGHT_STEP,
     MIN_ZOOM,
     MAX_ZOOM,
     DEFAULT_ZOOM,
+    ZOOM_LEVELS,
     ROTATIONS,
     clampZoom,
+    snapZoom,
+    stepZoom,
+    anchoredPan,
+    seasonOf,
     measureFrame,
     normalizeRotation,
     createCamera,

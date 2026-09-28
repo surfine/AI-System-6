@@ -126,9 +126,15 @@ test.assertIncludes(quickWindowHtml, "data-quick-draft-active-layer-scope", "Fig
 test.assertIncludes(quickWindowHtml, "data-quick-draft-active-layer-mask", "the shared Range row remains editable");
 test.assertIncludes(quickWindowHtml, "data-quick-draft-protect-selection", "Protect Selection lives in the inspector");
 test.assertIncludes(quickWindowHtml, "data-quick-draft-protected-summary", "Protection is a summary row until View is requested");
-test.assertIncludes(quickWindowHtml, 'class="draft-desk-mobile-inspector-actions"', "Figure 07 adds the narrow-drawer Preview / Develop row");
-test.assertIncludes(quickWindowHtml, "data-quick-draft-adjustment-apply", "Figure 07 previews the stack without changing the body");
-test.assertIncludes(quickWindowHtml, "data-quick-draft-adjustment-develop", "Figure 07 can develop the preview from inside the drawer");
+test.assertNotIncludes(quickWindowHtml, "draft-desk-mobile-inspector-actions", "Preview / Develop are not a drawer-only row any more");
+{
+  const lightroomFooter = quickWindowHtml.slice(quickWindowHtml.indexOf('<footer class="lightroom-actions">'));
+  test.assert(lightroomFooter.includes("data-quick-draft-adjustment-apply"), "试看 lives in 文字亮室's footer on every screen");
+  test.assert(lightroomFooter.includes("data-quick-draft-adjustment-develop"), "冲洗 lives in 文字亮室's footer on every screen");
+  test.assert(!/class="btn default" id="quick-draft-display-body"/.test(lightroomFooter), "Back to the Draft is a door, not the default key");
+}
+test.assertMatches(read("app/features/quick-draft-composition.js"), /const compositeReady = enabled\s*&& Boolean\(darkroomOf\(record\)\.composite\)/, "冲洗 waits for a proof, like the menu row it shortcuts");
+test.assertMatches(read("app/features/quick-draft-composition.js"), /developButton\?\.classList\.toggle\("default", compositeReady\)/, "the default key follows the pending proof");
 test.assertNotIncludes(quickWindowHtml, 'id="quick-draft-restore-dump"', "Versions do not add a second restore control below their rows");
 test.assertIncludes(quickWindowHtml, 'id="quick-draft-deliver"', "delivery is one action away from the paper");
 test.assertIncludes(quickWindowHtml, 'data-quick-draft-delivery="teachtext"', "TeachText handoff remains available");
@@ -245,9 +251,75 @@ test.assertIncludes(menus, 'menuItem("quick-draft-develop", "quick_draft_develop
 // removed real views on purpose, because the split says write here, look there.
 test.assertMatches(
   menus,
-  /menu\("view", "menu_view", \[[\s\S]*?quick-draft-view-body[\s\S]*?open-lightroom[\s\S]*?quick-draft-toggle-materials[\s\S]*?quick-draft-toggle-adjustments/,
+  /menu\("view", "menu_view", \[[\s\S]*?quick-draft-view-body[\s\S]*?open-lightroom[\s\S]*?quick-draft-toggle-materials/,
   "paper views and panels use the HIG-standard View menu",
 );
+// The bold application name read the raw window id: Liquid Glass showed
+// "lightroom" whenever 文字亮室 was in front.
+test.assertIncludes(read("app/core/multi-finder.js"), 'lightroom: "Lightroom"', "文字亮室 names itself in the menu bar");
+// 一个钟点: the dial replaces the length menu and the details bar's seconds;
+// the select stays as the model. 按住说 inserts the words exactly as heard.
+{
+  const desk = read("app/features/draft-desk.js");
+  test.assertIncludes(desk, 'wrap.classList.add("draft-desk-dial-model")', "the length select is kept as the dial's model, not deleted");
+  test.assertIncludes(css, ".draft-desk-dial-model {\n  display: none;", "the length menu's face is replaced by the dial");
+  test.assertIncludes(desk, 'refs.stats.textContent = units ? t("quick_draft_stats_units", units)', "the details bar reports words only");
+  test.assertIncludes(desk, "insertQuickDraftSpokenText(quickDraftSayTarget(), quickDraftSayHeard)", "spoken words land at the writer's caret");
+  test.assert(!/quickDraftSayHeard\s*=\s*[^;]*\.(replace|trim)\(/.test(desk), "what was heard is not rewritten before it lands");
+  for (const key of ["quick_draft_stats_units", "quick_draft_dial_label", "quick_draft_say_hold", "quick_draft_say_unsupported", "quick_draft_say_listening", "quick_draft_say_failed", "quick_draft_say_landed"]) {
+    test.assertIncludes(read("app/data/translations-en.js"), `${key}:`, `${key} has English copy`);
+    test.assertIncludes(read("app/data/translations-zh.js"), `${key}:`, `${key} has Chinese copy`);
+  }
+}
+// 看片台 (P2): the darkroom is a light table, versions are frames held to be
+// seen, strength is three stops, and 听众 lives in the listen view only.
+{
+  const desk = read("app/features/draft-desk.js");
+  const editor = read("app/features/quick-draft-editor.js");
+  const composition = read("app/features/quick-draft-composition.js");
+  test.assertMatches(css, /\.lightroom-view \{[\s\S]*?background: var\(--ink\);/, "文字亮室's table is the era's ink");
+  test.assertIncludes(css, "box-shadow: 0 0 0 5px var(--ink), 0 0 0 6px var(--teachtext-preview-bg);", "the sheet sits on the table with a light-box edge");
+  test.assertIncludes(editor, "text.dataset.quickDraftVersionPeek", "every version frame can be held to be seen");
+  test.assertIncludes(desk, "function endLightroomPeek()", "letting go of a frame brings the current paper back");
+  test.assertMatches(desk, /\["pointerup", "pointercancel", "lostpointercapture"\]\.forEach\(\(name\) => \{\s*list\.addEventListener\(name, endLightroomPeek\);/, "a cancelled hold also ends the peek");
+  test.assertIncludes(composition, 'button.dataset.requiresWrite = "";', "the three stops are locked by the write lease like the select they drive");
+  test.assertIncludes(composition, 'wrap.classList.add("draft-desk-strength-model")', "the strength select stays as the model");
+  test.assertIncludes(desk, "refs.eli5Bar.hidden = !hasBody || !listening;", "听众 appears in the listen view only");
+  test.assertIncludes(desk, 'data-i18n="lightroom_listener_label"', "the listen strip is named 听众");
+  test.assertIncludes(css, ".lightroom-layout.is-stack-open > .draft-desk-inspector {\n    display: grid;", "on a phone 文字亮室's stack opens as its own drawer");
+  test.assertIncludes(desk, 'data-action="lightroom-toggle-inspector" data-i18n="quick_draft_adjustments_label"', "文字亮室's footer carries the phone's way to the stack");
+  test.assertIncludes(desk, 'if (target === "inspector" && lightroomUsesStackDrawer()) return toggleLightroomStack();', "the View menu row opens the same drawer");
+  test.assertIncludes(css, ".draft-desk-eli5-bar[hidden] {\n  display: none;", "the listen strip's own display cannot beat the hidden attribute");
+  test.assertMatches(css, /\.lightroom-layout\.is-stack-open > \.draft-desk-inspector \{[\s\S]*?grid-area: 1 \/ 1 \/ -1 \/ -1;/, "the phone drawer spans the layout instead of an empty last row");
+  test.assert(css.lastIndexOf("\n.lightroom-actions {") < css.indexOf("  .lightroom-actions {\n    display: grid;"), "the two-row phone footer comes after the base footer rule it overrides");
+}
+// Safari 27's CJK/Latin autospace lands only where one layer draws the glyphs.
+{
+  const rule = css.slice(css.indexOf("text-autospace: ideograph-alpha ideograph-numeric") - 200, css.indexOf("text-autospace: ideograph-alpha ideograph-numeric"));
+  test.assert(!rule.includes(".draft-desk-editor"), "the stacked body editor never gets autospace (caret and glyphs would part)");
+  test.assert(rule.includes("#quick-draft-preview"), "the darkroom's paper gets CJK/Latin autospace");
+}
+// 清稿 (W2): a fifth layer over the spoken negative; it cleans, never rewrites.
+{
+  const composition = read("app/features/quick-draft-composition.js");
+  test.assertIncludes(composition, "不换说法，不改语气，不增删观点和事实，不润色", "清稿 is told to clean and never to reword");
+  test.assertIncludes(composition, 'kind === "density" || kind === "clean" ? "" : adjustmentStrengthPromptLine', "清稿 carries no strength line");
+  test.assertIncludes(composition, "function quickDraftDictionaryTerms()", "the personal dictionary is read from the project at prompt time, never stored");
+  test.assertIncludes(composition, 'if (workspace.titleMode === "manual")', "a derived title (the body's first sentence) never enters the dictionary");
+  test.assertIncludes(composition, "!/[。！？!?]/.test(term)", "a sentence is not a term");
+  test.assertIncludes(quickWindowHtml, 'data-quick-draft-adjustment-enabled="clean"', "文字亮室 has a 清稿 layer row");
+  test.assertNotIncludes(quickWindowHtml, 'data-quick-draft-adjustment-strength="clean"', "and it has no strength control");
+  test.assertIncludes(menus, '...(kind === "clean" ? [] :', "the 调整 menu offers 清稿 without strength rows");
+}
+// The adjustment stack lives in 文字亮室 (rule A). Quick Draft kept a footer
+// button and a View row that toggled a drawer whose panel had moved into the
+// other window: on a phone the button went black and nothing appeared.
+{
+  const quickDraftMenuBlock = menus.slice(menus.indexOf("const quickDraftMenus"), menus.indexOf("const clioTalkMenus"));
+  test.assert(!quickDraftMenuBlock.includes("quick-draft-toggle-adjustments"), "Quick Draft's View menu no longer offers the darkroom's adjustments");
+  const quickDraftWindowHtml = html.slice(html.indexOf('data-window="quickDraft"'), html.indexOf('data-window="cmfStudio"'));
+  test.assert(!quickDraftWindowHtml.includes('data-quick-draft-drawer="inspector"'), "Quick Draft's footer has no dead Adjustments button");
+}
 for (const retired of ["quick-draft-view-grain", "quick-draft-view-read", "quick-draft-view-listen"]) {
   // Once, not never: 文字亮室's own View menu still carries all three, which is
   // where looking now lives. What must not exist is a second copy inside the
@@ -292,15 +364,14 @@ test.assertMatches(css, /\.draft-desk-shelf \{[\s\S]*?right: auto;[\s\S]*?left: 
 test.assertMatches(css, /\.draft-desk-inspector \{[\s\S]*?right: 0;[\s\S]*?left: auto;/, "the inspector drawer enters from the right");
 test.assertMatches(css, /\.draft-desk-layout\.is-shelf-open \.draft-desk-paper,[\s\S]*?\.draft-desk-layout\.is-inspector-open \.draft-desk-paper \{[\s\S]*?isolation: isolate;/, "Figure 07 contains editor layers below the drawer without adding z-index");
 test.assertMatches(css, /\.draft-desk-sheet-select:last-child \.system-select-menu \{[\s\S]*?right: 0;[\s\S]*?left: auto;/, "the trailing length menu opens inward instead of clipping past the window edge");
-test.assertMatches(css, /@container \(max-width: 800px\)[\s\S]*?grid-template-rows: repeat\(2, minmax\(var\(--system-button-min-height\), auto\)\);/, "Figure 06 keeps two compact system-sized action rows");
+test.assertMatches(css, /@container \(max-width: 800px\)[\s\S]*?\.draft-desk-actions \{[\s\S]*?grid-auto-flow: column;[\s\S]*?grid-template-rows: minmax\(var\(--system-button-min-height\), auto\);/, "一个钟点: the phone footer is one thumb row");
 test.assertMatches(css, /@container \(max-width: 800px\)[\s\S]*?\.draft-desk-actions \{[\s\S]*?padding: 5px calc\(var\(--window-frame-lane\) \+ var\(--resize-affordance-clearance, 0px\) \+ 6px\) 5px 6px;/, "compact actions preserve the grow-box clearance in both themes");
 test.assertMatches(css, /@container \(max-width: 800px\)[\s\S]*?\.draft-desk-actions \.btn,[\s\S]*?\.draft-desk-actions summary\.btn \{[\s\S]*?min-height: var\(--system-button-min-height\);/, "compact actions consume the shared control height instead of enlarging visible System 6 buttons");
-test.assertMatches(css, /@container \(max-width: 800px\)[\s\S]*?\.draft-desk-display-switch \{[\s\S]*?grid-row: 1;[\s\S]*?\.draft-desk-drawer-switch \{[\s\S]*?grid-row: 1;/, "Figure 06 puts views and drawer switches on the first row");
-test.assertMatches(css, /@container \(max-width: 800px\)[\s\S]*?#quick-draft-tools \{[\s\S]*?grid-row: 2;[\s\S]*?#quick-draft-deliver \{[\s\S]*?grid-row: 2;[\s\S]*?#quick-draft-save \{[\s\S]*?grid-row: 2;/, "Figure 06 keeps More, Deliver, and the primary action on the second row");
+test.assertMatches(css, /@container \(max-width: 800px\)[\s\S]*?\.draft-desk-mic \{[\s\S]*?width: 56px;[\s\S]*?height: 56px;/, "the hold-to-speak key is the one 56pt exception on a phone");
+test.assertMatches(css, /@container \(max-width: 800px\)[\s\S]*?\.draft-desk-actions > \[data-action="open-lightroom"\] \{[\s\S]*?order: -1;/, "the door to 文字亮室 leads the thumb row");
 test.assertMatches(css, /@container \(max-width: 800px\)[\s\S]*?\.draft-desk-sheet-head \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) minmax\(96px, 0\.38fr\) minmax\(124px, 0\.42fr\);/, "compact format and length values have enough room to remain legible");
 test.assertMatches(css, /@container \(max-width: 520px\)[\s\S]*?\.draft-desk-title-field \{[\s\S]*?grid-column: 1 \/ -1;/, "very narrow windows place the title above complete format and length controls");
 test.assertMatches(css, /@container \(max-width: 800px\)[\s\S]*?\.draft-desk-layer-disclosure \{[\s\S]*?display: flex;/, "Figure 07 uses Finder-style disclosure controls in the narrow inspector");
-test.assertMatches(css, /@container \(max-width: 800px\)[\s\S]*?\.draft-desk-mobile-inspector-actions \{[\s\S]*?display: flex;/, "Figure 07 shows Preview / Develop only in the drawer layout");
 test.assertMatches(css, /@container \(max-width: 800px\)[\s\S]*?\.draft-desk-intake-field textarea,[\s\S]*?\.draft-desk-protect input \{[\s\S]*?font-size: 16px;/, "narrow text-entry controls avoid mobile browser zoom and remain legible");
 test.assertMatches(css, /\.draft-desk-window\.has-live-quick-draft-status[\s\S]*?#quick-draft-status \{[\s\S]*?display: block;/, "a live operation receipt outranks the idle stack receipt in a narrow details bar");
 test.assertMatches(css, /\.draft-desk-window\.has-live-quick-draft-status[\s\S]*?#quick-draft-stack-state \{[\s\S]*?display: none;/, "narrow live status never collides with the idle stack receipt");
@@ -322,7 +393,7 @@ test.assertIncludes(foundation, "calc(100% - 1px) calc(100% - 1px) / 5px 5px no-
 test.assertIncludes(foundation, "quickDraftWorkingSweep 2.6s ease-in-out infinite", "Figure 04 working edge moves slowly");
 test.assertNotIncludes(foundation, "quickDraftWorkingDither", "Figure 04 never dithers the whole text area while working");
 test.assertIncludes(css, "@media (prefers-reduced-motion: reduce)", "paper-state motion honors reduced motion");
-test.assertNotIncludes(css, "body.use-liquid-glass", "one DOM and one component stylesheet serve both themes");
+test.assertNotIncludes(css, "body[data-theme=\"liquid-glass\"]", "one DOM and one component stylesheet serve both themes");
 test.assertNotIncludes(css, "!important", "the clean stylesheet does not raise specificity budgets");
 test.assertNotMatches(css, /z-index\s*:/, "the clean shell adds no z-index layer");
 
@@ -402,7 +473,7 @@ test.assertIncludes(
 // buttons they shortcut can never give two different answers.
 test.assertMatches(
   lightroomMarkup,
-  /<button type="button" class="btn mini-btn" data-quick-draft-adjustment-apply/,
+  /<button type="button" class="btn" data-quick-draft-adjustment-apply/,
   "试看 carries no write gate: previewing a read-only subject is allowed"
 );
 test.assertMatches(

@@ -11,7 +11,9 @@ const windowManager = read("app/core/window-manager.js");
 function readFunction(source, name) {
   const start = source.indexOf(`function ${name}(`);
   if (start < 0) return null;
-  const bodyStart = source.indexOf("{", start);
+  // The body opens at ") {": a default parameter such as `options = {}`
+  // would otherwise be taken for the body.
+  const bodyStart = source.indexOf(") {", start) + 2;
   let depth = 0;
   for (let index = bodyStart; index < source.length; index += 1) {
     if (source[index] === "{") depth += 1;
@@ -102,6 +104,9 @@ const placementFunctions = [
   "windowPlacementOverlapArea",
   "windowPlacementRect",
   "windowHasOwnedPlacement",
+  "controlStripPlacementReserve",
+  "deskDockReserve",
+  "deskBottomReserve",
   "placeNewWindowAvoidingVisibleWindows",
 ].map((name) => readFunction(windowManager, name)).join("\n");
 const desktopRect = { left: 0, top: 25, right: 800, bottom: 625, width: 800, height: 600 };
@@ -129,6 +134,9 @@ const placementRuntime = Function("environment", `
 `)({
   document: {
     documentElement: {},
+    // The Dock is off in this scenario, so its reserve reads 0 and every
+    // frame below is what the desk produced before the Dock existed.
+    body: { classList: { contains: () => false } },
     querySelector: (selector) => selector === ".desktop" ? { getBoundingClientRect: () => desktopRect } : null,
     querySelectorAll: () => [oldWindow, newWindow],
   },
@@ -172,6 +180,9 @@ test.assertIncludes(
 
 const viewportClampFunctions = [
   "keyboardInsetValue",
+  "windowPlacementMetric",
+  "controlStripPlacementReserve",
+  "deskDockReserve",
   "clampWindowToViewport",
   "reconcileVisibleSystemWindowsToViewport",
 ].map((name) => readFunction(windowManager, name)).join("\n");
@@ -193,6 +204,7 @@ const clampRuntime = Function("environment", `
 `)({
   document: {
     documentElement: { clientWidth: 390, clientHeight: 844 },
+    body: { classList: { contains: () => false } },
     querySelector: (selector) => (
       selector === ".menu-bar" ? { getBoundingClientRect: () => ({ bottom: 22 }) } : null
     ),
@@ -249,5 +261,138 @@ test.assertMatches(
   /\.finder-operation-modal \{[\s\S]{0,180}?top: 50%;[\s\S]{0,80}?left: 50%;/,
   "Finder operation modals retain one centered blocking position",
 );
+
+// The Dock lives along the bottom edge. While it is shown, every path that
+// decides a system-placed window's bottom must stop above its band; while it
+// is hidden, every one of those paths must produce exactly the frame it did
+// before the Dock existed (a reserve of 0). A dozen functions each write a
+// bottom or height limit, and missing one is the realistic regression, so each
+// is pinned by name and the shared reserve is pinned by value.
+const dockReserveFunctions = [
+  "clampWindowToViewport",
+  "zoomWindow",
+  "maximizeWindow",
+  "placeClioStageDefaultWindow",
+  "fitFinderWindowToContents",
+  "placeFinderCascadeWindow",
+  "arrangeOutlineTeachTextSplit",
+  "arrangeWritingPairSplit",
+  "arrangeSoloWritingWindow",
+  "arrangeDeskAccessories",
+  "placeAssistantSidecarWindow",
+  "startWindowResize",
+];
+
+const deskDockReserveSource = readFunction(windowManager, "deskDockReserve");
+const deskBottomReserveSource = readFunction(windowManager, "deskBottomReserve");
+test.assert(Boolean(deskDockReserveSource), "deskDockReserve reads as one function");
+test.assert(Boolean(deskBottomReserveSource), "deskBottomReserve reads as one function");
+test.assertIncludes(
+  deskDockReserveSource || "",
+  "desk-dock-shown",
+  "the Dock reserve is armed by the body class the Dock module toggles",
+);
+test.assertIncludes(
+  deskBottomReserveSource || "",
+  "deskDockReserve()",
+  "default placement reserves the taller of the Control Strip and the Dock",
+);
+test.assertIncludes(
+  windowManager,
+  "deskBottomReserve()",
+  "placeNewWindowAvoidingVisibleWindows carries the Dock into its stripReserve",
+);
+test.assertIncludes(
+  windowManager,
+  "bottom: deskDockReserve()",
+  "getDesktopAvoidanceInsets reports the Dock band as the work area's bottom inset",
+);
+
+for (const name of dockReserveFunctions) {
+  test.assertIncludes(
+    readFunction(windowManager, name) || "",
+    "deskDockReserve()",
+    `${name} keeps system placement above the Dock`,
+  );
+}
+
+// Value-level: the reserve must be exactly the CSS custom property while the
+// Dock is shown, and exactly 0 the moment the class is gone -- even if a stale
+// property is left on the body. That second half is what makes a hidden Dock
+// reproduce every frame it produced before it existed.
+const dockBodyClasses = new Set();
+const dockBodyProperties = {};
+const dockReserveValues = {
+  body: { classList: { contains: (name) => dockBodyClasses.has(name) } },
+};
+const dockReserveRuntime = Function("environment", `
+  const { document, getComputedStyle, windowPlacementMetric } = environment;
+  ${readFunction(windowManager, "controlStripPlacementReserve")}
+  ${deskDockReserveSource}
+  ${deskBottomReserveSource}
+  return { deskDockReserve, deskBottomReserve };
+`)({
+  document: { body: dockReserveValues.body },
+  getComputedStyle: () => ({
+    getPropertyValue: (property) => dockBodyProperties[property] || "",
+  }),
+  windowPlacementMetric: (property, fallback) => {
+    const value = Number.parseFloat(dockBodyProperties[property]);
+    return Number.isFinite(value) && value >= 0 ? value : fallback;
+  },
+});
+test.assert(
+  dockReserveRuntime.deskDockReserve() === 0 && dockReserveRuntime.deskBottomReserve() === 0,
+  "with the Dock hidden no placement reserves a bottom band",
+);
+dockBodyClasses.add("desk-dock-shown");
+dockBodyProperties["--desk-dock-reserve"] = "64px";
+test.assert(
+  dockReserveRuntime.deskDockReserve() === 64 && dockReserveRuntime.deskBottomReserve() === 64,
+  "with the Dock shown system placement reserves exactly its measured band",
+);
+dockBodyClasses.delete("desk-dock-shown");
+test.assert(
+  dockReserveRuntime.deskDockReserve() === 0 && dockReserveRuntime.deskBottomReserve() === 0,
+  "hiding the Dock reserves nothing again even while its property stays set",
+);
+
+// A new route window is default-placed and a spine title alignment is queued
+// for the next frames; the writing route then lays it out explicitly (TeachText
+// under Section Drafts). The queued alignment must yield to that layout: when
+// it ran anyway it pulled TeachText back to the spine line, exactly over
+// Section Drafts, in every appearance (2026-09-26).
+{
+  const queued = [];
+  const aligned = [];
+  const runtime = Function("environment", `
+    const { requestAnimationFrame, setTimeout } = environment;
+    const window = { setTimeout };
+    let writerMode = false;
+    const isPortraitDocumentFlow = () => false;
+    const clearFinderContentFit = () => {};
+    const windowFrameValue = (value, fallback = "") => value ?? fallback;
+    const applyWindowFrame = (win, frame) => { win.frame = frame; };
+    const markWindowUserPositioned = () => {};
+    const markWindowSystemPositioned = () => {};
+    const placeNewWindowAvoidingVisibleWindows = () => {};
+    const clampWindowToViewport = () => {};
+    const alignWindowTitleBottomToWritingSpine = (win) => environment.aligned.push(win.id);
+    ${windowManager.match(/const explicitLayoutGeneration = new WeakMap\(\);/)?.[0] || ""}
+    ${readFunction(windowManager, "placeWindowForExplicitLayout")}
+    ${readFunction(windowManager, "scheduleWritingSpineTitleAlignment")}
+    return { placeWindowForExplicitLayout, scheduleWritingSpineTitleAlignment };
+  `)({ requestAnimationFrame: (fn) => queued.push(fn), setTimeout: (fn) => queued.push(fn), aligned });
+  const drain = () => { while (queued.length) queued.shift()(); };
+  const solo = { id: "questionSheet", dataset: {}, classList: { remove() {} } };
+  runtime.scheduleWritingSpineTitleAlignment(solo);
+  drain();
+  test.assert(aligned.includes("questionSheet"), "a window nothing re-lays out still gets its spine title alignment");
+  const lower = { id: "teachText", dataset: {}, classList: { remove() {} } };
+  runtime.scheduleWritingSpineTitleAlignment(lower);
+  runtime.placeWindowForExplicitLayout(lower, { top: "387px", height: "353px" });
+  drain();
+  test.assert(!aligned.includes("teachText") && lower.frame?.top === "387px", "an explicit route layout written after scheduling keeps its frame");
+}
 
 test.finish();

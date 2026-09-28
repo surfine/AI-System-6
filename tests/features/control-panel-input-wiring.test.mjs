@@ -54,9 +54,21 @@ const test = createFeatureTest("control-panel-input-wiring");
 // a settings save — proven by observing the real debounce actually run
 // (setTimeout is inert by default in this harness; overriding it here to
 // fire immediately is a deliberate, scoped exception for this one test, not
-// a change to the harness's default behavior).
+// a change to the harness's default behavior). Firing inline only nests a few
+// levels deep: the boot safety net re-arms itself through the same
+// setTimeout, and an unbounded inline callback would recurse until the stack
+// ran out instead of proving anything about the debounce. Past that depth the
+// timer stays inert, which is the harness's normal behavior.
 {
-  const vmw = createAppBootVm({ setTimeout: (fn) => { fn(); return 1; } });
+  let timerDepth = 0;
+  const vmw = createAppBootVm({
+    setTimeout: (fn) => {
+      if (timerDepth >= 8) return 1;
+      timerDepth += 1;
+      try { fn(); } finally { timerDepth -= 1; }
+      return 1;
+    },
+  });
   const ctx = vmw.context;
   await ctx.handleAction("open-control");
 

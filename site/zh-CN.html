@@ -23,9 +23,9 @@
 <meta name="twitter:title" content="AI System 6 - 把你的语言、来源与判断留在明处">
 <meta name="twitter:description" content="一张本地优先的写作桌，让 AI 帮忙，却不让它悄悄变成写作者。">
 <meta name="twitter:image" content="https://aisystem6.pages.dev/img/og-poster.png">
-<script>try{var t=localStorage.getItem("s6-site-theme");if(t&&t!=="classic")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<script>try{var t=localStorage.getItem("s6-site-theme"),p={"system-7":"classic",tiger:"aqua",lion:"snow-leopard","drawing-board":"platinum"}[t]||t;if(t)document.documentElement.setAttribute("data-era",t);if(p&&p!=="classic")document.documentElement.setAttribute("data-theme",p)}catch(e){}</script>
 <link rel="stylesheet" href="site.css?v=20260923a">
-<link rel="stylesheet" href="desk.css?v=20260923a">
+<link rel="stylesheet" href="desk.css?v=20260925a">
 </head>
 <body>
 
@@ -87,14 +87,18 @@
     <summary>特别</summary>
     <ul class="menu-list">
       <li><a href="#" data-appearance="classic"><span><span class="menu-check" aria-hidden="true">&#10003;</span>System 6</span><kbd>1988</kbd></a></li>
+      <li><a href="#" data-appearance="system-7"><span><span class="menu-check" aria-hidden="true">&#10003;</span>System 7</span><kbd>1991</kbd></a></li>
       <li><a href="#" data-appearance="platinum"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Platinum</span><kbd>1999</kbd></a></li>
       <li><a href="#" data-appearance="aqua"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Aqua</span><kbd>2002</kbd></a></li>
+      <li><a href="#" data-appearance="tiger"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Tiger</span><kbd>2005</kbd></a></li>
       <li><a href="#" data-appearance="snow-leopard"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Snow Leopard</span><kbd>2009</kbd></a></li>
+      <li><a href="#" data-appearance="lion"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Lion</span><kbd>2011</kbd></a></li>
       <li><a href="#" data-appearance="yosemite"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Yosemite</span><kbd>2014</kbd></a></li>
       <li><a href="#" data-appearance="big-sur"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Big Sur</span><kbd>2020</kbd></a></li>
       <li><a href="#" data-appearance="liquid-glass"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Liquid Glass</span><kbd>2026</kbd></a></li>
       <li class="menu-sep" aria-hidden="true"></li>
       <li><a href="#" data-appearance="nextstep"><span><span class="menu-check" aria-hidden="true">&#10003;</span>NeXTSTEP</span><kbd>1995</kbd></a></li>
+      <li><a href="#" data-appearance="drawing-board"><span><span class="menu-check" aria-hidden="true">&#10003;</span>Drawing Board</span><kbd>1998</kbd></a></li>
       <li class="menu-sep" aria-hidden="true"></li>
       <li><a href="#" id="menu-cycle"><span><span class="menu-check" aria-hidden="true">&#10003;</span>循环切换外观</span></a></li>
       <li class="menu-sep" aria-hidden="true"></li>
@@ -280,10 +284,9 @@
   <section class="scene" id="more" aria-labelledby="more-title">
     <p class="scene-kicker">工作之余</p>
     <h2 class="scene-head" id="more-title">写累了，<br>这还是一整台电脑。</h2>
-    <p class="scene-note">窗口里的游戏、一个音乐问答、几样桌面附件，还有一张安静的写作桌仍然容得下的工具。这里的每一张图，都拍摄自运行中的应用。</p>
+    <p class="scene-note">窗口里的游戏、几样桌面附件，还有一张安静的写作桌仍然容得下的工具。这里的每一张图，都拍摄自运行中的应用。</p>
     <div class="more-switch" role="tablist" aria-label="桌上还有什么" hidden>
       <button type="button" role="tab" data-panel="games" aria-selected="true">游戏</button>
-      <button type="button" role="tab" data-panel="music" aria-selected="false">音乐</button>
       <button type="button" role="tab" data-panel="accessories" aria-selected="false">桌面附件</button>
       <button type="button" role="tab" data-panel="impossible" aria-selected="false">工具</button>
     </div>
@@ -306,19 +309,6 @@
       </figure>
     </div>
       <p class="btn-row"><a class="btn btn-default" href="https://system6.aaronlau.me">去运行这些游戏</a></p>
-    </div>
-
-    <div class="more-panel" id="music" role="tabpanel">
-      <h3 class="more-head" id="music-title">它还会放音乐。</h3>
-      <p class="scene-fine">One More Tune 把苹果广告音乐放上一张白标唱片。听一段，选一个答案，沿十个曲目位置走完这一局。下次回来，十道题和上次的位置都还在。另外两种玩法跟着苹果发布会走：「接棒」讲台上一个接一个交棒的人，「下一幕」问一句名台词当时在做什么、接下来发生了什么。这是一位爱好者做的非官方问答。</p>
-      <div class="games-wall games-wall-single">
-      <figure class="proof-card">
-        <img class="proof-shot games-shot" src="img/proofs/one-more-tune-2026.webp?v=20260925a" alt="One More Tune in Liquid Glass: a record, ten track positions, the revealed answer and the next tune." loading="lazy" decoding="async">
-        <figcaption class="proof-cap"><span class="proof-label">One More Tune</span><span class="proof-line">十个曲目位置，一张唱片，下一首。</span></figcaption>
-      </figure>
-    </div>
-      <p class="proof-note">音乐来自商店的官方推广试听。</p>
-      <p class="btn-row"><a class="btn btn-default" href="https://system6.aaronlau.me/?launch=one-more-tune">玩一局</a></p>
     </div>
 
     <div class="more-panel" id="accessories" role="tabpanel">
@@ -372,12 +362,40 @@
     </div>
   </section>
 
+  <!-- ================= Bonsai City ================= -->
+  <section class="scene" id="bonsai-city" aria-labelledby="bonsai-title">
+    <p class="scene-kicker">我们自己的城市建造游戏</p>
+    <h2 class="scene-head" id="bonsai-title">盆景城市。<br>一条街一条街地长大。</h2>
+    <p class="scene-note">盆景城市是这张桌面自己的城市建造游戏，为 AI System 6 而写。铺路、架铁路和地铁、划分街区，城市就围着它们长起来。地图有 64²、96²、128² 三种尺寸；交通和公共服务会真的把人运来运去；顾问会告诉你城市还缺什么；存档留在你自己的浏览器里；3D 视图会从白天变到夜晚。也可以把 Micropolis 里的城市带进来。</p>
+    <div class="games-wall games-wall-single">
+      <figure class="proof-card">
+        <img class="proof-shot games-shot" src="img/proofs/bonsai-city.webp?v=20260927a" alt="Platinum 外观下的盆景城市：3D 视图里的示例中型城市，有街道、铁路、车流、交通工具栏和小地图。" loading="lazy" decoding="async">
+        <figcaption class="proof-cap"><span class="proof-label">盆景城市</span><span class="proof-line">一座中型城市，1903 年，人口 1,245。</span></figcaption>
+      </figure>
+    </div>
+    <p class="btn-row"><a class="btn btn-default" href="https://system6.aaronlau.me/go/bonsai-city">建一座城</a></p>
+  </section>
+  <!-- ================= One More Tune ================= -->
+  <section class="scene" id="one-more-tune" aria-labelledby="tune-title">
+    <p class="scene-kicker">音乐问答</p>
+    <h2 class="scene-head" id="tune-title">One More Tune。<br>听歌，猜出是哪支广告。</h2>
+    <p class="scene-note">One More Tune 把苹果广告音乐放上一张白标唱片。听一段，选一个答案，沿十个曲目位置走完这一局。下次回来，十道题和上次的位置都还在。另外两种玩法跟着苹果发布会走：「接棒」讲台上一个接一个交棒的人，「下一幕」问一句名台词当时在做什么、接下来发生了什么。这是一位爱好者做的非官方问答。</p>
+    <div class="games-wall games-wall-single">
+      <figure class="proof-card">
+        <img class="proof-shot games-shot" src="img/proofs/one-more-tune-2026.webp?v=20260925a" alt="Liquid Glass 外观下的 One More Tune：一张唱片、十个曲目位置、揭晓的答案和下一首。" loading="lazy" decoding="async">
+        <figcaption class="proof-cap"><span class="proof-label">One More Tune</span><span class="proof-line">十个曲目位置，一张唱片，下一首。</span></figcaption>
+      </figure>
+    </div>
+    <p class="proof-note">音乐来自商店的官方推广试听。</p>
+    <p class="btn-row"><a class="btn btn-default" href="https://system6.aaronlau.me/?launch=one-more-tune">玩一局</a></p>
+  </section>
+
   <!-- ================= Two floppies ================= -->
   <section class="scene" id="floppies" aria-labelledby="floppies-title">
     <p class="scene-kicker">大小</p>
     <h2 class="scene-head" id="floppies-title">两张软盘。</h2>
     <div class="floppy-wall" id="floppy-wall"></div>
-    <p class="scene-fine">你启动进去的那张桌面，装得进两张 1.44&nbsp;MB 软盘。AI 模型是另一件大得多的东西，用哪一个，始终由你决定。同一套系统里还带着三十五块写完的项目硬盘，都是可以打开、拆开来看的真实示例项目。每一块都有自己的地址，和所有窗口遵循同一条规则，所以一块磁盘可以用一个链接交给朋友：<code>/go/dtk</code>、<code>/go/m5mba</code>、<code>/go/pocket</code>。</p>
+    <p class="scene-fine">你启动进去的那张桌面，装得进两张 1.44&nbsp;MB 软盘。AI 模型是另一件大得多的东西，用哪一个，始终由你决定。同一套系统里还带着三十六块写完的项目硬盘，都是可以打开、拆开来看的真实示例项目。每一块都有自己的地址，和所有窗口遵循同一条规则，所以一块磁盘可以用一个链接交给朋友：<code>/go/dtk</code>、<code>/go/m5mba</code>、<code>/go/pocket</code>。整个书架也只要一个链接，<code>/go/disks</code>，打开时停在最新一块的正文上。</p>
   </section>
   <!-- ================= Your model ================= -->
   <section class="scene" id="model" aria-labelledby="model-title">
@@ -443,7 +461,7 @@
       <header class="tbar"><span class="close-box" aria-hidden="true"></span><h2 id="demo-title">AI System 6 - 影片</h2><span class="qt-badge">50 秒演示</span></header>
       <div class="qt-body" id="qt-body">
         <a class="qt-poster" id="qt-poster" href="https://www.bilibili.com/video/BV1ht3m6UEDb/">
-          <img src="img/hero-poster.jpg" width="1440" height="900" loading="lazy" decoding="async"
+          <img src="img/hero-poster.webp" width="1440" height="900" loading="lazy" decoding="async"
                alt="影片封面：AI System 6 桌面同时打开 Searcher、阅读器、DocMap 与 ClioTalk 窗口。">
           <span class="qt-poster-play" aria-hidden="true"></span>
           <span class="qt-poster-note">播放 50 秒影片</span>
@@ -489,6 +507,6 @@
   </footer>
 
 </main>
-<script type="module" src="js/main.js?v=20260923a"></script>
+<script type="module" src="js/main.js?v=20260925a"></script>
 </body>
 </html>

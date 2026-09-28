@@ -331,7 +331,7 @@ body.is-writer-mode .context-panel-window {
    washed strip across the top of the screen — worst once the desk is added to
    the Home Screen, where the bar runs under the status area and the material
    covers three times the strip it covers in a browser tab. */
-body.use-liquid-glass .menu-bar {
+body[data-theme="liquid-glass"] .menu-bar {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
@@ -350,11 +350,15 @@ body.use-liquid-glass .menu-bar {
 .menu-bar > .menu > .menu-popover {
   max-height: none;
   overflow: visible;
+  /* The same value, handed to an era's panel rule that reads it (Liquid
+     Glass). Submenu panels reset it (00-foundation.css). */
+  --menu-popover-overflow: visible;
 }
 
 .menu-bar > .menu > .apple-menu-popover {
   max-height: calc(100vh - var(--system-menu-height) - 8px);
   overflow: auto;
+  --menu-popover-overflow: auto;
 }
 
 .menu-item-with-sub > .menu-sub-popover {
@@ -384,6 +388,7 @@ body.use-liquid-glass .menu-bar {
   min-width: 300px;
   max-height: min(440px, calc(100vh - 36px));
   overflow: auto;
+  --menu-popover-overflow: auto;
   scrollbar-gutter: stable;
 }
 
@@ -431,7 +436,7 @@ body.use-liquid-glass .menu-bar {
      its lamps with a more specific selector that pins filter, so the value has
      to arrive as a variable it already reads. Set only in this context, so an
      active lamp never sees it. */
-  --titlebar-control-filter: var(--titlebar-inactive-control-filter, none);
+  --titlebar-control-filter: var(--titlebar-inactive-control-filter, var(--system-titlebar-inactive-control-filter));
   visibility: var(--system-titlebar-inactive-control-visibility);
   filter: var(--system-titlebar-inactive-control-filter);
   opacity: var(--system-titlebar-inactive-control-opacity);
@@ -444,6 +449,16 @@ body.use-liquid-glass .menu-bar {
     calc(4px + var(--details-bar-optical-rise));
   border-bottom: 1px solid var(--details-bar-border);
   background: var(--details-bar-bg);
+}
+
+/* The context panel's two-line bar (moved from 10-windows.css) refines the
+   bar above. */
+.context-panel-window .details-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 10px;
+  align-items: center;
+  min-height: 46px;
 }
 
 /* .writing-spine-panel max-height + overflow merged into base (styles/10-windows.css);
@@ -515,23 +530,10 @@ body.use-liquid-glass .menu-bar {
   background: var(--paper);
 }
 
-.message {
-  grid-template-columns: 86px minmax(0, 1fr);
-  gap: 11px;
-  padding: 9px 0;
-  border-bottom: var(--message-divider);
-}
-
 /* .speaker font-family moved to base (styles/10-windows.css);
    font-weight: 700 was already in base. */
 
 /* .message-content max-width moved to base (styles/10-windows.css). */
-
-.composer {
-  gap: 0;
-  padding: 8px;
-  border: var(--clio-composer-border);
-}
 
 .assistant-window .messages {
   min-height: 0;
@@ -566,19 +568,6 @@ body.use-liquid-glass .menu-bar {
 .assistant-window .composer-action-row > .button-row {
   min-width: 0;
   justify-content: flex-end;
-}
-
-textarea,
-input[type="url"],
-input[type="text"],
-input[type="password"],
-input[type="number"],
-select {
-  min-height: 31px;
-  border: var(--system-border);
-  background: var(--paper);
-  box-shadow: var(--system-inset);
-  color: var(--ink);
 }
 
 textarea:focus,
@@ -682,6 +671,19 @@ select:focus {
 
 /* .btn:active transform + box-shadow moved to base (styles/10-windows.css);
    background and color were already in base. */
+
+/* Copies of 10-windows.css's .window .window-frame-scroller for the content
+   areas below that are window frame scrollers: the same selector and
+   specificity, scoped by :where(), so the frame keeps beating each area's own
+   rule under a per-file layer order as it does today by specificity. */
+.window .window-frame-scroller:where(.document-icon-grid, .project-disk-grid, .trash-list) {
+  border: 0;
+  box-shadow: none;
+}
+
+.window .window-frame-scroller:where(.document-icon-grid) {
+  min-height: 0;
+}
 
 .file-preview-body,
 .document-icon-grid,
@@ -798,8 +800,8 @@ select:focus {
 }
 
 .system-modal {
-  border: 3px solid var(--ink);
-  box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--ink);
+  border: var(--modal-border, 3px solid var(--ink));
+  box-shadow: var(--modal-shadow, 0 0 0 3px var(--paper), 0 0 0 5px var(--ink));
 }
 
 @media (max-width: 1120px) {
@@ -1285,6 +1287,18 @@ select:focus {
 }
 
 @media (max-width: 620px) {
+  /* 「还原写作对象」 on a phone: each section takes two lines, number, name and
+     length above, the words it starts with below (owner decision D3). */
+  .rebuild-sections .finder-list-row {
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    grid-template-areas: "number title chars" ". start start";
+  }
+
+  .rebuild-sections .finder-list-row > :nth-child(1) { grid-area: number; }
+  .rebuild-sections .finder-list-row > :nth-child(2) { grid-area: title; }
+  .rebuild-sections .finder-list-row > :nth-child(3) { grid-area: start; }
+  .rebuild-sections .finder-list-row > :nth-child(4) { grid-area: chars; }
+
   /* A deck you have to scroll cannot be memorised. The window is content-sized,
      so the board carries the screen budget: rows share whatever height is left
      and the cards fill their row instead of deriving height from the 2/3
@@ -2228,10 +2242,17 @@ body.use-modern-fonts .mde-surface * {
 
 .menu-popover,
 .menu-sub-popover {
-  top: calc(var(--system-menu-height) - 2px);
-  padding: 4px 0;
+  top: calc(var(--system-menu-height) - 2px + var(--menu-popover-offset-top, 0px));
+  padding: var(--menu-popover-padding, 4px 0);
   border: var(--system-border);
+  border-top-width: var(--menu-panel-border-top-width, 1px);
   box-shadow: var(--menu-panel-shadow);
+  /* C1: a pull-down panel must fit its longest item. Measured before this:
+     File menu item [41,315,178,18] scrollWidth 230 while the panel's right edge
+     was x219 — the label ran under the border. This one is a deliberate change
+     to every era; the tokens above keep each era's own offset and padding. */
+  width: max-content;
+  max-width: calc(100vw - 16px);
 }
 
 .menu-popover button,
@@ -2245,10 +2266,53 @@ body.use-modern-fonts .mde-surface * {
   padding: var(--menu-item-padding, 3px 14px 3px 30px);
   font-family: var(--ui-font);
   font-size: var(--system-readable-min);
-  font-weight: 400;
+  font-weight: var(--menu-item-font-weight, 400);
+  line-height: var(--menu-item-line-height-menu, normal);
 }
 
+/* The menus that refine the generic menu metrics above (moved from
+   00-foundation.css): the Apple menu's title slot, the MultiFinder and project
+   switcher panels and the project switcher's rows. They win by specificity
+   today; following the metrics keeps that true under a per-file layer order. */
+.menu-bar > .menu > .apple {
+  width: var(--apple-menu-slot-width, 34px);
+  padding: 0;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 
+.multifinder-menu .menu-popover {
+  left: auto;
+  right: 0;
+  min-width: 220px;
+  max-width: min(320px, calc(100vw - 18px));
+  max-height: min(420px, calc(100vh - 38px));
+  overflow: auto;
+}
+
+.project-switcher-menu .menu-popover {
+  left: auto;
+  right: 0;
+  min-width: 250px;
+  max-width: min(360px, calc(100vw - 18px));
+  max-height: min(420px, calc(100vh - 38px));
+  overflow: auto;
+}
+
+.project-switcher-popover button.project-switcher-item {
+  min-height: 38px;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: start;
+  padding: 4px 12px 5px 8px;
+  line-height: 1.15;
+}
+
+.project-switcher-popover button.is-current {
+  font-weight: var(--system-strong-weight);
+}
 
 /* Kept in this layer on purpose: tests/features/window-frame.test.mjs pins both
    rules here. They were added after a combined
@@ -2303,6 +2367,43 @@ body.use-modern-fonts .mde-surface * {
   border-bottom: var(--window-frame-track-border);
 }
 
+/* The Alarm Clock's native top strip refines the generic bar above, so it
+   follows it (moved from 30-surfaces.css). */
+.window.alarm-clock-window > .title-bar.alarm-clock-title-bar {
+  position: relative;
+  grid-template-columns:
+    var(--alarm-clock-title-control-width)
+    minmax(0, 1fr)
+    var(--alarm-clock-title-control-width);
+  gap: 0;
+  height: var(--alarm-clock-title-height);
+  min-height: var(--alarm-clock-title-height);
+  margin: 0;
+  padding: 0;
+  border-bottom: 0;
+  background-color: var(--alarm-clock-title-bg);
+  background-image: none;
+  box-shadow: none;
+  /* The same value, handed to the era title-bar recipe that reads it. */
+  --titlebar-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  cursor: move;
+  user-select: none;
+}
+
+/* A narrow window's active stripes (moved from 10-windows.css) follow the
+   generic bar above and precede the background-window rule below, which must
+   still win for a window nested in a background window (Theme Lab's
+   specimens). */
+@container (max-width: 760px) {
+  .window.is-active .title-bar {
+    background: var(--system-titlebar-active-bg);
+    background-origin: var(--system-titlebar-background-origin);
+    background-clip: var(--system-titlebar-background-clip);
+  }
+}
+
 .window:not(.is-active) .title-bar {
   background: var(--system-titlebar-inactive-bg);
   background-origin: var(--system-titlebar-background-origin);
@@ -2349,11 +2450,40 @@ body.use-modern-fonts .mde-surface * {
   line-height: var(--system-titlebar-title-height);
 }
 
+/* Title bars that refine the generic ones above (moved from 10-windows.css):
+   the writing spine's title, ClioTalk's bar and the macOS 11 one-row
+   toolbar's taller bar. They win by specificity today and follow the generic
+   rules so a per-file layer order agrees. */
+.writing-spine-panel .title-bar h2 {
+  max-width: none;
+  padding: 0 4px;
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.assistant-window .title-bar {
+  grid-template-columns:
+    var(--titlebar-gutter)
+    minmax(0, 1fr)
+    var(--titlebar-slot-zoom)
+    calc(var(--titlebar-gutter) - var(--titlebar-slot-zoom));
+  background: var(--system-titlebar-active-bg);
+}
+
+@media (min-width: 861px) and (not ((hover: none) and (pointer: coarse) and (max-height: 660px))) {
+  body[data-finder-layout="one-row"] .is-toolbar-window > .title-bar {
+    min-height: 52px;
+  }
+}
+
 .window:not(.is-active) .title-bar h1,
 .window:not(.is-active) .title-bar h2 {
   /* Same black Chicago as the front window — System 6 marks a background window
      by removing its stripes and controls, not by graying its name. */
   color: var(--system-titlebar-inactive-title-color);
+  /* Also handed to Aqua's title rule, the one era rule this out-ranks today;
+     eras whose own title rules out-rank this one keep their colour. */
+  --titlebar-inactive-title-fg: var(--system-titlebar-inactive-title-color);
 }
 
 /* .details-bar/.finder-list-header/.teachtext-desk-strip/.control-section h3
@@ -2363,53 +2493,6 @@ body.use-modern-fonts .mde-surface * {
 
 .window-pane {
   padding: var(--system-window-padding);
-}
-
-textarea,
-input[type="url"],
-input[type="text"],
-input[type="password"],
-input[type="search"],
-input[type="number"] {
-  min-height: var(--system-control-min-height);
-  padding: 6px 9px;
-  border: var(--system-control-line) solid var(--ink);
-  border-radius: var(--item-radius);
-  background: var(--paper);
-  box-shadow: var(--system-inset);
-  color: var(--ink);
-  font-family: var(--text-font);
-  font-size: var(--system-control-size);
-  font-weight: 400;
-  line-height: 1.35;
-}
-
-textarea {
-  line-height: 1.55;
-}
-
-select {
-  min-height: var(--system-control-min-height);
-  padding: 6px 30px 6px 9px;
-  border: var(--system-control-line) solid var(--ink);
-  border-radius: var(--system-select-radius);
-  background: var(--paper);
-  box-shadow: var(--system-inset);
-  color: var(--ink);
-  font-family: var(--ui-font);
-  font-size: var(--system-control-size);
-  font-weight: 400;
-  line-height: 1.35;
-  padding-right: 30px;
-  background-color: var(--paper);
-  background-image: url("./assets/select-arrow.svg");
-  background-position: right 6px center;
-  background-repeat: no-repeat;
-  background-size: 17px 17px;
-  color-scheme: light;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
 }
 
 select:not(:disabled):hover {
@@ -2532,25 +2615,6 @@ textarea::placeholder {
   opacity: 1;
 }
 
-.btn,
-.file-picker .file-picker-button,
-button.btn {
-  min-height: var(--system-button-min-height);
-  min-width: 72px;
-  padding: var(--system-button-padding-y) var(--system-button-padding-x);
-  border: var(--system-control-line) solid var(--ink);
-  border-radius: 7px;
-  background: var(--paper);
-  box-shadow:
-    inset -1px -1px 0 var(--shade-dark),
-    inset 1px 1px 0 var(--paper);
-  color: var(--ink);
-  font-family: var(--title-font);
-  font-size: var(--system-control-size);
-  font-weight: var(--system-emphasis-weight);
-  line-height: 1.2;
-}
-
 /* .btn.default box-shadow merged into base (styles/10-windows.css);
    border-width was already in base. */
 
@@ -2589,14 +2653,12 @@ button:disabled {
    paper turned over, not chrome, and it takes the writing face and the writing
    size from styles/50-apps.css. Listing it here set it two points smaller in
    the system sans, alongside .hint and .tag. */
-.message-content,
 .print-directory-preview,
 .reader-content,
 .scrap-preview,
 .source-info-panel,
 .finder-item small,
 .control-status,
-.hint,
 .tag,
 .empty-folder-note,
 .finder-empty-object,
@@ -2606,8 +2668,10 @@ button:disabled {
   font-weight: 400;
 }
 
+/* A <button class="btn"> takes its weight from the button recipe's button.btn
+   (10-windows.css), which out-ranks this list; the list sets the others. */
 .speaker,
-.btn,
+.btn:where(:not(button)),
 .title-bar h1,
 .title-bar h2,
 .spine-actions b,
@@ -2668,7 +2732,10 @@ button:disabled {
   line-height: var(--writing-editor-line-height);
 }
 
-.mini-btn,
+/* A <button class="btn mini-btn"> takes both from the button recipe's
+   button.btn (10-windows.css), which out-ranks this list; the list sizes the
+   other mini buttons. */
+.mini-btn:where(:not(button.btn)),
 .message-actions .btn,
 .reader-tabs .btn,
 .details-bar .btn {
@@ -2735,6 +2802,17 @@ input[type="radio"] {
   font-size: var(--system-readable-min);
 }
 
+/* The Control Panel chooser's tab labels (moved from 30-surfaces.css) refine
+   the panel's text size above. */
+.control-chooser .control-chooser-label {
+  padding: var(--control-chooser-label-padding);
+  font-size: var(--control-chooser-label-size);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Adaptive control label. A control carries both a long and a short label and
    the enclosing .window decides which fits — a container query, so a narrow
    window on a wide screen shrinks its own labels. Opt-in per container is what
@@ -2757,9 +2835,11 @@ input[type="radio"] {
 /* The writing action row is designed for one command cluster plus one primary
    action. The manuscript now also carries SideAsk and the route's next step, so
    at phone width five controls squeezed every label into an ellipsis. Wrap
-   instead of shrinking: the primary action takes its own line and every label
-   stays readable. The window is the query container, so a narrow window on a
-   wide screen wraps too. */
+   instead of shrinking, but only when the words do not fit: with the 写 | 读
+   switch the four controls share one row on every phone, and the primary
+   action takes a line of its own only on a window too narrow to hold it. The
+   window is the query container, so a narrow window on a wide screen wraps
+   too. */
 @container (max-width: 470px) {
   .teachtext-actions {
     flex-wrap: wrap;
@@ -2767,8 +2847,15 @@ input[type="radio"] {
   }
 
   .teachtext-actions > .btn.default {
-    flex: 1 0 100%;
+    flex: 1 0 auto;
+    min-width: 0;
+    /* The same value, handed to the era button recipe that reads it. */
+    --theme-button-min-width: 0px;
     margin-left: 0;
+  }
+
+  .teachtext-command-group {
+    display: flex;
   }
 }
 
@@ -2880,36 +2967,6 @@ input[type="radio"] {
   body.mobile-app-foreground:not(.is-writer-mode) .assistant-window.is-mobile-fullscreen .composer textarea {
     min-height: 42px;
     max-height: min(108px, 20vh);
-  }
-
-  .find-path-pane > label {
-    display: none;
-  }
-
-  /* Two classes on the input: the touch minimum must outrank the era
-     search-field recipe in 10-windows (also two classes, earlier file). */
-  .find-path-window .find-path-query-row input,
-  .find-path-query-row .btn {
-    min-height: 44px;
-  }
-
-  /* One equal column per visible control: Synthesize only exists once there
-     are results, so a fixed four-column grid left a hole before it did. */
-  .find-path-pane > .button-row:last-child {
-    display: grid;
-    grid-auto-columns: minmax(0, 1fr);
-    grid-auto-flow: column;
-    gap: 6px;
-  }
-
-  .find-path-send-menu > summary {
-    width: 100%;
-  }
-
-  .find-path-pane > .button-row:last-child .btn {
-    min-width: 0;
-    min-height: 44px;
-    padding-inline: 5px;
   }
 
   .reader-pane {
@@ -3219,12 +3276,11 @@ input[type="radio"] {
 
 
 /* A home-screen web app owns the whole screen: the notch and the home indicator
-   are real, and the title bar's close and zoom boxes are the only way to end or
-   un-maximize a window there, where the eras draw them at 11-15px (measured: 14px
-   in Liquid Glass, 13px in Platinum). Installed + a finger means 44px, with the
-   era's art left where it was drawn. Safari keeps the drawn chrome; the hook is
-   the platform's own signal (navigator.standalone / display-mode), never a user
-   agent. Reasoning: DEBT-AUDIT.zh-CN.md §11. */
+   are real. Safari keeps the drawn chrome; the hook is the platform's own
+   signal (navigator.standalone / display-mode), never a user agent. The title
+   bar is NOT grown for a finger here: every appearance keeps the height and the
+   controls it draws on the desk (owner's decision, 2026-09-26; the 44px bar of
+   2026-09-22/23 was reverted). Reasoning: DEBT-AUDIT.zh-CN.md §11. */
 @media (hover: none) and (pointer: coarse) {
   /* The status band, wherever there is one. This started as a portrait-phone
      rule inside the 860px query above, which left the other two surfaces alone:
@@ -3272,65 +3328,10 @@ input[type="radio"] {
     padding-bottom: max(16px, var(--safe-area-bottom));
   }
 
-  html[data-installed] .title-bar {
-    --titlebar-installed-control: var(--system-titlebar-control-size);
-    --titlebar-installed-resize-x: var(--system-titlebar-resize-art-offset-x);
-    --system-titlebar-control-slot: 44px;
-    min-height: 44px;
-  }
-
-  /* The middle lamp belongs in this list: it is the same control as Close and
-     Zoom, and a finger that gets 44px for two of the three lamps and 24px for
-     the one in between is a row that only looks touch-sized. The hit area
-     grows; the lamp the appearance paints stays 12px, because what changed is
-     how far a finger may miss by, not how big the light is. */
-  html[data-installed] .title-bar > :is(.close-box, .resize-box, .minimize-box) {
-    --system-titlebar-control-size: 44px;
-    --system-titlebar-control-art-offset-y: calc((44px - var(--system-titlebar-title-height)) / 2);
-    width: 44px;
-    height: 44px;
-  }
-
-  /* The window's other corner control. `.is-mobile-fullscreen` hides the grow
-     box, which is right on a phone where the window is the screen — but a tablet
-     keeps a real window, so this one is a live control and was measured at 16px
-     there (and at 28px in another run) by `verify:ios-standalone`'s geometry
-     phase. A finger gets the same 44px the title bar's boxes get. */
-  html[data-installed] .grow-box {
-    width: 44px;
-    height: 44px;
-  }
-
-  /* A phone or tablet in a browser tab is still a finger, and the installed
-     block above only covered a home-screen app: measured 2026-09-23 at 390x844
-     with hasTouch, the assistant window's title bar was 38px with 24px Close
-     and Zoom. The same three controls get the same 44px hit area here; the
-     appearance's lamp art does not change size, because what grows is how far a
-     finger may miss by. */
-  html:not([data-installed]) body:not(.is-writer-mode) .title-bar {
-    --system-titlebar-control-slot: 44px;
-    min-height: 44px;
-  }
-
-  html:not([data-installed]) body:not(.is-writer-mode)
-    .title-bar > :is(.close-box, .resize-box, .minimize-box) {
-    --system-titlebar-control-size: 44px;
-    --system-titlebar-control-art-offset-y: calc((44px - var(--system-titlebar-title-height)) / 2);
-    width: 44px;
-    height: 44px;
-  }
-
-  /* Zoom is end-justified, so the bigger box moves its leading edge left by the
-     whole growth and the art has to come back by all of it. The composer's Add
-     and Send are the two controls a thumb hits most — 36px is a mouse size. */
+  /* The composer's Add and Send are the two controls a thumb hits most — 36px
+     is a mouse size. */
   html[data-installed] .assistant-window .composer :is(.composer-submit-button, .composer-file-button) {
     width: 44px;
     height: 44px;
-  }
-
-  html[data-installed] .title-bar > .resize-box {
-    --system-titlebar-resize-art-offset-x: calc(
-      var(--titlebar-installed-resize-x) + 44px - var(--titlebar-installed-control)
-    );
   }
 }
