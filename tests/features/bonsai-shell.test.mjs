@@ -3,7 +3,7 @@
 // pauses when hidden, and persists through the shared write-fence helper.
 
 import vm from "node:vm";
-import { admittedApplicationGroup, createFeatureTest, read, windowApp } from "../helpers/feature-test-harness.mjs";
+import { admissionRows, admittedApplicationGroup, createFeatureTest, read, windowApp } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("bonsai-shell");
 
@@ -182,7 +182,7 @@ test.assertIncludes(shellSource, "AISystem6BonsaiTranslations", "the shell falls
 
 const windowManager = read("app/core/window-manager.js");
 const windowRegistrySource = read("app/core/window-registry.js");
-test.assertIncludes(windowRegistrySource, "bonsaiCity: {", "one registry owns the lazy window entry");
+test.assert(admissionRows().bonsaiCity?.api === "AISystem6BonsaiCity" && windowRegistrySource.includes("...window.AISystem6Admissions.windowRecords()"), "one declaration owns the lazy window entry: the admission row, merged into the registry");
 test.assertIncludes(windowManager, "mobileImmersiveAppIds", "the window participates in the immersive mobile shell");
 test.assertIncludes(windowManager, "writerMode && !writerModeCompatible", "opening Bonsai leaves the writing-only desktop mode before immersive layout");
 

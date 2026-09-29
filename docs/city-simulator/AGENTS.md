@@ -28,6 +28,9 @@ DOOM) are separate products; rules here do not govern their vendor code.
    the reference — observed color values and layout/proportion measurements
    are facts and may guide our original artwork; sprites, tiles, traced
    outlines, and screenshots-as-assets remain expression and stay out.
+   Since 2026-09-28 the same line covers SimCity 3000, SimCity 4 and
+   SimCity (2013), for the miniature direction in
+   `internal/plans/BONSAI-MINIATURE-PLAN.zh-CN.md`.
 2. **The simulation core stays headless.** No DOM, canvas, window, IndexedDB,
    wall clock, timers, or `Math.random()`. The shell owns seed generation and
    pacing; the core owns rules, ticks, and deterministic state.

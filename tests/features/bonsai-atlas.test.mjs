@@ -203,13 +203,17 @@ test.assertIncludes(notes, "no network path", "provenance states the offline gen
       const context2d = canvas.getContext("2d");
       context2d.drawImage(image, frame.x, frame.y, frame.w, frame.h, 0, 0, frame.w, frame.h);
       const pixels = context2d.getImageData(0, 0, frame.w, frame.h).data;
+      // Power lines hang from the pole tops, so a wire meets its neighbour at
+      // the edge midpoint lifted to line height (14 voxels × 2.5 px), not on
+      // the ground.
+      const lift = family === "wire" ? 36 : 0;
       const opaqueNear = (dx, dy, radius = 1) => {
         for (let oy = -radius; oy <= radius; oy += 1) {
           for (let ox = -radius; ox <= radius; ox += 1) {
             // Round axes before indexing; fractional coordinates can alias
             // another pixel when multiplied by a trimmed frame width.
             const x = Math.round(frame.anchor.x + dx + ox);
-            const y = Math.round(frame.anchor.y + dy + oy);
+            const y = Math.round(frame.anchor.y + dy - lift + oy);
             if (x < 0 || y < 0 || x >= frame.w || y >= frame.h) continue;
             if (pixels[(y * frame.w + x) * 4 + 3] > 0) return true;
           }
@@ -224,7 +228,13 @@ test.assertIncludes(notes, "no network path", "provenance states the offline gen
           test.assert(opaqueNear(Math.round(edge.dx / 2), Math.round(edge.dy / 2)),
             `${family}.mask-${mask} is continuous from the centre out toward ${edge.name}`);
         } else {
-          test.assert(!opaqueNear(edge.dx * 1.4, edge.dy * 1.4, 0),
+          // Decks carry parapets and railings a few voxels tall; like every
+          // raised sprite they overlap the screen area above their back
+          // edges (y-1 and x-1 face away, up the screen). Probe the ground
+          // beyond that height there; front edges keep the close probe.
+          const raised = family === "highway" || family.startsWith("bridge-") || family === "subway";
+          const reach = raised && edge.dy < 0 ? 2.2 : 1.4;
+          test.assert(!opaqueNear(edge.dx * reach, edge.dy * reach, 0),
             `${family}.mask-${mask} paints nothing past the tile toward ${edge.name}`);
         }
       }

@@ -210,6 +210,22 @@ export const lazyStyleBundles = [
     loader: "app/core/config.js",
     sources: ["styles/97-one-more-tune.css"],
   },
+  // Rootline builds its own window like the other games, and every selector
+  // is scoped to .rootline-*.
+  {
+    id: "rootline",
+    output: "styles.rootline.css",
+    loader: "app/core/config.js",
+    sources: ["styles/99-rootline.css"],
+  },
+  // Joyride builds its own window and scopes every selector to .joyride-*,
+  // plus the one body state it sets while driving.
+  {
+    id: "joyride",
+    output: "styles.joyride.css",
+    loader: "app/core/config.js",
+    sources: ["styles/99-joyride.css"],
+  },
   // The demonstration-disk window is built at runtime by the panel that rides
   // the generated shared-disks module, so its geometry follows the module:
   // four declarations a boot that never opens the list should not download.
@@ -290,6 +306,8 @@ export const styleLayerByPath = Object.freeze({
   "styles/97-one-more-tune.css": "one-more-tune",
   "styles/98-project-disks.css": "project-disks",
   "styles/99-clio-project.css": "clio-project",
+  "styles/99-rootline.css": "rootline",
+  "styles/99-joyride.css": "joyride",
 });
 
 // Layer order = eager files in bundle order, then lazy sheets in declaration

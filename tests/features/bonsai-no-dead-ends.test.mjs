@@ -83,6 +83,7 @@ const preconditions = {
   "bonsai-speed-0": ["bonsai-speed-1"],
   "bonsai-overlay-none": ["bonsai-overlay-power"],
   "bonsai-sound-music": ["bonsai-sound-off"],
+  "bonsai-study-none": ["bonsai-study-white"],
   // Centring is only a change when the view is somewhere else first.
   "bonsai-center-city": [() => ctx.window.AISystem6BonsaiCanvasRenderer.panByScreen(160, 90)],
 };

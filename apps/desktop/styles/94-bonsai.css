@@ -296,6 +296,21 @@
   image-rendering: pixelated;
 }
 
+/* Tool pictures: one sheet of 40 px cells baked from the voxel models the map
+   draws, shown at 20 px (2x for sharp edges). JS sets the cell and sheet size
+   as custom properties. */
+.bonsai-window .bonsai-tool-sprite {
+  display: block;
+  width: var(--icon-size, 20px);
+  height: var(--icon-size, 20px);
+  font-size: 0;
+  background-image: var(--icon-url);
+  background-repeat: no-repeat;
+  background-size: calc(var(--icon-columns) * var(--icon-size, 20px)) calc(var(--icon-rows) * var(--icon-size, 20px));
+  background-position: calc(var(--icon-x) * -1 * var(--icon-size, 20px)) calc(var(--icon-y) * -1 * var(--icon-size, 20px));
+  image-rendering: auto;
+}
+
 .bonsai-window .bonsai-sub-palette {
   min-width: 0;
   min-height: 0;
@@ -515,6 +530,7 @@
 }
 
 .bonsai-window .bonsai-tool-icon {
+  --icon-size: 18px;
   grid-row: 1 / 3;
   align-self: center;
   font-family: monospace;
@@ -1256,4 +1272,63 @@
    the sheet that owns the value, so the boot payload pays nothing for it. */
 body.mobile-landscape-shell .bonsai-window.is-mobile-fullscreen:not(.is-collapsed) {
   min-height: 0;
+}
+
+/* Real place (OpenStreetMap) fields in Map Setup, and the map's credit line
+   while an imported place is on screen. */
+.bonsai-window .bonsai-osm-fields {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  margin: 0;
+  padding: 3px 5px 5px;
+  border: 1px solid var(--shade);
+  border-radius: var(--inset-radius);
+  background: var(--surface-muted, var(--paper));
+}
+
+.bonsai-window .bonsai-osm-fields[hidden] {
+  display: none;
+}
+
+.bonsai-window .bonsai-osm-fields legend {
+  padding: 0 3px;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.bonsai-window .bonsai-osm-search {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+}
+
+.bonsai-window .bonsai-osm-search input {
+  flex: 1 1 auto;
+}
+
+.bonsai-window .bonsai-osm-search .btn {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.bonsai-window .bonsai-osm-credit {
+  margin: 0;
+  font-size: 10px;
+}
+
+.bonsai-window .bonsai-map-credit {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  margin: 0;
+  padding: 1px 4px;
+  border: 1px solid var(--shade);
+  background: var(--paper);
+  font-size: 10px;
+  pointer-events: none;
+}
+
+.bonsai-window .bonsai-map-credit[hidden] {
+  display: none;
 }

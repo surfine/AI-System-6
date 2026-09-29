@@ -1,0 +1,184 @@
+/* Joyride / 兜风 — driving a Bonsai City town in a window.
+   A lazy style bundle: every selector is scoped to .joyride-* (and the one
+   body state it sets while driving), so a boot that never opens the game
+   downloads none of it. The picture is a small canvas scaled up with nearest
+   pixels; the chrome is the shared window, buttons and select harness. */
+
+.joyride-window {
+  width: min(680px, calc(100vw - 72px));
+  height: min(620px, calc(100vh - 88px));
+}
+
+.joyride-pane {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  padding: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.joyride-stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 160px;
+  background: var(--ink);
+  outline: none;
+}
+
+.joyride-screen {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.joyride-message {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  margin: 0;
+  padding: 4px 10px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  text-align: center;
+}
+
+.joyride-message[hidden],
+.joyride-controls[hidden],
+.joyride-prefs[hidden] {
+  display: none;
+}
+
+.joyride-status {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.joyride-status-speed {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Touch controls: the wheel at the left, the pedals at the right, the two
+   buttons between them. */
+.joyride-controls {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--ink);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.joyride-wheel {
+  width: 116px;
+  height: 116px;
+  touch-action: none;
+  transform: rotate(var(--joyride-wheel-turn, 0deg));
+}
+
+.joyride-wheel-art {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 6;
+}
+
+.joyride-buttons {
+  display: flex;
+  flex-direction: column;
+  justify-self: center;
+  gap: 8px;
+}
+
+.joyride-pedals {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.joyride-pedal {
+  width: 60px;
+  height: 88px;
+  padding: 0;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  touch-action: none;
+}
+
+.joyride-pedal-gas {
+  height: 108px;
+}
+
+.joyride-pedal.is-pressed {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* A landscape phone letterboxes the 4:3 picture; the wheel and the pedals
+   take the black bars at either side. */
+@media (orientation: landscape) and (pointer: coarse) {
+  .joyride-controls {
+    position: absolute;
+    inset: auto 0 0;
+    padding: 8px 12px;
+    border-top: 0;
+    color: var(--paper);
+    pointer-events: none;
+  }
+
+  .joyride-controls > * {
+    pointer-events: auto;
+  }
+
+  .joyride-wheel {
+    width: 104px;
+    height: 104px;
+  }
+
+  .joyride-buttons {
+    align-self: start;
+  }
+}
+
+.joyride-prefs {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(360px, calc(100% - 32px));
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.joyride-prefs h3 {
+  margin: 0;
+}
+
+.joyride-prefs-keys {
+  margin: 0;
+}
+
+/* The box hid the menu bar while you drove; pausing brings it back. */
+body.joyride-driving .menu-bar {
+  transform: translateY(-100%);
+}

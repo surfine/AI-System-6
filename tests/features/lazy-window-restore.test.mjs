@@ -13,6 +13,7 @@
 // and fails when a newly added lazy window forgets to register.
 
 import { existsSync, readFileSync } from "node:fs";
+import { createAppBootVm } from "../helpers/app-boot-vm.mjs";
 import { createFeatureTest, read, resolveProjectPath, windowRegistryRecords } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("lazy-window-restore");
@@ -274,6 +275,34 @@ test.assertMatches(
   wireup,
   /findFileForm\?\.addEventListener\("submit", async \(event\) => \{[\s\S]{0,160}?await ensureFindPathModule\(\);/,
   "the Find File form loads its module before running a search"
+);
+
+
+// --- restore reaches windows its modules build -------------------------------
+// A window built by its module has no markup until that module loads, so a
+// restore that only reopened windows already in the DOM dropped every game and
+// lab from the scene once their markup left index.html. Run the product's own
+// restore with openWindow recorded rather than performed.
+const restoreVm = createAppBootVm();
+const reopened = await restoreVm.run(`(async () => {
+  const calls = [];
+  const realOpen = openWindow;
+  openWindow = async (name) => { calls.push(name); };
+  try {
+    await restoreWindowWorkingSession({ windows: [
+      { name: "rootline", visible: true, zIndex: 3 },
+      { name: "doom", visible: true, zIndex: 2 },
+      { name: "about", visible: true, zIndex: 1 },
+      { name: "noSuchWindow", visible: true, zIndex: 4 },
+    ] });
+  } finally {
+    openWindow = realOpen;
+  }
+  return calls.join(",");
+})()`);
+test.assert(
+  reopened === "doom,rootline",
+  `a restored scene reopens module-built windows in z-order and skips excluded or unknown names (reopened: ${reopened || "none"})`,
 );
 
 test.finish();

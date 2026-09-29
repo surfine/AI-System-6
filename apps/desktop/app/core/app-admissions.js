@@ -12,9 +12,18 @@
 // This table is that declaration: one row per window, naming its owning
 // application, the loader config.js already builds, and the opener command it
 // answers to. config.js keeps the loader spec (it owns createLazyModuleLoader
-// and the flag/path rules); this table owns who is admitted and where. The
-// remaining surfaces — MultiFinder names, Applications entries, the repaint
-// hooks — read from here next; the loader specs can move in afterwards.
+// and the flag/path rules); this table owns who is admitted and where.
+// MultiFinder names, Applications rows, description keys, repaint hooks and
+// the availability pass all read from here.
+//
+// A window its own module builds can also be declared here whole. `api` names
+// the global the module installs; from it the table derives the window record
+// window-registry.js would otherwise spell out by hand (owning app,
+// builtByModule, width, the lazy ensure and attach). `phone` is its phone role
+// (1 = the full-screen app page in portrait, 2 = immersive: landscape too),
+// and `tile` / `grow` put it in the tileable and resizable sets. With those, a
+// new game is this row, its loader in config.js, its glyph in system-icons.js
+// and its strings — nothing in window-registry, window-manager or app.js.
 //
 // Contract: tests/features/app-admissions.test.mjs
 
@@ -24,14 +33,14 @@ window.AISystem6Admissions = (() => {
   // own, or another window's action.
   const WINDOWS = {
     alarmClock: { app: "accessories", load: ensureAlarmClockModule, command: "open-alarm-clock" },
-    bonsaiCity: { app: "bonsaiCity", load: ensureBonsaiCityModule, command: "open-bonsai-city" , multiFinder: "Bonsai City" , applicationGroup: "games", appLabel: "bonsai_city_label", appIcon: "bonsaiCity", appDesc: "app_desc_bonsai_city" },
+    bonsaiCity: { app: "bonsaiCity", load: ensureBonsaiCityModule, command: "open-bonsai-city" , multiFinder: "Bonsai City" , applicationGroup: "games", appLabel: "bonsai_city_label", appIcon: "bonsaiCity", appDesc: "app_desc_bonsai_city", api: "AISystem6BonsaiCity", appearance: 1, phone: 2, tile: 1, grow: 1 },
     bureaucracyMeme: { app: "bureaucracyMeme", load: ensureBureaucracyMemeModule, command: "open-bureaucracy-meme" , multiFinder: "Bureaucracy Meme" , applicationGroup: "extras", appLabel: "bureaucracy_meme_label", appIcon: "bureaucracyMeme", appIconClass: "tools-icon", appDesc: "app_desc_bureaucracy" },
     clioChart: { app: "clioChart", load: ensureClioChartModule, command: "open-clio-chart" , multiFinder: "ClioChart" , applicationGroup: "create", appLabel: "clio_chart_label", appIcon: "clioChart", appIconClass: "tools-icon", appDesc: "app_desc_clio_chart" },
-    clioPaint: { app: "clioPaint", load: ensureClioPaintModule, command: "open-clio-paint" , multiFinder: "ClioPaint" , applicationGroup: "create", appLabel: "clio_paint_label", appIcon: "clioPaint", appIconClass: "tools-icon" },
+    clioPaint: { app: "clioPaint", load: ensureClioPaintModule, command: "open-clio-paint" , multiFinder: "ClioPaint" , applicationGroup: "create", appLabel: "clio_paint_label", appIcon: "clioPaint", appIconClass: "tools-icon", api: "AISystem6ClioPaint", width: 640, phone: 1, tile: 1, grow: 1 },
     clioProject: { app: "clioProject", load: ensureClioProjectModule, command: "open-clio-project" , multiFinder: "ClioProject" , applicationGroup: "create", appLabel: "clio_project_label", appIcon: "clioProject", appIconClass: "tools-icon" },
     clioStage: { app: "clioStage", load: ensureClioStageModule, command: "open-clio-stage" , multiFinder: "ClioStage" , applicationGroup: "create", appLabel: "clio_stage_label", appIcon: "clioStage", appIconClass: "tools-icon", appDesc: "app_desc_clio_stage" },
     cmfStudio: { app: "cmfStudio", load: ensureCmfStudioModule, command: "open-cmf-studio" , multiFinder: "CMF Studio" , applicationGroup: "create", appLabel: "cmf_studio_label", appIcon: "cmfStudio", appIconClass: "tools-icon", appDesc: "app_desc_cmf_studio" },
-    doom: { app: "doom", load: ensureDoomModule, command: "open-doom" , multiFinder: "DOOM" , applicationGroup: "games", appLabel: "doom_label", appIcon: "doom", appDesc: "app_desc_doom" },
+    doom: { app: "doom", load: ensureDoomModule, command: "open-doom" , multiFinder: "DOOM" , applicationGroup: "games", appLabel: "doom_label", appIcon: "doom", appDesc: "app_desc_doom", api: "AISystem6Doom", phone: 2 },
     endfieldTerminal: { app: "endfield", load: ensureEndfieldTerminalModule, command: "open-endfield-terminal" , applicationGroup: "extras", appLabel: "endfield_terminal_label", appIcon: "endfieldTerminal", appIconClass: "tools-icon", appDesc: "app_desc_endfield" },
     findFile: { app: "accessories", load: ensureFindPathModule, command: "open-find-path" },
     findPath: { app: "searcher", load: ensureFindPathModule, command: "open-find-path", applicationGroup: "root", appLabel: "searcher_label", appIcon: "searcher", appIconClass: "tools-icon", appDesc: "app_desc_searcher" },
@@ -39,9 +48,11 @@ window.AISystem6Admissions = (() => {
     lightroom: { app: "lightroom", load: ensureQuickDraftModule, command: "open-quick-draft", applicationGroup: "root", appLabel: "quick_draft_label", appIcon: "quickDraft", appIconClass: "teachtext-icon", appDesc: "app_desc_draft_desk" },
     liquidCover: { app: "liquidCover", load: ensureLiquidCoverModule, command: "open-liquid-cover" , multiFinder: "Cover Glass" , applicationGroup: "create", appLabel: "liquid_cover_label", appIcon: "liquidCover", appIconClass: "tools-icon", appDesc: "app_desc_cover_glass" },
     memoryCards: { app: "accessories", load: ensureMemoryCardsModule, command: "open-memory-cards" },
-    micropolis: { app: "micropolis", load: ensureMicropolisModule, command: "open-micropolis" , multiFinder: "Micropolis" , applicationGroup: "games", appLabel: "micropolis_label", appIcon: "micropolis", appDesc: "app_desc_micropolis" },
-    oneMoreTune: { app: "oneMoreTune", load: ensureOneMoreTuneModule, command: "open-one-more-tune" , multiFinder: "One More Tune" , applicationGroup: "extras", appLabel: "one_more_tune_label", appIcon: "oneMoreTune", appIconClass: "tools-icon", appDesc: "app_desc_one_more_tune", repaint: "renderOneMoreTune" },
-    openttd: { app: "openttd", load: ensureOpenTTDModule, command: "open-openttd" , multiFinder: "OpenTTD" , applicationGroup: "games", appLabel: "openttd_label", appIcon: "openttd", appDesc: "app_desc_openttd" },
+    micropolis: { app: "micropolis", load: ensureMicropolisModule, command: "open-micropolis" , multiFinder: "Micropolis" , applicationGroup: "games", appLabel: "micropolis_label", appIcon: "micropolis", appDesc: "app_desc_micropolis", api: "AISystem6Micropolis", phone: 2, grow: 1 },
+    oneMoreTune: { app: "oneMoreTune", load: ensureOneMoreTuneModule, command: "open-one-more-tune" , multiFinder: "One More Tune" , applicationGroup: "extras", appLabel: "one_more_tune_label", appIcon: "oneMoreTune", appIconClass: "tools-icon", appDesc: "app_desc_one_more_tune", repaint: "renderOneMoreTune", api: "AISystem6OneMoreTune", width: 680, phone: 1, tile: 1, grow: 1 },
+    openttd: { app: "openttd", load: ensureOpenTTDModule, command: "open-openttd" , multiFinder: "OpenTTD" , applicationGroup: "games", appLabel: "openttd_label", appIcon: "openttd", appDesc: "app_desc_openttd", api: "AISystem6OpenTTD", phone: 2 },
+    rootline: { app: "rootline", load: ensureRootlineModule, command: "open-rootline" , multiFinder: "Rootline" , applicationGroup: "games", appLabel: "rootline_label", appIcon: "rootline", appDesc: "app_desc_rootline", api: "AISystem6Rootline", phone: 2, tile: 1, grow: 1, repaint: "renderRootline" },
+    joyride: { app: "joyride", load: ensureJoyrideModule, command: "open-joyride" , multiFinder: "Joyride" , applicationGroup: "games", appLabel: "joyride_label", appIcon: "joyride", appDesc: "app_desc_joyride", api: "AISystem6Joyride", phone: 2, tile: 1, grow: 1 },
     diskPeek: { app: "accessories", load: ensureDiskPeekModule },
     projectDisks: { app: "finder", load: ensureSharedProjectDisksIndexModule, command: "open-demo-disks", repaint: "renderDemoDisksPanel" },
     soundscape: { app: "soundscape", load: ensureSoundscapeModule, command: "open-soundscape" , multiFinder: "Soundscape" , applicationGroup: "create", appLabel: "soundscape_label", appIcon: "soundscape", appIconClass: "tools-icon", appDesc: "app_desc_soundscape" },
@@ -146,8 +157,38 @@ window.AISystem6Admissions = (() => {
     });
   }
 
+  // The window records the rows with an `api` declare. window-registry.js
+  // merges them into its table; a name declared in both is a contract failure.
+  function windowRecords() {
+    const records = {};
+    Object.entries(WINDOWS).forEach(([name, row]) => {
+      if (!row.api) return;
+      const attach = () => window[row.api]?.attach?.();
+      records[name] = {
+        app: row.app,
+        builtByModule: true,
+        ...(row.width ? { width: row.width } : {}),
+        lazy: { ensure: () => row.load(), attach, ...(row.appearance ? { appearanceAttach: attach } : {}) },
+      };
+    });
+    return records;
+  }
+
+  // Phone roles are per application; `level` 2 lists only the immersive ones.
+  function phoneApps(level = 1) {
+    return Object.values(WINDOWS).filter((row) => row.phone >= level).map((row) => row.app);
+  }
+
+  // Window names carrying a frame flag: "tile" or "grow".
+  function framedWindows(flag) {
+    return Object.keys(WINDOWS).filter((name) => WINDOWS[name][flag]);
+  }
+
   return Object.freeze({
     applicationItems,
+    framedWindows,
+    phoneApps,
+    windowRecords,
     appDescriptionKeys,
     repaintHooks,
     commands: COMMANDS,

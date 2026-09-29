@@ -62,8 +62,11 @@ const securityHeaders = Object.freeze([
   // fetch, media-src for the media element WebKit falls back to. Without them
   // the quiz opened on this deployment and played nothing at all, which is a
   // music game that cannot be played. They are the only cross-origin hosts
-  // beyond Turnstile and YouTube's embed.
-  "Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com https://www.youtube.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://audio-ssl.itunes.apple.com https://itunes.apple.com; media-src 'self' data: https://audio-ssl.itunes.apple.com; worker-src 'self' blob:; frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+  // beyond Turnstile and YouTube's embed, plus the writer's own Mac at
+  // http://127.0.0.1:4173: the loopback bridge Soundscape uses for the Music
+  // app remote and for Apple Music downloads (connect-src for the API,
+  // media-src for the signed audio URLs).
+  "Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com https://www.youtube.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://audio-ssl.itunes.apple.com https://itunes.apple.com http://127.0.0.1:4173; media-src 'self' data: https://audio-ssl.itunes.apple.com http://127.0.0.1:4173; worker-src 'self' blob:; frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
 ]);
 
 /** The full `_headers` file contents. */

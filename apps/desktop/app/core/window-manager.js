@@ -1215,8 +1215,6 @@ const mobileFullScreenAppIds = new Set([
   "clioStage",
   "clioChart",
   "clioProject",
-  "clioPaint",
-  "oneMoreTune",
   "liquidCover",
   "cmfStudio",
   // The Image Prompt Studio built its window but never declared a phone role,
@@ -1227,17 +1225,16 @@ const mobileFullScreenAppIds = new Set([
   "themeLab",
   "scrapbook",
   "bureaucracyMeme",
-  "micropolis",
-  "doom",
-  "openttd",
-  "bonsaiCity",
+  // Apps declared whole in the admission table carry their role there.
+  ...window.AISystem6Admissions.phoneApps(),
 ]);
 
-// Immersive apps are the ones whose content IS the screen: the three games.
+// Immersive apps are the ones whose content IS the screen: the games (phone: 2
+// in app/core/app-admissions.js).
 // They earn the full-screen shell in landscape as well, where a floating
 // window would spend most of a phone display on desktop pattern. Every other
 // app keeps the portrait-only figure.
-const mobileImmersiveAppIds = new Set(["micropolis", "doom", "openttd", "bonsaiCity"]);
+const mobileImmersiveAppIds = new Set(window.AISystem6Admissions.phoneApps(2));
 
 function isMobileImmersiveWindow(win) {
   return !!win && mobileImmersiveAppIds.has(getWindowAppId(win));

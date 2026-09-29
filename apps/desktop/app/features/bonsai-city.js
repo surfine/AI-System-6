@@ -202,6 +202,9 @@ window.AISystem6BonsaiCityLoaded = true;
     current: null,
     record: null,
     setupPreview: null,
+    // The real-place preview: the options key it was made for, the import
+    // in flight, and the finished import.
+    osm: null,
     setupOptions: null,
     playing: false,
     speed: 0,
@@ -262,7 +265,7 @@ window.AISystem6BonsaiCityLoaded = true;
     // Night and the seasons are shown only when asked for: SimCity 2000 has
     // neither, and a city that went dark every 7.5 seconds and repainted its
     // forest every 18 was harder to read than it was pretty.
-    display: { buildings: true, infrastructure: true, zones: true, underground: false, night: false, seasons: false },
+    display: { buildings: true, infrastructure: true, zones: true, underground: false, night: false, seasons: false, miniature: true, tank: false, studyModel: "none" },
     // 自动预算 (auto-budget): off by default, as in the original game, so
     // January holds the clock with the budget pane open. Session state,
     // never part of a city save. yearEndHold marks that pause.
@@ -471,6 +474,7 @@ window.AISystem6BonsaiCityLoaded = true;
               </div>
               <section class="bonsai-minimap-card" data-bonsai-minimap-card aria-label="${t("bonsai_minimap")}" hidden></section>
               <section class="bonsai-tile-balloon" data-bonsai-tile-balloon aria-label="${t("bonsai_tile_inspector")}" hidden></section>
+              <p class="bonsai-map-credit" data-bonsai-map-credit hidden></p>
               <section class="bonsai-map-setup" data-bonsai-map-setup aria-labelledby="bonsai-map-setup-title" hidden></section>
               <section class="bonsai-city-browser" data-bonsai-city-browser aria-labelledby="bonsai-city-browser-title" hidden></section>
             </main>
@@ -510,13 +514,31 @@ window.AISystem6BonsaiCityLoaded = true;
       // The terrain editor trims the rest of the rail until the city is
       // founded, exactly as the flat toolbox did.
       if (editing && category.id !== "terrain") button.disabled = true;
-      const glyph = document.createElement("span");
-      glyph.className = "bonsai-rail-glyph";
-      glyph.setAttribute("aria-hidden", "true");
-      glyph.textContent = tool.icon;
-      button.append(glyph);
+      button.append(toolIconElement(tool, "bonsai-rail-glyph"));
       rail.append(button);
     });
+  }
+
+  // A tool's picture: the icon baked from the same voxel model the map draws
+  // (assets/bonsai/tool-icons.png, cell map in the atlas metadata), or its
+  // text glyph when the sheet has no cell for it.
+  function toolIconElement(tool, className) {
+    const icon = document.createElement("span");
+    icon.className = className;
+    icon.setAttribute("aria-hidden", "true");
+    const sheet = window.AISystem6BonsaiAtlas?.toolIcons;
+    const cell = sheet?.icons?.[tool.id];
+    if (cell) {
+      icon.classList.add("bonsai-tool-sprite");
+      icon.style.setProperty("--icon-x", String(cell[0]));
+      icon.style.setProperty("--icon-y", String(cell[1]));
+      icon.style.setProperty("--icon-columns", String(sheet.columns));
+      icon.style.setProperty("--icon-rows", String(sheet.rows));
+      icon.style.setProperty("--icon-url", `url("${sheet.url}")`);
+    } else {
+      icon.textContent = tool.icon;
+    }
+    return icon;
   }
 
   // The sub-palette (M2 §3.4): one category at a time, keeping today's
@@ -552,10 +574,7 @@ window.AISystem6BonsaiCityLoaded = true;
       button.dataset.bonsaiCategory = group.id;
       setArmed(button, state.tool === tool.id);
       button.setAttribute("aria-label", `${t(`bonsai_tool_${tool.id.replaceAll("-", "_")}`)} · ${t("bonsai_unit_cost", cost)} · ${tool.shortcut || "—"}`);
-      const icon = document.createElement("span");
-      icon.className = "bonsai-tool-icon";
-      icon.setAttribute("aria-hidden", "true");
-      icon.textContent = tool.icon;
+      const icon = toolIconElement(tool, "bonsai-tool-icon");
       const label = document.createElement("span");
       label.className = "bonsai-tool-label";
       label.textContent = t(`bonsai_tool_${tool.id.replaceAll("-", "_")}`);
@@ -641,7 +660,18 @@ window.AISystem6BonsaiCityLoaded = true;
       <form class="bonsai-setup-form">
         <label><span>${t("bonsai_city_name")}</span><input type="text" data-bonsai-map-name maxlength="48"></label>
         <label><span>${t("bonsai_map_size")}</span><span class="select-wrap"><select data-bonsai-map-size><option value="64">64 × 64</option><option value="96">96 × 96</option><option value="128">128 × 128</option></select></span></label>
-        <label><span>${t("bonsai_terrain_preset")}</span><span class="select-wrap"><select data-bonsai-map-terrain>${TERRAIN_PRESETS.map((preset) => `<option value="${preset}">${t(`bonsai_terrain_${preset}`)}</option>`).join("")}</select></span></label>
+        <label><span>${t("bonsai_terrain_preset")}</span><span class="select-wrap"><select data-bonsai-map-terrain>${TERRAIN_PRESETS.map((preset) => `<option value="${preset}">${t(`bonsai_terrain_${preset}`)}</option>`).join("")}<option value="${OSM_SOURCE}">${t("bonsai_terrain_osm")}</option></select></span></label>
+        <fieldset class="bonsai-osm-fields" data-bonsai-osm-fields hidden>
+          <legend>${t("bonsai_osm_place")}</legend>
+          <div class="bonsai-osm-search">
+            <input type="search" data-bonsai-osm-query maxlength="120" placeholder="${escapeHtml(t("bonsai_osm_query_placeholder"))}" aria-label="${escapeHtml(t("bonsai_osm_search_label"))}">
+            <button class="btn" type="button" data-bonsai-osm-search>${t("bonsai_osm_search")}</button>
+          </div>
+          <span class="select-wrap"><select data-bonsai-osm-place aria-label="${escapeHtml(t("bonsai_osm_place"))}">${osmPlaceOptions()}</select></span>
+          <label><span>${t("bonsai_osm_coordinates")}</span><input type="text" data-bonsai-osm-coords inputmode="decimal" spellcheck="false" autocomplete="off"></label>
+          <label class="bonsai-setup-editor"><input type="checkbox" data-bonsai-osm-buildings> <span>${t("bonsai_osm_buildings")}</span></label>
+          <p class="bonsai-osm-credit">${t("bonsai_osm_credit")}</p>
+        </fieldset>
         <details class="bonsai-setup-advanced">
           <summary>${t("bonsai_advanced")}</summary>
           <label><span>${t("bonsai_seed")}</span><input type="number" data-bonsai-map-seed min="0" max="4294967295" step="1" value="${defaults.seed}"></label>
@@ -658,8 +688,187 @@ window.AISystem6BonsaiCityLoaded = true;
     setup.querySelector("[data-bonsai-map-size]").value = String(defaults.size);
     setup.querySelector("[data-bonsai-map-terrain]").value = defaults.terrainPreset;
     setup.querySelector("[data-bonsai-map-editor]").checked = defaults.editor;
+    const firstPlace = OSM_PLACES[0];
+    setup.querySelector("[data-bonsai-osm-coords]").value = formatCoords(firstPlace.lat, firstPlace.lon);
     setup.hidden = false;
     refreshSetupPreview();
+  }
+
+  // --- A real place (OpenStreetMap) -------------------------------------------
+  //
+  // The map square is fixed by the size (16 m a tile): 64, 96 or 128 tiles
+  // are about 1.0, 1.5 or 2.0 km a side. The server fetches the features and
+  // the heights (the page may not reach another host); the headless importer
+  // maps them. Nothing is fetched until the player asks for a preview or
+  // starts the city, and a preview is kept for the options it was made for.
+  const OSM_SOURCE = "osm";
+  const OSM_PLACES = Object.freeze([
+    { id: "taipei-xinyi", lat: 25.0330, lon: 121.5654 },
+    { id: "shanghai-bund", lat: 31.2400, lon: 121.4900 },
+    { id: "hongkong-central", lat: 22.2830, lon: 114.1590 },
+    { id: "kyoto-gion", lat: 35.0037, lon: 135.7788 },
+    { id: "sanfrancisco-embarcadero", lat: 37.7955, lon: -122.3937 },
+  ]);
+
+  function formatCoords(lat, lon) {
+    return `${Number(lat).toFixed(5)}, ${Number(lon).toFixed(5)}`;
+  }
+
+  function parseCoords(text) {
+    const match = String(text || "").trim().match(/^(-?\d+(?:\.\d+)?)\s*[,，\s]\s*(-?\d+(?:\.\d+)?)$/);
+    if (!match) return null;
+    const lat = Number(match[1]); const lon = Number(match[2]);
+    return lat >= -80 && lat <= 80 && lon >= -180 && lon <= 180 ? { lat, lon } : null;
+  }
+
+  function osmPlaceOptions(found = []) {
+    const presets = OSM_PLACES.map((place) => `<option value="${place.lat},${place.lon}">${escapeHtml(t(`bonsai_osm_place_${place.id.replace(/-/g, "_")}`))}</option>`).join("");
+    const results = found.map((place) => `<option value="${place.lat},${place.lon}">${escapeHtml(place.name)}</option>`).join("");
+    return results
+      ? `<optgroup label="${escapeHtml(t("bonsai_osm_results"))}">${results}</optgroup><optgroup label="${escapeHtml(t("bonsai_osm_examples"))}">${presets}</optgroup>`
+      : presets;
+  }
+
+  function osmKey(options) {
+    return options.osm ? `${options.osm.lat.toFixed(5)},${options.osm.lon.toFixed(5)},${options.size},${options.osm.buildings ? 1 : 0}` : "";
+  }
+
+  function showOsmFields(on) {
+    const fields = query("[data-bonsai-osm-fields]");
+    if (fields) fields.hidden = !on;
+    const regenerate = query("[data-bonsai-setup-regenerate]");
+    if (regenerate) regenerate.textContent = t(on ? "bonsai_osm_preview" : "bonsai_new_map");
+  }
+
+  function updateMapCredit(city) {
+    const credit = query("[data-bonsai-map-credit]");
+    if (!credit) return;
+    const provenance = city?.provenance;
+    const text = provenance?.source === "openstreetmap" ? String(provenance.attribution || "© OpenStreetMap contributors") : "";
+    if (credit.textContent !== text) credit.textContent = text;
+    credit.hidden = !text;
+  }
+
+  // Whether a city's ground came from OpenStreetMap: its exports then carry
+  // the ODbL credit in the message the player reads when the file leaves.
+  function isOsmCity(payloadOrState) {
+    return payloadOrState?.provenance?.source === "openstreetmap";
+  }
+
+  function isOsmSaveText(saveData) {
+    try {
+      const envelope = typeof saveData === "string" ? JSON.parse(saveData) : saveData;
+      return isOsmCity(envelope?.payload);
+    } catch {
+      return false;
+    }
+  }
+
+  async function searchOsmPlace() {
+    const input = query("[data-bonsai-osm-query]");
+    const text = input?.value.trim() || "";
+    if (text.length < 2) return;
+    const direct = parseCoords(text);
+    if (direct) {
+      query("[data-bonsai-osm-coords]").value = formatCoords(direct.lat, direct.lon);
+      refreshSetupPreview();
+      return;
+    }
+    setMessage("bonsai_status_osm_searching");
+    try {
+      const lang = typeof currentLanguage === "string" && currentLanguage === "zh" ? "zh-CN" : "en";
+      const response = await bonsaiOsmRequest("place", { q: text, lang });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) { setMessage(osmErrorKey(data?.code)); return; }
+      const places = Array.isArray(data.places) ? data.places : [];
+      const select = query("[data-bonsai-osm-place]");
+      if (select) select.innerHTML = osmPlaceOptions(places);
+      if (!places.length) { setMessage("bonsai_status_osm_no_place"); return; }
+      query("[data-bonsai-osm-coords]").value = formatCoords(places[0].lat, places[0].lon);
+      setMessage("bonsai_status_osm_found", places.length);
+      refreshSetupPreview();
+    } catch {
+      setMessage("bonsai_status_osm_failed");
+    }
+  }
+
+  // The server relay is reached through the service layer, as every /api
+  // route is (tooling/verify-service-boundary.mjs).
+  function bonsaiOsmRequest(route, params) {
+    return window.AISystem6Capabilities.requestService("bonsai.osm", { route, params });
+  }
+
+  function osmErrorKey(code) {
+    if (code === "busy") return "bonsai_status_osm_busy";
+    if (code === "daily_limit") return "bonsai_status_osm_daily_limit";
+    if (code === "verification_required") return "bonsai_status_osm_verify";
+    return "bonsai_status_osm_failed";
+  }
+
+  // Fetch, map and preview one square. Resolves to the import, or null when
+  // it failed (the status line says why).
+  async function loadOsmPreview(options = readSetupOptions()) {
+    if (options.source !== OSM_SOURCE) return null;
+    if (!options.osm) { setMessage("bonsai_status_osm_bad_coords"); return null; }
+    const key = osmKey(options);
+    if (state.osm?.key === key && state.osm.imported) return state.osm.imported;
+    if (state.osm?.key === key && state.osm.pending) return state.osm.pending;
+    const note = query("[data-bonsai-setup-preview-note]");
+    setMessage("bonsai_status_osm_fetching");
+    if (note) note.textContent = t("bonsai_status_osm_fetching");
+    const params = { lat: String(options.osm.lat), lon: String(options.osm.lon), size: String(options.size) };
+    const pending = (async () => {
+      try {
+        const [features, heights] = await Promise.all([
+          bonsaiOsmRequest("osm", { ...params, buildings: options.osm.buildings ? "1" : "0" }),
+          bonsaiOsmRequest("elevation", params),
+        ]);
+        const osm = await features.json().catch(() => ({}));
+        if (!features.ok) { setMessage(osmErrorKey(osm?.code)); return null; }
+        const elevation = heights.ok ? await heights.json().catch(() => null) : null;
+        if (note) note.textContent = t("bonsai_status_osm_mapping");
+        // One frame so the note paints before the import holds the thread.
+        await new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
+        const importer = window.AISystem6BonsaiOsmImport;
+        const imported = importer.importOsm({
+          osm, elevation, sim: sim(), name: options.name, includeBuildings: options.osm.buildings,
+          place: query("[data-bonsai-osm-place] option:checked")?.textContent || formatCoords(options.osm.lat, options.osm.lon),
+          retrievedAt: new Date().toISOString(),
+        });
+        if (!elevation) imported.warnings.push("terrain-unavailable");
+        if (state.osm?.key === key) state.osm.imported = imported;
+        return imported;
+      } catch {
+        setMessage("bonsai_status_osm_failed");
+        return null;
+      } finally {
+        if (state.osm?.key === key) state.osm.pending = null;
+      }
+    })();
+    state.osm = { key, pending, imported: null };
+    const imported = await pending;
+    // A preview is shown only while the setup still asks for this square.
+    if (imported && osmKey(readSetupOptions()) === key && query("[data-bonsai-map-setup]")?.hidden === false) {
+      state.setupPreview = sim().deserialize(imported.payload);
+      renderCity(state.setupPreview);
+      if (note) note.textContent = osmSummary(options, imported);
+      setMessage("bonsai_status_osm_previewed");
+    }
+    return imported;
+  }
+
+  function osmSummary(options, imported) {
+    const km = ((options.size * window.AISystem6BonsaiOsmImport.CELL_METERS) / 1000).toFixed(1);
+    const stats = imported.stats;
+    return t("bonsai_osm_summary", km, stats.roads + stats.highways + stats.onramps, stats.lots, stats.facilities || 0);
+  }
+
+  function reportOsmImport(warnings) {
+    const lines = (Array.isArray(warnings) ? warnings : []).map((code) => {
+      const [name, count] = String(code).split(":");
+      return `• ${t(`bonsai_osm_note_${name.replace(/-/g, "_")}`, Number(count) || 0)}`;
+    });
+    pushSystemNotification(`${t("bonsai_osm_report_intro")}\n${lines.join("\n")}`);
   }
 
   function readSetupOptions() {
@@ -667,7 +876,11 @@ window.AISystem6BonsaiCityLoaded = true;
     const rawSeed = seedText ? Number(seedText) : NaN;
     const rawSize = Number(query("[data-bonsai-map-size]")?.value);
     const terrainPreset = query("[data-bonsai-map-terrain]")?.value || "balanced";
+    const source = terrainPreset === OSM_SOURCE ? OSM_SOURCE : "generated";
+    const coords = source === OSM_SOURCE ? parseCoords(query("[data-bonsai-osm-coords]")?.value) : null;
     return {
+      source,
+      osm: coords ? { ...coords, buildings: !!query("[data-bonsai-osm-buildings]")?.checked } : null,
       name: query("[data-bonsai-map-name]")?.value.trim() || t("bonsai_city_unnamed"),
       seed: Number.isInteger(rawSeed) && rawSeed >= 0 && rawSeed <= 0xffffffff ? rawSeed >>> 0 : makeSeed(),
       size: rawSize === 64 || rawSize === 128 ? rawSize : 96,
@@ -680,6 +893,20 @@ window.AISystem6BonsaiCityLoaded = true;
     if (!sim()?.createCity) return;
     const options = readSetupOptions();
     state.setupOptions = options;
+    showOsmFields(options.source === OSM_SOURCE);
+    if (options.source === OSM_SOURCE) {
+      // A real place is fetched on request, not on every keystroke; until
+      // then the note says what the square will be.
+      const note = query("[data-bonsai-setup-preview-note]");
+      const ready = state.osm?.key === osmKey(options) && state.osm.imported;
+      if (ready) {
+        state.setupPreview = sim().deserialize(state.osm.imported.payload);
+        renderCity(state.setupPreview);
+      }
+      if (note) note.textContent = ready ? osmSummary(options, state.osm.imported)
+        : options.osm ? t("bonsai_osm_note_idle", ((options.size * 16) / 1000).toFixed(1)) : t("bonsai_status_osm_bad_coords");
+      return;
+    }
     try {
       state.setupPreview = sim().createCity(options);
       renderCity(state.setupPreview);
@@ -694,9 +921,16 @@ window.AISystem6BonsaiCityLoaded = true;
 
   async function createCityFromSetup() {
     const options = readSetupOptions();
+    let osmImport = null;
+    if (options.source === OSM_SOURCE) {
+      osmImport = await loadOsmPreview(options);
+      if (!osmImport) return false;
+    }
     try {
       if ((state.dirty || state.saving) && !await flushCurrentCitySave()) return false;
-      state.current = sim().createCity(options);
+      state.current = osmImport
+        ? sim().deserialize({ ...osmImport.payload, name: options.name })
+        : sim().createCity(options);
       state.record = {
         id: makeId(options.seed), name: options.name,
         createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
@@ -714,8 +948,16 @@ window.AISystem6BonsaiCityLoaded = true;
       if (setup) setup.hidden = true;
       selectTool("road");
       renderer()?.resetView?.({ center: state.current.spawnCenter || null, size: state.current.size, zoom: window.AISystem6BonsaiRenderer?.DEFAULT_ZOOM ?? 0.5 });
-      setMessage("bonsai_status_ready");
-      showFirstHint();
+      if (osmImport) {
+        // A real place arrives built: the opening checklist has nothing to
+        // teach it, and the report says what came and what did not.
+        markOpeningGoalsMet();
+        setMessage("bonsai_status_osm_ready");
+        reportOsmImport(osmImport.warnings);
+      } else {
+        setMessage("bonsai_status_ready");
+        showFirstHint();
+      }
       renderAll();
       scheduleSessionCommit();
       return true;
@@ -927,6 +1169,7 @@ window.AISystem6BonsaiCityLoaded = true;
 
   function renderCity(city = state.current) {
     const active = renderer();
+    updateMapCredit(city);
     if (!city || !state.rendererMounted || !active?.render) return;
     active.render(stampedSnapshot(city), { overlay: state.overlay, display: state.display });
   }
@@ -1879,10 +2122,24 @@ window.AISystem6BonsaiCityLoaded = true;
     scheduleSessionCommit();
   }
 
+  // The study model — the white, basswood or chipboard massing model of an
+  // architecture studio — is a 3D presentation, so choosing one from the 2D
+  // view opens the 3D view.
+  function setStudyModel(kind) {
+    state.display.studyModel = kind;
+    if (kind !== "none" && state.rendererBackend !== "three-voxel") setRendererBackend("three-voxel");
+    renderCity();
+    syncDisplayMenuChecks();
+    scheduleSessionCommit();
+  }
+
   function syncDisplayMenuChecks() {
     document.querySelectorAll(".menu-popover button, .menu-submenu-popover button").forEach((button) => {
       const key = button.dataset.bonsaiDisplay;
-      const on = key ? state.display[key] === true : button.dataset.bonsaiAutoBudget ? state.autoBudget : null;
+      const study = button.dataset.bonsaiStudy;
+      const on = key ? state.display[key] === true
+        : study ? state.display.studyModel === study
+          : button.dataset.bonsaiAutoBudget ? state.autoBudget : null;
       if (on === null) return;
       button.classList.toggle("is-checked", on);
       if (button.hasAttribute("aria-pressed")) setArmed(button, on);
@@ -2400,7 +2657,7 @@ window.AISystem6BonsaiCityLoaded = true;
         fileName: `${String(state.record?.name || "bonsai-city").replace(/[^a-z0-9_-]+/gi, "-")}.sc2`,
         mimeType: "application/octet-stream",
       });
-      setMessage(ok ? "bonsai_status_exported_sc2" : "bonsai_status_export_failed");
+      setMessage(ok ? (isOsmCity(state.current) ? "bonsai_status_exported_sc2_osm" : "bonsai_status_exported_sc2") : "bonsai_status_export_failed");
       return ok;
     } catch {
       setMessage("bonsai_status_export_failed");
@@ -2936,7 +3193,7 @@ window.AISystem6BonsaiCityLoaded = true;
         fileName,
         mimeType: "application/octet-stream",
       });
-      setMessage(ok ? "bonsai_status_exported_cty" : "bonsai_status_export_failed");
+      setMessage(ok ? (isOsmCity(payload) ? "bonsai_status_exported_cty_osm" : "bonsai_status_exported_cty") : "bonsai_status_export_failed");
       if (ok) await reportMicropolisImport(exported.warnings, "bonsai_micropolis_export_cty_report_intro");
       return Boolean(ok);
     } catch {
@@ -3356,7 +3613,7 @@ window.AISystem6BonsaiCityLoaded = true;
         fileName: `${String(target.name || "bonsai-city").replace(/[^a-z0-9_-]+/gi, "-")}.bonsai-city.json`,
         mimeType: "application/json",
       });
-      setMessage(ok ? "bonsai_status_exported" : "bonsai_status_export_failed");
+      setMessage(ok ? (isOsmSaveText(target.saveData) ? "bonsai_status_exported_osm" : "bonsai_status_exported") : "bonsai_status_export_failed");
       return;
     }
     if (action === "send-micropolis") return sendRecordToMicropolis(target);
@@ -3370,7 +3627,7 @@ window.AISystem6BonsaiCityLoaded = true;
           fileName: `${String(target.name || "bonsai-city").replace(/[^a-z0-9_-]+/gi, "-")}.sc2`,
           mimeType: "application/octet-stream",
         });
-        setMessage(ok ? "bonsai_status_exported_sc2" : "bonsai_status_export_failed");
+        setMessage(ok ? (isOsmCity(decoded.state) ? "bonsai_status_exported_sc2_osm" : "bonsai_status_exported_sc2") : "bonsai_status_export_failed");
       } catch {
         setMessage("bonsai_status_export_failed");
       }
@@ -3734,6 +3991,14 @@ window.AISystem6BonsaiCityLoaded = true;
       }
       const cityAction = event.target.closest("[data-bonsai-city-action]");
       if (cityAction) return handleCityBrowserAction(cityAction);
+      if (event.target.closest("[data-bonsai-osm-search]")) {
+        searchOsmPlace();
+        return;
+      }
+      if (event.target.closest("[data-bonsai-setup-regenerate]") && readSetupOptions().source === OSM_SOURCE) {
+        loadOsmPreview();
+        return;
+      }
       if (event.target.closest("[data-bonsai-setup-regenerate]")) {
         const seedInput = query("[data-bonsai-map-seed]");
         try {
@@ -3760,6 +4025,8 @@ window.AISystem6BonsaiCityLoaded = true;
     listen(win, "submit", (event) => {
       if (!event.target.matches(".bonsai-setup-form")) return;
       event.preventDefault();
+      // Return in the place field searches; it does not found the city.
+      if (document.activeElement?.matches?.("[data-bonsai-osm-query]")) { searchOsmPlace(); return; }
       createCityFromSetup();
     });
     listen(win, "change", (event) => {
@@ -3811,7 +4078,12 @@ window.AISystem6BonsaiCityLoaded = true;
           level: Number(event.target.value),
         });
       }
-      if (event.target.matches("[data-bonsai-map-size], [data-bonsai-map-terrain], [data-bonsai-map-seed]")) refreshSetupPreview();
+      if (event.target.matches("[data-bonsai-osm-place]")) {
+        const [lat, lon] = String(event.target.value).split(",").map(Number);
+        const coords = query("[data-bonsai-osm-coords]");
+        if (coords && Number.isFinite(lat) && Number.isFinite(lon)) coords.value = formatCoords(lat, lon);
+      }
+      if (event.target.matches("[data-bonsai-map-size], [data-bonsai-map-terrain], [data-bonsai-map-seed], [data-bonsai-osm-place], [data-bonsai-osm-coords], [data-bonsai-osm-buildings]")) refreshSetupPreview();
       if (event.target.matches("[data-bonsai-import-input]")) {
         importCityFile(event.target.files?.[0]);
         event.target.value = "";
@@ -4156,6 +4428,12 @@ window.AISystem6BonsaiCityLoaded = true;
     "display-underground": () => setDisplay("underground"),
     "display-night": () => setDisplay("night"),
     "display-seasons": () => setDisplay("seasons"),
+    "display-miniature": () => setDisplay("miniature"),
+    "display-tank": () => setDisplay("tank"),
+    "study-none": () => setStudyModel("none"),
+    "study-white": () => setStudyModel("white"),
+    "study-wood": () => setStudyModel("wood"),
+    "study-chipboard": () => setStudyModel("chipboard"),
     "zoom-in": () => zoomAt(2),
     "zoom-out": () => zoomAt(0.5),
     "rotate-cw": () => rotateView(1),
@@ -4184,7 +4462,7 @@ window.AISystem6BonsaiCityLoaded = true;
     "save", "save-as", "export-sc2", "export-cty", "send-micropolis", "undo", "redo", "report", "budget", "news", "subscribe", "extra", "ordinances", "minimap", "disasters-off",
     "open-graphs", "open-population", "open-industry", "open-neighbors", "open-goals", "open-advisors",
     "display-buildings", "display-infrastructure", "display-zones", "display-underground",
-    "display-night", "display-seasons", "zoom-in", "zoom-out", "rotate-cw", "rotate-ccw", "center-city",
+    "display-night", "display-seasons", "display-miniature", "display-tank", "study-none", "study-white", "study-wood", "study-chipboard", "zoom-in", "zoom-out", "rotate-cw", "rotate-ccw", "center-city",
     ...OVERLAYS.map((overlay) => `overlay-${overlay}`),
     ...DISASTER_MENU.map((kind) => `disaster-${kind}`),
   ]);
@@ -4272,6 +4550,9 @@ window.AISystem6BonsaiCityLoaded = true;
           separator,
           displayItem("night"),
           displayItem("seasons"),
+          displayItem("miniature"),
+          displayItem("tank"),
+          submenu("bonsai_study_model", ["none", "white", "wood", "chipboard"].map((kind) => ({ ...item(`study-${kind}`, `bonsai_study_${kind}`), dataset: { bonsaiStudy: kind } }))),
         ],
       },
       {

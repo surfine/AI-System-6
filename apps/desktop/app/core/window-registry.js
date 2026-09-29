@@ -47,15 +47,6 @@ const windowRegistry = Object.freeze({
   assistant: {
     app: "clioTalk",
   },
-  bonsaiCity: {
-    app: "bonsaiCity",
-    builtByModule: true,
-    lazy: {
-    ensure: () => ensureBonsaiCityModule(),
-    attach: () => window.AISystem6BonsaiCity?.attach?.(),
-    appearanceAttach: () => window.AISystem6BonsaiCity?.attach?.(),
-  },
-  },
   bureaucracyMeme: {
     builtByModule: true,
     app: "bureaucracyMeme",
@@ -93,15 +84,6 @@ const windowRegistry = Object.freeze({
     ensure: () => ensureClioChartModule(),
     attach: () => window.AISystem6ClioChart?.attach?.(),
   },
-  },
-  clioPaint: {
-    app: "clioPaint",
-    builtByModule: true,
-    width: 640,
-    lazy: {
-      ensure: () => ensureClioPaintModule(),
-      attach: () => window.AISystem6ClioPaint?.attach?.(),
-    },
   },
   clioProject: {
     app: "clioProject",
@@ -195,14 +177,6 @@ const windowRegistry = Object.freeze({
   documents: {
     app: "finder",
     sidebar: true,
-  },
-  doom: {
-    app: "doom",
-    builtByModule: true,
-    lazy: {
-    ensure: () => ensureDoomModule(),
-    attach: () => window.AISystem6Doom?.attach?.(),
-  },
   },
   endfieldTerminal: {
     app: "endfield",
@@ -328,14 +302,6 @@ const windowRegistry = Object.freeze({
     onOpen: () => { if (!memoryCardsHasGame()) newMemoryCardsGame(); renderMemoryCards(); },
     lazy: { ensure: () => ensureMemoryCardsModule() },
   },
-  micropolis: {
-    app: "micropolis",
-    builtByModule: true,
-    lazy: {
-    ensure: () => ensureMicropolisModule(),
-    attach: () => window.AISystem6Micropolis?.attach?.(),
-  },
-  },
   modelMeter: {
     app: "accessories",
     width: 230,
@@ -356,15 +322,6 @@ const windowRegistry = Object.freeze({
     sidebar: true,
     onOpen: () => renderNotificationCenter(),
   },
-  oneMoreTune: {
-    app: "oneMoreTune",
-    builtByModule: true,
-    width: 680,
-    lazy: {
-      ensure: () => ensureOneMoreTuneModule(),
-      attach: () => window.AISystem6OneMoreTune?.attach?.(),
-    },
-  },
   // The original film, watched where a desktop watches things: in a window of
   // its own, centered on the work area, rather than in a slab inside the quiz's
   // own pane. It is the same application (one MultiFinder entry, one lifecycle,
@@ -383,14 +340,6 @@ const windowRegistry = Object.freeze({
         window.AISystem6OneMoreTune?.installFilmWindow?.();
       },
     },
-  },
-  openttd: {
-    app: "openttd",
-    builtByModule: true,
-    lazy: {
-    ensure: () => ensureOpenTTDModule(),
-    attach: () => window.AISystem6OpenTTD?.attach?.(),
-  },
   },
   outline: {
     app: "teachText",
@@ -601,6 +550,10 @@ const windowRegistry = Object.freeze({
     sidebar: true,
     onOpen: () => renderWritingBell(),
   },
+  // Windows declared whole in the admission table (the rows with an `api`):
+  // the games and the labs whose record is only "built by my module, ensured
+  // by my loader, attached by my global". See app/core/app-admissions.js.
+  ...window.AISystem6Admissions.windowRecords(),
 });
 
 // Two names route into another window rather than opening one of their own:

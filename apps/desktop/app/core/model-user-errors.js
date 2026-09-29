@@ -45,6 +45,26 @@ const modelRecoveryKinds = Object.freeze({
   // The site allowance running out is not a failure to retry: it is the point
   // where a writer who kept asking has shown they want more, and the next step
   // is their own key or a local model. Both live behind the same settings.
+  // Subscription CLIs (docs/SUBSCRIPTION-CLI.md): missing or signed out, a used-up
+  // plan, or an image it cannot take. The next step is always a switch.
+  subscriptionUnavailable: Object.freeze({
+    messageKey: "ai_error_subscription_cli_unavailable",
+    actionKey: "ai_action_switch_ai",
+    actionId: "open-cloud-ai-settings",
+    diagnosticCode: "subscription-cli-unavailable",
+  }),
+  subscriptionQuota: Object.freeze({
+    messageKey: "ai_error_subscription_cli_quota",
+    actionKey: "ai_action_switch_ai",
+    actionId: "open-cloud-ai-settings",
+    diagnosticCode: "subscription-cli-quota",
+  }),
+  subscriptionImages: Object.freeze({
+    messageKey: "ai_error_subscription_cli_images",
+    actionKey: "ai_action_switch_ai",
+    actionId: "open-cloud-ai-settings",
+    diagnosticCode: "subscription-cli-images",
+  }),
   quotaExhausted: Object.freeze({
     messageKey: "cloud_shared_limit",
     actionKey: "ai_action_bring_own_ai",
@@ -62,6 +82,9 @@ function classifyModelFailure(error, context = {}) {
   const detail = String(error?.cause?.message || "").toLowerCase();
   const combined = `${message} ${detail}`;
 
+  if (/subscription_cli_(?:unavailable|auth)/.test(combined) || /SUBSCRIPTION_CLI_(?:UNAVAILABLE|AUTH)/.test(code)) return "subscriptionUnavailable";
+  if (/subscription_cli_quota/.test(combined) || code === "SUBSCRIPTION_CLI_QUOTA") return "subscriptionQuota";
+  if (/subscription_cli_images_unsupported/.test(combined) || code === "SUBSCRIPTION_CLI_IMAGES_UNSUPPORTED") return "subscriptionImages";
   if (status === 401 || status === 403) return "invalidCredentials";
   if (/shared_cloud_(?:session_limit|daily_request_limit|daily_token_limit)/.test(combined)) return "quotaExhausted";
   if (status === 404 || /unknown model|no such model|model ["']?[\w.-]+["']? not found/.test(combined)) {

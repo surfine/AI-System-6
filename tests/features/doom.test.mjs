@@ -7,7 +7,7 @@ import { createHash, webcrypto } from "node:crypto";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import vm from "node:vm";
-import { admittedApplicationGroup, createFeatureTest, desktopRoot, exists, read, readAppSurface, windowApp } from "../helpers/feature-test-harness.mjs";
+import { admissionRows, admittedApplicationGroup, createFeatureTest, desktopRoot, exists, read, readAppSurface, windowApp } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("doom");
 const index = read("index.html");
@@ -69,10 +69,10 @@ test.assert(windowApp("doom") === "doom", "the window declares its own app id");
 test.assertIncludes(host, 'AISystem6RegisterApplicationMenuSet?.("doom"', "the lazy module registers its menu set");
 test.assertNotIncludes(menus, "const doomMenus", "DOOM menu declarations stay off the startup floppy");
 test.assertIncludes(interfaceContract, "doom: creativeLab()", "DOOM remains a summoned immersive creative lab");
-test.assertMatches(read("app/core/window-registry.js"), /doom:[\s\S]{0,200}?ensure: \(\) => ensureDoomModule\(\)/,
-  "session restore and direct opens share the lazy loader");
-test.assertMatches(windowManager, /mobileFullScreenAppIds = new Set\(\[[^\]]*"doom"/,
-  "phones give the game one foreground work area");
+test.assert(admissionRows().doom?.load === "ensureDoomModule" && admissionRows().doom?.api === "AISystem6Doom",
+  "session restore and direct opens share the lazy loader: the window is declared whole by its admission row");
+test.assert(admissionRows().doom?.phone === 2,
+  "phones give the game one foreground work area, landscape too");
 
 // --- lazy, versioned iframe boundary ----------------------------------------
 

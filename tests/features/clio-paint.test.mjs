@@ -12,7 +12,7 @@
 
 import vm from "node:vm";
 
-import { createFeatureTest, read, windowRegistryRecords } from "../helpers/feature-test-harness.mjs";
+import { admissionRows, createFeatureTest, read, windowRegistryRecords } from "../helpers/feature-test-harness.mjs";
 import { lazyRuntimePaths } from "../../tooling/runtime-manifest.mjs";
 import { lazyStyleBundles } from "../../tooling/style-manifest.mjs";
 import { windowInterfaceRegistry } from "../../tooling/interface-guidelines-contract.mjs";
@@ -53,10 +53,9 @@ test.assertIncludes(source, 'function installClioPaintWindow()', "the module bui
 test.assertNotIncludes(html, 'data-window="clioPaint"', "the window is not duplicated as static markup in index.html");
 
 test.assertIncludes(read("app/core/app-admissions.js"), 'multiFinder: "ClioPaint"', "MultiFinder can name the running application from the admission table");
-test.assertMatches(
-  windowManager,
-  /mobileFullScreenAppIds = new Set\(\[(?:(?!\]\))[\s\S])*"clioPaint"/,
-  "the phone shell covers ClioPaint like its sibling creative labs"
+test.assert(
+  admissionRows().clioPaint?.phone === 1,
+  "the phone shell covers ClioPaint like its sibling creative labs (its admission row)"
 );
 test.assertIncludes(html, 'data-action="open-clio-paint"', "Applications lists the opener beside the other Clio- applications");
 test.assertIncludes(icons, "clioPaint: `", "a system icon is registered for ClioPaint");

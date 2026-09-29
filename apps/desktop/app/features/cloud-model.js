@@ -33,6 +33,10 @@
 
   const PROVIDER_BASE_URLS = {
     deepseek: DEEPSEEK_BASE_URL,
+    // Subscription CLIs run on this Mac: the server turns the sentinel into a
+    // `claude` / `codex` run (docs/SUBSCRIPTION-CLI.md).
+    "claude-subscription": "subscription-cli://claude",
+    "codex-subscription": "subscription-cli://codex",
   };
   // Sentinel the server resolves per task: heavy analysis runs on V4 Pro,
   // everything else on Flash. Kept out of the model list itself so
@@ -43,12 +47,31 @@
       { id: "deepseek-flash", name: "DeepSeek Flash", context_length: 1000000, vision: true },
       { id: "deepseek-v4-pro", name: "DeepSeek V4 Pro", context_length: 1000000 },
     ],
+    // The model is whatever the CLI itself uses; each answer reports it.
+    "claude-subscription": [{ id: "default", i18n: "cloud_model_cli_default", context_length: 200000 }],
+    "codex-subscription": [{ id: "default", i18n: "cloud_model_cli_default", context_length: 200000 }],
   };
+
+  // The subscription entries exist only where the server can run the CLIs.
+  window.addEventListener?.("ai-system6:capabilities", function (event) {
+    const enabled = /** @type {CustomEvent} */ (event).detail?.features?.subscription_cli === true;
+    cloudProviderEl?.querySelectorAll?.("option[data-requires-capability='subscription_cli']").forEach(function (option) {
+      option.hidden = !enabled;
+    });
+    if (!enabled && isSubscriptionCloudProvider(cloudConfig?.provider) && cloudConfig.active) {
+      cloudConfig.active = false;
+      saveCloudConfig();
+      applyCloudActiveState();
+    }
+  });
 
   let cloudModels = [];
   let cloudBalanceAtActivation = null;
 
   window.syncCloudCredentialUi = function () {
+    // A subscription CLI signs in on its own, so there is no key to ask for.
+    const keyField = cloudApiKeyEl?.closest?.(".control-field");
+    if (keyField) keyField.hidden = isSubscriptionCloudProvider(cloudConfig?.provider);
     const sharedAvailable = isPublicCloudCredentialMode() && publicSharedCloudAvailable;
     const mode = typeof cloudCredentialMode === "function" ? cloudCredentialMode() : "none";
     if (cloudApiKeyLabelEl) {
@@ -231,6 +254,7 @@
 
   async function fetchBalanceOnly() {
     if (!cloudConfig || !cloudConfig.provider || !cloudCredentialReady()) return null;
+    if (isSubscriptionCloudProvider(cloudConfig.provider)) return null;
     if (cloudCredentialMode() === "shared") return null;
     try {
       const baseUrl = PROVIDER_BASE_URLS[cloudConfig.provider] || DEEPSEEK_BASE_URL;
@@ -274,8 +298,38 @@
     cloudConfig.modelContextLength = knownMap[cloudConfig.model] || 0;
   }
 
+  // A subscription CLI has no endpoint to probe: ask the server whether the
+  // CLI is installed and signed in, without running a model.
+  async function checkSubscriptionCliStatus() {
+    cloudStatusEl.hidden = false;
+    cloudStatusDot.className = "cloud-status-dot";
+    cloudStatusText.textContent = typeof t === "function" ? t("cloud_checking") : "Checking...";
+    cloudBalanceEl.textContent = "";
+    try {
+      const response = await window.AISystem6Capabilities.requestService("cloud.subscriptionStatus", {
+        init: { headers: { Accept: "application/json" } },
+      });
+      const data = response.ok ? await response.json() : {};
+      const entry = (Array.isArray(data.providers) ? data.providers : []).find((item) => item?.id === cloudConfig.provider);
+      if (entry?.available && entry.signedIn) {
+        cloudStatusDot.classList.add("is-connected");
+        cloudStatusText.textContent = `${t("subscription_cli_ready")} ${entry.host}${entry.version ? ` · ${entry.version}` : ""}`;
+      } else {
+        cloudStatusDot.classList.add("is-error");
+        cloudStatusText.textContent = t(entry?.available ? "subscription_cli_signed_out" : "subscription_cli_missing");
+      }
+    } catch (err) {
+      cloudStatusDot.classList.add("is-error");
+      cloudStatusText.textContent = t("subscription_cli_missing");
+    }
+  }
+
   async function checkCloudStatus() {
     if (!cloudConfig || !cloudConfig.provider || !cloudCredentialReady()) return;
+    if (isSubscriptionCloudProvider(cloudConfig.provider)) {
+      await checkSubscriptionCliStatus();
+      return;
+    }
     const baseUrl = PROVIDER_BASE_URLS[cloudConfig.provider] || DEEPSEEK_BASE_URL;
     cloudStatusEl.hidden = false;
     cloudStatusDot.className = "cloud-status-dot";
@@ -347,7 +401,8 @@
     cloudModels.forEach(function (m) {
       const option = document.createElement("option");
       option.value = m.id;
-      option.textContent = m.name || m.id;
+      if (m.i18n) option.dataset.i18n = m.i18n;
+      option.textContent = m.i18n && typeof t === "function" ? t(m.i18n) : (m.name || m.id);
       cloudModelSelectEl?.append(option);
     });
     if (!cloudConfig) cloudConfig = {};
@@ -554,7 +609,9 @@
 
     const activeText = cloudConfig.active ? "✓" : "";
     const localText = !cloudConfig.active ? "✓" : "";
-    const cloudModeText = currentLanguage === "zh" ? "DeepSeek（云端）" : "DeepSeek (Cloud)";
+    const cloudModeText = isSubscriptionCloudProvider(cloudConfig.provider)
+      ? cloudProviderDisplayName(cloudConfig.provider)
+      : currentLanguage === "zh" ? "DeepSeek（云端）" : "DeepSeek (Cloud)";
     const cloudRouteText = typeof cloudModelRouteLabel === "function" ? cloudModelRouteLabel(cloudConfig) : cloudModeText;
     const localModeText = currentLanguage === "zh" ? "LM Studio（本地）" : "LM Studio (Local)";
     const localModelText = (document.querySelector("#model")?.value || "").trim();
@@ -635,10 +692,12 @@
     cloudConfig.provider = provider;
     cloudConfig.active = false;
     saveCloudConfig();
+    window.syncCloudCredentialUi();
     updateCheckButtonState();
     cloudStatusEl.hidden = true;
+    if (isSubscriptionCloudProvider(provider)) cloudConfig.model = "default";
     populateCloudModelDropdown(BUILTIN_PROVIDER_MODELS[provider] || []);
-    const models = await fetchCloudModels();
+    const models = isSubscriptionCloudProvider(provider) ? [] : await fetchCloudModels();
     if (models.length) populateCloudModelDropdown(models);
     if (cloudConfig.model) setCloudModelControlValue(cloudConfig.model);
     window.syncCloudModelControls();

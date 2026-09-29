@@ -18,7 +18,7 @@ import vm from "node:vm";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 
-import { createFeatureTest, read, windowRegistryRecords } from "../helpers/feature-test-harness.mjs";
+import { admissionRows, createFeatureTest, read, windowRegistryRecords } from "../helpers/feature-test-harness.mjs";
 import { lazyRuntimePaths } from "../../tooling/runtime-manifest.mjs";
 import { lazyStyleBundles } from "../../tooling/style-manifest.mjs";
 import { windowInterfaceRegistry } from "../../tooling/interface-guidelines-contract.mjs";
@@ -59,10 +59,9 @@ test.assertIncludes(source, "function installOneMoreTuneWindow()", "the module b
 test.assertNotIncludes(html, 'data-window="oneMoreTune"', "the window is not duplicated as static markup in index.html");
 
 test.assertIncludes(read("app/core/app-admissions.js"), 'multiFinder: "One More Tune"', "MultiFinder can name the running application from the admission table");
-test.assertMatches(
-  windowManager,
-  /mobileFullScreenAppIds = new Set\(\[(?:(?!\]\))[\s\S])*"oneMoreTune"/,
-  "the phone shell covers the deck like its sibling applications"
+test.assert(
+  admissionRows().oneMoreTune?.phone === 1,
+  "the phone shell covers the deck like its sibling applications (its admission row)"
 );
 test.assertIncludes(icons, "oneMoreTune: `", "a system icon is registered");
 test.assertIncludes(icons, "bonsaiCity clioPaint clioProject oneMoreTune", "One More Tune participates in the authored era vocabulary");

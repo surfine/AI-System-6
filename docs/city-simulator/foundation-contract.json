@@ -216,6 +216,18 @@
     "simulationAndSaveChanges": false,
     "deploymentIncluded": false
   },
+  "miniatureDirection": {
+    "decision": "owner directive, 2026-09-28; recorded in internal/plans/BONSAI-MINIATURE-PLAN.zh-CN.md",
+    "status": "sample stage: art authored and baked offline in tooling/bonsai-miniature; rendererBackends and primaryRendererBackend unchanged until the renderer convergence lands",
+    "art": "individually designed voxel buildings (16 voxels per tile edge, 3 per storey), finished as a miniature: tilt-shift depth of field, soft sun and sky light, ambient occlusion",
+    "tiers": ["sc2k-pixel-2d", "hybrid-live-terrain-baked-buildings"],
+    "liveVoxelBackend": "merges into the hybrid tier; no separately maintained second drawing grammar",
+    "supersedes": [
+      "phase 9 end state of three-voxel as the primary renderer",
+      "2026-09-26 Minecraft-block look (voxels stay as the authoring format)",
+      "2026-09-11 procedural composer with 16 muted materials as the art source"
+    ]
+  },
   "sc2Import": {
     "status": "implemented-m2",
     "codec": "apps/desktop/app/features/bonsai-sc2-codec.js",
@@ -300,8 +312,37 @@
     "noMaxisEaOriginalAssets": true,
     "noCoreMathRandom": true
   },
+  "osmImport": {
+    "status": "implemented",
+    "decision": "owner directive, 2026-09-28: base map plus optional existing buildings as grown lots, 16 m a tile, real heights from AWS Terrain Tiles; recorded in LEGAL-AND-PROVENANCE.md",
+    "importer": "apps/desktop/app/features/bonsai-osm-import.js",
+    "serverRelay": "apps/server/server/bonsai-osm.js",
+    "routes": ["GET /api/bonsai/osm", "GET /api/bonsai/elevation", "GET /api/bonsai/place"],
+    "cellMeters": 16,
+    "metersPerAltitudeStep": 4,
+    "mapSizes": [64, 96, 128],
+    "headlessDeterministicImporter": true,
+    "fixtures": "synthetic-only, built at test time; tests never reach the network",
+    "dataCommitted": false,
+    "saveProvenanceField": "provenance (optional; source, attribution, license, elevation, place, center, bbox, cellMeters, osmTimestamp, retrievedAt, buildings); no save version change",
+    "publicDeployment": "Turnstile session + reader pool + relay daily ceiling on uncached upstream queries",
+    "contract": "tests/features/bonsai-osm-import.test.mjs"
+  },
   "license": {
     "originalPathLicense": "MIT",
+    "externalRuntimeData": [
+      {
+        "source": "OpenStreetMap (Overpass API, Nominatim)",
+        "license": "ODbL-1.0",
+        "attribution": "© OpenStreetMap contributors",
+        "use": "runtime fetch for a player's own city; never committed or shipped; credit on map, setup, save provenance and export notices"
+      },
+      {
+        "source": "Terrain Tiles (AWS Open Data, Mapzen terrarium)",
+        "attribution": "Mapzen Terrain Tiles; SRTM, GMTED2010 and 3DEP courtesy of the U.S. Geological Survey; ETOPO1: U.S. NOAA; regional sources per tilezen/joerd",
+        "use": "runtime fetch sampled to one height per tile; never committed or shipped"
+      }
+    ],
     "prohibitedSources": [
       "OpenSC2K-GPLv3",
       "micropolisJS-GPLv3",
@@ -326,6 +367,8 @@
     "visualFidelity": {
       "reference": "Macintosh SimCity 2000 releases, studied from the owner's legally-owned copies",
       "decision": "owner directive, 2026-08-24; recorded in LEGAL-AND-PROVENANCE.md",
+      "additionalReferences": ["SimCity 3000", "SimCity 4", "SimCity (2013)"],
+      "additionalReferencesDecision": "owner directive, 2026-09-28; the same facts-in, expression-out line; recorded in LEGAL-AND-PROVENANCE.md",
       "observedFactsAuthorized": [
         "color values observed or sampled as RGB facts, reused in our own original artwork",
         "layout, proportion, and composition measurements",

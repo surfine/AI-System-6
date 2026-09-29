@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/MCP-GUEST-BRIDGE.md -->
-<!-- source-sha256: 752801e0a0b2d8c4de2ef963520a66000de02abd66e96dd9f69c95124b1470c4 -->
+<!-- source-sha256: ddd6b50ca15604dbf05c22055c5321b773cab90b089f35d954231eed1b9fe23a -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -234,5 +234,5 @@ claude mcp add --transport http my-desk https://system6.example/mcp \
 
 - **ClioTalk 的工具调用。** 让 Clio 在对话中直接调用外部服务器的工具，结果仍然落到
   文件软盘。
-- **桌面自身功能使用前沿模型。** 不走 sampling：没有 Claude 或 GPT 宿主支持，而且 2026-07-28 修订版已将其弃用。核查结果与方案见 [Desk Port](MCP.zh-CN.md#经端口使用前沿模型2026-09-28-核实)。
+- **桌面自身功能使用前沿模型。** 不走 sampling：没有 Claude 或 GPT 宿主支持，而且 2026-07-28 修订版已将其弃用。核查结果与方案见 [Desk Port](MCP.zh-CN.md#经端口使用前沿模型2026-09-28-核实)；选定的路线——写作者自己的订阅 CLI——见[订阅 CLI 提供方](SUBSCRIPTION-CLI.zh-CN.md)。
 - **协议修订版。** 本桥协商 `2025-11-25` 及之前三个修订版；[Desk Port](MCP.zh-CN.md) 描述的无状态 `2026-07-28` 形态是设计，不是 `/mcp` 当前使用的协议。

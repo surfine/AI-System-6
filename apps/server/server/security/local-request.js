@@ -3,13 +3,42 @@
 const net = require("node:net");
 
 const { sendJson } = require("../lib/http.js");
+const { verifySignedMediaUrl } = require("./media-signature.js");
 
 const modifyingMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const loopbackHostnames = new Set(["127.0.0.1", "::1", "localhost"]);
 const defaultBrowserBridgeOrigins = Object.freeze([
   "https://system6.aaronlau.me",
   "http://local.system6.aaronlau.me",
+  "https://boot-system6.pages.dev",
 ]);
+
+// Paths a trusted public page may call on this Mac through the loopback
+// bridge. Everything else — including pairing, consent and the audio files
+// themselves — stays same-origin; audio crosses only with a signed URL.
+const browserBridgeExactPaths = new Set([
+  "/api/music/system",
+  "/api/music/gamdl/status",
+  "/api/music/gamdl/jobs",
+  "/api/music/gamdl/sign",
+]);
+const browserBridgePrefixPaths = ["/api/music/gamdl/jobs/"];
+const signedMediaPrefix = "/api/music/gamdl/files/";
+
+function isBrowserBridgePath(pathname) {
+  return browserBridgeExactPaths.has(pathname)
+    || browserBridgePrefixPaths.some((prefix) => pathname.startsWith(prefix));
+}
+
+function configuredBrowserBridgeOrigins() {
+  return new Set([
+    ...defaultBrowserBridgeOrigins,
+    ...String(process.env.AI_SYSTEM6_BROWSER_BRIDGE_ORIGINS || "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
+  ]);
+}
 
 function normalizedHostname(value) {
   const text = String(value || "").trim().toLowerCase();
@@ -58,13 +87,7 @@ function configuredLocalRequestPolicy(port) {
     ? configuredHost || "0.0.0.0"
     : "127.0.0.1";
   const authToken = String(process.env.AI_SYSTEM6_AUTH_TOKEN || "");
-  const browserBridgeOrigins = new Set([
-    ...defaultBrowserBridgeOrigins,
-    ...String(process.env.AI_SYSTEM6_BROWSER_BRIDGE_ORIGINS || "")
-      .split(",")
-      .map((value) => value.trim())
-      .filter(Boolean),
-  ]);
+  const browserBridgeOrigins = configuredBrowserBridgeOrigins();
 
   if (!allowLan && configuredHost && !isLoopbackHostname(configuredHost)) {
     throw new Error(
@@ -93,7 +116,7 @@ function configuredLocalRequestPolicy(port) {
 }
 
 function trustedBrowserBridgeOrigin(req, policy) {
-  if (requestPath(req) !== "/api/music/system") return "";
+  if (!isBrowserBridgePath(requestPath(req))) return "";
   const host = hostHeaderParts(req.headers.host);
   if (!isLoopbackHostname(host.hostname) || (host.port && host.port !== policy.port)) return "";
   const origin = String(req.headers.origin || "").trim();
@@ -105,7 +128,7 @@ function applyBrowserBridgeCors(req, res, policy) {
   if (!origin) return false;
   res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-AI-System-6-Bridge");
   res.setHeader("Access-Control-Allow-Private-Network", "true");
   res.setHeader("Vary", "Origin, Access-Control-Request-Private-Network");
   return true;
@@ -225,7 +248,9 @@ function applySecurityHeaders(res) {
       // store previews in decodeAudioData, so the quiz plays them through a
       // media element, and a policy with only connect-src silences the phone.
       // `data:` is the silent quarter-second the unlock plays inside the tap.
-      "media-src 'self' data: https://audio-ssl.itunes.apple.com",
+      // http://127.0.0.1:4173 is the writer's own Mac: a desk opened from
+      // another loopback port plays Soundscape's downloads through the bridge.
+      "media-src 'self' data: https://audio-ssl.itunes.apple.com http://127.0.0.1:4173",
       "worker-src 'self' blob:",
       // 'self' is for #time-machine-frame, which embeds our own
       // /api/time-machine/render endpoint (see routes/time-machine.js).
@@ -242,11 +267,34 @@ function applySecurityHeaders(res) {
   );
 }
 
+// A cross-site <audio> request for downloaded music: no Origin to check, so
+// it passes only with a valid path signature, and only on the loopback Host.
+function isSignedMediaRequest(req, policy) {
+  const method = String(req.method || "GET").toUpperCase();
+  if (method !== "GET" && method !== "HEAD") return false;
+  if (!requestPath(req).startsWith(signedMediaPrefix)) return false;
+  const host = hostHeaderParts(req.headers.host);
+  if (!isLoopbackHostname(host.hostname) || (host.port && host.port !== policy.port)) return false;
+  return verifySignedMediaUrl(req.url);
+}
+
 async function runWithLocalRequestGuard(req, res, policy, handler) {
   const pathname = requestPath(req);
   if (!pathname.startsWith("/api/")) return handler();
   const trustedBrowserBridge = applyBrowserBridgeCors(req, res, policy);
-  if (!requestOriginIsTrusted(req, policy) && !trustedBrowserBridge) {
+  const originTrusted = requestOriginIsTrusted(req, policy);
+  // A validly signed audio request may be embedded by another origin however
+  // it arrived: cross-site from a public page, or same-site from another
+  // loopback port (which the Origin check already trusts).
+  if (isSignedMediaRequest(req, policy)) {
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    if (!originTrusted && !trustedBrowserBridge) return handler();
+  }
+  // Routes read this to tell a public page on the bridge from the desk itself.
+  /** @type {any} */ (req).aiSystem6BridgeOrigin = trustedBrowserBridge && !originTrusted
+    ? String(req.headers.origin || "")
+    : "";
+  if (!originTrusted && !trustedBrowserBridge) {
     sendJson(res, 403, {
       error: "Untrusted local request",
       code: "untrusted_local_request",
@@ -284,6 +332,7 @@ async function runWithLocalRequestGuard(req, res, policy, handler) {
 
 module.exports = {
   applySecurityHeaders,
+  configuredBrowserBridgeOrigins,
   configuredLocalRequestPolicy,
   handleBrowserBridgePreflight,
   hostHeaderParts,

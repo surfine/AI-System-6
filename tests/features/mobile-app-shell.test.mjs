@@ -4,7 +4,7 @@
 // model — Finder / MultiFinder still governs how many apps run.
 // See .claude/plans and app/core/window-manager.js.
 
-import { createFeatureTest, read, windowRegistryRecords } from "../helpers/feature-test-harness.mjs";
+import { admissionRows, createFeatureTest, read, windowRegistryRecords } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("mobile-app-shell");
 const foundation = read("styles/00-foundation.css");
@@ -211,7 +211,9 @@ test.assertIncludes(responsive, ".window.is-mobile-system-page:not(.is-hidden):n
 
 // Inventory gate: a new window cannot ship without acquiring exactly one of
 // the system roles above (directly, through its app id, or as an accessory).
-const fullScreenApps = declaredStringSet(windowManager, "mobileFullScreenAppIds");
+// Apps declared whole in the admission table carry their phone role on the row.
+const admittedPhoneApps = Object.values(admissionRows()).filter((row) => row.phone >= 1).map((row) => row.app);
+const fullScreenApps = new Set([...declaredStringSet(windowManager, "mobileFullScreenAppIds"), ...admittedPhoneApps]);
 const finderPages = declaredStringSet(windowManager, "mobileFinderPageWindowNames");
 const dialogs = declaredStringSet(windowManager, "mobileDialogWindowNames");
 const systemPages = declaredStringSet(windowManager, "mobileSystemPageWindowNames");
@@ -443,7 +445,11 @@ test.assertIncludes(
 const windowManagerSource = read("app/core/window-manager.js");
 test.assertIncludes(
   windowManagerSource,
-  'mobileImmersiveAppIds = new Set(["micropolis", "doom", "openttd", "bonsaiCity"])',
+  "mobileImmersiveAppIds = new Set(window.AISystem6Admissions.phoneApps(2))",
+  "the immersive class is read from the admission rows"
+);
+test.assert(
+  Object.values(admissionRows()).filter((row) => row.phone === 2).map((row) => row.app).sort().join(",") === "bonsaiCity,doom,joyride,micropolis,openttd,rootline",
   "the immersive class is the games and the city simulator"
 );
 test.assertIncludes(

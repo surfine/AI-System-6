@@ -137,8 +137,13 @@ test.assertMatches(quickDraft, /quick-draft-save-project-doc[\s\S]*export-markdo
 test.assertMatches(control, /use-website-ai[\s\S]*use-local-ai[\s\S]*show-ai-advanced[\s\S]*cloud-own-key-details/, "ordinary AI setup presents Website, Local, then Advanced routes");
 test.assertMatches(control, /detect-local-models[\s\S]*local-manual-connection[\s\S]*local-connect-fields/, "local setup detects known apps before showing connection fields");
 test.assertIncludes(control, 'id="reset-ai-connection"', "Control Panel exposes Reset AI Connection");
+// The writer's own Claude / Codex subscription, run through the CLI on this
+// Mac, is the one route to those models (docs/SUBSCRIPTION-CLI.md). A paid
+// provider API entry is still not part of the product.
+test.assertIncludes(control, '<option value="claude-subscription" data-i18n="cloud_provider_claude_subscription" data-requires-capability="subscription_cli" hidden>', "the Claude entry is the local subscription CLI, hidden until the server can run it");
+const controlWithoutSubscriptionCli = control.replace(/<option value="(?:claude|codex)-subscription"[^\n]*<\/option>/g, "");
 for (const forbiddenProvider of ["Groq", "Gemini", "Anthropic", "Claude"]) {
-  test.assertNotIncludes(control, forbiddenProvider, `Control Panel does not add ${forbiddenProvider}`);
+  test.assertNotIncludes(controlWithoutSubscriptionCli, forbiddenProvider, `Control Panel does not add ${forbiddenProvider} beyond the subscription CLI`);
 }
 const resetBlock = persistence.match(/async function resetAiConnection\(\)[\s\S]*?\n}\n/)?.[0] || "";
 for (const protectedState of ["projects", "chatFiles", "scraps", "mountedTextDisk"]) {

@@ -118,7 +118,8 @@
         ? parsed.queue.map((item) => ({
           ...item,
           source: normalizeSource(item.source),
-          unavailable: item.source === "local",
+          url: "",
+          unavailable: item.source === "local" || (item.source === "gamdl" && !item.ref),
         }))
         : [];
       const saved = Array.isArray(parsed.saved)
@@ -289,7 +290,8 @@
       artwork: item.artwork || "",
       duration: Number(item.duration) || 0,
       query: item.query || "",
-      unavailable: item.source === "local",
+      ...(item.source === "gamdl" ? { ref: item.ref || null, sourceUrl: item.sourceUrl || "" } : {}),
+      unavailable: item.source === "local" || (item.source === "gamdl" && !item.ref),
     }));
   }
 
@@ -872,7 +874,9 @@
   // back to the real source instead of substituting similar music.
   function momentUnavailable(moment = selectedMoment()) {
     if (!moment) return false;
-    if (moment.source === "system" || moment.source === "gamdl") return false;
+    if (moment.source === "system") return false;
+    // Downloads made before refs were kept cannot be found again by path.
+    if (moment.source === "gamdl") return !moment.queue.some((item) => item.ref);
     return !moment.queue.some((item) => sessionLocalUrls.get(item.id));
   }
 
@@ -882,6 +886,10 @@
     const moment = selectedMoment();
     const needed = momentUnavailable(moment);
     button.disabled = !needed;
+    if (moment?.source === "gamdl") {
+      button.textContent = translate("soundscape_gamdl_fetch_again", "Fetch the Link Again");
+      return;
+    }
     button.textContent = moment?.source === "system"
       ? translate("soundscape_find_again_music", "Find It in Music")
       : translate("soundscape_choose_local_again", "Choose the Files Again");
@@ -892,6 +900,16 @@
     if (!moment) return;
     if (moment.source === "system") {
       openSystemMusic();
+      return;
+    }
+    if (moment.source === "gamdl") {
+      const sourceUrl = moment.queue.find((item) => item.sourceUrl)?.sourceUrl || "";
+      if (sourceUrl) {
+        downloadFromAppleMusic(sourceUrl);
+      } else {
+        setActivePanel("queue");
+        ui("soundscape-gamdl-input")?.focus();
+      }
       return;
     }
     promptSoundscapeLocalFiles();
@@ -1077,128 +1095,390 @@
     }
   }
 
-  // Apple Music link downloads run on the host through gamdl; the browser
-  // only sends a link and receives finished audio URLs back. No cookies or
-  // tokens ever reach the browser.
-  function gamdlError(error) {
-    const code = error?.code || "";
-    if (code === "gamdl_cookies_missing") {
-      return translate("soundscape_gamdl_cookies_missing", "gamdl needs Apple Music cookies on this Mac.");
-    }
-    if (code === "gamdl_unavailable") {
-      return translate("soundscape_gamdl_unavailable", "gamdl is not installed on this Mac.");
-    }
-    if (code === "gamdl_busy") {
-      return translate("soundscape_gamdl_busy", "Another download is still running.");
-    }
-    if (code === "gamdl_invalid_url") {
-      return translate("soundscape_gamdl_invalid_url", "Only Apple Music links are allowed.");
-    }
-    return translate("soundscape_gamdl_failed", "gamdl could not download that link.");
+  // Apple Music links are fetched on the writer's own Mac: directly when this
+  // desk is served from it, through the loopback bridge from a public page
+  // (VPS or Pages). The browser sends a link and the formats it can play and
+  // gets finished audio back; cookies, tokens and tool output never reach it.
+  const GAMDL_SIGNATURE_REFRESH_MS = 11 * 60 * 60 * 1000;
+  const GAMDL_CACHE_NOTICE_KEY = "ai-system-6-soundscape-gamdl-cache-notice";
+  let gamdlPlayable = null;
+  const gamdlNoticesShown = new Set();
+
+  function gamdlPublicWeb() {
+    return window.AISystem6LocalLMStudio?.isPublicWebMode?.() === true;
   }
 
-  function gamdlItem(item) {
+  // What this browser can play decides the quality; the writer never picks.
+  function gamdlPlayableFormats() {
+    if (gamdlPlayable) return gamdlPlayable;
+    let probe = null;
+    try {
+      probe = document.createElement("audio");
+    } catch {}
+    const can = (type) => {
+      try {
+        return Boolean(probe?.canPlayType?.(type));
+      } catch {
+        return false;
+      }
+    };
+    gamdlPlayable = { alac: can('audio/mp4; codecs="alac"'), flac: can("audio/flac"), aac: true };
+    return gamdlPlayable;
+  }
+
+  function gamdlCodeError(code) {
+    const error = new Error(code);
+    error.code = code;
+    return error;
+  }
+
+  async function gamdlRequest(input) {
+    let response;
+    try {
+      response = await window.AISystem6Capabilities.requestService("soundscape.gamdl", {
+        ...input,
+        publicWeb: gamdlPublicWeb(),
+      });
+    } catch {
+      throw gamdlCodeError("local_music_bridge_unavailable");
+    }
+    const data = await response.json().catch(() => ({}));
+    return { response, data };
+  }
+
+  function gamdlBridgeToken() {
+    try {
+      return localStorage.getItem(window.AISystem6LocalBridge?.tokenKey || "") || "";
+    } catch {
+      return "";
+    }
+  }
+
+  function forgetGamdlBridgeToken() {
+    try {
+      localStorage.removeItem(window.AISystem6LocalBridge?.tokenKey || "");
+    } catch {}
+  }
+
+  function gamdlMediaUrl(url) {
+    if (!url) return "";
+    return gamdlPublicWeb() && url.startsWith("/") ? `${window.AISystem6LocalBridge?.origin || ""}${url}` : url;
+  }
+
+  function localGamdlPath(ref) {
+    return `/api/music/gamdl/files/${ref.cacheKey}/${ref.quality}/${ref.file}`;
+  }
+
+  function gamdlError(code) {
+    const messages = {
+      gamdl_cookies_missing: ["soundscape_gamdl_cookies_missing", "Apple Music cookies are missing on this Mac."],
+      gamdl_cookies_expired: ["soundscape_gamdl_cookies_expired", "The Apple Music cookies on this Mac have expired. Export them again."],
+      gamdl_unavailable: ["soundscape_gamdl_unavailable", "No Apple Music download tool is installed on this Mac."],
+      gamdl_queue_full: ["soundscape_gamdl_busy", "Five downloads are already waiting."],
+      gamdl_invalid_url: ["soundscape_gamdl_invalid_url", "Paste an Apple Music album, song or playlist link."],
+      apple_music_unsupported_kind: ["soundscape_gamdl_unsupported_kind", "Soundscape takes album, song and playlist links, not videos, stations or artists."],
+      gamdl_too_many_tracks: ["soundscape_gamdl_too_many_tracks", "That link has more than 200 tracks."],
+      gamdl_library_full: ["soundscape_gamdl_library_full", "The Soundscape download folder on this Mac is full."],
+      bridge_rate_limited: ["soundscape_gamdl_rate_limited", "This page has started many downloads in the last hour. Try again later."],
+      bridge_downloads_disabled: ["soundscape_gamdl_bridge_disabled", "Downloads from web pages are turned off on this Mac."],
+      bridge_pairing_denied: ["soundscape_gamdl_pairing_denied", "Not allowed on the Mac. Nothing was downloaded."],
+      bridge_popup_blocked: ["soundscape_gamdl_popup_blocked", "Allow pop-ups for this page, then press Download again."],
+      bridge_safari_https: ["soundscape_gamdl_safari_https", "Safari cannot reach this Mac from here. Use the Mac app or Chrome."],
+      consent_declined: ["soundscape_gamdl_consent_declined", "Nothing was downloaded."],
+      local_music_bridge_unavailable: ["soundscape_local_bridge_unavailable", "Start AI System 6 on this Mac, then connect again."],
+    };
+    const [key, fallback] = messages[code] || ["soundscape_gamdl_failed", "The download did not complete."];
+    return translate(key, fallback);
+  }
+
+  function gamdlQualityLabel(quality, sample) {
+    if (quality === "aac") return "AAC";
+    const name = quality === "flac" ? "FLAC" : "ALAC";
+    const bits = sample?.bitDepth ? `${sample.bitDepth}-bit` : "";
+    const rate = sample?.sampleRate ? `${Number((sample.sampleRate / 1000).toFixed(1))} kHz` : "";
+    const detail = [bits, rate].filter(Boolean).join("/");
+    return `${translate("soundscape_gamdl_lossless", "Lossless", name)} ${name}${detail ? ` ${detail}` : ""}`;
+  }
+
+  function gamdlFallbackNote(reason) {
+    if (reason === "lossless_login_required") return translate("soundscape_gamdl_fallback_login", "the lossless engine is not signed in");
+    if (reason === "lossless_wake_timeout") return translate("soundscape_gamdl_fallback_wake", "the lossless engine did not start");
+    return translate("soundscape_gamdl_fallback_other", "lossless was not available");
+  }
+
+  function noticeOnce(key, message) {
+    if (gamdlNoticesShown.has(key) || typeof pushSystemNotification !== "function") return;
+    gamdlNoticesShown.add(key);
+    pushSystemNotification(message);
+  }
+
+  function gamdlNotices(code, fallbackReason) {
+    if (code === "gamdl_cookies_missing" || code === "gamdl_cookies_expired") {
+      noticeOnce("cookies", translate(
+        "soundscape_gamdl_cookies_steps",
+        "To fetch Apple Music links, export your Apple Music cookies on this Mac, then try again."
+      ));
+    }
+    if (fallbackReason === "lossless_login_required") {
+      noticeOnce("lossless-login", translate(
+        "soundscape_gamdl_login_steps",
+        "The lossless engine on this Mac has not signed in to an Apple ID, so this came in as AAC. Sign in once in Terminal with wrapper-lite's --login option; Soundscape never asks for your password."
+      ));
+    }
+  }
+
+  function gamdlCacheNoticeOnce() {
+    try {
+      if (localStorage.getItem(GAMDL_CACHE_NOTICE_KEY)) return;
+      localStorage.setItem(GAMDL_CACHE_NOTICE_KEY, "1");
+    } catch {
+      return;
+    }
+    if (typeof pushSystemNotification === "function") {
+      pushSystemNotification(translate(
+        "soundscape_gamdl_cache_notice",
+        "Downloaded music stays on this Mac in ~/.ai-system6/soundscape-gamdl. The same link plays again without downloading; delete that folder to free the space."
+      ));
+    }
+  }
+
+  function gamdlItem(item, sourceUrl) {
+    const ref = item.ref && typeof item.ref === "object" ? item.ref : null;
     return {
-      id: `gamdl-${item.file}`,
+      id: `gamdl-${ref ? `${ref.cacheKey}-${ref.quality}-` : ""}${item.file}`,
       source: "gamdl",
       title: item.title || translate("untitled", "Untitled"),
       artist: item.artist || translate("soundscape_gamdl_source", "Apple Music"),
       album: item.album || "",
       artwork: "",
       duration: Number(item.duration) || 0,
-      url: item.url,
+      url: gamdlMediaUrl(item.url),
+      urlSignedAt: Date.now(),
+      ref,
+      sourceUrl: sourceUrl || "",
       unavailable: false,
     };
   }
 
-  function finishGamdlForm() {
+  // A restored queue keeps only each track's ref; the playable URL is built
+  // again here — a plain path on this Mac, a fresh signed URL from a public
+  // page (signatures last 12 hours and die with a server restart).
+  async function ensureGamdlUrls(items) {
+    const publicWeb = gamdlPublicWeb();
+    const stale = (item) => !item.url
+      || (publicWeb && Date.now() - (Number(item.urlSignedAt) || 0) > GAMDL_SIGNATURE_REFRESH_MS);
+    const missing = items.filter((item) => item?.source === "gamdl" && item.ref && stale(item));
+    if (!missing.length) return;
+    if (!publicWeb) {
+      missing.forEach((item) => {
+        item.url = localGamdlPath(item.ref);
+      });
+      return;
+    }
+    try {
+      const { response, data } = await gamdlRequest({ action: "sign", refs: missing.map((item) => item.ref) });
+      if (!response.ok) return;
+      missing.forEach((item, index) => {
+        const url = Array.isArray(data.urls) ? data.urls[index] : "";
+        if (url) {
+          item.url = gamdlMediaUrl(url);
+          item.urlSignedAt = Date.now();
+        }
+      });
+    } catch {}
+  }
+
+  function setGamdlBusy(busy) {
+    const submit = ui("soundscape-gamdl-submit");
+    if (submit) submit.disabled = busy;
+  }
+
+  function finishGamdlForm(clearInput = true) {
     if (gamdlJobTimer) {
       window.clearInterval(gamdlJobTimer);
       gamdlJobTimer = 0;
     }
     activeGamdlJobId = "";
-    const submit = ui("soundscape-gamdl-submit");
+    setGamdlBusy(false);
     const input = ui("soundscape-gamdl-input");
-    if (submit) submit.disabled = false;
-    if (input) input.value = "";
+    if (input && clearInput) input.value = "";
+  }
+
+  function gamdlProgressStatus(data) {
+    if (data.status === "queued") return translate("soundscape_gamdl_queued", "Waiting for the download before it...");
+    if (data.status === "waking") return translate("soundscape_gamdl_waking", "Waking the lossless engine (about 1-2 minutes)...");
+    const done = Number(data.progress?.done) || 0;
+    const total = Number(data.progress?.total) || 0;
+    if (total > 0) return translate("soundscape_gamdl_progress", `Fetching ${done} of ${total}...`, done, total);
+    return translate("soundscape_gamdl_started", "Fetching from Apple Music...");
+  }
+
+  async function applyGamdlResults(data) {
+    const items = data.results.map((item) => gamdlItem(item, data.sourceUrl));
+    if (systemMusicConnected) await requestSystemMusic("pause").catch(() => {});
+    localAudio.pause();
+    revokeLocalQueueUrls();
+    state.source = "gamdl";
+    state.playerState = "stopped";
+    state.queue = items;
+    state.currentIndex = 0;
+    state.position = 0;
+    state.muted = false;
+    setActivePanel("queue");
+    const quality = gamdlQualityLabel(data.quality, data.results[0]);
+    const added = translate("soundscape_gamdl_done", `Added ${items.length} track(s)`, items.length);
+    const note = data.fallbackReason ? ` (${gamdlFallbackNote(data.fallbackReason)})` : "";
+    setStatus(`${added} · ${quality}${note}`);
+    gamdlNotices("", data.fallbackReason);
+    gamdlCacheNoticeOnce();
+    await playIndex(0);
+    setStatus(`${added} · ${quality}${note}`);
+    persist();
+    renderAll();
+  }
+
+  async function handleGamdlJobData(data) {
+    if (data.status === "done" && Array.isArray(data.results) && data.results.length) {
+      finishGamdlForm();
+      await applyGamdlResults(data);
+      return true;
+    }
+    if (data.status === "error" || data.status === "done") {
+      finishGamdlForm(false);
+      setStatus(gamdlError(data.code || "gamdl_failed"));
+      gamdlNotices(data.code, "");
+      return true;
+    }
+    setStatus(gamdlProgressStatus(data));
+    return false;
   }
 
   async function pollGamdlJob() {
     if (!activeGamdlJobId) {
-      finishGamdlForm();
+      finishGamdlForm(false);
       return;
     }
-    let data;
     try {
-      const response = await window.AISystem6Capabilities.requestService("soundscape.gamdl", {
-        jobId: activeGamdlJobId,
-      });
-      data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        const error = new Error(data.error || "Download job failed.");
-        error.code = data.code || "gamdl_failed";
-        throw error;
-      }
+      const { response, data } = await gamdlRequest({ jobId: activeGamdlJobId });
+      if (!response.ok) throw gamdlCodeError(data.code || "gamdl_failed");
+      await handleGamdlJobData(data);
     } catch (error) {
-      finishGamdlForm();
-      setStatus(gamdlError(error));
-      return;
+      finishGamdlForm(false);
+      setStatus(gamdlError(error?.code));
     }
-    if (data.status === "running") {
-      setStatus(translate("soundscape_gamdl_started", "Downloading from Apple Music..."));
-      return;
-    }
-    finishGamdlForm();
-    if (data.status === "done" && Array.isArray(data.results) && data.results.length) {
-      if (systemMusicConnected) await requestSystemMusic("pause").catch(() => {});
-      localAudio.pause();
-      revokeLocalQueueUrls();
-      state.source = "gamdl";
-      state.playerState = "stopped";
-      state.queue = data.results.map(gamdlItem);
-      state.currentIndex = 0;
-      state.position = 0;
-      state.muted = false;
-      setActivePanel("queue");
-      setStatus(translate("soundscape_gamdl_done", `${data.results.length} track(s) downloaded to Soundscape.`, data.results.length));
-      await playIndex(0);
-      persist();
-      renderAll();
-      return;
-    }
-    setStatus(data.error || gamdlError({ code: data.code }));
   }
 
-  async function downloadFromAppleMusic(url) {
-    const link = String(url || "").trim();
-    if (!link) return;
-    if (window.AISystem6LocalLMStudio?.isPublicWebMode?.()) {
-      setStatus(translate("soundscape_gamdl_host_only", "Apple Music link downloads are available on this Mac only."));
+  function openGamdlPairingWindow() {
+    const origin = window.AISystem6LocalBridge?.origin || "";
+    const lang = String(document.documentElement.lang || "").toLowerCase().startsWith("zh") ? "zh" : "en";
+    const url = `${origin}/bridge/pair?origin=${encodeURIComponent(window.location.origin)}&lang=${lang}`;
+    try {
+      return window.open(url, "ai-system6-bridge-pair", "popup,width=560,height=720");
+    } catch {
+      return null;
+    }
+  }
+
+  // The pairing page on this Mac answers with postMessage, from its own
+  // loopback origin only; anything else is ignored.
+  function waitForGamdlPairing(popup) {
+    return new Promise((resolve) => {
+      const origin = window.AISystem6LocalBridge?.origin || "";
+      let settled = false;
+      let closedTimer = 0;
+      let timeout = 0;
+      const finish = (outcome) => {
+        if (settled) return;
+        settled = true;
+        window.removeEventListener("message", onMessage);
+        window.clearInterval(closedTimer);
+        window.clearTimeout(timeout);
+        resolve(outcome);
+      };
+      const onMessage = (event) => {
+        if (event.origin !== origin || event.source !== popup) return;
+        if (event.data?.type === "ai-system6-bridge-paired" && typeof event.data.token === "string") {
+          try {
+            localStorage.setItem(window.AISystem6LocalBridge.tokenKey, event.data.token);
+          } catch {}
+          finish("paired");
+        } else if (event.data?.type === "ai-system6-bridge-denied") {
+          finish("denied");
+        }
+      };
+      window.addEventListener("message", onMessage);
+      closedTimer = window.setInterval(() => {
+        if (popup?.closed) window.setTimeout(() => finish("closed"), 400);
+      }, 800);
+      timeout = window.setTimeout(() => finish("timeout"), 10 * 60 * 1000);
+    });
+  }
+
+  async function readGamdlStatus() {
+    const { response, data } = await gamdlRequest({ action: "status" });
+    if (!response.ok) throw gamdlCodeError(data.code || "local_music_bridge_unavailable");
+    return data;
+  }
+
+  async function ensureGamdlConsent(status) {
+    if (status.consent) return true;
+    if (typeof showSystemModal !== "function") return false;
+    const answer = await showSystemModal(
+      translate(
+        "soundscape_gamdl_consent",
+        "This uses your own Apple Music subscription to save music you are entitled to listen to, on this Mac, for your personal listening. Follow the Apple Media Services terms and the law where you live; whether to use it is your decision and responsibility. AI System 6 is not affiliated with Apple and does not provide, host or distribute any audio. Downloads rely on third-party open-source tools whose behavior this project does not guarantee."
+      ),
+      "confirm",
+      { confirmKey: "soundscape_gamdl_consent_accept", defaultAction: "cancel" },
+    );
+    if (answer !== "yes") return false;
+    const { response } = await gamdlRequest({ action: "consent" });
+    return response.ok;
+  }
+
+  async function downloadFromAppleMusic(text) {
+    const link = String(text || "").trim();
+    if (!link || activeGamdlJobId) return;
+    const publicWeb = gamdlPublicWeb();
+    if (publicWeb && window.AISystem6LocalLMStudio?.isSafariPublicWebUnsupported?.()) {
+      setStatus(gamdlError("bridge_safari_https"));
       return;
     }
-    const submit = ui("soundscape-gamdl-submit");
-    if (submit) submit.disabled = true;
-    setStatus(translate("soundscape_gamdl_started", "Downloading from Apple Music..."));
+    // A pop-up opens only inside the click that asked for it, so an unpaired
+    // public page opens the Mac's pairing page before waiting on anything.
+    let popup = publicWeb && !gamdlBridgeToken() ? openGamdlPairingWindow() : null;
+    setGamdlBusy(true);
+    setStatus(translate("soundscape_gamdl_checking", "Checking this Mac..."));
     try {
-      const response = await window.AISystem6Capabilities.requestService("soundscape.gamdl", {
-        url: link,
-      });
-      const data = await response.json().catch(() => ({}));
+      let status = await readGamdlStatus();
+      if (publicWeb && (status.paired === false || status.consent === false)) {
+        if (!popup || popup.closed) popup = openGamdlPairingWindow();
+        if (!popup) throw gamdlCodeError("bridge_popup_blocked");
+        setStatus(translate("soundscape_gamdl_pairing", "Allow this page in the window that opened from this Mac."));
+        const outcome = await waitForGamdlPairing(popup);
+        if (outcome !== "paired") throw gamdlCodeError("bridge_pairing_denied");
+        status = await readGamdlStatus();
+        if (status.paired === false) throw gamdlCodeError("bridge_pairing_denied");
+      } else if (popup && !popup.closed) {
+        popup.close();
+      }
+      if (!publicWeb && !(await ensureGamdlConsent(status))) throw gamdlCodeError("consent_declined");
+      const { response, data } = await gamdlRequest({ url: link, playable: gamdlPlayableFormats() });
       if (!response.ok) {
-        const error = new Error(data.error || "gamdl could not start the download.");
-        error.code = data.code || "gamdl_failed";
-        throw error;
+        if (data.code === "bridge_pairing_required") forgetGamdlBridgeToken();
+        throw gamdlCodeError(data.code || "gamdl_failed");
       }
+      if (await handleGamdlJobData(data)) return;
       activeGamdlJobId = data.jobId || "";
-      if (activeGamdlJobId) {
-        if (!gamdlJobTimer) gamdlJobTimer = window.setInterval(pollGamdlJob, GAMDL_POLL_MS);
-        pollGamdlJob();
-      } else {
-        finishGamdlForm();
+      if (!activeGamdlJobId) {
+        finishGamdlForm(false);
+        return;
       }
+      if (!gamdlJobTimer) gamdlJobTimer = window.setInterval(pollGamdlJob, GAMDL_POLL_MS);
     } catch (error) {
-      finishGamdlForm();
-      setStatus(gamdlError(error));
+      finishGamdlForm(false);
+      setStatus(gamdlError(error?.code));
+      gamdlNotices(error?.code, "");
     }
   }
 
@@ -1242,10 +1522,17 @@
     renderAll();
   }
 
-  async function playLocalIndex(index, startAt = 0) {
+  function missingItemMessage(item) {
+    return item?.source === "gamdl"
+      ? translate("soundscape_gamdl_missing", "This download is not on this Mac anymore. Fetch the link again.")
+      : translate("soundscape_local_missing", "Choose the local files again to resume this moment.");
+  }
+
+  async function playLocalIndex(index, startAt = 0, retried = false) {
     const item = state.queue[index];
+    if (item?.source === "gamdl") await ensureGamdlUrls(state.queue);
     if (!item?.url) {
-      setStatus(translate("soundscape_local_missing", "Choose the local files again to resume this moment."));
+      setStatus(missingItemMessage(item));
       return false;
     }
     state.source = item.source === "gamdl" ? "gamdl" : "local";
@@ -1266,7 +1553,14 @@
       state.playerState = "playing";
       setStatus(translate("soundscape_playing", "Playing."));
       return true;
-    } catch {
+    } catch (error) {
+      // A download's URL can go stale: its signature expires, or the Mac's
+      // server restarted and signs with a new key. Sign again once and retry;
+      // a browser refusing autoplay is not that, so it is left alone.
+      if (item.source === "gamdl" && item.ref && !retried && error?.name !== "NotAllowedError") {
+        item.url = "";
+        return playLocalIndex(index, startAt, true);
+      }
       setStatus(translate("soundscape_playback_failed", "Playback could not start."));
       return false;
     }
@@ -1514,10 +1808,11 @@
       return {
         ...item,
         source: normalizeSource(item.source),
-        ...(url ? { url } : {}),
-        unavailable: item.source === "local" && !url,
+        url,
+        unavailable: (item.source === "local" && !url) || (item.source === "gamdl" && !item.ref),
       };
     });
+    await ensureGamdlUrls(state.queue);
     state.currentIndex = Math.max(0, Math.min(moment.currentIndex, state.queue.length - 1));
     state.position = Number(moment.position) || 0;
     state.volume = clamp(moment.volume);
@@ -1535,7 +1830,7 @@
     } else if (currentItem()?.url) {
       await playIndex(state.currentIndex, state.position);
     } else {
-      setStatus(translate("soundscape_local_missing", "Choose the local files again to resume this moment."));
+      setStatus(missingItemMessage(currentItem()));
     }
     persist();
     if (moment.source === "system" || currentItem()?.url) {

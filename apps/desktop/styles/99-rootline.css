@@ -1,0 +1,508 @@
+/* Rootline / 根线 — the transit game in a window.
+   A lazy style bundle: every selector is scoped to .rootline-*, so a boot
+   that never opens the game downloads none of it. The map itself is a canvas
+   (rootline-view.js); this sheet lays out the bars and panels around it with
+   the appearance's own paper, ink and buttons. Overlays stack by document
+   order inside .rootline-map, so nothing here needs a z-index. */
+
+.rootline-window {
+  width: min(1000px, calc(100vw - 72px));
+  height: min(680px, calc(100vh - 88px));
+}
+
+.rootline-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  padding: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  container-type: inline-size;
+}
+
+/* ----- top bar: the clock and the count ----- */
+
+.rootline-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 34px;
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--ink);
+  flex-wrap: wrap;
+}
+
+.rootline-clock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.rootline-time,
+.rootline-period {
+  font-weight: 700;
+}
+
+.rootline-period:empty {
+  display: none;
+}
+
+.rootline-dayline {
+  position: relative;
+  display: inline-block;
+  width: 96px;
+  height: 8px;
+  border: 1px solid var(--ink);
+  box-sizing: border-box;
+}
+
+.rootline-dayline-peak {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--ink);
+  opacity: 0.35;
+}
+
+/* 06:30-09:30 and 16:30-19:30 on a 24-hour strip. */
+.rootline-dayline-peak.is-morning {
+  left: 27%;
+  width: 12.5%;
+}
+
+.rootline-dayline-peak.is-evening {
+  left: 68.75%;
+  width: 12.5%;
+}
+
+.rootline-dayline-cursor {
+  position: absolute;
+  /* The clock's position along the day; rootline.js writes --rootline-day-x. */
+  left: var(--rootline-day-x, 0%);
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--ink);
+}
+
+.rootline-city {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 700;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rootline-score {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rootline-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.rootline-controls .btn {
+  min-width: 52px;
+}
+
+/* ----- the map ----- */
+
+.rootline-map {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--paper);
+}
+
+.rootline-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.rootline-hint,
+.rootline-toast {
+  position: absolute;
+  left: 50%;
+  max-width: calc(100% - 32px);
+  padding: 6px 12px;
+  box-sizing: border-box;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  text-align: center;
+  pointer-events: none;
+}
+
+.rootline-hint {
+  top: 12px;
+  transform: translateX(-50%);
+}
+
+.rootline-toast {
+  bottom: 12px;
+  opacity: 0;
+  transform: translate(-50%, 6px);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.rootline-toast.is-shown {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* ----- station card ----- */
+
+.rootline-card {
+  position: absolute;
+  /* The waiting card follows the pointer; rootline.js writes both values. */
+  left: var(--rootline-card-x, 0px);
+  top: var(--rootline-card-y, 0px);
+  width: 196px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.rootline-card p {
+  margin: 4px 0;
+}
+
+.rootline-card > .btn {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.rootline-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rootline-card-head strong {
+  flex: 1 1 auto;
+}
+
+.rootline-card-head .btn {
+  min-width: 0;
+  width: 26px;
+  padding: 0;
+}
+
+.rootline-card-tag {
+  padding: 0 4px;
+  border: 1px solid var(--ink);
+  font-size: 11px;
+}
+
+/* ----- overlays: start, weekly reward, end ----- */
+
+.rootline-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+.rootline-overlay[hidden] {
+  display: none;
+}
+
+.rootline-panel {
+  width: min(420px, 100%);
+  max-height: 100%;
+  padding: 16px 20px;
+  box-sizing: border-box;
+  overflow: auto;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.rootline-panel h3 {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+
+.rootline-panel p {
+  margin: 6px 0;
+}
+
+.rootline-start-title {
+  letter-spacing: 0.08em;
+}
+
+.rootline-start-city {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0 8px;
+}
+
+.rootline-start-city strong {
+  font-size: 18px;
+}
+
+.rootline-start-number {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+.rootline-start-city .btn {
+  margin-left: auto;
+}
+
+.rootline-modes {
+  display: flex;
+  gap: 6px;
+}
+
+.rootline-modes .btn {
+  flex: 1 1 0;
+}
+
+.rootline-modes .btn.is-chosen {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.rootline-mode-note,
+.rootline-best,
+.rootline-how {
+  font-size: 12px;
+}
+
+.rootline-how {
+  margin: 10px 0 14px;
+  padding-left: 20px;
+}
+
+.rootline-how li + li {
+  margin-top: 3px;
+}
+
+.rootline-panel .rootline-start {
+  width: 100%;
+}
+
+.rootline-rewards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.rootline-reward.btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  height: auto;
+  padding: 12px 8px;
+  white-space: normal;
+}
+
+.rootline-reward span:last-child {
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.rootline-reward .rootline-icon svg {
+  width: 30px;
+  height: 30px;
+}
+
+.rootline-over-cause {
+  font-weight: 700;
+}
+
+.rootline-stats {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 12px 0;
+}
+
+.rootline-stats dt {
+  opacity: 0.75;
+}
+
+.rootline-stats dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rootline-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* ----- bottom bar: lines and stock ----- */
+
+.rootline-bottom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  /* The grow box sits in the window's bottom-right corner. */
+  padding: 6px 22px 6px 10px;
+  border-top: 1px solid var(--ink);
+  flex-wrap: wrap;
+}
+
+.rootline-slots {
+  display: flex;
+  gap: 6px;
+}
+
+.rootline-slot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.rootline-slot.is-free {
+  border-style: dashed;
+  opacity: 0.6;
+}
+
+.rootline-slot.is-locked {
+  border-style: dotted;
+  opacity: 0.25;
+  cursor: default;
+}
+
+.rootline-slot.is-selected {
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.rootline-swatch {
+  width: 34px;
+  height: 14px;
+}
+
+.rootline-slot-count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 2px;
+  box-sizing: border-box;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  font-size: 10px;
+  line-height: 12px;
+  text-align: center;
+}
+
+.rootline-stock {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.rootline-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rootline-chip.is-zero {
+  opacity: 0.4;
+}
+
+.rootline-icon {
+  display: inline-flex;
+}
+
+.rootline-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.rootline-linebar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 0 100%;
+  flex-wrap: wrap;
+  padding-top: 6px;
+  border-top: 1px dotted var(--ink);
+}
+
+.rootline-linebar[hidden] {
+  display: none;
+}
+
+.rootline-linebar-label {
+  margin-right: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.rootline-glyph {
+  flex: none;
+  /* The glyph's drawn size; rootline.js writes --rootline-glyph-size. */
+  width: var(--rootline-glyph-size, 16px);
+  height: var(--rootline-glyph-size, 16px);
+}
+
+/* A phone keeps every control; the bars fold onto more rows. */
+@container (max-width: 560px) {
+  .rootline-dayline {
+    width: 56px;
+  }
+
+  .rootline-city {
+    flex-basis: 100%;
+    order: -1;
+    text-align: left;
+  }
+
+  .rootline-slot {
+    width: 38px;
+  }
+
+  .rootline-stock {
+    margin-left: 0;
+  }
+}

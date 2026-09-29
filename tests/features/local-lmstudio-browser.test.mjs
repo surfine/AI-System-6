@@ -342,6 +342,57 @@ const modelPayload = {
 }
 
 {
+  // A loaded instance answers only at its loaded length. Asking for the model's
+  // maximum instead made LM Studio reply "Model does not exist." to every
+  // paragraph (or JIT-load a second `model:2`), so native chat names the
+  // loaded length, and the mismatch is reported as itself, not "not loaded".
+  const loadedPayload = {
+    models: [{
+      type: "llm",
+      key: "qwen3.5-4b-mlx",
+      display_name: "Qwen3.5 4B",
+      max_context_length: 262144,
+      loaded_instances: [{ id: "qwen3.5-4b-mlx", config: { context_length: 123648 } }],
+    }],
+  };
+  const bodies = [];
+  let reply = () => Response.json({ output: [{ type: "message", content: "ok" }], stats: {}, response_id: "resp_ctx" });
+  const client = makeClient(async (url, options) => {
+    if (!url.endsWith("/api/v1/chat")) return Response.json(loadedPayload);
+    bodies.push(JSON.parse(options.body));
+    return reply();
+  });
+  await client.listModels();
+  const ask = () => client.chat(
+    { model: "qwen3.5-4b-mlx", messages: [{ role: "user", content: "paragraph" }], stream: false },
+    { contextLength: 262144, autoLoad: true },
+  );
+  await ask();
+  ok(bodies[0].context_length === 123648, "a loaded model with loaded length < max keeps sending the loaded length");
+  reply = () => Response.json({ error: "Model does not exist." }, { status: 400 });
+  bodies.length = 0;
+  const unloadedClient = makeClient(async (url, options) => {
+    if (!url.endsWith("/api/v1/chat")) return Response.json({ models: [{ ...loadedPayload.models[0], loaded_instances: [] }] });
+    bodies.push(JSON.parse(options.body));
+    return reply();
+  });
+  await unloadedClient.listModels();
+  const failure = await unloadedClient.chat(
+    { model: "qwen3.5-4b-mlx", messages: [{ role: "user", content: "paragraph" }], stream: false },
+    { contextLength: 262144, autoLoad: true },
+  ).then(() => null, (error) => error);
+  ok(
+    bodies.length === 1 && /^lmstudio_context_mismatch:/.test(String(failure?.message || "")),
+    "\"Model does not exist.\" for a sized request is reported as a context mismatch, once, without loading"
+  );
+  ok(
+    persistenceStatus.includes('key: "lm_context_mismatch_error"')
+      && chat.includes('code === "lmstudio_context_mismatch" ? t("lm_context_mismatch_error")'),
+    "the mismatch reaches the writer as its own message, not 「模型未加载」"
+  );
+}
+
+{
   // LM Studio errors when `reasoning` is sent to a model that exposes no
   // reasoning configuration; a thinking-by-default model needs it or it
   // spends the output budget thinking and answers with nothing.

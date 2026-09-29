@@ -13,6 +13,38 @@
     },
   };
 
+  // A public page (VPS or Pages) reaches the writer's own Mac through the
+  // loopback bridge: the AI System 6 running there answers on 127.0.0.1.
+  // The desk served from that Mac simply calls itself.
+  const LOCAL_BRIDGE_ORIGIN = "http://127.0.0.1:4173";
+  const BRIDGE_TOKEN_KEY = "ai-system6-bridge-token";
+
+  function bridgeToken() {
+    try {
+      return localStorage.getItem(BRIDGE_TOKEN_KEY) || "";
+    } catch {
+      return "";
+    }
+  }
+
+  function localBridgeFetch(path, init = {}, publicWeb = false) {
+    if (!publicWeb) return fetch(path, init);
+    const bridged = { ...init, mode: "cors", credentials: "omit" };
+    const token = bridgeToken();
+    if (token) bridged.headers = { ...(init.headers || {}), "X-AI-System-6-Bridge": token };
+    if (!window.AISystem6LocalLMStudio?.isSafariPublicWebUnsupported?.()
+      && !window.AISystem6LocalLMStudio?.isSafariHttpLocalMode?.()) {
+      bridged.targetAddressSpace = "loopback";
+    }
+    return fetch(`${LOCAL_BRIDGE_ORIGIN}${path}`, bridged);
+  }
+
+  window.AISystem6LocalBridge = Object.freeze({
+    origin: LOCAL_BRIDGE_ORIGIN,
+    tokenKey: BRIDGE_TOKEN_KEY,
+    fetch: localBridgeFetch,
+  });
+
   window.AISystem6Capabilities?.registerServiceProvider?.("reader.remote", {
     id: "same-origin-node",
     request(input = {}) {
@@ -133,6 +165,19 @@
     request(input = {}) {
       return sameOriginNode.request({
         url: "/api/cloud/status",
+        init: input.init,
+        signal: input.signal,
+      });
+    },
+  });
+
+  // A subscription CLI provider (Claude / Codex) has no endpoint to probe; the
+  // server answers whether the CLI is installed and signed in.
+  window.AISystem6Capabilities?.registerServiceProvider?.("cloud.subscriptionStatus", {
+    id: "same-origin-node",
+    request(input = {}) {
+      return sameOriginNode.request({
+        url: "/api/subscription-cli/status",
         init: input.init,
         signal: input.signal,
       });
@@ -291,10 +336,6 @@
     id: "same-origin-node",
     request(input = {}) {
       if (input.action !== undefined) {
-        const publicWeb = input.publicWeb === true;
-        const url = publicWeb
-          ? "http://127.0.0.1:4173/api/music/system"
-          : "/api/music/system";
         const init = input.action === "state"
           ? { cache: "no-store" }
           : {
@@ -302,15 +343,7 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ action: input.action, ...(input.payload || {}) }),
           };
-        if (publicWeb) {
-          init.mode = "cors";
-          init.credentials = "omit";
-          if (!window.AISystem6LocalLMStudio?.isSafariPublicWebUnsupported?.()
-            && !window.AISystem6LocalLMStudio?.isSafariHttpLocalMode?.()) {
-            init.targetAddressSpace = "loopback";
-          }
-        }
-        return fetch(url, init);
+        return localBridgeFetch("/api/music/system", init, input.publicWeb === true);
       }
       return sameOriginNode.request({
         url: input.url || "/api/music/system",
@@ -320,32 +353,39 @@
     },
   });
 
+  // Apple Music links: status, start, poll, sign and consent, on this Mac or
+  // through the loopback bridge from a public page.
   window.AISystem6Capabilities?.registerServiceProvider?.("soundscape.gamdl", {
     id: "same-origin-node",
     request(input = {}) {
-      if (input.jobId) {
-        return sameOriginNode.request({
-          url: `/api/music/gamdl/jobs/${input.jobId}`,
-          init: { cache: "no-store" },
-          signal: input.signal,
-        });
-      }
-      if (input.url) {
-        return sameOriginNode.request({
-          url: "/api/music/gamdl/jobs",
-          init: {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url: input.url }),
-          },
-          signal: input.signal,
-        });
-      }
-      return sameOriginNode.request({
-        url: input.path || "/api/music/gamdl/jobs",
-        init: input.init,
+      const publicWeb = input.publicWeb === true;
+      const post = (body) => ({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
         signal: input.signal,
       });
+      if (input.action === "status") {
+        return localBridgeFetch("/api/music/gamdl/status", { cache: "no-store", signal: input.signal }, publicWeb);
+      }
+      if (input.action === "sign") {
+        return localBridgeFetch("/api/music/gamdl/sign", post({ refs: input.refs || [] }), publicWeb);
+      }
+      if (input.action === "consent") {
+        return localBridgeFetch("/api/music/gamdl/consent", post({}), false);
+      }
+      if (input.jobId) {
+        return localBridgeFetch(
+          `/api/music/gamdl/jobs/${encodeURIComponent(input.jobId)}`,
+          { cache: "no-store", signal: input.signal },
+          publicWeb
+        );
+      }
+      return localBridgeFetch(
+        "/api/music/gamdl/jobs",
+        post({ url: input.url || "", playable: input.playable || {} }),
+        publicWeb
+      );
     },
   });
 
@@ -434,6 +474,22 @@
     },
   });
 
+  // Bonsai City's real-place import: OpenStreetMap features, terrain heights
+  // and place search, relayed by the server (apps/server/server/bonsai-osm.js).
+  const bonsaiOsmRoutes = { osm: 1, elevation: 1, place: 1 };
+  window.AISystem6Capabilities?.registerServiceProvider?.("bonsai.osm", {
+    id: "same-origin-node",
+    request(input = {}) {
+      const route = String(input.route || "");
+      if (!bonsaiOsmRoutes[route]) return Promise.reject(new Error("unknown route"));
+      return sameOriginNode.request({
+        url: `/api/bonsai/${route}?${new URLSearchParams(input.params || {})}`,
+        init: { headers: { "Accept": "application/json" } },
+        signal: input.signal,
+      });
+    },
+  });
+
   window.AISystem6SameOriginProviders = Object.freeze({
     activate(enabledNames) {
       const names = enabledNames || [
@@ -445,6 +501,7 @@
         "importer.remote",
         "cloud.credentials",
         "cloud.status",
+        "cloud.subscriptionStatus",
         "cloud.models",
         "cloud.chat",
         "cloud.files.upload",
@@ -466,6 +523,7 @@
         "quickDraft.thesis",
         "bureaucracyMeme.captions",
         "oneMoreTune.api",
+        "bonsai.osm",
         "agent.executorReply",
         "agent.executorToken",
         "mcp.client",

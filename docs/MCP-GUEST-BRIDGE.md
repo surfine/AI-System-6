@@ -364,7 +364,9 @@ claude mcp add --transport http my-desk https://system6.example/mcp \
   conversation, with the results still landing on the File Floppy.
 - **Frontier models for the desk's own features.** Not through sampling:
   no Claude or GPT host supports it and the 2026-07-28 revision deprecates it.
-  The findings and the options are in [Desk Port](MCP.md#frontier-models-through-the-port-checked-2026-09-28).
+  The findings and the options are in [Desk Port](MCP.md#frontier-models-through-the-port-checked-2026-09-28);
+  the chosen route, the writer's own subscription CLI, is in
+  [Subscription CLI providers](SUBSCRIPTION-CLI.md).
 - **Protocol revision.** This bridge negotiates `2025-11-25` and the three
   revisions before it; the stateless `2026-07-28` shape described in
   [Desk Port](MCP.md) is a design, not what `/mcp` speaks today.

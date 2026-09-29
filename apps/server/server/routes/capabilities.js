@@ -107,6 +107,8 @@ function handleCapabilities(_req, res) {
       // deployment. The page reads this before it subscribes as an executor.
       guest_bridge: !isPublicDeployment || publicGuestBridgeEnabled,
       local_models: !isPublicDeployment,
+      // Claude / Codex subscription CLIs run on this Mac only (docs/SUBSCRIPTION-CLI.md).
+      subscription_cli: !isPublicDeployment,
       local_vision: !isPublicDeployment,
       // Cloud vision rides the same BYOK / shared-allowance path as chat, so
       // the public deployment can read images for the first time.

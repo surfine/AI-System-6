@@ -713,6 +713,10 @@ window.AISystem6BonsaiSimLoaded = true;
       newsMemo: { funds: START_FUNDS, population: 0, milestone: 0, rewardTier: 0, plantExpired: false, ordinance: "", bonds: 0 },
       lastIncome: 0, lastExpense: 0, history: [], problems: [], powerCapacity: 0, powerDemand: 0, waterCapacity: 0, waterDemand: 0,
       nextCommandSequence: 1, pendingCommands: [], events: [], notices: [], rev: 1, undoStack: [], redoStack: [], sc2Sidecar: null,
+      // Where a city's ground came from, when it came from outside: a
+      // real-place import records its source, licence and attribution here,
+      // and every save and export carries it on.
+      provenance: null,
     };
     installLayers(state, makeLayers(size * size)); allocateDerived(state); generateTerrain(state); syncCompatibility(state); ensureDerived(state);
     pushNotice(state, "bonsai_msg_welcome"); pushEvent(state, "city-created", { seed, size, terrainPreset });
@@ -3251,7 +3255,25 @@ window.AISystem6BonsaiSimLoaded = true;
       newspaper: cloneJson(state.newspaper), paperDelivery: state.paperDelivery, newsMemo: cloneJson(state.newsMemo),
       scenario: state.scenario ? cloneJson(state.scenario) : null,
       view: { ...state.view }, budgetHistory: state.budgetHistory.map((item) => ({ ...item })), militaryBase: state.militaryBase,
-      sc2Sidecar: state.sc2Sidecar ? cloneJson(state.sc2Sidecar) : null };
+      sc2Sidecar: state.sc2Sidecar ? cloneJson(state.sc2Sidecar) : null,
+      // Written only when there is one, so every city without an outside
+      // source serializes byte for byte as it did before the field existed.
+      ...(state.provenance ? { provenance: cloneJson(state.provenance) } : {}) };
+  }
+  // A provenance record is data from outside the game: only short strings,
+  // plain numbers and the known keys pass, so a hand-edited save cannot
+  // smuggle anything larger than a credit line through it.
+  const PROVENANCE_STRINGS = Object.freeze(["source", "attribution", "license", "elevation", "place", "osmTimestamp", "retrievedAt"]);
+  function sanitizeProvenance(input) {
+    if (!input || typeof input !== "object" || typeof input.source !== "string" || !input.source) return null;
+    const out = {};
+    for (const key of PROVENANCE_STRINGS) if (typeof input[key] === "string") out[key] = input[key].slice(0, 400);
+    const number = (value) => (typeof value === "number" && Number.isFinite(value) ? value : 0);
+    if (input.center && typeof input.center === "object") out.center = { lat: number(input.center.lat), lon: number(input.center.lon) };
+    if (input.bbox && typeof input.bbox === "object") out.bbox = { south: number(input.bbox.south), west: number(input.bbox.west), north: number(input.bbox.north), east: number(input.bbox.east) };
+    if (typeof input.cellMeters === "number" && Number.isFinite(input.cellMeters)) out.cellMeters = input.cellMeters;
+    if (typeof input.buildings === "boolean") out.buildings = input.buildings;
+    return out;
   }
   function readLayer(data, key, count, max, Type = Uint8Array) {
     const raw = data[key]; if (!Array.isArray(raw) || raw.length !== count) throw new Error(`bonsai-import-invalid: layer ${key}`); const layer = new Type(count);
@@ -3404,6 +3426,7 @@ window.AISystem6BonsaiSimLoaded = true;
         bonds: Number.isInteger(data.newsMemo.bonds) ? data.newsMemo.bonds : 0 }
       : { funds: state.funds, population: 0, milestone: 0, rewardTier: 0, plantExpired: false, ordinance: "", bonds: 0 };
     state.sc2Sidecar = data.sc2Sidecar && typeof data.sc2Sidecar === "object" ? cloneJson(data.sc2Sidecar) : null; state.facilities = [];
+    state.provenance = sanitizeProvenance(data.provenance);
     for (const item of Array.isArray(data.facilities) ? data.facilities : []) {
       if (!FACILITY_KINDS[item.kind] || !Number.isInteger(item.x) || !Number.isInteger(item.y)) throw new Error("bonsai-import-invalid: facility");
       const record = { kind: item.kind, x: item.x, y: item.y, builtTick: Number.isInteger(item.builtTick) ? item.builtTick : 0 };

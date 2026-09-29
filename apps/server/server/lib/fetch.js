@@ -20,6 +20,7 @@
 
 "use strict";
 
+const { isSubscriptionCliUrl, subscriptionCliResponse } = require("../subscription-cli.js");
 const http = require("node:http");
 const https = require("node:https");
 const net = require("node:net");
@@ -665,6 +666,7 @@ function boundedFetchResponse(response, maxBytes) {
  * @returns {Promise<boolean>}
  */
 function proxyJsonStream(targetUrl, payload, signal, res, extraHeaders = {}, options = {}) {
+  if (isSubscriptionCliUrl(targetUrl)) return proxySubscriptionCliStream(targetUrl, payload, signal, res, options);
   const maxBytes = normalizedMaxBytes(options.maxBytes);
   return new Promise((resolve, reject) => {
     const parsed = new URL(targetUrl);
@@ -736,6 +738,42 @@ function proxyJsonStream(targetUrl, payload, signal, res, extraHeaders = {}, opt
     signal?.addEventListener("abort", () => request.destroy(new Error("Request aborted")), { once: true });
     request.end(body);
   });
+}
+
+/**
+ * The streaming door for a subscription CLI: write the CLI's SSE answer to
+ * `res` the way proxyJsonStream writes an upstream's, and resolve true once
+ * it ended.
+ *
+ * @param {string} targetUrl
+ * @param {any} payload
+ * @param {AbortSignal | null | undefined} signal
+ * @param {import("node:http").ServerResponse} res
+ * @param {{ onRequest?: () => void, onData?: (chunk: any) => void, onBeforeEnd?: () => void }} options
+ */
+async function proxySubscriptionCliStream(targetUrl, payload, signal, res, options = {}) {
+  if (typeof options.onRequest === "function") options.onRequest();
+  const response = await subscriptionCliResponse(targetUrl, payload, signal, { stream: true });
+  res.writeHead(response.status, {
+    "Content-Type": response.headers.get("content-type") || "text/event-stream",
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive",
+  });
+  if (!response.body) {
+    res.end();
+    return true;
+  }
+  const reader = response.body.getReader();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = Buffer.from(value);
+    if (typeof options.onData === "function") options.onData(chunk);
+    res.write(chunk);
+  }
+  if (typeof options.onBeforeEnd === "function") options.onBeforeEnd();
+  res.end();
+  return true;
 }
 
 /**
@@ -954,10 +992,20 @@ function nodeGetTextViaProxy(targetUrl, signal, headers = { "Accept": "applicati
  *   response: any,
  *   fallback: boolean,
  *   directLoopback?: boolean,
- *   transport: "fetch" | "node",
+ *   transport: "fetch" | "node" | "subscription-cli",
  * }>}
  */
 async function postJsonWithFallback(targetUrl, payload, signal, extraHeaders = {}, options = {}) {
+  // A subscription CLI provider has no HTTP server behind it: the sentinel
+  // URL runs the CLI and answers in the same fetch shape (docs/SUBSCRIPTION-CLI.md).
+  if (isSubscriptionCliUrl(targetUrl)) {
+    if (typeof options.onRequest === "function") options.onRequest();
+    return {
+      response: await subscriptionCliResponse(targetUrl, payload, signal, { stream: Boolean(options.streamResponse || /** @type {{ stream?: unknown } | null} */ (payload)?.stream) }),
+      fallback: false,
+      transport: "subscription-cli",
+    };
+  }
   const forceNodeTransport =
     process.env.AI_SYSTEM6_HTTP_TRANSPORT === "node"
     || Boolean(options.pinnedAddress)

@@ -112,4 +112,38 @@ vmw.run("window.__settleListModels(true, { chatModels: [], embeddingModels: [] }
 await new Promise((resolve) => setTimeout(resolve, 30));
 test.assert(pendingDelays()[0] === 5000, "the normal cadence is restored after a successful refresh");
 
+// A model LM Studio already holds is addressed at the length it was loaded
+// with. The poll used to put the model's maximum back into the field on every
+// check, so each request named a length no instance had and LM Studio answered
+// "Model does not exist." for every paragraph.
+const loadedRecord = (loaded) => ({
+  chatModels: [{
+    id: "qwen3.5-4b-mlx",
+    name: "qwen3.5-4b-mlx",
+    type: "llm",
+    loaded,
+    loaded_context_length: loaded ? 123648 : 0,
+    max_context_length: 262144,
+  }],
+  embeddingModels: [],
+  loaded,
+  loaded_model: loaded ? "qwen3.5-4b-mlx" : "",
+  loaded_context_length: loaded ? 123648 : 0,
+});
+const refreshWith = (data) => vmw.run(`
+  localModelState.running = false;
+  modelInput.value = "qwen3.5-4b-mlx";
+  window.AISystem6LocalLMStudio = { listModels: async () => (${JSON.stringify(data)}) };
+  refreshLocalModelReadiness();
+`);
+await refreshWith(loadedRecord(true));
+test.assert(vmw.run("contextLengthInput.value") === "123648", "a loaded model keeps its loaded length, not the model maximum");
+await refreshWith(loadedRecord(true));
+test.assert(vmw.run("contextLengthInput.value") === "123648", "and the next poll does not reset it to the maximum");
+await refreshWith(loadedRecord(false));
+test.assert(vmw.run("contextLengthInput.value") === "262144", "a model that is not loaded still offers its maximum for the next Load");
+vmw.run(`contextLengthUserOverrides["qwen3.5-4b-mlx"] = true; contextLengthByModel["qwen3.5-4b-mlx"] = 65536;`);
+await refreshWith(loadedRecord(true));
+test.assert(vmw.run("contextLengthInput.value") === "65536", "a length the writer chose for the next Load is not overwritten by the poll");
+
 test.finish();

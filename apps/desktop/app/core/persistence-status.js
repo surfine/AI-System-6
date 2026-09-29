@@ -3234,6 +3234,10 @@ function explainStatusError(message) {
   const normalized = message.toLowerCase();
   const rules = [
     {
+      match: /lmstudio_context_mismatch/,
+      key: "lm_context_mismatch_error",
+    },
+    {
       match: /(lmstudio_context_length|context length|tokens to keep|too many tokens|prompt.*too long|input.*too long|shorter input|larger context|上下文|输入.*太长)/,
       zh: "说明：超上下文限制。请缩短输入或调大 context length。",
       en: "Note: Exceeds context. Shorten input or raise context length.",
@@ -3276,6 +3280,7 @@ function explainStatusError(message) {
   ];
   const rule = rules.find((item) => item.match.test(normalized));
   if (!rule) return "";
+  if (rule.key) return t(rule.key);
   return currentLanguage === "zh" ? rule.zh : rule.en;
 }
 
@@ -3358,6 +3363,7 @@ function classifyLmStudioError(error, response = null) {
       || /server error|service unavailable|overloaded/.test(lower)
     ))
   ) return "cloud_service_unavailable";
+  if (/lmstudio_context_mismatch/.test(lower)) return "lmstudio_context_mismatch";
   if (/context length|tokens to keep|too many tokens|prompt.*too long|input.*too long|shorter input|larger context/.test(lower)) return "lmstudio_context_length";
   if (/failed to fetch|fetch failed|networkerror|econnrefused|connection refused|not responding/.test(lower)) return "lmstudio_server_offline";
   if (/timeout|timed out|aborted/.test(lower)) return "lmstudio_timeout";

@@ -213,9 +213,12 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     return digest ? `${url}?v=${digest}` : url;
   }
 
-  function loadAtlasImages() {
+  // `offset` quarter turns from the camera's own direction: 0 is the atlas
+  // the camera looks through; 2, the opposite one, is fetched lazily for the
+  // buildings whose street lies behind them (see buildingFacing).
+  function loadAtlasImages(offset = 0) {
     const atlas = window.AISystem6BonsaiAtlas;
-    const direction = DIRECTIONS[state.camera.rotation];
+    const direction = DIRECTIONS[(state.camera.rotation + offset) % 4];
     if (state.imagePromises[direction]) return state.imagePromises[direction];
     if (!atlas || typeof Image !== "function") {
       state.imagePromises[direction] = Promise.resolve();
@@ -230,8 +233,10 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     });
     state.imagePromises[direction].then(() => {
       if (state.disposed) return;
-      if (DIRECTIONS[state.camera.rotation] !== direction) return;
-      clearChunkCache();
+      const current = DIRECTIONS[state.camera.rotation];
+      const opposite = DIRECTIONS[(state.camera.rotation + 2) % 4];
+      if (direction !== current && direction !== opposite) return;
+      if (direction === current) clearChunkCache();
       invalidateView();
       scheduleRender();
     });
@@ -392,9 +397,15 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     context.fill();
   }
 
-  function drawSprite(context, name, sx, sy, mirror = false) {
+  function drawSprite(context, name, sx, sy, mirror = false, offset = 0) {
     const frame = atlasFrame(name);
-    const image = currentAtlasImage();
+    let image = offset ? state.images[DIRECTIONS[(state.camera.rotation + offset) % 4]] : currentAtlasImage();
+    if (!image && offset) {
+      // The opposite atlas is still on its way: draw from the camera's own
+      // one for now; the load repaints the buildings when it lands.
+      loadAtlasImages(offset);
+      image = currentAtlasImage();
+    }
     if (!frame || !image) return false;
     const zoom = state.camera.zoom;
     if (mirror) {
@@ -1096,7 +1107,12 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
       projectPoint(snapshot, endX, startY, 12, true),
       projectPoint(snapshot, startX, endY, 12, true),
       projectPoint(snapshot, endX, endY, 12, true),
+      // All four ground corners: after a quarter turn the lowest corner on
+      // screen is (endX, startY) or (startX, endY), and leaving it out cut
+      // the chunk canvas short — a black triangle under every chunk.
       projectPoint(snapshot, startX, startY, 0, true),
+      projectPoint(snapshot, endX, startY, 0, true),
+      projectPoint(snapshot, startX, endY, 0, true),
       projectPoint(snapshot, endX, endY, 0, true),
     ];
     const marginX = 92 * state.camera.zoom;
@@ -1427,7 +1443,7 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     }
     for (let index = 0; index < size * size; index += 1) {
       if (!layerAt(layers.park, index, false) && layerAt(layers.over, index, OVER.NONE) !== OVER.PARK) continue;
-      scenery.push({ x: index % size, y: Math.floor(index / size), visualKind: "tree", variant: 3, footprint: { w: 1, h: 1 } });
+      scenery.push({ x: index % size, y: Math.floor(index / size), visualKind: "park", variant: 1 + (index % 2), footprint: { w: 1, h: 1 } });
     }
     const constructionSites = [];
     if (layers.blaze || layers.buildingState) {
@@ -1553,13 +1569,21 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
   // A planned building faces its street (shared rule): the art holds one
   // view direction, so a lot whose street runs east or west is drawn
   // mirrored, which lays its long side along that street.
-  function buildingMirrored(snapshot, building) {
-    if (typeof MATH.streetQuarter !== "function") return false;
+  // Which way a building's front turns: toward its street, quarter k (0 = the
+  // authored +y front). A frame from atlas direction d shows the model as the
+  // camera at d sees it, so a building turned k quarters is the frame from
+  // direction d − k. Two atlases cover it with mirroring: k 0 the camera's
+  // own frame, k 1 that frame mirrored, k 2 the opposite atlas's frame, k 3
+  // the opposite frame mirrored — the front always on the street side.
+  function buildingFacing(snapshot, building) {
+    if (typeof MATH.streetQuarter !== "function") return { mirror: false, offset: 0 };
     const size = mapSize(snapshot);
     const footprint = building.footprint || { w: building.w || 1, h: building.h || 1 };
-    return MATH.streetQuarter((tx, ty) => tx >= 0 && ty >= 0 && tx < size && ty < size && isRoad(snapshot, ty * size + tx),
-      Math.floor(building.x), Math.floor(building.y), footprint) % 2 === 1;
+    const k = ((MATH.streetQuarter((tx, ty) => tx >= 0 && ty >= 0 && tx < size && ty < size && isRoad(snapshot, ty * size + tx),
+      Math.floor(building.x), Math.floor(building.y), footprint) % 4) + 4) % 4;
+    return { mirror: k % 2 === 1, offset: k >= 2 ? 2 : 0 };
   }
+
 
   function drawSceneryItem(context, snapshot, building, point, night) {
     if (building.visualKind === "highway" || building.visualKind === "highway-upper") {
@@ -1592,12 +1616,19 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
       context.strokeRect(point.sx - width / 2, point.sy - height, width, height);
       return;
     }
+    if (building.visualKind === "park") {
+      // A park tile draws its own lawn-and-bench or fountain frame; an atlas
+      // without them falls back to the young tree parks used to be.
+      if (!drawSprite(context, `park.small.${building.variant || 1}`, point.sx, point.sy)) drawSprite(context, "tree.young", point.sx, point.sy);
+      return;
+    }
     if (building.visualKind === "tree") {
       drawSprite(context, `tree.${building.variant === 2 ? "conifer" : building.variant === 3 ? "young" : building.variant === 4 ? "maple" : building.variant === 5 ? "blossom" : building.variant === 6 ? "winter" : "broadleaf"}`, point.sx, point.sy);
       return;
     }
     if (building.spriteId && drawSprite(context, nightFrame(building.spriteId, snapshot), point.sx, point.sy)) return;
-    if (!drawSprite(context, buildingFrame(building, night), point.sx, point.sy, buildingMirrored(snapshot, building))) {
+    const facing = buildingFacing(snapshot, building);
+    if (!drawSprite(context, buildingFrame(building, night), point.sx, point.sy, facing.mirror, facing.offset)) {
       const color = zonePrefix(building.zone) === "r" ? "#b75d52" : zonePrefix(building.zone) === "c" ? "#486eaf" : "#b67c3b";
       context.fillStyle = color;
       const width = 22 * state.camera.zoom;
@@ -1771,6 +1802,122 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     return altitudeAt(snapshot, index) + (corners[0] + corners[1] + corners[2] + corners[3]) / 4;
   }
 
+  // --- traffic, the 3D backend's rules ------------------------------------
+  // bonsai-renderer-voxel.js (collectAgentBlocks) places every vehicle fact
+  // on its road tile: the axis the street runs along, a direction that
+  // alternates between neighbouring facts, a right-hand lane, and a roll
+  // forward through the five ticks between deals; streets also carry cars in
+  // proportion to their traffic count. The same numbers here put each vehicle
+  // in the same lane, facing the same way, as the 3D view. Headings are world
+  // directions: px/nx along ±x, py/ny along ±y.
+  const TRAFFIC_CAP = 360;
+  function trafficHash(index) {
+    let x = index | 0;
+    x = (x ^ (x >>> 16)) | 0;
+    x = Math.imul(x, 0x45d9f3b) | 0;
+    x = (x ^ (x >>> 16)) | 0;
+    return x >>> 0;
+  }
+
+  function trafficPlacements(snapshot) {
+    const agents = snapshot.agents;
+    const size = mapSize(snapshot);
+    const tick = Number(snapshot.tick) | 0;
+    const streets = Boolean(snapshot.road);
+    const inMap = (tx, ty) => tx >= 0 && ty >= 0 && tx < size && ty < size;
+    const drivable = (snap, i) => isRoad(snap, i) || isOnramp(snap, i) || isHighway(snap, i);
+    const placed = [];
+    const frameFor = (agent, index, predicate, laneOffset, travel) => {
+      const tx = Math.max(0, Math.min(size - 1, Math.floor(agent.x)));
+      const ty = Math.max(0, Math.min(size - 1, Math.floor(agent.y)));
+      const seed = trafficHash(index * 977 + 13);
+      const mask = streets ? connectorMask(snapshot, tx, ty, predicate) : 0;
+      const ew = Boolean(mask & 10), ns = Boolean(mask & 5);
+      const alongX = ew && ns ? Boolean(seed & 1) : ew;
+      const sign = streets ? ((index + (seed >>> 5)) & 1 ? 1 : -1) : 1;
+      const lane = streets ? laneOffset * sign : 0;
+      const along = streets ? (((Number(agent.phase) || 0) + (tick % 5) * travel) % 1) - 0.5 : 0;
+      return {
+        wx: tx + 0.5 + (alongX ? along * 0.9 * sign : -lane),
+        wy: ty + 0.5 + (alongX ? lane : along * 0.9 * sign),
+        heading: alongX ? (sign > 0 ? "px" : "nx") : (sign > 0 ? "py" : "ny"),
+      };
+    };
+    const flow = [];
+    if (streets && snapshot.traffic) {
+      const wanted = [];
+      let total = 0;
+      for (let i = 0; i < size * size; i += 1) {
+        if (!drivable(snapshot, i) || isTunnel(snapshot, i)) continue;
+        const count = Math.min(3, Math.floor((Number(snapshot.traffic[i]) || 0) / 40));
+        if (count) { wanted.push([i, count]); total += count; }
+      }
+      const keep = Math.min(1, TRAFFIC_CAP / Math.max(1, total));
+      wanted.forEach(([i, count]) => {
+        for (let j = 0; j < count; j += 1) {
+          const h = trafficHash(i * 13 + j * 7 + 1);
+          if ((h % 1000) / 1000 >= keep) continue;
+          flow.push({ x: i % size, y: Math.floor(i / size), phase: (j + ((h >>> 10) % 100) / 100) / count });
+        }
+      });
+    }
+    const vehicles = (Array.isArray(agents.vehicles) ? agents.vehicles : [])
+      .filter((agent) => !streets || !isTunnel(snapshot, Math.floor(agent.y) * size + Math.floor(agent.x)));
+    [...vehicles, ...flow].forEach((agent, index) => {
+      if (!Number.isFinite(agent?.x) || !Number.isFinite(agent?.y)) return;
+      placed.push({ ...frameFor(agent, index, drivable, 0.12, 0.18), frame: `agent.car.${1 + (index % 4)}` });
+    });
+    (Array.isArray(agents.trains) ? agents.trains : []).forEach((agent, index) => {
+      if (!Number.isFinite(agent?.x) || !Number.isFinite(agent?.y)) return;
+      placed.push({ ...frameFor(agent, index, isRail, 0, 0.1), frame: `agent.train.${1 + (index % 2)}` });
+    });
+    const services = ["police", "fire", "medical"];
+    (Array.isArray(agents.serviceVehicles) ? agents.serviceVehicles : []).forEach((agent, index) => {
+      if (!Number.isFinite(agent?.x) || !Number.isFinite(agent?.y)) return;
+      let spot = agent;
+      if (streets) {
+        const ax = Math.floor(agent.x), ay = Math.floor(agent.y);
+        spot = null;
+        for (let r = 0; r <= 3 && !spot; r += 1) {
+          for (let dy = -r; dy <= r && !spot; dy += 1) for (let dx = -r; dx <= r && !spot; dx += 1) {
+            if (Math.max(Math.abs(dx), Math.abs(dy)) !== r || !inMap(ax + dx, ay + dy)) continue;
+            if (isRoad(snapshot, (ay + dy) * size + ax + dx)) spot = { ...agent, x: ax + dx, y: ay + dy };
+          }
+        }
+        if (!spot) return;
+      }
+      const kind = agent.kind || services[index % services.length];
+      placed.push({ ...frameFor(spot, index + 5, drivable, 0.12, 0.2), frame: `agent.service.${kind}` });
+    });
+    // People walk the sidewalk of the street nearest their building, on the
+    // building's side; with no street near they stay home.
+    (Array.isArray(agents.pedestrians) ? agents.pedestrians : []).forEach((agent, index) => {
+      if (!Number.isFinite(agent?.x) || !Number.isFinite(agent?.y)) return;
+      const ax = Math.floor(agent.x), ay = Math.floor(agent.y);
+      let wx = ax + 0.5, wy = ay + 0.5, heading = null;
+      if (streets) {
+        let best = Infinity, spot = null;
+        for (let dy = -3; dy <= 3; dy += 1) for (let dx = -3; dx <= 3; dx += 1) {
+          if ((!dx && !dy) || !inMap(ax + dx, ay + dy)) continue;
+          const i = (ay + dy) * size + ax + dx;
+          const d = Math.hypot(dx, dy);
+          if (d < best && isRoad(snapshot, i) && !isWater(snapshot, i)) { best = d; spot = { tx: ax + dx, ty: ay + dy, dx, dy }; }
+        }
+        if (!spot) return;
+        const walk = (((Number(agent.phase) || 0) + (tick % 5) * 0.06) % 1) - 0.5;
+        const mask = connectorMask(snapshot, spot.tx, spot.ty, isRoad);
+        const ew = Boolean(mask & 10), ns = Boolean(mask & 5);
+        const alongX = ew && ns ? Math.abs(spot.dy) >= Math.abs(spot.dx) : ew || !ns;
+        const side = (delta) => (delta ? -Math.sign(delta) : ((trafficHash(index * 31) & 1) ? 1 : -1)) * 0.38;
+        wx = spot.tx + 0.5 + (alongX ? walk * 0.8 : side(spot.dx));
+        wy = spot.ty + 0.5 + (alongX ? side(spot.dy) : walk * 0.8);
+        heading = alongX ? "px" : "py";
+      }
+      placed.push({ wx, wy, heading, frame: `agent.pedestrian.${1 + (index % 2)}` });
+    });
+    return placed;
+  }
+
   function drawAgents(snapshot, viewKey) {
     const tick = Number(snapshot.tick) | 0;
     const key = `${viewKey}:${tick}:${snapshot.rev ?? "x"}:${snapshot.agentRevision ?? "x"}`;
@@ -1795,11 +1942,19 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
           drawSprite(context, frameFor(agent, index), point.sx + phase * 8, point.sy + phase * 2 - verticalOffset * state.camera.zoom);
         });
       };
-      drawFacts(snapshot.agents.vehicles, (_agent, index) => `agent.car.${1 + (index % 4)}`);
-      drawFacts(snapshot.agents.pedestrians, (_agent, index) => `agent.pedestrian.${1 + (index % 2)}`);
-      drawFacts(snapshot.agents.trains, (_agent, index) => `agent.train.${1 + (index % 2)}`);
+      // Vehicles drive in their lane along the street and face the way they
+      // go; people walk the sidewalk. Placement is the 3D backend's, number
+      // for number, so a car is in the same lane in both views.
+      trafficPlacements(snapshot)
+        .sort((a, b) => (a.wx + a.wy) - (b.wx + b.wy))
+        .forEach((agent) => {
+          const tx = Math.max(0, Math.min(size - 1, Math.floor(agent.wx)));
+          const ty = Math.max(0, Math.min(size - 1, Math.floor(agent.wy)));
+          const point = projectPoint(snapshot, agent.wx - 0.5, agent.wy - 0.5, travelAltitude(snapshot, tx, ty));
+          const headed = agent.heading ? `${agent.frame}.${agent.heading}` : agent.frame;
+          drawSprite(context, atlasFrame(headed) ? headed : agent.frame, point.sx, point.sy);
+        });
       drawFacts(snapshot.agents.smoke, (_agent, index) => `agent.smoke.${1 + (index % 3)}`, 28);
-      drawFacts(snapshot.agents.serviceVehicles, (_agent, index) => `agent.service.${["police", "fire", "medical"][index % 3]}`);
       return;
     }
     const roads = [];
@@ -2168,7 +2323,7 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
       if (item.object.visualKind !== "building") return;
       const point = { sx: camera.originX + (item.rx - item.ry) * halfW, sy: camera.originY + (item.rx + item.ry) * halfH - item.alt * MATH.HEIGHT_STEP * zoom };
       if (!inView(point)) return;
-      drawWindows(point, nightFrame(buildingFrame(item.object, false), snapshot), buildingMirrored(snapshot, item.object));
+      drawWindows(point, nightFrame(buildingFrame(item.object, false), snapshot), buildingFacing(snapshot, item.object).mirror);
     });
     derived.facilities.forEach((facility) => {
       const x = facility.x + ((facility.footprint?.w || 1) - 1) / 2;

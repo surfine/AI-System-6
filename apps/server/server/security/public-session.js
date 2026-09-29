@@ -419,6 +419,9 @@ const corpusReadPrefixes = [
   "/api/endfield/search",
   "/api/endfield/ask",
   "/api/time-machine",
+  // Bonsai City's real-place import reads OpenStreetMap, terrain tiles and
+  // place search: shared public services, so the reader pool bounds it.
+  "/api/bonsai/",
 ];
 
 function requestGroup(pathname) {

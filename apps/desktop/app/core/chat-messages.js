@@ -3723,7 +3723,7 @@ function buildPayload(userText, options = {}) {
 }
 
 function isQwen35ModelName(value = "") {
-  return /qwen(?:[-_/ ]?3\.[56]|3\.[56])/i.test(String(value || ""));
+  return /qwen[-_/ ]?3\.[5-9]|bonsai/i.test(String(value || ""));
 }
 
 function isGemma4ModelName(value = "") {
@@ -4366,10 +4366,14 @@ var sessionCloudUsage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 
 
 function cloudProviderDisplayName(provider) {
   if (provider === "deepseek") return "DeepSeek";
+  if (provider === "claude-subscription" || provider === "codex-subscription") {
+    return typeof t === "function" ? t(`cloud_provider_${provider.replace("-", "_")}`) : provider;
+  }
   return provider ? provider.charAt(0).toUpperCase() + provider.slice(1) : (typeof t === "function" ? t("cloud_model") : "Cloud Model");
 }
 
 function cloudModelShortName(model) {
+  if (model === "default") return typeof t === "function" ? t("cloud_model_cli_default") : "default";
   return String(model || "").replace(/^deepseek-/, "") || "-";
 }
 
@@ -4881,6 +4885,7 @@ function clioBackupRecoverable(error, context) {
   const code = typeof classifyLmStudioError === "function" ? classifyLmStudioError(error) : "";
   if ([
     "lmstudio_context_length",
+    "lmstudio_context_mismatch",
     "cloud_invalid_key",
     "cloud_insufficient_balance",
     "cloud_invalid_request",
@@ -4910,7 +4915,10 @@ async function requestModelResponse(finalPayload, signal, { taskKind, endPerf } 
     // Image messages are shipped as cloud file tokens / a vision model, so a
     // cloud -> local switch changes what the turn actually sends — leave those
     // to the writer rather than silently changing the model that reads them.
+    // A subscription CLI failure is shown with its reason and a way to switch;
+    // the desk never answers it silently with another model.
     if (currentRoute !== "cloud"
+        || (typeof isSubscriptionCloudProvider === "function" && isSubscriptionCloudProvider())
         || cloudPayloadCarriesImage(finalPayload?.messages)
         || !clioBackupRecoverable(error, { kind: "cloud" })) throw error;
     if (!clioBackupAvailable("local")) throw error;
@@ -5884,6 +5892,7 @@ async function submitUserTextCore(userText, options = {}) {
       }[code];
       const prefix = cloudErrorKey ? t(cloudErrorKey)
         : code === "lmstudio_context_length" ? t("lm_context_error")
+        : code === "lmstudio_context_mismatch" ? t("lm_context_mismatch_error")
         : isCloudActive ? t("cloud_api_error")
         : t("connection_error");
       // Ordinary UI shows a localized message + next step, never a raw HTTP
@@ -5898,7 +5907,7 @@ async function submitUserTextCore(userText, options = {}) {
         && (window.lastClioBackupError || !clioBackupAvailable("local"));
       const userMessage = backupFailed
         ? t(window.lastClioBackupError ? "clio_ai_backup_failed" : "clio_ai_no_backup")
-        : cloudErrorKey || code === "lmstudio_context_length"
+        : cloudErrorKey || code === "lmstudio_context_length" || code === "lmstudio_context_mismatch"
           ? prefix
           : modelRecovery
             ? `${t(modelRecovery.messageKey)} ${t(modelRecovery.actionKey)}`
@@ -5937,7 +5946,7 @@ async function submitUserTextCore(userText, options = {}) {
       });
       updateLocalModelState({
         server: code !== "lmstudio_server_offline",
-        ready: code === "lmstudio_context_length" ? localModelState.ready : false,
+        ready: code === "lmstudio_context_length" || code === "lmstudio_context_mismatch" ? localModelState.ready : false,
         running: false,
         task: "",
       });

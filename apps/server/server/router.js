@@ -54,6 +54,7 @@ const handleImporterStatus = lazyHandler(() => require("./routes/importer-status
 const handleCloudModels = lazyHandler(() => require("./routes/cloud-models.js"), "./routes/cloud-models.js", "handleCloudModels");
 const handleCloudStatus = lazyHandler(() => require("./routes/cloud-status.js"), "./routes/cloud-status.js", "handleCloudStatus");
 const handleCloudQuota = lazyHandler(() => require("./routes/cloud-quota.js"), "./routes/cloud-quota.js", "handleCloudQuota");
+const handleSubscriptionCliStatus = lazyHandler(() => require("./routes/subscription-cli-status.js"), "./routes/subscription-cli-status.js", "handleSubscriptionCliStatus");
 const handleCloudCredentials = lazyHandler(() => require("./routes/cloud-credentials.js"), "./routes/cloud-credentials.js", "handleCloudCredentials");
 const handleCloudEmbeddings = lazyHandler(() => require("./routes/cloud-embeddings.js"), "./routes/cloud-embeddings.js", "handleCloudEmbeddings");
 const handleCloudChat = lazyHandler(() => require("./routes/cloud-chat.js"), "./routes/cloud-chat.js", "handleCloudChat");
@@ -98,11 +99,21 @@ const handleSystemMusic = lazyHandler(() => require("./routes/system-music.js"),
 const handleGamdlJobs = lazyHandler(() => require("./routes/gamdl.js"), "./routes/gamdl.js", "handleGamdlJobs");
 const handleGamdlJob = lazyHandler(() => require("./routes/gamdl.js"), "./routes/gamdl.js", "handleGamdlJob");
 const handleGamdlFile = lazyHandler(() => require("./routes/gamdl.js"), "./routes/gamdl.js", "handleGamdlFile");
+const handleGamdlStatus = lazyHandler(() => require("./routes/gamdl.js"), "./routes/gamdl.js", "handleGamdlStatus");
+const handleGamdlSign = lazyHandler(() => require("./routes/gamdl.js"), "./routes/gamdl.js", "handleGamdlSign");
+const handleGamdlConsent = lazyHandler(() => require("./routes/gamdl.js"), "./routes/gamdl.js", "handleGamdlConsent");
+const handleBridgePairPage = lazyHandler(() => require("./routes/music-bridge.js"), "./routes/music-bridge.js", "handleBridgePairPage");
+const handleBridgePair = lazyHandler(() => require("./routes/music-bridge.js"), "./routes/music-bridge.js", "handleBridgePair");
+const handleBridgePairings = lazyHandler(() => require("./routes/music-bridge.js"), "./routes/music-bridge.js", "handleBridgePairings");
+const handleBridgeRevoke = lazyHandler(() => require("./routes/music-bridge.js"), "./routes/music-bridge.js", "handleBridgeRevoke");
 const handleOneMoreTuneRound = lazyHandler(() => require("./routes/one-more-tune.js"), "./routes/one-more-tune.js", "handleOneMoreTuneRound");
 const handleOneMoreTuneAnswer = lazyHandler(() => require("./routes/one-more-tune.js"), "./routes/one-more-tune.js", "handleOneMoreTuneAnswer");
 const handleOneMoreTuneReport = lazyHandler(() => require("./routes/one-more-tune.js"), "./routes/one-more-tune.js", "handleOneMoreTuneReport");
 const handleOneMoreTuneCredits = lazyHandler(() => require("./routes/one-more-tune.js"), "./routes/one-more-tune.js", "handleOneMoreTuneCredits");
 const handleOneMoreTuneMedia = lazyHandler(() => require("./routes/one-more-tune.js"), "./routes/one-more-tune.js", "handleOneMoreTuneMedia");
+const handleBonsaiOsm = lazyHandler(() => require("./routes/bonsai-osm.js"), "./routes/bonsai-osm.js", "handleBonsaiOsm");
+const handleBonsaiElevation = lazyHandler(() => require("./routes/bonsai-osm.js"), "./routes/bonsai-osm.js", "handleBonsaiElevation");
+const handleBonsaiPlace = lazyHandler(() => require("./routes/bonsai-osm.js"), "./routes/bonsai-osm.js", "handleBonsaiPlace");
 const handleOneMoreTunePreview = lazyHandler(() => require("./routes/one-more-tune.js"), "./routes/one-more-tune.js", "handleOneMoreTunePreview");
 const handleGoRedirect = lazyHandler(() => require("./routes/go.js"), "./routes/go.js", "handleGoRedirect");
 
@@ -123,6 +134,7 @@ const localExactRoutes = new Map([
   ["GET /api/cloud/models", handleCloudModels],
   ["POST /api/cloud/status", handleCloudStatus],
   ["GET /api/cloud/quota", handleCloudQuota],
+  ["GET /api/subscription-cli/status", handleSubscriptionCliStatus],
   ["POST /api/cloud/credentials", handleCloudCredentials],
   ["POST /api/cloud/embeddings", handleCloudEmbeddings],
   ["POST /api/cloud/chat", handleCloudChat],
@@ -169,9 +181,23 @@ const localExactRoutes = new Map([
   ["GET /api/music/system", handleSystemMusic],
   ["POST /api/music/system", handleSystemMusic],
   ["POST /api/music/gamdl/jobs", handleGamdlJobs],
+  ["GET /api/music/gamdl/status", handleGamdlStatus],
+  ["POST /api/music/gamdl/sign", handleGamdlSign],
+  ["POST /api/music/gamdl/consent", handleGamdlConsent],
+  // Pairing a public page with this Mac happens on a loopback page the public
+  // page cannot script; its API calls are same-origin only.
+  ["GET /bridge/pair", handleBridgePairPage],
+  ["POST /api/music/bridge/pair", handleBridgePair],
+  ["GET /api/music/bridge/pairings", handleBridgePairings],
+  ["POST /api/music/bridge/revoke", handleBridgeRevoke],
   ["POST /api/one-more-tune/round", handleOneMoreTuneRound],
   ["POST /api/one-more-tune/answer", handleOneMoreTuneAnswer],
   ["GET /api/one-more-tune/report", handleOneMoreTuneReport],
+  // Bonsai City's real-place import: OpenStreetMap features, terrain heights
+  // and place search, fetched for the browser inside fixed limits.
+  ["GET /api/bonsai/osm", handleBonsaiOsm],
+  ["GET /api/bonsai/elevation", handleBonsaiElevation],
+  ["GET /api/bonsai/place", handleBonsaiPlace],
 ]);
 
 const publicExactRouteKeys = new Set([
@@ -207,6 +233,12 @@ const publicExactRouteKeys = new Set([
   "POST /api/one-more-tune/round",
   "POST /api/one-more-tune/answer",
   "GET /api/one-more-tune/report",
+  // Bonsai City's real-place import. Public, but not session-free: each call
+  // costs a third party's shared service, so it takes the Turnstile session,
+  // the reader pool's concurrency and bonsai-osm.js's own daily ceiling.
+  "GET /api/bonsai/osm",
+  "GET /api/bonsai/elevation",
+  "GET /api/bonsai/place",
 ]);
 
 // The guest bridge on the public deployment is opt-in and off by default

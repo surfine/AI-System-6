@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/MCP.md -->
-<!-- source-sha256: 96f5e2707e196e5bd28d80f968ceb68c6629403f2ad11afbadaf0538b132e6c3 -->
+<!-- source-sha256: 1dda4dfdee62e7d5babc40d28661c0475d7ff4968032c5489b8fcd1fde63cfde -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -226,6 +226,8 @@ ais6://project/{id}/cd/{itemId}           text/markdown 或 text/html
 3. **在支持的宿主上用 sampling。** 为声明了 sampling 的访客（目前只有 VS Code Copilot）实现 MRTR sampling，作为绑定在访客自身调用上的实验。上游已弃用，不宜作为产品功能的基础。
 
 无论哪种方案，任务契约、humanizer 护栏和“AI 输出默认临时”的规则都照常生效，每次生成都标明由哪个提供方、哪个模型回答。
+
+**决定（2026-09-28）。** 所有者为本地版选择了方案 2，覆盖所有模型任务，并已实现：设计、所有者接受的条款风险和失败码见[订阅 CLI 提供方](SUBSCRIPTION-CLI.zh-CN.md)。
 
 ## 动代码之前要定下来的问题
 

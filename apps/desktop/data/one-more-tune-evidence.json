@@ -1,0 +1,1643 @@
+{
+ "version": 2,
+ "joined": 39,
+ "unjoined": 34,
+ "note": "Why each card is not a question yet, and the source behind each claim. Generated from the private research package by tooling/build-one-more-tune-evidence.mjs.",
+ "reasons": {
+  "music_recording_and_listening_window_not_auditioned": {
+   "en": "Nobody has listened to a recording against this film, so the passage has no in-point and no out-point.",
+   "zh": "还没有人把录音和这支影片对着听过，所以乐段没有起点也没有终点。"
+  },
+  "playback_and_usage_conditions_not_checked": {
+   "en": "How this recording may be played, and on what terms, has not been checked.",
+   "zh": "这段录音能怎么播、按什么条件播，还没查过。"
+  },
+  "distractors_need_reuse_review": {
+   "en": "The three wrong answers have not been checked for a product that used this same song.",
+   "zh": "三个错误选项还没核过：其中会不会有产品也用过这首歌。"
+  },
+  "distractors_not_reviewed": {
+   "en": "This card has no reviewed set of wrong answers yet.",
+   "zh": "这张卡还没有经过复核的错误选项。"
+  },
+  "audio_asset_not_resolved": {
+   "en": "No specific recording has been settled on — only a title and an artist.",
+   "zh": "还没定下具体是哪个录音，只有曲名和艺人。"
+  },
+  "cue_not_auditioned": {
+   "en": "The passage has not been auditioned, so where it starts and ends is unknown.",
+   "zh": "乐段没有实听过，起止位置未知。"
+  },
+  "usage_permission_not_established": {
+   "en": "Permission to use this particular recording as a question's audio has not been established.",
+   "zh": "把这一个录音用作题目音源的许可还没有确立。"
+  },
+  "original_video_id_unresolved": {
+   "en": "The original film has not been pinned to a specific video.",
+   "zh": "原片还没有定位到具体的一支视频。"
+  },
+  "track_identity_pending": {
+   "en": "Two sources disagree about which recording this is.",
+   "zh": "两个来源对这是哪个录音意见不一致。"
+  }
+ },
+ "sources": {
+  "appclips_user": {
+   "url": "https://www.youtube.com/live/GEZhD3J89ZE?t=1690"
+  },
+  "catalog": {
+   "url": "https://applemusic.info/"
+  },
+  "chimes": {
+   "url": "https://en.wikipedia.org/wiki/Chimes_(song)"
+  },
+  "cs12": {
+   "url": "https://commercialsong.co/en/apple/iphone-12-commercial-meet-iphone-12-eat-them-apples-suzi-wu"
+  },
+  "csbounce": {
+   "url": "https://commercialsong.co/en/apple/airpods-commercial-airpods-bounce-i-learnt-some-jazz-today-tessellated"
+  },
+  "cscard": {
+   "url": "https://commercialsong.co/en/apple/apple-card-commercial-introducing-apple-card-coming-summer-2019-jeans-rubi"
+  },
+  "csfaces": {
+   "url": "https://commercialsong.co/en/apple/apple-watch-commercial-all-new-watch-faces-budududum-emmit-fenn"
+  },
+  "csfree": {
+   "url": "https://commercialsong.co/en/apple/ipad-pro-commercial-life-on-ipad-almost-free-fidlar"
+  },
+  "csjam": {
+   "url": "https://commercialsong.co/en/apple/ipad-pro-commercial-how-to-correctly-use-a-computer-jam-for-bwengo-senbei-remix-naran-ratan"
+  },
+  "cvk": {
+   "url": "https://www.charlottevonkotze.com/"
+  },
+  "homepod": {
+   "url": "https://pitchfork.com/news/fka-twigs-dances-in-spike-jonzes-wild-new-apple-ad-watch"
+  },
+  "imac": {
+   "url": "https://it.wikipedia.org/wiki/IMac_G3"
+  },
+  "jerk": {
+   "url": "https://en.wikipedia.org/wiki/Jerk_It_Out"
+  },
+  "new_soul": {
+   "url": "https://en.wikipedia.org/wiki/New_Soul"
+  },
+  "share": {
+   "url": "https://9to5mac.com/2022/11/17/apple-holiday-ad-airpods-pro/"
+  },
+  "v06_cs_OMT-022": {
+   "url": "https://commercialsong.co/en/apple/airpods-commercial-airpods-bounce-i-learnt-some-jazz-today-tessellated"
+  },
+  "v06_cs_OMT-030": {
+   "url": "https://commercialsong.co/en/apple/iphone-12-commercial-meet-iphone-12-eat-them-apples-suzi-wu"
+  },
+  "v06_cs_OMT-048": {
+   "url": "https://commercialsong.co/en/apple/apple-watch-commercial-all-new-watch-faces-budududum-emmit-fenn"
+  },
+  "v06_cs_OMT-049": {
+   "url": "https://commercialsong.co/en/apple/apple-card-commercial-introducing-apple-card-coming-summer-2019-jeans-rubi"
+  },
+  "v06_supervisor_m3_clip": {
+   "url": "https://www.charlottevonkotze.com/"
+  },
+  "v06_umg_digue": {
+   "url": "https://www.youtube.com/watch?v=9t0bVw0dzMk"
+  },
+  "v06_wiki_new_soul": {
+   "url": "https://en.wikipedia.org/wiki/New_Soul"
+  },
+  "macpro_2013_article": {
+   "url": "https://www.llllitl.fr/2013/08/apple-new-mac-pro-2013-commercial-publicite-muse/"
+  },
+  "cs16": {
+   "url": "https://commercialsong.co/en/apple/macbook-pro-commercial-introducing-macbook-pro-16-inch-tokyo-drifting-with-denzel-curry-glass-animals-denzel-curry"
+  },
+  "cssnap": {
+   "url": "https://commercialsong.co/en/apple/airpods-pro-commercial-snap-the-difference-flume"
+  },
+  "csmini": {
+   "url": "https://commercialsong.co/en/apple/homepod-mini-commercial-introducing-homepod-mini-im-ready-to-rock-that-bonti-feat-nrzd"
+  },
+  "iphone13": {
+   "url": "https://www.ilounge.com/news/iphone/iphone-13-durability-and-battery-life-highlighted-in-new-apple-ads"
+  },
+  "iphone13b": {
+   "url": "https://9to5mac.com/2022/01/20/apple-shares-new-iphone-13-ads-highlighting-its-durability-battery-and-cameras/"
+  },
+  "dan_iphone16": {
+   "url": "https://www.danmufson.com/iphone-16-pro"
+  }
+ },
+ "cards": {
+  "OMT-001": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "a catalogue listing only — it does not name the film",
+      "zh": "只是目录里的一条收录，没有指明影片"
+     }
+    },
+    {
+     "source": "appclips_user",
+     "supports": {
+      "en": "supplied by the person who set the question, with a place to start looking",
+      "zh": "出题者提供的对应关系，外加一个查找位置"
+     }
+    },
+    {
+     "source": "v06_umg_digue",
+     "supports": {
+      "en": "source_link_and_metadata_only",
+      "zh": "source_link_and_metadata_only"
+     }
+    }
+   ],
+   "from": "OMT-001"
+  },
+  "OMT-002": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "records that this music belongs to this campaign",
+      "zh": "记录了这段音乐属于这支广告"
+     }
+    },
+    {
+     "source": "new_soul",
+     "supports": {
+      "en": "the pairing, or a link to the film itself",
+      "zh": "这组对应关系，或一条原片链接"
+     }
+    },
+    {
+     "source": "v06_wiki_new_soul",
+     "supports": {
+      "en": "source_link_and_metadata_only",
+      "zh": "source_link_and_metadata_only"
+     }
+    }
+   ],
+   "from": "OMT-002"
+  },
+  "OMT-003": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "records that this music belongs to this campaign",
+      "zh": "记录了这段音乐属于这支广告"
+     }
+    },
+    {
+     "source": "chimes",
+     "supports": {
+      "en": "the pairing, or a link to the film itself",
+      "zh": "这组对应关系，或一条原片链接"
+     }
+    }
+   ],
+   "from": "OMT-003"
+  },
+  "OMT-004": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "records that this music belongs to this campaign",
+      "zh": "记录了这段音乐属于这支广告"
+     }
+    },
+    {
+     "source": "imac",
+     "supports": {
+      "en": "the pairing, or a link to the film itself",
+      "zh": "这组对应关系，或一条原片链接"
+     }
+    }
+   ],
+   "from": "OMT-004"
+  },
+  "OMT-020": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "records that this music belongs to this campaign",
+      "zh": "记录了这段音乐属于这支广告"
+     }
+    }
+   ],
+   "from": "OMT-007"
+  },
+  "OMT-008": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "records that this music belongs to this campaign",
+      "zh": "记录了这段音乐属于这支广告"
+     }
+    },
+    {
+     "source": "jerk",
+     "supports": {
+      "en": "the pairing, or a link to the film itself",
+      "zh": "这组对应关系，或一条原片链接"
+     }
+    }
+   ],
+   "from": "OMT-012"
+  },
+  "OMT-009": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "records that this music belongs to this campaign",
+      "zh": "记录了这段音乐属于这支广告"
+     }
+    }
+   ],
+   "from": "OMT-014"
+  },
+  "OMT-010": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "records that this music belongs to this campaign",
+      "zh": "记录了这段音乐属于这支广告"
+     }
+    }
+   ],
+   "from": "OMT-015"
+  },
+  "OMT-012": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "records that this music belongs to this campaign",
+      "zh": "记录了这段音乐属于这支广告"
+     }
+    },
+    {
+     "source": "csbounce",
+     "supports": {
+      "en": "the pairing, or a link to the film itself",
+      "zh": "这组对应关系，或一条原片链接"
+     }
+    },
+    {
+     "source": "v06_cs_OMT-022",
+     "supports": {
+      "en": "source_link_and_metadata_only",
+      "zh": "source_link_and_metadata_only"
+     }
+    }
+   ],
+   "from": "OMT-022"
+  },
+  "OMT-030": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "records that this music belongs to this campaign",
+      "zh": "记录了这段音乐属于这支广告"
+     }
+    },
+    {
+     "source": "share",
+     "supports": {
+      "en": "the pairing, or a link to the film itself",
+      "zh": "这组对应关系，或一条原片链接"
+     }
+    }
+   ],
+   "from": "OMT-026"
+  },
+  "OMT-013": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "records that this music belongs to this campaign",
+      "zh": "记录了这段音乐属于这支广告"
+     }
+    },
+    {
+     "source": "homepod",
+     "supports": {
+      "en": "the pairing, or a link to the film itself",
+      "zh": "这组对应关系，或一条原片链接"
+     }
+    }
+   ],
+   "from": "OMT-027"
+  },
+  "OMT-017": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "records that this music belongs to this campaign",
+      "zh": "记录了这段音乐属于这支广告"
+     }
+    },
+    {
+     "source": "cs12",
+     "supports": {
+      "en": "the pairing, or a link to the film itself",
+      "zh": "这组对应关系，或一条原片链接"
+     }
+    },
+    {
+     "source": "v06_cs_OMT-030",
+     "supports": {
+      "en": "source_link_and_metadata_only",
+      "zh": "source_link_and_metadata_only"
+     }
+    }
+   ],
+   "from": "OMT-030"
+  },
+  "OMT-023": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "records that this music belongs to this campaign",
+      "zh": "记录了这段音乐属于这支广告"
+     }
+    }
+   ],
+   "from": "OMT-031"
+  },
+  "OMT-024": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "records that this music belongs to this campaign",
+      "zh": "记录了这段音乐属于这支广告"
+     }
+    }
+   ],
+   "from": "OMT-032"
+  },
+  "OMT-018": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "records that this music belongs to this campaign",
+      "zh": "记录了这段音乐属于这支广告"
+     }
+    },
+    {
+     "source": "csfree",
+     "supports": {
+      "en": "the pairing, or a link to the film itself",
+      "zh": "这组对应关系，或一条原片链接"
+     }
+    }
+   ],
+   "from": "OMT-042"
+  },
+  "OMT-019": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "records that this music belongs to this campaign",
+      "zh": "记录了这段音乐属于这支广告"
+     }
+    },
+    {
+     "source": "csjam",
+     "supports": {
+      "en": "the pairing, or a link to the film itself",
+      "zh": "这组对应关系，或一条原片链接"
+     }
+    }
+   ],
+   "from": "OMT-043"
+  },
+  "OMT-066": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "records that this music belongs to this campaign",
+      "zh": "记录了这段音乐属于这支广告"
+     }
+    }
+   ],
+   "from": "OMT-046"
+  },
+  "OMT-026": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "records that this music belongs to this campaign",
+      "zh": "记录了这段音乐属于这支广告"
+     }
+    },
+    {
+     "source": "csfaces",
+     "supports": {
+      "en": "the pairing, or a link to the film itself",
+      "zh": "这组对应关系，或一条原片链接"
+     }
+    },
+    {
+     "source": "v06_cs_OMT-048",
+     "supports": {
+      "en": "source_link_and_metadata_only",
+      "zh": "source_link_and_metadata_only"
+     }
+    }
+   ],
+   "from": "OMT-048"
+  },
+  "OMT-025": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "records that this music belongs to this campaign",
+      "zh": "记录了这段音乐属于这支广告"
+     }
+    },
+    {
+     "source": "cscard",
+     "supports": {
+      "en": "the pairing, or a link to the film itself",
+      "zh": "这组对应关系，或一条原片链接"
+     }
+    },
+    {
+     "source": "v06_cs_OMT-049",
+     "supports": {
+      "en": "source_link_and_metadata_only",
+      "zh": "source_link_and_metadata_only"
+     }
+    }
+   ],
+   "from": "OMT-049"
+  },
+  "OMT-055": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "records that this music belongs to this campaign",
+      "zh": "记录了这段音乐属于这支广告"
+     }
+    }
+   ],
+   "from": "OMT-050"
+  },
+  "OMT-033": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "a written credit naming the film — not proof of which recording",
+      "zh": "一条写下的署名，指明了影片——但不证明是哪个录音"
+     }
+    }
+   ],
+   "from": "OMT-051"
+  },
+  "OMT-049": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "a written credit naming the film — not proof of which recording",
+      "zh": "一条写下的署名，指明了影片——但不证明是哪个录音"
+     }
+    }
+   ],
+   "from": "OMT-052"
+  },
+  "OMT-050": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "a written credit naming the film — not proof of which recording",
+      "zh": "一条写下的署名，指明了影片——但不证明是哪个录音"
+     }
+    }
+   ],
+   "from": "OMT-053"
+  },
+  "OMT-051": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "a written credit naming the film — not proof of which recording",
+      "zh": "一条写下的署名，指明了影片——但不证明是哪个录音"
+     }
+    }
+   ],
+   "from": "OMT-054"
+  },
+  "OMT-053": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "a written credit naming the film — not proof of which recording",
+      "zh": "一条写下的署名，指明了影片——但不证明是哪个录音"
+     }
+    }
+   ],
+   "from": "OMT-056"
+  },
+  "OMT-054": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed",
+    "track_identity_pending"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "a written credit naming the film — not proof of which recording",
+      "zh": "一条写下的署名，指明了影片——但不证明是哪个录音"
+     }
+    }
+   ],
+   "from": "OMT-057"
+  },
+  "OMT-057": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed",
+    "track_identity_pending"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "a written credit naming the film — not proof of which recording",
+      "zh": "一条写下的署名，指明了影片——但不证明是哪个录音"
+     }
+    }
+   ],
+   "from": "OMT-059"
+  },
+  "OMT-058": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "a written credit naming the film — not proof of which recording",
+      "zh": "一条写下的署名，指明了影片——但不证明是哪个录音"
+     }
+    }
+   ],
+   "from": "OMT-060"
+  },
+  "OMT-059": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "a written credit naming the film — not proof of which recording",
+      "zh": "一条写下的署名，指明了影片——但不证明是哪个录音"
+     }
+    }
+   ],
+   "from": "OMT-061"
+  },
+  "OMT-060": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "a written credit naming the film — not proof of which recording",
+      "zh": "一条写下的署名，指明了影片——但不证明是哪个录音"
+     }
+    },
+    {
+     "source": "v06_supervisor_m3_clip",
+     "supports": {
+      "en": "source_link_and_metadata_only",
+      "zh": "source_link_and_metadata_only"
+     }
+    }
+   ],
+   "from": "OMT-062"
+  },
+  "OMT-062": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "a written credit naming the film — not proof of which recording",
+      "zh": "一条写下的署名，指明了影片——但不证明是哪个录音"
+     }
+    }
+   ],
+   "from": "OMT-064"
+  },
+  "OMT-063": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "a written credit naming the film — not proof of which recording",
+      "zh": "一条写下的署名，指明了影片——但不证明是哪个录音"
+     }
+    }
+   ],
+   "from": "OMT-065"
+  },
+  "OMT-065": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "a written credit naming the film — not proof of which recording",
+      "zh": "一条写下的署名，指明了影片——但不证明是哪个录音"
+     }
+    }
+   ],
+   "from": "OMT-067"
+  },
+  "OMT-067": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "a written credit naming the film — not proof of which recording",
+      "zh": "一条写下的署名，指明了影片——但不证明是哪个录音"
+     }
+    }
+   ],
+   "from": "OMT-068"
+  },
+  "OMT-068": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "a written credit naming the film — not proof of which recording",
+      "zh": "一条写下的署名，指明了影片——但不证明是哪个录音"
+     }
+    }
+   ],
+   "from": "OMT-069"
+  },
+  "OMT-069": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed",
+    "track_identity_pending"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "a written credit naming the film — not proof of which recording",
+      "zh": "一条写下的署名，指明了影片——但不证明是哪个录音"
+     }
+    }
+   ],
+   "from": "OMT-070"
+  },
+  "OMT-070": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "a written credit naming the film — not proof of which recording",
+      "zh": "一条写下的署名，指明了影片——但不证明是哪个录音"
+     }
+    }
+   ],
+   "from": "OMT-071"
+  },
+  "OMT-072": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "a written credit naming the film — not proof of which recording",
+      "zh": "一条写下的署名，指明了影片——但不证明是哪个录音"
+     }
+    }
+   ],
+   "from": "OMT-072"
+  },
+  "OMT-073": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed",
+    "track_identity_pending"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "a written credit naming the film — not proof of which recording",
+      "zh": "一条写下的署名，指明了影片——但不证明是哪个录音"
+     }
+    }
+   ],
+   "from": "OMT-073"
+  },
+  "OMT-074": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    },
+    {
+     "source": "macpro_2013_article",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-005"
+  },
+  "OMT-075": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    },
+    {
+     "source": "cs16",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-006"
+  },
+  "OMT-076": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-008"
+  },
+  "OMT-077": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-009"
+  },
+  "OMT-078": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-010"
+  },
+  "OMT-079": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-011"
+  },
+  "OMT-080": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-013"
+  },
+  "OMT-081": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-016"
+  },
+  "OMT-082": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-017"
+  },
+  "OMT-083": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-018"
+  },
+  "OMT-084": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-019"
+  },
+  "OMT-085": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-020"
+  },
+  "OMT-086": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-021"
+  },
+  "OMT-087": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    },
+    {
+     "source": "cssnap",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-023"
+  },
+  "OMT-088": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-024"
+  },
+  "OMT-089": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-025"
+  },
+  "OMT-090": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    },
+    {
+     "source": "csmini",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-028"
+  },
+  "OMT-091": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-029"
+  },
+  "OMT-092": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    },
+    {
+     "source": "iphone13",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    },
+    {
+     "source": "iphone13b",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-033"
+  },
+  "OMT-093": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    },
+    {
+     "source": "iphone13",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    },
+    {
+     "source": "iphone13b",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-034"
+  },
+  "OMT-094": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-035"
+  },
+  "OMT-095": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-036"
+  },
+  "OMT-096": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-037"
+  },
+  "OMT-097": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-038"
+  },
+  "OMT-098": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-039"
+  },
+  "OMT-099": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-040"
+  },
+  "OMT-100": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-041"
+  },
+  "OMT-101": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-044"
+  },
+  "OMT-102": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-045"
+  },
+  "OMT-103": {
+   "blocked": [
+    "music_recording_and_listening_window_not_auditioned",
+    "playback_and_usage_conditions_not_checked",
+    "distractors_need_reuse_review",
+    "original_video_id_unresolved"
+   ],
+   "evidence": [
+    {
+     "source": "catalog",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-047"
+  },
+  "OMT-104": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed",
+    "track_identity_pending"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-055"
+  },
+  "OMT-105": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed",
+    "track_identity_pending"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-058"
+  },
+  "OMT-106": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-063"
+  },
+  "OMT-107": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed",
+    "track_identity_pending"
+   ],
+   "evidence": [
+    {
+     "source": "cvk",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-066"
+  },
+  "OMT-108": {
+   "blocked": [
+    "audio_asset_not_resolved",
+    "cue_not_auditioned",
+    "usage_permission_not_established",
+    "distractors_not_reviewed"
+   ],
+   "evidence": [
+    {
+     "source": "dan_iphone16",
+     "supports": {
+      "en": "Source reference; recording and playback remain unverified.",
+      "zh": "来源参考；录音身份和播放仍待核验。"
+     }
+    }
+   ],
+   "from": "OMT-074"
+  }
+ }
+}

@@ -343,7 +343,7 @@
         min_p: 0,
       });
     }
-    if (/qwen(?:[-_/ ]?3\.[56]|3\.[56])/i.test(model)) {
+    if (/qwen[-_/ ]?3\.[5-9]|bonsai/i.test(model)) {
       const qwenTemperature = /dictation|speech|transcript/.test(taskKind)
         ? 0.25
         : /draft|rewrite|polish|writing-tool|continue|chat/.test(taskKind)

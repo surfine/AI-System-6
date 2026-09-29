@@ -572,7 +572,11 @@ async function restoreWindowWorkingSession(state = {}) {
     .filter((entry) => (
       entry?.visible
       && !workingSessionExcludedWindowNames.has(entry.name)
-      && getWindow(entry.name)
+      // A window its module builds has no markup until that module loads;
+      // openWindow() loads it through the registry, so the record counts as
+      // the window. Without this every game and lab fell out of the restored
+      // scene once its markup left index.html.
+      && (getWindow(entry.name) || lazyWindowRecord(entry.name))
       && isWorkspaceWindowAllowed(entry.name)
     ))
     .sort((a, b) => workingSessionNumber(a.zIndex, 0) - workingSessionNumber(b.zIndex, 0));
@@ -581,12 +585,19 @@ async function restoreWindowWorkingSession(state = {}) {
   ));
 
   for (const entry of visibleWindows) {
-    await openWindow(entry.name, {
-      skipFinderMode: true,
-      skipPlacement: true,
-      skipFocus: true,
-      skipSideAsk: entry.name === "quickDraft",
-    });
+    // A lazy window's module can fail to load (offline, a bad deploy); that
+    // window stays closed and the rest of the scene still comes back.
+    try {
+      await openWindow(entry.name, {
+        skipFinderMode: true,
+        skipPlacement: true,
+        skipFocus: true,
+        skipSideAsk: entry.name === "quickDraft",
+      });
+    } catch (error) {
+      console.warn(`Working Session could not reopen "${entry.name}".`, error);
+      continue;
+    }
     const win = getWindow(entry.name);
     if (!win) continue;
     win.dataset.app = entry.appId || getWindowAppId(win);

@@ -16,6 +16,13 @@ const localVision = read("apps/server/server/vision.js");
 
 test.assertIncludes(serverChat, "function isQwen35ModelName", "local first-class support includes Qwen 3.5 / 3.6 detection on the server");
 test.assertIncludes(clientChat, "function isQwen35ModelName", "local first-class support includes Qwen 3.5 / 3.6 detection in the browser");
+const { isQwen35ModelName } = (await import("node:module")).createRequire(import.meta.url)("../../apps/server/server/chat.js");
+for (const name of ["qwen3.5-4b-mlx", "Qwen3.6-27B", "qwen3.8-27b-uncensored-mlx", "ternary-bonsai-27b-mlx", "prism-ml/Bonsai-27B-mlx-1bit"]) {
+  test.assert(isQwen35ModelName(name), `${name} runs on the Qwen task profile (thinking off, Qwen sampling, task budgets)`);
+}
+for (const name of ["qwen2.5-7b", "qwen3-8b", "gemma-4-e4b-it", "deepseek-flash"]) {
+  test.assert(!isQwen35ModelName(name), `${name} is not mistaken for the Qwen 3.5+ family`);
+}
 test.assertIncludes(serverChat, "function tuneQwen35ChatPayload", "Qwen has a dedicated local payload tuner");
 test.assertIncludes(serverChat, "function isGemma4ModelName", "local first-class support includes Gemma 4 detection on the server");
 test.assertIncludes(clientChat, "function isGemma4ModelName", "local first-class support includes Gemma 4 detection in the browser");
@@ -35,7 +42,7 @@ test.assertIncludes(localVision, "tuneLmStudioChatPayload(enforceMarkdownOnlyCha
 test.assertIncludes(localVision, "type: \"image_url\"", "vision preserves an OpenAI-compatible image-content payload");
 
 test.assertIncludes(cloudModel, "DeepSeek is the first-class cloud provider", "cloud UI documents DeepSeek as the first-class cloud route");
-test.assertIncludes(cloudModel, "const PROVIDER_BASE_URLS = {\n    deepseek: DEEPSEEK_BASE_URL,\n  };", "cloud UI has only DeepSeek as a built-in provider");
+test.assertMatches(cloudModel, /const PROVIDER_BASE_URLS = \{\n    deepseek: DEEPSEEK_BASE_URL,\n(?:    \/\/[^\n]*\n)*    "claude-subscription": "subscription-cli:\/\/claude",\n    "codex-subscription": "subscription-cli:\/\/codex",\n  \};/, "cloud UI's built-in providers are DeepSeek plus the local subscription CLIs, nothing that bills a provider API");
 test.assertIncludes(cloudModel, "const BUILTIN_PROVIDER_MODELS = {\n    deepseek: [", "cloud model picker exposes DeepSeek as the built-in cloud model family");
 test.assertNotIncludes(cloudModel, "openai:", "cloud UI does not promote OpenAI as a built-in paid provider");
 test.assertNotIncludes(cloudModel, "anthropic:", "cloud UI does not promote Anthropic as a built-in paid provider");

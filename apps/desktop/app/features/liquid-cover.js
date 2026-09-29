@@ -244,7 +244,9 @@ Glass</textarea>
               </div>
               <input id="lc-fg-input" class="visually-hidden" type="file" accept="image/*" />
               <label class="lc-row"><span data-i18n="liquid_cover_scale">Scale</span><input type="range" id="lc-fg-scale" min="10" max="200" step="1" value="100"><span class="lc-val" id="lc-fg-scale-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_subject_register">Align to Background</span><input type="checkbox" id="lc-fg-register" class="lc-check" checked></label>
               <label class="lc-row"><span data-i18n="liquid_cover_drag_subject">Drag Subject</span><input type="checkbox" id="lc-fg-drag" class="lc-check"></label>
+              <p class="lc-note" data-i18n="liquid_cover_subject_register_note">A cut-out saved from this background photo (same size) lands exactly on it. Turn off for a subject cropped to its own edges.</p>
             </div>
             </details>
             </div>
@@ -257,7 +259,7 @@ Glass</textarea>
             <div class="lc-group lc-layer-glass-group">
               <div class="lc-group-title" data-i18n="liquid_cover_selected_layer">Selected layer</div>
               <label class="lc-row"><span data-i18n="liquid_cover_layer_solid">Solid Layer</span><input type="checkbox" id="lc-layer-solid" class="lc-check"></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_thickness">Thickness</span><input type="range" id="lc-thickness" min="0" max="100" step="1" value="20"><span class="lc-val" id="lc-thickness-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_depth">Depth</span><input type="range" id="lc-thickness" min="0" max="100" step="1" value="20"><span class="lc-val" id="lc-thickness-v"></span></label>
               <label class="lc-row"><span data-i18n="liquid_cover_tint">Tint</span><input type="color" id="lc-tint-color" class="lc-color" value="#ffffff"></label>
               <label class="lc-row"><span data-i18n="liquid_cover_tint_strength">Tint Strength</span><input type="range" id="lc-tint-alpha" min="0" max="100" step="1" value="0"><span class="lc-val" id="lc-tint-alpha-v"></span></label>
             </div>
@@ -282,27 +284,36 @@ Glass</textarea>
             <details class="lc-finetune">
               <summary data-i18n="liquid_cover_finetune">Fine-tune (manual)</summary>
             <details class="lc-group lc-tune-group">
-              <summary data-i18n="liquid_cover_refraction">Refraction (Global)</summary>
-              <label class="lc-row"><span data-i18n="liquid_cover_ior">Index</span><input type="range" id="lc-ref-factor" min="1" max="4" step="0.01" value="1.5"><span class="lc-val" id="lc-ref-factor-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_lens">Magnify</span><input type="range" id="lc-lens" min="0" max="30" step="0.5" value="11"><span class="lc-val" id="lc-lens-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_dispersion">Dispersion</span><input type="range" id="lc-dispersion" min="0" max="50" step="0.5" value="2"><span class="lc-val" id="lc-dispersion-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_blur_edge">Blur Edge</span><input type="checkbox" id="lc-blur-edge" class="lc-check" checked></label>
+              <summary data-i18n="liquid_cover_light_group">Light</summary>
+              <label class="lc-row"><span data-i18n="liquid_cover_light_angle">Light Angle</span><input type="range" id="lc-light-angle" min="-180" max="180" step="1" value="135"><span class="lc-val" id="lc-light-angle-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_light_intensity">Light Intensity</span><input type="range" id="lc-light-intensity" min="0" max="100" step="1" value="60"><span class="lc-val" id="lc-light-intensity-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_splay">Splay</span><input type="range" id="lc-splay" min="0" max="100" step="1" value="30"><span class="lc-val" id="lc-splay-v"></span></label>
             </details>
 
             <details class="lc-group lc-tune-group">
-              <summary data-i18n="liquid_cover_highlight">Fresnel &amp; Glare</summary>
-              <label class="lc-row"><span data-i18n="liquid_cover_fresnel_range">Fresnel Range</span><input type="range" id="lc-fresnel-range" min="1" max="100" step="1" value="32"><span class="lc-val" id="lc-fresnel-range-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_fresnel_strength">Fresnel Strength</span><input type="range" id="lc-fresnel-factor" min="0" max="100" step="1" value="90"><span class="lc-val" id="lc-fresnel-factor-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_glare_strength">Glare Strength</span><input type="range" id="lc-glare-factor" min="0" max="120" step="1" value="100"><span class="lc-val" id="lc-glare-factor-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_glare_range">Glare Range</span><input type="range" id="lc-glare-range" min="1" max="100" step="1" value="42"><span class="lc-val" id="lc-glare-range-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_glare_converge">Glare Converge</span><input type="range" id="lc-glare-convergence" min="0" max="100" step="1" value="58"><span class="lc-val" id="lc-glare-convergence-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_glare_angle">Glare Angle</span><input type="range" id="lc-glare-angle" min="-180" max="180" step="1" value="-50"><span class="lc-val" id="lc-glare-angle-v"></span></label>
+              <summary data-i18n="liquid_cover_optics_group">Optics</summary>
+              <label class="lc-row"><span data-i18n="liquid_cover_refraction_amount">Refraction</span><input type="range" id="lc-refraction" min="0" max="100" step="1" value="50"><span class="lc-val" id="lc-refraction-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_magnification">Magnification</span><input type="range" id="lc-magnify" min="-4" max="4" step="0.05" value="1"><span class="lc-val" id="lc-magnify-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_dispersion">Spectral Split</span><input type="range" id="lc-dispersion" min="0" max="100" step="0.5" value="4"><span class="lc-val" id="lc-dispersion-v"></span></label>
             </details>
 
             <details class="lc-group lc-tune-group">
-              <summary data-i18n="liquid_cover_blur_shadow">Blur &amp; Shadow</summary>
-              <label class="lc-row"><span data-i18n="liquid_cover_bg_blur">Background Blur</span><input type="range" id="lc-blur-radius" min="0" max="80" step="1" value="24"><span class="lc-val" id="lc-blur-radius-v"></span></label>
-              <label class="lc-row"><span data-i18n="liquid_cover_shadow_strength">Shadow Strength</span><input type="range" id="lc-shadow-factor" min="0" max="100" step="1" value="22"><span class="lc-val" id="lc-shadow-factor-v"></span></label>
+              <summary data-i18n="liquid_cover_surface_group">Surface</summary>
+              <label class="lc-row"><span data-i18n="liquid_cover_bg_blur">Frost</span><input type="range" id="lc-blur-radius" min="0" max="80" step="1" value="8"><span class="lc-val" id="lc-blur-radius-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_brightness">Brightness</span><input type="range" id="lc-brightness" min="-50" max="50" step="1" value="6"><span class="lc-val" id="lc-brightness-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_saturation">Saturation</span><input type="range" id="lc-saturation" min="0" max="200" step="1" value="120"><span class="lc-val" id="lc-saturation-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_post_blur">Post Blur</span><input type="range" id="lc-post-blur" min="0" max="40" step="1" value="0"><span class="lc-val" id="lc-post-blur-v"></span></label>
+            </details>
+
+            <details class="lc-group lc-tune-group">
+              <summary data-i18n="liquid_cover_merge_group">Liquid Merge</summary>
+              <label class="lc-row"><span data-i18n="liquid_cover_merge">Merge Distance</span><input type="range" id="lc-merge" min="0" max="160" step="1" value="0"><span class="lc-val" id="lc-merge-v"></span></label>
+              <p class="lc-note" data-i18n="liquid_cover_merge_note">Nearby glass layers flow into one piece of glass. Text placed inside a shape stays on top of it.</p>
+            </details>
+
+            <details class="lc-group lc-tune-group">
+              <summary data-i18n="liquid_cover_shadow_group">Shadow</summary>
+              <label class="lc-row"><span data-i18n="liquid_cover_shadow_strength">Shadow Strength</span><input type="range" id="lc-shadow-factor" min="0" max="100" step="1" value="12"><span class="lc-val" id="lc-shadow-factor-v"></span></label>
               <label class="lc-row"><span data-i18n="liquid_cover_shadow_spread">Shadow Spread</span><input type="range" id="lc-shadow-expand" min="2" max="100" step="1" value="20"><span class="lc-val" id="lc-shadow-expand-v"></span></label>
             </details>
             </details>
@@ -517,135 +528,162 @@ installLiquidCoverWindow();
     const i = index + 1;
     return "  if (idx == " + i + ") return texture(u_sdf[" + i + "], uv - u_sdfOffset[" + i + "]).r;";
   }).join("\n");
-  const LAYER_SHADER_UNION = Array.from({ length: MAX_LAYERS - 1 }, (_, index) => {
-    const i = index + 1;
-    return "  if (u_layerCount > " + i + ") { float v = layerSD(uv, " + i + "); if (v < d) { d = v; idx = " + i + "; } }";
-  }).join("\n");
-  const LAYER_SHADER_STACK = Array.from({ length: MAX_LAYERS - 1 }, (_, index) => {
-    const i = index + 1;
-    return "  if (u_layerCount > " + i + ") { float v = layerSD(uv, " + i + "); if (v <= 1.0) { d = v; idx = " + i + "; } }";
-  }).join("\n");
-  const UNION_SD = "\nuniform sampler2D u_sdf[" + MAX_LAYERS + "];\nuniform vec2 u_sdfOffset[" + MAX_LAYERS + "];\nuniform int u_layerCount;\nfloat layerSD(vec2 uv, int idx){\n"
+  // Liquid merge: layers that share a merge group (u_mergeGroup = index of the
+  // group's first layer, -1 = not merging) are read as ONE smooth-union field
+  // (polynomial smin, k in raster px), so nearby glass flows together the way
+  // MB Liquid Glass's Blob Merge does. Each group is evaluated once per sample
+  // (at its first layer) and reused. With no groups every layer reads its own
+  // field and the stack rule below is exactly the previous min/override pair:
+  // the lowest distance wins, then any later layer covering the point (<= 1px)
+  // stacks on top — which keeps text-in-shape readable while merging is on.
+  const UNION_SD = "\nuniform sampler2D u_sdf[" + MAX_LAYERS + "];\nuniform vec2 u_sdfOffset[" + MAX_LAYERS + "];\nuniform int u_layerCount;\nuniform int u_layerMode[" + MAX_LAYERS + "];\nuniform int u_mergeGroup[" + MAX_LAYERS + "];\nuniform float u_mergeK;\nfloat layerSD(vec2 uv, int idx){\n"
     + LAYER_SHADER_CASES
-    + "\n  return texture(u_sdf[0], uv - u_sdfOffset[0]).r;\n}\nfloat unionSDIdx(vec2 uv, out int idx){\n  float d = layerSD(uv, 0); idx = 0;\n"
-    + LAYER_SHADER_UNION
-    + "\n  return d;\n}\nfloat stackSDIdx(vec2 uv, out int idx){\n  float d = unionSDIdx(uv, idx);\n"
-    + LAYER_SHADER_STACK
-    + "\n  return d;\n}\nfloat unionSD(vec2 uv){ int i; return unionSDIdx(uv, i); }";
+    + "\n  return texture(u_sdf[0], uv - u_sdfOffset[0]).r;\n}\n"
+    + "float smoothMergeH(float a, float b){ return clamp(0.5 + 0.5*(a - b)/u_mergeK, 0.0, 1.0); }\n"
+    + "float groupSD(vec2 uv, int g){ float d = 1e5; bool first = true;\n"
+    + "  for (int j=0;j<" + MAX_LAYERS + ";j++){ if (j >= u_layerCount) break; if (u_mergeGroup[j] != g) continue; float v = layerSD(uv, j);\n"
+    + "    if (first) { d = v; first = false; } else { float h = smoothMergeH(v, d); d = mix(v, d, h) - u_mergeK*h*(1.0-h); } }\n"
+    + "  return d; }\n"
+    + "float effSD(vec2 uv, int idx){ int g = u_mergeGroup[idx]; return g < 0 ? layerSD(uv, idx) : groupSD(uv, g); }\n"
+    + "float stackSDIdx(vec2 uv, out int idx){ float e[" + MAX_LAYERS + "]; float d = 1e5; idx = 0;\n"
+    + "  for (int i=0;i<" + MAX_LAYERS + ";i++){ if (i >= u_layerCount) break; int g = u_mergeGroup[i]; float v = g < 0 ? layerSD(uv, i) : (g == i ? groupSD(uv, g) : e[g]); e[i] = v; if (i == 0 || v < d) { d = v; idx = i; } }\n"
+    + "  for (int i=1;i<" + MAX_LAYERS + ";i++){ if (i >= u_layerCount) break; if (e[i] <= 1.0) { d = e[i]; idx = i; } }\n"
+    + "  return d; }\n"
+    + "float unionSD(vec2 uv){ float d = 1e5;\n"
+    + "  for (int i=0;i<" + MAX_LAYERS + ";i++){ if (i >= u_layerCount) break; int g = u_mergeGroup[i]; if (g >= 0 && g != i) continue; d = min(d, g < 0 ? layerSD(uv, i) : groupSD(uv, g)); }\n"
+    + "  return d; }";
 
-  const BG_FRAG = "#version 300 es\nprecision highp float;\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_image;\nuniform vec2 u_resolution;\nuniform float u_dpr;\nuniform float u_imageAspect;\nuniform float u_shadowExpand;\nuniform float u_shadowFactor;\nuniform vec2 u_shadowOffset;\nuniform float u_bgZoom;\nuniform vec2 u_bgPan;\n" + UNION_SD + "\nvec2 cover(vec2 uv, float ca, float ta){ if (ca>ta){ float s=ta/ca; uv.y=uv.y*s+0.5-0.5*s; } else { float s=ca/ta; uv.x=uv.x*s+0.5-0.5*s; } return uv; }\nvoid main(){\n  vec2 uv = cover(v_uv, u_resolution.x/u_resolution.y, u_imageAspect);\n  uv = (uv - 0.5) / max(u_bgZoom, 0.001) + 0.5 + u_bgPan;\n  vec3 col = texture(u_image, uv).rgb;\n  vec2 off = u_shadowOffset * u_dpr / u_resolution;\n  float sd = unionSD(v_uv - off) / u_dpr;\n  float shadow = exp(-1.0/u_shadowExpand * abs(sd)) * 0.6 * u_shadowFactor;\n  col -= vec3(shadow);\n  fragColor = vec4(col, 1.0);\n}";
+  // The foreground subject (cut-out photo in front of the glass), shared by the
+  // main pass and the post-blur composite so the subject is never blurred.
+  // Registered mode: a cut-out made from the background photo itself (same
+  // aspect) is mapped through the backdrop's own cover crop, zoom and pan, so
+  // it lands on its source pixels exactly — at every canvas aspect and during
+  // the motion push. Position/scale then act as an offset from that match.
+  // Free mode keeps the old placement for a subject cropped to its own bounds.
+  // The texture is premultiplied, so cut-out edges carry no dark/white halo.
+  const FG_GLSL = "uniform sampler2D u_fg;\nuniform float u_fgAspect;\nuniform int u_hasFg;\nuniform vec2 u_fgPos;\nuniform float u_fgScale;\nuniform int u_fgRegistered;\nuniform float u_fgBgAspect;\nuniform float u_fgBgZoom;\nuniform vec2 u_fgBgPan;\n"
+    + "vec3 overFg(vec3 c){ if (u_hasFg == 1) { float A = u_resolution.x/u_resolution.y; vec2 fuv;\n"
+    + "  if (u_fgRegistered == 1) { vec2 q = (v_uv - u_fgPos)/max(u_fgScale, 0.001) + 0.5;\n"
+    + "    if (A > u_fgBgAspect) { float k = u_fgBgAspect/A; q.y = q.y*k + 0.5 - 0.5*k; } else { float k = A/u_fgBgAspect; q.x = q.x*k + 0.5 - 0.5*k; }\n"
+    + "    fuv = (q - 0.5)/max(u_fgBgZoom, 0.001) + 0.5 + u_fgBgPan; }\n"
+    + "  else { float sh = u_fgScale; float sw = u_fgScale*u_fgAspect/A; fuv = (v_uv - u_fgPos)/vec2(sw,sh) + 0.5; }\n"
+    + "  if (all(greaterThanEqual(fuv,vec2(0.0))) && all(lessThanEqual(fuv,vec2(1.0)))) { vec4 fg = texture(u_fg, fuv); c = c*(1.0 - fg.a) + fg.rgb; } } return c; }\n";
+
+  // The backdrop pass is the photo only (cover crop, motion zoom/pan). The
+  // drop shadow is composited in the main pass, outside the glass, so what
+  // the glass refracts is never darkened.
+  const BG_FRAG = "#version 300 es\nprecision highp float;\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_image;\nuniform vec2 u_resolution;\nuniform float u_imageAspect;\nuniform float u_bgZoom;\nuniform vec2 u_bgPan;\nvec2 cover(vec2 uv, float ca, float ta){ if (ca>ta){ float s=ta/ca; uv.y=uv.y*s+0.5-0.5*s; } else { float s=ca/ta; uv.x=uv.x*s+0.5-0.5*s; } return uv; }\nvoid main(){\n  vec2 uv = cover(v_uv, u_resolution.x/u_resolution.y, u_imageAspect);\n  uv = (uv - 0.5) / max(u_bgZoom, 0.001) + 0.5 + u_bgPan;\n  fragColor = vec4(texture(u_image, uv).rgb, 1.0);\n}";
 
   const BLUR_FRAG = "#version 300 es\nprecision highp float;\n#define MAX_R 96\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_tex;\nuniform vec2 u_resolution;\nuniform vec2 u_dir;\nuniform int u_radius;\nuniform float u_weights[MAX_R + 1];\nvoid main(){\n  vec2 texel = 1.0/u_resolution;\n  vec4 c = texture(u_tex, v_uv) * u_weights[0];\n  for (int i=1;i<=MAX_R;i++){ if (i>u_radius) break; vec2 o = u_dir*texel*float(i); c += texture(u_tex, v_uv+o)*u_weights[i]; c += texture(u_tex, v_uv-o)*u_weights[i]; }\n  fragColor = c;\n}";
 
-  const MAIN_FRAG = "#version 300 es\nprecision highp float;\n#define PI 3.14159265359\nconst float N_R=0.98; const float N_G=1.0; const float N_B=1.02;\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_bg;\nuniform sampler2D u_blurredBg;\nuniform vec2 u_resolution;\nuniform float u_dpr;\nuniform float u_baseDpr;\nuniform float u_lensMag;\nuniform float u_refThickness[" + MAX_LAYERS + "];\nuniform float u_refFactor;\nuniform float u_refDispersion;\nuniform float u_refFresnelRange;\nuniform float u_refFresnelHardness;\nuniform float u_refFresnelFactor;\nuniform float u_glareRange;\nuniform float u_glareHardness;\nuniform float u_glareFactor;\nuniform float u_glareConvergence;\nuniform float u_glareOppositeFactor;\nuniform float u_glareAngle;\nuniform float u_bodyFactor;\nuniform float u_rimFactor;\nuniform float u_rimWidth;\nuniform float u_bevelFactor;\nuniform float u_saturationFactor;\nuniform vec4 u_tint[" + MAX_LAYERS + "];\nuniform int u_layerMode[" + MAX_LAYERS + "];\nuniform int u_blurEdge;\nuniform sampler2D u_fg;\nuniform float u_fgAspect;\nuniform int u_hasFg;\nuniform vec2 u_fgPos;\nuniform float u_fgScale;\n" + UNION_SD + "\n"
-    + "const vec3 D65=vec3(0.95045592705,1.0,1.08905775076);\n"
-    + "const mat3 RGB2XYZ=mat3(0.4124,0.3576,0.1805,0.2126,0.7152,0.0722,0.0193,0.1192,0.9505);\n"
-    + "const mat3 XYZ2RGB=mat3(3.2406255,-1.537208,-0.4986286,-0.9689307,1.8757561,0.0415175,0.0557101,-0.2040211,1.0569959);\n"
-    + "float unc(float a){ return a>0.04045?pow((a+0.055)/1.055,2.4):a/12.92; }\n"
-    + "float cmp(float a){ return a<=0.0031308?12.92*a:1.055*pow(a,0.41666666666)-0.055; }\n"
-    + "vec3 s2rgb(vec3 c){ return vec3(unc(c.x),unc(c.y),unc(c.z)); }\n"
-    + "vec3 rgb2s(vec3 c){ return vec3(cmp(c.x),cmp(c.y),cmp(c.z)); }\n"
-    + "vec3 s2xyz(vec3 c){ return s2rgb(c)*RGB2XYZ; }\n"
-    + "vec3 xyz2s(vec3 c){ return rgb2s(c*XYZ2RGB); }\n"
-    + "float f1(float x){ return x>0.00885645167?pow(x,0.333333333):7.78703703704*x+0.13793103448; }\n"
-    + "vec3 xyz2lab(vec3 xyz){ vec3 s=xyz/D65; s=vec3(f1(s.x),f1(s.y),f1(s.z)); return vec3(116.0*s.y-16.0,500.0*(s.x-s.y),200.0*(s.y-s.z)); }\n"
-    + "float f2(float x){ return x>0.206897?x*x*x:0.12841854934*(x-0.137931034); }\n"
-    + "vec3 lab2xyz(vec3 l){ float w=(l.x+16.0)/116.0; return D65*vec3(f2(w+l.y/500.0),f2(w),f2(w-l.z/200.0)); }\n"
-    + "vec3 s2lch(vec3 c){ vec3 lab=xyz2lab(s2xyz(c)); return vec3(lab.x,sqrt(dot(lab.yz,lab.yz)),atan(lab.z,lab.y)*57.2957795131); }\n"
-    + "vec3 lch2s(vec3 lch){ vec3 lab=vec3(lch.x,lch.y*cos(lch.z*0.01745329251),lch.y*sin(lch.z*0.01745329251)); return xyz2s(lab2xyz(lab)); }\n"
-    // Sobel (3x3) gradient over the linear-filtered SDF. The wider, weighted
-    // stencil low-passes the normal direction so the angle-sensitive glare no
-    // longer rings (the ribbed/corrugated edge). Normalized to keep |grad|~2 in
-    // smooth regions so nlen still saturates to 1 and only drops at the skeleton.
-    + "vec2 getGrad(vec2 uv, int layer){ vec2 t=1.5/u_resolution; float tl=layerSD(uv+vec2(-t.x,t.y),layer); float tc=layerSD(uv+vec2(0.0,t.y),layer); float tr=layerSD(uv+vec2(t.x,t.y),layer); float ml=layerSD(uv+vec2(-t.x,0.0),layer); float mr=layerSD(uv+vec2(t.x,0.0),layer); float bl=layerSD(uv+vec2(-t.x,-t.y),layer); float bc=layerSD(uv+vec2(0.0,-t.y),layer); float br=layerSD(uv+vec2(t.x,-t.y),layer); float gx=(tr+2.0*mr+br)-(tl+2.0*ml+bl); float gy=(tl+2.0*tc+tr)-(bl+2.0*bc+br); return vec2(gx,gy)*0.16667; }\n"
-    + "float a2(vec2 v){ float a=atan(v.y,v.x); if(a<0.0)a+=2.0*PI; return a; }\n"
-    + "vec4 disp(vec2 base, float mr, vec2 off, float fa){ vec4 p=vec4(1.0); float ar=texture(u_bg,base+off*(1.0-(N_R-1.0)*fa)).r; float ag=texture(u_bg,base+off*(1.0-(N_G-1.0)*fa)).g; float ab=texture(u_bg,base+off*(1.0-(N_B-1.0)*fa)).b; float br=texture(u_blurredBg,base+off*(1.0-(N_R-1.0)*fa)).r; float bg=texture(u_blurredBg,base+off*(1.0-(N_G-1.0)*fa)).g; float bb=texture(u_blurredBg,base+off*(1.0-(N_B-1.0)*fa)).b; p.r=mix(ar,br,mr); p.g=mix(ag,bg,mr); p.b=mix(ab,bb,mr); return p; }\n"
-    // Faithful port of liquid-glass-studio STEP9 (the same code MB Liquid Glass is
-    // built on). The earlier invented edge treatments (a metallic inner sheen, a
-    // global veil, a luminance-driven boost) are gone — they are exactly what
-    // made it read like a metal sticker. The baseline edge is physical Fresnel
-    // (LCH lightness lift) + glare; the 9to5Mac preset can add a controlled SDF
-    // milky body and rim while regular recipes keep those controls at zero.
+  // Glass material v3 — an optical model rather than a stack of looks.
+  //  • Surface: a convex squircle dome over a bezel of width Depth
+  //    (h(x) = (1-(1-x)^4)^(1/4), x = depth/bezel): steep at the rim, flat in
+  //    the middle, so the centre stays clear and the bend gathers at the edge.
+  //  • Refraction: Snell's law through that surface (glass n = 1.5) down to the
+  //    backdrop plane; the displacement is in design px, so preview ≡ export.
+  //  • Light: a thin rim specular on the side facing the light and, weaker, on
+  //    the opposite rim (light passing through reflects off the far wall), a
+  //    Schlick Fresnel lift on the steep bezel, and a faint inner glow — the
+  //    Apple/Sketch grammar of Light angle / intensity / splay. No broad glare
+  //    band, no LCH wash: those are what read as plastic or metal.
+  //  • Surface: frost (pre-blur), tint, Sketch's Brightness and Saturation.
+  //  • The drop shadow falls outside the glass only; the backdrop the glass
+  //    refracts is never darkened, so no dirty ring gathers inside the rim.
+  const MAIN_FRAG = "#version 300 es\nprecision highp float;\n#define PI 3.14159265359\n#define SPEC_N 12\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_bg;\nuniform sampler2D u_blurredBg;\nuniform vec2 u_resolution;\nuniform float u_dpr;\nuniform float u_refThickness[" + MAX_LAYERS + "];\nuniform float u_refraction;\nuniform float u_refDispersion;\nuniform vec2 u_lightDir;\nuniform float u_lightIntensity;\nuniform float u_splay;\nuniform float u_brightness;\nuniform float u_saturationFactor;\nuniform float u_bodyFactor;\nuniform vec4 u_tint[" + MAX_LAYERS + "];\nuniform vec2 u_layerCenter[" + MAX_LAYERS + "];\nuniform float u_magnify;\nuniform float u_shadowExpand;\nuniform float u_shadowFactor;\nuniform vec2 u_shadowOffset;\n" + UNION_SD + FG_GLSL + "\n"
+    // Continuous spectral split: the edge bend is integrated over SPEC_N
+    // wavelengths (400-700nm, stratified with a per-pixel interleaved-gradient
+    // jitter so large splits read as a smooth spectrum rather than stepped
+    // copies), folded back to RGB with colour-matching bumps normalised per
+    // channel (white stays white). fa = 0 is a single sample.
+    + "vec3 specW(float t){ float l = 400.0 + 300.0*t; float r = exp(-pow((l-605.0)/55.0,2.0)) + 0.22*exp(-pow((l-425.0)/22.0,2.0)); float g = exp(-pow((l-540.0)/50.0,2.0)); float b = exp(-pow((l-450.0)/38.0,2.0)); return vec3(r,g,b); }\n"
+    + "vec3 disp(vec2 base, vec2 off, float fa){\n"
+    + "  if (fa <= 0.0) return texture(u_blurredBg, base+off).rgb;\n"
+    + "  vec3 acc = vec3(0.0); vec3 wsum = vec3(0.0);\n"
+    + "  float jit = fract(52.9829189*fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));\n"
+    + "  for (int s=0;s<SPEC_N;s++){ float t = (float(s)+jit)/float(SPEC_N); vec2 o = base + off*(1.0 + 0.012*fa*(2.0*t-1.0)); vec3 w = specW(t); acc += texture(u_blurredBg, o).rgb*w; wsum += w; }\n"
+    + "  return acc/max(wsum, vec3(1e-4)); }\n"
+    // Merged glass carries its material through the bridge: tint, depth and
+    // the magnification centre are blended with the same smin weight as the
+    // distance, so two differently sized pieces meet without a seam.
+    + "void groupAttr(vec2 uv, int g, inout vec4 tint, inout float thick, inout vec2 centre){ float d = 1e5; bool first = true;\n"
+    + "  for (int j=0;j<" + MAX_LAYERS + ";j++){ if (j >= u_layerCount) break; if (u_mergeGroup[j] != g) continue; float v = layerSD(uv, j);\n"
+    + "    if (first) { d = v; tint = u_tint[j]; thick = u_refThickness[j]; centre = u_layerCenter[j]; first = false; }\n"
+    + "    else { float h = smoothMergeH(v, d); d = mix(v, d, h) - u_mergeK*h*(1.0-h); tint = mix(u_tint[j], tint, h); thick = mix(u_refThickness[j], thick, h); centre = mix(u_layerCenter[j], centre, h); } } }\n"
+    // Outside-only drop shadow: a soft falloff from the offset silhouette.
+    + "float dropShadow(){ if (u_shadowFactor <= 0.0) return 0.0; vec2 off = u_shadowOffset * u_dpr / u_resolution; float s = unionSD(v_uv - off) / u_dpr; float k = 1.0 - smoothstep(-u_shadowExpand*0.25, u_shadowExpand, s); return k*k*0.55*u_shadowFactor; }\n"
     + "void main(){\n"
     + "  int layer; float sd = stackSDIdx(v_uv, layer);\n"
-    + "  vec4 bg = texture(u_bg, v_uv);\n"
+    + "  vec3 bg = texture(u_bg, v_uv).rgb;\n"
+    + "  vec3 outside = bg * (1.0 - dropShadow());\n"
     + "  float aa = 1.0;\n"
-    + "  vec4 tint = u_tint[layer]; float thick = u_refThickness[layer];\n"
-    + "  vec4 result;\n"
-    + "  if (sd > aa) { result = bg; } else if (u_layerMode[layer] == 1) {\n"
-    + "    float mask = 1.0 - smoothstep(-aa, aa, sd);\n"
-    + "    result = vec4(mix(bg.rgb, tint.rgb, mask), 1.0);\n"
+    + "  vec4 tint = u_tint[layer]; float thick = u_refThickness[layer]; vec2 centre = u_layerCenter[layer];\n"
+    + "  if (u_mergeGroup[layer] >= 0) groupAttr(v_uv, u_mergeGroup[layer], tint, thick, centre);\n"
+    + "  vec3 result;\n"
+    + "  if (sd > aa) { result = outside; } else if (u_layerMode[layer] == 1) {\n"
+    + "    result = mix(tint.rgb, outside, smoothstep(-aa, aa, sd));\n"
     + "  } else {\n"
-    + "    float sdCss = sd/u_dpr; float depth = -sdCss;\n"
-    + "    vec2 G = getGrad(v_uv, layer); float glen = length(G); vec2 N = glen>1e-5 ? G/glen : vec2(0.0); float nlen = clamp(glen*0.5, 0.0, 1.0);\n"
-    + "    float xr = clamp(1.0 - depth/thick, 0.0, 1.0);\n"
-    + "    float thetaI = asin(clamp(pow(xr,2.0),0.0,1.0));\n"  /* STEP9 exponent: refraction concentrates at the edge, clear centre */
-    + "    float thetaT = asin(clamp(sin(thetaI)/u_refFactor,-1.0,1.0));\n"
-    + "    float edgeFactor = -tan(thetaT-thetaI);\n"
-    + "    if (depth >= thick) edgeFactor = 0.0;\n"
-    + "    vec2 aspect = vec2(u_resolution.y/u_resolution.x, 1.0);\n"
-    // Convex-lens magnification: sample the background pulled toward the stroke's
-    // centreline (-N), zero at the rim and growing into the body (smoothstep),
-    // killed at the skeleton by nlen. This is the real thick-glass lens that flat
-    // STEP9 refraction lacks — it enlarges the background seen through the glyph.
-    + "    float magProfile = nlen * smoothstep(0.0, max(thick,1.0)*0.6, depth);\n"
-    + "    vec2 base = v_uv - N * magProfile * u_lensMag * u_baseDpr * aspect;\n"  /* lens magnification baked into the sample coord — NOT spectrally split */
-    + "    vec4 col;\n"
-    + "    if (edgeFactor <= 0.0) { col = texture(u_blurredBg, base); col = mix(col, vec4(tint.rgb,1.0), tint.a*0.8); }\n"
-    + "    else {\n"
-    + "      float edgeH = depth/thick;\n"
-    + "      vec2 off = -N*edgeFactor*0.05*u_baseDpr*aspect;\n"  /* only the thin edge bend gets the spectral split */
-    + "      float mr = (u_blurEdge>0)?1.0:edgeH;\n"
-    + "      vec4 refr = disp(base, mr, off, u_refDispersion);\n"
-    + "      col = mix(refr, vec4(tint.rgb,1.0), tint.a*0.8);\n"
-    + "      float fres = clamp(pow(1.0 + sdCss/1500.0*pow(500.0/u_refFresnelRange,2.0) + u_refFresnelHardness, 5.0), 0.0, 1.0);\n"
-    + "      vec3 fLCH = s2lch(mix(vec3(1.0), tint.rgb, tint.a*0.5)); fLCH.x = clamp(fLCH.x + 20.0*fres*u_refFresnelFactor, 0.0, 100.0);\n"
-    + "      col = mix(col, vec4(lch2s(fLCH),1.0), fres*u_refFresnelFactor*0.7*nlen);\n"
-    + "      float gGeo = clamp(pow(1.0 + sdCss/1500.0*pow(500.0/u_glareRange,2.0) + u_glareHardness, 5.0), 0.0, 1.0);\n"
-    + "      float ga = (a2(N) - PI/4.0 + u_glareAngle)*2.0;\n"
-    + "      int far = ((ga>PI*1.5 && ga<PI*3.5)||(ga<-PI*0.5))?1:0;\n"
-    + "      float gaf = (0.5+sin(ga)*0.5)*(far==1?1.2*u_glareOppositeFactor:1.2)*u_glareFactor;\n"
-    + "      gaf = clamp(pow(gaf, 0.3+u_glareConvergence*1.5), 0.0, 1.0);\n"  /* studio exponent band 0.3-1.8: low convergence stays a soft wide band instead of blowing out */
-    + "      vec3 gLCH = s2lch(mix(refr.rgb, tint.rgb, tint.a*0.5)); gLCH.x = clamp(gLCH.x + 150.0*gaf*gGeo, 0.0, 120.0); gLCH.y = gLCH.y + 30.0*gaf*gGeo;\n"
-    + "      col = mix(col, vec4(lch2s(gLCH),1.0), gaf*gGeo*nlen);\n"
-    + "    }\n"
-    + "    float luma = dot(col.rgb, vec3(0.2126, 0.7152, 0.0722));\n"
-    /* saturationFactor is Apple's Glass Saturation: 1.0 = unchanged, <1 desaturates
-       (the high-grey glass look), >1 boosts (mix extrapolates past the colour).
-       Only the lower bound is clamped so the value can go above 100%. */
-    + "    col.rgb = max(mix(vec3(luma), col.rgb, max(u_saturationFactor, 0.0)), 0.0);\n"
+    + "    float sdCss = sd/u_dpr; float depth = max(-sdCss, 0.0);\n"
+    + "    float B = max(thick, 1.0); float x = clamp(depth/B, 0.0, 1.0); float u = 1.0 - x;\n"
+    + "    float hgt = pow(max(1.0 - u*u*u*u, 0.0), 0.25);\n"
+    + "    float slope = min(0.5 * u*u*u * pow(max(1.0 - u*u*u*u, 1e-4), -0.75), 6.0);\n"  /* dome height = half the bezel */
+    // The bend direction comes from a 3px central-difference gradient: the
+    // pixel-scale SDF normal carries enough noise that a strong bend turns it
+    // into radial streaks. The same wide gradient collapses toward 0 on a
+    // skeleton ridge (a merged neck, a hairline stroke), where the two sides'
+    // bends would otherwise flip in one pixel, so the bend fades across it.
+    + "    vec2 rw = vec2(3.0*u_dpr)/u_resolution; vec2 gw = vec2(effSD(v_uv+vec2(rw.x,0.0),layer)-effSD(v_uv-vec2(rw.x,0.0),layer), effSD(v_uv+vec2(0.0,rw.y),layer)-effSD(v_uv-vec2(0.0,rw.y),layer)) / (6.0*u_dpr);\n"
+    + "    float gwl = length(gw); vec2 Nr = gwl > 1e-4 ? gw/gwl : vec2(0.0); float rf = smoothstep(0.35, 0.95, gwl);\n"
+    + "    vec3 n = normalize(vec3(Nr*slope*rf, 1.0));\n"
+    + "    vec3 T = refract(vec3(0.0, 0.0, -1.0), n, 1.0/1.5);\n"
+    + "    float z = B*(0.18 + 0.5*hgt);\n"  /* glass above the backdrop at this point, design px */
+    + "    vec2 dCss = T.xy / max(-T.z, 0.2) * z * u_refraction;\n"
+    + "    vec2 off = dCss * rf * u_dpr / u_resolution;\n"
+    // Magnification (MB's Glass Optics > Magnification): the backdrop seen
+    // through the glass is scaled about the glass centre; 1 = unchanged, 2 =
+    // 200%, negative mirrors it. Only the backdrop moves.
+    + "    float mg = u_magnify < 0.0 ? min(u_magnify, -0.05) : max(u_magnify, 0.05);\n"
+    + "    vec2 base = centre + (v_uv - centre) / mg;\n"
+    + "    vec3 col = disp(base, off, u_refDispersion);\n"
+    + "    col = mix(col, tint.rgb, tint.a*0.8);\n"
+    /* saturationFactor is Sketch/Apple's Glass Saturation: 1.0 = unchanged, <1
+       desaturates, >1 boosts (mix extrapolates past the colour). Brightness
+       lifts toward white or scales toward black. */
+    + "    float luma = dot(col, vec3(0.2126, 0.7152, 0.0722));\n"
+    + "    col = max(mix(vec3(luma), col, max(u_saturationFactor, 0.0)), 0.0);\n"
+    + "    col = u_brightness >= 0.0 ? mix(col, vec3(1.0), u_brightness*0.6) : col*(1.0 + u_brightness);\n"
     + "    float body = smoothstep(0.5, max(2.0, min(thick*0.22, 8.0)), depth) * u_bodyFactor;\n"
-    + "    col = mix(col, vec4(1.0), clamp(body, 0.0, 0.78));\n"
-    + "    float rim = (1.0 - smoothstep(0.0, max(u_rimWidth,0.5), abs(sdCss))) * u_rimFactor * nlen;\n"
-    + "    col = mix(col, vec4(1.0), clamp(rim, 0.0, 1.0));\n"
-    // iOS 27 bilateral bevel — read off Apple's design-resource shadow stack:
-    // paired X/Y hairlines (X±1.2/Y±1, blur 0), soft X±20 side light, and a
-    // Y±40 glow wash with big negative spread. NOT an angular streak. Zero in
-    // all regular recipes.
-    + "    if (u_bevelFactor > 0.0) {\n"
-    + "      float hair = 1.0 - smoothstep(0.0, 1.35, abs(sdCss));\n"
-    + "      float topW = clamp(N.y, 0.0, 1.0); float botW = clamp(-N.y, 0.0, 1.0); float sideW = abs(N.x);\n"
-    + "      float bevel = hair * (topW + 0.70*botW + 0.45*sideW) * nlen;\n"
-    + "      float edgeGlow = (1.0 - smoothstep(0.0, max(10.0, thick*0.42), depth)) * sideW * nlen * 0.26;\n"
-    /* the Y±40 glow fills the glyph interior. It is screen-space, not normal-only:
-       at the glyph skeleton the SDF gradient vanishes, so a normal-weighted wash
-       cannot reach the interior the way the official effect does. */
-    + "      float interior = smoothstep(1.0, max(10.0, thick*0.50), depth);\n"
-    + "      float topWash = clamp((v_uv.y - 0.30) * 1.25, 0.0, 1.0) * 0.24;\n"
-    + "      float botWash = clamp((0.20 - v_uv.y) * 1.25, 0.0, 1.0) * 0.10;\n"
-    + "      float wash = interior * (topWash + botWash);\n"
-    + "      col = mix(col, vec4(1.0), clamp((bevel + edgeGlow + wash) * u_bevelFactor, 0.0, 1.0));\n"
-    + "    }\n"
-    + "    result = mix(col, bg, smoothstep(-aa, aa, sd));\n"
+    + "    col = mix(col, vec3(1.0), clamp(body, 0.0, 0.78));\n"
+    // Light: rim specular (both rims, facing side stronger), Fresnel on the
+    // steep bezel, faint inner glow on the lit side.
+    // The rim is two things, as on Apple's glass clock: a crisp ~1px
+    // hairline all the way round (stronger where the light hits), and a
+    // softer directional band whose width and angular spread follow Splay.
+    + "    float ndl = dot(Nr, u_lightDir);\n"
+    + "    float lobe = mix(14.0, 1.6, u_splay);\n"
+    + "    float dirL = pow(max(ndl, 0.0), lobe) + 0.6*pow(max(-ndl, 0.0), lobe);\n"
+    + "    float hair = exp(-depth/0.55);\n"
+    + "    float band = exp(-depth/mix(1.2, 6.0, u_splay)) * rf;\n"
+    + "    float spec = hair*(0.45 + 0.55*dirL) + band*0.7*dirL;\n"
+    + "    float fres = 0.04 + 0.96*pow(1.0 - n.z, 5.0);\n"
+    + "    float glow = u*u*max(ndl, 0.0)*rf*0.10;\n"
+    + "    col = mix(col, vec3(1.0), clamp((fres*0.25 + glow)*u_lightIntensity, 0.0, 1.0));\n"
+    + "    col += vec3(spec*u_lightIntensity);\n"
+    + "    result = mix(min(col, vec3(1.0)), outside, smoothstep(-aa, aa, sd));\n"
     + "  }\n"
-    + "  if (u_hasFg == 1) {\n"
-    + "    float A = u_resolution.x/u_resolution.y; float sh = u_fgScale; float sw = u_fgScale*u_fgAspect/A;\n"
-    + "    vec2 fuv = (v_uv - u_fgPos)/vec2(sw,sh) + 0.5;\n"
-    + "    if (all(greaterThanEqual(fuv,vec2(0.0))) && all(lessThanEqual(fuv,vec2(1.0)))) { vec4 fg = texture(u_fg, fuv); result = vec4(mix(result.rgb, fg.rgb, fg.a), 1.0); }\n"
-    + "  }\n"
-
-    + "  fragColor = result;\n"
+    + "  fragColor = vec4(overFg(result), 1.0);\n"
     + "}";
+
+  // Post Blur (MB's second blur stage): the finished glass composite is
+  // softened inside the glass silhouette only, after refraction, Fresnel and
+  // glare — the pre-blur (Background Blur) frosts what the glass sees, this
+  // frosts the glass itself. Solid layers and the foreground subject stay
+  // sharp: the subject is laid over here instead of in the main pass.
+  const COMP_FRAG = "#version 300 es\nprecision highp float;\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_sharp;\nuniform sampler2D u_soft;\nuniform vec2 u_resolution;\n" + UNION_SD + FG_GLSL
+    + "void main(){ int layer; float sd = stackSDIdx(v_uv, layer); vec3 c = texture(u_sharp, v_uv).rgb;\n"
+    + "  float m = u_layerMode[layer] == 1 ? 0.0 : 1.0 - smoothstep(-1.0, 1.0, sd);\n"
+    + "  c = mix(c, texture(u_soft, v_uv).rgb, m);\n"
+    + "  fragColor = vec4(overFg(c), 1.0); }";
 
   function compile(gl, type, src) {
     const sh = gl.createShader(type);
@@ -698,6 +736,7 @@ installLiquidCoverWindow();
     this.progBg = program(gl, VERT, BG_FRAG);
     this.progBlur = program(gl, VERT, BLUR_FRAG);
     this.progMain = program(gl, VERT, MAIN_FRAG);
+    this.progComp = program(gl, VERT, COMP_FRAG);
     this.vao = gl.createVertexArray();
     gl.bindVertexArray(this.vao);
     const buf = gl.createBuffer();
@@ -706,7 +745,7 @@ installLiquidCoverWindow();
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     gl.bindVertexArray(null);
-    this.fboA = null; this.fboB = null; this.fboC = null;
+    this.fboA = null; this.fboB = null; this.fboC = null; this.fboD = null;
     this.bgTex = null; this.bgAspect = 1;
     this.bgVideo = null; this.bgVideoFrameReady = false; this.bgVideoUploadError = false;
     this.fgTex = null; this.fgAspect = 1;
@@ -716,9 +755,18 @@ installLiquidCoverWindow();
   Renderer.prototype._ensureFBOs = function (w, h) {
     if (this.w === w && this.h === h && this.fboA) return;
     const gl = this.gl;
-    [this.fboA, this.fboB, this.fboC].forEach((f) => { if (f) { gl.deleteFramebuffer(f.fbo); gl.deleteTexture(f.tex); } });
+    [this.fboA, this.fboB, this.fboC, this.fboD].forEach((f) => { if (f) { gl.deleteFramebuffer(f.fbo); gl.deleteTexture(f.tex); } });
     this.fboA = makeFBO(gl, w, h, this.hdr); this.fboB = makeFBO(gl, w, h, this.hdr); this.fboC = makeFBO(gl, w, h, this.hdr);
+    this.fboD = null;
     this.w = w; this.h = h;
+  };
+  // Post Blur needs one more full-size buffer (the sharp composite); it is
+  // allocated on first use and dropped again when Post Blur returns to 0, so
+  // an ordinary cover never pays for it — a 6000px HDR export buffer is ~190MB.
+  Renderer.prototype._ensurePostFBO = function (on) {
+    const gl = this.gl;
+    if (on && !this.fboD) this.fboD = makeFBO(gl, this.w, this.h, this.hdr);
+    if (!on && this.fboD) { gl.deleteFramebuffer(this.fboD.fbo); gl.deleteTexture(this.fboD.tex); this.fboD = null; }
   };
   Renderer.prototype.setBackground = function (image) {
     const gl = this.gl;
@@ -788,8 +836,11 @@ installLiquidCoverWindow();
     const tex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    // premultiplied: filtering and mipmaps then never mix the colour of fully
+    // transparent pixels into the cut-out edge (the halo)
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     gl.generateMipmap(gl.TEXTURE_2D);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
@@ -822,11 +873,28 @@ installLiquidCoverWindow();
     this.sdfTexs.splice(i, 1); this.sdfTexs.push(null);
   };
   Renderer.prototype._u = function (p, n) { return this.gl.getUniformLocation(p, n); };
-  Renderer.prototype._bindLayers = function (p, count, base) {
+  Renderer.prototype._bindLayers = function (p, count, base, meta) {
     const gl = this.gl; const fb = this.sdfTexs[0]; const units = [];
     for (let i = 0; i < MAX_LAYERS; i++) { gl.activeTexture(gl.TEXTURE0 + base + i); gl.bindTexture(gl.TEXTURE_2D, this.sdfTexs[i] || fb); units.push(base + i); }
     gl.uniform1iv(this._u(p, "u_sdf"), units);
     gl.uniform1i(this._u(p, "u_layerCount"), count);
+    gl.uniform2fv(this._u(p, "u_sdfOffset"), meta.offsets);
+    gl.uniform1iv(this._u(p, "u_layerMode"), meta.layerModes);
+    gl.uniform1iv(this._u(p, "u_mergeGroup"), meta.mergeGroups);
+    gl.uniform1f(this._u(p, "u_mergeK"), meta.mergeK);
+  };
+  Renderer.prototype._bindFg = function (p, unit, on, params) {
+    const gl = this.gl;
+    gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, this.fgTex || this.bgTex);
+    gl.uniform1i(this._u(p, "u_fg"), unit);
+    gl.uniform1f(this._u(p, "u_fgAspect"), this.fgAspect);
+    gl.uniform1i(this._u(p, "u_hasFg"), on && this.fgTex ? 1 : 0);
+    gl.uniform2f(this._u(p, "u_fgPos"), params.fgPos[0], params.fgPos[1]);
+    gl.uniform1f(this._u(p, "u_fgScale"), params.fgScale);
+    gl.uniform1i(this._u(p, "u_fgRegistered"), params.fgRegistered ? 1 : 0);
+    gl.uniform1f(this._u(p, "u_fgBgAspect"), this.bgAspect);
+    gl.uniform1f(this._u(p, "u_fgBgZoom"), params.bgZoom || 1);
+    gl.uniform2f(this._u(p, "u_fgBgPan"), (params.bgPan && params.bgPan[0]) || 0, (params.bgPan && params.bgPan[1]) || 0);
   };
   Renderer.prototype.render = function (params) {
     const gl = this.gl;
@@ -839,12 +907,22 @@ installLiquidCoverWindow();
     const tints = new Float32Array(MAX_LAYERS * 4);
     const thick = new Float32Array(MAX_LAYERS).fill(20);
     const layerModes = new Int32Array(MAX_LAYERS);
+    const mergeGroups = new Int32Array(MAX_LAYERS).fill(-1);
+    const centers = new Float32Array(MAX_LAYERS * 2).fill(0.5);
     for (let i = 0; i < count; i++) {
       offsets[i * 2] = params.offsets[i][0]; offsets[i * 2 + 1] = params.offsets[i][1];
       const t = params.tints[i]; tints[i * 4] = t[0]; tints[i * 4 + 1] = t[1]; tints[i * 4 + 2] = t[2]; tints[i * 4 + 3] = t[3];
       thick[i] = params.thicknesses[i];
       layerModes[i] = params.layerModes && params.layerModes[i] ? 1 : 0;
+      if (params.mergeGroups && params.mergeGroups[i] != null) mergeGroups[i] = params.mergeGroups[i];
+      if (params.centers && params.centers[i]) { centers[i * 2] = params.centers[i][0]; centers[i * 2 + 1] = params.centers[i][1]; }
     }
+    // merge distance is in design px; the SDF textures are in raster px
+    const mergeK = Math.max(0, params.mergeK || 0) * dpr;
+    if (!(mergeK > 0)) mergeGroups.fill(-1);
+    const meta = { offsets, layerModes, mergeGroups, mergeK };
+    const postWeights = params.postBlurWeights && params.postBlurWeights.length > 1 ? params.postBlurWeights : null;
+    this._ensurePostFBO(!!postWeights);
     gl.bindVertexArray(this.vao);
     gl.viewport(0, 0, w, h);
 
@@ -852,21 +930,15 @@ installLiquidCoverWindow();
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.fboA.fbo);
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.bgTex);
     gl.uniform1i(this._u(this.progBg, "u_image"), 0);
-    this._bindLayers(this.progBg, count, 1);
-    gl.uniform2fv(this._u(this.progBg, "u_sdfOffset"), offsets);
     gl.uniform2f(this._u(this.progBg, "u_resolution"), w, h);
-    gl.uniform1f(this._u(this.progBg, "u_dpr"), dpr);
     gl.uniform1f(this._u(this.progBg, "u_imageAspect"), this.bgAspect);
     gl.uniform1f(this._u(this.progBg, "u_bgZoom"), params.bgZoom || 1);
     gl.uniform2f(this._u(this.progBg, "u_bgPan"), (params.bgPan && params.bgPan[0]) || 0, (params.bgPan && params.bgPan[1]) || 0);
-    gl.uniform1f(this._u(this.progBg, "u_shadowExpand"), params.shadowExpand);
-    gl.uniform1f(this._u(this.progBg, "u_shadowFactor"), params.shadowFactor);
-    gl.uniform2f(this._u(this.progBg, "u_shadowOffset"), params.shadowOffset[0], params.shadowOffset[1]);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
-    const weights = params.blurWeights, radius = weights.length - 1;
     const self = this;
-    const drawBlur = function (srcTex, dstFbo, dir) {
+    const drawBlur = function (srcTex, dstFbo, dir, weights) {
+      const radius = weights.length - 1;
       gl.useProgram(self.progBlur);
       gl.bindFramebuffer(gl.FRAMEBUFFER, dstFbo);
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, srcTex);
@@ -877,13 +949,12 @@ installLiquidCoverWindow();
       gl.uniform1fv(self._u(self.progBlur, "u_weights"), weights);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     };
-    drawBlur(this.fboA.tex, this.fboB.fbo, [0, 1]);
-    drawBlur(this.fboB.tex, this.fboC.fbo, [1, 0]);
+    drawBlur(this.fboA.tex, this.fboB.fbo, [0, 1], params.blurWeights);
+    drawBlur(this.fboB.tex, this.fboC.fbo, [1, 0], params.blurWeights);
 
     gl.useProgram(this.progMain);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    this._bindLayers(this.progMain, count, 0);
-    gl.uniform2fv(this._u(this.progMain, "u_sdfOffset"), offsets);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, postWeights ? this.fboD.fbo : null);
+    this._bindLayers(this.progMain, count, 0, meta);
     const bgUnit = MAX_LAYERS;
     const blurUnit = MAX_LAYERS + 1;
     const fgUnit = MAX_LAYERS + 2;
@@ -891,37 +962,41 @@ installLiquidCoverWindow();
     gl.uniform1i(this._u(this.progMain, "u_bg"), bgUnit);
     gl.activeTexture(gl.TEXTURE0 + blurUnit); gl.bindTexture(gl.TEXTURE_2D, this.fboC.tex);
     gl.uniform1i(this._u(this.progMain, "u_blurredBg"), blurUnit);
-    gl.activeTexture(gl.TEXTURE0 + fgUnit); gl.bindTexture(gl.TEXTURE_2D, this.fgTex || this.bgTex);
-    gl.uniform1i(this._u(this.progMain, "u_fg"), fgUnit);
-    gl.uniform1f(this._u(this.progMain, "u_fgAspect"), this.fgAspect);
-    gl.uniform1i(this._u(this.progMain, "u_hasFg"), this.fgTex ? 1 : 0);
-    gl.uniform2f(this._u(this.progMain, "u_fgPos"), params.fgPos[0], params.fgPos[1]);
-    gl.uniform1f(this._u(this.progMain, "u_fgScale"), params.fgScale);
+    this._bindFg(this.progMain, fgUnit, !postWeights, params);
+    gl.uniform2fv(this._u(this.progMain, "u_layerCenter"), centers);
+    gl.uniform1f(this._u(this.progMain, "u_magnify"), params.magnify == null ? 1 : params.magnify);
     gl.uniform2f(this._u(this.progMain, "u_resolution"), w, h);
     gl.uniform1f(this._u(this.progMain, "u_dpr"), dpr);
-    gl.uniform1f(this._u(this.progMain, "u_baseDpr"), params.baseDpr || dpr);
-    gl.uniform1f(this._u(this.progMain, "u_lensMag"), params.lensMag || 0);
     gl.uniform1fv(this._u(this.progMain, "u_refThickness"), thick);
-    gl.uniform1f(this._u(this.progMain, "u_refFactor"), params.refFactor);
+    gl.uniform1f(this._u(this.progMain, "u_refraction"), params.refraction);
     gl.uniform1f(this._u(this.progMain, "u_refDispersion"), params.refDispersion);
-    gl.uniform1f(this._u(this.progMain, "u_refFresnelRange"), params.refFresnelRange);
-    gl.uniform1f(this._u(this.progMain, "u_refFresnelHardness"), params.refFresnelHardness);
-    gl.uniform1f(this._u(this.progMain, "u_refFresnelFactor"), params.refFresnelFactor);
-    gl.uniform1f(this._u(this.progMain, "u_glareRange"), params.glareRange);
-    gl.uniform1f(this._u(this.progMain, "u_glareHardness"), params.glareHardness);
-    gl.uniform1f(this._u(this.progMain, "u_glareFactor"), params.glareFactor);
-    gl.uniform1f(this._u(this.progMain, "u_glareConvergence"), params.glareConvergence);
-    gl.uniform1f(this._u(this.progMain, "u_glareOppositeFactor"), params.glareOppositeFactor);
-    gl.uniform1f(this._u(this.progMain, "u_glareAngle"), params.glareAngle);
+    gl.uniform2f(this._u(this.progMain, "u_lightDir"), Math.cos(params.lightAngle), Math.sin(params.lightAngle));
+    gl.uniform1f(this._u(this.progMain, "u_lightIntensity"), params.lightIntensity);
+    gl.uniform1f(this._u(this.progMain, "u_splay"), params.splay);
+    gl.uniform1f(this._u(this.progMain, "u_brightness"), params.brightness);
+    gl.uniform1f(this._u(this.progMain, "u_saturationFactor"), params.saturationFactor);
     gl.uniform1f(this._u(this.progMain, "u_bodyFactor"), params.bodyFactor || 0);
-    gl.uniform1f(this._u(this.progMain, "u_rimFactor"), params.rimFactor || 0);
-    gl.uniform1f(this._u(this.progMain, "u_rimWidth"), params.rimWidth || 1);
-    gl.uniform1f(this._u(this.progMain, "u_bevelFactor"), params.bevelFactor || 0);
-    gl.uniform1f(this._u(this.progMain, "u_saturationFactor"), params.saturationFactor == null ? 1 : params.saturationFactor);
+    gl.uniform1f(this._u(this.progMain, "u_shadowExpand"), params.shadowExpand);
+    gl.uniform1f(this._u(this.progMain, "u_shadowFactor"), params.shadowFactor);
+    gl.uniform2f(this._u(this.progMain, "u_shadowOffset"), params.shadowOffset[0], params.shadowOffset[1]);
     gl.uniform4fv(this._u(this.progMain, "u_tint"), tints);
-    gl.uniform1iv(this._u(this.progMain, "u_layerMode"), layerModes);
-    gl.uniform1i(this._u(this.progMain, "u_blurEdge"), params.blurEdge ? 1 : 0);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+    if (postWeights) {
+      // A (the backdrop) is free once the main pass has read it: D → B → A.
+      drawBlur(this.fboD.tex, this.fboB.fbo, [0, 1], postWeights);
+      drawBlur(this.fboB.tex, this.fboA.fbo, [1, 0], postWeights);
+      gl.useProgram(this.progComp);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      this._bindLayers(this.progComp, count, 0, meta);
+      gl.activeTexture(gl.TEXTURE0 + bgUnit); gl.bindTexture(gl.TEXTURE_2D, this.fboD.tex);
+      gl.uniform1i(this._u(this.progComp, "u_sharp"), bgUnit);
+      gl.activeTexture(gl.TEXTURE0 + blurUnit); gl.bindTexture(gl.TEXTURE_2D, this.fboA.tex);
+      gl.uniform1i(this._u(this.progComp, "u_soft"), blurUnit);
+      gl.uniform2f(this._u(this.progComp, "u_resolution"), w, h);
+      this._bindFg(this.progComp, fgUnit, true, params);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
     gl.bindVertexArray(null);
   };
 
@@ -947,8 +1022,8 @@ installLiquidCoverWindow();
   const layers = [];
   let sel = 0;
   const selectedLayerIds = new Set();
-  const fg = { x: 0.5, y: 0.5, scale: 1.0 };
-  const glassFx = { bodyFactor: 0, rimFactor: 0, rimWidth: 1, bevelFactor: 0, saturationFactor: 100 };
+  const fg = { x: 0.5, y: 0.5, scale: 1.0, registered: true };
+  const glassFx = { bodyFactor: 0 };
   let dragFgMode = false;
   let activeBg = 0;
   let rafPending = false;
@@ -1175,65 +1250,63 @@ installLiquidCoverWindow();
   // directly; the AI path only *chooses* one by key (plus a tint + light) and
   // the code does the numeric mapping. `desc` is plain language the model can
   // actually reason about, and it is also what the prompt catalog is built from.
-  // Optics are pinned to the MB / liquid-glass-studio base, plus our convex-lens
-  // magnification (`lens`) which is what makes thick glass actually magnify the
-  // background like the reference — flat STEP9 refraction alone can't. IOR stays
-  // in the clean 1.4–1.6 band (2.0 caused the old metal/rainbow look).
+  // Every recipe is written in the material-v3 vocabulary, which is Sketch's
+  // and Figma's Glass vocabulary: light angle / intensity / splay, refraction,
+  // spectral split, frost, brightness, saturation, depth (per layer), tint.
+  // `clear` and `thinfrost` are Apple's Clear and Regular variants; the rest
+  // walk toward frosted and milky, plus the editorial looks.
   const PRESETS = [
-    // "clear" is the official liquid-glass-studio demo-shape material, read off
-    // the studio's own panel: invisible water-clear body, bright refractive edges
-    // with prismatic dispersion, no tint, no frost (blur 1), no magnification.
-    { key: "clear", mixValue: 0, desc: "water-clear official glass — fully transparent body showing the background 1:1, bright crisp refractive edges with a prismatic sparkle; subtle and premium",
-      p: { refFactor: 1.4, lens: 0, dispersion: 7, fresnelRange: 30, fresnelFactor: 20, glareRange: 30, glareFactor: 90, glareConvergence: 50, glareAngle: -45, blurEdge: true, blurRadius: 1, shadowFactor: 8, shadowExpand: 18, thickness: 20, tintColor: "#ffffff", tintAlpha: 0, bodyFactor: 0, rimFactor: 0, rimWidth: 1, bevelFactor: 0, saturationFactor: 100 } },
-    // "frosted" is crystal glass: thinner than "thick", clearer than "milky",
-    // with a bright rim and low frost so it reads as sparkling, not opaque.
-    { key: "frosted", mixValue: 55, desc: "crystal frosted glass — clear body, bright rim, light frost; limpid and luminous rather than milky",
-      p: { refFactor: 1.48, lens: 8, dispersion: 3, fresnelRange: 26, fresnelFactor: 96, glareRange: 34, glareFactor: 110, glareConvergence: 52, glareAngle: -50, blurEdge: true, blurRadius: 10, shadowFactor: 14, shadowExpand: 16, thickness: 48, tintColor: "#ffffff", tintAlpha: 8, bodyFactor: 0, rimFactor: 20, rimWidth: 1.6, bevelFactor: 0, saturationFactor: 100 } },
-    // "milky" is the soft-white material: real white body, lower sparkle, more
-    // blur, and less background colour than the clear/crystal family.
-    { key: "milky", mixValue: 75, desc: "solid milky frosted glass — a soft opaque-feeling white block with the background gently glowing through; calm and substantial",
-      p: { refFactor: 1.45, lens: 4, dispersion: 1, fresnelRange: 38, fresnelFactor: 52, glareRange: 48, glareFactor: 35, glareConvergence: 45, glareAngle: -50, blurEdge: true, blurRadius: 36, shadowFactor: 24, shadowExpand: 24, thickness: 72, tintColor: "#ffffff", tintAlpha: 52, bodyFactor: 38, rimFactor: 12, rimWidth: 3, bevelFactor: 0, saturationFactor: 80 } },
-    // "thinfrost" is the quiet veil: low thickness, no lens, modest white veil.
-    // It should be useful when the title must stay understated.
-    { key: "thinfrost", mixValue: 30, desc: "thin veiled glass — a flat light pane with a soft white veil and gentle frost, like the Apple lock-screen clock; quiet and elegant",
-      p: { refFactor: 1.38, lens: 0, dispersion: 6, fresnelRange: 30, fresnelFactor: 58, glareRange: 36, glareFactor: 55, glareConvergence: 58, glareAngle: -50, blurEdge: false, blurRadius: 12, shadowFactor: 10, shadowExpand: 16, thickness: 18, tintColor: "#ffffff", tintAlpha: 18, bodyFactor: 0, rimFactor: 0, rimWidth: 1, bevelFactor: 0, saturationFactor: 90 } },
-    // "thick" is the physical chunk: highest magnification, heavy thickness,
-    // and stronger rim weight, but less white milk than "milky".
-    { key: "thick", mixValue: 85, desc: "heavy chunky glass with strong magnification and bold bright edges — dramatic, poster-like",
-      p: { refFactor: 1.58, lens: 22, dispersion: 1.2, fresnelRange: 22, fresnelFactor: 88, glareRange: 30, glareFactor: 70, glareConvergence: 62, glareAngle: -50, blurEdge: false, blurRadius: 8, shadowFactor: 30, shadowExpand: 20, thickness: 96, tintColor: "#ffffff", tintAlpha: 12, bodyFactor: 4, rimFactor: 28, rimWidth: 2.4, bevelFactor: 0, saturationFactor: 105 } },
-    // "tinted" exists for colour systems: the visible difference is the colour
-    // cast itself, not merely more blur or more thickness.
-    { key: "tinted", mixValue: 100, desc: "thick glass carrying a gentle colour cast — when the title should hold a brand or mood colour",
-      p: { refFactor: 1.48, lens: 6, dispersion: 2, fresnelRange: 30, fresnelFactor: 70, glareRange: 36, glareFactor: 62, glareConvergence: 52, glareAngle: -50, blurEdge: false, blurRadius: 12, shadowFactor: 18, shadowExpand: 18, thickness: 54, tintColor: "#5ac8fa", tintAlpha: 52, bodyFactor: 8, rimFactor: 10, rimWidth: 1.8, bevelFactor: 0, saturationFactor: 120 } },
-    { key: "ninefive", mixValue: 75, desc: "9to5Mac hero logo glass — oversized logo or number rendered as a milky translucent glass object, crisp white bevel rim, soft editorial shadow, with product/subject optionally placed in front",
-      p: { refFactor: 1.5, lens: 5, dispersion: 1.2, fresnelRange: 24, fresnelFactor: 88, glareRange: 34, glareFactor: 48, glareConvergence: 58, glareAngle: -50, blurEdge: true, blurRadius: 24, shadowFactor: 28, shadowExpand: 20, thickness: 86, tintColor: "#ffffff", tintAlpha: 30, bodyFactor: 52, rimFactor: 110, rimWidth: 4.6, bevelFactor: 0, saturationFactor: 96, layerMode: "glass" } },
-    // "ios27" transcribes Apple's macOS 27 Sketch UI Kit / Materials page:
-    // Regular - Small - Tinted uses 6px Gaussian blur, 1.25px bilateral X
-    // hairlines, Y±40 glow, X±20 side light, and a 0/8/15 4% shadow. We keep
-    // the renderer's official Distortion 30 / Saturation 40 values for the
-    // custom Glass term, but the frost/shadow now come from the visible Sketch
-    // resource instead of the earlier large-control guess.
-    { key: "ios27", mixValue: 0, desc: "iOS 27 official glass — the neutral Apple UI Kit material (shared across iOS/macOS 27): a near-clear body with paired side/top/bottom hairlines, a soft top light wash, and a barely-there 4% floating shadow",
-      p: { refFactor: 1.45, lens: 30, dispersion: 0, fresnelRange: 26, fresnelFactor: 34, glareRange: 34, glareFactor: 10, glareConvergence: 62, glareAngle: -50, blurEdge: true, blurRadius: 6, shadowFactor: 4, shadowExpand: 15, thickness: 90, tintColor: "#ffffff", tintAlpha: 8, bodyFactor: 4, rimFactor: 10, rimWidth: 1.25, bevelFactor: 90, saturationFactor: 40, layerMode: "glass" } },
+    // Apple Clear: the backdrop shows 1:1 through a water-clear body; the
+    // curved rim bends it and catches a crisp two-sided highlight.
+    { key: "clear", mixValue: 0, desc: "water-clear Apple glass — fully transparent body showing the background 1:1, the curved rim bends the image and catches a crisp highlight; subtle and premium",
+      p: { refraction: 55, dispersion: 5, lightAngle: 135, lightIntensity: 70, splay: 22, blurRadius: 0, brightness: 3, saturation: 110, shadowFactor: 8, shadowExpand: 18, thickness: 40, tintColor: "#ffffff", tintAlpha: 0, bodyFactor: 0 } },
+    // Apple Regular (the lock-screen clock, controls): a little frost, a
+    // brightness and saturation lift so colour glows through, thin bright rim.
+    { key: "thinfrost", mixValue: 35, desc: "Apple Regular glass — a light frost with the background colour glowing through brighter and more saturated, thin bright rim; the lock-screen clock look, quiet and elegant",
+      p: { refraction: 45, dispersion: 3, lightAngle: 135, lightIntensity: 60, splay: 28, blurRadius: 10, brightness: 10, saturation: 150, shadowFactor: 10, shadowExpand: 18, thickness: 34, tintColor: "#ffffff", tintAlpha: 4, bodyFactor: 0 } },
+    // Crystal: clearer than milky, more frost than Regular, luminous rim.
+    { key: "frosted", mixValue: 65, desc: "crystal frosted glass — soft frost, luminous body and a bright rim; limpid and glowing rather than milky",
+      p: { refraction: 55, dispersion: 4, lightAngle: 135, lightIntensity: 75, splay: 36, blurRadius: 20, brightness: 16, saturation: 140, shadowFactor: 14, shadowExpand: 18, thickness: 50, tintColor: "#ffffff", tintAlpha: 6, bodyFactor: 0 } },
+    // Milky: a soft white block with the backdrop glowing through.
+    { key: "milky", mixValue: 100, desc: "solid milky frosted glass — a soft opaque-feeling white block with the background gently glowing through; calm and substantial",
+      p: { refraction: 35, dispersion: 1, lightAngle: 135, lightIntensity: 50, splay: 50, blurRadius: 36, brightness: 22, saturation: 100, shadowFactor: 20, shadowExpand: 24, thickness: 64, tintColor: "#ffffff", tintAlpha: 34, bodyFactor: 30 } },
+    // Thick: a heavy lens — deep bezel, strong bend, a touch of magnification.
+    { key: "thick", mixValue: 20, desc: "heavy chunky glass with a deep curved edge, strong bending and slight magnification — dramatic, poster-like",
+      p: { refraction: 90, dispersion: 3, lightAngle: 135, lightIntensity: 80, splay: 18, blurRadius: 3, brightness: 4, saturation: 115, shadowFactor: 24, shadowExpand: 22, thickness: 92, magnify: 1.12, tintColor: "#ffffff", tintAlpha: 0, bodyFactor: 0 } },
+    // Tinted: the colour cast is the point, luminance kept.
+    { key: "tinted", mixValue: 65, desc: "glass carrying a gentle colour cast — when the title should hold a brand or mood colour",
+      p: { refraction: 55, dispersion: 2, lightAngle: 135, lightIntensity: 62, splay: 32, blurRadius: 14, brightness: 6, saturation: 140, shadowFactor: 16, shadowExpand: 18, thickness: 50, tintColor: "#5ac8fa", tintAlpha: 42, bodyFactor: 0 } },
+    { key: "ninefive", mixValue: 100, desc: "9to5Mac hero logo glass — oversized logo or number rendered as a milky translucent glass object, crisp bright rim, soft editorial shadow, with product/subject optionally placed in front",
+      p: { refraction: 55, dispersion: 1.5, lightAngle: 120, lightIntensity: 90, splay: 16, blurRadius: 24, brightness: 16, saturation: 100, shadowFactor: 28, shadowExpand: 20, thickness: 80, tintColor: "#ffffff", tintAlpha: 26, bodyFactor: 42, layerMode: "glass" } },
+    // Apple UI-kit glass as Sketch's Auto mode renders it: near-clear, small
+    // frost, vibrancy lift, hairline rim, a barely-there floating shadow.
+    // Aaron's own cover glass, read off 113 finished covers (2025-09 → 2026-05):
+    // a pale, heavily frosted, slightly warm-white glass lifted well above
+    // the photo and desaturated, quiet edges, a short soft shadow, almost no
+    // refraction and no spectral split; titles set in a regular weight.
+    { key: "aaron", mixValue: 85, desc: "Aaron's cover glass — a pale, heavily frosted warm-white glass lifted well above the photo, low colour, quiet crisp edges and a short soft shadow; regular-weight title, product photo often in front of it; calm, editorial, product-review",
+      p: { refraction: 18, dispersion: 0, lightAngle: 135, lightIntensity: 32, splay: 40, blurRadius: 52, brightness: 30, saturation: 55, shadowFactor: 18, shadowExpand: 12, thickness: 30, tintColor: "#f4f1ec", tintAlpha: 48, bodyFactor: 30, fontWeight: 500 } },
+    { key: "ios27", mixValue: 35, desc: "iOS 27 official glass — the neutral Apple UI Kit material: near-clear with a small frost, colour lifted through the glass, a hairline rim and a barely-there floating shadow",
+      p: { refraction: 50, dispersion: 0, lightAngle: 135, lightIntensity: 65, splay: 20, blurRadius: 6, brightness: 12, saturation: 140, shadowFactor: 5, shadowExpand: 15, thickness: 60, tintColor: "#ffffff", tintAlpha: 6, bodyFactor: 2, layerMode: "glass" } },
   ];
   const RECIPE_KEYS = PRESETS.map((r) => r.key);
   function recipeByKey(k) { return PRESETS.find((r) => r.key === String(k).toLowerCase()) || null; }
   function recipeLabel(k) { return (typeof t === "function" && t("liquid_cover_preset_" + k)) || k; }
   function recipeSummary(k) { return tr("liquid_cover_preset_" + k + "_summary", ""); }
-  // The Glass Mix slider is the clear→tinted MATERIAL continuum only. Editorial
-  // presets (ios27, ninefive) carry bevel/layerMode/saturation and are NOT
-  // points on this axis — dragging through them would silently flip those on.
+  // The Glass Mix slider (玻璃总控) is Apple's material axis: Clear → Regular
+  // → Frosted → Milky. Tint and the editorial presets (ios27, ninefive,
+  // thick) are NOT points on it — dragging through them would silently flip
+  // a colour cast or a layer mode on.
   const MATERIAL_STOPS = [
     { value: 0, key: "clear" },
-    { value: 30, key: "thinfrost" },
-    { value: 55, key: "frosted" },
-    { value: 75, key: "milky" },
-    { value: 100, key: "tinted" },
+    { value: 35, key: "thinfrost" },
+    { value: 65, key: "frosted" },
+    { value: 100, key: "milky" },
   ];
   const MATERIAL_NUMERIC_FIELDS = [
-    "refFactor", "lens", "dispersion", "fresnelRange", "fresnelFactor",
-    "glareRange", "glareFactor", "glareConvergence", "glareAngle",
-    "blurRadius", "shadowFactor", "shadowExpand", "thickness", "tintAlpha", "bodyFactor", "rimFactor", "rimWidth", "bevelFactor", "saturationFactor",
+    "refraction", "dispersion", "lightAngle", "lightIntensity", "splay",
+    "blurRadius", "brightness", "saturation", "shadowFactor", "shadowExpand",
+    "thickness", "tintAlpha", "bodyFactor",
   ];
   function lerp(a, b, x) { return a + (b - a) * x; }
   function mixHex(a, b, x) {
@@ -1262,7 +1335,6 @@ installLiquidCoverWindow();
     const x = hi.value === lo.value ? 0 : (v - lo.value) / (hi.value - lo.value);
     const p = {};
     MATERIAL_NUMERIC_FIELDS.forEach((field) => { p[field] = lerp(a.p[field], b.p[field], x); });
-    p.blurEdge = x < 0.5 ? a.p.blurEdge : b.p.blurEdge;
     p.tintColor = mixHex(a.p.tintColor, b.p.tintColor, x);
     return p;
   }
@@ -1288,21 +1360,21 @@ installLiquidCoverWindow();
   // --- the model→physics mapping. The model only ever speaks in these closed
   // vocabularies; the numbers all live on this side of the boundary. ---
   const TINT_STRENGTH = { none: 0, subtle: 12, medium: 24, strong: 38 };
-  // Light direction (where the brightest light comes from) → glare streak angle.
+  // Light direction (where the brightest light comes from) → Light Angle.
   const LIGHT_ANGLE = { top: 90, "top-left": 135, left: 180, "bottom-left": -135, bottom: -90, "bottom-right": -45, right: 0, "top-right": 45 };
   function adjCtl(id, d, min, max) { const x = $(id); if (x) x.value = clampNum(+x.value + d, min, max, +x.value); }
   function adjLayerField(f, d, min, max) { layers.forEach((L) => { L[f] = clampNum((+L[f] || 0) + d, min, max, +L[f] || 0); }); }
   // Bounded modifier vocabulary: each word maps to a deterministic delta. This is
   // how the model nudges a recipe without ever touching a raw number.
   const MODIFIER_FX = {
-    brighter: () => { adjCtl("lc-glare-factor", 15, 0, 120); adjCtl("lc-fresnel-factor", 8, 0, 100); },
-    softer: () => { adjCtl("lc-glare-factor", -15, 0, 120); adjCtl("lc-blur-radius", 8, 0, 80); },
+    brighter: () => { adjCtl("lc-light-intensity", 15, 0, 100); adjCtl("lc-brightness", 6, -50, 50); },
+    softer: () => { adjCtl("lc-light-intensity", -15, 0, 100); adjCtl("lc-splay", 15, 0, 100); adjCtl("lc-blur-radius", 8, 0, 80); },
     thinner: () => { adjLayerField("refThickness", -10, 0, 100); },
     thicker: () => { adjLayerField("refThickness", 12, 0, 100); },
-    "more-frosted": () => { const be = $("lc-blur-edge"); if (be) be.checked = true; adjCtl("lc-blur-radius", 16, 0, 80); },
+    "more-frosted": () => { adjCtl("lc-blur-radius", 16, 0, 80); adjCtl("lc-brightness", 4, -50, 50); },
     clearer: () => { adjCtl("lc-blur-radius", -12, 0, 80); adjLayerField("tintAlpha", -10, 0, 100); },
     "more-color": () => { adjLayerField("tintAlpha", 16, 0, 100); },
-    "more-dispersion": () => { adjCtl("lc-dispersion", 6, 0, 50); },
+    "more-dispersion": () => { adjCtl("lc-dispersion", 6, 0, 100); },
   };
   // Background-adaptive geometry. The vision model only judges how BUSY the photo
   // is (a real, groundable image property); the code decides what that means for
@@ -1314,7 +1386,7 @@ installLiquidCoverWindow();
   // ones go clearer and let the background hue flood the glass.
   function adjBody(d) { if (glassFx.bodyFactor > 0) glassFx.bodyFactor = clampNum(glassFx.bodyFactor + d, 10, 80, glassFx.bodyFactor); }
   const BUSYNESS_FX = {
-    busy: () => { adjLayerField("refThickness", -8, 0, 100); const be = $("lc-blur-edge"); if (be) be.checked = true; adjCtl("lc-blur-radius", 12, 0, 80); adjLayerField("tintAlpha", 8, 0, 100); adjBody(8); },
+    busy: () => { adjLayerField("refThickness", -8, 0, 100); adjCtl("lc-blur-radius", 12, 0, 80); adjLayerField("tintAlpha", 8, 0, 100); adjBody(8); },
     moderate: () => { /* leave the recipe as-is */ },
     clean: () => { adjLayerField("refThickness", 6, 0, 100); adjCtl("lc-blur-radius", -6, 0, 80); adjBody(-8); },
   };
@@ -1363,23 +1435,21 @@ installLiquidCoverWindow();
   function setSlider(id, v, min, max) { if (v == null) return; const x = $(id); if (x) x.value = clampNum(v, min, max, +x.value); }
   function applyPreset(p) {
     if (p.bodyFactor != null) glassFx.bodyFactor = p.bodyFactor;
-    if (p.rimFactor != null) glassFx.rimFactor = p.rimFactor;
-    if (p.rimWidth != null) glassFx.rimWidth = p.rimWidth;
-    if (p.bevelFactor != null) glassFx.bevelFactor = p.bevelFactor;
-    if (p.saturationFactor != null) glassFx.saturationFactor = p.saturationFactor;
-    setSlider("lc-ref-factor", p.refFactor, 1, 4);
-    setSlider("lc-lens", p.lens, 0, 30);
-    setSlider("lc-dispersion", p.dispersion, 0, 50);
-    setSlider("lc-fresnel-range", p.fresnelRange, 1, 100);
-    setSlider("lc-fresnel-factor", p.fresnelFactor, 0, 100);
-    setSlider("lc-glare-angle", p.glareAngle, -180, 180);
-    setSlider("lc-glare-range", p.glareRange, 1, 100);
-    setSlider("lc-glare-factor", p.glareFactor, 0, 120);
-    setSlider("lc-glare-convergence", p.glareConvergence, 0, 100);
+    setSlider("lc-refraction", p.refraction, 0, 100);
+    setSlider("lc-dispersion", p.dispersion, 0, 100);
+    setSlider("lc-light-angle", p.lightAngle, -180, 180);
+    setSlider("lc-light-intensity", p.lightIntensity, 0, 100);
+    setSlider("lc-splay", p.splay, 0, 100);
     setSlider("lc-blur-radius", p.blurRadius, 0, 80);
+    setSlider("lc-brightness", p.brightness, -50, 50);
+    setSlider("lc-saturation", p.saturation, 0, 200);
+    // Magnification and Post Blur are material optics: a recipe that does not
+    // name them returns them to neutral. Merge Distance is composition, not
+    // material, so recipes leave it alone.
+    setSlider("lc-magnify", p.magnify == null ? 1 : p.magnify, -4, 4);
+    setSlider("lc-post-blur", p.postBlur == null ? 0 : p.postBlur, 0, 40);
     setSlider("lc-shadow-factor", p.shadowFactor, 0, 100);
     setSlider("lc-shadow-expand", p.shadowExpand, 2, 100);
-    if (typeof p.blurEdge === "boolean") { const be = $("lc-blur-edge"); if (be) be.checked = p.blurEdge; }
     layers.forEach((L) => {
       // layerMode only retargets shape/logo layers. Text layers keep their
       // solid/glass choice: in the 9to5Mac grammar the title is ALWAYS the
@@ -1389,6 +1459,13 @@ installLiquidCoverWindow();
       if (p.tintColor) L.tintColor = p.tintColor;
       if (p.tintAlpha != null) L.tintAlpha = p.tintAlpha;
     });
+    // a recipe may name a title weight (aaron sets titles regular); text
+    // layers only, and only this recipe path — Glass Mix never carries one
+    let reshaped = false;
+    if (p.fontWeight) layers.forEach((L) => {
+      if (!L.shape && !L.shapeKind && L.fontWeight !== p.fontWeight) { L.fontWeight = p.fontWeight; reshaped = true; }
+    });
+    if (reshaped) rebuildAllSDF();
     loadLayerIntoPanel(); syncValueLabels(); renderNow(); scheduleRender();
   }
   function buildPresetRow() {
@@ -1424,6 +1501,92 @@ installLiquidCoverWindow();
       row.appendChild(b);
     });
     syncPresetButtons();
+  }
+  // Preset previews are rendered by the glass kernel itself, on the current
+  // backdrop, so a card always shows what its recipe really does — the CSS
+  // sketch underneath is only the fallback when WebGL is unavailable. One
+  // small second renderer, kept for re-renders when the backdrop changes.
+  // Frost and shadow are scaled to the sample glyph, so a thumbnail reads the
+  // way the recipe reads on a cover-sized title.
+  const THUMB_W = 432, THUMB_H = 180, THUMB_DPR = 2, THUMB_FONT = 64, COVER_FONT = 170;
+  let thumbRenderer = null;
+  let thumbTimer = 0;
+  const thumbSdf = new Map();
+  function thumbSampleText(k) { return k === "ninefive" ? "9" : k === "ios27" ? "27" : "Aa"; }
+  function thumbSdfFor(text, weight) {
+    const key = text + "@" + weight;
+    if (thumbSdf.has(key)) return thumbSdf.get(key);
+    const r = rasterizeText({ text, width: THUMB_W, height: THUMB_H, fontFamily: FONT_DEFAULT, fontWeight: weight, fontSize: THUMB_FONT * THUMB_DPR, letterSpacing: 0, rotationDeg: 0 });
+    const sdf = alphaToSignedDistance(r.alpha, r.width, r.height, true);
+    smoothSDF(sdf, r.width, r.height);
+    let mn = 0; for (let i = 0; i < sdf.length; i++) { if (sdf[i] < mn) mn = sdf[i]; }
+    const entry = { sdf, halfPx: -mn };
+    thumbSdf.set(key, entry);
+    return entry;
+  }
+  function recipeRenderParams(p, halfPx) {
+    const k = THUMB_FONT / COVER_FONT;
+    const frac = clampNum(p.thickness, 0, 100, 60) / 100;
+    const tint = hexToRgb(validHex(p.tintColor) || "#ffffff");
+    const expand = clampNum(p.shadowExpand, 2, 100, 20);
+    return {
+      dpr: THUMB_DPR, layerCount: 1, offsets: [[0, 0]], layerModes: [0],
+      mergeGroups: [-1], mergeK: 0, centers: [[0.5, 0.5]],
+      magnify: p.magnify == null ? 1 : p.magnify, postBlurWeights: null,
+      tints: [[tint[0], tint[1], tint[2], (p.tintAlpha || 0) / 100]],
+      thicknesses: [Math.max(1, (halfPx / THUMB_DPR) * Math.min(frac, 0.96))],
+      fgPos: [0.5, 0.5], fgScale: 1, fgRegistered: false,
+      refraction: (p.refraction || 0) / 50,
+      refDispersion: p.dispersion || 0,
+      lightAngle: ((p.lightAngle == null ? 135 : p.lightAngle) * Math.PI) / 180,
+      lightIntensity: (p.lightIntensity || 0) / 100,
+      splay: (p.splay || 0) / 100,
+      brightness: (p.brightness || 0) / 100,
+      saturationFactor: (p.saturation == null ? 100 : p.saturation) / 100,
+      bodyFactor: (p.bodyFactor || 0) / 100,
+      blurWeights: gaussianWeights(Math.min(96, Math.round((p.blurRadius || 0) * (1440 / 1080) * (THUMB_FONT * THUMB_DPR) / (COVER_FONT * 2)))),
+      shadowExpand: expand * k,
+      shadowFactor: (p.shadowFactor || 0) / 100,
+      shadowOffset: [0, -(4 + 0.35 * expand) * k],
+      bgZoom: 1, bgPan: [0, 0],
+    };
+  }
+  function renderPresetThumbs() {
+    thumbTimer = 0;
+    const src = lastStillBgSource;
+    const row = $("lc-preset-row");
+    if (!src || !row || !renderer) return;
+    try {
+      if (!thumbRenderer) {
+        const c = document.createElement("canvas");
+        c.width = THUMB_W; c.height = THUMB_H;
+        thumbRenderer = new Renderer(c);
+      }
+      thumbRenderer.setBackground(src);
+      let current = "";
+      PRESETS.forEach((pr) => {
+        const text = thumbSampleText(pr.key);
+        const weight = pr.p.fontWeight || 800;
+        const entry = thumbSdfFor(text, weight);
+        if (text + weight !== current) { thumbRenderer.setLayerSDF(0, entry.sdf, THUMB_W, THUMB_H); current = text + weight; }
+        thumbRenderer.render(recipeRenderParams(pr.p, entry.halfPx));
+        const preview = row.querySelector(`[data-preset-key="${pr.key}"] .lc-preset-preview`);
+        if (!preview) return;
+        // inline, so a card's own sketch background (tinted has one) can't
+        // reset the size or position
+        preview.style.backgroundImage = "url(" + thumbRenderer.canvas.toDataURL("image/png") + ")";
+        preview.style.backgroundSize = "cover";
+        preview.style.backgroundPosition = "center";
+        preview.classList.add("is-rendered");
+      });
+    } catch (e) {
+      // keep the CSS sketches; the cover itself reports WebGL problems
+      thumbRenderer = null;
+    }
+  }
+  function schedulePresetThumbs() {
+    if (thumbTimer) clearTimeout(thumbTimer);
+    thumbTimer = setTimeout(renderPresetThumbs, 250);
   }
   function syncPresetButtons() {
     document.querySelectorAll("#liquid-cover-app [data-preset-key]").forEach((button) => {
@@ -1536,10 +1699,10 @@ installLiquidCoverWindow();
   }
 
   const HISTORY_CONTROL_IDS = [
-    "lc-ref-factor", "lc-lens", "lc-dispersion", "lc-blur-edge",
-    "lc-fresnel-range", "lc-fresnel-factor", "lc-glare-factor",
-    "lc-glare-range", "lc-glare-convergence", "lc-glare-angle",
+    "lc-light-angle", "lc-light-intensity", "lc-splay",
+    "lc-refraction", "lc-dispersion", "lc-brightness", "lc-saturation",
     "lc-blur-radius", "lc-shadow-factor", "lc-shadow-expand",
+    "lc-magnify", "lc-merge", "lc-post-blur",
     "lc-material-mix", "lc-motion-preset", "lc-motion-duration",
     "lc-motion-audio", "lc-fg-scale",
   ];
@@ -1642,6 +1805,7 @@ installLiquidCoverWindow();
     sel = Math.max(0, layers.findIndex((L) => L.id === state.selectedId));
     if (!selectedLayerIds.size && layers[sel]) selectedLayerIds.add(layers[sel].id);
     Object.assign(fg, state.fg);
+    { const reg = $("lc-fg-register"); if (reg) reg.checked = !!fg.registered; }
     Object.assign(glassFx, state.glassFx);
     Object.entries(state.controls || {}).forEach(([id, value]) => {
       const el = $(id);
@@ -1727,7 +1891,7 @@ installLiquidCoverWindow();
   function setBg(src) {
     lastBgSource = src;
     lastStillBgSource = src;
-    if (renderer) { renderer.setBackground(src); scheduleRender(); }
+    if (renderer) { renderer.setBackground(src); scheduleRender(); schedulePresetThumbs(); }
     updateExportDimNote();
   }
   function motionDurationSeconds() {
@@ -2194,38 +2358,71 @@ installLiquidCoverWindow();
     if (raw <= 0) return 0;
     return Math.max(0, Math.min(96, Math.round(raw * (EXPORT_H / 1080))));
   }
+  // Liquid merge groups: top-level glass layers merge with each other; text
+  // linked inside a shape merges only with its siblings in that shape, so it
+  // keeps stacking on top of the shape. Solid and hidden layers never merge.
+  // Value = index of the group's first layer (what the shader expects).
+  function mergeGroupsFor(list) {
+    const firstByKey = new Map();
+    return list.map((L, i) => {
+      if (L.hidden || isSolidLayer(L)) return -1;
+      const key = L.parentId || "";
+      if (!firstByKey.has(key)) firstByKey.set(key, i);
+      return firstByKey.get(key);
+    });
+  }
+  // Magnification centre per layer. Merged glass is one piece, so every member
+  // of a group gets the centre of the group's combined bounds — per-member
+  // centres would bend the magnified backdrop through the bridge.
+  function layerCenters(list, groups) {
+    const boxes = new Map();
+    const keyOf = (i) => (groups[i] >= 0 ? "g" + groups[i] : "l" + i);
+    list.forEach((L, i) => {
+      const b = worldBounds(L);
+      const u = boxes.get(keyOf(i));
+      boxes.set(keyOf(i), u ? { left: Math.min(u.left, b.left), right: Math.max(u.right, b.right), bottom: Math.min(u.bottom, b.bottom), top: Math.max(u.top, b.top) } : b);
+    });
+    return list.map((L, i) => {
+      const b = boxes.get(keyOf(i));
+      return [(b.left + b.right) / 2, (b.bottom + b.top) / 2];
+    });
+  }
+  // Post Blur shares Frost's resolution-independent scale (value at 1080p).
+  function scaledPostBlurRadius() {
+    const raw = +($("lc-post-blur") && $("lc-post-blur").value) || 0;
+    if (raw <= 0) return 0;
+    return Math.max(1, Math.min(96, Math.round(raw * (EXPORT_H / 1080))));
+  }
   function readParams() {
+    const postRadius = scaledPostBlurRadius();
+    const mergeK = +($("lc-merge") && $("lc-merge").value) || 0;
+    const mergeGroups = mergeK > 0 ? mergeGroupsFor(layers) : layers.map(() => -1);
     return {
       dpr: currentDPR(),
-      baseDpr: DPR, // refraction offset uses this so it doesn't grow with export scale
-      lensMag: (+($("lc-lens") && $("lc-lens").value) || 0) / 1000, // slider 0..30 → 0..0.03 UV pull
       layerCount: layers.length,
       offsets: layers.map((L) => L.hidden ? [10, 10] : [L.cx - 0.5, L.cy - 0.5]),
       layerModes: layers.map((L) => isSolidLayer(L) ? 1 : 0),
+      mergeGroups,
+      mergeK,
+      centers: layerCenters(layers, mergeGroups),
+      magnify: $("lc-magnify") ? +$("lc-magnify").value : 1,
+      postBlurWeights: postRadius > 0 ? gaussianWeights(postRadius) : null,
       tints: layers.map((L) => { const c = hexToRgb(layerColor(L)); return [c[0], c[1], c[2], L.tintAlpha / 100]; }),
       thicknesses: layers.map((L) => effectiveThickness(L)),
-      fgPos: [fg.x, fg.y], fgScale: fg.scale,
-      refFactor: +$("lc-ref-factor").value,
+      fgPos: [fg.x, fg.y], fgScale: fg.scale, fgRegistered: !!fg.registered,
+      refraction: (+$("lc-refraction").value || 0) / 50, // 50 = physical n 1.5 dome
       refDispersion: +$("lc-dispersion").value,
-      refFresnelRange: +$("lc-fresnel-range").value,
-      refFresnelHardness: 0.2,
-      refFresnelFactor: +$("lc-fresnel-factor").value / 100,
-      glareRange: +$("lc-glare-range").value,
-      glareHardness: 0.2,
-      glareFactor: +$("lc-glare-factor").value / 100,
-      glareConvergence: +$("lc-glare-convergence").value / 100,
-      glareOppositeFactor: 0.8,
-      glareAngle: (+$("lc-glare-angle").value * Math.PI) / 180,
+      lightAngle: (+$("lc-light-angle").value * Math.PI) / 180, // direction the light comes from
+      lightIntensity: +$("lc-light-intensity").value / 100,
+      splay: +$("lc-splay").value / 100,
+      brightness: +$("lc-brightness").value / 100,
+      saturationFactor: +$("lc-saturation").value / 100,
       bodyFactor: glassFx.bodyFactor / 100,
-      rimFactor: glassFx.rimFactor / 100,
-      rimWidth: glassFx.rimWidth,
-      bevelFactor: glassFx.bevelFactor / 100,
-      saturationFactor: glassFx.saturationFactor / 100,
-      blurEdge: $("lc-blur-edge").checked,
       blurWeights: gaussianWeights(scaledBlurRadius()),
       shadowExpand: +$("lc-shadow-expand").value,
       shadowFactor: +$("lc-shadow-factor").value / 100,
-      shadowOffset: [0, -10],
+      // the glass floats: the shadow drops further the softer it spreads
+      shadowOffset: [0, -(4 + 0.35 * +$("lc-shadow-expand").value)],
       bgZoom: 1,
       bgPan: [0, 0],
     };
@@ -2240,19 +2437,17 @@ installLiquidCoverWindow();
     const reveal = easeOutCubic(t);
     if (preset === "condense") {
       p.thicknesses = p.thicknesses.map((v) => v * (0.08 + 0.92 * reveal));
-      p.refFresnelFactor *= reveal;
-      p.glareFactor *= reveal;
+      p.refraction *= reveal;
+      p.lightIntensity *= reveal;
       p.bodyFactor *= reveal;
-      p.rimFactor *= reveal;
-      p.lensMag *= reveal;
+      p.magnify = 1 + (p.magnify - 1) * reveal;
       p.shadowFactor *= reveal;
       p.blurWeights = gaussianWeights(Math.min(96, Math.round(scaledBlurRadius() * (1.9 - 0.9 * reveal))));
     } else if (preset === "push") {
       const z = 0.5 - Math.cos(t * Math.PI) * 0.5;
       p.bgZoom = 1 + 0.045 * z;
       p.bgPan = [-0.012 * z, 0.006 * z];
-      p.lensMag *= 0.55 + 0.45 * reveal;
-      p.glareAngle += (12 * Math.sin(t * Math.PI * 2)) * Math.PI / 180;
+      p.lightAngle += (12 * Math.sin(t * Math.PI * 2)) * Math.PI / 180;
     }
     return p;
   }
@@ -2850,7 +3045,28 @@ installLiquidCoverWindow();
     });
   }
 
-  function loadImageFile(file, cb) { const img = new Image(); img.onload = () => cb(img); img.src = URL.createObjectURL(file); }
+  function loadImageFile(file, cb) {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => { URL.revokeObjectURL(url); cb(img); };
+    img.onerror = () => URL.revokeObjectURL(url);
+    img.src = url;
+  }
+  // A cut-out exported from the background photo keeps that photo's aspect
+  // ratio; that is the signal to register it to the backdrop. A subject
+  // cropped to its own bounds has some other aspect and is placed freely.
+  function subjectMatchesBackdrop(img) {
+    const bg = lastStillBgSource;
+    const bw = sourceWidth(bg), bh = sourceHeight(bg);
+    const fw = img.naturalWidth || img.width, fh = img.naturalHeight || img.height;
+    if (!bw || !bh || !fw || !fh) return false;
+    return Math.abs((fw / fh) / (bw / bh) - 1) < 0.015;
+  }
+  function syncSubjectControls() {
+    const reg = $("lc-fg-register"); if (reg) reg.checked = !!fg.registered;
+    const sc = $("lc-fg-scale"); if (sc) sc.value = Math.round(fg.scale * 100);
+    syncValueLabels();
+  }
 
   function pointerToUV(e) {
     const r = canvas.getBoundingClientRect();
@@ -3142,18 +3358,19 @@ installLiquidCoverWindow();
       hit = true;
       if (before != null) report(labelId, before, +layers[sel][f]);
     };
-    if (/通透|透明|清澈|clear|transparent/.test(s)) { adjLayer("tintAlpha", -15, 0, 100, "lc-tint-alpha"); adj("lc-blur-radius", -8, 0, 80); adj("lc-fresnel-factor", -6, 0, 100); }
-    if (/磨砂|朦胧|雾|frost/.test(s)) { adj("lc-blur-radius", 12, 0, 80); const be = $("lc-blur-edge"); if (be && flip > 0) { be.checked = true; } hit = true; }
+    if (/通透|透明|清澈|clear|transparent/.test(s)) { adjLayer("tintAlpha", -15, 0, 100, "lc-tint-alpha"); adj("lc-blur-radius", -8, 0, 80); adj("lc-brightness", -4, -50, 50); }
+    if (/磨砂|朦胧|雾|frost/.test(s)) { adj("lc-blur-radius", 12, 0, 80); }
     if (/清晰|锐|sharp|crisp/.test(s)) { adj("lc-blur-radius", -10, 0, 80); }
     if (/厚|thick/.test(s)) { adjLayer("refThickness", 14, 1, 80, "lc-thickness"); }
     if (/薄|thin/.test(s)) { adjLayer("refThickness", -12, 1, 80, "lc-thickness"); }
-    if (/亮|高光|发光|闪|bright|glow|shiny/.test(s)) { adj("lc-glare-factor", 18, 0, 120); adj("lc-fresnel-factor", 10, 0, 100); }
-    if (/暗|柔|低调|dark|soft|subtle|dim/.test(s)) { adj("lc-glare-factor", -18, 0, 120); adj("lc-fresnel-factor", -8, 0, 100); }
-    if (/眩光|glare/.test(s)) { adj("lc-glare-factor", 16, 0, 120); }
-    if (/色散|彩虹|虹彩|dispersion|rainbow|chromatic/.test(s)) { adj("lc-dispersion", 8, 0, 50); }
+    if (/亮|高光|发光|闪|bright|glow|shiny/.test(s)) { adj("lc-light-intensity", 16, 0, 100); adj("lc-brightness", 5, -50, 50); }
+    if (/暗|柔|低调|dark|soft|subtle|dim/.test(s)) { adj("lc-light-intensity", -16, 0, 100); adj("lc-brightness", -5, -50, 50); }
+    if (/眩光|glare|反光|specular/.test(s)) { adj("lc-light-intensity", 14, 0, 100); adj("lc-splay", 12, 0, 100); }
+    if (/色散|彩虹|虹彩|dispersion|rainbow|chromatic/.test(s)) { adj("lc-dispersion", 8, 0, 100); }
     if (/染色|着色|彩色|tint/.test(s)) { adjLayer("tintAlpha", 18, 0, 100, "lc-tint-alpha"); }
     if (/阴影|shadow/.test(s)) { adj("lc-shadow-factor", 12, 0, 100); }
-    if (/折射|弯曲|放大|refract|warp|magnif/.test(s)) { adj("lc-ref-factor", 0.2, 1, 4); }
+    if (/折射|弯曲|refract|warp/.test(s)) { adj("lc-refraction", 14, 0, 100); }
+    if (/放大|magnif/.test(s)) { adj("lc-magnify", 0.25, -4, 4); }
     if (hit) { loadLayerIntoPanel(); syncValueLabels(); renderNow(); scheduleRender(); }
     return hit ? changes : null;
   }
@@ -3212,7 +3429,7 @@ installLiquidCoverWindow();
       if (!applyRecipeByName(spec.recipe)) applyRecipeByName("clear");
       const tintApplied = applyVisionTint(spec, recipeByKey(spec.recipe) || recipeByKey("clear"));
       const ang = lightToAngle(spec.light);
-      if (ang != null) setSlider("lc-glare-angle", ang, -180, 180);
+      if (ang != null) setSlider("lc-light-angle", ang, -180, 180);
       const applied = applyModifiers(spec.modifiers);
       const busy = imgUrl ? applyBusyness(spec.busyness) : null; // background-adaptive thickness/frost
       const tone = imgUrl ? applyBackdrop(spec.backdrop) : null; // background-adaptive shadow
@@ -3596,7 +3813,7 @@ installLiquidCoverWindow();
     });
 
     // global glass / shadow
-    ["lc-ref-factor", "lc-lens", "lc-dispersion", "lc-blur-edge", "lc-fresnel-range", "lc-fresnel-factor", "lc-glare-factor", "lc-glare-range", "lc-glare-convergence", "lc-glare-angle", "lc-blur-radius", "lc-shadow-factor", "lc-shadow-expand"].forEach((id) => {
+    ["lc-light-angle", "lc-light-intensity", "lc-splay", "lc-refraction", "lc-dispersion", "lc-blur-radius", "lc-brightness", "lc-saturation", "lc-shadow-factor", "lc-shadow-expand", "lc-magnify", "lc-merge", "lc-post-blur"].forEach((id) => {
       $(id).addEventListener("input", () => { setActivePreset(""); syncValueLabels(); scheduleRender(); });
     });
     $("lc-material-mix").addEventListener("input", () => {
@@ -3700,7 +3917,17 @@ installLiquidCoverWindow();
     $("lc-fg-input").addEventListener("change", (e) => {
       const f = e.target.files && e.target.files[0]; if (!f) return;
       const fgName = $("lc-fg-name"); fgName.removeAttribute("data-i18n"); fgName.textContent = f.name;
-      loadImageFile(f, (img) => { if (!renderer) return; renderer.setForeground(img); $("lc-fg-clear").hidden = false; scheduleRender(); });
+      loadImageFile(f, (img) => {
+        if (!renderer) return;
+        beginHistory("liquid_cover_subject_action", "Place subject");
+        renderer.setForeground(img);
+        // a new subject starts exactly on its source pixels (or centred)
+        fg.x = 0.5; fg.y = 0.5; fg.scale = 1; fg.registered = subjectMatchesBackdrop(img);
+        syncSubjectControls();
+        $("lc-fg-clear").hidden = false;
+        scheduleRender();
+        commitHistory();
+      });
     });
     $("lc-fg-clear").addEventListener("click", () => {
       if (renderer) renderer.setForeground(null); $("lc-fg-clear").hidden = true;
@@ -3708,6 +3935,14 @@ installLiquidCoverWindow();
     });
     $("lc-fg-scale").addEventListener("input", () => { fg.scale = +$("lc-fg-scale").value / 100; syncValueLabels(); scheduleRender(); });
     $("lc-fg-drag").addEventListener("change", () => { dragFgMode = $("lc-fg-drag").checked; });
+    $("lc-fg-register").addEventListener("change", () => {
+      beginHistory("liquid_cover_subject_action", "Place subject");
+      fg.registered = $("lc-fg-register").checked;
+      fg.x = 0.5; fg.y = 0.5; fg.scale = 1;
+      syncSubjectControls();
+      scheduleRender();
+      commitHistory();
+    });
 
     // Bottom ask bar: describe a mood → AI configures every parameter
     $("lc-ask-form").addEventListener("submit", (e) => { e.preventDefault(); aiSuggestStyle(); });

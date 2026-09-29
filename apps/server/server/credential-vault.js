@@ -3,6 +3,11 @@
 const crypto = require("node:crypto");
 const { execFile } = require("node:child_process");
 const { promisify } = require("node:util");
+const { isSubscriptionCliUrl } = require("./subscription-cli.js");
+
+// Placeholder "key" for a subscription CLI target: never a secret, never
+// sent anywhere; it only satisfies routes that refuse an empty credential.
+const SUBSCRIPTION_CLI_CREDENTIAL = "subscription-cli";
 
 const {
   isTrustedDeepSeekCredentialTarget,
@@ -218,6 +223,9 @@ async function resolveCloudCredential(options = {}) {
     allowSupplied = false,
     now = Date.now(),
   } = options;
+  // A subscription CLI signs in on its own; there is no secret to find, and
+  // none may be sent (docs/SUBSCRIPTION-CLI.md).
+  if (isSubscriptionCliUrl(targetBaseUrl)) return SUBSCRIPTION_CLI_CREDENTIAL;
   const normalizedTargetBaseUrl = normalizeCloudBaseUrl(targetBaseUrl);
   const id = normalizedCredentialId(credentialId);
   if (id && id !== createCredentialId(provider, normalizedTargetBaseUrl)) {

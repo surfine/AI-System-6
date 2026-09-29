@@ -2019,3 +2019,10 @@ await writeAsset("provenance.json", `${JSON.stringify(provenance, null, 2)}\n`);
 }
 
 console.log(`Bonsai atlas: ${sprites.length} frames, ${atlasWidth}x${atlasHeight}, ${directions.length} directions`);
+
+// Growable buildings and their build states now come from authored voxel
+// models (tooling/bonsai-miniature). The overlay re-renders exactly the frames
+// its catalog draws and keeps every other frame from the atlas written above,
+// so families migrate one at a time and every caller of this builder gets the
+// same final atlas.
+await import("./bonsai-miniature/bake-atlas.mjs");

@@ -115,6 +115,14 @@ export function windowRegistryRecords() {
 
   const records = {};
   for (const property of table.properties) {
+    // `...window.AISystem6Admissions.windowRecords()`: the windows the
+    // admission table declares whole. Spelled here as window-registry.js
+    // would have spelled them; app-admissions.test.mjs runs the product's own
+    // derivation and holds it to these records.
+    if (property.type === "SpreadElement") {
+      Object.assign(records, admittedWindowRecords());
+      continue;
+    }
     const name = property.key.name || property.key.value;
     const record = {};
     for (const field of property.value.properties) {
@@ -126,6 +134,52 @@ export function windowRegistryRecords() {
     records[name] = record;
   }
   windowRegistryCache = records;
+  return records;
+}
+
+/**
+ * The admission table's rows, read as data: window name -> literal fields, with
+ * `load` as the loader's name. Only literal and identifier values are carried.
+ */
+export function admissionRows() {
+  const source = read("app/core/app-admissions.js");
+  const ast = parseJsSource(source);
+  let table = null;
+  const visit = (node) => {
+    if (node.type === "VariableDeclarator" && node.id?.name === "WINDOWS" && node.init?.type === "ObjectExpression") {
+      table = node.init;
+      return;
+    }
+    forEachAstChild(node, visit);
+  };
+  visit(ast);
+  if (!table) throw new Error("app-admissions.js does not declare a WINDOWS table");
+  const rows = {};
+  for (const property of table.properties) {
+    const row = {};
+    for (const field of property.value.properties) {
+      const key = field.key.name || field.key.value;
+      if (field.value.type === "Literal") row[key] = field.value.value;
+      else if (field.value.type === "Identifier") row[key] = field.value.name;
+    }
+    rows[property.key.name || property.key.value] = row;
+  }
+  return rows;
+}
+
+/** The window records the admission table derives for its rows with an `api`. */
+export function admittedWindowRecords() {
+  const records = {};
+  for (const [name, row] of Object.entries(admissionRows())) {
+    if (!row.api) continue;
+    const attach = `() => window.${row.api}?.attach?.()`;
+    records[name] = {
+      app: row.app,
+      builtByModule: true,
+      ...(row.width ? { width: row.width } : {}),
+      lazy: `{ ensure: () => ${row.load}(), attach: ${attach}${row.appearance ? `, appearanceAttach: ${attach}` : ""} }`,
+    };
+  }
   return records;
 }
 

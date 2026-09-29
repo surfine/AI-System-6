@@ -216,6 +216,8 @@ const systemIconPaths = {
     <path class="classic-ink" d="M27.5 13c2.2 0 3.3 1.2 3.3 2.5s-1.1 1.8-3.3 1.8-3.3-.5-3.3-1.8S25.3 13 27.5 13z" />
   `,
   oneMoreTune: `<path d="M8 6h4v20H8zM13 4h12v24H13zM16 22V11l7-2v11"/><circle class="classic-ink" cx="16" cy="22" r="2.3"/><circle class="classic-ink" cx="23" cy="20" r="2.3"/>`,
+  joyride: `<path d="M3 21h26M5 18v-4l4-1 4-5h9l4 5 3 1v4zM13 13h11"/><circle cx="10" cy="19" r="3"/><circle class="classic-ink" cx="23" cy="19" r="3"/><path d="M6 25h5M15 25h4M23 25h5"/>`,
+  rootline: `<path d="M4 18h10l8-8h6M14 28V18"/><circle cx="4" cy="18" r="2"/><circle cx="28" cy="10" r="2"/><circle cx="14" cy="28" r="2"/><circle cx="14" cy="18" r="2"/><circle class="classic-ink" cx="22" cy="10" r="3.5"/>`,
   liquidCover: `
     <path d="M4 6h24v20H4z" />
     <path d="M9 21a5 5 0 0 1 10 0" />
@@ -674,6 +676,11 @@ const nextstepCoreSystemIconIds = new Set((
   + "writingBell control localModel controlStrip"
 ).split(" "));
 const classicBigSurFallbackIds = new Set("imagePromptStudio micropolis openttd doom lightroom bonsaiCity".split(" "));
+// An application admitted before its era family is drawn: every appearance
+// paints its Classic glyph instead of an empty group (or, in Liquid Glass, a
+// request for an SVG that does not exist). Leaves this set when its family
+// joins completeEraSystemIconIds.
+const glyphOnlySystemIconIds = new Set(["rootline", "joyride"]);
 const liquidGlassRoundedRectIconIds = new Set(("finderApp assistant writingStudio cloudModel cloudModelOff reviewDesk searcher reader timeMachine docMap clioStage clioChart liquidCover cmfStudio soundscape scrapbook importUtility controlPanel chooser systemHelp dictionary teachText chatImport systemStatus contextPanel rebuildArticle bureaucracyMeme endfieldTerminal multiFinderApp daHandler writingBell control localModel controlStrip clioPaint clioProject oneMoreTune").split(" "));
 function liquidGlassIconUsesRoundedRect(iconId) {
   return liquidGlassRoundedRectIconIds.has(iconId);
@@ -783,6 +790,7 @@ function completeEraRasterSystemIconArt(era, iconId, sourceSize) {
 
 function liquidGlassSystemIconArt(iconId, sourceSize = 32) {
   if (transportIconPaths[iconId]) return transportIconPaths[iconId];
+  if (glyphOnlySystemIconIds.has(iconId)) return systemIconPaths[iconId];
   if (classicLineArtEverywhere()) {
     const lineArt = classicLineArtImage(iconId);
     if (lineArt) return lineArt;
@@ -864,11 +872,12 @@ function systemIconSvg(iconId, options = {}) {
       : systemIconModernSourceSize(options, sourceSize, [16, 32, 64, 128]);
   const eraArt = independent ? (era === "big-sur" && classicBigSurFallbackIds.has(id) ? paths
     : completeEraRasterSystemIconArt(era, id, independentSourceSize)) : "";
+  const glyphOnly = glyphOnlySystemIconIds.has(id) ? paths : "";
   const liquidPaths = liquidGlassSystemIconArt(id, modernSourceSize);
   const maskClass = coreArt ? " has-classic-mask" : "";
   const platinumClass = platinumArt ? " has-platinum-core" : "";
   const liquidShapeClass = liquidGlassIconUsesRoundedRect(id) ? " liquid-glass-rounded" : "";
-  return `<svg class="sys-icon-svg${maskClass}${platinumClass}${liquidShapeClass}" data-classic-source-size="${sourceSize}" data-platinum-source-size="${platinumSourceSize}" data-modern-display-size="${modernDisplaySize}" data-modern-source-size="${independentSourceSize}" viewBox="0 0 32 32" focusable="false" aria-hidden="true"><g class="sys-icon-classic">${paths}</g><g class="sys-icon-platinum-core">${platinumArt}</g><g class="sys-icon-aqua">${aquaArt}</g><g class="sys-icon-snow-leopard">${snowArt}</g><g class="sys-icon-yosemite">${yosemiteArt}</g><g class="sys-icon-liquid">${liquidPaths}</g>${independent ? `<g class="sys-icon-${era}">${eraArt}</g>` : ""}</svg>`;
+  return `<svg class="sys-icon-svg${maskClass}${platinumClass}${liquidShapeClass}" data-classic-source-size="${sourceSize}" data-platinum-source-size="${platinumSourceSize}" data-modern-display-size="${modernDisplaySize}" data-modern-source-size="${independentSourceSize}" viewBox="0 0 32 32" focusable="false" aria-hidden="true"><g class="sys-icon-classic">${paths}</g><g class="sys-icon-platinum-core">${platinumArt}</g><g class="sys-icon-aqua">${aquaArt || glyphOnly}</g><g class="sys-icon-snow-leopard">${snowArt || glyphOnly}</g><g class="sys-icon-yosemite">${yosemiteArt || glyphOnly}</g><g class="sys-icon-liquid">${liquidPaths}</g>${independent ? `<g class="sys-icon-${era}">${eraArt || glyphOnly}</g>` : ""}</svg>`;
 }
 
 function renderSystemIcon(iconId, options = {}) {

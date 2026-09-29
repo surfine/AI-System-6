@@ -90,14 +90,15 @@ function enforceMarkdownOnlyChatPayload(payload) {
 }
 
 /**
- * Detect Qwen 3.5 / 3.6 model names. Mirrors `isQwen35ModelName`
+ * Detect Qwen 3.5 and later model names, and PrismML Bonsai (a low-bit
+ * Qwen 3.6/3.8 build with the same chat template). Mirrors `isQwen35ModelName`
  * from root server.js exactly.
  *
  * @param {string} [value]
  * @returns {boolean}
  */
 function isQwen35ModelName(value = "") {
-  return /qwen(?:[-_/ ]?3\.[56]|3\.[56])/i.test(String(value || ""));
+  return /qwen[-_/ ]?3\.[5-9]|bonsai/i.test(String(value || ""));
 }
 
 /**

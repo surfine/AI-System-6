@@ -462,6 +462,11 @@ window.AISystem6BonsaiMicropolisExportLoaded = true;
         from: "bonsai-city",
         cityId: typeof options.cityId === "string" ? options.cityId : null,
         exportedAt: typeof options.exportedAt === "string" ? options.exportedAt : null,
+        // A city built on OpenStreetMap ground keeps its ODbL credit when it
+        // travels to the other game.
+        ...(payload.provenance && payload.provenance.source === "openstreetmap"
+          ? { mapData: { attribution: String(payload.provenance.attribution || "© OpenStreetMap contributors"), license: String(payload.provenance.license || "ODbL-1.0") } }
+          : {}),
       },
     };
 

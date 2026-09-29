@@ -3,7 +3,7 @@
 // inside an iframe; the desktop side stays a thin lazy chrome module. The
 // game must never touch the boot bundles or the floppy budget.
 
-import { admittedApplicationGroup, createFeatureTest, exists, read, readAppSurface, windowApp } from "../helpers/feature-test-harness.mjs";
+import { admissionRows, admittedApplicationGroup, createFeatureTest, exists, read, readAppSurface, windowApp } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("openttd");
 const index = read("index.html");
@@ -61,7 +61,7 @@ test.assertIncludes(styleManifest, "styles.openttd.css", "styles ship as a lazy 
 test.assertIncludes(styles, ".openttd-frame", "the frame styling is scoped to the window");
 
 // --- mobile: full-screen app page ---
-test.assertMatches(app, /mobileFullScreenAppIds = new Set\(\[(?:(?!\]\))[\s\S])*"openttd",/, "appId opts into the mobile full-screen shell");
+test.assert(admissionRows().openttd?.phone === 2, "appId opts into the mobile full-screen shell through its admission row");
 
 // --- quit handshake keeps saves safe, then frees the wasm loop ---
 test.assertIncludes(app, 'window.AISystem6OpenTTD?.handleQuit?.()', "quitApp tears the game down");

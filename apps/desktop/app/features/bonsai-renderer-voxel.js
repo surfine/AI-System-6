@@ -13,14 +13,22 @@
 // method for method (mount, isReady, resize, render, pickTile, setPreview,
 // clearPreview, renderMiniMap, rotateBy, zoomBy, panByScreen, resetView,
 // dispose, debugStats) so the shell can switch backends with one factory swap.
+//
+// The module is a factory: the Bonsai window draws with the instance installed
+// below, and Joyride builds a second, independent one for its street view
+// (mount(target, { street })), so the same chunks, models and lighting are
+// drawn through a perspective camera without touching the city window's scene.
 window.AISystem6BonsaiVoxelRendererLoaded = true;
 
-(function initBonsaiVoxelRenderer() {
+function createBonsaiVoxelRenderer() {
   "use strict";
 
-  const VENDOR_URL = "/app/vendor/bonsai-renderer.js?v=three-0.185.1-voxel-r3";
+  const VENDOR_URL = "/app/vendor/bonsai-renderer.js?v=three-0.185.1-voxel-r4";
   const RECIPE_URL = "/assets/bonsai/atlas-source.json";
   const TEXTURES_URL = "/assets/bonsai/textures.json";
+  // The authored voxel models the 2D atlas is baked from (tooling/bonsai-miniature):
+  // with them the 3D view draws the very same buildings, not a second design.
+  const VOXEL_MODELS_URL = "/assets/bonsai/voxel-models.json";
   const TEXTURES_IMAGE_URL = "/assets/bonsai/textures.png";
   const WEBGL_UNAVAILABLE_CODE = "bonsai-voxel-webgl-unavailable";
 
@@ -734,6 +742,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         facilities.push({
           ...object,
           kind,
+          rawKind: object.kind || object.type,
           footprint: normalizeFootprint(object.footprint || recipe?.footprint),
         });
       });
@@ -754,7 +763,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     const catalogObjects = window.AISystem6BonsaiRenderer?.collectCatalogObjects(snapshot, catalog) || [];
     const catalogTiles = catalogObjects.filter((object) => !object.spriteId);
     catalogObjects.filter((object) => object.spriteId).forEach((object) => {
-      facilities.push({ x: object.x, y: object.y, kind: object.spriteId.split(".")[1], footprint: object.footprint });
+      facilities.push({ x: object.x, y: object.y, kind: object.spriteId.split(".")[1], spriteId: object.spriteId, footprint: object.footprint });
     });
 
     return { buildings, facilities, covered, blazeTiles, catalogTiles };
@@ -830,6 +839,15 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
   // --- block collectors: snapshot in, instance descriptors out ---------------
 
   function pushBlock(list, x, y, z, sx, sy, sz, color, tile = null, shape = "box") {
+    // A study model is one material: any opaque colour that was not chosen
+    // from the study palette keeps only its lightness, between the palette's
+    // cut edge and its sheet, so no old-art piece stays in full colour.
+    if (state.study && state.study !== "none" && !color.study && (color.a === undefined || color.a >= 1)) {
+      const palette = STUDY_PALETTES[state.study];
+      const t = Math.min(1, 0.35 + (0.3 * color.r + 0.59 * color.g + 0.11 * color.b) * 0.75);
+      color = { r: (palette.edge[0] + (palette.mass[0] - palette.edge[0]) * t) / 255, g: (palette.edge[1] + (palette.mass[1] - palette.edge[1]) * t) / 255, b: (palette.edge[2] + (palette.mass[2] - palette.edge[2]) * t) / 255, a: 1 };
+      tile = null;
+    }
     list.push({ x, y, z, sx, sy, sz, r: color.r, g: color.g, b: color.b, a: color.a === undefined ? 1 : color.a, tile, shape });
   }
 
@@ -2480,6 +2498,546 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     return { opaque, water: [], tint: [] };
   }
 
+  // --- authored voxel models (shared with the 2D atlas) --------------------
+  //
+  // The 2D atlas frames are rasterized from voxel models; the same models are
+  // exported to voxel-models.json (run-length data, gzip, base64) so this
+  // backend meshes the identical building. Frame ids are resolved with the
+  // Canvas backend's rules, so a lot shows the same design in both views.
+  // A model is meshed once (greedy faces per material) and drawn as one
+  // InstancedMesh per chunk; anything without a model keeps the grammar path.
+
+  const VOXEL_TILE = 16;
+  const VOXEL_LIGHT_GAIN = 1.3;
+  const FACILITY_SPRITES_2D = Object.freeze({
+    hospital: "catalog.hospital", university: "catalog.college", library: "catalog.library", museum: "catalog.museum",
+    prison: "catalog.prison", zoo: "catalog.zoo", stadium: "catalog.stadium", marina: "catalog.marina", "park-big": "catalog.park_big",
+    "mayors-house": "catalog.mayors_house", "city-hall": "catalog.city_hall", statue: "catalog.statue", dome: "catalog.dome",
+    arco: "catalog.arcology", "arco-plymouth": "catalog.arcology", "arco-forest": "catalog.arcology", "arco-darco": "catalog.arcology", "arco-launch": "catalog.arcology",
+  });
+
+  function facilityKind2d(kind) {
+    const value = String(kind || "").toLowerCase();
+    for (const exact of ["hydro", "oil", "gas", "nuclear", "solar", "microwave", "fusion", "treatment", "desal", "subway-station", "bus", ...Object.keys(FACILITY_SPRITES_2D)]) {
+      if (value === exact) return exact;
+    }
+    return normalizeFacilityKind(value);
+  }
+
+  function voxelModelFor(frameId) {
+    const models = state.voxelModels;
+    if (!models || !frameId) return null;
+    const index = models.index.frames[frameId];
+    return Number.isInteger(index) ? index : null;
+  }
+
+  function buildingModelId(building) {
+    const prefix = zonePrefix(building.zone || building.type) || "r";
+    const stage = Math.max(1, Math.min(3, Number(building.stage || building.level || 1) | 0));
+    const variant = 1 + ((Math.max(1, Number(building.variant) || 1) - 1) % 24);
+    const stateName = normalizeBuildingState(building.state || building.status);
+    if (stateName !== "normal") {
+      const sized = voxelModelFor(`building.${prefix}.${stage}.1.${stateName}`);
+      if (sized !== null) return sized;
+    }
+    return voxelModelFor(`building.${prefix}.${stage}.${variant}.normal`);
+  }
+
+  function facilityModelId(facility) {
+    if (facility.spriteId) {
+      const direct = voxelModelFor(facility.spriteId);
+      if (direct !== null) return direct;
+    }
+    const kind = facilityKind2d(facility.rawKind || facility.kind);
+    const footprint = facility.footprint || { w: 1, h: 1 };
+    const frame = kind === "coal" && footprint.w === 2 && footprint.h === 2 ? "facility.coal-2x2" : (FACILITY_SPRITES_2D[kind] || `facility.${kind}`);
+    return voxelModelFor(frame);
+  }
+
+  function catalogModelId(tile) {
+    const shared = { police: "police", fire: "fire", school: "school", hospital: "clinic", pump: "pump", water_tower: "tower", rail_station: "station" }[tile.label];
+    const category = tile.category === "powerPlant" ? "power_plant" : tile.category;
+    for (const frame of [`catalog.${tile.label}`, shared ? `facility.${shared}` : null, `catalog.${category}`]) {
+      const id = voxelModelFor(frame);
+      if (id !== null) return id;
+    }
+    return null;
+  }
+
+  // The Canvas backend's tree choice, number for number (treeSpriteVariant).
+  function treeModelId(snapshot, index) {
+    const season = seasonOfSnapshot(snapshot);
+    const variant = season === 0
+      ? ((index % 8) === 0 ? 5 : 1 + (index % 3))
+      : season === 3
+        ? ((index % 3) === 0 ? 6 : 1 + (index % 3))
+        : season === 2
+          ? ((index % 3) === 0 ? 4 : 1 + (index % 3))
+          : 1 + (index % 3);
+    const kind = ["broadleaf", "broadleaf", "conifer", "young", "maple", "blossom", "winter"][variant] || "broadleaf";
+    return voxelModelFor(`tree.${kind}`);
+  }
+
+  // With the voxel catalog loaded, the ground takes the 2D terrain frames'
+  // colours: the same grass, sand and water in both views. Terrain tiles keep
+  // their texture detail; only the colour they are tinted to changes.
+  function applyVoxelGround(recipes, ground) {
+    if (!ground || !recipes?.terrain) return;
+    const rgb = (value) => ({ r: value[0] / 255, g: value[1] / 255, b: value[2] / 255, a: 1 });
+    recipes.terrain.grass = { ...recipes.terrain.grass, top: rgb(ground.grass), side: rgb(ground.side) };
+    recipes.terrain.soil = { ...recipes.terrain.soil, top: rgb(ground.soil), side: rgb(ground.side) };
+    recipes.terrain.rock = { ...recipes.terrain.rock, top: rgb(ground.rock) };
+    recipes.terrain.slope = { ...recipes.terrain.slope, top: rgb(ground.grass), side: rgb(ground.side) };
+    recipes.terrain.coast = { ...recipes.terrain.coast, top: rgb(ground.sand) };
+    recipes.terrain.water = { ...recipes.terrain.water, surface: rgb(ground.water), lit: rgb(ground.waterLight) };
+  }
+
+  // The 2D terrain frames' cell texture (tooling/bonsai-miniature/terrain.mjs),
+  // ported: 16 × 16 cells per tile, two tones in 4 × 4 blocks, a few specks,
+  // soil or rock clumps showing through grass, and banded soil on the sides.
+  function groundHash(x, y, z) {
+    let h = (x * 374761393 + y * 668265263 + z * 2147483647) >>> 0;
+    h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0;
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  }
+
+  const GROUND_CELLS = {
+    grass: { base: [132, 180, 84], alt: [150, 190, 92], speck: [[112, 164, 72], [168, 198, 104]], flower: 0.012 },
+    soil: { base: [138, 172, 82], alt: [148, 178, 88], speck: [[150, 124, 84], [128, 160, 76]], patch: [[156, 126, 86], 0.075] },
+    rock: { base: [136, 170, 86], alt: [144, 176, 92], speck: [[150, 148, 140], [124, 156, 80]], patch: [[168, 164, 156], 0.055] },
+    sand: { base: [226, 206, 150], alt: [216, 196, 142], speck: [[204, 184, 132], [238, 222, 172]] },
+    snow: { base: [236, 242, 246], alt: [226, 234, 242], speck: [[210, 222, 234], [248, 250, 252]] },
+  };
+  const GROUND_SIDE = [[152, 110, 76], [128, 92, 64], [104, 78, 58]];
+
+  function groundCell(kind, cx, cy) {
+    const g = GROUND_CELLS[kind];
+    const h = groundHash(cx * 3, cy * 5 + 7, 11);
+    let c = ((cx >> 2) + (cy >> 2)) % 2 ? g.alt : g.base;
+    if (h < 0.1) c = g.speck[0];
+    else if (h > 0.92) c = g.speck[1];
+    if (g.patch) {
+      let sum = 0;
+      for (let dy = -1; dy <= 1; dy += 1) for (let dx = -1; dx <= 1; dx += 1) sum += groundHash(cx + dx, cy + dy, 401);
+      if (sum / 9 - 0.3 < g.patch[1]) c = g.patch[0];
+    }
+    if (g.flower && groundHash(cx, cy, 313) < g.flower) c = groundHash(cx, cy, 17) < 0.5 ? [246, 232, 110] : [248, 248, 244];
+    const j = 1 + (groundHash(cx, cy, 5) - 0.5) * 0.06;
+    return [c[0] * j, c[1] * j, c[2] * j];
+  }
+
+  function repaintGroundTiles(image, manifest) {
+    if (typeof document === "undefined") return image;
+    const canvas = document.createElement("canvas");
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(image, 0, 0);
+    const paint = (tileId, cell) => {
+      const rect = manifest.tiles[tileId];
+      if (!rect) return;
+      const size = rect.w / 16;
+      const sum = [0, 0, 0];
+      for (let cy = 0; cy < 16; cy += 1) for (let cx = 0; cx < 16; cx += 1) {
+        const rgb = cell(cx, cy);
+        ctx.fillStyle = `rgb(${Math.round(rgb[0])},${Math.round(rgb[1])},${Math.round(rgb[2])})`;
+        ctx.fillRect(rect.x + cx * size, rect.y + cy * size, size, size);
+        sum[0] += rgb[0]; sum[1] += rgb[1]; sum[2] += rgb[2];
+      }
+      // the tint correction divides by this mean, so the instance colour
+      // (the same ground colour) lands on exactly these cells
+      rect.meanColor = sum.map((v) => v / 256);
+    };
+    paint("terrain.grass.top", (cx, cy) => groundCell("grass", cx, cy));
+    paint("terrain.soil", (cx, cy) => groundCell("soil", cx, cy));
+    paint("terrain.rock", (cx, cy) => groundCell("rock", cx, cy));
+    paint("terrain.sand", (cx, cy) => groundCell("sand", cx, cy));
+    paint("terrain.snow", (cx, cy) => groundCell("snow", cx, cy));
+    paint("terrain.grass.side", (cx, cy) => {
+      const band = GROUND_SIDE[Math.min(2, Math.floor(cy / 6))];
+      const j = 1 - (groundHash(cx >> 1, cy, 29) - 0.5) * 0.08;
+      return [band[0] * j, band[1] * j, band[2] * j];
+    });
+    return canvas;
+  }
+
+  // --- the miniature finish ---------------------------------------------------
+  //
+  // The 3D view is the miniature tier: the scene renders into a target, a
+  // tilt-shift blur keeps a band across the middle sharp and softens toward
+  // the top and bottom (two separable passes, twice), and a light grade adds
+  // warmth, a touch of saturation and a vignette — a model city seen through
+  // a lens. The player turns it off from Options; without WebGL render
+  // targets the plain render stays.
+  const POST_VERTEX = "varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }";
+  const TILT_FRAGMENT = `
+    uniform sampler2D tDiffuse; uniform vec2 texel; uniform vec2 dir; uniform float focus; uniform float band; uniform float ramp; uniform float maxBlur;
+    varying vec2 vUv;
+    void main(){
+      float amount = smoothstep(band, band + ramp, abs(vUv.y - focus)) * maxBlur;
+      vec4 sum = vec4(0.0); float weight = 0.0;
+      for (int i = -6; i <= 6; i++) {
+        float f = float(i);
+        float w = exp(-f * f / 18.0);
+        sum += texture2D(tDiffuse, vUv + dir * texel * f * amount) * w;
+        weight += w;
+      }
+      gl_FragColor = sum / weight;
+    }`;
+  const GRADE_FRAGMENT = `
+    uniform sampler2D tDiffuse; varying vec2 vUv;
+    void main(){
+      vec3 c = texture2D(tDiffuse, vUv).rgb;
+      c = mix(c * 12.92, 1.055 * pow(max(c, vec3(0.0)), vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c));
+      float l = dot(c, vec3(0.299, 0.587, 0.114));
+      c = mix(vec3(l), c, 1.1);
+      c = c * vec3(1.03, 1.0, 0.965) + vec3(0.012, 0.008, 0.0);
+      float v = smoothstep(1.0, 0.35, distance(vUv, vec2(0.5, 0.52)));
+      c *= mix(0.86, 1.0, v);
+      gl_FragColor = vec4(c, 1.0);
+    }`;
+
+  function ensurePost(width, height) {
+    const THREE = state.THREE;
+    if (!THREE?.WebGLRenderTarget || !THREE?.ShaderMaterial) return null;
+    if (state.post && state.post.width === width && state.post.height === height) return state.post;
+    if (state.post) ["scene", "a", "b"].forEach((key) => state.post[key].dispose());
+    const target = () => {
+      const t = new THREE.WebGLRenderTarget(width, height, { type: THREE.HalfFloatType, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+      return t;
+    };
+    const texel = new THREE.Vector2(1 / width, 1 / height);
+    const tilt = (dx, dy) => new THREE.ShaderMaterial({
+      uniforms: {
+        tDiffuse: { value: null }, texel: { value: texel }, dir: { value: new THREE.Vector2(dx, dy) },
+        focus: { value: 0.54 }, band: { value: 0.22 }, ramp: { value: 0.4 }, maxBlur: { value: 1.15 * Math.max(1, state.dpr || 1) },
+      },
+      vertexShader: POST_VERTEX, fragmentShader: TILT_FRAGMENT, depthTest: false, depthWrite: false,
+    });
+    const previous = state.post;
+    const post = {
+      width, height,
+      scene: target(), a: target(), b: target(),
+      horizontal: previous?.horizontal || state.ledger.track(tilt(1, 0)),
+      vertical: previous?.vertical || state.ledger.track(tilt(0, 1)),
+      grade: previous?.grade || state.ledger.track(new THREE.ShaderMaterial({ uniforms: { tDiffuse: { value: null } }, vertexShader: POST_VERTEX, fragmentShader: GRADE_FRAGMENT, depthTest: false, depthWrite: false })),
+      quadScene: previous?.quadScene || new THREE.Scene(),
+      quadCamera: previous?.quadCamera || new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1),
+      quad: previous?.quad || null,
+    };
+    post.horizontal.uniforms.texel.value = texel;
+    post.vertical.uniforms.texel.value = texel;
+    if (!post.quad) {
+      post.quad = new THREE.Mesh(state.ledger.track(new THREE.PlaneGeometry(2, 2)), post.grade);
+      post.quad.frustumCulled = false;
+      post.quadScene.add(post.quad);
+    }
+    state.post = post;
+    return post;
+  }
+
+  function renderFrame() {
+    const renderer = state.renderer;
+    const miniature = state.miniature === true && !state.underground;
+    const size = miniature && typeof renderer.getDrawingBufferSize === "function" ? renderer.getDrawingBufferSize(new state.THREE.Vector2()) : null;
+    const post = size ? ensurePost(Math.max(1, size.x), Math.max(1, size.y)) : null;
+    if (!post) {
+      renderer.render(state.scene, state.camera);
+      return;
+    }
+    const pass = (material, input, output) => {
+      material.uniforms.tDiffuse.value = input.texture;
+      post.quad.material = material;
+      renderer.setRenderTarget(output);
+      renderer.render(post.quadScene, post.quadCamera);
+    };
+    renderer.setRenderTarget(post.scene);
+    renderer.render(state.scene, state.camera);
+    pass(post.horizontal, post.scene, post.a);
+    pass(post.vertical, post.a, post.b);
+    pass(post.horizontal, post.b, post.a);
+    pass(post.vertical, post.a, post.b);
+    pass(post.grade, post.b, null);
+  }
+
+  // --- the pot ------------------------------------------------------------
+  //
+  // Bonsai City sits in a shallow glazed tray: four walls and a floor around
+  // the whole map, the rim just above sea level so hills rise out of it like
+  // a bonsai's soil. Options > Glass tank swaps the tray for a glass case —
+  // the city in a vat — its clear walls taller than the highest ground. In
+  // the miniature finish the backdrop turns to a warm table top so the pot
+  // reads as an object on a desk.
+  const POT_WALL = 0.95;
+  const POT_DEPTH = 1.1;
+  const POT_RIM = 0.24;
+
+  function syncMapFrame(snapshot) {
+    const THREE = state.THREE;
+    const size = mapSize(snapshot);
+    const mode = state.tank ? "tank" : "tray";
+    const key = `${size}:${mode}:${state.underground ? "u" : "-"}:${maxAltitude(snapshot)}:${state.study || "none"}`;
+    if (state.frameKey === key) return;
+    state.frameKey = key;
+    if (state.frameGroup) {
+      state.frameGroup.children.forEach((mesh) => mesh.parent && mesh.parent.remove(mesh));
+      state.scene.remove(state.frameGroup);
+    }
+    state.frameGroup = new THREE.Group();
+    state.scene.add(state.frameGroup);
+    if (state.underground) return;
+    const colour = (r, g, b) => new THREE.Color().setRGB(r / 255, g / 255, b / 255, THREE.SRGBColorSpace);
+    if (!state.potMaterials) {
+      state.potMaterials = {
+        glaze: state.ledger.track(new THREE.MeshLambertMaterial({ color: colour(58, 96, 150) })),
+        rim: state.ledger.track(new THREE.MeshLambertMaterial({ color: colour(84, 126, 178) })),
+        foot: state.ledger.track(new THREE.MeshLambertMaterial({ color: colour(40, 66, 106) })),
+        glass: state.ledger.track(new THREE.MeshLambertMaterial({ color: colour(206, 230, 242), transparent: true, opacity: 0.2, depthWrite: false })),
+        steel: state.ledger.track(new THREE.MeshLambertMaterial({ color: colour(84, 90, 98) })),
+      };
+    }
+    // A study model stands on a plain baseboard instead of a glazed pot.
+    const study = STUDY_PALETTES[state.study || "none"];
+    if (study) {
+      const board = colour(...(state.study === "wood" ? [204, 172, 128] : state.study === "white" ? [240, 238, 232] : [96, 92, 86]));
+      state.potMaterials.glaze.color.copy(board);
+      state.potMaterials.rim.color.copy(board.clone().multiplyScalar(0.94));
+      state.potMaterials.foot.color.copy(board.clone().multiplyScalar(0.8));
+    } else {
+      state.potMaterials.glaze.color.copy(colour(58, 96, 150));
+      state.potMaterials.rim.color.copy(colour(84, 126, 178));
+      state.potMaterials.foot.color.copy(colour(40, 66, 106));
+    }
+    const m = state.potMaterials;
+    const box = (material, cx, cy, cz, sx, sy, sz, shadows = true) => {
+      const mesh = new THREE.Mesh(state.sharedGeometry, material);
+      mesh.scale.set(sx, sy, sz);
+      mesh.position.set(cx, cy, cz);
+      mesh.castShadow = shadows;
+      mesh.receiveShadow = shadows;
+      state.frameGroup.add(mesh);
+      return mesh;
+    };
+    const outer = size + POT_WALL * 2;
+    const mid = size / 2;
+    if (mode === "tray") {
+      const top = POT_RIM, bottom = -POT_DEPTH, height = top - bottom;
+      const cy = bottom + height / 2;
+      box(m.glaze, mid, cy, -POT_WALL / 2, outer, height, POT_WALL);
+      box(m.glaze, mid, cy, size + POT_WALL / 2, outer, height, POT_WALL);
+      box(m.glaze, -POT_WALL / 2, cy, mid, POT_WALL, height, size);
+      box(m.glaze, size + POT_WALL / 2, cy, mid, POT_WALL, height, size);
+      // a lighter rim band and a floor under the soil
+      box(m.rim, mid, top + 0.03, -POT_WALL / 2, outer, 0.06, POT_WALL);
+      box(m.rim, mid, top + 0.03, size + POT_WALL / 2, outer, 0.06, POT_WALL);
+      box(m.rim, -POT_WALL / 2, top + 0.03, mid, POT_WALL, 0.06, size);
+      box(m.rim, size + POT_WALL / 2, top + 0.03, mid, POT_WALL, 0.06, size);
+      box(m.glaze, mid, bottom - 0.08, mid, outer, 0.16, outer);
+      for (const [fx, fz] of [[0.12, 0.12], [0.88, 0.12], [0.12, 0.88], [0.88, 0.88]]) box(m.foot, outer * fx - POT_WALL, bottom - 0.3, outer * fz - POT_WALL, size * 0.14, 0.3, size * 0.1);
+    } else {
+      const top = (maxAltitude(snapshot) + 3) * ALT_STEP, bottom = -POT_DEPTH, height = top - bottom;
+      const cy = bottom + height / 2;
+      const t = 0.08;
+      box(m.glass, mid, cy, -t / 2, outer, height, t, false);
+      box(m.glass, mid, cy, size + t / 2, outer, height, t, false);
+      box(m.glass, -t / 2, cy, mid, t, height, size, false);
+      box(m.glass, size + t / 2, cy, mid, t, height, size, false);
+      // steel edges and a dark plinth
+      for (const [ex, ez] of [[0, 0], [size, 0], [0, size], [size, size]]) box(m.steel, ex, cy, ez, 0.14, height, 0.14);
+      for (const y of [top, bottom]) {
+        box(m.steel, mid, y, 0, size, 0.1, 0.12);
+        box(m.steel, mid, y, size, size, 0.1, 0.12);
+        box(m.steel, 0, y, mid, 0.12, 0.1, size);
+        box(m.steel, size, y, mid, 0.12, 0.1, size);
+      }
+      box(m.foot, mid, bottom - 0.25, mid, outer + 0.6, 0.5, outer + 0.6);
+    }
+  }
+
+  // --- the study model ----------------------------------------------------
+  //
+  // The massing model of an architecture, landscape or planning studio: one
+  // material for every building (white board, basswood, or white on a
+  // chipboard ground), paler glass, a ground of stacked boards whose levels
+  // alternate a shade so the contours read, foam-ball trees and an acrylic
+  // sea. The authored models keep their shapes; only the colour of each
+  // material class changes. "none" is the full-colour city.
+  const STUDY_PALETTES = {
+    none: null,
+    white: {
+      mass: [246, 244, 238], glass: [206, 212, 214], ground: [236, 233, 226], road: [218, 215, 208],
+      tree: [214, 222, 202], water: [188, 214, 226], board: [238, 236, 230], edge: [214, 210, 202],
+    },
+    wood: {
+      mass: [226, 202, 164], glass: [198, 176, 140], ground: [200, 172, 130], road: [212, 190, 154],
+      tree: [132, 148, 100], water: [184, 200, 198], board: [214, 190, 150], edge: [172, 142, 106],
+    },
+    chipboard: {
+      mass: [246, 244, 238], glass: [210, 214, 216], ground: [150, 146, 138], road: [176, 172, 164],
+      tree: [122, 140, 100], water: [168, 190, 202], board: [158, 154, 146], edge: [122, 118, 112],
+    },
+  };
+
+  function studyClass(name) {
+    if (/^(leaf|conifer|cherry|maple|hedge|flower|moss)/.test(name)) return "tree";
+    if (/^(water|poolwater)$/.test(name)) return "water";
+    if (/^(glass|glassdark|window|windowlit|roofglass|lamp)$/.test(name)) return "glass";
+    if (/^(asphalt|asphaltpatch|parking|lineyellow|linewhite|sidewalk|curb|paving|gravel)$/.test(name)) return "road";
+    if (/^(lawn|grass|sand|soil|rock|snow)$/.test(name)) return "ground";
+    return "mass";
+  }
+
+  function studyColour(material) {
+    const palette = STUDY_PALETTES[state.study || "none"];
+    if (!palette) return null;
+    return palette[studyClass(material)] || palette.mass;
+  }
+
+  async function loadVoxelModels() {
+    if (typeof fetch !== "function" || typeof DecompressionStream !== "function") return null;
+    try {
+      const response = await fetch(VOXEL_MODELS_URL);
+      if (!response.ok) return null;
+      const index = await response.json();
+      if (!index || !Array.isArray(index.models) || typeof index.blob !== "string") return null;
+      const packed = Uint8Array.from(atob(index.blob), (c) => c.charCodeAt(0));
+      const stream = new Blob([packed]).stream().pipeThrough(new DecompressionStream("gzip"));
+      const bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+      return { index, bytes, geometries: new Map() };
+    } catch {
+      return null;
+    }
+  }
+
+  function decodeVoxelModel(modelIndex) {
+    const { index, bytes } = state.voxelModels;
+    const entry = index.models[modelIndex];
+    const data = new Uint8Array(entry.w * entry.d * entry.h);
+    let at = 0;
+    for (let i = entry.o; i < entry.o + entry.l; i += 2) {
+      data.fill(bytes[i], at, at + bytes[i + 1]);
+      at += bytes[i + 1];
+    }
+    return { w: entry.w, d: entry.d, h: entry.h, data };
+  }
+
+  // Greedy meshing: for each of five face directions (the underside never
+  // shows) and each slice, merge same-material faces into rectangles.
+  // Model x → world x, model y → world z, model z → world y; the footprint
+  // centre sits at the origin and the lot surface's underside at y = 0.
+  function voxelModelGeometry(modelIndex) {
+    const cache = state.voxelModels.geometries;
+    const cacheKey = `${modelIndex}:${state.study || "none"}`;
+    if (cache.has(cacheKey)) return cache.get(cacheKey);
+    const THREE = state.THREE;
+    const { w, d, h, data } = decodeVoxelModel(modelIndex);
+    const palette = state.voxelModels.index.palette;
+    const at = (x, y, z) => (x < 0 || y < 0 || z < 0 || x >= w || y >= d || z >= h ? 0 : data[x + w * (y + d * z)]);
+    const sxv = 1 / VOXEL_TILE;
+    const syv = pxToWorld(2.5);
+    const ox = w / 2, oy = d / 2;
+    const positions = [];
+    const normals = [];
+    const colors = [];
+    const color = new THREE.Color();
+    const emit = (corners, normal, material) => {
+      const entry = palette[material - 1] || [200, 200, 200, "mass"];
+      const rgb = studyColour(entry[3]) || entry;
+      color.setRGB(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255, THREE.SRGBColorSpace);
+      let [a, b, c, e] = corners.map(([x, y, z]) => [(x - ox) * sxv, z * syv, (y - oy) * sxv]);
+      // wind counter-clockwise seen from outside: flip when the triangle's
+      // own normal points against the face normal
+      const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
+      const vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
+      const facing = (uy * vz - uz * vy) * normal[0] + (uz * vx - ux * vz) * normal[1] + (ux * vy - uy * vx) * normal[2];
+      if (facing < 0) [b, e] = [e, b];
+      for (const v of [a, b, c, a, c, e]) {
+        positions.push(v[0], v[1], v[2]);
+        normals.push(normal[0], normal[1], normal[2]);
+        colors.push(color.r, color.g, color.b);
+      }
+    };
+    // [axis, dir]: axis 0 = x, 1 = y (model), 2 = z (up)
+    const dims = [w, d, h];
+    for (const [axis, dir] of [[2, 1], [0, 1], [0, -1], [1, 1], [1, -1]]) {
+      const u = (axis + 1) % 3, v = (axis + 2) % 3;
+      const mask = new Int32Array(dims[u] * dims[v]);
+      for (let slice = 0; slice < dims[axis]; slice += 1) {
+        let n = 0;
+        for (let j = 0; j < dims[v]; j += 1) {
+          for (let i = 0; i < dims[u]; i += 1) {
+            const p = [0, 0, 0];
+            p[axis] = slice; p[u] = i; p[v] = j;
+            const m = at(p[0], p[1], p[2]);
+            const q = [p[0], p[1], p[2]];
+            q[axis] += dir;
+            mask[n++] = m && !at(q[0], q[1], q[2]) ? m : 0;
+          }
+        }
+        for (let j = 0; j < dims[v]; j += 1) {
+          for (let i = 0; i < dims[u];) {
+            const m = mask[i + j * dims[u]];
+            if (!m) { i += 1; continue; }
+            let width = 1;
+            while (i + width < dims[u] && mask[i + width + j * dims[u]] === m) width += 1;
+            let height = 1;
+            grow: while (j + height < dims[v]) {
+              for (let k = 0; k < width; k += 1) if (mask[i + k + (j + height) * dims[u]] !== m) break grow;
+              height += 1;
+            }
+            for (let hh = 0; hh < height; hh += 1) for (let k = 0; k < width; k += 1) mask[i + k + (j + hh) * dims[u]] = 0;
+            const plane = dir > 0 ? slice + 1 : slice;
+            const corner = (du, dv) => { const c = [0, 0, 0]; c[axis] = plane; c[u] = i + du; c[v] = j + dv; return c; };
+            const normal = [0, 0, 0];
+            // world normal: model x → x, model z → y, model y → z
+            if (axis === 0) normal[0] = dir; else if (axis === 2) normal[1] = dir; else normal[2] = dir;
+            const quad = [corner(0, 0), corner(width, 0), corner(width, height), corner(0, height)];
+            emit(quad, normal, m);
+            i += width;
+          }
+        }
+      }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+    geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+    geometry.computeBoundingSphere();
+    state.ledger.track(geometry);
+    cache.set(cacheKey, geometry);
+    return geometry;
+  }
+
+  function buildVoxelModelMeshes(instances) {
+    if (!instances.length || !state.voxelModels) return [];
+    const THREE = state.THREE;
+    if (!state.voxelModelMaterial) state.voxelModelMaterial = state.ledger.track(new THREE.MeshLambertMaterial({ vertexColors: true }));
+    const groups = new Map();
+    instances.forEach((instance) => {
+      if (!groups.has(instance.model)) groups.set(instance.model, []);
+      groups.get(instance.model).push(instance);
+    });
+    const meshes = [];
+    const matrix = new THREE.Matrix4();
+    const rotation = new THREE.Matrix4();
+    groups.forEach((list, model) => {
+      const mesh = new THREE.InstancedMesh(voxelModelGeometry(model), state.voxelModelMaterial, list.length);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      list.forEach((instance, i) => {
+        rotation.makeRotationY((instance.quarter || 0) * Math.PI / 2);
+        matrix.makeTranslation(instance.x, instance.y, instance.z).multiply(rotation);
+        mesh.setMatrixAt(i, matrix);
+      });
+      mesh.instanceMatrix.needsUpdate = true;
+      mesh.userData.voxelModel = model;
+      state.ledger.track(mesh);
+      state.instanceCount += list.length;
+      meshes.push(mesh);
+    });
+    return meshes;
+  }
+
   function collectChunkBlocks(snapshot, recipes, chunkX, chunkY, sceneObjects, objectsOnly = false) {
     if (state.underground && !objectsOnly) return collectUndergroundBlocks(snapshot, recipes, chunkX, chunkY);
     const size = mapSize(snapshot);
@@ -2490,6 +3048,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     const opaque = [];
     const water = [];
     const tint = [];
+    const models = [];
     // Facilities and catalog objects stand on tiles the building cover
     // set does not list; ground detail keeps off them too.
     const occupied = new Set();
@@ -2536,13 +3095,20 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
           const level = Number(gridValue(snapshot, ["waterLevel"], index, NaN));
           const surfaceY = Number.isFinite(level) && level > alt ? level * ALT_STEP : topY;
           const salt = Boolean(gridValue(snapshot, ["salt"], index, false));
-          const open = salt ? shade(recipes.terrain.water.lit, 1.05) : recipes.terrain.water.surface;
-          const shelf = { r: 0.34, g: 0.62, b: 0.63, a: Math.max(0.6, open.a - 0.16) };
+          const studyWater = STUDY_PALETTES[state.study || "none"]?.water;
+          const open = studyWater ? { r: studyWater[0] / 255, g: studyWater[1] / 255, b: studyWater[2] / 255, a: 0.85 }
+            : salt ? shade(recipes.terrain.water.lit, 1.05) : recipes.terrain.water.surface;
+          // With the voxel catalog the shelf is the 2D water, lightened toward
+          // its ripple colour, so both views show the same blue.
+          const shelf = studyWater ? { ...shade(open, 1.08), a: 0.8 }
+            : state.voxelModels
+            ? { ...shade(mixColor(recipes.terrain.water.surface, recipes.terrain.water.lit, 0.25), 1.0), a: Math.max(0.6, open.a - 0.16) }
+            : { r: 0.34, g: 0.62, b: 0.63, a: Math.max(0.6, open.a - 0.16) };
           // The tone follows the straight distance from the tile's centre to
           // the nearest land square, which rounds the shelf's outline where
           // ring counting would draw it as stepped squares.
           const gap = reach === SHORE_REACH ? SHORE_REACH - 1 : shoreGap(nearbyLand(snapshot, x, y, size), x + 0.5, y + 0.5);
-          const surface = mixColor(shelf, shade(open, 0.86), (gap - 0.5) / (SHORE_REACH - 1.5));
+          const surface = mixColor(shelf, shade(open, state.voxelModels ? 1.0 : 0.86), (gap - 0.5) / (SHORE_REACH - 1.5));
           // Seasonal water: winter freezes to a pale ice, spring brightens.
           const season = seasonOfSnapshot(snapshot);
           const seasonalSurface = season === 3
@@ -2556,7 +3122,9 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
           water.push({
             x: x + 0.5, y: surfaceY + 0.02, z: y + 0.5, sx: 1, sy: 0.06, sz: 1,
             r: seasonalSurface.r, g: seasonalSurface.g, b: seasonalSurface.b, a: seasonalSurface.a,
-            tile: "water",
+            // Untextured with the voxel catalog: the texture's mean-colour
+            // correction would divide the plain 2D blue down to grey.
+            tile: state.voxelModels ? null : "water",
           });
           if (season !== 3) {
             // Surf: a white line where the water meets each land edge, a
@@ -2625,6 +3193,14 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
             const slopeShape = top && slopeMask && gridValue(snapshot, ["slope"], index, false)
               && !sceneObjects.covered.has(`${x}:${y}`) ? `slope-${slopeMask}` : "box";
             if (slopeShape !== "box") tileSlope = slopeMask;
+            const study = STUDY_PALETTES[state.study || "none"];
+            if (study) {
+              // Stacked boards: every altitude level a slightly different
+              // sheet, the cut edges a shade darker, so contours read.
+              const sheet = level % 2 ? study.board : study.ground;
+              const tone = top ? sheet : study.edge;
+              pushBlock(opaque, x + 0.5, level * ALT_STEP - ALT_STEP / 2, y + 0.5, 1, ALT_STEP, 1, { r: tone[0] / 255, g: tone[1] / 255, b: tone[2] / 255, a: 1, study: true }, null, slopeShape);
+            } else
             pushBlock(opaque, x + 0.5, level * ALT_STEP - ALT_STEP / 2, y + 0.5, 1, ALT_STEP, 1, color, top ? terrainTile : (kind === "grass" || kind === "slope" ? "terrain.grass" : `terrain.${kind}`), slopeShape);
           }
           // Cliff shadow bands: the lower tile carries a dark edge toward
@@ -2665,9 +3241,35 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         const night = isNight(snapshot);
         // Every network block from here on lies on this tile's ground.
         const networkStart = opaque.length;
+        // On level dry ground the road, rail and power-line pieces are the
+        // authored models the 2D atlas draws; slopes, bridges and tunnels keep
+        // the block pieces below, which bend and stand on piers.
+        const modelled = {};
+        if (!wet && !tunnel && !tileSlope && state.voxelModels) {
+          for (const family of ["road", "rail", "wire"]) {
+            if (!masks[family]) continue;
+            const piece = voxelModelFor(`${family}.mask-${masks[family]}`);
+            if (piece === null) continue;
+            models.push({ model: piece, x: cx, y: topY, z: cz, quarter: 0 });
+            modelled[family] = true;
+          }
+        }
         // Water pipes are buried: like the subway they show on the
         // underground view only, as in SC2K.
-        if (masks.rail) {
+        // Over water a level road or rail deck is the atlas bridge piece at
+        // bank height, still on the block pier the Canvas renderer also draws.
+        if (wet && state.voxelModels) {
+          for (const [family, predicate, color] of [["rail", isRail, recipes.connectors.rail], ["road", isRoad, recipes.connectors.road]]) {
+            if (!masks[family] || modelled[family]) continue;
+            const piece = voxelModelFor(`bridge-${family}.mask-${masks[family]}`);
+            if (piece === null) continue;
+            const deckY = bridgeDeckAltitude(snapshot, x, y, size, predicate) * ALT_STEP;
+            pushBlock(opaque, cx, (topY + deckY) / 2, cz, 0.16, Math.max(0.02, deckY - topY), 0.16, shade(color, 0.8), "metal");
+            models.push({ model: piece, x: cx, y: deckY, z: cz, quarter: 0 });
+            modelled[family] = true;
+          }
+        }
+        if (masks.rail && !modelled.rail) {
           // Over water the track runs level with its banks, on a pier.
           const railY = wet ? bridgeDeckAltitude(snapshot, x, y, size, isRail) * ALT_STEP : topY;
           if (wet) pushBlock(opaque, cx, (topY + railY) / 2, cz, 0.16, Math.max(0.02, railY - topY), 0.16, shade(recipes.connectors.rail, 0.8), "metal");
@@ -2676,7 +3278,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
           pushTwinRails(opaque, cx, railY + 0.11, cz, masks.rail, recipes.connectors.railAccent, "metal");
           if (wet) pushBridgeGuards(opaque, cx, railY, cz, masks.rail);
         }
-        if (masks.road) {
+        if (masks.road && !modelled.road) {
           // A bridge deck rides level with its banks and stands on a pier.
           const roadY = wet ? bridgeDeckAltitude(snapshot, x, y, size, isRoad) * ALT_STEP : topY;
           if (wet) pushBlock(opaque, cx, (topY + roadY) / 2, cz, 0.16, Math.max(0.02, roadY - topY), 0.16, shade(recipes.connectors.road, 0.8), "metal");
@@ -2757,9 +3359,13 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
               block.shearX = (block.shearX || 0) + gradient;
             }
           } else {
-            pushDeck(baseY, masks.highway, deckRise);
+            // A level deck is the atlas's own highway (or highway-bridge)
+            // piece; the pier and capital above stay blocks.
+            const deckModel = state.voxelModels ? voxelModelFor(`${wet ? "bridge-highway" : "highway"}.mask-${masks.highway}`) : null;
+            if (deckModel !== null) models.push({ model: deckModel, x: cx, y: baseY + deckRise - 0.05, z: cz, quarter: 0 });
+            else pushDeck(baseY, masks.highway, deckRise);
           }
-          if (wet) pushBridgeGuards(opaque, cx, baseY + topRise, cz, masks.highway);
+          if (wet && !state.voxelModels) pushBridgeGuards(opaque, cx, baseY + topRise, cz, masks.highway);
         }
         if (isOnrampTile(snapshot, index)) {
           // A real ramp: a wide highway-end slab and a narrow road-end slab
@@ -2793,19 +3399,23 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
           }
           pushBlock(opaque, cx + toward[0] * 0.3, topY + deckRise * 0.4, cz + toward[1] * 0.3, 0.14, deckRise * 0.8, 0.14, shade(rampColor, 0.86), "metal");
         }
-        if (masks.wire) {
+        if (masks.wire && !modelled.wire) {
           const straightWire = masks.wire === 5 || masks.wire === 10;
           const pylon = !straightWire || (x + y) % 2 === 0;
           pushPowerLine(opaque, cx, topY, cz, masks.wire, pylon, Boolean(masks.road || masks.rail), shade(recipes.connectors.wire, 0.8));
         }
         // On a slope the whole set climbs with the hill.
         if (tileSlope) for (let i = networkStart; i < opaque.length; i += 1) tiltBlock(opaque[i], x, y, tileSlope);
-        if (isPark(snapshot, index)) {
+        const parkModel = isPark(snapshot, index) && state.voxelModels ? voxelModelFor(`park.small.${1 + (index % 2)}`) : null;
+        if (parkModel !== null) models.push({ model: parkModel, x: x + 0.5, y: topY, z: y + 0.5, quarter: 0 });
+        else if (isPark(snapshot, index)) {
           pushBlock(opaque, x + 0.5, topY + 0.025, y + 0.5, 0.94, 0.05, 0.94, recipes.connectors.park, "park");
           const canopy = (hashTile(index) & 1) ? recipes.tree.canopy : recipes.tree.canopyLight;
           pushBlock(opaque, x + 0.35, topY + 0.05 + 0.14, y + 0.6, 0.28, 0.28, 0.28, canopy, "tree.canopy");
         }
-        if (isTree(snapshot, index)) {
+        const treeModel = isTree(snapshot, index) ? treeModelId(snapshot, index) : null;
+        if (treeModel !== null) models.push({ model: treeModel, x: x + 0.5, y: topY, z: y + 0.5, quarter: 0 });
+        else if (isTree(snapshot, index)) {
           // The four-season canopy: sakura in spring, deep green in summer,
           // maples in autumn, snow-dusted crowns in winter — deterministic
           // per tile and snapshot clock.
@@ -2927,6 +3537,12 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       const variant = Math.max(1, Number(building.variant) || 1);
       const cx = building.x + footprint.w / 2;
       const cz = building.y + footprint.h / 2;
+      const buildingModel = buildingModelId(building);
+      if (buildingModel !== null) {
+        // The authored model, turned to face its street like the grammar parcel.
+        models.push({ model: buildingModel, x: cx, y: topY, z: cz, quarter: streetQuarter(snapshot, building.x, building.y, footprint, size) });
+        return;
+      }
       const decorSeed = assetSeed({ category: "building", zone: prefix, stage, variant });
       const grammar = grammarForZone(recipes, prefix, stage);
       if (grammar) {
@@ -2990,6 +3606,11 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       const baseX = Math.max(0, Math.min(size - 1, Math.floor(facility.x)));
       const baseY = Math.max(0, Math.min(size - 1, Math.floor(facility.y)));
       const topY = terrainTopY(snapshot, baseY * size + baseX);
+      const facilityModel = facilityModelId(facility);
+      if (facilityModel !== null) {
+        models.push({ model: facilityModel, x: facility.x + footprint.w / 2, y: topY, z: facility.y + footprint.h / 2, quarter: 0 });
+        return;
+      }
       if (pushUtilityFacility(opaque, facility,
         facility.x + footprint.w / 2, facility.y + footprint.h / 2,
         topY, footprint, recipe, recipes, night)) return;
@@ -3042,6 +3663,11 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
 
     (sceneObjects.catalogTiles || []).filter(inChunk).forEach((tile) => {
       const topY = terrainTopY(snapshot, tile.y * size + tile.x);
+      const catalogModel = catalogModelId(tile);
+      if (catalogModel !== null) {
+        models.push({ model: catalogModel, x: tile.x + (tile.footprint?.w || 1) / 2, y: topY, z: tile.y + (tile.footprint?.h || 1) / 2, quarter: 0 });
+        return;
+      }
       // Bespoke recipe first, then a shared facility recipe, then the
       // category recipe, then the category-tinted block - the same chain
       // the Canvas backend draws.
@@ -3058,7 +3684,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       pushCatalogObject(opaque, { ...tile, night }, tile.x + (tile.footprint?.w || 1) / 2, tile.y + (tile.footprint?.h || 1) / 2, topY, null, color);
     });
 
-    return { opaque, water, tint };
+    return { opaque, water, tint, models };
   }
 
   // Decorative agents ride the snapshot's derived agent facts. Position and
@@ -3151,6 +3777,19 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       }
     };
     const windowTone = { r: 0.2, g: 0.26, b: 0.3, a: 1 };
+    // On level ground a vehicle is the same voxel model the 2D atlas draws,
+    // turned to its axis; on a slope the block vehicle below leans with it.
+    const models = [];
+    const asModel = (frameId, frame, lift = 0) => {
+      if (!state.voxelModels || frame.mask) return false;
+      const model = voxelModelFor(frameId);
+      if (model === null) return false;
+      // Models face +x; turn the nose the way the vehicle travels (the same
+      // headings the 2D view's px/ny/nx/py frames use).
+      const quarter = frame.alongX ? (frame.sign > 0 ? 0 : 2) : (frame.sign > 0 ? 3 : 1);
+      models.push({ model, x: frame.x, y: frame.y - 0.06 + lift, z: frame.z, quarter });
+      return true;
+    };
     // SC3K shows traffic as it is: besides the sim's own vehicle facts,
     // every street carries cars in proportion to its traffic count (one per
     // 40, up to three a tile), thinned evenly by hash past TRAFFIC_CAP.
@@ -3193,6 +3832,8 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         vehicleBox(opaque, frame, 0.19, 0, 0.085, 0.07, 0.132, 0.03, windowTone);
         vehicleBox(opaque, frame, -0.08, 0, 0.075, 0.34, 0.14, 0.13, { r: 0.88, g: 0.88, b: 0.84, a: 1 });
         lamps(frame, 0.5, 0.14, 0.03);
+      } else if (asModel(`agent.car.${1 + (index % 4)}`, frame)) {
+        lamps(frame, 0.37, 0.18, 0.06);
       } else {
         // A 4.3 m car: a low body and a darker cabin set back from the nose.
         vehicleBox(opaque, frame, 0, 0, 0.0675, 0.27, 0.112, 0.065, paint);
@@ -3250,6 +3891,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       const frame = frameFor(agent, index, isRail, 0, 0.1);
       frame.y += streets ? 0.07 : 0.08;
       const body = recipes.agents.train[index % recipes.agents.train.length];
+      if (asModel(`agent.train.${1 + (index % 2)}`, frame, streets ? -0.07 : -0.08)) { lamps(frame, 0.88, 0.25, 0.06); return; }
       vehicleBox(opaque, frame, 0.23, 0, 0.1, 0.42, 0.18, 0.16, shade(body, 0.78));
       vehicleBox(opaque, frame, 0.36, 0, 0.2, 0.12, 0.16, 0.05, windowTone);
       vehicleBox(opaque, frame, -0.23, 0, 0.1, 0.42, 0.18, 0.16, body);
@@ -3279,6 +3921,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       const paint = recipes.agents.service[index % recipes.agents.service.length];
       const white = { r: 0.94, g: 0.94, b: 0.92, a: 1 };
       const bar = [{ r: 0.2, g: 0.4, b: 0.95, a: 1 }, { r: 0.95, g: 0.18, b: 0.15, a: 1 }];
+      if (asModel(`agent.service.${kind}`, frame)) { lamps(frame, 0.44, 0.2, 0.05); return; }
       if (kind === "fire") {
         vehicleBox(opaque, frame, 0, 0, 0.08, 0.44, 0.15, 0.13, paint);
         vehicleBox(opaque, frame, 0.17, 0, 0.12, 0.08, 0.152, 0.04, windowTone);
@@ -3403,7 +4046,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         pushBlock(opaque, cx - 0.24, base + 0.95, cz + 0.36, 0.1, 0.1, 0.06, { r: 1, g: 0.28, b: 0.2, a: 1 });
       }
     }
-    return { opaque, smoke, glow };
+    return { opaque, smoke, glow, models };
   }
 
   function collectOverlayBlocks(snapshot, overlay) {
@@ -3679,6 +4322,13 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     frameSamples: [],
     shadowReduced: false,
     ledger: createResourceLedger(),
+    // Street mode (Joyride): a fixed low-resolution drawing buffer, a
+    // perspective camera placed by the caller, no shadows, no lens finish and
+    // no simulated traffic -- the caller draws its own moving objects.
+    street: null,
+    streetView: null,
+    streetMeshes: new Map(),
+    streetSceneObjects: null,
   };
 
   function isCanvasElement(node) {
@@ -4007,8 +4657,11 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     disposeChunkRecord(state.chunks.get(key));
     const blocks = collectChunkBlocks(snapshot, state.recipes, chunkX, chunkY, sceneObjects);
     const meshes = [];
-    const opaqueMeshes = buildChunkMeshes(blocks.opaque);
-    const water = buildInstancedMesh(blocks.water, state.materials.waterTextured || state.materials.water, 1, state.sharedGeometry, "receive");
+    const opaqueMeshes = [...buildChunkMeshes(blocks.opaque), ...buildVoxelModelMeshes(blocks.models || [])];
+    // The old water texture tints toward the retired material sheet; with the
+    // voxel catalog the surface is the plain 2D water colour.
+    const waterMaterial = state.voxelModels ? state.materials.water : (state.materials.waterTextured || state.materials.water);
+    const water = buildInstancedMesh(blocks.water, waterMaterial, 1, state.sharedGeometry, "receive");
     const tint = buildInstancedMesh(blocks.tint, state.materials.tint, 2);
     [...opaqueMeshes, water, tint].forEach((mesh) => {
       if (!mesh) return;
@@ -4047,7 +4700,10 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       disposeMesh(state.dynamicMeshes.agents);
       disposeMesh(state.dynamicMeshes.smoke);
       disposeMesh(state.dynamicMeshes.glow);
+      (state.agentModelMeshes || []).forEach(disposeMesh);
       const blocks = state.underground ? { opaque: [], smoke: [], glow: [] } : collectAgentBlocks(snapshot, state.recipes);
+      state.agentModelMeshes = buildVoxelModelMeshes(blocks.models || []);
+      state.agentModelMeshes.forEach((mesh) => state.dynamicGroup.add(mesh));
       state.dynamicMeshes.agents = buildInstancedMesh(blocks.opaque, state.materials.opaque, 0, state.sharedGeometry, "both");
       state.dynamicMeshes.smoke = buildInstancedMesh(blocks.smoke, state.materials.smoke, 3);
       state.dynamicMeshes.glow = buildInstancedMesh(blocks.glow || [], state.materials.glow || state.materials.opaque, 1);
@@ -4104,8 +4760,11 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       shadowCamera.bottom = -radius;
       shadowCamera.updateProjectionMatrix();
     }
-    state.sun.intensity = light.sunIntensity;
-    state.ambient.intensity = light.ambientIntensity;
+    // The voxel catalog's colours are the 2D atlas colours, whose flat tops
+    // read at full brightness; lift the light so the 3D tops match them.
+    const gain = state.voxelModels ? VOXEL_LIGHT_GAIN : 1;
+    state.sun.intensity = light.sunIntensity * gain;
+    state.ambient.intensity = light.ambientIntensity * gain;
     state.sun.color.setRGB(light.sunR, light.sunG, light.sunB);
     state.ambient.color.setRGB(light.ambientR, light.ambientG, light.ambientB);
     if (state.fill) {
@@ -4130,7 +4789,11 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
         dark.uGlassGlow.value.setRGB(0, 0, 0);
       }
     }
-    state.scene.background.setRGB(light.skyR, light.skyG, light.skyB, state.THREE.SRGBColorSpace);
+    // In the miniature finish the pot stands on a warm table top.
+    if (state.street) syncStreetSky(light);
+    else if (state.study && state.study !== "none" && !state.underground) state.scene.background.setRGB(0.9, 0.9, 0.88, state.THREE.SRGBColorSpace);
+    else if (state.miniature && !state.underground && light.dayFactor > 0.5) state.scene.background.setRGB(0.86, 0.82, 0.74, state.THREE.SRGBColorSpace);
+    else state.scene.background.setRGB(light.skyR, light.skyG, light.skyB, state.THREE.SRGBColorSpace);
     const bob = waterBob(snapshot.timeOfDay);
     state.chunks.forEach((record) => {
       if (record.waterMesh) record.waterMesh.position.y = bob;
@@ -4144,7 +4807,49 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     }
   }
 
+  // At street level the backdrop is a sky, not the table the pot stands on:
+  // one vertical gradient, pale at the horizon, deeper overhead, dimming
+  // with the day. The caller's palette pass turns it into bands or dither.
+  function syncStreetSky(light) {
+    const day = light.dayFactor;
+    const mix = (a, b) => Math.round((b + (a - b) * day) * 255);
+    const zenith = [mix(0.36, 0.05), mix(0.56, 0.07), mix(0.86, 0.16)];
+    const horizon = [mix(0.8, 0.12), mix(0.87, 0.13), mix(0.94, 0.22)];
+    const key = `${zenith}|${horizon}`;
+    if (state.skyKey === key) return;
+    state.skyKey = key;
+    if (typeof document === "undefined") return;
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 64;
+    const context = canvas.getContext("2d");
+    const gradient = context.createLinearGradient(0, 0, 0, 64);
+    gradient.addColorStop(0, `rgb(${zenith})`);
+    gradient.addColorStop(1, `rgb(${horizon})`);
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, 1, 64);
+    if (state.skyTexture) {
+      state.ledger.release(state.skyTexture);
+      state.skyTexture.dispose();
+    }
+    state.skyTexture = state.ledger.track(new state.THREE.CanvasTexture(canvas));
+    state.skyTexture.colorSpace = state.THREE.SRGBColorSpace;
+    state.scene.background = state.skyTexture;
+  }
+
   function syncCamera(snapshot) {
+    if (state.street) {
+      const view = state.streetView || {};
+      const eye = view.eye || [0, 1, 0];
+      const target = view.target || [1, 1, 1];
+      state.camera.fov = Number.isFinite(view.fov) ? view.fov : 60;
+      state.camera.aspect = state.street.width / state.street.height;
+      state.camera.position.set(eye[0], eye[1], eye[2]);
+      state.camera.up.set(0, 1, 0);
+      state.camera.lookAt(target[0], target[1], target[2]);
+      state.camera.updateProjectionMatrix();
+      return;
+    }
     const rig = cameraRig(state.view, mapSize(snapshot), state.cssWidth, state.cssHeight);
     state.camera.left = -rig.halfW;
     state.camera.right = rig.halfW;
@@ -4160,8 +4865,10 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
 
   // --- public surface ---------------------------------------------------------
 
-  async function mount(target) {
+  async function mount(target, options = {}) {
     const stack = resolveStack(target);
+    const street = options && options.street;
+    state.street = street ? { width: Math.max(1, Math.round(street.width) || 640), height: Math.max(1, Math.round(street.height) || 480) } : null;
     if (state.mounted && stack === state.stack && !state.disposed) {
       await loadThree();
       return;
@@ -4205,16 +4912,24 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     }
     const recipeSource = await loadRecipeSource();
     const textureAssets = await loadTextureAssets();
+    const voxelModels = await loadVoxelModels();
 
     if (state.disposed) return;
     state.THREE = THREE;
+    if (voxelModels) {
+      state.voxelModels = voxelModels;
+      state.recipeRev += 1;
+    }
     if (recipeSource) {
       state.recipes = buildRecipes(recipeSource);
       state.recipeRev += 1;
     }
+    if (voxelModels && state.recipes) applyVoxelGround(state.recipes, voxelModels.index.ground);
     if (textureAssets) {
       state.textures = textureAssets.manifest;
-      const texture = new THREE.CanvasTexture(textureAssets.image);
+      // With the voxel catalog the ground tiles are repainted with the 2D
+      // terrain frames' own cell pattern, so the 3D ground is the 2D ground.
+      const texture = new THREE.CanvasTexture(voxelModels ? repaintGroundTiles(textureAssets.image, state.textures) : textureAssets.image);
       // Atlas rectangles use top-origin image coordinates in both backends.
       // The default upload flip would sample a different row of the atlas.
       texture.flipY = false;
@@ -4263,7 +4978,9 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     }
 
     try {
-      state.renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+      // The street view reads its frame back for palette quantization, so its
+      // drawing buffer survives the render.
+      state.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, preserveDrawingBuffer: Boolean(state.street) });
     } catch (error) {
       dispose();
       throw webglUnavailableError(String(error && error.message || error));
@@ -4271,7 +4988,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     state.renderer.outputColorSpace = THREE.SRGBColorSpace;
     // One sun, one shadow map. Hard-edged PCF keeps the blocks crisp; the
     // map is fitted to the visible ground every frame in syncLighting.
-    state.renderer.shadowMap.enabled = true;
+    state.renderer.shadowMap.enabled = !state.street;
     state.renderer.shadowMap.type = THREE.PCFShadowMap;
 
     state.contextLostHandler = (event) => {
@@ -4283,10 +5000,12 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     const rect0 = containerRect();
     state.scene = new THREE.Scene();
     state.scene.background = new THREE.Color(0x1b2a20);
-    state.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 2000);
+    state.camera = state.street
+      ? new THREE.PerspectiveCamera(60, state.street.width / state.street.height, 0.02, 160)
+      : new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 2000);
     state.ambient = new THREE.AmbientLight(0xffffff, 0.62);
     state.sun = new THREE.DirectionalLight(0xffffff, 0.85);
-    state.sun.castShadow = true;
+    state.sun.castShadow = !state.street;
     state.sun.shadow.mapSize.set(shadowMapSizeFor(rect0.width, state.dpr), shadowMapSizeFor(rect0.width, state.dpr));
     state.frameSamples.length = 0;
     state.shadowReduced = false;
@@ -4310,7 +5029,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
 
     const rect = containerRect();
     resize(rect.width, rect.height);
-    observeContainer();
+    if (!state.street) observeContainer();
     state.ready = true;
   }
 
@@ -4319,6 +5038,13 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
   }
 
   function resize(width, height, dpr) {
+    if (state.street) {
+      // The street view draws at its own low resolution whatever the window
+      // size; the caller scales the finished frame up with nearest pixels.
+      width = state.street.width;
+      height = state.street.height;
+      dpr = 1;
+    }
     const measured = containerRect();
     const cssWidth = Math.max(1, Math.round(Number.isFinite(width) ? width : measured.width));
     const cssHeight = Math.max(1, Math.round(Number.isFinite(height) ? height : measured.height));
@@ -4336,12 +5062,25 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
 
   function applyViewState(viewState) {
     if (!viewState || typeof viewState !== "object") return;
+    if (state.street && viewState.street) state.streetView = viewState.street;
     if (Number.isFinite(viewState.zoom)) state.view.zoom = clampZoom(viewState.zoom);
     if (Number.isFinite(viewState.rotation)) state.view.rotation = normalizeRotation(viewState.rotation);
     if (Number.isFinite(viewState.panX)) state.view.panX = viewState.panX;
     if (Number.isFinite(viewState.panY)) state.view.panY = viewState.panY;
     if (viewState.overlay !== undefined) state.overlay = normalizeOverlay(viewState.overlay);
-    if (viewState.display && typeof viewState.display === "object") state.underground = Boolean(viewState.display.underground);
+    if (viewState.display && typeof viewState.display === "object") {
+      state.underground = Boolean(viewState.display.underground);
+      state.miniature = viewState.display.miniature === true;
+      state.tank = viewState.display.tank === true;
+      const study = STUDY_PALETTES[viewState.display.studyModel] ? viewState.display.studyModel : "none";
+      if (study !== (state.study || "none")) {
+        // A new material rebuilds every chunk, the pot and the moving things.
+        state.study = study;
+        state.recipeRev += 1;
+        state.frameKey = null;
+        state.lastKeys.agents = null;
+      }
+    }
   }
 
   function render(snapshot, viewState) {
@@ -4360,11 +5099,13 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
       const sceneObjects = collectSceneObjects(snapshot, state.recipes);
       syncStaticChunks(snapshot, sceneObjects);
     }
-    syncDynamic(snapshot);
+    if (state.street) syncStreetObjects(state.streetView && state.streetView.objects);
+    else syncDynamic(snapshot);
+    syncMapFrame(snapshot);
     syncLighting(snapshot);
     syncCamera(snapshot);
-    state.renderer.render(state.scene, state.camera);
-    if (frameStart) {
+    renderFrame();
+    if (frameStart && !state.street) {
       const elapsed = performance.now() - frameStart;
       state.frameSamples.push(elapsed);
       if (state.frameSamples.length >= 30 && !state.shadowReduced) {
@@ -4520,6 +5261,68 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     return miniMapFallback(canvas, snapshot, options);
   }
 
+  // --- street mode (Joyride) --------------------------------------------------
+
+  // The caller's moving objects: voxel models at any heading, one mesh each,
+  // kept across frames and only moved. `yaw` turns the model's +x (its nose)
+  // toward world (cos yaw, sin yaw) on the ground plane.
+  function syncStreetObjects(objects) {
+    const list = Array.isArray(objects) ? objects : [];
+    const seen = new Set();
+    list.forEach((object, index) => {
+      const model = state.voxelModels ? voxelModelFor(object.frame) : null;
+      if (model === null || model === undefined) return;
+      const key = `${index}:${model}`;
+      seen.add(key);
+      let mesh = state.streetMeshes.get(key);
+      if (!mesh) {
+        if (!state.voxelModelMaterial) state.voxelModelMaterial = state.ledger.track(new state.THREE.MeshLambertMaterial({ vertexColors: true }));
+        mesh = new state.THREE.Mesh(voxelModelGeometry(model), state.voxelModelMaterial);
+        state.streetMeshes.set(key, mesh);
+        state.dynamicGroup.add(mesh);
+      }
+      mesh.position.set(object.x, object.y, object.z);
+      mesh.rotation.set(Number(object.roll) || 0, -(Number(object.yaw) || 0), Number(object.pitch) || 0, "YXZ");
+    });
+    state.streetMeshes.forEach((mesh, key) => {
+      if (seen.has(key)) return;
+      if (mesh.parent) mesh.parent.remove(mesh);
+      state.streetMeshes.delete(key);
+    });
+  }
+
+  // The finished street frame, bottom row first (WebGL order), into an RGBA
+  // byte array of width x height x 4. The drawing buffer is preserved in
+  // street mode, so this may run after render() in the same frame.
+  function readPixels(target) {
+    if (!state.street || !state.renderer) return null;
+    const gl = state.renderer.getContext();
+    const { width, height } = state.street;
+    const out = target && target.length >= width * height * 4 ? target : new Uint8Array(width * height * 4);
+    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, out);
+    return out;
+  }
+
+  // What this instance draws for one chunk: the same block and model lists
+  // the chunk meshes are built from, so a caller can derive collision from
+  // exactly the geometry on screen. Read-only; nothing is built or cached on
+  // the GPU.
+  function streetChunkBlocks(snapshot, chunkX, chunkY) {
+    const key = `${snapshot.rev ?? "x"}:${mapSize(snapshot)}:${state.recipeRev}`;
+    if (!state.streetSceneObjects || state.streetSceneObjects.key !== key) {
+      state.streetSceneObjects = { key, objects: collectSceneObjects(snapshot, state.recipes) };
+    }
+    return collectChunkBlocks(snapshot, state.recipes, chunkX, chunkY, state.streetSceneObjects.objects);
+  }
+
+  function voxelModelIndex(frameId) {
+    return state.voxelModels ? voxelModelFor(frameId) : null;
+  }
+
+  function voxelModelVoxels(modelIndex) {
+    return state.voxelModels && Number.isInteger(modelIndex) ? decodeVoxelModel(modelIndex) : null;
+  }
+
   function dispose() {
     if (state.observer) state.observer.disconnect();
     state.observer = null;
@@ -4531,6 +5334,12 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     state.contextLostHandler = null;
     state.chunks.forEach(disposeChunkRecord);
     state.chunks.clear();
+    state.streetMeshes.forEach((mesh) => mesh.parent && mesh.parent.remove(mesh));
+    state.streetMeshes.clear();
+    state.streetView = null;
+    state.streetSceneObjects = null;
+    state.skyTexture = null;
+    state.skyKey = null;
     Object.keys(state.dynamicMeshes).forEach((key) => {
       disposeMesh(state.dynamicMeshes[key]);
       state.dynamicMeshes[key] = null;
@@ -4560,6 +5369,14 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     state.sharedGeometry = null;
     state.materials = null;
     state.textures = null;
+    state.voxelModels = null;
+    state.voxelModelMaterial = null;
+    if (state.post) ["scene", "a", "b"].forEach((key) => state.post[key].dispose());
+    state.post = null;
+    state.agentModelMeshes = null;
+    state.frameGroup = null;
+    state.frameKey = null;
+    state.potMaterials = null;
     state.texture = null;
     state.texturedMaterial = null;
     state.wallMaterial = null;
@@ -4669,7 +5486,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     });
   }
 
-  window.AISystem6BonsaiVoxelRenderer = Object.freeze({
+  return Object.freeze({
     BACKEND: "three-voxel",
     LAYERS,
     CHUNK_SIZE,
@@ -4690,5 +5507,14 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
     debugStats,
     whenReady: loadThree,
     pure: PURE,
+    readPixels,
+    streetChunkBlocks,
+    voxelModelIndex,
+    voxelModelVoxels,
+    VOXEL_TILE,
+    VOXEL_LAYER: pxToWorld(2.5),
   });
-})();
+}
+
+window.AISystem6BonsaiVoxelRenderer = createBonsaiVoxelRenderer();
+window.AISystem6BonsaiVoxelRendererFactory = createBonsaiVoxelRenderer;

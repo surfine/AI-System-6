@@ -384,6 +384,22 @@ const dynamicWindowSources = Object.freeze({
     cssPrefixes: Object.freeze(["doom-", "openttd-"]),
     iconId: "doom",
   }),
+  rootline: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-rootline",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/rootline.js#installRootlineWindow",
+    cssPrefixes: Object.freeze(["rootline-"]),
+    iconId: "rootline",
+  }),
+  joyride: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-joyride",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/joyride.js#installJoyrideWindow",
+    cssPrefixes: Object.freeze(["joyride-"]),
+    iconId: "joyride",
+  }),
 });
 
 // Prefixes that predate the registry do not always match the data-window id
@@ -517,6 +533,8 @@ const windowInterfaceContracts = Object.freeze({
   openttd: creativeLab(),
   bonsaiCity: creativeLab(),
   doom: creativeLab(),
+  rootline: creativeLab(),
+  joyride: creativeLab(),
   imagePromptStudio: specializedUtility("utility", {
     documentModel: "none",
     statusLayout: "task-specific",

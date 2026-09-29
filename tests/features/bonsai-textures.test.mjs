@@ -3,7 +3,7 @@
 
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { inflateSync } from "node:zlib";
 import vm from "node:vm";
 import { createCanvas, loadImage } from "canvas";
@@ -16,15 +16,45 @@ const trackedArtifacts = [
   resolveProjectPath("assets/bonsai/textures.json"),
   resolveProjectPath("app/generated/bonsai-textures.js"),
 ];
+const pngArtifacts = trackedArtifacts.slice(0, 2);
 
 const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
-const before = new Map(trackedArtifacts.map((file) => [file, digest(readFileSync(file))]));
+const before = new Map(trackedArtifacts.map((file) => [file, readFileSync(file)]));
 execFileSync(process.execPath, [resolveProjectPath("tooling/build-bonsai-texture-atlas.mjs")], {
   cwd: resolveProjectPath("."),
   stdio: "pipe",
 });
-const after = new Map(trackedArtifacts.map((file) => [file, digest(readFileSync(file))]));
-test.assert([...before].every(([file, hash]) => after.get(file) === hash), "a rebuild is byte-for-byte deterministic across PNG, manifest, and runtime JS");
+const after = new Map(trackedArtifacts.map((file) => [file, readFileSync(file)]));
+
+// A PNG's bytes depend on the zlib the running Node links, so two machines
+// encode identical pixels differently — this checkout's atlas was written by a
+// different Node release than the one running this test, and comparing bytes
+// made the guard fail on every machine except the one that committed the file.
+// What the guard is for is the artwork and the manifests, so it compares the
+// decoded pixels and the manifest text with the derived PNG digest normalised
+// out, then puts the tracked bytes back: a passing run leaves the checkout
+// exactly as it found it instead of rewriting three tracked files.
+async function decodePng(bytes) {
+  const image = await loadImage(bytes);
+  const canvas = createCanvas(image.width, image.height);
+  const context = canvas.getContext("2d");
+  context.drawImage(image, 0, 0);
+  return { width: image.width, height: image.height, data: Buffer.from(context.getImageData(0, 0, image.width, image.height).data) };
+}
+for (const file of pngArtifacts) {
+  const before2 = await decodePng(before.get(file));
+  const after2 = await decodePng(after.get(file));
+  const same = before2.width === after2.width && before2.height === after2.height && before2.data.equals(after2.data);
+  test.assert(same, `a rebuild reproduces ${file.split("/").pop()} pixel for pixel`);
+}
+for (const file of trackedArtifacts.slice(2)) {
+  const withoutPngDigest = (bytes, png) => bytes.toString("utf8").split(digest(png)).join("<png-digest>");
+  test.assert(
+    withoutPngDigest(before.get(file), before.get(pngArtifacts[0])) === withoutPngDigest(after.get(file), after.get(pngArtifacts[0])),
+    `a rebuild reproduces ${file.split("/").pop()} apart from the PNG's own digest`,
+  );
+}
+for (const file of trackedArtifacts) writeFileSync(file, before.get(file));
 
 const context = vm.createContext({ window: {} });
 vm.runInContext(read("app/generated/bonsai-textures.js"), context);

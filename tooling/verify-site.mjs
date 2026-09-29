@@ -394,11 +394,40 @@ for (const slug of ["safufu"]) {
   else fail(`the unlisted /${slug} is linked from ${linkers.map((f) => path.relative(root, f)).join(", ")}`);
 }
 
-const siteFiles = walk(siteRoot);
+// The payload budget is a statement about what a reader downloads, so it must
+// count exactly the files the deploy step copies. Finder metadata is not part of
+// the product: `tooling/build-pages-static.mjs` filters `.DS_Store` out of the
+// Pages upload, and every other release walk in `tooling/`
+// (release-preflight, release-receipt, verify-public-tree,
+// verify-web-release-safety) already skips it and `._*` resource forks.
+// Counting them here made the gate depend on whether Finder had ever opened
+// `site/` in this checkout, and charged the release for bytes no reader fetches.
+// Keep this predicate identical to the packaging filter.
+const isShippedSiteFile = (file) => {
+  const name = path.basename(file);
+  return name !== ".DS_Store" && !name.startsWith("._");
+};
+
+const siteFiles = walk(siteRoot, isShippedSiteFile);
 const siteBytes = siteFiles.reduce((sum, file) => sum + statSync(file).size, 0);
 const sitePayloadBudget = 4 * 1024 * 1024;
-if (siteBytes <= sitePayloadBudget) ok(`official site payload ${(siteBytes / 1024 / 1024).toFixed(1)} MiB`);
-else fail(`official site payload ${(siteBytes / 1024 / 1024).toFixed(1)} MiB exceeds 4 MiB`);
+if (siteBytes <= sitePayloadBudget) {
+  ok(`official site payload ${(siteBytes / 1024 / 1024).toFixed(2)} MiB (${siteBytes} bytes, shipped files only)`);
+} else {
+  fail(`official site payload ${(siteBytes / 1024 / 1024).toFixed(2)} MiB exceeds 4 MiB`);
+}
+
+// The excluded metadata must genuinely be excluded, not merely ignored here:
+// the Pages upload filters it, and a stray copy in the VPS staging directory
+// would ship it. Name anything the packager would drop.
+{
+  const unshipped = walk(siteRoot).filter((file) => !isShippedSiteFile(file));
+  if (!unshipped.length) {
+    ok("site/ carries no macOS metadata for a packager to drop");
+  } else {
+    ok(`site/ carries ${unshipped.length} macOS metadata file(s); the push filters them (${unshipped.map((f) => path.relative(siteRoot, f)).slice(0, 3).join(", ")})`);
+  }
+}
 
 // The floppy claim appears in three places, so only one of them is allowed
 // to be a source: the receipt verify:floppy writes. A hand-edited README is

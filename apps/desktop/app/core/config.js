@@ -237,8 +237,6 @@ window.AISystem6Config = (() => {
       "bureaucracyMeme",
       "clioStage",
       "liquidCover",
-      "clioPaint",
-      "oneMoreTune",
       "quickDraft",
       "cmfStudio",
       "soundscape",
@@ -250,7 +248,6 @@ window.AISystem6Config = (() => {
       "importUtility",
       "printDirectory",
       "pageSetup",
-      "bonsaiCity",
     ]),
     resizableWindowNames: Object.freeze([
       // A window that can be sized shows the two scroll bar lanes whose corner
@@ -280,19 +277,15 @@ window.AISystem6Config = (() => {
       "clioStage",
       "clioChart",
       "liquidCover",
-      "clioPaint",
-      "oneMoreTune",
       "quickDraft",
       "cmfStudio",
       "soundscape",
-      "micropolis",
       // Theme Lab is a workbench with tabs and a live token editor, so it earns
       // a grow box. Its static markup used to hand-draw one, but themeLab was
       // never in this list and installGrowBoxes() returns before wiring
       // anything for a window it does not consider resizable -- so that corner
       // was painted and dead for as long as it existed.
       "themeLab",
-      "bonsaiCity",
       "imageManager",
       "systemHelp",
       "projectCd",
@@ -652,6 +645,7 @@ const ensureBonsaiCityModule = createLazyModuleLoader("AISystem6BonsaiCityLoaded
   "app/features/bonsai-sc2-codec.js",
   "app/features/bonsai-micropolis-codec.js",
   "app/features/bonsai-micropolis-export.js",
+  "app/features/bonsai-osm-import.js",
   "app/features/micropolis-cty-codec.js",
   "app/features/bonsai-catalog.js",
   "app/features/bonsai-audio.js",
@@ -669,6 +663,27 @@ const ensureDoomModule = createLazyModuleLoader("AISystem6DoomLoaded", [
   "app/core/application-shell.js",
   "app/features/doom.js",
 ], false, ["styles.openttd.css"]);
+// Rootline: the headless core, then the map that reads it, then the shell
+// that paces it; the shell's flag proves all three arrived.
+const ensureRootlineModule = createLazyModuleLoader("AISystem6RootlineLoaded", [
+  "app/core/application-shell.js",
+  "app/features/rootline-core.js",
+  "app/features/rootline-view.js",
+  "app/features/rootline.js",
+], false, ["styles.rootline.css"]);
+// Joyride drives a Bonsai City town at street level: the simulation replays
+// the demonstration town, the shared renderer helpers and the voxel renderer
+// give it a street instance of its own, then the headless core and the game.
+// The Bonsai files load once whichever of the two windows asks first.
+const ensureJoyrideModule = createLazyModuleLoader("AISystem6JoyrideLoaded", [
+  "app/core/application-shell.js",
+  "app/features/bonsai-city-sim.js",
+  "app/features/bonsai-catalog.js",
+  "app/features/bonsai-renderer.js",
+  "app/features/bonsai-renderer-voxel.js",
+  "app/features/joyride-core.js",
+  "app/features/joyride.js",
+], false, ["styles.joyride.css"]);
 const ensureWritingDemoModule = createLazyModuleLoader("AISystem6WritingDemoLoaded", [
   "app/data/evergreen-demo-corpus.js",
   "app/features/writing-demo.js",

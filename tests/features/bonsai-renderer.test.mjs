@@ -518,7 +518,15 @@ renderer.clearPreview();
 test.assert(renderer.rotateBy(1) === 1, "rotateBy applies an exact clockwise quarter turn");
 await Promise.resolve();
 await Promise.resolve();
-test.assert(atlasPaths().includes("/assets/bonsai/atlas-east.png") && loadedImageUrls.length === 2, "rotation lazily decodes only the newly active direction");
+// A building whose street lies behind it draws from the opposite atlas, so
+// besides the active direction the renderer may fetch the opposite of a
+// direction it has shown — never a sideways one it has no use for.
+{
+  const paths = atlasPaths();
+  const allowed = new Set(["/assets/bonsai/atlas-north.png", "/assets/bonsai/atlas-south.png", "/assets/bonsai/atlas-east.png", "/assets/bonsai/atlas-west.png"]);
+  test.assert(paths.includes("/assets/bonsai/atlas-east.png") && new Set(paths).size === paths.length && paths.every((path) => allowed.has(path))
+    && paths.length <= 4, "rotation lazily decodes the newly active direction, each atlas at most once");
+}
 test.assert(renderer.rotateBy(-1) === 0, "rotateBy applies an exact reversible counterclockwise quarter turn");
 test.assert(renderer.zoomBy(100) === math.MAX_ZOOM && renderer.zoomBy(0.0001) === math.MIN_ZOOM, "zoomBy clamps at the pure camera limits");
 // Rotation re-centres the pan on the ground at the middle of the view, so
@@ -560,7 +568,7 @@ for (const source of [mathSource, canvasSource]) {
 // not the build: it changes exactly when the art does.
 {
   const start = canvasSource.indexOf("function atlasImageUrl(");
-  const end = canvasSource.indexOf("function loadAtlasImages()");
+  const end = canvasSource.indexOf("function loadAtlasImages(");
   test.assert(start >= 0 && end > start, "the atlas url stamper can be extracted for execution");
   const urlContext = vm.createContext({});
   vm.runInContext(`${canvasSource.slice(start, end)}; globalThis.atlasImageUrl = atlasImageUrl;`, urlContext);

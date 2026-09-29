@@ -155,7 +155,7 @@
   function tryByok() {
     if (!cloudReady()) return null;
     const mode = typeof cloudCredentialMode === "function" ? cloudCredentialMode() : "none";
-    return ["byok", "stored"].includes(mode) ? currentReadyRoute() : null;
+    return ["byok", "stored", "subscription"].includes(mode) ? currentReadyRoute() : null;
   }
 
   async function performResolve(options = {}) {

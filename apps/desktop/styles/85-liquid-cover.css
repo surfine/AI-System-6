@@ -1639,6 +1639,9 @@ body .lc-font-import-row .btn {
 .lc-preset-row .btn {
   position: relative;
   display: grid;
+  /* one full-width column: the generic .btn centring would otherwise shrink
+     the card's track to its widest item and squeeze the preview */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: 58px auto;
   gap: 7px;
   min-height: 102px;
@@ -1699,6 +1702,25 @@ body .lc-font-import-row .btn {
     linear-gradient(112deg, transparent 0 43%, rgba(255, 255, 255, 0.26) 44% 46%, transparent 47%),
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 12px);
   pointer-events: none;
+}
+
+/* A preview rendered by the glass kernel (inline background image) replaces
+   the CSS sketch; the sketch stays as the no-WebGL fallback. */
+.lc-preset-preview.is-rendered {
+  align-self: stretch;
+  justify-self: stretch;
+  /* the sketch's gradient and inset shade would show through the real render */
+  background: none;
+  box-shadow: none;
+}
+
+.lc-preset-preview.is-rendered::before {
+  display: none;
+}
+
+/* hidden, not removed: the sample still gives the card its height */
+.lc-preset-preview.is-rendered .lc-preset-sample {
+  visibility: hidden;
 }
 
 .lc-preset-sample {

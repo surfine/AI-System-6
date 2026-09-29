@@ -19,6 +19,8 @@ const dns = require("node:dns/promises");
 const net = require("node:net");
 
 const { isPrivateAddress } = require("./reader.js");
+const { isPublicDeployment } = require("./runtime-profile.js");
+const { subscriptionCliBaseUrl, subscriptionCliKind } = require("./subscription-cli.js");
 
 const DEEPSEEK_API_KEY_DEFAULT = process.env.DEEPSEEK_API_KEY || "";
 const DEEPSEEK_BASE_URL_DEFAULT =
@@ -70,6 +72,13 @@ function resolveCloudBaseUrl(requestedBaseUrl) {
  * @returns {Promise<{ baseUrl: string, address: string, family: number }>}
  */
 async function resolveCloudTarget(requestedBaseUrl) {
+  // A subscription CLI provider runs on this Mac; the public deployment has
+  // no writer's CLI to run and never accepts the sentinel.
+  const cliKind = subscriptionCliKind(requestedBaseUrl);
+  if (cliKind) {
+    if (isPublicDeployment) throw cloudEndpointError("Subscription CLI providers are only available in the local app.");
+    return { baseUrl: subscriptionCliBaseUrl(cliKind), address: "", family: 0 };
+  }
   const baseUrl = resolveCloudBaseUrl(requestedBaseUrl);
   const parsed = new URL(baseUrl);
   const hostname = parsed.hostname.toLowerCase();

@@ -134,7 +134,16 @@ function rememberContextLengthForCurrentModel(userOverride = false) {
   return value;
 }
 
-function setContextLengthOptions(record) {
+// A model that LM Studio already holds answers only at the length it was
+// loaded with; a request that names another length is not addressed to that
+// instance. So the loaded length outranks the model's maximum, and only a
+// length the writer chose for the next Load outranks it.
+function loadedContextLengthForModel(value = modelInput?.value) {
+  const loaded = findMatchingModel(modelCatalog, value);
+  return loaded?.loaded ? parsePositiveInteger(loaded.loaded_context_length) : 0;
+}
+
+function setContextLengthOptions(record, loadedLength = 0) {
   if (!contextLengthInput) return 0;
   const previous = parsePositiveInteger(contextLengthInput.value);
   contextLengthInput.disabled = false;
@@ -147,7 +156,7 @@ function setContextLengthOptions(record) {
   const key = modelContextKey();
   const hasUserOverride = !!contextLengthUserOverrides[key];
   const remembered = hasUserOverride ? contextLengthByModel[key] : 0;
-  const preferred = [remembered, hasUserOverride && previous && previous <= record.max ? previous : 0, record.max]
+  const preferred = [remembered, hasUserOverride && previous && previous <= record.max ? previous : 0, loadedLength, record.max]
     .map(parsePositiveInteger)
     .find((value) => value && value <= record.max);
   contextLengthInput.value = String(preferred || options[options.length - 1] || "");
@@ -166,8 +175,9 @@ function normalizeContextLengthInput(options = {}) {
     if (value) rememberContextLengthForCurrentModel();
     return value || 0;
   }
-  setContextLengthOptions(record);
-  value = parsePositiveInteger(contextLengthInput.value) || setContextLengthOptions(record);
+  const loadedLength = loadedContextLengthForModel();
+  setContextLengthOptions(record, loadedLength);
+  value = parsePositiveInteger(contextLengthInput.value) || setContextLengthOptions(record, loadedLength);
   if (value > record.max) {
     value = record.max;
     contextLengthInput.value = String(value);

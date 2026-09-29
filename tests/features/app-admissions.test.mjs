@@ -15,7 +15,7 @@
 // registerLazyCommand line has come back.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { createFeatureTest, read, root, windowRegistryRecords } from "../helpers/feature-test-harness.mjs";
+import { admissionRows, admittedWindowRecords, createFeatureTest, read, root, windowRegistryRecords } from "../helpers/feature-test-harness.mjs";
 import { createAppBootVm } from "../helpers/app-boot-vm.mjs";
 
 const test = createFeatureTest("app-admissions");
@@ -105,5 +105,75 @@ test.assert(
   new Set(commands).size <= registered.size,
   `the runtime holds at least one entry per declared command (${new Set(commands).size} declared, ${registered.size} live)`,
 );
+
+// 6. A window its own module builds is declared whole by its row: `api` (the
+//    global the module installs) derives the window record, `phone` its phone
+//    role, `tile` / `grow` its frame sets. So a new game is one row plus its
+//    loader, glyph and strings. Each of those facts must then live in one place
+//    only, and the product's derivation must say what the harness spells for
+//    the contracts that read windowRegistryRecords().
+const rows = admissionRows();
+const whole = Object.keys(rows).filter((name) => rows[name].api);
+["bonsaiCity", "micropolis", "openttd", "doom", "oneMoreTune", "clioPaint", "rootline", "joyride"].forEach((name) => {
+  test.assert(whole.includes(name), `${name} is declared whole by its admission row`);
+});
+const registrySource = read("app/core/window-registry.js");
+const handWritten = [...registrySource.matchAll(/^  ([A-Za-z0-9]+): \{$/gm)].map((match) => match[1]);
+const twice = whole.filter((name) => handWritten.includes(name));
+test.assert(twice.length === 0, twice.length === 0
+  ? "no window is declared both by its row and by hand in window-registry.js"
+  : `declared twice (row and window-registry.js): ${twice.join(", ")}`);
+const windowManagerSource = read("app/core/window-manager.js");
+const phoneBlock = windowManagerSource.slice(windowManagerSource.indexOf("const mobileFullScreenAppIds"), windowManagerSource.indexOf("const mobileImmersiveAppIds"));
+const phoneTwice = whole.filter((name) => rows[name].phone && phoneBlock.includes(`"${rows[name].app}"`));
+test.assert(phoneTwice.length === 0, `no phone role is declared both by a row and in window-manager.js (${phoneTwice.join(", ") || "none"})`);
+const windowListsBlock = config.slice(config.indexOf("tileableWindowNames:"), config.indexOf("assistantSidecarWindowNames:"));
+const frameTwice = whole.filter((name) => (rows[name].tile || rows[name].grow) && windowListsBlock.includes(`"${name}"`));
+test.assert(frameTwice.length === 0, `no tile/grow flag is declared both by a row and in config.js (${frameTwice.join(", ") || "none"})`);
+
+const spelled = admittedWindowRecords();
+const derived = JSON.parse(vmw.run(`JSON.stringify(Object.fromEntries(Object.entries(AISystem6Admissions.windowRecords()).map(([name, record]) => [name, {
+  app: record.app,
+  builtByModule: record.builtByModule,
+  width: record.width || 0,
+  lazy: Object.keys(record.lazy).sort().join(" "),
+  registered: getWindowRecord(name) === null ? "" : getWindowRecord(name).app,
+}])))`));
+test.assert(
+  Object.keys(derived).sort().join(",") === Object.keys(spelled).sort().join(","),
+  `the product derives the same whole-row windows the harness spells (${Object.keys(derived).length})`,
+);
+Object.entries(spelled).forEach(([name, record]) => {
+  const live = derived[name] || {};
+  const spelledHooks = [...record.lazy.matchAll(/(\w+): \(\) =>/g)].map((match) => match[1]).sort().join(" ");
+  test.assert(
+    live.app === record.app && live.builtByModule === true && live.width === (record.width || 0) && live.lazy === spelledHooks,
+    `${name}: the derived record matches its spelling (${JSON.stringify(live)})`,
+  );
+  test.assert(live.registered === record.app, `${name}: window-registry answers for it at boot`);
+});
+// The hooks are the row's own: ensure runs the row's loader, attach calls the
+// global the row names.
+const hookProbe = vmw.run(`(() => {
+  const saved = window.AISystem6Doom;
+  let hit = "";
+  window.AISystem6Doom = { attach: () => { hit = "doom"; } };
+  getWindowRecord("doom").lazy.attach();
+  window.AISystem6Doom = saved;
+  return hit;
+})()`);
+test.assert(hookProbe === "doom", "a derived attach calls the global its row names");
+const roles = JSON.parse(vmw.run(`JSON.stringify({
+  phone: mobileFullScreenAppIds.has("rootline"),
+  immersive: [...mobileImmersiveAppIds].sort().join(","),
+  tile: tileableWindowNames.has("rootline"),
+  grow: resizableWindowNames.has("rootline"),
+  microGrow: resizableWindowNames.has("micropolis"),
+  doomGrow: resizableWindowNames.has("doom"),
+})`));
+test.assert(roles.phone && roles.tile && roles.grow, `Rootline takes its phone page and frame sets from its row (${JSON.stringify(roles)})`);
+test.assert(roles.immersive === "bonsaiCity,doom,joyride,micropolis,openttd,rootline", `the immersive set is the games, from their rows (${roles.immersive})`);
+test.assert(roles.microGrow && !roles.doomGrow, "frame flags stay per window: Micropolis grows, DOOM does not");
+
 test.finish();
 process.exit(0);

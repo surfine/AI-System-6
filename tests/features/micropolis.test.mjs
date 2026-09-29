@@ -5,7 +5,7 @@
 
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
-import { createFeatureTest, exists, read, resolveProjectPath, windowApp, windowRegistryRecords } from "../helpers/feature-test-harness.mjs";
+import { admissionRows, createFeatureTest, exists, read, resolveProjectPath, windowApp, windowRegistryRecords } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("micropolis");
 
@@ -437,8 +437,8 @@ test.assertMatches(config, /ensureMicropolisModule[\s\S]{0,400}styles\.micropoli
 test.assert(
   /ensure: \(\) => ensureMicropolisModule\(\)/.test(windowRegistryRecords().micropolis?.lazy || ""),
   "session restore reloads the module through the window registry");
-test.assertMatches(windowManager, /mobileFullScreenAppIds = new Set\(\[[^\]]*"micropolis"/,
-  "the phone shell treats Micropolis as a full-screen app");
+test.assert(admissionRows().micropolis?.phone === 2,
+  "the phone shell treats Micropolis as a full-screen app (its admission row)");
 test.assert(windowApp("micropolis") === "micropolis", "the window declares its owning app");
 test.assertNotIncludes(html, 'data-window="micropolis"', "the window frame stays off the startup disk");
 test.assertIncludes(shellSource, 'data-window="micropolis"', "the lazy module installs the real window frame");

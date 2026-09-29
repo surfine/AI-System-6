@@ -70,8 +70,9 @@ const {
   resizableWindowNames: resizableWindowNameValues,
   assistantSidecarWindowNames: assistantSidecarWindowNameValues,
 } = windowManagementConfig;
-const tileableWindowNames = new Set(tileableWindowNameValues);
-const resizableWindowNames = new Set(resizableWindowNameValues);
+// Windows declared whole in the admission table add themselves by flag.
+const tileableWindowNames = new Set([...tileableWindowNameValues, ...window.AISystem6Admissions.framedWindows("tile")]);
+const resizableWindowNames = new Set([...resizableWindowNameValues, ...window.AISystem6Admissions.framedWindows("grow")]);
 const assistantSidecarWindowNames = new Set(assistantSidecarWindowNameValues);
 
 const {
@@ -1495,7 +1496,14 @@ function isPublicCloudCredentialMode() {
   return document.documentElement.dataset.deploymentProfile === "public";
 }
 
+// Claude / Codex subscription CLIs sign in on their own, on this Mac only
+// (docs/SUBSCRIPTION-CLI.md); they need no key and never appear publicly.
+function isSubscriptionCloudProvider(provider = cloudConfig?.provider) {
+  return provider === "claude-subscription" || provider === "codex-subscription";
+}
+
 function cloudCredentialReady(config = cloudConfig) {
+  if (isSubscriptionCloudProvider(config?.provider)) return !isPublicCloudCredentialMode();
   return !!(config?.credentialMode === "shared-remote" || config?.credentialId || cloudRuntimeApiKey || (
     isPublicCloudCredentialMode()
     && publicSharedCloudAvailable
@@ -1504,6 +1512,7 @@ function cloudCredentialReady(config = cloudConfig) {
 }
 
 function cloudCredentialMode(config = cloudConfig) {
+  if (isSubscriptionCloudProvider(config?.provider)) return "subscription";
   if (config?.credentialMode === "shared-remote") return "shared-remote";
   if (isPublicCloudCredentialMode()) {
     if (cloudRuntimeApiKey) return "byok";

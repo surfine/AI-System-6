@@ -57,7 +57,7 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 - [How the repository is laid out](#how-the-repository-is-laid-out)
 - [Contributing](#contributing)
 
-## Since 1.0.55 (on main, not yet released)
+## Since 1.0.55
 
 - **Twelve appearances.** System 7, Tiger and Lion join the 1988-2026 line,
   and Drawing Board, the unreleased Mac OS 8.5 theme, joins NeXTSTEP as a
@@ -82,6 +82,29 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 - **The Writing Flow fits its era.** NeXTSTEP hangs it under the main menu as
   a 3.3 panel; Platinum draws it as Mac OS 9's Application Switcher; both can
   close it, and every era can bring it back.
+- **Joyride is the first street-level view of Bonsai City.** In its P0 slice,
+  you drive a car through a deterministic starter town with chase, cockpit and
+  overhead cameras. It is rendered as a 1996 Mac would have drawn it: 640 ×
+  480 in 256 colours, or the compact black-and-white mode with Atkinson
+  dithering. Keyboard, touch pedals, a steering wheel and a gamepad all drive
+  the same read-only city snapshot; the drive never writes into a Bonsai save.
+- **Rootline is a complete P1 round, not a picture of a transit map.** Draw and
+  edit lines, add trains and carriages, build interchanges and spend the weekly
+  reward while the morning and evening peaks turn passenger flow around. Classic
+  1-bit and colour appearances, touch gestures, a crowding end state and an
+  endless mode all use the same deterministic headless core.
+- **Bonsai City can turn a bounded real place into a city.** Its OSM path reads
+  a geocoded area through the server relay, maps it onto the same 16-metre grid,
+  and can add terrain elevation and optional building footprints. The UI and
+  exports carry OpenStreetMap attribution and ODbL provenance; failed or
+  incomplete terrain/building layers stay visible instead of becoming invented
+  city data.
+- **Soundscape can bring an Apple Music link onto your own Mac.** Paste an
+  album, song or playlist link and the local host caches the playable result,
+  preferring lossless when the optional engine and browser support it and
+  falling back honestly to AAC. A VPS or Pages page only asks the paired Mac
+  through the loopback bridge; Apple credentials and audio never go to the
+  cloud.
 
 ## What's new in 1.0.55
 
@@ -374,6 +397,10 @@ city grows around them.
   can be brought in.
 - **Day and night in 3D.** The 3D view changes from day to night, and the 2D
   map is one switch away.
+- **Real places, with their paperwork attached.** A bounded OSM import can seed
+  a new city on the same 16-metre grid, with optional elevation and building
+  layers. OpenStreetMap attribution and ODbL provenance travel with the city;
+  incomplete optional layers remain explicitly incomplete.
 
 <p align="center">
   <img src="site/img/proofs/bonsai-city.webp" alt="Bonsai City under Platinum: the example mid-size city in 3D, with streets, rail, traffic, the transport tools and the minimap." width="820">
@@ -405,9 +432,9 @@ because the sound *is* the question: hear a few bars, name the ad.
 
 ## It also runs DOOM
 
-Four games ship on this desktop, each in its own window next to the
-manuscript you were writing: three open-source classics, and Bonsai City,
-our own city builder.
+Six games ship on this desktop, each in its own window next to the manuscript
+you were writing: three open-source classics, Bonsai City, and two original
+games that share its city data boundaries.
 
 | Game | What it is |
 | --- | --- |
@@ -415,6 +442,8 @@ our own city builder.
 | **OpenTTD** | the open-source Transport Tycoon Deluxe, in Chinese, with touch controls |
 | **DOOM** | DOOM |
 | **Bonsai City** | our own city builder: 64², 96² and 128² maps, working transport and public services, local saves, and a 3D city that changes from day to night |
+| **Rootline** | a deterministic transit round: draw lines, carry passengers through the peaks, choose weekly rewards, and survive a crowding clock or keep building in Endless mode |
+| **Joyride** | a 1996-style street drive through a Bonsai starter town, with colour or black-and-white rendering and keyboard, touch or gamepad controls |
 
 <table>
   <tr>
@@ -472,7 +501,7 @@ is a mockup, because a script re-shoots all of it from the running app.
 ## Built under a 1988 constraint
 
 ```text
-boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,719,857 bytes
+boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,727,636 bytes
 two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 bytes
 heavy tools             load lazily, from a third disk
 ```

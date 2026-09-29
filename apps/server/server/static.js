@@ -74,6 +74,8 @@ const exactPublicFiles = new Set([
   "styles.clio-chart.css",
   "styles.clio-paint.css",
   "styles.one-more-tune.css",
+  "styles.rootline.css",
+  "styles.joyride.css",
   "styles.project-disks.css",
   "styles.clio-project.css",
   "styles.big-sur.css",

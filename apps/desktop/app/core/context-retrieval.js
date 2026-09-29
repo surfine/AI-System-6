@@ -162,8 +162,10 @@ async function embedTexts(texts, signal, options = {}) {
   // The hosted route answers the one case the provider check cannot: the shared
   // brain is DeepSeek, which has no embeddings endpoint, and the deployment
   // serves one anyway.
-  const useCloudEmbeddings = Boolean(hostedEmbeddings)
-    || (isCloud && cloudConfig?.provider && cloudConfig.provider !== "deepseek");
+  // A subscription CLI has no embeddings endpoint; the local and in-browser
+  // embedders below answer instead.
+  const useCloudEmbeddings = (Boolean(hostedEmbeddings)
+    || (isCloud && cloudConfig?.provider && cloudConfig.provider !== "deepseek")) && !(typeof isSubscriptionCloudProvider === "function" && isSubscriptionCloudProvider());
   const modelForCloudEmbeddings = String(cloudConfig?.model || "").trim();
   const localModel = String(embeddingModelInput?.value?.trim() || "");
   const localConnected = !!localLmStudioConnectionEnabled;

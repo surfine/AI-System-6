@@ -601,7 +601,11 @@ window.AISystem6LocalLMStudio = (() => {
       if (systemPrompt) request.system_prompt = systemPrompt;
     }
 
-    const contextLength = Number(options.contextLength || payload.context_length || 0);
+    // An instance LM Studio already holds is addressed at its own loaded
+    // length; any other length reads as a different instance ("Model does
+    // not exist." or a second `model:2`). Changing it is the Load button's job.
+    const loadedInstance = lastModels.find((model) => model.loaded && model.id === request.model);
+    const contextLength = Number(loadedInstance?.loaded_context_length || options.contextLength || payload.context_length || 0);
     if (Number.isFinite(contextLength) && contextLength > 0) request.context_length = Math.round(contextLength);
     ["temperature", "top_p", "top_k", "min_p", "repeat_penalty"].forEach((key) => {
       const value = Number(payload[key]);
@@ -1086,6 +1090,15 @@ window.AISystem6LocalLMStudio = (() => {
         response = await post();
       }
     }
+    // LM Studio answers a request whose context length matches no held
+    // instance with "Model does not exist." — the model is there, the length
+    // is not, so the writer is told that rather than "not loaded".
+    if (!response.ok && apiMode === "native" && nativeRequest.context_length) {
+      const probeText = await response.clone().text().catch(() => "");
+      if (/model does not exist/i.test(probeText)) {
+        throw new Error(`lmstudio_context_mismatch: ${nativeRequest.model} has no instance at context ${nativeRequest.context_length}`);
+      }
+    }
     if (!response.ok) await readErrorResponse(response);
     connected = true;
     if (apiMode === "native") {
@@ -1141,6 +1154,7 @@ window.AISystem6LocalLMStudio = (() => {
     if (status === 401 || status === 403 || /unauthorized|forbidden|api token|authentication/.test(value)) return "lmstudio_auth_failed";
     if (status === 404 || /api\/v1|not found/.test(value)) return provider === "ollama" ? "ollama_api_incompatible" : "lmstudio_v1_required";
     if (/cors|load failed|failed to fetch|networkerror|network request failed/.test(value)) return provider === "ollama" ? "ollama_cors_or_offline" : "lmstudio_cors_or_offline";
+    if (/lmstudio_context_mismatch/.test(value)) return "lmstudio_context_mismatch";
     if (/context length|too many tokens|prompt.*too long/.test(value)) return "lmstudio_context_length";
     if (/no models loaded|model .*not loaded|please load a model/.test(value)) return "lmstudio_model_not_loaded";
     if (/timeout|timed out/.test(value)) return "lmstudio_timeout";

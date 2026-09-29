@@ -283,6 +283,11 @@ In every option the task contracts, humanizer guardrail and "AI output is
 temporary" rule apply unchanged, and each generation shows which provider and
 model answered.
 
+**Decision (2026-09-28).** The owner chose option 2 for the local app,
+covering every model task, and it is implemented:
+[Subscription CLI providers](SUBSCRIPTION-CLI.md) records the design, the
+terms risk the owner accepted, and the failure codes.
+
 ## Open questions to settle before code
 
 - Should mounted-project reads include the working session (cursor, open

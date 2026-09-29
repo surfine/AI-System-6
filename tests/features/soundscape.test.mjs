@@ -59,9 +59,10 @@ test.assertIncludes(source, "const localAudio = new Audio()", "local audio uses 
 test.assertIncludes(source, "URL.createObjectURL(file)", "local files play without being copied");
 test.assertIncludes(source, "URL.revokeObjectURL(url)", "temporary local playback URLs are released");
 test.assertIncludes(source, "const sessionLocalUrls = new Map()", "local files can be restored during the current session without being persisted");
-test.assertIncludes(serviceProviders, '"http://127.0.0.1:4173/api/music/system"', "the public Web app sends Music commands back to the host Mac");
+test.assertIncludes(serviceProviders, 'const LOCAL_BRIDGE_ORIGIN = "http://127.0.0.1:4173"', "the public Web app reaches the host Mac on loopback");
+test.assertIncludes(serviceProviders, 'localBridgeFetch("/api/music/system", init, input.publicWeb === true)', "the public Web app sends Music commands back to the host Mac");
 test.assertIncludes(source, 'requestService("system.music"', "Soundscape routes Music commands through the service capability");
-test.assertIncludes(serviceProviders, 'init.targetAddressSpace = "loopback"', "Chromium declares the local Music bridge address space");
+test.assertIncludes(serviceProviders, 'bridged.targetAddressSpace = "loopback"', "Chromium declares the local bridge address space");
 test.assertIncludes(source, "isSafariPublicWebUnsupported", "Safari reuses the dedicated HTTP local entry");
 test.assertIncludes(source, 'error.code = "local_music_bridge_unavailable"', "an unavailable Mac bridge has a specific low-friction explanation");
 test.assertIncludes(source, 'requestSystemMusic("state")', "the player reads real Music app state");
@@ -86,11 +87,11 @@ test.assertIncludes(html, 'id="soundscape-gamdl-form"', "the queue drawer offers
 test.assertIncludes(html, 'id="soundscape-gamdl-input" type="url"', "the link field is a real URL input");
 test.assertIncludes(html, 'id="soundscape-gamdl-submit"', "the download action is a visible button");
 test.assertIncludes(menus, 'menuItem("soundscape-gamdl-download", "soundscape_gamdl_download")', "the File menu offers the download command");
-test.assertIncludes(source, "function downloadFromAppleMusic(url)", "the download is an explicit user command");
+test.assertIncludes(source, "async function downloadFromAppleMusic(text)", "the download is an explicit user command");
 test.assertIncludes(source, 'source: "gamdl"', "downloaded tracks carry their own queue source");
 test.assertIncludes(source, "state.source = item.source === \"gamdl\" ? \"gamdl\" : \"local\"", "downloaded tracks play through the local audio engine");
 test.assertIncludes(source, "gamdlJobTimer", "the bridge polls one download at a time");
-test.assertIncludes(source, "window.AISystem6LocalLMStudio?.isPublicWebMode?.()", "public-web Soundscape does not attempt host-only downloads");
+test.assertIncludes(source, "window.AISystem6LocalLMStudio?.isPublicWebMode?.() === true", "public-web Soundscape knows it is on the loopback bridge");
 test.assertIncludes(source, "gamdl_cookies_missing", "missing host cookies have a specific low-friction message");
 test.assertNotIncludes(source, "cookies.txt", "the browser never holds a cookie file path");
 test.assertIncludes(router, '["POST /api/music/gamdl/jobs", handleGamdlJobs]', "the gamdl job route is registered");
@@ -103,7 +104,7 @@ test.assertIncludes(gamdlModule, "music.apple.com", "the URL allowlist names App
 test.assertIncludes(gamdlModule, "randomUUID()", "each download job owns a unique id");
 test.assertIncludes(gamdlModule, '"--no-config-file"', "gamdl runs with deterministic flags");
 test.assertIncludes(gamdlModule, '"--cookies-path"', "the cookies path is passed explicitly");
-test.assertIncludes(gamdlModule, "AI_SYSTEM6_GAMDL_COOKIES_PATH", "the host cookie path comes from the server environment");
+test.assertIncludes(read("apps/server/server/music-tools.js"), "AI_SYSTEM6_GAMDL_COOKIES_PATH", "the host cookie path comes from the server environment");
 test.assertIncludes(gamdlModule, "candidate.startsWith(`${base}${path.sep}`)", "downloaded file paths are traversal-guarded");
 test.assertIncludes(gamdlRoute, "createReadStream(filePath", "downloaded audio streams from disk");
 test.assertIncludes(gamdlRoute, '"Accept-Ranges": "bytes"', "downloaded audio serves byte ranges");
@@ -256,10 +257,7 @@ test.assertIncludes(app, "var translations = window.AISystem6Data?.translations 
 // audio or macOS Music control.
 test.assertIncludes(source, "gamdl_unavailable", "missing gamdl maps to a friendly error");
 test.assertIncludes(source, "gamdl_cookies_missing", "missing cookies map to a friendly error");
-test.assert(
-  source.includes("No cookies or") && source.includes("tokens ever reach the browser"),
-  "browser never handles Apple Music cookies"
-);
+test.assertIncludes(source, "cookies, tokens and tool output never reach it", "browser never handles Apple Music cookies");
 test.assertIncludes(
   source,
   'if (!("mediaSession" in navigator) || !["local", "gamdl"].includes(state.source)) return;',

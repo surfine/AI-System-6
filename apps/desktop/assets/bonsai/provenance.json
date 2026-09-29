@@ -3,19 +3,19 @@
   "files": [
     {
       "file": "assets/bonsai/atlas-north.png",
-      "sha256": "b3956a34a0eecfa96cde40e3e08777e30c95092970ad4cec6be81be9c9f85e9a"
+      "sha256": "e6b7860e898c1398fff64e53782fcba12ff21d939f9f9727b90a18066ff53726"
     },
     {
       "file": "assets/bonsai/atlas-east.png",
-      "sha256": "531a1518b467d344d1d90cc63b0b9a4222f0bc8089b0588cfd8d45468681e215"
+      "sha256": "44abf7b3b0328a856c4a62121426ee5fc5a2ec61f29a3d753d1bc46d51dce808"
     },
     {
       "file": "assets/bonsai/atlas-south.png",
-      "sha256": "33a0c3a24f5bd7bfc561645d30f9d165b5f4b3b1d27508c823551a302f37e27e"
+      "sha256": "d34cdf28ff29e4efc18a99226f224f070f311ed4dae735d78b86e5f6bbad9809"
     },
     {
       "file": "assets/bonsai/atlas-west.png",
-      "sha256": "a28700869ef984d17a9c2bf954541f5d53fc6ae8fbcd3665d6052a35d90ce7f4"
+      "sha256": "525f691ac581b7575b66d905fbae63ad3ecf869c62372ea2592416adb2ad8371"
     }
   ],
   "metadata": "assets/bonsai/atlas-metadata.json",
@@ -31,7 +31,7 @@
   },
   "author": "AI System 6 (original, agent-authored)",
   "date": "2026-09-11T00:00:00.000Z",
-  "tool": "tooling/build-bonsai-atlas.mjs (shared runtime geometry + saved image textures + deterministic orthographic rasterizer)",
+  "tool": "tooling/build-bonsai-atlas.mjs, then tooling/bonsai-miniature/bake-atlas.mjs (authored voxel models, deterministic CPU isometric rasterizer)",
   "license": "MIT",
   "source": "original",
   "notes": [
@@ -39,6 +39,7 @@
     "No pixels copied, traced, sampled, measured from, or converted from any external game or artwork; the reference authorized by the 2026-08-24 amendment was not consulted for this build.",
     "Building identity selects massing, roof and wall colour independently of position, light and camera; twenty-four authored variants per stage stay stable across backends.",
     "The generator has no network path and no wall clock, and reads checked-in recipes, runtime geometry and saved texture/mask PNGs; a rebuild is byte-identical.",
-    "All four rotations share frame ids and dimensions; camera rotation changes visible faces without changing asset identity."
+    "All four rotations share frame ids and dimensions; camera rotation changes visible faces without changing asset identity.",
+    "826 frames (growable buildings and their build states) are original voxel models authored in tooling/bonsai-miniature and rasterized on the CPU with exact 2:1 isometric arithmetic; no external art was consulted, traced or sampled."
   ]
 }

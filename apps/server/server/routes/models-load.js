@@ -24,6 +24,9 @@
 //   load `embedding_model` or `embeddingModel` if present. Embedding
 //   load failure does NOT fail the route; the error message goes
 //   into the `embedding_warning` field.
+// - A Qwen-family model (Qwen 3.5+, Bonsai) first gets its LM Studio
+//   template override pinned to thinking off; the outcome is reported as
+//   `thinking_override` and never fails the load.
 // - AbortError swallowed silently.
 // - Outer 502 carries { error: "Model load failed", detail }.
 
@@ -37,6 +40,8 @@ const {
   loadedModelContext,
   loadedModelName,
 } = require("../lib/lmstudio-models.js");
+const { parseJsonOutput, runLms } = require("../lib/lms-cli.js");
+const { ensureLmStudioThinkingOff, isQwenFamilyName } = require("../lib/lmstudio-thinking-override.js");
 const {
   loadLmStudioAuxModel,
   setLoadedLmStudioModelInfo,
@@ -102,6 +107,21 @@ async function handleModelsLoad(req, res) {
         detail: contextConfig.detail,
       }), { "Content-Type": "application/json" });
       return;
+    }
+
+    // LM Studio reads a model's template override when it loads the model,
+    // and its MLX engine ignores the request-level thinking switch, so a
+    // Qwen-family model gets its thinking pinned off before this load.
+    /** @type {{ status: string, reason?: string } | null} */
+    let thinkingOverride = null;
+    if (isQwenFamilyName(model)) {
+      try {
+        const listed = parseJsonOutput((await runLms(["ls", "--llm", "--json"], { timeout: 15000, signal })).stdout);
+        thinkingOverride = await ensureLmStudioThinkingOff({ modelKey: model, models: Array.isArray(listed) ? listed : [] });
+      } catch (error) {
+        if (/** @type {any} */ (error)?.name === "AbortError") throw error;
+        thinkingOverride = { status: "skipped", reason: "lms_unavailable" };
+      }
     }
 
     const payload = {
@@ -177,6 +197,7 @@ async function handleModelsLoad(req, res) {
       max_context_source: contextConfig.maxContextSource,
       embedding_model: embeddingLoaded?.model || "",
       embedding_warning: embeddingWarning,
+      thinking_override: thinkingOverride,
       raw: data,
     }), {
       "Content-Type": "application/json",
