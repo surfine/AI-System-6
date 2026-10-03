@@ -100,6 +100,10 @@ class LruCache {
 }
 
 const featureCache = new LruCache(12);
+// Answers cached before real names travelled were keyed without a version, so
+// an old answer (no names in its tags) must not be served as a new one. The
+// version is part of the key; a stale entry simply stops being reachable.
+const FEATURE_CACHE_VERSION = 2;
 const elevationCache = new LruCache(24);
 const tileCache = new LruCache(48);
 const placeCache = new LruCache(200);
@@ -145,6 +149,11 @@ const CIVIC_AMENITIES = "police|fire_station|school|kindergarten|university|coll
 const KEEP_TAGS = new Set([
   "highway", "railway", "waterway", "natural", "water", "landuse", "leisure", "amenity", "building", "building:levels", "height",
   "tunnel", "bridge", "layer", "covered", "area", "intermittent", "service", "location", "tourism",
+  // Real names, so the shared gazetteer can show them. Only these four keys
+  // travel: an element with a name carries at most a few extra bytes.
+  "name", "name:zh", "name:zh-Hans", "name:en",
+  // The tags a rail station is recognised by, and a place tag's own kind.
+  "public_transport", "place", "train", "station", "subway",
 ]);
 
 function overpassQuery(area, includeBuildings) {
@@ -163,6 +172,11 @@ function overpassQuery(area, includeBuildings) {
     `relation["leisure"~"^(park|garden|nature_reserve)$"]${box};`,
     `way["amenity"~"^(${CIVIC_AMENITIES})$"]${box};`,
     `node["amenity"~"^(${CIVIC_AMENITIES})$"]${box};`,
+    // Real railway stations and the places a district is known by: the
+    // gazetteer's real names come from these three node selectors.
+    `node["railway"~"^(station|halt)$"]${box};`,
+    `node["public_transport"="station"]${box};`,
+    `node["place"~"^(suburb|quarter|neighbourhood|village|hamlet)$"]${box};`,
     `nwr["tourism"="museum"]${box};`,
     `way["leisure"="stadium"]${box};`,
     includeBuildings ? `way["building"]${box};` : "",
@@ -246,7 +260,7 @@ async function fetchOverpass(area, includeBuildings, signal) {
 async function osmFeatures({ lat, lon, size, buildings }, { signal, isPublic = false } = {}) {
   const area = areaFor(lat, lon, size);
   const includeBuildings = buildings === true || buildings === "1" || buildings === "true";
-  const key = `${area.lat},${area.lon},${area.size},${includeBuildings ? 1 : 0}`;
+  const key = `v${FEATURE_CACHE_VERSION},${area.lat},${area.lon},${area.size},${includeBuildings ? 1 : 0}`;
   const cached = featureCache.get(key);
   if (cached) return { ...cached, cached: true };
   if (overpassInFlight) throw busyError("Another map is being fetched. Try again in a moment.");

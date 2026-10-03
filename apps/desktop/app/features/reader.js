@@ -552,6 +552,7 @@ async function readReaderFigure(plate, row) {
         payload: {
           model: getLocalModelRequestName(),
           messages: window.AISystem6ModelTaskRuntime.buildVisionMessages({
+            projectId: activeProjectId,
             mode: "writing-context",
             name: label,
             dataUrl: src,
@@ -1486,7 +1487,7 @@ async function translateReaderSubtitleLocally(blocks, mode, signal) {
     const result = await sendLocalModelTask({
       payload: {
         model: getLocalModelRequestName(),
-        messages: window.AISystem6ModelTaskRuntime.buildSubtitleMessages(batch, mode),
+        messages: window.AISystem6ModelTaskRuntime.buildSubtitleMessages(batch, mode, activeProjectId),
         temperature: 0.2,
         max_tokens: 2600,
         stream: false,

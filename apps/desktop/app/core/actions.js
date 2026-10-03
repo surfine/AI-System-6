@@ -472,7 +472,7 @@ function startReviewDeskSplitterDrag(event) {
 }
 
 function isReviewDeskLinkedToFinal() {
-  return !!teachTextReviewLabel();
+  return !!teachTextReviewLabel() && !!teachTextBodyInput?.value.trim();
 }
 
 // The Review Desk body has its own lock (nothing to review until the manuscript
@@ -502,6 +502,18 @@ function syncReviewDeskAvailability() {
   }
   reviewDeskPreviewEl?.classList.add("is-hidden");
   reviewDeskEmptyNoteEl?.classList.toggle("is-hidden", ready);
+  const startButton = reviewDeskEmptyNoteEl?.querySelector("button");
+  const hasManuscript = typeof isTeachTextManuscriptRole === "function" && isTeachTextManuscriptRole() && !!teachTextBodyInput?.value.trim();
+  if (startButton) {
+    startButton.dataset.action = hasManuscript ? "advance-manuscript-to-review" : "open-teachtext";
+    startButton.dataset.i18n = hasManuscript ? "to_review" : "to_manuscript";
+    startButton.textContent = t(startButton.dataset.i18n);
+  }
+  const emptyMessage = reviewDeskEmptyNoteEl?.querySelector("p");
+  if (emptyMessage) {
+    emptyMessage.dataset.i18n = hasManuscript ? "review_desk_requires_final" : "writing_review_needs_text";
+    emptyMessage.textContent = t(emptyMessage.dataset.i18n);
+  }
   // A rebuild waiting for the writer shows through the lock; the guest tools
   // draw its card, so they load only when one is waiting.
   if (!ready && window.AISystem6RunReceipts?.queryReceipts?.({ projectId: activeProjectId, limit: 50, includeRunning: true })
@@ -771,7 +783,7 @@ function runReviewDeskMingmingHandoffBackstageReview() {
     .catch((error) => clearReviewFeedbackSlot("facts", t("lazy_load_failed", t("review_mingming_handoff_backstage"), error?.message || String(error))));
 }
 
-async function viewReviewDeskManuscript() {
+async function viewReviewDeskManuscript({ edit = false } = {}) {
   if (!ensureTeachTextReviewState({ promoteSavedFinal: true, openTeachText: false })) {
     await openWindow("teachText");
     setStatus(t("teachtext_review_requires_final"));
@@ -784,6 +796,16 @@ async function viewReviewDeskManuscript() {
   const section = currentReviewDeskSectionBlock(teachTextBodyInput.value || "");
   if (section) {
     scrollTextareaToOffset(teachTextBodyInput, section.offset || 0);
+  }
+  if (edit) {
+    showTeachTextEditor({ focus: false });
+    if (section) {
+      teachTextBodyInput.setSelectionRange(section.offset || 0, section.offset || 0);
+      scrollTextareaToOffset(teachTextBodyInput, section.offset || 0);
+    }
+    await openWindow("teachText");
+    teachTextBodyInput.focus();
+    return;
   }
   showTeachTextPreview({ focus: false, preserveScroll: false });
   if (section && teachTextPreviewEl && typeof scrollRatioForElement === "function" && typeof setElementScrollRatio === "function") {
@@ -1317,6 +1339,7 @@ function getApplicationActionHandlers() {
     "review-mingming-handoff": runReviewDeskMingmingHandoffReview,
     "review-mingming-handoff-backstage": runReviewDeskMingmingHandoffBackstageReview,
     "review-view-manuscript": viewReviewDeskManuscript,
+    "review-edit-manuscript": () => viewReviewDeskManuscript({ edit: true }),
     "review-export": exportReviewDeskReport,
     "previous-claim-section": () => showAdjacentClaimCheckSection(-1),
     "next-claim-section": () => showAdjacentClaimCheckSection(1),

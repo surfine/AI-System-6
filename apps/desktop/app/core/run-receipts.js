@@ -395,11 +395,13 @@ async function recordModelAnswer({
   answerText = "",
   status = "completed",
   publicErrorReason = "",
+  runManifest = null,
 } = {}) {
   const text = String(answerText || "");
   if (!text.trim()) return { ok: false, reason: "empty" };
   const created = await createReceipt({
     projectId, sourceAppId, intent, provider, model, attempts, inputObjectIds, sourceScope,
+    extraFields: runManifest ? { runManifest: JSON.parse(JSON.stringify(runManifest)) } : null,
   });
   if (!created.ok) return created;
   await updateReceipt(created.receiptId, { proposal: text });

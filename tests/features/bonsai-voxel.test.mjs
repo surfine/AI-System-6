@@ -19,6 +19,16 @@ test.assertFile("tooling/vendor/bonsai-renderer-entry.mjs", "the vendor entry ex
 test.assertIncludes(voxelSource, "AISystem6BonsaiVoxelRendererLoaded", "the module installs its lazy-loader flag");
 test.assertIncludes(voxelSource, "/app/vendor/bonsai-renderer.js?v=", "the vendor URL carries a version tag");
 test.assertIncludes(voxelSource, "import(", "the renderer lazy-loads its three.js vendor");
+// 2026-10-02 render pass. A slope wedge's raised sides sampled outside their
+// atlas tile on the GPU (soil chevrons on hillsides): they now fold into a
+// tile and wear the grass top. A railway on a slope keeps a narrow ballast
+// bed instead of a tile-wide deck. Authored models carry per-vertex ambient
+// occlusion with the ground counted as solid.
+test.assertIncludes(voxelSource, "const rect = face.surface === \"top\" || wedge ? topRect : sideRect;", "a slope wedge's banks wear the grass top tile");
+test.assertIncludes(voxelSource, "const v = wedge && face.surface !== \"top\" ? (rawV + 1) / 2 : rawV;", "and their texture coordinates stay inside the tile");
+test.assertIncludes(voxelSource, "else pushPathStrip(opaque, cx, railY + 0.04, cz, masks.rail,", "a railway on a slope lies on a ballast strip along the line");
+test.assertIncludes(voxelSource, "const solid = (x, y, z) => (z < 0 ?", "occlusion counts the ground under a model as solid");
+test.assertIncludes(voxelSource, "const uniform = ((bits & 3) * 0x55) === bits;", "only faces with even occlusion merge, so the shading stays exact");
 test.assertNotIncludes(voxelSource, "Math.random", "view variation never falls back to Math.random");
 test.assertNotIncludes(voxelSource, "Date.now", "the renderer never reads the wall clock");
 test.assert((voxelSource.match(/performance\.now/g) || []).length <= 3 && voxelSource.includes("frameStart") && voxelSource.includes("shadowReduced"),
@@ -118,6 +128,19 @@ if (exists("app/features/bonsai-renderer-canvas.js")) {
 test.assert(voxel.dispose() === undefined && voxel.debugStats().disposed === true, "dispose before mount is a safe no-op that reports disposed");
 test.assert(voxel.debugStats().activeRaf === 0, "no animation frame survives outside render scheduling");
 test.assert(voxel.pickTile(10, 10, { left: 0, top: 0, width: 100, height: 100 }) === null, "picking before mount returns null");
+
+// A power line that shares its tile with a street must not stand its pole in
+// the middle of the carriageway: the baked index carries a second, kerbside
+// mesh per mask next to the centred one, and the two are different models.
+{
+  const models = JSON.parse(read("assets/bonsai/voxel-models.json"));
+  const centred = models.frames["wire.mask-10"];
+  const kerbside = models.frames["wire.side.mask-10"];
+  test.assert(Number.isInteger(centred) && Number.isInteger(kerbside) && centred !== kerbside,
+    `the baked index holds a kerbside power-line mesh beside the centred one (${centred} vs ${kerbside})`);
+  test.assert(models.frames["wire.side.mask-5"] !== undefined && models.frames["wire.side.mask-0"] !== undefined,
+    "every wire mask has its kerbside twin, so no street line falls back to the pole-in-the-road mesh");
+}
 
 const pure = voxel.pure;
 test.assert(pure && Object.isFrozen(pure), "the pure toolkit is frozen");
@@ -688,12 +711,25 @@ if (exists("app/features/bonsai-city-sim.js")) {
   test.assert(cabins.length === 4, "every car is two-tone: a body with a darker cabin on it");
   const crossing = city((snapshot) => { snapshot.agents.vehicles = [{ x: 12, y: 7, phase: 0.2 }]; });
   test.assert(bodies(crossing, 0.27).every((block) => block.sz > block.sx), "a car on a north-south street points north-south");
+  // An avenue half is one-way in the voxel view too: a car keeps the half's
+  // own direction and sits in its general lanes, so no block meets oncoming
+  // traffic or strays toward the median.
+  const avenue = city((snapshot) => {
+    snapshot.avenue = layer();
+    for (let x = 0; x < n; x += 1) { snapshot.road[4 * n + x] = 1; snapshot.avenue[3 * n + x] = 8; snapshot.avenue[4 * n + x] = 2; }
+    snapshot.agents.vehicles = [{ x: 3, y: 3, phase: 0.5 }, { x: 6, y: 3, phase: 0.5 }, { x: 3, y: 4, phase: 0.5 }, { x: 6, y: 4, phase: 0.5 }];
+  });
+  const half = (ty) => avenue.opaque.filter((block) => Math.abs(Math.max(block.sx, block.sz) - 0.27) < 1e-9 && block.z >= ty && block.z < ty + 1);
+  test.assert(half(3).length === 2 && half(3).every((block) => block.sx > block.sz && block.z < 3.5),
+    "a car on the westbound half of an avenue points west and keeps to the north lane");
+  test.assert(half(4).length === 2 && half(4).every((block) => block.sx > block.sz && block.z > 4.5),
+    "a car on the eastbound half points east and keeps to the south lane");
   const later = city((snapshot) => { snapshot.agents.vehicles = [{ x: 4, y: 3, phase: 0.3 }]; }, 0.5, 11);
   const earlier = city((snapshot) => { snapshot.agents.vehicles = [{ x: 4, y: 3, phase: 0.3 }]; }, 0.5, 10);
   test.assert(Math.abs(Math.abs(bodies(later, 0.27)[0].x - bodies(earlier, 0.27)[0].x) - 0.18 * 0.9) < 1e-9,
     "a car rolls along its lane from tick to tick until the next deal");
   const fleet = city((snapshot) => { snapshot.agents.vehicles = Array.from({ length: 10 }, (_, i) => ({ x: i + 1, y: 3, phase: 0.5 })); });
-  test.assert(bodies(fleet, 0.72).length === 1 && bodies(fleet, 0.34).length === 2, "traffic mixes in a bus and lorries");
+  test.assert(bodies(fleet, 0.72).length === 0 && bodies(fleet, 0.34).length === 2 && bodies(fleet, 0.27).length === 8, "traffic is cars and lorries; a bus is not painted onto every tenth car");
   const dark = city((snapshot) => { snapshot.agents.vehicles = [{ x: 4, y: 3, phase: 0.3 }]; }, 0);
   test.assert(dark.glow.length === 4 && dark.glow.filter((block) => block.r > 0.9 && block.b < 0.2).length === 2,
     "at night a car shows two headlights and two red tail lights");
@@ -723,5 +759,55 @@ if (exists("app/features/bonsai-city-sim.js")) {
   const sprite = pure.createAssetBlocks({ category: "agent", kind: "car", variant: 1, state: "normal" }, JSON.parse(read("assets/bonsai/atlas-source.json")));
   test.assert(sprite && sprite.length >= 2, "the atlas car sprite still composes from a snapshot with no streets");
 }
+
+// Buses, stops and cameras are the city's own lines, not a tenth of the cars.
+vm.runInContext(read("app/core/pot-world.js"), context);
+test.assertNotIncludes(voxelSource, "One vehicle in ten is a bus", "ordinary traffic is no longer dressed up as a bus");
+for (const id of ["agent.bus.1", "agent.bus.brt.front", "agent.bus.brt.rear", "street.bus-stop", "street.bus-platform", "street.camera"]) {
+  test.assertIncludes(voxelSource, id, `${id} is wired into the voxel view`);
+}
+const modelIndex = JSON.parse(read("assets/bonsai/voxel-models.json"));
+test.assert(modelIndex.palette.some((entry) => entry[3] === "livery"), "the palette keeps one livery slot");
+for (const id of ["agent.bus.1", "agent.bus.brt.front", "agent.bus.brt.rear", "street.bus-stop", "street.bus-platform", "street.camera"]) {
+  for (const heading of ["", ".px", ".ny", ".nx", ".py"]) {
+    const name = heading ? `${id}${heading}` : id;
+    test.assert(Number.isInteger(modelIndex.frames[name]), `${name} is a voxel frame`);
+  }
+}
+const brtLine = {
+  mode: "brt", color: 2, vehicles: 3,
+  tiles: [1, 4, 2, 4, 3, 4, 4, 4, 5, 4, 6, 4],
+  stations: [{ kind: "bus-stop", x: 2, y: 4 }, { kind: "bus-stop", x: 5, y: 4 }],
+};
+const roadCity = (tick, lines) => {
+  const snapshot = { size: 16, tick, road: new Uint8Array(256), avenue: new Uint8Array(256), transitLines: { lines } };
+  snapshot.road[4 * 16 + 2] = 1;
+  snapshot.road[4 * 16 + 5] = 1;
+  snapshot.road[3 * 16 + 2] = 1;
+  return snapshot;
+};
+test.assert(pure.transitInstances({ tick: 0 }).length === 0, "a city with no lines draws no bus");
+for (const tick of [0, 37, 400, 4000]) {
+  const snapshot = roadCity(tick, [brtLine]);
+  const once = pure.transitInstances(snapshot);
+  const twice = pure.transitInstances(snapshot);
+  const fronts = once.filter((item) => item.frame === "agent.bus.brt.front");
+  const places = context.AISystem6PotWorld.transit.rubberPlaces(brtLine, tick);
+  const paired = fronts.every((front, index) => {
+    const rear = once[index * 2 + 1];
+    return rear && rear.frame === "agent.bus.brt.rear" && Math.abs(front.x - rear.x) + Math.abs(front.y - rear.y) === 1
+      && front.x === places[index].x && front.y === places[index].y && front.livery === 2;
+  });
+  test.assert(JSON.stringify(once) === JSON.stringify(twice) && fronts.length === 3 && once.every((item) => item.frame.startsWith("agent.bus.brt.")) && paired,
+    `tick ${tick} puts the three BRT vehicles on the same tiles as the canvas, in the line colour`);
+}
+const signed = roadCity(0, [brtLine]);
+const furniture = pure.transitFurniture(signed);
+test.assert(furniture.some((item) => item.frame === "street.bus-stop"), "a stop on an ordinary road is a bus stop");
+signed.avenue[4 * 16 + 2] = 8;
+signed.avenue[5 * 16 + 2] = 2;
+signed.road[5 * 16 + 2] = 1;
+const island = pure.transitFurniture(signed).find((item) => item.x > 1 && item.x < 3 && item.y > 3 && item.y < 5);
+test.assert(island && island.frame === "street.bus-platform", "a stop on an avenue half is a platform against the median");
 
 test.finish();

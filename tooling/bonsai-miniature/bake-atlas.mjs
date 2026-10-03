@@ -29,6 +29,7 @@ const ANCHOR_X = 160;
 const ANCHOR_Y = CELL_H - 84;
 const ATLAS_W = 2048;
 
+const modelsOnly = process.argv.includes("--models-only");
 const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const invariant = (ok, message) => { if (!ok) throw new Error(message); };
 
@@ -60,7 +61,7 @@ for (const entry of catalog.values()) {
     zone: null, stage: 0, density: null, license: "MIT", source: "original",
   }]);
 }
-for (const [id, old] of frameList) {
+if (!modelsOnly) for (const [id, old] of frameList) {
   const entry = catalog.get(id);
   const model = entry ? modelFor(entry) : null;
   if (model) {
@@ -105,6 +106,7 @@ for (const [id, old] of frameList) {
   }
 }
 
+if (!modelsOnly) {
 let shelfX = 0, shelfY = 0, shelfH = 0;
 for (const rect of packed) {
   if (shelfX + rect.w > ATLAS_W) { shelfY += shelfH; shelfX = 0; shelfH = 0; }
@@ -167,6 +169,8 @@ provenance.tool = "tooling/build-bonsai-atlas.mjs, then tooling/bonsai-miniature
 const note = `${voxelFrames} frames (growable buildings and their build states) are original voxel models authored in tooling/bonsai-miniature and rasterized on the CPU with exact 2:1 isometric arithmetic; no external art was consulted, traced or sampled.`;
 provenance.notes = [...(provenance.notes || []).filter((line) => !line.includes("tooling/bonsai-miniature")), note];
 await writeFile(provenancePath, `${JSON.stringify(provenance, null, 2)}\n`);
+console.log(`bake-atlas: ${voxelFrames} voxel frames, ${packed.length - voxelFrames} kept, atlas ${ATLAS_W}x${atlasH}, ${((Date.now() - started) / 1000).toFixed(1)} s`);
+}
 
 // The live 3D view draws the very same models: every voxel frame (day frames
 // only; night reuses them) is exported as run-length data so the 3D backend
@@ -207,5 +211,3 @@ await writeFile(provenancePath, `${JSON.stringify(provenance, null, 2)}\n`);
   await writeFile(path.join(assets, "voxel-models.json"), `${JSON.stringify(index)}\n`);
   console.log(`bake-atlas: ${index.models.length} voxel models for the 3D view, ${Object.keys(index.frames).length} frames, ${(index.blob.length / 1024).toFixed(0)} KB`);
 }
-
-console.log(`bake-atlas: ${voxelFrames} voxel frames, ${packed.length - voxelFrames} kept, atlas ${ATLAS_W}x${atlasH}, ${((Date.now() - started) / 1000).toFixed(1)} s`);

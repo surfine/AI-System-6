@@ -127,6 +127,13 @@ window.AISystem6BonsaiSaveWorkerManagerLoaded = true;
       parseAndDecode(text) { return run("parse-decode", String(text || "")); },
       importSc2(bytes) { return run("sc2-import", bytes); },
       exportSc2(payload) { return run("sc2-export", payload); },
+      // Counted on the main thread. A new worker message would not change the
+      // file, and the codec already answers without one.
+      sc2LossReport(payload) {
+        const codec = sc2Codec();
+        if (!codec || typeof codec.sc2LossReport !== "function") return { warnings: [] };
+        return codec.sc2LossReport(payload);
+      },
       importMicropolis(record, options) { return run("micropolis-import", record, options); },
       exportMicropolis(payload, options) { return run("micropolis-export", payload, options); },
       dispose() { abandonWorker(); },

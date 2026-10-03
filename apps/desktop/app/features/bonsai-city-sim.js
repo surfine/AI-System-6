@@ -8,7 +8,12 @@ window.AISystem6BonsaiSimLoaded = true;
   const FORMAT = "bonsai-city";
   const SAVE_VERSION = 5;
   const SAVE_FORMAT_VERSION = 5;
-  const ENGINE_RULESET_VERSION = 5;
+  // Ruleset 6 (owner decision 2026-10-02) lets a subway tunnel under water.
+  // It changes what a command may build, not what a save holds: an
+  // underwater subway is a subway tile on a water tile, two layers the v5
+  // payload already carries, so the payload and the envelope keep version 5
+  // and a ruleset-5 city lifts to 6 with no change to its state.
+  const ENGINE_RULESET_VERSION = 6;
   const COMMAND_SCHEMA_VERSION = 2;
   const EVENT_SCHEMA_VERSION = 2;
   const FIXED_TICK_HZ = 20;
@@ -50,6 +55,31 @@ window.AISystem6BonsaiSimLoaded = true;
   // Road capacity in commuter trips per 4-day routing pass (our balance).
   const CONGESTION_THRESHOLD = 80;
   const HIGHWAY_CAPACITY = 320;
+  // Ruleset 6: the Basin's avenue, a Yichang- or Guangzhou-style corridor
+  // with its BRT in the middle of the road. Two road tiles side by side, one
+  // carriageway each way; the avenue layer holds each half's direction of
+  // travel (1 north, 2 east, 4 south, 8 west), so the median and its busway
+  // are on the driver's left and the other half is the tile to the left.
+  // Both halves stay road = 1: the commute graph keeps its shape. Each half,
+  // from the centre line out, is 16 m: median or island platform 1.5 | BRT
+  // lane 3.5 | barrier 0.5 | two general lanes 2 x 3.0 | non-motorised lane
+  // 1.5 | sidewalk 2 | verge 1.
+  const AVENUE_DIRECTIONS = Object.freeze({ north: 1, east: 2, south: 4, west: 8 });
+  const AVENUE_LEFT = Object.freeze({ 1: [-1, 0], 2: [0, -1], 4: [1, 0], 8: [0, 1] });
+  const AVENUE_BACK = Object.freeze({ 1: 4, 2: 8, 4: 1, 8: 2 });
+  const AVENUE_CROSS_SECTION_METERS = Object.freeze({ median: 1.5, brtLane: 3.5, barrier: 0.5, generalLanes: 6, nonMotorised: 1.5, sidewalk: 2, verge: 1 });
+  // Widening a road tile that is already there into an avenue half; a new
+  // tile is priced in NETWORK_COST (land) and BRIDGE_COST (a deck over water)
+  // with every other network.
+  const AVENUE_UPGRADE_COST = 15;
+  // Two general lanes a half carry twice a street's commuters before the
+  // tile congests. The BRT lane is not one of them and never congests.
+  const AVENUE_CAPACITY = 2 * CONGESTION_THRESHOLD;
+  // The year the avenue opens: the BRT's, as the shared world core's transit
+  // modes give it (PotWorld.MODES.brt.bonsai.tech). The core runs headless
+  // and in the save worker without the world core loaded, so the year is
+  // held here and a contract keeps the two equal.
+  const AVENUE_TECH_YEAR = 1920;
   const INTEGRITY_ALGORITHM = "SHA-256";
   const CANONICALIZATION = "sorted-json-v1";
 
@@ -152,7 +182,7 @@ window.AISystem6BonsaiSimLoaded = true;
   // tiles, roughly ten thousand people in a mixed town (our balance).
   const POWER_UNITS_PER_MW = 2;
   const ROUTE_DAYS = 4;
-  const ROUTE_COST = Object.freeze({ road: 5, congested: 9, highway: 2, onramp: 3, rail: 2, subway: 2, station: 3 });
+  const ROUTE_COST = Object.freeze({ road: 5, congested: 9, highway: 2, onramp: 3, rail: 2, subway: 2, station: 3, avenue: 3 });
   const COMMUTE_LIMIT = 200;
   const ROUTE_UNREACHED = 65535;
   const ROUTE_MAX = 4000;
@@ -168,10 +198,15 @@ window.AISystem6BonsaiSimLoaded = true;
 
   // Highway rides at SC2K's player-visible $100 per 2x2 section, charged as
   // $25 per tile; the onramp is the $25 joint piece [verify-during-impl].
-  const NETWORK_COST = Object.freeze({ road: 10, rail: 25, wire: 5, pipe: 8, park: 20, subway: 100, highway: 25, onramp: 25 });
-  // Crossing water builds a bridge (or a line over pylons): same layer,
-  // higher per-tile price. Pipes and subways stay on land.
-  const BRIDGE_COST = Object.freeze({ road: 50, rail: 75, wire: 25, highway: 100 });
+  // An avenue (ruleset 6) is 25 a new tile on land; widening an existing
+  // road tile into a half is AVENUE_UPGRADE_COST.
+  const NETWORK_COST = Object.freeze({ road: 10, rail: 25, wire: 5, pipe: 8, park: 20, subway: 100, highway: 25, onramp: 25, avenue: 25 });
+  // Crossing water builds a bridge (or a line over pylons), and since
+  // ruleset 6 a subway tunnel under the bed: same layer, higher per-tile
+  // price. The tunnel is four rail bridges a tile. An avenue's new deck is
+  // 60 a tile. Pipes, parks and onramps stay on land, and so does every
+  // station.
+  const BRIDGE_COST = Object.freeze({ road: 50, rail: 75, wire: 25, highway: 100, subway: 300, avenue: 60 });
   // SC2K-scale zoning: $5 a light tile, $10 a dense one.
   const ZONE_COST = Object.freeze({ low: 5, high: 10 });
   // Port zones per tile; military zones arrive with the reward flow.
@@ -356,13 +391,14 @@ window.AISystem6BonsaiSimLoaded = true;
   // non-facility unlocks the player drags (highway, onramp, subway) or zones
   // (airport, seaport).
   const TECHS = Object.freeze({
-    // Bonsai keeps these networks available from the start (they are its
-    // baseline transport), so the gate exists and is exported, but does not
-    // silently remove what a player already builds at 1900. Tune the years
-    // here if the game should unlock them later.
+    // Bonsai keeps its baseline networks available from the start, so the
+    // gate exists and is exported but does not silently remove what a player
+    // already builds; the bus network opens with its depot in 1920, the year
+    // the shared world core gives the bus mode. Tune the years here if the
+    // game should unlock them later.
     airport: 1900,
     highways: 1900,
-    buses: 1900,
+    buses: 1920,
     subways: 1900,
   });
   // Each working facility kind reports one headline figure in the query
@@ -388,6 +424,8 @@ window.AISystem6BonsaiSimLoaded = true;
     zone: ZONE_COST,
     facility: Object.freeze(Object.fromEntries(Object.entries(FACILITY_KINDS).map(([kind, spec]) => [kind, spec.cost]))),
     terraform: TERRAFORM_COST,
+    // The per-tile price on a water tile, for the networks that may cross.
+    crossing: BRIDGE_COST,
     demolish: 3,
   });
   const TOOLS = Object.freeze({
@@ -436,30 +474,36 @@ window.AISystem6BonsaiSimLoaded = true;
     return strips.map(([row, height], index) => zoneCommand(`${id}-${index}`, zone, density, x, y + row, 6, height, targetTick));
   }
 
+  // Starter Town's log, built from an id prefix so Hezhou can replay the
+  // same town (ids prefixed "hezhou-") without changing starter-town's output.
+  function starterTownLog(prefix) {
+    return [
+      placeCommand(`${prefix}-coal`, "coal", 9, 17),
+      placeCommand(`${prefix}-water`, "water-tower", 14, 19),
+      ...streetGrid(prefix, 14, 21, 3, 2),
+      pathCommand(`${prefix}-mid-1`, "road", [{ x: 14, y: 25 }, { x: 35, y: 25 }]),
+      pathCommand(`${prefix}-mid-2`, "road", [{ x: 21, y: 32 }, { x: 35, y: 32 }]),
+      pathCommand(`${prefix}-wire-plant`, "wire", [{ x: 13, y: 20 }, { x: 14, y: 20 }, { x: 14, y: 21 }]),
+      pathCommand(`${prefix}-pipe-tower`, "pipe", [{ x: 15, y: 19 }, { x: 15, y: 20 }, { x: 14, y: 20 }]),
+      ...blockZoneCommands(`${prefix}-r1`, "residential", "high", 15, 22),
+      ...blockZoneCommands(`${prefix}-c`, "commercial", "high", 22, 22),
+      ...blockZoneCommands(`${prefix}-i`, "industrial", "low", 29, 22),
+      ...blockZoneCommands(`${prefix}-r2`, "residential", "low", 22, 29),
+      ...blockZoneCommands(`${prefix}-r3`, "residential", "high", 29, 29),
+      placeCommand(`${prefix}-police`, "police", 15, 29),
+      placeCommand(`${prefix}-fire`, "fire", 16, 29),
+      placeCommand(`${prefix}-school`, "school", 17, 29),
+      placeCommand(`${prefix}-park`, "park-big", 17, 31),
+    ];
+  }
+
   const EXAMPLES = Object.freeze({
     // A healthy small town two and a half years in: a coal plant and water
     // tower, a street grid carrying power and water, homes, shops and
     // factories, and police, fire, a school and a park on the civic corner.
     "starter-town": freezeRecipe({
       id: "starter-town", name: "Starter Town", seed: 6101, size: 64, terrainPreset: "balanced", targetTick: 3750,
-      commandLog: [
-        placeCommand("starter-coal", "coal", 9, 17),
-        placeCommand("starter-water", "water-tower", 14, 19),
-        ...streetGrid("starter", 14, 21, 3, 2),
-        pathCommand("starter-mid-1", "road", [{ x: 14, y: 25 }, { x: 35, y: 25 }]),
-        pathCommand("starter-mid-2", "road", [{ x: 21, y: 32 }, { x: 35, y: 32 }]),
-        pathCommand("starter-wire-plant", "wire", [{ x: 13, y: 20 }, { x: 14, y: 20 }, { x: 14, y: 21 }]),
-        pathCommand("starter-pipe-tower", "pipe", [{ x: 15, y: 19 }, { x: 15, y: 20 }, { x: 14, y: 20 }]),
-        ...blockZoneCommands("starter-r1", "residential", "high", 15, 22),
-        ...blockZoneCommands("starter-c", "commercial", "high", 22, 22),
-        ...blockZoneCommands("starter-i", "industrial", "low", 29, 22),
-        ...blockZoneCommands("starter-r2", "residential", "low", 22, 29),
-        ...blockZoneCommands("starter-r3", "residential", "high", 29, 29),
-        placeCommand("starter-police", "police", 15, 29),
-        placeCommand("starter-fire", "fire", 16, 29),
-        placeCommand("starter-school", "school", 17, 29),
-        placeCommand("starter-park", "park-big", 17, 31),
-      ],
+      commandLog: starterTownLog("starter"),
     }),
     // A town that grew and then was neglected: a neighbourhood on a road
     // that reaches no jobs, a dense block no pipe reaches, police funding cut
@@ -498,6 +542,46 @@ window.AISystem6BonsaiSimLoaded = true;
         exampleCommand("troubled-tax", "set-policy", { policy: "tax-rate", taxRate: 20 }, 3750),
         zoneCommand("troubled-late-r", "residential", "high", 17, 0, 6, 2, 4375),
         zoneCommand("troubled-late-c", "commercial", "high", 24, 0, 6, 2, 4375),
+      ],
+    }),
+    // Hezhou, 1952: Starter Town with the public works of a river town on
+    // top. A road bridge crosses the lake east of the grid; shore, south,
+    // back and hill roads loop around it; a railway runs beside the south
+    // road, level with the hill road, with a station at each end; and a
+    // two-way avenue (paired halves, the Basin's layer) crosses the north,
+    // east of the coal plant and water tower, joined to the grid streets at
+    // x=21, 28 and 35. Founded 1950, so the replay opens on 1952-07-01.
+    // Joyride lays the same works after Starter Town's replay, when only
+    // $3,264 is left; one bond issued at tick 0 (the recipe's only borrowing)
+    // lifts the treasury so every later command is accepted. Nothing is lent
+    // or edited outside commands.
+    "hezhou-1952": freezeRecipe({
+      id: "hezhou-1952", name: "Hezhou", seed: 6101, size: 64, terrainPreset: "balanced", yearFounded: 1950, targetTick: 3750,
+      commandLog: [
+        // The one bond: $10,000 covers the $5,180 of works laid in 1952.
+        exampleCommand("hezhou-bond", "set-policy", { policy: "bond", action: "issue" }, 0),
+        ...starterTownLog("hezhou"),
+        // The bridge east across the lake and the loop of shore roads, laid
+        // in 1952 after the town's replay, as Joyride's demonstration does.
+        pathCommand("hezhou-bridge", "road", [{ x: 35, y: 28 }, { x: 60, y: 28 }], 3750),
+        pathCommand("hezhou-far-shore", "road", [{ x: 60, y: 28 }, { x: 60, y: 38 }], 3750),
+        pathCommand("hezhou-south", "road", [{ x: 60, y: 38 }, { x: 31, y: 38 }], 3750),
+        pathCommand("hezhou-back", "road", [{ x: 31, y: 38 }, { x: 31, y: 35 }], 3750),
+        pathCommand("hezhou-hill", "road", [{ x: 21, y: 35 }, { x: 21, y: 58 }], 3750),
+        pathCommand("hezhou-station-lane", "road", [{ x: 21, y: 42 }, { x: 15, y: 42 }], 3750),
+        // The railway beside the south road, crossing the hill road on the
+        // level at x=21, with a station at each end.
+        pathCommand("hezhou-rail", "rail", [{ x: 15, y: 39 }, { x: 60, y: 39 }], 3750),
+        placeCommand("hezhou-west-station", "station", 16, 40, 3750),
+        placeCommand("hezhou-east-station", "station", 61, 38, 3750),
+        // The avenue: one build-path stamp lays both carriageways, the north
+        // half westbound (dir 8) and the south half eastbound (dir 2), each
+        // half's partner on its driver's left. It runs x=15..35 at y=18/19,
+        // east of the coal plant (9-12, 17-20) and water tower (14, 19).
+        pathCommand("hezhou-avenue", "avenue", [{ x: 15, y: 18 }, { x: 35, y: 18 }], 3750),
+        pathCommand("hezhou-avenue-21", "road", [{ x: 21, y: 19 }, { x: 21, y: 21 }], 3750),
+        pathCommand("hezhou-avenue-28", "road", [{ x: 28, y: 19 }, { x: 28, y: 21 }], 3750),
+        pathCommand("hezhou-avenue-35", "road", [{ x: 35, y: 19 }, { x: 35, y: 21 }], 3750),
       ],
     }),
   });
@@ -560,6 +644,9 @@ window.AISystem6BonsaiSimLoaded = true;
       highway: new Uint8Array(count), onramp: new Uint8Array(count),
       // blaze: 0 none, 1..4 burning (age), 5 burns out to rubble, 6 flooded.
       blaze: new Uint8Array(count),
+      // Ruleset 6: each avenue half's direction of travel (AVENUE_DIRECTIONS),
+      // 0 on every other tile.
+      avenue: new Uint8Array(count),
     };
   }
   function installLayers(state, layers) { Object.keys(layers).forEach((key) => { state[key] = layers[key]; }); }
@@ -713,6 +800,10 @@ window.AISystem6BonsaiSimLoaded = true;
       newsMemo: { funds: START_FUNDS, population: 0, milestone: 0, rewardTier: 0, plantExpired: false, ordinance: "", bonds: 0 },
       lastIncome: 0, lastExpense: 0, history: [], problems: [], powerCapacity: 0, powerDemand: 0, waterCapacity: 0, waterDemand: 0,
       nextCommandSequence: 1, pendingCommands: [], events: [], notices: [], rev: 1, undoStack: [], redoStack: [], sc2Sidecar: null,
+      // The Basin's laid lines: what the mayor actually paid for, recorded so
+      // the map, the newspaper and Rootline can read them back. Never a
+      // simulation input — the numbers ignore it.
+      transitLines: null,
       // Where a city's ground came from, when it came from outside: a
       // real-place import records its source, licence and attribution here,
       // and every save and export carries it on.
@@ -951,9 +1042,9 @@ window.AISystem6BonsaiSimLoaded = true;
     if (a === RK_SUBWAY_STATION) return b === RK_ROAD;
     return false;
   }
-  function routeGraph(state) {
+  function routeGraph(state, served) {
     return { size: state.size, n: state.size * state.size, kinds: state.routeKind, rail: state.railConnected,
-      subway: state.subwayConnected, congested: state.congested, out: new Int32Array(8) };
+      subway: state.subwayConnected, congested: state.congested, served, out: new Int32Array(8) };
   }
   function routeNeighbors(graph, node) {
     const { size, n, kinds, rail, subway, out } = graph;
@@ -986,6 +1077,7 @@ window.AISystem6BonsaiSimLoaded = true;
     const n = graph.n;
     if (node >= n) return node >= 2 * n ? ROUTE_COST.subway : ROUTE_COST.rail;
     const kind = graph.kinds[node];
+    if (kind === RK_ROAD && graph.served && graph.served[node]) return ROUTE_COST.avenue;
     if (kind === RK_ROAD) return graph.congested[node] ? ROUTE_COST.congested : ROUTE_COST.road;
     if (kind === RK_HIGHWAY) return ROUTE_COST.highway;
     if (kind === RK_ONRAMP) return ROUTE_COST.onramp;
@@ -1036,22 +1128,27 @@ window.AISystem6BonsaiSimLoaded = true;
       if (building.zone === ZONE_R) homes.push(building.access); else jobs.push(building.access);
     }
     state.routeSources = { jobs: jobs.length, homes: homes.length };
-    const graph = routeGraph(state);
+    const served = new Uint8Array(n);
+    const avenueLayer = state.avenue;
+    const reliefNow = state.busRelief;
+    if (avenueLayer && reliefNow) for (let i = 0; i < n; i += 1) if (avenueLayer[i] && reliefNow[i]) served[i] = 1;
+    const graph = routeGraph(state, served);
     routeField(graph, state.distJobs, jobs);
     routeField(graph, state.distHomes, homes);
     const traffic = state.traffic; const congested = state.congested; const dist = state.distJobs;
     traffic.fill(0); congested.fill(0);
-    let railRiders = 0; let subwayRiders = 0; let highwayTrips = 0;
+    let railRiders = 0; let subwayRiders = 0; let highwayTrips = 0; let busRiders = 0;
     if (jobs.length) for (const building of state.buildings) {
       if (building.zone !== ZONE_R || !lotOccupied(building.state) || building.access < 0 || building.population <= 0) continue;
       let node = building.access; if (dist[node] >= ROUTE_UNREACHED) continue;
       const trips = Math.max(1, Math.round(building.population * TRIPS_PER_RESIDENT));
-      let usedHighway = false; let usedRail = false; let usedSubway = false;
+      let usedHighway = false; let usedRail = false; let usedSubway = false; let usedBusway = false;
       for (let guard = 0; guard < 4096; guard += 1) {
         if (node < n) {
           const kind = kinds[node];
           if (kind !== RK_STATION && kind !== RK_SUBWAY_STATION) traffic[node] = Math.min(65535, traffic[node] + trips);
           if (kind === RK_HIGHWAY) usedHighway = true;
+          if (served[node]) usedBusway = true;
         } else if (node < 2 * n) usedRail = true; else usedSubway = true;
         const here = dist[node]; if (!here) break;
         const count = routeNeighbors(graph, node); let best = -1; let bestDist = here;
@@ -1061,14 +1158,25 @@ window.AISystem6BonsaiSimLoaded = true;
       if (usedHighway) highwayTrips += trips;
       if (usedRail) railRiders += trips;
       if (usedSubway) subwayRiders += trips;
+      if (usedBusway) busRiders += trips;
     }
-    const relief = state.busRelief;
+    const relief = state.busRelief; const avenue = state.avenue;
+    let servedCount = 0;
     for (let i = 0; i < n; i += 1) {
+      if (served[i]) servedCount += 1;
       if (!traffic[i]) continue;
-      if (relief[i]) traffic[i] = Math.floor(traffic[i] * (1 - 0.25 * Math.min(2, relief[i])));
-      const capacity = kinds[i] === RK_HIGHWAY ? HIGHWAY_CAPACITY : CONGESTION_THRESHOLD;
+      if (served[i]) traffic[i] = Math.floor(traffic[i] * 0.25);
+      else if (relief[i]) traffic[i] = Math.floor(traffic[i] * (1 - 0.25 * Math.min(2, relief[i])));
+      // A served half already took the quarter weight and does not congest.
+      // Any other avenue half still counts as two general lanes. Avenue
+      // maintenance stays on the road divisor: charging it at 150 would
+      // move the pinned hezhou-1952 checkpoint.
+      if (served[i]) continue;
+      const capacity = kinds[i] === RK_HIGHWAY ? HIGHWAY_CAPACITY : kinds[i] === RK_ROAD && avenue[i] ? AVENUE_CAPACITY : CONGESTION_THRESHOLD;
       if (traffic[i] > capacity) congested[i] = 1;
     }
+    if (servedCount) state.busService.avenues = servedCount; else delete state.busService.avenues;
+    if (busRiders) state.busService.busRiders = busRiders; else delete state.busService.busRiders;
     state.railService = { ...state.railService, riders: railRiders, roadTrafficRelief: railRiders };
     state.subwayService = { ...state.subwayService, riders: subwayRiders, roadTrafficRelief: subwayRiders };
     state.highwayService = { ...state.highwayService, roadTrafficRelief: highwayTrips };
@@ -1485,6 +1593,87 @@ window.AISystem6BonsaiSimLoaded = true;
     }
     return out.length ? out : null;
   }
+  // --- Avenues (ruleset 6) ---------------------------------------------------
+  // The other half of an avenue tile: the tile on its driver's left.
+  function avenuePartner(state, i, dir) {
+    const left = AVENUE_LEFT[dir]; if (!left) return -1;
+    const x = (i % state.size) + left[0]; const y = Math.floor(i / state.size) + left[1];
+    return inBounds(state, x, y) ? indexOf(state, x, y) : -1;
+  }
+  // An avenue never survives as a half: a value outside the four directions,
+  // a half off the road, or a half its partner does not answer is cleared.
+  // Validity is symmetric between the two halves, so one pass settles it.
+  function sanitizeAvenue(state) {
+    const avenue = state.avenue; const road = state.road; const invalid = [];
+    for (let i = 0, n = tileCount(state); i < n; i += 1) {
+      const dir = avenue[i]; if (!dir) continue;
+      const partner = road[i] ? avenuePartner(state, i, dir) : -1;
+      if (partner < 0 || !road[partner] || avenue[partner] !== AVENUE_BACK[dir]) invalid.push(i);
+    }
+    invalid.forEach((i) => { avenue[i] = 0; });
+  }
+  function hasAvenue(state) {
+    for (let i = 0, n = tileCount(state); i < n; i += 1) if (state.avenue[i]) return true;
+    return false;
+  }
+  // An avenue is laid one straight run at a time: the drag's first and last
+  // points pick the axis (east-west unless the drag is longer north-south)
+  // and the run goes from the first point to the last along it. The drag's
+  // own row is the north half (its column the west half) and the next one
+  // the other half, pulled back inside the map at the far edge the way a
+  // highway pad is. Tiles come in pairs: [half on the drag, its partner].
+  function avenueStamp(state, payload) {
+    let points = Array.isArray(payload && payload.points) ? payload.points : null; if (!points && payload && payload.start && payload.end) points = [payload.start, payload.end];
+    if (!points || !points.length || !points.every((point) => point && Number.isInteger(point.x) && Number.isInteger(point.y))) return null;
+    const first = points[0]; const last = points[points.length - 1];
+    if (!inBounds(state, first.x, first.y) || !inBounds(state, last.x, last.y)) return { bounds: true, tiles: [], dirs: [] };
+    const eastWest = Math.abs(last.x - first.x) >= Math.abs(last.y - first.y);
+    const tiles = []; const dirs = [];
+    if (eastWest) {
+      const y = Math.min(first.y, state.size - 2); const step = last.x >= first.x ? 1 : -1;
+      for (let x = first.x; ; x += step) { tiles.push({ x, y }, { x, y: y + 1 }); dirs.push(AVENUE_DIRECTIONS.west, AVENUE_DIRECTIONS.east); if (x === last.x) break; }
+    } else {
+      const x = Math.min(first.x, state.size - 2); const step = last.y >= first.y ? 1 : -1;
+      for (let y = first.y; ; y += step) { tiles.push({ x, y }, { x: x + 1, y }); dirs.push(AVENUE_DIRECTIONS.south, AVENUE_DIRECTIONS.north); if (y === last.y) break; }
+    }
+    return { bounds: false, tiles, dirs };
+  }
+  // build-path {network: "avenue"}: the whole run is laid or nothing is. A
+  // pair already this avenue is left alone and costs nothing; a pair that is
+  // a crossing avenue's two halves is the junction and keeps them; a pair
+  // with half of another avenue in it is refused. Road is laid where it is
+  // missing, under the street's own rules: it bridges water, and stops at
+  // zoned land, buildings, and a step of more than one level.
+  function planAvenue(state, payload) {
+    const stamp = avenueStamp(state, payload); if (!stamp) return reject("payload");
+    if (stamp.bounds) return reject("bounds");
+    const { tiles, dirs } = stamp;
+    // The avenue opens with the BRT that runs on it.
+    if (dateOf(state).year < AVENUE_TECH_YEAR) return reject("tech-year", tiles);
+    const at = (k) => indexOf(state, tiles[k].x, tiles[k].y);
+    for (let k = 0; k < tiles.length; k += 1) { const i = at(k); if (state.zone[i] || state.facilityAt[i] >= 0) return reject("occupied", tiles); }
+    const changed = []; const values = []; let cost = 0;
+    for (let k = 0; k < tiles.length; k += 2) {
+      const a = at(k); const b = at(k + 1);
+      if (state.avenue[a] === dirs[k] && state.avenue[b] === dirs[k + 1]) continue;
+      if (state.avenue[a] && state.avenue[b]) continue;
+      if (state.avenue[a] || state.avenue[b]) return reject("occupied", tiles);
+      for (const k2 of [k, k + 1]) {
+        const i = at(k2);
+        cost += state.road[i] ? AVENUE_UPGRADE_COST : state.water[i] ? BRIDGE_COST.avenue : NETWORK_COST.avenue;
+        changed.push(tiles[k2]); values.push(dirs[k2]);
+      }
+    }
+    // A bridge deck levels itself over the water; on land each half climbs
+    // like a street, and the two halves of a pair stand within a level.
+    const step = (i, j) => !state.water[i] && !state.water[j] && Math.abs(state.alt[i] - state.alt[j]) > 1;
+    for (let k = 0; k < tiles.length; k += 1) {
+      if (k % 2 === 0 && step(at(k), at(k + 1))) return reject("slope", tiles);
+      if (k >= 2 && step(at(k - 2), at(k))) return reject("slope", tiles);
+    }
+    if (!changed.length) return reject("empty", tiles);
+    return state.funds < cost ? reject("funds", tiles) : accept("build-path", cost, changed, { network: "avenue", dirs: values });
+  }
   function footprintBounds(tiles) {
     if (!tiles.length) return null; let minX = tiles[0].x; let maxX = minX; let minY = tiles[0].y; let maxY = minY;
     tiles.forEach((tile) => { minX = Math.min(minX, tile.x); maxX = Math.max(maxX, tile.x); minY = Math.min(minY, tile.y); maxY = Math.max(maxY, tile.y); });
@@ -1495,6 +1684,7 @@ window.AISystem6BonsaiSimLoaded = true;
     return { schemaVersion: 2, accepted: !!(plan && plan.accepted), code: plan ? plan.code : "schema", cost: plan ? plan.cost || 0 : 0,
       footprint: { tiles, bounds: footprintBounds(tiles) }, sequence: extra.sequence || 0, queued: !!extra.queued,
       levelCost: plan && plan.data && plan.data.levelCost ? plan.data.levelCost : 0,
+      tunnelCost: plan && plan.data && plan.data.tunnelCost ? plan.data.tunnelCost : 0,
       transactionId: extra.transactionId || "", events: extra.events || [] };
   }
   function reject(code, tiles = []) { return { accepted: false, code, cost: 0, tiles }; }
@@ -1550,6 +1740,8 @@ window.AISystem6BonsaiSimLoaded = true;
       return accept("trigger-disaster", 0, [], { kind: payload.kind, x: site.x, y: site.y });
     }
     if (type === "build-path") {
+      // An avenue is two tiles wide and lays its own road (planAvenue).
+      if (payload.network === "avenue") return planAvenue(state, payload);
       const network = payload.network; const layer = state[network];
       // A highway is two tiles wide: every dragged point stamps a 2x2 pad,
       // pulled back inside the map at the far edges.
@@ -1564,8 +1756,9 @@ window.AISystem6BonsaiSimLoaded = true;
       const changed = [];
       for (const tile of tiles) {
         if (!inBounds(state, tile.x, tile.y)) return reject("bounds", tiles); const i = indexOf(state, tile.x, tile.y);
-        // Roads, rails, power lines, and highways bridge water; pipes,
-        // subways, and parks stop at the shore.
+        // Roads, rails, power lines, and highways bridge water and a subway
+        // tunnels under it (ruleset 6); pipes, parks, and onramps stop at
+        // the shore.
         if (state.water[i] && !BRIDGE_COST[network]) return reject("water", tiles);
         if ((network === "road" || network === "rail" || network === "park" || network === "highway" || network === "onramp") && (state.zone[i] || state.facilityAt[i] >= 0)) return reject("occupied", tiles);
         if (!layer[i]) changed.push(tile);
@@ -1591,9 +1784,14 @@ window.AISystem6BonsaiSimLoaded = true;
         if (Math.abs(state.alt[previous] - state.alt[current]) > 1) return reject("slope", tiles);
       }
       if (!changed.length) return reject("empty", tiles);
-      let cost = 0;
-      for (const tile of changed) cost += state.water[indexOf(state, tile.x, tile.y)] ? BRIDGE_COST[network] : NETWORK_COST[network];
-      return state.funds < cost ? reject("funds", tiles) : accept("build-path", cost, changed, { network });
+      let cost = 0; let crossing = 0;
+      for (const tile of changed) {
+        if (state.water[indexOf(state, tile.x, tile.y)]) { cost += BRIDGE_COST[network]; crossing += BRIDGE_COST[network]; } else cost += NETWORK_COST[network];
+      }
+      // The underwater share of a subway drag is reported apart, the way a
+      // pad's levelling is, so the preview can say why the line costs more.
+      const data = network === "subway" && crossing ? { network, tunnelCost: crossing } : { network };
+      return state.funds < cost ? reject("funds", tiles) : accept("build-path", cost, changed, data);
     }
     if (type === "zone-area") {
       const area = normalizeArea(payload);
@@ -1730,6 +1928,13 @@ window.AISystem6BonsaiSimLoaded = true;
       const requestedKeys = new Set(expanded.keys()); const lotAnchors = new Set();
       for (const tile of requested) { const i = indexOf(state, tile.x, tile.y); if (state.lot[i]) lotAnchors.add(state.lot[i] - 1); }
       lotAnchors.forEach((anchor) => { const { x, y } = xyOf(state, anchor); const side = Math.max(1, state.stage[anchor]); areaTiles({ x, y, width: side, height: side }).forEach((tile) => { if (!expanded.has(`${tile.x},${tile.y}`)) expanded.set(`${tile.x},${tile.y}`, tile); }); });
+      // An avenue comes down as a pair: bulldozing either half takes the
+      // other one too, so an avenue never survives as a half.
+      Array.from(requestedKeys).forEach((key) => {
+        const tile = expanded.get(key); const i = indexOf(state, tile.x, tile.y); const partner = avenuePartner(state, i, state.avenue[i]);
+        if (partner < 0) return; const other = xyOf(state, partner); const otherKey = `${other.x},${other.y}`;
+        expanded.set(otherKey, other); requestedKeys.add(otherKey);
+      });
       const tiles = Array.from(expanded.values()); const changed = tiles.filter((tile) => {
         const i = indexOf(state, tile.x, tile.y); return state.facilityAt[i] >= 0 || state.road[i] || state.rail[i] || state.wire[i] || state.pipe[i] || state.park[i] || state.zone[i] || state.tree[i] || state.highway[i] || state.onramp[i] || state.lot[i];
       });
@@ -1794,7 +1999,7 @@ window.AISystem6BonsaiSimLoaded = true;
     if (normalized.command.targetTick < state.tick) return receipt(reject("stale")); return receipt(planCommand(state, normalized.command));
   }
 
-  const UNDO_LAYERS = ["alt", "tree", "road", "rail", "wire", "pipe", "park", "zone", "density", "stage", "buildingState", "constructionTimer", "variant", "catalogId", "subway", "highway", "onramp", "lot"];
+  const UNDO_LAYERS = ["alt", "tree", "road", "rail", "wire", "pipe", "park", "zone", "density", "stage", "buildingState", "constructionTimer", "variant", "catalogId", "subway", "highway", "onramp", "lot", "avenue"];
   function syncMeanTaxRate(state) { state.taxRate = Math.round((state.taxRates.r + state.taxRates.c + state.taxRates.i) / 3); }
   // A city already carrying debt, or broke, borrows at a worse rate.
   function bondRate(state) { return 5 + Math.floor(state.bonds.length / 4) + (state.funds < 0 ? 3 : 0); }
@@ -1815,8 +2020,9 @@ window.AISystem6BonsaiSimLoaded = true;
     // Each action marks only the derived systems it can move.
     let dirty = DIRTY.PROBLEMS;
     if (plan.action === "build-path") {
-      const layer = state[plan.data.network]; plan.tiles.forEach((tile) => { const i = indexOf(state, tile.x, tile.y); layer[i] = 1; state.tree[i] = 0; });
       const network = plan.data.network;
+      if (network === "avenue") plan.tiles.forEach((tile, k) => { const i = indexOf(state, tile.x, tile.y); state.road[i] = 1; state.avenue[i] = plan.data.dirs[k]; state.tree[i] = 0; });
+      else { const layer = state[network]; plan.tiles.forEach((tile) => { const i = indexOf(state, tile.x, tile.y); layer[i] = 1; state.tree[i] = 0; }); }
       dirty |= network === "wire" ? DIRTY.POWER : network === "pipe" ? DIRTY.WATER : network === "park" ? DIRTY.COVERAGE : DIRTY.NETWORK;
       domainEvents.push(["infrastructure-built", { network: plan.data.network, tiles: plan.tiles.length }]);
     } else if (plan.action === "zone-area") {
@@ -1836,7 +2042,7 @@ window.AISystem6BonsaiSimLoaded = true;
       const ids = new Set(plan.data.facilityIds); state.facilities = state.facilities.filter((_, id) => !ids.has(id));
       plan.data.lotAnchors.forEach((anchor) => clearLot(state, anchor));
       plan.data.cleared.forEach((i) => { state.road[i] = 0; state.rail[i] = 0; state.wire[i] = 0; state.pipe[i] = 0; state.park[i] = 0;
-        state.zone[i] = 0; state.density[i] = 0; state.stage[i] = 0; state.buildingState[i] = 0; state.constructionTimer[i] = 0; state.tree[i] = 0; state.catalogId[i] = 0; state.highway[i] = 0; state.onramp[i] = 0; state.lot[i] = 0; state.variant[i] = 0; });
+        state.zone[i] = 0; state.density[i] = 0; state.stage[i] = 0; state.buildingState[i] = 0; state.constructionTimer[i] = 0; state.tree[i] = 0; state.catalogId[i] = 0; state.highway[i] = 0; state.onramp[i] = 0; state.lot[i] = 0; state.variant[i] = 0; state.avenue[i] = 0; });
       dirty |= DIRTY_STRUCTURE;
       domainEvents.push(["area-demolished", { tiles: plan.tiles.length }]);
     } else if (plan.action === "trigger-disaster") {
@@ -2929,14 +3135,17 @@ window.AISystem6BonsaiSimLoaded = true;
       season: seasonOf(date.month),
     };
   }
+  // Mean temperature in °C for a temperate city, January..December (the old
+  // table was scrambled and read as °F: July was -4).
+  const MONTHLY_MEAN_C = Object.freeze([2, 4, 9, 15, 20, 25, 28, 27, 23, 17, 10, 4]);
   function weatherTemp(type, month) {
-    const base = [ -6, 2, 30, 10, 0, 8, -4, 12, 6, -8, 16, 10 ][month]; // avg Feb..Jan-ish by month index
+    const base = MONTHLY_MEAN_C[((month % 12) + 12) % 12];
     switch (type) {
-      case "hot": return base + 14;
+      case "hot": return base + 6;
       case "snow":
-      case "blizzard": return -12;
-      case "cold": return base - 12;
-      case "chilly": return base - 6;
+      case "blizzard": return Math.min(base - 4, -2);
+      case "cold": return base - 8;
+      case "chilly": return base - 4;
       default: return base;
     }
   }
@@ -3229,7 +3438,7 @@ window.AISystem6BonsaiSimLoaded = true;
   }
 
   function serialize(state) {
-    return { format: FORMAT, version: 5, rulesetVersion: 5, name: state.name, seed: state.seed, rngState: state.rngState | 0, size: state.size, terrainPreset: state.terrainPreset, yearFounded: state.yearFounded,
+    return { format: FORMAT, version: SAVE_VERSION, rulesetVersion: ENGINE_RULESET_VERSION, name: state.name, seed: state.seed, rngState: state.rngState | 0, size: state.size, terrainPreset: state.terrainPreset, yearFounded: state.yearFounded,
       tick: state.tick, funds: state.funds, taxRate: state.taxRate, taxRates: { ...state.taxRates }, bonds: state.bonds.map((item) => ({ ...item })), ordinances: { ...state.ordinances },
       eq: state.eq, le: state.le, workforcePercent: state.workforcePercent, unemployed: state.unemployed, nationalPopulation: state.nationalPopulation,
       demand: { ...state.demand }, economyIndex: state.economyIndex,
@@ -3256,14 +3465,124 @@ window.AISystem6BonsaiSimLoaded = true;
       scenario: state.scenario ? cloneJson(state.scenario) : null,
       view: { ...state.view }, budgetHistory: state.budgetHistory.map((item) => ({ ...item })), militaryBase: state.militaryBase,
       sc2Sidecar: state.sc2Sidecar ? cloneJson(state.sc2Sidecar) : null,
+      // Like the avenue layer: only a city that has laid a line writes the
+      // key, so every other city's save and checkpoint are the bytes they
+      // were before the sidecar existed.
+      ...(state.transitLines ? { transitLines: cloneJson(state.transitLines) } : {}),
       // Written only when there is one, so every city without an outside
       // source serializes byte for byte as it did before the field existed.
-      ...(state.provenance ? { provenance: cloneJson(state.provenance) } : {}) };
+      ...(state.provenance ? { provenance: cloneJson(state.provenance) } : {}),
+      // Likewise the avenue layer (ruleset 6): only a city with an avenue
+      // half in it writes the key, so every other city's save and checkpoint
+      // are the bytes they were.
+      ...(hasAvenue(state) ? { avenue: Array.from(state.avenue) } : {}) };
+  }
+  // The avenue layer is optional. A present one must be the map's size;
+  // values outside the four directions are dropped here and halves that are
+  // off the road or unanswered by sanitizeAvenue, the way a provenance
+  // record keeps only what it knows.
+  function readAvenueLayer(data, count) {
+    const layer = new Uint8Array(count);
+    if (data.avenue === undefined) return layer;
+    if (!Array.isArray(data.avenue) || data.avenue.length !== count) throw new Error("bonsai-import-invalid: layer avenue");
+    for (let i = 0; i < count; i += 1) { const value = data.avenue[i]; layer[i] = Number.isInteger(value) && AVENUE_BACK[value] ? value : 0; }
+    return layer;
   }
   // A provenance record is data from outside the game: only short strings,
   // plain numbers and the known keys pass, so a hand-edited save cannot
   // smuggle anything larger than a credit line through it.
   const PROVENANCE_STRINGS = Object.freeze(["source", "attribution", "license", "elevation", "place", "osmTimestamp", "retrievedAt"]);
+  // ----- the Basin's laid lines (payload.transitLines) ------------------------
+  //
+  // The sidecar the mayor's flip-the-pot flow writes once a plan is laid: one
+  // record per line, saying which tiles carry it, which stations stand for it
+  // and which mode it is. It is not a command and not a simulation input — the
+  // map, the newspaper, Rootline and Joyride read it; no number in the city
+  // depends on it. Its shape is the shared contract that `pot-world`'s
+  // `lines.check` owns, and this file only refuses to carry a line the
+  // contract would reject.
+  const TRANSIT_LINE_MODES = Object.freeze(["metro", "brt", "bus"]);
+  const TRANSIT_STATION_KINDS = Object.freeze(["subway-station", "station", "bus-stop"]);
+  const TRANSIT_LINE_COLORS = 7;
+  const TRANSIT_BUS_NUMBER_MIN = 11;
+  const TRANSIT_BUS_NUMBER_MAX = 16;
+  const MAX_TRANSIT_LINES = 32;
+  const MAX_TRANSIT_STATIONS = 64;
+
+  function sanitizeTransitPair(value) {
+    if (!value || typeof value !== "object") return null;
+    if (typeof value.zh !== "string" || typeof value.en !== "string") return null;
+    return { zh: value.zh.slice(0, 40), en: value.en.slice(0, 40) };
+  }
+
+  function sanitizeTransitTiles(tiles) {
+    if (!Array.isArray(tiles) || tiles.length % 2 !== 0 || tiles.length === 0 || tiles.length > 4096) return null;
+    for (const value of tiles) if (!Number.isInteger(value) || value < 0 || value >= 512) return null;
+    return tiles.map((value) => value);
+  }
+
+  function sanitizeTransitLine(line) {
+    if (!line || typeof line !== "object" || typeof line.id !== "string" || !line.id) return null;
+    if (!(line.planId === null || typeof line.planId === "string") || !Number.isInteger(line.laidTick) || line.laidTick < 0) return null;
+    const name = sanitizeTransitPair(line.name);
+    if (!name) return null;
+    const mode = TRANSIT_LINE_MODES.includes(line.mode) ? line.mode : "metro";
+    if (line.mode !== undefined && !TRANSIT_LINE_MODES.includes(line.mode)) return null;
+    const paintOk = mode === "bus"
+      ? line.color === null && Number.isInteger(line.number)
+        && line.number >= TRANSIT_BUS_NUMBER_MIN && line.number <= TRANSIT_BUS_NUMBER_MAX
+      : Number.isInteger(line.color) && line.color >= 0 && line.color < TRANSIT_LINE_COLORS;
+    if (!paintOk) return null;
+    if (line.vehicles !== undefined && !(Number.isInteger(line.vehicles) && line.vehicles >= 1 && line.vehicles <= 6)) return null;
+    const tiles = sanitizeTransitTiles(line.tiles);
+    if (!tiles) return null;
+    const rawStations = Array.isArray(line.stations) ? line.stations.slice(0, MAX_TRANSIT_STATIONS) : null;
+    if (!rawStations) return null;
+    const stations = [];
+    for (const station of rawStations) {
+      if (!station || !Number.isInteger(station.x) || !Number.isInteger(station.y) || station.x < 0 || station.y < 0 || station.x >= 512 || station.y >= 512) return null;
+      if (!TRANSIT_STATION_KINDS.includes(station.kind)) return null;
+      const stationName = sanitizeTransitPair(station.name);
+      if (!stationName) return null;
+      const clean = { x: station.x, y: station.y, kind: station.kind, name: stationName };
+      if (typeof station.group === "string") clean.group = station.group.slice(0, 40);
+      stations.push(clean);
+    }
+    if (mode === "metro" && stations.some((station) => station.kind === "bus-stop")) return null;
+    const out = { id: line.id.slice(0, 64), planId: line.planId === null ? null : line.planId.slice(0, 64), name, color: mode === "bus" ? null : line.color, tiles, stations, laidTick: line.laidTick };
+    if (mode !== "metro") out.mode = mode;
+    if (mode === "bus") out.number = line.number;
+    if (line.vehicles !== undefined) out.vehicles = line.vehicles;
+    return out;
+  }
+
+  // Root shape wrong: no sidecar at all. A line the contract would reject is
+  // dropped rather than taken into the save; the tiles it names stay in the
+  // city either way, because the sidecar is only a record of them.
+  function sanitizeTransitLines(input) {
+    if (!input || typeof input !== "object" || input.version !== 1 || !Array.isArray(input.lines)) return null;
+    const lines = [];
+    const ids = new Set();
+    for (const line of input.lines.slice(0, MAX_TRANSIT_LINES)) {
+      const clean = sanitizeTransitLine(line);
+      if (!clean || ids.has(clean.id)) continue;
+      ids.add(clean.id);
+      lines.push(clean);
+    }
+    if (input.lines.length > 0 && lines.length === 0) return null;
+    return { version: 1, lines };
+  }
+
+  // The mayor's flip-the-pot flow submits the real build commands first and
+  // then records what they laid. Pure: no tick, no events, no command in the
+  // queue — only the sidecar and the render counter move.
+  function setTransitLines(state, sidecar) {
+    const next = sanitizeTransitLines(sidecar);
+    state.transitLines = next;
+    state.rev += 1;
+    return next;
+  }
+
   function sanitizeProvenance(input) {
     if (!input || typeof input !== "object" || typeof input.source !== "string" || !input.source) return null;
     const out = {};
@@ -3273,7 +3592,41 @@ window.AISystem6BonsaiSimLoaded = true;
     if (input.bbox && typeof input.bbox === "object") out.bbox = { south: number(input.bbox.south), west: number(input.bbox.west), north: number(input.bbox.north), east: number(input.bbox.east) };
     if (typeof input.cellMeters === "number" && Number.isFinite(input.cellMeters)) out.cellMeters = input.cellMeters;
     if (typeof input.buildings === "boolean") out.buildings = input.buildings;
+    const names = sanitizeProvenanceNames(input.names);
+    if (names) out.names = names;
     return out;
+  }
+  // Real OpenStreetMap names (Aaron, 2026-10-02: 「OSM 真名进存档」): stations,
+  // streets and places, each a capped list of {x, y, name, zh?, en?} on the
+  // tile the feature landed on; places also carry their kind. Anything else
+  // in the record is dropped, so a hand-edited save cannot smuggle data in.
+  const PROVENANCE_NAME_CAPS = Object.freeze({ stations: 64, streets: 256, places: 64 });
+  const PROVENANCE_PLACE_KINDS = new Set(["suburb", "quarter", "neighbourhood", "village", "hamlet"]);
+  function sanitizeProvenanceNames(input) {
+    if (!input || typeof input !== "object") return null;
+    const text = (value) => (typeof value === "string" ? value.slice(0, 40) : "");
+    const out = {};
+    let any = false;
+    for (const [list, cap] of Object.entries(PROVENANCE_NAME_CAPS)) {
+      const items = [];
+      for (const item of Array.isArray(input[list]) ? input[list] : []) {
+        if (items.length >= cap) break;
+        if (!item || !Number.isInteger(item.x) || !Number.isInteger(item.y) || item.x < 0 || item.y < 0 || item.x >= 512 || item.y >= 512) continue;
+        const name = text(item.name);
+        if (!name) continue;
+        const record = { x: item.x, y: item.y, name };
+        if (text(item.zh)) record.zh = text(item.zh);
+        if (text(item.en)) record.en = text(item.en);
+        if (list === "places") {
+          if (!PROVENANCE_PLACE_KINDS.has(item.kind)) continue;
+          record.kind = item.kind;
+        }
+        items.push(record);
+      }
+      out[list] = items;
+      if (items.length) any = true;
+    }
+    return any ? out : null;
   }
   function readLayer(data, key, count, max, Type = Uint8Array) {
     const raw = data[key]; if (!Array.isArray(raw) || raw.length !== count) throw new Error(`bonsai-import-invalid: layer ${key}`); const layer = new Type(count);
@@ -3351,13 +3704,23 @@ window.AISystem6BonsaiSimLoaded = true;
       budgetHistory: [], militaryBase: 0 };
   }
 
+  // Ruleset 5 -> 6 adds a rule, not a field: whatever a ruleset-5 city holds
+  // is legal under ruleset 6, so the lift only restamps the version. The
+  // input is never mutated; its layers are shared read-only with the output.
+  function migrateRulesetV5To6(data) {
+    if (!data || data.format !== FORMAT || data.version !== 5 || data.rulesetVersion !== 5) throw new Error("bonsai-import-invalid: ruleset5");
+    return { ...data, rulesetVersion: 6 };
+  }
+
   function deserialize(input) {
     let data = input && input.version === 1 ? migrateEngineV1(input) : input;
     if (data && data.version === 2) data = migrateEngineV2To3(data);
     if (data && data.version === 3) data = migrateEngineV3To4(data);
     if (data && data.version === 4) data = migrateEngineV4To5(data);
-    if (!data || data.format !== FORMAT) throw new Error("bonsai-import-invalid: format"); if (data.version > 5) throw new Error("bonsai-import-version-too-new");
-    if (data.version !== 5 || data.rulesetVersion !== 5) throw new Error("bonsai-import-version"); if (!SUPPORTED_SIZES.includes(data.size)) throw new Error("bonsai-import-invalid: size");
+    if (!data || data.format !== FORMAT) throw new Error("bonsai-import-invalid: format"); if (data.version > SAVE_VERSION) throw new Error("bonsai-import-version-too-new");
+    if (data.version === SAVE_VERSION && data.rulesetVersion > ENGINE_RULESET_VERSION) throw new Error("bonsai-import-version-too-new");
+    if (data.version === 5 && data.rulesetVersion === 5) data = migrateRulesetV5To6(data);
+    if (data.version !== SAVE_VERSION || data.rulesetVersion !== ENGINE_RULESET_VERSION) throw new Error("bonsai-import-version"); if (!SUPPORTED_SIZES.includes(data.size)) throw new Error("bonsai-import-invalid: size");
     if (!Number.isInteger(data.tick) || data.tick < 0 || !Number.isInteger(data.funds)) throw new Error("bonsai-import-invalid: scalar");
     const state = createCity({ seed: Number.isInteger(data.seed) ? data.seed : 0, size: data.size, terrainPreset: TERRAIN_PRESETS.includes(data.terrainPreset) ? data.terrainPreset : "balanced", name: typeof data.name === "string" ? data.name : "",
       yearFounded: Number.isInteger(data.yearFounded) && data.yearFounded >= 1000 && data.yearFounded <= 2999 ? data.yearFounded : START_YEAR });
@@ -3378,6 +3741,7 @@ window.AISystem6BonsaiSimLoaded = true;
     state.catalogId = readLayer(data, "catalogId", count, 255); state.subway = readLayer(data, "subway", count, 63); state.waterLevel = readLayer(data, "waterLevel", count, MAX_ALT);
     state.highway = readLayer(data, "highway", count, 1); state.onramp = readLayer(data, "onramp", count, 1);
     state.lot = readLayer(data, "lot", count, count, Uint16Array);
+    state.avenue = readAvenueLayer(data, count); sanitizeAvenue(state);
     const savedEnvironment = ["landValue", "crime", "pollution"].every((key) => Array.isArray(data[key]) && data[key].length === count);
     if (savedEnvironment) { state.landValue = readLayer(data, "landValue", count, 255); state.crime = readLayer(data, "crime", count, 255); state.pollution = readLayer(data, "pollution", count, 255); }
     state.salt = readLayer(data, "salt", count, 1); state.rotate = readLayer(data, "rotate", count, 1); state.tunnel = readLayer(data, "tunnel", count, 63); state.waterKind = readLayer(data, "waterKind", count, 7);
@@ -3426,6 +3790,7 @@ window.AISystem6BonsaiSimLoaded = true;
         bonds: Number.isInteger(data.newsMemo.bonds) ? data.newsMemo.bonds : 0 }
       : { funds: state.funds, population: 0, milestone: 0, rewardTier: 0, plantExpired: false, ordinance: "", bonds: 0 };
     state.sc2Sidecar = data.sc2Sidecar && typeof data.sc2Sidecar === "object" ? cloneJson(data.sc2Sidecar) : null; state.facilities = [];
+    state.transitLines = sanitizeTransitLines(data.transitLines);
     state.provenance = sanitizeProvenance(data.provenance);
     for (const item of Array.isArray(data.facilities) ? data.facilities : []) {
       if (!FACILITY_KINDS[item.kind] || !Number.isInteger(item.x) || !Number.isInteger(item.y)) throw new Error("bonsai-import-invalid: facility");
@@ -3524,7 +3889,7 @@ window.AISystem6BonsaiSimLoaded = true;
     const errors = [];
     if (!envelope || typeof envelope !== "object" || Array.isArray(envelope)) errors.push("envelope"); else {
       if (envelope.format !== FORMAT) errors.push("format"); if (!Number.isInteger(envelope.formatVersion) || envelope.formatVersion < 1 || envelope.formatVersion > SAVE_FORMAT_VERSION) errors.push("format-version");
-      if (!envelope.engine || ![1, 2, 3, 4, 5].includes(envelope.engine.rulesetVersion)) errors.push("ruleset-version"); if (!envelope.simulation || typeof envelope.simulation.seed !== "number") errors.push("simulation-seed");
+      if (!envelope.engine || !Number.isInteger(envelope.engine.rulesetVersion) || envelope.engine.rulesetVersion < 1 || envelope.engine.rulesetVersion > ENGINE_RULESET_VERSION) errors.push("ruleset-version"); if (!envelope.simulation || typeof envelope.simulation.seed !== "number") errors.push("simulation-seed");
       if (!envelope.payload || typeof envelope.payload !== "object") errors.push("payload"); if (!envelope.integrity || envelope.integrity.algorithm !== INTEGRITY_ALGORITHM) errors.push("integrity-algorithm");
       if (!envelope.integrity || envelope.integrity.canonicalization !== CANONICALIZATION) errors.push("integrity-canonicalization"); if (!envelope.integrity || !/^[a-f0-9]{64}$/i.test(String(envelope.integrity.digest))) errors.push("integrity-digest");
     }
@@ -3533,27 +3898,37 @@ window.AISystem6BonsaiSimLoaded = true;
   function cloneJson(value) { return JSON.parse(JSON.stringify(value)); }
   function migrateSave(envelope) {
     if (!envelope || envelope.format !== FORMAT) throw new Error("bonsai-save-invalid: format"); if (envelope.formatVersion > SAVE_FORMAT_VERSION) throw new Error("bonsai-save-version-too-new");
-    if (envelope.formatVersion === SAVE_FORMAT_VERSION) return envelope;
+    const ruleset = envelope.engine ? envelope.engine.rulesetVersion : undefined;
+    if (ruleset > ENGINE_RULESET_VERSION) throw new Error("bonsai-save-version-too-new");
+    if (envelope.formatVersion === SAVE_FORMAT_VERSION) {
+      if (ruleset === ENGINE_RULESET_VERSION) return envelope;
+      if (ruleset !== 5) throw new Error("bonsai-save-version-unsupported");
+      // Same format, older ruleset: restamp the engine and the payload; the
+      // city itself does not change (migrateRulesetV5To6).
+      return { ...envelope, engine: { ...envelope.engine, rulesetVersion: ENGINE_RULESET_VERSION }, payload: migrateRulesetV5To6(envelope.payload), migratedFromRulesetVersion: ruleset };
+    }
     if (![1, 2, 3, 4].includes(envelope.formatVersion)) throw new Error("bonsai-save-version-unsupported");
     const from = envelope.formatVersion; const out = cloneJson(envelope);
     if (out.formatVersion === 1) { out.formatVersion = 2; out.payload = migrateEngineV1(out.payload); }
     if (out.formatVersion === 2) { out.formatVersion = 3; out.payload = migrateEngineV2To3(out.payload); }
     if (out.formatVersion === 3) { out.formatVersion = 4; out.payload = migrateEngineV3To4(out.payload); }
-    out.formatVersion = 5; out.payload = migrateEngineV4To5(out.payload);
-    out.engine = { rulesetVersion: 5, fixedTickHz: 20, ticksPerDay: 5, daysPerMonth: 25 };
+    out.formatVersion = 5; out.payload = migrateRulesetV5To6(migrateEngineV4To5(out.payload));
+    out.engine = { rulesetVersion: ENGINE_RULESET_VERSION, fixedTickHz: 20, ticksPerDay: 5, daysPerMonth: 25 };
     out.simulation = { seed: out.payload.seed, rng: { algorithm: "mulberry32-v1", state: [out.payload.rngState | 0] } }; out.migratedFromFormatVersion = from; return out;
   }
   async function decodeSave(envelope) {
-    if (envelope && envelope.formatVersion > SAVE_FORMAT_VERSION) throw new Error("bonsai-save-version-too-new"); const validation = validateSaveEnvelope(envelope);
+    if (envelope && (envelope.formatVersion > SAVE_FORMAT_VERSION || (envelope.engine && envelope.engine.rulesetVersion > ENGINE_RULESET_VERSION))) throw new Error("bonsai-save-version-too-new");
+    const validation = validateSaveEnvelope(envelope);
     if (!validation.valid) throw new Error(`bonsai-save-invalid: ${validation.errors.join(",")}`); const digest = await sha256Hex(canonicalStringify(envelopeWithoutIntegrity(envelope)));
     if (digest.toLowerCase() !== String(envelope.integrity.digest).toLowerCase()) throw new Error("bonsai-save-integrity"); const migrated = migrateSave(envelope);
-    return { state: deserialize(migrated.payload), metadata: migrated.metadata || {}, migratedFromFormatVersion: migrated.migratedFromFormatVersion || null };
+    return { state: deserialize(migrated.payload), metadata: migrated.metadata || {}, migratedFromFormatVersion: migrated.migratedFromFormatVersion || null,
+      migratedFromRulesetVersion: migrated.migratedFromRulesetVersion || null };
   }
 
   function replayExampleCity(id) {
     const recipe = EXAMPLES[id];
     if (!recipe) throw new Error("bonsai-example-unknown");
-    const state = createCity({ name: recipe.name, seed: recipe.seed, size: recipe.size, terrainPreset: recipe.terrainPreset });
+    const state = createCity({ name: recipe.name, seed: recipe.seed, size: recipe.size, terrainPreset: recipe.terrainPreset, yearFounded: recipe.yearFounded });
     recipe.commandLog.forEach((command, commandIndex) => {
       if (command.targetTick < state.tick || command.targetTick > recipe.targetTick) throw new Error(`bonsai-example-tick:${id}:${commandIndex}`);
       advanceTicks(state, command.targetTick - state.tick);
@@ -3621,6 +3996,40 @@ window.AISystem6BonsaiSimLoaded = true;
       serviceVehicles: facts("service", serviceSources, Math.min(serviceSources.length, state.problems.length)) };
   }
   function buildRenderSnapshot(state) {
+    // The 「线网」 overlay's own picture: one category per tile, derived from
+    // what the mayor actually laid. 0 no line; 1-7 a metro or BRT line's
+    // colour; 8 a bus line; 9 an avenue half with no depot in reach; 10 an
+    // avenue corridor in service; 11 a station or stop. The city draws what the
+    // sidecar names and nothing else.
+    const transitLayer = (() => {
+      const count = tileCount(state);
+      const layer = new Int8Array(count);
+      const sidecar = state.transitLines;
+      const depots = state.facilities.filter((item) => item.kind === "bus");
+      for (let index = 0; index < count; index += 1) {
+        if (!state.avenue[index]) continue;
+        const x = index % state.size;
+        const y = (index - x) / state.size;
+        layer[index] = depots.some((item) => Math.max(Math.abs((item.x ?? 0) - x), Math.abs((item.y ?? 0) - y)) <= 8) ? 10 : 9;
+      }
+      if (sidecar) {
+        for (const line of sidecar.lines) {
+          const mode = line.mode === "bus" ? "bus" : line.mode === "brt" ? "brt" : "metro";
+          for (let i = 0; i + 1 < line.tiles.length; i += 2) {
+            const index = line.tiles[i + 1] * state.size + line.tiles[i];
+            if (index < 0 || index >= count) continue;
+            layer[index] = mode === "bus" ? 8 : ((line.color ?? 0) % 7) + 1;
+          }
+        }
+        for (const line of sidecar.lines) {
+          for (const station of line.stations || []) {
+            const index = station.y * state.size + station.x;
+            if (index >= 0 && index < count) layer[index] = 11;
+          }
+        }
+      }
+      return layer;
+    })();
     ensureDerived(state); return { size: state.size, tick: state.tick, seed: state.seed, rev: state.rev, timeOfDay: (state.tick % 150) / 150, weather: weatherOf(state), spawnCenter: { ...state.spawnCenter },
       terrain: state.terrain, alt: state.alt, water: state.water, shore: state.shore, slope: state.slope, tree: state.tree, road: state.road, rail: state.rail, wire: state.wire, pipe: state.pipe, park: state.park, over: state.over,
       zone: state.zone, density: state.density, stage: state.stage, buildingState: state.buildingState, variant: state.variant, traffic: state.traffic, congested: state.congested, powered: state.powered, watered: state.watered,
@@ -3628,7 +4037,9 @@ window.AISystem6BonsaiSimLoaded = true;
       policeCovered: state.policeCovered, fireCovered: state.fireCovered, educationCovered: state.educationCovered, healthCovered: state.healthCovered,
       pollution: state.pollution, crime: state.crime, fireRisk: state.fireRisk, happiness: state.happiness, problemCode: state.problemCode, buildingId: state.buildingId, buildingAnchor: state.buildingAnchor, buildings: state.buildings,
       catalogId: state.catalogId, subway: state.subway, waterLevel: state.waterLevel, salt: state.salt, rotate: state.rotate, tunnel: state.tunnel, waterKind: state.waterKind,
-      highway: state.highway, onramp: state.onramp,
+      highway: state.highway, onramp: state.onramp, avenue: state.avenue,
+      transitLayer,
+      transitLines: state.transitLines,
       blaze: state.blaze, disaster: state.disaster ? { ...state.disaster } : null,
       facilityAt: state.facilityAt, plantAt: state.plantAt, serviceAt: state.serviceAt, facilities: state.facilities.map((item) => ({ ...item, footprint: footprintOf(item) })), plants: state.plants, services: state.services, lot: state.lot,
       railService: { ...state.railService }, subwayService: { ...state.subwayService }, busService: { ...state.busService },
@@ -3645,9 +4056,14 @@ window.AISystem6BonsaiSimLoaded = true;
     EXAMPLES, SCENARIOS, createScenarioCity, createCity, replayExampleCity, createExampleCity, advanceTicks, applyTool, previewCommand, submitCommand, undo, redo, drainEvents, canonicalStringify, checkpoint, encodeSave, decodeSave, validateSaveEnvelope, migrateSave,
     cityReport, populationBreakdown, industryBreakdown, neighborsReport, INDUSTRY_SECTORS, NEIGHBOR_DIRECTIONS, NEIGHBOR_NAME_COUNT,
     tileInfo, footprintOf, LEGACY_FOOTPRINTS, sc2DerivedGrids, SC2_GRID_SIDES, ensureDerived, dateOf, drainNotices, derivedAgentFacts, buildRenderSnapshot, serialize, deserialize,
-    weatherOf, WEATHER_TYPES,
+    weatherOf, WEATHER_TYPES, setTransitLines, sanitizeTransitLines,
     ADVISOR_IDS, advisorReport,
     LOT_CAPACITY, LOT_RULES, COMMUTE_LIMIT, ROAD_REACH, PORT_REACH, ROUTE_COST, HIGHWAY_CAPACITY, lotCapacity, demandReport: demandInternals,
+    AVENUE: Object.freeze({
+      directions: AVENUE_DIRECTIONS, crossSectionMeters: AVENUE_CROSS_SECTION_METERS, capacity: AVENUE_CAPACITY, techYear: AVENUE_TECH_YEAR,
+      costs: Object.freeze({ land: NETWORK_COST.avenue, upgrade: AVENUE_UPGRADE_COST, water: BRIDGE_COST.avenue }),
+      partner: (state, x, y) => { if (!inBounds(state, x, y)) return null; const partner = avenuePartner(state, indexOf(state, x, y), state.avenue[indexOf(state, x, y)]); return partner < 0 ? null : xyOf(state, partner); },
+    }),
     // Marks every derived system stale, for tools and tests that edit layers
     // directly; the next read recomputes them.
     invalidateDerived: (state) => { markDerivedDirty(state, DIRTY_ALL); repairLots(state); },

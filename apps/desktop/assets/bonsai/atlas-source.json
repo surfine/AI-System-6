@@ -594,6 +594,11 @@
       "accent": "metal"
     },
     {
+      "family": "wire.side",
+      "color": "wire",
+      "accent": "metal"
+    },
+    {
       "family": "highway",
       "color": "highway",
       "accent": "highwayLight"

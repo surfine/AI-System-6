@@ -87,6 +87,8 @@ const requiredAssets = [
   "assets/doom/SOURCE.txt",
   "assets/doom/chocolate-doom-3.1.1-source.tar.gz",
   "assets/doom/chocolate-doom-3.1.1-ai-system6.patch",
+  "assets/mingwen/index.html",
+  "assets/mingwen/engine.js",
   "app/vendor/markmap/d3.min.js",
   "app/vendor/markmap/markmap-lib.js",
   "app/vendor/markmap/markmap-view.js",
@@ -150,6 +152,7 @@ for (const pattern of [
   "apps/desktop/app/vendor/micropolis/**/*",
   "apps/desktop/assets/openttd/**/*",
   "apps/desktop/assets/doom/**/*",
+  "apps/desktop/assets/mingwen/**/*",
 ]) {
   if (!packageAssets.has(pattern)) packaging.push(`macPackagedAssets is missing game payload ${pattern}`);
 }

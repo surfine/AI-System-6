@@ -12,17 +12,15 @@ window.AISystem6ExplanationLens = (() => {
     "familiar",
   ]);
 
-  // Writing for one-pass listening is a default capability, not an opt-in
-  // feature: a reader who has to go back and re-read a sentence has already
-  // lost it, and that is true of every piece the route produces. A writer can
-  // still switch it off per project - an explicit false is honoured below.
+  // Clarity is on by default; it does not choose an oral medium for the writer.
+  // Explicit saved media and the per-project off switch remain authoritative.
   function blankExplanationLens() {
     return {
       id: "eli5",
       enabled: true,
       audience: "general-public",
       baselineKnowledge: "secondary-school",
-      medium: "spoken-video",
+      medium: "written-article",
       question: "",
       stuckPointHint: "",
       mustKeepTerms: [],

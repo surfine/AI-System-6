@@ -23,7 +23,7 @@ function findLand(state, w, h) {
   throw new Error("no land");
 }
 
-test.assert(sim.SAVE_VERSION === 5 && sim.ENGINE_RULESET_VERSION === 5, "the save format is v5");
+test.assert(sim.SAVE_VERSION === 5 && sim.ENGINE_RULESET_VERSION === 6, "the save format is v5 and the ruleset is 6");
 test.assert(Object.keys(sim.DISASTER_KINDS).length === 15, "the disaster set is expanded to 15");
 test.assert(sim.TECHS && sim.TECHS.airport === 1900, "the tech gate table is exported");
 test.assert(sim.ARCO_KINDS.length === 4, "four arco kinds are exported");

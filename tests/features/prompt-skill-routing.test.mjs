@@ -122,7 +122,9 @@ corpus.forEach((record) => {
   });
 });
 const untouched = corpus.filter((record) => !record.descriptions && !record.partOf);
-test.assert(untouched.length === 63, `${untouched.length} prompts carry no skill metadata and stay ordinary prompt files`);
+// The three review prompts the writing methodology added (2026-09-30) are
+// ordinary prompt files too, so the untouched set grew from 63 to 66.
+test.assert(untouched.length === 66, `${untouched.length} prompts carry no skill metadata and stay ordinary prompt files`);
 
 // ------------------------------------------- precedence, reused not rebuilt
 api.upsertProjectPromptOverride(projectId, "writing-route.skill-table-shaping", "This project hands over CSV, never a sheet.");

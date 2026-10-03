@@ -118,19 +118,26 @@ function questionSheetFieldList(language = currentLanguage) {
   return QUESTION_SHEET_SECTION_KEYS.map((key) => `- ${questionSheetSectionLabel(key, language)}`).join("\n");
 }
 
-function resolveWritingRoutePrompt(id, language = currentLanguage) {
-  const projectId = typeof activeProjectId === "undefined" ? null : activeProjectId;
-  const resolved = window.AISystem6PromptFilesRuntime?.resolvePromptFile(id, projectId, language);
+function resolveWritingRoutePrompt(id, language = currentLanguage, options = {}) {
+  const projectId = options.projectId ?? (typeof activeProjectId === "undefined" ? null : activeProjectId);
+  const runtime = window.AISystem6PromptFilesRuntime;
+  const resolved = runtime?.resolvePromptFile?.(id, projectId, language);
   const record = window.AISystem6PromptFiles?.find?.((item) => item.id === id);
-  const body = resolved?.status === "ready"
-    ? resolved.body
-    : (language === "zh" ? record?.bodies?.zh : record?.bodies?.en);
-  if (!body) {
-    throw new Error(language === "zh" ? "写作路线提示词文件不可用。" : "The Writing Route prompt file is unavailable.");
+  // A loaded resolver owns missing/disabled status as well as ready overrides.
+  const body = runtime?.resolvePromptFile
+    ? (resolved?.status === "ready" ? resolved.body : "")
+    : (String(language).toLowerCase().startsWith("zh") ? record?.bodies?.zh : record?.bodies?.en);
+  if (typeof body !== "string" || !body.trim()) {
+    const error = new Error(language === "zh" ? "写作路线提示词文件不可用。" : "The Writing Route prompt file is unavailable.");
+    Object.assign(error, { code: "prompt-unavailable", id, language, promptStatus: resolved?.status || "missing" });
+    throw error;
   }
-  if (resolved?.status === "ready") {
-    window.AISystem6PromptFilesRuntime?.recordPromptRun?.(projectId, id, resolved);
+  if (options.invocation) {
+    const invocation = options.invocation;
+    const entry = Object.freeze({ id, projectId, language, path: resolved?.path || record?.path || "", source: resolved?.source || "system", hash: resolved?.hash || record?.hash || "", body });
+    invocation.runManifest = { ...(invocation.runManifest || {}), promptSources: [...(invocation.runManifest?.promptSources || []), entry] };
   }
+  if (resolved?.status === "ready") runtime?.recordPromptRun?.(projectId, id, resolved);
   return body;
 }
 
@@ -278,6 +285,8 @@ function questionSheetCoveredSections(markdown) {
   let current = "";
 
   normalizeMarkdownText(markdown).split("\n").forEach((line) => {
+    const recipient = line.match(/^\s{0,3}(?:接收者|受众|recipient|audience)\s*[:：]\s*(.+)$/i)?.[1]?.trim();
+    if (recipient && !emptyMarkers.has(recipient)) covered.add("recipient");
     const heading = line.match(/^\s{0,3}#{1,6}\s+(.+?)\s*$/);
     if (heading) {
       current = headings.get(heading[1].replace(/\s+/g, "").toLowerCase()) || "";
@@ -291,9 +300,18 @@ function questionSheetCoveredSections(markdown) {
   return covered;
 }
 
-// The first load-bearing section this sheet has not said anything about, or ""
-// when it has said something about all five.
+// Optional prompts for a structured sheet. Freeform notes are welcome: a
+// missing heading is not evidence that the writer omitted an idea.
 function questionSheetFirstGap(markdown) {
+  const text = normalizeMarkdownText(markdown);
+  if (text.trim()) {
+    const headings = questionSheetHeadingKeyMap();
+    const structured = text.split("\n").some((line) => {
+      const title = line.match(/^\s{0,3}#{1,6}\s+(.+?)\s*$/)?.[1];
+      return title && headings.has(title.replace(/\s+/g, "").toLowerCase());
+    });
+    if (!structured) return "";
+  }
   const covered = questionSheetCoveredSections(markdown);
   return QUESTION_SHEET_LOAD_BEARING.find((key) => !covered.has(key)) || "";
 }
@@ -326,7 +344,10 @@ function questionSheetSectionBody(markdown, key) {
     if (current === key) lines.push(line);
   });
 
-  return lines.join("\n").trim();
+  const body = lines.join("\n").trim();
+  return body || (key === "recipient"
+    ? normalizeMarkdownText(markdown).match(/^\s{0,3}(?:接收者|受众|recipient|audience)\s*[:：]\s*(.+)$/mi)?.[1]?.trim() || ""
+    : "");
 }
 
 // Words the writer quoted inside their own output rules. Quoting is not a

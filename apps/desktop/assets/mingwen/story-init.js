@@ -1,0 +1,1 @@
+window.STORY = PlainRules.createStory();

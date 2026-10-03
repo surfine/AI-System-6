@@ -295,9 +295,12 @@ async function runMingmingHandoffReview(options = {}) {
     const data = await readChatJson(response);
     const content = stripRebuildMarkdownFence(data?.choices?.[0]?.message?.content || "").trim();
     const visibleContent = isBackstage ? content : (extractMingmingHandoffCard(content) || content);
-    appendReviewFeedbackToBody(visibleContent || (isBackstage
-      ? (currentLanguage === "zh" ? "没有生成交付后台审校结果。" : "No backstage handoff review was generated.")
-      : (currentLanguage === "zh" ? "没有生成若是落落会怎么接结果。" : "No How Luoluo Would Receive It result was generated.")));
+    if (!visibleContent) {
+      appendReviewFeedbackToBody(t("writing_review_empty"));
+      setStatus(t("writing_review_empty"));
+      return;
+    }
+    appendReviewFeedbackToBody(visibleContent);
 
     if (isBackstage) {
       setStatus(t("backstage_handoff_review_ready"));

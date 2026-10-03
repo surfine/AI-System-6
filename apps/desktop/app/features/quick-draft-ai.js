@@ -200,13 +200,14 @@ async function requestQuickDraft(stage = "brief", options = {}) {
           // Same pictures the cloud path sends, attached in the browser because
           // this prompt is built here.
           messages: attachImagesToModelMessages(
-            window.AISystem6ModelTaskRuntime.buildQuickDraftMessages(payload),
+            window.AISystem6ModelTaskRuntime.buildQuickDraftMessages(payload, { projectId: activeProjectId }),
             payload.chatMaterials
           ),
           temperature: 0.35,
           max_tokens: 5200,
           stream: false,
           ai_system6_task_kind: taskKind || "quick-draft",
+          ai_system6_output_kind: "json",
         },
         signal: requestGuard.signal,
         taskKind: taskKind || "quick-draft",

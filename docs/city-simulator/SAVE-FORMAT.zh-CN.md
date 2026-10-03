@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/city-simulator/SAVE-FORMAT.md -->
-<!-- source-sha256: aa8cde1f5971f035e57ad7d3e043204a180b663645a4cffd33012c06217cdbcc -->
+<!-- source-sha256: cbe095eb88a23af01d564fa3d40e07c323cf58e396aff711a2ed0de3686ac4a7 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -10,6 +10,7 @@
 - 存档格式：`bonsai-city`
 - 当前格式版本：5
 - 当前引擎存档版本：5
+- 当前规则集版本：6
 - 支持地图尺寸：64×64、96×96 与 128×128（SC2K 原生尺寸）
 
 格式名与版本由模拟核心（`FORMAT` / `SAVE_VERSION`）和
@@ -32,6 +33,7 @@
 | 字段 | 含义 |
 | --- | --- |
 | `format` / `version` | `bonsai-city` / 5 |
+| `rulesetVersion` | 6；规则集 5 的载荷可以加载，并被改写版本号（见迁移规则） |
 | `name` | 城市名（仅显示，不翻译） |
 | `seed` | 初始整数种子 |
 | `rngState` | 当前 32 位 PRNG 状态 |
@@ -46,12 +48,23 @@
 | `lot` | v5：地块层——0 表示没有建筑，否则整栋 1×1、2×2 或 3×3 建筑的每一格都记锚点下标 + 1；锚点是地块 x、y 最小的那一格 |
 | `catalogId` | 显式的 XBLD 对齐地块 id；0 表示"由模拟状态派生"——让导入的 `.sc2` 建筑在模拟接管该地块前得以保留的载体 |
 | `subway`、`waterLevel`、`salt`、`rotate`、`tunnel`、`waterKind` | v3 SC2K 模型层（地下、水位、盐度、占地旋转、地形隧道、水体分类） |
+| `avenue` | 可选，规则集 6：每个主干道半幅的行车方向（1 北、2 东、4 南、8 西；其余格为 0），只在至少有一格非零时写出 |
 | `sc2Sidecar` | 导入 `.sc2` 城市的可选保留侧表（原始 MISC 字节与未建模段），或 `null` |
+| `transitLines` | 可选，规则集 6：市长真正铺下的线网（见下），只在至少还有一条线时写出 |
 | `facilities` | 电力、供水、交通和公共服务设施；记录可自带 `w`/`h`（存档规则 3.1：煤电厂记录 SC2K 的 4×4 占地，没有该字段的记录是旧版 2×2 电厂并保持原尺寸；穹顶与巨构记录与贴图一致的 4×4，没有该字段的记录是旧版 3×3 并保持原尺寸） |
 | `history` | 有界的 120 个月城市历史 |
 | `view`、`budgetHistory`、`militaryBase` | v4 新增：保存的相机（`panX`/`panY`/`zoom`）、有界的逐月财政历史，以及军事基地生命周期（0 无、1 提议、2 拒绝、3 陆军、4 空军、5 海军、6 导弹） |
 | `landValue`、`crime`、`pollution` | v5：月度环境。之所以保存，是因为它每月由上个月的值（平滑与扩散）重算，加载时重建会得到与保存时不同的城市 |
 | `nextCommandSequence` / `pendingCommands` | 确定性命令顺序 |
+
+可选的 `transitLines` 侧表（version 1）记下市长经翻盆铺下的线网：每条线的方案
+id、中英名称、颜色（公交则记路号）、方式（`metro`、`brt` 或 `bus`）、车辆数、
+所经格、保留下来的站点，以及铺设时的 tick。只在至少还有一条线时写出，
+所以没有线的城市与这个字段出现之前逐字节相同，`SAVE_FORMAT_VERSION` 保持 5。
+侧表绝不改动城市的任何数字；线网里的每条线都是市长自己的命令铺下的，而带着
+这份侧表的城市必须与它一致——每格地铁下有轨道或隧道、每格胶轮线下面是路、
+每格 BRT 下面是主干道、每座站点上立着设施、每条胶轮线附近有车场
+（`pot-world lines.check`）。
 
 派生网络（`powered`、`watered`、道路连接、覆盖、通勤距离场、交通）、
 `buildings` 列表、问题标记、人口、岗位、需求、视觉代理和渲染缓存加载时重建，
@@ -85,6 +98,21 @@ parse → 结构验证 → 完整性验证 → clone
   2×2 方块成为 2×2 地块，其余有建筑的单格成为 1×1 地块（`.sc2` 这类已知建筑
   的导入器直接交来自己的地块）；尺寸写回 `stage`，资金、历史和其余内容原样
   保留。迁移后的城市按新规则继续生长，人口会重新计算；文件里的东西不会丢。
+- 规则集 6（水下地铁，Aaron 2026-10-02 拍板）没有移动格式版本。水下地铁就是
+  `water` 格上的 `subway` 格，这两层 v5 本来就存，文件不多任何东西：
+  `migrateRulesetV5To6` 把载荷和 `engine` 里的 `rulesetVersion` 从 5 改成 6，
+  城市的其余每个字节保持原样。早于规则集 6 的版本会拒绝规则集 6 的存档，
+  和拒绝任何更新的存档一样。
+- 规则集 6 的主干道是它带来的唯一可选字段，同样没有移动格式版本：早于规则集 6
+  的版本本来就拒收这份存档，不会悄悄丢掉主干道。`serialize` 只在有非零格时写出
+  `avenue`，所以没有主干道的城市字节和 checkpoint 都不变；规则集 5 的城市都没有
+  主干道，所以 5→6 的升级仍然只改版本号。读档时，存在的图层长度必须等于地图格数，
+  否则拒收；0、1、2、4、8 以外的值清零；不在路格上的半幅、伙伴（司机左手那一格）
+  不是相反方向的半幅也清零。主干道永远不会只剩一半。`.sc2` 和 Micropolis 导出都
+  把两半写成它们本来就是的路；两种格式都没有主干道，所以这一层不随导出带走。
+  `exportSc2` 仍然只返回文件字节。`sc2LossReport` 列出留在原地的东西（主干道、
+  线网 sidecar、站牌、128 窗口外的地块，以及文件装不下的设施和记录），外壳在
+  文件保存成功后用一条通知说出来。
 
 ## 信封
 
@@ -95,9 +123,9 @@ parse → 结构验证 → 完整性验证 → clone
   "format": "bonsai-city",
   "formatVersion": 5,
   "metadata": { "cityId": "…", "name": "…", "createdAt": "…", "updatedAt": "…" },
-  "engine": { "rulesetVersion": 5, "fixedTickHz": 20, "ticksPerDay": 5, "daysPerMonth": 25 },
+  "engine": { "rulesetVersion": 6, "fixedTickHz": 20, "ticksPerDay": 5, "daysPerMonth": 25 },
   "simulation": { "seed": "...", "rng": { "algorithm": "mulberry32-v1", "state": [0] } },
-  "payload": { "format": "bonsai-city", "version": 5, "…": "v5 引擎存档" },
+  "payload": { "format": "bonsai-city", "version": 5, "rulesetVersion": 6, "…": "v5 引擎存档" },
   "integrity": { "algorithm": "SHA-256", "canonicalization": "sorted-json-v1", "digest": "..." }
 }
 ```
@@ -107,7 +135,8 @@ parse → 结构验证 → 完整性验证 → clone
 层，并把 `tick` 转为 `tick * 5`；v2 以零值补齐 SC2K 模型层（`waterKind` 从
 `water` 派生），建城年份默认 1900；v3 补上保存的相机、财政历史和军事基地生命
 周期，`rulesetVersion` 升到 4；v4 经上面的归并迁移得到 `lot` 层与保存的月度环境，
-`rulesetVersion` 升到 5。更新的版本显式拒绝。
+`rulesetVersion` 升到 5；规则集 5 写成的格式 v5 存档改写为规则集 6，其余不变。
+更新的格式或规则集版本显式拒绝。
 规范化 = 键排序、数组保序、无空白，Node 与浏览器结果一致，检查点哈希可移植。
 
 内存版 `createCityRepository`（create/list/get/put/remove）保留为测试适配器。

@@ -249,14 +249,17 @@
     "format": "bonsai-city",
     "formatVersion": 5,
     "currentEngineSaveVersion": 5,
+    "currentRulesetVersion": 6,
     "derivedLayersNeverSaved": false,
     "buildingOccupancyDerivedFromDurableDevelopmentLayers": true,
     "v3DurableLayers": ["catalogId", "subway", "waterLevel", "salt", "rotate", "tunnel", "waterKind"],
     "v5DurableLayers": ["lot"],
     "v5SavedMonthlyEnvironment": ["landValue", "crime", "pollution"],
     "v5SavedRouting": { "version": 1, "optionalForLegacySaves": true, "fields": ["traffic", "congested", "distJobs", "distHomes", "sources", "railRiders", "subwayRiders", "highwayTrips"] },
+    "ruleset6OptionalLayers": ["avenue"],
     "v5LotModel": "lot = anchor index + 1 on every cell; anchor stage = size 1..3; cells mirror stage and buildingState",
     "v4ToV5Migration": "per-tile buildings grouped into lots by the v4 grouping rule; isolated tiles become 1x1 lots; funds unchanged",
+    "ruleset5ToRuleset6Migration": "no-op: restamps payload.rulesetVersion and engine.rulesetVersion from 5 to 6; formatVersion and the payload version stay 5 because no field is required: avenue is optional and absent from every ruleset-5 city; every other byte of the city is unchanged",
     "sc2SidecarOptional": true,
     "integrity": "SHA-256/sorted-json-v1",
     "migration": "pure-chain-vN-to-vN+1-input-never-mutated"
@@ -300,6 +303,61 @@
     "disasterRules": { "volcanoAlt": 8, "riotCrime": 60 },
     "simCostBudgetMs": { "meanTick": 0.5, "monthPeak": 15, "maxTick": 30 }
   },
+  "ruleset6": {
+    "decision": "owner directive, 2026-10-02: 「地铁过水同意放开，按推荐 A 做」 (internal/plans/BASIN-WORLD.zh-CN.md, 待拍板 #3, recommendation A)",
+    "inherits": "ruleset5",
+    "underwaterSubway": {
+      "comment": "a subway line may cross water tiles as a tunnel under the bed: the same subway layer, the same commute graph, the same monthly subway upkeep per tile; only the build price differs. Demolish never touches the subway layer, on land or under water, and nothing is refunded; undo restores the funds of the transaction",
+      "allowed": true,
+      "costPerWaterTile": 300,
+      "costPerLandTile": 100,
+      "railBridgeMultiple": 4,
+      "stationsOnWater": false
+    },
+    "waterCrossingCostPerTile": { "road": 50, "rail": 75, "wire": 25, "highway": 100, "subway": 300, "avenue": 60 },
+    "staysOnLand": ["pipe", "park", "onramp", "subway-station"],
+    "exports": {
+      "sc2": "subway and water both survive the round trip: XUND carries the subway piece and XTER the water under it, two independent segments",
+      "micropolis": "the subway is dropped like every subway and counted in layer-dropped-subway; the tile exports as water"
+    },
+    "avenue": {
+      "decision": "Aaron 2026-10-02, relayed by the Joyride session: 「BRT是宜昌/广州式的路权，站台在中央，专用道也在中央，总之请你好好研究，纳入人行道、自行车道、非机动车也就是电动车电鸡等慢行系统」; the data convention was agreed with the Joyride session the same day (internal/plans/BASIN-WORLD.zh-CN.md, 公交、快速公交与慢行)",
+      "comment": "a Yichang- or Guangzhou-style avenue with its BRT in the centre: two road tiles side by side, one carriageway each way, the median and the BRT lanes on the drivers' left",
+      "layer": "avenue",
+      "storage": "Uint8Array, y * size + x, durable",
+      "values": { "none": 0, "north": 1, "east": 2, "south": 4, "west": 8 },
+      "valueMeans": "the direction of travel on that half",
+      "partner": "the tile on the driver's left, holding the opposite direction: north (1) -> x - 1, east (2) -> y - 1, south (4) -> x + 1, west (8) -> y + 1",
+      "orientation": { "eastWest": { "northHalf": 8, "southHalf": 2 }, "northSouth": { "westHalf": 4, "eastHalf": 1 } },
+      "bothHalvesAreRoad": true,
+      "commuteGraphUnchanged": true,
+      "crossSectionMetersPerHalf": { "order": "from the centre line out", "median": 1.5, "brtLane": 3.5, "barrier": 0.5, "generalLanes": 6, "nonMotorised": 1.5, "sidewalk": 2, "verge": 1, "total": 16 },
+      "command": "build-path { network: \"avenue\", points }: one straight run, two tiles wide, from the first point toward the last (east-west unless the drag is longer north-south); the drag's row is the north half (its column the west half), pulled back one tile at the far map edge; the whole run is laid or nothing is",
+      "stampRules": "road is laid where missing under a road's rules (bridges water; refused on zoned land, facilities and a step of more than one level, along each half and across each pair); a pair already this avenue is unchanged and free; a pair that is both halves of a crossing avenue is the junction and keeps them; a pair holding one half of another avenue is refused as occupied; a run with nothing to change is empty",
+      "costs": { "newLandTile": 25, "upgradeRoadTile": 15, "newWaterTile": 60 },
+      "previewEqualsCharge": true,
+      "techYear": 1920,
+      "capacity": { "generalLanesPerHalf": 2, "congestionThreshold": 160, "rule": "twice CONGESTION_THRESHOLD; the BRT lane carries no commuters and never congests" },
+      "brtEffect": "an avenue half congests at twice CONGESTION_THRESHOLD. A half inside a serving bus depot's eight tiles is served: its route cost is 3, its commuter flow is floor(traffic * 0.25) with no extra depot relief, and it is never marked congested. Halves outside that square keep the ordinary road cost. Avenue maintenance stays on the road divisor so a city with no served half keeps its save bytes",
+      "demolish": "bulldozing either half takes its partner too and both are billed; an avenue never survives as a half",
+      "undoable": true,
+      "save": "written only while a non-zero tile exists, so a city without an avenue keeps its save bytes and checkpoint; on load a present layer of the wrong length is refused, values outside 0, 1, 2, 4, 8 are cleared, and a half off the road or unanswered by its partner is cleared; SAVE_FORMAT_VERSION stays 5 because builds before ruleset 6 already refuse a ruleset-6 save",
+      "renderSnapshot": "buildRenderSnapshot passes the layer through as avenue",
+      "exports": {
+        "sc2": "both halves export as road; the layer has no SC2K equivalent and is not carried; exportSc2 still returns bytes only, and sc2LossReport names the dropped layer so the shell can say so after a successful export",
+        "micropolis": "both halves export as road; the layer has no Micropolis equivalent and is not carried; every dropped half is counted in the loss report as layer-dropped-avenue"
+      }
+    },
+    "transitLines": {
+      "decision": "Aaron's Basin lane L4 (internal/plans/BASIN-WORLD.zh-CN.md, 翻盆): the planner draws, the mayor prices and pays, the city builds",
+      "comment": "the lines the mayor actually laid, written by Bonsai City after a flip-the-pot confirmation",
+      "storage": "optional payload sidecar `transitLines`: { version: 1, lines: [{ id, planId, name { zh, en }, color 0-6 or null, number 11-16 for a bus, mode (\"metro\" default, \"brt\", \"bus\"), vehicles 1-6, tiles [x, y, ...], stations [{ x, y, kind: \"subway-station\" | \"station\" | \"bus-stop\", name { zh, en }, group? }], laidTick }] }",
+      "writtenWhen": "only while the city holds at least one laid line; a city without one serializes byte for byte as it did before the field existed, and SAVE_FORMAT_VERSION stays 5",
+      "readBy": ["app/features/bonsai-renderer-canvas.js (the transit overlay, the stop signs, the buses)", "app/features/bonsai-city.js (the tile balloon and the newspaper's 本市交通 box)", "app/features/joyride-rail.js (the street's own lines)", "app/core/pot-world.js lines.check"],
+      "invariant": "a sidecar never changes a city number; every line in it was laid by the mayor's own commands, and the tiles it names are the city's own",
+      "check": "pot-world lines.check answers whether the city still holds what the sidecar says: rail or subway under every metro tile, road under every rubber-tyre tile, avenue under every BRT tile, the facility standing on every station, and a depot within reach of every rubber-tyre line"
+    }
+  },
   "phase0Invariants": {
     "noWindowRegistration": true,
     "noRuntimeManifestEntries": true,
@@ -324,7 +382,8 @@
     "headlessDeterministicImporter": true,
     "fixtures": "synthetic-only, built at test time; tests never reach the network",
     "dataCommitted": false,
-    "saveProvenanceField": "provenance (optional; source, attribution, license, elevation, place, center, bbox, cellMeters, osmTimestamp, retrievedAt, buildings); no save version change",
+    "saveProvenanceField": "provenance (optional; source, attribution, license, elevation, place, center, bbox, cellMeters, osmTimestamp, retrievedAt, buildings, names); no save version change",
+    "saveProvenanceNames": "names (optional, Aaron 2026-10-02 「OSM 真名进存档」): { stations ≤64, streets ≤256, places ≤64 } of { x, y, name, zh?, en? } on the tile the feature landed on, places also { kind ∈ suburb|quarter|neighbourhood|village|hamlet }; strings ≤40 characters; sanitised on load; no save version change",
     "publicDeployment": "Turnstile session + reader pool + relay daily ceiling on uncached upstream queries",
     "contract": "tests/features/bonsai-osm-import.test.mjs"
   },

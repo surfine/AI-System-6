@@ -449,7 +449,9 @@ test.assertIncludes(
   "the immersive class is read from the admission rows"
 );
 test.assert(
-  Object.values(admissionRows()).filter((row) => row.phone === 2).map((row) => row.app).sort().join(",") === "bonsaiCity,doom,joyride,micropolis,openttd,rootline",
+  // Mingwen joined the Games folder: the visual novel takes the whole phone
+  // page like the simulators beside it, so it declares the same phone contract.
+  Object.values(admissionRows()).filter((row) => row.phone === 2).map((row) => row.app).sort().join(",") === "bonsaiCity,doom,joyride,micropolis,mingwen,openttd,rootline",
   "the immersive class is the games and the city simulator"
 );
 test.assertIncludes(

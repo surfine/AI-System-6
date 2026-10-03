@@ -119,14 +119,22 @@ for (let rotation = 0; rotation < 4; rotation += 1) {
 function makeContext() {
   const calls = [];
   const images = [];
+  // The source rectangle of every drawImage, in call order: which atlas frame
+  // a tile was drawn with is not visible in the destination rect the `calls`
+  // trace keeps, and some contracts are about exactly that.
+  const sourceRects = [];
   return {
-    calls, images,
+    calls, images, sourceRects,
     imageSmoothingEnabled: true,
     setTransform: (...args) => calls.push(["setTransform", ...args]),
     clearRect: (...args) => calls.push(["clearRect", ...args]),
     fillRect: (...args) => calls.push(["fillRect", ...args]),
     strokeRect: (...args) => calls.push(["strokeRect", ...args]),
-    drawImage: (...args) => { images.push(args[0]); calls.push(["drawImage", ...args.slice(-4)]); },
+    drawImage: (...args) => {
+      images.push(args[0]);
+      if (args.length >= 9) sourceRects.push(args.slice(1, 5));
+      calls.push(["drawImage", ...args.slice(-4)]);
+    },
     save: () => calls.push(["save"]),
     translate: (...args) => calls.push(["translate", ...args]),
     scale: (...args) => calls.push(["scale", ...args]),
@@ -473,6 +481,19 @@ liveSnapshot.rev += 1;
 renderer.render(liveSnapshot);
 test.assert(renderer.debugStats().chunkBuildCount === beforeRoadBuilds + 1, "a road transaction invalidates only its one infrastructure chunk");
 {
+  // Widening two streets into an avenue changes no layer but the avenue's,
+  // and the chunk still repaints.
+  liveSnapshot.road[33 * 64 + 32] = 1;
+  liveSnapshot.rev += 1;
+  renderer.render(liveSnapshot);
+  const beforeAvenue = renderer.debugStats().chunkBuildCount;
+  liveSnapshot.avenue[32 * 64 + 32] = 8;
+  liveSnapshot.avenue[33 * 64 + 32] = 2;
+  liveSnapshot.rev += 1;
+  renderer.render(liveSnapshot);
+  test.assert(renderer.debugStats().chunkBuildCount === beforeAvenue + 1, "an avenue-only change repaints its one infrastructure chunk");
+}
+{
   // The scenery list (buildings, trees, parks, blazes) is built once per
   // content revision: panning redraws the layer from it, a city change
   // rebuilds it.
@@ -548,6 +569,133 @@ renderer.resetView({ center: { x: 10, y: 20 }, size: 64, zoom: math.DEFAULT_ZOOM
   );
 }
 renderer.resetView();
+
+// Avenues (the Basin avenue layer): each half paints its cross-section from
+// the median out — hedge, red BRT lane, general lanes, green slow lane,
+// sidewalk, verge — and the same point of the tile keeps its paint under
+// every quarter turn. Side streets open a mouth and a crossing; an avenue
+// with nothing beyond ends at a kerb; a deck has a parapet; a half its
+// partner does not answer is an ordinary street.
+{
+  const n = 16;
+  const avenueSnapshot = { size: n, tick: 0, seed: 1, rev: 1, timeOfDay: 0.5, alt: new Uint8Array(n * n), water: new Uint8Array(n * n), road: new Uint8Array(n * n), avenue: new Uint8Array(n * n) };
+  for (let x = 2; x <= 10; x += 1) for (const y of [7, 8]) avenueSnapshot.road[y * n + x] = 1;
+  for (let x = 3; x <= 10; x += 1) { avenueSnapshot.avenue[7 * n + x] = 8; avenueSnapshot.avenue[8 * n + x] = 2; }
+  avenueSnapshot.road[6 * n + 6] = 1; avenueSnapshot.road[5 * n + 6] = 1;
+  avenueSnapshot.water[8 * n + 9] = 1;
+  avenueSnapshot.road[12 * n + 12] = 1; avenueSnapshot.avenue[12 * n + 12] = 8;
+  const LEFT = { 1: [-1, 0], 2: [0, -1], 4: [1, 0], 8: [0, 1] };
+  const AHEAD = { 1: [0, -1], 2: [1, 0], 4: [0, 1], 8: [-1, 0] };
+  // The pixel under a point `a` metres out from the median, `s` along.
+  const paintAt = (tile, rotation, a, s) => {
+    const L = LEFT[tile.dir], F = AHEAD[tile.dir];
+    const u = L[0] * (0.5 - a / 16) + F[0] * s, v = L[1] * (0.5 - a / 16) + F[1] * s;
+    const [ru, rv] = [[u, v], [-v, u], [-u, -v], [v, -u]][rotation];
+    const px = Math.floor((ru - rv) * (math.TILE_W / 2) + tile.anchorX), py = Math.floor((ru + rv) * (math.TILE_H / 2) + tile.anchorY);
+    const k = (py * tile.width + px) * 4;
+    return [tile.pixels[k], tile.pixels[k + 1], tile.pixels[k + 2]].join(",");
+  };
+  const is = (tile, rotation, a, s, part) => paintAt(tile, rotation, a, s) === tile.paint[part].join(",");
+  let turns = true;
+  for (let rotation = 0; rotation < 4; rotation += 1) {
+    const north = renderer.avenueTile(avenueSnapshot, 4, 7);
+    const south = renderer.avenueTile(avenueSnapshot, 4, 8);
+    turns &&= north.dir === 8 && south.dir === 2 && north.ahead === 2 && north.behind === 2 && !north.outer && !north.crossing
+      && is(north, rotation, 0.3, 0.1, "hedge") && is(north, rotation, 3.2, 0.1, "brt") && is(north, rotation, 7, 0.1, "asphalt")
+      && is(north, rotation, 12.4, 0.1, "slow") && is(north, rotation, 14.2, 0.1, "walk") && is(north, rotation, 15.6, 0.1, "verge")
+      && is(south, rotation, 3.2, -0.2, "brt") && is(south, rotation, 12.4, -0.2, "slow");
+    renderer.rotateBy(1);
+  }
+  test.assert(turns, "both halves paint median, red BRT lane, lanes, slow lane, sidewalk and verge outward from the centre, under all four quarter turns");
+  const mouth = renderer.avenueTile(avenueSnapshot, 6, 7);
+  const across = renderer.avenueTile(avenueSnapshot, 6, 8);
+  test.assert(mouth.outer && mouth.crossing && is(mouth, 0, 13.15, 0.1, "asphalt") && is(mouth, 0, 0.3, 0.1, "asphalt"),
+    "a side street opens the kerb into a mouth and the median into a crossing");
+  test.assert(!across.outer && across.crossing && is(across, 0, 0.3, 0.1, "asphalt") && is(across, 0, 14.2, 0.1, "walk"),
+    "across the avenue the median opens too, and the far kerb stays");
+  const end = renderer.avenueTile(avenueSnapshot, 10, 7);
+  const onward = renderer.avenueTile(avenueSnapshot, 3, 7);
+  test.assert(end.behind === 0 && is(end, 0, 8, -0.35, "walk") && is(end, 0, 8, -0.46, "verge") && is(end, 0, 0.3, -0.25, "asphalt"),
+    "with nothing beyond, the avenue ends at a kerb and the median stops short of it");
+  test.assert(onward.ahead === 1 && is(onward, 0, 8, 0.45, "asphalt"), "into another street the carriageway runs to the edge");
+  const deck = renderer.avenueTile(avenueSnapshot, 9, 8);
+  test.assert(deck.bridge && is(deck, 0, 15.2, 0.1, "parapet"), "on a bridge the verge is a parapet");
+  test.assert(renderer.avenueTile(avenueSnapshot, 12, 12) === null && renderer.avenueTile(avenueSnapshot, 2, 7) === null,
+    "a half its partner does not answer, and a plain street, are not avenue tiles");
+}
+
+// An avenue is one surface. Its halves may stand a level apart on a hill and
+// its land tiles meet a deck at the higher bank, yet each grid vertex an
+// avenue touches has one height for every half meeting there: the median
+// edge the halves share, the edge between one tile of a run and the next,
+// and the seam where the land meets the deck. Each half's pieces are planes
+// through its corners, so equal corners mean the median, the BRT lanes and
+// the lane lines run on without a break.
+{
+  const n = 16;
+  const hill = { size: n, tick: 0, seed: 1, rev: 1, timeOfDay: 0.5, alt: new Uint8Array(n * n), slope: new Uint8Array(n * n).fill(1), water: new Uint8Array(n * n), road: new Uint8Array(n * n), avenue: new Uint8Array(n * n) };
+  const pairs = [[7, 8], [12, 13]];
+  for (const [north, south] of pairs) for (let x = 2; x <= 12; x += 1) {
+    hill.road[north * n + x] = 1; hill.road[south * n + x] = 1;
+    hill.avenue[north * n + x] = 8; hill.avenue[south * n + x] = 2;
+  }
+  // Rows 7/8 climb a level, the south half a tile before the north one.
+  for (let x = 0; x < n; x += 1) { hill.alt[7 * n + x] = x >= 6 ? 1 : 0; hill.alt[8 * n + x] = x >= 5 ? 1 : 0; }
+  // Rows 12/13 cross a river from a bank at level 1 to one at level 2.
+  for (let x = 0; x < n; x += 1) for (const y of [12, 13]) {
+    if (x === 7 || x === 8) hill.water[y * n + x] = 1;
+    else hill.alt[y * n + x] = x <= 6 ? 1 : 2;
+  }
+  const corner = (x, y) => renderer.avenueTile(hill, x, y).worldCorners;
+  let shared = true;
+  for (const [north, south] of pairs) for (let x = 2; x <= 12; x += 1) {
+    const [, , nSE, nSW] = corner(x, north);
+    const [sNW, sNE] = corner(x, south);
+    shared &&= nSW === sNW && nSE === sNE;
+    if (x < 12) for (const y of [north, south]) {
+      const here = corner(x, y), next = corner(x + 1, y);
+      shared &&= here[1] === next[0] && here[2] === next[3];
+    }
+  }
+  test.assert(shared, "both halves share their median edge and every tile meets the next on one edge, on a hill and across a bridge");
+  test.assert(corner(4, 7)[2] === 1 && corner(4, 8)[1] === 1,
+    "where the south half climbs first, the north half's median corner rises with it instead of stepping");
+  const deck = renderer.avenueTile(hill, 7, 12);
+  const bank = renderer.avenueTile(hill, 6, 12);
+  test.assert(deck.bridge && deck.base === 2 && bank.base === 1 && bank.worldCorners[1] === 2 && bank.worldCorners[2] === 2 && corner(6, 13)[1] === 2,
+    "the last land tile before the deck rises to the deck's height at the seam");
+  let turned = true;
+  for (let rotation = 0; rotation < 4; rotation += 1) {
+    const tile = renderer.avenueTile(hill, 4, 7);
+    turned &&= tile.corners.every((value, i) => value === tile.worldCorners[(i - rotation + 4) % 4] - tile.base);
+    renderer.rotateBy(1);
+  }
+  test.assert(turned, "the shared corners turn with the camera onto the screen corners the surface is drawn from");
+  // And in pixels: where the halves climb a tile apart (x 4 and 5), each
+  // half's drawn tile puts its median on the ground the shared edge stands
+  // on, all along the edge. Both halves place the edge at the same
+  // screen height (the corners above), so the hedge runs on across them.
+  let hedge = true;
+  for (const x of [4, 5]) for (const y of [7, 8]) {
+    const tile = renderer.avenueTile(hill, x, y);
+    const [A, B, C, D] = tile.corners;
+    // Points 0.4 m inside this half from the centre line, along its run.
+    for (const along of [-0.35, -0.2, 0, 0.2, 0.35]) {
+      const L = { 8: [0, 1], 2: [0, -1] }[tile.dir];
+      const du = along, dv = L[1] * (0.5 - 0.4 / 16);
+      const s = du + 0.5, t = dv + 0.5;
+      const z = A * (1 - s) * (1 - t) + B * s * (1 - t) + C * s * t + D * (1 - s) * t;
+      const px = Math.floor((du - dv) * (math.TILE_W / 2) + tile.laid.anchorX);
+      const py = Math.floor((du + dv) * (math.TILE_H / 2) - z * math.HEIGHT_STEP + tile.laid.anchorY);
+      const k = (py * tile.laid.width + px) * 4;
+      // The hedge and the island's paving are each under a pixel wide at
+      // this scale; either is the median.
+      const got = [tile.laid.pixels[k], tile.laid.pixels[k + 1], tile.laid.pixels[k + 2]].join(",");
+      hedge &&= got === tile.paint.hedge.join(",") || got === tile.paint.walk.join(",");
+    }
+  }
+  test.assert(hedge && renderer.avenueTile(hill, 4, 7).laid.lift > 0, "each tilted half draws its median hedge on its shared edge, where the surface puts it");
+}
 
 renderer.dispose();
 const disposedStats = renderer.debugStats();
@@ -679,6 +827,33 @@ test.assertIncludes(canvasSource, "A ramp has two ends", "onramps pick orientati
   const flat = base();
   for (let x = 1; x < 7; x += 1) flat.road[3 * n + x] = 1;
   test.assert(count(drawn(flat), "clip") === count(drawn(base()), "clip"), "a road on level ground is drawn flat, as before");
+
+  // A power line that shares its tile with a street stands its pole on the
+  // kerb, not in the middle of the carriageway. Which atlas frame a tile drew
+  // is only visible in the source rectangle, which is why the fake context
+  // keeps one.
+  {
+    const frameRect = (name) => {
+      const frame = canvasContext.window.AISystem6BonsaiAtlas.frames[name];
+      return frame ? [frame.x, frame.y, frame.w, frame.h] : null;
+    };
+    const sourceRectsOf = (snapshot) => { drawn(snapshot); return created.flatMap((canvas) => canvas._context.sourceRects); };
+    const same = (list, rect) => list.some((entry) => rect && entry.every((value, k) => value === rect[k]));
+    const alongStreet = base();
+    for (let x = 2; x < 6; x += 1) { alongStreet.road[4 * n + x] = 1; alongStreet.wire[4 * n + x] = 1; }
+    const streetRects = sourceRectsOf(alongStreet);
+    test.assert(same(streetRects, frameRect("wire.side.mask-10")) && !same(streetRects, frameRect("wire.mask-10")),
+      "a power line along a street draws the kerbside frames, never the pole-in-the-road one");
+    const acrossField = base();
+    for (let x = 2; x < 6; x += 1) acrossField.wire[4 * n + x] = 1;
+    const fieldRects = sourceRectsOf(acrossField);
+    test.assert(same(fieldRects, frameRect("wire.mask-10")) && !same(fieldRects, frameRect("wire.side.mask-10")),
+      "a power line across open ground still stands its pole on the tile centre");
+    const acrossRail = base();
+    for (let x = 2; x < 6; x += 1) { acrossRail.rail[4 * n + x] = 1; acrossRail.wire[4 * n + x] = 1; }
+    test.assert(same(sourceRectsOf(acrossRail), frameRect("wire.side.mask-10")),
+      "and beside a railway it keeps to the kerb too");
+  }
 
   // Water pipes are buried: the daylight map does not draw them.
   const piped = base();

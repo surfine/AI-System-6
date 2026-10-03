@@ -204,12 +204,12 @@ for (const fenceTerm of ["storageRecordFingerprintCache", "DESK_RECORD_CONFLICT"
 // would only be single-line forwarding checks.
 test.assertIncludes(
   writingFlowSource,
-  "return applySectionDraftMarkdown(clean, { ai: true, statusKey });",
+  "return applySectionDraftMarkdown(clean, { ai: true, statusKey, targetSnapshot: target });",
   "confirmAndApplySectionDraft still forwards its own promise"
 );
 test.assertIncludes(
   read("app/features/outline-claim.js"),
-  'await applySectionDraftMarkdown(content, { append: true, ai: true, statusKey: "section_draft_suggested" });',
+  'await applySectionDraftMarkdown(content, { append: true, ai: true, statusKey: "section_draft_suggested", targetSnapshot });',
   "suggestDraft awaits the write-back instead of leaving it dangling"
 );
 

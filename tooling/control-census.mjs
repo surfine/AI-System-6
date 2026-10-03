@@ -618,6 +618,7 @@ async function main() {
     const results = [];
     let processed = 0;
     let reloadsObserved = 0;
+    const ACTION_BUDGET_MS = 45000;
     for (const norm of actionIds) {
       const entry = byAction.get(norm);
       const denylistReason = classifyDenylist(entry.rawSample);
@@ -625,6 +626,9 @@ async function main() {
         results.push({ action: norm, verdict: "not-exercised", cause: denylistReason, sites: entry.sites });
         continue;
       }
+      try {
+        await Promise.race([
+          (async () => {
       // A command that raises a dialog and waits is now scored on what
       // appeared rather than on its promise, so that dialog is still
       // standing when the next command is measured. Left up it makes the
@@ -693,6 +697,19 @@ async function main() {
           : { verdict: "dead", cause: "no-op" };
       }
       results.push({ action: norm, ...verdict, sites: entry.sites });
+          })(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("action-budget timeout")), ACTION_BUDGET_MS)),
+        ]);
+      } catch (error) {
+        const message = String(error && error.message || error);
+        results.push({
+          action: norm,
+          verdict: "dead",
+          cause: /action-budget/.test(message) ? "action-budget-timeout" : "probe-timeout-or-crash",
+          detail: message,
+          sites: entry.sites,
+        });
+      }
       processed += 1;
       if (processed % 40 === 0) console.log(`control-census: ${processed}/${actionIds.length}...`);
     }

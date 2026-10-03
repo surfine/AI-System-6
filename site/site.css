@@ -61,11 +61,18 @@
 :root {
   --face-classic: Chicago_12, Chicago, Geneva, Verdana, "Songti SC", STSong, SimSun, serif;
   --face-classic-title: Chicago, Geneva, Verdana, "Songti SC", STSong, SimSun, serif;
+  /* Specimen aliases. These eras share a page theme with a parent (eras.js
+     `page`), but each Appearances row has to wear its own face while the
+     rest of the page is standing in another year. */
+  --face-system-7: var(--face-classic);
   /* Noto Sans before Tahoma: fontconfig maps Tahoma and Verdana to DejaVu
      Sans, which is what Aqua gets, so Linux would show two eras in one face. */
   --face-platinum: Charcoal, "Charcoal CY", "Platinum Asap", Geneva, "Noto Sans", Tahoma, Verdana, "Songti SC", STSong, SimSun, sans-serif;
+  --face-drawing-board: var(--face-platinum);
   --face-aqua: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", "DejaVu Sans", STHeiti, "Heiti SC", SimHei, sans-serif;
+  --face-tiger: var(--face-aqua);
   --face-snow-leopard: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", "DejaVu Sans", STHeiti, "Heiti SC", SimHei, sans-serif;
+  --face-lion: var(--face-snow-leopard);
   --face-nextstep: Helvetica, Arial, "Liberation Sans", "PingFang SC", "Microsoft YaHei", sans-serif;
   --face-big-sur: var(--face-liquid-glass);
   --face-yosemite: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", "Hiragino Sans GB", "Heiti SC", STHeiti, SimHei, sans-serif;

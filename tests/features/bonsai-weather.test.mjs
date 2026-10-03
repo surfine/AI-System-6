@@ -26,9 +26,25 @@ for (let i = 0; i < 3000; i += 1) {
   test.assert(sim.WEATHER_TYPES.includes(w.type), `weather type is a known value (${w.type})`);
   test.assert(w.wind >= 2 && w.wind < 40, "wind is in a sane mph band");
   test.assert(w.humidity >= 20 && w.humidity < 90, "humidity is in a sane percent band");
-  test.assert(w.temperature >= -20 && w.temperature <= 44, "temperature is in a sane F band");
+  test.assert(Number.isInteger(w.temperature) && w.temperature >= -20 && w.temperature <= 40, "temperature is an integer in a sane °C band");
+  if (w.type === "snow" || w.type === "blizzard") test.assert(w.temperature <= 0, `snow never sits above freezing (${w.temperature} °C)`);
 }
 test.assert(seen.size >= 4, `over a year the weather varies (${seen.size} distinct types)`);
+
+// °C on one metric world (the Basin canon): across the year the warmest
+// months are summer ones, and the mean of July days beats January's.
+{
+  const TICKS_PER_MONTH = 5 * 25;
+  const meanFor = (month) => {
+    let total = 0; let count = 0;
+    for (let year = 0; year < 4; year += 1) for (let day = 0; day < 25; day += 1) {
+      total += sim.weatherOf({ ...city, tick: (year * 12 + month) * TICKS_PER_MONTH + day * 5 }).temperature; count += 1;
+    }
+    return total / count;
+  };
+  const january = meanFor(0); const july = meanFor(6);
+  test.assert(july > january + 10, `July is clearly warmer than January (${july.toFixed(1)} vs ${january.toFixed(1)} °C)`);
+}
 
 // The weather type is season-weighted: January never reads "hot".
 const jan = sim.weatherOf({ ...city, tick: 0 }); // founding day ~ Jan

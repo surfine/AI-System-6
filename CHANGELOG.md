@@ -1423,3 +1423,12 @@ landscape sweep) stay open and are tracked in the 1.0.52 closeout.
 - **The first time a plan opens on a project already under way, it asks once.** It lists the stops and sections the record already shows work at, ticked, and ticks exactly what you keep — or nothing. The answer is remembered either way.
 - **The disk's risk diamond reads dates now.** It marks a disk whose handoff is within a week or past while unticked, or whose dated task is overdue; only dates that mean one day are read, and anything else stays your words. The earlier "untouched for two weeks" rule is gone.
 - **The plan cost the boot floppy nothing net.** Its stylesheet moved to a lazy bundle and its menus arrive with the module.
+
+## Public Beta 1.0.56 - 2026-10-03
+
+- **Bonsai City, Rootline and Joyride now share one world: The Basin.** A shared core gives the three games the same city, calendar and names wherever a save is opened. Hezhou · 1952 is the worked example: a river town with a bridge, two rail stations, a level crossing and a subway, seeded once and read by all three.
+- **Rootline opens a real Bonsai City instead of its own round, and plans Metro, BRT and Bus together.** Switch mode from the bottom bar or press M; lay an avenue to run a BRT down its centre lane, spend a weekly avenue reward, and a leg with no bridge nearby still cannot cross the river.
+- **Joyride drives the city Rootline planned, not a private demo town.** A photo now stamps the pot's seal, district and date into the Picture Album, and the drive opens on the pot you last drove instead of starting over.
+- **Bonsai City's OSM import now carries the place's own street and station names into the save**, alongside the existing OpenStreetMap attribution and ODbL provenance.
+- **Cover Glass ships an Aqua recipe, with a reflection-mix rim and a small-size check, and a failed export now says so.** A 4× export no longer renders into a clamped drawing buffer, and with Post Blur on, the subject can sit entirely under the whole cover's water.
+- **Plaintext (明文), an original Chinese-language visual novel about a ghostwriter and a mapmaker, joins the Games folder**, with super-resolved background plates and final character portraits, loaded only when its window opens, with local saves. File, Story and Debug live in the menu bar; the window has no empty details bar.

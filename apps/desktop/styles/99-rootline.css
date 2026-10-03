@@ -99,6 +99,12 @@
   white-space: nowrap;
 }
 
+/* A pot on the planning table: its clock waits for the first line. */
+.rootline-city.is-planning {
+  font-weight: 400;
+  opacity: 0.75;
+}
+
 .rootline-score {
   display: flex;
   align-items: center;
@@ -124,6 +130,9 @@
   min-height: 0;
   overflow: hidden;
   background: var(--paper);
+  /* Its size comes from the pane's flex layout, never its content, so the
+     panels can ask how tall the map is (a phone on its side: ~220px). */
+  container: rootline-map / size;
 }
 
 .rootline-canvas {
@@ -174,7 +183,9 @@
   /* The waiting card follows the pointer; rootline.js writes both values. */
   left: var(--rootline-card-x, 0px);
   top: var(--rootline-card-y, 0px);
-  width: 196px;
+  /* Wide enough for "Make it an interchange (1 left)" inside an Aqua pill,
+     whose padding is the widest of the appearances. */
+  width: 220px;
   padding: 8px 10px;
   box-sizing: border-box;
   border: 1px solid var(--ink);
@@ -202,7 +213,9 @@
   flex: 1 1 auto;
 }
 
-.rootline-card-head .btn {
+/* Three classes: an appearance's own button minimum (Aqua's is 69px, written
+   as body[data-theme] .btn) must not widen the close box past the card. */
+.rootline-card .rootline-card-head .btn {
   min-width: 0;
   width: 26px;
   padding: 0;
@@ -241,6 +254,15 @@
   background: var(--paper);
   color: var(--ink);
   box-shadow: 3px 3px 0 var(--ink);
+  /* A drag that misses the map lands here; it should not select the text. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* The panel takes focus programmatically so Space stays the pause key; it is
+   not itself a control, so it draws no focus ring. Its buttons still do. */
+.rootline-panel:focus {
+  outline: none;
 }
 
 .rootline-panel h3 {
@@ -286,9 +308,11 @@
   flex: 1 1 0;
 }
 
+/* The chosen mode wears the appearance's own selection colours: black on
+   Classic, the system highlight where an appearance has one. */
 .rootline-modes .btn.is-chosen {
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--selection-bg, var(--ink));
+  color: var(--selection-fg, var(--paper));
 }
 
 .rootline-mode-note,
@@ -366,7 +390,39 @@
   margin-top: 12px;
 }
 
-/* ----- bottom bar: lines and stock ----- */
+/* ----- bottom bar: the mode picker, lines and stock ----- */
+
+/* The start panel's segmented choice, reused for metro / BRT / bus: each
+   segment wears the mode's badge, its name and what is left of it. */
+.rootline-transit {
+  flex: 0 0 auto;
+  gap: 4px;
+}
+
+.rootline-transit[hidden] {
+  display: none;
+}
+
+.rootline-transit .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  min-width: 0;
+  height: auto;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.rootline-transit-count {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+.rootline-transit .btn.is-chosen .rootline-transit-count {
+  opacity: 1;
+}
 
 .rootline-bottom {
   display: flex;
@@ -417,6 +473,17 @@
 .rootline-swatch {
   width: 34px;
   height: 14px;
+}
+
+/* Bus routes are numbers, not colours: 11-16 in ink. */
+.rootline-routes[hidden] {
+  display: none;
+}
+
+.rootline-route {
+  width: 30px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .rootline-slot-count {
@@ -479,11 +546,124 @@
   font-variant-numeric: tabular-nums;
 }
 
+.rootline-linebar-note {
+  flex: 1 0 100%;
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.rootline-card-kind {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+/* ----- File > Open Bonsai City…: the saved pots ----- */
+
+.rootline-pots {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 260px;
+  margin: 10px 0 4px;
+  overflow: auto;
+}
+
+.rootline-pot.btn {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  height: auto;
+  padding: 6px 10px;
+  text-align: left;
+  white-space: normal;
+}
+
+.rootline-pot span {
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
+.rootline-pots-note {
+  font-size: 12px;
+}
+
 .rootline-glyph {
   flex: none;
   /* The glyph's drawn size; rootline.js writes --rootline-glyph-size. */
   width: var(--rootline-glyph-size, 16px);
   height: var(--rootline-glyph-size, 16px);
+}
+
+/* A wide map docks the start panel on the left; the camera frames the city
+   in the space beside it (dockStartPanel in rootline.js). */
+@container (min-width: 720px) {
+  .rootline-overlay.is-start {
+    justify-content: flex-start;
+  }
+
+  .rootline-overlay.is-start .rootline-panel {
+    width: 360px;
+  }
+}
+
+/* A short map (a phone on its side) keeps the weekly choice and the score on
+   one screen: the panel tightens, the cards and stats spread sideways. */
+@container rootline-map (max-height: 300px) {
+  .rootline-overlay {
+    padding: 8px;
+  }
+
+  .rootline-panel {
+    padding: 10px 14px;
+  }
+
+  .rootline-panel h3 {
+    margin-bottom: 2px;
+    font-size: 16px;
+  }
+
+  .rootline-panel p {
+    margin: 2px 0;
+  }
+
+  .rootline-rewards {
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .rootline-reward.btn {
+    gap: 2px;
+    padding: 6px 8px;
+  }
+
+  .rootline-reward .rootline-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .rootline-stats {
+    grid-template-columns: repeat(2, auto 1fr);
+    margin: 6px 0;
+  }
+
+  .rootline-actions {
+    margin-top: 6px;
+  }
+
+  /* The start panel still scrolls here; its one action stays in view, with a
+     band of paper so the steps scrolling past do not show around the pill. */
+  .rootline-overlay.is-start .rootline-start {
+    position: sticky;
+    bottom: 0;
+  }
+
+  .rootline-overlay.is-start .rootline-start:not(:focus-visible) {
+    outline: 10px solid var(--paper);
+  }
 }
 
 /* A phone keeps every control; the bars fold onto more rows. */
@@ -502,7 +682,25 @@
     width: 38px;
   }
 
+  .rootline-route {
+    width: 28px;
+  }
+
   .rootline-stock {
     margin-left: 0;
+  }
+
+  /* The picker keeps its three segments on a phone; the counts step aside. */
+  .rootline-transit {
+    flex: 1 0 100%;
+  }
+
+  .rootline-transit .btn {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+
+  .rootline-transit-count {
+    display: none;
   }
 }

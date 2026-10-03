@@ -226,6 +226,13 @@ const userWindow = {
 };
 clampRuntime.clampWindowToViewport(userWindow);
 test.assert(viewportWrites === writesBeforeUserWindow, "viewport reconciliation never overwrites a user-positioned desktop frame");
+const fullScreenPage = {
+  dataset: { userPositioned: "false" },
+  classList: { contains: (name) => name === "is-mobile-fullscreen" },
+  getBoundingClientRect: () => ({ left: 0, right: 375, top: 44, bottom: 823, width: 375, height: 779 }),
+};
+clampRuntime.clampWindowToViewport(fullScreenPage);
+test.assert(viewportWrites === writesBeforeUserWindow, "a phone's full-screen page keeps the shell's CSS frame; the clamp writes no height into it");
 test.assertIncludes(
   windowManager,
   "writingLayoutWindowNames.has(name)",

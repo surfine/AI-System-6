@@ -982,6 +982,20 @@ window.AISystem6ProjectDiskBackup = (() => {
         importedAt: now,
       },
     };
+    // Citation numbers belong to this disk's history. Remap the live object
+    // keys, retaining deleted-source allocations so their S numbers are never
+    // reassigned to unrelated material after an import.
+    if (isPlainObject(importedProject.sourceRegistry?.allocations)) {
+      importedProject.sourceRegistry.allocations = Object.fromEntries(
+        Object.entries(importedProject.sourceRegistry.allocations).map(([key, citation]) => {
+          const separator = key.indexOf(":");
+          const type = key.slice(0, separator);
+          const mapped = separator > 0 && ["file", "scrap", "reference"].includes(type)
+            ? idMaps[type]?.get(key.slice(separator + 1)) : null;
+          return [mapped ? `${type}:${mapped}` : key, citation];
+        })
+      );
+    }
     // Quick Draft's durable linkage lives inside the project record; after
     // import it must point at the remapped Project document, or
     // "Continue in TeachText" would resolve a dead id.

@@ -7,6 +7,7 @@
 - **Save format:** `bonsai-city`
 - **Current format version:** 5
 - **Current engine save version:** 5
+- **Current ruleset version:** 6
 - **Supported map sizes:** 64×64, 96×96, and 128×128 (the SC2K-native size)
 
 The format name and version are pinned by the simulation core
@@ -31,6 +32,7 @@ Three numbers mean three different things and must never be conflated:
 | Field | Meaning |
 | --- | --- |
 | `format` / `version` | `bonsai-city` / 5 |
+| `rulesetVersion` | 6; a ruleset-5 payload loads and is restamped (see Migration policy) |
 | `name` | city name (display only, no translation) |
 | `seed` | initial integer seed |
 | `rngState` | current 32-bit PRNG state |
@@ -45,7 +47,9 @@ Three numbers mean three different things and must never be conflated:
 | `lot` | v5: the lot layer — 0 for no building, otherwise the anchor's index + 1 on every cell of a whole 1×1, 2×2 or 3×3 building; the anchor is the lot's smallest x, y |
 | `catalogId` | explicit XBLD-aligned tile id; 0 means "derive from sim state" — the carrier that lets imported `.sc2` buildings survive until the sim takes ownership of the tile |
 | `subway`, `waterLevel`, `salt`, `rotate`, `tunnel`, `waterKind` | v3 SC2K-model layers (underground, water table, salinity, footprint rotation, terrain tunnels, water classification) |
+| `avenue` | optional, ruleset 6: each avenue half's direction of travel (1 north, 2 east, 4 south, 8 west; 0 elsewhere), written only while at least one tile is non-zero |
 | `sc2Sidecar` | optional preservation side-table for an imported `.sc2` city (raw MISC bytes and unmodeled segments), or `null` |
+| `transitLines` | optional, ruleset 6: the lines the mayor actually laid (see below), written only while a city holds at least one of them |
 | `facilities` | power, water, transport, and public-service facilities; a record may carry its own `w`/`h` (save rule 3.1: a coal plant records the SC2K 4×4 pad, a record without one is an older 2×2 plant and keeps that size; domes and arcologies record the 4×4 their art shows, a record without one is an older 3×3 and keeps that size) |
 | `history` | bounded 120-month city history |
 | `view`, `budgetHistory`, `militaryBase` | v4 additions: the saved camera (`panX`/`panY`/`zoom`), the bounded month-by-month funding history, and the military-base lifecycle (0 none, 1 offered, 2 refused, 3 army, 4 air, 5 navy, 6 missile) |
@@ -58,6 +62,19 @@ history: the next pass uses the previous congestion, and development reads
 the last scheduled fields. Old v5 saves without this record rebuild once;
 subsequent saves preserve exact continuation. Present but malformed records
 are rejected, including wrong array lengths and out-of-range values.
+
+The optional `transitLines` sidecar (version 1) records the lines the mayor
+laid through the flip-the-pot flow: each line's plan id, its name in both
+languages, its colour (or, for a bus, its route number), its mode (`metro`,
+`brt`, or `bus`), its vehicle count, the tiles it runs on, the stations it
+keeps, and the tick it was laid. It is written only while at least one line
+stands, so a city without one serializes byte for byte as it did before the
+field existed and `SAVE_FORMAT_VERSION` stays 5. A sidecar never changes a
+city number; every line in it was laid by the mayor's own commands, and a
+city that carries it must hold what it names — rail or subway under every
+metro tile, road under every rubber-tyre tile, avenue under every BRT tile,
+the facility standing on every station, and a depot within reach of every
+rubber-tyre line (`pot-world lines.check`).
 
 Derived networks (`powered`, `watered`, road access, coverage), the `buildings` list, problem flags, population,
 jobs, demand, visual agents, and renderer caches are rebuilt on load and never
@@ -103,6 +120,29 @@ Rules:
   and everything else are kept as they were.
   The migrated city then grows under the new rules, so its population is
   recounted; nothing in the file is lost.
+- Ruleset 6 (the underwater subway, owner decision 2026-10-02) moved no
+  format version. An underwater subway is a `subway` tile on a `water`
+  tile, two layers v5 already stores, so the file gains nothing:
+  `migrateRulesetV5To6` restamps `rulesetVersion` from 5 to 6 in the
+  payload and in `engine`, and every other byte of the city stays as it
+  was. A build that predates ruleset 6 refuses a ruleset-6 save, as it
+  refuses any newer save.
+- Ruleset 6's avenue is the one optional field it brings, and it too moved
+  no format version: a build that predates ruleset 6 already refuses the
+  save rather than drop the avenue. `serialize` writes `avenue` only while
+  a tile is non-zero, so a city without one keeps its bytes and its
+  checkpoint, and no ruleset-5 city has one, so the 5→6 lift still changes
+  nothing else. On load a present layer must be the map's size or the save
+  is refused; values outside 0, 1, 2, 4, 8 are cleared, and so is a half
+  that is not on a road tile or whose partner (the tile on its driver's
+  left) does not hold the opposite direction. An avenue never survives as
+  a half. Both `.sc2` and Micropolis exports write the two halves as the
+  roads they are; neither format has an avenue, so the layer is not
+  carried. `exportSc2` still returns only the file bytes. `sc2LossReport`
+  lists what was left behind (the avenue, the transit sidecar, bus stops,
+  tiles outside the 128 window, facilities and records the file cannot
+  hold), and the shell shows that list as a notification after the file
+  is saved.
 
 ## Envelope
 
@@ -113,9 +153,9 @@ Rules:
   "format": "bonsai-city",
   "formatVersion": 5,
   "metadata": { "cityId": "…", "name": "…", "createdAt": "…", "updatedAt": "…" },
-  "engine": { "rulesetVersion": 5, "fixedTickHz": 20, "ticksPerDay": 5, "daysPerMonth": 25 },
+  "engine": { "rulesetVersion": 6, "fixedTickHz": 20, "ticksPerDay": 5, "daysPerMonth": 25 },
   "simulation": { "seed": "...", "rng": { "algorithm": "mulberry32-v1", "state": [0] } },
-  "payload": { "format": "bonsai-city", "version": 5, "…": "the v5 engine save" },
+  "payload": { "format": "bonsai-city", "version": 5, "rulesetVersion": 6, "…": "the v5 engine save" },
   "integrity": { "algorithm": "SHA-256", "canonicalization": "sorted-json-v1", "digest": "..." }
 }
 ```
@@ -128,7 +168,9 @@ zero-filled (with `waterKind` derived from `water`) and the default founding
 year 1900; v3 gains the saved camera, the funding history and the military-base
 lifecycle with safe defaults, and bumps `rulesetVersion` to 4; v4 gains the
 `lot` layer and the saved monthly environment through the grouping migration
-above, and bumps `rulesetVersion` to 5. Newer versions are rejected explicitly.
+above, and bumps `rulesetVersion` to 5; a format-v5 save written under
+ruleset 5 is restamped to ruleset 6 and is otherwise unchanged. Newer format
+or ruleset versions are rejected explicitly.
 Canonicalization is sorted keys, arrays in order, no whitespace — stable across
 Node and browsers so a checkpoint hash is portable.
 
@@ -243,4 +285,4 @@ Interop with files written by other programs is unverified by design: no
 city file of any origin is committed, and the contract's fixtures are
 engine-built.
 
-<!-- claim-check: apps/desktop/app/features/bonsai-city-sim.js (SAVE_VERSION = 4, ENGINE_RULESET_VERSION = 4, migrateEngineV3To4) | tests/features/city-simulator-foundation.test.mjs reads the constant instead of pinning a literal -->
+<!-- claim-check: apps/desktop/app/features/bonsai-city-sim.js (SAVE_VERSION = 5, SAVE_FORMAT_VERSION = 5, ENGINE_RULESET_VERSION = 6, migrateRulesetV5To6) | tests/features/city-simulator-foundation.test.mjs reads the constant instead of pinning a literal -->

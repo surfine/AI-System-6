@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: 1ea7783103f7cf384f0a0cab184306312d6c0284d30319988c9914f0df74097f -->
+<!-- source-sha256: 01e3af8c4b4cebf4bc6df0f92ce760da612d77f708dd0285a44de94f0b9fea93 -->
 
 > 英文版为准 / 仅供人类参考
 
@@ -44,7 +44,7 @@
 
 ## 目录
 
-- [1.0.55 有什么新东西](#1055-有什么新东西)
+- [1.0.56 有什么新东西](#1056-有什么新东西)
 - [它保护的是什么](#它保护的是什么)
 - [60 秒跑起来](#60-秒跑起来)
 - [路线就是产品](#路线就是产品)
@@ -60,7 +60,7 @@
 - [仓库是怎么摆的](#仓库是怎么摆的)
 - [参与贡献](#参与贡献)
 
-## 1.0.55 之后
+## 1.0.56 有什么新东西
 
 - **十二套外观。** System 7、Tiger 与 Lion 加入 1988–2026 这条线；没有发布过的
   Mac OS 8.5 主题 Drawing Board 与 NeXTSTEP 一起作为岔路。十二套都是「特别」菜单和
@@ -78,115 +78,31 @@
 - **Lion 的全屏箭头就是全屏。** 窗口占满屏幕，Dock 让开，菜单栏在屏幕顶端等着。
 - **写作流程贴合各自的时代。** NeXTSTEP 把它挂在主菜单下方，做成 3.3 的面板；
   Platinum 画成 Mac OS 9 的程序切换器；两者都能关闭，每个时代都能取回。
-- **兜风是盆景城市第一次落到街面上。** P0 里，你在一座确定性起步小镇里开车，
-  可以切换追尾、车内和头顶三个镜头。画面按 1996 年 Mac 的办法来画：640 × 480
-  的 256 色，或者带 Atkinson 抖动的紧凑黑白模式。键盘、触控油门与方向盘、游戏手柄
-  都在驱动同一份只读城市快照；这一局不会写回盆景城市的存档。
-- **根线是一整局 P1，不是一张交通图。** 画线、改线、加车和车厢、升级换乘站，
-  在每周奖励里做选择，早晚高峰会把客流方向调转。Classic 的 1-bit 和彩色外观、
-  触控手势、挤爆结局与无尽模式，共用同一个确定性的无头核心。
+- **盆景城市、根线与兜风现在共用一个世界：盆地。** 同一座城市、同一份日历、
+  同一批名字，无论在哪份存档里打开都一样。鹤洲 · 1952 就是那个做出来的例子——
+  一座带桥、两座火车站、一个平交道口和一条地铁的江边小镇——兜风开的就是它，
+  或者任何一份盆景城市存档，在街面高度上跑，而不是一座私有的演示小镇。
+- **根线把地铁、BRT 与巴士规划成同一部交通字典。** 在底栏切换模式，或者按 M；
+  铺一条大道，让 BRT 跑在它的中央车道上，花掉一份每周大道奖励，而一条附近没有桥
+  的线路仍然过不了江。站点、票价和花盆自己的日历，都来自盆景城市与兜风看到的那
+  同一座城市。
+- **兜风跑的是根线规划出来的线路。** 一张照片现在会把花盆的印章、城区和日期盖进
+  相册，而这次驾驶会从你上一次开的那只花盆开始，而不是从头再来。键盘、触控油门、
+  方向盘和游戏手柄驱动的都是同一份只读城市快照；这次驾驶永远不会写进盆景城市存档。
 - **盆景城市现在能把一块有边界的真实地方变成城市。** OSM 路径经服务器代理读取
-  地理编码区域，映射到同一套 16 米网格，还能选择地形高程和建筑轮廓。界面和导出物
-  都带 OpenStreetMap 署名与 ODbL 来源；高程或建筑层失败、缺失时，会明确显示缺失，
-  不会悄悄编造城市数据。
+  地理编码区域，映射到同一套 16 米网格，把这个地方自己的街道名和车站名带进存档，
+  还能选择地形高程和建筑轮廓。界面和导出物都带 OpenStreetMap 署名与 ODbL 来源；
+  高程或建筑层失败、缺失时，会明确显示缺失，不会悄悄编造城市数据。
+- **Cover Glass 多了一份 Aqua 配方，小尺寸封面在导出前先检查。** 配方里加入了一圈
+  反射混合描边和一次小尺寸检查，导出失败会明说出来，而不是一声不响。4× 导出不再
+  渲染进一个被钳住的绘图缓冲区，打开 Post Blur 时，主体可以整个沉在整张封面的水下。
+- **明文加入「游戏」文件夹。** 一部代笔人与海图师的中文原创视觉小说，现在有超分
+  背景板与最终角色立绘，只在它的窗口打开时加载，存档留在本机。文件、故事与调试
+  在菜单栏里；窗口不再带一条空的状态栏。
 - **Soundscape 可以把 Apple Music 链接带到你自己的 Mac。** 粘贴专辑、单曲或歌单链接，
   本机获取并缓存浏览器能播放的结果；有可选无损引擎且浏览器支持时优先无损，否则诚实
   退回 AAC。VPS 或 Pages 只经由 loopback 桥请求已经配对的 Mac，Apple 凭据与音频不会
   进入云端。
-
-## 1.0.55 有什么新东西
-
-另附 System 7、Drawing Board、Tiger 与 Lion 四套实验外观；常规外观当时仍为原来的八套。
-
-- **NeXTSTEP 成为第八套外观。** Mac OS X 的来处，按 3.3 版界面规范做：角落里的主菜单、
-  左侧滚动条、右侧 Dock，每个对象都有自己的图标。从 Special 菜单选它。
-- **Mac OS X 时代的 Finder 窗口有了工具栏，从 Snow Leopard 起还有边栏。**「个人收藏」与
-  「位置」在同一个窗口里导航；经典时代保持空间式 Finder，手机上每个时代都保留单栏。
-- **一份 deck 可以穿这张桌子的任何一种外观。** 讲演台多出四个互相独立的维度：
-  **时代主题**（桌面自己的八个外观，1988 到 2025）、**论证方式**（结论先行 / 故事线 /
-  教学 / 视觉主导 / 中性完备）、**页面版式**（十六种，从封面到对比矩阵），以及
-  **画布与阅读距离**（它决定这一页正文的字号下限）。每个时代都照那一年的演示软件来打扮页面，
-  从 1988 年的投影胶片外框，到 NeXTSTEP 的斜面面板与 Platinum 的红色楔形。生成前只问两件事——用途与阅读距离；
-  时代用你自己第一页的真实缩略图来选。**换时代主题**可以把整份 deck 换个时代而**正文一字不动**，
-  **Print PDF** 一页一张导出。
-- **交给 deck 的图现在随页面一起旅行。** ClioChart 把选定的投影画成一份自包含 SVG——
-  自带网点、标签、数值与"未测"说明，不引用任何外部资源——deck 页面把它当图片带着，
-  页内注释留着原表格。于是这页可以在 ClioChart 关掉之后照样保存、重开、打印与导出。
-- **配色工作台按产品实拍的打光来照配色。** iPhone 17 Pro / Max（一个条目、
-  两种姿态）、iPhone Air、iPhone 17e、MacBook Neo，以及可折叠的 iPhone Duo，
-  都在官方场景自己的环境光下渲染，逐部件配色，并可导出 USDZ 用于 AR。
-- **Duo 会折，样式也由你决定。** 连续转轴取代了姿态切换，内外屏图片分开保存，
-  原始壁纸一个按钮就能恢复，折叠视频在你的机器上渲染完成。
-- **每个应用只有一个地址。** `/go/cmf-studio`、`/go/bonsai-city`、`/go/doom`
-  等是把这个窗口交给别人的唯一方式；服务器上那些旧的裸目录由安装器自己退役。
-- **写完之后的作品以整块盘旅行，不是截图。** 三十六块演示盘，每一块都是完整的项目硬盘：问题单、大纲、分节草稿、正文、审校记录。每块都有一个地址 `/go/<route>`，打开即挂载，停在排好版的正文上；[`/go/disks`](https://system6.aaronlau.me/go/disks) 则打开启动磁盘上的**「演示用项目硬盘」文件夹**，停在最新一块。文件夹里的盘以器物命名；双击（或按空格）先打开只读的「现场」窗口，按路线列出作者在每一站留下的东西，默认显示正文，方向键逐块翻看。**「打开副本」**才在这台电脑上建一份可以改的副本，演示盘本身不变。打开文件夹只读一份 37KB 的清单，看某一块只下载那一块。加一块新盘＝在 `tooling/lib/project-disk-integrity.mjs` 登记（名字和成片月份），运行 `node tooling/build-shared-project-disks.mjs`，在三张 `LAUNCH_ROUTES` 表里加一条路由，`tests/features/launch-intent.test.mjs` 会盯着源盘和发布出去的副本保持一致。
-
-  <img src="docs/images/demo-disks.webp" alt="「演示用项目硬盘」文件夹选中 iPad Pro 9.7，右边是它的只读窗口：左栏列出问题单、大纲、正文、审校台，右侧是排好版的正文；最右是同一个窗口在手机上的样子。">
-
-  <details>
-  <summary>全部三十六块，新的在前</summary>
-
-  | 盘 | 文章 | 成片 |
-  | --- | --- | --- |
-  | [iPad Pro 9.7](https://system6.aaronlau.me/go/ipad97) | iPad Pro 9.7：叛逆的另一种尺寸 | 2026/07 |
-  | [iPhone 17e](https://system6.aaronlau.me/go/iphone17e) | iPhone 17e 浅粉色：其貌不扬，但很有料 | 2026/06 |
-  | [初代 iPad](https://system6.aaronlau.me/go/ipad1) | 初代 iPad 为什么只有 256MB 内存 | 2026/06 |
-  | [M5 iPad Pro](https://system6.aaronlau.me/go/m5ipad) | 杀掉那个键盘 | 2026/05 |
-  | [M5 MacBook Air](https://system6.aaronlau.me/go/m5mba) | M5 MacBook Air：这一次的牙膏，挤在硬盘上 | 2026/03 |
-  | [MacBook Neo](https://system6.aaronlau.me/go/mbneo) | MacBook Neo：苹果把 iPhone 芯片放进 Mac 的那一天 | 2026/03 |
-  | [Mac Pro 2019](https://system6.aaronlau.me/go/macpro19) | 大学时的白月光 · Mac Pro (2019) | 2026/03 |
-  | [Magic Keyboard](https://system6.aaronlau.me/go/mkb) | Magic Keyboard (USB-C)：确定性也是一种硬件规格 | 2026/01 |
-  | [Studio Display](https://system6.aaronlau.me/go/sd) | Studio Display：买断一份安心 | 2026/01 |
-  | [透明 Air 工程机](https://system6.aaronlau.me/go/airtrans) | 透明探索版 Air：透明不是配色，是工作方法 | 2025/12 |
-  | [iPad mini A17 Pro](https://system6.aaronlau.me/go/mini7) | iPad mini (A17 Pro)：每天跟着你出门的那一台 | 2025/12 |
-  | [iPhone 4S 展示机](https://system6.aaronlau.me/go/ip4sdemo) | iPhone 4S Demo：回到过去的钥匙 | 2025/12 |
-  | [iPhone Pocket](https://system6.aaronlau.me/go/pocket) | 当 iPhone 穿上三宅一生：一块布，一个口袋，你就是独一无二的你 | 2025/11 |
-  | [CDMA iPhone 4](https://system6.aaronlau.me/go/cdma4) | CDMA 版 iPhone 4：最早的「国行 eSIM」iPhone | 2025/10 |
-  | [iPhone 17 Pro Max](https://system6.aaronlau.me/go/pm17) | 形式追随功能的一代 · iPhone 17 Pro Max | 2025/10 |
-  | [MagSafe 电池 · Air](https://system6.aaronlau.me/go/airbattery) | iPhone Air 专用 MagSafe 电池：三代电池，改的是谁给谁充 | 2025/10 |
-  | [iPhone 17](https://system6.aaronlau.me/go/iphone17) | iPhone 17 标准版：诚意不是心情，是价格行为 | 2025/10 |
-  | [iPhone Air](https://system6.aaronlau.me/go/airact) | iPhone Air：165 克本该是正常手机的重量 | 2025/09 |
-  | [MagSafe 皮革保护套](https://system6.aaronlau.me/go/sleeve) | MagSafe 皮革保护套：苹果是怎么看待手机依赖的？ | 2025/09 |
-  | [iPhone 12 Pro Max](https://system6.aaronlau.me/go/pm12) | iPhone 12 Pro Max：开箱一台未激活的，还有苹果最奇葩的手机壳 | 2025/09 |
-  | [无接口 Apple Watch](https://system6.aaronlau.me/go/noport) | 无接口 Apple Watch：先有安全网，才敢拆掉那个口 | 2025/08 |
-  | [iPhone 6s Plus](https://system6.aaronlau.me/go/iphone6sp) | 还有人记得 3D Touch 吗 · iPhone 6s Plus | 2025/08 |
-  | [touch 2 工程板](https://system6.aaronlau.me/go/touch2) | touch 2 工程板：一块不是设备的设备 | 2025/08 |
-  | [iPhone 11 Pro Max](https://system6.aaronlau.me/go/pm11) | iPhone 11 Pro Max：我觉得最丑的一代 iPhone | 2025/08 |
-  | [陶瓷 Apple Watch](https://system6.aaronlau.me/go/ceramic) | 陶瓷 Apple Watch：我的白月光 | 2025/07 |
-  | [Project Sympathy](https://system6.aaronlau.me/go/sympathy) | Project Sympathy：iPod 消失了，音乐没有 | 2025/07 |
-  | [MagSafe 废案](https://system6.aaronlau.me/go/mgscrap) | MagSafe 废案：苹果怎么对待失败的作品 | 2025/06 |
-  | [iPhone 16 工程机](https://system6.aaronlau.me/go/ip16p) | iPhone 16 工程机：竟然有未来产品的细节？ | 2025/06 |
-  | [iPad Air 4 工程机](https://system6.aaronlau.me/go/ipada4) | iPad Air 4 工程机：挖挖苹果内部的工程系统 | 2025/05 |
-  | [DTK 过渡机](https://system6.aaronlau.me/go/dtk) | 未来通车之后 | 2024/12 |
-  | [WindowShade](https://system6.aaronlau.me/go/windowshade) | 收起窗口，留下位置：一个比 Mac 还老的双击 | — |
-  | [iPad Pro 2018](https://system6.aaronlau.me/go/ipadpro18) | A12X，桌面级性能的预演 | — |
-  | [Project Bongo](https://system6.aaronlau.me/go/bongo) | 走向一整块玻璃：从 Project Bongo 看 iPhone 的终极演进 | — |
-  | [Liquid Glass](https://system6.aaronlau.me/go/glass) | 玻璃与他们的产地 | — |
-  | [WWDC2099](https://system6.aaronlau.me/go/ios19) | WWDC2099：苹果最诚实的标签 | — |
-  | [T2 网卡](https://system6.aaronlau.me/go/t2nic) | Apple T2 网卡：一块卡上的两台设备 | — |
-
-  </details>
-- **公网可以接待一位访客。** 打开访客桥之后，另一个 agent 可以经由指名你这张
-  桌面的邀请，从互联网连上来；工具契约、权限和在审校台等待你确认的方式，
-  与你在 Mac 上使用时完全一致。
-- **把散步带回书桌。** 钟点稿可以接收粘贴的逐字稿，找出口述「标记」前的原话，
-  确认后放进文件软盘。原话保持完整，不会自动插入正文。
-- **资料工具相互衔接。** Reader 保留阅读进度，Scrapbook 把选择和编辑分开，
-  DocMap 可以先选一枝再提问；Searcher 支持键盘选择，Time Machine 把存档控件留在页面旁。
-- **One More Tune：一个关于苹果广告音乐的问答游戏。** 每一题都会自己出声，
-  因为声音本身就是题目。答完，揭晓会打开原片——在它自己的窗口里，居中放在
-  桌面上——并且让整张桌面换成这张卡所属的时代，随后把你的外观还给你。声音
-  用的是商店试听；网络到不了商店时，由这张桌面自己的主机转发同一个文件，所以
-  任何地方都能靠耳朵玩。白标唱片和十个曲目位置把手机上的一局放在一屏内；
-  继续存下的一局时，十道题和上次的位置会一起回来。
-  第二种玩法「接棒」问的是另一件事：这一棒由谁接手——每轮六条主讲人线索，
-  每开一条扣一分，答案留在服务器上，直到你作答。第三种玩法「下一幕」问的
-  是台词当时在做什么、接着进入哪一章：一轮十道纯文字题，完全不播声音，每题
-  答后打开解释和它依据的文字稿位置——包括同一句话有两种已核对用法的时候，
-  前一道的说明不会顺手把后一道的答案送出去。接棒与下一幕里的 41 道苹果历史题
-  都放回所引页面核对过，经三轮作者审阅后才进入轮换。
-
-每个测试版都有自己的[发布说明](https://github.com/surfine/AI-System-6/releases)。
 
 ## 它保护的是什么
 
@@ -240,6 +156,8 @@ npm run verify:public    # 仓库、命令、资源与文档门禁
 ```
 
 这个仓库里其他所有东西，都是你召唤到这条路线上的工具。
+
+写作流程接受自由笔记，把 AI 生成大纲与起草放在编辑器旁，章节可以直接跳转。文章显示字数，口播稿另外显示预计时长；窄窗口里，下一步单独占一行。审校台可以直接返回全文编辑，并明确标出保存到项目光盘。正文保存成功才进入审校；保存期间切换文稿，也不会把旧稿写进新标签。
 
 | 站点 | 它装着什么 |
 | --- | --- |
@@ -360,13 +278,14 @@ flowchart LR
 
 ## 它还能跑 DOOM
 
-六个游戏装在这台桌面上，各有各的窗口，就在你刚才写的稿子旁边：三款开源经典、盆景城市，以及两款共享城市边界的原创游戏。
+七个游戏装在这台桌面上，各有各的窗口，就在你刚才写的稿子旁边：三款开源经典、盆景城市、两款共享城市边界的原创游戏，以及中文视觉小说《明文》。
 
 | 游戏 | 它是什么 |
 | --- | --- |
 | **Micropolis** | 初代 SimCity 的开源发行版 |
 | **OpenTTD** | 开源版《运输大亨豪华版》，中文，带触控操作 |
 | **DOOM** | DOOM |
+| **明文** | 代笔人与海图师的中文原创视觉小说；打开窗口时加载，存档留在本机 |
 | **盆景城市** | 我们自己做的城市建造游戏：64²、96²、128² 地图，参与城市发展的交通与公共服务，本地存档，以及昼夜变化的 3D 城市 |
 | **根线** | 确定性的公共交通一局：画线、在高峰里运送乘客、挑每周奖励，在挤爆倒计时前撑住，或切到无尽模式慢慢修 |
 | **兜风** | 1996 年风格的街面驾驶，在盆景起步小镇里开车，支持彩色或黑白画面，以及键盘、触控和游戏手柄 |
@@ -421,10 +340,12 @@ System 6.0.8 资源和实际观察到的 Macintosh 行为出发；后面几个�
 
 </div>
 
+写作运行层独立处理作者、接收者、文体和媒介，共享研究并保留亲历归属，分别处理专栏文章与口播视频，重试保留明确作者锁，每次结果绑定各自的来源与提示词快照。外部评阅等待作者采纳，隐含修复也计入同一任务的有限调用预算。行为验收和证据边界见写作工程实施记录。
+
 ## 在一个 1988 年的约束下建造
 
 ```text
-启动关键载荷            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,727,636 字节
+启动关键载荷            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,776,060 字节
 两张 1.44 MB 软盘       ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 字节
 重型工具                按需懒加载，从第三张盘上来
 ```
@@ -483,6 +404,12 @@ AI-System-6/
 
 这些是归属边界，不是好看的文件夹：有一个布局测试会在退役的根目录副本和兼容软链接
 回来之前就把它们拒掉。
+
+三十六块演示用项目硬盘是一份登记表，不是三十六个各写各的文件：要加第三十七块，
+就登记进 `tooling/build-shared-project-disks.mjs`；
+登记表、Finder 里那一行和官网场景不一致时，守门的是
+`tests/features/launch-intent.test.mjs`
+和演示盘面板的契约测试。
 
 请阅读[架构](docs/ARCHITECTURE.md)、[开发](docs/DEVELOPMENT.md)
 和[设计契约](docs/design/DESIGN.md)。

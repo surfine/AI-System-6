@@ -4066,8 +4066,6 @@ body[data-theme="liquid-glass"] .docmap-command-popover {
 body[data-theme="liquid-glass"] .question-sheet-window .teachtext-command-popover,
 body[data-theme="liquid-glass"] .outline-window .teachtext-command-popover,
 body[data-theme="liquid-glass"] .section-drafts-window .teachtext-command-popover {
-  left: 0;
-  right: auto;
   width: max-content;
   min-width: 184px;
   max-width: min(280px, calc(100vw - 48px));
@@ -4172,7 +4170,6 @@ html:lang(zh-Hans) body[data-theme="liquid-glass"] .section-drafts-window .speci
 }
 
 body[data-theme="liquid-glass"] .review-desk-actions .specialized-command-menu .teachtext-command-popover {
-  right: auto;
   width: min(300px, calc(100vw - 56px));
   min-width: 220px;
   max-height: min(330px, calc(100vh - 190px));

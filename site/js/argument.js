@@ -21,10 +21,14 @@ const doc = document;
 // set Terminal in Ohlfs, which nobody ships; Courier is the nearest face.
 const MONO = {
   classic: "monaco",
+  "system-7": "monaco",
   nextstep: "courier",
   platinum: "monaco",
+  "drawing-board": "monaco",
   aqua: "monaco",
+  tiger: "monaco",
   "snow-leopard": "menlo",
+  lion: "menlo",
   yosemite: "menlo",
   "big-sur": "sf",
   "liquid-glass": "sf",

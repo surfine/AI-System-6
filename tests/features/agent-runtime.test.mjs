@@ -261,7 +261,7 @@ test.assertMatches(
   "all legacy sendToLmStudio callers enter the Writing Agent coordinator"
 );
 test.assertIncludes(chatMessages, "retryOf: record.id", "explicit retries retain source-message lineage");
-test.assertIncludes(chatMessages, "agentRun: window.lastWritingAgentRun", "preflight and failed runs enter the durable run manifest");
+test.assertIncludes(chatMessages, "agentRun: options.invocation?.runManifest?.agentRun", "preflight and failed runs enter the durable run manifest");
 test.assertIncludes(coordinatorSource, 'const effect = "proposal";', "browser preflight fixes model output to proposal effect");
 test.assertIncludes(coordinatorSource, 'allowedEffects: ["read", "proposal"]', "browser coordinator never grants model commit capability");
 test.assertIncludes(coordinatorSource, "writingAgentEvidenceSnapshot", "coordinator records a normalized evidence packet");

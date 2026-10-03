@@ -365,8 +365,15 @@
     drag: 0.0028 / METRE,
     gravity: 18 * METRE,
     maxSteer: 0.62,
-    fastSteer: 0.14,
+    fastSteer: 0.12,
     steerRate: 3.2,
+    // Tyres: the most sideways acceleration they hold (about 2 g, an
+    // arcade car's grip). A turn that asks for more slides; the handbrake
+    // lets go of most of it and swings the tail.
+    grip: 20 * METRE,
+    handbrakeGrip: 0.22,
+    handbrakeYaw: 1.5,
+    handbrakeDrag: 9 * METRE,
   });
 
   // Sample points over the car's footprint, in its own frame (nose +x).
@@ -378,7 +385,7 @@
     return {
       x: spawn.x, z: spawn.z, y: spawn.y,
       heading: spawn.heading || 0,
-      speed: 0, steer: 0, vy: 0,
+      speed: 0, slip: 0, steer: 0, vy: 0, damage: 0,
       pitch: 0, roll: 0,
       grounded: true, bumped: 0, tick: 0,
     };
@@ -403,7 +410,53 @@
     const tilt = world.step * 3;
     const blocked = points.map(([px, pz], i) => supports[i] === -Infinity
       || blockedAt(world, px, pz, supports[i] >= body - tilt ? supports[i] : body));
+    // Other vehicles (P1 traffic): a pose overlapping one is refused, and
+    // the one met is remembered for whoever asked.
+    const other = touching(x, z, heading, body, world.layer);
+    if (other !== null) {
+      blocked[0] = true;
+      contactId = other;
+    }
     return { rest, body, points, supports, blocked };
+  }
+
+  // --- other vehicles -------------------------------------------------------------
+  //
+  // The traffic around the car, as boxes: { id, x, z, y, heading, halfLength,
+  // halfWidth }. stepCar takes them for the length of one step; a box is
+  // solid to the car like a wall, and the step reports which one it met.
+  let obstacles = null;
+  let contactId = null;
+
+  function overlapOnAxis(ax, az, a, b) {
+    const project = (box) => {
+      const c = Math.cos(box.heading), s = Math.sin(box.heading);
+      const centre = box.x * ax + box.z * az;
+      const radius = Math.abs((c * ax + s * az) * box.halfLength) + Math.abs((-s * ax + c * az) * box.halfWidth);
+      return [centre - radius, centre + radius];
+    };
+    const [a0, a1] = project(a);
+    const [b0, b1] = project(b);
+    return a0 < b1 && b0 < a1;
+  }
+
+  // Separating axes for two boxes on the ground plane.
+  function boxesOverlap(a, b) {
+    for (const box of [a, b]) {
+      const c = Math.cos(box.heading), s = Math.sin(box.heading);
+      if (!overlapOnAxis(c, s, a, b) || !overlapOnAxis(-s, c, a, b)) return false;
+    }
+    return true;
+  }
+
+  function touching(x, z, heading, y, layer) {
+    if (!obstacles || !obstacles.length) return null;
+    const self = { x, z, heading, halfLength: CAR.halfLength, halfWidth: CAR.halfWidth };
+    for (const other of obstacles) {
+      if (Number.isFinite(other.y) && Math.abs(other.y - y) > layer * 2.5) continue;
+      if (boxesOverlap(self, other)) return other.id;
+    }
+    return null;
   }
 
   function restingHeight(world, car, x, z, heading) {
@@ -434,10 +487,24 @@
   }
 
   // input: { throttle 0..1, brake 0..1, steer -1..1 (right positive) }.
-  function stepCar(car, input, world) {
-    const throttle = clamp(Number(input?.throttle) || 0, 0, 1);
+  function stepCar(car, input, world, others = null) {
+    obstacles = Array.isArray(others) ? others : null;
+    contactId = null;
+    try {
+      return stepCarInWorld(car, input, world);
+    } finally {
+      car.contact = contactId;
+      obstacles = null;
+    }
+  }
+
+  function stepCarInWorld(car, input, world) {
+    // A wrecked car's engine is dead: no throttle until it is towed.
+    const throttle = (car.damage || 0) >= 100 ? 0 : clamp(Number(input?.throttle) || 0, 0, 1);
     const brake = clamp(Number(input?.brake) || 0, 0, 1);
     const steerInput = clamp(Number(input?.steer) || 0, -1, 1);
+    const handbrake = clamp(Number(input?.handbrake) || 0, 0, 1);
+    if (!Number.isFinite(car.slip)) car.slip = 0;
     car.tick += 1;
     car.bumped = Math.max(0, car.bumped - 1);
 
@@ -453,6 +520,8 @@
     if (throttle > 0) accel += car.speed < 0 ? CAR.brake * throttle : CAR.engine * throttle * (1 - clamp(car.speed / CAR.topSpeed, 0, 1));
     if (brake > 0) accel -= car.speed > 0.4 * METRE ? CAR.brake * brake : CAR.engine * 0.6 * brake * (1 - clamp(-car.speed / CAR.reverseSpeed, 0, 1));
     if (car.grounded) accel -= CAR.gravity * Math.sin(car.pitch);
+    // The handbrake locks the rear wheels: it slows the car, gently.
+    if (handbrake > 0 && car.grounded) accel -= Math.sign(car.speed) * CAR.handbrakeDrag * handbrake;
     let speed = car.speed + accel * DT;
     // Rolling resistance and drag pull toward a standstill, never past it.
     const fade = (CAR.rolling + CAR.drag * speed * speed) * DT;
@@ -460,12 +529,37 @@
     car.speed = clamp(speed, -CAR.reverseSpeed, CAR.topSpeed);
 
     // Turning never swings the body into a wall: a turn that would is held.
+    // The body turns at the bicycle-model rate; the car's motion keeps its
+    // old direction and the tyres pull it round, up to their grip. Below the
+    // grip that is the same path as before; above it the car slides wide,
+    // and with the handbrake the tail comes round.
+    const before = car.heading;
     if (car.grounded && car.speed !== 0) {
-      const heading = car.heading + (car.speed / CAR.wheelbase) * Math.tan(car.steer) * DT;
+      const yawBoost = handbrake > 0 && Math.abs(car.speed) > 6 * METRE ? 1 + (CAR.handbrakeYaw - 1) * handbrake : 1;
+      let yaw = (car.speed / CAR.wheelbase) * Math.tan(car.steer) * yawBoost;
+      // Without the handbrake the body turns at most a little faster than
+      // the tyres can bend the path, so a car at its limit drifts wide in a
+      // controlled slide instead of spinning; the handbrake lifts the cap.
+      if (handbrake <= 0) {
+        const cap = (CAR.grip * 1.15) / Math.max(Math.abs(car.speed), METRE);
+        yaw = clamp(yaw, -cap, cap);
+      }
+      const heading = car.heading + yaw * DT;
       if (restingHeight(world, car, car.x, car.z, heading) !== null) car.heading = heading;
     }
-    const dx = Math.cos(car.heading) * car.speed * DT;
-    const dz = Math.sin(car.heading) * car.speed * DT;
+    if (car.heading !== before || car.slip !== 0) {
+      // The velocity, unchanged by the turn, in the new heading's frame.
+      const turn = car.heading - before;
+      const forward = car.speed * Math.cos(turn) + car.slip * Math.sin(turn);
+      let side = -car.speed * Math.sin(turn) + car.slip * Math.cos(turn);
+      const hold = (car.grounded ? CAR.grip : 0) * (handbrake > 0 ? 1 - (1 - CAR.handbrakeGrip) * handbrake : 1) * DT;
+      side = Math.abs(side) <= hold ? 0 : side - Math.sign(side) * hold;
+      car.speed = clamp(forward, -CAR.reverseSpeed, CAR.topSpeed);
+      car.slip = side;
+    }
+    const lateralX = -Math.sin(car.heading), lateralZ = Math.cos(car.heading);
+    const dx = (Math.cos(car.heading) * car.speed + lateralX * car.slip) * DT;
+    const dz = (Math.sin(car.heading) * car.speed + lateralZ * car.slip) * DT;
 
     // Move; on a hit try each axis alone (scraping along a wall), else stop.
     let rest = restingHeight(world, car, car.x + dx, car.z + dz, car.heading);
@@ -478,15 +572,24 @@
       if (alongX !== null && Math.abs(dx) > 1e-9) {
         car.x += dx;
         rest = alongX;
+        if (Math.abs(car.speed) / METRE > 8) car.damage = Math.min(100, (car.damage || 0) + (Math.abs(car.speed) / METRE - 8) * 0.12);
         car.speed *= 0.82;
+        car.slip *= 0.5;
       } else if (alongZ !== null && Math.abs(dz) > 1e-9) {
         car.z += dz;
         rest = alongZ;
+        if (Math.abs(car.speed) / METRE > 8) car.damage = Math.min(100, (car.damage || 0) + (Math.abs(car.speed) / METRE - 8) * 0.12);
         car.speed *= 0.82;
+        car.slip *= 0.5;
       } else {
         rest = restingHeight(world, car, car.x, car.z, car.heading);
-        if (Math.abs(car.speed) > 2 * METRE) car.bumped = 12;
+        const impact = Math.hypot(car.speed, car.slip) / METRE;
+        if (impact > 2) car.bumped = 12;
+        // Damage (spec §3.4): a hit above walking pace dents the car, more
+        // the harder it is; at 100 the engine dies.
+        if (impact > 3) car.damage = Math.min(100, (car.damage || 0) + (impact - 3) * 2.2);
         car.speed = 0;
+        car.slip = 0;
       }
       if (rest === null) rest = car.y;
     }
@@ -540,7 +643,7 @@
 
   function carDigest(hash, car) {
     const round = (v) => Math.round(v * 1e6);
-    return fnv(hash, `${round(car.x)},${round(car.z)},${round(car.y)},${round(car.heading)},${round(car.speed)}`);
+    return fnv(hash, `${round(car.x)},${round(car.z)},${round(car.y)},${round(car.heading)},${round(car.speed)},${round(car.slip || 0)}`);
   }
 
   // A run from a seed and an input list: the seed picks the spawn and the
@@ -559,68 +662,368 @@
     return { car, paint, digest: hash.toString(16).padStart(8, "0") };
   }
 
-  // --- the demonstration city ---------------------------------------------------------
+  // --- a drivable carriageway ---------------------------------------------------
+  //
+  // Bonsai City lays a road on a slope tile in blocks that lean with the
+  // wedge triangle under each block's centre. Where the slope runs across the
+  // road (a higher neighbour beside it, not ahead), the blocks disagree: a
+  // kerb of one to three layers opens at a tile seam, or a ridge runs
+  // diagonally across the carriageway where the wedge's two triangles meet.
+  // From the street either one is a wall in the road. Joyride fills the low
+  // side: every metre of carriageway is raised, never lowered, until no
+  // neighbour stands more than half a layer per metre above it. The fill is
+  // drawn by the street renderer and rasterized into the collision world, so
+  // the car still meets exactly what is on screen; the Bonsai City views are
+  // unchanged.
 
-  // Starter Town as Bonsai City's example replays it, plus five roads laid
-  // after the replay: a 21-tile bridge across the lake east of the grid, the
-  // far shore, a road back along the south, and a climb over the hill to the
-  // south-west. The roads are ordinary build-path commands the simulation
-  // accepts and costs; nothing about the city is edited by hand.
-  const DEMO_CITY = Object.freeze({
-    id: "joyride-demo",
-    base: "starter-town",
-    roads: Object.freeze([
-      Object.freeze({ id: "bridge", points: Object.freeze([{ x: 35, y: 28 }, { x: 60, y: 28 }]) }),
-      Object.freeze({ id: "far-shore", points: Object.freeze([{ x: 60, y: 28 }, { x: 60, y: 38 }]) }),
-      Object.freeze({ id: "south", points: Object.freeze([{ x: 60, y: 38 }, { x: 31, y: 38 }]) }),
-      Object.freeze({ id: "back", points: Object.freeze([{ x: 31, y: 38 }, { x: 31, y: 35 }]) }),
-      Object.freeze({ id: "hill", points: Object.freeze([{ x: 21, y: 35 }, { x: 21, y: 58 }]) }),
-    ]),
-    // Where the car can start: straight stretches of road without the power
-    // line (Bonsai City plants its poles on the road's centre line), facing
-    // along the road and parked in the right-hand lane.
-    spawns: Object.freeze([
-      Object.freeze({ tileX: 18, tileY: 25, heading: 0 }),
-      Object.freeze({ tileX: 25, tileY: 32, heading: Math.PI }),
-      Object.freeze({ tileX: 17, tileY: 21, heading: 0 }),
-      Object.freeze({ tileX: 44, tileY: 28, heading: 0 }),
-      Object.freeze({ tileX: 45, tileY: 38, heading: Math.PI }),
-    ]),
-  });
+  const CARRIAGEWAY_HALF_WIDTH = 5;   // metres either side of the centre line
+  const FILL_RISE_PER_METRE = 0.5;    // voxel layers
+  // A road step is at most one terrain level (four layers); anything taller
+  // standing in the carriageway is a thing on the road (a pole), not road.
+  const FILL_MAX_RISE = 4.5;
 
-  // Builds the city in memory from the simulation's own replay. Returns the
-  // simulation state; the caller reads it through buildRenderSnapshot only.
-  function buildDemoCity(sim, recipe = DEMO_CITY) {
-    const state = sim.replayExampleCity(recipe.base);
-    recipe.roads.forEach((road) => {
-      const result = sim.submitCommand(state, {
-        schemaVersion: 2,
-        type: "build-path",
-        payload: { network: "road", points: road.points.map((point) => ({ ...point })) },
-        targetTick: state.tick,
-        clientCommandId: `${recipe.id}-${road.id}`,
-      });
-      if (!result || !result.accepted) throw new Error(`joyride-demo-road:${road.id}:${result && result.code}`);
+  // The surface a car drives on in a column: a deck over water (a bridge),
+  // or a deck the car could not fit under (a road block hovering over its
+  // wedge); otherwise the ground. A deck with a car's height of air beneath
+  // it (a cable, a crossbar) is overhead, not road.
+  function roadSurface(world, x, z) {
+    const cell = cellAt(world, x, z);
+    if (cell < 0) return null;
+    const ground = world.ground[cell];
+    const deck = world.deckTop[cell];
+    if (deck !== -Infinity && (world.water[cell] !== -Infinity || world.deckBottom[cell] - ground < world.carHeight)) return Math.max(ground, deck);
+    return ground === -Infinity ? null : ground;
+  }
+
+  // The cells of the carriageway: within five metres of a road's centre
+  // line, on the halves of each tile a road arm runs through (past the end
+  // of a T the far half is kerb and verge).
+  function carriagewayCells(world, snapshot) {
+    const size = Number(snapshot.size) || 0;
+    const road = (x, y) => x >= 0 && y >= 0 && x < size && y < size
+      && Boolean(snapshot.road?.[y * size + x] || snapshot.onramp?.[y * size + x]);
+    const cells = new Set();
+    const side = world.side;
+    const n = world.cells;
+    // An avenue half is carriageway from the median out to the kerb, five
+    // metres past its centre line, the whole length of the tile.
+    const avenue = avenueLayer(snapshot);
+    for (let y = 0; y < size; y += 1) {
+      for (let x = 0; x < size; x += 1) {
+        if (!road(x, y)) continue;
+        const dir = avenue?.[y * size + x];
+        if (dir) {
+          // As the renderer lays it: the median (2 m) is kerb and hedge, or
+          // an island at a stop, except at a crossing or the avenue's end;
+          // along the tile the asphalt stops 5 m past the centre where no
+          // road goes on.
+          const [lx, lz] = STEP[LEFT_OF[dir]];
+          const [fx, fz] = STEP[dir];
+          const crossing = road(x - lx, y - lz) || road(x + 2 * lx, y + 2 * lz);
+          const runs = (k) => avenue[(y + fz * k) * size + (x + fx * k)] === dir && x + fx * k >= 0 && y + fz * k >= 0 && x + fx * k < size && y + fz * k < size;
+          const open = crossing || !runs(1) || !runs(-1);
+          const ahead = road(x + fx, y + fz), behind = road(x - fx, y - fz);
+          for (let j = 0; j < n; j += 1) {
+            for (let i = 0; i < n; i += 1) {
+              const u = (i + 0.5) / n - 0.5, v = (j + 0.5) / n - 0.5;
+              const towardMedian = u * lx + v * lz;
+              const along = u * fx + v * fz;
+              if (towardMedian < -CARRIAGEWAY_HALF_WIDTH * METRE) continue;
+              if (!open && towardMedian > 6 * METRE) continue;
+              if ((!ahead && along > CARRIAGEWAY_HALF_WIDTH * METRE) || (!behind && along < -CARRIAGEWAY_HALF_WIDTH * METRE)) continue;
+              cells.add((y * n + j) * side + (x * n + i));
+            }
+          }
+          continue;
+        }
+        const arms = { w: road(x - 1, y), e: road(x + 1, y), n: road(x, y - 1), s: road(x, y + 1) };
+        if (!arms.w && !arms.e && !arms.n && !arms.s) arms.w = arms.e = true;
+        for (let j = 0; j < n; j += 1) {
+          for (let i = 0; i < n; i += 1) {
+            const u = (i + 0.5) / n - 0.5; // -0.5..0.5 across x
+            const v = (j + 0.5) / n - 0.5; // -0.5..0.5 across z
+            const half = CARRIAGEWAY_HALF_WIDTH * METRE;
+            const alongX = Math.abs(v) <= half && ((u <= 0 && arms.w) || (u >= 0 && arms.e) || Math.abs(u) <= half);
+            const alongZ = Math.abs(u) <= half && ((v <= 0 && arms.n) || (v >= 0 && arms.s) || Math.abs(v) <= half);
+            if ((alongX && (arms.w || arms.e)) || (alongZ && (arms.n || arms.s))) cells.add((y * n + j) * side + (x * n + i));
+          }
+        }
+      }
+    }
+    return cells;
+  }
+
+  // The fill: one 1 m column per raised cell, in the renderer's block shape.
+  // The colour is the road models' own asphalt (voxel palette 84, 86, 92), so a
+  // ramp reads as the same street.
+  function fillCarriageway(world, snapshot, colour = { r: 84 / 255, g: 86 / 255, b: 92 / 255 }) {
+    const cells = carriagewayCells(world, snapshot);
+    const side = world.side;
+    const height = new Map();
+    cells.forEach((cell) => {
+      const cx = cell % side;
+      const cz = Math.floor(cell / side);
+      const h = roadSurface(world, (cx + 0.5) / world.cells, (cz + 0.5) / world.cells);
+      if (h !== null) height.set(cell, h);
     });
-    return state;
+    const per = world.layer * FILL_RISE_PER_METRE;
+    const cap = world.layer * FILL_MAX_RISE;
+    const filled = new Map(height);
+    const neighbours = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, Math.SQRT2], [-1, 1, Math.SQRT2], [1, -1, Math.SQRT2], [-1, -1, Math.SQRT2]];
+    // Relax until settled: a cell rises to (neighbour - slope x distance)
+    // when that neighbour is road no more than one terrain level above the
+    // cell's own surface. Forward and backward raster sweeps, repeated until
+    // nothing moves, so the result does not depend on any queue order.
+    const order = [...height.keys()].sort((a, b) => a - b);
+    for (let pass = 0; pass < 64; pass += 1) {
+      let changed = false;
+      const sweep = (cell) => {
+        const own = height.get(cell);
+        const cx = cell % side;
+        const cz = Math.floor(cell / side);
+        let best = filled.get(cell);
+        for (const [dx, dz, distance] of neighbours) {
+          const top = filled.get((cz + dz) * side + (cx + dx));
+          if (top === undefined || top - own > cap) continue;
+          const wanted = top - per * distance;
+          if (wanted > best + 1e-6) best = wanted;
+        }
+        if (best > filled.get(cell)) {
+          filled.set(cell, best);
+          changed = true;
+        }
+      };
+      order.forEach(sweep);
+      for (let i = order.length - 1; i >= 0; i -= 1) sweep(order[i]);
+      if (!changed) break;
+    }
+    const blocks = [];
+    filled.forEach((top, cell) => {
+      const base = height.get(cell);
+      if (top - base < world.layer * 0.05) return;
+      const cx = cell % side;
+      const cz = Math.floor(cell / side);
+      blocks.push({
+        x: (cx + 0.5) / world.cells, z: (cz + 0.5) / world.cells,
+        y: (base + top) / 2, sy: top - base, sx: 1 / world.cells, sz: 1 / world.cells,
+        r: colour.r, g: colour.g, b: colour.b, a: 1, tile: null, shape: "box",
+      });
+    });
+    return blocks;
+  }
+
+  // How the filled carriageway is drawn. The fill itself (above) is solid
+  // per metre cell, which drawn as boxes reads as a flight of stairs up every
+  // cross-tilted slope road. Drawn instead: each filled cell's box only up to
+  // its lowest corner, and over it a quad whose corners sit at the mean height
+  // of the carriageway cells sharing them (ledges taller than a terrain layer
+  // are not averaged across). Collision still uses the boxes; the eye sees a
+  // ramp. Call after the fill has been rasterized into the world.
+  function rampSurface(world, snapshot, ramps) {
+    const n = world.cells;
+    const side = world.side;
+    const road = carriagewayCells(world, snapshot);
+    const topAt = (cx, cz) => {
+      if (cx < 0 || cz < 0 || cx >= side || cz >= side) return null;
+      const cell = cz * side + cx;
+      if (!road.has(cell)) return null;
+      return roadSurface(world, (cx + 0.5) / n, (cz + 0.5) / n);
+    };
+    const blocks = [];
+    const positions = [];
+    (Array.isArray(ramps) ? ramps : []).forEach((block) => {
+      const cx = Math.floor(block.x * n);
+      const cz = Math.floor(block.z * n);
+      const own = block.y + block.sy / 2;
+      const base = block.y - block.sy / 2;
+      const corner = (i, j) => {
+        let sum = 0, count = 0;
+        for (const [dx, dz] of [[i - 1, j - 1], [i, j - 1], [i - 1, j], [i, j]]) {
+          const h = topAt(cx + dx, cz + dz);
+          if (h === null || Math.abs(h - own) > world.layer) continue;
+          sum += h;
+          count += 1;
+        }
+        return count ? sum / count : own;
+      };
+      const h00 = corner(0, 0), h10 = corner(1, 0), h11 = corner(1, 1), h01 = corner(0, 1);
+      const floor = Math.min(h00, h10, h11, h01);
+      if (floor - base > 1e-4) blocks.push({ ...block, y: (base + floor) / 2, sy: floor - base });
+      const x0 = cx / n, x1 = (cx + 1) / n, z0 = cz / n, z1 = (cz + 1) / n;
+      const lift = 0.0015;
+      // Counter-clockwise seen from above (y up): (x0,z1) (x1,z1) (x1,z0), (x0,z1) (x1,z0) (x0,z0).
+      positions.push(
+        x0, h01 + lift, z1, x1, h11 + lift, z1, x1, h10 + lift, z0,
+        x0, h01 + lift, z1, x1, h10 + lift, z0, x0, h00 + lift, z0,
+      );
+    });
+    const colour = ramps && ramps[0] ? { r: ramps[0].r, g: ramps[0].g, b: ramps[0].b } : { r: 0.27, g: 0.27, b: 0.29 };
+    return { blocks, positions: Float32Array.from(positions), colour };
+  }
+
+  // Where a car can start in any city: straight stretches of road (a run
+  // north-south or east-west, nothing joining from the side) on dry, level
+  // ground, without the power line Bonsai City plants on a road's centre
+  // line. Nearest first to `from` (the tile the player was looking at), at
+  // least three tiles apart, at most `limit`. A city with no such road falls
+  // back to any dry road tile; a city without roads starts at its spawn
+  // centre, on the ground.
+  function citySpawns(snapshot, from = null, limit = 12) {
+    const size = Number(snapshot.size) || 0;
+    const at = (layer, x, y) => (x >= 0 && y >= 0 && x < size && y < size ? Number(snapshot[layer]?.[y * size + x]) || 0 : 0);
+    const road = (x, y) => at("road", x, y) > 0 || at("onramp", x, y) > 0;
+    const strict = [];
+    const loose = [];
+    for (let y = 0; y < size; y += 1) {
+      for (let x = 0; x < size; x += 1) {
+        if (!road(x, y) || at("water", x, y) || at("highway", x, y)) continue;
+        const ns = road(x, y - 1) && road(x, y + 1);
+        const ew = road(x - 1, y) && road(x + 1, y);
+        const heading = ew ? 0 : ns ? Math.PI / 2 : 0;
+        loose.push({ tileX: x, tileY: y, heading });
+        if (ns === ew || at("slope", x, y) || at("wire", x, y) || at("tunnel", x, y)) continue;
+        if (ns && (road(x - 1, y) || road(x + 1, y))) continue;
+        if (ew && (road(x, y - 1) || road(x, y + 1))) continue;
+        strict.push({ tileX: x, tileY: y, heading });
+      }
+    }
+    // Junctions (three or more arms) carry traffic lights. A start keeps
+    // three tiles clear of them where the town allows, and faces away from
+    // the nearer one, so the first seconds are not a red light (Basin J1).
+    const junction = (x, y) => road(x, y) && [road(x - 1, y), road(x + 1, y), road(x, y - 1), road(x, y + 1)].filter(Boolean).length >= 3;
+    const clearance = (spawn, dx, dy) => {
+      for (let k = 1; k <= 8; k += 1) {
+        const x = spawn.tileX + dx * k, y = spawn.tileY + dy * k;
+        if (!road(x, y)) return 99;
+        if (junction(x, y)) return k;
+      }
+      return 99;
+    };
+    strict.forEach((spawn) => {
+      const ew = spawn.heading === 0;
+      const ahead = ew ? clearance(spawn, 1, 0) : clearance(spawn, 0, 1);
+      const behind = ew ? clearance(spawn, -1, 0) : clearance(spawn, 0, -1);
+      spawn.clear = Math.min(ahead, behind);
+      // Face the longer clear run: away from the nearer junction.
+      if (ahead >= behind) spawn.heading = ew ? 0 : Math.PI / 2;
+      else spawn.heading = ew ? Math.PI : -Math.PI / 2;
+    });
+    const roomy = strict.filter((spawn) => spawn.clear >= 3);
+    const pool = roomy.length ? roomy : strict.length ? strict : loose;
+    if (!pool.length) {
+      const centre = snapshot.spawnCenter || { x: Math.floor(size / 2), y: Math.floor(size / 2) };
+      return [{ tileX: Math.max(0, Math.min(size - 1, Math.round(centre.x))), tileY: Math.max(0, Math.min(size - 1, Math.round(centre.y))), heading: 0 }];
+    }
+    const origin = from && Number.isFinite(from.x) && Number.isFinite(from.y) ? from : null;
+    const ordered = origin
+      ? [...pool].sort((a, b) => (Math.hypot(a.tileX - origin.x, a.tileY - origin.y) - Math.hypot(b.tileX - origin.x, b.tileY - origin.y)) || (a.tileY - b.tileY) || (a.tileX - b.tileX))
+      : pool;
+    const chosen = [];
+    for (const spawn of ordered) {
+      if (chosen.every((other) => Math.max(Math.abs(other.tileX - spawn.tileX), Math.abs(other.tileY - spawn.tileY)) >= 3)) chosen.push(spawn);
+      if (chosen.length >= limit) break;
+    }
+    return chosen;
+  }
+
+  // --- avenues, bus lanes and stops (the Basin avenue layer) -------------------------
+  //
+  // An avenue is two road tiles side by side, one carriageway each way, with
+  // a median between them; Yichang's and Guangzhou's BRT run in that median
+  // and stop at island platforms in it. The `avenue` layer holds, for each
+  // half, the way its traffic runs (1 north, 2 east, 4 south, 8 west), so the
+  // median is always on the driver's left and the other half is the tile to
+  // the left. A half whose other half does not answer it is an ordinary road.
+  const STEP = Object.freeze({ 1: [0, -1], 2: [1, 0], 4: [0, 1], 8: [-1, 0] });
+  const LEFT_OF = Object.freeze({ 1: 8, 2: 1, 4: 2, 8: 4 });
+  const BACK = Object.freeze({ 1: 4, 2: 8, 4: 1, 8: 2 });
+
+  function avenuePartner(size, tile, dir) {
+    const [dx, dz] = STEP[LEFT_OF[dir]];
+    const x = (tile % size) + dx, y = Math.floor(tile / size) + dz;
+    return x >= 0 && y >= 0 && x < size && y < size ? y * size + x : -1;
+  }
+
+  function avenueLayer(snapshot) {
+    const size = Number(snapshot.size) || 0;
+    const source = snapshot.avenue;
+    if (!source || !size) return null;
+    const road = (i) => Number(snapshot.road?.[i]) > 0;
+    const out = new Uint8Array(size * size);
+    let any = false;
+    for (let i = 0; i < size * size; i += 1) {
+      const dir = Number(source[i]) || 0;
+      if (!LEFT_OF[dir] || !road(i)) continue;
+      const partner = avenuePartner(size, i, dir);
+      if (partner < 0 || !road(partner) || Number(source[partner]) !== BACK[dir]) continue;
+      out[i] = dir;
+      any = true;
+    }
+    return any ? out : null;
+  }
+
+  // The street's own copy of a snapshot: the avenue layer checked, and the
+  // bus lanes and stops a Rootline plan implies when the snapshot does not
+  // carry them already. A BRT lane on an avenue is its median busway, both
+  // ways; a stop there is an island platform on both halves (2). Anywhere
+  // else a bus stops at the kerb (1).
+  function streetLayers(snapshot, transit = null) {
+    const size = Number(snapshot.size) || 0;
+    const avenue = avenueLayer(snapshot);
+    const plans = Array.isArray(transit?.lines) ? transit.lines.filter((plan) => plan?.mode === "bus" || plan?.mode === "brt") : [];
+    const indexOf = (x, y) => (Number.isInteger(x) && Number.isInteger(y) && x >= 0 && y >= 0 && x < size && y < size ? y * size + x : -1);
+    let busLane = snapshot.busLane ? Uint8Array.from(snapshot.busLane) : null;
+    if (!busLane && plans.some((plan) => plan.mode === "brt")) {
+      busLane = new Uint8Array(size * size);
+      plans.filter((plan) => plan.mode === "brt").forEach((plan) => {
+        const tiles = Array.isArray(plan.tiles) ? plan.tiles : [];
+        for (let i = 0; i + 1 < tiles.length; i += 2) {
+          const tile = indexOf(tiles[i], tiles[i + 1]);
+          if (tile >= 0 && Number(snapshot.road?.[tile]) > 0) busLane[tile] = 1;
+        }
+      });
+    }
+    if (busLane && avenue) {
+      for (let i = 0; i < size * size; i += 1) if (busLane[i] && avenue[i]) busLane[avenuePartner(size, i, avenue[i])] = 1;
+    }
+    let busStop = snapshot.busStop ? Uint8Array.from(snapshot.busStop) : null;
+    const stopsOf = (plan) => (Array.isArray(plan?.stops) ? plan.stops : Array.isArray(plan?.stations) ? plan.stations : []);
+    if (!busStop && plans.some((plan) => stopsOf(plan).length)) {
+      busStop = new Uint8Array(size * size);
+      plans.forEach((plan) => stopsOf(plan).forEach((stop) => {
+        const tile = indexOf(stop?.x, stop?.y);
+        if (tile < 0) return;
+        if (plan.mode === "brt" && avenue?.[tile]) {
+          busStop[tile] = 2;
+          busStop[avenuePartner(size, tile, avenue[tile])] = 2;
+        } else if (!busStop[tile]) busStop[tile] = 1;
+      }));
+    }
+    return { ...snapshot, avenue, busLane, busStop };
   }
 
   // Spawn points in world units, resting on whatever the world says is there.
-  function spawnPoints(world, recipe = DEMO_CITY) {
-    return recipe.spawns.map((spawn) => {
-      // The right-hand lane: 2.5 m right of the centre line.
-      const x = spawn.tileX + 0.5 - Math.sin(spawn.heading) * 2.5 * METRE;
-      const z = spawn.tileY + 0.5 + Math.cos(spawn.heading) * 2.5 * METRE;
+  function spawnPoints(world, recipe = { spawns: [] }) {
+    return (Array.isArray(recipe?.spawns) ? recipe.spawns : []).map((spawn) => {
+      // The right-hand lane: 2 m right of the centre line (the kerb side
+      // of the carriageway is the non-motor lane).
+      const x = spawn.tileX + 0.5 - Math.sin(spawn.heading) * 2 * METRE;
+      const z = spawn.tileY + 0.5 + Math.cos(spawn.heading) * 2 * METRE;
+      // The top surface of the column: a bridge deck when there is one (the
+      // ground under a deck is the river bed), the ground otherwise.
       const cell = cellAt(world, x, z);
-      const y = cell >= 0 && world.ground[cell] !== -Infinity ? world.ground[cell] : 0;
+      const ground = cell >= 0 && world.ground[cell] !== -Infinity ? world.ground[cell] : 0;
+      const y = cell >= 0 && world.deckTop[cell] !== -Infinity ? Math.max(ground, world.deckTop[cell]) : ground;
       return Object.freeze({ x, z, y, heading: spawn.heading });
     });
   }
 
   global.AISystem6JoyrideCore = Object.freeze({
-    PALETTE, DEPTHS, RESOLUTIONS, CELLS, STEP_HZ, DT, METRE, CAR, DEMO_CITY,
+    PALETTE, DEPTHS, RESOLUTIONS, CELLS, STEP_HZ, DT, METRE, CAR,
     macSystemPalette, nearestPaletteIndex, quantize256, quantizeThousands, ditherAtkinson, convertFrame,
     createStreetWorld, applySpan, modelColumnRuns, rasterizeChunk, cellAt, supportAt, blockedAt,
-    createCar, stepCar, carIsClear, footprintReport, replay, mulberry32, buildDemoCity, spawnPoints,
+    createCar, stepCar, carIsClear, boxesOverlap, footprintReport, replay, mulberry32, spawnPoints,
+    roadSurface, carriagewayCells, fillCarriageway, rampSurface, citySpawns,
+    avenueLayer, avenuePartner, streetLayers,
   });
 })(window);

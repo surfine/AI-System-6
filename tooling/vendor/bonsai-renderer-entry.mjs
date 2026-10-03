@@ -6,12 +6,14 @@
 
 export {
   AmbientLight,
+  BasicShadowMap,
   BoxGeometry,
   BufferGeometry,
   Float32BufferAttribute,
   CanvasTexture,
   Color,
   DirectionalLight,
+  Fog,
   PCFShadowMap,
   Group,
   HalfFloatType,
@@ -27,6 +29,7 @@ export {
   NearestMipmapLinearFilter,
   OrthographicCamera,
   PerspectiveCamera,
+  SpotLight,
   PlaneGeometry,
   Raycaster,
   RepeatWrapping,

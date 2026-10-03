@@ -39,9 +39,13 @@ test.assertIncludes(manifest, '"app/core/dictation-shape.js"', "the shaper is a 
 test.assertNotIncludes(manifest, 'appModulePaths = [\n  "app/core/dictation-shape.js"', "the shaper does not enter the boot bundle");
 test.assertIncludes(
   config,
-  '"app/core/dictation-shape.js",\n  "app/features/dictation-pad.js",',
+  '"app/core/dictation-shape.js",',
   "the shaper travels with the pad that calls it",
 );
+// The session joined the same loader: it is pure, lazy, and only the pad reads
+// it, so it costs no boot bytes either.
+test.assertIncludes(config, '"app/core/dictation-session.js",', "the session travels with the pad that owns it");
+test.assertIncludes(config, '"app/features/dictation-pad.js",', "and the pad itself is the third file in that loader");
 test.assertIncludes(wireup, "withDictationPad(() => shapeDictationTranscript())", "a boot-time control resolves the lazy command at click time");
 test.assertNotMatches(wireup, /addEventListener\("click", shapeDictationTranscript\)/, "no bare reference to the lazy command survives at boot");
 test.assertIncludes(handles, 'const dictationShapeButton = document.querySelector("#dictation-shape");', "the Shape control has a DOM handle");

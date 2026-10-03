@@ -51,7 +51,7 @@ function reservePort() {
 // A first answer that carries a Humanizer hit, so an explicit-rewrite task has
 // something to repair.
 const FIRST_ANSWER = "此外，这一版还带着明显的 AI 腔。";
-const REPAIR_MARKER = "上一版仍然有 AI 腔残留";
+const REPAIR_MARKER = "上一版有机械检查标出的候选问题";
 
 function jsonResponse(content, usage) {
   return JSON.stringify({
@@ -125,6 +125,11 @@ const upstream = https.createServer({ key, cert }, (req, res) => {
     if (repairBehaviour === "no-usage") {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(jsonResponse("这版已经直接说明问题。"));
+      return;
+    }
+    if (repairBehaviour === "unchanged") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(jsonResponse(FIRST_ANSWER, 20));
       return;
     }
     if (repairBehaviour === "blank") {
@@ -224,7 +229,7 @@ try {
     model: "deepseek-flash",
     messages: [{ role: "user", content: "把这段改得像人写的。" }],
     max_tokens: 400,
-    ai_system6_task_kind: "humanize-selection",
+    ai_system6_task_kind: "humanizer-rewrite",
   };
 
   repairBehaviour = "cut-off";
@@ -361,6 +366,15 @@ function repair(input = {}) {
     result.ai_system6_humanizer?.total_usage_tokens === 100,
     "the known tokens stay as a floor"
   );
+}
+
+{
+  repairBehaviour = "unchanged";
+  const before = _repairCalls;
+  const { result, usage } = await repair();
+  assert(_repairCalls === before + 1, "an unchanged candidate stops without another cosmetic repair call");
+  assert(result.ai_system6_humanizer?.repaired === false && result.ai_system6_humanizer?.repair_attempts === 1, "retaining a meaningful candidate word is not falsely reported as a repair");
+  assert(usage.length === 1 && result.ai_system6_humanizer?.total_usage_tokens === 120, "an unchanged response still books its real call and usage");
 }
 
 {

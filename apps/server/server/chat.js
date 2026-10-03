@@ -16,6 +16,8 @@ const {
   localChatDefaults: sharedLocalChatDefaults,
   scrubVisibleModelOutput: sharedScrubVisibleModelOutput,
   taskContractForPayload,
+  assertFinalChatPayloadBudget,
+  estimateFinalChatPayloadBudget,
 } = require("../../desktop/app/shared/model-task-runtime.js");
 
 /**
@@ -69,6 +71,17 @@ function applyChatTaskContract(payload) {
     delete nextPayload.response_format;
     delete nextPayload.json_schema;
   }
+  if ((outputKind === "json" || outputKind === "patch") && anyPayload.ai_system6_output_schema
+    && !nextPayload.response_format && !nextPayload.json_schema) {
+    nextPayload.response_format = {
+      type: "json_schema",
+      json_schema: {
+        name: String(contract.output.schemaId || "ai_system6_output").replace(/[^a-zA-Z0-9_-]/g, "_"),
+        schema: anyPayload.ai_system6_output_schema,
+        strict: true,
+      },
+    };
+  }
   delete nextPayload.ai_system6_output_kind;
   delete nextPayload.ai_system6_output_schema;
   delete nextPayload.ai_system6_output_schema_id;
@@ -115,7 +128,7 @@ function isGemma4ModelName(value = "") {
 /**
  * Detect the smaller Gemma 4 E4B instruct variants. E4B is quick and
  * useful locally, but tends to over-generalize product identity unless
- * the local-writing context is made very explicit.
+ * the active desktop/task scope is made explicit.
  *
  * @param {string} [value]
  * @returns {boolean}
@@ -127,8 +140,9 @@ function isGemma4E4BModelName(value = "") {
 
 const GEMMA4_E4B_ADAPTER_MARKER = "AI System 6 Gemma 4 E4B adapter";
 const GEMMA4_E4B_ADAPTER_INSTRUCTION = [
-  `${GEMMA4_E4B_ADAPTER_MARKER}: keep short local-writing answers concrete, bounded, and source-first.`,
-  "When asked what AI System 6 is, describe it as a local source-first writing desktop with visible writing objects, save boundaries, and a clear path from sources to drafts.",
+  `${GEMMA4_E4B_ADAPTER_MARKER}: keep answers concrete, bounded, and grounded in the active task.`,
+  "AI System 6 is a local-first, model-agnostic desktop with peer tools for chat, reading, writing, creative work, and games.",
+  "Follow the active workspace and task. Describe writing objects and the sources-to-drafts route only when the user is working in that route; general desktop requests remain valid.",
   "Do not describe AI System 6 as an intelligent system framework, advanced cognitive system, autonomous-learning architecture, decision engine, or self-optimizing model.",
   "For short Chinese requests, obey sentence and character limits before adding explanation. Prefer one plain concrete point over a polished paragraph.",
 ].join("\n");
@@ -476,9 +490,11 @@ function tuneLocalNoThinkingPayload(payload, options = {}) {
  * then receive family-specific sampling / template tweaks.
  *
  * @param {any} payload
+ * @param {{ contextLimit?: number, reservedOutputTokens?: number }} [options]
  * @returns {any}
  */
-function tuneLmStudioChatPayload(payload) {
+function tuneLmStudioChatPayload(payload, options = {}) {
+  taskContractForPayload(payload);
   const sharedDefaults = sharedLocalChatDefaults(payload?.model, {
     taskKind: payload?.ai_system6_task_kind,
     temperature: Number(payload?.temperature),
@@ -486,7 +502,12 @@ function tuneLmStudioChatPayload(payload) {
   const basePayload = tuneLocalNoThinkingPayload({ ...sharedDefaults, ...payload }, {
     stripInternalFields: !isQwen35ModelName(payload?.model) && !isGemma4ModelName(payload?.model),
   });
-  return tuneGemma4ChatPayload(tuneQwen35ChatPayload(basePayload));
+  // Count after adapter/system-message folding and output-token tuning.
+  const finalPayload = tuneGemma4ChatPayload(tuneQwen35ChatPayload(basePayload));
+  assertFinalChatPayloadBudget(finalPayload, options);
+  delete finalPayload.ai_system6_context_limit;
+  delete finalPayload.ai_system6_reserved_output_tokens;
+  return finalPayload;
 }
 
 /**
@@ -515,6 +536,8 @@ function modelContentFromChatData(data) {
 }
 
 module.exports = {
+  assertFinalChatPayloadBudget,
+  estimateFinalChatPayloadBudget,
   applyChatTaskContract,
   enforceMarkdownOnlyChatPayload,
   isGemma4E4BModelName,

@@ -56,7 +56,12 @@ const TASK_POLICY = Object.freeze({
   // Instant surfaces: no chain of thought, latency is the product.
   chat: { tier: "fast", thinking: false, effort: "none", answerBudget: 1800 },
   sideask: { tier: "fast", thinking: false, effort: "none", answerBudget: 520 },
-  dictation: { tier: "fast", thinking: false, effort: "none", answerBudget: 900 },
+  // Dictation is still an instant surface, but its input can run to the
+  // product's limit (2400 code points), and tidying a long transcript needs
+  // room to answer in. The pad asks for
+  // min(4096, max(900, ceil(1.5 * n) + 256)) and this is the ceiling it can
+  // ask for; every other task keeps its own budget.
+  dictation: { tier: "fast", thinking: false, effort: "none", answerBudget: 4096 },
   lookup: { tier: "fast", thinking: false, effort: "none", answerBudget: 900 },
   dictionary: { tier: "fast", thinking: false, effort: "none", answerBudget: 900 },
   reader: { tier: "fast", thinking: false, effort: "none", answerBudget: 520 },

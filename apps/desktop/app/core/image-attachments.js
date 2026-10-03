@@ -613,6 +613,7 @@ async function analyzeImageAttachment(attachment, options = {}) {
     payload: {
       model,
       messages: window.AISystem6ModelTaskRuntime.buildVisionMessages({
+        projectId: activeProjectId,
         mode,
         name: attachment?.name || "",
         dataUrl,

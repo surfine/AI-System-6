@@ -79,6 +79,7 @@ function showSystemModal(message, type = "confirm", options = {}) {
     if (typeof closeMenus === "function") closeMenus();
     document.body.classList.add("has-system-modal");
     systemModalMessage.textContent = message;
+    systemModal.classList.toggle("is-reading-candidate", options.reading === true);
     systemModalCancel.classList.toggle("default", options.defaultAction === "cancel");
     systemModalYes.classList.toggle("default", options.defaultAction !== "cancel");
     systemModalYes.classList.toggle("danger", options.danger === true);

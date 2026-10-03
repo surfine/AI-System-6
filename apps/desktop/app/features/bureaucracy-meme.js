@@ -553,6 +553,7 @@ installBureaucracyMemeWindow();
           payload: {
             model: getLocalModelRequestName(),
             messages: window.AISystem6ModelTaskRuntime.buildBureaucracyMessages({
+              projectId: activeProjectId,
               topic,
               tone: state.tone,
               mood: template().mood,

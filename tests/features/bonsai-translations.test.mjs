@@ -23,7 +23,7 @@ for (const id of ["road", "power", "wire", "zone", "run"]) required.add(`bonsai_
 for (const id of ["none", "power", "water", "traffic", "pollution", "land_value", "police", "fire", "education", "health"]) required.add(`bonsai_overlay_${id}`);
 for (const id of ["roads", "utilities", "police", "fire", "education", "health"]) required.add(`bonsai_funding_${id}`);
 for (const id of ["open", "export", "delete"]) required.add(`bonsai_city_${id}`);
-for (const id of ["starter", "troubled"]) required.add(`bonsai_example_${id}`);
+for (const id of ["starter", "troubled", "hezhou"]) required.add(`bonsai_example_${id}`);
 
 for (const key of [...required].sort()) {
   test.assert(Object.prototype.hasOwnProperty.call(en, key), `English defines ${key}`);

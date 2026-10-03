@@ -288,7 +288,10 @@ window.AISystem6LocalLMStudio = (() => {
     if (provider === "lm-studio" && response.status === 404) {
       throw new Error(`lmstudio_v1_required: ${detail}`);
     }
-    throw new Error(`${classifyError(detail, response.status, provider)}: ${detail}`);
+    const error = new Error(`${classifyError(detail, response.status, provider)}: ${detail}`);
+    error.status = response.status;
+    error.code = String(data?.code || (response.status === 402 ? "cloud_insufficient_balance" : ""));
+    throw error;
   }
 
   function ollamaContextLength(modelInfo = {}) {
@@ -561,6 +564,8 @@ window.AISystem6LocalLMStudio = (() => {
       "model_info",
       "ai_system6_task_kind",
       "ai_system6_enable_thinking",
+      "ai_system6_max_repair_calls",
+      "ai_system6_max_followup_calls",
     ].forEach((key) => delete next[key]);
     return next;
   }
@@ -1038,11 +1043,20 @@ window.AISystem6LocalLMStudio = (() => {
       body: JSON.stringify(responsesRequest),
     }), inferenceTimeoutMs);
     let apiMode = nativeRequest ? "native" : responsesRequest ? "responses" : "compatible";
-    const post = () => apiMode === "native" ? postNative() : apiMode === "responses" ? postResponses() : postCompatible();
+    const post = async () => {
+      const loaded = lastModels.find((entry) => entry.loaded && entry.id === String(payload.model || ""));
+      window.AISystem6ModelTaskRuntime?.assertFinalChatPayloadBudget?.(payload, { contextLimit: loaded?.loaded_context_length || options.contextLength, reservedOutputTokens: nativeRequest?.max_output_tokens || responsesRequest?.max_output_tokens });
+      options.beforeRequest?.({ api: apiMode });
+      const response = await (apiMode === "native" ? postNative() : apiMode === "responses" ? postResponses() : postCompatible());
+      if ([402, 429].includes(response.status)) await readErrorResponse(response);
+      return response;
+    };
     let response;
     try {
       response = await post();
     } catch (error) {
+      if (error?.code === "context-budget-exceeded" || error?.code === "writing_call_budget_exhausted"
+          || [402, 429].includes(error?.status)) throw error;
       connected = false;
       throw networkError(error, signal);
     }
@@ -1070,14 +1084,14 @@ window.AISystem6LocalLMStudio = (() => {
       const endpointUnavailable = nativeChatEndpointUnavailable(probeText, response.status);
       if (staleChain) {
         responsesRequest = responsesV1Request(payload, options, true);
-        if (responsesRequest) response = await postResponses();
+        if (responsesRequest) response = await post();
         else {
           apiMode = "compatible";
-          response = await postCompatible();
+          response = await post();
         }
       } else if (endpointUnavailable) {
         apiMode = "compatible";
-        response = await postCompatible();
+        response = await post();
       }
     }
     if (!response.ok && currentProvider() === "lm-studio" && options.autoLoad !== false) {

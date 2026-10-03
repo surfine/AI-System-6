@@ -1223,6 +1223,108 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   overflow: auto;
 }
 
+/* The live guess, the unconfirmed last sentence, and the three small
+   preferences. Same tokens as the rest of the pad: no new materials, no new
+   type scale, nothing that drifts when the appearance changes. */
+.dictation-interim {
+  margin: 6px 0 0;
+  padding: 4px 8px;
+  border: 1px dashed var(--shade-dark);
+  border-radius: 6px;
+  color: var(--shade-dark);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.dictation-tail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.dictation-tail span {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.dictation-label-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.dictation-source-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.dictation-source-actions {
+  display: inline-flex;
+}
+
+.dictation-source-actions button.is-selected,
+.dictation-source-actions button[aria-pressed="true"] {
+  font-weight: bold;
+}
+
+.dictation-badge {
+  color: var(--shade-dark);
+  font-size: 10px;
+}
+
+.dictation-target-note {
+  color: var(--shade-dark);
+}
+
+.dictation-preferences {
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.dictation-preferences > summary {
+  cursor: pointer;
+}
+
+.dictation-preference {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.dictation-preferences select,
+.dictation-preferences textarea {
+  font-family: var(--text-font);
+  font-size: 12px;
+}
+
+.dictation-preferences textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.dictation-preference-note {
+  margin: 4px 0 0;
+  color: var(--shade-dark);
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+
+.dictation-preference-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
 .sideask-pad-pane {
   display: flex;
   flex-direction: column;

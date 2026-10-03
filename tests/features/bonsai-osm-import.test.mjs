@@ -45,7 +45,11 @@ const compact = service.compactOverpass({ elements: [
   { type: "relation", id: 4, tags: { natural: "water" }, members: [{ type: "way", role: "inner", geometry: [{ lat: 0, lon: 0 }, { lat: 0, lon: 1 }] }] },
 ] });
 test.assert(compact.map((item) => item.type).join() === "node,way,relation", "the relay orders nodes, ways, relations");
-test.assert(!("name" in compact[1].tags) && !("addr:street" in compact[1].tags) && !("phone" in compact[0].tags), "only the tags the importer maps travel");
+test.assert(compact[1].tags.name === "Private Name" && !("addr:street" in compact[1].tags) && !("phone" in compact[0].tags), "real names travel while the tags the importer does not map are dropped");
+const query = service.overpassQuery(area, true);
+test.assertIncludes(query, 'node["railway"~"^(station|halt)$"]', "the query asks for railway stations and halts as nodes");
+test.assertIncludes(query, 'node["public_transport"="station"]', "the query asks for public-transport station nodes");
+test.assertIncludes(query, 'node["place"~"^(suburb|quarter|neighbourhood|village|hamlet)$"]', "the query asks for the district place nodes");
 test.assert(compact[2].members[0].role === "inner" && compact[2].members[0].g.length === 4, "relation members keep their role and line");
 
 // A synthetic terrarium PNG: 2x2, rows filtered None and Paeth.
@@ -208,6 +212,50 @@ const bare = run(elements, false).payload;
 test.assert(bare.lot.every((value) => !value), "a bare map imports no buildings");
 test.assert(bare.funds < p.funds, "a city that arrives built has the treasury to light it");
 
+// Railway stations: a real station beside the imported track becomes the
+// Bonsai train station a Joyride driver can board.
+const track = line([4, 10.5], [20, 10.5]);
+const stationW = sim.FACILITY_KINDS.station.w; const stationH = sim.FACILITY_KINDS.station.h;
+test.assert(stationW === 2 && stationH === 2, "a Bonsai station is a 2x2 site");
+const beside = run([
+  way({ railway: "rail" }, track),
+  // A street and a pond on the ground nearest the station: the footprint has
+  // to step off them and still reach the track.
+  way({ highway: "residential" }, line([10, 8.5], [13, 8.5])),
+  way({ natural: "water" }, box(8, 8, 10, 10)),
+  node({ railway: "station" }, 12, 9.5),
+]);
+const besideStations = beside.payload.facilities.filter((item) => item.kind === "station");
+test.assert(beside.stats.stations === 1 && besideStations.length === 1, `a station beside the track becomes exactly one Bonsai train station (got ${beside.stats.stations})`);
+const station = besideStations[0];
+const footprint = [];
+for (let dy = 0; dy < stationH; dy += 1) for (let dx = 0; dx < stationW; dx += 1) footprint.push([station.x + dx, station.y + dy]);
+const besideAt = (layer, x, y) => beside.payload[layer][y * n + x];
+// The street and the pond take the ground above the track, so the nearest
+// free footprint on the track is the one just under it.
+test.assert(station.x === 11 && station.y === 11, `the nearest free footprint on the track wins (got ${station.x},${station.y})`);
+test.assert(Math.hypot(station.x + stationW / 2 - 12, station.y + stationH / 2 - 9.5) <= 4, "the station stands within four tiles of the OSM station");
+test.assert(footprint.every(([x, y]) => ["water", "road", "rail", "highway", "onramp", "lot"].every((layer) => !besideAt(layer, x, y))), "its footprint lies on no water, street, track or lot");
+test.assert(footprint.some(([x, y]) => [[0, -1], [1, 0], [0, 1], [-1, 0]].some(([dx, dy]) => x + dx >= 0 && y + dy >= 0 && x + dx < n && y + dy < n && besideAt("rail", x + dx, y + dy))), "and at least one of its tiles touches the track");
+test.assert(sim.deserialize(JSON.parse(JSON.stringify(beside.payload))).facilities.some((item) => item.kind === "station"), "the simulation loads the imported station");
+
+// One station mapped twice (its node and its outline) is still one station.
+const merged = run([
+  way({ railway: "rail" }, track),
+  way({ railway: "station" }, box(10.5, 8.5, 14.5, 11.5)),
+  node({ railway: "station" }, 12, 9.5),
+]);
+test.assert(merged.stats.stations === 1 && merged.stats.stationsNoRoom === 0
+  && merged.payload.facilities.filter((item) => item.kind === "station").length === 1, "a station's node and its outline a tile apart are one station");
+const halts = run([way({ railway: "rail" }, track), node({ railway: "halt" }, 8, 9.5), node({ public_transport: "station", train: "yes" }, 17, 9.5)]);
+test.assert(halts.stats.stations === 2, "a halt and a train interchange are stations too");
+const stranded = run([way({ railway: "rail" }, track), node({ railway: "station" }, 40, 40)]);
+test.assert(stranded.stats.stations === 0 && stranded.stats.stationsNoRoom === 1
+  && !stranded.payload.facilities.some((item) => item.kind === "station"), "a station with no track within reach is counted and left for the mayor");
+const underground = run([way({ railway: "rail" }, track), node({ railway: "station", station: "subway" }, 12, 9.5), node({ railway: "station", subway: "yes" }, 12, 9.5)]);
+test.assert(underground.stats.stations === 0 && underground.stats.stationsNoRoom === 0
+  && !underground.payload.facilities.some((item) => item.kind === "station"), "a subway station is out of scope");
+
 // Utilities along streets.
 test.assert(Array.from({ length: n * n }, (_, i) => !p.road[i] || (p.water[i] ? !p.pipe[i] : p.pipe[i])).every(Boolean), "every dry street tile carries a water main");
 test.assert(Array.from({ length: n * n }, (_, i) => !p.wire[i] || !(p.water[i] || p.rail[i] || p.highway[i] || p.lot[i] || p.zone[i] || p.park[i])).every(Boolean), "power lines run over streets and open ground only");
@@ -233,5 +281,73 @@ sim.ensureDerived(state);
 test.assert(state.powered[anchor] === 1, "power crosses the street to the next block and reaches the imported lot");
 sim.advanceTicks(state, 5 * 25);
 test.assert(state.population > 0 && Number.isFinite(state.funds), "the imported city runs");
+
+// --- Real names in the provenance ---------------------------------------------
+// The gazetteer's records: one entry per named street, place and station, on
+// the Bonsai tile the feature landed on. Same synthetic fixtures and the same
+// run() path as above.
+const names = (result) => result.payload.provenance.names;
+const payloadAt = (result, layer, x, y) => result.payload[layer][y * n + x];
+
+// (a) A named primary road becomes a street with its zh/en variants, and its
+// tile is a road tile in the payload.
+const namedStreet = run([
+  way({ highway: "primary", name: "Main Road", "name:zh-Hans": "主路", "name:en": "Main Road" }, line([10.5, 30.5], [40.5, 30.5])),
+]);
+const namedStreetNames = names(namedStreet);
+test.assert(namedStreetNames && namedStreetNames.streets.length === 1, `a named road yields exactly one street entry (got ${namedStreetNames?.streets.length})`);
+const mainRoad = namedStreetNames.streets[0];
+test.assert(mainRoad.name === "Main Road" && mainRoad.zh === "主路" && !("en" in mainRoad), `the street carries its zh variant and drops en equal to the name (got ${JSON.stringify(mainRoad)})`);
+test.assert(payloadAt(namedStreet, "road", mainRoad.x, mainRoad.y) === 1, "the street entry stands on a road tile");
+
+// (b) Two ways with the same name give one entry, placed from the longer way.
+const sameName = run([
+  way({ highway: "residential", name: "Oak Street" }, line([5.5, 40.5], [15.5, 40.5])),
+  way({ highway: "residential", name: "Oak Street" }, line([30.5, 50.5], [55.5, 50.5])),
+]);
+test.assert(names(sameName).streets.length === 1, `two ways with one name are one street entry (got ${names(sameName).streets.length})`);
+const oak = names(sameName).streets[0];
+test.assert(oak.x >= 30 && oak.y === 50, `the entry comes from the longer way's middle tile (got ${oak.x},${oak.y})`);
+
+// (c) A road with no name adds nothing.
+const unnamedRoad = run([way({ highway: "residential" }, line([5.5, 5.5], [40.5, 5.5]))]);
+test.assert(!names(unnamedRoad) || names(unnamedRoad).streets.length === 0, "a road with no name adds no entry");
+
+// (d) A place node inside the square is a place; one outside is not.
+const places = run([
+  node({ place: "suburb", name: "North Ward" }, 20.5, 20.5),
+  node({ place: "suburb", name: "Off Map" }, -5, -5),
+]);
+const placeNames = names(places).places;
+test.assert(placeNames.length === 1 && placeNames[0].name === "North Ward" && placeNames[0].kind === "suburb", `only the in-square suburb is a place (got ${JSON.stringify(placeNames)})`);
+test.assert(placeNames[0].x === 20 && placeNames[0].y === 20, `a place sits on its own node's tile (got ${placeNames[0].x},${placeNames[0].y})`);
+
+// (e) A named station node beside imported track names the placed station.
+const namedStationRun = run([
+  way({ railway: "rail" }, line([4, 20.5], [30, 20.5])),
+  node({ railway: "station", name: "Central", "name:en": "Central Station" }, 12, 21.5),
+]);
+const stationNames = names(namedStationRun).stations;
+test.assert(namedStationRun.stats.stations === 1 && stationNames.length === 1, `a named station beside the track is one stations entry (got ${stationNames.length})`);
+const namedStation = stationNames[0];
+test.assert(payloadAt(namedStationRun, "facilities", 0, 0) !== undefined && namedStationRun.payload.facilities.some((item) => item.kind === "station" && item.x === namedStation.x && item.y === namedStation.y), "the stations entry stands on the placed station facility's tile");
+test.assert(namedStation.name === "Central" && namedStation.en === "Central Station", `the station carries its en variant (got ${JSON.stringify(namedStation)})`);
+
+// (f) A map with no names keeps the provenance it had before names travelled.
+const anonymous = run([
+  way({ highway: "residential" }, line([5.5, 5.5], [40.5, 5.5])),
+  node({ place: "suburb" }, 20.5, 20.5),
+]);
+test.assert(!("names" in anonymous.payload.provenance), "a map with no names has no provenance.names key");
+
+// (g) The same input gives byte-identical provenance.names twice.
+const twiceA = run([...elements, node({ place: "suburb", name: "Repeat Ward" }, 30.5, 30.5)]);
+const twiceB = run([...elements, node({ place: "suburb", name: "Repeat Ward" }, 30.5, 30.5)]);
+test.assert(JSON.stringify(names(twiceA)) === JSON.stringify(names(twiceB)), "running importOsm twice gives byte-identical provenance.names");
+
+// (h) A name longer than 40 characters is trimmed to 40.
+const longName = "A".repeat(60);
+const trimmed = run([way({ highway: "primary", name: longName }, line([10.5, 30.5], [40.5, 30.5]))]);
+test.assert(names(trimmed).streets[0].name.length === 40, `a long name is trimmed to 40 characters (got ${names(trimmed).streets[0].name.length})`);
 
 test.finish();

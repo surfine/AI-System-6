@@ -294,6 +294,63 @@ test.assert(
   test.assert(embedded.details.window.embedX === 28 && embedded.details.window.embedY === 18 && (embedded.saveData.map[0] & MASK) === 2, "a 64-square city embeds centred in an apron of open water");
 }
 
+// --- ruleset 6: a subway under a river is dropped and counted, the river kept ---
+{
+  // The classic model has no subway; a tunnel under water leaves like any
+  // other subway (counted in layer-dropped-subway) and its tiles go out and
+  // come back as the water they lie under.
+  const town = sim.createCity({ seed: 507, size: 64, terrainPreset: "river", yearFounded: 1950 });
+  let crossing = null;
+  for (let y = 4; y < 60 && !crossing; y += 1) for (let x = 2; x < 52 && !crossing; x += 1) {
+    const i = y * 64 + x;
+    if (town.water[i] || !town.water[i + 1]) continue;
+    let end = x + 1; while (end < 63 && town.water[y * 64 + end]) end += 1;
+    if (end < 63) crossing = { y, from: x, to: end };
+  }
+  test.assert(!!crossing, "the river town offers a crossing");
+  const span = crossing ? crossing.to - crossing.from + 1 : 0;
+  const line = crossing && sim.submitCommand(town, { schemaVersion: 2, type: "build-path", payload: { network: "subway", start: { x: crossing.from, y: crossing.y }, end: { x: crossing.to, y: crossing.y } }, targetTick: town.tick });
+  test.assert(!!line && line.accepted && line.tunnelCost > 0, "the river town tunnels a subway under the water");
+  const before = sim.serialize(town);
+  const sent = exporter.exportMicropolis(before, { name: "River Town" });
+  test.assert(sent.warnings.includes(`layer-dropped-subway:${span}`), `every subway tile, under water or not, is reported as dropped (${sent.warnings.join(", ")})`);
+  const returned = codec.importMicropolis(sent.saveData, { name: "River Town" }).payload;
+  const win = sent.details.window;
+  const shiftX = -win.x + win.embedX + Math.floor((128 - 120) / 2);
+  const shiftY = -win.y + win.embedY + Math.floor((128 - 100) / 2);
+  let kept = 0; let wet = 0;
+  for (let x = crossing.from; x <= crossing.to; x += 1) {
+    const from = crossing.y * 64 + x; const to = (crossing.y + shiftY) * 128 + x + shiftX;
+    if (returned.water[to] === before.water[from] && !returned.subway[to]) kept += 1;
+    if (before.water[from]) wet += 1;
+  }
+  test.assert(wet > 0 && kept === span, `the line's ${wet} water tiles come back as water, and no tile brings a subway back`);
+}
+
+// --- ruleset 6: an avenue leaves as the two roads it is -----------------------
+{
+  const town = sim.createCity({ seed: 610, size: 64, yearFounded: 1920 });
+  let spot = null;
+  for (let y = 2; y < 58 && !spot; y += 1) for (let x = 2; x < 50 && !spot; x += 1) {
+    let flat = true; const base = town.alt[y * 64 + x];
+    for (let k = 0; k < 10 && flat; k += 1) for (const dy of [0, 1]) if (town.water[(y + dy) * 64 + x + k] || town.alt[(y + dy) * 64 + x + k] !== base) flat = false;
+    if (flat) spot = { x, y };
+  }
+  const laid = sim.submitCommand(town, { schemaVersion: 2, type: "build-path", payload: { network: "avenue", points: [{ x: spot.x, y: spot.y }, { x: spot.x + 9, y: spot.y }] }, targetTick: town.tick });
+  test.assert(laid.accepted, "the Micropolis town lays an avenue");
+  const before = sim.serialize(town);
+  const sent = exporter.exportMicropolis(before, { name: "Avenue Town" });
+  const returned = codec.importMicropolis(sent.saveData, { name: "Avenue Town" }).payload;
+  const win = sent.details.window;
+  const shiftX = -win.x + win.embedX + Math.floor((128 - 120) / 2);
+  const shiftY = -win.y + win.embedY + Math.floor((128 - 100) / 2);
+  let roads = 0;
+  for (let x = spot.x; x <= spot.x + 9; x += 1) for (const y of [spot.y, spot.y + 1]) if (returned.road[(y + shiftY) * 128 + x + shiftX] === 1) roads += 1;
+  test.assert(sent.warnings.includes("layer-dropped-avenue:20"), `the avenue's downgrade is reported for every half (${sent.warnings.join(", ")})`);
+  test.assert(roads === 20 && !("avenue" in returned) && sent.warnings.every((code) => !code.startsWith("tiles-without-equivalent")),
+    `both halves of the avenue export as classic roads and come back as roads (${roads} of 20)`);
+}
+
 // --- the worker entry carries both operations ---------------------------------
 {
   const workerSource = read("app/features/bonsai-save-worker.js");

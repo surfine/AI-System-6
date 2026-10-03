@@ -3316,12 +3316,26 @@ body[data-menu-bar-model="system-owned"] {
 }
 
 .system-modal p {
+  max-height: 50dvh;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
   min-height: 34px;
   margin: 0 0 16px 0;
   padding-left: 46px;
   position: relative;
   line-height: 1.4;
   white-space: pre-line;
+}
+
+/* A candidate is a piece of writing to read, so give its text the whole
+   message area. Ordinary confirmation dialogs retain their alert icon. */
+.system-modal.is-reading-candidate #system-modal-message {
+  display: block;
+  padding-left: 0;
+}
+
+.system-modal.is-reading-candidate #system-modal-message::before {
+  display: none;
 }
 
 .system-modal p::before {

@@ -193,7 +193,11 @@ test.assertIncludes(notes, "no network path", "provenance states the offline gen
     { bit: 4, dx: -edgeX, dy: edgeY, name: "y+1" },
     { bit: 8, dx: -edgeX, dy: -edgeY, name: "x-1" },
   ];
-  const families = ["road", "rail", "wire", "highway", "pipe", "subway", "bridge-road", "bridge-rail", "bridge-highway"];
+  // `wire.side` is the same line where it shares a tile with a street: the
+  // pole moves to the kerb, the conductors must still reach every connected
+  // edge midpoint at line height, or a street's wires would break at the
+  // tile boundary.
+  const families = ["road", "rail", "wire", "wire.side", "highway", "pipe", "subway", "bridge-road", "bridge-rail", "bridge-highway"];
   for (const family of families) {
     for (let mask = 0; mask < 16; mask += 1) {
       const frame = atlas.frames[`${family}.mask-${mask}`];
@@ -206,7 +210,7 @@ test.assertIncludes(notes, "no network path", "provenance states the offline gen
       // Power lines hang from the pole tops, so a wire meets its neighbour at
       // the edge midpoint lifted to line height (14 voxels × 2.5 px), not on
       // the ground.
-      const lift = family === "wire" ? 36 : 0;
+      const lift = family.startsWith("wire") ? 36 : 0;
       const opaqueNear = (dx, dy, radius = 1) => {
         for (let oy = -radius; oy <= radius; oy += 1) {
           for (let ox = -radius; ox <= radius; ox += 1) {

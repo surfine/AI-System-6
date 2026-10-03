@@ -490,7 +490,7 @@ test.assertNotIncludes(translation, receiptModelFromSelection, "and no longer th
 // The module records what the stream named, every stream in the file reports
 // it, and the receipt no longer falls back to the desk's local selection.
 test.assertIncludes(outlineClaim, "function noteServedWritingModel", "outline-claim records the model the stream served");
-const servedModelStreamReports = outlineClaim.split("onModel: noteServedWritingModel").length - 1;
+const servedModelStreamReports = (outlineClaim.match(/onModel: (?:noteServedWritingModel|\(model\) => \{ servedModel = String\(model \|\| ""\); \})/g) || []).length;
 test.assert(
   servedModelStreamReports >= 6,
   "every writing-route stream in outline-claim reports the served model"

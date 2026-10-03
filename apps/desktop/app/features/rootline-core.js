@@ -10,9 +10,28 @@
 // are derived from it and cached outside it, keyed by `networkVersion`, so the
 // state itself stays serialisable and hashable.
 //
-// Spec: internal/plans/TRANSIT-GAME-SPEC.zh-CN.md (§2, §8b).
+// Three ways to lay a line (Basin plan, 「公交、快速公交与慢行」): the metro,
+// octilinear and under the water by tunnel; the BRT on the avenues' central
+// lanes; the bus along the streets. Both road modes cross water only by
+// bridge. A game created without `modes` is the metro-only game it always
+// was, key for key, so its seeds replay to the hashes they always did.
+//
+// A city is generated from the seed, or handed over from a Bonsai City pot
+// (rootline-pot.js) and kept whole in `game.city`, so the hash and the replay
+// cover it.
+//
+// Spec: internal/plans/TRANSIT-GAME-SPEC.zh-CN.md (§2, §8b);
+// internal/plans/BASIN-WORLD.zh-CN.md (lane L3, 「玩法与规则」).
 (function installRootlineCore(root) {
   "use strict";
+
+  // The shared world core (app/core/pot-world.js, first in the loader) owns
+  // the city names, the hour curves and the land-use kinds, so a Rootline
+  // city, a Bonsai City pot and a Joyride street agree on them.
+  const World = root.AISystem6PotWorld;
+  if (!World) throw new Error("rootline-core needs app/core/pot-world.js loaded first");
+  const { activity, periodOf, originWeight, destinationWeights, roadTraffic } = World.hours;
+  const MODES = World.transit.MODES;
 
   const RULES = Object.freeze({
     ticksPerSecond: 60,
@@ -45,9 +64,14 @@
     turnCost: 1.2,
     dwellCost: 0.8,
     start: Object.freeze({ lines: 3, trains: 3, carriages: 0, tunnels: 3, interchanges: 0 }),
+    // Only in a game with the road modes: route numbers 11-16 (a separate
+    // pool from the seven line slots), buses, and avenue corridor pairs.
+    routeSlots: 6,
+    startTransit: Object.freeze({ routes: 1, buses: 3, avenues: 0 }),
+    stationCap: 64,
   });
 
-  const KINDS = Object.freeze(["residential", "commercial", "industrial", "school", "hospital", "stadium", "airport", "port"]);
+  const KINDS = World.landUse.KINDS;
   const EVERYDAY = Object.freeze(["residential", "commercial", "industrial"]);
 
   // Landmarks arrive on a schedule, by station count, so every city meets
@@ -58,6 +82,49 @@
   ]);
 
   const REWARDS = Object.freeze(["line", "carriage", "tunnel", "interchange"]);
+
+  // ----- modes --------------------------------------------------------------
+  //
+  // A line without a `mode` is a metro line. Its running numbers are RULES'
+  // own (equal to the world's MODES.metro), so a metro-only game runs on the
+  // arithmetic it always did; the road modes take theirs from the world.
+
+  const TRANSIT = Object.freeze(["metro", "brt", "bus"]);
+  const isRoad = (mode) => mode === "brt" || mode === "bus";
+
+  function modeOfLine(record) {
+    return record && isRoad(record.mode) ? record.mode : "metro";
+  }
+
+  const METRO_PACE = Object.freeze({
+    speed: RULES.trainSpeed,
+    accel: RULES.trainAccel,
+    capacity: RULES.carCapacity,
+    boardTicks: RULES.transferTicks,
+    minDwellTicks: RULES.minDwellTicks,
+    board: RULES.boardCost,
+    alight: RULES.alightCost,
+    peakSlowdown: 0,
+  });
+  const PACES = Object.freeze({ metro: METRO_PACE, brt: MODES.brt.rootline, bus: MODES.bus.rootline });
+
+  function paceOf(mode) {
+    return PACES[mode] || METRO_PACE;
+  }
+
+  function normalizeModes(value) {
+    if (!Array.isArray(value)) return null;
+    const modes = TRANSIT.filter((mode) => value.includes(mode));
+    return modes.some(isRoad) ? (modes.includes("metro") ? modes : ["metro", ...modes]) : null;
+  }
+
+  // How much the evening and morning traffic slows a bus: 0 at noon, about
+  // 0.71 at 08:00, 1 at 18:00 (Basin plan 2.4). Routing plans by period, the
+  // buses themselves by the hour.
+  function peak(hour) {
+    return Math.max(0, Math.min(1, (roadTraffic(hour) - 0.55) / 0.7));
+  }
+  const PERIOD_PEAK = Object.freeze({ morning: peak(8), evening: peak(18), day: 0, night: 0 });
 
   // ----- determinism primitives ---------------------------------------------
 
@@ -112,29 +179,9 @@
     return { day, weekday: day % RULES.daysPerWeek, week: Math.floor(tick / ticksPerWeek()) + 1, hour };
   }
 
-  function bump(hour, center, width) {
-    const d = (hour - center) / width;
-    return Math.exp(-d * d);
-  }
-
-  // The two peaks. Morning pushes homes out to work and school; evening pulls
-  // everybody home. A line that only serves one direction runs empty half the
-  // day, which is the whole point of the time axis (spec §2.2, 二).
-  function periodOf(hour) {
-    if (hour >= 6.5 && hour < 9.5) return "morning";
-    if (hour >= 16.5 && hour < 19.5) return "evening";
-    if (hour >= 22 || hour < 5.5) return "night";
-    return "day";
-  }
-
-  // How awake the city is. The peaks themselves live in originWeight, per
-  // kind, so they can point in opposite directions.
-  function activity(hour) {
-    if (hour >= 23.5 || hour < 5) return 0.2;
-    if (hour < 6.5) return 0.55;
-    if (hour >= 21.5) return 0.5;
-    return 1;
-  }
+  // The peaks (periodOf), how awake the city is (activity) and which way
+  // people travel at each hour (originWeight, destinationWeights) are the
+  // world's one rhythm: World.hours.
 
   // ----- geometry -----------------------------------------------------------
 
@@ -196,6 +243,39 @@
     return count;
   }
 
+  // Tunnels a metro leg needs. On a generated city, one per crossing of the
+  // river. On a pot, each body of water is a polygon (its rings: the shore
+  // and any islands): a leg needs ceil(boundary crossings / 2) tunnels for
+  // each body it passes, so one pass under a river is one tunnel.
+  function crossesXY(ax, ay, bx, by, cx, cy, dx, dy) {
+    const d1 = (dx - cx) * (ay - cy) - (dy - cy) * (ax - cx);
+    const d2 = (dx - cx) * (by - cy) - (dy - cy) * (bx - cx);
+    const d3 = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
+    const d4 = (bx - ax) * (dy - ay) - (by - ay) * (dx - ax);
+    return ((d1 > 0) !== (d2 > 0)) && ((d3 > 0) !== (d4 > 0));
+  }
+
+  function waterCrossings(game, points) {
+    if (!isPot(game)) return riverCrossings(game, points);
+    let tunnels = 0;
+    for (const body of game.city.water) {
+      let hits = 0;
+      for (const ring of body.rings) {
+        const n = ring.length / 2;
+        for (let i = 1; i < points.length; i += 1) {
+          const a = points[i - 1];
+          const b = points[i];
+          for (let j = 0; j < n; j += 1) {
+            const k = (j + 1) % n;
+            if (crossesXY(a.x, a.y, b.x, b.y, ring[2 * j], ring[2 * j + 1], ring[2 * k], ring[2 * k + 1])) hits += 1;
+          }
+        }
+      }
+      tunnels += Math.ceil(hits / 2);
+    }
+    return tunnels;
+  }
+
   function distanceToPolyline(p, points) {
     let best = Infinity;
     for (let i = 1; i < points.length; i += 1) {
@@ -212,14 +292,23 @@
 
   // ----- city ---------------------------------------------------------------
 
-  const NAME_HEADS = [["青", "Qing"], ["柳", "Liu"], ["石", "Shi"], ["松", "Song"], ["白", "Bai"], ["鹤", "He"], ["枫", "Feng"], ["渔", "Yu"], ["桐", "Tong"], ["兰", "Lan"], ["云", "Yun"], ["梅", "Mei"], ["苇", "Wei"], ["榕", "Rong"]];
-  const NAME_TAILS = [["湾", "wan"], ["汀", "ting"], ["川", "chuan"], ["原", "yuan"], ["港", "gang"], ["桥", "qiao"], ["岭", "ling"], ["门", "men"], ["洲", "zhou"], ["浦", "pu"], ["溪", "xi"], ["陵", "ling"]];
+  // The name comes from the world's table, from the seed alone, and draws
+  // nothing from the game's random stream. A neighbouring pot opened as a
+  // nursery keeps the neighbour's own name instead.
+  const cityName = World.names.city;
 
-  function cityName(seed) {
-    const h = seedFrom(`name:${seed}`);
-    const head = NAME_HEADS[h % NAME_HEADS.length];
-    const tail = NAME_TAILS[Math.floor(h / NAME_HEADS.length) % NAME_TAILS.length];
-    return { zh: `${head[0]}${tail[0]}`, en: `${head[1]}${tail[1]}` };
+  function nameOf(value) {
+    return value && typeof value.zh === "string" && typeof value.en === "string" && (value.zh || value.en) ? { zh: value.zh, en: value.en } : null;
+  }
+
+  // A pot handed over from Bonsai City (rootline-pot.js), rather than a city
+  // grown from the seed.
+  function isPot(game) {
+    return game.city.kind === "pot";
+  }
+
+  function stationCap(game) {
+    return isPot(game) ? Math.min(RULES.stationCap, game.city.sites.length) : RULES.stationCap;
   }
 
   function makeRiver(game) {
@@ -333,7 +422,30 @@
     return station;
   }
 
+  function addSite(game, index) {
+    const site = game.city.sites[index];
+    const s = addStation(game, { x: site.x, y: site.y }, site.kind);
+    s.name = { zh: site.name.zh, en: site.name.en };
+    s.site = index;
+    return s;
+  }
+
+  // On a pot the stations come from its sites: the next real landmark when
+  // the schedule calls for one (none in the city, none on the map), otherwise
+  // the next place people live and work, in the order the converter ranked.
+  function spawnPotStation(game) {
+    const sites = game.city.sites;
+    const used = new Set(game.stations.map((s) => s.site));
+    const free = (i) => !used.has(i);
+    const landmark = LANDMARKS.find(([at]) => at === game.stations.length + 1);
+    let index = landmark ? sites.findIndex((s, i) => free(i) && s.kind === landmark[1]) : -1;
+    if (index < 0) index = sites.findIndex((s, i) => free(i) && EVERYDAY.includes(s.kind));
+    if (index < 0) index = sites.findIndex((s, i) => free(i));
+    return index < 0 ? null : addSite(game, index);
+  }
+
   function spawnStation(game) {
+    if (isPot(game)) return spawnPotStation(game);
     const count = game.stations.length;
     const landmark = LANDMARKS.find(([at]) => at === count + 1);
     if (landmark) {
@@ -349,23 +461,320 @@
 
   function nextStationDelay(game) {
     const weeks = game.tick / ticksPerWeek();
-    const seconds = Math.max(10, 26 - weeks * 3) * (0.8 + nextRandom(game) * 0.45);
+    // Calibrated by hand play (2026-10-01): at the earlier 26 - 3w the city
+    // passed 30 stations by week 4, every line was forced past ten stops on
+    // one or two trains, and careful play (loops, interchanges, rebalancing)
+    // lasted no longer than a bot that never reorganises. Slower growth
+    // leaves the difference to the player.
+    const seconds = Math.max(12, 28 - weeks * 2.5) * (0.8 + nextRandom(game) * 0.45);
     return Math.round(seconds * RULES.ticksPerSecond);
+  }
+
+  // ----- the road modes' legs ------------------------------------------------
+  //
+  // A bus or BRT leg is a road route, canonical per station pair (lower id
+  // first) and cached outside the state. On a generated city it is a right-
+  // angled L, the lower id running across first, and it crosses the river
+  // only at a bridge. On a pot it is the shortest way along the real roads
+  // (the BRT along avenue tiles only): one per tile, half more for each turn,
+  // ties to north, east, south, west.
+
+  const round1 = (v) => Math.round(v * 10) / 10;
+
+  function ortho(p, q, across) {
+    const bend = across ? { x: q.x, y: p.y } : { x: p.x, y: q.y };
+    return [{ x: p.x, y: p.y }, bend, { x: q.x, y: q.y }];
+  }
+
+  function joinRuns(runs) {
+    const out = [];
+    for (const run of runs) {
+      for (const p of run) {
+        const last = out[out.length - 1];
+        if (!last || Math.abs(last.x - p.x) > 1e-9 || Math.abs(last.y - p.y) > 1e-9) out.push({ x: p.x, y: p.y });
+      }
+    }
+    return out;
+  }
+
+  // Bridges are derived, never stored: two (three on a long river) at even
+  // arc lengths, each nudged by a hash of the seed, so they draw nothing from
+  // the random stream and a metro-only game never knows they are there.
+  const bridgeCache = new WeakMap();
+  function bridgesOf(game) {
+    if (isPot(game)) return [];
+    const river = game.city.river;
+    const cached = bridgeCache.get(game);
+    if (cached && cached.river === river) return cached.bridges;
+    const total = polylineLength(river);
+    const count = total > 1400 ? 3 : 2;
+    // The river overhangs the map by 40 at each end.
+    const usable = Math.max(0, total - 80);
+    const bridges = [];
+    for (let k = 0; k < count; k += 1) {
+      const nudge = ((World.hash32(`bridge:${game.seed}:${k}`) % 1001) / 1000 - 0.5) * 0.16;
+      const s = Math.max(0.06, Math.min(0.94, (k + 0.5) / count + nudge));
+      const at = pointAlong(river, 40 + usable * s);
+      // The deck runs square to the map: a river flowing across takes a
+      // north-south bridge, one flowing down an east-west one.
+      const across = Math.abs(Math.cos(at.angle)) < Math.abs(Math.sin(at.angle));
+      const ux = across ? 1 : 0;
+      const uy = across ? 0 : 1;
+      let half = RULES.riverHalfWidth + 16;
+      let a = null;
+      let b = null;
+      for (let tries = 0; tries < 12; tries += 1) {
+        a = { x: round1(at.x - ux * half), y: round1(at.y - uy * half) };
+        b = { x: round1(at.x + ux * half), y: round1(at.y + uy * half) };
+        if (distanceToPolyline(a, river) >= RULES.riverHalfWidth + 6 && distanceToPolyline(b, river) >= RULES.riverHalfWidth + 6) break;
+        half += 8;
+      }
+      bridges.push({ x: round1(at.x), y: round1(at.y), a, b });
+    }
+    bridgeCache.set(game, { river, bridges });
+    return bridges;
+  }
+
+  // How crowded the streets under a generated-city leg are: denser near the
+  // centre (Basin plan 2.4).
+  function groundLoad(game, points) {
+    const c = game.city.center;
+    const total = polylineLength(points);
+    const samples = Math.max(2, Math.ceil(total / 24) + 1);
+    let sum = 0;
+    for (let i = 0; i < samples; i += 1) {
+      const p = pointAlong(points, (total * i) / (samples - 1));
+      sum += Math.exp(-((Math.hypot(p.x - c.x, p.y - c.y) / 260) ** 2));
+    }
+    return 0.3 + (0.7 * sum) / samples;
+  }
+
+  function groundRoute(game, p, q) {
+    const direct = ortho(p, q, true);
+    const crossings = riverCrossings(game, direct);
+    const done = (points) => ({ points: joinRuns([points]), problem: "", tiles: null, load: groundLoad(game, points) });
+    if (crossings === 0) return done(direct);
+    if (crossings % 2 === 0) {
+      const other = ortho(p, q, false);
+      if (riverCrossings(game, other) === 0) return done(other);
+      return { points: joinRuns([direct]), problem: "bridge", tiles: null, load: 0 };
+    }
+    // Over a bridge: the approach and the way on stay each on their own
+    // bank, so the one crossing is the deck's.
+    let best = null;
+    for (const bridge of bridgesOf(game)) {
+      for (const [near, far] of [[bridge.a, bridge.b], [bridge.b, bridge.a]]) {
+        const approach = ortho(p, near, true);
+        const onward = ortho(far, q, true);
+        if (riverCrossings(game, approach) || riverCrossings(game, onward) || riverCrossings(game, [near, far]) !== 1) continue;
+        const points = joinRuns([approach, onward]);
+        const length = polylineLength(points);
+        if (!best || length < best.length - 1e-9) best = { points, length };
+      }
+    }
+    return best ? done(best.points) : { points: joinRuns([direct]), problem: "bridge", tiles: null, load: 0 };
+  }
+
+  // The pot's roads, avenues and traffic as lookup layers, built once per city.
+  const potGraphs = new WeakMap();
+  function potGraph(game) {
+    const city = game.city;
+    let graph = potGraphs.get(city);
+    if (graph) return graph;
+    const count = city.size * city.size;
+    const road = new Uint8Array(count);
+    for (const i of city.roads) road[i] = 1;
+    const avenue = new Uint8Array(count);
+    for (let k = 0; k < city.avenue.length; k += 2) avenue[city.avenue[k]] = city.avenue[k + 1];
+    const jam = new Uint8Array(count);
+    for (let k = 0; k < city.jam.length; k += 2) jam[city.jam[k]] = city.jam[k + 1];
+    graph = { size: city.size, road, avenue, jam };
+    potGraphs.set(city, graph);
+    return graph;
+  }
+
+  const STEPS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+
+  // Tile path from one stop tile to another over `pass`, as [x0, y0, x1, y1,
+  // ...], or null. Costs are doubled to stay integral (a tile 2, a turn 1),
+  // so a bucket queue settles them in order; first come wins a tie, and
+  // neighbours are tried north, east, south, west.
+  function shortestPath(size, pass, from, to) {
+    const start = from[1] * size + from[0];
+    const goal = to[1] * size + to[0];
+    if (!pass[start] || !pass[goal]) return null;
+    if (start === goal) return [from[0], from[1]];
+    const states = size * size * 5;
+    const best = new Int32Array(states).fill(0x7fffffff);
+    const prev = new Int32Array(states).fill(-1);
+    const buckets = [];
+    const origin = start * 5 + 4;
+    best[origin] = 0;
+    buckets[0] = [origin];
+    let found = -1;
+    for (let cost = 0; cost < buckets.length && found < 0; cost += 1) {
+      const bucket = buckets[cost];
+      if (!bucket) continue;
+      for (let k = 0; k < bucket.length; k += 1) {
+        const state = bucket[k];
+        if (best[state] !== cost) continue;
+        const tile = (state / 5) | 0;
+        if (tile === goal) { found = state; break; }
+        const heading = state % 5;
+        const x = tile % size;
+        const y = (tile - x) / size;
+        for (let d = 0; d < 4; d += 1) {
+          const nx = x + STEPS[d][0];
+          const ny = y + STEPS[d][1];
+          if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
+          const next = ny * size + nx;
+          if (!pass[next]) continue;
+          const nc = cost + 2 + (heading !== 4 && heading !== d ? 1 : 0);
+          const ns = next * 5 + d;
+          if (nc < best[ns]) {
+            best[ns] = nc;
+            prev[ns] = state;
+            (buckets[nc] ||= []).push(ns);
+          }
+        }
+      }
+    }
+    if (found < 0) return null;
+    const tiles = [];
+    for (let state = found; state >= 0; state = prev[state]) tiles.push((state / 5) | 0);
+    tiles.reverse();
+    return tiles.flatMap((tile) => [tile % size, (tile - (tile % size)) / size]);
+  }
+
+  function potRoute(game, p, q, mode) {
+    const graph = potGraph(game);
+    const city = game.city;
+    const brt = mode === "brt";
+    const problem = brt ? "avenue" : "road";
+    const sp = city.sites[p.site];
+    const sq = city.sites[q.site];
+    const from = sp ? (brt ? sp.brt : sp.stop) : null;
+    const to = sq ? (brt ? sq.brt : sq.stop) : null;
+    const refused = { points: [{ x: p.x, y: p.y }, { x: q.x, y: q.y }], problem, tiles: null, load: 0 };
+    if (!from || !to) return refused;
+    const tiles = shortestPath(graph.size, brt ? graph.avenue : graph.road, from, to);
+    if (!tiles) return refused;
+    const centre = (k) => ({ x: city.bounds.x + (tiles[2 * k] + 0.5) * city.cell, y: city.bounds.y + (tiles[2 * k + 1] + 0.5) * city.cell });
+    const n = tiles.length / 2;
+    const turns = [];
+    for (let k = 0; k < n; k += 1) {
+      if (k === 0 || k === n - 1) { turns.push(centre(k)); continue; }
+      const ax = tiles[2 * k] - tiles[2 * k - 2];
+      const ay = tiles[2 * k + 1] - tiles[2 * k - 1];
+      const bx = tiles[2 * k + 2] - tiles[2 * k];
+      const by = tiles[2 * k + 3] - tiles[2 * k + 1];
+      if (ax !== bx || ay !== by) turns.push(centre(k));
+    }
+    // From the station to its stop and from the last stop to the station,
+    // square to the grid like the rest of the route.
+    const points = joinRuns([ortho(p, turns[0], true), turns, ortho(turns[turns.length - 1], q, false)]);
+    let load = 0;
+    for (let k = 0; k < n; k += 1) {
+      const i = tiles[2 * k + 1] * graph.size + tiles[2 * k];
+      load += graph.avenue[i] ? 0 : graph.jam[i] / 3;
+    }
+    return { points, problem: "", tiles, load: load / n };
+  }
+
+  const legCache = new WeakMap();
+
+  // The way between two stations for a mode, in travel order a -> b: its
+  // points, and a reason it cannot be built ("road", "avenue", "bridge") or
+  // "". A metro leg is legPoints, unchanged.
+  function legRoute(game, a, b, mode = "metro") {
+    if (!isRoad(mode)) return { points: legPoints(a, b), problem: "", tiles: null, load: 0 };
+    const flip = a.id > b.id;
+    const p = flip ? b : a;
+    const q = flip ? a : b;
+    let cache = legCache.get(game);
+    if (!cache || cache.city !== game.city || cache.river !== game.city.river) {
+      cache = { city: game.city, river: game.city.river, legs: new Map() };
+      legCache.set(game, cache);
+    }
+    // On a generated city a bus and a BRT share a leg's shape.
+    const key = `${isPot(game) ? mode : "road"}:${p.id}-${q.id}`;
+    let entry = cache.legs.get(key);
+    if (!entry) {
+      entry = isPot(game) ? potRoute(game, p, q, mode) : groundRoute(game, p, q);
+      cache.legs.set(key, entry);
+    }
+    return flip ? { ...entry, points: [...entry.points].reverse() } : entry;
+  }
+
+  function legPath(game, a, b, mode = "metro") {
+    return legRoute(game, a, b, mode).points;
+  }
+
+  const pairKey = (a, b) => (a < b ? `${a}-${b}` : `${b}-${a}`);
+
+  function linePairs(stops, loop) {
+    const out = [];
+    const n = loop ? stops.length : stops.length - 1;
+    for (let i = 0; i < n; i += 1) out.push(pairKey(stops[i], stops[(i + 1) % stops.length]));
+    return out;
+  }
+
+  // Station pairs the BRT covers. On a generated city each costs one avenue
+  // from the stock, however many BRT lines share it; on a pot the avenues are
+  // the city's own and cost nothing.
+  function avenuePairs(game, exceptLineId = 0) {
+    const pairs = new Set();
+    for (const record of game.lines) {
+      if (record.id === exceptLineId || modeOfLine(record) !== "brt") continue;
+      for (const key of linePairs(record.stops, record.loop)) pairs.add(key);
+    }
+    return pairs;
+  }
+
+  function avenuesUsed(game) {
+    return isPot(game) ? 0 : avenuePairs(game).size;
+  }
+
+  // A bus on a pair the BRT runs rides the avenue too and crawls nowhere.
+  function legLoad(game, aId, bId) {
+    const a = station(game, aId);
+    const b = station(game, bId);
+    if (!a || !b) return 0;
+    if (avenuePairs(game).has(pairKey(aId, bId))) return 0;
+    return legRoute(game, a, b, "bus").load || 0;
   }
 
   // ----- game ---------------------------------------------------------------
 
+  // The road modes arrive with their stock and their delivery count, at the
+  // start of a game or (see the "modes.open" command) when a metro-only game
+  // lays its first bus or BRT line.
+  function addModes(game, modes) {
+    game.modes = modes;
+    game.deliveredBy = { metro: 0, brt: 0, bus: 0 };
+    for (const [key, value] of Object.entries(RULES.startTransit)) game.owned[key] = (game.owned[key] || 0) + value;
+  }
+
+  // options: seed, mode ("classic" | "endless"), and optionally
+  //   modes: ["metro", "brt", "bus"] -- the road modes, their stock, rewards
+  //     and the per-mode delivery count; left out, none of it exists;
+  //   city: a pot from rootline-pot.js fromHandoff (copied into the state);
+  //   name: { zh, en } for a generated city that should not take the seed's.
   function createGame(options = {}) {
     const seed = seedFrom(options.seed ?? 1);
+    const pot = options.city && options.city.kind === "pot" ? JSON.parse(JSON.stringify(options.city)) : null;
+    const modes = normalizeModes(options.modes);
     const game = {
-      version: 1,
+      version: pot ? 2 : 1,
       seed,
       mode: options.mode === "endless" ? "endless" : "classic",
       rng: seed,
       tick: 0,
       nextId: 1,
       networkVersion: 0,
-      city: { name: cityName(seed), width: RULES.mapWidth, height: RULES.mapHeight, river: [], center: null, industryAngle: 0 },
+      city: pot
+        ? { ...pot, name: nameOf(pot.name) || cityName(seed), width: RULES.mapWidth, height: RULES.mapHeight, river: [], industryAngle: 0 }
+        : { name: nameOf(options.name) || cityName(seed), width: RULES.mapWidth, height: RULES.mapHeight, river: [], center: null, industryAngle: 0 },
       stations: [],
       lines: [],
       trains: [],
@@ -377,6 +786,14 @@
       nextStationTick: 0,
       events: [],
     };
+    if (modes) addModes(game, modes);
+    if (pot) {
+      // A pot opens on the planning table: its clock waits for the first line.
+      game.planning = true;
+      for (const index of pot.start) if (pot.sites[index]) addSite(game, index);
+      game.nextStationTick = Math.round(16 * RULES.ticksPerSecond);
+      return game;
+    }
     makeCity(game);
     // Three stations to begin with: a home, a shop and a works (spec §2.1).
     const c = game.city.center;
@@ -410,33 +827,57 @@
     return game.lines.find((l) => l.id === id) || null;
   }
 
-  function lineLegs(game, stops, loop) {
+  function lineLegs(game, stops, loop, mode = "metro") {
     const legs = [];
     const count = loop ? stops.length : stops.length - 1;
     for (let i = 0; i < count; i += 1) {
       const a = station(game, stops[i]);
       const b = station(game, stops[(i + 1) % stops.length]);
-      if (a && b) legs.push(legPoints(a, b));
+      if (a && b) legs.push(isRoad(mode) ? legRoute(game, a, b, mode).points : legPoints(a, b));
     }
     return legs;
   }
 
-  function stopsTunnels(game, stops, loop) {
-    return lineLegs(game, stops, loop).reduce((sum, points) => sum + riverCrossings(game, points), 0);
+  // Only the metro spends tunnels; the road modes cross by bridge.
+  function stopsTunnels(game, stops, loop, mode = "metro") {
+    if (isRoad(mode)) return 0;
+    return lineLegs(game, stops, loop).reduce((sum, points) => sum + waterCrossings(game, points), 0);
   }
 
+  // The first leg of a road line that cannot be built, and why.
+  function roadProblem(game, stops, loop, mode) {
+    const count = loop ? stops.length : stops.length - 1;
+    for (let i = 0; i < count; i += 1) {
+      const a = station(game, stops[i]);
+      const b = station(game, stops[(i + 1) % stops.length]);
+      const problem = a && b ? legRoute(game, a, b, mode).problem : "station";
+      if (problem) return problem;
+    }
+    return "";
+  }
+
+  // What is left in the depot. Bus routes sit in slots past the seven line
+  // slots (RULES.lineSlots + k - 1 for route 10 + k), so `lines` counts only
+  // the metro and BRT; buses are road vehicles, flagged as such.
   function available(game) {
-    const linesUsed = game.lines.length;
-    const trainsUsed = game.trains.filter((t) => !t.retiring).length;
-    const carriagesUsed = game.trains.reduce((sum, t) => sum + (t.retiring ? 0 : t.carriages), 0);
+    const linesUsed = game.lines.filter((l) => l.slot < RULES.lineSlots).length;
+    const rail = game.trains.filter((t) => !t.retiring && !t.road);
+    const trainsUsed = rail.length;
+    const carriagesUsed = rail.reduce((sum, t) => sum + t.carriages, 0);
     const tunnelsUsed = game.lines.reduce((sum, l) => sum + l.tunnels, 0);
-    return {
+    const out = {
       lines: game.owned.lines - linesUsed,
       trains: game.owned.trains - trainsUsed,
       carriages: game.owned.carriages - carriagesUsed,
       tunnels: game.owned.tunnels - tunnelsUsed,
       interchanges: game.owned.interchanges - game.interchangesUsed,
     };
+    if (game.modes) {
+      out.routes = game.owned.routes - game.lines.filter((l) => l.slot >= RULES.lineSlots).length;
+      out.buses = game.owned.buses - game.trains.filter((t) => !t.retiring && t.road).length;
+      out.avenues = game.owned.avenues - avenuesUsed(game);
+    }
+    return out;
   }
 
   function freeSlot(game) {
@@ -446,20 +887,45 @@
     return -1;
   }
 
+  function freeRoute(game) {
+    for (let k = 1; k <= RULES.routeSlots; k += 1) {
+      const slot = RULES.lineSlots - 1 + k;
+      if (!game.lines.some((l) => l.slot === slot)) return slot;
+    }
+    return -1;
+  }
+
+  // A bus route's number: 11 for the first route slot, up to 16.
+  function routeNumber(slot) {
+    return slot - RULES.lineSlots + 11;
+  }
+
   // Whether a list of stops is a legal line. `lineId` is the line being
-  // edited (its own tunnels are released for the comparison).
-  function validateStops(game, stops, loop, lineId) {
+  // edited (its own tunnels are released for the comparison); `mode` is the
+  // way it is laid, the edited line's own when not given.
+  function validateStops(game, stops, loop, lineId, mode) {
+    const kind = mode || (lineId ? modeOfLine(line(game, lineId)) : "metro");
     if (!Array.isArray(stops) || stops.length < 2) return "short";
     if (new Set(stops).size !== stops.length) return "repeat";
     if (loop && stops.length < 3) return "short";
     for (const id of stops) if (!station(game, id)) return "station";
+    if (isRoad(kind)) {
+      const problem = roadProblem(game, stops, loop, kind);
+      if (problem) return problem;
+      if (kind === "brt" && !isPot(game)) {
+        const pairs = avenuePairs(game, lineId || 0);
+        for (const key of linePairs(stops, loop)) pairs.add(key);
+        if (pairs.size > game.owned.avenues) return "no-avenue";
+      }
+      return "";
+    }
     const own = lineId ? line(game, lineId)?.tunnels || 0 : 0;
     const need = stopsTunnels(game, stops, loop);
     if (need > available(game).tunnels + own) return "tunnel";
     return "";
   }
 
-  function makeTrain(game, lineRecord, atIndex = 0, dir = 1) {
+  function makeTrain(game, lineRecord, atIndex = 0, dir = 1, road = false) {
     const train = {
       id: game.nextId++,
       lineId: lineRecord.id,
@@ -477,6 +943,9 @@
       retiring: false,
       carried: 0,
     };
+    // A bus or an articulated BRT bus: it comes from the bus depot, not the
+    // train shed, whichever of the two its line runs as.
+    if (road) train.road = true;
     game.trains.push(train);
     return train;
   }
@@ -488,15 +957,44 @@
   // log lands on the same state.
 
   const COMMANDS = {
-    "line.create"(game, { stops, loop = false }) {
-      if (available(game).lines <= 0) return "no-line";
-      const slot = freeSlot(game);
-      if (slot < 0) return "no-line";
-      const problem = validateStops(game, stops, loop, 0);
+    // A seeded game begins metro-only, so its hash and its weekly choices are
+    // what they always were; the road modes are switched on by this command,
+    // logged like any other, just before the first bus or BRT line.
+    "modes.open"(game, { modes }) {
+      if (game.modes) return "mode";
+      const chosen = normalizeModes(modes);
+      if (!chosen) return "mode";
+      addModes(game, chosen);
+      return "";
+    },
+    // `mode` is "metro" when left out; the road modes exist only in a game
+    // created with them. A line records its mode only when it is not metro,
+    // and a bus its route number.
+    "line.create"(game, { stops, loop = false, mode = "metro" }) {
+      if (!TRANSIT.includes(mode) || (mode !== "metro" && !game.modes?.includes(mode))) return "mode";
+      let slot;
+      if (mode === "bus") {
+        if (available(game).routes <= 0) return "no-route";
+        slot = freeRoute(game);
+        if (slot < 0) return "no-route";
+      } else {
+        if (available(game).lines <= 0) return "no-line";
+        slot = freeSlot(game);
+        if (slot < 0) return "no-line";
+      }
+      const problem = validateStops(game, stops, loop, 0, mode);
       if (problem) return problem;
-      const record = { id: game.nextId++, slot, stops: [...stops], loop: Boolean(loop), tunnels: stopsTunnels(game, stops, loop), carried: 0, created: game.tick };
+      const record = { id: game.nextId++, slot, stops: [...stops], loop: Boolean(loop), tunnels: stopsTunnels(game, stops, loop, mode), carried: 0, created: game.tick };
+      if (mode !== "metro") record.mode = mode;
+      if (mode === "bus") record.number = routeNumber(slot);
       game.lines.push(record);
-      if (available(game).trains > 0) makeTrain(game, record, 0, 1);
+      if (isRoad(mode)) {
+        if (available(game).buses > 0) makeTrain(game, record, 0, 1, true);
+      } else if (available(game).trains > 0) {
+        makeTrain(game, record, 0, 1);
+      }
+      // The first line ends the planning table's wait: the clock starts.
+      if (game.planning) game.planning = false;
       game.networkVersion += 1;
       return "";
     },
@@ -504,11 +1002,43 @@
       const record = line(game, lineId);
       if (!record) return "line";
       if (!Array.isArray(stops) || stops.length < 2) return COMMANDS["line.remove"](game, { lineId });
-      const problem = validateStops(game, stops, loop, lineId);
+      const mode = modeOfLine(record);
+      const problem = validateStops(game, stops, loop, lineId, mode);
       if (problem) return problem;
       record.stops = [...stops];
       record.loop = Boolean(loop);
-      record.tunnels = stopsTunnels(game, stops, loop);
+      record.tunnels = stopsTunnels(game, stops, loop, mode);
+      game.networkVersion += 1;
+      return "";
+    },
+    // A bus route becomes a BRT line (a line slot, the line's colour, and on
+    // a generated city an avenue for each new pair), or back again (a route
+    // number). Its buses stay its buses.
+    "line.mode"(game, { lineId, mode }) {
+      const record = line(game, lineId);
+      if (!record) return "line";
+      const from = modeOfLine(record);
+      if (!isRoad(from) || !isRoad(mode) || from === mode || !game.modes?.includes(mode)) return "mode";
+      if (mode === "brt") {
+        if (available(game).lines <= 0) return "no-line";
+        const slot = freeSlot(game);
+        if (slot < 0) return "no-line";
+        const problem = validateStops(game, record.stops, record.loop, lineId, "brt");
+        if (problem) return problem;
+        record.slot = slot;
+        record.mode = "brt";
+        delete record.number;
+      } else {
+        if (available(game).routes <= 0) return "no-route";
+        const slot = freeRoute(game);
+        if (slot < 0) return "no-route";
+        const problem = validateStops(game, record.stops, record.loop, lineId, "bus");
+        if (problem) return problem;
+        record.slot = slot;
+        record.mode = "bus";
+        record.number = routeNumber(slot);
+      }
+      game.events.push({ tick: game.tick, type: "mode", lineId, mode });
       game.networkVersion += 1;
       return "";
     },
@@ -525,24 +1055,27 @@
     "train.add"(game, { lineId }) {
       const record = line(game, lineId);
       if (!record) return "line";
-      if (available(game).trains <= 0) return "no-train";
+      const road = isRoad(modeOfLine(record));
+      if (road ? available(game).buses <= 0 : available(game).trains <= 0) return road ? "no-bus" : "no-train";
       // A second train starts at the far end, heading back, so the two do
       // not bunch; a third starts mid-line.
       const running = game.trains.filter((t) => t.lineId === lineId && !t.retiring).length;
       const index = running % 2 === 1 ? record.stops.length - 1 : Math.floor(record.stops.length / 2) * (running > 0 ? 1 : 0);
       const dir = record.loop ? (running % 2 === 1 ? -1 : 1) : index === record.stops.length - 1 ? -1 : 1;
-      makeTrain(game, record, index, dir);
+      makeTrain(game, record, index, dir, road);
       game.networkVersion += 1;
       return "";
     },
     "train.remove"(game, { lineId }) {
       const trains = game.trains.filter((t) => t.lineId === lineId && !t.retiring);
-      if (!trains.length) return "no-train";
+      if (!trains.length) return isRoad(modeOfLine(line(game, lineId))) ? "no-bus" : "no-train";
       trains[trains.length - 1].retiring = true;
       game.networkVersion += 1;
       return "";
     },
     "carriage.add"(game, { lineId }) {
+      // A bus takes no carriages: the BRT's articulated bus is already long.
+      if (isRoad(modeOfLine(line(game, lineId)))) return "mode";
       if (available(game).carriages <= 0) return "no-carriage";
       const trains = game.trains.filter((t) => t.lineId === lineId && !t.retiring);
       if (!trains.length) return "no-train";
@@ -569,6 +1102,11 @@
       if (choice === "carriage") game.owned.carriages += 1;
       if (choice === "tunnel") game.owned.tunnels += 2;
       if (choice === "interchange") game.owned.interchanges += 1;
+      if (choice === "bus") {
+        game.owned.routes = Math.min(RULES.routeSlots, game.owned.routes + 1);
+        game.owned.buses += 2;
+      }
+      if (choice === "avenue") game.owned.avenues += 2;
       game.events.push({ tick: game.tick, type: "reward", choice });
       game.reward = null;
       return "";
@@ -584,6 +1122,23 @@
     return { ok: !reason, reason };
   }
 
+  // "modes.open" and then `command`, as one: if the command is refused, the
+  // game goes back to metro-only. The shell lays a metro-only game's first
+  // road line this way; a log replays the same two commands.
+  function applyOpening(game, modes, command) {
+    if (game.modes) return apply(game, command);
+    const owned = { ...game.owned };
+    const opened = apply(game, { type: "modes.open", modes });
+    if (!opened.ok) return opened;
+    const result = apply(game, command);
+    if (!result.ok) {
+      delete game.modes;
+      delete game.deliveredBy;
+      game.owned = owned;
+    }
+    return result;
+  }
+
   // ----- routing ------------------------------------------------------------
   //
   // Cost-to-go per destination kind over two node types: waiting at a
@@ -594,7 +1149,12 @@
   const routeCache = new WeakMap();
 
   function lineGeometry(game, record) {
-    const legs = lineLegs(game, record.stops, record.loop).map((points) => ({ points, length: polylineLength(points) }));
+    const mode = modeOfLine(record);
+    const legs = lineLegs(game, record.stops, record.loop, mode).map((points) => ({ points, length: polylineLength(points) }));
+    if (mode === "bus") {
+      // How crowded the streets under each leg are, for the peak's slowdown.
+      legs.forEach((leg, i) => { leg.load = legLoad(game, record.stops[i], record.stops[(i + 1) % record.stops.length]); });
+    }
     return legs;
   }
 
@@ -615,12 +1175,16 @@
     } else if (j === i + 1) { index = i; forward = true; } else { index = j; forward = false; }
     const leg = legs[index];
     if (!leg) return null;
-    return { points: forward ? leg.points : [...leg.points].reverse(), length: leg.length };
+    return { points: forward ? leg.points : [...leg.points].reverse(), length: leg.length, load: leg.load || 0 };
   }
 
   function routes(game) {
+    // With buses on the map the peaks change the best way somewhere, so the
+    // table is planned per period; a metro-only game plans once per network.
+    const period = game.modes ? periodOf(clock(game.tick).hour) : "";
     const cached = routeCache.get(game);
-    if (cached && cached.version === game.networkVersion && cached.stationCount === game.stations.length) return cached;
+    if (cached && cached.version === game.networkVersion && cached.stationCount === game.stations.length && cached.period === period) return cached;
+    const peakNow = game.modes ? PERIOD_PEAK[period] || 0 : 0;
     const legsByLine = new Map();
     for (const record of game.lines) legsByLine.set(record.id, lineGeometry(game, record));
     // Only a line with a train on it is a way to get anywhere.
@@ -636,11 +1200,13 @@
       }
       // ride = "stay aboard" (continue from stop i in direction dir, not
       // getting off here); aboard = the better of staying and alighting.
-      const aboard = (record, dir, i) => Math.min(RULES.alightCost + wait.get(record.stops[i]), ride.get(`${record.id}:${dir}`)[i]);
+      const aboard = (record, dir, i) => Math.min(paceOf(modeOfLine(record)).alight + wait.get(record.stops[i]), ride.get(`${record.id}:${dir}`)[i]);
       for (let pass = 0; pass < 200; pass += 1) {
         let changed = false;
         for (const record of served) {
           const legs = legsByLine.get(record.id);
+          const mode = modeOfLine(record);
+          const pace = paceOf(mode);
           for (const dir of [1, -1]) {
             const costs = ride.get(`${record.id}:${dir}`);
             for (let i = 0; i < record.stops.length; i += 1) {
@@ -648,7 +1214,8 @@
               const j = nextIndex(record, i, dir);
               if (j >= 0) {
                 const leg = legBetween(record, legs, i, j);
-                const travel = (leg ? leg.length : 0) / RULES.trainSpeed + RULES.dwellCost;
+                const slow = mode === "bus" && leg ? 1 + pace.peakSlowdown * peakNow * leg.load : 1;
+                const travel = ((leg ? leg.length : 0) / pace.speed) * slow + RULES.dwellCost;
                 best = travel + aboard(record, dir, j);
               } else if (!record.loop) {
                 best = RULES.turnCost + ride.get(`${record.id}:${-dir}`)[i];
@@ -658,10 +1225,11 @@
           }
         }
         for (const record of served) {
+          const board = paceOf(modeOfLine(record)).board;
           for (const dir of [1, -1]) {
             const costs = ride.get(`${record.id}:${dir}`);
             record.stops.forEach((sid, i) => {
-              const candidate = RULES.boardCost + costs[i];
+              const candidate = board + costs[i];
               if (candidate < wait.get(sid) - 1e-9) { wait.set(sid, candidate); changed = true; }
             });
           }
@@ -670,7 +1238,7 @@
       }
       table.set(kind, { wait, ride });
     }
-    const result = { version: game.networkVersion, stationCount: game.stations.length, table, legsByLine };
+    const result = { version: game.networkVersion, stationCount: game.stations.length, period, table, legsByLine };
     routeCache.set(game, result);
     return result;
   }
@@ -688,39 +1256,7 @@
 
   // ----- passengers ---------------------------------------------------------
 
-  function originWeight(kind, hour) {
-    const m = bump(hour, 8, 1.5);
-    const e = bump(hour, 18, 1.6);
-    switch (kind) {
-      case "residential": return 0.55 + 1.9 * m + 0.2 * e;
-      case "commercial": return 0.45 + 0.25 * m + 1.6 * e;
-      case "industrial": return 0.35 + 0.1 * m + 1.8 * e;
-      case "school": return 0.2 + 2.2 * bump(hour, 15.5, 1);
-      case "hospital": return 0.55;
-      case "stadium": return 0.15 + 2.6 * bump(hour, 21, 0.9);
-      case "airport": return 0.95;
-      case "port": return 0.6;
-      default: return 0.5;
-    }
-  }
-
-  function destinationWeights(origin, hour, kinds) {
-    const m = bump(hour, 8, 1.6);
-    const e = bump(hour, 18, 1.7);
-    const mid = bump(hour, 12.5, 2.2);
-    const table = {
-      residential: { commercial: 0.8 + 1.4 * m + 0.9 * mid, industrial: 0.6 + 2.0 * m, school: 2.2 * m + 0.2, hospital: 0.35, stadium: 0.1 + 1.6 * e, airport: 0.3, port: 0.2 },
-      commercial: { residential: 0.7 + 2.8 * e, industrial: 0.35, school: 0.1, hospital: 0.25, stadium: 0.1 + 0.9 * e, airport: 0.35, port: 0.2 },
-      industrial: { residential: 0.7 + 3.0 * e, commercial: 0.45 + 0.4 * mid, hospital: 0.2, port: 0.8, airport: 0.25, stadium: 0.5 * e },
-      school: { residential: 1.6, commercial: 0.4, stadium: 0.3 },
-      hospital: { residential: 1.3, commercial: 0.5 },
-      stadium: { residential: 1.7, commercial: 0.6 },
-      airport: { commercial: 1.2, residential: 1.0, industrial: 0.4, stadium: 0.3 },
-      port: { industrial: 1.2, commercial: 0.6, residential: 0.5 },
-    };
-    const row = table[origin] || {};
-    return kinds.filter((k) => k !== origin).map((k) => [k, row[k] ?? 0.15]);
-  }
+  // originWeight and destinationWeights: World.hours (see the top of the file).
 
   function spawnPassengers(game, dt) {
     const { hour } = clock(game.tick);
@@ -749,8 +1285,17 @@
 
   // ----- trains -------------------------------------------------------------
 
-  function trainCapacity(train) {
+  // A train is six a car; a bus or an articulated BRT bus is its mode's own
+  // number and takes no carriages.
+  function trainCapacity(train, game) {
+    if (train.road) return paceOf(game ? modeOfLine(line(game, train.lineId)) : "bus").capacity || paceOf("bus").capacity;
     return RULES.carCapacity * (1 + train.carriages);
+  }
+
+  function vehicleMode(game, train) {
+    const record = line(game, train.lineId);
+    if (record) return modeOfLine(record);
+    return train.road ? "bus" : "metro";
   }
 
   function lineIndexOf(record, stationId) {
@@ -766,6 +1311,7 @@
   function deliver(game, s, train) {
     s.served += 1;
     game.delivered += 1;
+    if (game.deliveredBy) game.deliveredBy[train ? vehicleMode(game, train) : "metro"] += 1;
     if (train) {
       train.carried += 1;
       const record = line(game, train.lineId);
@@ -777,6 +1323,7 @@
   // One boarding or alighting action at a dwelling train. Returns true when
   // something moved.
   function transferOne(game, train, record, s) {
+    const pace = paceOf(vehicleMode(game, train));
     const index = lineIndexOf(record, s.id);
     const dir = index >= 0 ? departureDir(record, index, train.dir) : train.dir;
     // Alight first: arrived, or better off changing here.
@@ -793,7 +1340,7 @@
         return true;
       }
       const stay = rideCost(game, record.id, dir, index, p.dest);
-      const leave = RULES.alightCost + waitCost(game, s.id, p.dest);
+      const leave = pace.alight + waitCost(game, s.id, p.dest);
       // Nobody rides a train that can no longer take them anywhere useful:
       // a passenger the network stranded waits on the platform instead of
       // holding a seat for ever.
@@ -804,12 +1351,12 @@
       }
     }
     if (train.retiring || index < 0) return false;
-    if (train.passengers.length >= trainCapacity(train)) return false;
+    if (train.passengers.length >= trainCapacity(train, game)) return false;
     for (let k = 0; k < s.waiting.length; k += 1) {
       const p = s.waiting[k];
       const here = waitCost(game, s.id, p.dest);
       if (!Number.isFinite(here)) continue;
-      const aboard = RULES.boardCost + rideCost(game, record.id, dir, index, p.dest);
+      const aboard = pace.board + rideCost(game, record.id, dir, index, p.dest);
       if (aboard <= here + 1e-6) {
         s.waiting.splice(k, 1);
         train.passengers.push(p);
@@ -834,15 +1381,22 @@
     train.dist = 0;
     train.state = "moving";
     train.at = 0;
+    // A bus remembers how crowded the streets on this leg are.
+    if (modeOfLine(record) === "bus") train.load = leg.load || 0;
     return true;
   }
 
   function stepTrain(game, train, dt) {
     const record = line(game, train.lineId);
+    const mode = record ? modeOfLine(record) : train.road ? "bus" : "metro";
+    const pace = paceOf(mode);
     if (train.state === "moving") {
       const remaining = train.length - train.dist;
-      const brake = Math.sqrt(2 * RULES.trainAccel * Math.max(0, remaining)) + 12;
-      train.speed = Math.min(RULES.trainSpeed, train.speed + RULES.trainAccel * dt, brake);
+      const brake = Math.sqrt(2 * pace.accel * Math.max(0, remaining)) + 12;
+      // A bus in the peak crawls with the traffic: up to 1.8 times slower in
+      // the busiest streets at 18:00; the BRT's own lanes never jam.
+      const top = mode === "bus" ? pace.speed / (1 + pace.peakSlowdown * peak(clock(game.tick).hour) * (train.load || 0)) : pace.speed;
+      train.speed = Math.min(top, train.speed + pace.accel * dt, brake);
       train.dist += train.speed * dt;
       if (train.dist >= train.length) {
         train.dist = train.length;
@@ -865,7 +1419,7 @@
       // its nearest stop or, if the line is gone, return to the depot.
       if (s && train.passengers.length) {
         train.transferClock = (train.transferClock || 0) + 1;
-        if (train.transferClock >= RULES.transferTicks) {
+        if (train.transferClock >= pace.boardTicks) {
           train.transferClock = 0;
           transferOne(game, train, record, s);
         }
@@ -880,16 +1434,16 @@
       train.dwell = 0;
       return;
     }
-    const pace = s && s.interchange ? RULES.interchangeTransferTicks : RULES.transferTicks;
+    const every = s && s.interchange ? RULES.interchangeTransferTicks : pace.boardTicks;
     train.transferClock = (train.transferClock || 0) + 1;
-    if (train.transferClock >= pace) {
+    if (train.transferClock >= every) {
       train.transferClock = 0;
       if (s && transferOne(game, train, record, s)) {
-        train.dwell = Math.min(train.dwell, RULES.minDwellTicks - pace);
+        train.dwell = Math.min(train.dwell, pace.minDwellTicks - every);
         return;
       }
     }
-    if (train.dwell >= RULES.minDwellTicks) {
+    if (train.dwell >= pace.minDwellTicks) {
       if (!startLeg(game, train, record, index)) train.dwell = 0;
     }
   }
@@ -934,7 +1488,15 @@
 
   function offerReward(game) {
     const pool = REWARDS.filter((r) => r !== "line" || game.owned.lines < RULES.lineSlots);
-    const first = pool[Math.floor(nextRandom(game) * pool.length)];
+    if (game.modes) {
+      if (game.modes.includes("bus") && game.owned.routes < RULES.routeSlots) pool.push("bus");
+      // A pot's avenues are the city's own; only a generated city sells them.
+      if (game.modes.includes("brt") && !isPot(game)) pool.push("avenue");
+    }
+    let first = pool[Math.floor(nextRandom(game) * pool.length)];
+    // The first week's choice always holds an avenue: by then the player has
+    // watched seven evening peaks catch the buses (Basin plan 2.2).
+    if (game.modes && clock(game.tick).week === 2 && pool.includes("avenue")) first = "avenue";
     const rest = pool.filter((r) => r !== first);
     const second = rest[Math.floor(nextRandom(game) * rest.length)];
     game.owned.trains += 1;
@@ -945,11 +1507,11 @@
   // ----- the tick -----------------------------------------------------------
 
   function step(game) {
-    if (game.over || game.reward) return game;
+    if (game.over || game.reward || game.planning) return game;
     const dt = 1 / RULES.ticksPerSecond;
     game.tick += 1;
     if (game.tick >= game.nextStationTick) {
-      if (game.stations.length < 64) spawnStation(game);
+      if (game.stations.length < stationCap(game)) spawnStation(game);
       game.nextStationTick = game.tick + nextStationDelay(game);
     }
     spawnPassengers(game, dt);
@@ -964,8 +1526,8 @@
   // Run a whole game from its seed and a command log ({ tick, ...command }),
   // choosing no rewards the log does not choose. For the contract and for
   // anyone checking a result.
-  function replay({ seed, mode, log = [], ticks }) {
-    const game = createGame({ seed, mode });
+  function replay({ seed, mode, log = [], ticks, city, name, modes }) {
+    const game = createGame({ seed, mode, city, name, modes });
     const queue = [...log].sort((a, b) => a.tick - b.tick);
     let cursor = 0;
     let guard = 0;
@@ -984,6 +1546,15 @@
     return game;
   }
 
+  function cleanTurns(points) {
+    const out = [];
+    for (const p of points) {
+      const last = out[out.length - 1];
+      if (!last || Math.hypot(last.x - p.x, last.y - p.y) > 1e-9) out.push(p);
+    }
+    return out;
+  }
+
   // What the renderer needs about where a train is right now.
   function trainPose(game, train) {
     if (train.state === "moving" && train.points) {
@@ -998,9 +1569,8 @@
       const j = index >= 0 ? nextIndex(record, index, departureDir(record, index, train.dir)) : -1;
       const t = j >= 0 ? station(game, record.stops[j]) : null;
       if (t) {
-        const pts = legPoints(s, t);
-        angle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
-        if (pts[1].x === pts[0].x && pts[1].y === pts[0].y) angle = Math.atan2(pts[2].y - pts[1].y, pts[2].x - pts[1].x);
+        const pts = cleanTurns(legPath(game, s, t, modeOfLine(record)));
+        if (pts.length >= 2) angle = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
       }
     }
     return { x: s ? s.x : 0, y: s ? s.y : 0, angle };
@@ -1009,9 +1579,24 @@
   root.AISystem6RootlineCore = Object.freeze({
     RULES,
     KINDS,
+    TRANSIT,
+    isRoad,
+    modeOfLine,
+    paceOf,
+    peak,
+    isPot,
+    stationCap,
+    legRoute,
+    legPath,
+    legLoad,
+    bridgesOf,
+    waterCrossings,
+    avenuesUsed,
+    routeNumber,
     createGame,
     step,
     apply,
+    applyOpening,
     replay,
     hashGame,
     clock,

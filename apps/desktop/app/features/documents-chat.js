@@ -2503,6 +2503,15 @@ async function setTeachTextFileLabel(label, { announce = false, persist = false,
   }
   const next = normalizeFileLabel(label);
   const previous = normalizeTeachTextWorkflowState(teachTextWorkflowState);
+  const previousLabel = teachTextFileLabel;
+  const projectId = activeProjectId;
+  const targetTab = typeof getActiveDocumentTab === "function" ? getActiveDocumentTab("teachText") : null;
+  let targetFile = getTeachTextFile();
+  const previousFileLabel = targetFile?.label;
+  const targetBody = teachTextBodyInput.value;
+  const stillActive = () => activeProjectId === projectId
+    && (activeTextFileId || "") === (targetFile?.id || "")
+    && (targetTab ? getActiveDocumentTab("teachText")?.id === targetTab.id : getTeachTextFile() === targetFile);
   if (next === "final" && previous !== "final" && !confirmed) {
     const result = await showSystemModal(t("final_label_confirm"), "confirm");
     if (result !== "yes") {
@@ -2511,12 +2520,39 @@ async function setTeachTextFileLabel(label, { announce = false, persist = false,
     }
   }
 
+  if (!stillActive() || teachTextBodyInput.value !== targetBody) return false;
   setTeachTextWorkflowState(next);
   teachTextFileLabel = next;
 
-  if (next==="final"&&!(await saveTextDocument({promptForFolder:false}))) {
-    syncTeachTextLabelControl();
-    return;
+  if (next === "final") {
+    let saved = false;
+    try {
+      const saving = saveTextDocument({ promptForFolder: false });
+      // A first save creates its file synchronously before awaiting storage.
+      targetFile = getTeachTextFile();
+      saved = await saving;
+    } catch (error) {
+      console.warn("Manuscript finalization could not be saved.", error);
+    }
+    if (!saved) {
+      if (targetFile?.label === next) {
+        targetFile.label = previousFileLabel ?? previousLabel;
+        markDeskDirty("chatFiles", targetFile.id);
+      }
+      const originalTab = projects.find((project) => project.id === projectId)?.documentTabs?.find((item) => item.id === targetTab?.id);
+      if (originalTab?.state?.workflowState === next) {
+        Object.assign(originalTab.state, { workflowState: previous, label: previousLabel, statusKey: "modified" });
+      }
+      if (stillActive()) {
+        setTeachTextWorkflowState(previous);
+        teachTextFileLabel = previousLabel;
+        syncTeachTextLabelControl();
+        setStatus(t("writing_save_failed"));
+      }
+      if (typeof scheduleWorkingSessionSave === "function") scheduleWorkingSessionSave();
+      return false;
+    }
+    if (!stillActive()) return true;
   }
 
   const file = getTeachTextFile();
@@ -2525,7 +2561,7 @@ async function setTeachTextFileLabel(label, { announce = false, persist = false,
     file.updatedAt = new Date().toISOString();
     markDeskDirty("chatFiles", file.id);
     renderDocuments();
-    if (persist) saveDeskState();
+    if (persist && next !== "final") saveDeskState();
   }
 
   if (next === "draft" || next === "ai") {
@@ -2537,6 +2573,7 @@ async function setTeachTextFileLabel(label, { announce = false, persist = false,
     unlinkTeachTextPipeline({clearUpstream:true});
     syncReviewDeskFromTeachText({ force: true });
     await openWindow("teachText");
+    if (!stillActive()) return true;
     // openReviewDesk opens the Review Desk; its placement tail pairs it beside the
     // finalized manuscript (审校台 + 定稿正文 在一起).
     openReviewDesk("style");
@@ -2955,84 +2992,88 @@ function showTeachTextPreview({ focus = false, preserveScroll = true } = {}) {
 
 async function saveTextDocument({ asCopy = false, revealInDocuments = false, promptForFolder = true } = {}) {
   if (typeof captureActiveTeachTextTabState === "function") captureActiveTeachTextTabState();
-  if (!getActiveProject()) {
+  const projectId = getActiveProject()?.id;
+  if (!projectId) {
     setStatus(t("no_project_mounted"));
     openWindow("projects");
     return false;
   }
 
   let file = !asCopy && activeTextFileId
-    ? chatFiles.find((item) => item.id === activeTextFileId && item.type === "text" && isInActiveProject(item))
+    ? chatFiles.find((item) => item.id === activeTextFileId && item.type === "text" && item.projectId === projectId)
     : null;
-
   if (promptForFolder && (!file || asCopy)) {
     openSaveTextDialog({ asCopy, revealInDocuments });
     return false;
   }
 
+  // Bind the save before any I/O. A history write can outlive a tab/project
+  // switch; its continuation must never borrow the newly active editor.
+  const tab = typeof getActiveDocumentTab === "function" ? getActiveDocumentTab("teachText") : null;
+  const role = teachTextDocumentRole;
   const folder = ensureFolder(teachTextFolderInput.value || preferredFolderName());
   const name = getTeachTextDocumentName();
+  const body = teachTextBodyInput.value;
+  const folderInput = teachTextFolderInput.value;
+  const fileLabel = teachTextFileLabel;
+  const tabFolder = tab?.state?.folder;
+  const existing = !!file;
   teachTextNameInput.value = name;
-
   if (!file) {
-    file = {
-      id: crypto.randomUUID(),
-      projectId: activeProjectId,
-      type: "text",
-      name,
-      folderId: folder.id,
-      body: teachTextBodyInput.value,
-      label: normalizeFileLabel(teachTextFileLabel),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    file = { id: crypto.randomUUID(), projectId, type: "text", createdAt: new Date().toISOString() };
     chatFiles.unshift(file);
     activeTextFileId = file.id;
-  } else {
-    file.name = name;
-    file.folderId = folder.id;
-    file.body = teachTextBodyInput.value;
-    file.label = normalizeFileLabel(teachTextFileLabel);
-    file.updatedAt = new Date().toISOString();
-    // Saving over a document that is already on disk: name the record, so a
-    // save plan that trusts the writers carries the edited body.
-    markDeskDirty("chatFiles", file.id);
-    if (typeof createDocumentRevision === "function") {
-      try {
-        await createDocumentRevision({
-          projectId: file.projectId,
-          documentId: file.id,
-          body: file.body,
-          origin: "user",
-          operation: "save",
-        });
-      } catch (error) {
-        // A plain manual save still persists the body; only the version
-        // history entry failed, and the user must know.
-        console.warn("Document body saved, but the version history entry could not be persisted.", error);
-        setStatus(currentLanguage === "zh"
-          ? "正文已保存，但版本历史未能写入。"
-          : "The document was saved, but the version history could not be written.");
-      }
+  }
+  Object.assign(file, { name, folderId: folder.id, body, label: normalizeFileLabel(teachTextFileLabel), updatedAt: new Date().toISOString() });
+  markDeskDirty("chatFiles", file.id);
+  if (tab) {
+    tab.role = role === "manuscript" ? "manuscript" : "scratch_file";
+    tab.title = name;
+    tab.backing = { type: tab.role === "manuscript" ? "manuscript" : "projectText", id: file.id };
+    tab.state = { ...(tab.state || {}), activeTextFileId: file.id, name, body, statusKey: "modified" };
+    tab.updatedAt = file.updatedAt;
+    markDeskDirty("projects", projectId);
+  }
+  const stillActive = () => activeProjectId === projectId && activeTextFileId === file.id
+    && (!tab || getActiveDocumentTab("teachText")?.id === tab.id);
+  let historyFailed = false;
+  if (existing && typeof createDocumentRevision === "function") {
+    try {
+      await createDocumentRevision({ projectId, documentId: file.id, body, origin: "user", operation: "save" });
+    } catch (error) {
+      historyFailed = true;
+      console.warn("Document version history could not be persisted.", error);
     }
   }
 
+  let saved = false;
+  try {
+    saved = await saveDeskState();
+  } catch (error) {
+    console.warn("Document could not be saved.", error);
+  }
+  if (!saved) {
+    if (stillActive()) {
+      setTeachTextStatus("modified");
+      setStatus(t("writing_save_failed"));
+    }
+    return false;
+  }
+  const originalTab = projects.find((project) => project.id === projectId)?.documentTabs?.find((item) => item.id === tab?.id);
+  if (originalTab?.state?.body === body && originalTab.state.name === name
+    && originalTab.state.folder === tabFolder && originalTab.state.label === normalizeFileLabel(fileLabel)) {
+    originalTab.state.statusKey = "saved";
+  }
+  // A newer edit is still modified even though this snapshot reached disk.
+  if (!stillActive() || teachTextBodyInput.value !== body || getTeachTextDocumentName() !== name
+    || teachTextFolderInput.value !== folderInput || teachTextFileLabel !== fileLabel) return true;
   selectedFolderId = folder.id;
   selectedChatFileId = null;
   selectedDocumentFolderId = null;
-  const tab = typeof getActiveDocumentTab === "function" ? getActiveDocumentTab("teachText") : null;
-  if (tab) {
-    tab.role = teachTextDocumentRole === "manuscript" ? "manuscript" : "scratch_file";
-    tab.title = file.name;
-    tab.backing = tab.role === "manuscript" ? { type: "manuscript", id: file.id } : { type: "projectText", id: file.id };
-    tab.state = { ...(tab.state || {}), activeTextFileId: file.id, name: file.name, body: file.body, statusKey: "saved" };
-    tab.updatedAt = new Date().toISOString();
-  }
   setTeachTextStatus("saved");
   refreshTeachTextDocumentState();
-  setStatus(t("saved"));
+  setStatus(historyFailed ? t("writing_history_failed") : t("saved"));
   playSystemSound("save");
-  saveDeskState();
   renderDocuments();
   if (revealInDocuments) openWindow("documents");
   openWindow("teachText");

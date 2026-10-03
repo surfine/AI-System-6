@@ -1503,6 +1503,13 @@ body .lc-font-import-row .btn {
   opacity: 1;
 }
 
+.lc-thumbnail {
+  display: block;
+  width: 320px;
+  max-width: 100%;
+  height: auto;
+}
+
 .lc-export-group {
   display: grid;
   align-content: start;

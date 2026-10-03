@@ -107,7 +107,13 @@ server.listen(port, host, () => {
   console.log(`${appName} ${appVersion} build ${appBuild}`);
   console.log(`Deployment profile: ${deploymentProfile}`);
   console.log(`LAN access: ${localRequestPolicy.allowLan ? "enabled with token" : "disabled"}`);
-  console.log(`Routes: ${listMigratedRoutes().join(", ") || "(none)"}`);
+  const registeredRoutes = listMigratedRoutes();
+  // The full METHOD PATH list is a debugging aid. Startup prints the count.
+  if (process.env.AI_SYSTEM6_LOG_ROUTES === "1") {
+    console.log(`Routes: ${registeredRoutes.join(", ") || "(none)"}`);
+  } else {
+    console.log(`Routes: ${registeredRoutes.length}`);
+  }
 });
 
 let shuttingDown = false;

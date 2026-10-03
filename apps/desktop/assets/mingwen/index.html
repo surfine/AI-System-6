@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#121018">
+<meta name="description" content="《明文 Plaintext》代笔人与海图师：一部关于直说与传话的奇幻视觉小说。纯属虚构。">
+<meta name="robots" content="noindex">
+<meta property="og:type" content="website">
+<meta property="og:title" content="明文 Plaintext · 代笔人与海图师">
+<meta property="og:description" content="代笔人与海图师：一部关于直说与传话的奇幻视觉小说。一位靠替人代笔维生的书记官，想把一位海图师推上她并不想去的灯塔席。每一章结束，你都会以别人的眼睛重读那一段旅程。纯属虚构。">
+<meta property="og:locale" content="zh_CN">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="明文 Plaintext · 代笔人与海图师">
+<meta name="twitter:description" content="代笔人与海图师：一部关于直说与传话的奇幻视觉小说。纯属虚构。">
+<title>明文 Plaintext · 代笔人与海图师</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23C23B22'/%3E%3Ccircle cx='16' cy='16' r='9.5' fill='none' stroke='%23F2E8D5' stroke-opacity='.45' stroke-width='1.6'/%3E%3Cpath d='M16 9l1.6 5.4L23 16l-5.4 1.6L16 23l-1.6-5.4L9 16l5.4-1.6z' fill='%23C9A24A'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="app">
+  <div id="stage" class="stage" aria-live="polite">
+    <div id="bg" class="layer bg"></div>
+    <div id="collage" class="collage" aria-hidden="true"></div>
+    <div id="chars" class="layer chars"><div class="slot" data-slot="0"></div><div class="slot" data-slot="1"></div></div>
+    <div class="edge-blur" aria-hidden="true"></div>
+    <div class="replay-ink" aria-hidden="true"></div>
+    <div id="wolfShade" class="wolf-shade" aria-hidden="true"></div>
+    <div id="wall" class="hex-wall" aria-hidden="true"></div>
+    <div id="phone" class="phone-screen" hidden>
+      <div class="phone-head"><span class="phone-dot"></span><span id="phoneName" class="phone-name"></span></div>
+      <div id="phoneTraces" class="phone-traces" aria-hidden="true"></div>
+      <div id="phoneDeco" class="phone-deco" aria-hidden="true"><i class="lseal"></i><span class="rseal"></span><span class="tri">△</span><div class="thread"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+      <div id="phoneBody" class="phone-body"></div>
+    </div>
+    <div id="msgpop" class="msgpop" hidden></div>
+    <div id="sysline" class="sysline" hidden></div>
+    <div id="hud" class="hud" hidden></div>
+    <div id="chaptag" class="chaptag" hidden></div>
+    <div id="replayhud" class="replayhud" hidden></div>
+    <div id="choices" class="choices" hidden></div>
+    <div id="dialog" class="dialog" hidden>
+      <div id="dseal" class="dseal" aria-hidden="true"></div>
+      <div id="namebox" class="namebox"></div>
+      <div id="text" class="text"></div>
+      <div class="next-ind" aria-hidden="true">❧</div>
+    </div>
+    <div id="quickbar" class="quickbar" hidden>
+      <button data-q="log" title="回看日志 (L)">日志</button>
+      <button data-q="auto" title="自动播放 (A)">自动</button>
+      <button data-q="skip" title="快进已读 (S)">快进</button>
+      <button data-q="ledger" title="账簿">账簿</button>
+      <button data-q="menu" title="菜单 (Esc)">菜单</button>
+    </div>
+    <div class="page-frame" aria-hidden="true"></div>
+  </div>
+  <div id="overlay" class="overlay" hidden></div>
+  <div id="title" class="title-screen" hidden></div>
+  <div id="modal" class="modal" hidden role="dialog" aria-modal="true"></div>
+  <div class="grain" aria-hidden="true"></div>
+  <div id="toast" class="toast" hidden></div>
+  <div id="debug" class="debug" hidden></div>
+</div>
+<noscript><p class="noscript">《明文》需要启用 JavaScript 才能游玩。</p></noscript>
+<script src="rules.js"></script>
+<script src="story-init.js"></script>
+<script src="art.js"></script>
+<script src="img/ch/manifest.js"></script>
+<script src="portrait2.js"></script>
+<script src="audio.js"></script>
+<script src="engine.js"></script>
+</body>
+</html>

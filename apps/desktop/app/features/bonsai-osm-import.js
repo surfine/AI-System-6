@@ -74,6 +74,58 @@ window.AISystem6BonsaiOsmImportLoaded = true;
   // city budget in the game could keep open.
   const FACILITY_MERGE_TILES = 4;
   const mergeTiles = (spec) => Math.max(FACILITY_MERGE_TILES, spec.radius || 0);
+  // A real station stands beside its own platform: the footprint's middle
+  // must lie within this many tiles of the OSM feature, and two features this
+  // close are one station mapped twice (its node and its outline).
+  const STATION_REACH = 4;
+
+  // A stop a Joyride train can call at: a station, a halt, or a public
+  // transport interchange that says it carries trains. A subway station is
+  // underground and out of scope.
+  function isRailStation(tags) {
+    if (tags.station === "subway" || tags.subway === "yes") return false;
+    return tags.railway === "station" || tags.railway === "halt" || (tags.public_transport === "station" && tags.train === "yes");
+  }
+
+  // --- Real names ------------------------------------------------------------
+  // The shared gazetteer shows the real names of the stations, streets and
+  // districts an import lands on. Every list is sorted by (y, x, name) and
+  // every name is trimmed, so the same answer always gives the same record.
+  const NAME_LIMIT = 40;
+  const NAME_CAPS = Object.freeze({ stations: 64, streets: 256, places: 64 });
+  // The place kinds the server asks for, mapped to the same word.
+  const PLACE_KINDS = Object.freeze({ suburb: "suburb", quarter: "quarter", neighbourhood: "neighbourhood", village: "village", hamlet: "hamlet" });
+
+  function trimName(value) {
+    if (typeof value !== "string") return "";
+    return value.replace(/\s+/g, " ").trim().slice(0, NAME_LIMIT);
+  }
+
+  // The four names a feature can carry: name, and the zh/en variants. A key
+  // is present only when the server sent it and it is not empty.
+  function namesOf(tags) {
+    const name = trimName(tags.name);
+    const zh = trimName(tags["name:zh-Hans"]) || trimName(tags["name:zh"]);
+    const en = trimName(tags["name:en"]);
+    if (!name && !zh && !en) return null;
+    const record = { name: name || zh };
+    if (zh && zh !== record.name) record.zh = zh;
+    if (en && en !== record.name) record.en = en;
+    return record;
+  }
+
+  const byYXName = (a, b) => a.y - b.y || a.x - b.x || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+
+  // The road tiles a way actually became, in index order.
+  function roadWayCells(element, n, project, road, onramp) {
+    const cells = [];
+    const seen = new Set();
+    traceLine(n, toPoints(element.g, project), (i) => {
+      if (!(road[i] || onramp[i]) || seen.has(i)) return;
+      seen.add(i); cells.push(i);
+    });
+    return cells.sort((a, b) => a - b);
+  }
 
   function hash32(value) {
     let h = 0x811c9dc5;
@@ -258,7 +310,8 @@ window.AISystem6BonsaiOsmImportLoaded = true;
     const includeBuildings = input.includeBuildings === true && input.osm.buildings === true;
     const warnings = [];
     const stats = { roads: 0, highways: 0, onramps: 0, rails: 0, water: 0, sea: 0, parks: 0, trees: 0, zoned: 0, lots: 0,
-      buildings: 0, buildingsPlaced: 0, buildingsNoStreet: 0, buildingsCivic: 0, buildingsNoRoom: 0, tunnelsSkipped: 0 };
+      buildings: 0, buildingsPlaced: 0, buildingsNoStreet: 0, buildingsCivic: 0, buildingsNoRoom: 0, tunnelsSkipped: 0,
+      stations: 0, stationsNoRoom: 0 };
 
     const water = new Uint8Array(count); const salt = new Uint8Array(count);
     const road = new Uint8Array(count); const highway = new Uint8Array(count); const onramp = new Uint8Array(count); const link = new Uint8Array(count);
@@ -268,11 +321,26 @@ window.AISystem6BonsaiOsmImportLoaded = true;
     const civic = new Uint8Array(count); const coast = new Uint8Array(count);
 
     const areaElements = []; const lineElements = []; const buildings = []; const coastlines = [];
-    const serviceSites = [];
+    const serviceSites = []; const stationSites = [];
+    // The real names on the map, collected here and placed once the layers
+    // exist. The elements arrive sorted (node, way, relation by id), so
+    // "first" below never depends on OSM's own order.
+    const namedWays = []; const namedPlaces = [];
     for (const element of elements) {
       const tags = element.tags || {};
       const service = FACILITY_BY_TAG.findIndex(([key, value]) => tags[key] === value);
       if (service >= 0 && sim.FACILITY_KINDS[FACILITY_BY_TAG[service][2]]) serviceSites.push({ element, rank: service, kind: FACILITY_BY_TAG[service][2] });
+      // The elements arrive sorted node, way, relation by id, so the first
+      // station feature is the same one however OSM ordered the answer.
+      if (isRailStation(tags)) stationSites.push(element);
+      if (element.type === "way" && tags.highway && (ROAD_CLASSES.has(tags.highway) || LINK_CLASSES.has(tags.highway) || HIGHWAY_CLASSES.has(tags.highway))) {
+        const names = namesOf(tags);
+        if (names) namedWays.push({ element, names });
+      }
+      if (element.type === "node" && PLACE_KINDS[tags.place] && Array.isArray(element.g) && element.g.length >= 2) {
+        const names = namesOf(tags);
+        if (names) namedPlaces.push({ element, names, kind: PLACE_KINDS[tags.place] });
+      }
       if (element.type === "node") continue;
       if (element.type === "way" && tags.natural === "coastline") { coastlines.push(element); continue; }
       if (tags.building && element.type === "way") { buildings.push(element); continue; }
@@ -442,11 +510,23 @@ window.AISystem6BonsaiOsmImportLoaded = true;
       for (const i of cells) alt[i] = level;
     }
 
-    // 5. Public services on their own sites: each becomes the facility the
-    // mayor would build there, on the free ground nearest its middle.
+    // 5. Public services and real railway stations on their own sites: each
+    // becomes the facility the mayor would build there, on the free ground
+    // nearest its middle.
     const facilities = []; const facilityCell = new Uint8Array(count);
     const lot = new Uint16Array(count); const stage = new Uint8Array(count); const buildingState = new Uint8Array(count); const variant = new Uint8Array(count);
     const free = (i) => !water[i] && !isNetwork(i) && !park[i] && !lot[i] && !civic[i] && !facilityCell[i];
+    // Every tile of a w x h footprint at (x, y) must be clear of whatever the
+    // caller counts as blocked: water, a road or a track, a park, a lot or
+    // the ground of another facility.
+    const footprintClear = (x, y, w, h, blocked) => {
+      for (let yy = 0; yy < h; yy += 1) for (let xx = 0; xx < w; xx += 1) if (blocked((y + yy) * n + x + xx)) return false;
+      return true;
+    };
+    // A service keeps off parks but stands on the civic amenity ground it
+    // serves; a station keeps off lots and other facilities as well.
+    const serviceBlocked = (c) => water[c] || isNetwork(c) || park[c] || facilityCell[c];
+    const stationBlocked = (c) => water[c] || isNetwork(c) || park[c] || lot[c] || facilityCell[c];
     const levelPad = (x, y, w, h) => {
       // The pad sits at its cells' middle height; every dry neighbour
       // outside it must end within one step, as the simulation's own
@@ -463,14 +543,30 @@ window.AISystem6BonsaiOsmImportLoaded = true;
       }
       return target;
     };
+    // The OSM position of a site: a node's own point, or the centroid of a
+    // way's or relation's outline.
+    const siteCentre = (element) => {
+      const points = element.type === "node" ? [project(element.g[0], element.g[1])]
+        : element.type === "way" ? toPoints(element.g, project) : toPoints((element.members.find((m) => m.role === "outer") || element.members[0]).g, project);
+      return points.length === 1 ? points[0] : centroidOf(points);
+    };
+    // A placed site takes its tiles: marked as taken, so no lot or zone is
+    // laid over them, and levelled to its own pad, as the simulation's
+    // levelling demands. False when the pad cannot be levelled.
+    const claimSite = (x, y, w, h) => {
+      const target = levelPad(x, y, w, h);
+      if (target < 0) return false;
+      for (let yy = 0; yy < h; yy += 1) for (let xx = 0; xx < w; xx += 1) {
+        const c = (y + yy) * n + x + xx;
+        facilityCell[c] = 1; alt[c] = target; zone[c] = 0; density[c] = 0; tree[c] = 0;
+      }
+      return true;
+    };
     serviceSites.sort((a, b) => a.rank - b.rank || (a.element.type < b.element.type ? -1 : a.element.type > b.element.type ? 1 : a.element.id - b.element.id));
     stats.facilities = 0; stats.facilitiesNoRoom = 0;
     for (const site of serviceSites) {
       const spec = sim.FACILITY_KINDS[site.kind];
-      const { element } = site;
-      const points = element.type === "node" ? [project(element.g[0], element.g[1])]
-        : element.type === "way" ? toPoints(element.g, project) : toPoints((element.members.find((m) => m.role === "outer") || element.members[0]).g, project);
-      const [cx, cy] = points.length === 1 ? points[0] : centroidOf(points);
+      const [cx, cy] = siteCentre(site.element);
       if (cx < 0 || cy < 0 || cx >= n || cy >= n) continue;
       if (facilities.some((item) => item.kind === site.kind && Math.abs(item.x + spec.w / 2 - cx) + Math.abs(item.y + spec.h / 2 - cy) < mergeTiles(spec))) continue;
       const ox = Math.floor(cx - spec.w / 2 + 0.5); const oy = Math.floor(cy - spec.h / 2 + 0.5);
@@ -480,23 +576,79 @@ window.AISystem6BonsaiOsmImportLoaded = true;
           if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
           const x = ox + dx; const y = oy + dy;
           if (x < 0 || y < 0 || x + spec.w > n || y + spec.h > n) continue;
-          let fits = true;
-          for (let yy = 0; yy < spec.h && fits; yy += 1) for (let xx = 0; xx < spec.w; xx += 1) {
-            const c = (y + yy) * n + x + xx;
-            if (water[c] || isNetwork(c) || park[c] || facilityCell[c]) { fits = false; break; }
-          }
-          if (!fits) continue;
-          const target = levelPad(x, y, spec.w, spec.h);
-          if (target >= 0) spot = { x, y, target };
+          if (!footprintClear(x, y, spec.w, spec.h, serviceBlocked)) continue;
+          if (levelPad(x, y, spec.w, spec.h) >= 0) spot = { x, y };
         }
       }
       if (!spot) { stats.facilitiesNoRoom += 1; continue; }
-      for (let yy = 0; yy < spec.h; yy += 1) for (let xx = 0; xx < spec.w; xx += 1) {
-        const c = (spot.y + yy) * n + spot.x + xx;
-        facilityCell[c] = 1; alt[c] = spot.target; zone[c] = 0; density[c] = 0; tree[c] = 0;
-      }
+      claimSite(spot.x, spot.y, spec.w, spec.h);
       facilities.push({ kind: site.kind, x: spot.x, y: spot.y, builtTick: 0 });
       stats.facilities += 1;
+    }
+
+    // 5b. Real railway stations: a station beside the imported track becomes
+    // the Bonsai station a Joyride train calls at, so a driver can ride the
+    // trains of a real place. The footprint must lie within STATION_REACH
+    // tiles of where OSM put the station, touch the track, and stand on free
+    // ground; the nearest such footprint wins, so the station lands on its
+    // own platform rather than a block away.
+    stats.stations = 0; stats.stationsNoRoom = 0;
+    const stationSpec = sim.FACILITY_KINDS.station || {};
+    const stationW = stationSpec.w || 2; const stationH = stationSpec.h || 2;
+    const touchesRail = (x, y, w, h) => {
+      for (let yy = 0; yy < h; yy += 1) for (let xx = 0; xx < w; xx += 1) {
+        const tx = x + xx; const ty = y + yy; const c = ty * n + tx;
+        const around = [tx > 0 ? c - 1 : -1, tx < n - 1 ? c + 1 : -1, ty > 0 ? c - n : -1, ty < n - 1 ? c + n : -1];
+        if (around.some((j) => j >= 0 && rail[j])) return true;
+      }
+      return false;
+    };
+    // A station's node and its outline are one station: the first feature
+    // seen keeps it, which the sorted elements make the node, then the
+    // lowest OSM id.
+    const stationCentres = [];
+    for (const element of stationSites) {
+      const [cx, cy] = siteCentre(element);
+      if (stationCentres.some((centre) => Math.hypot(centre.x - cx, centre.y - cy) <= STATION_REACH)) continue;
+      stationCentres.push({ x: cx, y: cy });
+    }
+    // The tile a station's name goes on: the Bonsai station facility the OSM
+    // station's centre stands in, or the nearest rail tile when the importer
+    // placed no footprint there.
+    const stationNameTile = (centre, placed) => {
+      const facility = placed.find((item) => item.kind === "station"
+        && centre.x >= item.x && centre.x < item.x + stationW
+        && centre.y >= item.y && centre.y < item.y + stationH);
+      if (facility) return { x: facility.x, y: facility.y };
+      let best = null; let bestDistance = Infinity;
+      for (let i = 0; i < count; i += 1) {
+        if (!rail[i]) continue;
+        const x = i % n; const y = (i - x) / n;
+        const distance = Math.hypot(x + 0.5 - centre.x, y + 0.5 - centre.y);
+        if (distance < bestDistance || (distance === bestDistance && best && (y < best.y || (y === best.y && x < best.x)))) { best = { x, y }; bestDistance = distance; }
+      }
+      return best || { x: Math.max(0, Math.min(n - 1, Math.floor(centre.x))), y: Math.max(0, Math.min(n - 1, Math.floor(centre.y))) };
+    };
+    const stationTiles = [];
+    for (const centre of stationCentres) {
+      const ox = Math.floor(centre.x - stationW / 2 + 0.5); const oy = Math.floor(centre.y - stationH / 2 + 0.5);
+      let spot = null; let best = Infinity;
+      for (let dy = -STATION_REACH; dy <= STATION_REACH; dy += 1) for (let dx = -STATION_REACH; dx <= STATION_REACH; dx += 1) {
+        const x = ox + dx; const y = oy + dy;
+        if (x < 0 || y < 0 || x + stationW > n || y + stationH > n) continue;
+        if (!footprintClear(x, y, stationW, stationH, stationBlocked)) continue;
+        if (!touchesRail(x, y, stationW, stationH)) continue;
+        const distance = Math.hypot(x + stationW / 2 - centre.x, y + stationH / 2 - centre.y);
+        if (distance > STATION_REACH || distance > best) continue;
+        // Equal distance falls to the smaller y, then the smaller x: the same
+        // city whichever order the features arrived in.
+        if (distance === best && spot && (y > spot.y || (y === spot.y && x > spot.x))) continue;
+        spot = { x, y }; best = distance;
+      }
+      if (!spot || !claimSite(spot.x, spot.y, stationW, stationH)) { stats.stationsNoRoom += 1; continue; }
+      facilities.push({ kind: "station", x: spot.x, y: spot.y, builtTick: 0 });
+      stationTiles.push({ centre, x: spot.x, y: spot.y });
+      stats.stations += 1;
     }
 
     // 6. Buildings: each footprint is tiled with the largest square lots
@@ -660,6 +812,61 @@ window.AISystem6BonsaiOsmImportLoaded = true;
         buildings: includeBuildings,
       },
     };
+    // --- Real names -------------------------------------------------------
+    // One entry per name, each on the Bonsai tile the feature landed on: the
+    // station facility the importer placed (or the nearest rail tile), the
+    // middle road tile of the longest way that carries a street's name, and a
+    // place node's own tile. Lists are sorted by (y, x, name) and capped, so
+    // one import always gives the same record.
+    const entry = (x, y, names) => ({ x, y, ...names });
+    const stationNames = [];
+    const namedStationsSeen = new Set();
+    for (const centre of stationCentres) {
+      // The first named station feature within reach of this centre names it.
+      const owner = stationSites.find((element) => {
+        if (!namesOf(element.tags || {})) return false;
+        const [x, y] = siteCentre(element);
+        return Math.hypot(x - centre.x, y - centre.y) <= STATION_REACH;
+      });
+      if (!owner) continue;
+      const names = namesOf(owner.tags);
+      if (namedStationsSeen.has(names.name)) continue;
+      namedStationsSeen.add(names.name);
+      const placed = stationTiles.find((item) => item.centre === centre);
+      const tile = placed ? { x: placed.x, y: placed.y } : stationNameTile(centre, facilities);
+      stationNames.push(entry(tile.x, tile.y, names));
+    }
+    const streetByName = new Map();
+    for (const { element, names } of namedWays) {
+      const cells = roadWayCells(element, n, project, road, onramp);
+      if (!cells.length) continue;
+      const known = streetByName.get(names.name);
+      if (known && known.cells.length >= cells.length) continue;
+      streetByName.set(names.name, { names, cells });
+    }
+    const streetNames = [];
+    for (const { names, cells } of streetByName.values()) {
+      const middle = cells[Math.floor((cells.length - 1) / 2)];
+      streetNames.push(entry(middle % n, Math.floor(middle / n), names));
+    }
+    const placeNames = [];
+    const placesSeen = new Set();
+    for (const { element, names, kind } of namedPlaces) {
+      if (placesSeen.has(names.name)) continue;
+      const [px, py] = project(element.g[0], element.g[1]);
+      if (!(px >= 0 && py >= 0 && px < n && py < n)) continue;
+      placesSeen.add(names.name);
+      placeNames.push({ x: Math.floor(px), y: Math.floor(py), kind, ...names });
+    }
+    stationNames.sort(byYXName); streetNames.sort(byYXName); placeNames.sort(byYXName);
+    const realNames = {
+      stations: stationNames.slice(0, NAME_CAPS.stations),
+      streets: streetNames.slice(0, NAME_CAPS.streets),
+      places: placeNames.slice(0, NAME_CAPS.places),
+    };
+    // Only when there is something to show: a map with no names keeps the
+    // provenance it had before names travelled, byte for byte.
+    if (realNames.stations.length || realNames.streets.length || realNames.places.length) payload.provenance.names = realNames;
     // A fresh city computes its own routing and monthly environment; the
     // template's would describe the noise terrain it was made on.
     delete payload.routing; delete payload.landValue; delete payload.crime; delete payload.pollution;

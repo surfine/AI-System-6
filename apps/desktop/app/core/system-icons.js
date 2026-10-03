@@ -218,6 +218,7 @@ const systemIconPaths = {
   oneMoreTune: `<path d="M8 6h4v20H8zM13 4h12v24H13zM16 22V11l7-2v11"/><circle class="classic-ink" cx="16" cy="22" r="2.3"/><circle class="classic-ink" cx="23" cy="20" r="2.3"/>`,
   joyride: `<path d="M3 21h26M5 18v-4l4-1 4-5h9l4 5 3 1v4zM13 13h11"/><circle cx="10" cy="19" r="3"/><circle class="classic-ink" cx="23" cy="19" r="3"/><path d="M6 25h5M15 25h4M23 25h5"/>`,
   rootline: `<path d="M4 18h10l8-8h6M14 28V18"/><circle cx="4" cy="18" r="2"/><circle cx="28" cy="10" r="2"/><circle cx="14" cy="28" r="2"/><circle cx="14" cy="18" r="2"/><circle class="classic-ink" cx="22" cy="10" r="3.5"/>`,
+  mingwen: `<path d="M5 8h22v16H5z"/><path d="M5 8l11 9 11-9"/><path class="classic-ink" d="M17 20l9-5 2 3-9 5-4 1z"/>`,
   liquidCover: `
     <path d="M4 6h24v20H4z" />
     <path d="M9 21a5 5 0 0 1 10 0" />
@@ -680,7 +681,7 @@ const classicBigSurFallbackIds = new Set("imagePromptStudio micropolis openttd d
 // paints its Classic glyph instead of an empty group (or, in Liquid Glass, a
 // request for an SVG that does not exist). Leaves this set when its family
 // joins completeEraSystemIconIds.
-const glyphOnlySystemIconIds = new Set(["rootline", "joyride"]);
+const glyphOnlySystemIconIds = new Set(["rootline", "joyride", "mingwen"]);
 const liquidGlassRoundedRectIconIds = new Set(("finderApp assistant writingStudio cloudModel cloudModelOff reviewDesk searcher reader timeMachine docMap clioStage clioChart liquidCover cmfStudio soundscape scrapbook importUtility controlPanel chooser systemHelp dictionary teachText chatImport systemStatus contextPanel rebuildArticle bureaucracyMeme endfieldTerminal multiFinderApp daHandler writingBell control localModel controlStrip clioPaint clioProject oneMoreTune").split(" "));
 function liquidGlassIconUsesRoundedRect(iconId) {
   return liquidGlassRoundedRectIconIds.has(iconId);

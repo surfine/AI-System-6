@@ -512,9 +512,10 @@ function findFlatRect(state, width, height) {
 }
 
 // M3b-2a: bridges — roads, rails, and power lines cross water at bridge
-// prices; pipes stop at the shore.
+// prices; pipes stop at the shore. Founded in 1950 so subway stations
+// (1910) exist for the ruleset 6 checks below.
 {
-  const state = sim.createCity({ seed: 507, size: 64, terrainPreset: "river" });
+  const state = sim.createCity({ seed: 507, size: 64, terrainPreset: "river", yearFounded: 1950 });
   let crossing = null;
   for (let y = 4; y < state.size - 4 && !crossing; y += 1) {
     for (let x = 2; x < state.size - 12; x += 1) {
@@ -534,6 +535,36 @@ function findFlatRect(state, width, height) {
   test.assert(command(state, "build-path", { network: "wire", start: { x: crossing.from, y: crossing.y }, end: { x: crossing.to, y: crossing.y } }).accepted, "power lines cross the river on pylons");
   const pipe = command(state, "build-path", { network: "pipe", start: { x: crossing.from, y: crossing.y }, end: { x: crossing.to, y: crossing.y } });
   test.assert(!pipe.accepted && pipe.code === "water", "pipes stop at the shore");
+
+  // Ruleset 6 (owner decision 2026-10-02): a subway tunnels under the river
+  // at 300 a water tile, four rail bridge tiles; its stations stay ashore.
+  let wet = 0;
+  for (let x = crossing.from; x <= crossing.to; x += 1) if (state.water[crossing.y * state.size + x]) wet += 1;
+  const line = { network: "subway", start: { x: crossing.from, y: crossing.y }, end: { x: crossing.to, y: crossing.y } };
+  const expected = wet * 300 + (span - wet) * 100;
+  const preview = sim.previewCommand(state, { schemaVersion: 2, type: "build-path", payload: line, targetTick: state.tick });
+  const fundsBefore = state.funds;
+  const subway = command(state, "build-path", line);
+  test.assert(sim.COSTS.crossing.subway === 300 && sim.COSTS.crossing.subway === 4 * sim.COSTS.crossing.rail, "an underwater subway tile is priced at four rail bridge tiles");
+  test.assert(wet > 0 && subway.accepted && subway.cost === expected && subway.tunnelCost === wet * 300 && fundsBefore - state.funds === expected,
+    `a subway crosses the river and is billed 300 a water tile (${wet} wet, ${span - wet} dry: $${subway.cost}, expected $${expected})`);
+  test.assert(preview.accepted && preview.cost === subway.cost && preview.tunnelCost === subway.tunnelCost, "the drag preview shows the price the commit bills");
+  const wetTile = (() => { for (let x = crossing.from; x <= crossing.to; x += 1) if (state.water[crossing.y * state.size + x]) return x; return -1; })();
+  test.assert(state.subway[crossing.y * state.size + wetTile] === 1, "the tunnel tile is a subway tile on the water tile");
+  const station = command(state, "place-facility", { kind: "subway-station", x: wetTile, y: crossing.y });
+  test.assert(!station.accepted && station.code === "water", "a subway station stays on land");
+  test.assert(bridge.tunnelCost === 0, "a road bridge reports no tunnel share; only a subway drag does");
+  sim.undo(state);
+  test.assert(state.funds === fundsBefore && state.subway[crossing.y * state.size + wetTile] === 0, "undo takes the tunnel back with its full price");
+  // Same seed and commands, same city: the tunnel is part of the deterministic replay.
+  async function replay() {
+    const city = sim.createCity({ seed: 507, size: 64, terrainPreset: "river", yearFounded: 1950 });
+    command(city, "build-path", { network: "road", start: { x: crossing.from, y: crossing.y }, end: { x: crossing.to, y: crossing.y } });
+    command(city, "build-path", line);
+    sim.advanceTicks(city, 250);
+    return sim.checkpoint(city);
+  }
+  test.assert(await replay() === await replay(), "an underwater subway replays to the same checkpoint");
 }
 
 // M4b-1 demographics and tiered graphs: EQ follows school coverage, LE
@@ -722,6 +753,283 @@ function findFlatRect(state, width, height) {
   const before = sim.canonicalStringify(sim.serialize(state));
   sim.sc2DerivedGrids(state);
   test.assert(sim.canonicalStringify(sim.serialize(state)) === before, "the read never mutates the save");
+}
+
+// Ruleset 6: the Basin's avenue, Yichang- and Guangzhou-style, with its BRT
+// in the middle of the road. One drag lays a straight run two tiles wide:
+// 25 a new tile on land, 15 to widen a street tile, 60 a new deck over
+// water; the halves always come and go as a pair.
+{
+  const flatDry = (state, x0, y0, w, h) => {
+    const base = state.alt[y0 * state.size + x0];
+    for (let y = y0; y < y0 + h; y += 1) for (let x = x0; x < x0 + w; x += 1) {
+      const i = y * state.size + x; if (state.water[i] || state.alt[i] !== base) return false;
+    }
+    return true;
+  };
+  const back = { 1: 4, 2: 8, 4: 1, 8: 2 };
+  const left = { 1: [-1, 0], 2: [0, -1], 4: [1, 0], 8: [0, 1] };
+  // Every avenue half is on the road and answered by the tile on its left.
+  const paired = (state) => {
+    for (let i = 0; i < state.size * state.size; i += 1) {
+      const dir = state.avenue[i]; if (!dir) continue;
+      const x = (i % state.size) + left[dir][0]; const y = Math.floor(i / state.size) + left[dir][1];
+      const j = y * state.size + x;
+      if (!state.road[i] || !state.road[j] || state.avenue[j] !== back[dir]) return false;
+    }
+    return true;
+  };
+  const state = sim.createCity({ seed: 610, size: 64, yearFounded: 1920 });
+  let spot = null;
+  for (let y = 2; y < state.size - 10 && !spot; y += 1) for (let x = 2; x < state.size - 22 && !spot; x += 1) if (flatDry(state, x, y, 20, 8)) spot = { x, y };
+  test.assert(!!spot, "the avenue test city has a flat block to build on");
+  const { x: X, y: Y } = spot;
+  // The avenue opens with the BRT, in 1920: a city founded in 1910 waits.
+  const early = sim.createCity({ seed: 610, size: 64, yearFounded: 1910 });
+  test.assert(command(early, "build-path", { network: "avenue", points: [{ x: X, y: Y + 3 }, { x: X + 9, y: Y + 3 }] }).code === "tech-year" && early.avenue.every((value) => value === 0),
+    "a 1910 city cannot lay an avenue yet");
+  const at = (x, y) => y * state.size + x;
+  test.assert(command(state, "build-path", { network: "road", start: { x: X + 2, y: Y + 3 }, end: { x: X + 5, y: Y + 3 } }).accepted, "the avenue test city lays a street to widen");
+  const run = { network: "avenue", points: [{ x: X, y: Y + 3 }, { x: X + 9, y: Y + 3 }] };
+  const preview = sim.previewCommand(state, { schemaVersion: 2, type: "build-path", payload: run, targetTick: state.tick });
+  const fundsBefore = state.funds;
+  const laid = command(state, "build-path", run);
+  test.assert(laid.accepted && laid.cost === 4 * 15 + 16 * 25 && fundsBefore - state.funds === laid.cost,
+    `ten pairs over a four-tile street bill 4 x 15 + 16 x 25 (billed $${laid.cost})`);
+  test.assert(preview.accepted && preview.cost === laid.cost && preview.footprint.tiles.length === 20, "the drag preview shows the price the commit bills, tile for tile");
+  test.assert(sim.unitCost({ type: "build-path", payload: { network: "avenue" } }) === 25 && sim.AVENUE.costs.upgrade === 15 && sim.COSTS.crossing.avenue === 60,
+    "the listed prices are 25 a new tile, 15 a widened one, 60 a new deck");
+  let eastWest = true;
+  for (let x = X; x <= X + 9; x += 1) eastWest &&= state.avenue[at(x, Y + 3)] === 8 && state.avenue[at(x, Y + 4)] === 2 && state.road[at(x, Y + 3)] === 1 && state.road[at(x, Y + 4)] === 1;
+  test.assert(eastWest && state.avenue[at(X + 10, Y + 3)] === 0, "an east-west avenue's north half runs west (8), its south half east (2), and both are road");
+  test.assert(paired(state), "every half has its partner on the driver's left");
+  const partner = sim.AVENUE.partner(state, X + 4, Y + 3);
+  test.assert(partner && partner.x === X + 4 && partner.y === Y + 4, "the core names a half's partner");
+  test.assert(command(state, "build-path", run).code === "empty", "laying the same avenue again changes nothing and is refused as empty");
+  const longer = command(state, "build-path", { network: "avenue", points: [{ x: X + 5, y: Y + 3 }, { x: X + 14, y: Y + 3 }] });
+  test.assert(longer.accepted && longer.cost === 10 * 25, `extending the run bills only the five new pairs (billed $${longer.cost})`);
+  // A north-south avenue across it: the west half runs south (4), the east
+  // half north (1); where the two cross, the junction keeps the halves that
+  // were there.
+  const across = command(state, "build-path", { network: "avenue", points: [{ x: X + 12, y: Y }, { x: X + 12, y: Y + 7 }] });
+  let northSouth = true;
+  for (let y = Y; y <= Y + 7; y += 1) if (y !== Y + 3 && y !== Y + 4) northSouth &&= state.avenue[at(X + 12, y)] === 4 && state.avenue[at(X + 13, y)] === 1;
+  test.assert(across.accepted && across.cost === 12 * 25 && northSouth, `a north-south avenue's west half runs south (4) and its east half north (1) (billed $${across.cost})`);
+  test.assert(state.avenue[at(X + 12, Y + 3)] === 8 && state.avenue[at(X + 13, Y + 4)] === 2 && paired(state), "the junction keeps the crossing avenue's halves and every half stays paired");
+  test.assert(command(state, "build-path", { network: "avenue", points: [{ x: X, y: Y + 4 }, { x: X + 3, y: Y + 4 }] }).code === "occupied",
+    "a run that would take one half of an avenue is refused");
+  test.assert(command(state, "zone-area", { zone: "residential", density: "low", x: X + 16, y: Y + 1, width: 2, height: 1 }).accepted, "the avenue test city zones a plot");
+  test.assert(command(state, "build-path", { network: "avenue", points: [{ x: X + 16, y: Y }, { x: X + 18, y: Y }] }).code === "occupied", "an avenue stops at zoned land, as a street does");
+  // Bulldozing one half brings the pair down; undo puts both back.
+  const beforeDemolish = state.funds;
+  const razed = command(state, "demolish-area", { x: X + 1, y: Y + 3, width: 1, height: 1 });
+  const razedTiles = razed.footprint.tiles.map((tile) => `${tile.x},${tile.y}`).sort().join(" ");
+  test.assert(razed.accepted && razedTiles === [`${X + 1},${Y + 3}`, `${X + 1},${Y + 4}`].sort().join(" ") && razed.cost === 2 * sim.COSTS.demolish,
+    "bulldozing one half takes its partner too, and bills both");
+  test.assert(!state.road[at(X + 1, Y + 3)] && !state.road[at(X + 1, Y + 4)] && !state.avenue[at(X + 1, Y + 3)] && !state.avenue[at(X + 1, Y + 4)] && paired(state),
+    "neither half survives the bulldozer");
+  sim.undo(state);
+  test.assert(state.funds === beforeDemolish && state.avenue[at(X + 1, Y + 3)] === 8 && state.avenue[at(X + 1, Y + 4)] === 2 && state.road[at(X + 1, Y + 4)] === 1,
+    "undo puts both halves back with the funds");
+  sim.undo(state); sim.undo(state); sim.undo(state); sim.undo(state);
+  test.assert(state.funds === fundsBefore + 0 && state.avenue.every((value) => value === 0) && state.road[at(X + 2, Y + 3)] === 1 && state.road[at(X + 1, Y + 3)] === 0,
+    "undoing the avenues returns every coin and leaves the street that was there");
+  // Same seed and commands, same city.
+  async function replay() {
+    const city = sim.createCity({ seed: 610, size: 64, yearFounded: 1920 });
+    command(city, "build-path", { network: "road", start: { x: X + 2, y: Y + 3 }, end: { x: X + 5, y: Y + 3 } });
+    command(city, "build-path", run);
+    command(city, "build-path", { network: "avenue", points: [{ x: X + 12, y: Y }, { x: X + 12, y: Y + 7 }] });
+    sim.advanceTicks(city, 125);
+    return sim.checkpoint(city);
+  }
+  test.assert(await replay() === await replay(), "an avenue replays to the same checkpoint");
+}
+
+// The avenue over water: a new deck is 60 a tile, and a road bridge already
+// there is widened at 15 like any street tile.
+{
+  const state = sim.createCity({ seed: 507, size: 64, terrainPreset: "river", yearFounded: 1950 });
+  let found = null;
+  for (let y = 4; y < state.size - 5 && !found; y += 1) {
+    for (let x = 2; x < state.size - 14 && !found; x += 1) {
+      const row = (yy) => {
+        if (state.water[yy * state.size + x]) return -1;
+        let end = x + 1; while (end < state.size - 1 && state.water[yy * state.size + end]) end += 1;
+        return end > x + 1 && !state.water[yy * state.size + end] ? end : -1;
+      };
+      const to = Math.max(row(y), row(y + 1));
+      if (row(y) < 0 || row(y + 1) < 0) continue;
+      const payload = { network: "avenue", points: [{ x, y }, { x: to, y }] };
+      const bridge = sim.previewCommand(state, { schemaVersion: 2, type: "build-path", payload: { network: "road", start: { x, y }, end: { x: to, y } }, targetTick: state.tick });
+      if (bridge.accepted && sim.previewCommand(state, { schemaVersion: 2, type: "build-path", payload, targetTick: state.tick }).accepted) found = { x, y, to, payload };
+    }
+  }
+  test.assert(!!found, "the river preset offers a crossing for an avenue");
+  test.assert(command(state, "build-path", { network: "road", start: { x: found.x, y: found.y }, end: { x: found.to, y: found.y } }).accepted, "a road bridge crosses first");
+  let expected = 0; let decks = 0; let widened = 0;
+  for (let x = found.x; x <= found.to; x += 1) for (const y of [found.y, found.y + 1]) {
+    const i = y * state.size + x;
+    if (state.road[i]) { expected += 15; if (state.water[i]) widened += 1; } else if (state.water[i]) { expected += 60; decks += 1; } else expected += 25;
+  }
+  const fundsBefore = state.funds;
+  const avenue = command(state, "build-path", found.payload);
+  test.assert(decks > 0 && widened > 0 && avenue.accepted && avenue.cost === expected && fundsBefore - state.funds === expected,
+    `the avenue bills ${decks} new deck tiles at 60 and widens ${widened} bridge tiles at 15 (billed $${avenue.cost}, expected $${expected})`);
+  sim.undo(state);
+  test.assert(state.funds === fundsBefore, "undo returns the avenue's price");
+}
+
+// Congestion counts an avenue half by its two general lanes: the same
+// commute on the same two-tile road congests as two streets and flows as an
+// avenue. Lots are written straight into the layers so the trip count is
+// exact: a 3x3 tower of 770 residents sends 96 trips.
+{
+  const corridor = (asAvenue) => {
+    const state = sim.createCity({ seed: 610, size: 64, yearFounded: 1920 });
+    let spot = null;
+    for (let y = 2; y < state.size - 8 && !spot; y += 1) for (let x = 2; x < state.size - 22 && !spot; x += 1) {
+      const base = state.alt[y * state.size + x]; let flat = true;
+      for (let dy = 0; dy < 6 && flat; dy += 1) for (let dx = 0; dx < 20; dx += 1) { const i = (y + dy) * state.size + x + dx; if (state.water[i] || state.alt[i] !== base) { flat = false; break; } }
+      if (flat) spot = { x, y };
+    }
+    const { x: X, y: Y } = spot;
+    if (asAvenue) command(state, "build-path", { network: "avenue", points: [{ x: X, y: Y + 3 }, { x: X + 19, y: Y + 3 }] });
+    else for (const y of [Y + 3, Y + 4]) command(state, "build-path", { network: "road", start: { x: X, y }, end: { x: X + 19, y } });
+    const lot = (ax, ay, zone) => {
+      const anchor = ay * state.size + ax;
+      for (let dy = 0; dy < 3; dy += 1) for (let dx = 0; dx < 3; dx += 1) {
+        const c = anchor + dy * state.size + dx;
+        state.zone[c] = zone; state.density[c] = 2; state.stage[c] = 3; state.buildingState[c] = sim.BUILDING_STATE.ACTIVE; state.lot[c] = anchor + 1; state.variant[c] = 0; state.tree[c] = 0;
+      }
+    };
+    lot(X, Y, sim.ZONE.R); lot(X + 17, Y, sim.ZONE.I);
+    sim.invalidateDerived(state); sim.ensureDerived(state);
+    return { state, X, Y };
+  };
+  const streets = corridor(false); const avenue = corridor(true);
+  const busiest = (city) => { let best = -1; for (let i = 0; i < city.state.size * city.state.size; i += 1) if (city.state.road[i] && (best < 0 || city.state.traffic[i] > city.state.traffic[best])) best = i; return best; };
+  const s = busiest(streets); const a = busiest(avenue);
+  test.assert(streets.state.traffic[s] === avenue.state.traffic[a] && avenue.state.traffic[a] > sim.CONGESTION_THRESHOLD && avenue.state.traffic[a] <= sim.AVENUE.capacity,
+    `both corridors carry the same commute, over a street's capacity and within an avenue's (${avenue.state.traffic[a]} trips)`);
+  test.assert(streets.state.congested[s] === 1 && avenue.state.congested[a] === 0 && avenue.state.avenue[a] !== 0, "two streets jam where the avenue flows");
+  test.assert(sim.AVENUE.capacity === 2 * sim.CONGESTION_THRESHOLD, "an avenue tile's capacity is twice a street's");
+  let consistent = true;
+  for (let i = 0; i < avenue.state.size * avenue.state.size; i += 1) {
+    if (!avenue.state.road[i]) continue;
+    consistent &&= Boolean(avenue.state.congested[i]) === (avenue.state.traffic[i] > (avenue.state.avenue[i] ? sim.AVENUE.capacity : sim.CONGESTION_THRESHOLD));
+  }
+  test.assert(consistent, "every street tile congests over its own capacity: twice the threshold on an avenue half");
+}
+
+// A depot's eight tiles make the avenue halves they cover cheaper to commute
+// on, and those halves take a quarter of the car trips without also taking
+// the depot's block relief. Halves outside the square stay ordinary roads
+// for route cost. Maintenance is unchanged, so hezhou's pinned checkpoint holds.
+{
+  const corridor = (asAvenue) => {
+    const state = sim.createCity({ seed: 610, size: 64, yearFounded: 1920 });
+    let spot = null;
+    for (let y = 2; y < state.size - 8 && !spot; y += 1) for (let x = 2; x < state.size - 22 && !spot; x += 1) {
+      const base = state.alt[y * state.size + x]; let flat = true;
+      for (let dy = 0; dy < 6 && flat; dy += 1) for (let dx = 0; dx < 20; dx += 1) { const i = (y + dy) * state.size + x + dx; if (state.water[i] || state.alt[i] !== base) { flat = false; break; } }
+      if (flat) spot = { x, y };
+    }
+    const { x: X, y: Y } = spot;
+    if (asAvenue) command(state, "build-path", { network: "avenue", points: [{ x: X, y: Y + 3 }, { x: X + 19, y: Y + 3 }] });
+    const lot = (ax, ay, zone) => {
+      const anchor = ay * state.size + ax;
+      for (let dy = 0; dy < 3; dy += 1) for (let dx = 0; dx < 3; dx += 1) {
+        const c = anchor + dy * state.size + dx;
+        state.zone[c] = zone; state.density[c] = 2; state.stage[c] = 3; state.buildingState[c] = sim.BUILDING_STATE.ACTIVE; state.lot[c] = anchor + 1; state.variant[c] = 0; state.tree[c] = 0;
+      }
+    };
+    lot(X, Y, sim.ZONE.R); lot(X + 17, Y, sim.ZONE.I);
+    sim.invalidateDerived(state); sim.ensureDerived(state);
+    return { state, X, Y };
+  };
+  const servedCity = () => {
+    const city = corridor(true);
+    const depot = command(city.state, "place-facility", { kind: "bus", x: city.X + 10, y: city.Y + 2 });
+    return { ...city, depot };
+  };
+  const plain = corridor(true);
+  const covered = servedCity();
+  test.assert(covered.depot.accepted, `a depot stands beside the avenue (${covered.depot.code})`);
+  const homeOf = (city) => city.state.buildings.find((building) => building.zone === sim.ZONE.R);
+  const plainHome = homeOf(plain);
+  const coveredHome = homeOf(covered);
+  test.assert(plainHome && coveredHome && covered.state.distJobs[coveredHome.access] < plain.state.distJobs[plainHome.access],
+    "commuters prefer the avenue once a depot covers it");
+  test.assert(covered.state.busService.busRiders > 0 && covered.state.busService.avenues > 0, "served trips are counted as bus riders");
+  test.assert(!Object.prototype.hasOwnProperty.call(plain.state.busService, "busRiders") && !Object.prototype.hasOwnProperty.call(plain.state.busService, "avenues"),
+    "a city with no depot writes neither rider count");
+  const depotTile = (covered.X + 10) + (covered.Y + 2) * covered.state.size;
+  let servedQuiet = true;
+  let outsideMatchesRoad = true;
+  for (let i = 0; i < covered.state.size * covered.state.size; i += 1) {
+    if (!covered.state.avenue[i]) continue;
+    const x = i % covered.state.size;
+    const y = Math.floor(i / covered.state.size);
+    const near = Math.max(Math.abs(x - (covered.X + 10)), Math.abs(y - (covered.Y + 2))) <= 8;
+    if (near) servedQuiet &&= covered.state.congested[i] === 0;
+    else outsideMatchesRoad &&= covered.state.congested[i] === (covered.state.traffic[i] > sim.AVENUE.capacity ? 1 : 0);
+  }
+  test.assert(servedQuiet, "a depot-covered avenue half is not marked congested");
+  test.assert(outsideMatchesRoad, "an avenue half outside the depot square still uses the avenue's own capacity");
+  test.assert(sim.ROUTE_COST.avenue === 3, "a served avenue tile costs 3, between a highway and a street");
+  const sample = covered.state.buildings.find((building) => building.zone === sim.ZONE.R);
+  const trips = Math.max(1, Math.round(sample.population / 8));
+  let weighted = false;
+  for (let i = 0; i < covered.state.size * covered.state.size; i += 1) {
+    if (!covered.state.avenue[i] || !covered.state.traffic[i]) continue;
+    const x = i % covered.state.size;
+    const y = Math.floor(i / covered.state.size);
+    if (Math.max(Math.abs(x - (covered.X + 10)), Math.abs(y - (covered.Y + 2))) > 8) continue;
+    weighted = covered.state.traffic[i] === Math.floor(trips * 0.25);
+    break;
+  }
+  test.assert(weighted, "a served tile keeps a quarter of the trips and does not stack the depot relief");
+}
+
+// Hezhou, 1952: Starter Town plus the works of a river town. The bridge is a
+// road over water, the railway has exactly two stations and crosses the hill
+// road on the level, and the avenue is a paired two-way layer (westbound 8 /
+// eastbound 2) from x=15 to x=35. The replay is deterministic and no command
+// is refused; one bond funded at tick 0 lifts the treasury for the $5,180 of
+// works laid in 1952, after the town's replay, when only $3,264 remains.
+{
+  const first = sim.replayExampleCity("hezhou-1952");
+  const second = sim.replayExampleCity("hezhou-1952");
+  const checkpoint = await sim.checkpoint(first);
+  test.assert(checkpoint === await sim.checkpoint(second), "hezhou-1952 replays to the same checkpoint twice");
+  test.assert(checkpoint.startsWith("947f588aa5c943dc"), `hezhou-1952 pins its deterministic checkpoint prefix (${checkpoint.slice(0, 16)})`);
+  const date = sim.dateOf(first);
+  test.assert(date.year === 1952 && date.month === 6 && date.day === 1, "hezhou-1952 opens on 1952-07-01");
+  test.assert(sim.EXAMPLES["hezhou-1952"].yearFounded === 1950 && sim.EXAMPLES["hezhou-1952"].seed === 6101, "hezhou-1952 founds the city in 1950 on seed 6101");
+  test.assert(first.bonds.length === 1 && first.funds > 0, "one bond issued at tick 0 funds the 1952 works and every command is accepted");
+  let bridge = 0;
+  for (let i = 0; i < first.size * first.size; i += 1) if (first.water[i] && first.road[i]) bridge += 1;
+  test.assert(bridge > 0, `hezhou-1952 carries a road bridge standing on water (${bridge} tiles)`);
+  const stations = first.facilities.filter((facility) => facility.kind === "station");
+  test.assert(stations.length === 2
+    && stations.some((station) => station.x === 16 && station.y === 40)
+    && stations.some((station) => station.x === 61 && station.y === 38),
+    "hezhou-1952 runs one railway with exactly two stations, one at each end");
+  let crossings = 0;
+  for (let i = 0; i < first.size * first.size; i += 1) if (first.rail[i] && first.road[i]) crossings += 1;
+  test.assert(crossings >= 1, `the railway crosses the hill road on the level (${crossings} shared tiles)`);
+  const at = (x, y) => y * first.size + x;
+  let avenue = true;
+  for (let x = 15; x <= 35; x += 1) {
+    const north = sim.AVENUE.partner(first, x, 18);
+    const south = sim.AVENUE.partner(first, x, 19);
+    avenue = avenue && first.avenue[at(x, 18)] === 8 && first.avenue[at(x, 19)] === 2
+      && first.road[at(x, 18)] === 1 && first.road[at(x, 19)] === 1
+      && north !== null && north.y === 19 && south !== null && south.y === 18;
+  }
+  test.assert(avenue, "the avenue halves run west (8) and east (2), paired, from x=15 to x=35");
+  test.assert(first.avenue[at(15, 18)] === 8 && first.avenue[at(14, 19)] === 0, "the avenue starts east of the water tower");
 }
 
 test.finish();

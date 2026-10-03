@@ -964,7 +964,7 @@ body[data-line-spacing="relaxed"] {
   display: none;
 }
 
-/* Left cluster: three equal-role controls (Preview / Focus / Commands). */
+/* Left cluster: display mode, frequent action, and additional commands. */
 .teachtext-command-group {
   display: grid;
   /* The first track is the 写 | 读 switch: it takes the width its words need
@@ -981,7 +981,6 @@ body[data-line-spacing="relaxed"] {
 /* Controls and primary alike: one line, centered label, ellipsis under
    pressure instead of wrapping or stacking vertically. */
 .teachtext-command-group > .btn,
-.teachtext-command-group > .teachtext-command-menu,
 .teachtext-command-group > .teachtext-command-menu > summary,
 .teachtext-actions > .btn.default {
   min-width: 0;
@@ -1063,6 +1062,14 @@ body[data-line-spacing="relaxed"] {
   left: 0;
   bottom: 100%;
   margin-bottom: 5px;
+}
+
+.specialized-command-menu .teachtext-command-popover {
+  left: auto;
+  right: 0;
+  max-height: 60dvh;
+  overflow-y: auto;
+  --teachtext-command-popover-overflow: auto;
 }
 
 /* A command menu with nothing available reads as a disabled button and does

@@ -1,10 +1,7 @@
-// Route dispatch table. Replaces the if/else chain at the bottom of
-// the root server.js. Entries are matched by exact `METHOD PATH` first,
+// Route dispatch table. Entries are matched by exact `METHOD PATH` first,
 // then by `METHOD prefix` for routes that accept query strings.
-//
-// Until a route is migrated into this table, a request for it returns
-// a structured 404 from server.js with both `migrated` and
-// `unmigrated` lists.
+// A request that matches neither returns null; server.js answers that
+// with a structured 404.
 
 "use strict";
 
@@ -320,17 +317,6 @@ const prefixRoutes = isPublicDeployment
   : localPrefixRoutes;
 
 /**
- * Routes that exist in the root server.js but have not been migrated
- * yet. Surfaced in 404 responses so callers can see the migration
- * frontier without inspecting source.
- *
- * Keep this list in sync with the dispatcher block at the bottom of
- * the root server.js.
- */
-const unmigratedRoutes = [
-];
-
-/**
  * Resolve a request to a handler. Returns null if no route matches.
  *
  * @param {import("node:http").IncomingMessage} req
@@ -377,5 +363,4 @@ function listMigratedRoutes() {
 module.exports = {
   resolveRoute,
   listMigratedRoutes,
-  unmigratedRoutes,
 };

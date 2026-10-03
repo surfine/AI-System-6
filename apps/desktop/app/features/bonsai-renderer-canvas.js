@@ -12,7 +12,25 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
   const MATH = window.AISystem6BonsaiRenderer;
   const LAYERS = Object.freeze(["terrain", "infrastructure", "buildings", "agents", "feedback", "lighting"]);
   const DIRECTIONS = Object.freeze(["north", "east", "south", "west"]);
-  const OVERLAYS = Object.freeze(["none", "power", "water", "traffic", "pollution", "land-value", "police", "fire", "education", "health"]);
+  const OVERLAYS = Object.freeze(["none", "power", "water", "traffic", "pollution", "land-value", "police", "fire", "education", "health", "transit"]);
+
+  // The 「线网」 overlay's colours, indexed by the tile category the snapshot
+  // derived: nothing, the seven line colours, a bus, an avenue with no depot
+  // in reach, an avenue corridor in service, and a station.
+  const TRANSIT_COLORS = Object.freeze([
+    "rgba(0,0,0,0)",
+    "rgba(214,58,52,0.55)",
+    "rgba(49,94,201,0.55)",
+    "rgba(232,168,44,0.55)",
+    "rgba(58,152,88,0.55)",
+    "rgba(150,74,178,0.55)",
+    "rgba(52,150,168,0.55)",
+    "rgba(196,104,44,0.55)",
+    "rgba(120,120,120,0.52)",
+    "rgba(150,60,60,0.22)",
+    "rgba(196,52,44,0.45)",
+    "rgba(18,18,18,0.78)",
+  ]);
   const CHUNK_SIZE = 16;
   const MAX_CHUNK_CACHE = 72;
   const OVER = Object.freeze({ NONE: 0, ROAD: 1, WIRE: 2, PARK: 3, ROADWIRE: 4 });
@@ -672,7 +690,16 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     // A wire or pipe that shares a tile with a road draws the same frame over
     // it (the SC2000 wire-over-road look).
     const corners = bridgeFamily ? [0, 0, 0, 0] : liftedCorners(groundLift(snapshot, index));
-    const spriteDrawn = drawOnSurface(context, `${frameFamily}.mask-${mask}`, point.sx, point.sy, corners);
+    // A power line that shares its tile with a street or a railway stands its
+    // pole on the kerb — the atlas's `wire.side` frames — instead of in the
+    // middle of the carriageway. The conductors still run along the tile's
+    // centre line, so they meet the neighbouring pieces exactly as before; if
+    // the kerbside frame is ever missing, the centred one is the fallback.
+    const kerbside = family === "wire" && (isRoad(snapshot, index) || isRail(snapshot, index));
+    let spriteDrawn = kerbside
+      ? drawOnSurface(context, `${frameFamily}.side.mask-${mask}`, point.sx, point.sy, corners)
+      : false;
+    if (!spriteDrawn) spriteDrawn = drawOnSurface(context, `${frameFamily}.mask-${mask}`, point.sx, point.sy, corners);
     if (!spriteDrawn) {
       const overlay = (family === "wire" || family === "pipe") && isRoad(snapshot, index);
       context.fillStyle = family === "road" ? "#555" : family === "rail" ? "#443c35" : "#292929";
@@ -716,6 +743,288 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
       context.strokeStyle = "#0b0d0f";
       context.stroke();
     });
+  }
+
+  // --- avenues (the Basin avenue layer) --------------------------------------
+  //
+  // An avenue is two road tiles side by side, one carriageway each way, with
+  // its BRT in the middle of the road, Yichang's and Guangzhou's way. The
+  // snapshot's `avenue` layer holds each half's direction of travel (1 north,
+  // 2 east, 4 south, 8 west); the median is on the driver's left, against the
+  // other half, and a half its partner does not answer is an ordinary street.
+  // A half is painted from the centre line out, in metres of its 16: the
+  // median to 1.5, the red BRT lane to 5, a barrier to 5.5, two general lanes
+  // to 11.5, the green non-motorised lane to 13 (bicycles and e-bikes), the
+  // sidewalk to 15 and a verge. Each tile is classified pixel by pixel at the
+  // atlas's own scale, so it is as crisp as the sprite art and scales with it.
+  const AVENUE_LEFT = Object.freeze({ 1: [-1, 0], 2: [0, -1], 4: [1, 0], 8: [0, 1] });
+  const AVENUE_AHEAD = Object.freeze({ 1: [0, -1], 2: [1, 0], 4: [0, 1], 8: [-1, 0] });
+  const AVENUE_BACK = Object.freeze({ 1: 4, 2: 8, 4: 1, 8: 2 });
+  // The atlas palette's road, concrete, grass and paint, with the bus lane's
+  // red and the slow lane's green.
+  const AVENUE_PAINT = Object.freeze({
+    asphalt: [81, 87, 87], brt: [158, 60, 48], paint: [226, 224, 212], dash: [196, 194, 182],
+    barrier: [206, 204, 192], slow: [86, 128, 100], kerb: [146, 144, 134], walk: [178, 176, 164],
+    verge: [108, 139, 87], hedge: [78, 106, 65], parapet: [196, 194, 186], zebra: [236, 236, 226],
+  });
+  // Metres out from the median where each part ends.
+  const AVENUE_BANDS = Object.freeze({ median: 1.5, brt: 5, barrier: 5.5, lanes: 11.5, slow: 13, walk: 15, edge: 16 });
+  // Metres along from the tile centre: half a side street's mouth (a street
+  // sprite is about 6.7 m across), the crossing box where the median and the
+  // barrier open, and the outer edge of the zebras on either side of it.
+  const AVENUE_MOUTH = 3.5;
+  const AVENUE_BOX = 4.5;
+  const AVENUE_ZEBRA = 6.5;
+  // The sprite is the 64x32 diamond plus a pixel of overlap all round, so
+  // neighbouring tiles meet without a seam at any zoom.
+  const AVENUE_SPRITE = Object.freeze({ w: 66, h: 34, ax: 33, ay: 17, bleed: 1 / 32 });
+  const avenueSprites = new Map();
+
+  function avenueDirAt(snapshot, x, y) {
+    const raw = snapshot.avenue;
+    const size = mapSize(snapshot);
+    if (!raw || x < 0 || y < 0 || x >= size || y >= size) return 0;
+    const dir = Number(raw[y * size + x]) || 0;
+    const left = AVENUE_LEFT[dir];
+    if (!left || !isRoad(snapshot, y * size + x)) return 0;
+    const px = x + left[0], py = y + left[1];
+    if (px < 0 || py < 0 || px >= size || py >= size) return 0;
+    return Number(raw[py * size + px]) === AVENUE_BACK[dir] && isRoad(snapshot, py * size + px) ? dir : 0;
+  }
+
+  // What a half meets. Along its run, ahead and behind: the avenue going on
+  // (2), another street (1), or nothing (0: the avenue ends at a kerb). At
+  // its outer kerb, a side street's mouth; at its own or its partner's, a
+  // crossing, where the median opens. A parallel avenue alongside is its own
+  // carriageway behind its own kerb, not a side street.
+  function avenueFlags(snapshot, x, y, dir) {
+    const size = mapSize(snapshot);
+    const L = AVENUE_LEFT[dir], F = AVENUE_AHEAD[dir];
+    const street = (tx, ty) => tx >= 0 && ty >= 0 && tx < size && ty < size && (isRoad(snapshot, ty * size + tx) || isOnramp(snapshot, ty * size + tx));
+    const along = (k) => (avenueDirAt(snapshot, x + F[0] * k, y + F[1] * k) === dir ? 2 : street(x + F[0] * k, y + F[1] * k) ? 1 : 0);
+    const sideStreet = (tx, ty) => {
+      if (!street(tx, ty)) return false;
+      const other = avenueDirAt(snapshot, tx, ty);
+      return !other || Boolean(other & 5) !== Boolean(dir & 5);
+    };
+    const outer = sideStreet(x - L[0], y - L[1]);
+    return { ahead: along(1), behind: along(-1), outer, crossing: outer || sideStreet(x + 2 * L[0], y + 2 * L[1]), bridge: isWater(snapshot, y * size + x) };
+  }
+
+  // The colour of one point of a half, `a` metres out from the median and
+  // `s` along the tile (-0.5..0.5, positive the way its traffic runs).
+  function avenueColour(a, s, flags) {
+    const P = AVENUE_PAINT, B = AVENUE_BANDS;
+    const m = s * 16;
+    const along = Math.abs(m);
+    const finish = flags.bridge ? P.parapet : P.verge;
+    // Where nothing lies beyond, the carriageway stops 3 m short of the edge
+    // behind a kerb, a sidewalk and the verge.
+    const end = Math.min(flags.ahead === 0 ? 8 - m : 99, flags.behind === 0 ? 8 + m : 99);
+    if (end < 3) {
+      if (end < 1 || a >= B.walk) return finish;
+      return end > 2.6 && a < B.slow ? P.kerb : P.walk;
+    }
+    // The outer side: a side street's mouth, with a zebra for the sidewalk
+    // across it; otherwise the kerb, the sidewalk and the verge (a parapet
+    // on a bridge).
+    if (a >= B.slow) {
+      if (flags.outer && along < AVENUE_MOUTH) return a >= B.slow + 0.3 && a < B.walk - 0.3 && Math.floor(m + 8) % 2 === 0 ? P.zebra : P.asphalt;
+      if (a >= B.walk) return flags.bridge && a >= B.edge - 0.45 ? P.kerb : finish;
+      return a < B.slow + 0.4 || (flags.outer && along < AVENUE_MOUTH + 0.4) ? P.kerb : P.walk;
+    }
+    const box = flags.crossing && along < AVENUE_BOX;
+    // The median stops 3 m short of where the avenue does not go on, so
+    // traffic can turn round its nose.
+    const nose = (flags.ahead !== 2 && m > 3) || (flags.behind !== 2 && m < -3);
+    let colour;
+    if (a < B.median) colour = box || nose ? P.asphalt : flags.bridge || a >= 0.75 ? P.walk : P.hedge;
+    else if (a < B.brt) colour = P.brt;
+    else if (a < B.barrier) colour = box ? P.asphalt : P.barrier;
+    else if (a < B.lanes) colour = !box && a >= 8.25 && a < 8.75 && (m + 8) % 8 >= 1 && (m + 8) % 8 < 5 ? P.dash : P.asphalt;
+    else colour = a < B.lanes + 0.4 ? P.paint : P.slow;
+    // Zebras across the whole carriageway, median included, either side of
+    // the crossing box.
+    if (flags.crossing && along >= AVENUE_BOX && along < AVENUE_ZEBRA && Math.floor(a) % 2 === 0) colour = P.zebra;
+    return colour;
+  }
+
+  // A half's pixels at the atlas scale, RGBA, the tile centre at the anchor.
+  // The inverse of the 2:1 projection turns each pixel back into a point of
+  // the tile for the camera's quarter turn.
+  function avenueTilePixels(dir, rotation, flags) {
+    const { w, h, ax, ay, bleed } = AVENUE_SPRITE;
+    const out = new Uint8ClampedArray(w * h * 4);
+    const L = AVENUE_LEFT[dir], F = AVENUE_AHEAD[dir];
+    const turn = ((rotation % 4) + 4) % 4;
+    for (let py = 0; py < h; py += 1) {
+      for (let px = 0; px < w; px += 1) {
+        const dx = px + 0.5 - ax, dy = py + 0.5 - ay;
+        const ru = (dx / (MATH.TILE_W / 2) + dy / (MATH.TILE_H / 2)) / 2;
+        const rv = (dy / (MATH.TILE_H / 2) - dx / (MATH.TILE_W / 2)) / 2;
+        const u = turn === 0 ? ru : turn === 1 ? rv : turn === 2 ? -ru : -rv;
+        const v = turn === 0 ? rv : turn === 1 ? -ru : turn === 2 ? -rv : ru;
+        if (Math.abs(u) > 0.5 + bleed || Math.abs(v) > 0.5 + bleed) continue;
+        const colour = avenueColour((0.5 - (u * L[0] + v * L[1])) * 16, u * F[0] + v * F[1], flags);
+        const k = (py * w + px) * 4;
+        out[k] = colour[0]; out[k + 1] = colour[1]; out[k + 2] = colour[2]; out[k + 3] = 255;
+      }
+    }
+    return out;
+  }
+
+  // A half laid on its tilted surface, at the atlas scale: the surface
+  // between the four corners (heights in steps, A top, B right, C bottom,
+  // D left) is bilinear, which is exact along every edge, so it meets its
+  // neighbours, and keeps every line parallel to the run straight within the
+  // tile, so lanes climb without bowing. The flat tile is sampled four times
+  // finer than its pixels and each sample is dropped where the surface puts
+  // it, nearer samples over farther ones; the tile centre at the base height
+  // lands on the anchor, `lift` pixels lower than the flat sprite's.
+  function avenueWarpedPixels(dir, rotation, flags, corners) {
+    const { w, ax, ay, bleed } = AVENUE_SPRITE;
+    const step = MATH.HEIGHT_STEP;
+    const lift = Math.ceil(Math.max(0, ...corners) * step);
+    const h = AVENUE_SPRITE.h + lift;
+    const anchorY = ay + lift;
+    const out = new Uint8ClampedArray(w * h * 4);
+    const depth = new Float32Array(w * h).fill(-Infinity);
+    const L = AVENUE_LEFT[dir], F = AVENUE_AHEAD[dir];
+    const turn = ((rotation % 4) + 4) % 4;
+    const [A, B, C, D] = corners;
+    const samples = 4 * MATH.TILE_W;
+    const span = 1 + 2 * bleed;
+    for (let i = 0; i < samples; i += 1) {
+      const ru = -0.5 - bleed + ((i + 0.5) / samples) * span;
+      const s = Math.max(0, Math.min(1, ru + 0.5));
+      for (let j = 0; j < samples; j += 1) {
+        const rv = -0.5 - bleed + ((j + 0.5) / samples) * span;
+        const t = Math.max(0, Math.min(1, rv + 0.5));
+        const z = A * (1 - s) * (1 - t) + B * s * (1 - t) + C * s * t + D * (1 - s) * t;
+        const px = Math.floor((ru - rv) * (MATH.TILE_W / 2) + ax);
+        const py = Math.floor((ru + rv) * (MATH.TILE_H / 2) - z * step + anchorY);
+        if (px < 0 || py < 0 || px >= w || py >= h) continue;
+        const k = py * w + px;
+        if (ru + rv < depth[k]) continue;
+        depth[k] = ru + rv;
+        const u = turn === 0 ? ru : turn === 1 ? rv : turn === 2 ? -ru : -rv;
+        const v = turn === 0 ? rv : turn === 1 ? -ru : turn === 2 ? -rv : ru;
+        const colour = avenueColour((0.5 - (u * L[0] + v * L[1])) * 16, u * F[0] + v * F[1], flags);
+        out[k * 4] = colour[0]; out[k * 4 + 1] = colour[1]; out[k * 4 + 2] = colour[2]; out[k * 4 + 3] = 255;
+      }
+    }
+    return { width: w, height: h, anchorX: ax, anchorY, lift, pixels: out };
+  }
+
+  // One canvas per kind of half; null where the canvas cannot take pixels,
+  // and the tile then draws as the street it also is.
+  function avenueSprite(dir, rotation, flags, corners = null) {
+    const tilted = corners && corners.some(Boolean);
+    const key = `${dir}:${rotation}:${flags.ahead}${flags.behind}${flags.outer ? 1 : 0}${flags.crossing ? 1 : 0}${flags.bridge ? 1 : 0}${tilted ? `:${corners.join(",")}` : ""}`;
+    if (avenueSprites.has(key)) return avenueSprites.get(key);
+    const art = tilted ? avenueWarpedPixels(dir, rotation, flags, corners)
+      : { width: AVENUE_SPRITE.w, height: AVENUE_SPRITE.h, anchorX: AVENUE_SPRITE.ax, anchorY: AVENUE_SPRITE.ay, pixels: null };
+    let sprite = null;
+    const canvas = makeOffscreen(art.width, art.height);
+    const context = typeof canvas.getContext === "function" ? canvas.getContext("2d") : null;
+    if (context && typeof context.createImageData === "function" && typeof context.putImageData === "function") {
+      const image = context.createImageData(art.width, art.height);
+      image.data.set(art.pixels || avenueTilePixels(dir, rotation, flags));
+      context.putImageData(image, 0, 0);
+      sprite = { canvas, width: art.width, height: art.height, anchorX: art.anchorX, anchorY: art.anchorY };
+    }
+    if (avenueSprites.size >= 512) avenueSprites.clear();
+    avenueSprites.set(key, sprite);
+    return sprite;
+  }
+
+  // The deck a half rides on a bridge: both halves share one, at the higher
+  // bank either of them reaches.
+  function avenueDeckAltitude(snapshot, x, y, dir) {
+    const size = mapSize(snapshot);
+    const L = AVENUE_LEFT[dir];
+    let deck = isWater(snapshot, y * size + x) ? bridgeDeckAltitude(snapshot, x, y, isRoad) : -Infinity;
+    if (isWater(snapshot, (y + L[1]) * size + x + L[0])) deck = Math.max(deck, bridgeDeckAltitude(snapshot, x + L[0], y + L[1], isRoad));
+    return deck;
+  }
+
+  // A half's own corner heights, absolute, in world order NW, NE, SE, SW:
+  // the pair's deck on a bridge, the tilted ground elsewhere.
+  function avenueNaturalCorners(snapshot, x, y, dir) {
+    const index = y * mapSize(snapshot) + x;
+    if (isWater(snapshot, index)) { const deck = avenueDeckAltitude(snapshot, x, y, dir); return [deck, deck, deck, deck]; }
+    const ground = altitudeAt(snapshot, index);
+    const mask = groundLift(snapshot, index);
+    return [mask & 9 ? 1 : 0, mask & 3 ? 1 : 0, mask & 6 ? 1 : 0, mask & 12 ? 1 : 0].map((lift) => ground + lift);
+  }
+
+  // One surface for the whole avenue: each grid vertex an avenue touches
+  // stands at the highest height any avenue half meeting there gives it, so
+  // both halves of a pair share their median edge, a run meets the next tile
+  // on it, and the first tile on land rises to meet the deck. Each half's
+  // pieces are planes through its corners, so they then join edge to edge.
+  // World order NW, NE, SE, SW, absolute heights.
+  function avenueWorldCorners(snapshot, x, y) {
+    const offsets = [[0, 0], [1, 0], [1, 1], [0, 1]];
+    return offsets.map(([ox, oy]) => {
+      const vx = x + ox, vy = y + oy;
+      let height = -Infinity;
+      offsets.forEach(([cx, cy], corner) => {
+        // The tile whose corner `corner` is this vertex.
+        const tx = vx - cx, ty = vy - cy;
+        const dir = avenueDirAt(snapshot, tx, ty);
+        if (dir) height = Math.max(height, avenueNaturalCorners(snapshot, tx, ty, dir)[corner]);
+      });
+      return height;
+    });
+  }
+
+  // Where a half is drawn from: its base altitude (the deck on a bridge, the
+  // ground elsewhere) and its corners in steps above it, turned to the
+  // screen (A top, B right, C bottom, D left).
+  function avenueSurface(snapshot, x, y, dir) {
+    const index = y * mapSize(snapshot) + x;
+    const base = isWater(snapshot, index) ? avenueDeckAltitude(snapshot, x, y, dir) : altitudeAt(snapshot, index);
+    const world = avenueWorldCorners(snapshot, x, y);
+    const turn = ((state.camera.rotation % 4) + 4) % 4;
+    return { base, world, corners: [0, 1, 2, 3].map((i) => world[(i - turn + 4) % 4] - base) };
+  }
+
+  function drawAvenueTile(context, snapshot, x, y) {
+    const dir = avenueDirAt(snapshot, x, y);
+    if (!dir) return false;
+    const flags = avenueFlags(snapshot, x, y, dir);
+    const index = y * mapSize(snapshot) + x;
+    const zoom = state.camera.zoom;
+    const ground = altitudeAt(snapshot, index);
+    const { base, corners } = avenueSurface(snapshot, x, y, dir);
+    // A flat half is the flat sprite; a tilted one is drawn already laid on
+    // its surface (avenueWarpedPixels), never sheared after the fact.
+    const sprite = avenueSprite(dir, state.camera.rotation, flags, corners);
+    if (!sprite) return false;
+    const point = projectPoint(snapshot, x, y, base, true);
+    if (flags.bridge) drawPier(context, point.sx, point.sy + 2 * zoom, point.sy + (base - ground) * MATH.HEIGHT_STEP * zoom + 4 * zoom, zoom);
+    context.drawImage(sprite.canvas, 0, 0, sprite.width, sprite.height,
+      Math.round(point.sx - sprite.anchorX * zoom), Math.round(point.sy - sprite.anchorY * zoom),
+      Math.round(sprite.width * zoom), Math.round(sprite.height * zoom));
+    if (isTunnel(snapshot, index)) drawTunnelOverlay(context, snapshot, x, y, point);
+    return true;
+  }
+
+  // What the renderer makes of one avenue tile at the current quarter turn,
+  // for contracts: the half's direction, what it meets, the surface it is
+  // laid on, its flat pixels, and (`laid`) the pixels it is drawn with on
+  // that surface, which are the flat ones where the half lies flat.
+  function avenueTile(snapshot, x, y) {
+    const dir = avenueDirAt(snapshot, x, y);
+    if (!dir) return null;
+    const flags = avenueFlags(snapshot, x, y, dir);
+    const surface = avenueSurface(snapshot, x, y, dir);
+    const pixels = avenueTilePixels(dir, state.camera.rotation, flags);
+    const laid = surface.corners.some(Boolean) ? avenueWarpedPixels(dir, state.camera.rotation, flags, surface.corners)
+      : { width: AVENUE_SPRITE.w, height: AVENUE_SPRITE.h, anchorX: AVENUE_SPRITE.ax, anchorY: AVENUE_SPRITE.ay, lift: 0, pixels };
+    return Object.freeze({ dir, ...flags, base: surface.base, worldCorners: Object.freeze(surface.world), corners: Object.freeze(surface.corners), width: AVENUE_SPRITE.w, height: AVENUE_SPRITE.h, anchorX: AVENUE_SPRITE.ax, anchorY: AVENUE_SPRITE.ay,
+      paint: AVENUE_PAINT, pixels, laid: Object.freeze(laid) });
   }
 
   // Highways stand on piers, SC2K-style: the deck rides HIGHWAY_DECK_STEPS
@@ -1059,6 +1368,8 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     const networks = layer === "terrain" ? [] : [
       snapshot.road || snapshot.roads, snapshot.rail || snapshot.rails, snapshot.wire || snapshot.wires,
       snapshot.pipe || snapshot.pipes, snapshot.subway, snapshot.highway, snapshot.onramp, snapshot.over,
+      // Widening a street into an avenue changes no other layer.
+      snapshot.avenue,
     ].filter(Boolean);
     const zone = snapshot.zone || snapshot.zoneType || null;
     let hash = 2166136261;
@@ -1155,11 +1466,20 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
           if (state.display.underground) {
             // Subways and tunnels are the only networks that live below the
             // surface; they draw on the dark underground view and never on
-            // the daylight map (the SC2000 underground display).
+            // the daylight map (the SC2000 underground display). The water
+            // above shows as a faint blue, so a line under a river reads as
+            // the tunnel it is (subways may cross water from rule set v6).
+            const index = y * mapSize(snapshot) + x;
+            if (isWater(snapshot, index)) {
+              const point = projectPoint(snapshot, x, y, altitudeAt(snapshot, index), true);
+              fallbackDiamond(context, point.sx, point.sy, "rgba(52, 96, 140, 0.42)", null);
+            }
             drawConnector(context, snapshot, x, y, "subway", isSubway);
             drawConnector(context, snapshot, x, y, "pipe", isPipe);
           } else {
-            drawConnector(context, snapshot, x, y, "road", isRoad);
+            // An avenue half paints its own cross-section; any other street
+            // is the atlas's piece.
+            if (!drawAvenueTile(context, snapshot, x, y)) drawConnector(context, snapshot, x, y, "road", isRoad);
             drawConnector(context, snapshot, x, y, "rail", isRail);
             drawHighway(context, snapshot, x, y);
             drawConnector(context, snapshot, x, y, "wire", isWire);
@@ -1794,6 +2114,9 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
   // middle of the tilted piece.
   function travelAltitude(snapshot, x, y) {
     const index = y * mapSize(snapshot) + x;
+    // An avenue half rides the pair's one surface.
+    const dir = avenueDirAt(snapshot, x, y);
+    if (dir) return avenueWorldCorners(snapshot, x, y).reduce((sum, value) => sum + value, 0) / 4;
     if (isWater(snapshot, index)) {
       if (isRoad(snapshot, index)) return bridgeDeckAltitude(snapshot, x, y, isRoad);
       if (isRail(snapshot, index)) return bridgeDeckAltitude(snapshot, x, y, isRail);
@@ -1827,10 +2150,21 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     const inMap = (tx, ty) => tx >= 0 && ty >= 0 && tx < size && ty < size;
     const drivable = (snap, i) => isRoad(snap, i) || isOnramp(snap, i) || isHighway(snap, i);
     const placed = [];
-    const frameFor = (agent, index, predicate, laneOffset, travel) => {
+    const headingOf = (F) => (F[0] > 0 ? "px" : F[0] < 0 ? "nx" : F[1] > 0 ? "py" : "ny");
+    const frameFor = (agent, index, predicate, laneOffset, travel, avenueLanes = false) => {
       const tx = Math.max(0, Math.min(size - 1, Math.floor(agent.x)));
       const ty = Math.max(0, Math.min(size - 1, Math.floor(agent.y)));
       const seed = trafficHash(index * 977 + 13);
+      // On an avenue a vehicle keeps to its own half and that half's way,
+      // in one of its two general lanes (7 m or 10 m out from the median);
+      // the BRT lane is left to the buses. The 3D view keeps the street rule.
+      const dir = avenueLanes && streets ? avenueDirAt(snapshot, tx, ty) : 0;
+      if (dir) {
+        const L = AVENUE_LEFT[dir], F = AVENUE_AHEAD[dir];
+        const out = 0.5 - ((seed >>> 3) & 1 ? 10 : 7) / 16;
+        const ahead = ((((Number(agent.phase) || 0) + (tick % 5) * travel) % 1) - 0.5) * 0.9;
+        return { wx: tx + 0.5 + L[0] * out + F[0] * ahead, wy: ty + 0.5 + L[1] * out + F[1] * ahead, heading: headingOf(F) };
+      }
       const mask = streets ? connectorMask(snapshot, tx, ty, predicate) : 0;
       const ew = Boolean(mask & 10), ns = Boolean(mask & 5);
       const alongX = ew && ns ? Boolean(seed & 1) : ew;
@@ -1865,7 +2199,7 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
       .filter((agent) => !streets || !isTunnel(snapshot, Math.floor(agent.y) * size + Math.floor(agent.x)));
     [...vehicles, ...flow].forEach((agent, index) => {
       if (!Number.isFinite(agent?.x) || !Number.isFinite(agent?.y)) return;
-      placed.push({ ...frameFor(agent, index, drivable, 0.12, 0.18), frame: `agent.car.${1 + (index % 4)}` });
+      placed.push({ ...frameFor(agent, index, drivable, 0.12, 0.18, true), frame: `agent.car.${1 + (index % 4)}` });
     });
     (Array.isArray(agents.trains) ? agents.trains : []).forEach((agent, index) => {
       if (!Number.isFinite(agent?.x) || !Number.isFinite(agent?.y)) return;
@@ -1887,7 +2221,7 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
         if (!spot) return;
       }
       const kind = agent.kind || services[index % services.length];
-      placed.push({ ...frameFor(spot, index + 5, drivable, 0.12, 0.2), frame: `agent.service.${kind}` });
+      placed.push({ ...frameFor(spot, index + 5, drivable, 0.12, 0.2, true), frame: `agent.service.${kind}` });
     });
     // People walk the sidewalk of the street nearest their building, on the
     // building's side; with no street near they stay home.
@@ -1905,6 +2239,15 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
         }
         if (!spot) return;
         const walk = (((Number(agent.phase) || 0) + (tick % 5) * 0.06) % 1) - 0.5;
+        // An avenue's only sidewalk is at its outer kerb, 14 m from the median.
+        const dir = avenueDirAt(snapshot, spot.tx, spot.ty);
+        if (dir) {
+          const L = AVENUE_LEFT[dir], F = AVENUE_AHEAD[dir];
+          const out = 0.5 - 14 / 16;
+          placed.push({ wx: spot.tx + 0.5 + L[0] * out + F[0] * walk * 0.8, wy: spot.ty + 0.5 + L[1] * out + F[1] * walk * 0.8,
+            heading: F[0] ? "px" : "py", frame: `agent.pedestrian.${1 + (index % 2)}` });
+          return;
+        }
         const mask = connectorMask(snapshot, spot.tx, spot.ty, isRoad);
         const ew = Boolean(mask & 10), ns = Boolean(mask & 5);
         const alongX = ew && ns ? Math.abs(spot.dy) >= Math.abs(spot.dx) : ew || !ns;
@@ -2106,6 +2449,10 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
   }
 
   function overlayValue(snapshot, overlay, index) {
+    if (overlay === "transit") {
+      const layer = snapshot?.transitLayer;
+      return layer && layer[index] !== undefined ? Number(layer[index]) || 0 : 0;
+    }
     const direct = {
       power: ["powered", "powerCoverage"],
       water: ["watered", "waterCoverage"],
@@ -2126,12 +2473,14 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
   }
 
   function overlayBucket(overlay, value) {
+    if (overlay === "transit") return Math.max(0, Math.min(TRANSIT_COLORS.length - 1, Math.round(value)));
     if (["power", "water", "police", "fire", "education", "health"].includes(overlay)) return value ? 1 : 0;
     const divisor = overlay === "traffic" ? 160 : 255;
     return Math.max(0, Math.min(4, Math.floor((value / divisor) * 5)));
   }
 
   function overlayColor(overlay, bucket) {
+    if (overlay === "transit") return TRANSIT_COLORS[bucket] || TRANSIT_COLORS[0];
     if (overlay === "power") return bucket ? "rgba(247,205,67,0.42)" : "rgba(182,48,45,0.28)";
     if (overlay === "water") return bucket ? "rgba(55,154,211,0.44)" : "rgba(164,61,54,0.25)";
     if (overlay === "police") return bucket ? "rgba(65,105,214,0.42)" : "rgba(83,70,70,0.20)";
@@ -2194,7 +2543,10 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     // stands in for hashing every visible tile on every frame.
     const overlayIdentity = state.overlay === "none" ? "none"
       : Number.isFinite(snapshot.rev) ? `r${snapshot.seed}:${snapshot.size}:${snapshot.rev}` : overlaySignature(snapshot, state.overlay, tiles);
-    const key = `${viewKey}:${lightStep}:${state.overlay}:${overlayIdentity}`;
+    // At night the street lights are part of the layer, so a street built
+    // in the dark lights up without waiting for the clock.
+    const nightIdentity = isNight(snapshot) && Number.isFinite(snapshot.rev) ? `n${snapshot.rev}` : "";
+    const key = `${viewKey}:${lightStep}:${state.overlay}:${overlayIdentity}:${nightIdentity}`;
     if (state.lastKeys.lighting === key) return;
     state.lastKeys.lighting = key;
     clearContext("lighting");
@@ -2207,8 +2559,112 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     }
     if (isNight(snapshot)) drawNightWindowGlow(context, snapshot);
     drawWaterShimmer(context, snapshot, tiles);
+    drawAvenueLamps(context, snapshot, tiles);
+    drawTransitStops(context, snapshot, tiles);
+    drawTransitBuses(context, snapshot);
     drawZenNight(context, snapshot, tiles);
     drawOverlayCells(context, snapshot, state.overlay, tiles);
+  }
+
+  // An avenue is lit from its median: one post for the pair on every other
+  // tile of the run, its head 9 m up and its light falling on both
+  // carriageways. Drawn after the darkness overlay, like the windows.
+  // 站牌 and the buses that run the lines the mayor laid. A stop is a pole and
+  // a plate standing on its own tile; a bus's place is a pure function of the
+  // snapshot clock, so the same tick always draws it in the same spot. Both
+  // read the city's own record — a city that laid nothing draws neither.
+  function drawTransitStops(context, snapshot, tiles) {
+    const sidecar = snapshot.transitLines;
+    if (!sidecar || !Array.isArray(sidecar.lines) || !sidecar.lines.length) return;
+    const zoom = state.camera.zoom;
+    const visible = new Set((Array.isArray(tiles) ? tiles : []).map(([x, y]) => `${x},${y}`));
+    const stops = new Map();
+    for (const line of sidecar.lines) {
+      for (const station of line.stations || []) {
+        if (station.kind !== "bus-stop") continue;
+        if (!visible.has(`${station.x},${station.y}`)) continue;
+        stops.set(`${station.x},${station.y}`, station);
+      }
+    }
+    if (!stops.size) return;
+    const pole = Math.max(1, Math.round(1.5 * zoom));
+    const plateWidth = Math.max(2, Math.round(5 * zoom));
+    const plateHeight = Math.max(1, Math.round(2 * zoom));
+    for (const station of stops.values()) {
+      const { sx, sy } = projectPoint(snapshot, station.x, station.y, travelAltitude(snapshot, station.x, station.y));
+      context.fillStyle = "rgba(24,24,24,0.85)";
+      context.fillRect(sx - pole / 2, sy - 10 * zoom, pole, 10 * zoom);
+      context.fillStyle = "rgba(246,244,236,0.95)";
+      context.fillRect(sx - plateWidth / 2, sy - 12 * zoom, plateWidth, plateHeight);
+    }
+  }
+
+  function drawTransitBuses(context, snapshot) {
+    const sidecar = snapshot.transitLines;
+    if (!sidecar || !Array.isArray(sidecar.lines) || !sidecar.lines.length) return;
+    const zoom = state.camera.zoom;
+    const tick = Number(snapshot.tick) || 0;
+    const body = Math.max(2, Math.round(3 * zoom));
+    const height = Math.max(1, Math.round(2 * zoom));
+    const sharedPlaces = window.AISystem6PotWorld?.transit?.rubberPlaces;
+    for (const line of sidecar.lines) {
+      const mode = line.mode === "bus" ? "bus" : line.mode === "brt" ? "brt" : "metro";
+      if (mode === "metro") continue;                     // the metro runs under the pot
+      const places = typeof sharedPlaces === "function" ? sharedPlaces(line, tick) : null;
+      const drawn = places || (() => {
+        const stops = (line.tiles || []).length / 2;
+        if (stops < 2) return [];
+        const count = Math.max(1, Math.min(6, Number(line.vehicles) || 2));
+        const local = [];
+        for (let index = 0; index < count; index += 1) {
+          const phase = (tick / (stops * 3) + index / count) % 1;
+          const step = Math.floor(phase * stops);
+          local.push({ x: line.tiles[step * 2], y: line.tiles[step * 2 + 1] });
+        }
+        return local;
+      })();
+      for (const place of drawn) {
+        const { sx, sy } = projectPoint(snapshot, place.x, place.y, travelAltitude(snapshot, place.x, place.y));
+        context.fillStyle = mode === "brt" ? "rgba(192,60,48,0.95)" : "rgba(70,86,150,0.95)";
+        context.fillRect(sx - body / 2, sy - height - 1, body, height);
+      }
+    }
+  }
+
+  function drawAvenueLamps(context, snapshot, tiles) {
+    if (!isNight(snapshot) || !snapshot.avenue) return;
+    const size = mapSize(snapshot);
+    const zoom = state.camera.zoom;
+    const halfW = (MATH.TILE_W / 2) * zoom;
+    const halfH = (MATH.TILE_H / 2) * zoom;
+    const diamond = (sx, sy, scale) => {
+      context.moveTo(sx, sy - halfH * scale);
+      context.lineTo(sx + halfW * scale, sy);
+      context.lineTo(sx, sy + halfH * scale);
+      context.lineTo(sx - halfW * scale, sy);
+      context.closePath();
+    };
+    const lamps = [];
+    (Array.isArray(tiles) ? tiles : []).forEach(([x, y]) => {
+      const dir = avenueDirAt(snapshot, x, y);
+      if (!dir) return;
+      const L = AVENUE_LEFT[dir];
+      // Once a pair (from its smaller half), on the run's even tiles.
+      if ((y + L[1]) * size + x + L[0] < y * size + x || (L[0] ? y : x) % 2) return;
+      lamps.push(projectPoint(snapshot, x + L[0] / 2, y + L[1] / 2, travelAltitude(snapshot, x, y)));
+    });
+    if (!lamps.length) return;
+    context.fillStyle = "rgba(255, 214, 140, 0.12)";
+    context.beginPath();
+    lamps.forEach(({ sx, sy }) => diamond(sx, sy, 0.95));
+    context.fill();
+    context.fillStyle = "rgba(255, 220, 156, 0.16)";
+    context.beginPath();
+    lamps.forEach(({ sx, sy }) => diamond(sx, sy, 0.5));
+    context.fill();
+    const head = Math.max(1, 2 * zoom);
+    context.fillStyle = "rgba(255, 232, 176, 0.95)";
+    lamps.forEach(({ sx, sy }) => context.fillRect(sx - head / 2, sy - 9 * zoom - head / 2, head, head));
   }
 
   // SC2000 water life: faint moving strokes over visible water tiles, driven
@@ -2262,7 +2718,8 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     // a path of occasional paper lamps rather than a string of noise.
     (Array.isArray(tiles) ? tiles : []).forEach(([x, y]) => {
       const index = y * size + x;
-      if (!isRoad(snapshot, index)) return;
+      // Avenues carry their own lamps (drawAvenueLamps).
+      if (!isRoad(snapshot, index) || avenueDirAt(snapshot, x, y)) return;
       if (((phase + index * 7 + x * 3 + y * 5) % 12) !== 0) return;
       const point = projectPoint(snapshot, x, y, altitudeAt(snapshot, index), true);
       context.fillStyle = "rgba(255, 220, 150, 0.9)";
@@ -2909,6 +3366,7 @@ window.AISystem6BonsaiCanvasRendererLoaded = true;
     setPreview,
     clearPreview,
     renderMiniMap,
+    avenueTile,
     rotateBy,
     zoomBy,
     setZoom,

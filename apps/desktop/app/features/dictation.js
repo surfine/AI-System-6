@@ -24,14 +24,105 @@ let dictationFieldButton = null;
 let dictationFieldButtonTarget = null;
 let dictationFieldButtonHideTimer = null;
 
+// What the pad was opened on: the element, the words in it and the identity of
+// the document behind it. Send checks this before writing, because an element
+// that is still in the DOM is not necessarily the same piece of writing
+// (spec §8).
+let dictationTargetSnapshot = null;
+let dictationTargetStale = false;
+
+// Which native inputs are surfaces a floating microphone belongs over. The
+// rule is a whitelist: text and search hold prose. Everything else — password,
+// hidden, number, date, file and friends — is not a place to speak into, and
+// setRangeText is not even supported on some of them. A field that looks like
+// text but is an API key or a one-time code opts out through autocomplete.
+const DICTATION_SAFE_INPUT_TYPES = new Set(["text", "search"]);
+const DICTATION_BLOCKED_AUTOCOMPLETE = new Set(["current-password", "new-password", "one-time-code"]);
+
+function dictationInputIsSafe(target) {
+  if (!(target instanceof HTMLInputElement)) return true;
+  const type = String(target.type || "text").toLowerCase();
+  if (!DICTATION_SAFE_INPUT_TYPES.has(type)) return false;
+  const autocomplete = String(target.getAttribute?.("autocomplete") || "").toLowerCase();
+  if (DICTATION_BLOCKED_AUTOCOMPLETE.has(autocomplete)) return false;
+  return true;
+}
+
+// The app's own name for the document a field belongs to. Two copies of a
+// field from different projects are different writing, even when the element,
+// the id and the value look the same.
+function dictationDocumentIdentity(target) {
+  const windowName = target?.closest?.(".window")?.dataset.window || "";
+  const project = typeof activeProjectId === "string" ? activeProjectId : "";
+  if (windowName === "teachText" || windowName === "assistant" || windowName === "questionSheet") {
+    return `${windowName}:${project}`;
+  }
+  return windowName || "desk";
+}
+
+function captureDictationTarget(target) {
+  if (!target) return null;
+  const windowName = target.closest?.(".window")?.dataset.window || "";
+  const identity = dictationDocumentIdentity(target);
+  if (target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement) {
+    return {
+      element: target,
+      kind: "field",
+      id: target.id || "",
+      windowName,
+      documentId: identity,
+      value: target.value,
+      selectionStart: target.selectionStart ?? target.value.length,
+      selectionEnd: target.selectionEnd ?? target.value.length,
+    };
+  }
+  if (target instanceof HTMLElement && target.isContentEditable) {
+    const range = lastEditableRange && rangeBelongsToTarget(lastEditableRange, target)
+      ? lastEditableRange.cloneRange()
+      : null;
+    return {
+      element: target,
+      kind: "editable",
+      id: target.id || "",
+      windowName,
+      documentId: identity,
+      text: target.textContent || "",
+      range,
+    };
+  }
+  return null;
+}
+
+// Why this target cannot take the words now, or "" when it can. Every reason
+// is a refusal, never a reason to quietly pick another field.
+function dictationTargetProblem(snapshot) {
+  if (!snapshot || !snapshot.element) return "target-missing";
+  const element = snapshot.element;
+  if (!document.contains(element)) return "target-missing";
+  if (!isVisibleTextTarget(element)) return "target-hidden";
+  if (element.disabled || element.readOnly) return "target-locked";
+  if (element instanceof HTMLInputElement && !dictationInputIsSafe(element)) return "target-unsafe";
+  if (dictationDocumentIdentity(element) !== snapshot.documentId) return "target-changed";
+  if (snapshot.kind === "field") {
+    if (element.value !== snapshot.value) return "target-changed";
+  } else if ((element.textContent || "") !== snapshot.text) {
+    return "target-changed";
+  }
+  return "";
+}
+
 function getEditableTextTarget(target) {
   if (!target) return null;
   if (target.closest?.('[data-dictation="off"]')) return null;
 
-  if (target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement) {
+  if (target instanceof HTMLTextAreaElement) {
     if (target.readOnly || target.disabled || target.closest(".dictation-window")) return null;
-    if (["button", "checkbox", "file", "hidden", "radio", "range", "submit"].includes(target.type)) return null;
     return target;
+  }
+
+  if (target instanceof HTMLInputElement) {
+    if (target.readOnly || target.disabled || target.closest(".dictation-window")) return null;
+    return dictationInputIsSafe(target) ? target : null;
   }
 
   const editable = target.closest?.("[contenteditable='true'], [contenteditable='']");
@@ -423,16 +514,29 @@ function defaultInputTargetForDestination(dest) {
 function insertTextIntoInputTarget(target, text) {
   if (!target || !text) return false;
   if (target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement) {
+    if (!dictationInputIsSafe(target)) return false;
+    if (target.readOnly || target.disabled || !document.contains(target)) return false;
     const start = target.selectionStart ?? target.value.length;
     const end = target.selectionEnd ?? target.value.length;
-    target.focus();
-    target.setRangeText(text, start, end, "end");
-    target.dispatchEvent(new Event("input", { bubbles: true }));
+    const before = target.value;
+    // The app's own editing transaction (markdown-editor.js): it keeps the
+    // native undo stack and fires one real input event, so the document's own
+    // state moves — not just the DOM (T05, T08).
+    if (typeof mdeApply === "function") {
+      mdeApply(target, { from: start, to: end, insert: text, selStart: start + text.length });
+    } else {
+      target.focus();
+      target.setRangeText(text, start, end, "end");
+      target.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    // Success is the buffer having changed, not the call having returned.
+    if (target.value === before) return false;
     target.dispatchEvent(new Event("change", { bubbles: true }));
     return true;
   }
 
-  if (!(target instanceof HTMLElement) || !target.isContentEditable) return false;
+  if (!(target instanceof HTMLElement) || !target.isContentEditable || !document.contains(target)) return false;
+  const beforeText = target.textContent || "";
 
   target.focus();
   const selection = window.getSelection();
@@ -457,7 +561,7 @@ function insertTextIntoInputTarget(target, text) {
   lastEditableRange = range.cloneRange();
   target.dispatchEvent(new Event("input", { bubbles: true }));
   target.dispatchEvent(new Event("change", { bubbles: true }));
-  return true;
+  return (target.textContent || "") !== beforeText;
 }
 
 function inferDictationDestination() {
@@ -487,9 +591,20 @@ function inferDictationDestination() {
 // A destination that names a window nobody can see is the promise this pad used
 // to break, so it is re-checked whenever the window appears.
 function refreshDictationDestination() {
-  if (getVisibleEditableTextTarget(dictationInputTarget)) return;
-  dictationInputTarget = null;
-  setDictationDestination("notepad");
+  // No field was captured when the pad opened: the Note Pad was the declared
+  // destination from the start, not a fallback chosen after a failure.
+  if (!dictationTargetSnapshot) {
+    if (getVisibleEditableTextTarget(dictationInputTarget)) return;
+    dictationInputTarget = null;
+    setDictationDestination("notepad");
+    return;
+  }
+  const problem = dictationTargetProblem(dictationTargetSnapshot);
+  dictationTargetStale = problem !== "";
+  // A captured field that went away keeps its name in the window and its
+  // refusal at Send. Choosing a new field here is what "spoke ten minutes into
+  // the wrong place" looked like.
+  dictationInputTarget = dictationTargetSnapshot.element;
 }
 
 // The one door into the lazy half. Every control that reaches a window function
@@ -501,15 +616,20 @@ async function withDictationPad(run) {
 }
 
 function openDictationPad(options = {}) {
-  dictationInputTarget = getVisibleEditableTextTarget(options.target) || getCurrentInputTarget();
-  const dest = options.dest || destinationForInputTarget(dictationInputTarget) || inferDictationDestination();
-  dictationInputTarget = dictationInputTarget || getVisibleEditableTextTarget(defaultInputTargetForDestination(dest));
+  const requested = getVisibleEditableTextTarget(options.target) || getCurrentInputTarget();
+  const dest = options.dest || destinationForInputTarget(requested) || inferDictationDestination();
+  const target = requested || getVisibleEditableTextTarget(defaultInputTargetForDestination(dest));
+  dictationInputTarget = target;
+  // Captured before the pad takes focus: the element, its words, its selection
+  // and the document behind it (§8.1).
+  dictationTargetSnapshot = captureDictationTarget(target);
+  dictationTargetStale = false;
   // The window names where the words will actually land. With no field open,
   // naming ClioTalk was a promise the Send button could not keep.
-  setDictationDestination(dictationInputTarget ? dest : "notepad");
+  setDictationDestination(target ? dest : "notepad");
   openWindow("dictation");
   dictationRawInput.focus();
-  return dest;
+  return target ? dest : "notepad";
 }
 
 function invokeIntentKey() {

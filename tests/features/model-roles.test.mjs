@@ -49,8 +49,8 @@ test.assert(context.modelRoleForTaskKind("source.verify-claims") === "critic", "
 test.assert(context.modelRoleForTaskKind("source.translate") === "utility", "translation uses the Utility role");
 test.assert(context.modelRoleForTaskKind("writing.rewrite-selection") === "writer", "selection rewrites use the Writer role");
 test.assert(
-  context.modelRoleForTaskKind("generate-outline") === "default",
-  "an unregistered task kind resolves to default, never to a word-guessed role"
+  context.modelRoleForTaskKind("generate-outline") === "writer",
+  "the shipped outline task resolves to its explicit Writer contract"
 );
 
 const normal = context.resolveModelRoleForTask("writing.rewrite-selection");

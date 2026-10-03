@@ -201,9 +201,10 @@ async function handleStatic(req, res) {
       "ETag": etag,
       ...cacheHeaders(relative, ext, url),
     };
-    if (relative.startsWith("assets/openttd/") || relative.startsWith("assets/doom/")) {
-      // Wasm game shells run inside the desktop's same-origin iframe, and
-      // WebAssembly compilation needs 'wasm-unsafe-eval'. The global policy
+    if (relative.startsWith("assets/openttd/") || relative.startsWith("assets/doom/") || relative.startsWith("assets/mingwen/")) {
+      // Game shells (OpenTTD and DOOM in wasm, 明文 as a plain static page) run
+      // inside the desktop's same-origin iframe; the wasm ones also need
+      // 'wasm-unsafe-eval' to compile. The global policy
       // (frame-ancestors 'none', no wasm) stays in force everywhere else;
       // foreign origins still cannot embed the game.
       headers["X-Frame-Options"] = "SAMEORIGIN";

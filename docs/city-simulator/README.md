@@ -285,6 +285,45 @@ the historical phase descriptions below do not override them.
     128² city; `tooling/play-bonsai-browser.mjs` plays a new city through the
     real UI. Acceptance evidence is in
     `internal/plans/BONSAI-PLAYABLE-REPORT.zh-CN.md`.
+- Ruleset 6, the underwater subway (owner decision 2026-10-02,
+  `internal/plans/BASIN-WORLD.zh-CN.md`, open question 3, option A):
+  - A subway line may cross water as a tunnel under the bed, at $300 a
+    water tile (four rail bridge tiles; $100 on land). It is the same
+    subway layer, carries commuters like any other subway tile, and pays the
+    same monthly subway upkeep; the drag preview names the tunnel's share.
+    Subway stations, pipes, parks and onramps stay on land.
+  - Saves keep format v5: the rule adds nothing to the file, so a ruleset-5
+    city lifts to ruleset 6 with only its version stamp changed.
+- Ruleset 6, the avenue (Aaron 2026-10-02, relayed by the Joyride session:
+  Yichang- and Guangzhou-style right of way, the BRT lanes and their island
+  platforms in the middle of the road, with sidewalks and a lane for
+  bicycles and e-bikes; the data convention is in
+  `internal/plans/BASIN-WORLD.zh-CN.md`, 公交、快速公交与慢行):
+  - An avenue is two road tiles side by side, one carriageway each way. The
+    durable `avenue` layer holds each half's direction of travel (1 north,
+    2 east, 4 south, 8 west); the median is on the driver's left and the
+    other half is the tile there. Both halves stay road, so commutes route
+    as before. Each half, from the centre line out, is median 1.5 m, BRT
+    lane 3.5, barrier 0.5, two general lanes 2 × 3.0, non-motorised lane
+    1.5, sidewalk 2 and verge 1.
+  - `build-path` with `network: "avenue"` lays one straight run two tiles
+    wide along the drag: $25 a new tile on land, $15 to widen a road tile,
+    $60 a new bridge deck. It lays road where there is none under a road's
+    rules, leaves a pair that is already this avenue alone, keeps a crossing
+    avenue's halves at the junction, and refuses to take half of another
+    avenue. Bulldozing either half brings the pair down; undo restores both.
+    The avenue opens in 1920 with the BRT that runs on it (the world core's
+    `transit.MODES.brt`).
+  - An avenue tile congests at twice a street's traffic (two general lanes a
+    half); the BRT lane carries no commuters and never congests. What a BRT
+    line does on its lanes arrives with transit lines.
+  - The 2D map paints the cross-section — the red BRT lanes either side of a
+    hedged median, white lane lines, the green slow lane at each kerb, the
+    sidewalk and verge — with mouths for side streets, zebras at crossings,
+    a kerbed end, a bridge parapet, and median lamps at night. The whole
+    avenue is laid as one surface: where its halves stand a level apart on a
+    hill, or its land meets a bridge deck, each corner the halves share takes
+    one height, so the median and lanes run on without a step.
 
 ## Document map
 

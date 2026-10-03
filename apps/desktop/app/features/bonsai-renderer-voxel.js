@@ -23,7 +23,7 @@ window.AISystem6BonsaiVoxelRendererLoaded = true;
 function createBonsaiVoxelRenderer() {
   "use strict";
 
-  const VENDOR_URL = "/app/vendor/bonsai-renderer.js?v=three-0.185.1-voxel-r4";
+  const VENDOR_URL = "/app/vendor/bonsai-renderer.js?v=three-0.185.1-voxel-r7";
   const RECIPE_URL = "/assets/bonsai/atlas-source.json";
   const TEXTURES_URL = "/assets/bonsai/textures.json";
   // The authored voxel models the 2D atlas is baked from (tooling/bonsai-miniature):
@@ -38,7 +38,7 @@ function createBonsaiVoxelRenderer() {
   const TRAFFIC_CAP = 360;
   const OVER = Object.freeze({ NONE: 0, ROAD: 1, WIRE: 2, PARK: 3, ROADWIRE: 4 });
   const ZONE = Object.freeze({ NONE: 0, R: 1, C: 2, I: 3 });
-  const OVERLAYS = Object.freeze(["none", "power", "water", "traffic", "pollution", "land-value", "police", "fire", "education", "health"]);
+  const OVERLAYS = Object.freeze(["none", "power", "water", "traffic", "pollution", "land-value", "police", "fire", "education", "health", "transit"]);
 
   // View constants shared with the Canvas backend (bonsai-renderer.js).
   const PX_PER_TILE = 64;
@@ -510,6 +510,10 @@ function createBonsaiVoxelRenderer() {
   }
 
   function overlayValue(snapshot, overlay, index) {
+    if (overlay === "transit") {
+      const layer = snapshot?.transitLayer;
+      return layer && layer[index] !== undefined ? Number(layer[index]) || 0 : 0;
+    }
     const direct = {
       power: ["powered", "powerCoverage"],
       water: ["watered", "waterCoverage"],
@@ -530,6 +534,7 @@ function createBonsaiVoxelRenderer() {
   }
 
   function overlayBucket(overlay, value) {
+    if (overlay === "transit") return Math.max(0, Math.min(TRANSIT_COLORS.length - 1, Math.round(value)));
     if (["power", "water", "police", "fire", "education", "health"].includes(overlay)) return value ? 1 : 0;
     const divisor = overlay === "traffic" ? 160 : 255;
     return Math.max(0, Math.min(4, Math.floor((value / divisor) * 5)));
@@ -562,7 +567,27 @@ function createBonsaiVoxelRenderer() {
     ],
   });
 
+  // The 「线网」 overlay's colours, the same categories and alphas the Canvas
+  // backend uses, handed to the instanced tint mesh as rgba objects: nothing,
+  // the seven line colours, a bus, an avenue with no depot in reach, an avenue
+  // corridor in service, and a station.
+  const TRANSIT_COLORS = Object.freeze([
+    { r: 0, g: 0, b: 0, a: 0 },
+    { r: 0.839, g: 0.227, b: 0.204, a: 0.55 },
+    { r: 0.192, g: 0.369, b: 0.788, a: 0.55 },
+    { r: 0.91, g: 0.659, b: 0.173, a: 0.55 },
+    { r: 0.227, g: 0.596, b: 0.345, a: 0.55 },
+    { r: 0.588, g: 0.29, b: 0.698, a: 0.55 },
+    { r: 0.204, g: 0.588, b: 0.659, a: 0.55 },
+    { r: 0.769, g: 0.408, b: 0.173, a: 0.55 },
+    { r: 0.471, g: 0.471, b: 0.471, a: 0.52 },
+    { r: 0.588, g: 0.235, b: 0.235, a: 0.22 },
+    { r: 0.769, g: 0.204, b: 0.173, a: 0.45 },
+    { r: 0.071, g: 0.071, b: 0.071, a: 0.78 },
+  ]);
+
   function overlayColor(overlay, bucket) {
+    if (overlay === "transit") return TRANSIT_COLORS[bucket] || TRANSIT_COLORS[0];
     const binary = OVERLAY_BINARY_COLORS[overlay];
     if (binary) return binary[bucket ? 1 : 0];
     const heat = OVERLAY_HEAT_COLORS[overlay] || OVERLAY_HEAT_COLORS.traffic;
@@ -1125,6 +1150,184 @@ function createBonsaiVoxelRenderer() {
     }
   }
 
+  // --- avenues (the Basin avenue layer) --------------------------------------
+  //
+  // An avenue is two road tiles side by side, one carriageway each way. The
+  // `avenue` layer holds each half's direction of travel (1 north, 2 east,
+  // 4 south, 8 west); the median is on the driver's left, against the other
+  // half. A half is drawn across from the median out to its kerb, in metres:
+  // 0-2 median (an island platform where a BRT stops), 2-5.5 busway (red
+  // where a BRT runs, else a third lane), two lanes to 11.5, a non-motor
+  // lane to 13, the sidewalk to 15 and a verge, so the sidewalk lines up
+  // with an ordinary street's. Solid parts keep to whole metres: the street
+  // view's collision is rasterized from these blocks a metre at a time.
+  const AVENUE_LEFT = Object.freeze({ 1: [-1, 0], 2: [0, -1], 4: [1, 0], 8: [0, 1] });
+  const AVENUE_AHEAD = Object.freeze({ 1: [0, -1], 2: [1, 0], 4: [0, 1], 8: [-1, 0] });
+  const AVENUE_BACK = Object.freeze({ 1: 4, 2: 8, 4: 1, 8: 2 });
+  const AVENUE_COLORS = Object.freeze({
+    asphalt: { r: 84 / 255, g: 86 / 255, b: 92 / 255, a: 1 },
+    walk: { r: 0.66, g: 0.66, b: 0.62, a: 1 },
+    kerb: { r: 0.6, g: 0.6, b: 0.57, a: 1 },
+    hedge: { r: 0.27, g: 0.45, b: 0.25, a: 1 },
+    busway: { r: 0.6, g: 0.22, b: 0.17, a: 1 },
+    bike: { r: 0.33, g: 0.5, b: 0.42, a: 1 },
+    bikeTint: { r: 0.3, g: 0.36, b: 0.35, a: 1 },
+    paint: { r: 0.86, g: 0.86, b: 0.82, a: 1 },
+    tactile: { r: 0.86, g: 0.7, b: 0.2, a: 1 },
+    platform: { r: 0.76, g: 0.75, b: 0.72, a: 1 },
+    glass: { r: 0.6, g: 0.78, b: 0.84, a: 1 },
+    canopy: { r: 0.9, g: 0.9, b: 0.88, a: 1 },
+    steel: { r: 0.3, g: 0.31, b: 0.3, a: 1 },
+  });
+
+  function pushNonMotorLanes(list, cx, roadY, cz, alongX) {
+    const m = 1 / 16;
+    for (const side of [-1, 1]) {
+      const line = side * 3.575 * m, strip = side * 4.325 * m;
+      pushBlock(list, alongX ? cx : cx + line, roadY + 0.002, alongX ? cz + line : cz, alongX ? 1 : 0.15 * m, 0.004, alongX ? 0.15 * m : 1, AVENUE_COLORS.paint, "metal");
+      pushBlock(list, alongX ? cx : cx + strip, roadY + 0.0015, alongX ? cz + strip : cz, alongX ? 1 : 1.35 * m, 0.003, alongX ? 1.35 * m : 1, AVENUE_COLORS.bikeTint, "metal");
+    }
+  }
+
+  function avenueDirAt(snapshot, x, y, size) {
+    const raw = snapshot.avenue;
+    if (!raw || x < 0 || y < 0 || x >= size || y >= size) return 0;
+    const dir = Number(raw[y * size + x]) || 0;
+    const left = AVENUE_LEFT[dir];
+    if (!left || !isRoad(snapshot, y * size + x)) return 0;
+    const px = x + left[0], py = y + left[1];
+    if (px < 0 || py < 0 || px >= size || py >= size) return 0;
+    if (Number(raw[py * size + px]) !== AVENUE_BACK[dir] || !isRoad(snapshot, py * size + px)) return 0;
+    return dir;
+  }
+
+  function pushAvenueTile(list, tint, snapshot, x, y, size, topY, dir, night) {
+    const C = AVENUE_COLORS;
+    const L = AVENUE_LEFT[dir];
+    const F = AVENUE_AHEAD[dir];
+    const m = 1 / 16;
+    const layer = pxToWorld(2.5);
+    const road = topY + layer;
+    const cx = x + 0.5, cz = y + 0.5;
+    const alongX = F[0] !== 0;
+    const index = y * size + x;
+    // From a to b metres out from the median, s to t along the tile
+    // (-0.5..0.5, forward positive), standing from y0 to y1.
+    const box = (a, b, s, t, y0, y1, color, material = "concrete") => {
+      const across = 0.5 - ((a + b) / 2) * m;
+      const along = (s + t) / 2;
+      const w = (b - a) * m, l = t - s;
+      pushBlock(list, cx + L[0] * across + F[0] * along, (y0 + y1) / 2, cz + L[1] * across + F[1] * along,
+        alongX ? l : w, y1 - y0, alongX ? w : l, color, material);
+    };
+    const paint = (a, b, s, t, color) => box(a, b, s, t, road, road + 0.004, color, "metal");
+    const roadAt = (tx, ty) => tx >= 0 && ty >= 0 && tx < size && ty < size && (isRoad(snapshot, ty * size + tx) || isOnrampTile(snapshot, ty * size + tx));
+    const partner = (y + L[1]) * size + (x + L[0]);
+    const outerArm = roadAt(x - L[0], y - L[1]);
+    const crossing = outerArm || roadAt(x + 2 * L[0], y + 2 * L[1]);
+    const continues = (k) => avenueDirAt(snapshot, x + F[0] * k, y + F[1] * k, size) === dir;
+    const ahead = roadAt(x + F[0], y + F[1]);
+    const behind = roadAt(x - F[0], y - F[1]);
+    const end = !continues(1) || !continues(-1);
+    const busway = Number(snapshot.busLane?.[index]) > 0 || Number(snapshot.busLane?.[partner]) > 0;
+    // An island needs a closed median: a stop on a crossing or an end tile
+    // stays open asphalt (the traffic graph turns cars through there).
+    const stop = Number(snapshot.busStop?.[index]) === 2 && !crossing && !end;
+    // A side street that is itself an avenue: its mouth is its whole
+    // carriageway, on the side of its own median.
+    const sideHalf = outerArm ? avenueDirAt(snapshot, x - L[0], y - L[1], size) : 0;
+    const sideMedian = sideHalf ? AVENUE_LEFT[sideHalf][0] * F[0] + AVENUE_LEFT[sideHalf][1] * F[1] : 0;
+    const half = 5 * m;
+
+    // The carriageway, cut back where the street ends without a road beyond.
+    const s0 = behind ? -0.5 : -half, t0 = ahead ? 0.5 : half;
+    box(0, 13, s0, t0, topY, road, C.asphalt, "road");
+    if (sideMedian > 0) box(13, 16, -half, 0.5, topY, road, C.asphalt, "road");
+    else if (sideMedian < 0) box(13, 16, -0.5, half, topY, road, C.asphalt, "road");
+    else if (outerArm) box(13, 16, -half, half, topY, road, C.asphalt, "road");
+    // The sidewalk: along the kerb, or round both corners of a side street
+    // (one corner where the side street is an avenue's half); across the
+    // end of a street that stops here.
+    if (outerArm) {
+      if (sideMedian <= 0) box(13, 16, half, 0.5, topY, road + layer, C.walk);
+      if (sideMedian >= 0) box(13, 16, -0.5, -half, topY, road + layer, C.walk);
+    } else box(13, 15, -0.5, 0.5, topY, road + layer, C.walk);
+    if (!ahead) box(0, 15, half, half + 2 * m, topY, road + layer, C.walk);
+    if (!behind) box(0, 15, -half - 2 * m, -half, topY, road + layer, C.walk);
+
+    // The median: open at a crossing and at the ends (where the traffic
+    // turns back); an island platform at a BRT stop; elsewhere a kerb and a
+    // hedge too tall to drive over.
+    if (stop) {
+      box(0, 2, -0.5, 0.5, topY, road + layer, C.platform);
+      box(1.4, 1.7, -0.5, 0.5, road + layer, road + layer + 0.004, C.tactile, "metal");
+      // Platform screen doors along the edge, open where the bus's doors
+      // stop (Yichang's buses open on both sides), and a canopy over it.
+      for (const [s, t] of [[-0.5, -0.31], [-0.19, -0.06], [0.06, 0.19], [0.31, 0.5]]) box(1.85, 2, s, t, road + layer, road + layer + 2.2 * m, C.glass, "metal");
+      for (const s of [-0.38, 0, 0.38]) box(0, 0.25, s - 0.012, s + 0.012, road + layer, road + layer + 4 * m, C.steel, "metal");
+      box(0, 2.3, -0.5, 0.5, road + layer + 4 * m, road + layer + 4.3 * m, C.canopy, "metal");
+      box(2.2, 2.35, -0.5, 0.5, road + layer + 3.75 * m, road + layer + 4.3 * m, C.busway, "metal");
+    } else if (!crossing && !end) {
+      // One hedge across both halves, a kerb lip showing at each busway.
+      box(0, 2, -0.5, 0.5, topY, road + layer, C.kerb);
+      box(0, 1.6, -0.5, 0.5, road + layer, road + 2 * layer, C.hedge, "terrain.grass");
+    }
+
+    // Paint. Not across a crossing, where the zebras are.
+    if (!crossing) {
+      if (busway) {
+        paint(2, 5.35, s0, t0, C.busway);
+        paint(5.35, 5.5, s0, t0, C.paint);
+        paint(5.6, 5.75, s0, t0, C.paint);
+      } else {
+        for (const [s, t] of [[-0.4, -0.21], [0.1, 0.29]]) paint(5.45, 5.6, s, t, C.paint);
+      }
+      for (const [s, t] of [[-0.4, -0.21], [0.1, 0.29]]) paint(8.45, 8.6, s, t, C.paint);
+      paint(11.4, 11.55, s0, t0, C.paint);
+      paint(11.55, 13, s0, t0, C.bike);
+    } else {
+      // Zebras across the avenue on both sides of the crossing, and across
+      // the side street at the corner.
+      for (const along of [-0.36, 0.36]) {
+        for (let a = 0.5; a < 13; a += 1) paint(a, a + 0.5, along - 0.05, along + 0.05, C.paint);
+      }
+      if (outerArm) {
+        const [k0, k1] = sideMedian > 0 ? [-4.5, 8] : sideMedian < 0 ? [-7.5, 5] : [-4.5, 5];
+        for (let k = k0; k < k1; k += 1) paint(13.8, 15.4, k * m, (k + 0.5) * m, C.paint);
+      }
+    }
+
+    // Lamps on the median, one post lighting both carriageways, drawn once
+    // for the pair; and at a BRT stop, a footbridge from kerb to kerb with
+    // stairs down to the island (Guangzhou's way in).
+    if (index < partner && !crossing && !end && !stop && hashTile(index * 7) % 2 === 0) {
+      box(0.75, 1.25, -0.02, 0.02, road + layer, road + layer + 9 * m, C.steel, "metal");
+      box(-6, 6, -0.015, 0.015, road + layer + 8.7 * m, road + layer + 9 * m, C.steel, "metal");
+      for (const a of [-5.6, 5.6]) {
+        box(a - 0.6, a + 0.6, -0.03, 0.03, road + layer + 8.5 * m, road + layer + 8.8 * m, night ? { r: 1, g: 0.86, b: 0.52, a: 1 } : { r: 0.78, g: 0.78, b: 0.72, a: 1 }, "metal");
+        if (night) {
+          const across = 0.5 - a * m;
+          tint.push({ x: cx + L[0] * across, y: road + 0.01, z: cz + L[1] * across, sx: alongX ? 0.62 : 0.46, sy: 0.008, sz: alongX ? 0.46 : 0.62, r: 1, g: 0.8, b: 0.46, a: 0.22 });
+        }
+      }
+    }
+    if (stop && index < partner) {
+      const deck = road + 5.5 * m;
+      box(-15, 15, 0.3, 0.48, deck, deck + 0.6 * m, C.platform);
+      box(-15, 15, 0.29, 0.3, deck + 0.6 * m, deck + 1.8 * m, C.glass, "metal");
+      box(-15, 15, 0.48, 0.49, deck + 0.6 * m, deck + 1.8 * m, C.glass, "metal");
+      // Stairs: up from both sidewalks, and down to the island.
+      for (let k = 0; k < 5; k += 1) {
+        const rise = road + layer + (k + 1) * ((deck - road - layer) / 5);
+        const s = 0.3 - (5 - k) * 0.05;
+        box(13, 15, s, s + 0.05, road + layer, rise, C.platform);
+        box(-15, -13, s, s + 0.05, road + layer, rise, C.platform);
+        box(-1, 1, s, s + 0.05, road + layer, rise, C.platform);
+      }
+      for (const a of [-14, 14]) box(a - 0.3, a + 0.3, 0.38, 0.4, road + layer, deck, C.steel, "metal");
+    }
+  }
+
   // A street lamp on the sidewalk: a slim post, an arm over the kerb and a
   // head that glows at night, with a pool of light on the street.
   function pushStreetLamp(list, tint, cx, topY, cz, alongX, side, night) {
@@ -1148,12 +1351,14 @@ function createBonsaiVoxelRenderer() {
 
   // Sleepers across the ballast under the twin rails.
   function pushSleepers(list, cx, topY, cz, mask) {
-    const wood = { r: 0.3, g: 0.23, b: 0.18, a: 1 };
-    pushBlock(list, cx, topY, cz, 0.64, 0.02, 0.64, shade(wood, 0.9), "rail");
+    // Weathered timber, the tone of the level track model's ties: separate
+    // sleepers with ballast showing between them, not a solid square deck.
+    const wood = { r: 0.42, g: 0.33, b: 0.25, a: 1 };
+    pushBlock(list, cx, topY, cz, 0.12, 0.02, 0.12, shade(wood, 0.9), "rail");
     for (const [bit, dx, dz] of [[1,0,-1],[2,1,0],[4,0,1],[8,-1,0]]) {
       if (!(mask & bit)) continue;
-      for (const along of [0.16, 0.29, 0.42]) {
-        pushBlock(list, cx + dx * along, topY, cz + dz * along, dx ? 0.06 : 0.64, 0.02, dz ? 0.06 : 0.64, wood, "rail");
+      for (const along of [0.04, 0.17, 0.3, 0.43]) {
+        pushBlock(list, cx + dx * along, topY, cz + dz * along, dx ? 0.06 : 0.6, 0.02, dz ? 0.06 : 0.6, wood, "rail");
       }
     }
   }
@@ -2738,6 +2943,10 @@ function createBonsaiVoxelRenderer() {
 
   function renderFrame() {
     const renderer = state.renderer;
+    if (state.street && state.glyph) {
+      renderGlyphFrame();
+      return;
+    }
     const miniature = state.miniature === true && !state.underground;
     const size = miniature && typeof renderer.getDrawingBufferSize === "function" ? renderer.getDrawingBufferSize(new state.THREE.Vector2()) : null;
     const post = size ? ensurePost(Math.max(1, size.x), Math.max(1, size.y)) : null;
@@ -2776,7 +2985,7 @@ function createBonsaiVoxelRenderer() {
     const THREE = state.THREE;
     const size = mapSize(snapshot);
     const mode = state.tank ? "tank" : "tray";
-    const key = `${size}:${mode}:${state.underground ? "u" : "-"}:${maxAltitude(snapshot)}:${state.study || "none"}`;
+    const key = `${size}:${mode}:${state.underground ? "u" : "-"}:${maxAltitude(snapshot)}:${state.study || "none"}:${state.street ? "street" : "city"}`;
     if (state.frameKey === key) return;
     state.frameKey = key;
     if (state.frameGroup) {
@@ -2822,6 +3031,32 @@ function createBonsaiVoxelRenderer() {
     const mid = size / 2;
     if (mode === "tray") {
       const top = POT_RIM, bottom = -POT_DEPTH, height = top - bottom;
+      if (state.street) {
+        // From the street the rim follows the ground along the town's edge,
+        // one step above it wherever it is, so a driver meets a low glazed
+        // wall rather than a rim buried under the hills. Runs of equal
+        // height are one block each.
+        const sides = [
+          (i) => ({ index: i, cx: i + 0.5, cz: -POT_WALL / 2, along: "x" }),
+          (i) => ({ index: (size - 1) * size + i, cx: i + 0.5, cz: size + POT_WALL / 2, along: "x" }),
+          (i) => ({ index: i * size, cx: -POT_WALL / 2, cz: i + 0.5, along: "z" }),
+          (i) => ({ index: i * size + size - 1, cx: size + POT_WALL / 2, cz: i + 0.5, along: "z" }),
+        ];
+        sides.forEach((side) => {
+          let start = 0;
+          const wallTop = (i) => Math.max(POT_RIM, (altitudeAt(snapshot, side(i).index) + 1) * ALT_STEP);
+          for (let i = 1; i <= size; i += 1) {
+            if (i < size && wallTop(i) === wallTop(start)) continue;
+            const a = side(start), b = side(i - 1);
+            const h = wallTop(start) - bottom;
+            const length = i - start;
+            const cx = (a.cx + b.cx) / 2, cz = (a.cz + b.cz) / 2;
+            box(m.glaze, cx, bottom + h / 2, cz, a.along === "x" ? length : POT_WALL, h, a.along === "x" ? POT_WALL : length);
+            box(m.rim, cx, wallTop(start) + 0.03, cz, a.along === "x" ? length : POT_WALL, 0.06, a.along === "x" ? POT_WALL : length);
+            start = i;
+          }
+        });
+      } else {
       const cy = bottom + height / 2;
       box(m.glaze, mid, cy, -POT_WALL / 2, outer, height, POT_WALL);
       box(m.glaze, mid, cy, size + POT_WALL / 2, outer, height, POT_WALL);
@@ -2832,8 +3067,16 @@ function createBonsaiVoxelRenderer() {
       box(m.rim, mid, top + 0.03, size + POT_WALL / 2, outer, 0.06, POT_WALL);
       box(m.rim, -POT_WALL / 2, top + 0.03, mid, POT_WALL, 0.06, size);
       box(m.rim, size + POT_WALL / 2, top + 0.03, mid, POT_WALL, 0.06, size);
+      }
       box(m.glaze, mid, bottom - 0.08, mid, outer, 0.16, outer);
       for (const [fx, fz] of [[0.12, 0.12], [0.88, 0.12], [0.12, 0.88], [0.88, 0.88]]) box(m.foot, outer * fx - POT_WALL, bottom - 0.3, outer * fz - POT_WALL, size * 0.14, 0.3, size * 0.1);
+      // From the street, past the glazed rim, the pot stands on the
+      // gardener's desk: a wide wooden top under its feet (the Basin canon:
+      // the rim is the edge of the world, the desk is what lies beyond).
+      if (state.street) {
+        if (!state.potMaterials.desk) state.potMaterials.desk = state.ledger.track(new THREE.MeshLambertMaterial({ color: colour(150, 108, 72) }));
+        box(state.potMaterials.desk, mid, bottom - 0.5, mid, size * 9, 0.1, size * 9, false).receiveShadow = true;
+      }
     } else {
       const top = (maxAltitude(snapshot) + 3) * ALT_STEP, bottom = -POT_DEPTH, height = top - bottom;
       const cy = bottom + height / 2;
@@ -2923,16 +3166,48 @@ function createBonsaiVoxelRenderer() {
 
   // Greedy meshing: for each of five face directions (the underside never
   // shows) and each slice, merge same-material faces into rectangles.
+  // Ambient occlusion per vertex, the classic voxel way: a face corner is
+  // darkened by the voxels around it in the layer the face looks into (two
+  // sides and the diagonal), and the ground counts as solid under the model,
+  // so eaves, inside corners, window reveals and the foot of every wall read
+  // as depth. A face whose four corners differ is not merged, so the shading
+  // stays exact; flat runs still merge.
   // Model x → world x, model y → world z, model z → world y; the footprint
   // centre sits at the origin and the lot surface's underside at y = 0.
-  function voxelModelGeometry(modelIndex) {
+  // The seven line colours, in the same order Rootline paints them. A null
+  // livery keeps the model's own basin blue.
+  const LIVERY_RGB = Object.freeze([
+    [45, 154, 72], [140, 70, 178], [20, 155, 178], [200, 51, 138], [31, 111, 209], [233, 161, 21], [138, 90, 51],
+  ]);
+
+  function voxelModelGeometry(modelIndex, livery = null) {
     const cache = state.voxelModels.geometries;
-    const cacheKey = `${modelIndex}:${state.study || "none"}`;
+    // The street view at night (Joyride's character drive) builds a second
+    // variant whose window, lamp and sign faces carry a glow weight: lamps
+    // and lit windows always, other window glass in a fixed scatter, so the
+    // same buildings stand at night with some rooms lit.
+    const night = Boolean(state.street && state.streetNight);
+    const painted = Number.isInteger(livery) && livery >= 0 && livery < LIVERY_RGB.length;
+    const cacheKey = `${modelIndex}:${state.study || "none"}${night ? ":night" : ""}${state.street ? ":street" : ""}:ao1${painted ? `:liv${livery}` : ""}`;
     if (cache.has(cacheKey)) return cache.get(cacheKey);
     const THREE = state.THREE;
     const { w, d, h, data } = decodeVoxelModel(modelIndex);
+    const glowOf = (name, x, y, z) => {
+      if (!night) return 0;
+      if (name === "windowlit" || name === "lamp") return 1;
+      if (name === "red" || name === "signgreen" || name === "pink") return 0.7;
+      if (name === "window" || name === "glass" || name === "glassdark") {
+        const hash = Math.imul((x * 73856093) ^ (y * 19349663) ^ (z * 83492791) ^ (modelIndex * 2654435761), 0x45d9f3b) >>> 0;
+        return hash % 100 < 38 ? 0.9 : 0;
+      }
+      return 0;
+    };
+    const glows = [];
     const palette = state.voxelModels.index.palette;
     const at = (x, y, z) => (x < 0 || y < 0 || z < 0 || x >= w || y >= d || z >= h ? 0 : data[x + w * (y + d * z)]);
+    // For occlusion only: inside the model, or the ground below it.
+    const solid = (x, y, z) => (z < 0 ? x >= -1 && y >= -1 && x <= w && y <= d : Boolean(at(x, y, z)));
+    const AO_LEVELS = [1, 0.76, 0.6, 0.48];
     const sxv = 1 / VOXEL_TILE;
     const syv = pxToWorld(2.5);
     const ox = w / 2, oy = d / 2;
@@ -2940,9 +3215,10 @@ function createBonsaiVoxelRenderer() {
     const normals = [];
     const colors = [];
     const color = new THREE.Color();
-    const emit = (corners, normal, material) => {
+    const emit = (corners, normal, material, ao = null) => {
       const entry = palette[material - 1] || [200, 200, 200, "mass"];
-      const rgb = studyColour(entry[3]) || entry;
+      const glow = glowOf(entry[3], corners[0][0], corners[0][1], corners[0][2]);
+      const rgb = (painted && entry[3] === "livery" ? LIVERY_RGB[livery] : null) || studyColour(entry[3]) || entry;
       color.setRGB(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255, THREE.SRGBColorSpace);
       let [a, b, c, e] = corners.map(([x, y, z]) => [(x - ox) * sxv, z * syv, (y - oy) * sxv]);
       // wind counter-clockwise seen from outside: flip when the triangle's
@@ -2950,11 +3226,22 @@ function createBonsaiVoxelRenderer() {
       const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
       const vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
       const facing = (uy * vz - uz * vy) * normal[0] + (uz * vx - ux * vz) * normal[1] + (ux * vy - uy * vx) * normal[2];
-      if (facing < 0) [b, e] = [e, b];
-      for (const v of [a, b, c, a, c, e]) {
+      // The street view (Joyride) is flat-shaded, 1996-style: one occlusion
+      // value per face, so a dark corner steps voxel by voxel instead of a
+      // gradient the 8-bit palette would band into stray colours.
+      const flatAo = ao && state.street ? (ao[0] + ao[1] + ao[2] + ao[3]) / 4 : null;
+      const shadeAt = flatAo !== null ? [flatAo, flatAo, flatAo, flatAo] : ao ? [...ao] : [1, 1, 1, 1];
+      if (facing < 0) { [b, e] = [e, b]; [shadeAt[1], shadeAt[3]] = [shadeAt[3], shadeAt[1]]; }
+      // Split the quad along the diagonal that keeps the occlusion gradient
+      // smooth (the darker pair of corners shares the edge).
+      const order = shadeAt[0] + shadeAt[2] < shadeAt[1] + shadeAt[3] ? [1, 2, 3, 1, 3, 0] : [0, 1, 2, 0, 2, 3];
+      const vertices = [a, b, c, e];
+      for (const k of order) {
+        const v = vertices[k];
         positions.push(v[0], v[1], v[2]);
         normals.push(normal[0], normal[1], normal[2]);
-        colors.push(color.r, color.g, color.b);
+        colors.push(color.r * shadeAt[k], color.g * shadeAt[k], color.b * shadeAt[k]);
+        glows.push(glow);
       }
     };
     // [axis, dir]: axis 0 = x, 1 = y (model), 2 = z (up)
@@ -2962,6 +3249,7 @@ function createBonsaiVoxelRenderer() {
     for (const [axis, dir] of [[2, 1], [0, 1], [0, -1], [1, 1], [1, -1]]) {
       const u = (axis + 1) % 3, v = (axis + 2) % 3;
       const mask = new Int32Array(dims[u] * dims[v]);
+      const aoMask = new Int32Array(dims[u] * dims[v]);
       for (let slice = 0; slice < dims[axis]; slice += 1) {
         let n = 0;
         for (let j = 0; j < dims[v]; j += 1) {
@@ -2971,18 +3259,39 @@ function createBonsaiVoxelRenderer() {
             const m = at(p[0], p[1], p[2]);
             const q = [p[0], p[1], p[2]];
             q[axis] += dir;
-            mask[n++] = m && !at(q[0], q[1], q[2]) ? m : 0;
+            if (!m || at(q[0], q[1], q[2])) { mask[n] = 0; aoMask[n++] = 0; continue; }
+            // Occlusion at the four corners of this face, in quad order
+            // (0,0), (1,0), (1,1), (0,1) along u and v.
+            let bits = 0;
+            [[0, 0], [1, 0], [1, 1], [0, 1]].forEach(([cu, cv], k) => {
+              const su = cu ? 1 : -1, sv = cv ? 1 : -1;
+              const side1 = [...q]; side1[u] += su;
+              const side2 = [...q]; side2[v] += sv;
+              const diag = [...q]; diag[u] += su; diag[v] += sv;
+              const s1 = solid(...side1), s2 = solid(...side2);
+              const occ = s1 && s2 ? 3 : (s1 ? 1 : 0) + (s2 ? 1 : 0) + (solid(...diag) ? 1 : 0);
+              bits |= occ << (k * 2);
+            });
+            mask[n] = m;
+            aoMask[n++] = bits;
           }
         }
         for (let j = 0; j < dims[v]; j += 1) {
           for (let i = 0; i < dims[u];) {
             const m = mask[i + j * dims[u]];
             if (!m) { i += 1; continue; }
+            const bits = aoMask[i + j * dims[u]];
+            // Only faces with one occlusion value at all four corners merge.
+            const uniform = ((bits & 3) * 0x55) === bits;
+            const same = (cell) => mask[cell] === m && aoMask[cell] === bits;
             let width = 1;
-            while (i + width < dims[u] && mask[i + width + j * dims[u]] === m) width += 1;
+            // At night each window voxel is its own face, so rooms light
+            // one by one instead of a whole band at once.
+            const single = !uniform || (night && /^(window|glass|glassdark)$/.test((palette[m - 1] || [])[3] || ""));
+            while (!single && i + width < dims[u] && same(i + width + j * dims[u])) width += 1;
             let height = 1;
-            grow: while (j + height < dims[v]) {
-              for (let k = 0; k < width; k += 1) if (mask[i + k + (j + height) * dims[u]] !== m) break grow;
+            grow: while (!single && j + height < dims[v]) {
+              for (let k = 0; k < width; k += 1) if (!same(i + k + (j + height) * dims[u])) break grow;
               height += 1;
             }
             for (let hh = 0; hh < height; hh += 1) for (let k = 0; k < width; k += 1) mask[i + k + (j + hh) * dims[u]] = 0;
@@ -2992,7 +3301,7 @@ function createBonsaiVoxelRenderer() {
             // world normal: model x → x, model z → y, model y → z
             if (axis === 0) normal[0] = dir; else if (axis === 2) normal[1] = dir; else normal[2] = dir;
             const quad = [corner(0, 0), corner(width, 0), corner(width, height), corner(0, height)];
-            emit(quad, normal, m);
+            emit(quad, normal, m, [0, 1, 2, 3].map((k) => AO_LEVELS[(bits >> (k * 2)) & 3]));
             i += width;
           }
         }
@@ -3002,26 +3311,53 @@ function createBonsaiVoxelRenderer() {
     geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
     geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
     geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+    if (night) geometry.setAttribute("glow", new THREE.Float32BufferAttribute(glows, 1));
     geometry.computeBoundingSphere();
     state.ledger.track(geometry);
     cache.set(cacheKey, geometry);
     return geometry;
   }
 
+  // The voxel material: plain Lambert, or at night in the street view the
+  // same with the glow weight added as emission in the face's own colour.
+  function voxelMaterial() {
+    const THREE = state.THREE;
+    if (state.street && state.streetNight) {
+      if (!state.voxelGlowMaterial) {
+        const material = new THREE.MeshLambertMaterial({ vertexColors: true });
+        material.onBeforeCompile = (shader) => {
+          shader.vertexShader = shader.vertexShader
+            .replace("#include <common>", "#include <common>\nattribute float glow;\nvarying float vGlow;")
+            .replace("#include <begin_vertex>", "#include <begin_vertex>\nvGlow = glow;");
+          shader.fragmentShader = shader.fragmentShader
+            .replace("#include <common>", "#include <common>\nvarying float vGlow;")
+            .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\n#if defined( USE_COLOR )\ntotalEmissiveRadiance += vColor.rgb * vGlow * 1.6;\n#endif");
+        };
+        material.customProgramCacheKey = () => "bonsai-voxel-glow";
+        state.voxelGlowMaterial = state.ledger.track(material);
+      }
+      return state.voxelGlowMaterial;
+    }
+    if (!state.voxelModelMaterial) state.voxelModelMaterial = state.ledger.track(new THREE.MeshLambertMaterial({ vertexColors: true }));
+    return state.voxelModelMaterial;
+  }
+
   function buildVoxelModelMeshes(instances) {
     if (!instances.length || !state.voxelModels) return [];
     const THREE = state.THREE;
-    if (!state.voxelModelMaterial) state.voxelModelMaterial = state.ledger.track(new THREE.MeshLambertMaterial({ vertexColors: true }));
+    const material = voxelMaterial();
     const groups = new Map();
     instances.forEach((instance) => {
-      if (!groups.has(instance.model)) groups.set(instance.model, []);
-      groups.get(instance.model).push(instance);
+      const painted = Number.isInteger(instance.livery) ? instance.livery : "";
+      const key = `${instance.model}:${painted}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(instance);
     });
     const meshes = [];
     const matrix = new THREE.Matrix4();
     const rotation = new THREE.Matrix4();
-    groups.forEach((list, model) => {
-      const mesh = new THREE.InstancedMesh(voxelModelGeometry(model), state.voxelModelMaterial, list.length);
+    groups.forEach((list) => {
+      const mesh = new THREE.InstancedMesh(voxelModelGeometry(list[0].model, Number.isInteger(list[0].livery) ? list[0].livery : null), material, list.length);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       list.forEach((instance, i) => {
@@ -3030,7 +3366,7 @@ function createBonsaiVoxelRenderer() {
         mesh.setMatrixAt(i, matrix);
       });
       mesh.instanceMatrix.needsUpdate = true;
-      mesh.userData.voxelModel = model;
+      mesh.userData.voxelModel = list[0].model;
       state.ledger.track(mesh);
       state.instanceCount += list.length;
       meshes.push(mesh);
@@ -3245,13 +3581,34 @@ function createBonsaiVoxelRenderer() {
         // authored models the 2D atlas draws; slopes, bridges and tunnels keep
         // the block pieces below, which bend and stand on piers.
         const modelled = {};
+        // An avenue half on dry, level ground is laid across from its median
+        // (see pushAvenueTile); on a slope or a bridge it keeps the plain
+        // road pieces.
+        const avenueDir = masks.road && !wet && !tunnel && !tileSlope ? avenueDirAt(snapshot, x, y, size) : 0;
+        if (avenueDir) {
+          pushAvenueTile(opaque, tint, snapshot, x, y, size, topY, avenueDir, night);
+          modelled.road = true;
+        }
         if (!wet && !tunnel && !tileSlope && state.voxelModels) {
           for (const family of ["road", "rail", "wire"]) {
-            if (!masks[family]) continue;
-            const piece = voxelModelFor(`${family}.mask-${masks[family]}`);
+            if (!masks[family] || modelled[family]) continue;
+            // A level crossing: the street's model keeps its flat surface and
+            // the track is laid flush into it below, so no ballast bed stands
+            // up through the carriageway.
+            if (family === "rail" && modelled.road) continue;
+            // A power line that shares its tile with a street or a railway
+            // stands its pole on the kerb, the same read the 2D atlas's
+            // `wire.side` frames give.
+            const piece = family === "wire" && (masks.road || masks.rail)
+              ? (voxelModelFor(`wire.side.mask-${masks[family]}`) ?? voxelModelFor(`${family}.mask-${masks[family]}`))
+              : voxelModelFor(`${family}.mask-${masks[family]}`);
             if (piece === null) continue;
             models.push({ model: piece, x: cx, y: topY, z: cz, quarter: 0 });
             modelled[family] = true;
+            // From the street, a straight road shows its non-motor lanes:
+            // a solid line 3.5 m out from the centre and a faintly tinted
+            // strip to the kerb, where the bicycles and e-bikes ride.
+            if (family === "road" && state.street && (masks.road === 5 || masks.road === 10)) pushNonMotorLanes(opaque, cx, topY + pxToWorld(2.5), cz, masks.road === 10);
           }
         }
         // Water pipes are buried: like the subway they show on the
@@ -3269,11 +3626,21 @@ function createBonsaiVoxelRenderer() {
             modelled[family] = true;
           }
         }
-        if (masks.rail && !modelled.rail) {
+        if (masks.rail && modelled.road) {
+          // Rails flush with the asphalt, full length across the crossing.
+          const roadTop = topY + pxToWorld(2.5) + 0.006;
+          const metal = recipes.connectors.railAccent;
+          if (masks.rail & (1 | 4)) for (const dx of [-0.24, 0.24]) pushBlock(opaque, cx + dx, roadTop, cz, 0.05, 0.012, 1, metal, "metal");
+          if (masks.rail & (2 | 8)) for (const dz of [-0.24, 0.24]) pushBlock(opaque, cx, roadTop, cz + dz, 1, 0.012, 0.05, metal, "metal");
+        } else if (masks.rail && !modelled.rail) {
           // Over water the track runs level with its banks, on a pier.
           const railY = wet ? bridgeDeckAltitude(snapshot, x, y, size, isRail) * ALT_STEP : topY;
           if (wet) pushBlock(opaque, cx, (topY + railY) / 2, cz, 0.16, Math.max(0.02, railY - topY), 0.16, shade(recipes.connectors.rail, 0.8), "metal");
-          pushBlock(opaque, cx, railY + 0.04, cz, 0.96, 0.08, 0.96, recipes.connectors.rail, "rail");
+          // A bridge carries a full-width deck; on a slope the track keeps the
+          // level model's narrow ballast bed, laid along the line, rather
+          // than a whole tile of sleeper texture tilted up the hill.
+          if (wet) pushBlock(opaque, cx, railY + 0.04, cz, 0.96, 0.08, 0.96, recipes.connectors.rail, "rail");
+          else pushPathStrip(opaque, cx, railY + 0.04, cz, masks.rail, { r: 0.43, g: 0.39, b: 0.34, a: 1 }, 0.72, 0.08);
           pushSleepers(opaque, cx, railY + 0.09, cz, masks.rail);
           pushTwinRails(opaque, cx, railY + 0.11, cz, masks.rail, recipes.connectors.railAccent, "metal");
           if (wet) pushBridgeGuards(opaque, cx, railY, cz, masks.rail);
@@ -3687,6 +4054,95 @@ function createBonsaiVoxelRenderer() {
     return { opaque, water, tint, models };
   }
 
+  function transitQuarter(dx, dy) {
+    if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? 0 : 2;
+    return dy >= 0 ? 3 : 1;
+  }
+
+  function transitTravel(line, step) {
+    const tiles = line.tiles || [];
+    const stops = tiles.length / 2;
+    const x = tiles[step * 2];
+    const y = tiles[step * 2 + 1];
+    const next = (step + 1) % stops;
+    const nx = tiles[next * 2];
+    const ny = tiles[next * 2 + 1];
+    if (Math.abs(nx - x) + Math.abs(ny - y) === 1) return { dx: nx - x, dy: ny - y };
+    if (step > 0) return { dx: x - tiles[(step - 1) * 2], dy: y - tiles[(step - 1) * 2 + 1] };
+    return { dx: 1, dy: 0 };
+  }
+
+  // Buses and BRT where the canvas draws them: a pure function of the tick.
+  function transitInstances(snapshot) {
+    const placesOf = globalThis.AISystem6PotWorld?.transit?.rubberPlaces;
+    const lines = snapshot?.transitLines?.lines;
+    if (typeof placesOf !== "function" || !Array.isArray(lines)) return [];
+    const out = [];
+    for (const line of lines) {
+      const mode = line.mode === "brt" ? "brt" : line.mode === "bus" ? "bus" : "";
+      if (!mode) continue;
+      const livery = mode === "brt" && Number.isInteger(line.color) ? line.color : null;
+      for (const place of placesOf(line, snapshot.tick)) {
+        const travel = transitTravel(line, place.step);
+        const quarter = transitQuarter(travel.dx, travel.dy);
+        out.push({ frame: mode === "brt" ? "agent.bus.brt.front" : "agent.bus.1", x: place.x, y: place.y, livery, quarter });
+        if (mode === "brt" && place.behind) out.push({ frame: "agent.bus.brt.rear", x: place.behind.x, y: place.behind.y, livery, quarter });
+      }
+    }
+    return out;
+  }
+
+  const STOP_RIGHT = Object.freeze({ 1: [1, 0], 2: [0, 1], 4: [-1, 0], 8: [0, -1] });
+
+  // A stop sign on the right kerb, or a platform against the avenue median.
+  // A camera stands at each end of a bus-lane run.
+  function transitFurniture(snapshot) {
+    const lines = snapshot?.transitLines?.lines;
+    const size = mapSize(snapshot);
+    const out = [];
+    if (Array.isArray(lines)) {
+      const seen = new Set();
+      for (const line of lines) {
+        const tiles = line.tiles || [];
+        const stops = tiles.length / 2;
+        for (const station of line.stations || []) {
+          if (station.kind !== "bus-stop") continue;
+          const key = `${station.x},${station.y}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          let step = 0;
+          for (let i = 0; i < stops; i += 1) if (tiles[i * 2] === station.x && tiles[i * 2 + 1] === station.y) step = i;
+          const travel = stops >= 2 ? transitTravel(line, step) : { dx: 1, dy: 0 };
+          const dir = travel.dx > 0 ? 2 : travel.dx < 0 ? 8 : travel.dy > 0 ? 4 : 1;
+          const quarter = transitQuarter(-travel.dx, -travel.dy);
+          const avenue = avenueDirAt(snapshot, station.x, station.y, size);
+          if (avenue) {
+            const left = AVENUE_LEFT[avenue];
+            out.push({ frame: "street.bus-platform", x: station.x + left[0] * 0.28, y: station.y + left[1] * 0.28, quarter });
+          } else {
+            const right = STOP_RIGHT[dir];
+            out.push({ frame: "street.bus-stop", x: station.x + right[0] * 0.32, y: station.y + right[1] * 0.32, quarter });
+          }
+        }
+      }
+    }
+    const lane = snapshot?.busLane;
+    if (lane && size) {
+      for (let i = 0; i < size * size; i += 1) {
+        if (!lane[i]) continue;
+        const x = i % size;
+        const y = Math.floor(i / size);
+        let neighbors = 0;
+        if (x > 0 && lane[i - 1]) neighbors += 1;
+        if (x + 1 < size && lane[i + 1]) neighbors += 1;
+        if (y > 0 && lane[i - size]) neighbors += 1;
+        if (y + 1 < size && lane[i + size]) neighbors += 1;
+        if (neighbors <= 1) out.push({ frame: "street.camera", x, y, quarter: 0 });
+      }
+    }
+    return out;
+  }
+
   // Decorative agents ride the snapshot's derived agent facts. Position and
   // phase come from the core's deterministic derivation; this collector only
   // shapes and colors them.
@@ -3740,6 +4196,15 @@ function createBonsaiVoxelRenderer() {
     // A heading on a tile: the axis its network runs along, a direction
     // sign, and the lane offset to the right of travel.
     const heading = (tx, ty, predicate, seed, laneOffset, index) => {
+      // An avenue half is one-way: its cars keep the half's own direction and
+      // sit in its general lanes, so they never meet oncoming traffic or stray
+      // into the median's BRT lane.
+      const avenue = streets ? avenueDirAt(snapshot, tx, ty, size) : 0;
+      if (avenue) {
+        const alongX = avenue === 2 || avenue === 8;
+        const sign = avenue === 2 || avenue === 4 ? 1 : -1;
+        return { alongX, sign, lane: laneOffset * sign };
+      }
       const mask = streets ? networkMask(snapshot, tx, ty, size, predicate) : 0;
       const ew = Boolean(mask & 10), ns = Boolean(mask & 5);
       const alongX = ew && ns ? Boolean(seed & 1) : ew;
@@ -3817,16 +4282,10 @@ function createBonsaiVoxelRenderer() {
       if (!Number.isFinite(agent?.x) || !Number.isFinite(agent?.y)) return;
       const frame = frameFor(agent, index, drivable, 0.12, 0.18);
       const paint = recipes.agents.car[index % recipes.agents.car.length];
-      // One vehicle in ten is a bus and two are lorries; the first is
-      // always a car, which is what the atlas sprite shows.
-      const kind = index % 10 === 9 ? "bus" : index % 10 === 4 || index % 10 === 7 ? "lorry" : "car";
-      if (kind === "bus") {
-        // A 12 m bus: a tall cream-and-colour body with a band of windows.
-        vehicleBox(opaque, frame, 0, 0, 0.07, 0.72, 0.15, 0.13, { r: 0.93, g: 0.9, b: 0.8, a: 1 });
-        vehicleBox(opaque, frame, 0, 0, 0.032, 0.724, 0.154, 0.035, paint);
-        vehicleBox(opaque, frame, 0.02, 0, 0.1, 0.62, 0.156, 0.035, windowTone);
-        lamps(frame, 0.72, 0.15, 0.03);
-      } else if (kind === "lorry") {
+      // Two vehicles in ten are lorries. Buses are the city's own lines,
+      // placed further down, never painted onto ordinary traffic.
+      const kind = index % 10 === 4 || index % 10 === 7 ? "lorry" : "car";
+      if (kind === "lorry") {
         // A cab and a white box trailer.
         vehicleBox(opaque, frame, 0.17, 0, 0.055, 0.13, 0.13, 0.1, paint);
         vehicleBox(opaque, frame, 0.19, 0, 0.085, 0.07, 0.132, 0.03, windowTone);
@@ -4046,6 +4505,18 @@ function createBonsaiVoxelRenderer() {
         pushBlock(opaque, cx - 0.24, base + 0.95, cz + 0.36, 0.1, 0.1, 0.06, { r: 1, g: 0.28, b: 0.2, a: 1 });
       }
     }
+    const placeFrame = (item) => {
+      const model = voxelModelFor(item.frame);
+      if (model === null) return;
+      const tx = Math.max(0, Math.min(size - 1, Math.floor(item.x)));
+      const ty = Math.max(0, Math.min(size - 1, Math.floor(item.y)));
+      models.push({
+        model, frame: item.frame, livery: Number.isInteger(item.livery) ? item.livery : null,
+        x: item.x + 0.5, y: terrainTopY(snapshot, ty * size + tx), z: item.y + 0.5, quarter: item.quarter || 0,
+      });
+    };
+    transitInstances(snapshot).forEach(placeFrame);
+    transitFurniture(snapshot).forEach(placeFrame);
     return { opaque, smoke, glow, models };
   }
 
@@ -4240,6 +4711,8 @@ function createBonsaiVoxelRenderer() {
     collectUndergroundBlocks,
     surfaceAt,
     collectAgentBlocks,
+    transitInstances,
+    transitFurniture,
     collectOverlayBlocks,
     previewTiles,
     collectPreviewBlocks,
@@ -4329,6 +4802,12 @@ function createBonsaiVoxelRenderer() {
     streetView: null,
     streetMeshes: new Map(),
     streetSceneObjects: null,
+    // Joyride's character drive: the street at night, a headlight, and the
+    // frame drawn as characters straight to the canvas.
+    streetNight: false,
+    voxelGlowMaterial: null,
+    headlight: null,
+    glyph: null,
   };
 
   function isCanvasElement(node) {
@@ -4554,13 +5033,23 @@ function createBonsaiVoxelRenderer() {
       const geometry = new THREE.BufferGeometry();
       const positions = [], normals = [], coordinates = [];
       const faces = blockFaces({ x: 0, y: 0, z: 0, sx: 1, sy: 1, sz: 1, shape });
+      // A slope wedge's sides rise a whole block above the box (v runs from
+      // -1 at the raised corner to 1 at the base). The offline atlas wraps
+      // v inside the tile; the GPU cannot, so v outside the tile sampled the
+      // neighbouring atlas tiles (dark soil chevrons on hillsides, sleepers
+      // smeared across a railway on a slope). Fold the full height into the
+      // side tile instead: grass rim at the raised edge, soil below.
+      const wedge = shape.startsWith("slope-");
       faces.forEach((face) => {
-        const rect = face.surface === "top" ? topRect : sideRect;
+        // The bank a wedge raises above its neighbours is hillside, so it
+        // wears the top (grass) tile, not the soil of a cut.
+        const rect = face.surface === "top" || wedge ? topRect : sideRect;
         for (let i = 1; i < face.vertices.length - 1; i += 1) {
           for (const j of [0, i, i + 1]) {
             positions.push(...face.vertices[j]);
             normals.push(...face.normal);
-            const [u,v] = face.uv[j];
+            const [u, rawV] = face.uv[j];
+            const v = wedge && face.surface !== "top" ? (rawV + 1) / 2 : rawV;
             coordinates.push(rect ? (rect.x + .5 + u * (rect.w - 1)) / state.textures.atlas.width : u,
               rect ? (rect.y + .5 + v * (rect.h - 1)) / state.textures.atlas.height : v);
           }
@@ -4739,10 +5228,24 @@ function createBonsaiVoxelRenderer() {
     return Math.sqrt(halfW * halfW + halfU * halfU) + 4;
   }
 
+  const STREET_SHADOW_RADIUS = 24;
+  function streetShadowFocus() {
+    const view = state.streetView || {};
+    const eye = view.eye || [0, 1, 0];
+    const look = view.target || [eye[0] + 1, eye[1], eye[2]];
+    const dx = look[0] - eye[0], dz = look[2] - eye[2];
+    const length = Math.hypot(dx, dz) || 1;
+    const ahead = STREET_SHADOW_RADIUS * 0.6;
+    return { x: eye[0] + (dx / length) * ahead, z: eye[2] + (dz / length) * ahead };
+  }
+
   function syncLighting(snapshot) {
     const light = lightingFor(snapshot.timeOfDay);
     const size = mapSize(snapshot);
-    const target = cameraTarget(state.view, size);
+    // In the street the shadow map follows the driver: a square centred a
+    // little ahead of the eye, as far as the frame shows sharp detail.
+    const streetFocus = state.street ? streetShadowFocus() : null;
+    const target = streetFocus || cameraTarget(state.view, size);
     const length = Math.hypot(light.sunX, light.sunY, light.sunZ) || 1;
     state.sun.position.set(
       target.x + (light.sunX / length) * SUN_DISTANCE,
@@ -4751,7 +5254,9 @@ function createBonsaiVoxelRenderer() {
     );
     state.sun.target.position.set(target.x, 0, target.z);
     state.sun.target.updateMatrixWorld();
-    const radius = Math.min(size + 8, visibleGroundRadius(state.view, state.cssWidth, state.cssHeight));
+    const radius = streetFocus ? STREET_SHADOW_RADIUS : Math.min(size + 8, visibleGroundRadius(state.view, state.cssWidth, state.cssHeight));
+    // No sun shadows in the character drive's night.
+    state.sun.castShadow = !(state.street && state.streetNight) && light.dayFactor > 0.25;
     const shadowCamera = state.sun.shadow.camera;
     if (shadowCamera.right !== radius) {
       shadowCamera.left = -radius;
@@ -4762,7 +5267,9 @@ function createBonsaiVoxelRenderer() {
     }
     // The voxel catalog's colours are the 2D atlas colours, whose flat tops
     // read at full brightness; lift the light so the 3D tops match them.
-    const gain = state.voxelModels ? VOXEL_LIGHT_GAIN : 1;
+    // The character drive's night is darker than the city's own: the lit
+    // windows, lamps and headlight have to carry the picture.
+    const gain = (state.voxelModels ? VOXEL_LIGHT_GAIN : 1) * (state.street && state.streetNight ? 0.4 : 1);
     state.sun.intensity = light.sunIntensity * gain;
     state.ambient.intensity = light.ambientIntensity * gain;
     state.sun.color.setRGB(light.sunR, light.sunG, light.sunB);
@@ -4811,10 +5318,26 @@ function createBonsaiVoxelRenderer() {
   // one vertical gradient, pale at the horizon, deeper overhead, dimming
   // with the day. The caller's palette pass turns it into bands or dither.
   function syncStreetSky(light) {
-    const day = light.dayFactor;
+    const day = state.streetNight ? 0 : light.dayFactor;
     const mix = (a, b) => Math.round((b + (a - b) * day) * 255);
-    const zenith = [mix(0.36, 0.05), mix(0.56, 0.07), mix(0.86, 0.16)];
-    const horizon = [mix(0.8, 0.12), mix(0.87, 0.13), mix(0.94, 0.22)];
+    // Night in the character drive is a true black sky with a faint glow
+    // over the horizon, so blank cells read as sky, not as noise.
+    let zenith = state.streetNight ? [2, 3, 8] : [mix(0.36, 0.05), mix(0.56, 0.07), mix(0.86, 0.16)];
+    let horizon = state.streetNight ? [10, 12, 22] : [mix(0.8, 0.12), mix(0.87, 0.13), mix(0.94, 0.22)];
+    if (!state.streetNight) {
+      // Golden hour: the horizon warms to amber and the zenith deepens
+      // toward violet as the sun nears the horizon.
+      const warm = Math.max(0, Math.min(1, light.warmth || 0));
+      horizon = horizon.map((v, i) => Math.round(v + ([250, 168, 104][i] - v) * warm * 0.75));
+      zenith = zenith.map((v, i) => Math.round(v + ([70, 74, 140][i] - v) * warm * 0.45));
+      // A grey sky under rain, snow or fog.
+      const grey = state.streetView && state.streetView.overcast ? 0.65 : 0;
+      if (grey) {
+        const g = [mix(0.62, 0.1), mix(0.64, 0.11), mix(0.67, 0.13)];
+        zenith = zenith.map((v, i) => Math.round(v + (g[i] - v) * grey));
+        horizon = horizon.map((v, i) => Math.round(v + (g[i] * 1.12 - v) * grey));
+      }
+    }
     const key = `${zenith}|${horizon}`;
     if (state.skyKey === key) return;
     state.skyKey = key;
@@ -4848,6 +5371,20 @@ function createBonsaiVoxelRenderer() {
       state.camera.up.set(0, 1, 0);
       state.camera.lookAt(target[0], target[1], target[2]);
       state.camera.updateProjectionMatrix();
+      if (state.scene.fog && view.fog) {
+        state.scene.fog.near = view.fog.near;
+        state.scene.fog.far = view.fog.far;
+        if (Array.isArray(view.fog.color)) state.scene.fog.color.setRGB(view.fog.color[0], view.fog.color[1], view.fog.color[2], state.THREE.SRGBColorSpace);
+      }
+      if (state.headlight) {
+        const lamp = view.headlight;
+        state.headlight.intensity = lamp && state.streetNight ? lamp.intensity ?? 2.2 : 0;
+        if (lamp) {
+          state.headlight.position.set(lamp.from[0], lamp.from[1], lamp.from[2]);
+          state.headlight.target.position.set(lamp.to[0], lamp.to[1], lamp.to[2]);
+          state.headlight.target.updateMatrixWorld();
+        }
+      }
       return;
     }
     const rig = cameraRig(state.view, mapSize(snapshot), state.cssWidth, state.cssHeight);
@@ -4918,6 +5455,7 @@ function createBonsaiVoxelRenderer() {
     state.THREE = THREE;
     if (voxelModels) {
       state.voxelModels = voxelModels;
+      if (voxelModels?.index?.frames) globalThis.AISystem6BonsaiFrameIndex = new Set(Object.keys(voxelModels.index.frames));
       state.recipeRev += 1;
     }
     if (recipeSource) {
@@ -4988,8 +5526,12 @@ function createBonsaiVoxelRenderer() {
     state.renderer.outputColorSpace = THREE.SRGBColorSpace;
     // One sun, one shadow map. Hard-edged PCF keeps the blocks crisp; the
     // map is fitted to the visible ground every frame in syncLighting.
-    state.renderer.shadowMap.enabled = !state.street;
-    state.renderer.shadowMap.type = THREE.PCFShadowMap;
+    // The street view casts them too (by day): buildings throwing shade
+    // across the road are most of what gives the low-res frame its depth.
+    state.renderer.shadowMap.enabled = true;
+    // Hard-edged in the street: the palette pass turns a filtered penumbra
+    // into grain, a hard edge stays one clean step.
+    state.renderer.shadowMap.type = state.street && THREE.BasicShadowMap !== undefined ? THREE.BasicShadowMap : THREE.PCFShadowMap;
 
     state.contextLostHandler = (event) => {
       if (event && typeof event.preventDefault === "function") event.preventDefault();
@@ -5005,8 +5547,9 @@ function createBonsaiVoxelRenderer() {
       : new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 2000);
     state.ambient = new THREE.AmbientLight(0xffffff, 0.62);
     state.sun = new THREE.DirectionalLight(0xffffff, 0.85);
-    state.sun.castShadow = !state.street;
-    state.sun.shadow.mapSize.set(shadowMapSizeFor(rect0.width, state.dpr), shadowMapSizeFor(rect0.width, state.dpr));
+    state.sun.castShadow = true;
+    const shadowSize = state.street ? SHADOW_MAP_SIZE : shadowMapSizeFor(rect0.width, state.dpr);
+    state.sun.shadow.mapSize.set(shadowSize, shadowSize);
     state.frameSamples.length = 0;
     state.shadowReduced = false;
     state.sun.shadow.bias = -0.0006;
@@ -5019,6 +5562,17 @@ function createBonsaiVoxelRenderer() {
     state.staticGroup = new THREE.Group();
     state.dynamicGroup = new THREE.Group();
     state.scene.add(state.ambient, state.sun, state.sun.target, state.fill, state.staticGroup, state.dynamicGroup);
+    if (state.street && THREE.Fog) {
+      // Present from the start (far away when the air is clean), so smog
+      // coming and going never changes the programs the materials compile.
+      state.scene.fog = new THREE.Fog(0x000000, 1000, 2000);
+    }
+    if (state.street && THREE.SpotLight) {
+      // Always present in the street scene (dark by day), so turning night
+      // on does not change the light count and recompile every material.
+      state.headlight = new THREE.SpotLight(0xfff0d2, 0, 5, 0.52, 0.65, 1.2);
+      state.scene.add(state.headlight, state.headlight.target);
+    }
     state.sharedGeometry = state.ledger.track(new THREE.BoxGeometry(1, 1, 1));
     state.materials = createMaterials(THREE);
     if (state.waterTexture) {
@@ -5043,7 +5597,7 @@ function createBonsaiVoxelRenderer() {
       // size; the caller scales the finished frame up with nearest pixels.
       width = state.street.width;
       height = state.street.height;
-      dpr = 1;
+      dpr = state.street.dpr || 1;
     }
     const measured = containerRect();
     const cssWidth = Math.max(1, Math.round(Number.isFinite(width) ? width : measured.width));
@@ -5099,7 +5653,10 @@ function createBonsaiVoxelRenderer() {
       const sceneObjects = collectSceneObjects(snapshot, state.recipes);
       syncStaticChunks(snapshot, sceneObjects);
     }
-    if (state.street) syncStreetObjects(state.streetView && state.streetView.objects);
+    if (state.street) {
+      syncStreetObjects(state.streetView && state.streetView.objects);
+      syncStreetBlocks(state.streetView && state.streetView.blocks);
+    }
     else syncDynamic(snapshot);
     syncMapFrame(snapshot);
     syncLighting(snapshot);
@@ -5272,12 +5829,14 @@ function createBonsaiVoxelRenderer() {
     list.forEach((object, index) => {
       const model = state.voxelModels ? voxelModelFor(object.frame) : null;
       if (model === null || model === undefined) return;
-      const key = `${index}:${model}`;
+      const livery = Number.isInteger(object.livery) ? object.livery : null;
+      const key = livery === null ? `${index}:${model}` : `${index}:${model}:${livery}`;
       seen.add(key);
       let mesh = state.streetMeshes.get(key);
       if (!mesh) {
-        if (!state.voxelModelMaterial) state.voxelModelMaterial = state.ledger.track(new state.THREE.MeshLambertMaterial({ vertexColors: true }));
-        mesh = new state.THREE.Mesh(voxelModelGeometry(model), state.voxelModelMaterial);
+        mesh = new state.THREE.Mesh(voxelModelGeometry(model, livery), voxelMaterial());
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
         state.streetMeshes.set(key, mesh);
         state.dynamicGroup.add(mesh);
       }
@@ -5291,16 +5850,122 @@ function createBonsaiVoxelRenderer() {
     });
   }
 
+  // The caller's small moving or changing pieces -- signal lamps, payphones,
+  // a beacon -- as plain coloured boxes, rebuilt every frame from the list.
+  // Boxes marked `glow` are unlit (a lamp shines at night); the others take
+  // the scene's light. Two instanced meshes, grown when the list outgrows
+  // them, so a frame allocates nothing.
+  function syncStreetBlocks(list) {
+    const THREE = state.THREE;
+    const blocks = Array.isArray(list) ? list : [];
+    state.streetBlockMeshes = state.streetBlockMeshes || {};
+    const matrix = new THREE.Matrix4();
+    const color = new THREE.Color();
+    [["lit", blocks.filter((block) => !block.glow), state.materials.opaque], ["glow", blocks.filter((block) => block.glow), state.materials.glow || state.materials.opaque]].forEach(([key, group, material]) => {
+      let mesh = state.streetBlockMeshes[key];
+      if (!mesh || mesh.userData.capacity < group.length) {
+        if (mesh) {
+          if (mesh.parent) mesh.parent.remove(mesh);
+          mesh.dispose?.();
+        }
+        const capacity = Math.max(32, Math.ceil(group.length * 1.5));
+        mesh = new THREE.InstancedMesh(state.sharedGeometry, material, capacity);
+        mesh.userData.capacity = capacity;
+        mesh.setColorAt(0, color.setRGB(1, 1, 1));
+        mesh.frustumCulled = false;
+        state.dynamicGroup.add(mesh);
+        state.streetBlockMeshes[key] = mesh;
+      }
+      group.forEach((block, index) => {
+        if (block.yaw) {
+          // Turned about the vertical by the block's heading (a bus, a
+          // shelter): rotation times scale, written out.
+          const c = Math.cos(-block.yaw), sn = Math.sin(-block.yaw);
+          matrix.set(c * block.sx, 0, sn * block.sz, block.x, 0, block.sy, 0, block.y, -sn * block.sx, 0, c * block.sz, block.z, 0, 0, 0, 1);
+        } else {
+          matrix.makeScale(block.sx, block.sy, block.sz);
+          matrix.setPosition(block.x, block.y, block.z);
+        }
+        mesh.setMatrixAt(index, matrix);
+        mesh.setColorAt(index, color.setRGB(block.r, block.g, block.b, THREE.SRGBColorSpace));
+      });
+      mesh.count = group.length;
+      mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    });
+  }
+
   // The finished street frame, bottom row first (WebGL order), into an RGBA
   // byte array of width x height x 4. The drawing buffer is preserved in
   // street mode, so this may run after render() in the same frame.
   function readPixels(target) {
-    if (!state.street || !state.renderer) return null;
+    if (!state.street || !state.renderer || state.glyph) return null;
     const gl = state.renderer.getContext();
     const { width, height } = state.street;
     const out = target && target.length >= width * height * 4 ? target : new Uint8Array(width * height * 4);
     gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, out);
     return out;
+  }
+
+  // The same frame without the stall: a synchronous readPixels waits for the
+  // GPU to finish drawing, every frame. On WebGL2 each call instead queues a
+  // copy of the frame just rendered into a pixel buffer behind a fence, and
+  // hands back the newest earlier copy the GPU has already finished -- one
+  // or two frames behind, never waited for. Null until the first copy lands;
+  // without WebGL2 it falls back to readPixels.
+  function readPixelsAsync(target) {
+    if (!state.street || !state.renderer || state.glyph) return null;
+    const gl = state.renderer.getContext();
+    if (typeof WebGL2RenderingContext === "undefined" || !(gl instanceof WebGL2RenderingContext)) return readPixels(target);
+    const { width, height } = state.street;
+    const bytes = width * height * 4;
+    if (!state.readback || state.readback.bytes !== bytes) {
+      releaseReadback();
+      state.readback = {
+        bytes,
+        slots: [0, 1, 2].map(() => {
+          const buffer = gl.createBuffer();
+          gl.bindBuffer(gl.PIXEL_PACK_BUFFER, buffer);
+          gl.bufferData(gl.PIXEL_PACK_BUFFER, bytes, gl.STREAM_READ);
+          return { buffer, fence: null, order: 0 };
+        }),
+        issued: 0,
+      };
+      gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+    }
+    const out = target && target.length >= bytes ? target : new Uint8Array(bytes);
+    let collected = null;
+    // Oldest first, so the newest finished copy is the one left in `out`.
+    [...state.readback.slots].filter((slot) => slot.fence).sort((a, b) => a.order - b.order).forEach((slot) => {
+      const status = gl.clientWaitSync(slot.fence, 0, 0);
+      if (status !== gl.ALREADY_SIGNALED && status !== gl.CONDITION_SATISFIED) return;
+      gl.deleteSync(slot.fence);
+      slot.fence = null;
+      gl.bindBuffer(gl.PIXEL_PACK_BUFFER, slot.buffer);
+      gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, out, 0, bytes);
+      collected = out;
+    });
+    const free = state.readback.slots.find((slot) => !slot.fence);
+    if (free) {
+      gl.bindBuffer(gl.PIXEL_PACK_BUFFER, free.buffer);
+      gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, 0);
+      free.fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+      free.order = ++state.readback.issued;
+      gl.flush();
+    }
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+    return collected;
+  }
+
+  function releaseReadback() {
+    const gl = state.renderer?.getContext?.();
+    if (gl && state.readback) {
+      state.readback.slots.forEach((slot) => {
+        if (slot.fence) gl.deleteSync(slot.fence);
+        gl.deleteBuffer(slot.buffer);
+      });
+    }
+    state.readback = null;
   }
 
   // What this instance draws for one chunk: the same block and model lists
@@ -5313,6 +5978,188 @@ function createBonsaiVoxelRenderer() {
       state.streetSceneObjects = { key, objects: collectSceneObjects(snapshot, state.recipes) };
     }
     return collectChunkBlocks(snapshot, state.recipes, chunkX, chunkY, state.streetSceneObjects.objects);
+  }
+
+  // --- the character drive ------------------------------------------------------
+  //
+  // The scene renders into a small target, two texels per character cell,
+  // and one full-screen pass draws each cell as a character from an atlas:
+  // dark cells blank, brighter cells denser, and where brightness changes
+  // sharply an edge character along the edge (| / \ -). Colour keeps to a
+  // few families: warm white, amber (lit windows, lamps, lane paint), cyan
+  // (glass, water) and red (tail lights, signs). It is drawn on the GPU,
+  // straight to the canvas: no frame comes back to the CPU.
+  const GLYPHS = " .,:;-=+*#%@|/\\";
+  const GLYPH_VERTEX = "varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }";
+  const GLYPH_FRAGMENT = `
+    uniform sampler2D tScene; uniform sampler2D tAtlas;
+    uniform vec2 grid; uniform vec2 cellPx; uniform vec2 origin; uniform float glyphCount; uniform float exposure;
+    float luma(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
+    vec3 sceneAt(vec2 cell) {
+      vec2 uv = (clamp(cell, vec2(0.0), grid - 1.0) + 0.5) / grid;
+      return pow(max(texture2D(tScene, uv).rgb, vec3(0.0)), vec3(1.0 / 2.2)) * exposure;
+    }
+    void main() {
+      vec2 p = gl_FragCoord.xy - origin;
+      vec2 cell = floor(p / cellPx);
+      if (p.x < 0.0 || p.y < 0.0 || cell.x >= grid.x || cell.y >= grid.y) { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); return; }
+      vec2 local = fract(p / cellPx);
+      vec3 c = sceneAt(cell);
+      float l = luma(c);
+      float gx = luma(sceneAt(cell + vec2(1.0, 0.0))) - luma(sceneAt(cell - vec2(1.0, 0.0)));
+      float gy = luma(sceneAt(cell + vec2(0.0, 1.0))) - luma(sceneAt(cell - vec2(0.0, 1.0)));
+      float index;
+      // The dark third of the scale stays blank: night sky, shadow, unlit
+      // walls. Above it the ramp climbs, slowly at first.
+      float lit = clamp((l - 0.1) / 0.9, 0.0, 1.0);
+      if (length(vec2(gx, gy)) > 0.3 && l > 0.16) {
+        float t = mod(atan(gy, gx) + 3.14159265, 3.14159265) / 3.14159265;
+        if (t < 0.125 || t >= 0.875) index = 12.0;
+        else if (t < 0.375) index = 14.0;
+        else if (t < 0.625) index = 5.0;
+        else index = 13.0;
+      } else {
+        index = lit <= 0.0 ? 0.0 : floor(clamp(pow(lit, 1.25), 0.0, 0.999) * 12.0);
+      }
+      float mask = texture2D(tAtlas, vec2((index + local.x) / glyphCount, local.y)).r;
+      float top = max(c.r, max(c.g, c.b)) + 0.0001;
+      vec3 n = c / top;
+      vec3 tint = vec3(1.0, 0.94, 0.84);
+      if (n.r > 0.9 && n.g < 0.55 && n.b < 0.55) tint = vec3(1.0, 0.3, 0.24);
+      else if (n.r > 0.85 && n.g > 0.5 && n.b < 0.62) tint = vec3(1.0, 0.72, 0.32);
+      else if (n.b > 0.9 && n.r < 0.78) tint = vec3(0.38, 0.86, 0.92);
+      gl_FragColor = vec4(tint * mask * (0.3 + 0.7 * clamp(l * 1.25, 0.0, 1.0)), 1.0);
+    }`;
+
+  function glyphAtlas(THREE, cellW, cellH) {
+    const canvas = document.createElement("canvas");
+    canvas.width = cellW * GLYPHS.length;
+    canvas.height = cellH;
+    const context = canvas.getContext("2d");
+    context.fillStyle = "#000";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = "#fff";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.font = `${Math.round(cellH * 0.8)}px Monaco, Menlo, "Courier New", monospace`;
+    [...GLYPHS].forEach((glyph, index) => context.fillText(glyph, index * cellW + cellW / 2, cellH / 2 + cellH * 0.04));
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    texture.generateMipmaps = false;
+    texture.colorSpace = THREE.NoColorSpace;
+    return texture;
+  }
+
+  function releaseGlyph() {
+    if (!state.glyph) return;
+    ["target", "atlas", "material", "geometry"].forEach((key) => {
+      const resource = state.glyph[key];
+      if (!resource) return;
+      state.ledger.release(resource);
+      resource.dispose?.();
+    });
+    state.glyph = null;
+  }
+
+  function renderGlyphFrame() {
+    const renderer = state.renderer;
+    const glyph = state.glyph;
+    renderer.setRenderTarget(glyph.target);
+    renderer.render(state.scene, state.camera);
+    renderer.setRenderTarget(null);
+    renderer.render(glyph.scene, glyph.camera);
+  }
+
+  // The street output: "readback" draws the small fixed frame the caller
+  // reads back (Joyride's classic screens); "glyph" fills the given CSS size
+  // at the device ratio and draws characters of cellCss pixels.
+  function setStreetOutput(output = {}) {
+    if (!state.street || !state.renderer) return null;
+    const THREE = state.THREE;
+    const glyphMode = output.mode === "glyph";
+    const dpr = glyphMode ? Math.max(1, Math.min(2, Number(output.dpr) || 1)) : 1;
+    state.street = {
+      width: Math.max(1, Math.round(output.width) || state.street.width),
+      height: Math.max(1, Math.round(output.height) || state.street.height),
+      dpr,
+    };
+    state.cssWidth = 0;
+    resize(state.street.width, state.street.height, dpr);
+    if (!glyphMode) {
+      releaseGlyph();
+      return { mode: "readback", width: state.street.width, height: state.street.height };
+    }
+    const cellCss = Array.isArray(output.cell) ? output.cell : [7, 12];
+    const cellW = Math.max(4, Math.round(cellCss[0] * dpr));
+    const cellH = Math.max(6, Math.round(cellCss[1] * dpr));
+    const deviceW = Math.round(state.street.width * dpr);
+    const deviceH = Math.round(state.street.height * dpr);
+    const cols = Math.max(8, Math.floor(deviceW / cellW));
+    const rows = Math.max(6, Math.floor(deviceH / cellH));
+    const key = `${cols}x${rows}:${cellW}x${cellH}`;
+    if (!state.glyph || state.glyph.key !== key) {
+      releaseGlyph();
+      const target = state.ledger.track(new THREE.WebGLRenderTarget(cols * 2, rows * 2, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: true }));
+      const atlas = state.ledger.track(glyphAtlas(THREE, cellW, cellH));
+      const material = state.ledger.track(new THREE.ShaderMaterial({
+        uniforms: {
+          tScene: { value: target.texture }, tAtlas: { value: atlas },
+          grid: { value: new THREE.Vector2(cols, rows) }, cellPx: { value: new THREE.Vector2(cellW, cellH) },
+          origin: { value: new THREE.Vector2(Math.floor((deviceW - cols * cellW) / 2), Math.floor((deviceH - rows * cellH) / 2)) },
+          glyphCount: { value: GLYPHS.length }, exposure: { value: 1.8 },
+        },
+        vertexShader: GLYPH_VERTEX, fragmentShader: GLYPH_FRAGMENT, depthTest: false, depthWrite: false,
+      }));
+      const geometry = state.ledger.track(new THREE.PlaneGeometry(2, 2));
+      const quad = new THREE.Mesh(geometry, material);
+      quad.frustumCulled = false;
+      const scene = new THREE.Scene();
+      scene.add(quad);
+      state.glyph = { key, target, atlas, material, geometry, scene, camera: new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1), cols, rows };
+    }
+    if (Number.isFinite(output.exposure)) state.glyph.material.uniforms.exposure.value = output.exposure;
+    return { mode: "glyph", width: state.street.width, height: state.street.height, cols, rows };
+  }
+
+  // Night in the street view: the night variant of every voxel model (lit
+  // windows, lamps), the headlight, and the chunks rebuilt to use them.
+  function setStreetNight(on) {
+    const night = Boolean(on);
+    if (!state.street || state.streetNight === night) return;
+    state.streetNight = night;
+    state.recipeRev += 1;
+    state.streetMeshes.forEach((mesh) => mesh.parent && mesh.parent.remove(mesh));
+    state.streetMeshes.clear();
+  }
+
+  // Extra static blocks the caller adds to the street scene (Joyride's ramps
+  // over road seams); replaced as a set.
+  // Street-only geometry the caller derives from the town: blocks, and
+  // optionally a triangle surface (the carriageway ramps drawn smooth).
+  function setStreetExtras(blocks, surface = null) {
+    if (!state.street || !state.ready) return;
+    if (state.streetExtras) disposeMesh(state.streetExtras);
+    state.streetExtras = buildInstancedMesh(Array.isArray(blocks) ? blocks : [], state.materials.opaque, 0, state.sharedGeometry, "none");
+    if (state.streetExtras) state.staticGroup.add(state.streetExtras);
+    if (state.streetSurface) {
+      if (state.streetSurface.parent) state.streetSurface.parent.remove(state.streetSurface);
+      state.streetSurface.geometry.dispose();
+      state.streetSurface.material.dispose();
+      state.streetSurface = null;
+    }
+    const positions = surface && surface.positions;
+    if (positions && positions.length >= 9) {
+      const THREE = state.THREE;
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.Float32BufferAttribute(Array.from(positions), 3));
+      geometry.computeVertexNormals();
+      const colour = surface.colour || { r: 0.27, g: 0.27, b: 0.29 };
+      const material = new THREE.MeshLambertMaterial({ color: new THREE.Color().setRGB(colour.r, colour.g, colour.b, THREE.SRGBColorSpace) });
+      state.streetSurface = new THREE.Mesh(geometry, material);
+      state.streetSurface.receiveShadow = true;
+      state.staticGroup.add(state.streetSurface);
+    }
   }
 
   function voxelModelIndex(frameId) {
@@ -5332,8 +6179,26 @@ function createBonsaiVoxelRenderer() {
       state.canvas.removeEventListener("webglcontextlost", state.contextLostHandler, false);
     }
     state.contextLostHandler = null;
+    if (state.streetSurface) {
+      state.streetSurface.geometry.dispose();
+      state.streetSurface.material.dispose();
+      state.streetSurface = null;
+    }
     state.chunks.forEach(disposeChunkRecord);
     state.chunks.clear();
+    releaseReadback();
+    releaseGlyph();
+    if (state.headlight) state.scene?.remove(state.headlight, state.headlight.target);
+    state.headlight = null;
+    state.streetNight = false;
+    state.voxelGlowMaterial = null;
+    if (state.streetExtras) disposeMesh(state.streetExtras);
+    state.streetExtras = null;
+    Object.values(state.streetBlockMeshes || {}).forEach((mesh) => {
+      if (mesh.parent) mesh.parent.remove(mesh);
+      mesh.dispose?.();
+    });
+    state.streetBlockMeshes = null;
     state.streetMeshes.forEach((mesh) => mesh.parent && mesh.parent.remove(mesh));
     state.streetMeshes.clear();
     state.streetView = null;
@@ -5508,6 +6373,10 @@ function createBonsaiVoxelRenderer() {
     whenReady: loadThree,
     pure: PURE,
     readPixels,
+    readPixelsAsync,
+    setStreetExtras,
+    setStreetOutput,
+    setStreetNight,
     streetChunkBlocks,
     voxelModelIndex,
     voxelModelVoxels,

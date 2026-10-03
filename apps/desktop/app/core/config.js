@@ -141,8 +141,11 @@ window.AISystem6Config = (() => {
     // the separate "bonsaiCities" store so the original simulator's saves
     // never share provenance with the GPL games. Version 5 adds
     // "imageAttachments" so a picture is one object shared by every surface,
-    // instead of base64 swelling each project and scrap record.
-    indexedDbVersion: 5,
+    // instead of base64 swelling each project and scrap record. Version 6
+    // adds "transitPlans": the Basin's line-network plans, which Rootline
+    // writes and Bonsai City reads when the mayor flips the pot. The upgrade
+    // is a no-op for every existing store.
+    indexedDbVersion: 6,
     referenceStoreName: "projectReferences",
     keyvalStoreName: "keyval",
     projectsStoreName: "projects",
@@ -153,6 +156,7 @@ window.AISystem6Config = (() => {
     citiesStoreName: "cities",
     bonsaiCitiesStoreName: "bonsaiCities",
     imageAttachmentsStoreName: "imageAttachments",
+    transitPlansStoreName: "transitPlans",
   });
 
   const projectConfig = Object.freeze({
@@ -544,6 +548,10 @@ const ensureDictionaryHelpModule = createLazyModuleLoader("AISystem6DictionaryHe
 // pad instead of costing every boot the bytes.
 const ensureDictationPadModule = createLazyModuleLoader("AISystem6DictationPadLoaded", [
   "app/core/dictation-shape.js",
+  // The session: which recognition instance is current, the raw text's
+  // revision, and the identity of the organizing request. Pure, and only the
+  // pad reads it.
+  "app/core/dictation-session.js",
   "app/features/dictation-pad.js",
 ]);
 const ensureHoldThatThoughtModule = createLazyModuleLoader("AISystem6HoldThatThoughtLoaded", ["app/core/application-shell.js", "app/features/hold-that-thought.js"]);
@@ -636,12 +644,18 @@ const ensureOpenTTDModule = createLazyModuleLoader("AISystem6OpenTTDLoaded", [
   "app/core/application-shell.js",
   "app/features/openttd.js",
 ], false, ["styles.openttd.css"]);
-// Bonsai City loads its MIT-clean core, the in-memory repository, and the
-// System 6 shell together; the shell's flag proves all three arrived.
+// Bonsai City loads the shared world core (app/core/pot-world.js, first in
+// all three game loaders), its MIT-clean core, the in-memory repository, and
+// the System 6 shell together; the shell's flag proves all three arrived.
 const ensureBonsaiCityModule = createLazyModuleLoader("AISystem6BonsaiCityLoaded", [
+  "app/core/pot-world.js",
   "app/features/bonsai-translations.js",
   "app/features/city-demand-gauge.js",
   "app/features/bonsai-city-sim.js",
+  // The mayor's bill for a Rootline plan. Pure, and only Bonsai City's
+  // flip-the-pot flow reads it, so it travels with that window rather than at
+  // boot.
+  "app/core/basin-flip-pot.js",
   "app/features/bonsai-sc2-codec.js",
   "app/features/bonsai-micropolis-codec.js",
   "app/features/bonsai-micropolis-export.js",
@@ -663,9 +677,20 @@ const ensureDoomModule = createLazyModuleLoader("AISystem6DoomLoaded", [
   "app/core/application-shell.js",
   "app/features/doom.js",
 ], false, ["styles.openttd.css"]);
-// Rootline: the headless core, then the map that reads it, then the shell
-// that paces it; the shell's flag proves all three arrived.
+// The visual novel travels the same way DOOM's engine does: the story stays
+// inside assets/mingwen/ and is fetched only by its same-origin frame.
+const ensureMingwenModule = createLazyModuleLoader("AISystem6MingwenLoaded", [
+  "app/core/application-shell.js",
+  "app/features/mingwen.js",
+], false, ["styles.openttd.css"]);
+// Rootline: the world core it takes names and hours from, the Bonsai City
+// simulation that decodes a pot's save and the converter that reads a pot as
+// a transit map, the headless core, then the map that reads it, then the
+// shell that paces it; the shell's flag proves they all arrived.
 const ensureRootlineModule = createLazyModuleLoader("AISystem6RootlineLoaded", [
+  "app/core/pot-world.js",
+  "app/features/bonsai-city-sim.js",
+  "app/features/rootline-pot.js",
   "app/core/application-shell.js",
   "app/features/rootline-core.js",
   "app/features/rootline-view.js",
@@ -676,12 +701,18 @@ const ensureRootlineModule = createLazyModuleLoader("AISystem6RootlineLoaded", [
 // give it a street instance of its own, then the headless core and the game.
 // The Bonsai files load once whichever of the two windows asks first.
 const ensureJoyrideModule = createLazyModuleLoader("AISystem6JoyrideLoaded", [
+  "app/core/pot-world.js",
   "app/core/application-shell.js",
+  "app/features/bonsai-translations.js",
   "app/features/bonsai-city-sim.js",
   "app/features/bonsai-catalog.js",
   "app/features/bonsai-renderer.js",
   "app/features/bonsai-renderer-voxel.js",
   "app/features/joyride-core.js",
+  "app/features/joyride-rail.js",
+  "app/features/joyride-bus.js",
+  "app/features/joyride-traffic.js",
+  "app/features/joyride-radio.js",
   "app/features/joyride.js",
 ], false, ["styles.joyride.css"]);
 const ensureWritingDemoModule = createLazyModuleLoader("AISystem6WritingDemoLoaded", [
@@ -837,18 +868,26 @@ const markdownOnlyModelInstruction = [
   "Never return JSON, JSON code fences, schemas, or machine-readable object literals.",
 ].join(" ");
 
-function withMarkdownModelMessages(messages = []) {
+// The shared wrapper every prose surface goes through. The defaults are what
+// they always were: Markdown-only, system integrity, the Humanizer. Dictation
+// is the one caller that asks for less — it wants the writer's spoken words
+// tidied, not restyled, and a Humanizer instruction is an instruction to change
+// how someone writes. It still keeps the integrity boundary.
+function withMarkdownModelMessages(messages = [], options = {}) {
+  const wantMarkdown = options.markdown !== false;
+  const wantHumanizer = options.humanizer !== false;
+  const wantIntegrity = options.integrity !== false;
   const normalized = Array.isArray(messages) ? messages : [];
   const systemIntegrity = window.AISystem6SystemIntegrity;
-  const systemIntegrityInstruction = systemIntegrity && !systemIntegrity.hasIntegrityInstruction(normalized)
+  const systemIntegrityInstruction = wantIntegrity && systemIntegrity && !systemIntegrity.hasIntegrityInstruction(normalized)
     ? systemIntegrity.instruction()
     : "";
   const humanizer = window.AISystem6Humanizer;
-  const humanizerInstruction = humanizer && !humanizer.hasHumanizerInstruction(normalized)
+  const humanizerInstruction = wantHumanizer && humanizer && !humanizer.hasHumanizerInstruction(normalized)
     ? humanizer.instruction()
     : "";
   return [
-    { role: "system", content: markdownOnlyModelInstruction },
+    ...(wantMarkdown ? [{ role: "system", content: markdownOnlyModelInstruction }] : []),
     ...(systemIntegrityInstruction ? [{ role: "system", content: systemIntegrityInstruction }] : []),
     ...(humanizerInstruction ? [{ role: "system", content: humanizerInstruction }] : []),
     ...normalized,

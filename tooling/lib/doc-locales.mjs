@@ -41,6 +41,7 @@ const ignoredFiles = new Set(["AGENTS.md", "HANDOFF.md", "HANDOFF.zh-CN.md"]);
 
 function shouldIgnoreDirectory(absPath, entryName) {
   return ignoredDirs.has(entryName)
+    || entryName === "design-proposals"
     || entryName.startsWith(".venv")
     || existsSync(join(absPath, ".git"));
 }
@@ -48,6 +49,8 @@ function shouldIgnoreDirectory(absPath, entryName) {
 function shouldIgnoreTrackedPath(path) {
   const segments = path.split("/");
   return ignoredFiles.has(basename(path))
+    || path.endsWith(".verification.md")
+    || segments.includes("design-proposals")
     || segments.some((segment) => ignoredDirs.has(segment) || segment.startsWith(".venv"));
 }
 

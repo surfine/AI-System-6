@@ -683,6 +683,64 @@
   font-size: 11px;
 }
 
+/* 翻盆: the mayor's bill. A list of what each line would cost, the reasons a
+   tile cannot take it, and the one checkbox the rubber-tyre lines need. */
+.bonsai-window .bonsai-flip-lines {
+  margin: 0 0 6px;
+  padding-left: 16px;
+  font-size: 11px;
+}
+
+.bonsai-window .bonsai-flip-lines li {
+  margin: 0 0 3px;
+}
+
+.bonsai-window .bonsai-flip-lines em {
+  font-style: normal;
+  color: var(--shade-dark);
+}
+
+.bonsai-window .bonsai-flip-depot {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.bonsai-window .bonsai-flip-note {
+  margin: 6px 0 0;
+  color: var(--shade-dark);
+  font-size: 11px;
+}
+
+/* 本市交通: the newspaper's transit box. One row per laid line, and the one
+   city-wide figure the simulation actually keeps. */
+.bonsai-window .bonsai-transit-title {
+  margin: 8px 0 3px;
+  padding-top: 4px;
+  border-top: 1px solid var(--shade);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.bonsai-window .bonsai-transit-lines {
+  margin: 0;
+  padding-left: 15px;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.bonsai-window .bonsai-transit-lines em {
+  font-style: normal;
+  color: var(--shade-dark);
+}
+
+.bonsai-window .bonsai-transit-note {
+  margin: 3px 0 0;
+  color: var(--shade-dark);
+  font-size: 10px;
+}
+
 .bonsai-window .bonsai-setup-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

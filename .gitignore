@@ -144,8 +144,13 @@ platform/macos/native/nohup.out
 .wrangler/
 # j-space controller ledger (per-task state, never committed)
 .jspace/
+# StateM run state (per-task execution ledger, never committed)
+.statem/
 # execution-based control-census reports (tooling/control-census.mjs); the
 # committed ratchet ceiling lives in tooling/control-census-baseline.json
 internal/evidence/drafts/control-census/
 HANDOFF.md
 HANDOFF.zh-CN.md
+# local capture evidence (screenshots, CLI logs, Playwright traces) from a
+# working session; durable evidence lives under internal/evidence/
+output/

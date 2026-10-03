@@ -49,6 +49,7 @@ const {
   citiesStoreName,
   bonsaiCitiesStoreName,
   imageAttachmentsStoreName,
+  transitPlansStoreName,
 } = storageConfig;
 const {
   defaultProjectName,

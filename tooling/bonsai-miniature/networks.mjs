@@ -97,12 +97,46 @@ export function wirePiece(mask) {
   return m;
 }
 
+// The same line where it shares a tile with a street or a railway: the pole
+// stands on the kerb (the carriageway is T/2±5, the sidewalk band T/2±7), so
+// the middle of the roadway stays clear. A short crossarm reaches in from the
+// pole to hold the conductors, which stay on the tile's centre line — that is
+// what makes them meet the neighbouring pieces exactly at the shared edge
+// midpoint, whichever way the street runs. This is the power-line-beside-a-
+// road tile the 2D atlas and the 3D view both draw.
+export function wireSidePiece(mask) {
+  const m = new Model(T, T, 18, `wire-side-${mask}`);
+  const c = T / 2;
+  const linked = PORTS.filter((p) => mask & p.bit);
+  const alongY = linked.some((p) => p.dx === 0) || !linked.length;
+  // The very same slender pole the open-ground piece stands, one voxel square,
+  // only moved out past the kerb (the carriageway spans c±5, the sidewalk band
+  // c±7): at c+6 it clears the asphalt by a whole voxel, and a pole any thicker
+  // reads as a tree trunk at street scale.
+  const px = alongY ? c + 6 : c;
+  const py = alongY ? c : c + 6;
+  m.box(px, py, 0, px + 1, py + 1, 14, "wood");
+  // The bracket runs to the conductor and no further: it starts at the
+  // conductor's own voxel edge rather than across it, so the arm over the
+  // roadway is as short as the connection allows. One voxel tall and one voxel
+  // deep is the thinnest this model format draws — a half voxel is not on the
+  // grid.
+  if (alongY) m.box(c + 1, c, 13, px + 1, c + 1, 14, "wood");
+  else m.box(c, c + 1, 13, c + 1, py + 1, 14, "wood");
+  for (const p of linked) {
+    if (p.dx === 0) m.box(c, p.dy < 0 ? 0 : c, WIRE_Z, c + 1, p.dy < 0 ? c + 1 : T, WIRE_Z + 1, "trim");
+    else m.box(p.dx < 0 ? 0 : c, c, WIRE_Z, p.dx < 0 ? c + 1 : T, c + 1, WIRE_Z + 1, "trim");
+  }
+  return m;
+}
+
 export function networkFrames() {
   const frames = [];
   for (let mask = 0; mask < 16; mask += 1) {
     frames.push({ id: `road.mask-${mask}`, make: () => roadPiece(mask), outline: false });
     frames.push({ id: `rail.mask-${mask}`, make: () => railPiece(mask), outline: false });
     frames.push({ id: `wire.mask-${mask}`, make: () => wirePiece(mask), outline: true });
+    frames.push({ id: `wire.side.mask-${mask}`, make: () => wireSidePiece(mask), outline: true });
   }
   return frames;
 }

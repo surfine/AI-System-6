@@ -82,6 +82,8 @@ test.assertMatches(app, /open-writing-studio[\s\S]*workspaceProfiles: \[workspac
 test.assert(admittedApplicationGroup("open-quick-draft") === "root", "Quick Draft is a root Applications item (admitted and listed by the table)");
 test.assertNotMatches(profile, /const studioWindowNames = new Set\(\[[^\]]*"quickDraft"/, "Quick Draft is available outside the writing workspace");
 test.assertNotMatches(profile, /const studioActionNames = new Set\(\[[^\]]*"open-quick-draft"/, "Quick Draft launches directly from the Desktop profile");
+test.assertNotMatches(profile, /const studioActionNames = new Set\(\[[^\]]*"open-image-manager"/, "the Picture Album opens from the Desktop profile, where Joyride files its photographs");
+test.assertNotMatches(profile, /const studioWindowNames = new Set\(\[[^\]]*"imageManager"/, "the Picture Album window is shared, not studio-only");
 test.assertMatches(html, /desktop-app-icon[\s\S]*data-action="open-quick-draft"[\s\S]*data-system-icon="quickDraft"/, "the Desktop has a direct Quick Draft application icon");
 test.assertMatches(app, /function getStaticFinderItems[\s\S]*filterWorkspaceItems/, "existing Finder registries are profile-filtered");
 test.assertIncludes(actions, 'registerCommand?.("open-writing-studio"', "Writing Studio launcher uses the central profile transition");

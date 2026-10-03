@@ -131,6 +131,92 @@ test.assertIncludes(shellSource, "registerApplication", "the shell registers its
 test.assertIncludes(shellSource, "\"open-bonsai-city\"", "the registered command matches the Applications launch action");
 test.assertIncludes(shellSource, "builtViewCenter(state.current) || state.current.spawnCenter", "loading a saved city centers the camera on the built-up area before falling back to the spawn point");
 test.assertIncludes(shellSource, "builtViewCenter(city) || city.spawnCenter", "opening an example city centers the camera on the built-up area before falling back to the spawn point");
+test.assertIncludes(shellSource, "const recordId = `example-${exampleId}`", "an example city's save id is derived from its example id, not a fresh random one");
+test.assertIncludes(shellSource, "record.id === recordId", "reopening an example opens the record already saved for it instead of replaying and writing a second");
+test.assertIncludes(shellSource, '{ id: "hezhou-1952", label: "hezhou", note: true }', "the city browser lists Hezhou, 1952 as a third example button");
+test.assertIncludes(shellSource, "state.speed = 1", "a newly opened example runs at normal speed instead of pausing");
+
+// --- the Basin: the one world Bonsai City, Rootline and Joyride share -------
+
+// 1. Drive Its Streets hands the street the v2 payload the shared core built,
+// with the display choices stamped, after stopping the clock; a page without
+// the core keeps the older one-shot hand-over.
+test.assertIncludes(shellSource, "state.speedBeforeStreets = state.speed", "going down to the street remembers the clock speed");
+test.assertIncludes(shellSource, "core.handoff.fromCity(sim(), state.current", "the street receives the shared hand-over, not a bare snapshot");
+test.assertIncludes(shellSource, "AISystem6Joyride?.queueCity?.(payload)", "the v2 payload is what Joyride is handed");
+test.assertIncludes(shellSource, "keep the older one-shot hand-over", "a page without the world core keeps the old hand-over");
+test.assertIncludes(shellSource, "function stampHandoffDisplay(payload, display)", "the shell stamps light and season if the core did not");
+test.assertIncludes(shellSource, "BONSAI_SEASON_OF_MONTH", "the season table is shared with the render snapshot");
+
+// 2. The way back restores the clock once, recentres on the stopping tile and
+// says where the mayor has returned; the resume hook shares that one restore.
+test.assertIncludes(shellSource, "function returnFromStreets({ cityId, tile } = {})", "returnFromStreets is the way back up");
+test.assertIncludes(shellSource, "function resumeFromStreetsSpeed()", "the command and the resume hook share one restore path");
+test.assertIncludes(shellSource, "state.speedBeforeStreets = null", "the remembered speed is cleared, so it restores once");
+test.assertIncludes(shellSource, 'setMessage("bonsai_status_back_from_streets", districtNameAt(tile), potDateText(state.current))', "the way back names the district and the pot date");
+test.assertIncludes(shellSource, "onResume: async () => {\n        // Give the street-goer their clock back, once", "the lifecycle resume hook restores the street speed");
+test.assertIncludes(shellSource, "returnFromStreets,", "returnFromStreets is on the public window API");
+
+// 3. The open action also accepts the saved record id Rootline sends.
+test.assertIncludes(shellSource, "payload?.bonsaiRecordId", "open-bonsai-city accepts the save Rootline names");
+test.assertIncludes(shellSource, "record.id === payload.bonsaiRecordId", "the id is looked up the way the city browser lists saves");
+test.assertIncludes(shellSource, "if (target) return openSavedRecord(target)", "a known id opens through the browser's own path");
+
+// 4. The gauge speaks the pot calendar in words, with the ISO stamp as the
+// fallback, and the weekday names live in the tables.
+test.assertIncludes(shellSource, "date: potDateText(state.current) ||", "the gauge date is the pot calendar's, with an ISO fallback");
+test.assertIncludes(shellSource, "bonsai_weekday_${date.weekday}", "the weekday comes from the weekday-name keys");
+const transContext = vm.createContext({ window: {} });
+vm.runInContext(read("app/features/bonsai-translations.js"), transContext);
+const bonsaiEn = transContext.window.AISystem6BonsaiTranslations.en;
+const bonsaiZh = transContext.window.AISystem6BonsaiTranslations.zh;
+test.assert(bonsaiEn.bonsai_pot_date(1952, 7, 1, "Monday", "Minor Heat") === "1 July 1952, Monday \u00b7 Minor Heat", "an English pot date reads 1 July 1952, Monday \u00b7 Minor Heat");
+test.assert(bonsaiZh.bonsai_pot_date(1952, 7, 1, "\u5468\u4e00", "\u5c0f\u6691") === "1952\u5e747\u67081\u65e5 \u5468\u4e00 \u00b7 \u5c0f\u6691", "a Chinese pot date reads 1952\u5e747\u67081\u65e5 \u5468\u4e00 \u00b7 \u5c0f\u6691");
+test.assert(bonsaiEn.bonsai_weekday_0 === "Monday" && bonsaiZh.bonsai_weekday_0 === "\u5468\u4e00", "weekday keys start at Monday");
+
+// 5. The weather tooltip is translated and metric.
+test.assertIncludes(shellSource, 't("bonsai_weather_detail", weather.temperature, Math.round(weather.wind * 1.609), weather.humidity)', "the weather tooltip converts mph to km/h and translates");
+test.assert(bonsaiEn.bonsai_weather_detail(28, 18, 60).includes("\u00b0C") && bonsaiEn.bonsai_weather_detail(28, 18, 60).includes("km/h"), "the English tooltip is Celsius and km/h");
+test.assert(bonsaiZh.bonsai_weather_detail(28, 18, 60).includes("\u516c\u91cc/\u5c0f\u65f6"), "the Chinese tooltip is km/h");
+
+// 6. ClioTalk holds the clock while it reads, works or waits, and gives the
+// speed back unless the player chose another meanwhile.
+test.assertIncludes(shellSource, "BONSAI_ASSISTANT_BUSY", "the assistant's busy states are named as Rootline names them");
+test.assertIncludes(shellSource, "window.AISystem6AssistantActivity?.subscribe?.(", "the shell pauses with ClioTalk like Rootline");
+test.assertIncludes(shellSource, "state.speedBeforeAssistant = state.speed", "the assistant pause remembers the speed");
+test.assertIncludes(shellSource, "assistantSpeedUserChanged", "a speed the player picks while paused is not overwritten");
+
+// 7. The language switch repaints the shell through its admission row.
+test.assertIncludes(shellSource, "window.renderBonsaiCityLanguage = () => refreshLanguage();", "the shell installs the repaint hook its admission row names");
+test.assertIncludes(read("app/core/app-admissions.js"), 'repaint: "renderBonsaiCityLanguage"', "the Bonsai admission row declares the repaint");
+
+// 8. Chinese File menu copy: the scenario item and the full-width ellipses.
+const transSource = read("app/features/bonsai-translations.js");
+test.assertIncludes(transSource, 'bonsai_open_scenario: "\u6253\u5f00\u5267\u672c\u2026\u2026"', "the Chinese scenario item reads \u6253\u5f00\u5267\u672c\u2026\u2026");
+test.assertNotIncludes(transSource, "\u6253\u5f00 scenario", "no Chinese menu item still leaves scenario in English");
+test.assertIncludes(transSource, 'bonsai_open_cities: "\u6253\u5f00\u57ce\u5e02\u2026\u2026"', "Chinese File menu ellipses stay full-width");
+
+// 9. Plan Transit in Rootline takes the same v2 payload, without the pause.
+test.assertIncludes(shellSource, 'item("plan-transit", "bonsai_plan_transit_rootline")', "the File menu offers Plan Transit after Drive Its Streets");
+test.assertIncludes(shellSource, '"plan-transit": () => planTransitInRootline(),', "the menu command queues the plan");
+test.assertIncludes(shellSource, "window.AISystem6Rootline?.queuePot", "the plan is queued on Rootline's window global");
+test.assertIncludes(shellSource, 'typeof ensureRootlineModule === "function"', "the lazy Rootline module is loaded before it is used");
+test.assertIncludes(shellSource, '"send-micropolis", "drive-streets", "plan-transit"', "the plan needs a city, so it is disabled without one");
+test.assert(bonsaiEn.bonsai_plan_transit_rootline === "Plan Transit in Rootline\u2026" && bonsaiZh.bonsai_plan_transit_rootline === "\u5728\u6839\u7ebf\u91cc\u89c4\u5212\u7ebf\u7f51\u2026\u2026", "the File menu item is bilingual");
+
+// 10. The avenue tool joins the transport palette beside road and highway.
+test.assertIncludes(shellSource, '{ id: "avenue", icon: "\u2550", description: "bonsai_tool_avenue_description", gesture: "path", command: "build-path", network: "avenue" }', "the avenue is a two-tile path tool named avenue");
+test.assertIncludes(shellSource, "highway's two-rail mark", "the baked road/highway glyph stands in for the avenue");
+test.assert(bonsaiEn.bonsai_tool_avenue === "Avenue" && bonsaiZh.bonsai_tool_avenue === "\u4e3b\u5e72\u9053", "the avenue label is bilingual");
+test.assert(bonsaiEn.bonsai_tool_avenue_description.includes("two-tile avenue") && bonsaiZh.bonsai_tool_avenue_description.includes("\u4e24\u683c\u5bbd\u7684\u5927\u9053"), "the avenue description is bilingual");
+
+// 11. A neighbour can be planted in Rootline as a nursery.
+test.assertIncludes(shellSource, "data-bonsai-rootline-neighbor", "each neighbour row carries a Look in Rootline button");
+test.assertIncludes(shellSource, "data-bonsai-neighbor-index", "the button carries the neighbour's name index");
+test.assertIncludes(shellSource, 't("bonsai_neighbor_look_rootline")', "the button is translated");
+test.assertIncludes(shellSource, "names.neighbor(citySeed, dir, nameIndex)", "the shared namer seeds the nursery");
+test.assertIncludes(shellSource, "queueNursery({ seed: neighbor.seed, name: { zh: neighbor.zh, en: neighbor.en } })", "the nursery carries the seed and both names");
+test.assert(bonsaiZh.bonsai_neighbor_look_rootline === "\u5728\u6839\u7ebf\u91cc\u770b\u770b" && bonsaiEn.bonsai_neighbor_look_rootline === "Look in Rootline", "the nursery button is bilingual");
 
 // --- wiring through the desktop ----------------------------------------------
 

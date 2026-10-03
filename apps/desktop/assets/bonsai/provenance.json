@@ -3,19 +3,19 @@
   "files": [
     {
       "file": "assets/bonsai/atlas-north.png",
-      "sha256": "e6b7860e898c1398fff64e53782fcba12ff21d939f9f9727b90a18066ff53726"
+      "sha256": "e0fb33666fc1b997e5ff0cf32b9ff5f5c09ec99e0ec32254bbe4b01d1922251f"
     },
     {
       "file": "assets/bonsai/atlas-east.png",
-      "sha256": "44abf7b3b0328a856c4a62121426ee5fc5a2ec61f29a3d753d1bc46d51dce808"
+      "sha256": "d806bc89cb0400fd1d23c6fb80fa7b860fa25e9d4bab8668c18ab153a4c75637"
     },
     {
       "file": "assets/bonsai/atlas-south.png",
-      "sha256": "d34cdf28ff29e4efc18a99226f224f070f311ed4dae735d78b86e5f6bbad9809"
+      "sha256": "602961c6211359cfd84db0021bb89d85686689809a798892da992c06f3849a1a"
     },
     {
       "file": "assets/bonsai/atlas-west.png",
-      "sha256": "525f691ac581b7575b66d905fbae63ad3ecf869c62372ea2592416adb2ad8371"
+      "sha256": "fe151d5196d5fc474df924a2ecb5c952b330792559fd1c29d84c01c8f0002018"
     }
   ],
   "metadata": "assets/bonsai/atlas-metadata.json",
@@ -40,6 +40,6 @@
     "Building identity selects massing, roof and wall colour independently of position, light and camera; twenty-four authored variants per stage stay stable across backends.",
     "The generator has no network path and no wall clock, and reads checked-in recipes, runtime geometry and saved texture/mask PNGs; a rebuild is byte-identical.",
     "All four rotations share frame ids and dimensions; camera rotation changes visible faces without changing asset identity.",
-    "826 frames (growable buildings and their build states) are original voxel models authored in tooling/bonsai-miniature and rasterized on the CPU with exact 2:1 isometric arithmetic; no external art was consulted, traced or sampled."
+    "872 frames (growable buildings and their build states) are original voxel models authored in tooling/bonsai-miniature and rasterized on the CPU with exact 2:1 isometric arithmetic; no external art was consulted, traced or sampled."
   ]
 }

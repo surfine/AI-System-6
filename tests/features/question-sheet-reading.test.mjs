@@ -54,8 +54,8 @@ test.assert(
   "an empty sheet is asked for the recipient first",
 );
 test.assert(
-  context.questionSheetFirstGap("交给收件人，她没做过供应链。") === "recipient",
-  "and so is a sheet with a raw dump in it but nothing filed",
+  context.questionSheetFirstGap("交给收件人，她没做过供应链。") === "",
+  "freeform notes are not judged missing merely because they have no template headings",
 );
 test.assert(
   context.questionSheetFirstGap("## 接收者 / 受众\n\n- 收件人\n") === "originalQuestions",
@@ -116,13 +116,13 @@ test.assertMatches(
   /function buildQuestionSheetTemplate[\s\S]*?sections: \{\}/,
   "it is blank, all of it",
 );
-test.assertIncludes(zh, "你给 AI 的意图，要多于你要求它输出的文字。", "the rule about the sheet lives in the sheet's hint");
+test.assertIncludes(zh, "顺序随意", "the empty sheet welcomes unstructured input");
 // Dictation already accepts the Question Sheet as a destination; the empty
 // state is where a writer with a mess in their head finds out. It is named,
 // not given a control: the Dictation Pad is a desk accessory, and the Apple
 // menu is where the whole group is meant to be seen at once.
 test.assertIncludes(zh, "就用听写簿说", "the empty sheet says you can speak instead of type");
-test.assertIncludes(en, "or say it, with the Dictation Pad", "in both languages");
+test.assertIncludes(en, "Use the Dictation Pad", "in both languages");
 test.assertNotIncludes(read("index.html"), 'data-action="open-dictation" class="btn"', "without adding a button for it");
 
 // --- The Outline carries the same unsaid thing ---------------------------

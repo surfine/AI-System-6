@@ -913,6 +913,13 @@ function openAppDb() {
         const store = db.createObjectStore(imageAttachmentsStoreName, { keyPath: "id" });
         store.createIndex("projectId", "projectId", { unique: false });
       }
+      // Version 6: the Basin's line-network plans. Rootline writes a plan;
+      // Bonsai City reads the plans of one city when the mayor flips the pot.
+      // A plan is its own record — it never lives inside a city save.
+      if (!db.objectStoreNames.contains(transitPlansStoreName)) {
+        const store = db.createObjectStore(transitPlansStoreName, { keyPath: "id" });
+        store.createIndex("cityId", "cityId", { unique: false });
+      }
     };
 
     request.onblocked = () => finish(
@@ -983,6 +990,61 @@ async function deleteStoredProjectReference(referenceId) {
       referenceStoreName,
       "readwrite",
       (tx) => idbRequest(tx.objectStore(referenceStoreName).delete(referenceId))
+    );
+  } finally {
+    db.close();
+  }
+}
+
+// ----- the Basin's line-network plans (transitPlans, schema v6) -------------
+//
+// A plan is written by Rootline when the planner saves one, and read by
+// Bonsai City when the mayor lays it. A city with no id yet (nothing saved)
+// has plans whose `cityId` is null; IndexedDB will not index a null key, so
+// those are read through the store itself rather than the index.
+
+async function listStoredTransitPlans(cityId) {
+  const key = typeof cityId === "string" && cityId ? cityId : null;
+  const db = await openAppDb();
+  try {
+    const records = await window.AISystem6StorageTransactions.runTransaction(
+      db,
+      transitPlansStoreName,
+      "readonly",
+      (tx) => idbRequest(key
+        ? tx.objectStore(transitPlansStoreName).index("cityId").getAll(key)
+        : tx.objectStore(transitPlansStoreName).getAll())
+    );
+    return (records || []).filter((record) => record && (key ? record.cityId === key : !record.cityId));
+  } finally {
+    db.close();
+  }
+}
+
+async function putStoredTransitPlan(record) {
+  if (!record || typeof record.id !== "string" || !record.id) throw new Error("transit-plan-required-id");
+  const db = await openAppDb();
+  try {
+    await window.AISystem6StorageTransactions.runTransaction(
+      db,
+      transitPlansStoreName,
+      "readwrite",
+      (tx) => idbRequest(tx.objectStore(transitPlansStoreName).put(record))
+    );
+    return record;
+  } finally {
+    db.close();
+  }
+}
+
+async function deleteStoredTransitPlan(id) {
+  const db = await openAppDb();
+  try {
+    await window.AISystem6StorageTransactions.runTransaction(
+      db,
+      transitPlansStoreName,
+      "readwrite",
+      (tx) => idbRequest(tx.objectStore(transitPlansStoreName).delete(id))
     );
   } finally {
     db.close();

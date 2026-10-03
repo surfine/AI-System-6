@@ -59,6 +59,75 @@
     };
   }
 
+  // Dispatch allowances are parent-call bounds, not estimates of money spent.
+  // One synchronous reservation covers one real provider request, including
+  // retries and repairs; tool rounds all share the same mutable allowance.
+  function createWritingCallBudget(options = {}) {
+    return {
+      maxRequests: Math.min(5, Math.max(0, Number.isInteger(options.maxRequests) ? options.maxRequests : 5)),
+      maxRepairs: Math.min(1, Math.max(0, Number.isInteger(options.maxRepairs) ? options.maxRepairs : 1)),
+      requests: 0,
+      repairs: 0,
+      stopped: false,
+      stopReason: "",
+    };
+  }
+
+  function snapshotWritingCallBudget(budget) {
+    if (!budget) return null;
+    return Object.freeze({
+      maxRequests: budget.maxRequests,
+      maxRepairs: budget.maxRepairs,
+      requests: budget.requests,
+      repairs: budget.repairs,
+      remainingRequests: Math.max(0, budget.maxRequests - budget.requests),
+      remainingRepairs: Math.max(0, budget.maxRepairs - budget.repairs),
+      stopped: !!budget.stopped,
+      stopReason: String(budget.stopReason || ""),
+    });
+  }
+
+  function writingCallStopReason(error) {
+    const code = String(error?.code || "").toLowerCase();
+    const message = String(error?.message || "").toLowerCase();
+    if (code === "writing_call_budget_exhausted") return String(error?.stopReason || "call-budget");
+    if (/shared_cloud_(?:session_limit|daily_request_limit|daily_token_limit)|subscription_cli_quota|insufficient[_ -](?:quota|balance)|quota[_ -](?:exceeded|exhausted)|billing_hard_limit/.test(`${code} ${message}`)) return "quota-exhausted";
+    if (Number(error?.status || error?.response?.status) === 429
+        || /rate[_ -]?limit|too many requests/.test(`${code} ${message}`)) return "rate-limit";
+    return "";
+  }
+
+  function stopWritingCallBudget(budget, error) {
+    const reason = writingCallStopReason(error);
+    if (!reason) return false;
+    if (budget) {
+      budget.stopped = true;
+      budget.stopReason = budget.stopReason || reason;
+    }
+    return true;
+  }
+
+  function assertWritingModelCallBudget(budget, { kind = "model" } = {}) {
+    if (!budget) return;
+    if (!budget.stopped && budget.requests < budget.maxRequests
+        && (kind !== "repair" || budget.repairs < budget.maxRepairs)) return;
+    const error = new Error("The writing call allowance is exhausted; resume with an explicit retry.");
+    error.code = "writing_call_budget_exhausted";
+    error.stopReason = budget.stopReason || (kind === "repair" && budget.repairs >= budget.maxRepairs ? "repair-budget" : "call-budget");
+    error.recoverable = true;
+    stopWritingCallBudget(budget, error);
+    error.callBudget = snapshotWritingCallBudget(budget);
+    throw error;
+  }
+
+  function reserveWritingModelCall(budget, options = {}) {
+    assertWritingModelCallBudget(budget, options);
+    if (!budget) return null;
+    budget.requests += 1;
+    if (options.kind === "repair") budget.repairs += 1;
+    return snapshotWritingCallBudget(budget);
+  }
+
   function createAgentRun(input = {}, dependencies = {}) {
     const now = dependencies.now || (() => new Date().toISOString());
     const idFactory = dependencies.idFactory || defaultIdFactory;
@@ -107,6 +176,37 @@
 
   function snapshotAgentRun(run) {
     return clone(run);
+  }
+
+  // This records a proposed reading of evidence, never certifies a fact or saves
+  // a document. Unknown/out-of-scope citation IDs fail instead of gaining authority.
+  function proposeResearchNote(context = {}, claims = []) {
+    const kinds = new Set(["source-statement", "personal-experience", "inference", "unresolved"]);
+    const evidence = (context.evidence || []).filter((item) =>
+      String(item.projectId || "") === String(context.projectId || "")
+      && sourceScopeAllows(normalizeSourceScope(context.sourceScope), item)
+    );
+    const provenance = [];
+    const entries = claims.map((claim) => {
+      if (!kinds.has(claim.kind)) throw new Error("Research notes cannot certify verified facts.");
+      const resolve = (ids = []) => ids.map((id) => {
+        const matches = evidence.filter((item) => item.citation === id || item.citationId === id);
+        if (!matches.length) throw new Error(`Citation is absent from authorized evidence: ${id}`);
+        provenance.push(...matches);
+        return { citationId: id, passages: clone(matches) };
+      });
+      const sources = resolve(claim.citationIds);
+      const counterevidence = resolve(claim.counterCitationIds);
+      if (claim.kind === "source-statement" && !sources.length) {
+        throw new Error("A source statement needs a passage actually supplied to this run.");
+      }
+      return {
+        statement: String(claim.statement || ""), kind: claim.kind,
+        sources, counterevidence, limitation: String(claim.limitation || ""),
+        verification: "not-certified",
+      };
+    });
+    return { data: { kind: "research-note", status: "proposal", entries }, provenance };
   }
 
   function schemaTypeMatches(value, type) {
@@ -339,20 +439,49 @@
       }
     }
 
-    async function runToolLoop({ next, context = {}, initial = null, maxRounds = defaultMaxRounds } = {}) {
+    async function runToolLoop({ next, context = {}, initial = null, maxRounds = defaultMaxRounds, signal, callBudget = null } = {}) {
       if (typeof next !== "function") throw new TypeError("runToolLoop requires next().");
       if (!Number.isInteger(maxRounds) || maxRounds < 1 || maxRounds > 3) {
         throw new RangeError("Tool loops are limited to one through three rounds.");
       }
       const calls = [];
+      const resultsByInput = new Map();
+      const canonical = (value) => {
+        if (Array.isArray(value)) return value.map(canonical);
+        if (!value || typeof value !== "object") return value;
+        return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])]));
+      };
       let modelState = initial;
+      let completedRounds = 0;
+      let stopReason = "budget";
+      const nextWithinBudget = async (stepInput) => {
+        try {
+          assertWritingModelCallBudget(callBudget);
+          return await next(stepInput);
+        } catch (error) {
+          if (stopWritingCallBudget(callBudget, error)) {
+            if (!String(error.partialContent || "").trim() && typeof modelState === "string") error.partialContent = modelState;
+            error.toolCalls = clone(calls);
+            error.stopReason = writingCallStopReason(error);
+            error.recoverable = true;
+            error.callBudget = snapshotWritingCallBudget(callBudget);
+          }
+          throw error;
+        }
+      };
       for (let round = 1; round <= maxRounds; round += 1) {
-        const step = await next({ round, modelState, toolResults: calls.map((entry) => clone(entry)) });
+        throwIfAborted(signal);
+        const step = await nextWithinBudget({ round, modelState, toolResults: calls.map((entry) => clone(entry)) });
+        throwIfAborted(signal);
         if (!step || step.done === true || !Array.isArray(step.calls) || !step.calls.length) {
           return { output: step?.output ?? modelState, toolCalls: calls, rounds: round - 1 };
         }
+        let newCalls = 0;
         for (const call of step.calls) {
-          const result = call.argumentError
+          throwIfAborted(signal);
+          const key = JSON.stringify([call.name, canonical(call.input || {}), call.argumentError || ""]);
+          const cached = resultsByInput.has(key);
+          const result = cached ? clone(resultsByInput.get(key)) : call.argumentError
             ? {
                 ok: false,
                 data: null,
@@ -361,27 +490,42 @@
                 error: String(call.argumentError),
               }
             : await invoke(call.name, { ...context, invokedBy: "model" }, call.input || {});
+          throwIfAborted(signal);
+          if (!cached) {
+            resultsByInput.set(key, clone(result));
+            newCalls += 1;
+          }
           calls.push({
             round,
             id: String(call.id || ""),
             name: String(call.name || ""),
             input: clone(call.input || {}),
             result,
+            cached,
           });
         }
         modelState = step.output ?? modelState;
+        completedRounds = round;
+        if (!newCalls) {
+          stopReason = "no-progress";
+          break;
+        }
       }
-      const finalStep = await next({
-        round: maxRounds + 1,
+      throwIfAborted(signal);
+      const finalStep = await nextWithinBudget({
+        round: completedRounds + 1,
         modelState,
         toolResults: calls.map((entry) => clone(entry)),
         toolsDisabled: true,
+        stopReason,
       });
+      throwIfAborted(signal);
       const ignoredCalls = Array.isArray(finalStep?.calls) ? finalStep.calls.length : 0;
       return {
         output: finalStep?.output ?? modelState,
         toolCalls: calls,
-        rounds: maxRounds,
+        rounds: completedRounds,
+        stopReason,
         truncated: ignoredCalls > 0,
       };
     }
@@ -413,6 +557,7 @@
 
     async function run(input = {}) {
       const runRecord = createAgentRun(input, { now, idFactory });
+      const callBudget = input.options?.invocation?.callBudget || input.options?.callBudget || input.callBudget || null;
       const notify = (state) => dependencies.onTransition?.(snapshotAgentRun(runRecord), state, input);
       notify("preparing");
       try {
@@ -450,15 +595,25 @@
         notify("awaitingCommit");
         return { output, run: snapshotAgentRun(runRecord), generated };
       } catch (error) {
+        const recoverable = stopWritingCallBudget(callBudget, error);
+        const partialContent = String(error?.partialContent || "");
         const nextState = error?.name === "AbortError" || input.signal?.aborted ? "aborted" : "failed";
         if (!terminalRunStates.has(runRecord.state)) {
           transitionAgentRun(runRecord, nextState, {
             error: {
               name: String(error?.name || "Error"),
               message: String(error?.message || error || "Writing task failed."),
+              ...(recoverable ? { code: String(error?.code || ""), stopReason: writingCallStopReason(error), recoverable: true } : {}),
             },
+            ...(partialContent ? { output: { hash: stableHash(partialContent), chars: partialContent.length } } : {}),
+            ...(error?.toolCalls ? { toolCalls: error.toolCalls } : {}),
           }, { now });
           notify(nextState);
+        }
+        if (recoverable) {
+          error.recoverable = true;
+          error.callBudget = snapshotWritingCallBudget(callBudget);
+          runRecord.callBudget = error.callBudget;
         }
         error.agentRun = snapshotAgentRun(runRecord);
         throw error;
@@ -473,10 +628,16 @@
     toolEffects,
     toolScopes,
     stableHash,
+    createWritingCallBudget,
+    snapshotWritingCallBudget,
+    reserveWritingModelCall,
+    assertWritingModelCallBudget,
+    stopWritingCallBudget,
     normalizeSourceScope,
     createAgentRun,
     transitionAgentRun,
     snapshotAgentRun,
+    proposeResearchNote,
     validateSchema,
     normalizeToolDefinition,
     providerToolDefinitions,

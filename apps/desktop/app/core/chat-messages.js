@@ -835,7 +835,8 @@ function clioInlineFallbackPayload(payload) {
   };
 }
 
-async function retryCloudFilePayloadInline(response, payload, signal) {
+async function retryCloudFilePayloadInline(response, payload, signal, options = {}) {
+  assertClioTaskInvocationActive(options.invocation, signal);
   if (response.ok || !clioPayloadCarriesFileToken(payload?.messages)) return response;
   let code = "";
   try {
@@ -847,7 +848,7 @@ async function retryCloudFilePayloadInline(response, payload, signal) {
   const inlinePayload = clioInlineFallbackPayload(payload);
   if (clioPayloadCarriesFileToken(inlinePayload.messages)) return response;
   invalidateClioImageFileTokens("clio_image_reattach_required");
-  return fetchModelPayload(inlinePayload, signal);
+  return fetchModelPayload(inlinePayload, signal, { ...options, callKind: "retry" });
 }
 
 window.AISystem6ClioImages = Object.freeze({
@@ -1177,7 +1178,67 @@ function renderClioTalkRunAssembly() {
   renderClioTalkTally();
 }
 
-function recordContextLoadout(payload) {
+// Invocation receipts own snapshots. The window fields are only the latest
+// Context Panel view; another task finishing cannot change an older receipt.
+function clioTaskSnapshot(value) {
+  if (value == null) return value;
+  const copy = JSON.parse(JSON.stringify(value));
+  const freeze = (item) => {
+    if (item && typeof item === "object") {
+      Object.values(item).forEach(freeze);
+      Object.freeze(item);
+    }
+    return item;
+  };
+  return freeze(copy);
+}
+
+function createClioTaskInvocation(options = {}) {
+  const invocation = {
+    id: crypto.randomUUID(),
+    projectId: String(options.projectId || activeProjectId || ""),
+    documentId: typeof activeTextFileId !== "undefined" ? String(activeTextFileId || "") : "",
+    userText: String(options.userInput || options.userText || ""),
+    contextManifest: null,
+    contextBudget: null,
+    assembly: clioTaskSnapshot({ promptFiles: [], skillFiles: [], inputFiles: [], imageInputs: [], contextItems: [] }),
+    runManifest: null,
+    modelResult: null,
+    grounding: null,
+    callBudget: options.callBudget || window.AISystem6WritingAgentRuntime?.createWritingCallBudget?.() || null,
+    nativeResponseScope: clioTaskSnapshot(currentClioTalkNativeResponseScope()),
+  };
+  window.lastTaskInvocationId = invocation.id;
+  return invocation;
+}
+
+function assertClioTaskInvocationActive(invocation, signal, requireProjectMatch = false) {
+  if (signal?.aborted || (requireProjectMatch && invocation
+      && invocation.projectId !== String(activeProjectId || ""))) {
+    const error = new Error("The writing task was stopped.");
+    error.name = "AbortError";
+    throw error;
+  }
+}
+
+function updateClioTaskInvocation(invocation, patch = {}) {
+  if (!invocation) return null;
+  if (Object.hasOwn(patch, "servedModel") && invocation.contextManifest) {
+    invocation.contextManifest = clioTaskSnapshot({
+      ...invocation.contextManifest, actualModel: String(patch.servedModel || ""),
+    });
+    patch = { ...patch, contextManifest: invocation.contextManifest };
+  }
+  invocation.runManifest = clioTaskSnapshot({ ...(invocation.runManifest || {}), ...patch });
+  if (window.lastTaskInvocationId === invocation.id
+      && invocation.projectId === String(activeProjectId || "")) {
+    window.lastTaskRunManifest = invocation.runManifest;
+    window.lastContextManifest = invocation.contextManifest;
+  }
+  return invocation.runManifest;
+}
+
+function recordContextLoadout(payload, invocation) {
   const messages = Array.isArray(payload?.messages) ? payload.messages : [];
   const entries = messages.map((message, index) => {
     const rawContent = message?.content || "";
@@ -1190,17 +1251,17 @@ function recordContextLoadout(payload) {
             : index < 2 ? "system" : "conversation";
     return { id: `${kind}:${index}`, kind, label: kind, estimatedTokens: estimateTokenCount(rawContent) + 6, content };
   });
-  const skipped = (lastRetrievedContextItems || [])
+  const skipped = (invocation?.assembly?.contextItems || [])
     .filter((item) => item.included === false || item.excluded)
     .map((item) => ({ id: item.id || getContextSourceKey(item), kind: "skipped", label: contextSourceLabel(item), estimatedTokens: 0, reason: item.excluded ? "disabled by user" : "budget or ranking" }));
-  window.lastContextLoadout = {
+  const loadout = {
     capturedAt: new Date().toISOString(),
     entries,
     skipped,
     promptTokens: entries.reduce((sum, entry) => sum + entry.estimatedTokens, 0),
-    contextTokens: Number(lastContextBudget?.contextTokens || (typeof getEffectiveContextTokens === "function" ? getEffectiveContextTokens() : 0)),
+    contextTokens: Number(invocation?.contextBudget?.contextTokens || 0),
   };
-  const promptFiles = (window.lastTaskPromptFiles || []).map((file) => ({ ...file }));
+  const promptFiles = (invocation?.assembly?.promptFiles || []).map((file) => ({ ...file }));
   const labelPromptMessage = (message, index) => {
     const content = modelMessageContentReceipt(message?.content || "");
     const matchedFile = promptFiles.find((file) => file.hash === clioRunHash(content));
@@ -1220,7 +1281,17 @@ function recordContextLoadout(payload) {
     body: modelMessageContentReceipt(message?.content || ""),
     hash: clioRunHash(modelMessageContentIdentity(message?.content || "")),
   }));
-  window.lastTaskRunManifest = {
+  const contextManifest = invocation?.contextManifest ? clioTaskSnapshot({
+    ...invocation.contextManifest,
+    requestedRole: String(payload?.ai_system6_model_role || "default"),
+    effectiveModel: String(payload?._cloud_model || payload?.model || ""),
+    actualModel: null,
+    fallbackReason: String(payload?.ai_system6_model_fallback_reason || ""),
+  }) : null;
+  const runManifest = {
+    invocationId: invocation?.id || "",
+    projectId: invocation?.projectId || "",
+    documentId: invocation?.documentId || "",
     schemaVersion: 1,
     scope: "application-supplied",
     scopeNote: t("clio_run_runtime_note"),
@@ -1240,23 +1311,20 @@ function recordContextLoadout(payload) {
     policyFiles: promptFiles.filter((file) => file.kind === "policy"),
     promptStack: messageStack.filter((message) => message.role === "system"),
     messageStack,
-    skillFiles: (window.lastTaskSkillFiles || []).map((file) => ({ ...file })),
-    harnessFile: window.lastTaskHarnessFile ? { ...window.lastTaskHarnessFile } : null,
-    inputFiles: (window.lastTaskInputFiles || []).map((file) => ({ ...file })),
-    imageInputs: (window.lastTaskImageInputs || []).map((input) => ({ ...input })),
-    contextManifest: window.lastContextManifest || null,
+    skillFiles: (invocation?.assembly?.skillFiles || []).map((file) => ({ ...file })),
+    harnessFile: invocation?.assembly?.harnessFile || null,
+    inputFiles: (invocation?.assembly?.inputFiles || []).map((file) => ({ ...file })),
+    imageInputs: (invocation?.assembly?.imageInputs || []).map((input) => ({ ...input })),
+    contextManifest,
     productHelpTopics: clioProductHelpReceipt(),
   };
-  // The Context Manifest is written at retrieval time with model: null; now
-  // that the task's role and model are resolved, record the ACTUAL model and
-  // any fallback reason so the manifest and the Run Record always agree.
-  if (window.lastContextManifest && typeof window.lastContextManifest === "object") {
-    window.lastContextManifest = {
-      ...window.lastContextManifest,
-      requestedRole: String(payload?.ai_system6_model_role || "default"),
-      actualModel: String(payload?.model || ""),
-      fallbackReason: String(payload?.ai_system6_model_fallback_reason || ""),
-    };
+  if (invocation) {
+    invocation.contextManifest = contextManifest;
+    updateClioTaskInvocation(invocation, runManifest);
+    if (window.lastTaskInvocationId === invocation.id && invocation.projectId === String(activeProjectId || "")) {
+      window.lastContextManifest = contextManifest;
+      window.lastContextLoadout = clioTaskSnapshot(loadout);
+    }
   }
   renderClioTalkContextSpace();
   renderClioTalkRunAssembly();
@@ -1285,6 +1353,7 @@ function resetClioTalkRuntimeState(options = {}) {
   lastContextBudget = null;
   window.lastContextLoadout = null;
   window.lastTaskRunManifest = null;
+  window.lastTaskInvocationId = null;
   window.lastTaskPromptFiles = [];
   window.lastTaskSkillFiles = [];
   window.lastTaskHarnessFile = null;
@@ -3484,6 +3553,8 @@ function buildEndfieldSourceContext() {
 }
 
 function buildPayload(userText, options = {}) {
+  const invocation = options.invocation || createClioTaskInvocation({ ...options, userText });
+  assertClioTaskInvocationActive(invocation, options.signal, true);
   compactConversationMemoryIfNeeded(options);
   const contextSections = [];
   const skipContext = options.skipContext === true;
@@ -3588,12 +3659,16 @@ function buildPayload(userText, options = {}) {
     ? retrieveContext(userText, {
         budgetInfo,
         taskKind,
+        invocation,
         includeCurated: useBroadContext,
         includeProjectReferences: useBroadContext,
         includeTextDisk: hasMountedFileDisk || useBroadContext,
       })
     : "";
   if (!useContext) {
+    invocation.contextManifest = null;
+    invocation.contextBudget = null;
+    window.lastContextManifest = null;
     lastContextBudget = null;
     lastRetrievedContextItems = [];
     scheduleRenderTasks("contextPanel");
@@ -3719,6 +3794,15 @@ function buildPayload(userText, options = {}) {
   attachClioImageInputsToMessages(payload.messages, options.imageInputIds || []);
   window.lastTaskImageInputs = clioImageReceiptDescriptors(options.imageInputIds || []);
 
+  invocation.assembly = clioTaskSnapshot({
+    promptFiles: window.lastTaskPromptFiles || [],
+    skillFiles: window.lastTaskSkillFiles || [],
+    harnessFile: window.lastTaskHarnessFile || null,
+    inputFiles: window.lastTaskInputFiles || [],
+    imageInputs: window.lastTaskImageInputs || [],
+    contextItems: lastRetrievedContextItems || [],
+  });
+  invocation.grounding = clioTaskSnapshot(captureClioTalkGroundingSafely({ ...options, taskKind, invocation: null }));
   return payload;
 }
 
@@ -3754,7 +3838,9 @@ function qwen35AppMaxTokens(taskKind = "chat") {
   if (/mingming/.test(kind)) return 5200;
   if (/sideask|reader|scrapbook|clio-stage/.test(kind)) return 520;
   if (/docmap-question/.test(kind)) return 520;
-  if (/dictation|speech|transcript/.test(kind)) return 900;
+  // Dictation shares the pad's ceiling: floor 900 is chosen per request, and
+  // this local default must not press a long transcript back down to 900.
+  if (/dictation|speech|transcript/.test(kind)) return 4096;
   if (/organize-question-sheet|question-sheet/.test(kind)) return 420;
   if (/generate-outline/.test(kind)) return 900;
   if (/writing-demo-rag/.test(kind)) return 260;
@@ -3792,6 +3878,10 @@ function cloudTaskMaxTokens(taskKind = "chat") {
   if (/docmap|outline|draft|rebuild|writing_object|hkrr|slides|marp|critique|review|claim/.test(kind)) return 2600;
   if (/bureaucracy|meme|caption/.test(kind)) return 1200;
   if (/dictionary/.test(kind)) return 900;
+  // Dictation's own ceiling. The pad passes the size it worked out for this
+  // transcript; this stops any later default from pressing a long one back
+  // down to the short-answer budget.
+  if (/dictation/.test(kind)) return 4096;
   return 1800;
 }
 
@@ -4632,8 +4722,31 @@ function modelMessageText(message) {
   return typeof message.content === "string" ? message.content : "";
 }
 
-async function readJsonModelResult(response, startedAt, endPerf, streamFallback = false) {
+function chargeClioServerModelCalls(data, invocation) {
+  const runtime = window.AISystem6WritingAgentRuntime;
+  const budget = invocation?.callBudget;
+  if (!budget || !runtime?.reserveWritingModelCall) return;
+  const metrics = data?.ai_system6_metrics || {};
+  const reportedCalls = Number(metrics.provider_calls);
+  const repairs = Math.max(0, Math.floor(Number(metrics.repair_attempts ?? data?.ai_system6_humanizer?.repair_attempts) || 0));
+  const thinking = Math.max(0, Math.floor(Number(metrics.thinking_fallback_attempts) || (data?.ai_system6_thinking_fallback?.retried_without_thinking ? 1 : 0)));
+  const extras = Number.isInteger(reportedCalls) && reportedCalls > 0 ? reportedCalls - 1 : repairs + thinking;
+  for (let index = 0; index < extras; index += 1) runtime.reserveWritingModelCall(budget, { kind: index < repairs ? "repair" : "retry" });
+  updateClioTaskInvocation(invocation, { callBudget: runtime.snapshotWritingCallBudget(budget), serverModelCalls: metrics });
+  if (metrics.call_stop) {
+    const stopped = Object.assign(new Error(metrics.call_stop.message || "The provider stopped this writing call."), metrics.call_stop);
+    stopped.partialContent = modelMessageText(data?.choices?.[0]?.message);
+    updateClioTaskInvocation(invocation, { servedModel: String(metrics.model || data?.model || ""), servedProvider: String(invocation.activeProvider || "") });
+    runtime.stopWritingCallBudget(budget, stopped);
+    updateClioTaskInvocation(invocation, { callBudget: runtime.snapshotWritingCallBudget(budget) });
+    throw stopped;
+  }
+}
+
+async function readJsonModelResult(response, startedAt, endPerf, streamFallback = false, invocation = null, signal = null) {
   const data = await response.json();
+  assertClioTaskInvocationActive(invocation, signal);
+  chargeClioServerModelCalls(data, invocation);
   const message = data?.choices?.[0]?.message;
   const toolCalls = Array.isArray(message?.tool_calls) ? message.tool_calls : [];
   // A reasoning model answers in more than one shape. DeepSeek's V4 line can
@@ -4652,13 +4765,13 @@ async function readJsonModelResult(response, startedAt, endPerf, streamFallback 
   }
   const trimmed = scrubVisibleModelOutput(content);
   const metrics = modelMetricsFromResponse(data, trimmed, performance.now() - startedAt);
-  updateModelMeter(metrics);
+  if (!invocation || (window.lastTaskInvocationId === invocation.id && invocation.projectId === String(activeProjectId || ""))) updateModelMeter(metrics);
   endPerf?.({ streamed: false, streamFallback, tokens: metrics.tokens });
   return {
     text: trimmed,
     model: String(data?.ai_system6_metrics?.model || data?.model || ""),
     metrics,
-    budget: lastContextBudget,
+    budget: invocation?.contextBudget || null,
     message,
     toolCalls,
     responseId: String(data?.ai_system6_lmstudio_response_id || ""),
@@ -4666,11 +4779,11 @@ async function readJsonModelResult(response, startedAt, endPerf, streamFallback 
   };
 }
 
-function withBrowserLocalSafetyMessages(messages = [], taskKind = "") {
+function withBrowserLocalSafetyMessages(messages = [], taskKind = "", payload = {}) {
   const normalized = Array.isArray(messages) ? messages : [];
   const integrity = window.AISystem6SystemIntegrity;
   const humanizer = window.AISystem6Humanizer;
-  const taskContract = window.AISystem6ModelTaskRuntime?.taskContractRegistry?.require(taskKind);
+  const taskContract = window.AISystem6ModelTaskRuntime?.taskContractRegistry?.forPayload({ ...payload, ai_system6_task_kind: taskKind });
   const additions = [];
   if (integrity && !integrity.hasIntegrityInstruction(normalized)) {
     additions.push({ role: "system", content: integrity.instruction() });
@@ -4682,12 +4795,12 @@ function withBrowserLocalSafetyMessages(messages = [], taskKind = "") {
   return [...additions, ...normalized];
 }
 
-async function maybeRepairBrowserLocalResult(result, requestPayload, taskKind, streamPreference, signal, servedRoute = "") {
+async function maybeRepairBrowserLocalResult(result, requestPayload, taskKind, streamPreference, signal, servedRoute = "", invocation = null) {
   const isCloud = servedRoute
     ? servedRoute === "cloud"
     : (typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady());
   const runtime = window.AISystem6ModelTaskRuntime;
-  if (isCloud || streamPreference === "json" || !runtime?.shouldRepairHumanizerOutput?.(taskKind)) return result;
+  if (isCloud || streamPreference === "json" || runtime?.taskContractRegistry?.forPayload({ ...requestPayload, ai_system6_task_kind: taskKind })?.humanizer === "off" || !runtime?.shouldRepairHumanizerOutput?.(taskKind)) return result;
   const originalHits = runtime.findHumanizerOutputHits(result?.text);
   if (!originalHits.length) return result;
 
@@ -4698,16 +4811,24 @@ async function maybeRepairBrowserLocalResult(result, requestPayload, taskKind, s
     max_tokens: Math.max(320, Number(requestPayload.max_tokens || 0)),
     stream: false,
     ai_system6_task_kind: "humanizer-repair",
-  }, signal);
-  if (!repairResponse.ok) return result;
+  }, signal, { route: servedRoute, invocation, callKind: "repair" });
+  if (!repairResponse.ok) await throwModelResponseError(repairResponse);
+
   const data = await repairResponse.json().catch(() => null);
+  assertClioTaskInvocationActive(invocation, signal);
+  chargeClioServerModelCalls(data, invocation);
   const repaired = scrubVisibleModelOutput(modelMessageText(data?.choices?.[0]?.message));
   if (!repaired) return result;
   return runtime.findHumanizerOutputHits(repaired).length < originalHits.length
     // The repair is a separate model request. Its visible answer is not part
     // of the original native response chain, so continuing from that response
     // id would give the next turn different history from the saved chat.
-    ? { ...result, text: repaired, responseId: "", responseApi: "" }
+    ? {
+        ...result, text: repaired,
+        model: String(data?.ai_system6_metrics?.model || data?.model || ""),
+        metrics: modelMetricsFromResponse(data, repaired, 0),
+        responseId: "", responseApi: "",
+      }
     : result;
 }
 
@@ -4752,6 +4873,14 @@ function fetchModelPayload(payload, signal, options = {}) {
       ? false
       : (typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.provider && cloudCredentialReady());
   let nextPayload = { ...payload };
+  const runtime = window.AISystem6WritingAgentRuntime;
+  const callBudget = options.invocation?.callBudget || options.callBudget;
+  const reserve = () => {
+    assertClioTaskInvocationActive(options.invocation, signal);
+    if (options.invocation) options.invocation.activeProvider = isCloud ? "cloud" : "local";
+    runtime?.reserveWritingModelCall?.(callBudget, { kind: options.callKind || "model", provider: isCloud ? "cloud" : "local" });
+    if (callBudget && options.invocation) updateClioTaskInvocation(options.invocation, { callBudget: runtime.snapshotWritingCallBudget(callBudget) });
+  };
   const shouldRecordLoadout = nextPayload.ai_system6_record_loadout === true;
 
   if (isCloud) {
@@ -4773,7 +4902,7 @@ function fetchModelPayload(payload, signal, options = {}) {
     nextPayload._cloud_model = cloudModel;
     if (nextPayload.stream) nextPayload.stream_options = { include_usage: true };
     delete nextPayload.ai_system6_record_loadout;
-    if (shouldRecordLoadout) recordContextLoadout(nextPayload);
+    if (shouldRecordLoadout) recordContextLoadout(nextPayload, options.invocation);
   } else {
     if (!localLmStudioConnectionEnabled) {
       throw new Error("lmstudio_server_offline: Connect to LM Studio in Control Panel first.");
@@ -4793,7 +4922,7 @@ function fetchModelPayload(payload, signal, options = {}) {
         temperature: Number(nextPayload.temperature),
       }),
       ...nextPayload,
-      messages: withBrowserLocalSafetyMessages(nextPayload.messages, taskKind),
+      messages: withBrowserLocalSafetyMessages(nextPayload.messages, taskKind, nextPayload),
     };
     const previousResponse = clioTalkPreviousNativeResponseId(taskKind);
     if (previousResponse && !nextPayload._lmstudio_previous_response_id) {
@@ -4801,14 +4930,21 @@ function fetchModelPayload(payload, signal, options = {}) {
       nextPayload._lmstudio_previous_response_api = previousResponse.api;
     }
     delete nextPayload.ai_system6_record_loadout;
-    if (shouldRecordLoadout) recordContextLoadout(nextPayload);
+    if (shouldRecordLoadout) recordContextLoadout(nextPayload, options.invocation);
     return window.AISystem6LocalLMStudio.chat(nextPayload, {
       signal,
       contextLength: Number(contextLengthInput?.value || 0),
       autoLoad: true,
+      beforeRequest: reserve,
     });
   }
 
+  reserve();
+  if (callBudget) {
+    const allowance = runtime.snapshotWritingCallBudget(callBudget);
+    nextPayload.ai_system6_max_followup_calls = allowance.remainingRequests;
+    nextPayload.ai_system6_max_repair_calls = Math.min(allowance.remainingRequests, allowance.remainingRepairs);
+  }
   const endpoint = getChatCompletionsEndpoint();
   if (endpoint === "same-origin-cloud-chat") {
     return window.AISystem6Capabilities.requestService("cloud.chat", {
@@ -4828,7 +4964,7 @@ function fetchModelPayload(payload, signal, options = {}) {
   });
 }
 
-async function throwModelResponseError(response, endPerf) {
+async function throwModelResponseError(response, endPerf, invocation = null) {
   const detail = await response.text();
   const structured = (() => {
     try { return JSON.parse(detail); } catch { return null; }
@@ -4837,13 +4973,14 @@ async function throwModelResponseError(response, endPerf) {
     ? "Cloud API"
     : "LM Studio";
   const message = `${routeLabel} returned ${response.status}: ${serviceErrorDetail(response.status, detail)}`;
-  const code = String(structured?.code || (
+  const code = String(structured?.code || (response.status === 402 ? "cloud_insufficient_balance" : "") || (
     typeof classifyLmStudioError === "function" ? classifyLmStudioError(message, response) : ""
   ));
   endPerf?.({ error: true, status: response.status });
   const error = new Error([code, message].filter(Boolean).join(": "));
   error.status = response.status;
   error.code = code;
+  chargeClioServerModelCalls(structured, invocation);
   throw error;
 }
 
@@ -4897,17 +5034,20 @@ function clioBackupRecoverable(error, context) {
   return true;
 }
 
-async function requestModelResponse(finalPayload, signal, { taskKind, endPerf } = {}) {
+async function requestModelResponse(finalPayload, signal, { taskKind, endPerf, invocation } = {}) {
   const currentRoute = clioCloudRouteActive() ? "cloud" : "local";
   const attempt = async (route) => {
-    const response = await fetchModelPayload(finalPayload, signal, { route });
-    if (!response.ok) await throwModelResponseError(response, endPerf);
+    let response = await fetchModelPayload(finalPayload, signal, { route, invocation });
+    assertClioTaskInvocationActive(invocation, signal);
+    response = await retryCloudFilePayloadInline(response, finalPayload, signal, { route, invocation });
+    if (!response.ok) await throwModelResponseError(response, endPerf, invocation);
     return response;
   };
   try {
     const response = await attempt(currentRoute);
     return { response, route: currentRoute, fallbackTaken: false };
   } catch (error) {
+    if (window.AISystem6WritingAgentRuntime?.stopWritingCallBudget?.(invocation?.callBudget, error)) throw error;
     // The only automatic backup the product may take is cloud -> local. It is
     // the real "connected AI silently failed" case (shared allowance / relay
     // 5xx / network). Turning local -> cloud would re-activate a provider the
@@ -4917,17 +5057,18 @@ async function requestModelResponse(finalPayload, signal, { taskKind, endPerf } 
     // to the writer rather than silently changing the model that reads them.
     // A subscription CLI failure is shown with its reason and a way to switch;
     // the desk never answers it silently with another model.
-    if (currentRoute !== "cloud"
+    if (signal?.aborted || currentRoute !== "cloud"
         || (typeof isSubscriptionCloudProvider === "function" && isSubscriptionCloudProvider())
         || cloudPayloadCarriesImage(finalPayload?.messages)
         || !clioBackupRecoverable(error, { kind: "cloud" })) throw error;
     if (!clioBackupAvailable("local")) throw error;
     try {
       const response = await attempt("local");
-      if (window.lastTaskRunManifest) {
-        window.lastTaskRunManifest.aiBackupRoute = "local";
-        window.lastTaskRunManifest.aiBackupReason = String(error?.code || error?.message || "");
-      }
+      assertClioTaskInvocationActive(invocation, signal);
+      updateClioTaskInvocation(invocation, {
+        aiBackupRoute: "local",
+        aiBackupReason: String(error?.code || error?.message || ""),
+      });
       return { response, route: "local", fallbackTaken: true };
     } catch (backupError) {
       window.lastClioBackupError = backupError;
@@ -4937,6 +5078,8 @@ async function requestModelResponse(finalPayload, signal, { taskKind, endPerf } 
 }
 
 async function sendLocalModelTask(options = {}) {
+  const invocation = options.invocation || createClioTaskInvocation(options);
+  options = { ...options, invocation };
   // Prompt files are lazy-loaded; boot preloads them, and the task entry
   // awaits them so no payload is ever assembled without its system prompts.
   await ensurePromptFilesData();
@@ -4948,6 +5091,7 @@ async function sendLocalModelTask(options = {}) {
     streamPreference = "auto",
     onToken,
   } = options;
+  assertClioTaskInvocationActive(invocation, signal);
   const startedAt = performance.now();
   window.lastLocalModelResponseId = "";
   window.lastLocalModelResponseApi = "";
@@ -4955,19 +5099,21 @@ async function sendLocalModelTask(options = {}) {
   const requestPayload = payload || buildPayload(userText, { ...options, taskKind });
   if (window.lastAutoSkillCall?.length) options.onAutoSkillCall?.(window.lastAutoSkillCall);
   const budgetedPayload = await fitPayloadWithModelBudget(requestPayload, { ...options, taskKind }, signal);
+  assertClioTaskInvocationActive(invocation, signal);
   const normalizedTaskKind = String(taskKind || "").toLowerCase();
   const explicitHumanizerRewrite = window.AISystem6ModelTaskRuntime
-    ?.shouldRepairHumanizerOutput?.(normalizedTaskKind) === true;
+    ?.shouldRepairHumanizerOutput?.(normalizedTaskKind) === true
+    && window.AISystem6ModelTaskRuntime?.taskContractRegistry?.forPayload({ ...budgetedPayload, ai_system6_task_kind: taskKind })?.humanizer !== "off";
   const gemma4NeedsVisibleRepair = normalizedTaskKind === "chat" && isGemma4ModelName(budgetedPayload.model);
   const localNeedsVisibleRepair = explicitHumanizerRewrite || gemma4NeedsVisibleRepair;
   const shouldStream = streamPreference === "stream" || (streamPreference === "auto" && normalizedTaskKind === "chat" && !localNeedsVisibleRepair);
-  const finalPayload = { ...budgetedPayload, stream: shouldStream };
+  const finalPayload = { ...budgetedPayload, stream: shouldStream, ai_system6_record_loadout: true };
 
-  const requestOutcome = await requestModelResponse(finalPayload, signal, { taskKind, endPerf });
+  const requestOutcome = await requestModelResponse(finalPayload, signal, { taskKind, endPerf, invocation });
   let response = requestOutcome.response;
   const servedRoute = requestOutcome.route;
-  response = await retryCloudFilePayloadInline(response, finalPayload, signal);
-  if (!response.ok) await throwModelResponseError(response, endPerf);
+  response = await retryCloudFilePayloadInline(response, finalPayload, signal, { route: servedRoute, invocation });
+  if (!response.ok) await throwModelResponseError(response, endPerf, invocation);
 
   const contentType = response.headers.get("content-type") || "";
   const isCloud = servedRoute === "cloud" && typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady();
@@ -4993,31 +5139,34 @@ async function sendLocalModelTask(options = {}) {
       if (isCloud && typeof window.fetchCloudBalanceSilent === "function") {
         window.fetchCloudBalanceSilent().catch(() => {});
       }
+      assertClioTaskInvocationActive(invocation, signal);
       const metrics = modelMetricsFromStream(text, performance.now() - startedAt, finishReason || "stop");
-      updateModelMeter(metrics);
-      window.lastLocalModelResponseId = String(responseId || "");
-      window.lastLocalModelResponseApi = String(responseApi || "");
-      if (window.lastTaskRunManifest && servedModel) {
-        window.lastTaskRunManifest.servedModel = servedModel;
-        window.lastTaskRunManifest.model = servedModel;
-        window.lastTaskRunManifest.servedProvider = servedRoute;
+      if (window.lastTaskInvocationId === invocation.id && invocation.projectId === String(activeProjectId || "")) updateModelMeter(metrics);
+      if (window.lastTaskInvocationId === invocation.id && invocation.projectId === String(activeProjectId || "")) {
+        window.lastLocalModelResponseId = String(responseId || "");
+        window.lastLocalModelResponseApi = String(responseApi || "");
       }
-      noteClioTalkModelAttempt({ model: servedModel, provider: servedRoute });
+      assertClioTaskInvocationActive(invocation, signal);
+      updateClioTaskInvocation(invocation, { servedModel: String(servedModel || ""), model: String(servedModel || ""), servedProvider: servedRoute });
+      noteClioTalkModelAttempt({ model: servedModel, provider: servedRoute }, invocation);
       endPerf?.({ streamed: true, tokens: metrics.tokens });
-      return {
+      const result = {
         text,
         model: servedModel,
         metrics,
-        budget: lastContextBudget,
+        budget: invocation.contextBudget,
         // The tool loop reads the assistant turn back off this result, so a
         // streamed turn must present the same message shape as a JSON turn.
         message: { role: "assistant", content: text || null, ...(toolCalls.length ? { tool_calls: toolCalls } : {}) },
         toolCalls,
-        responseId: window.lastLocalModelResponseId,
-        responseApi: window.lastLocalModelResponseApi,
+        responseId: String(responseId || ""),
+        responseApi: String(responseApi || ""),
+        runManifest: invocation.runManifest,
       };
+      invocation.modelResult = clioTaskSnapshot(result);
+      return result;
     } catch (streamError) {
-      if (signal?.aborted) throw streamError;
+      if (signal?.aborted || window.AISystem6WritingAgentRuntime?.stopWritingCallBudget?.(invocation.callBudget, streamError)) throw streamError;
       if (String(streamError?.partialContent || "").trim()) throw streamError;
       window.AISystem6Perf?.record("model_request", performance.now() - startedAt, { streamFallback: true });
       // The stream never produced an answer. It is still an attempt, and a
@@ -5027,45 +5176,67 @@ async function sendLocalModelTask(options = {}) {
         model: String(budgetedPayload?.model || ""),
         provider: servedRoute,
         outcome: "stream-failed",
-      });
+      }, invocation);
       const retryPayload = { ...budgetedPayload, stream: false };
-      let retryResponse = await fetchModelPayload(retryPayload, signal, { route: servedRoute });
-      retryResponse = await retryCloudFilePayloadInline(retryResponse, retryPayload, signal);
-      if (!retryResponse.ok) await throwModelResponseError(retryResponse);
-      const fallbackResult = await readJsonModelResult(retryResponse, startedAt, endPerf, true);
-      const repairedResult = await maybeRepairBrowserLocalResult(fallbackResult, budgetedPayload, taskKind, streamPreference, signal, servedRoute);
-      if (window.lastTaskRunManifest && repairedResult?.model) {
-        window.lastTaskRunManifest.servedModel = String(repairedResult.model);
-        window.lastTaskRunManifest.model = String(repairedResult.model);
-        window.lastTaskRunManifest.servedProvider = servedRoute;
+      let retryResponse = await fetchModelPayload(retryPayload, signal, { route: servedRoute, invocation });
+      retryResponse = await retryCloudFilePayloadInline(retryResponse, retryPayload, signal, { route: servedRoute, invocation });
+      if (!retryResponse.ok) await throwModelResponseError(retryResponse, null, invocation);
+      const fallbackResult = await readJsonModelResult(retryResponse, startedAt, endPerf, true, invocation, signal);
+      let repairedResult;
+      try {
+        repairedResult = await maybeRepairBrowserLocalResult(fallbackResult, budgetedPayload, taskKind, streamPreference, signal, servedRoute, invocation);
+      } catch (error) {
+        if (window.AISystem6WritingAgentRuntime?.stopWritingCallBudget?.(invocation.callBudget, error)) {
+          error.partialContent = String(error.partialContent || fallbackResult.text || "");
+          updateClioTaskInvocation(invocation, { servedModel: String(fallbackResult.model || ""), model: String(fallbackResult.model || ""), servedProvider: servedRoute });
+          noteClioTalkModelAttempt({ model: fallbackResult.model, provider: servedRoute, outcome: "served-before-stop" }, invocation);
+        }
+        throw error;
       }
+      assertClioTaskInvocationActive(invocation, signal);
+      updateClioTaskInvocation(invocation, { servedModel: String(repairedResult?.model || ""), model: String(repairedResult?.model || ""), servedProvider: servedRoute });
       if (fallbackResult?.model && fallbackResult.model !== repairedResult?.model) {
-        noteClioTalkModelAttempt({ model: fallbackResult.model, provider: servedRoute, outcome: "repaired" });
+        noteClioTalkModelAttempt({ model: fallbackResult.model, provider: servedRoute, outcome: "repaired" }, invocation);
       }
-      noteClioTalkModelAttempt({ model: String(repairedResult?.model || ""), provider: servedRoute });
-      window.lastLocalModelResponseId = String(repairedResult?.responseId || fallbackResult.responseId || "");
-      window.lastLocalModelResponseApi = String(repairedResult?.responseApi || fallbackResult.responseApi || "");
-      return repairedResult;
+      noteClioTalkModelAttempt({ model: String(repairedResult?.model || ""), provider: servedRoute }, invocation);
+      if (window.lastTaskInvocationId === invocation.id && invocation.projectId === String(activeProjectId || "")) {
+        window.lastLocalModelResponseId = String(repairedResult?.responseId || fallbackResult.responseId || "");
+        window.lastLocalModelResponseApi = String(repairedResult?.responseApi || fallbackResult.responseApi || "");
+      }
+      const result = { ...repairedResult, budget: invocation.contextBudget, runManifest: invocation.runManifest };
+      invocation.modelResult = clioTaskSnapshot(result);
+      return result;
     }
   }
 
   if (isCloud && typeof window.fetchCloudBalanceSilent === "function") {
     window.fetchCloudBalanceSilent().catch(() => {});
   }
-  const jsonResult = await readJsonModelResult(response, startedAt, endPerf);
-  const finalResult = await maybeRepairBrowserLocalResult(jsonResult, budgetedPayload, taskKind, streamPreference, signal, servedRoute);
-  if (window.lastTaskRunManifest && finalResult?.model) {
-    window.lastTaskRunManifest.servedModel = String(finalResult.model);
-    window.lastTaskRunManifest.model = String(finalResult.model);
-    window.lastTaskRunManifest.servedProvider = servedRoute;
+  const jsonResult = await readJsonModelResult(response, startedAt, endPerf, false, invocation, signal);
+  let finalResult;
+  try {
+    finalResult = await maybeRepairBrowserLocalResult(jsonResult, budgetedPayload, taskKind, streamPreference, signal, servedRoute, invocation);
+  } catch (error) {
+    if (window.AISystem6WritingAgentRuntime?.stopWritingCallBudget?.(invocation.callBudget, error)) {
+      error.partialContent = String(error.partialContent || jsonResult.text || "");
+      updateClioTaskInvocation(invocation, { servedModel: String(jsonResult.model || ""), model: String(jsonResult.model || ""), servedProvider: servedRoute });
+      noteClioTalkModelAttempt({ model: jsonResult.model, provider: servedRoute, outcome: "served-before-stop" }, invocation);
+    }
+    throw error;
   }
+  assertClioTaskInvocationActive(invocation, signal);
+  updateClioTaskInvocation(invocation, { servedModel: String(finalResult?.model || ""), model: String(finalResult?.model || ""), servedProvider: servedRoute });
   if (jsonResult?.model && jsonResult.model !== finalResult?.model) {
-    noteClioTalkModelAttempt({ model: jsonResult.model, provider: servedRoute, outcome: "repaired" });
+    noteClioTalkModelAttempt({ model: jsonResult.model, provider: servedRoute, outcome: "repaired" }, invocation);
   }
-  noteClioTalkModelAttempt({ model: String(finalResult?.model || ""), provider: servedRoute });
-  window.lastLocalModelResponseId = String(finalResult?.responseId || jsonResult.responseId || "");
-  window.lastLocalModelResponseApi = String(finalResult?.responseApi || jsonResult.responseApi || "");
-  return finalResult;
+  noteClioTalkModelAttempt({ model: String(finalResult?.model || ""), provider: servedRoute }, invocation);
+  if (window.lastTaskInvocationId === invocation.id && invocation.projectId === String(activeProjectId || "")) {
+    window.lastLocalModelResponseId = String(finalResult?.responseId || jsonResult.responseId || "");
+    window.lastLocalModelResponseApi = String(finalResult?.responseApi || jsonResult.responseApi || "");
+  }
+  const result = { ...finalResult, budget: invocation.contextBudget, runManifest: invocation.runManifest };
+  invocation.modelResult = clioTaskSnapshot(result);
+  return result;
 }
 
 if (typeof window !== "undefined") window.AISystem6SendLocalModelTask = sendLocalModelTask;
@@ -5112,8 +5283,8 @@ function quickDraftActionFromText(text = "") {
 // buffered retry, or a local reply a repair pass answers again. The manifest
 // keeps every attempt in the order it happened, so a receipt can name the model
 // that actually answered without losing the ones tried before it.
-function noteClioTalkModelAttempt({ model = "", provider = "", outcome = "served" } = {}) {
-  const manifest = window.lastTaskRunManifest;
+function noteClioTalkModelAttempt({ model = "", provider = "", outcome = "served" } = {}, invocation) {
+  const manifest = invocation?.runManifest;
   if (!manifest) return;
   const entry = {
     model: String(model || ""),
@@ -5122,13 +5293,12 @@ function noteClioTalkModelAttempt({ model = "", provider = "", outcome = "served
     at: new Date().toISOString(),
   };
   if (!entry.model && !entry.provider) return;
-  if (!Array.isArray(manifest.attempts)) manifest.attempts = [];
-  manifest.attempts.push(entry);
+  updateClioTaskInvocation(invocation, { attempts: [...(manifest.attempts || []), entry] });
 }
 
 function createClioTalkPreflightRunManifest(taskKind = "chat", error = "", options = {}) {
   const temporaryChat = options.temporaryChat === true || clioTalkTemporaryMode;
-  const promptFiles = (window.lastTaskPromptFiles?.length ? window.lastTaskPromptFiles : getClioTalkPromptFileDescriptors())
+  const promptFiles = getClioTalkPromptFileDescriptors()
     .map((file) => ({ ...file }));
   return {
     schemaVersion: 1,
@@ -5144,21 +5314,22 @@ function createClioTalkPreflightRunManifest(taskKind = "chat", error = "", optio
     policyFiles: promptFiles.filter((file) => file.kind === "policy"),
     promptStack: [],
     messageStack: [],
-    skillFiles: (window.lastTaskSkillFiles?.length ? window.lastTaskSkillFiles : getClioTalkPendingSkillDescriptors(promptInput?.value || "", { temporaryChat }))
+    skillFiles: (options.invocation?.assembly?.skillFiles || getClioTalkPendingSkillDescriptors(promptInput?.value || "", { temporaryChat }))
       .map((file) => ({ ...file })),
-    harnessFile: window.lastTaskHarnessFile
-      ? { ...window.lastTaskHarnessFile }
-      : getClioTalkPendingHarnessDescriptor(),
-    inputFiles: (window.lastTaskInputFiles?.length ? window.lastTaskInputFiles : getClioTalkPendingInputDescriptors({ temporaryChat }))
+    harnessFile: options.invocation?.assembly?.harnessFile || getClioTalkPendingHarnessDescriptor(),
+    inputFiles: (options.invocation?.assembly?.inputFiles || getClioTalkPendingInputDescriptors({ temporaryChat }))
       .map((file) => ({ ...file })),
     productHelpTopics: clioProductHelpReceipt(),
-    agentRun: window.lastWritingAgentRun
-      ? window.AISystem6WritingAgentRuntime.snapshotAgentRun(window.lastWritingAgentRun)
-      : null,
+    agentRun: options.invocation?.runManifest?.agentRun || null,
   };
 }
 
 function captureClioTalkGroundingSafely(options = {}) {
+  if (options.invocation?.grounding) {
+    const grounding = JSON.parse(JSON.stringify(options.invocation.grounding));
+    if (options.invocation.generated?.toolLoopTruncated === true) grounding.missing.push(t("clio_grounding_reading_capped"));
+    return grounding;
+  }
   try {
     return captureClioTalkGroundingSnapshot(options);
   } catch (error) {
@@ -5208,17 +5379,18 @@ function createClioTalkAssistantRecord({
   webSearch = null,
   providerResponseId = "",
   providerResponseApi = "",
+  invocation = null,
 } = {}) {
   const nativeResponseId = String(providerResponseId || "");
   const nativeResponseApi = String(providerResponseApi || "");
-  const nativeScope = currentClioTalkNativeResponseScope();
+  const nativeScope = invocation?.nativeResponseScope || currentClioTalkNativeResponseScope();
   // Which model answered is a fact the transport already brought back; the
   // global model selection is only what the desk would ask NEXT. They differ
   // whenever the request fell back, was repaired, or ran on the cloud route
   // while the local selection sat unchanged — and a receipt naming the
   // selection would be naming a model that never saw the question. When the
   // transport did not say, the receipt says nothing rather than guessing.
-  const runManifest = window.lastTaskRunManifest;
+  const runManifest = invocation?.runManifest || requestRecord?.runManifest || null;
   const servedModelName = String(runManifest?.servedModel || "");
   const modelAttempts = Array.isArray(runManifest?.attempts)
     ? runManifest.attempts.map((attempt) => ({ ...attempt }))
@@ -5253,6 +5425,7 @@ function createClioTalkAssistantRecord({
       api: nativeResponseApi,
       id: nativeResponseId,
       ...nativeScope,
+      model: servedModelName,
     } : null,
     harness: {
       taskKind: String(taskKind || "chat"),
@@ -5261,7 +5434,7 @@ function createClioTalkAssistantRecord({
       projectMemoryIds: grounding?.projectMemoryIds || [],
     },
     runManifest: cloneClioRunManifest(
-      window.lastTaskRunManifest || createClioTalkPreflightRunManifest(taskKind)
+      runManifest || createClioTalkPreflightRunManifest(taskKind, "", { invocation })
     ),
   };
   // Charter rule: a model answer is durable the moment it arrives, not only
@@ -5275,12 +5448,13 @@ function createClioTalkAssistantRecord({
   const receiptAnswerText = String(content || "").trim();
   if (receiptAnswerText) {
     window.AISystem6RunReceipts?.recordModelAnswer?.({
-      projectId: activeProjectId,
+      projectId: invocation?.projectId || runManifest?.projectId || "",
       sourceAppId: "clioTalk",
       intent: String(taskKind || "chat"),
       provider: servedProviderName,
       model: servedModelName,
       attempts: modelAttempts,
+      runManifest,
       answerText: receiptAnswerText,
     }).then((recorded) => {
       if (recorded?.receiptId) record.aiSystem6ReceiptId = recorded.receiptId;
@@ -5562,7 +5736,8 @@ async function submitUserTextCore(userText, options = {}) {
 
   const messageTaskKind = options.taskKind || (sideAskEnabled && !isMultiFinderMode() ? "sideask" : "chat");
   const isTemporaryChat = options.temporaryChat === true || clioTalkTemporaryMode;
-  const runtimeOptions = { ...options, temporaryChat: isTemporaryChat };
+  const invocation = options.invocation || createClioTaskInvocation({ ...options, userText });
+  const runtimeOptions = { ...options, temporaryChat: isTemporaryChat, invocation };
   const requiresDurableChatFile = !isTemporaryChat
     && options.fileNative !== false
     && !sideAskEnabled
@@ -5616,6 +5791,8 @@ async function submitUserTextCore(userText, options = {}) {
   const submittedUserRecord = {
     id: crypto.randomUUID(),
     role: "user",
+    projectId: invocation.projectId,
+    invocationId: invocation.id,
     content: userText,
     displayContent: options.displayText && options.displayText !== userText ? options.displayText : "",
     taskKind: messageTaskKind,
@@ -5657,7 +5834,8 @@ async function submitUserTextCore(userText, options = {}) {
   promptInput.focus();
   persistClioTalkConversationMutation();
 
-  activeAbortController = new AbortController();
+  const requestAbortController = new AbortController();
+  activeAbortController = requestAbortController;
   setComposerBusy(true);
   setStatus(t("thinking"));
   updateLocalModelState({ running: true, task: modelRouteText("consulting_model", "consulting_cloud_model") });
@@ -5678,13 +5856,13 @@ async function submitUserTextCore(userText, options = {}) {
       const groundingApi = window.AISystem6EndfieldGrounding;
       if (groundingApi) {
         await groundingApi.prepare(userText, {
-          signal: activeAbortController.signal,
+          signal: requestAbortController.signal,
         }).catch(() => {});
       }
     }
     if (useWebSearch && !hasClioImages) {
       updatePendingMessage(pendingMessage, 1, t("clio_web_search_running"));
-      const webResult = await runClioTalkWebSearch(userText, activeAbortController.signal, {
+      const webResult = await runClioTalkWebSearch(userText, requestAbortController.signal, {
         onDelta: (content) => updatePendingStreamContent(pendingMessage, content),
       });
       receivedAssistantText = String(webResult.answer || "").trim();
@@ -5695,6 +5873,7 @@ async function submitUserTextCore(userText, options = {}) {
         taskKind: messageTaskKind,
       });
       const assistantRecord = createClioTalkAssistantRecord({
+        invocation,
         content: receivedAssistantText,
         taskKind: messageTaskKind,
         requestRecord: submittedUserRecord,
@@ -5726,14 +5905,14 @@ async function submitUserTextCore(userText, options = {}) {
     let clioWebResult = null;
     if (useWebSearch && hasClioImages) {
       updatePendingMessage(pendingMessage, 1, t("clio_web_search_running"));
-      clioWebResult = await runClioTalkWebSearch(userText, activeAbortController.signal, {
+      clioWebResult = await runClioTalkWebSearch(userText, requestAbortController.signal, {
         onDelta: (content) => updatePendingStreamContent(pendingMessage, content),
       });
       if (String(clioWebResult?.answer || "").trim()) {
         modelUserText = `${t("clio_web_search_context")}${clioWebResult.answer}${t("clio_web_search_end")}${userText}`;
       }
     }
-    receivedAssistantText = await sendToLmStudio(modelUserText, activeAbortController.signal, {
+    receivedAssistantText = await sendToLmStudio(modelUserText, requestAbortController.signal, {
       ...runtimeOptions,
       taskKind: messageTaskKind,
       streamPreference: "auto",
@@ -5741,13 +5920,15 @@ async function submitUserTextCore(userText, options = {}) {
       onAutoSkillCall: (skills) => updatePendingMessage(pendingMessage, 0, currentLanguage === "zh" ? `正在自动调用只读技能：${skills.map((entry) => entry.parsed.manifest.name).join("、")}` : `Auto-calling read-only Skill: ${skills.map((entry) => entry.parsed.manifest.name).join(", ")}`),
       onToolActivity: (calls) => reportClioTalkToolActivity(pendingMessage, calls),
     });
+    assertClioTaskInvocationActive(invocation, requestAbortController.signal, true);
     const grounding = captureClioTalkGroundingSafely({
       ...runtimeOptions,
       taskKind: messageTaskKind,
     });
     updatePendingMessage(pendingMessage, 2, `${t("typesetting_reply")}.`);
-    const finishReason = String(lastModelMetrics?.stopReason || "stop");
+    const finishReason = String(invocation.modelResult?.metrics?.stopReason || "stop");
     const assistantRecord = createClioTalkAssistantRecord({
+      invocation,
       content: receivedAssistantText,
       taskKind: messageTaskKind,
       requestRecord: submittedUserRecord,
@@ -5755,8 +5936,8 @@ async function submitUserTextCore(userText, options = {}) {
       grounding,
       finishReason,
       temporaryChat: isTemporaryChat,
-      providerResponseId: window.lastLocalModelResponseId,
-      providerResponseApi: window.lastLocalModelResponseApi,
+      providerResponseId: invocation.modelResult?.responseId,
+      providerResponseApi: invocation.modelResult?.responseApi,
       ...(clioWebResult ? { webSearch: { citations: clioWebResult.citations || [], usage: clioWebResult.usage || null } } : {}),
     });
     const finalization = finalizeClioTalkAssistantReply({
@@ -5770,10 +5951,21 @@ async function submitUserTextCore(userText, options = {}) {
       appendClioTalkWebSearchCitations(pendingMessage, clioWebResult.citations);
     }
     updateLocalModelState({ server: true, selected: true, ready: true, running: false, task: "" });
-    if (window.lastTaskRunManifest?.aiBackupRoute) setStatus(t("clio_backup_served"));
+    if (invocation.runManifest?.aiBackupRoute) setStatus(t("clio_backup_served"));
     else if (finalization.warnings.length) setStatus(t("clio_reply_preserved_record_warning"));
     else clearStatus();
   } catch (error) {
+    if (invocation.projectId !== String(activeProjectId || "")) {
+      // A completed answer still belongs to the original project. Preserve
+      // its receipt without adding it to the newly mounted conversation.
+      if (receivedAssistantText) createClioTalkAssistantRecord({
+        invocation, content: receivedAssistantText, taskKind: messageTaskKind,
+        requestRecord: submittedUserRecord, requestOptions: replayOptions,
+        finishReason: String(invocation.modelResult?.metrics?.stopReason || "stop"),
+        temporaryChat: isTemporaryChat,
+      });
+      return;
+    }
     const interruptedPartial = error?.name !== "AbortError"
       ? String(error?.partialContent || "").trim()
       : "";
@@ -5783,6 +5975,7 @@ async function submitUserTextCore(userText, options = {}) {
         taskKind: messageTaskKind,
       });
       const assistantRecord = createClioTalkAssistantRecord({
+        invocation,
         content: interruptedPartial,
         taskKind: messageTaskKind,
         requestRecord: submittedUserRecord,
@@ -5790,8 +5983,8 @@ async function submitUserTextCore(userText, options = {}) {
         grounding,
         finishReason: "interrupted",
         temporaryChat: isTemporaryChat,
-        providerResponseId: window.lastLocalModelResponseId,
-        providerResponseApi: window.lastLocalModelResponseApi,
+        providerResponseId: invocation.modelResult?.responseId,
+        providerResponseApi: invocation.modelResult?.responseApi,
       });
       const finalization = finalizeClioTalkAssistantReply({
         pendingMessage,
@@ -5812,6 +6005,7 @@ async function submitUserTextCore(userText, options = {}) {
           taskKind: messageTaskKind,
         });
         const assistantRecord = createClioTalkAssistantRecord({
+          invocation,
           content: partialContent,
           taskKind: messageTaskKind,
           requestRecord: submittedUserRecord,
@@ -5820,8 +6014,8 @@ async function submitUserTextCore(userText, options = {}) {
           stopped: true,
           finishReason: "stopped",
           temporaryChat: isTemporaryChat,
-          providerResponseId: window.lastLocalModelResponseId,
-          providerResponseApi: window.lastLocalModelResponseApi,
+          providerResponseId: invocation.modelResult?.responseId,
+          providerResponseApi: invocation.modelResult?.responseApi,
         });
         finalizeClioTalkAssistantReply({
           pendingMessage,
@@ -5833,7 +6027,7 @@ async function submitUserTextCore(userText, options = {}) {
       } else {
         submittedUserRecord.deliveryState = "sent";
         submittedUserRecord.runManifest = cloneClioRunManifest(
-          window.lastTaskRunManifest || createClioTalkPreflightRunManifest(messageTaskKind)
+          invocation.runManifest || createClioTalkPreflightRunManifest(messageTaskKind, "", { invocation })
         );
         const runResult = saveClioTalkRunRecordSafely({
           chatFile: conversationFile,
@@ -5854,15 +6048,16 @@ async function submitUserTextCore(userText, options = {}) {
         taskKind: messageTaskKind,
       });
       const assistantRecord = createClioTalkAssistantRecord({
+        invocation,
         content: receivedAssistantText,
         taskKind: messageTaskKind,
         requestRecord: submittedUserRecord,
         requestOptions: replayOptions,
         grounding,
-        finishReason: String(lastModelMetrics?.stopReason || "stop"),
+        finishReason: String(invocation.modelResult?.metrics?.stopReason || "stop"),
         temporaryChat: isTemporaryChat,
-        providerResponseId: window.lastLocalModelResponseId,
-        providerResponseApi: window.lastLocalModelResponseApi,
+        providerResponseId: invocation.modelResult?.responseId,
+        providerResponseApi: invocation.modelResult?.responseApi,
       });
       assistantRecord.localCommitWarning = String(error?.message || error || "");
       finalizeClioTalkAssistantReply({
@@ -5923,7 +6118,7 @@ async function submitUserTextCore(userText, options = {}) {
         conversation.push(submittedUserRecord);
       }
       submittedUserRecord.runManifest = cloneClioRunManifest(
-        window.lastTaskRunManifest || createClioTalkPreflightRunManifest(messageTaskKind, error.message)
+        invocation.runManifest || createClioTalkPreflightRunManifest(messageTaskKind, error.message, { invocation })
       );
       const runResult = saveClioTalkRunRecordSafely({
         chatFile: conversationFile,
@@ -5952,10 +6147,12 @@ async function submitUserTextCore(userText, options = {}) {
       });
     }
   } finally {
-    stopWaitCycle();
-    activeAbortController = null;
-    updateLocalModelState({ running: false, task: "" });
-    setComposerBusy(false);
+    if (activeAbortController === requestAbortController) {
+      stopWaitCycle();
+      activeAbortController = null;
+      updateLocalModelState({ running: false, task: "" });
+      setComposerBusy(false);
+    }
   }
 }
 
@@ -6000,7 +6197,7 @@ async function submitUserText(userText, options = {}) {
       submittedUserRecord.deliveryState = "failed";
       try {
         submittedUserRecord.runManifest = cloneClioRunManifest(
-          window.lastTaskRunManifest
+          submittedUserRecord.runManifest
             || createClioTalkPreflightRunManifest(submittedUserRecord.taskKind, error?.message || String(error))
         );
         const runResult = saveClioTalkRunRecordSafely({

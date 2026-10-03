@@ -171,8 +171,8 @@ Glass</textarea>
                   <optgroup label="中文">
                     <option value='"PingFang SC", -apple-system, sans-serif' data-font-family="PingFang SC">苹方简体 · PingFang SC</option>
                     <option value='"PingFang TC", -apple-system, sans-serif' data-font-family="PingFang TC">蘋方繁體 · PingFang TC</option>
-                    <option value='"Songti SC", STSong, serif' data-font-family="Songti SC">宋体简体 · Songti SC</option>
-                    <option value='"Songti TC", "Songti SC", STSong, serif' data-font-family="Songti TC">宋體繁體 · Songti TC</option>
+                    <option value='Georgia, "Songti SC", "Songti TC", STSong, "Times New Roman", serif' data-font-family="Songti SC" data-font-system="true" data-font-serif="true">宋体简体 · Georgia</option>
+                    <option value='Georgia, "Songti TC", "Songti SC", STSong, "Times New Roman", serif' data-font-family="Songti TC" data-font-system="true" data-font-serif="true">宋體繁體 · Georgia</option>
                     <option value='"Smiley Sans", "PingFang SC", sans-serif' data-font-bundled="true">得意黑 · Smiley Sans</option>
                   </optgroup>
                 </select></div>
@@ -269,6 +269,26 @@ Glass</textarea>
               <p class="lc-note" data-i18n="liquid_cover_presets_hint">Choose a proven material; the cover updates immediately.</p>
             </div>
 
+            <div class="lc-group lc-liquid-group">
+              <div class="lc-group-title" data-i18n="liquid_cover_liquid">Liquid Surface</div>
+              <label class="lc-row"><span data-i18n="liquid_cover_liquid_mode">Ripples</span>
+                <div class="select-wrap"><select id="lc-liquid-mode">
+                  <option value="off" selected data-i18n="liquid_cover_liquid_off">Off</option>
+                  <option value="glass" data-i18n="liquid_cover_liquid_glass">In the glass</option>
+                  <option value="cover" data-i18n="liquid_cover_liquid_cover">Whole cover</option>
+                </select></div>
+              </label>
+              <label class="lc-row"><span data-i18n="liquid_cover_liquid_strength">Strength</span><input type="range" id="lc-liquid-strength" min="0" max="100" step="1" value="50"><span class="lc-val" id="lc-liquid-strength-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_liquid_drop">Drop Size</span><input type="range" id="lc-liquid-drop" min="6" max="120" step="1" value="28"><span class="lc-val" id="lc-liquid-drop-v"></span></label>
+              <label class="lc-row"><span data-i18n="liquid_cover_liquid_pointer">Pointer Stirs</span><input type="checkbox" id="lc-liquid-pointer" class="lc-check" checked></label>
+              <div class="lc-button-row">
+                <button class="btn" type="button" id="lc-liquid-rain" data-i18n="liquid_cover_liquid_rain">Drop</button>
+                <button class="btn" type="button" id="lc-liquid-freeze" aria-pressed="false" data-i18n="liquid_cover_liquid_freeze">Hold Frame</button>
+                <button class="btn" type="button" id="lc-liquid-calm" data-i18n="liquid_cover_liquid_calm">Calm</button>
+              </div>
+              <p class="lc-note" id="lc-liquid-note" data-i18n="liquid_cover_liquid_note">Move or click over the cover to disturb it. The PNG keeps the frame on screen; Hold Frame stops the water so you can export it.</p>
+            </div>
+
             <details class="lc-look-assistant">
               <summary data-i18n="liquid_cover_ai_director">AI art director</summary>
               <form id="lc-ask-form" class="lc-ask-bar">
@@ -321,6 +341,12 @@ Glass</textarea>
             </div>
 
             <div class="lc-inspector-panel" id="lc-panel-export" data-lc-inspector-panel="export" role="tabpanel" aria-labelledby="lc-tab-export" hidden>
+            <div class="lc-group lc-thumbnail-group">
+              <div class="lc-group-title" data-i18n="liquid_cover_thumbnail_title">Small-size check</div>
+              <canvas id="lc-thumbnail" class="lc-thumbnail" width="320" height="180" role="img" data-i18n-aria-label="liquid_cover_thumbnail_alt" aria-label="Current cover at thumbnail size"></canvas>
+              <p class="lc-note" data-i18n="liquid_cover_thumbnail_hint">Check the promise at this size. Use solid text if glass is hard to read. This preview does not change the export.</p>
+            </div>
+
             <div class="lc-group lc-export-group">
               <label class="lc-export-choice"><span data-i18n="liquid_cover_export_res">Export size</span>
                 <div class="select-wrap"><select id="lc-export-res">
@@ -344,6 +370,7 @@ Glass</textarea>
                   <option value="none" data-i18n="liquid_cover_motion_none">None</option>
                   <option value="condense" data-i18n="liquid_cover_motion_condense">Glass Forming</option>
                   <option value="push" data-i18n="liquid_cover_motion_push">Live Push</option>
+                  <option value="ripple" data-i18n="liquid_cover_motion_ripple">Ripple Settles</option>
                 </select></div>
               </label>
               <label class="lc-row"><span data-i18n="liquid_cover_motion_duration">Duration</span><input type="range" id="lc-motion-duration" min="1" max="6" step="0.1" value="2"><span class="lc-val" id="lc-motion-duration-v"></span></label>
@@ -562,12 +589,13 @@ installLiquidCoverWindow();
   // Free mode keeps the old placement for a subject cropped to its own bounds.
   // The texture is premultiplied, so cut-out edges carry no dark/white halo.
   const FG_GLSL = "uniform sampler2D u_fg;\nuniform float u_fgAspect;\nuniform int u_hasFg;\nuniform vec2 u_fgPos;\nuniform float u_fgScale;\nuniform int u_fgRegistered;\nuniform float u_fgBgAspect;\nuniform float u_fgBgZoom;\nuniform vec2 u_fgBgPan;\n"
-    + "vec3 overFg(vec3 c){ if (u_hasFg == 1) { float A = u_resolution.x/u_resolution.y; vec2 fuv;\n"
-    + "  if (u_fgRegistered == 1) { vec2 q = (v_uv - u_fgPos)/max(u_fgScale, 0.001) + 0.5;\n"
+    + "vec3 overFgAt(vec3 c, vec2 uv){ if (u_hasFg == 1) { float A = u_resolution.x/u_resolution.y; vec2 fuv;\n"
+    + "  if (u_fgRegistered == 1) { vec2 q = (uv - u_fgPos)/max(u_fgScale, 0.001) + 0.5;\n"
     + "    if (A > u_fgBgAspect) { float k = u_fgBgAspect/A; q.y = q.y*k + 0.5 - 0.5*k; } else { float k = A/u_fgBgAspect; q.x = q.x*k + 0.5 - 0.5*k; }\n"
     + "    fuv = (q - 0.5)/max(u_fgBgZoom, 0.001) + 0.5 + u_fgBgPan; }\n"
-    + "  else { float sh = u_fgScale; float sw = u_fgScale*u_fgAspect/A; fuv = (v_uv - u_fgPos)/vec2(sw,sh) + 0.5; }\n"
-    + "  if (all(greaterThanEqual(fuv,vec2(0.0))) && all(lessThanEqual(fuv,vec2(1.0)))) { vec4 fg = texture(u_fg, fuv); c = c*(1.0 - fg.a) + fg.rgb; } } return c; }\n";
+    + "  else { float sh = u_fgScale; float sw = u_fgScale*u_fgAspect/A; fuv = (uv - u_fgPos)/vec2(sw,sh) + 0.5; }\n"
+    + "  if (all(greaterThanEqual(fuv,vec2(0.0))) && all(lessThanEqual(fuv,vec2(1.0)))) { vec4 fg = texture(u_fg, fuv); c = c*(1.0 - fg.a) + fg.rgb; } } return c; }\n"
+    + "vec3 overFg(vec3 c){ return overFgAt(c, v_uv); }\n";
 
   // The backdrop pass is the photo only (cover crop, motion zoom/pan). The
   // drop shadow is composited in the main pass, outside the glass, so what
@@ -575,6 +603,61 @@ installLiquidCoverWindow();
   const BG_FRAG = "#version 300 es\nprecision highp float;\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_image;\nuniform vec2 u_resolution;\nuniform float u_imageAspect;\nuniform float u_bgZoom;\nuniform vec2 u_bgPan;\nvec2 cover(vec2 uv, float ca, float ta){ if (ca>ta){ float s=ta/ca; uv.y=uv.y*s+0.5-0.5*s; } else { float s=ca/ta; uv.x=uv.x*s+0.5-0.5*s; } return uv; }\nvoid main(){\n  vec2 uv = cover(v_uv, u_resolution.x/u_resolution.y, u_imageAspect);\n  uv = (uv - 0.5) / max(u_bgZoom, 0.001) + 0.5 + u_bgPan;\n  fragColor = vec4(texture(u_image, uv).rgb, 1.0);\n}";
 
   const BLUR_FRAG = "#version 300 es\nprecision highp float;\n#define MAX_R 96\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_tex;\nuniform vec2 u_resolution;\nuniform vec2 u_dir;\nuniform int u_radius;\nuniform float u_weights[MAX_R + 1];\nvoid main(){\n  vec2 texel = 1.0/u_resolution;\n  vec4 c = texture(u_tex, v_uv) * u_weights[0];\n  for (int i=1;i<=MAX_R;i++){ if (i>u_radius) break; vec2 o = u_dir*texel*float(i); c += texture(u_tex, v_uv+o)*u_weights[i]; c += texture(u_tex, v_uv-o)*u_weights[i]; }\n  fragColor = c;\n}";
+
+  // Liquid surface — a wave field the glass and the cover can lie under.
+  // The simulation is the height-field scheme of jquery.ripples (Pim
+  // Schreurs, MIT License; https://github.com/sirxemic/jquery.ripples): two
+  // float textures ping-pong height (r) and velocity (g); each step pulls a
+  // cell toward the mean of its four neighbours and damps it, and a drop adds
+  // a cosine bump. Here it is not a separate effect: the field is one more
+  // input to the same optical model. Its slope tilts the glass dome before
+  // Snell's law, its curvature focuses light on the photo (caustics), and a
+  // crest that faces the light glints. The idea of letting motion feed the
+  // spectral split comes from liquid-refraction-lab's chromatic-aberration
+  // layer; here the split grows with the local wave slope instead of the
+  // pointer's speed, so a still frame exports exactly as it is seen.
+  // The grid lives in design space (RIPPLE_GRID cells on the long side), so
+  // preview, 4x export and video read the same field.
+  //
+  // RIPPLE_STEP_FRAG and RIPPLE_DROP_FRAG adapt jquery.ripples:
+  //   Copyright (c) 2017 Pim Schreurs. Permission is hereby granted, free of
+  //   charge, to any person obtaining a copy of this software and associated
+  //   documentation files (the "Software"), to deal in the Software without
+  //   restriction, including without limitation the rights to use, copy,
+  //   modify, merge, publish, distribute, sublicense, and/or sell copies of
+  //   the Software, and to permit persons to whom the Software is furnished to
+  //   do so, subject to the following conditions: The above copyright notice
+  //   and this permission notice shall be included in all copies or
+  //   substantial portions of the Software. THE SOFTWARE IS PROVIDED "AS IS",
+  //   WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+  //   LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+  //   PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+  //   HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+  //   AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  //   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+  const RIPPLE_GRID = 384;
+  const RIPPLE_STEP_FRAG = "#version 300 es\nprecision highp float;\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_state;\nuniform vec2 u_texel;\nuniform float u_damping;\nvoid main(){\n  vec4 s = texture(u_state, v_uv);\n  vec2 dx = vec2(u_texel.x, 0.0); vec2 dy = vec2(0.0, u_texel.y);\n  float avg = (texture(u_state, v_uv - dx).r + texture(u_state, v_uv - dy).r + texture(u_state, v_uv + dx).r + texture(u_state, v_uv + dy).r) * 0.25;\n  s.g += (avg - s.r) * 2.0;\n  s.g *= u_damping;\n  s.r += s.g;\n  fragColor = s;\n}";
+  const RIPPLE_DROP_FRAG = "#version 300 es\nprecision highp float;\n#define PI 3.14159265359\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_state;\nuniform vec2 u_center;\nuniform vec2 u_scale;\nuniform float u_radius;\nuniform float u_strength;\nvoid main(){\n  vec4 s = texture(u_state, v_uv);\n  float d = max(0.0, 1.0 - length((v_uv - u_center) * u_scale) / u_radius);\n  d = 0.5 - cos(d * PI) * 0.5;\n  s.r += d * u_strength;\n  fragColor = s;\n}";
+  // Shared by the main pass: x/y = surface slope (gain applied), z = the
+  // curvature that focuses light. A Blinn glint needs a crest tilted ~25°
+  // toward the light, so a calm surface never sparkles.
+  const LIQUID_GLSL = "uniform sampler2D u_ripple;\nuniform int u_liquidMode;\nuniform float u_ripGain;\nuniform vec2 u_ripTexel;\nuniform float u_waterDepth;\n"
+    // Slope is a one-cell central difference; curvature is taken across two
+    // cells, which is blind to the scheme's lingering one-cell checkerboard
+    // (a one-cell Laplacian turns it into a dot screen on the photo).
+    + "float ripH(vec2 uv){ return texture(u_ripple, uv).r; }\n"
+    + "vec3 ripField(vec2 uv){ if (u_liquidMode == 0) return vec3(0.0);\n"
+    + "  vec2 ex = vec2(u_ripTexel.x, 0.0); vec2 ey = vec2(0.0, u_ripTexel.y);\n"
+    + "  vec2 g = vec2(ripH(uv + ex) - ripH(uv - ex), ripH(uv + ey) - ripH(uv - ey)) * 0.5;\n"
+    + "  float lap = (ripH(uv + 2.0*ex) + ripH(uv - 2.0*ex) + ripH(uv + 2.0*ey) + ripH(uv - 2.0*ey) - 4.0*ripH(uv)) * 0.25;\n"
+    + "  return vec3(g, lap) * u_ripGain; }\n"
+    // Blinn glint from a high light (60° up) along the Light Angle, minus
+    // what a flat surface would return, so calm water never glows.
+    + "float ripGlint(vec2 g){ if (u_liquidMode == 0) return 0.0; vec3 nr = normalize(vec3(-g, 1.0)); vec3 H = normalize(normalize(vec3(u_lightDir*0.5, 0.866)) + vec3(0.0, 0.0, 1.0));\n"
+    + "  float flat0 = pow(H.z, 140.0); return max(pow(max(dot(nr, H), 0.0), 140.0) - flat0, 0.0) / (1.0 - flat0); }\n"
+    // How far whole-cover water displaces what lies under it at uv (0 unless
+    // the mode is whole cover): shared by the photo and the subject.
+    + "vec2 waterOffset(vec2 uv){ if (u_liquidMode != 2) return vec2(0.0); vec3 r = ripField(uv); vec3 nw = normalize(vec3(-r.xy, 1.0)); vec3 Tw = refract(vec3(0.0, 0.0, -1.0), nw, 1.0/1.333); return Tw.xy / max(-Tw.z, 0.2) * u_waterDepth * u_dpr / u_resolution; }\n";
 
   // Glass material v3 — an optical model rather than a stack of looks.
   //  • Surface: a convex squircle dome over a bezel of width Depth
@@ -590,7 +673,7 @@ installLiquidCoverWindow();
   //  • Surface: frost (pre-blur), tint, Sketch's Brightness and Saturation.
   //  • The drop shadow falls outside the glass only; the backdrop the glass
   //    refracts is never darkened, so no dirty ring gathers inside the rim.
-  const MAIN_FRAG = "#version 300 es\nprecision highp float;\n#define PI 3.14159265359\n#define SPEC_N 12\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_bg;\nuniform sampler2D u_blurredBg;\nuniform vec2 u_resolution;\nuniform float u_dpr;\nuniform float u_refThickness[" + MAX_LAYERS + "];\nuniform float u_refraction;\nuniform float u_refDispersion;\nuniform vec2 u_lightDir;\nuniform float u_lightIntensity;\nuniform float u_splay;\nuniform float u_brightness;\nuniform float u_saturationFactor;\nuniform float u_bodyFactor;\nuniform vec4 u_tint[" + MAX_LAYERS + "];\nuniform vec2 u_layerCenter[" + MAX_LAYERS + "];\nuniform float u_magnify;\nuniform float u_shadowExpand;\nuniform float u_shadowFactor;\nuniform vec2 u_shadowOffset;\n" + UNION_SD + FG_GLSL + "\n"
+  const MAIN_FRAG = "#version 300 es\nprecision highp float;\n#define PI 3.14159265359\n#define SPEC_N 12\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_bg;\nuniform sampler2D u_blurredBg;\nuniform vec2 u_resolution;\nuniform float u_dpr;\nuniform float u_refThickness[" + MAX_LAYERS + "];\nuniform float u_refraction;\nuniform float u_refDispersion;\nuniform vec2 u_lightDir;\nuniform float u_lightIntensity;\nuniform float u_splay;\nuniform float u_brightness;\nuniform float u_saturationFactor;\nuniform float u_bodyFactor;\nuniform vec4 u_tint[" + MAX_LAYERS + "];\nuniform vec2 u_layerCenter[" + MAX_LAYERS + "];\nuniform float u_magnify;\nuniform float u_shadowExpand;\nuniform float u_shadowFactor;\nuniform vec2 u_shadowOffset;\n" + LIQUID_GLSL + UNION_SD + FG_GLSL + "\n"
     // Continuous spectral split: the edge bend is integrated over SPEC_N
     // wavelengths (400-700nm, stratified with a per-pixel interleaved-gradient
     // jitter so large splits read as a smooth spectrum rather than stepped
@@ -613,12 +696,28 @@ installLiquidCoverWindow();
     // Outside-only drop shadow: a soft falloff from the offset silhouette.
     + "float dropShadow(){ if (u_shadowFactor <= 0.0) return 0.0; vec2 off = u_shadowOffset * u_dpr / u_resolution; float s = unionSD(v_uv - off) / u_dpr; float k = 1.0 - smoothstep(-u_shadowExpand*0.25, u_shadowExpand, s); return k*k*0.55*u_shadowFactor; }\n"
     + "void main(){\n"
-    + "  int layer; float sd = stackSDIdx(v_uv, layer);\n"
-    + "  vec3 bg = texture(u_bg, v_uv).rgb;\n"
+    // The liquid surface: slope (xy) and curvature (z) of the wave field.
+    // Whole-cover water lies over the photo, so the backdrop — and what the
+    // glass refracts — is first bent by it (n = 1.333), split by wavelength
+    // at the steep crests, brightened where the surface focuses light
+    // (caustics) and glinting where a crest faces the light.
+    + "  vec3 rip = ripField(v_uv);\n"
+    // Liquid glass is moved by the water it is made of: the silhouette is
+    // read a few px down the wave slope, so edges sway as a wave passes and
+    // settle back exactly when the surface is calm.
+    + "  vec2 suv = v_uv - rip.xy * 6.0 * u_dpr / u_resolution;\n"
+    + "  int layer; float sd = stackSDIdx(suv, layer);\n"
+    + "  vec2 wOff = vec2(0.0); vec3 bg;\n"
+    + "  if (u_liquidMode == 2) {\n"
+    + "    wOff = waterOffset(v_uv);\n"
+    + "    float wc = 0.012 * u_refDispersion * (1.0 + 6.0*length(rip.xy));\n"
+    + "    bg = vec3(texture(u_bg, v_uv + wOff*(1.0 + wc)).r, texture(u_bg, v_uv + wOff).g, texture(u_bg, v_uv + wOff*(1.0 - wc)).b);\n"
+    + "    bg *= clamp(1.0 - rip.z * u_waterDepth * 0.03, 0.72, 1.45);\n"
+    + "  } else { bg = texture(u_bg, v_uv).rgb; }\n"
     + "  vec3 outside = bg * (1.0 - dropShadow());\n"
     + "  float aa = 1.0;\n"
     + "  vec4 tint = u_tint[layer]; float thick = u_refThickness[layer]; vec2 centre = u_layerCenter[layer];\n"
-    + "  if (u_mergeGroup[layer] >= 0) groupAttr(v_uv, u_mergeGroup[layer], tint, thick, centre);\n"
+    + "  if (u_mergeGroup[layer] >= 0) groupAttr(suv, u_mergeGroup[layer], tint, thick, centre);\n"
     + "  vec3 result;\n"
     + "  if (sd > aa) { result = outside; } else if (u_layerMode[layer] == 1) {\n"
     + "    result = mix(tint.rgb, outside, smoothstep(-aa, aa, sd));\n"
@@ -632,19 +731,23 @@ installLiquidCoverWindow();
     // into radial streaks. The same wide gradient collapses toward 0 on a
     // skeleton ridge (a merged neck, a hairline stroke), where the two sides'
     // bends would otherwise flip in one pixel, so the bend fades across it.
-    + "    vec2 rw = vec2(3.0*u_dpr)/u_resolution; vec2 gw = vec2(effSD(v_uv+vec2(rw.x,0.0),layer)-effSD(v_uv-vec2(rw.x,0.0),layer), effSD(v_uv+vec2(0.0,rw.y),layer)-effSD(v_uv-vec2(0.0,rw.y),layer)) / (6.0*u_dpr);\n"
+    + "    vec2 rw = vec2(3.0*u_dpr)/u_resolution; vec2 gw = vec2(effSD(suv+vec2(rw.x,0.0),layer)-effSD(suv-vec2(rw.x,0.0),layer), effSD(suv+vec2(0.0,rw.y),layer)-effSD(suv-vec2(0.0,rw.y),layer)) / (6.0*u_dpr);\n"
     + "    float gwl = length(gw); vec2 Nr = gwl > 1e-4 ? gw/gwl : vec2(0.0); float rf = smoothstep(0.35, 0.95, gwl);\n"
     + "    vec3 n = normalize(vec3(Nr*slope*rf, 1.0));\n"
     + "    vec3 T = refract(vec3(0.0, 0.0, -1.0), n, 1.0/1.5);\n"
     + "    float z = B*(0.18 + 0.5*hgt);\n"  /* glass above the backdrop at this point, design px */
     + "    vec2 dCss = T.xy / max(-T.z, 0.2) * z * u_refraction;\n"
     + "    vec2 off = dCss * rf * u_dpr / u_resolution;\n"
+    // A liquid surface tilts the dome by the wave slope. Only the change it
+    // makes is added, so a calm surface leaves the glass exactly as it was.
+    + "    if (u_liquidMode > 0) { vec3 nl = normalize(vec3(Nr*slope*rf - rip.xy, 1.0)); vec3 Tl = refract(vec3(0.0, 0.0, -1.0), nl, 1.0/1.5);\n"
+    + "      off += (Tl.xy / max(-Tl.z, 0.2) - T.xy / max(-T.z, 0.2)) * z * u_refraction * u_dpr / u_resolution; }\n"
     // Magnification (MB's Glass Optics > Magnification): the backdrop seen
     // through the glass is scaled about the glass centre; 1 = unchanged, 2 =
     // 200%, negative mirrors it. Only the backdrop moves.
     + "    float mg = u_magnify < 0.0 ? min(u_magnify, -0.05) : max(u_magnify, 0.05);\n"
-    + "    vec2 base = centre + (v_uv - centre) / mg;\n"
-    + "    vec3 col = disp(base, off, u_refDispersion);\n"
+    + "    vec2 base = centre + (v_uv - centre) / mg + wOff;\n"
+    + "    vec3 col = disp(base, off, u_refDispersion * (1.0 + 6.0*length(rip.xy)));\n"
     + "    col = mix(col, tint.rgb, tint.a*0.8);\n"
     /* saturationFactor is Sketch/Apple's Glass Saturation: 1.0 = unchanged, <1
        desaturates, >1 boosts (mix extrapolates past the colour). Brightness
@@ -659,19 +762,30 @@ installLiquidCoverWindow();
     // The rim is two things, as on Apple's glass clock: a crisp ~1px
     // hairline all the way round (stronger where the light hits), and a
     // softer directional band whose width and angular spread follow Splay.
-    + "    float ndl = dot(Nr, u_lightDir);\n"
+    // On moving water the rim light follows the tilted surface, so the
+    // highlight runs along the edge with each wave.
+    + "    vec2 Nl = Nr; if (u_liquidMode > 0) { vec2 q = Nr - rip.xy*0.8; float ql = length(q); Nl = ql > 1e-4 ? q/ql : Nr; }\n"
+    + "    float ndl = dot(Nl, u_lightDir);\n"
     + "    float lobe = mix(14.0, 1.6, u_splay);\n"
     + "    float dirL = pow(max(ndl, 0.0), lobe) + 0.6*pow(max(-ndl, 0.0), lobe);\n"
     + "    float hair = exp(-depth/0.55);\n"
     + "    float band = exp(-depth/mix(1.2, 6.0, u_splay)) * rf;\n"
-    + "    float spec = hair*(0.45 + 0.55*dirL) + band*0.7*dirL;\n"
+    + "    float spec = hair*(0.45 + 0.55*dirL) + band*0.7*dirL + ripGlint(rip.xy)*0.6;\n"
     + "    float fres = 0.04 + 0.96*pow(1.0 - n.z, 5.0);\n"
     + "    float glow = u*u*max(ndl, 0.0)*rf*0.10;\n"
     + "    col = mix(col, vec3(1.0), clamp((fres*0.25 + glow)*u_lightIntensity, 0.0, 1.0));\n"
-    + "    col += vec3(spec*u_lightIntensity);\n"
+    // Reflection consumes the light left after Fresnel/body/tint. An additive
+    // white rim clipped several channels to 1.0, losing the backdrop's detail.
+    + "    float reflection = 1.0 - exp(-max(spec*u_lightIntensity, 0.0));\n"
+    + "    col = mix(col, vec3(1.0), reflection);\n"
     + "    result = mix(min(col, vec3(1.0)), outside, smoothstep(-aa, aa, sd));\n"
     + "  }\n"
-    + "  fragColor = vec4(overFg(result), 1.0);\n"
+    // Under whole-cover water the subject is bent with the photo it was cut
+    // from (no ghost of the photo's own copy beside it), and the glints sit
+    // on the surface above everything.
+    + "  vec3 fin = overFgAt(result, v_uv + wOff);\n"
+    + "  if (u_liquidMode == 2) fin = mix(fin, vec3(1.0), clamp(ripGlint(rip.xy) * u_lightIntensity * 0.8, 0.0, 1.0));\n"
+    + "  fragColor = vec4(fin, 1.0);\n"
     + "}";
 
   // Post Blur (MB's second blur stage): the finished glass composite is
@@ -679,11 +793,12 @@ installLiquidCoverWindow();
   // glare — the pre-blur (Background Blur) frosts what the glass sees, this
   // frosts the glass itself. Solid layers and the foreground subject stay
   // sharp: the subject is laid over here instead of in the main pass.
-  const COMP_FRAG = "#version 300 es\nprecision highp float;\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_sharp;\nuniform sampler2D u_soft;\nuniform vec2 u_resolution;\n" + UNION_SD + FG_GLSL
+  const COMP_FRAG = "#version 300 es\nprecision highp float;\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_sharp;\nuniform sampler2D u_soft;\nuniform vec2 u_resolution;\nuniform float u_dpr;\nuniform vec2 u_lightDir;\n" + LIQUID_GLSL + UNION_SD + FG_GLSL
     + "void main(){ int layer; float sd = stackSDIdx(v_uv, layer); vec3 c = texture(u_sharp, v_uv).rgb;\n"
     + "  float m = u_layerMode[layer] == 1 ? 0.0 : 1.0 - smoothstep(-1.0, 1.0, sd);\n"
     + "  c = mix(c, texture(u_soft, v_uv).rgb, m);\n"
-    + "  fragColor = vec4(overFg(c), 1.0); }";
+    // the subject goes under whole-cover water here too (Post Blur lays it over after the main pass)
+    + "  fragColor = vec4(overFgAt(c, v_uv + waterOffset(v_uv)), 1.0); }";
 
   function compile(gl, type, src) {
     const sh = gl.createShader(type);
@@ -751,7 +866,71 @@ installLiquidCoverWindow();
     this.fgTex = null; this.fgAspect = 1;
     this.sdfTexs = new Array(MAX_LAYERS).fill(null);
     this.w = 0; this.h = 0;
+    // The wave field needs float render targets; without them ripples stay off.
+    this.rippleOK = this.hdr;
+    this.ripA = null; this.ripB = null; this.ripW = 0; this.ripH = 0;
+    this.progRipStep = null; this.progRipDrop = null;
   }
+  // Allocates (or keeps) the wave field for a design size. A new aspect starts
+  // calm: a field stretched to another shape would bend the cover wrongly.
+  Renderer.prototype.rippleSize = function (designW, designH) {
+    if (!this.rippleOK) return false;
+    const gl = this.gl;
+    const long = Math.max(designW, designH, 1);
+    const gw = Math.max(8, Math.round(RIPPLE_GRID * designW / long));
+    const gh = Math.max(8, Math.round(RIPPLE_GRID * designH / long));
+    if (this.ripA && this.ripW === gw && this.ripH === gh) return true;
+    if (!this.progRipStep) {
+      this.progRipStep = program(gl, VERT, RIPPLE_STEP_FRAG);
+      this.progRipDrop = program(gl, VERT, RIPPLE_DROP_FRAG);
+    }
+    [this.ripA, this.ripB].forEach((f) => { if (f) { gl.deleteFramebuffer(f.fbo); gl.deleteTexture(f.tex); } });
+    this.ripA = makeFBO(gl, gw, gh, true); this.ripB = makeFBO(gl, gw, gh, true);
+    this.ripW = gw; this.ripH = gh;
+    this.rippleReset();
+    return true;
+  };
+  Renderer.prototype.rippleReset = function () {
+    if (!this.ripA) return;
+    const gl = this.gl;
+    gl.clearColor(0, 0, 0, 0);
+    [this.ripA, this.ripB].forEach((f) => { gl.bindFramebuffer(gl.FRAMEBUFFER, f.fbo); gl.clear(gl.COLOR_BUFFER_BIT); });
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  };
+  Renderer.prototype._ripplePass = function (prog, setup) {
+    const gl = this.gl;
+    gl.useProgram(prog);
+    gl.bindVertexArray(this.vao);
+    gl.viewport(0, 0, this.ripW, this.ripH);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.ripB.fbo);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.ripA.tex);
+    gl.uniform1i(this._u(prog, "u_state"), 0);
+    setup(gl);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    const a = this.ripA; this.ripA = this.ripB; this.ripB = a;
+  };
+  // x, y in canvas uv (y up); radius as a fraction of the long side.
+  Renderer.prototype.rippleDrop = function (x, y, radius, strength) {
+    if (!this.ripA) return;
+    const long = Math.max(this.ripW, this.ripH);
+    this._ripplePass(this.progRipDrop, (gl) => {
+      gl.uniform2f(this._u(this.progRipDrop, "u_center"), x, y);
+      gl.uniform2f(this._u(this.progRipDrop, "u_scale"), this.ripW / long, this.ripH / long);
+      gl.uniform1f(this._u(this.progRipDrop, "u_radius"), Math.max(radius, 1e-4));
+      gl.uniform1f(this._u(this.progRipDrop, "u_strength"), strength);
+    });
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+  };
+  Renderer.prototype.rippleStep = function (steps, damping) {
+    if (!this.ripA) return;
+    for (let i = 0; i < steps; i++) {
+      this._ripplePass(this.progRipStep, (gl) => {
+        gl.uniform2f(this._u(this.progRipStep, "u_texel"), 1 / this.ripW, 1 / this.ripH);
+        gl.uniform1f(this._u(this.progRipStep, "u_damping"), damping);
+      });
+    }
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+  };
   Renderer.prototype._ensureFBOs = function (w, h) {
     if (this.w === w && this.h === h && this.fboA) return;
     const gl = this.gl;
@@ -896,6 +1075,16 @@ installLiquidCoverWindow();
     gl.uniform1f(this._u(p, "u_fgBgZoom"), params.bgZoom || 1);
     gl.uniform2f(this._u(p, "u_fgBgPan"), (params.bgPan && params.bgPan[0]) || 0, (params.bgPan && params.bgPan[1]) || 0);
   };
+  Renderer.prototype._bindLiquid = function (p, unit, params) {
+    const gl = this.gl;
+    const mode = this.ripA ? (params.liquidMode | 0) : 0;
+    gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, mode ? this.ripA.tex : this.bgTex);
+    gl.uniform1i(this._u(p, "u_ripple"), unit);
+    gl.uniform1i(this._u(p, "u_liquidMode"), mode);
+    gl.uniform1f(this._u(p, "u_ripGain"), params.liquidGain || 0);
+    gl.uniform2f(this._u(p, "u_ripTexel"), 1 / Math.max(this.ripW, 1), 1 / Math.max(this.ripH, 1));
+    gl.uniform1f(this._u(p, "u_waterDepth"), params.waterDepth || 0);
+  };
   Renderer.prototype.render = function (params) {
     const gl = this.gl;
     const w = this.canvas.width, h = this.canvas.height, dpr = params.dpr || 1;
@@ -980,6 +1169,7 @@ installLiquidCoverWindow();
     gl.uniform1f(this._u(this.progMain, "u_shadowFactor"), params.shadowFactor);
     gl.uniform2f(this._u(this.progMain, "u_shadowOffset"), params.shadowOffset[0], params.shadowOffset[1]);
     gl.uniform4fv(this._u(this.progMain, "u_tint"), tints);
+    this._bindLiquid(this.progMain, MAX_LAYERS + 3, params);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
     if (postWeights) {
@@ -994,6 +1184,9 @@ installLiquidCoverWindow();
       gl.activeTexture(gl.TEXTURE0 + blurUnit); gl.bindTexture(gl.TEXTURE_2D, this.fboA.tex);
       gl.uniform1i(this._u(this.progComp, "u_soft"), blurUnit);
       gl.uniform2f(this._u(this.progComp, "u_resolution"), w, h);
+      gl.uniform1f(this._u(this.progComp, "u_dpr"), dpr);
+      gl.uniform2f(this._u(this.progComp, "u_lightDir"), Math.cos(params.lightAngle), Math.sin(params.lightAngle));
+      this._bindLiquid(this.progComp, MAX_LAYERS + 3, params);
       this._bindFg(this.progComp, fgUnit, true, params);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }
@@ -1083,7 +1276,7 @@ installLiquidCoverWindow();
     const select = $("lc-font");
     if (!select) return;
     select.querySelectorAll("option[data-font-family]").forEach((option) => {
-      const available = systemFontAvailable(option.dataset.fontFamily);
+      const available = option.dataset.fontSystem === "true" || systemFontAvailable(option.dataset.fontFamily);
       option.dataset.fontAvailable = available ? "true" : "false";
       option.dataset.baseLabel ||= option.textContent;
       option.textContent = option.dataset.baseLabel + (available ? "" : " · " + tr("liquid_cover_font_not_installed_short", "Not installed"));
@@ -1098,6 +1291,7 @@ installLiquidCoverWindow();
     const select = $("lc-font");
     const L = layers[sel];
     if (!select || !L) return false;
+    if (L.locked) { select.value = L.font; return false; }
     const option = select.options[select.selectedIndex];
     if (option?.dataset.fontAvailable === "false") {
       select.value = L.font;
@@ -1108,7 +1302,12 @@ installLiquidCoverWindow();
       if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
       return false;
     }
-    L.font = select.value;
+    if (L.font !== select.value) runHistoryAction("liquid_cover_edit_action", "Edit layer", () => {
+      L.font = select.value;
+      if (option?.dataset.fontSerif === "true") {
+        L.fontWeight = 600;
+      }
+    });
     setFontStatus("liquid_cover_font_active", "Using {0}.", option?.dataset.baseLabel || option?.textContent || "");
     return true;
   }
@@ -1256,6 +1455,9 @@ installLiquidCoverWindow();
   // `clear` and `thinfrost` are Apple's Clear and Regular variants; the rest
   // walk toward frosted and milky, plus the editorial looks.
   const PRESETS = [
+    // A typography + material recipe for the active unlocked layer only.
+    { key: "aqua", sampleText: "X", desc: "Aqua-inspired pale-blue serif glass — a full curved body, soft wide light and a short shadow; refracted background stays visible",
+      p: { refraction: 37.5, dispersion: 0, lightAngle: 135, lightIntensity: 32, splay: 80, blurRadius: 0, brightness: 0, saturation: 100, shadowFactor: 10, shadowExpand: 6, thickness: 85, tintColor: "#369dd1", tintAlpha: 18, bodyFactor: 0, fontFamily: 'Georgia, "Songti SC", "Songti TC", STSong, "Times New Roman", serif', fontWeight: 600, layerScope: "active", textLayerMode: "glass" } },
     // Apple Clear: the backdrop shows 1:1 through a water-clear body; the
     // curved rim bends it and catches a crisp two-sided highlight.
     { key: "clear", mixValue: 0, desc: "water-clear Apple glass — fully transparent body showing the background 1:1, the curved rim bends the image and catches a crisp highlight; subtle and premium",
@@ -1286,6 +1488,10 @@ installLiquidCoverWindow();
     // refraction and no spectral split; titles set in a regular weight.
     { key: "aaron", mixValue: 85, desc: "Aaron's cover glass — a pale, heavily frosted warm-white glass lifted well above the photo, low colour, quiet crisp edges and a short soft shadow; regular-weight title, product photo often in front of it; calm, editorial, product-review",
       p: { refraction: 18, dispersion: 0, lightAngle: 135, lightIntensity: 32, splay: 40, blurRadius: 52, brightness: 30, saturation: 55, shadowFactor: 18, shadowExpand: 12, thickness: 30, tintColor: "#f4f1ec", tintAlpha: 48, bodyFactor: 30, fontWeight: 500 } },
+    // A restrained cover treatment. Keep the author's type weight, positions,
+    // solid caption colors and layer modes; only the material recipe changes.
+    { key: "cover", mixValue: 15, desc: "quiet transparent cover lettering — thin curved edges, low frost, neutral color and no milky body; keep the primary promise in a readable solid layer",
+      p: { refraction: 30, dispersion: 0, lightAngle: 135, lightIntensity: 40, splay: 26, blurRadius: 4, brightness: 0, saturation: 100, shadowFactor: 8, shadowExpand: 12, thickness: 25, tintColor: "#ffffff", tintAlpha: 12, bodyFactor: 0 } },
     { key: "ios27", mixValue: 35, desc: "iOS 27 official glass — the neutral Apple UI Kit material: near-clear with a small frost, colour lifted through the glass, a hairline rim and a barely-there floating shadow",
       p: { refraction: 50, dispersion: 0, lightAngle: 135, lightIntensity: 65, splay: 20, blurRadius: 6, brightness: 12, saturation: 140, shadowFactor: 5, shadowExpand: 15, thickness: 60, tintColor: "#ffffff", tintAlpha: 6, bodyFactor: 2, layerMode: "glass" } },
   ];
@@ -1413,7 +1619,7 @@ installLiquidCoverWindow();
     if (fn) { fn(); return k; }
     return null;
   }
-  function applyRecipeByName(k) { const r = recipeByKey(k); if (r) { syncMaterialMixToRecipe(r.key); applyPreset(r.p); setActivePreset(r.key); } return r; }
+  function applyRecipeByName(k) { const r = recipeByKey(k); if (r && !(r.p.layerScope === "active" && (!layers[sel] || layers[sel].locked))) { syncMaterialMixToRecipe(r.key); applyPreset(r.p); setActivePreset(r.key); } return r; }
   function applyTintStrength(s) { const a = TINT_STRENGTH[String(s).toLowerCase()]; if (a == null) return false; layers.forEach((L) => { L.tintAlpha = a; }); return true; }
   // The vision tint is a COLOR-harmony call, not a material change: "none"
   // keeps the recipe's own veil (a thick recipe's 30% white IS its body — the
@@ -1433,7 +1639,40 @@ installLiquidCoverWindow();
   function applyModifiers(list) { if (!Array.isArray(list)) return []; const done = []; list.slice(0, 3).forEach((m) => { const fn = MODIFIER_FX[String(m).toLowerCase()]; if (fn) { fn(); done.push(m); } }); return done; }
   function applyBusyness(name) { const fn = BUSYNESS_FX[String(name).toLowerCase()]; if (fn) { fn(); return String(name).toLowerCase(); } return null; }
   function setSlider(id, v, min, max) { if (v == null) return; const x = $(id); if (x) x.value = clampNum(v, min, max, +x.value); }
+  function readableTitleTint(L) {
+    const source = lastStillBgSource;
+    const w = sourceWidth(source), h = sourceHeight(source);
+    if (!w || !h) return "#f7f7f3";
+    try {
+      const probe = document.createElement("canvas");
+      probe.width = 48; probe.height = 48;
+      const ctx = probe.getContext("2d", { willReadFrequently: true });
+      if (!ctx) return "#f7f7f3";
+      // Match the renderer's cover fit. Layer positions use bottom-origin UV.
+      const cropW = Math.min(w, h * DESIGN_W / DESIGN_H);
+      const cropH = Math.min(h, w * DESIGN_H / DESIGN_W);
+      const sx = (w - cropW) / 2, sy = (h - cropH) / 2;
+      const bounds = worldBounds(L);
+      const sampleW = Math.max(cropW * (bounds.right - bounds.left), cropW * 0.04);
+      const sampleH = Math.max(cropH * (bounds.top - bounds.bottom), cropH * 0.03);
+      const x = clampNum(sx + cropW * L.cx - sampleW / 2, 0, w - sampleW, sx);
+      const y = clampNum(sy + cropH * (1 - L.cy) - sampleH / 2, 0, h - sampleH, sy);
+      ctx.drawImage(source, x, y, sampleW, sampleH, 0, 0, 48, 48);
+      const pixels = ctx.getImageData(0, 0, 48, 48).data;
+      let sum = 0;
+      for (let i = 0; i < pixels.length; i += 4) sum += (0.2126 * pixels[i] + 0.7152 * pixels[i + 1] + 0.0722 * pixels[i + 2]) / 255;
+      return sum / (pixels.length / 4) > 0.5 ? "#202329" : "#f7f7f3";
+    } catch (_) {
+      // A cross-origin photo may be drawable but not readable; keep export usable.
+      return "#f7f7f3";
+    }
+  }
+
   function applyPreset(p) {
+    const targets = p.layerScope === "active"
+      ? [layers[sel]].filter((L) => L && !L.locked)
+      : layers;
+    if (p.layerScope === "active" && !targets.length) return;
     if (p.bodyFactor != null) glassFx.bodyFactor = p.bodyFactor;
     setSlider("lc-refraction", p.refraction, 0, 100);
     setSlider("lc-dispersion", p.dispersion, 0, 100);
@@ -1450,19 +1689,26 @@ installLiquidCoverWindow();
     setSlider("lc-post-blur", p.postBlur == null ? 0 : p.postBlur, 0, 40);
     setSlider("lc-shadow-factor", p.shadowFactor, 0, 100);
     setSlider("lc-shadow-expand", p.shadowExpand, 2, 100);
-    layers.forEach((L) => {
+    targets.forEach((L) => {
+      // Only an explicitly scoped typography recipe converts the active text.
+      if (p.layerScope === "active" && p.textLayerMode && !L.shape && !L.shapeKind) L.renderMode = p.textLayerMode;
       // layerMode only retargets shape/logo layers. Text layers keep their
       // solid/glass choice: in the 9to5Mac grammar the title is ALWAYS the
       // readable solid layer — a material preset must never strip that.
       if ((p.layerMode === "glass" || p.layerMode === "solid") && (L.shape || L.shapeKind)) L.renderMode = p.layerMode;
       if (p.thickness != null) L.refThickness = p.thickness;
-      if (p.tintColor) L.tintColor = p.tintColor;
+      const titleTint = p.adaptiveTitleTint ? readableTitleTint(L) : p.tintColor;
+      if (titleTint) L.tintColor = titleTint;
+      if (p.adaptiveTitleTint && isSolidLayer(L)) L.solidColor = titleTint;
       if (p.tintAlpha != null) L.tintAlpha = p.tintAlpha;
     });
     // a recipe may name a title weight (aaron sets titles regular); text
     // layers only, and only this recipe path — Glass Mix never carries one
     let reshaped = false;
-    if (p.fontWeight) layers.forEach((L) => {
+    if (p.fontFamily) targets.forEach((L) => {
+      if (!L.shape && !L.shapeKind && L.font !== p.fontFamily) { L.font = p.fontFamily; reshaped = true; }
+    });
+    if (p.fontWeight) targets.forEach((L) => {
       if (!L.shape && !L.shapeKind && L.fontWeight !== p.fontWeight) { L.fontWeight = p.fontWeight; reshaped = true; }
     });
     if (reshaped) rebuildAllSDF();
@@ -1485,7 +1731,7 @@ installLiquidCoverWindow();
       preview.setAttribute("aria-hidden", "true");
       const sample = document.createElement("span");
       sample.className = "lc-preset-sample";
-      sample.textContent = pr.key === "ninefive" ? "9" : pr.key === "ios27" ? "27" : "Aa";
+      sample.textContent = thumbSampleText(pr.key);
       preview.appendChild(sample);
       const copy = document.createElement("span");
       copy.className = "lc-preset-copy";
@@ -1512,11 +1758,11 @@ installLiquidCoverWindow();
   let thumbRenderer = null;
   let thumbTimer = 0;
   const thumbSdf = new Map();
-  function thumbSampleText(k) { return k === "ninefive" ? "9" : k === "ios27" ? "27" : "Aa"; }
-  function thumbSdfFor(text, weight) {
-    const key = text + "@" + weight;
+  function thumbSampleText(k) { return recipeByKey(k)?.sampleText || (k === "ninefive" ? "9" : k === "ios27" ? "27" : "Aa"); }
+  function thumbSdfFor(text, weight, fontFamily = FONT_DEFAULT) {
+    const key = JSON.stringify([text, weight, fontFamily]);
     if (thumbSdf.has(key)) return thumbSdf.get(key);
-    const r = rasterizeText({ text, width: THUMB_W, height: THUMB_H, fontFamily: FONT_DEFAULT, fontWeight: weight, fontSize: THUMB_FONT * THUMB_DPR, letterSpacing: 0, rotationDeg: 0 });
+    const r = rasterizeText({ text, width: THUMB_W, height: THUMB_H, fontFamily, fontWeight: weight, fontSize: THUMB_FONT * THUMB_DPR, letterSpacing: 0, rotationDeg: 0 });
     const sdf = alphaToSignedDistance(r.alpha, r.width, r.height, true);
     smoothSDF(sdf, r.width, r.height);
     let mn = 0; for (let i = 0; i < sdf.length; i++) { if (sdf[i] < mn) mn = sdf[i]; }
@@ -1567,8 +1813,10 @@ installLiquidCoverWindow();
       PRESETS.forEach((pr) => {
         const text = thumbSampleText(pr.key);
         const weight = pr.p.fontWeight || 800;
-        const entry = thumbSdfFor(text, weight);
-        if (text + weight !== current) { thumbRenderer.setLayerSDF(0, entry.sdf, THUMB_W, THUMB_H); current = text + weight; }
+        const family = pr.p.fontFamily || FONT_DEFAULT;
+        const sampleKey = JSON.stringify([text, weight, family]);
+        const entry = thumbSdfFor(text, weight, family);
+        if (sampleKey !== current) { thumbRenderer.setLayerSDF(0, entry.sdf, THUMB_W, THUMB_H); current = sampleKey; }
         thumbRenderer.render(recipeRenderParams(pr.p, entry.halfPx));
         const preview = row.querySelector(`[data-preset-key="${pr.key}"] .lc-preset-preview`);
         if (!preview) return;
@@ -1605,6 +1853,7 @@ installLiquidCoverWindow();
   // adaptation belongs to the bottom mood/config bar, otherwise the button label
   // stops matching the final rendered result.
   function onPresetClick(pr) {
+    if (pr.p.layerScope === "active" && (!layers[sel] || layers[sel].locked)) return;
     runHistoryAction("liquid_cover_style_action", "Change style", () => {
       syncMaterialMixToRecipe(pr.key);
       applyPreset(pr.p);
@@ -1705,6 +1954,7 @@ installLiquidCoverWindow();
     "lc-magnify", "lc-merge", "lc-post-blur",
     "lc-material-mix", "lc-motion-preset", "lc-motion-duration",
     "lc-motion-audio", "lc-fg-scale",
+    "lc-liquid-mode", "lc-liquid-strength", "lc-liquid-drop", "lc-liquid-pointer",
   ];
 
   function cloneLayerForHistory(L) {
@@ -1832,6 +2082,7 @@ installLiquidCoverWindow();
     loadLayerIntoPanel();
     setInspectorPanel(isShapeLayer(layers[sel]) ? "glass" : "layers");
     syncValueLabels();
+    syncLiquidControls();
     setActivePreset(activePresetKey);
     scheduleRender();
     historyRestoring = false;
@@ -2058,6 +2309,26 @@ installLiquidCoverWindow();
   // Design dims define layout; export multiplies them up to the imported photo's
   // native long edge (so a 6000×4000 import exports 6000×4000), clamped to the
   // GPU's max texture size. Never downscales below the preview.
+  // MAX_TEXTURE_SIZE is not what a canvas can actually hold: browsers clamp the
+  // drawing buffer lower (7680x4320 on this Mac, with 16384 reported), and a
+  // clamped buffer renders a cropped, zoomed corner of the cover. Probe the
+  // real limit with a scratch canvas of the same shape.
+  const drawingFitCache = new Map();
+  function drawingBufferFits(w, h) {
+    const key = w + "x" + h;
+    if (drawingFitCache.has(key)) return drawingFitCache.get(key);
+    let ok = false;
+    try {
+      // context first, resize after: that is how the cover canvas grows
+      const c = document.createElement("canvas");
+      const gl = c.getContext("webgl2", { preserveDrawingBuffer: true, premultipliedAlpha: false });
+      c.width = w; c.height = h;
+      ok = !!gl && gl.drawingBufferWidth === w && gl.drawingBufferHeight === h;
+      if (gl) { const lose = gl.getExtension("WEBGL_lose_context"); if (lose) lose.loseContext(); }
+    } catch (e) { ok = false; }
+    drawingFitCache.set(key, ok);
+    return ok;
+  }
   function exportTargetDims() {
     const a = ASPECTS[activeAspectKey()] || [DESIGN_W, DESIGN_H];
     const baseW = a[0], baseH = a[1], baseLong = Math.max(baseW, baseH);
@@ -2075,6 +2346,15 @@ installLiquidCoverWindow();
     scale = Math.max(1, scale);
     const maxTex = (renderer && renderer.gl && renderer.gl.getParameter(renderer.gl.MAX_TEXTURE_SIZE)) || 4096;
     if (baseLong * scale > maxTex) scale = maxTex / baseLong;
+    // shrink until the canvas can really hold the render (binary search, whole px)
+    if (!drawingBufferFits(Math.round(baseW * scale), Math.round(baseH * scale))) {
+      let lo = 1, hi = scale;
+      for (let i = 0; i < 8; i++) {
+        const mid = (lo + hi) / 2;
+        if (drawingBufferFits(Math.round(baseW * mid), Math.round(baseH * mid))) lo = mid; else hi = mid;
+      }
+      scale = lo;
+    }
     return { scale, w: Math.round(baseW * scale), h: Math.round(baseH * scale) };
   }
   function updateExportDimNote() {
@@ -2082,24 +2362,22 @@ installLiquidCoverWindow();
     const d = exportTargetDims();
     el.textContent = (typeof t === "function" && t("liquid_cover_export_dim_prefix") || "PNG") + " " + d.w + " × " + d.h + " px";
   }
-  function exportPng() {
-    if (!renderer) return;
+  let pngExportInFlight = false;
+  async function exportPng() {
+    if (!renderer || pngExportInFlight) return;
+    pngExportInFlight = true;
     const d = exportTargetDims();
     const exportButton = $("lc-export");
-    const restore = () => {
-      applyAspect(DESIGN_W, DESIGN_H);
-      rebuildAllSDF(); renderNow();
-      setBusy(exportButton, false);
-    };
+    liquid.hold = true;
     setBusy(exportButton, true, tr("liquid_cover_ai_exporting", "Rendering…"));
     try {
       aiStatusText(tr("liquid_cover_ai_exporting", "Rendering") + " " + d.w + "×" + d.h + "…");
-      // Export supersampling: render 2x the target and downsample once at the
-      // end. The PNG ships at exactly d.w × d.h — never below the promise — but
-      // every output pixel averages 4 rendered samples, so glyph edges and the
-      // glare band stay clean at any size. Skipped when 2x would exceed the GPU.
+      // Let the real busy state paint before the CPU-intensive SDF rebuild.
+      await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+      // Export supersampling keeps the promised output size, with smoother
+      // letter edges. Respect the current GPU texture limit.
       const maxTex = (renderer.gl && renderer.gl.getParameter(renderer.gl.MAX_TEXTURE_SIZE)) || 4096;
-      const ss = (d.w * 2 <= maxTex && d.h * 2 <= maxTex) ? 2 : 1;
+      const ss = (d.w * 2 <= maxTex && d.h * 2 <= maxTex && drawingBufferFits(d.w * 2, d.h * 2)) ? 2 : 1;
       renderScale = d.scale * ss;
       EXPORT_W = d.w * ss; EXPORT_H = d.h * ss;
       canvas.width = EXPORT_W; canvas.height = EXPORT_H;
@@ -2115,18 +2393,20 @@ installLiquidCoverWindow();
         ctx.drawImage(canvas, 0, 0, d.w, d.h);
         blobSource = down;
       }
-      blobSource.toBlob((blob) => {
-        if (blob) {
-          downloadBlob(blob, "liquid-glass-" + d.w + "x" + d.h + ".png");
-          aiStatusText(tr("liquid_cover_ai_exported", "Exported") + " " + d.w + "×" + d.h + " PNG");
-        } else {
-          aiStatus("error", "Export failed");
-        }
-        restore();
-      }, "image/png");
+      const blob = await new Promise((resolve) => blobSource.toBlob(resolve, "image/png"));
+      if (!blob) throw new Error("PNG encoding failed");
+      await downloadBlob(blob, "liquid-glass-" + d.w + "x" + d.h + ".png");
+      aiStatusText(tr("liquid_cover_ai_exported", "Exported") + " " + d.w + "×" + d.h + " PNG");
     } catch (e) {
-      restore();
-      aiStatus("error", "Export failed (resolution too high for this GPU)");
+      aiStatus("error", tr("liquid_cover_export_failed", "Could not export PNG. Try a smaller output size."));
+    } finally {
+      applyAspect(DESIGN_W, DESIGN_H);
+      rebuildAllSDF(); renderNow();
+      pngExportInFlight = false;
+      updateThumbnailPreview();
+      setBusy(exportButton, false);
+      liquid.hold = false;
+      if (liquid.energy > 0) wakeLiquid();
     }
   }
 
@@ -2425,6 +2705,9 @@ installLiquidCoverWindow();
       shadowOffset: [0, -(4 + 0.35 * +$("lc-shadow-expand").value)],
       bgZoom: 1,
       bgPan: [0, 0],
+      liquidMode: liquidModeValue(),
+      liquidGain: liquidGain(),
+      waterDepth: LIQUID_WATER_DEPTH,
     };
   }
 
@@ -2448,11 +2731,170 @@ installLiquidCoverWindow();
       p.bgZoom = 1 + 0.045 * z;
       p.bgPan = [-0.012 * z, 0.006 * z];
       p.lightAngle += (12 * Math.sin(t * Math.PI * 2)) * Math.PI / 180;
+    } else if (preset === "ripple" && (motionPreviewActive || motionExporting)) {
+      // Drops land on the title and the water settles: the last frame is the
+      // still cover, so the video ends on exactly what the PNG exports.
+      if (!p.liquidMode) { p.liquidMode = 1; p.liquidGain = liquidGain(0.5); }
+      p.liquidGain *= 1 - smoothstep01(0.62, 1, t);
     }
     return p;
   }
+  function smoothstep01(a, b, x) { const k = clampNum((x - a) / (b - a), 0, 1, 0); return k * k * (3 - 2 * k); }
 
-  function renderNow() { if (renderer) renderer.render(readParamsAt(motionProgress())); }
+  function updateThumbnailPreview() {
+    const panel = $("lc-panel-export");
+    const preview = $("lc-thumbnail");
+    if (!renderer || !canvas || !preview || !panel || panel.hidden || pngExportInFlight) return;
+    // Fixed 320px raster; CSS may shrink it in a narrow inspector. Never resize
+    // the artboard, change renderScale or touch an export setting here.
+    const width = 320;
+    const height = Math.max(1, Math.round(width * DESIGN_H / DESIGN_W));
+    if (preview.width !== width || preview.height !== height) {
+      preview.width = width; preview.height = height;
+    }
+    const ctx = preview.getContext("2d");
+    if (!ctx) return;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.clearRect(0, 0, width, height);
+    ctx.drawImage(canvas, 0, 0, width, height);
+  }
+  // --- Liquid surface: live water in the editor, scripted water in video ---
+  const LIQUID_HZ = 60;
+  const LIQUID_DAMPING = 0.995;
+  const LIQUID_SETTLE_STEPS = 900;
+  const LIQUID_WATER_DEPTH = 70;
+  const liquid = { frozen: false, energy: 0, last: 0, frameId: 0, hold: false, seed: 1, scripted: null };
+  function liquidModeValue() {
+    const v = $("lc-liquid-mode") ? $("lc-liquid-mode").value : "off";
+    return v === "glass" ? 1 : v === "cover" ? 2 : 0;
+  }
+  function liquidGain(strength) {
+    const s = strength == null ? clampNum(+($("lc-liquid-strength") && $("lc-liquid-strength").value), 0, 100, 50) / 100 : strength;
+    return 180 * s;
+  }
+  function liquidDropRadius(scale) {
+    const px = clampNum(+($("lc-liquid-drop") && $("lc-liquid-drop").value), 6, 120, 28);
+    return (px * (scale || 1)) / Math.max(DESIGN_W, DESIGN_H);
+  }
+  function liquidReady() { return !!(renderer && renderer.rippleSize(DESIGN_W, DESIGN_H)); }
+  function liquidLive() { return liquidModeValue() > 0 && !liquid.frozen && !motionPreviewActive && !motionExporting; }
+  function wakeLiquid() {
+    liquid.energy = LIQUID_SETTLE_STEPS;
+    if (liquid.frameId || liquid.hold) return;
+    liquid.last = performance.now();
+    liquid.frameId = requestAnimationFrame(liquidTick);
+  }
+  // Runs only while the water still moves (about 15 s after the last drop),
+  // then stops: a calm cover costs nothing.
+  function liquidTick(now) {
+    liquid.frameId = 0;
+    const win = document.querySelector(".liquid-cover-window");
+    if (!renderer || liquid.hold || !liquidLive() || (win && win.classList.contains("is-hidden"))) return;
+    const stepMs = 1000 / LIQUID_HZ;
+    let steps = Math.floor((now - liquid.last) / stepMs);
+    if (steps > 4) { steps = 4; liquid.last = now; } else liquid.last += steps * stepMs;
+    if (steps > 0) {
+      renderer.rippleStep(steps, LIQUID_DAMPING);
+      liquid.energy -= steps;
+      renderNow();
+    }
+    if (liquid.energy > 0) liquid.frameId = requestAnimationFrame(liquidTick);
+  }
+  function liquidDropAt(p, big) {
+    if (!liquidLive() || !$("lc-liquid-pointer")?.checked || !liquidReady()) return;
+    renderer.rippleDrop(p.x, p.y, liquidDropRadius(big ? 1.5 : 1), big ? 0.14 : 0.012);
+    wakeLiquid();
+  }
+  function mulberry32(seed) {
+    let a = seed >>> 0;
+    return function () {
+      a = (a + 0x6D2B79F5) >>> 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  // A drop on each visible glass layer plus a few smaller ones around it.
+  function liquidDropPlan(seed, spanSteps) {
+    const rnd = mulberry32(seed);
+    const long = Math.max(DESIGN_W, DESIGN_H);
+    const drops = [];
+    layers.forEach((L, i) => {
+      if (L.hidden || isSolidLayer(L)) return;
+      const b = worldBounds(L);
+      const hPx = Math.abs(b.top - b.bottom) * DESIGN_H;
+      drops.push({ step: i * 5, x: (b.left + b.right) / 2, y: (b.bottom + b.top) / 2, r: clampNum(hPx * 0.55, 18, 140, 40) / long, s: 0.16 });
+    });
+    const extra = Math.max(3, Math.round(spanSteps / 40));
+    for (let k = 0; k < extra; k++) {
+      drops.push({ step: 6 + Math.floor(rnd() * spanSteps), x: 0.08 + rnd() * 0.84, y: 0.1 + rnd() * 0.8, r: (10 + rnd() * 26) / long, s: 0.04 + rnd() * 0.06 });
+    }
+    return drops.sort((a, b) => a.step - b.step);
+  }
+  function liquidRain() {
+    if (liquidModeValue() === 0) { $("lc-liquid-mode").value = "glass"; syncLiquidControls(); }
+    if (liquid.frozen) setLiquidFrozen(false);
+    if (!liquidReady()) return;
+    // the plan's later drops are scheduled into the live loop
+    const plan = liquidDropPlan(liquid.seed++, 36);
+    const start = performance.now();
+    plan.forEach((d) => setTimeout(() => {
+      if (!liquidLive() || !liquidReady()) return;
+      renderer.rippleDrop(d.x, d.y, d.r, d.s);
+      wakeLiquid();
+    }, Math.max(0, d.step * (1000 / LIQUID_HZ) - (performance.now() - start))));
+  }
+  function setLiquidFrozen(on) {
+    liquid.frozen = !!on;
+    $("lc-liquid-freeze")?.setAttribute("aria-pressed", on ? "true" : "false");
+    if (!on && liquid.energy > 0) wakeLiquid();
+  }
+  function liquidCalm() {
+    if (renderer) renderer.rippleReset();
+    liquid.energy = 0;
+    renderNow();
+  }
+  function syncLiquidControls() {
+    const supported = !renderer || renderer.rippleOK;
+    const on = supported && liquidModeValue() > 0;
+    ["lc-liquid-strength", "lc-liquid-drop", "lc-liquid-pointer", "lc-liquid-freeze", "lc-liquid-calm"].forEach((id) => { const el = $(id); if (el) el.disabled = !on; });
+    const mode = $("lc-liquid-mode");
+    if (mode) mode.disabled = !supported;
+    const rain = $("lc-liquid-rain");
+    if (rain) rain.disabled = !supported;
+    const note = $("lc-liquid-note");
+    if (note && !supported) note.textContent = tr("liquid_cover_liquid_unsupported", "This browser cannot render the water (no float render targets).");
+  }
+  // Video: the field is replayed from calm on every run, step by step from the
+  // motion progress, so preview and export see the same water.
+  function driveScriptedRipple(progress) {
+    if (!liquidReady()) return;
+    const duration = motionDurationSeconds();
+    const target = Math.round(clampNum(progress, 0, 1, 0) * duration * LIQUID_HZ);
+    let s = liquid.scripted;
+    if (!s || s.duration !== duration || target < s.step) {
+      renderer.rippleReset();
+      s = liquid.scripted = { duration, step: 0, next: 0, plan: liquidDropPlan(0x5eed, Math.round(duration * LIQUID_HZ * 0.45)) };
+    }
+    while (s.step < target) {
+      while (s.next < s.plan.length && s.plan[s.next].step <= s.step) {
+        const d = s.plan[s.next++];
+        renderer.rippleDrop(d.x, d.y, d.r, d.s);
+      }
+      renderer.rippleStep(1, LIQUID_DAMPING);
+      s.step++;
+    }
+  }
+
+  function renderNow() {
+    if (!renderer) return;
+    const scripted = motionPresetKey() === "ripple" && (motionPreviewActive || motionExporting);
+    if (scripted) driveScriptedRipple(motionProgress());
+    else if (liquid.scripted) { liquid.scripted = null; renderer.rippleReset(); }
+    renderer.render(readParamsAt(motionProgress()));
+    updateThumbnailPreview();
+  }
 
   function scheduleRender() {
     if (rafPending) return;
@@ -3227,7 +3669,7 @@ installLiquidCoverWindow();
   }
 
   function activeAspectKey() {
-    const b = document.querySelector("#liquid-cover-app .lc-aspect button.is-active");
+    const b = document.querySelector(".liquid-cover-window .lc-aspect button.is-active");
     return (b && b.dataset.k) || "16:9";
   }
 
@@ -3478,6 +3920,7 @@ installLiquidCoverWindow();
       hint.dataset.i18n = copy[2];
       hint.textContent = tr(copy[2], copy[3]);
     }
+    if (target === "export") { renderNow(); }
     if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
     if (typeof syncRovingTabStops === "function") {
       const tablist = document.querySelector(".liquid-cover-window .lc-toolbar-modes");
@@ -3956,6 +4399,7 @@ installLiquidCoverWindow();
     canvas.addEventListener("pointerdown", (e) => {
       const p = pointerToUV(e);
       canvas.focus({ preventScroll: true });
+      liquidDropAt(p, true);
       if (dragFgMode) {
         beginHistory("liquid_cover_move_action", "Move layer");
         drag = { kind: "foreground", start: p, x0: fg.x, y0: fg.y };
@@ -3997,8 +4441,10 @@ installLiquidCoverWindow();
       }
     });
     canvas.addEventListener("pointermove", (e) => {
-      if (!drag) return;
+      // the pointer stirs the water whether it hovers or drags glass through it
       const p = pointerToUV(e);
+      liquidDropAt(p, false);
+      if (!drag) return;
       const rawDx = p.x - drag.start.x;
       const rawDy = p.y - drag.start.y;
       if (drag.kind === "marquee") {
@@ -4051,6 +4497,20 @@ installLiquidCoverWindow();
     };
     canvas.addEventListener("pointerup", endDrag);
     canvas.addEventListener("pointercancel", endDrag);
+
+    // liquid surface
+    $("lc-liquid-mode").addEventListener("change", () => {
+      syncLiquidControls();
+      if (liquidModeValue() > 0 && liquidReady() && liquid.energy <= 0) liquidRain();
+      renderNow();
+    });
+    ["lc-liquid-strength", "lc-liquid-drop"].forEach((id) => {
+      $(id).addEventListener("input", () => { syncValueLabels(); renderNow(); });
+    });
+    $("lc-liquid-rain").addEventListener("click", liquidRain);
+    $("lc-liquid-calm").addEventListener("click", liquidCalm);
+    $("lc-liquid-freeze").addEventListener("click", () => setLiquidFrozen(!liquid.frozen));
+    syncLiquidControls();
 
     // export at full source resolution
     $("lc-export").addEventListener("click", exportPng);

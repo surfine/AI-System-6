@@ -25,7 +25,7 @@ const serviceProviders = read("app/core/service-providers.js");
 test.assertIncludes(manifest, "\"app/core/image-attachments.js\"", "the shared module is in the boot bundle");
 test.assertNotIncludes(manifest, "lazyRuntimePaths.push(\"app/core/image-attachments.js\")", "the shared module is not lazy");
 
-test.assertIncludes(config, "indexedDbVersion: 5", "the database version carries the new store");
+test.assertIncludes(config, "indexedDbVersion: 6", "the database version carries the new store");
 test.assertIncludes(config, "imageAttachmentsStoreName: \"imageAttachments\"", "the store has a name");
 test.assertIncludes(projectDisk, "db.createObjectStore(imageAttachmentsStoreName", "the store is created on upgrade");
 test.assertIncludes(projectDisk, "store.createIndex(\"projectId\"", "attachments are indexed by project");

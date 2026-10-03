@@ -1987,10 +1987,11 @@
           <div class="teachtext-actions teachtext-surface-actions review-desk-actions">
             <div class="teachtext-command-group" aria-label="Review commands" data-i18n-aria-label="review_commands">
               <button class="btn writing-mode-toggle" type="button" data-action="toggle-review-preview" data-i18n="preview">Preview</button>
-              <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#review-desk-body" data-i18n="teachtext_focus_off">Focus: Off</button>
+              <button class="btn" type="button" data-action="review-edit-manuscript" data-i18n="to_manuscript">Edit Full Manuscript</button>
               <details class="teachtext-command-menu specialized-command-menu">
                 <summary class="btn"><span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span><span class="mobile-control-short" data-i18n="commands_short">Cmds</span></summary>
                 <div class="teachtext-command-popover">
+                  <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#review-desk-body" data-i18n="teachtext_focus_off">Focus: Off</button>
                   <button class="btn" type="button" data-action="review-style-section" data-i18n="review_style_section">Style Check This Section</button>
                   <button class="btn" type="button" data-action="review-facts-section" data-i18n="review_facts_section">Fact Check This Section</button>
                   <button class="btn" type="button" data-action="review-facts-section-online" data-i18n="review_facts_section_online">Fact Check This Section Online</button>
@@ -2375,16 +2376,16 @@
           <div class="teachtext-actions teachtext-surface-actions">
             <div class="teachtext-command-group" aria-label="Question Sheet commands" data-i18n-aria-label="question_sheet_commands">
               <button class="btn writing-mode-toggle" type="button" data-action="toggle-question-preview" data-i18n="preview">Preview</button>
-              <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#question-sheet-body" data-i18n="teachtext_focus_off">Focus: Off</button>
+              <button class="btn" type="button" data-action="generate-outline" data-i18n="writing_ai_outline">AI Outline</button>
               <details class="teachtext-command-menu specialized-command-menu">
                 <summary class="btn"><span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span><span class="mobile-control-short" data-i18n="commands_short">Cmds</span></summary>
                 <div class="teachtext-command-popover">
+                  <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#question-sheet-body" data-i18n="teachtext_focus_off">Focus: Off</button>
                   <button class="btn" type="button" data-action="question-sheet-view-page" aria-pressed="true" data-i18n="question_sheet_view_page">As Page</button>
                   <button class="btn" type="button" data-action="question-sheet-view-cards" aria-pressed="false" data-i18n="question_sheet_view_cards">As Cards</button>
                   <hr />
                   <button class="btn" type="button" data-action="add-question-sheet-photo" data-i18n="question_sheet_add_photo">Add Photo</button>
                   <button class="btn" type="button" data-action="organize-question-sheet" data-i18n="organize_question_sheet">Sort Into Sections</button>
-                  <button class="btn" type="button" data-action="generate-outline" data-i18n="make_outline">Make Outline</button>
                   <button class="btn" type="button" data-action="insert-question-template" data-i18n="insert_question_template">Insert Template</button>
                   <hr />
                   <button class="btn" type="button" data-action="toggle-writing-eli5" aria-pressed="false" data-i18n="quick_draft_eli5_enabled">Write for one-pass listening</button>
@@ -2420,11 +2421,11 @@
           <div class="teachtext-actions teachtext-surface-actions">
             <div class="teachtext-command-group" aria-label="Outline commands" data-i18n-aria-label="outline_commands">
               <button class="btn writing-mode-toggle" type="button" data-action="toggle-outline-preview" data-i18n="preview">Preview</button>
-              <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#outline-content" data-i18n="teachtext_focus_off">Focus: Off</button>
+              <button class="btn" type="button" data-action="add-outline-section" data-i18n="add_outline_section">Add Section</button>
               <details class="teachtext-command-menu specialized-command-menu">
                 <summary class="btn"><span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span><span class="mobile-control-short" data-i18n="commands_short">Cmds</span></summary>
                 <div class="teachtext-command-popover">
-                  <button class="btn" type="button" data-action="add-outline-section" data-i18n="add_outline_section">Add Section</button>
+                  <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#outline-content" data-i18n="teachtext_focus_off">Focus: Off</button>
                   <button class="btn" type="button" data-action="outline-tree-up" data-i18n="outline_tree_up">Move Section Up</button>
                   <button class="btn" type="button" data-action="outline-tree-down" data-i18n="outline_tree_down">Move Section Down</button>
                   <button class="btn" type="button" data-action="outline-tree-promote" data-i18n="outline_tree_promote">Raise a Level</button>
@@ -2459,13 +2460,13 @@
           <div class="status-bar-trailing window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
         </div>
         <div class="window-pane teachtext-surface-pane section-drafts-pane">
-          <select id="draft-section-source" hidden aria-label="Outline Section" data-i18n-aria-label="outline_section"></select>
           <input id="draft-title" type="hidden" />
           <div id="draft-list" class="draft-list is-hidden"></div>
           <div class="draft-editor">
             <div class="section-draft-nav">
               <button class="btn" type="button" data-action="previous-section-draft" data-i18n="previous_section" data-i18n-aria-label="previous_section">Previous section</button>
-              <div id="draft-section-label" class="draft-section-label" data-i18n="no_draft_selected">Select a section draft.</div>
+              <div class="select-wrap draft-section-picker"><select id="draft-section-source" aria-label="Outline Section" data-i18n-aria-label="outline_section" aria-describedby="draft-section-label"></select></div>
+              <span id="draft-section-label" class="visually-hidden" data-i18n="no_draft_selected">Select a section draft.</span>
               <button class="btn" type="button" data-action="next-section-draft" data-i18n="next_section" data-i18n-aria-label="next_section">Next section</button>
             </div>
             <div class="teachtext-editor-container specialized-teachtext-editor window-frame-scroller">
@@ -2475,11 +2476,11 @@
             <div class="teachtext-actions teachtext-surface-actions">
               <div class="teachtext-command-group" aria-label="Section Draft commands" data-i18n-aria-label="section_draft_commands">
                 <button class="btn writing-mode-toggle" type="button" data-action="toggle-draft-preview" data-i18n="preview">Preview</button>
-                <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#draft-body" data-i18n="teachtext_focus_off">Focus: Off</button>
+                <button class="btn" type="button" data-action="draft-current-section" data-i18n="writing_ai_draft">AI Draft</button>
                 <details class="teachtext-command-menu specialized-command-menu">
                   <summary class="btn"><span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span><span class="mobile-control-short" data-i18n="commands_short">Cmds</span></summary>
                   <div class="teachtext-command-popover">
-                    <button class="btn" type="button" data-action="draft-current-section" data-i18n="draft_section">Draft Section</button>
+                  <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#draft-body" data-i18n="teachtext_focus_off">Focus: Off</button>
                     <button class="btn" type="button" data-action="polish-draft" data-i18n="polish_draft">AI Polish</button>
                     <button class="btn" type="button" data-action="suggest-draft" data-i18n="suggest_draft">AI Suggestions</button>
                     <button class="btn writing-eli5-action" type="button" data-action="eli5-rewrite-section" data-i18n="quick_draft_eli5_rewrite" hidden>Make it listenable</button>
@@ -2835,7 +2836,8 @@
           <h2 id="dictation-title" data-i18n="dictation_pad">Dictation Pad</h2>
         </div>
         <div class="details-bar compact-status-bar dictation-details-bar">
-          <span class="status-bar-leading" id="dictation-status" data-i18n="ready">Ready</span>
+          <span class="status-bar-leading" id="dictation-status" role="status" aria-live="polite" aria-atomic="true" data-i18n="ready">Ready</span>
+          <span class="status-bar-trailing dictation-target-note is-hidden" id="dictation-target-note"></span>
           <span class="status-bar-trailing" id="dictation-intent-target"></span>
         </div>
         <div class="window-pane dictation-pane">
@@ -2845,18 +2847,56 @@
               <button type="button" id="dictation-stop" data-i18n="stop" disabled>Stop</button>
             </div>
           </div>
+          <p class="dictation-interim is-hidden" id="dictation-interim" aria-hidden="true"></p>
+          <div class="dictation-tail is-hidden" id="dictation-tail">
+            <span id="dictation-tail-text"></span>
+            <button class="btn mini-btn" type="button" id="dictation-tail-keep" data-i18n="dictation_tail_keep">Keep it</button>
+            <button class="btn mini-btn" type="button" id="dictation-tail-drop" data-i18n="dictation_tail_drop">Ignore it</button>
+          </div>
           <div class="dictation-transcripts">
             <label for="dictation-raw" data-i18n="raw_transcript">Raw Transcript</label>
             <textarea id="dictation-raw" rows="4" placeholder="Spoken text appears here..." data-i18n-placeholder="dictation_raw_hint"></textarea>
-            <label for="dictation-cleaned" data-i18n="cleaned_transcript">Cleaned Transcript</label>
+            <div class="dictation-label-row">
+              <label for="dictation-cleaned" data-i18n="cleaned_transcript">Cleaned Transcript</label>
+              <span class="dictation-badge is-hidden" id="dictation-cleaned-state"></span>
+            </div>
             <textarea id="dictation-cleaned" rows="4" placeholder="AI cleaned text..." data-i18n-placeholder="dictation_clean_hint"></textarea>
           </div>
+          <div class="dictation-source-row" role="group" aria-labelledby="dictation-source-label">
+            <span id="dictation-source-label" data-i18n="dictation_use_source">Use</span>
+            <div class="segmented-control dictation-source-actions">
+              <button type="button" id="dictation-source-raw" data-i18n="dictation_source_raw" aria-pressed="true">Raw</button>
+              <button type="button" id="dictation-source-cleaned" data-i18n="dictation_source_cleaned_choice" aria-pressed="false" disabled>Organized</button>
+            </div>
+          </div>
+          <details class="dictation-preferences">
+            <summary data-i18n="dictation_preferences">Dictation preferences</summary>
+            <label class="dictation-preference" for="dictation-auto-clean">
+              <input type="checkbox" id="dictation-auto-clean" />
+              <span data-i18n="dictation_auto_clean">Lightly organize after a stop</span>
+            </label>
+            <p class="dictation-preference-note" id="dictation-auto-hint"></p>
+            <label class="dictation-preference" for="dictation-recognition-language" data-i18n="dictation_recognition_language">Recognition language</label>
+            <select id="dictation-recognition-language">
+              <option value="follow-ui" data-i18n="dictation_language_follow">Follow the interface</option>
+              <option value="zh-CN">普通话 (zh-CN)</option>
+              <option value="en-US">English (en-US)</option>
+            </select>
+            <label class="dictation-preference" for="dictation-terms" data-i18n="dictation_terms">Glossary</label>
+            <textarea id="dictation-terms" rows="3" placeholder="AI System 6&#10;WindowShade&#10;DeepSeek" data-i18n-placeholder="dictation_terms_hint"></textarea>
+            <div class="dictation-preference-actions">
+              <button class="btn mini-btn" type="button" id="dictation-terms-save" data-i18n="dictation_terms_save">Save glossary</button>
+              <span class="dictation-preference-note" data-i18n="dictation_privacy_note">Speech is recognized by the browser's service and may go online; organizing sends the text and the saved glossary to the current writing model.</span>
+            </div>
+            <p class="dictation-preference-note" id="dictation-prefs-note"></p>
+          </details>
           <div class="button-row dictation-bottom-actions">
             <button class="btn" type="button" id="dictation-clear" data-i18n="clear" disabled>Clear</button>
+            <button class="btn" type="button" id="dictation-copy" data-i18n="dictation_copy" disabled>Copy</button>
             <span class="spacer"></span>
             <button class="btn" type="button" id="dictation-shape" data-i18n="dictation_shape" disabled>Shape</button>
             <button class="btn" type="button" id="dictation-clean" data-i18n="clean_transcript" disabled>Organize</button>
-            <button class="btn default" type="button" id="dictation-send" data-i18n="send" disabled>Send</button>
+            <button class="btn default" type="button" id="dictation-send" disabled>Insert</button>
           </div>
         </div>
       </section>

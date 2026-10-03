@@ -1152,6 +1152,16 @@
   min-width: 88px;
 }
 
+.draft-section-picker,
+.draft-section-picker select {
+  min-width: 0;
+  width: 100%;
+}
+
+.draft-section-picker select {
+  text-overflow: ellipsis;
+}
+
 .draft-section-label {
   min-width: 0;
   padding: 4px 8px;

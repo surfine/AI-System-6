@@ -523,6 +523,10 @@ function wireAppEvents() {
 
   draftTitleInput?.addEventListener("input", savePipelineData);
 
+  draftSectionSelectEl?.addEventListener("change", () => {
+    if (typeof selectSectionDraft === "function") selectSectionDraft(Number(draftSectionSelectEl.value));
+  });
+
   draftBodyInput.addEventListener("input", () => {
     if (typeof noteWritingSurfaceEdit === "function") noteWritingSurfaceEdit("draft");
     if (typeof markActiveProjectDirty === "function") markActiveProjectDirty();
@@ -1526,7 +1530,7 @@ function wireAppEvents() {
 
   dictationShapeButton.addEventListener("click", () => withDictationPad(() => shapeDictationTranscript()));
 
-  dictationCleanButton.addEventListener("click", () => withDictationPad(() => cleanTranscript()));
+  dictationCleanButton.addEventListener("click", () => withDictationPad(() => dictationCleanOrCancel()));
 
   dictationClearButton.addEventListener("click", () => withDictationPad(() => clearDictationTranscript()));
 

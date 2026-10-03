@@ -30,7 +30,7 @@ test.assertIncludes(
   "model: null",
   "the retrieval-time manifest does not claim to know the final model"
 );
-test.assertIncludes(chatMessages, "contextManifest: window.lastContextManifest", "the Run Record links the Context Manifest");
+test.assertIncludes(chatMessages, "contextManifest,", "the Run Record links its invocation Context Manifest");
 test.assertIncludes(chatMessages, "actualModel", "the run layer records the ACTUAL model on the Context Manifest");
 test.assertIncludes(chatMessages, "fallbackReason", "the run layer records the fallback reason on the Context Manifest");
 test.assertIncludes(finderObjects, "applyFinderLabel", "labels are only written through the user-confirmed apply path");

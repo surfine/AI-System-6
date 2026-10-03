@@ -2857,6 +2857,14 @@ input[type="radio"] {
   .teachtext-command-group {
     display: flex;
   }
+
+  /* A writing step keeps all three common actions readable. The next step
+     gets its own full-width row instead of squeezing its neighbours. */
+  .teachtext-surface-actions > .teachtext-command-group {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    flex: 1 0 100%;
+  }
 }
 
 @media (max-width: 860px) and (orientation: portrait) {

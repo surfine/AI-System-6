@@ -176,9 +176,13 @@ test.assertIncludes(dictation, "appendToNotePad(text);", "Send always has somewh
 test.assertNotIncludes(dictation, 'setStatus(t("select_text_first"));\n}', "Send no longer ends in a message nobody can see");
 test.assertIncludes(
   dictation,
-  'setDictationDestination(dictationInputTarget ? dest : "notepad");',
+  'setDictationDestination(target ? dest : "notepad");',
   "the pad names the place the words will actually land"
 );
+// And it captures the position before the pad takes focus, so the promise it
+// names can actually be kept (spec §8.1).
+test.assertIncludes(dictation, "dictationTargetSnapshot = captureDictationTarget(target);",
+  "the position is captured when the pad opens, not guessed at Send");
 
 // ---- The slip itself --------------------------------------------------------
 

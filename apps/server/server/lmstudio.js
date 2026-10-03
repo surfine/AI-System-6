@@ -787,12 +787,17 @@ async function chooseLmStudioAutoloadModel(baseUrl, signal, preferredModel = "")
  * `{ ...result, autoLoaded: false }`.
  *
  * @param {{ chatUrl: string, payload: any, provider: string,
- *           model?: string, signal?: AbortSignal | null }} input
+ *           model?: string, signal?: AbortSignal | null,
+ *           beforeRequest?: () => void, onRequest?: () => void }} input
  * @returns {Promise<AutoloadChatResult>}
  */
-async function postLocalChatWithModelAutoload({ chatUrl, payload, provider, model, signal }) {
+async function postLocalChatWithModelAutoload({ chatUrl, payload, provider, model, signal, beforeRequest, onRequest }) {
   const chatPayload = stripLmStudioLoadFields(payload);
-  let result = await postJsonWithFallback(chatUrl, chatPayload, signal);
+  const post = () => {
+    beforeRequest?.();
+    return postJsonWithFallback(chatUrl, chatPayload, signal, {}, { onRequest });
+  };
+  let result = await post();
   if (provider !== "lm-studio") {
     return { ...result, autoLoaded: false };
   }
@@ -837,7 +842,7 @@ async function postLocalChatWithModelAutoload({ chatUrl, payload, provider, mode
       max_context_length: loadedLmStudioModelInfo?.max_context_length || 0,
     };
     chatPayload.model = loaded?.model || selectedModel;
-    result = await postJsonWithFallback(chatUrl, chatPayload, signal);
+    result = await post();
     return {
       ...result,
       autoLoaded: true,

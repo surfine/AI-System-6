@@ -27,9 +27,11 @@
 
 "use strict";
 
+const { createChatFollowupBudget } = require("./chat.js");
 const { send, readJsonBody, requestSignal, withTimeoutSignal } = require("../lib/http.js");
 const { createSseJsonParser, postJsonWithFallback, proxyJsonStream } = require("../lib/fetch.js");
-const { applyChatTaskContract, modelContentFromChatData } = require("../chat.js");
+const { applyChatTaskContract, modelContentFromChatData, assertFinalChatPayloadBudget } = require("../chat.js");
+const { taskContractForPayload } = require("../../../desktop/app/shared/model-task-runtime.js");
 const {
   findHumanizerOutputHits,
   findHumanizerStyleDiagnostics,
@@ -38,6 +40,7 @@ const {
   shouldRepairHumanizerOutput,
 } = require("../humanizer.js");
 const {
+  DEEPSEEK_CLOUD_MODELS,
   cloudAuthHeaders,
   DEEPSEEK_BASE_URL_DEFAULT,
   DEEPSEEK_PUBLIC_BASE_URL,
@@ -104,6 +107,8 @@ function stripCloudLocalOnlyFields(payload) {
  *   data: any,
  *   payload: any,
  *   taskKind: string,
+ *   taskContract?: any,
+ *   budgetOptions?: any,
  *   targetUrl: string,
  *   signal: AbortSignal | null | undefined,
  *   authHeaders: Record<string, string>,
@@ -111,13 +116,14 @@ function stripCloudLocalOnlyFields(payload) {
  *   reserveSharedCall?: (payload: any) => any,
  *   initialUsageTokens?: number,
  *   onUsage?: (usage: any) => void,
+ *   callBudget?: any,
  * }} options
  */
 async function repairCloudHumanizerOutputIfNeeded(options) {
   const { payload, taskKind, targetUrl, signal, authHeaders, transportOptions } = options;
   let data = options.data;
   let content = modelContentFromChatData(data).trim();
-  if (!content || !shouldLintHumanizerOutput(taskKind)) return data;
+  if (!content || options.taskContract?.humanizer === "off" || !shouldLintHumanizerOutput(taskKind)) return data;
   let hits = findHumanizerOutputHits(content);
   const explicitRewrite = shouldRepairHumanizerOutput(taskKind);
 
@@ -127,11 +133,13 @@ async function repairCloudHumanizerOutputIfNeeded(options) {
   // is still one attempt the run owes an explanation for.
   let attempts = 0;
   let repaired = false;
+  const callBudget = options.callBudget || createChatFollowupBudget({});
+  const maxRepairs = Math.min(2, callBudget.remaining, callBudget.remainingRepairs);
   let totalUsageTokens = Math.max(0, Number(options.initialUsageTokens) || 0);
   // `round` bounds the loop the way `attempts < 2` used to: the counter itself
   // may only move when a request is really sent, and a loop bounded by it
   // could spin forever if a transport never reported the send.
-  for (let round = 0; explicitRewrite && round < 2 && hits.length; round += 1) {
+  for (let round = 0; explicitRewrite && round < maxRepairs && hits.length; round += 1) {
     const repairPayload = {
       ...payload,
       stream: false,
@@ -142,9 +150,9 @@ async function repairCloudHumanizerOutputIfNeeded(options) {
         {
           role: "user",
           content: [
-            "上一版仍然有 AI 腔残留。",
-            `必须删除这些片段或结构：${hits.join("、")}`,
-            "只重写上一版，不要添加新事实，不要解释，不要列禁词清单。",
+            "上一版有机械检查标出的候选问题，请按语义判断。",
+            `候选片段或结构（不是禁词）：${hits.join("、")}`,
+            "只在确有空话、错误联系或模板表达时修改上一版；保留普通词语的准确用法、来源原话、数字、限定条件与作者声音。不要添加新事实、加强无证据的推论或列禁词清单；没有真实问题就原样返回。",
             "如果是在提修改建议，不要逐字引用源文里的套话；用“这类词”“这个判断”指代即可。",
             "如果原文太空，就写短一点，直接说明缺少具体信息。",
           ].join("\n"),
@@ -155,7 +163,9 @@ async function repairCloudHumanizerOutputIfNeeded(options) {
     let requestSent = false;
     let usageBooked = false;
     try {
+      assertFinalChatPayloadBudget(repairPayload, options.budgetOptions);
       repairReservation = options.reserveSharedCall?.(repairPayload) || null;
+      callBudget.reserve("repair");
       const { response } = await postJsonWithFallback(
         targetUrl,
         repairPayload,
@@ -170,13 +180,18 @@ async function repairCloudHumanizerOutputIfNeeded(options) {
             if (!requestSent) {
               requestSent = true;
               attempts += 1;
+              callBudget.sent("repair");
             }
             repairReservation?.markUpstreamStarted();
           },
         }
       );
       const text = await response.text();
-      if (!response.ok) break;
+      if (!response.ok) {
+        let failure; try { failure = JSON.parse(text); } catch { failure = {}; }
+        callBudget.stop({ status: response.status, code: failure.code, message: failure.detail || failure.error || text });
+        break;
+      }
       let repairData = {};
       try {
         repairData = JSON.parse(text);
@@ -196,11 +211,14 @@ async function repairCloudHumanizerOutputIfNeeded(options) {
       const nextContent = modelContentFromChatData(repairData).trim();
       if (!nextContent) break;
       if (isHumanizerRepairMetaResponse(nextContent)) break;
+      if (nextContent === content) break;
       data = repairData;
       content = nextContent;
       repaired = true;
       hits = findHumanizerOutputHits(content);
     } catch (error) {
+      callBudget.stop(error);
+      if (error?.name === "AbortError") throw error;
       console.error(JSON.stringify({
         level: "error",
         event: "cloud_humanizer_repair_failed",
@@ -284,16 +302,18 @@ function cloudRunUsageMetrics(finalUsage, knownTokens, unknown) {
  *   authHeaders: Record<string, string>,
  *   transportOptions: { maxBytes?: number, pinnedAddress?: string, pinnedFamily?: number },
  *   reserveSharedCall?: (payload: any) => any,
+ *   callBudget?: any,
  * }} options
  * @returns {Promise<any | null>}
  */
-async function retryWithoutThinking({ payload, targetUrl, signal, authHeaders, transportOptions, reserveSharedCall }) {
+async function retryWithoutThinking({ payload, targetUrl, signal, authHeaders, transportOptions, reserveSharedCall, callBudget }) {
   const retryPayload = { ...payload, thinking: { type: "disabled" } };
   delete retryPayload.reasoning_effort;
   /** @type {any} */
   let reservation = null;
   try {
     if (reserveSharedCall) reservation = reserveSharedCall(retryPayload);
+    callBudget?.reserve("thinking-fallback");
     // The retry is a request of its own, so it is marked the same way every
     // other send path marks one: from the moment the request is on the wire.
     // Waiting for the response means a request that was sent and then cut off
@@ -306,17 +326,23 @@ async function retryWithoutThinking({ payload, targetUrl, signal, authHeaders, t
       authHeaders,
       {
         ...transportOptions,
-        onRequest: () => reservation?.markUpstreamStarted(),
+        onRequest: () => { callBudget?.sent("thinking-fallback"); reservation?.markUpstreamStarted(); },
       }
     );
     const text = await response.text();
-    if (!response.ok) return null;
+    if (!response.ok) {
+      let failure; try { failure = JSON.parse(text); } catch { failure = {}; }
+      callBudget?.stop({ status: response.status, code: failure.code, message: failure.detail || failure.error || text });
+      return null;
+    }
     if (!(response.headers.get("content-type") || "").includes("application/json")) return null;
     const retried = JSON.parse(text);
     reservation?.addUsage(retried?.usage);
     if (isBudgetStarvedCompletion(retried)) return null;
     return retried;
-  } catch {
+  } catch (error) {
+    callBudget?.stop(error);
+    if (error?.name === "AbortError") throw error;
     return null;
   } finally {
     reservation?.settle();
@@ -334,9 +360,11 @@ async function handleCloudChat(req, res) {
   const startedAt = Date.now();
 
   try {
-    const raw = /** @type {any} */ (
-      applyChatTaskContract(await readJsonBody(req, { limitBytes: 10 * 1024 * 1024 }))
-    );
+    const requestPayload = await readJsonBody(req, { limitBytes: 10 * 1024 * 1024 });
+    const callBudget = createChatFollowupBudget(requestPayload);
+    const taskContract = taskContractForPayload(requestPayload);
+    const raw = /** @type {any} */ (applyChatTaskContract(requestPayload));
+    const budgetOptions = { contextLimit: Math.min(...[raw.ai_system6_context_limit, raw.loaded_context_length, raw.context_length].map(Number).filter((value) => Number.isSafeInteger(value) && value > 0)), reservedOutputTokens: raw.ai_system6_reserved_output_tokens };
     timeoutHandle = withTimeoutSignal(
       requestAbortSignal,
       raw.stream === true ? 600000 : 120000
@@ -490,6 +518,10 @@ async function handleCloudChat(req, res) {
       }
     }
     stripCloudLocalOnlyFields(payload);
+    delete payload.ai_system6_context_limit;
+    delete payload.ai_system6_reserved_output_tokens;
+    delete payload.loaded_context_length;
+    delete payload.context_length;
     if (isDeepSeekCloudModelId(payload.model)) {
       payload.thinking = policy.thinking
         ? { type: "enabled" }
@@ -526,6 +558,9 @@ async function handleCloudChat(req, res) {
     console.log("[cloud-chat] model:", payload.model, "stream:", payload.stream, "has_key:", !!apiKey);
 
     const authHeaders = cloudAuthHeaders(apiKey);
+    const registryLimit = deepSeekTarget ? DEEPSEEK_CLOUD_MODELS.find((entry) => entry.id === normalizeCloudModelId(payload.model))?.context_length : 0;
+    if (registryLimit) budgetOptions.contextLimit = Math.min(budgetOptions.contextLimit, registryLimit);
+    assertFinalChatPayloadBudget(payload, budgetOptions);
 
     if (payload.stream === true) {
       payload.stream_options = {
@@ -557,7 +592,7 @@ async function handleCloudChat(req, res) {
       authHeaders,
       {
         ...transportOptions,
-        onRequest: () => sharedReservation?.markUpstreamStarted(),
+        onRequest: () => { callBudget.sent("model"); sharedReservation?.markUpstreamStarted(); },
       }
     );
     const text = await upstream.text();
@@ -578,6 +613,8 @@ async function handleCloudChat(req, res) {
       const warning = cloudUpstreamWarning(upstream.status);
       send(res, upstream.status, JSON.stringify({
         error: "Cloud API request failed",
+        code: data.code || (upstream.status === 402 ? "cloud_insufficient_balance" : ""),
+        ai_system6_metrics: callBudget.metrics(),
         ...(warning ? { warning } : {}),
         detail: `Cloud API returned HTTP ${upstream.status}`,
       }), { "Content-Type": "application/json" });
@@ -613,6 +650,7 @@ async function handleCloudChat(req, res) {
       firstAnswerUsageTokens = usageTokenTotal(data?.usage);
       if (firstAnswerUsageTokens !== null) sharedReservation?.addUsage(data.usage);
       const retried = await retryWithoutThinking({
+        callBudget,
         payload,
         targetUrl,
         signal,
@@ -644,7 +682,8 @@ async function handleCloudChat(req, res) {
       if (!retried) {
         send(res, 502, JSON.stringify({
           error: "The reasoning chain used the whole answer budget",
-          code: "reasoning_budget_exhausted",
+          code: callBudget.metrics().call_stop?.code || "reasoning_budget_exhausted",
+          ai_system6_metrics: callBudget.metrics(),
           warning: "这次思考用光了回答额度，没有正文返回。请缩短输入或稍后重试。",
         }), { "Content-Type": "application/json" });
         return;
@@ -677,6 +716,9 @@ async function handleCloudChat(req, res) {
       data,
       payload,
       taskKind,
+      taskContract,
+      callBudget,
+      budgetOptions,
       targetUrl,
       signal,
       authHeaders,
@@ -716,6 +758,7 @@ async function handleCloudChat(req, res) {
       finish_reason: choice.finish_reason || data.stop_reason || "",
       model: data.model || payload.model || "",
       usage: cloudRunUsageMetrics(data.usage, knownUsageTokens, usageIsUnknown),
+      ...callBudget.metrics(),
     };
 
     send(res, upstream.status, JSON.stringify(data), {
@@ -723,11 +766,12 @@ async function handleCloudChat(req, res) {
     });
   } catch (error) {
     if (/** @type {any} */ (error)?.name === "AbortError") return;
-    const status = Number(/** @type {any} */ (error)?.statusCode) || 502;
+    const status = Number(/** @type {any} */ (error)?.statusCode || /** @type {any} */ (error)?.status) || 502;
     const code = String(/** @type {any} */ (error)?.code || "cloud_proxy_failed");
     send(res, status, JSON.stringify({
       error: status < 500 ? /** @type {Error} */ (error).message : "Cloud proxy failed",
       code,
+      budget: /** @type {any} */ (error)?.budget,
     }), { "Content-Type": "application/json" });
   } finally {
     sharedReservation?.settle();

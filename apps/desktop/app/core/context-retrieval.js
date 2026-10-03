@@ -1094,9 +1094,13 @@ function getCuratedContextItems(userText, limit = maxCuratedContextItems) {
 }
 
 function retrieveContext(userText, options = {}) {
+  const invocation = options.invocation;
+  if (invocation) assertClioTaskInvocationActive(invocation, options.signal, true);
   if (!isProjectMounted || !activeProjectId) {
     lastContextBudget = null;
     lastRetrievedContextItems = [];
+    window.lastContextManifest = null;
+    if (invocation) { invocation.contextManifest = null; invocation.contextBudget = null; }
     scheduleRenderTasks("contextPanel");
     return "";
   }
@@ -1299,7 +1303,9 @@ function retrieveContext(userText, options = {}) {
       id: item.id || item.sourceKey || "",
       reason: item.excludedReason || (item.excluded ? "disabled by user" : "budget or ranking"),
     }));
-  window.lastContextManifest = {
+  const contextManifest = {
+    invocationId: invocation?.id || "",
+    projectId: invocation?.projectId || String(activeProjectId || ""),
     schemaVersion: 1,
     capturedAt: new Date().toISOString(),
     taskKind: String(options.taskKind || "chat"),
@@ -1323,11 +1329,19 @@ function retrieveContext(userText, options = {}) {
     },
   };
 
+  window.lastContextManifest = contextManifest;
+  if (invocation) {
+    invocation.contextManifest = clioTaskSnapshot(contextManifest);
+    invocation.contextBudget = clioTaskSnapshot(lastContextBudget);
+  }
+  options.onContextManifest?.(contextManifest);
   return sections.join("\n\n");
 }
 
 async function buildBudgetedProjectContext(userText, options = {}) {
+  const projectId = String(activeProjectId || "");
   await rankChunksForQuery(userText, options.signal);
+  assertClioTaskInvocationActive(options.invocation || { projectId }, options.signal, true);
   const budgetInfo = getRagContextBudget(userText, [], {
     capChars: options.budget || maxPipelineContextChars,
   });
@@ -1335,6 +1349,8 @@ async function buildBudgetedProjectContext(userText, options = {}) {
     budget: Math.min(options.budget || maxPipelineContextChars, budgetInfo.budgetChars),
     budgetInfo,
     taskKind: options.taskKind || "project-context",
+    invocation: options.invocation,
+    onContextManifest: options.onContextManifest,
     topK: options.topK || maxPipelineReferenceChunks,
     maxReferenceChunks: options.maxReferenceChunks || maxPipelineReferenceChunks,
     maxCuratedContextItems: options.maxCuratedContextItems || 6,

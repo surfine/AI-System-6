@@ -400,6 +400,17 @@ const dynamicWindowSources = Object.freeze({
     cssPrefixes: Object.freeze(["joyride-"]),
     iconId: "joyride",
   }),
+  // The visual novel joined the Games folder with the Basin's game set; it is a
+  // lazy summoned window like its siblings, playing in the shared application
+  // frame rather than a shell of its own.
+  mingwen: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-mingwen",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/mingwen.js#installMingwenWindow",
+    cssPrefixes: Object.freeze(["mingwen-"]),
+    iconId: "mingwen",
+  }),
 });
 
 // Prefixes that predate the registry do not always match the data-window id
@@ -535,6 +546,7 @@ const windowInterfaceContracts = Object.freeze({
   doom: creativeLab(),
   rootline: creativeLab(),
   joyride: creativeLab(),
+  mingwen: creativeLab(),
   imagePromptStudio: specializedUtility("utility", {
     documentModel: "none",
     statusLayout: "task-specific",

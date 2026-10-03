@@ -172,7 +172,7 @@ const roles = JSON.parse(vmw.run(`JSON.stringify({
   doomGrow: resizableWindowNames.has("doom"),
 })`));
 test.assert(roles.phone && roles.tile && roles.grow, `Rootline takes its phone page and frame sets from its row (${JSON.stringify(roles)})`);
-test.assert(roles.immersive === "bonsaiCity,doom,joyride,micropolis,openttd,rootline", `the immersive set is the games, from their rows (${roles.immersive})`);
+test.assert(roles.immersive === "bonsaiCity,doom,joyride,micropolis,mingwen,openttd,rootline", `the immersive set is the games, from their rows (${roles.immersive})`);
 test.assert(roles.microGrow && !roles.doomGrow, "frame flags stay per window: Micropolis grows, DOOM does not");
 
 test.finish();

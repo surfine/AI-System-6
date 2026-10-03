@@ -237,6 +237,20 @@ function buildContextGistPacket(userText, entries = [], options = {}) {
     .filter((card) => card.rawText);
   if (!cards.length) return null;
 
+  // The upstream raw packet has already passed ranking, exclusions and budget.
+  // Gist reconstruction of numbers cannot protect a late caveat or counterexample.
+  const evidenceTask = /(research|draft|outline|question-sheet|project-context|review|claim|critique|hkrr|humaniz|polish|rewrite|fact|citation|quote|source|evidence)/i.test(options.taskKind || "")
+    || /(研究|起草|写作|创作|修稿|改稿|大纲|审稿|证据|引用|核查)/.test(userText);
+  if (evidenceTask && options.rawContextText) {
+    const text = String(options.rawContextText);
+    return {
+      text, cards, revealedCards: [], rawCards: cards,
+      usedFallback: true, fallbackReason: "preserve evidence qualifications",
+      rolesByCitation: Object.fromEntries(cards.map((card) => [card.citationId, "raw"])),
+      stats: contextGistStats(cards, [], cards, text, true),
+    };
+  }
+
   const queryWords = new Set(contextGistWords(userText));
   const highRisk = contextGistIsHighRisk(userText, options.taskKind || "");
   const revealLimit = highRisk ? 5 : 3;

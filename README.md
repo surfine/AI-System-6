@@ -41,7 +41,7 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 
 ## Contents
 
-- [What's new in 1.0.55](#whats-new-in-1055)
+- [What's new in 1.0.56](#whats-new-in-1056)
 - [What this protects](#what-this-protects)
 - [Run it in 60 seconds](#run-it-in-60-seconds)
 - [The route is the product](#the-route-is-the-product)
@@ -57,7 +57,7 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 - [How the repository is laid out](#how-the-repository-is-laid-out)
 - [Contributing](#contributing)
 
-## Since 1.0.55
+## What's new in 1.0.56
 
 - **Twelve appearances.** System 7, Tiger and Lion join the 1988-2026 line,
   and Drawing Board, the unreleased Mac OS 8.5 theme, joins NeXTSTEP as a
@@ -82,158 +82,43 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 - **The Writing Flow fits its era.** NeXTSTEP hangs it under the main menu as
   a 3.3 panel; Platinum draws it as Mac OS 9's Application Switcher; both can
   close it, and every era can bring it back.
-- **Joyride is the first street-level view of Bonsai City.** In its P0 slice,
-  you drive a car through a deterministic starter town with chase, cockpit and
-  overhead cameras. It is rendered as a 1996 Mac would have drawn it: 640 ×
-  480 in 256 colours, or the compact black-and-white mode with Atkinson
-  dithering. Keyboard, touch pedals, a steering wheel and a gamepad all drive
-  the same read-only city snapshot; the drive never writes into a Bonsai save.
-- **Rootline is a complete P1 round, not a picture of a transit map.** Draw and
-  edit lines, add trains and carriages, build interchanges and spend the weekly
-  reward while the morning and evening peaks turn passenger flow around. Classic
-  1-bit and colour appearances, touch gestures, a crowding end state and an
-  endless mode all use the same deterministic headless core.
+- **Bonsai City, Rootline and Joyride now share one world: The Basin.** The
+  same city, calendar and names hold wherever a save is opened. Hezhou · 1952
+  is the worked example — a river town with a bridge, two rail stations, a
+  level crossing and a subway — and Joyride drives it, or any Bonsai save, at
+  street level instead of a private demo town.
+- **Rootline plans Metro, BRT and Bus as one transit dictionary.** Switch mode
+  from the bottom bar or press M; lay an avenue to run a BRT down its centre
+  lane, spend a weekly avenue reward, and a leg with no bridge nearby still
+  cannot cross the river. Stops, fares and the pot's own calendar come from
+  the same city Bonsai City and Joyride see.
+- **Joyride rides the line Rootline planned.** A photo now stamps the pot's
+  seal, district and date into the Picture Album, and the drive opens on the
+  pot you last drove instead of starting over. Keyboard, touch pedals, a
+  steering wheel and a gamepad all drive the same read-only city snapshot; the
+  drive never writes into a Bonsai save.
 - **Bonsai City can turn a bounded real place into a city.** Its OSM path reads
   a geocoded area through the server relay, maps it onto the same 16-metre grid,
-  and can add terrain elevation and optional building footprints. The UI and
-  exports carry OpenStreetMap attribution and ODbL provenance; failed or
-  incomplete terrain/building layers stay visible instead of becoming invented
-  city data.
+  carries the place's own street and station names into the save, and can add
+  terrain elevation and optional building footprints. The UI and exports carry
+  OpenStreetMap attribution and ODbL provenance; failed or incomplete
+  terrain/building layers stay visible instead of becoming invented city data.
+- **Cover Glass gets an Aqua recipe, and small covers are checked before they
+  export.** A reflection-mix rim and a small-size check join the recipe, and a
+  failed export says so instead of staying silent. A 4× export no longer
+  renders into a clamped drawing buffer, and with Post Blur on, the subject
+  can sit entirely under the whole cover's water.
+- **Plaintext joins the Games folder.** An original Chinese-language visual
+  novel about a ghostwriter and a mapmaker, now with super-resolved background
+  plates and final character portraits, loaded only when its window opens,
+  with local saves. File, Story and Debug live in the menu bar; the window
+  has no empty details bar.
 - **Soundscape can bring an Apple Music link onto your own Mac.** Paste an
   album, song or playlist link and the local host caches the playable result,
   preferring lossless when the optional engine and browser support it and
   falling back honestly to AAC. A VPS or Pages page only asks the paired Mac
   through the loopback bridge; Apple credentials and audio never go to the
   cloud.
-
-## What's new in 1.0.55
-
-System 7, Drawing Board, Tiger and Lion were also included as experimental appearances; the eight regular choices stayed unchanged.
-
-- **NeXTSTEP is the eighth appearance.** The desk Mac OS X descends from, after
-  the 3.3 guidelines: a main menu in the corner, scrollers on the left, a Dock
-  on the right, and an icon of its own for every object. Pick it from Special.
-- **Mac OS X-era Finder windows have a toolbar, and from Snow Leopard on a
-  sidebar.** Favorites and Locations navigate the same window; the classic eras
-  stay spatial, and a phone keeps one column in every era.
-- **A deck can wear any of the desk's eight appearances.** ClioStage's slides
-  gained four independent dimensions: the **era** (the same eight appearances
-  the desk itself has, 1988 to 2025), the **argument mode** (five: conclusions
-  first, story, teaching, visual-led, or neutral briefing), the **page layout**
-  (sixteen, from a cover to a comparison matrix), and a **canvas plus reading
-  distance** that sets the smallest type a page may use. Each era dresses the
-  page as the presentation software of its year did, from an overhead frame in
-  1988 to NeXTSTEP's bevelled panel and Platinum's red wedge. The mode and the
-  reading distance are asked before generation; the era is picked from real
-  miniature previews of your own first page. **Change Era** then restyles a whole
-  deck without touching a word of it, and **Print PDF** lays one slide per page.
-- **A chart handed to a deck now travels as a drawing.** ClioChart serializes
-  the chosen projection into one self-contained SVG — its own patterns, labels,
-  values and "not measured" note, nothing external to fetch — and the deck page
-  carries it as an image plus the source table in a comment, so the page can be
-  saved, reopened, printed and exported without ClioChart being open.
-- **CMF Studio lights its colorways the way the product photographs them.**
-  iPhone 17 Pro / Max (one entry, two poses), iPhone Air, iPhone 17e, MacBook
-  Neo and the folding iPhone Duo, rendered under the official scene's own
-  environment, matched part by part, and exported as USDZ for AR.
-- **The Duo folds, and you choose what it wears.** A continuous hinge instead
-  of a pose switch, inner and outer screen images kept apart, the original
-  wallpapers one button away, and a fold video rendered on your own machine.
-- **Every app has one address.** `/go/cmf-studio`, `/go/bonsai-city`,
-  `/go/doom` and the rest are the single way to hand somebody one window; the
-  old bare directories are retired on the server by the installer itself.
-- **A finished project travels as a disk, not as a screenshot.** Each of the
-  thirty-six disks is a whole Project Hard Disk: question sheet, outline,
-  section drafts, manuscript, review record. Each has one address,
-  `/go/<route>`, which mounts it and lands on the rendered manuscript.
-  [`/go/disks`](https://system6.aaronlau.me/go/disks) opens the **Demonstration Project Disks** folder
-  on the Startup Disk instead, reading the newest disk. In the folder a disk is
-  named for the object on it; double-click it (or press the space bar) and a
-  read-only window shows what the writer left at each stop, the manuscript first,
-  with the arrow keys walking the shelf. **Open a Copy** puts an editable copy on
-  this computer; the disk itself never changes. Opening the folder reads a 37 KB
-  list, and looking at a disk fetches that disk alone. Adding one means an entry
-  in `tooling/lib/project-disk-integrity.mjs` (its name and release month),
-  `node tooling/build-shared-project-disks.mjs`, one route in the three
-  `LAUNCH_ROUTES` tables, and `tests/features/launch-intent.test.mjs` will
-  insist the source disk and the shipped copy stay equal.
-
-  <img src="docs/images/demo-disks.webp" alt="The Demonstration Project Disks folder with iPad Pro 9.7 selected, and its read-only window open on the manuscript beside a rail listing the question sheet, outline, manuscript and review record; on the right, the same window on a phone.">
-
-  <details>
-  <summary>All thirty-six disks, newest first</summary>
-
-  | Disk | Article (as written) | Released |
-  | --- | --- | --- |
-  | [iPad Pro 9.7](https://system6.aaronlau.me/go/ipad97) | iPad Pro 9.7：叛逆的另一种尺寸 | 2026/07 |
-  | [iPhone 17e](https://system6.aaronlau.me/go/iphone17e) | iPhone 17e 浅粉色：其貌不扬，但很有料 | 2026/06 |
-  | [Original iPad](https://system6.aaronlau.me/go/ipad1) | 初代 iPad 为什么只有 256MB 内存 | 2026/06 |
-  | [M5 iPad Pro](https://system6.aaronlau.me/go/m5ipad) | 杀掉那个键盘 | 2026/05 |
-  | [M5 MacBook Air](https://system6.aaronlau.me/go/m5mba) | M5 MacBook Air：这一次的牙膏，挤在硬盘上 | 2026/03 |
-  | [MacBook Neo](https://system6.aaronlau.me/go/mbneo) | MacBook Neo：苹果把 iPhone 芯片放进 Mac 的那一天 | 2026/03 |
-  | [Mac Pro (2019)](https://system6.aaronlau.me/go/macpro19) | 大学时的白月光 · Mac Pro (2019) | 2026/03 |
-  | [Magic Keyboard (USB-C)](https://system6.aaronlau.me/go/mkb) | Magic Keyboard (USB-C)：确定性也是一种硬件规格 | 2026/01 |
-  | [Studio Display](https://system6.aaronlau.me/go/sd) | Studio Display：买断一份安心 | 2026/01 |
-  | [Transparent Air Prototypes](https://system6.aaronlau.me/go/airtrans) | 透明探索版 Air：透明不是配色，是工作方法 | 2025/12 |
-  | [iPad mini (A17 Pro)](https://system6.aaronlau.me/go/mini7) | iPad mini (A17 Pro)：每天跟着你出门的那一台 | 2025/12 |
-  | [iPhone 4S Demo Unit](https://system6.aaronlau.me/go/ip4sdemo) | iPhone 4S Demo：回到过去的钥匙 | 2025/12 |
-  | [iPhone Pocket](https://system6.aaronlau.me/go/pocket) | 当 iPhone 穿上三宅一生：一块布，一个口袋，你就是独一无二的你 | 2025/11 |
-  | [CDMA iPhone 4](https://system6.aaronlau.me/go/cdma4) | CDMA 版 iPhone 4：最早的「国行 eSIM」iPhone | 2025/10 |
-  | [iPhone 17 Pro Max](https://system6.aaronlau.me/go/pm17) | 形式追随功能的一代 · iPhone 17 Pro Max | 2025/10 |
-  | [iPhone Air MagSafe Battery](https://system6.aaronlau.me/go/airbattery) | iPhone Air 专用 MagSafe 电池：三代电池，改的是谁给谁充 | 2025/10 |
-  | [iPhone 17](https://system6.aaronlau.me/go/iphone17) | iPhone 17 标准版：诚意不是心情，是价格行为 | 2025/10 |
-  | [iPhone Air](https://system6.aaronlau.me/go/airact) | iPhone Air：165 克本该是正常手机的重量 | 2025/09 |
-  | [MagSafe Leather Sleeve](https://system6.aaronlau.me/go/sleeve) | MagSafe 皮革保护套：苹果是怎么看待手机依赖的？ | 2025/09 |
-  | [iPhone 12 Pro Max](https://system6.aaronlau.me/go/pm12) | iPhone 12 Pro Max：开箱一台未激活的，还有苹果最奇葩的手机壳 | 2025/09 |
-  | [Portless Apple Watch](https://system6.aaronlau.me/go/noport) | 无接口 Apple Watch：先有安全网，才敢拆掉那个口 | 2025/08 |
-  | [iPhone 6s Plus](https://system6.aaronlau.me/go/iphone6sp) | 还有人记得 3D Touch 吗 · iPhone 6s Plus | 2025/08 |
-  | [touch 2 Engineering Board](https://system6.aaronlau.me/go/touch2) | touch 2 工程板：一块不是设备的设备 | 2025/08 |
-  | [iPhone 11 Pro Max](https://system6.aaronlau.me/go/pm11) | iPhone 11 Pro Max：我觉得最丑的一代 iPhone | 2025/08 |
-  | [The Ceramic Apple Watch](https://system6.aaronlau.me/go/ceramic) | 陶瓷 Apple Watch：我的白月光 | 2025/07 |
-  | [Project Sympathy](https://system6.aaronlau.me/go/sympathy) | Project Sympathy：iPod 消失了，音乐没有 | 2025/07 |
-  | [MagSafe Prototypes](https://system6.aaronlau.me/go/mgscrap) | MagSafe 废案：苹果怎么对待失败的作品 | 2025/06 |
-  | [iPhone 16 Prototype](https://system6.aaronlau.me/go/ip16p) | iPhone 16 工程机：竟然有未来产品的细节？ | 2025/06 |
-  | [iPad Air 4 Prototype](https://system6.aaronlau.me/go/ipada4) | iPad Air 4 工程机：挖挖苹果内部的工程系统 | 2025/05 |
-  | [DTK Transition Kit](https://system6.aaronlau.me/go/dtk) | 未来通车之后 | 2024/12 |
-  | [WindowShade](https://system6.aaronlau.me/go/windowshade) | 收起窗口，留下位置：一个比 Mac 还老的双击 | — |
-  | [iPad Pro 2018](https://system6.aaronlau.me/go/ipadpro18) | A12X，桌面级性能的预演 | — |
-  | [Project Bongo](https://system6.aaronlau.me/go/bongo) | 走向一整块玻璃：从 Project Bongo 看 iPhone 的终极演进 | — |
-  | [Liquid Glass](https://system6.aaronlau.me/go/glass) | 玻璃与他们的产地 | — |
-  | [WWDC2099](https://system6.aaronlau.me/go/ios19) | WWDC2099：苹果最诚实的标签 | — |
-  | [Apple T2 Network Card](https://system6.aaronlau.me/go/t2nic) | Apple T2 网卡：一块卡上的两台设备 | — |
-
-  </details>
-- **The public site can host a guest.** Turn the bridge on and another agent
-  connects to your desk over the internet, through an invitation that names
-  it, under the same tool contract, permissions and Review Desk approvals as
-  on your Mac.
-- **Bring a walk back to the desk.** Quick Draft accepts a pasted transcript,
-  picks out the words before spoken marks, and asks before adding it to File
-  Floppy. Your words stay intact; nothing is inserted into the manuscript.
-- **The source tools work together.** Reader keeps reading progress; Scrapbook
-  separates selecting from editing; DocMap lets you select a branch before
-  asking about it. Searcher supports keyboard selection, and Time Machine
-  keeps its archive controls with the page.
-- **One More Tune: a quiz about the music Apple put in its ads.** Every
-  question plays itself, because the sound *is* the question. Answer, and the
-  reveal opens the original — in a window of its own, centered on the desk —
-  and dresses the whole desk in the era the card belongs to, then hands your
-  appearance back. The sound is a store preview, and when a network cannot
-  reach the store, this desk's own host relays the same file, so the game is
-  playable by ear anywhere. A white-label record and ten track positions keep
-  the phone round on one screen; continuing a saved round restores all ten
-  questions at the place you reached.
-  A second game, Relay, asks who took the handoff instead: six presenter
-  clues per round, each one opened costing a point, and the answer kept on the
-  server until you choose. A third, Next Act, asks what a keynote line was
-  doing and which chapter followed it: ten written questions a round, no sound
-  at all, and every answer opens its explanation and the transcript position it
-  rests on — including the cases where one phrase has two checked uses and the
-  first explanation would otherwise hand over the second question. Forty-one
-  Apple-history questions across Relay and Next Act were checked against the
-  pages they cite and passed three owner reviews before entering rotation.
-
-Every beta has [its own release notes](https://github.com/surfine/AI-System-6/releases).
 
 ## What this protects
 
@@ -292,6 +177,8 @@ Project Hard Disk → File Floppy → Question Sheet → Outline
 ```
 
 Everything else in this repository is a tool you summon onto that route.
+
+Writing Studio accepts freeform notes, puts AI outlining and drafting beside the editor, and lets you jump directly between sections. Articles show word counts; spoken scripts also show estimated timing. On narrow windows the next step has its own row. Review offers a direct return to editing and names Project CD as the save destination. A manuscript enters review only after its save succeeds; changing documents during a save cannot redirect that save into the new tab.
 
 | Stop | What it holds |
 | --- | --- |
@@ -432,15 +319,16 @@ because the sound *is* the question: hear a few bars, name the ad.
 
 ## It also runs DOOM
 
-Six games ship on this desktop, each in its own window next to the manuscript
-you were writing: three open-source classics, Bonsai City, and two original
-games that share its city data boundaries.
+Seven games ship on this desktop, each in its own window next to the manuscript
+you were writing: three open-source classics, Bonsai City, two original
+games that share its city data boundaries, and Plaintext, a Chinese-language visual novel.
 
 | Game | What it is |
 | --- | --- |
 | **Micropolis** | the open-source release of the original SimCity |
 | **OpenTTD** | the open-source Transport Tycoon Deluxe, in Chinese, with touch controls |
 | **DOOM** | DOOM |
+| **Plaintext** | an original Chinese-language visual novel about a ghostwriter and a mapmaker, loaded when its window opens, with local saves |
 | **Bonsai City** | our own city builder: 64², 96² and 128² maps, working transport and public services, local saves, and a 3D city that changes from day to night |
 | **Rootline** | a deterministic transit round: draw lines, carry passengers through the peaks, choose weekly rewards, and survive a crowding clock or keep building in Endless mode |
 | **Joyride** | a 1996-style street drive through a Bonsai starter town, with colour or black-and-white rendering and keyboard, touch or gamepad controls |
@@ -498,10 +386,12 @@ is a mockup, because a script re-shoots all of it from the running app.
 
 </div>
 
+The writing runtime keeps author, recipient, voice and medium independent, shares research while preserving each creator’s firsthand evidence, and keeps article and spoken-video tasks distinct. It preserves explicit author locks through retries, and binds each result to its own source and prompt snapshot. External reviews remain proposals until the writer adopts them; hidden repairs share the task's bounded call allowance. See the writing engineering implementation for behavior checks and the limits of that evidence.
+
 ## Built under a 1988 constraint
 
 ```text
-boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,727,636 bytes
+boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,776,060 bytes
 two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 bytes
 heavy tools             load lazily, from a third disk
 ```
@@ -566,6 +456,12 @@ AI-System-6/
 
 These are ownership boundaries, not decorative folders: a layout test rejects
 retired root copies and compatibility symlinks before they can return.
+
+The thirty-six demonstration project disks are one registry, not one file each:
+`tooling/build-shared-project-disks.mjs`
+is the list a third disk has to join, and
+[`tests/features/demo-disks-panel.test.mjs`](tests/features/demo-disks-panel.test.mjs)
+is what fails if the list, the Finder row and the site scene disagree.
 
 Read [Architecture](docs/ARCHITECTURE.md), [Development](docs/DEVELOPMENT.md),
 and the [Design Contract](docs/design/DESIGN.md).

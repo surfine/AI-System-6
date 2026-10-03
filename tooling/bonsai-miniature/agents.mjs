@@ -69,6 +69,76 @@ function train(livery, stripe) {
   return m;
 }
 
+// A city bus, nose toward +x. The body is the livery slot: one colour for
+// the basin's own buses, swapped per line when a BRT carries a colour.
+function bus() {
+  const m = new Model(T, T, 12, "bus");
+  const x0 = C - 5, y0 = C - 2;
+  m.box(x0, y0, 0, x0 + 10, y0 + 4, 1, "tyre");
+  m.box(x0, y0, 1, x0 + 10, y0 + 4, 6, "livery");
+  m.box(x0, y0, 3, x0 + 10, y0 + 4, 5, "glassdark");
+  m.box(x0 + 1, y0, 3, x0 + 9, y0 + 4, 5, "livery");
+  m.box(x0, y0, 6, x0 + 10, y0 + 4, 8, "white");
+  m.set(x0 + 9, y0, 1, "lamp");
+  m.set(x0 + 9, y0 + 3, 1, "lamp");
+  m.set(x0, y0, 1, "red");
+  m.set(x0, y0 + 3, 1, "red");
+  return m;
+}
+
+// Articulated BRT, one tile each. The front leaves its tail column empty and
+// the rear leaves its nose column empty, so the two tiles meet at a joint.
+function brtFront() {
+  const m = new Model(T, T, 12, "brt");
+  const y0 = C - 2;
+  m.box(1, y0, 0, T, y0 + 4, 1, "tyre");
+  m.box(1, y0, 1, T, y0 + 4, 6, "livery");
+  m.box(1, y0, 3, T, y0 + 4, 5, "glassdark");
+  m.box(2, y0, 3, T - 1, y0 + 4, 5, "livery");
+  m.box(1, y0, 6, T, y0 + 4, 8, "white");
+  m.set(T - 1, y0, 1, "lamp");
+  m.set(T - 1, y0 + 3, 1, "lamp");
+  return m;
+}
+
+function brtRear() {
+  const m = new Model(T, T, 12, "brt");
+  const y0 = C - 2;
+  m.box(0, y0, 0, T - 1, y0 + 4, 1, "tyre");
+  m.box(0, y0, 1, T - 1, y0 + 4, 6, "livery");
+  m.box(0, y0, 3, T - 1, y0 + 4, 5, "glassdark");
+  m.box(1, y0, 3, T - 2, y0 + 4, 5, "livery");
+  m.box(0, y0, 6, T - 1, y0 + 4, 8, "white");
+  m.set(0, y0, 1, "red");
+  m.set(0, y0 + 3, 1, "red");
+  return m;
+}
+
+function busStop() {
+  const m = new Model(T, T, 16, "stop");
+  m.box(C, C, 0, C + 1, C + 1, 12, "lamppole");
+  m.box(C - 2, C, 8, C + 3, C + 1, 11, "carwhite");
+  return m;
+}
+
+function busPlatform() {
+  const m = new Model(T, T, 16, "platform");
+  m.box(2, 4, 0, 14, 12, 1, "carred");
+  m.box(3, 5, 1, 13, 11, 2, "carwhite");
+  m.box(4, 6, 2, 5, 7, 8, "lamppole");
+  m.box(12, 6, 2, 13, 7, 8, "lamppole");
+  m.box(3, 5, 8, 13, 11, 9, "white");
+  return m;
+}
+
+function trafficCamera() {
+  const m = new Model(T, T, 16, "camera");
+  m.box(C, C, 0, C + 1, C + 1, 12, "lamppole");
+  m.box(C, C, 10, C + 3, C + 2, 12, "darksteel");
+  m.set(C + 2, C, 11, "glassdark");
+  return m;
+}
+
 function smoke(seed, size) {
   const m = new Model(T, T, 40, "smoke");
   const rng = mulberry32(seed);
@@ -95,12 +165,18 @@ export function agentFrames() {
     ["agent.smoke.1", () => smoke(801, 2.2)],
     ["agent.smoke.2", () => smoke(802, 2.8)],
     ["agent.smoke.3", () => smoke(803, 3.4)],
+    ["agent.bus.1", bus],
+    ["agent.bus.brt.front", brtFront],
+    ["agent.bus.brt.rear", brtRear],
+    ["street.bus-stop", busStop],
+    ["street.bus-platform", busPlatform],
+    ["street.camera", trafficCamera],
   ];
   // Each vehicle also in the four world headings it can drive (nose along
   // +x, −y, −x, +y), people in the two axes they walk; `extra` asks the bake
   // to append these frames, which the old atlas never had.
   const turns = { px: 0, ny: 1, nx: 2, py: 3 };
-  const out = frames.map(([id, make]) => ({ id, make, outline: true }));
+  const out = frames.map(([id, make]) => ({ id, make, outline: true, extra: { category: id.startsWith("street.") ? "street" : "agent", variant: 1 } }));
   for (const [id, make] of frames) {
     if (id.startsWith("agent.smoke")) continue;
     const headings = id.startsWith("agent.pedestrian") ? ["px", "py"] : ["px", "ny", "nx", "py"];

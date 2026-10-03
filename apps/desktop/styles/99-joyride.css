@@ -37,6 +37,176 @@
   image-rendering: pixelated;
 }
 
+/* The character night drive draws straight to the WebGL canvas, which then
+   fills the stage: no old monitor's frame, no letterbox. */
+.joyride-gl {
+  position: absolute;
+  inset: 0;
+}
+
+.joyride-gl canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.joyride-stage[data-style="glyph"] .joyride-screen {
+  visibility: hidden;
+}
+
+/* The radar sits in the picture's top-right corner, over the 3D view. */
+.joyride-radar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 128px;
+  height: 128px;
+  pointer-events: none;
+}
+
+.joyride-radar[hidden] {
+  display: none;
+}
+
+@media (max-width: 560px) {
+  .joyride-radar {
+    width: 92px;
+    height: 92px;
+  }
+}
+
+/* The title over the orbiting town: a System 6 dialog card, the wordmark
+   large, the two names stacked. */
+.joyride-title {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.joyride-title[hidden] {
+  display: none;
+}
+
+.joyride-title-card {
+  max-width: 420px;
+  padding: 18px 22px 14px;
+  border: 1px solid var(--ink);
+  box-shadow: 0 0 0 3px var(--paper), 0 0 0 4px var(--ink), 4px 4px 0 4px var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  text-align: center;
+}
+
+.joyride-title-mark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 0 6px;
+  line-height: 1;
+}
+
+.joyride-title-mark span {
+  font-size: 2.6em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.joyride-title-mark small {
+  margin-top: 4px;
+  font-size: 0.85em;
+  letter-spacing: 0.4em;
+}
+
+.joyride-title-line {
+  margin: 8px 0 14px;
+}
+
+.joyride-title .button-row {
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.joyride-title-keys {
+  margin: 12px 0 0;
+  font-size: 0.82em;
+  opacity: 0.8;
+}
+
+/* A job card across the top third of the picture: a System 6 alert box,
+   the job in bold and its time limit under it. */
+.joyride-banner {
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 180px;
+  padding: 8px 18px;
+  border: 1px solid var(--ink);
+  box-shadow: 0 0 0 2px var(--paper), 0 0 0 3px var(--ink), 3px 3px 0 3px var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.joyride-banner[hidden] {
+  display: none;
+}
+
+.joyride-banner strong {
+  font-size: 1.15em;
+}
+
+/* Entrances settle on a spring-like ease that does not overshoot. */
+.joyride-banner.is-showing {
+  animation: joyride-banner-in 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .joyride-banner.is-showing {
+    animation: none;
+  }
+}
+
+@keyframes joyride-banner-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px) scale(0.96);
+  }
+}
+
+/* The title card comes in in step: the card, then the wordmark, the line,
+   the buttons and the keys, each a beat after the last. */
+.joyride-title:not([hidden]) .joyride-title-card,
+.joyride-title:not([hidden]) .joyride-title-card > * {
+  animation: joyride-title-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.joyride-title:not([hidden]) .joyride-title-card > :nth-child(1) { animation-delay: 90ms; }
+.joyride-title:not([hidden]) .joyride-title-card > :nth-child(2) { animation-delay: 160ms; }
+.joyride-title:not([hidden]) .joyride-title-card > :nth-child(3) { animation-delay: 230ms; }
+.joyride-title:not([hidden]) .joyride-title-card > :nth-child(4) { animation-delay: 300ms; }
+
+@keyframes joyride-title-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .joyride-title:not([hidden]) .joyride-title-card,
+  .joyride-title:not([hidden]) .joyride-title-card > * {
+    animation: none;
+  }
+}
+
 .joyride-message {
   position: absolute;
   left: 50%;
@@ -57,13 +227,119 @@
   display: none;
 }
 
+/* Nothing in the status bar is cut short: when the city's name and the
+   street's description do not fit on one line, the description takes the
+   next one (with the speed at its end) instead of trailing off. */
 .joyride-status {
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: 12px;
+  gap: 2px 12px;
 }
 
 .joyride-status-speed {
   font-variant-numeric: tabular-nums;
+}
+
+.joyride-status-city,
+.joyride-status-area {
+  min-width: 0;
+}
+
+.joyride-status-area {
+  flex: 1 1 280px;
+  text-align: center;
+}
+
+.joyride-status-speed {
+  flex: none;
+  margin-left: auto;
+}
+
+/* A phone has no room for three things on one line: the city and the speed
+   keep the first, and the street's description takes a line of its own. */
+@media (max-width: 560px) {
+  .joyride-status {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+
+  .joyride-status-area {
+    order: 3;
+    flex-basis: 100%;
+    text-align: start;
+    white-space: normal;
+  }
+}
+
+/* The dashboard under the picture: the hour on a shift, money, the wanted
+   stars, the job and where it is, the station. Plain status text, like the
+   window's own status bar. */
+.joyride-dash {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  min-height: 1.4em;
+  padding: 3px 10px;
+  border-top: 1px solid var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.joyride-dash:empty,
+.joyride-dash > span:empty {
+  display: none;
+}
+
+.joyride-dash-job {
+  flex: 1 1 12em;
+}
+
+/* The shift's record for the mayor, under the score: the facts as a list,
+   a line for the player's own words, and Send. */
+.joyride-letter {
+  margin: 8px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--ink);
+  font-size: 0.92em;
+}
+
+.joyride-letter-title {
+  margin: 0 0 4px;
+  font-weight: 700;
+}
+
+.joyride-letter-facts {
+  margin: 0 0 8px;
+  padding-left: 18px;
+}
+
+.joyride-letter-own {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.joyride-letter-own input {
+  font: inherit;
+}
+
+@media (pointer: coarse) {
+  .joyride-letter-own input {
+    font-size: 16px;
+  }
+}
+
+.joyride-letter[hidden] {
+  display: none;
+}
+
+.joyride-scores {
+  margin: 0;
+  padding-inline-start: 1.6em;
+}
+
+.joyride-scores .is-new {
+  font-weight: bold;
 }
 
 /* Touch controls: the wheel at the left, the pedals at the right, the two
@@ -123,6 +399,23 @@
   height: 108px;
 }
 
+/* The handbrake sits over the brake, a short lever; together they stand as
+   tall as the gas pedal. */
+.joyride-pedal-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.joyride-pedal-stack .joyride-pedal {
+  height: 66px;
+}
+
+.joyride-pedal-stack .joyride-pedal-handbrake {
+  height: 36px;
+  font-size: 0.85em;
+}
+
 .joyride-pedal.is-pressed {
   background: var(--ink);
   color: var(--paper);
@@ -131,9 +424,13 @@
 /* A landscape phone letterboxes the 4:3 picture; the wheel and the pedals
    take the black bars at either side. */
 @media (orientation: landscape) and (pointer: coarse) {
+  /* Landscape lays the controls over the picture's edges: the wheel at the
+     bottom left, the pedals at the bottom right, and the three buttons in a
+     row at the top right, clear of the car and the road ahead. */
   .joyride-controls {
     position: absolute;
-    inset: auto 0 0;
+    inset: 0;
+    grid-template-rows: auto 1fr auto;
     padding: 8px 12px;
     border-top: 0;
     color: var(--paper);
@@ -145,12 +442,44 @@
   }
 
   .joyride-wheel {
+    grid-column: 1;
+    grid-row: 3;
     width: 104px;
     height: 104px;
   }
 
+  .joyride-pedals {
+    grid-column: 3;
+    grid-row: 3;
+  }
+
   .joyride-buttons {
-    align-self: start;
+    grid-column: 3;
+    grid-row: 1;
+    flex-direction: row;
+    justify-self: end;
+  }
+
+  /* The buttons hold the top right, so the radar takes the top left, in
+     the letterbox bar; the pedals shorten to stay inside the picture. */
+  .joyride-radar {
+    left: 8px;
+    right: auto;
+    top: 8px;
+    width: 84px;
+    height: 84px;
+  }
+
+  .joyride-pedal-gas {
+    height: 84px;
+  }
+
+  .joyride-pedal-stack .joyride-pedal {
+    height: 50px;
+  }
+
+  .joyride-pedal-stack .joyride-pedal-handbrake {
+    height: 28px;
   }
 }
 

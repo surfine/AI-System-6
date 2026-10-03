@@ -294,6 +294,53 @@ const eager = (state) => () => { state.demand = { r: 60, c: 60, i: 60 }; };
   }
 }
 
+// --- ruleset 6: commuters ride a subway under the river ---------------------------
+{
+  // The commuter town split by a river at x 33..35 (owner decision
+  // 2026-10-02): the main road stops at both banks, power crosses on
+  // pylons, each bank has its own water tower, and the only way from the
+  // homes to the factories is a subway tunnel under the water.
+  const RIVER = [33, 34, 35];
+  function riverTown(seed, withSubway) {
+    const state = flatCity(seed, { yearFounded: 1950 });
+    for (let y = 0; y < 64; y += 1) for (const x of RIVER) { state.water[y * 64 + x] = 1; state.waterKind[y * 64 + x] = 1; }
+    sim.invalidateDerived(state); sim.ensureDerived(state);
+    must(state, "place-facility", { kind: "coal", x: 20, y: 22 }, "coal");
+    must(state, "place-facility", { kind: "water-tower", x: 25, y: 22 }, "west tower");
+    must(state, "place-facility", { kind: "water-tower", x: 38, y: 22 }, "east tower");
+    must(state, "build-path", { network: "road", points: [{ x: 3, y: 30 }, { x: 32, y: 30 }] }, "west road");
+    must(state, "build-path", { network: "road", points: [{ x: 36, y: 30 }, { x: 48, y: 30 }] }, "east road");
+    must(state, "build-path", { network: "wire", points: [{ x: 24, y: 24 }, { x: 24, y: 31 }, { x: 4, y: 31 }] }, "wire west");
+    must(state, "build-path", { network: "wire", points: [{ x: 24, y: 31 }, { x: 40, y: 31 }] }, "wire over the river");
+    must(state, "build-path", { network: "pipe", points: [{ x: 25, y: 23 }, { x: 25, y: 29 }, { x: 4, y: 29 }] }, "pipe west");
+    must(state, "build-path", { network: "pipe", points: [{ x: 38, y: 23 }, { x: 38, y: 29 }, { x: 47, y: 29 }] }, "pipe east");
+    must(state, "build-path", { network: "road", points: [{ x: 13, y: 30 }, { x: 13, y: 33 }, { x: 4, y: 33 }] }, "west back street");
+    must(state, "build-path", { network: "road", points: [{ x: 39, y: 30 }, { x: 39, y: 33 }, { x: 47, y: 33 }] }, "east back street");
+    must(state, "zone-area", { zone: "residential", density: "low", x: 4, y: 31, width: 8, height: 2 }, "homes");
+    must(state, "zone-area", { zone: "industrial", density: "low", x: 41, y: 31, width: 7, height: 2 }, "factories");
+    must(state, "place-facility", { kind: "police", x: 12, y: 31 }, "police west");
+    must(state, "place-facility", { kind: "police", x: 40, y: 31 }, "police east");
+    let line = null;
+    if (withSubway) {
+      line = must(state, "build-path", { network: "subway", points: [{ x: 8, y: 29 }, { x: 44, y: 29 }] }, "subway under the river");
+      must(state, "place-facility", { kind: "subway-station", x: 8, y: 29 }, "west station");
+      must(state, "place-facility", { kind: "subway-station", x: 44, y: 29 }, "east station");
+    }
+    days(state, 200, eager(state));
+    return { state, line };
+  }
+  const { state, line } = riverTown(21, true);
+  test.assert(line.cost === 34 * 100 + 3 * 300 && line.tunnelCost === 3 * 300, `the line is billed 100 a dry tile and 300 a water tile ($${line.cost}, tunnel $${line.tunnelCost})`);
+  test.assert(RIVER.every((x) => state.subway[29 * 64 + x] && state.water[29 * 64 + x] && state.subwayConnected[29 * 64 + x]),
+    "the tunnel tiles are subway on water and belong to the connected line");
+  const homes = working(state, ZONE.R); const factories = working(state, ZONE.I);
+  test.assert(homes.length > 0 && factories.length > 0 && homes.every((building) => building.access >= 0 && state.distJobs[building.access] <= sim.COMMUTE_LIMIT),
+    `homes and factories on opposite banks both work, every home within commuting reach (${homes.length} homes, ${factories.length} factories)`);
+  test.assert(state.subwayService.riders > 0, `commuters ride through the underwater segment (${state.subwayService.riders} riders)`);
+  const cut = riverTown(21, false).state;
+  test.assert(working(cut, ZONE.I).length === 0 && cut.subwayService.riders === 0, "without the tunnel the river cuts the commute and the factories never open");
+}
+
 // --- the price on the tool is the price billed ----------------------------------
 {
   // The palette read $5 a tile for the military zone, which the nation places

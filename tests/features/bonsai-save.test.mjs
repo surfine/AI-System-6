@@ -53,7 +53,8 @@ for (const size of sim.SUPPORTED_SIZES) {
   const spot = landTile(state, 10);
   sim.submitCommand(state, { schemaVersion: 2, type: "build-path", payload: { network: "road", points: [spot] }, targetTick: 0 });
   const envelope = await sim.encodeSave(state, metadata);
-  test.assert(envelope.formatVersion === 5 && envelope.engine.rulesetVersion === 5, `${size} save separates format and ruleset v5`);
+  test.assert(envelope.formatVersion === 5 && envelope.payload.version === 5 && envelope.engine.rulesetVersion === 6 && envelope.payload.rulesetVersion === 6,
+    `${size} save separates format v5 from ruleset 6`);
   test.assert(/^[a-f0-9]{64}$/.test(envelope.integrity.digest) && sim.validateSaveEnvelope(envelope).valid, `${size} save carries valid SHA-256 integrity`);
   const decoded = await sim.decodeSave(envelope);
   test.assert(await sim.checkpoint(decoded.state) === await sim.checkpoint(state), `${size} save round-trips byte-identically`);
@@ -71,6 +72,38 @@ for (const size of sim.SUPPORTED_SIZES) {
   let future = false;
   try { sim.migrateSave({ ...envelope, formatVersion: 6 }); } catch (error) { future = String(error.message).includes("too-new"); }
   test.assert(future, "future saves reject without partial migration");
+}
+
+// Ruleset 5 -> 6 (underwater subway, owner decision 2026-10-02) adds a rule,
+// not a field: a signed ruleset-5 envelope keeps format v5, restamps the
+// ruleset, and loads into exactly the city a ruleset-6 save of it holds.
+{
+  const state = sim.createCity({ seed: 42, size: 64, terrainPreset: "river", name: "Lakeview" });
+  sim.submitCommand(state, { schemaVersion: 2, type: "build-path", payload: { network: "road", points: [landTile(state, 10)] }, targetTick: 0 });
+  sim.advanceTicks(state, 150);
+  const payload6 = sim.serialize(state);
+  const payload5 = { ...payload6, rulesetVersion: 5 };
+  const base = { format: "bonsai-city", formatVersion: 5, metadata, engine: { rulesetVersion: 5, fixedTickHz: 20, ticksPerDay: 5, daysPerMonth: 25 },
+    simulation: { seed: state.seed, rng: { algorithm: "mulberry32-v1", state: [state.rngState | 0] } }, payload: payload5 };
+  const envelope = await signEnvelope(base);
+  const frozenInput = JSON.stringify(envelope);
+  const migrated = sim.migrateSave(envelope);
+  test.assert(JSON.stringify(envelope) === frozenInput && migrated !== envelope, "the ruleset 5 -> 6 lift never mutates its input");
+  test.assert(migrated.formatVersion === 5 && migrated.payload.version === 5 && migrated.engine.rulesetVersion === 6 && migrated.payload.rulesetVersion === 6
+    && migrated.migratedFromRulesetVersion === 5 && !migrated.migratedFromFormatVersion, "a ruleset-5 envelope keeps format v5 and lifts to ruleset 6");
+  test.assert(sim.canonicalStringify({ ...migrated.payload, rulesetVersion: 5 }) === sim.canonicalStringify(payload5), "the lift changes nothing but the ruleset version");
+  const decoded = await sim.decodeSave(envelope);
+  const fresh = sim.deserialize(payload6);
+  test.assert(decoded.migratedFromRulesetVersion === 5 && decoded.migratedFromFormatVersion === null, "decode reports the ruleset lift");
+  test.assert(await sim.checkpoint(decoded.state) === await sim.checkpoint(fresh) && await sim.checkpoint(sim.deserialize(payload5)) === await sim.checkpoint(fresh),
+    "a ruleset-5 city loads into the same checkpoint as a fresh ruleset-6 load of it");
+  sim.advanceTicks(decoded.state, 250); sim.advanceTicks(fresh, 250);
+  test.assert(await sim.checkpoint(decoded.state) === await sim.checkpoint(fresh), "the lifted city plays on exactly like the ruleset-6 one");
+  let future = 0;
+  try { sim.migrateSave({ ...envelope, engine: { ...envelope.engine, rulesetVersion: 7 } }); } catch (error) { if (String(error.message).includes("too-new")) future += 1; }
+  try { await sim.decodeSave(await signEnvelope({ ...base, engine: { ...base.engine, rulesetVersion: 7 }, payload: { ...payload6, rulesetVersion: 7 } })); } catch (error) { if (String(error.message).includes("too-new")) future += 1; }
+  try { sim.deserialize({ ...payload6, rulesetVersion: 7 }); } catch (error) { if (String(error.message).includes("too-new")) future += 1; }
+  test.assert(future === 3, "a save from a newer ruleset is refused as too new by migrate, decode and deserialize");
 }
 
 // A signed v1 envelope migrates purely through the chain to v5: 64 remains 64
@@ -262,14 +295,28 @@ test.assertIncludes(workerSource, "importScripts(\"bonsai-city-sim.js\")", "the 
     // troubled-mid-size 1,245) with the same stories: a healthy town with no
     // problem flags, and a neglected one with a stranded neighbourhood.
     // Adding saved routing changes the digest, not the example simulation.
+    // Ruleset 6 (underwater subway) re-pinned both through the ruleset
+    // field alone: neither recipe lays a subway, and the ruleset-5 digests
+    // below still match the same replay stamped with ruleset 5.
+    "starter-town": "6d0a75d437a2a0f9bc0fca55fee770cf6d6dd16d5c8db50e04b7305f5b6bfd0c",
+    "troubled-mid-size": "97b5735b2d25fa0ff8693f8adc0555629f2ea863faf70b1765ccf944a82b06d0",
+    // Hezhou, 1952: Starter Town plus the bridge, the railway with two
+    // stations and a paired avenue, and the one bond that funds them.
+    "hezhou-1952": "947f588aa5c943dcc6258e8dc381954698b09c42209faa5a1bfe31b2b4dd9dab",
+  };
+  const ruleset5Digests = {
     "starter-town": "9faa037d80e5a2f6a67e1f2afc17543f586de54e21df92bf1cc51a9e5a076e7e",
     "troubled-mid-size": "185bbadc8b30049094453a2bbae8a668a7c9d2ef607500c3ca204adb162a6106",
+    "hezhou-1952": "944b5ab6a44fb56a1fcfac32c04e699c4e0664173cbd421f8d49c50c318ca341",
   };
+  const sha256 = async (text) => [...new Uint8Array(await webcrypto.subtle.digest("SHA-256", new TextEncoder().encode(text)))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
   test.assert(Object.isFrozen(sim.EXAMPLES) && Object.values(sim.EXAMPLES).every((recipe) => Object.isFrozen(recipe)
     && Object.isFrozen(recipe.commandLog) && recipe.commandLog.every((item) => item.schemaVersion === 2)), "example metadata and v2 command logs are read-only");
   for (const [id, digest] of Object.entries(expected)) {
     const replayed = sim.replayExampleCity(id);
     test.assert(await sim.checkpoint(replayed) === digest, `${id} pins its deterministic final checkpoint`);
+    test.assert(await sha256(sim.canonicalStringify({ ...sim.serialize(replayed), rulesetVersion: 5 })) === ruleset5Digests[id],
+      `${id} replays the same city it did under ruleset 5; only the ruleset field moved`);
     const decoded = await sim.createExampleCity(id);
     test.assert(await sim.checkpoint(decoded) === digest, `${id} uses the real save round-trip without drift`);
     if (id === "troubled-mid-size") {
@@ -283,6 +330,104 @@ test.assertIncludes(workerSource, "importScripts(\"bonsai-city-sim.js\")", "the 
       test.assert(codes.has("no-commute") && replayed.buildings.some((building) => building.state === sim.BUILDING_STATE.ABANDONED || building.state === sim.BUILDING_STATE.DECLINING),
         "troubled-mid-size shows a stranded neighbourhood and buildings in decline");
     }
+  }
+}
+
+// Real OpenStreetMap names ride in provenance (Aaron, 2026-10-02): kept
+// through a save, capped, trimmed, and nothing else in the record survives.
+{
+  const state = sim.createCity({ seed: 77, size: 64 });
+  const payload = sim.serialize(state);
+  const long = "很长很长的名字".repeat(10);
+  payload.provenance = {
+    source: "openstreetmap", attribution: "© OpenStreetMap contributors", license: "ODbL-1.0",
+    names: {
+      stations: [{ x: 3, y: 4, name: "台北车站", en: "Taipei Main Station", secret: "x" }, { x: -1, y: 2, name: "bad" }, { x: 5, y: 5, name: "" }],
+      streets: Array.from({ length: 300 }, (_, i) => ({ x: i % 64, y: Math.floor(i / 64), name: `路${i}` })),
+      places: [{ x: 9, y: 9, kind: "suburb", name: long }, { x: 1, y: 1, kind: "city", name: "Not a district kind" }],
+      extra: [{ x: 1, y: 1, name: "smuggled" }],
+    },
+  };
+  const loaded = sim.deserialize(payload);
+  const names = loaded.provenance?.names;
+  test.assert(names && names.stations.length === 1 && names.stations[0].name === "台北车站" && names.stations[0].en === "Taipei Main Station" && !("secret" in names.stations[0]),
+    "a station's real name and English name survive a load; unknown fields and bad tiles are dropped");
+  test.assert(names.streets.length === 256, `street names are capped at 256 (got ${names?.streets.length})`);
+  test.assert(names.places.length === 1 && names.places[0].kind === "suburb" && names.places[0].name.length === 40, "places keep only known kinds, names trimmed to 40 characters");
+  test.assert(!("extra" in names), "lists outside stations, streets and places do not survive");
+  const again = sim.deserialize(sim.serialize(loaded));
+  test.assert(JSON.stringify(again.provenance.names) === JSON.stringify(names), "names round-trip through save and load unchanged");
+  const bare = { ...payload, provenance: { source: "openstreetmap", names: { stations: [], streets: [], places: [] } } };
+  test.assert(!("names" in sim.deserialize(bare).provenance), "empty name lists leave no names key");
+}
+
+// Ruleset 6's avenue layer is optional in the save: a city with an avenue
+// writes it and gets it back, a city without one never writes the key (so
+// its bytes and checkpoint are what they were: the example digests above
+// were pinned before the avenue and still hold, and below a fresh city's
+// canonical save is pinned too), and a hand-edited layer is
+// cleaned on load: unknown values, halves off the road and unanswered halves
+// are cleared; a layer of the wrong size is refused.
+{
+  const state = sim.createCity({ seed: 611, size: 64, yearFounded: 1920, name: "Avenue Town" });
+  const plain = sim.serialize(state);
+  test.assert(!("avenue" in plain), "a city without an avenue writes no avenue key");
+  const plainDigest = [...new Uint8Array(await webcrypto.subtle.digest("SHA-256", new TextEncoder().encode(sim.canonicalStringify(plain))))]
+    .map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  // The digest this city's save had before the avenue layer existed.
+  test.assert(plainDigest === "88e86f5ac7d6c00b8560e4b29188101ba3a6706ca8ddbb7836645060fd546c1a", `a city without an avenue saves the bytes it did before the avenue (${plainDigest.slice(0, 12)})`);
+  let row = -1; let x0 = -1;
+  for (let y = 2; y < state.size - 3 && row < 0; y += 1) for (let x = 2; x < state.size - 10 && row < 0; x += 1) {
+    let ok = true; const base = state.alt[y * state.size + x];
+    for (let k = 0; k < 8 && ok; k += 1) for (const dy of [0, 1]) { const i = (y + dy) * state.size + x + k; if (state.water[i] || state.alt[i] !== base) ok = false; }
+    if (ok) { row = y; x0 = x; }
+  }
+  const receipt = sim.submitCommand(state, { schemaVersion: 2, type: "build-path", payload: { network: "avenue", points: [{ x: x0, y: row }, { x: x0 + 7, y: row }] }, targetTick: state.tick });
+  test.assert(receipt.accepted, "the save city lays an avenue");
+  sim.advanceTicks(state, 30);
+  const payload = sim.serialize(state);
+  test.assert(Array.isArray(payload.avenue) && payload.avenue.length === 64 * 64 && payload.avenue.filter(Boolean).length === 16, "a city with an avenue writes all sixteen halves");
+  const envelope = await sim.encodeSave(state, metadata);
+  const decoded = await sim.decodeSave(envelope);
+  test.assert(await sim.checkpoint(decoded.state) === await sim.checkpoint(state) && decoded.state.avenue[row * 64 + x0] === 8 && decoded.state.avenue[(row + 1) * 64 + x0] === 2,
+    "the avenue survives the signed save round trip byte for byte");
+  test.assert(envelope.formatVersion === 5 && envelope.engine.rulesetVersion === 6 && payload.version === 5, "the avenue rides in format 5 under ruleset 6");
+  const snapshot = sim.buildRenderSnapshot(decoded.state);
+  test.assert(snapshot.avenue && snapshot.avenue[row * 64 + x0 + 3] === 8, "the render snapshot passes the avenue layer through");
+  // A layer that only ever held nothing writes nothing: bulldoze the whole
+  // avenue and the key goes with it.
+  sim.submitCommand(state, { schemaVersion: 2, type: "demolish-area", payload: { x: x0, y: row, width: 8, height: 1 }, targetTick: state.tick });
+  test.assert(!("avenue" in sim.serialize(state)) && state.road[(row + 1) * 64 + x0] === 0, "bulldozing every half takes both rows and the key");
+  // Hand-edited layers.
+  const edited = payload.avenue.slice();
+  const tile = (x, y) => y * 64 + x;
+  edited[tile(x0, row)] = 3;                      // not a direction: its partner is left unanswered too
+  edited[tile(x0 + 1, row + 1)] = "2";            // a string, not a number
+  edited[tile(x0 + 2, row)] = 0;                  // one half removed: the other is cleared
+  const offRoad = (() => { for (let i = 0; i < 64 * 64; i += 1) if (!payload.road[i] && !payload.water[i]) return i; return -1; })();
+  edited[offRoad] = 4;                            // a half on bare ground
+  const cleaned = sim.deserialize({ ...payload, avenue: edited });
+  test.assert(cleaned.avenue[tile(x0, row)] === 0 && cleaned.avenue[tile(x0, row + 1)] === 0, "a value outside the four directions is cleared, and its partner with it");
+  test.assert(cleaned.avenue[tile(x0 + 1, row)] === 0 && cleaned.avenue[tile(x0 + 1, row + 1)] === 0, "a direction written as text is cleared with its partner");
+  test.assert(cleaned.avenue[tile(x0 + 2, row + 1)] === 0 && cleaned.avenue[offRoad] === 0, "an unanswered half and a half off the road are cleared");
+  test.assert(cleaned.avenue[tile(x0 + 3, row)] === 8 && cleaned.avenue[tile(x0 + 3, row + 1)] === 2 && cleaned.road[tile(x0, row)] === 1,
+    "the honest pairs and every road tile stay");
+  let refused = "";
+  try { sim.deserialize({ ...payload, avenue: payload.avenue.slice(0, 100) }); } catch (error) { refused = String(error.message); }
+  test.assert(refused === "bonsai-import-invalid: layer avenue", "an avenue layer of the wrong size is refused");
+  const allBad = sim.serialize(sim.deserialize({ ...plain, avenue: new Array(64 * 64).fill(16) }));
+  test.assert(!("avenue" in allBad) && sim.canonicalStringify(allBad) === sim.canonicalStringify(plain), "a layer cleaned to nothing saves as a city without an avenue");
+}
+
+// A city without an avenue saves exactly as it did before avenues existed:
+// the example cities' checkpoints are pinned (measured on the branch before
+// the avenue layer landed, ruleset 6). Writing an all-zero layer, or any
+// other change to avenue-free saves, moves these values.
+{
+  const pinned = { "starter-town": "6d0a75d437a2a0f9", "troubled-mid-size": "97b5735b2d25fa0f" };
+  for (const [id, prefix] of Object.entries(pinned)) {
+    const got = (await sim.checkpoint(sim.replayExampleCity(id))).slice(0, 16);
+    test.assert(got === prefix, `an avenue-free ${id} keeps its save bytes (${got})`);
   }
 }
 

@@ -291,6 +291,57 @@ for (const [label, bytes] of [
   test.assert(back.water[0] === 1 && back.salt[0] === 1, "the apron is open salt water");
 }
 
+{
+  // Ruleset 6: a subway tunnel under a river exports as an XUND subway piece
+  // over XTER water and comes back as both, at the embedded offset.
+  const town = sim.createCity({ seed: 507, size: 64, terrainPreset: "river", yearFounded: 1950 });
+  let crossing = null;
+  for (let y = 4; y < 60 && !crossing; y += 1) for (let x = 2; x < 52 && !crossing; x += 1) {
+    const i = y * 64 + x;
+    if (town.water[i] || !town.water[i + 1]) continue;
+    let end = x + 1; while (end < 63 && town.water[y * 64 + end]) end += 1;
+    if (end < 63) crossing = { y, from: x, to: end };
+  }
+  test.assert(!!crossing, "the river town offers a crossing");
+  const line = sim.submitCommand(town, { schemaVersion: 2, type: "build-path", payload: { network: "subway", start: { x: crossing.from, y: crossing.y }, end: { x: crossing.to, y: crossing.y } }, targetTick: town.tick });
+  test.assert(line.accepted && line.tunnelCost > 0, "the river town tunnels a subway under the water");
+  const bytes = codec.exportSc2(sim.serialize(town));
+  const back = sim.deserialize(codec.importSc2(bytes).payload);
+  const shift = 32;
+  let kept = 0; let wet = 0;
+  for (let x = crossing.from; x <= crossing.to; x += 1) {
+    const from = crossing.y * 64 + x; const to = (crossing.y + shift) * 128 + x + shift;
+    if (back.subway[to] && back.water[to] === town.water[from]) kept += 1;
+    if (town.water[from]) wet += 1;
+  }
+  test.assert(wet > 0 && kept === crossing.to - crossing.from + 1, `every tile of the line, ${wet} of them under water, comes back as subway over the same ground`);
+  // Once in the 128 frame, the line is byte-stable across further round trips.
+  const again = codec.exportSc2(sim.serialize(back));
+  const third = codec.exportSc2(sim.serialize(sim.deserialize(codec.importSc2(again).payload)));
+  test.assert(third.length === again.length && third.every((byte, index) => byte === again[index]), "the underwater line re-exports byte-stable");
+}
+
+{
+  // Ruleset 6: SC2K has no avenue. Both halves leave as the roads they are
+  // and come back as roads; the avenue layer itself is not carried.
+  const town = sim.createCity({ seed: 610, size: 64, yearFounded: 1920 });
+  let spot = null;
+  for (let y = 2; y < 58 && !spot; y += 1) for (let x = 2; x < 50 && !spot; x += 1) {
+    let flat = true; const base = town.alt[y * 64 + x];
+    for (let k = 0; k < 10 && flat; k += 1) for (const dy of [0, 1]) if (town.water[(y + dy) * 64 + x + k] || town.alt[(y + dy) * 64 + x + k] !== base) flat = false;
+    if (flat) spot = { x, y };
+  }
+  const laid = sim.submitCommand(town, { schemaVersion: 2, type: "build-path", payload: { network: "avenue", points: [{ x: spot.x, y: spot.y }, { x: spot.x + 9, y: spot.y }] }, targetTick: town.tick });
+  test.assert(laid.accepted, "the sc2 town lays an avenue");
+  const payload = sim.serialize(town);
+  const bytes = codec.exportSc2(payload);
+  const back = sim.deserialize(codec.importSc2(bytes).payload);
+  let roads = 0;
+  for (let x = spot.x; x <= spot.x + 9; x += 1) for (const y of [spot.y, spot.y + 1]) if (back.road[(y + 32) * 128 + x + 32] === 1) roads += 1;
+  test.assert(Array.isArray(payload.avenue) && roads === 20 && back.avenue.every((value) => value === 0),
+    "an avenue exports to .sc2 as its twenty road tiles and comes back as road, without the avenue layer");
+}
+
 // --- Worker manager fallback -------------------------------------------------
 {
   const manager = managerFactory.createSaveWorkerManager({ sim, WorkerCtor: null });
@@ -298,6 +349,92 @@ for (const [label, bytes] of [
   test.assert(sim.canonicalStringify(viaManager.payload) === sim.canonicalStringify(imported.payload),
     "the manager's sc2-import falls back to the direct codec byte-identically");
   manager.dispose();
+}
+
+// --- Loss report: the file bytes stay; the player is told what stayed behind --
+{
+  const empty = sim.serialize(sim.createCity({ seed: 1, size: 64 }));
+  const quiet = codec.sc2LossReport(empty);
+  test.assert(Array.isArray(quiet.warnings) && quiet.warnings.length === 0, "a small city with nothing extra exports without a loss report");
+  const again = codec.sc2LossReport(empty);
+  test.assert(JSON.stringify(again) === JSON.stringify(quiet), "the loss report is pure");
+
+  const hezhou = sim.serialize(sim.replayExampleCity("hezhou-1952"));
+  const avenueTiles = hezhou.avenue.filter((value) => value).length;
+  const hezhouReport = codec.sc2LossReport(hezhou);
+  test.assert(hezhouReport.warnings.includes(`layer-dropped-avenue:${avenueTiles}`), `hezhou names every avenue tile (${avenueTiles})`);
+  const hezhouBytes = codec.exportSc2(hezhou);
+  const hezhouBytesAgain = codec.exportSc2(hezhou);
+  test.assert(hezhouBytes.length === hezhouBytesAgain.length && hezhouBytes.every((byte, index) => byte === hezhouBytesAgain[index]), "naming the loss does not change the hezhou file");
+
+  const brt = {
+    version: 1,
+    lines: [{
+      id: "brt-1", planId: null, laidTick: 0, mode: "brt", color: 1,
+      name: { zh: "鹤洲快线", en: "Hezhou BRT" },
+      tiles: [15, 18, 16, 18, 17, 18],
+      stations: [
+        { x: 15, y: 18, kind: "bus-stop", name: { zh: "甲", en: "A" } },
+        { x: 16, y: 18, kind: "bus-stop", name: { zh: "乙", en: "B" } },
+        { x: 17, y: 18, kind: "bus-stop", name: { zh: "丙", en: "C" } },
+      ],
+    }],
+  };
+  const linedCity = sim.deserialize(hezhou);
+  test.assert(sim.setTransitLines(linedCity, brt), "hezhou accepts a straight BRT sidecar");
+  const lined = sim.serialize(linedCity);
+  const linedReport = codec.sc2LossReport(lined);
+  test.assert(linedReport.warnings.includes("lines-dropped:1") && linedReport.warnings.includes("stops-dropped:3"),
+    "a flipped BRT is named as one line and three stops");
+
+  const rich = sim.serialize(sim.createCity({ seed: 3, size: 64 }));
+  rich.avenue = Array.from({ length: 64 * 64 }, () => 0);
+  rich.avenue[64 * 4 + 4] = 8;
+  rich.avenue[64 * 5 + 4] = 2;
+  rich.transitLines = brt;
+  rich.bonds = [{ principal: 10000, rate: 5 }];
+  rich.ordinances = { ...(rich.ordinances || {}), salesTax: true };
+  rich.things = [{ kind: "train", x: 3, y: 3 }, { kind: "airplane", x: 6, y: 6, dir: 0, z: 0 }];
+  rich.facilities = [...(rich.facilities || []), { kind: "library", x: 8, y: 8 }];
+  const richBytes = codec.exportSc2(rich);
+  test.assert(codec.exportSc2(rich).every((byte, index) => byte === richBytes[index]), "the rich file is byte-stable");
+  const richReport = codec.sc2LossReport(rich);
+  const back = codec.importSc2(richBytes).payload;
+  const backThings = back.things || [];
+  test.assert(backThings.some((thing) => thing.kind === "airplane"), "a plane still comes back from the file");
+  test.assert(!backThings.some((thing) => thing.kind === "train"), "a train does not come back");
+  test.assert(!back.transitLines, "the transit sidecar does not come back");
+  test.assert(!(back.avenue || []).some((value) => value), "the avenue layer does not come back");
+  test.assert(!(back.bonds || []).length, "bond terms do not come back");
+  test.assert(!Object.values(back.ordinances || {}).some((value) => value === true), "enacted ordinances do not come back");
+  test.assert(!(back.facilities || []).some((facility) => facility.kind === "library"), "an unknown facility does not come back");
+  for (const [code, count] of [
+    ["layer-dropped-avenue", 2], ["lines-dropped", 1], ["stops-dropped", 3],
+    ["facilities-dropped", 1], ["records-dropped-bonds", 1],
+    ["records-dropped-ordinances", 1], ["records-dropped-things", 1],
+  ]) test.assert(richReport.warnings.includes(`${code}:${count}`), `the rich city names ${code}:${count}`);
+
+  const wide = { size: 160, road: new Uint8Array(160 * 160), facilities: [] };
+  wide.road[0] = 1;
+  test.assert(codec.sc2LossReport(wide).warnings.includes("map-cropped:1"), "a tile outside the 128 window is counted");
+  test.assert(!codec.sc2LossReport({ size: 64, road: Uint8Array.from([1]) }).warnings.some((code) => code.startsWith("map-cropped")),
+    "a map that fits the window is not cropped");
+
+  const lossManager = managerFactory.createSaveWorkerManager({ sim, WorkerCtor: null, sc2Codec: codec });
+  test.assert(JSON.stringify(lossManager.sc2LossReport(empty)) === JSON.stringify(quiet),
+    "the manager counts the loss on the main thread");
+  lossManager.dispose();
+
+  const shell = read("app/features/bonsai-city.js");
+  test.assertIncludes(shell, "function reportConversion", "the conversion report is one function");
+  test.assertIncludes(shell, "text === key ? raw : text", "an unknown loss code is shown as itself");
+  test.assert((shell.match(/reportSc2Export\(/g) || []).length >= 3, "both .sc2 saves report after the file is written");
+  const strings = read("app/features/bonsai-translations.js");
+  for (const key of ["bonsai_sc2_report_intro", "bonsai_sc2_note_layer_dropped_avenue", "bonsai_sc2_note_lines_dropped",
+    "bonsai_sc2_note_stops_dropped", "bonsai_sc2_note_map_cropped", "bonsai_sc2_note_facilities_dropped",
+    "bonsai_sc2_note_records_dropped_bonds", "bonsai_sc2_note_records_dropped_ordinances", "bonsai_sc2_note_records_dropped_things"]) {
+    test.assert((strings.match(new RegExp(`${key}:`, "g")) || []).length === 2, `${key} has copy in both languages`);
+  }
 }
 
 test.finish();

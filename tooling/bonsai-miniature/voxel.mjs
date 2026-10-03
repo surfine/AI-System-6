@@ -102,6 +102,9 @@ const MATERIAL_TABLE = [
   ["glaze", [58, 92, 142], 0.03],
   ["glazedeep", [42, 68, 112], 0.03],
   ["moss", [96, 146, 72], 0.08],
+  // Paintable bus livery. Appended so every older material index stays put.
+  // Only bus bodies use it; the renderer swaps it for a line colour.
+  ["livery", [70, 86, 150], 0.01],
 ];
 
 export const MATERIALS = [null];

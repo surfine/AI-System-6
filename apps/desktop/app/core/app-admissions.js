@@ -33,7 +33,7 @@ window.AISystem6Admissions = (() => {
   // own, or another window's action.
   const WINDOWS = {
     alarmClock: { app: "accessories", load: ensureAlarmClockModule, command: "open-alarm-clock" },
-    bonsaiCity: { app: "bonsaiCity", load: ensureBonsaiCityModule, command: "open-bonsai-city" , multiFinder: "Bonsai City" , applicationGroup: "games", appLabel: "bonsai_city_label", appIcon: "bonsaiCity", appDesc: "app_desc_bonsai_city", api: "AISystem6BonsaiCity", appearance: 1, phone: 2, tile: 1, grow: 1 },
+    bonsaiCity: { app: "bonsaiCity", load: ensureBonsaiCityModule, command: "open-bonsai-city" , multiFinder: "Bonsai City" , applicationGroup: "games", appLabel: "bonsai_city_label", appIcon: "bonsaiCity", appDesc: "app_desc_bonsai_city", api: "AISystem6BonsaiCity", appearance: 1, phone: 2, tile: 1, grow: 1, repaint: "renderBonsaiCityLanguage" },
     bureaucracyMeme: { app: "bureaucracyMeme", load: ensureBureaucracyMemeModule, command: "open-bureaucracy-meme" , multiFinder: "Bureaucracy Meme" , applicationGroup: "extras", appLabel: "bureaucracy_meme_label", appIcon: "bureaucracyMeme", appIconClass: "tools-icon", appDesc: "app_desc_bureaucracy" },
     clioChart: { app: "clioChart", load: ensureClioChartModule, command: "open-clio-chart" , multiFinder: "ClioChart" , applicationGroup: "create", appLabel: "clio_chart_label", appIcon: "clioChart", appIconClass: "tools-icon", appDesc: "app_desc_clio_chart" },
     clioPaint: { app: "clioPaint", load: ensureClioPaintModule, command: "open-clio-paint" , multiFinder: "ClioPaint" , applicationGroup: "create", appLabel: "clio_paint_label", appIcon: "clioPaint", appIconClass: "tools-icon", api: "AISystem6ClioPaint", width: 640, phone: 1, tile: 1, grow: 1 },
@@ -50,6 +50,7 @@ window.AISystem6Admissions = (() => {
     memoryCards: { app: "accessories", load: ensureMemoryCardsModule, command: "open-memory-cards" },
     micropolis: { app: "micropolis", load: ensureMicropolisModule, command: "open-micropolis" , multiFinder: "Micropolis" , applicationGroup: "games", appLabel: "micropolis_label", appIcon: "micropolis", appDesc: "app_desc_micropolis", api: "AISystem6Micropolis", phone: 2, grow: 1 },
     oneMoreTune: { app: "oneMoreTune", load: ensureOneMoreTuneModule, command: "open-one-more-tune" , multiFinder: "One More Tune" , applicationGroup: "extras", appLabel: "one_more_tune_label", appIcon: "oneMoreTune", appIconClass: "tools-icon", appDesc: "app_desc_one_more_tune", repaint: "renderOneMoreTune", api: "AISystem6OneMoreTune", width: 680, phone: 1, tile: 1, grow: 1 },
+    mingwen: { app: "mingwen", load: ensureMingwenModule, command: "open-mingwen" , multiFinderKey: "mingwen_title" , applicationGroup: "games", appLabel: "mingwen_label", appIcon: "mingwen", appDesc: "app_desc_mingwen", api: "AISystem6Mingwen", width: 1024, phone: 2, tile: 1, grow: 1 },
     openttd: { app: "openttd", load: ensureOpenTTDModule, command: "open-openttd" , multiFinder: "OpenTTD" , applicationGroup: "games", appLabel: "openttd_label", appIcon: "openttd", appDesc: "app_desc_openttd", api: "AISystem6OpenTTD", phone: 2 },
     rootline: { app: "rootline", load: ensureRootlineModule, command: "open-rootline" , multiFinder: "Rootline" , applicationGroup: "games", appLabel: "rootline_label", appIcon: "rootline", appDesc: "app_desc_rootline", api: "AISystem6Rootline", phone: 2, tile: 1, grow: 1, repaint: "renderRootline" },
     joyride: { app: "joyride", load: ensureJoyrideModule, command: "open-joyride" , multiFinder: "Joyride" , applicationGroup: "games", appLabel: "joyride_label", appIcon: "joyride", appDesc: "app_desc_joyride", api: "AISystem6Joyride", phone: 2, tile: 1, grow: 1 },
@@ -99,10 +100,19 @@ window.AISystem6Admissions = (() => {
 
   // The MultiFinder list names an admitted application exactly once; the map in
   // multi-finder.js spreads this instead of keeping its own copy of the names.
+  //
+  // A row may name either a literal (`multiFinder`, for a name that is the same
+  // in every language — DOOM, OpenTTD) or a translation key (`multiFinderKey`,
+  // for a name that is translated — 明文 / Plaintext). The key is resolved
+  // through t() here, so the app switcher and the menu bar read the same string
+  // the window's own title bar does instead of an English literal.
   function multiFinderLabels() {
     const labels = {};
     Object.values(WINDOWS).forEach((row) => {
-      if (row.multiFinder && !labels[row.app]) labels[row.app] = row.multiFinder;
+      const label = row.multiFinderKey
+        ? (typeof t === "function" ? t(row.multiFinderKey) : "")
+        : row.multiFinder;
+      if (label && !labels[row.app]) labels[row.app] = label;
     });
     return labels;
   }

@@ -9,7 +9,8 @@
   // The prompt files are generated from private editorial sources and are
   // deliberately absent from the public snapshot, so the type check there must
   // not require the module to exist. The read is already guarded at runtime:
-  // the absence of the file is an empty list, not a failure.
+  // absence keeps ordinary chat available; prompt-backed capabilities fail
+  // explicitly when their builder tries to resolve the missing prompt.
   const readServerPromptFiles = () => {
     // @ts-ignore optional generated module
     try { return require("../generated/ai-prompt-files.json"); } catch { return []; }
@@ -25,6 +26,18 @@
     "code",
     "table-cell",
   ]);
+  function registerTask(id, modelRole, outputKind = "markdown", writeTarget = "none", sourcePolicy = "registered-only", humanizer = "off") {
+    return Object.freeze({
+      id,
+      output: Object.freeze({ kind: outputKind }),
+      sourcePolicy,
+      writeTarget,
+      humanizer,
+      modelRole,
+      protectedSpans: protectedWritingSpans,
+      requiresUserCommit: writeTarget !== "none",
+    });
+  }
   const taskContracts = Object.freeze({
     chat: Object.freeze({
       id: "chat",
@@ -116,8 +129,145 @@
       protectedSpans: protectedWritingSpans,
       requiresUserCommit: false,
     }),
+    // These entries reflect actual shipped callers, rather than word matches.
+    "chat.sideask": registerTask("chat.sideask", "default"),
+    "chat.clio-stage": registerTask("chat.clio-stage", "default"),
+    "chat.task-config": registerTask("chat.task-config", "default"),
+    "system.chat-title": registerTask("system.chat-title", "utility", "plainText"),
+    "system.preflight": registerTask("system.preflight", "utility"),
+    "system.import-repair": registerTask("system.import-repair", "utility", "markdown", "none", "selected-only"),
+    "source.audio-transcript-repair": registerTask("source.audio-transcript-repair", "utility", "plainText", "none", "selected-only"),
+    "source.read": registerTask("source.read", "researcher"),
+    "source.scrapbook": registerTask("source.scrapbook", "researcher", "markdown", "none", "selected-only"),
+    "source.docmap": registerTask("source.docmap", "researcher", "markdown", "none", "selected-only"),
+    "source.vision-ocr": registerTask("source.vision-ocr", "utility", "markdown", "none", "selected-only"),
+    "source.vision-writing-context": registerTask("source.vision-writing-context", "researcher", "markdown", "none", "selected-only"),
+    "source.vision-describe": registerTask("source.vision-describe", "utility", "markdown", "none", "selected-only"),
+    "source.vision-layout": registerTask("source.vision-layout", "utility", "markdown", "none", "selected-only"),
+    "source.vision-pages": registerTask("source.vision-pages", "utility", "markdown", "none", "selected-only"),
+    "source.subtitle-translation": registerTask("source.subtitle-translation", "utility", "json", "none", "selected-only"),
+    "source.endfield-rag": registerTask("source.endfield-rag", "researcher"),
+    "writing.generate-outline": registerTask("writing.generate-outline", "writer", "markdown", "outline", "registered-only", "lint"),
+    "writing.organize-question-sheet": registerTask("writing.organize-question-sheet", "writer", "markdown", "question-sheet", "selected-only"),
+    "writing.expand-outline": registerTask("writing.expand-outline", "writer", "markdown", "outline", "registered-only", "lint"),
+    "writing.rewrite-outline": registerTask("writing.rewrite-outline", "writer", "markdown", "outline", "registered-only", "lint"),
+    "writing.outline-reduce": registerTask("writing.outline-reduce", "writer", "markdown", "outline", "registered-only", "lint"),
+    "writing.outline-structure": registerTask("writing.outline-structure", "writer", "markdown", "outline", "registered-only", "lint"),
+    "writing.outline-review": registerTask("writing.outline-review", "critic"),
+    "writing.draft": registerTask("writing.draft", "writer", "markdown", "manuscript", "registered-only", "lint"),
+    "writing.polish-section": registerTask("writing.polish-section", "writer", "markdown", "manuscript", "registered-only", "lint"),
+    "writing.review-section": registerTask("writing.review-section", "critic"),
+    "writing.critique": registerTask("writing.critique", "critic"),
+    "writing.style-review": registerTask("writing.style-review", "critic"),
+    "writing.hkrr-review": registerTask("writing.hkrr-review", "critic"),
+    "writing.mingming-rewrite": registerTask("writing.mingming-rewrite", "writer", "markdown", "manuscript", "registered-only", "lint"),
+    "writing.handoff-review": registerTask("writing.handoff-review", "critic"),
+    "writing.rebuild": registerTask("writing.rebuild", "writer", "markdown", "manuscript", "registered-only", "lint"),
+    "writing.demo": registerTask("writing.demo", "writer", "markdown", "none", "registered-only", "lint"),
+    "writing.demo-rag": registerTask("writing.demo-rag", "researcher"),
+    "writing.collect-vent-outline": registerTask("writing.collect-vent-outline", "writer", "markdown", "outline", "selected-only", "lint"),
+    "writing.first-day-hands-on": registerTask("writing.first-day-hands-on", "writer", "markdown", "manuscript", "registered-only", "lint"),
+    "writing.slides": registerTask("writing.slides", "writer", "markdown", "none", "registered-only", "lint"),
+    "writing.tool-rewrite": registerTask("writing.tool-rewrite", "writer", "markdown", "manuscript", "registered-only", "lint"),
+    "writing.humanizer-rewrite": registerTask("writing.humanizer-rewrite", "writer", "markdown", "manuscript", "selected-only", "explicit-rewrite"),
+    "writing.tool-review": registerTask("writing.tool-review", "critic"),
+    "writing.tool-summary": registerTask("writing.tool-summary", "utility", "markdown", "none", "selected-only"),
+    "writing.quick-draft": registerTask("writing.quick-draft", "writer", "json", "manuscript"),
+    "writing.quick-draft-review": registerTask("writing.quick-draft-review", "critic", "json"),
+    "tools.sketch-outline": registerTask("tools.sketch-outline", "writer", "markdown", "outline", "selected-only"),
+    "tools.image-prompt": registerTask("tools.image-prompt", "utility"),
+    "tools.clio-chart": registerTask("tools.clio-chart", "utility"),
+    "tools.bureaucracy-captions": registerTask("tools.bureaucracy-captions", "utility", "json"),
+    "tools.bureaucracy-captions-markdown": registerTask("tools.bureaucracy-captions-markdown", "utility"),
   });
   const taskContractAliases = Object.freeze({
+    "quick-draft": "writing.quick-draft",
+    "generate-first-body": "writing.quick-draft",
+    "shorten": "writing.quick-draft",
+    "hook": "writing.quick-draft",
+    "spoken": "writing.quick-draft",
+    "closing": "writing.quick-draft",
+    "counter": "writing.quick-draft",
+    "boundary": "writing.quick-draft-review",
+    "strategy-check": "writing.quick-draft-review",
+    "mingming": "writing.quick-draft-review",
+    "luoluo": "writing.quick-draft-review",
+    "clio-paint-sketch-to-outline": "tools.sketch-outline",
+    "clio-paint-sketch-to-image-prompt": "tools.image-prompt",
+    "outline_claim": "source.verify-claims",
+
+    "sideask": "chat.sideask",
+    "clio-stage": "chat.clio-stage",
+    "task-config": "chat.task-config",
+    "chat-title": "system.chat-title",
+    "writing-demo-preflight": "system.preflight",
+    "import-text-repair": "system.import-repair",
+    "extract": "system.import-repair",
+    "audio-transcript-repair": "source.audio-transcript-repair",
+    "dictation-clean": "source.audio-transcript-repair",
+    "reader": "source.read",
+    "scrapbook": "source.scrapbook",
+    "docmap": "source.docmap",
+    "docmap-question": "chat.sideask",
+    "ocr": "source.vision-ocr",
+    "extract-vision-ocr": "source.vision-ocr",
+    "extract-vision-writing-context": "source.vision-writing-context",
+    "extract-vision-describe": "source.vision-describe",
+    "extract-vision-layout": "source.vision-layout",
+    "extract-vision-pages": "source.vision-pages",
+    "subtitle-translation": "source.subtitle-translation",
+    "endfield_rag": "source.endfield-rag",
+    "generate-outline": "writing.generate-outline",
+    "organize-question-sheet": "writing.organize-question-sheet",
+    "expand-outline": "writing.expand-outline",
+    "rewrite-outline": "writing.rewrite-outline",
+    "review-outline": "writing.outline-review",
+    "outline_critique": "writing.outline-review",
+    "outline_reduce": "writing.outline-reduce",
+    "outline_structure": "writing.outline-structure",
+    "draft": "writing.draft",
+    "draft-section": "writing.draft",
+    "polish-draft": "writing.polish-section",
+    "polish-section": "writing.polish-section",
+    "suggest-draft": "writing.review-section",
+    "review-section": "writing.review-section",
+    "critique": "writing.critique",
+    "style": "writing.style-review",
+    "hkrr": "writing.hkrr-review",
+    "docmap-hkrr": "writing.hkrr-review",
+    "claim-check": "source.verify-claims",
+    "mingming_rewrite": "writing.mingming-rewrite",
+    "mingming-handoff-review": "writing.handoff-review",
+    "mingming_handoff_card": "writing.handoff-review",
+    "mingming_handoff_backstage_review": "writing.handoff-review",
+    "rebuild": "writing.rebuild",
+    "writing-demo": "writing.demo",
+    "writing-demo-rewrite": "writing.tool-rewrite",
+    "writing-demo-rag": "writing.demo-rag",
+    "collect-vent-outline": "writing.collect-vent-outline",
+    "first-day-hands-on": "writing.first-day-hands-on",
+    "slides": "writing.slides",
+    "marp": "writing.slides",
+    "humanizer-repair": "writing.tool-rewrite",
+    "image-prompt": "tools.image-prompt",
+    "clio-chart": "tools.clio-chart",
+    "bureaucracy_meme_caption": "tools.bureaucracy-captions",
+    "bureaucracy_meme_caption_markdown": "tools.bureaucracy-captions-markdown",
+    "praise": "writing.tool-review",
+    "writing-tool-describechange": "writing.tool-rewrite",
+    "writing-tool-proofread": "writing.tool-rewrite",
+    "writing-tool-rewrite": "writing.tool-rewrite",
+    "writing-tool-friendly": "writing.tool-rewrite",
+    "writing-tool-professional": "writing.tool-rewrite",
+    "writing-tool-concise": "writing.tool-rewrite",
+    "writing-tool-transform": "writing.tool-rewrite",
+    "writing-tool-praise": "writing.tool-review",
+    "writing-tool-reviewpraise": "writing.tool-review",
+    "writing-tool-summary": "writing.tool-summary",
+    "writing-tool-keypoints": "writing.tool-summary",
+    "writing-tool-list": "writing.tool-summary",
+    "writing-tool-table": "writing.tool-summary",
+
     "extract-facts": "source.extract-facts",
     "source-extract-facts": "source.extract-facts",
     "verify-claims": "source.verify-claims",
@@ -126,7 +276,7 @@
     translation: "source.translate",
     "rewrite-selection": "writing.rewrite-selection",
     "humanize-selection": "writing.humanize-selection",
-    "humanizer-rewrite": "writing.humanize-selection",
+    "humanizer-rewrite": "writing.humanizer-rewrite",
     "json-repair": "system.json-repair",
     "eli5-rewrite": "writing.eli5-rewrite",
     "eli5-review": "writing.eli5-review",
@@ -146,10 +296,12 @@
   const taskOutputKinds = new Set(["markdown", "plainText", "json", "patch"]);
 
   function taskContractId(taskKind = "") {
-    const requested = String(taskKind || "chat").trim().toLowerCase();
+    const requested = String(taskKind || "chat").trim().toLowerCase() || "chat";
     if (Object.prototype.hasOwnProperty.call(taskContracts, requested)) return requested;
     if (Object.prototype.hasOwnProperty.call(taskContractAliases, requested)) return taskContractAliases[requested];
-    return "chat";
+    const error = new Error(`Task unavailable: ${requested}`);
+    Object.assign(error, { code: "task-unavailable", taskKind: requested, status: 400 });
+    throw error;
   }
 
   function taskContractForPayload(payload = {}) {
@@ -159,10 +311,13 @@
     const explicitKind = taskOutputKinds.has(source.ai_system6_output_kind)
       ? source.ai_system6_output_kind
       : "";
-    const structuredKind = source.response_format || source.json_schema ? "json" : "";
-    const outputKind = explicitKind
-      || (base.id === "chat" && structuredKind)
-      || base.output.kind;
+    const structuredKind = source.response_format || source.json_schema || source.ai_system6_output_schema ? "json" : "";
+    // A registered machine-readable task cannot be downgraded to prose by a
+    // generic caller's Markdown hint. Legacy Markdown parsers keep Markdown
+    // unless the caller actually supplies a structured envelope.
+    const outputKind = base.output.kind === "json" || base.output.kind === "patch"
+      ? base.output.kind
+      : explicitKind || (base.output.kind === "markdown" && structuredKind) || base.output.kind;
     const schemaId = String(
       source.ai_system6_output_schema_id
         || source.ai_system6_output_schema?.$id
@@ -172,7 +327,7 @@
     const output = schemaId && (outputKind === "json" || outputKind === "patch")
       ? { kind: outputKind, schemaId }
       : { kind: outputKind };
-    const structuredOverride = outputKind === "json" && base.output.kind !== "json";
+    const structuredOverride = outputKind === "json" || outputKind === "patch";
     return Object.freeze({
       ...base,
       output: Object.freeze(output),
@@ -189,12 +344,102 @@
     },
   });
 
-  function systemPromptBody(id, language = "en") {
-    const browserRecord = globalThis?.window?.AISystem6PromptFilesRuntime?.resolvePromptFile(id, null, language);
-    if (browserRecord?.status === "ready") return browserRecord.body;
-    const record = serverPromptFiles.find((item) => item.id === id);
-    return record?.bodies?.[String(language).startsWith("zh") ? "zh" : "en"] || "";
+  function systemPromptBody(id, language = "en", projectId = null) {
+    const lang = String(language).toLowerCase().startsWith("zh") ? "zh" : "en";
+    const browserRuntime = globalThis?.window?.AISystem6PromptFilesRuntime;
+    let status = "missing";
+    let body = "";
+    if (browserRuntime && typeof browserRuntime.resolvePromptFile === "function") {
+      const record = browserRuntime.resolvePromptFile(id, projectId, lang);
+      status = record?.status || "missing";
+      if (status === "ready") body = record.body;
+      // The browser is authoritative, including disabled and missing overrides.
+      // Never revive a capability with a bundled system prompt after this read.
+    } else {
+      const record = serverPromptFiles.find((item) => item.id === id);
+      body = record?.bodies?.[lang] || "";
+      if (String(body).trim()) status = "ready";
+    }
+    if (status === "ready" && typeof body === "string" && body.trim()) return body;
+    const error = new Error(`Prompt unavailable: ${id} (${lang}; ${status})`);
+    Object.assign(error, { code: "prompt-unavailable", id, language: lang, promptStatus: status, status: 400 });
+    throw error;
   }
+  // This is a conservative byte-based estimate, not a model tokenizer. Count
+  // the complete final wire structures, including tool schemas and responses.
+  // Image/audio/file blocks have provider-specific token costs: include their
+  // transport metadata, report the missing modality cost, and never pretend
+  // that base64 transport bytes are text tokens.
+  function estimateFinalChatPayloadBudget(payload = {}, options = {}) {
+    const positive = (value) => {
+      const number = Number(value);
+      return Number.isSafeInteger(number) && number > 0 ? number : 0;
+    };
+    const limits = [
+      payload.ai_system6_context_limit,
+      payload.context_length,
+      payload.loaded_context_length,
+      options.contextLimit,
+    ].map(positive).filter(Boolean);
+    const contextLimit = limits.length ? Math.min(...limits) : 0;
+    let unknownModalities = 0;
+    const budgetContentBlock = (value) => {
+      if (value && typeof value === "object" && !Array.isArray(value)) {
+        if (["image_url", "image", "input_image", "input_audio", "audio", "file", "input_file"].includes(value.type)) {
+          unknownModalities += 1;
+          return { type: value.type, token_cost: "unknown" };
+        }
+      }
+      return value;
+    };
+    const wireInput = {};
+    for (const field of ["messages", "tools", "functions", "tool_choice", "function_call", "response_format", "json_schema"]) {
+      if (payload[field] !== undefined) wireInput[field] = payload[field];
+    }
+    if (Array.isArray(wireInput.messages)) {
+      wireInput.messages = wireInput.messages.map((message) => {
+        if (!message || typeof message !== "object" || !Array.isArray(message.content)) return message;
+        return { ...message, content: message.content.map(budgetContentBlock) };
+      });
+    }
+    const serialized = JSON.stringify(wireInput);
+    // TextEncoder is available in browser and Node runtimes and handles
+    // non-ASCII text and lone surrogate replacement consistently.
+    const inputTokens = new TextEncoder().encode(serialized).length;
+    const reservedOutputTokens = Math.max(
+      positive(payload.max_tokens),
+      positive(payload.max_completion_tokens),
+      positive(payload.ai_system6_reserved_output_tokens),
+      positive(options.reservedOutputTokens),
+    );
+    const protocolReserveTokens = Math.max(128, Math.ceil(contextLimit * 0.02));
+    const totalTokens = inputTokens + reservedOutputTokens + protocolReserveTokens;
+    return Object.freeze({
+      status: contextLimit && totalTokens > contextLimit
+        ? "exceeded"
+        : !contextLimit || unknownModalities || !reservedOutputTokens ? "unknown" : "within-limit",
+      contextLimit: contextLimit || null,
+      inputTokens,
+      reservedOutputTokens,
+      protocolReserveTokens,
+      totalTokens,
+      unknownModalities,
+      estimator: "conservative-utf8-bytes-v1",
+    });
+  }
+
+  function assertFinalChatPayloadBudget(payload = {}, options = {}) {
+    const budget = estimateFinalChatPayloadBudget(payload, options);
+    // Even with unknown media costs, the conservative estimate for the known
+    // text/schema portion can exceed a real limit. Never remove any input.
+    if (budget.contextLimit && budget.totalTokens > budget.contextLimit) {
+      const error = new Error(`Final chat payload exceeds context budget: ${budget.totalTokens} > ${budget.contextLimit} (${budget.estimator})`);
+      Object.assign(error, { code: "context-budget-exceeded", status: 413, budget });
+      throw error;
+    }
+    return budget;
+  }
+
   function cleanModelOutput(text = "") {
     return String(text || "")
       .trim()
@@ -222,11 +467,11 @@
     }
   }
 
-  function buildImportRepairMessages(text, name = "Untitled") {
+  function buildImportRepairMessages(text, name = "Untitled", projectId = null) {
     return [
       {
         role: "system",
-        content: systemPromptBody("other-apps.import-repair", "en"),
+        content: systemPromptBody("other-apps.import-repair", "en", projectId),
       },
       {
         role: "user",
@@ -239,13 +484,13 @@
   // cloud model read a 512x512 copy, "original" hands over the picture as
   // sent. A local VLM ignores the field, so the two routes stay equivalent
   // and only the cloud one gets cheaper.
-  function buildVisionMessages({ mode = "writing-context", name = "Image", dataUrl = "", detail = "" } = {}) {
+  function buildVisionMessages({ mode = "writing-context", name = "Image", dataUrl = "", detail = "", projectId = null } = {}) {
     const ocr = mode === "ocr";
     const imageUrl = detail ? { url: dataUrl, detail } : { url: dataUrl };
     return [
       {
         role: "system",
-        content: systemPromptBody(ocr ? "other-apps.vision-ocr" : "other-apps.vision-writing-context", "en"),
+        content: systemPromptBody(ocr ? "other-apps.vision-ocr" : "other-apps.vision-writing-context", "en", projectId),
       },
       {
         role: "user",
@@ -262,12 +507,12 @@
     ];
   }
 
-  function buildSubtitleMessages(blocks = [], mode = "en") {
+  function buildSubtitleMessages(blocks = [], mode = "en", projectId = null) {
     const target = mode === "tw" ? "natural Taiwan Traditional Chinese" : "natural English";
     return [
       {
         role: "system",
-        content: systemPromptBody("other-apps.subtitle-translation", "en").replace("{{target}}", target),
+        content: systemPromptBody("other-apps.subtitle-translation", "en", projectId).replace("{{target}}", target),
       },
       {
         role: "user",
@@ -279,7 +524,7 @@
     ];
   }
 
-  function buildBureaucracyMessages({ topic = "", tone = "", mood = "", imageDataUrl = "" } = {}) {
+  function buildBureaucracyMessages({ topic = "", tone = "", mood = "", imageDataUrl = "", projectId = null } = {}) {
     /** @type {any[]} */
     const content = [
       {
@@ -296,17 +541,17 @@
     return [
       {
         role: "system",
-        content: systemPromptBody("other-apps.bureaucracy-captions", "en"),
+        content: systemPromptBody("other-apps.bureaucracy-captions", "en", projectId),
       },
       { role: "user", content },
     ];
   }
 
-  function buildQuickDraftMessages(payload = {}) {
+  function buildQuickDraftMessages(payload = {}, { projectId = null } = {}) {
     return [
       {
         role: "system",
-        content: systemPromptBody("other-apps.quick-draft", "en"),
+        content: systemPromptBody("other-apps.quick-draft", "en", projectId),
       },
       { role: "user", content: JSON.stringify(payload) },
     ];
@@ -501,6 +746,9 @@
   }
 
   return Object.freeze({
+    systemPromptBody,
+    estimateFinalChatPayloadBudget,
+    assertFinalChatPayloadBudget,
     cleanModelOutput,
     parseJsonText,
     buildImportRepairMessages,

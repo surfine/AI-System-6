@@ -21,7 +21,12 @@ ${fullBody}`;
   try {
     const response = await fetchModelPayload({ model: getLocalModelRequestName(), messages: attachImagesToModelMessages(withMarkdownModelMessages([{ role: "user", content: prompt }]), teachTextFiguresReferencedIn(fullBody)), temperature: 0.2, max_tokens: 2600, ai_system6_task_kind: "hkrr" }, getLongTaskSignal());
     const data = await readChatJson(response);
-    const reportText = stripRebuildMarkdownFence(data?.choices?.[0]?.message?.content || "");
+    const reportText = stripRebuildMarkdownFence(data?.choices?.[0]?.message?.content || "").trim();
+    if (!reportText) {
+      claimResultsEl.innerHTML = `<div class="empty-folder-note">${escapeHtml(t("writing_review_empty"))}</div>`;
+      setStatus(t("writing_review_empty"));
+      return;
+    }
     renderClaimCheckDraft(reportText);
     setStatus(t("hkrr_review_ready"));
     // The report is on screen the moment it renders, but nowhere durable

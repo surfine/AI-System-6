@@ -167,7 +167,7 @@ const LUOLUO_SPOKEN_LENS_ZH = [
   "- 视频口播稿不是文章：前两句就要看到重点，前 20 秒必须有意思，判断/结论放在前面。",
   "- 落落接收标准前置：这稿交过去要能直接理解、能开口念、能想到画面；不要让他还要重新拆资料、重新找主线。",
   "- 把出稿取舍和素材处理转成能拍、能念、能成立的第一人称口播；按可拍画面推进，再补原因、考据、判断。",
-  "- 正文只放可录内容；后台判断、来源状态、待核边界和采用理由放在出稿取舍 / 素材处理 / 稿里怎么处理。",
+  "- 正文只放可录内容；采用理由与工作记录放在出稿取舍 / 素材处理 / 稿里怎么处理。影响结论的来源限制与未测边界也要在正文自然说清。",
   "- 句子短，像当天边录边说；允许一点停顿、口水词和自我修正；趋近落落的真实口播质感，但不要机械复刻口头禅或招牌梗。",
   "- 参数、资料和链接要改成观众听得懂的体验后果；没亲测或没来源的事实标成“〔待核：...〕”或放进后续测试。",
 ].join("\n");
@@ -178,7 +178,7 @@ const LUOLUO_SPOKEN_LENS_EN = [
   "- This is spoken video copy, not an article: the point should be visible in the first two sentences, and the first 20 seconds must be interesting.",
   "- Luoluo receiving standard comes first: the script should be understandable, speakable, and visually imaginable without making him re-triage sources or rediscover the spine.",
   "- Turn editorial strategy and the material ledger into first-person copy that can be filmed, spoken, and defended; move through showable visuals before reasons, research, and judgment.",
-  "- Keep only recordable copy in the body; backstage judgment, source status, pending checks, and adoption reasons belong in Drafting choices / Material handling / How it lands in the draft.",
+  "- Keep recordable copy in the body; working records and adoption reasons belong in Drafting choices / Material handling / How it lands in the draft. Also state source limits and untested boundaries naturally in the body when they affect its conclusions.",
   "- Use short same-day spoken sentences with a little natural hesitation or self-correction; move toward Luoluo's grounded spoken texture without filling in catchphrases or signature bits mechanically.",
   "- Convert specs, sources, and links into viewer-understandable experience consequences; mark untried or unsourced facts as '〔待核: ...〕' or follow-up testing.",
 ].join("\n");
@@ -247,10 +247,10 @@ function quickDraftCommandLens(kind = "", zh = true) {
       "- 把“出稿”理解成主写作入口，不是普通总结：它要直接生成一版趋近落落频道、当天能录、接地气的口播稿。",
       "- 复用“若是铭铭会怎么写”的转换思路：先提取核心判断、可拍画面、观众关心点、真实遗憾和资料边界，再重排成视频顺序。",
       "- 风格目标：唠嗑感、考据癖、设计情怀、真诚不端着；像人刚整理完资料准备开录，不像媒体稿、讲课稿或 AI 汇总。",
-      "- 开头 2-4 句必须看到重点、反差或判断；不要先介绍背景、不要从发布会顺序平铺。",
-      "- 句子要短，5-12 字一个想法优先；允许“其实 / 然后 / 不过 / 哦对 / 怎么说呢”这类自然口头纹理，但不要把落落招牌当填空题。",
+      "- 开头尽早呈现值得讲的具体观察和观众为什么关心；不强迫反差或结论，也不照搬发布会顺序。",
+      "- 句子长短服从意思和自然呼吸，主语、指代与因果要清楚；保留作者已有口气，不用字数配额或口头禅模板。",
       "- 资料必须改成体验后果和观众能懂的话；参数表、链接、发布会顺序都要压缩成人话。",
-      "- 至少保留 1-2 个真实遗憾、限制或没法展示的边界；不能为了好听把稿子写成广告。",
+      "- 保留材料中确实存在且影响判断的遗憾、限制与展示边界；不凑数量、不编感受，不为了顺滑删掉限定。",
       "- 创作判断归用户；不得新增事实，不得把没亲测写成亲测，不得用风格覆盖事实边界。",
     ],
     mingming: [
@@ -304,10 +304,10 @@ function quickDraftCommandLens(kind = "", zh = true) {
       "- Treat Draft as the main writing entrance, not a generic summary: generate a grounded, recordable same-day spoken script that moves toward Luoluo-channel texture.",
       "- Reuse the Mingming conversion move: extract the core judgment, shootable visuals, viewer concerns, real regrets, and source boundaries, then reorder them into video order.",
       "- Style target: chatty, detail-loving, design-sensitive, sincere without posing; it should feel like someone has just organized the material and is ready to record, not like press copy, a lecture, or an AI summary.",
-      "- The first 2-4 sentences must show the point, contrast, or judgment; do not open with background or keynote chronology.",
-      "- Prefer short sentences, roughly one idea per 5-12 Chinese characters when writing Chinese; allow natural spoken texture, but do not use Luoluo signatures as fill-in-the-blank catchphrases.",
+      "- Foreground a concrete observation and why viewers care; do not force a contrast or conclusion, or copy keynote chronology.",
+      "- Let sentence length follow meaning and natural breath; clarify subjects, references, and causality. Preserve the author's existing voice without character quotas or catchphrase templates.",
       "- Convert source material into experience consequences and viewer-understandable language; compress specs, links, and launch chronology into plain speech.",
-      "- Keep at least 1-2 real regrets, limits, or hard-to-show boundaries; do not turn the draft into advertising.",
+      "- Preserve actual regrets, limits, and demonstration boundaries that affect judgment; do not fill a quota, invent feelings, or erase qualifications for smoothness.",
       "- Creative judgment belongs to the user; do not add facts, do not turn untested material into first-hand experience, and do not let style override factual boundaries.",
     ],
     mingming: [
@@ -669,13 +669,13 @@ function buildFirstDayMessages(body, sources) {
   const iterativeDraftInstruction = stage === "draft" && currentBody
     ? (zh
       ? [
-          "- 本次是基于“当前正文草稿”的迭代打磨，不是重新总结素材，也不是原样返回旧稿。",
-          "- 必须让正文比当前稿更进一步：至少改善开头钩子、视频顺序、口播节奏、事实边界、具体画面或结尾收束中的两项；不要只换同义词。",
+          "- 本次基于“当前正文草稿”检查真实问题，保留已经成立的内容；无实质问题可以原样返回。",
+          "- 先检查主张与证据，再检查材料顺序与段落联系，最后修句子；只改发现的问题，不凑改动项或换同义词。",
           "- 保留当前稿已经成立的判断和口气，但要主动压掉空泛总结，把素材转换成更能录、更接地气、更像落落口播的段落。",
         ].join("\n")
       : [
-          "- This is an iterative pass over the current body draft, not a fresh source summary and not a request to return the old draft unchanged.",
-          "- The body must move forward in at least two of these ways: stronger opening hook, clearer video order, more spoken rhythm, sharper factual boundaries, more concrete shootable moments, or cleaner ending payoff; do not merely swap synonyms.",
+          "- Inspect real problems in the current body draft and retain working material; return it unchanged when there is no substantive issue.",
+          "- Check claims and evidence first, material order and paragraph links next, sentences last. Repair actual problems without a change quota or synonym swapping.",
           "- Preserve the current draft's working judgment and voice, but actively reduce generic summary language and turn material into more recordable, grounded Luoluo-style spoken paragraphs.",
         ].join("\n"))
     : "";
@@ -693,8 +693,8 @@ function buildFirstDayMessages(body, sources) {
         "- 只用 Markdown 输出，不要返回 JSON、代码块包裹的对象或机器结构。",
         `- 必须且只能用这些二级标题分区，逐字使用：${wantedHeaders.map((h) => `## ${h}`).join("、")}。`,
         "- 先把素材默分四格：能拍（亲眼看到/摸到/可展示）、只能嘴过（发布会/官网/参数/别人说法）、不能下结论（续航/发热/影像/性能/AI/长期稳定性等未测项）、这一期想说（Aaron 的标题、吐槽、第一感受候选和判断）。",
-        "- “可讲点候选”必须给 5 条，每条一行；只能来自用户吐槽和聊天素材中反复出现的作者表达，写成可选择的角度/讲法；每条要暗含来源依据和待确认状态，不要替用户决定最终第一感受。",
-        "- “出稿骨架”只给开场、可展示变化、不能展示、发布会快速过、重点展开、三点感受、结尾的粗骨架；同时标出哪一段最适合落落先开口，不要写完整正文。",
+        "- “可讲点候选”只列材料实际支持的角度，每条一行并注明依据和待确认状态；不凑条数，不替用户决定最终第一感受。",
+        "- “出稿骨架”按观众理解与可展示内容安排粗骨架，标出适合先开口的观察；只保留有材料支撑的部分，不凑感受数量，不写完整正文。",
         "- 聊天截图是创作素材，不是可靠事实来源；不要把群友吐槽写成事实、官方信息或“大家都认为”。",
         "- 默认匿名化聊天对象，不输出昵称、头像、手机号等隐私标识。",
         "- 不要复述系统消息或这份契约，不要用“当然”“好的”“以下是”开头。",
@@ -708,7 +708,7 @@ function buildFirstDayMessages(body, sources) {
       "- 正文里的第一人称表达就是当前最高优先级作者意图；缺失字段不能阻断，只能放进“不确定推测”或“需要后续测试”。",
         "- 出稿前先默分四格：能拍 / 只能嘴过 / 不能下结论 / 这一期想说。正文优先使用“能拍”和“这一期想说”；“只能嘴过”要改成资料边界；“不能下结论”不能伪装成体验。",
         "- 落落接收标准前置：前两句要让落落知道这期为什么要录，前 20 秒要能直接开口，稿子不能要求他重新拆资料或重新找主线。",
-        "- 标题决定结构：这期标题就是表达主轴，正文要证明标题，所有取舍都要服务这个标题。",
+        "- 标题表达用户当前的暂定主张；按观众理解选材与排列，反证可以收窄或推翻主张，不为证明标题筛掉冲突。",
         "- 标题不能由 AI 替用户生成；可以建议修改标题，但必须标为“建议”，并继续保留用户原始标题的决定权。",
         "- 如果标题和亲测内容、官方资料或不能展示的边界冲突，要标出冲突，不要硬圆。",
         "- 优先顺序是：亲测展示 -> 观众关心点 -> 官方资料快速过 -> 个人感受。",
@@ -732,7 +732,7 @@ function buildFirstDayMessages(body, sources) {
           ? "- 这是“按策略检查”：不要重写正文；重点检查当前正文是否接住出稿取舍、素材池、可拍画面、未测边界和落落接收标准，并更新“稿里怎么处理”。"
           : "",
         stage === "draft"
-          ? "- “初稿”必须是一版完整可录的视频稿，只写自然段正文，不要在正文里放三级标题、后台标签、表格、来源编号或策略说明；内容顺序要自然包含开场、可展示变化、国内用户或普通用户最关心的点、不好展示的功能、发布会资料快速过、重点展开、最后三点个人感受、结尾。"
+          ? "- “初稿”必须是一版完整可录的视频稿，只写自然段正文，不要在正文里放三级标题、后台标签、表格、来源编号或策略说明；按观众理解与可展示内容安排顺序，只使用有依据的材料和作者已有感受，不要求每类素材齐全或固定感受数量。"
           : "- 这一步只整理亲测/官方/不确定/后续测试和骨架，不要写完整稿。",
         stage === "draft"
           ? "- 绝对不要在初稿正文里写“请提供”“此处需要”“待填写”这类占位说明；材料不足就只写已有材料，并把缺口放进“需要后续测试/事实风险”。"
@@ -760,7 +760,7 @@ function buildFirstDayMessages(body, sources) {
         "- Output Markdown only. Do not return JSON, fenced object literals, or machine structures.",
         `- Use exactly these level-2 headings, verbatim: ${wantedHeaders.map((h) => `## ${h}`).join(", ")}.`,
         "- First mentally split material into four bins: showable, mention-only, cannot conclude, and what this episode wants to say. Showable means tried/seen/recordable; mention-only means launch/official/spec/second-hand; cannot conclude covers untested battery, heat, camera, performance, AI, and long-term stability; what this episode wants to say is the user's title, complaint, candidate first impression, and judgment.",
-        "- Talk-point candidates must contain exactly 5 one-line candidates. They must come from pasted material, repeated author expression, or chat material and be phrased as selectable video angles; each should imply its evidence/status, and must not decide the final first impression for the user.",
+        "- List only talk-point candidates actually supported by the supplied material, one per line with evidence/status. Do not fill a count or decide the final first impression for the user.",
         "- The draft path must use this internal shape: showable content / audience concerns / hard-to-show or untested / official quick pass / personal feeling / spoken flow order. Mark which opening is easiest for Luoluo to say first. Do not write the full script.",
         "- Chat screenshots are creative material, not reliable source facts; do not turn chat complaints into confirmed facts, official information, or 'everyone thinks' claims.",
         "- Anonymize chat participants by default; do not output nicknames, avatars, phone numbers, or private identifiers.",
@@ -775,7 +775,7 @@ function buildFirstDayMessages(body, sources) {
       "- First-person language in the body is the current highest-priority author intent; missing fields must not block the work and should be marked as uncertain or needs follow-up.",
         "- Before drafting, mentally split material into four bins: showable / mention-only / cannot conclude / what this episode wants to say. The body should prioritize showable material and what the user wants to say; mention-only material must stay bounded as source material; cannot-conclude material must not become experience.",
         "- Put the Luoluo receiving standard first: the first two sentences should show why this episode is worth recording, the first 20 seconds should be directly speakable, and the script must not require Luoluo to re-triage sources or rediscover the spine.",
-        "- The title decides the structure: the issue title is the expression spine, and the script must prove that title.",
+        "- Treat the title as the user's provisional claim. Select and order material for viewer understanding; counterevidence can narrow or overturn the claim, rather than being filtered out to prove the title.",
         "- Do not generate the title for the user; you may suggest a title revision only when explicitly marked as a suggestion, while preserving the user's original title as the decision point.",
         "- If the title conflicts with first-hand notes, official material, or stated limitations, flag the conflict instead of forcing consistency.",
         "- Priority order: first-hand showable notes -> audience concerns -> quick official-material pass -> personal feeling.",
@@ -871,9 +871,9 @@ function buildFirstDayMessages(body, sources) {
 
   const userMessage = zh
     ? [
-        asText(body.title) ? `这期标题（表达主轴，标题决定结构）：\n${asText(body.title)}` : "",
+        asText(body.title) ? `这期标题（作者暂定主张，遇反证须提示冲突）：\n${asText(body.title)}` : "",
         humanAnchor && humanAnchor !== currentBody ? `人的原稿锚点（防止 AI 越改越顺滑，必须保护其中的真实判断和口气）：\n${humanAnchor}` : "",
-        currentBody ? `当前正文草稿（最高优先级作者表达；本次要在它基础上继续打磨，不要原样返回）：\n${currentBody}` : "",
+        currentBody ? `当前正文草稿（保留作者表达；按真实问题修稿，无问题可原样保留）：\n${currentBody}` : "",
         `这期对象：\n${asText(body.subject)}`,
         durationLabel ? `目标长度：${durationLabel}` : "",
         asText(body.firstImpression) ? `作者判断/第一感受（最高优先级，不能由 AI 替用户决定）：\n${asText(body.firstImpression)}` : "",
@@ -889,9 +889,9 @@ function buildFirstDayMessages(body, sources) {
         mountedBlock ? `额外挂载资料：\n${mountedBlock}` : "",
       ].filter(Boolean).join("\n\n")
     : [
-        asText(body.title) ? `Issue title (expression spine; title decides structure):\n${asText(body.title)}` : "",
+        asText(body.title) ? `Issue title (author's provisional claim; flag counterevidence):\n${asText(body.title)}` : "",
         humanAnchor && humanAnchor !== currentBody ? `Human original anchor (prevents AI-over-AI smoothing; preserve its real judgment and voice):\n${humanAnchor}` : "",
-        currentBody ? `Current body draft (highest-priority author expression; improve it in this pass and do not return it unchanged):\n${currentBody}` : "",
+        currentBody ? `Current body draft (preserve author expression; fix real issues and allow unchanged text):\n${currentBody}` : "",
         `Subject:\n${asText(body.subject)}`,
         durationLabel ? `Target length: ${durationLabel}` : "",
         asText(body.firstImpression) ? `Author judgment / first impression (highest priority; AI must not decide it):\n${asText(body.firstImpression)}` : "",
@@ -1113,55 +1113,9 @@ function fallbackDraftFromMarkdown(markdown = "") {
     .trim();
 }
 
-/**
- * @param {string} draft
- * @param {string} material
- * @param {boolean} zh
- * @returns {string}
- */
-function expandSparseFirstDayDraft(draft = "", material = "", zh = true) {
-  if (!zh || draft.length >= 900) return draft;
-  const hasMaterial = String(material || "").trim().length > 0;
-  if (!hasMaterial || draft.length >= 520) return draft;
-  return `${cleanQuickDraftSpokenBody(draft)}\n\n稿子偏短的话，建议加一条边界过渡：先讲能直接展示的变化，没亲测到的只标记为“待后测/待确认”，避免新增未核实结论。`.trim();
-}
-
-/**
- * @param {string} draft
- * @param {any} body
- * @param {boolean} zh
- * @returns {string}
- */
-function ensureFirstDayDraftTouchpoints(draft = "", body = {}, zh = true) {
-  let next = cleanQuickDraftSpokenBody(draft);
-  const material = [
-    body.pastedSources,
-    body.officialMaterials,
-    body.unavailableNotes,
-    body.audienceConcerns,
-    body.firstImpression,
-  ].map(asText).filter(Boolean).join("\n");
-  const additions = [];
-  next = expandSparseFirstDayDraft(next, material, zh);
-  if (/欧盟没有|中国也没有|国行|国内/.test(material) && !/欧盟|中国|国行|国内/.test(next)) {
-    additions.push(zh
-      ? "还有一个边界要先讲清楚：资料里写到欧盟没有、中国也没有，所以 AI 相关功能不能直接写成国行可用，这部分要等后续版本再确认。"
-      : "One boundary should stay explicit: the material says the EU and China do not have these AI features, so do not present them as generally available until later verification.");
-  }
-  if (/iMessage|发送指示器/.test(material) && !/iMessage|发送指示器|发送状态/.test(next)) {
-    additions.push(zh
-      ? "还有一个很小但能直接讲的变化是 iMessage 发送指示器，消息发送状态会更清楚，这种小细节也属于这次把系统体验修顺的一部分。"
-      : "A small showable change is the iMessage sending indicator: message state becomes clearer, which fits the system-polish story.");
-  }
-  if (/全景照片|空间场景/.test(material) && !/全景照片|空间场景/.test(next)) {
-    additions.push(zh
-      ? "照片里还有一个适合快速带过的点：全景照片可以转换为空间场景，这种变化不一定是主线，但适合作为能展示的小更新。"
-      : "Photos also has a quick showable point: panoramas can become spatial scenes. It is not the main argument, but it is a useful visual update.");
-  }
-  if (additions.length) {
-    next = `${next}\n\n${additions.join("\n\n")}`;
-  }
-  return cleanQuickDraftSpokenBody(next);
+// Formatting cleanup must not invent facts or add editing advice to the body.
+function ensureFirstDayDraftTouchpoints(draft = "", _body = {}, _zh = true) {
+  return cleanQuickDraftSpokenBody(draft);
 }
 
 /**

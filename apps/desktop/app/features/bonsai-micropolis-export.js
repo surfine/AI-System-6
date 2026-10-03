@@ -77,7 +77,7 @@ window.AISystem6BonsaiMicropolisExportLoaded = true;
   const WARNING_CODES = Object.freeze([
     "map-cropped", "altitude-flattened", "zone-tiles-unblocked", "tiles-without-equivalent",
     "facilities-without-equivalent", "wires-dropped-at-crossings",
-    "layer-dropped-pipe", "layer-dropped-subway", "layer-dropped-highway", "layer-dropped-onramp",
+    "layer-dropped-pipe", "layer-dropped-subway", "layer-dropped-highway", "layer-dropped-onramp", "layer-dropped-avenue",
     "layer-dropped-tunnel", "layer-dropped-water-level",
     "records-dropped-bonds", "records-dropped-ordinances", "records-dropped-microsims", "records-dropped-things",
     "history-dropped", "progress-not-carried", "population-recomputed",
@@ -211,6 +211,9 @@ window.AISystem6BonsaiMicropolisExportLoaded = true;
       if (!Array.isArray(raw) || raw.length !== count) fail(`layer ${name}`);
       L[name] = raw;
     }
+    // The avenue layer is optional: a city without an avenue writes no key.
+    if (payload.avenue !== undefined && (!Array.isArray(payload.avenue) || payload.avenue.length !== count)) fail("layer avenue");
+    L.avenue = Array.isArray(payload.avenue) ? payload.avenue : new Array(count).fill(0);
     const powered = Array.isArray(options.powered) || ArrayBuffer.isView(options.powered) ? options.powered : null;
     const facilities = Array.isArray(payload.facilities) ? payload.facilities : [];
 
@@ -225,7 +228,7 @@ window.AISystem6BonsaiMicropolisExportLoaded = true;
     const claimed = new Uint8Array(CLASSIC_WIDTH * CLASSIC_HEIGHT);
     const counts = {
       cropped: 0, unblocked: 0, withoutEquivalent: 0, facilitiesWithout: 0, wiresDropped: 0,
-      pipe: 0, subway: 0, highway: 0, onramp: 0, tunnel: 0, waterLevel: 0,
+      pipe: 0, subway: 0, highway: 0, onramp: 0, tunnel: 0, waterLevel: 0, avenue: 0,
     };
     const facilityKinds = {};
 
@@ -347,6 +350,7 @@ window.AISystem6BonsaiMicropolisExportLoaded = true;
       if (L.onramp[i]) counts.onramp += 1;
       if (L.tunnel[i]) counts.tunnel += 1;
       if (L.waterLevel[i]) counts.waterLevel += 1;
+      if (L.avenue[i]) counts.avenue += 1;
       const road = !!L.road[i]; const rail = !!L.rail[i]; const wire = !!L.wire[i];
       const water = !!L.water[i];
       if (claimed[ci]) {
@@ -411,7 +415,7 @@ window.AISystem6BonsaiMicropolisExportLoaded = true;
     if (counts.withoutEquivalent > 0) warnings.push(`tiles-without-equivalent:${counts.withoutEquivalent}`);
     if (counts.facilitiesWithout > 0) warnings.push(`facilities-without-equivalent:${counts.facilitiesWithout}`);
     if (counts.wiresDropped > 0) warnings.push(`wires-dropped-at-crossings:${counts.wiresDropped}`);
-    for (const [layer, code] of [["pipe", "pipe"], ["subway", "subway"], ["highway", "highway"], ["onramp", "onramp"], ["tunnel", "tunnel"], ["waterLevel", "water-level"]]) {
+    for (const [layer, code] of [["pipe", "pipe"], ["subway", "subway"], ["highway", "highway"], ["onramp", "onramp"], ["tunnel", "tunnel"], ["waterLevel", "water-level"], ["avenue", "avenue"]]) {
       if (counts[layer] > 0) warnings.push(`layer-dropped-${code}:${counts[layer]}`);
     }
     const bonds = Array.isArray(payload.bonds) ? payload.bonds.length : 0;

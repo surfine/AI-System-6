@@ -50,6 +50,22 @@ const typeMismatches = [...enKeys]
   .sort();
 test.assert(typeMismatches.length === 0, `both languages use the same value type (mismatch: ${typeMismatches.join(", ")})`);
 
+// t() spreads call-site arguments into a function-valued string. Two functions
+// have the same type and can still disagree about how many arguments they
+// read, so one language drops a name the other interpolates. function.length
+// ignores rest parameters and parameters with defaults; a deliberate
+// (...args) pair would need a different comparison.
+const arityMismatches = [...enKeys]
+  .filter((key) => typeof en[key] === "function" && typeof zh[key] === "function" && en[key].length !== zh[key].length)
+  .map((key) => `${key}:en=${en[key].length}/zh=${zh[key].length}`)
+  .sort();
+test.assert(
+  arityMismatches.length === 0,
+  arityMismatches.length === 0
+    ? "function-valued strings take the same number of arguments in both languages"
+    : `function-valued strings disagree on argument count: ${arityMismatches.join(", ")}`,
+);
+
 function walkFiles(directory) {
   const rows = [];
   for (const entry of readdirSync(directory, { withFileTypes: true })) {

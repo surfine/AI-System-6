@@ -14,7 +14,7 @@ function writingStudioExplanationLens() {
       enabled: true,
       audience: "general-public",
       baselineKnowledge: "secondary-school",
-      medium: "spoken-video",
+      medium: "written-article",
       question: "",
       stuckPointHint: "",
       mustKeepTerms: [],
@@ -32,11 +32,141 @@ function writingStudioEli5Block(language = currentLanguage) {
     ? `${zh ? "必须保留的术语" : "Terms to keep"}：${lens.mustKeepTerms.join(zh ? "、" : ", ")}`
     : "";
   return [
-    "ELI5 解释规则（styleLens: luoluo-spoken，两者叠加，不要覆盖口吻）：",
+    "ELI5 解释规则（仅帮助理解，不决定交付媒介，不覆盖作者口吻）：",
     body,
     baseline,
     terms,
   ].filter(Boolean).join("\n\n");
+}
+
+// A request freezes the editorial choice once. Author identity and the ELI5
+// lens do not turn an article into a video; an explicit task/medium does.
+function resolveWritingTaskGenre(project, options = {}) {
+  const supplied = options.editorialContract || options.contract || {};
+  const taskMedium = String(options.genre || supplied.genre || "").trim();
+  const questions = String(options.questions || "");
+  const labelledMedium = questions.match(/^(?:#{1,6}\s*)?(?:体裁|媒介|交付形式|用途|genre|medium|format)\s*[:：]\s*(.+)$/mi)?.[1]?.trim() || "";
+  const explicitSpokenTask = /(?:请|我(?:要|想)|(?:这次|本次)|任务)[^\n。！？]{0,24}(?:写|做|制作|生成|输出|改成|转为|转换)[^\n。！？]{0,18}(?:口播(?:稿|脚本)?|视频(?:稿|脚本|创作)|(?:一期|一支|一条)视频|旁白)/.test(questions);
+  const questionMedium = labelledMedium || (explicitSpokenTask ? "spoken-script" : "");
+  const requested = taskMedium || questionMedium || project?.editorialTask?.genre || project?.genre || project?.editorialPlan?.genre || project?.explanationLens?.medium || "article";
+  const genres = {
+    article: "article", column: "article", "written-article": "article", 专栏: "article", 专栏文章: "article", 文章: "article", 书面文章: "article",
+    "spoken-script": "spoken-script", "spoken-video": "spoken-script", video: "spoken-script", 口播: "spoken-script", 口播稿: "spoken-script", 视频: "spoken-script", 视频稿: "spoken-script",
+    "technical-document": "technical-document", technical: "technical-document", 技术规范: "technical-document", 技术长文: "technical-document",
+    "ui-copy": "ui-copy", other: "other",
+  };
+  return genres[String(requested).toLowerCase()] || "";
+}
+
+function resolveWritingEditorialContract(project, options = {}) {
+  const supplied = options.editorialContract || options.contract || {};
+  const questions = String(options.questions || "");
+  const genre = resolveWritingTaskGenre(project, options);
+  if (!genre) throw new Error("editorial-genre-invalid: choose an explicit supported medium.");
+  const locks = JSON.parse(JSON.stringify(options.locks || supplied.locks || project?.authorLocks || project?.editorialTask?.locks || project?.editorialPlan?.locks || []));
+  const lockEntries = Array.isArray(locks) ? locks : Object.entries(locks).map(([target, value]) => ({ target, value }));
+  for (const lock of lockEntries) {
+    const value = typeof lock === "string" ? lock : lock?.exactText ?? lock?.value;
+    const titleList = ["sections", "sectionTitles"].includes(lock?.target) && Array.isArray(value) && value.every((title) => typeof title === "string");
+    if (typeof value !== "string" && !titleList) throw new Error("author-lock-unbound: resolve the locked target's exact text or section titles before generating.");
+  }
+  const labelled = (names) => questions.match(new RegExp(`^(?:#{1,6}\\s*)?(?:${names})\\s*[:：]\\s*(.+)$`, "mi"))?.[1]?.trim() || "";
+  const voice = options.voiceIntent || supplied.voiceIntent || project?.editorialTask?.voiceIntent || project?.editorialPlan?.voiceIntent || {};
+  // These are independent task choices. A named recipient never changes the
+  // speaker, style or medium, and a style label never invents firsthand history.
+  const voiceIntent = Object.freeze({
+    author: String(options.author || labelled("作者|说话者|author|speaker") || voice.author || ""),
+    recipient: String(options.recipient || labelled("接收者|交给|recipient") || voice.recipient || ""),
+    style: String(options.style || labelled("文体|声音|voice|style") || voice.style || "preserve-source"),
+    operation: String(options.operation || labelled("协作方式|collaboration") || voice.operation || "preserve"),
+  });
+  return Object.freeze({
+    genre,
+    language: String(options.language || supplied.language || currentLanguage || "en"),
+    locks,
+    voiceIntent,
+  });
+}
+
+function writingEditorialContractBlock(contract) {
+  return `EDITORIAL CONTRACT (same for generation and repair):\n${JSON.stringify(contract)}\nAuthor, recipient, voice and medium are independent. A recipient is not the narrator. Preserve the source voice unless a voice change is explicitly requested. Aaron's voice can retain historical depth, technical precision, personal observation and restrained literary expression; Luoluo's voice leads an equal exploration with the audience, using discovery and complementary visuals/narration rather than catchphrase mimicry. Either voice can serve either medium. For handoff or adaptation, retain original attribution, evidence limits and firsthand ownership; prepare only the requested candidate, never silently replace or merge both authors' originals, and leave creative choices to its author. Do not fabricate either person's experiences. Use this task's medium and output language. Preserve explicit author locks; facts contradicted by sources require a separate correction proposal, never an invisible rewrite of a lock. ## headings are draftable sections; ### headings are legal subsections. Choose the number of sections the material needs. Output only the requested candidate; workflow explanations and research diagnostics belong outside its body.`;
+}
+
+function validateWritingEditorialLocks(markdown, contract = {}) {
+  const text = String(markdown || "");
+  const headings = [...text.matchAll(/^##\s+(.+)$/gm)].map((match) => match[1].replace(/\s*\{#[0-9a-f]{6}\}\s*$/i, "").trim());
+  const locks = Array.isArray(contract.locks) ? contract.locks : Object.entries(contract.locks || {}).map(([target, value]) => ({ target, value }));
+  for (const entry of locks) {
+    const lock = typeof entry === "string" ? { target: "text", value: entry } : entry;
+    const value = lock?.exactText ?? lock?.value;
+    if (lock?.valueHash && value === undefined) throw new Error("author-lock-unbound: resolve the locked original text before generating a candidate.");
+    if (lock?.target === "sections" || lock?.target === "sectionTitles") {
+      if (Array.isArray(value) && JSON.stringify(headings) !== JSON.stringify(value)) throw new Error("author-lock-mismatch: locked section titles or order changed.");
+    } else if (typeof value === "string" && value) {
+      const kept = lock.target === "title"
+        ? text.match(/^#\s+(.+)$/m)?.[1]?.trim() === value
+        : lock.target === "opening"
+          ? text.replace(/^#\s+[^\n]*\n+/, "").trimStart().startsWith(value)
+          : text.includes(value);
+      if (!kept) throw new Error(`author-lock-mismatch: ${String(lock.target || "text")} was changed.`);
+    }
+  }
+  return text;
+}
+
+function captureWritingRouteTarget(project = getActiveProject()) {
+  return Object.freeze({
+    projectId: String(project?.id || ""),
+    outline: String(currentOutlineMarkdown(project) || ""),
+    authorConstraints: JSON.stringify({ genre: project?.genre, locks: project?.authorLocks, plan: project?.editorialPlan, task: project?.editorialTask, constraints: project?.authorConstraints, medium: project?.explanationLens?.medium }),
+    questionSheet: String(typeof questionSheetBodyInput !== "undefined" ? questionSheetBodyInput?.value ?? project?.questionSheet ?? "" : project?.questionSheet || ""),
+  });
+}
+
+function writingRouteTargetMatches(target) {
+  const project = getActiveProject();
+  return Boolean(project && target && String(project.id) === target.projectId
+    && JSON.stringify({ genre: project.genre, locks: project.authorLocks, plan: project.editorialPlan, task: project.editorialTask, constraints: project.authorConstraints, medium: project.explanationLens?.medium }) === target.authorConstraints
+    && String(currentOutlineMarkdown(project) || "") === target.outline
+    && String(typeof questionSheetBodyInput !== "undefined" ? questionSheetBodyInput?.value ?? project.questionSheet ?? "" : project.questionSheet || "") === target.questionSheet);
+}
+
+function captureSectionDraftTarget(context) {
+  return Object.freeze({ ...captureWritingRouteTarget(context.project),
+    recordId: String(context.block.id || context.draft.sectionId || ""),
+    draftId: String(context.draft.id || ""),
+    outlineIndex: context.block.sourceOutlineIndex,
+    body: String(context.body || ""),
+  });
+}
+
+function sectionDraftTargetMatches(target) {
+  if (!writingRouteTargetMatches(target)) return false;
+  const current = currentSectionDraftContext();
+  if (!current) return false;
+  const recordId = String(current.block.id || current.draft.sectionId || "");
+  return recordId === target.recordId && String(current.draft.id || "") === target.draftId
+    && current.block.sourceOutlineIndex === target.outlineIndex && String(current.body || "") === target.body
+    && (typeof manuscriptPhase !== "function" || manuscriptPhase() === "drafting");
+}
+
+function sectionDraftContinuityContext(context) {
+  const blocks = getProjectOutlineDraftBlocks(context.project);
+  const index = blocks.findIndex((block) => context.block.id ? block.id === context.block.id : block.sourceOutlineIndex === context.block.sourceOutlineIndex);
+  const compact = (value, limit) => clipContextContent(String(value || ""), limit);
+  const neighbour = (offset) => {
+    const block = blocks[index + offset];
+    if (!block) return "None: this is the document boundary.";
+    return `${block.title}\n${compact(block.sourceMarkdown || block.body, 1000)}`;
+  };
+  return [
+    "DOCUMENT STRUCTURE (orientation, not another introduction):",
+    compact(blocks.map((block) => `${block.id === context.block.id ? "[CURRENT] " : ""}${compact(block.title, 160)}`).join("\n"), 3000),
+    "PREVIOUS SECTION — responsibility and existing text:", neighbour(-1),
+    "NEXT SECTION — responsibility; do not pre-empt its explanation:", neighbour(1),
+    "CURRENT EXISTING TEXT — retain useful author wording and avoid restating it:", compact(context.body, 1400),
+    "Add only this section's contribution. Do not repeat the document opening, established mechanisms or the conclusion to make this section self-contained. Internal planning notes do not belong in the candidate body.",
+  ].join("\n\n");
 }
 
 function getProjectEvidenceClips() {
@@ -330,7 +460,8 @@ function countQuestionSheetQuestions(markdown) {
 // five listed at once is a form with marks on it again, and a score invites
 // filling boxes to raise it.
 function questionSheetCellText(markdown) {
-  const count = t("questions_count", countQuestionSheetQuestions(markdown));
+  const questions = countQuestionSheetQuestions(markdown);
+  const count = !questions && String(markdown || "").trim() ? t("question_sheet_notes") : t("questions_count", questions);
   const gap = typeof questionSheetFirstGap === "function" ? questionSheetFirstGap(markdown) : "";
   return gap ? `${count} · ${t(`question_sheet_gap_${gap}`)}` : count;
 }
@@ -412,7 +543,7 @@ function renderDraftSectionSource(outlineSections) {
   outlineSections.forEach((section, index) => {
     const option = document.createElement("option");
     option.value = String(index);
-    option.textContent = section || defaultOutlineSection;
+    option.textContent = t("draft_section_option", index + 1, outlineSections.length, section || defaultOutlineSection);
     draftSectionSelectEl.append(option);
   });
 
@@ -951,7 +1082,8 @@ function currentSectionDraftContext({ ensureDraft = false, seedBody = false } = 
   };
 }
 
-async function applySectionDraftMarkdown(markdown, { append = false, ai = false, statusKey = "saved" } = {}) {
+async function applySectionDraftMarkdown(markdown, { append = false, ai = false, statusKey = "saved", targetSnapshot = null } = {}) {
+  if (targetSnapshot && !sectionDraftTargetMatches(targetSnapshot)) return false;
   const context = currentSectionDraftContext({ ensureDraft: true });
   if (!context || !draftBodyInput) {
     setStatus(t("section_draft_needs_section"));
@@ -1004,16 +1136,19 @@ async function applySectionDraftMarkdown(markdown, { append = false, ai = false,
   return saved;
 }
 
-async function confirmAndApplySectionDraft(markdown, confirmKey, statusKey) {
+async function confirmAndApplySectionDraft(markdown, confirmKey, statusKey, targetSnapshot = null) {
+  const context = currentSectionDraftContext();
+  const target = targetSnapshot || (context ? captureSectionDraftTarget(context) : null);
+  if (!target || !sectionDraftTargetMatches(target)) return false;
   const clean = stripRebuildMarkdownFence(String(markdown || "")).trim();
   if (!clean) return false;
-  const preview = clipContextContent(clean, 1600);
-  const result = await showSystemModal(t(confirmKey, preview), "confirm");
+  const result = await showSystemModal(t(confirmKey, clean), "confirm", { confirmKey: "writing_apply_candidate", defaultAction: "cancel", reading: true });
   if (result !== "yes") {
     clearStatus();
     return false;
   }
-  return applySectionDraftMarkdown(clean, { ai: true, statusKey });
+  if (!sectionDraftTargetMatches(target)) return false;
+  return applySectionDraftMarkdown(clean, { ai: true, statusKey, targetSnapshot: target });
 }
 
 function syncTeachTextToLinkedProjectMarkdown() {
@@ -1353,7 +1488,13 @@ async function advanceDraftsToManuscript() {
     return;
   }
 
-  syncLinkedTeachTextFromProject(project);
+  // The writer may arrive here while a scratch tab is still the active
+  // TeachText tab. Activate the manuscript and fill its projection explicitly
+  // before handing over ownership; a role-based background sync can skip it.
+  if (!syncProjectOutlineToTeachText(project)) return;
+  const outlineAtAdvance = project.outline;
+  const bodyAtAdvance = teachTextBodyInput.value;
+  const tabId = typeof getActiveDocumentTab === "function" ? getActiveDocumentTab("teachText")?.id : null;
   if (typeof createDocumentRevision === "function") {
     // Awaited, and it can refuse. This is the writer's way back from a phase
     // that hands the pen to another surface; taking the step without it is the
@@ -1365,6 +1506,12 @@ async function advanceDraftsToManuscript() {
       setStatus(t("phase_advance_needs_version_history"));
       return;
     }
+  }
+  if (getActiveProject()?.id !== project.id || project.outline !== outlineAtAdvance
+    || teachTextBodyInput.value !== bodyAtAdvance
+    || (tabId && getActiveDocumentTab("teachText")?.id !== tabId)) {
+    setStatus(t("writing_step_changed"));
+    return;
   }
   project.manuscriptOwnsDraft = true;
   project.updatedAt = new Date().toISOString();
@@ -1531,24 +1678,31 @@ function writingFlowWindowNames() {
   return ["teachText", "questionSheet", "outline", "sectionDrafts"];
 }
 
-function showAdjacentSectionDraft(direction) {
+function canNavigateSectionDraft(direction) {
+  const count = getProjectOutlineDraftBlocks(getActiveProject()).length;
+  const next = Number(draftSectionSelectEl?.value || 0) + direction;
+  return Number.isInteger(next) && next >= 0 && next < count;
+}
+
+function selectSectionDraft(index) {
   const project = getActiveProject();
-  if (!project) {
-    setStatus(t("no_project_mounted"));
-    openWindow("projects");
-    return;
-  }
-
-  const blocks = getProjectOutlineDraftBlocks(project);
-  if (!blocks.length) return;
-
-  const currentIndex = Number(draftSectionSelectEl?.value || 0);
-  const nextIndex = (currentIndex + direction + blocks.length) % blocks.length;
-  if (draftSectionSelectEl) draftSectionSelectEl.value = String(nextIndex);
+  const count = project ? getProjectOutlineDraftBlocks(project).length : 0;
+  if (!Number.isInteger(index) || index < 0 || index >= count) return false;
+  // Input is already written to the outline on each keystroke. Saving after
+  // changing this selector would write the old section into the new one.
+  if (draftSectionSelectEl) draftSectionSelectEl.value = String(index);
   const draftRefs = syncDraftsFromProjectOutline(project);
-  selectEnsuredDraftRef(draftRefs, nextIndex);
+  selectEnsuredDraftRef(draftRefs, index);
   renderPipeline();
+  if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
+  if (typeof updateMenuState === "function") updateMenuState();
   requestAnimationFrame(() => draftBodyInput?.focus());
+  return true;
+}
+
+function showAdjacentSectionDraft(direction) {
+  if (!canNavigateSectionDraft(direction)) return false;
+  return selectSectionDraft(Number(draftSectionSelectEl?.value || 0) + direction);
 }
 
 function updateOutlineSectionStatus(outlineSections) {
@@ -1574,6 +1728,11 @@ function estimateVoiceoverSeconds(text) {
 function updateDraftVoiceStats(text = draftBodyInput?.value || "") {
   if (!draftCountEl) return;
   const words = countTextWords(text || "");
+  const project = getActiveProject();
+  if (resolveWritingTaskGenre(project, { questions: project?.questionSheet || "" }) !== "spoken-script") {
+    draftCountEl.textContent = t("draft_word_stats", words);
+    return;
+  }
   const seconds = estimateVoiceoverSeconds(text || "");
   if (!words) {
     draftCountEl.textContent = t("draft_voice_stats_empty");
@@ -1753,6 +1912,7 @@ function inferRebuildTitle(text) {
 
 function getReaderClipSummaries(limit = 6) {
   return getProjectScraps()
+    .filter((scrap) => typeof finderLabelContextPolicy !== "function" || finderLabelContextPolicy(scrap).include)
     .filter((scrap) => scrap.source?.type === "reader-clip" || scrap.tags?.includes("reader-clip"))
     .slice(0, limit)
     .map((scrap, index) => ({
@@ -1766,6 +1926,7 @@ function getReaderClipSummaries(limit = 6) {
 
 function getReaderClipOutlineContext(limit = 6000) {
   const clips = getProjectScraps()
+    .filter((scrap) => typeof finderLabelContextPolicy !== "function" || finderLabelContextPolicy(scrap).include)
     .filter((scrap) => scrap.source?.type === "reader-clip" || scrap.tags?.includes("reader-clip"))
     .slice(0, 12);
   if (!clips.length) return "";
@@ -1788,15 +1949,28 @@ function getReaderClipOutlineContext(limit = 6000) {
 function validateSectionDraftContent(markdown) {
   const content = stripRebuildMarkdownFence(markdown).trim();
   if (!content) return "";
-  const forbiddenTemplate = /(?:核心卖点|事实支撑|观众在意点|营销政策|购买门槛|数据准确性|下一步|资料补充)/;
-  const bulletLines = content.split("\n").filter((line) => /^\s*[-*+]\s+/.test(line)).length;
-  const paragraphs = content.split(/\n\s*\n+/).filter((block) => block.replace(/^#+\s+/, "").trim().length > 40);
-  if (forbiddenTemplate.test(content) || (bulletLines >= 4 && paragraphs.length < 2)) {
+  // A short paragraph, ordinary word or parallel list can be valid prose.
+  // Reject leaked contract headings rather than declaring its quality/medium.
+  if (/^#{1,6}\s*(?:输出规则|提示词说明|Output Rules|Prompt Instructions)\s*$/im.test(content)) {
     throw new Error(currentLanguage === "zh"
-      ? "章节草稿像大纲/卖点清单，不是可朗读口播。"
-      : "Section draft looks like an outline or selling-points list, not spoken copy.");
+      ? "章节草稿混入了提示词说明。"
+      : "Section draft contains prompt instructions.");
   }
   return content;
+}
+
+function validateSectionDraftAuthorLocks(markdown, contract, existingBody) {
+  const locks = Array.isArray(contract?.locks) ? contract.locks : Object.entries(contract?.locks || {}).map(([target, value]) => ({ target, value }));
+  for (const entry of locks) {
+    const lock = typeof entry === "string" ? { target: "text", value: entry } : entry;
+    if (["title", "sections", "sectionTitles"].includes(lock?.target)) continue;
+    const value = lock?.exactText ?? lock?.value;
+    // Locks in other sections do not need to be repeated in this section.
+    if (typeof value === "string" && value && String(existingBody).includes(value) && !String(markdown).includes(value)) {
+      throw new Error("author-lock-mismatch: a locked expression in this section changed.");
+    }
+  }
+  return markdown;
 }
 
 async function draftOutlineSection(sectionTitle) {
@@ -1808,6 +1982,10 @@ async function draftOutlineSection(sectionTitle) {
     openWindow("outline");
     return;
   }
+  const targetSnapshot = captureSectionDraftTarget(context);
+  const editorialContract = resolveWritingEditorialContract(project, { questions: project.questionSheet });
+  const invocation = typeof createClioTaskInvocation === "function" ? createClioTaskInvocation({ userText: context.body, taskKind: "draft-section", projectId: project.id }) : null;
+  let servedModel = "";
   const cleanSectionTitle = String(sectionTitle || context.title || "").trim() || t("manual_draft_title");
   if (!beginLongTask("draft-section", t("drafting_section", cleanSectionTitle))) return;
 
@@ -1818,9 +1996,14 @@ async function draftOutlineSection(sectionTitle) {
     await prepareStreamingMarkdownPreview();
     const questionSheet = (project.questionSheet || "").trim();
     const query = [questionSheet, context.outlineMarkdown || context.outlineBody || cleanSectionTitle].filter(Boolean).join("\n\n");
-    const projectContext = await buildBudgetedProjectContext(query, { taskKind: "draft-section" });
+    const projectContext = await buildBudgetedProjectContext(query, { taskKind: "draft-section", signal: getLongTaskSignal(), invocation });
+    if (!sectionDraftTargetMatches(targetSnapshot)) throw new Error("target-stale: the selected section changed before generation.");
     const eli5Block = writingStudioEli5Block();
-    const prompt = `${resolveWritingRoutePrompt("writing-route.section-draft")}
+    const prompt = `${resolveWritingRoutePrompt("writing-route.section-draft", editorialContract.language, { invocation })}
+
+${writingEditorialContractBlock(editorialContract)}
+
+${sectionDraftContinuityContext(context)}
 
 QUESTION SHEET:
 ${questionSheet || "No Question Sheet provided."}
@@ -1839,16 +2022,17 @@ ${context.outlineMarkdown || context.outlineBody || cleanSectionTitle}${eli5Bloc
       temperature: 0.55,
       ai_system6_task_kind: "draft-section",
       stream: true,
-    }, getLongTaskSignal());
+    }, getLongTaskSignal(), { invocation });
 
     const streamedContent = await readModelTextStream(response, {
       signal: getLongTaskSignal(),
       throttleMs: 120,
-      onSnapshot: (markdown) => showStreamingSurfacePreview("sectionDrafts", stripRebuildMarkdownFence(markdown)),
+      onModel: (model) => { servedModel = String(model || ""); },
+      onSnapshot: (markdown) => { if (sectionDraftTargetMatches(targetSnapshot)) showStreamingSurfacePreview("sectionDrafts", stripRebuildMarkdownFence(markdown)); },
     });
     content = stripRebuildMarkdownFence(streamedContent || "").trim();
     content = validateSectionDraftContent(content);
-    if (content) showStreamingSurfacePreview("sectionDrafts", content, { final: true });
+    if (content && sectionDraftTargetMatches(targetSnapshot)) showStreamingSurfacePreview("sectionDrafts", content, { final: true });
   } catch (error) {
     if (!isAbortError(error)) {
       console.error("Drafting failed", error);
@@ -1864,7 +2048,15 @@ ${context.outlineMarkdown || context.outlineBody || cleanSectionTitle}${eli5Bloc
     return;
   }
 
-  const applied = await confirmAndApplySectionDraft(content, "draft_replace_confirm", "section_draft_ai_drafted");
+  const receipt = await window.AISystem6RunReceipts?.recordModelAnswer?.({ projectId: project.id, sourceAppId: "sectionDrafts", intent: "draft-section", model: servedModel, answerText: content, runManifest: invocation?.runManifest || null });
+  try { validateSectionDraftAuthorLocks(content, editorialContract, context.body); }
+  catch (error) {
+    if (receipt?.receiptId) await window.AISystem6RunReceipts?.recordUserAction?.(receipt.receiptId, { action: "reject" });
+    await reportWritingRouteModelFailure(error, t("section_drafts"));
+    return;
+  }
+  const applied = await confirmAndApplySectionDraft(content, "draft_replace_confirm", "section_draft_ai_drafted", targetSnapshot);
+  if (receipt?.receiptId) await window.AISystem6RunReceipts?.recordUserAction?.(receipt.receiptId, { action: applied ? "accept" : "reject" });
   if (applied) {
     const contextAfterDraft = currentSectionDraftContext({ ensureDraft: true });
     if (contextAfterDraft?.draft) {
@@ -1882,6 +2074,7 @@ async function eli5RewriteSection() {
     openWindow("outline");
     return false;
   }
+  const targetSnapshot = captureSectionDraftTarget(context);
   const body = String(draftBodyInput?.value || context.body || "").trim();
   if (!body) {
     setStatus(t("draft_needs_content"));
@@ -1896,6 +2089,7 @@ async function eli5RewriteSection() {
   }
   if (!beginLongTask("eli5-rewrite-section", t("section_draft_eli5_rewriting"))) return false;
   let content = "";
+  let servedModel = "";
   try {
     const lens = writingStudioExplanationLens();
     const baseline = `${currentLanguage === "zh" ? "观众基础" : "Audience baseline"}：${lens.baselineKnowledge || "secondary-school"}`;
@@ -1921,6 +2115,7 @@ async function eli5RewriteSection() {
     }, getLongTaskSignal());
     if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
     const result = await response.json().catch(() => ({}));
+    servedModel = String(result?.ai_system6_metrics?.model || result?.model || "");
     content = stripRebuildMarkdownFence(String(result?.choices?.[0]?.message?.content || "").trim());
   } catch (error) {
     if (!isAbortError(error)) {
@@ -1934,7 +2129,10 @@ async function eli5RewriteSection() {
     clearStatus();
     return false;
   }
-  return confirmAndApplySectionDraft(content, "section_draft_eli5_replace_confirm", "section_draft_eli5_applied");
+  const receipt = await window.AISystem6RunReceipts?.recordModelAnswer?.({ projectId: context.project.id, sourceAppId: "sectionDrafts", intent: "writing.eli5-rewrite", model: servedModel, answerText: content });
+  const applied = await confirmAndApplySectionDraft(content, "section_draft_eli5_replace_confirm", "section_draft_eli5_applied", targetSnapshot);
+  if (receipt?.receiptId) await window.AISystem6RunReceipts?.recordUserAction?.(receipt.receiptId, { action: applied ? "accept" : "reject" });
+  return applied;
 }
 
 async function eli5ReviewSection() {

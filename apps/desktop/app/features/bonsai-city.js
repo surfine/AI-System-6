@@ -51,7 +51,7 @@ window.AISystem6BonsaiCityLoaded = true;
   const TERRAIN_PRESETS = Object.freeze(["balanced", "river", "lake", "coast"]);
   const OVERLAYS = Object.freeze([
     "none", "power", "water", "traffic", "pollution", "land-value",
-    "police", "fire", "education", "health",
+    "police", "fire", "education", "health", "transit",
   ]);
   const GOALS = Object.freeze([
     { id: "road", tool: "road" },
@@ -60,6 +60,14 @@ window.AISystem6BonsaiCityLoaded = true;
     { id: "zone", tools: ["residential-light", "commercial-light", "industrial-light"] },
     { id: "run", run: true },
   ]);
+  // The pot calendar's month-to-season table, read by the render snapshot and
+  // by the hand-over stamp so both name the same season for the same month.
+  const BONSAI_SEASON_OF_MONTH = Object.freeze([3, 3, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3]);
+  // While ClioTalk is reading, working or waiting the city holds its breath,
+  // exactly as Rootline holds its own (rootline.js BUSY).
+  const BONSAI_ASSISTANT_BUSY = Object.freeze(["reading", "working", "waiting"]);
+  // The Neighbours window names a rim side; the shared namer wants its letter.
+  const BONSAI_RIM_DIRECTIONS = Object.freeze({ north: "n", east: "e", south: "s", west: "w" });
   const TOOL_GROUPS = Object.freeze([
     {
       id: "terrain",
@@ -75,6 +83,9 @@ window.AISystem6BonsaiCityLoaded = true;
       tools: [
         { id: "road", icon: "━", shortcut: "R", gesture: "path", command: "build-path", network: "road" },
         { id: "highway", icon: "═", shortcut: "E", gesture: "path", command: "build-path", network: "highway" },
+        // 主干道 has no baked icon or glyph of its own yet: it borrows the
+        // highway's two-rail mark, which reads as a road laid two tiles wide.
+        { id: "avenue", icon: "═", description: "bonsai_tool_avenue_description", gesture: "path", command: "build-path", network: "avenue" },
         { id: "onramp", icon: "◢", gesture: "path", command: "build-path", network: "onramp" },
         { id: "rail", icon: "╫", shortcut: "Y", gesture: "path", command: "build-path", network: "rail" },
         { id: "station", icon: "S", shortcut: "S", gesture: "point", command: "place-facility", kind: "station" },
@@ -209,6 +220,15 @@ window.AISystem6BonsaiCityLoaded = true;
     playing: false,
     speed: 0,
     lastRunningSpeed: 1,
+    // Down to the street the clock stops, and this remembers what it was so
+    // the way back restores it exactly once (returnFromStreets, onResume).
+    speedBeforeStreets: null,
+    // ClioTalk's turn: while the assistant works the city pauses, and the
+    // speed it held is restored unless the player chose a new one meanwhile.
+    assistantPaused: false,
+    speedBeforeAssistant: null,
+    assistantSpeedUserChanged: false,
+    assistantApplying: false,
     tickCarry: 0,
     tool: "road",
     dirty: false,
@@ -574,6 +594,9 @@ window.AISystem6BonsaiCityLoaded = true;
       button.dataset.bonsaiCategory = group.id;
       setArmed(button, state.tool === tool.id);
       button.setAttribute("aria-label", `${t(`bonsai_tool_${tool.id.replaceAll("-", "_")}`)} · ${t("bonsai_unit_cost", cost)} · ${tool.shortcut || "—"}`);
+      // A tool may carry a longer note (the avenue's); it rides as the
+      // button's tooltip. Tools without one keep the bare label as before.
+      if (tool.description) button.title = t(tool.description);
       const icon = toolIconElement(tool, "bonsai-tool-icon");
       const label = document.createElement("span");
       label.className = "bonsai-tool-label";
@@ -1060,6 +1083,9 @@ window.AISystem6BonsaiCityLoaded = true;
     // buttons above are the only place that said which one is in force. A
     // player who chose the speed from the menu saw nothing there.
     if (typeof updateMenuState === "function") updateMenuState();
+    // A speed the player picks while the assistant holds the city is theirs:
+    // when ClioTalk goes idle the shell must not overwrite it.
+    if (state.assistantPaused && !state.assistantApplying) state.assistantSpeedUserChanged = true;
   }
 
   function currentDate() {
@@ -1067,6 +1093,82 @@ window.AISystem6BonsaiCityLoaded = true;
       return state.current ? sim().dateOf(state.current) : null;
     } catch {
       return null;
+    }
+  }
+
+  // The shared world core (pot-world.js) is loaded first by this window's
+  // loader; every use is guarded so a page without it still runs.
+  function potWorld() {
+    return window.AISystem6PotWorld || null;
+  }
+
+  function potLanguageIsChinese() {
+    return typeof currentLanguage === "string" && currentLanguage.toLowerCase().startsWith("zh");
+  }
+
+  // The pot's own calendar in words: 「1952年7月1日 周一 · 小暑」 /
+  // "1 July 1952, Monday · Minor Heat". Empty when the core is absent, so the
+  // caller can fall back to the ISO stamp.
+  function potDateText(city = state.current) {
+    const core = potWorld();
+    if (!city || typeof core?.calendar?.dateOfTick !== "function") return "";
+    const yearFounded = Number.isInteger(city.yearFounded) ? city.yearFounded : undefined;
+    const date = core.calendar.dateOfTick(Number(city.tick) || 0, yearFounded);
+    const weekday = t(`bonsai_weekday_${date.weekday}`);
+    const term = core.calendar.TERMS?.[date.term] || null;
+    const termName = term ? (potLanguageIsChinese() ? term[0] : term[1]) : "";
+    return t("bonsai_pot_date", date.year, date.month + 1, date.day, weekday, termName);
+  }
+
+  // The district a tile stands in, in the player's language, through the
+  // shared gazetteer. Empty when the core or the snapshot is unavailable.
+  function districtNameAt(tile) {
+    const core = potWorld();
+    if (!state.current || typeof core?.gazetteer !== "function" || typeof sim()?.buildRenderSnapshot !== "function") return "";
+    if (!Number.isInteger(tile?.x) || !Number.isInteger(tile?.y)) return "";
+    try {
+      const district = core.gazetteer(sim().buildRenderSnapshot(state.current)).districtAt(tile.x, tile.y);
+      return district ? (potLanguageIsChinese() ? district.zh : district.en) : "";
+    } catch {
+      return "";
+    }
+  }
+
+  // Where the car is put down: the middle of the map view, or the built-up
+  // centre when no picker is mounted.
+  function streetDepartureTile() {
+    if (!state.current) return null;
+    let from = builtViewCenter(state.current);
+    const stack = query("[data-bonsai-map-stack]");
+    const rect = stack?.getBoundingClientRect?.();
+    const picked = rect && renderer()?.pickTile?.(rect.left + rect.width / 2, rect.top + rect.height / 2, rect);
+    if (picked && Number.isFinite(picked.x) && Number.isFinite(picked.y)) from = { x: picked.x, y: picked.y };
+    if (from && Number.isFinite(from.x) && Number.isFinite(from.y)) return from;
+    return state.current.spawnCenter || null;
+  }
+
+  // The v2 hand-over the street and the roots both receive. Null when the
+  // shared core is absent: the shell then keeps its older one-shot hand-over.
+  function cityHandoffPayload(from = streetDepartureTile()) {
+    const core = potWorld();
+    if (!state.current || typeof core?.handoff?.fromCity !== "function") return null;
+    const display = { night: Boolean(state.display.night), seasons: Boolean(state.display.seasons), tank: Boolean(state.display.tank) };
+    const payload = core.handoff.fromCity(sim(), state.current, { record: state.record, display, from });
+    stampHandoffDisplay(payload, display);
+    return payload;
+  }
+
+  // The core stamps the light and the season from `display`; if a core ever
+  // does not, stamp them here exactly as stampedSnapshot() does.
+  function stampHandoffDisplay(payload, display) {
+    const snapshot = payload?.snapshot;
+    if (!snapshot) return;
+    const timeOfDay = display.night ? 0 : 0.5;
+    if (snapshot.timeOfDay !== timeOfDay) snapshot.timeOfDay = timeOfDay;
+    if (!Number.isInteger(snapshot.season) || snapshot.season < 0 || snapshot.season > 3) {
+      const date = potWorld()?.calendar?.dateOfTick?.(state.current?.tick, state.current?.yearFounded) || sim()?.dateOf?.(state.current) || null;
+      const month = Number(date?.month) || 0;
+      snapshot.season = display.seasons ? BONSAI_SEASON_OF_MONTH[month] : 1;
     }
   }
 
@@ -1119,15 +1221,20 @@ window.AISystem6BonsaiCityLoaded = true;
     const speedId = state.playing ? SPEEDS.find((entry) => entry.value === state.speed)?.id || "normal" : "pause";
     const values = {
       city: state.record?.name || t("bonsai_city_unnamed"),
-      date: date ? `${date.year}-${String((date.month ?? 0) + 1).padStart(2, "0")}-${String(date.day ?? 1).padStart(2, "0")}` : "—",
+      // The gauge speaks the pot's own calendar; the ISO stamp stays the
+      // fallback for a page whose world core has not loaded.
+      date: potDateText(state.current) || (date ? `${date.year}-${String((date.month ?? 0) + 1).padStart(2, "0")}-${String(date.day ?? 1).padStart(2, "0")}` : "—"),
       speed: t(`bonsai_speed_${speedId}`),
       funds: state.current ? `$${formatMoney(state.current.funds)}` : "—",
       population: state.current ? String(Math.floor(Number(state.current.population) || 0)) : "—",
       tool: t(`bonsai_tool_${tool.id.replaceAll("-", "_")}`),
       // A pad on uneven ground is levelled first; the preview shows that part.
+      // A subway drag under water names its tunnel share (ruleset 6).
       cost: state.tool === "pan" ? "—" : Number(state.previewReceipt?.levelCost) > 0
         ? `$${formatMoney(cost)} ${t("bonsai_status_level_cost", `$${formatMoney(state.previewReceipt.levelCost)}`)}`
-        : `$${formatMoney(cost)}`,
+        : Number(state.previewReceipt?.tunnelCost) > 0
+          ? `$${formatMoney(cost)} ${t("bonsai_status_tunnel_cost", `$${formatMoney(state.previewReceipt.tunnelCost)}`)}`
+          : `$${formatMoney(cost)}`,
       overlay: state.overlay && state.overlay !== "none" ? t(`bonsai_overlay_${state.overlay.replaceAll("-", "_")}`) : "",
       saved: !state.current ? "" : state.lastSavedAt ? t("bonsai_status_saved_ago", Math.max(0, Math.round((Date.now() - state.lastSavedAt) / 1000))) : t("bonsai_status_unsaved"),
     };
@@ -1146,7 +1253,7 @@ window.AISystem6BonsaiCityLoaded = true;
         if (weather) {
           const text = t(`bonsai_weather_${weather.type}`) || weather.type;
           if (weatherEl.textContent !== text) weatherEl.textContent = text;
-          weatherEl.setAttribute("title", `${weather.temperature}°F · wind ${weather.wind}mph · humidity ${weather.humidity}%`);
+          weatherEl.setAttribute("title", t("bonsai_weather_detail", weather.temperature, Math.round(weather.wind * 1.609), weather.humidity));
         }
       }
     }
@@ -1160,7 +1267,7 @@ window.AISystem6BonsaiCityLoaded = true;
     const snapshot = sim().buildRenderSnapshot(city);
     snapshot.timeOfDay = state.display.night ? 0 : 0.5;
     const month = Number(sim().dateOf?.(city)?.month) || 0;
-    snapshot.season = state.display.seasons ? [3, 3, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3][month] : 1;
+    snapshot.season = state.display.seasons ? BONSAI_SEASON_OF_MONTH[month] : 1;
     // Problem signs blink at 1 Hz on the shell's clock (the renderer reads
     // no clock of its own).
     snapshot.flagPhase = Math.floor(performance.now() / 500) % 2;
@@ -1982,6 +2089,9 @@ window.AISystem6BonsaiCityLoaded = true;
       bonsai_tile_footprint: info.facilityFootprint
         ? `${info.facilityFootprint.w}×${info.facilityFootprint.h}${info.facilityFootprint.legacy ? ` · ${t("bonsai_footprint_legacy")}` : ""}`
         : "—",
+      // What runs through this tile, read from the lines the mayor laid: the
+      // line that passes here, and the stop that stands here.
+      bonsai_tile_transit: transitAtTile(tile) || "—",
     };
     balloon.innerHTML = `
       <div class="bonsai-tile-balloon-title">${t("bonsai_tile_inspector")}<span>${tile.x}, ${tile.y}</span></div>
@@ -2032,6 +2142,57 @@ window.AISystem6BonsaiCityLoaded = true;
     state.inspectorMode = "news";
     renderInspector();
     scheduleSessionCommit();
+  }
+
+  // The line passing over one tile, and the stop standing on it.
+  function transitAtTile(tile) {
+    const sidecar = state.current?.transitLines;
+    if (!sidecar || !Array.isArray(sidecar.lines)) return "";
+    const names = [];
+    for (const line of sidecar.lines) {
+      let onTile = false;
+      for (let i = 0; i + 1 < line.tiles.length; i += 2) {
+        if (line.tiles[i] === tile.x && line.tiles[i + 1] === tile.y) {
+          onTile = true;
+          break;
+        }
+      }
+      const stop = (line.stations || []).find((station) => station.x === tile.x && station.y === tile.y);
+      const label = currentLanguage === "zh" ? line.name?.zh : line.name?.en;
+      if (stop) {
+        const stopName = currentLanguage === "zh" ? stop.name?.zh : stop.name?.en;
+        names.push(`${label} · ${stopName}`);
+      } else if (onTile) {
+        names.push(label);
+      }
+    }
+    return names.join("、");
+  }
+
+  // 本市交通: what the city actually runs, read from the lines the mayor laid.
+  // A city with no laid lines has no box — nothing here is invented, and the
+  // only city-wide figure is the corridor ridership the simulation keeps.
+  function transitBoxMarkup() {
+    const sidecar = state.current?.transitLines;
+    if (!sidecar || !Array.isArray(sidecar.lines) || !sidecar.lines.length) return "";
+    const perDay = Number(sim().TICKS_PER_DAY) || 5;
+    const rows = sidecar.lines.map((line) => {
+      const mode = line.mode === "bus" ? "bus" : line.mode === "brt" ? "brt" : "metro";
+      const name = currentLanguage === "zh" ? line.name?.zh : line.name?.en;
+      const stops = (line.stations || [])
+        .map((station) => (currentLanguage === "zh" ? station.name?.zh : station.name?.en))
+        .filter(Boolean);
+      const ends = stops.length >= 2 ? `${stops[0]} → ${stops[stops.length - 1]}` : (stops[0] || "");
+      const opened = Number.isInteger(line.laidTick) && state.current.tick - line.laidTick <= 30 * perDay
+        ? `<em>${t("bonsai_transit_this_month")}</em>`
+        : "";
+      return `<li>${escapeHtml(t(`bonsai_transit_mode_${mode}`))} · <strong>${escapeHtml(name || line.id)}</strong> — ${escapeHtml(ends)} `
+        + `· ${escapeHtml(t("bonsai_transit_stops", stops.length))}${opened ? ` ${opened}` : ""}</li>`;
+    }).join("");
+    const riders = Number(state.current.busService?.busRiders) || 0;
+    return `<h4 class="bonsai-transit-title">${escapeHtml(t("bonsai_transit_box"))}</h4>`
+      + `<ul class="bonsai-transit-lines">${rows}</ul>`
+      + `<p class="bonsai-transit-note">${escapeHtml(t("bonsai_transit_riders", formatMoney(riders)))}</p>`;
   }
 
   function openGraphs() {
@@ -2651,13 +2812,15 @@ window.AISystem6BonsaiCityLoaded = true;
   async function exportCurrentSc2() {
     if (!state.current) return false;
     try {
-      const bytes = await saveCodec().exportSc2(sim().serialize(state.current));
+      const payload = sim().serialize(state.current);
+      const bytes = await saveCodec().exportSc2(payload);
       const ok = window.AISystem6WebPlatform?.saveArtifact?.({
         blob: new Blob([Uint8Array.from(bytes)], { type: "application/octet-stream" }),
         fileName: `${String(state.record?.name || "bonsai-city").replace(/[^a-z0-9_-]+/gi, "-")}.sc2`,
         mimeType: "application/octet-stream",
       });
       setMessage(ok ? (isOsmCity(state.current) ? "bonsai_status_exported_sc2_osm" : "bonsai_status_exported_sc2") : "bonsai_status_export_failed");
+      if (ok) reportSc2Export(payload);
       return ok;
     } catch {
       setMessage("bonsai_status_export_failed");
@@ -2890,6 +3053,49 @@ window.AISystem6BonsaiCityLoaded = true;
         bonsai_history_months: report.history?.length ?? state.current.history?.length ?? 0,
       };
       controls = `<div class="button-row"><button class="btn" type="button" data-bonsai-open-graphs>${t("bonsai_view_graphs")}</button></div>`;
+    } else if (state.inspectorMode === "flipPot") {
+      titleKey = "bonsai_flip_pot";
+      const current = flipPotBill();
+      if (!current) {
+        rows = { bonsai_flip_none: t("bonsai_flip_none") };
+      } else {
+        const { record, bill } = current;
+        rows = {
+          bonsai_flip_plan: String(record.id).slice(-12),
+          bonsai_flip_total: `$${formatMoney(bill.total)}`,
+          bonsai_flip_upkeep: `$${formatMoney(bill.upkeep)}`,
+          bonsai_flip_funds: `$${formatMoney(state.current.funds)}`,
+          bonsai_flip_blocked: bill.blocked.length ? String(bill.blocked.length) : t("bonsai_flip_none_blocked"),
+        };
+        const lineRows = bill.lines.map((line) => {
+          const name = currentLanguage === "zh" ? line.name?.zh : line.name?.en;
+          const items = line.items.map((item) => (item.kind === "track"
+            ? (item.existing ? t("bonsai_flip_track_existing") : t("bonsai_flip_track", item.tiles))
+            : item.kind === "station" ? t("bonsai_flip_station")
+              : item.kind === "depot" ? t("bonsai_flip_depot") : t("bonsai_flip_stop"))).join(" · ");
+          const reasons = line.blocked
+            .map((item) => t(`bonsai_flip_reason_${String(item.code).replaceAll("-", "_")}`))
+            .filter((label) => label && label !== "undefined")
+            .join("、");
+          const blocked = line.blocked.length
+            ? `<em>${escapeHtml(t("bonsai_flip_cannot", reasons || line.blocked[0].code))}</em>`
+            : "";
+          return `<li><strong>${escapeHtml(name || line.lineId)}</strong> ${escapeHtml(items)} — $${formatMoney(line.cost)}${blocked ? ` ${blocked}` : ""}</li>`;
+        }).join("");
+        const needsDepot = bill.blocked.some((item) => item.code === "depot");
+        controls = [
+          `<ul class="bonsai-flip-lines">${lineRows}</ul>`,
+          `<div class="button-row">`,
+          (needsDepot || state.flipDepot)
+            ? `<label class="bonsai-flip-depot"><input type="checkbox" data-bonsai-flip-depot${state.flipDepot ? " checked" : ""}> ${t("bonsai_flip_depot_option")}</label>`
+            : "",
+          `<button class="btn" type="button" data-bonsai-flip-confirm${(bill.blocked.length || !bill.affordable) ? " disabled" : ""}>${t("bonsai_flip_confirm")}</button>`,
+          `<button class="btn" type="button" data-bonsai-flip-cancel>${t("close")}</button>`,
+          `</div>`,
+          bill.blocked.length ? `<p class="bonsai-flip-note">${escapeHtml(t("bonsai_flip_blocked_note"))}</p>` : "",
+          !bill.affordable ? `<p class="bonsai-flip-note">${escapeHtml(t("bonsai_flip_short", formatMoney(bill.deficit)))}</p>` : "",
+        ].join("");
+      }
     } else if (state.inspectorMode === "budget") {
       titleKey = "bonsai_budget";
       const budget = state.current.budget || {};
@@ -2919,6 +3125,7 @@ window.AISystem6BonsaiCityLoaded = true;
           const shaped = story.key === "ordinance" ? { ...story, id: t(`bonsai_ordinance_${story.id}`) } : story;
           return `<p class="bonsai-news-story">${t(`bonsai_news_${story.key}`, shaped)}</p>`;
         }).join("") || (teachingStory() ? "" : `<p class="bonsai-news-story">${t("bonsai_news_none")}</p>`)}</div>
+        ${transitBoxMarkup()}
         <label class="bonsai-ordinance"><input type="checkbox" data-bonsai-policy-newspaper${state.current.paperDelivery ? " checked" : ""}><span>${t("bonsai_news_subscribe")}</span></label>`;
     } else if (state.inspectorMode === "graphs") {
       titleKey = "bonsai_graphs";
@@ -3001,7 +3208,8 @@ window.AISystem6BonsaiCityLoaded = true;
       });
       controls = `
         <canvas class="bonsai-graph-canvas" data-bonsai-neighbors-canvas aria-label="${t("bonsai_neighbors")}"></canvas>
-        <p class="bonsai-goals-note">${t("bonsai_neighbors_note")}</p>`;
+        <p class="bonsai-goals-note">${t("bonsai_neighbors_note")}</p>
+        <ul class="bonsai-neighbor-actions">${(report?.neighbors || []).map((neighbor) => `<li><button class="btn mini-btn" type="button" data-bonsai-rootline-neighbor="${neighbor.direction}" data-bonsai-neighbor-index="${neighbor.nameIndex}">${t("bonsai_neighbor_look_rootline")}</button></li>`).join("")}</ul>`;
     }
     inspector.innerHTML = `
       <div class="bonsai-subwindow-title">
@@ -3080,17 +3288,33 @@ window.AISystem6BonsaiCityLoaded = true;
   // playing. Every warning code the codec emits gets a line, and an unknown
   // code shows itself rather than disappearing, so a new code can never go
   // silently unreported.
-  function reportMicropolisImport(warnings, introKey = "bonsai_micropolis_report_intro") {
+  function reportConversion(warnings, introKey, notePrefix) {
+    const prefix = notePrefix || ["bonsai", "micropolis", "note", ""].join("_");
     const codes = Array.isArray(warnings) ? warnings : [];
     if (!codes.length) return;
     const lines = codes.map((code) => {
-      const [name, count] = String(code).split(":");
-      const text = t(`bonsai_micropolis_note_${name.replace(/-/g, "_")}`, Number(count) || 0);
-      return `• ${text}`;
+      const raw = String(code);
+      const splitAt = raw.indexOf(":");
+      const name = splitAt === -1 ? raw : raw.slice(0, splitAt);
+      const count = splitAt === -1 ? 0 : Number(raw.slice(splitAt + 1)) || 0;
+      const key = `${prefix}${name.replace(/-/g, "_")}`;
+      const text = t(key, count);
+      // A code with no sentence shows itself. A missing line must not vanish.
+      return `• ${text === key ? raw : text}`;
     });
     // The report is a receipt for work that already finished, not a decision:
     // it reads in the notification list instead of stopping the read.
     pushSystemNotification(`${t(introKey)}\n${lines.join("\n")}`);
+  }
+
+  function reportMicropolisImport(warnings, introKey = "bonsai_micropolis_report_intro") {
+    reportConversion(warnings, introKey);
+  }
+
+  function reportSc2Export(payload) {
+    const report = saveCodec().sc2LossReport(payload);
+    const notePrefix = ["bonsai", "sc2", "note", ""].join("_");
+    reportConversion(report && report.warnings, "bonsai_sc2_report_intro", notePrefix);
   }
 
   // The way back. Bonsai summons Micropolis cities and can send a city
@@ -3145,6 +3369,160 @@ window.AISystem6BonsaiCityLoaded = true;
       setMessage("bonsai_status_export_failed");
       return false;
     }
+  }
+
+  // Down to the street: Joyride drives a copy of the city as it stands now
+  // (typed arrays included, so nothing Joyride does can reach this city or
+  // its save), carrying the mayor's day, season, light and calendar through
+  // the shared hand-over. The middle of the map view is where the car is put
+  // down, and the clock stops here so the way back can restore it.
+  async function driveCurrentStreets() {
+    if (!state.current) return false;
+    state.speedBeforeStreets = state.speed;
+    setSpeed(0);
+    const from = streetDepartureTile();
+    const payload = cityHandoffPayload(from);
+    if (typeof ensureJoyrideModule === "function") await ensureJoyrideModule();
+    if (payload) {
+      window.AISystem6Joyride?.queueCity?.(payload);
+    } else {
+      // No shared core on this page: keep the older one-shot hand-over.
+      window.AISystem6Joyride?.queueCity?.({
+        snapshot: structuredClone(sim().buildRenderSnapshot(state.current)),
+        name: String(state.record?.name || t("bonsai_city_unnamed")),
+        from,
+        osm: isOsmCity(state.current),
+        descend: true,
+      });
+    }
+    await openWindow("joyride");
+    return true;
+  }
+
+  // The way back up: Joyride's and Rootline's File menus call this on the
+  // window global. It gives the clock the speed it held when the car left
+  // (once — the lifecycle resume hook shares this), puts the view back on
+  // the tile the car stopped at, and says where the mayor has returned.
+  function resumeFromStreetsSpeed() {
+    if (state.speedBeforeStreets === null || state.speedBeforeStreets === undefined) return false;
+    const speed = state.speedBeforeStreets;
+    state.speedBeforeStreets = null;
+    setSpeed(speed ?? 1);
+    return true;
+  }
+
+  function returnFromStreets({ cityId, tile } = {}) {
+    const targetId = cityId || null;
+    if (targetId && targetId !== state.record?.id) return false;
+    if (!state.current) return false;
+    resumeFromStreetsSpeed();
+    if (tile && Number.isInteger(tile.x) && Number.isInteger(tile.y)) centerViewOnTile(tile);
+    setMessage("bonsai_status_back_from_streets", districtNameAt(tile), potDateText(state.current));
+    return true;
+  }
+
+  // L3: a neighbouring pot becomes a nursery in Rootline. The button carries
+  // the rim side and the name index; the shared namer turns them into the
+  // seed and the bilingual name the planting board shows.
+  async function lookNeighborInRootline(button) {
+    if (!state.current) return false;
+    const names = potWorld()?.names;
+    const dir = BONSAI_RIM_DIRECTIONS[button?.dataset?.bonsaiRootlineNeighbor] || null;
+    const nameIndex = Number(button?.dataset?.bonsaiNeighborIndex);
+    const citySeed = Number(state.current.seed);
+    if (typeof names?.neighbor !== "function" || !dir || !Number.isInteger(nameIndex) || !Number.isFinite(citySeed)) return false;
+    const neighbor = names.neighbor(citySeed, dir, nameIndex);
+    if (!neighbor) return false;
+    if (typeof ensureRootlineModule === "function") await ensureRootlineModule();
+    const queueNursery = window.AISystem6Rootline?.queueNursery;
+    if (typeof queueNursery !== "function") { setMessage("bonsai_status_rootline_unavailable"); return false; }
+    queueNursery({ seed: neighbor.seed, name: { zh: neighbor.zh, en: neighbor.en } });
+    await openWindow("rootline");
+    return true;
+  }
+
+  // 在根线里规划线网: the same v2 hand-over the street receives, without the
+  // pause, queued for Rootline and its window opened.
+  async function planTransitInRootline() {
+    if (!state.current) return false;
+    const payload = cityHandoffPayload();
+    if (!payload) { setMessage("bonsai_status_rootline_unavailable"); return false; }
+    if (typeof ensureRootlineModule === "function") await ensureRootlineModule();
+    const queuePot = window.AISystem6Rootline?.queuePot;
+    if (typeof queuePot !== "function") { setMessage("bonsai_status_rootline_unavailable"); return false; }
+    queuePot(payload);
+    await openWindow("rootline");
+    return true;
+  }
+
+  // ----- 翻盆: the mayor's bill for a plan the planner saved ------------------
+  //
+  // The quote comes from app/core/basin-flip-pot.js, which prices every leg and
+  // station with the city's own preview calls on a scratch copy — so the money
+  // named here is the money the commands below take. The city does not move
+  // until the mayor confirms (spec §4).
+  async function openFlipPot() {
+    if (!state.current) return false;
+    const list = typeof listStoredTransitPlans === "function" ? await listStoredTransitPlans(state.record?.id || null) : [];
+    const drafts = (list || [])
+      .filter((record) => record?.plan && record.status !== "laid")
+      .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+    if (!drafts.length) {
+      setMessage("bonsai_flip_none");
+      return false;
+    }
+    state.flipPlans = drafts;
+    state.flipPlanId = drafts[0].id;
+    state.flipDepot = false;
+    state.inspectorMode = "flipPot";
+    renderInspector();
+    scheduleSessionCommit();
+    return true;
+  }
+
+  function flipPotBill() {
+    const flip = window.AISystem6BasinFlipPot;
+    const record = (state.flipPlans || []).find((item) => item.id === state.flipPlanId) || null;
+    if (!flip || !record || !state.current) return null;
+    const bill = flip.quote(sim(), state.current, record.plan, { depot: state.flipDepot === true });
+    return { record, bill };
+  }
+
+  async function confirmFlipPot() {
+    const flip = window.AISystem6BasinFlipPot;
+    const current = flipPotBill();
+    if (!flip || !current || !state.current) return false;
+    const { record } = current;
+    const laid = flip.lay(sim(), state.current, record.plan, { depot: state.flipDepot === true });
+    if (!laid.ok || laid.blocked.length || (!laid.commands.length && !laid.sidecar)) {
+      setMessage("bonsai_flip_blocked");
+      return false;
+    }
+    const before = snapshotForFallbackUndo();
+    let spent = 0;
+    for (const command of laid.commands) {
+      const receipt = sim().submitCommand(state.current, command);
+      if (!receipt.accepted) {
+        // The preview said this would work. Put the city back so a later
+        // refusal cannot leave a half-built avenue and a smaller treasury.
+        restoreFallbackSnapshot(before);
+        setMessage("bonsai_flip_failed");
+        renderInspector();
+        return false;
+      }
+      spent += receipt.cost;
+    }
+    sim().setTransitLines(state.current, laid.sidecar);
+    await saveCurrentCity();
+    if (typeof putStoredTransitPlan === "function") {
+      await putStoredTransitPlan({ ...record, status: "laid", updatedAt: new Date().toISOString() });
+    }
+    state.flipPlans = [];
+    state.flipPlanId = "";
+    state.flipDepot = false;
+    closeInspector();
+    setMessage("bonsai_flip_laid", formatMoney(spent));
+    return true;
   }
 
   async function sendCurrentToMicropolis() {
@@ -3484,7 +3862,7 @@ window.AISystem6BonsaiCityLoaded = true;
         heading.textContent = t("bonsai_examples");
         const actions = document.createElement("div");
         actions.className = "bonsai-example-actions";
-        [{ id: "starter-town", label: "starter" }, { id: "troubled-mid-size", label: "troubled" }].forEach((example) => {
+        [{ id: "starter-town", label: "starter" }, { id: "troubled-mid-size", label: "troubled" }, { id: "hezhou-1952", label: "hezhou", note: true }].forEach((example) => {
           const button = document.createElement("button");
           button.type = "button";
           button.className = "btn";
@@ -3492,6 +3870,7 @@ window.AISystem6BonsaiCityLoaded = true;
           button.dataset.bonsaiExampleLabel = example.label;
           button.dataset.bonsaiAction = "open";
           button.textContent = t(`bonsai_example_${example.label}`);
+          if (example.note) button.title = t(`bonsai_example_${example.label}_note`);
           actions.append(button);
         });
         examples.append(heading, actions);
@@ -3621,13 +4000,15 @@ window.AISystem6BonsaiCityLoaded = true;
     if (action === "export-sc2") {
       try {
         const decoded = await saveCodec().decode(target.saveData);
-        const bytes = await saveCodec().exportSc2(sim().serialize(decoded.state));
+        const payload = sim().serialize(decoded.state);
+        const bytes = await saveCodec().exportSc2(payload);
         const ok = window.AISystem6WebPlatform?.saveArtifact?.({
           blob: new Blob([Uint8Array.from(bytes)], { type: "application/octet-stream" }),
           fileName: `${String(target.name || "bonsai-city").replace(/[^a-z0-9_-]+/gi, "-")}.sc2`,
           mimeType: "application/octet-stream",
         });
         setMessage(ok ? (isOsmCity(decoded.state) ? "bonsai_status_exported_sc2_osm" : "bonsai_status_exported_sc2") : "bonsai_status_export_failed");
+        if (ok) reportSc2Export(payload);
       } catch {
         setMessage("bonsai_status_export_failed");
       }
@@ -3738,20 +4119,27 @@ window.AISystem6BonsaiCityLoaded = true;
     if (typeof sim()?.createExampleCity !== "function") return false;
     try {
       if ((state.dirty || state.saving) && !await flushCurrentCitySave()) return false;
+      // One example, one record: the id is derived from the example, so
+      // reopening the same example opens the record already saved for it
+      // instead of replaying and writing a second record with the same name.
+      const recordId = `example-${exampleId}`;
+      const saved = (await listSavedCities()).find((record) => record && record.id === recordId);
+      if (saved) return openSavedRecord(saved);
       const city = await sim().createExampleCity(exampleId);
       if (!city) throw new Error("bonsai-example-missing");
       const createdAt = new Date().toISOString();
       state.current = city;
       state.record = {
-        id: makeId(city.seed),
+        id: recordId,
         name: t(`bonsai_example_${label}`),
         createdAt,
         updatedAt: createdAt,
       };
       state.dirty = true;
       scheduleAutosave();
-      state.playing = false;
-      state.speed = 0;
+      // A new example opens with the clock running, not paused on the map.
+      state.playing = true;
+      state.speed = 1;
       state.lastRunningSpeed = 1;
       state.tickCarry = 0;
       markOpeningGoalsMet();
@@ -3763,6 +4151,7 @@ window.AISystem6BonsaiCityLoaded = true;
       renderer()?.resetView?.({ center: builtViewCenter(city) || city.spawnCenter || null, size: city.size, zoom: city.view?.zoom ?? window.AISystem6BonsaiRenderer?.DEFAULT_ZOOM ?? 0.5 });
       setMessage("bonsai_status_ready");
       renderAll();
+      startLoop();
       scheduleSessionCommit();
       return true;
     } catch {
@@ -3951,9 +4340,24 @@ window.AISystem6BonsaiCityLoaded = true;
       const toolButton = event.target.closest("[data-bonsai-tool]");
       if (toolButton) return selectTool(toolButton.dataset.bonsaiTool);
       if (event.target.closest("[data-bonsai-open-graphs]")) return openGraphs();
+      // 翻盆: choose the plan, tick the depot, confirm, or walk away.
+      const flipPlan = event.target.closest("[data-bonsai-flip-plan]");
+      if (flipPlan) {
+        state.flipPlanId = flipPlan.dataset.bonsaiFlipPlan;
+        state.flipDepot = false;
+        return renderInspector();
+      }
+      if (event.target.closest("[data-bonsai-flip-depot]")) {
+        state.flipDepot = !state.flipDepot;
+        return renderInspector();
+      }
+      if (event.target.closest("[data-bonsai-flip-confirm]")) return confirmFlipPot();
+      if (event.target.closest("[data-bonsai-flip-cancel]")) return closeInspector();
       const adviceLocate = event.target.closest("[data-bonsai-advisor-locate]");
       if (adviceLocate) return locateAdvice(adviceLocate);
       if (event.target.closest("[data-bonsai-open-demographic-graphs]")) return openDemographicGraphs();
+      const nurseryButton = event.target.closest("[data-bonsai-rootline-neighbor]");
+      if (nurseryButton) return lookNeighborInRootline(nurseryButton);
       const overlayChip = event.target.closest("[data-bonsai-overlay-chip]");
       if (overlayChip) return setOverlay(overlayChip.dataset.bonsaiOverlayChip);
       if (event.target.closest("[data-bonsai-found-city]")) return foundCity();
@@ -4178,6 +4582,9 @@ window.AISystem6BonsaiCityLoaded = true;
         }
       },
       onResume: async () => {
+        // Give the street-goer their clock back, once: returnFromStreets may
+        // already have done it before the window was shown.
+        resumeFromStreetsSpeed();
         if (!state.rendererMounted) await mountRenderer();
         startLoop();
         renderAll();
@@ -4366,7 +4773,37 @@ window.AISystem6BonsaiCityLoaded = true;
     return sim().checkpoint(state.current);
   }
 
+  // Whatever ClioTalk is doing for the writer comes first: while it reads,
+  // works or waits the city holds its breath, as Rootline does. The speed the
+  // clock held is remembered and given back unless the player chose another.
+  window.AISystem6AssistantActivity?.subscribe?.(() => {
+    const busy = BONSAI_ASSISTANT_BUSY.includes(window.AISystem6AssistantActivity?.getState?.()?.state);
+    if (busy === state.assistantPaused) return;
+    state.assistantPaused = busy;
+    if (busy) {
+      state.assistantSpeedUserChanged = false;
+      state.speedBeforeAssistant = state.speed;
+      if (state.speed > 0) {
+        state.assistantApplying = true;
+        setSpeed(0);
+        state.assistantApplying = false;
+      }
+    } else {
+      const restore = !state.assistantSpeedUserChanged;
+      state.assistantSpeedUserChanged = false;
+      if (restore && state.speedBeforeAssistant > 0) {
+        state.assistantApplying = true;
+        setSpeed(state.speedBeforeAssistant);
+        state.assistantApplying = false;
+      }
+    }
+  });
+
   registerSessionAdapter();
+
+  // The language switch repaints this window through its admission row's
+  // repaint hook (app-admissions.js).
+  window.renderBonsaiCityLanguage = () => refreshLanguage();
 
   window.AISystem6BonsaiSaveGuard = Object.freeze({
     capture: captureSaveGuard,
@@ -4382,6 +4819,9 @@ window.AISystem6BonsaiCityLoaded = true;
     save: saveCurrentCity,
     openCities: openCityBrowser,
     refreshLanguage,
+    // The way back from the street (Joyride's and Rootline's return items):
+    // restore the clock once, recentre on the stopping tile, say where.
+    returnFromStreets,
     isRunning: () => !!state.timer,
     // Empty while no city is loaded, so the Speed menu marks nothing rather
     // than claiming a speed that no simulation is running at.
@@ -4407,6 +4847,9 @@ window.AISystem6BonsaiCityLoaded = true;
     "export-sc2": () => exportCurrentSc2(),
     "export-cty": () => exportCurrentAsCty(),
     "send-micropolis": () => sendCurrentToMicropolis(),
+    "drive-streets": () => driveCurrentStreets(),
+    "plan-transit": () => planTransitInRootline(),
+    "flip-pot": () => openFlipPot(),
     "undo": () => performUndo(),
     "redo": () => performRedo(),
     "report": () => openReport(),
@@ -4459,7 +4902,7 @@ window.AISystem6BonsaiCityLoaded = true;
     // to start, no gauge to arm, no date to advance. The four rows stayed
     // black and did nothing when chosen.
     ...SPEEDS.map((speed) => `speed-${speed.value}`),
-    "save", "save-as", "export-sc2", "export-cty", "send-micropolis", "undo", "redo", "report", "budget", "news", "subscribe", "extra", "ordinances", "minimap", "disasters-off",
+    "save", "save-as", "export-sc2", "export-cty", "send-micropolis", "drive-streets", "plan-transit", "flip-pot", "undo", "redo", "report", "budget", "news", "subscribe", "extra", "ordinances", "minimap", "disasters-off",
     "open-graphs", "open-population", "open-industry", "open-neighbors", "open-goals", "open-advisors",
     "display-buildings", "display-infrastructure", "display-zones", "display-underground",
     "display-night", "display-seasons", "display-miniature", "display-tank", "study-none", "study-white", "study-wood", "study-chipboard", "zoom-in", "zoom-out", "rotate-cw", "rotate-ccw", "center-city",
@@ -4514,6 +4957,9 @@ window.AISystem6BonsaiCityLoaded = true;
           item("export-sc2", "bonsai_export_sc2"),
           item("export-cty", "bonsai_export_cty"),
           item("send-micropolis", "bonsai_send_micropolis"),
+          item("drive-streets", "bonsai_drive_streets"),
+          item("plan-transit", "bonsai_plan_transit_rootline"),
+          item("flip-pot", "bonsai_flip_pot_menu"),
           separator,
           { type: "item", action: "close-active-window", labelKey: "close", shortcutId: "close-window", conditionId: "close-active-window" },
         ],
@@ -4615,6 +5061,15 @@ window.AISystem6BonsaiCityLoaded = true;
         // own Micropolis section uses; a plain open stays a plain open.
         handler: async (payload = {}) => {
           await openWindow(WINDOW_NAME);
+          // Rootline's return item names the save: open it through the same
+          // path the city browser uses. An unknown id changes nothing and
+          // says so, like the Micropolis branch below.
+          if (payload?.bonsaiRecordId) {
+            const target = (await listSavedCities()).find((record) => record.id === payload.bonsaiRecordId);
+            if (target) return openSavedRecord(target);
+            setMessage("bonsai_status_import_failed");
+            return false;
+          }
           if (payload?.micropolisRecordId) {
             const saves = await listMicropolisSaves();
             const record = saves.find((candidate) => candidate.id === payload.micropolisRecordId);

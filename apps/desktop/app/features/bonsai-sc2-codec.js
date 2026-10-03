@@ -734,6 +734,75 @@ window.AISystem6BonsaiSc2CodecLoaded = true;
     return misc;
   }
 
+  // What exportSc2 does not write. The file bytes stay the exporter's; this
+  // list is how the shell tells the player, after a save succeeds, which
+  // layers and records stayed behind. Counts only — never a changed tile.
+  const SC2_CARRIED_THINGS = new Set(["airplane", "helicopter", "ship", "sailboat"]);
+  const SC2_CROP_LAYERS = Object.freeze(["road", "rail", "wire", "pipe", "subway", "highway", "onramp", "avenue", "park", "zone", "tunnel"]);
+  function countPresent(layer) {
+    if (!layer || typeof layer.length !== "number") return 0;
+    let count = 0;
+    for (let index = 0; index < layer.length; index += 1) if (layer[index]) count += 1;
+    return count;
+  }
+  function sc2CropWindow(size) {
+    const offset = Math.floor((SC2_SIZE - size) / 2);
+    return { lo: Math.max(0, -offset), hi: Math.min(size, SC2_SIZE - offset) };
+  }
+  function sc2MapCropped(payload) {
+    const size = payload.size | 0;
+    if (!size || size <= SC2_SIZE) return 0;
+    const win = sc2CropWindow(size);
+    const hit = new Uint8Array(size * size);
+    const mark = (x, y) => {
+      if (x < 0 || y < 0 || x >= size || y >= size) return;
+      if (x >= win.lo && x < win.hi && y >= win.lo && y < win.hi) return;
+      hit[y * size + x] = 1;
+    };
+    for (const name of SC2_CROP_LAYERS) {
+      const layer = payload[name];
+      if (!layer) continue;
+      for (let y = 0; y < size; y += 1) for (let x = 0; x < size; x += 1) {
+        if (layer[y * size + x]) mark(x, y);
+      }
+    }
+    for (const facility of payload.facilities || []) mark(facility.x | 0, facility.y | 0);
+    return countPresent(hit);
+  }
+  function sc2LossReport(payload) {
+    const warnings = [];
+    const push = (code, count) => { if (count > 0) warnings.push(`${code}:${count}`); };
+    push("layer-dropped-avenue", countPresent(payload && payload.avenue));
+    const lines = payload && payload.transitLines && Array.isArray(payload.transitLines.lines) ? payload.transitLines.lines : [];
+    push("lines-dropped", lines.length);
+    let stops = 0;
+    for (const line of lines) {
+      const stations = line && Array.isArray(line.stations) ? line.stations : [];
+      for (const station of stations) if (station && station.kind === "bus-stop") stops += 1;
+    }
+    push("stops-dropped", stops);
+    push("map-cropped", payload ? sc2MapCropped(payload) : 0);
+    const catalog = payload && payload.catalogId;
+    const size = payload ? payload.size | 0 : 0;
+    let facilities = 0;
+    for (const facility of (payload && payload.facilities) || []) {
+      if (!facility || FACILITY_EXPORT_ID[facility.kind]) continue;
+      const x = facility.x | 0;
+      const y = facility.y | 0;
+      const explicit = catalog && size > 0 && x >= 0 && y >= 0 && x < size && y < size ? catalog[y * size + x] : 0;
+      if (!explicit) facilities += 1;
+    }
+    push("facilities-dropped", facilities);
+    push("records-dropped-bonds", Array.isArray(payload && payload.bonds) ? payload.bonds.length : 0);
+    const ordinances = payload && payload.ordinances && typeof payload.ordinances === "object" ? payload.ordinances : {};
+    let enacted = 0;
+    for (const value of Object.values(ordinances)) if (value === true) enacted += 1;
+    push("records-dropped-ordinances", enacted);
+    const things = Array.isArray(payload && payload.things) ? payload.things : [];
+    push("records-dropped-things", things.filter((thing) => !SC2_CARRIED_THINGS.has(thing && thing.kind)).length);
+    return { warnings };
+  }
+
   function exportSc2(payload) {
     if (!payload || payload.format !== "bonsai-city" || ![3, 4, 5].includes(payload.version)) fail("export-payload");
     const sidecar = payload.sc2Sidecar && payload.sc2Sidecar.chunks ? payload.sc2Sidecar : null;
@@ -787,6 +856,6 @@ window.AISystem6BonsaiSc2CodecLoaded = true;
 
   window.AISystem6BonsaiSc2Codec = Object.freeze({
     SC2_SIZE, SEGMENT_SIZES, UNCOMPRESSED, REQUIRED, MISC_OFFSETS: MISC, CHUNK_ORDER, FACILITY_EXPORT_ID,
-    rleDecode, rleEncode, bytesToBase64, base64ToBytes, parseIff, decodeSc2, buildCityPayload, importSc2, buildSc2File, exportSc2,
+    rleDecode, rleEncode, bytesToBase64, base64ToBytes, parseIff, decodeSc2, buildCityPayload, importSc2, buildSc2File, exportSc2, sc2LossReport,
   });
 })();

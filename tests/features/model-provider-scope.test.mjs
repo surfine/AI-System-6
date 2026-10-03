@@ -29,7 +29,7 @@ test.assertIncludes(clientChat, "function isGemma4ModelName", "local first-class
 test.assertIncludes(serverChat, "function tuneGemma4ChatPayload", "Gemma has a dedicated local payload tuner");
 test.assertIncludes(serverChat, "first-class model QA targets are Gemma and\n// Qwen locally, plus DeepSeek in the cloud", "server chat documents the app-wide first-class model boundary");
 test.assertIncludes(serverChat, "underlying chat payload OpenAI-compatible", "local chat keeps the OpenAI-compatible escape hatch");
-test.assertIncludes(serverChat, "return tuneGemma4ChatPayload(tuneQwen35ChatPayload(basePayload));", "local routing layers only the Gemma and Qwen family-specific tuners");
+test.assertIncludes(serverChat, "const finalPayload = tuneGemma4ChatPayload(tuneQwen35ChatPayload(basePayload));", "local routing layers only the Gemma and Qwen family-specific tuners");
 test.assertIncludes(serverChat, "function tuneLocalNoThinkingPayload", "non-first-class local models still receive a conservative generic compatibility pass");
 test.assertIncludes(serverChat, "stripInternalFields: !isQwen35ModelName(payload?.model) && !isGemma4ModelName(payload?.model)", "Gemma/Qwen keep family metadata for first-class tuning while other local models remain best-effort");
 

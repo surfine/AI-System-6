@@ -487,6 +487,7 @@ async function addProjectCdItem(markdown, name, options = {}) {
   let stored = null;
   let refused = "";
   await window.AISystem6StateStores?.projects.commit((draft) => {
+    options.validateBeforeCommit?.();
     if (!draft.projects.some((project) => String(project?.id) === projectId)) {
       // The project this burn belonged to is gone. Writing its CD item anyway
       // would file a deliverable under a disk the writer no longer has.
@@ -528,6 +529,7 @@ async function addProjectCdItem(markdown, name, options = {}) {
       stored = reservedIsFree ? item : { ...item, id: crypto.randomUUID() };
     }
     draft.projectCdItems.unshift(stored);
+    options.updateDraft?.(draft, stored);
   });
   if (refused || !stored) {
     // A refusal is not a burn: the caller must not report one, and the caller
@@ -1353,7 +1355,7 @@ async function repairImportedTextWithLocalModel(text, file, signal) {
     const result = await sendLocalModelTask({
       payload: {
         model: getLocalModelRequestName(),
-        messages: window.AISystem6ModelTaskRuntime.buildImportRepairMessages(chunk, file?.name),
+        messages: window.AISystem6ModelTaskRuntime.buildImportRepairMessages(chunk, file?.name, activeProjectId),
         temperature: 0.1,
         max_tokens: 2600,
         stream: false,
@@ -1390,6 +1392,7 @@ async function extractImageTextWithCloudVision(file, options = {}) {
     payload: {
       model: getLocalModelRequestName(),
       messages: window.AISystem6ModelTaskRuntime.buildVisionMessages({
+        projectId: activeProjectId,
         mode: "ocr",
         name: file.name || "",
         dataUrl: prepared.inlineDataUrl,

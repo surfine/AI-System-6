@@ -292,9 +292,12 @@ function keyboardInsetValue() {
 // A system-placed window must stay reachable: if its default frame (creative
 // labs and other wide windows after the writing spine) would push the right
 // or bottom edge past the viewport, shift it back inside. User-dragged
-// windows are never touched here — the user owns their position.
+// windows are never touched here — the user owns their position. Neither is
+// a phone's full-screen page: the shell's CSS owns that frame, and a height
+// written here mid-rotation outlived the turn and pushed the page's bottom
+// controls off the screen.
 function clampWindowToViewport(win, margin = 16) {
-  if (!win || win.dataset.userPositioned === "true") return;
+  if (!win || win.dataset.userPositioned === "true" || win.classList?.contains("is-mobile-fullscreen")) return;
   let r = win.getBoundingClientRect();
   if (r.width <= 0 || r.height <= 0) return;
   const vw = window.innerWidth || document.documentElement.clientWidth;
@@ -2752,11 +2755,8 @@ function getActionAvailability() {
     "expand-outline": routeWinName === "outline",
     "reduce-outline": routeWinName === "outline",
     "advance-outline-to-drafts": routeWinName === "outline",
-    // Cycling needs something to cycle between: with zero or one draft block
-    // the handler's own modulo lands back on the block already shown, so the
-    // row looked enabled and did nothing at all.
-    "previous-section-draft": routeWinName === "sectionDrafts" && getProjectOutlineDraftBlocks(getActiveProject()).length > 1,
-    "next-section-draft": routeWinName === "sectionDrafts" && getProjectOutlineDraftBlocks(getActiveProject()).length > 1,
+    "previous-section-draft": routeWinName === "sectionDrafts" && typeof canNavigateSectionDraft === "function" && canNavigateSectionDraft(-1),
+    "next-section-draft": routeWinName === "sectionDrafts" && typeof canNavigateSectionDraft === "function" && canNavigateSectionDraft(1),
     "draft-current-section": routeWinName === "sectionDrafts",
     "polish-draft": routeWinName === "sectionDrafts",
     "suggest-draft": routeWinName === "sectionDrafts",
@@ -2774,7 +2774,7 @@ function getActionAvailability() {
     "advance-drafts-to-manuscript": routeWinName === "sectionDrafts",
     "return-document-to-section-drafts": routeWinName === "sectionDrafts"
       && typeof manuscriptPhase === "function" && manuscriptPhase() === "manuscript",
-    "advance-manuscript-to-review": routeWinName === "teachText" && hasTeachTextBody
+    "advance-manuscript-to-review": ["teachText", "reviewDesk"].includes(routeWinName) && routeHasProject && !!teachTextBodyInput?.value.trim()
       && typeof isTeachTextManuscriptRole === "function" && isTeachTextManuscriptRole(),
     "translate-teachtext": hasTeachTextTranslation,
     "clip-teachtext-selection": hasTeachTextSelection,
@@ -2873,6 +2873,7 @@ function getActionAvailability() {
     "open-writing-flow-windows": routeHasProject,
     "toggle-review-preview": reviewDeskReady,
     "review-view-manuscript": canViewReviewManuscript,
+    "review-edit-manuscript": canViewReviewManuscript,
     "review-style-section": reviewDeskReady && teachTextCanReview && hasStyleSections,
     "review-facts-section": reviewDeskReady && teachTextCanReview && hasClaimSections,
     "review-facts-section-online": reviewDeskReady && teachTextCanReview && hasClaimSections,
@@ -3049,7 +3050,7 @@ function updateMenuState() {
       if (isMenuButton) btn.disabled = false;
     } else if (state[action] !== undefined) {
       btn.classList.toggle("is-disabled", !state[action]);
-      if (isMenuButton) btn.disabled = !state[action];
+      if (isMenuButton || ["previous-section-draft", "next-section-draft"].includes(action)) btn.disabled = !state[action];
     }
     // A lazy module that failed to load this session stays disabled no
     // matter what the state above decided — its window/command is the one
@@ -3181,6 +3182,9 @@ function updateMenuState() {
     }
     if (btn.dataset.clioPaintCheck) {
       btn.classList.toggle("is-checked", window.AISystem6ClioPaint?.menuChecked?.(btn.dataset.clioPaintCheck) === true);
+    }
+    if (btn.dataset.mingwenCheck) {
+      btn.classList.toggle("is-checked", window.AISystem6Mingwen?.menuChecked?.(btn.dataset.mingwenCheck) === true);
     }
     if (btn.dataset.cmfViewChoice) {
       const view = window.AISystem6CMFStudio?.currentView?.() || "";

@@ -285,6 +285,34 @@ function registerWritingAgentTools() {
   });
 
   writingAgentToolRegistry.register({
+    name: "proposeResearchNote",
+    description: "Propose a temporary claim/source working note, keeping attribution, inference, personal experience, counterevidence and gaps distinct. Citation presence is not fact verification. Never saves a file.",
+    inputSchema: {
+      type: "object", required: ["claims"], additionalProperties: false,
+      properties: {
+        claims: {
+          type: "array", minItems: 1, maxItems: 12,
+          items: {
+            type: "object", required: ["statement", "kind"], additionalProperties: false,
+            properties: {
+              statement: { type: "string", minLength: 1, maxLength: 2000 },
+              kind: { enum: ["source-statement", "personal-experience", "inference", "unresolved"] },
+              citationIds: { type: "array", maxItems: 12, items: { type: "string", minLength: 1, maxLength: 160 } },
+              counterCitationIds: { type: "array", maxItems: 12, items: { type: "string", minLength: 1, maxLength: 160 } },
+              limitation: { type: "string", maxLength: 2000 },
+            },
+          },
+        },
+      },
+    },
+    outputSchema: { type: "object", additionalProperties: true },
+    scope: ["project", "source"], effect: "proposal", timeoutMs: 2000, maxResults: 12,
+    run(context, input) {
+      return window.AISystem6WritingAgentRuntime.proposeResearchNote(context, input.claims);
+    },
+  });
+
+  writingAgentToolRegistry.register({
     name: "proposeManuscriptPatch",
     description: "Create a temporary manuscript patch proposal without applying it.",
     inputSchema: {
@@ -342,6 +370,7 @@ const browserWritingAgentCoordinator = window.AISystem6WritingAgentRuntime.creat
     const shouldRank = !sideAskChat
       && (rememberInput.checked || attachedClipIds.size > 0 || hasMountedFileDiskContext());
     if (shouldRank) await rankChunksForQuery(userText, signal);
+    assertClioTaskInvocationActive(options.invocation, signal, true);
     const payload = options.payload || buildPayload(userText, { ...options, taskKind: input.taskKind });
     return {
       payload,
@@ -379,6 +408,7 @@ const browserWritingAgentCoordinator = window.AISystem6WritingAgentRuntime.creat
     const messages = Array.isArray(payloadWithoutTools.messages)
       ? payloadWithoutTools.messages.map((message) => ({ ...message }))
       : [];
+    messages.push({ role: "system", content: "Use project tools to resolve an important evidence gap, not to reach a call count. Search for counterevidence as well as support. An existing citation verifies presence only, not whether a claim follows. For research, use proposeResearchNote to link major claims to the passages you actually read; it is a temporary working note, not an extra final deliverable. Revise the claim when evidence changes. For edits, examine claim/evidence, then structure, then sentences; do not request more tools when the current evidence suffices." });
     let appendedToolResults = 0;
     let lastResult = null;
     let activeResponseId = "";
@@ -392,6 +422,8 @@ const browserWritingAgentCoordinator = window.AISystem6WritingAgentRuntime.creat
     const onToken = listener ? (snapshot) => listener(streamedPrefix + String(snapshot || "")) : undefined;
     const loopResult = await writingAgentToolRegistry.runToolLoop({
       maxRounds: 3,
+      signal: input.signal,
+      callBudget: input.options?.invocation?.callBudget || input.options?.callBudget,
       context: {
         projectId: input.projectId,
         sourceScope: input.sourceScope,
@@ -399,7 +431,7 @@ const browserWritingAgentCoordinator = window.AISystem6WritingAgentRuntime.creat
         projectTools: prepared.projectTools || {},
         allowedEffects: prepared.allowedEffects || ["read", "proposal"],
       },
-      async next({ toolResults, toolsDisabled = false }) {
+      async next({ toolResults, toolsDisabled = false, stopReason = "" }) {
         toolResults.slice(appendedToolResults).forEach((entry) => {
           messages.push({
             role: "tool",
@@ -409,6 +441,9 @@ const browserWritingAgentCoordinator = window.AISystem6WritingAgentRuntime.creat
           });
         });
         appendedToolResults = toolResults.length;
+        if (toolsDisabled) {
+          messages.push({ role: "system", content: `Tool research stopped: ${stopReason}. Synthesize from the passages actually read. Repeated calls add no evidence. Distinguish attributed statements, inference and unresolved gaps; narrow or withdraw a claim contradicted by the material. If an important gap remains, state it concisely rather than claiming verification or completion. Do not add scores, self-praise, a second deliverable, independent-reader feedback or an aloud-reading claim.` });
+        }
         const modelPayload = {
           ...payloadWithoutTools,
           messages,
@@ -467,6 +502,7 @@ const browserWritingAgentCoordinator = window.AISystem6WritingAgentRuntime.creat
       modelResult: result,
       toolCalls: loopResult.toolCalls,
       toolLoopTruncated: loopResult.truncated === true,
+      toolLoopStopReason: loopResult.stopReason || "complete",
     };
   },
   onTransition(run, state, input) {
@@ -483,6 +519,9 @@ const browserWritingAgentCoordinator = window.AISystem6WritingAgentRuntime.creat
 });
 
 async function runWritingTask(options = {}) {
+  const invocation = options.invocation || createClioTaskInvocation(options);
+  invocation.callBudget = invocation.callBudget || options.callBudget || window.AISystem6WritingAgentRuntime.createWritingCallBudget();
+  options = { ...options, invocation, callBudget: invocation.callBudget, projectId: invocation.projectId };
   const taskKind = String(options.taskKind || "chat");
   const projectId = String(options.projectId || activeProjectId || "");
   window.lastWritingAgentGenerated = null;
@@ -490,6 +529,7 @@ async function runWritingTask(options = {}) {
     const result = await browserWritingAgentCoordinator.run({
       projectId,
       taskKind,
+      policyVersion: window.AISystem6PromptFilesRuntime?.resolvePromptFile("system.model-boundaries", null, currentLanguage)?.hash || "",
       sourceScope: writingAgentSourceScope(options),
       retryOf: options.retryOf || options.continueFromMessageId || "",
       userText: String(options.userInput || options.userText || ""),
@@ -504,16 +544,20 @@ async function runWritingTask(options = {}) {
     // second one used to be computed and dropped, which let a shortened answer
     // arrive looking complete.
     window.lastWritingAgentGenerated = result.generated || null;
-    if (window.lastTaskRunManifest) {
-      window.lastTaskRunManifest.agentRun = window.AISystem6WritingAgentRuntime.snapshotAgentRun(result.run);
-    }
+    invocation.generated = result.generated || null;
+    updateClioTaskInvocation(invocation, {
+      agentRun: window.AISystem6WritingAgentRuntime.snapshotAgentRun(result.run),
+      callBudget: window.AISystem6WritingAgentRuntime.snapshotWritingCallBudget(invocation.callBudget),
+    });
     return result.output;
   } catch (error) {
+    window.AISystem6WritingAgentRuntime.stopWritingCallBudget(invocation.callBudget, error);
     if (error?.agentRun) {
       window.lastWritingAgentRun = error.agentRun;
-      if (window.lastTaskRunManifest) {
-        window.lastTaskRunManifest.agentRun = window.AISystem6WritingAgentRuntime.snapshotAgentRun(error.agentRun);
-      }
+      updateClioTaskInvocation(invocation, {
+        agentRun: window.AISystem6WritingAgentRuntime.snapshotAgentRun(error.agentRun),
+        callBudget: window.AISystem6WritingAgentRuntime.snapshotWritingCallBudget(invocation.callBudget),
+      });
     }
     throw error;
   }

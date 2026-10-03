@@ -17,11 +17,14 @@ const mingmingLens = read("app/features/mingming-lens.js");
 const zh = read("app/data/translations-zh.js");
 const en = read("app/data/translations-en.js");
 
+// The Review Desk's primary row is everything between the window's action
+// group and its own command menu. The window anchors on the menu opener rather
+// than on the Focus control, which now sits inside that menu with the other
+// secondary commands.
 const reviewDeskActionsIndex = html.indexOf("review-desk-actions");
-const focusButtonIndex = html.indexOf('data-i18n="teachtext_focus_off"', reviewDeskActionsIndex);
-const commandMenuIndex = html.indexOf('<details class="teachtext-command-menu', focusButtonIndex);
+const commandMenuIndex = html.indexOf('<details class="teachtext-command-menu', reviewDeskActionsIndex);
 const commandMenuEndIndex = html.indexOf("</details>", commandMenuIndex);
-const mainButtonArea = focusButtonIndex >= 0 && commandMenuIndex >= 0 ? html.slice(focusButtonIndex, commandMenuIndex) : "";
+const mainButtonArea = reviewDeskActionsIndex >= 0 && commandMenuIndex >= 0 ? html.slice(reviewDeskActionsIndex, commandMenuIndex) : "";
 const commandPopover = commandMenuIndex >= 0 && commandMenuEndIndex >= 0 ? html.slice(commandMenuIndex, commandMenuEndIndex) : "";
 
 test.assertNotIncludes(mainButtonArea, 'data-action="review-mingming-handoff"', "Review Desk button row matches other TeachText windows: no extra primary handoff button");

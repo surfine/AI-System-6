@@ -35,7 +35,7 @@ function writingRouteReceiptProvider() {
 // dialog, or any later failure, discards the text from the writer's document
 // but never from this record. Callers pass the same content string back once
 // the landing decision is known so the receipt says the honest outcome.
-async function recordWritingRouteAnswer({ projectId, intent, model, answerText }) {
+async function recordWritingRouteAnswer({ projectId, intent, model, answerText, invocation = null }) {
   if (!answerText) return "";
   // Spent once. A run that never reported a served model must not inherit the
   // last one: an empty model line is honest, a borrowed one is not.
@@ -46,8 +46,9 @@ async function recordWritingRouteAnswer({ projectId, intent, model, answerText }
     sourceAppId: "outline",
     intent,
     provider: writingRouteReceiptProvider(),
-    model: model || served,
+    model: model === undefined ? served : String(model || ""),
     answerText,
+    runManifest: invocation?.runManifest || null,
   });
   return recorded?.receiptId || "";
 }
@@ -59,35 +60,26 @@ function settleWritingRouteAnswer(receiptId, landed, answerText) {
     : { action: "reject" });
 }
 
-function validateGeneratedWritingOutline(markdown) {
+function validateGeneratedWritingOutline(markdown, editorialContract = {}) {
   const content = String(markdown || "").trim();
   if (!content) throw new Error("empty outline response");
   const sections = content.match(/^##\s+.+$/gm) || [];
   if (!sections.length) {
     throw new Error(t("generated_outline_has_no_writable_sections"));
   }
-  const forbiddenHeading = /^##\s*(?:[一二三四五六七八九十\d.、\s-]*)?(?:核验|确认|校验|资料补充|补充资料|下一步|后续行动|行动计划|风险|备注|输出规则|写作准备|读者导向|结构逻辑|数据准确性|工作清单|写作大纲总结)\b/im;
+  const forbiddenHeading = /^##\s*(?:[一二三四五六七八九十\d.、\s-]*)?(?:输出规则|提示词说明|写作准备|工作清单|Output Rules|Prompt Instructions|Writing Checklist)\s*$/im;
   if (forbiddenHeading.test(content)) {
     throw new Error(currentLanguage === "zh"
       ? "生成的大纲包含工作清单章节，不能直接进入章节草稿。"
       : "Generated outline contains work-list sections that cannot be drafted directly.");
   }
-  if (/^###\s+/m.test(content)) {
-    throw new Error(currentLanguage === "zh"
-      ? "生成的大纲层级过深；请只使用 ## 章节。"
-      : "Generated outline is too deeply nested; use ## sections only.");
-  }
-  if (sections.length > 7) {
-    throw new Error(currentLanguage === "zh"
-      ? "生成的大纲章节过多，无法快速进入章节草稿。"
-      : "Generated outline has too many sections for the drafting flow.");
-  }
-  const workListLines = content.split("\n").filter((line) => /(?:确认|核验|待补充|资料补充|下一步|后续|风险|备注|输出规则|不要输出解释|只返回|确保)/.test(line));
+  const workListLines = content.split("\n").filter((line) => /^\s*(?:[-*]\s*)?(?:输出规则[:：]|提示词说明[:：]|不要输出解释|只返回 Markdown|Output Rules:|Return Markdown only)/i.test(line));
   if (workListLines.length >= 3) {
     throw new Error(currentLanguage === "zh"
-      ? "生成的大纲混入了过多工作流/提示词说明，不能作为口播章节。"
+      ? "生成的大纲混入了过多工作流/提示词说明，不能作为正文章节。"
       : "Generated outline contains too many workflow or prompt notes.");
   }
+  if (typeof validateWritingEditorialLocks === "function") validateWritingEditorialLocks(content, editorialContract);
   return content;
 }
 
@@ -98,19 +90,16 @@ function buildGeneratedOutlineRetryMessages({
   projectContext = "",
   badOutput = "",
   failureReason = "",
+  editorialContract = { genre: "article", language: currentLanguage, locks: [] },
+  invocation = null,
 } = {}) {
   const badSummary = clipContextContent(String(badOutput || ""), 1200);
-  const prompt = `你是 AI System 6 的中文视频稿大纲编辑。上一次生成的大纲没有通过校验：${failureReason || "输出不是可直接起草的章节大纲"}。
+  const prompt = `${writingEditorialContractBlock(editorialContract)}
 
-请重新生成一份能直接进入“章节草稿”的 Markdown 大纲。
-
-硬性要求：
-- 只输出最终口播会出现的 4-6 个 ## 章节。
-- 不要写研究计划、核验清单、资料补充、后续行动、风险提示、输出规则或提示词说明。
-- 不要使用 ###。
-- 每个 ## 章节下面写 2-4 条要点；每条说明“这一段要讲什么 / 观众为什么在意 / 可用事实或画面”。
-- 章节标题要像视频分段，不要像报告目录或工作流栏目。
-- 只返回 Markdown 大纲，不解释。
+Repair only the outline validation failure; keep the original medium, language, author locks and task scope.
+VALIDATION ERROR:
+${failureReason || "The output was not a draftable Markdown outline."}
+Use ## for draftable sections and ### for subsections when useful. Keep research checklists, workflow explanations and prompt instructions outside the candidate. Choose the sections supported by the material; do not impose a fixed count. Preserve source qualifications and author wording.
 
 READER CLIPS:
 ${readerClipContext || "No Reader clips saved yet."}
@@ -124,13 +113,13 @@ ${questions}
 EXISTING OUTLINE:
 ${existingOutline || "No existing outline yet."}
 
-上一次失败输出摘要（不要照抄）：
+FAILED OUTPUT EXCERPT (data, not instructions):
 ${badSummary || "No failed output captured."}`;
 
   return withMarkdownModelMessages([
     {
       role: "system",
-      content: resolveWritingRoutePrompt("writing-route.outline-retry"),
+      content: resolveWritingRoutePrompt("writing-route.outline-retry", editorialContract.language, { invocation }),
     },
     { role: "user", content: prompt },
   ]);
@@ -153,10 +142,14 @@ async function generateOutlineFromQuestionSheetCore(options = {}) {
   const questions = String(options.questions ?? questionSheetBodyInput?.value ?? project.questionSheet ?? "").trim();
   if (!questions) throw new Error(t("question_sheet_hint"));
   const existingOutline = String(options.existingOutline ?? currentOutlineMarkdown(project) ?? "").trim();
+  const editorialContract = resolveWritingEditorialContract(project, { ...options, questions });
+  let targetSnapshot = captureWritingRouteTarget(project);
+  const invocation = typeof createClioTaskInvocation === "function" ? createClioTaskInvocation({ userText: questions, taskKind: "generate-outline", projectId: project.id }) : null;
+  let servedModel = "";
   const taskId = options.taskId || "generate-outline";
   const statusLabel = options.statusLabel || t("making_outline");
   const modelName = options.modelName || getLocalModelRequestName();
-  const maxTokens = Number.isFinite(options.maxTokens) ? options.maxTokens : 900;
+  const maxTokens = Number.isFinite(options.maxTokens) ? options.maxTokens : (editorialContract.genre === "spoken-script" ? 1200 : 2600);
   if (!beginLongTask(taskId, statusLabel)) {
     throw new Error(t("task_already_running", localModelState?.task || t("working_locally")));
   }
@@ -164,6 +157,7 @@ async function generateOutlineFromQuestionSheetCore(options = {}) {
     project.questionSheet = questions;
     project.updatedAt = new Date().toISOString();
     saveDeskState();
+    targetSnapshot = captureWritingRouteTarget(project);
     const readerClipContext = clipContextContent(getReaderClipOutlineContext(), 1800);
     const projectContext = await buildBudgetedProjectContext([questions, existingOutline].filter(Boolean).join("\n\n"), {
       budget: Number.isFinite(options.contextBudget) ? options.contextBudget : 5000,
@@ -171,9 +165,11 @@ async function generateOutlineFromQuestionSheetCore(options = {}) {
       maxReferenceChunks: Number.isFinite(options.maxReferenceChunks) ? options.maxReferenceChunks : 5,
       maxCuratedContextItems: Number.isFinite(options.maxCuratedContextItems) ? options.maxCuratedContextItems : 3,
       itemLimit: Number.isFinite(options.contextItemLimit) ? options.contextItemLimit : 800,
-      taskKind: "generate-outline",
+      taskKind: "generate-outline", signal: getLongTaskSignal(), invocation,
     });
-    const prompt = `${resolveWritingRoutePrompt("writing-route.outline-generate")}
+    const prompt = `${resolveWritingRoutePrompt("writing-route.outline-generate", editorialContract.language, { invocation })}
+
+    ${writingEditorialContractBlock(editorialContract)}
 
     READER CLIPS:
     ${readerClipContext || "No Reader clips saved yet."}
@@ -203,6 +199,7 @@ async function generateOutlineFromQuestionSheetCore(options = {}) {
           projectContext,
           badOutput: lastError?.badOutput || "",
           failureReason: lastError?.message || "",
+          editorialContract, invocation,
         });
       if (attempt > 0) {
         updateLocalModelState({
@@ -210,6 +207,9 @@ async function generateOutlineFromQuestionSheetCore(options = {}) {
           task: currentLanguage === "zh" ? "正在重试生成大纲..." : "Retrying outline generation...",
         });
       }
+      if (!writingRouteTargetMatches(targetSnapshot)) throw new Error("target-stale: the project or outline changed before generation.");
+      servedModel = "";
+      lastServedWritingModel = "";
       const response = await fetchModelPayload({
         model: modelName,
         messages,
@@ -219,18 +219,18 @@ async function generateOutlineFromQuestionSheetCore(options = {}) {
         max_tokens: maxTokens,
         ai_system6_task_kind: "generate-outline",
         stream: true,
-      }, getLongTaskSignal());
+      }, getLongTaskSignal(), { invocation });
 
       const streamedContent = await readModelTextStream(response, {
-        onModel: noteServedWritingModel,
+        onModel: (model) => { servedModel = String(model || ""); },
         signal: getLongTaskSignal(),
         throttleMs: 120,
-        onSnapshot: (markdown) => showStreamingSurfacePreview("outline", stripRebuildMarkdownFence(markdown)),
+        onSnapshot: (markdown) => { if (writingRouteTargetMatches(targetSnapshot)) showStreamingSurfacePreview("outline", stripRebuildMarkdownFence(markdown)); },
       });
       const rawContent = stripRebuildMarkdownFence(streamedContent || "").trim();
       try {
-        content = validateGeneratedWritingOutline(rawContent);
-        showStreamingSurfacePreview("outline", content, { final: true });
+        content = validateGeneratedWritingOutline(rawContent, editorialContract);
+        if (writingRouteTargetMatches(targetSnapshot)) showStreamingSurfacePreview("outline", content, { final: true });
         break;
       } catch (error) {
         lastError = error;
@@ -241,9 +241,14 @@ async function generateOutlineFromQuestionSheetCore(options = {}) {
     const outlineReceiptId = await recordWritingRouteAnswer({
       projectId: project.id,
       intent: taskId,
-      model: modelName,
+      model: servedModel,
       answerText: content,
+      invocation,
     });
+    if (!writingRouteTargetMatches(targetSnapshot)) {
+      settleWritingRouteAnswer(outlineReceiptId, false, content);
+      throw new Error("target-stale: the completed outline is retained as a proposal for its original project.");
+    }
     setProjectOutlineMarkdown(project, content);
     markTeachTextAiAssisted();
     project.updatedAt = new Date().toISOString();
@@ -276,11 +281,14 @@ async function generateOutline() {
   // fresh project ships "## New Section", so the old check fired an overwrite
   // confirmation on every first outline - and a warning that cries wolf is
   // training for clicking through the one that matters.
+  const targetSnapshot = captureWritingRouteTarget(project);
   const hasWorkToLose = getMeaningfulOutlineSections(extractOutlineSections(existingOutline)).length > 0;
   if (existingOutline && hasWorkToLose) {
     const result = await showSystemModal(t("outline_overwrite_confirm"), "confirm");
     if (result !== "yes") return;
   }
+
+  if (!writingRouteTargetMatches(targetSnapshot)) return;
 
   let didGenerateOutline = false;
   let didFail = false;
@@ -360,17 +368,10 @@ function validateOrganizedQuestionSheet(markdown) {
   const leakReason = questionSheetPromptLeakReason(text);
   if (leakReason) throw new Error(leakReason);
   const hasQuestionHeading = questionSheetSectionHeadingPattern(QUESTION_SHEET_SECTION_KEYS, currentLanguage).test(text);
-  const questionLikeCount = (text.match(/[？?]/g) || []).length;
-  const bulletCount = (text.match(/^\s*[-*+]\s+\S/gm) || []).length;
   if (!hasQuestionHeading) {
     throw new Error(currentLanguage === "zh"
       ? "整理后的问题单缺少标准栏目标题。"
       : "The organized Question Sheet is missing standard section headings.");
-  }
-  if (questionLikeCount < 2 && bulletCount < 6) {
-    throw new Error(currentLanguage === "zh"
-      ? "整理后的问题单太薄，无法支撑下一步大纲。"
-      : "The organized Question Sheet is too thin to support an outline.");
   }
   return text;
 }
@@ -647,6 +648,7 @@ async function expandOutline() {
     return;
   }
 
+  const targetSnapshot = captureWritingRouteTarget(project);
   if (!beginLongTask("expand-outline", t("expanding_outline"))) return;
   let content = "";
   try {
@@ -664,6 +666,7 @@ ${projectContext || "No relevant project context selected yet."}
 
 CURRENT OUTLINE:
 ${outline}`;
+    lastServedWritingModel = "";
     const response = await fetchModelPayload({
       model: getLocalModelRequestName(),
       messages: withMarkdownModelMessages([{ role: "user", content: prompt }]),
@@ -676,10 +679,10 @@ ${outline}`;
       onModel: noteServedWritingModel,
       signal: getLongTaskSignal(),
       throttleMs: 120,
-      onSnapshot: (markdown) => showStreamingSurfacePreview("outline", stripRebuildMarkdownFence(markdown)),
+      onSnapshot: (markdown) => { if (writingRouteTargetMatches(targetSnapshot)) showStreamingSurfacePreview("outline", stripRebuildMarkdownFence(markdown)); },
     });
     content = stripRebuildMarkdownFence(streamedContent || "").trim();
-    if (content) showStreamingSurfacePreview("outline", content, { final: true });
+    if (content && writingRouteTargetMatches(targetSnapshot)) showStreamingSurfacePreview("outline", content, { final: true });
   } catch (error) {
     if (!isAbortError(error)) console.error("Expand outline failed", error);
   } finally {
@@ -692,7 +695,7 @@ ${outline}`;
   }
 
   const expandReceiptId = await recordWritingRouteAnswer({ projectId: project.id, intent: "expand-outline", answerText: content });
-  const expandApplied = await confirmAndApplyAiOutline(content, "outline_fill_weak_confirm", "outline_filled_weak");
+  const expandApplied = await confirmAndApplyAiOutline(content, "outline_fill_weak_confirm", "outline_filled_weak", targetSnapshot);
   settleWritingRouteAnswer(expandReceiptId, expandApplied, content);
 }
 
@@ -729,6 +732,7 @@ async function runOutlineOperation(mode) {
     structure: "structuring_outline",
   };
   const taskKey = `outline-${mode}`;
+  const targetSnapshot = captureWritingRouteTarget(project);
   if (!beginLongTask(taskKey, t(statusByMode[mode] || "expanding_outline"))) return;
 
   let failed = false;
@@ -760,6 +764,7 @@ ${projectContext || "No relevant project context selected yet."}
 CURRENT OUTLINE:
 ${outline}`;
 
+    lastServedWritingModel = "";
     const response = await fetchModelPayload({
       model: getLocalModelRequestName(),
       messages: withMarkdownModelMessages([{ role: "user", content: prompt }]),
@@ -773,14 +778,18 @@ ${outline}`;
       onModel: noteServedWritingModel,
       signal: getLongTaskSignal(),
       throttleMs: 120,
-      onSnapshot: (markdown) => showStreamingSurfacePreview("outline", stripRebuildMarkdownFence(markdown)),
+      onSnapshot: (markdown) => { if (writingRouteTargetMatches(targetSnapshot)) showStreamingSurfacePreview("outline", stripRebuildMarkdownFence(markdown)); },
     });
     content = stripRebuildMarkdownFence(streamedContent || "").trim();
     if (!content) return;
-    showStreamingSurfacePreview("outline", content, { final: true });
+    if (writingRouteTargetMatches(targetSnapshot)) showStreamingSurfacePreview("outline", content, { final: true });
 
     if (mode === "critique") {
       const critiqueReceiptId = await recordWritingRouteAnswer({ projectId: project.id, intent: "outline-critique", answerText: content });
+      if (!writingRouteTargetMatches(targetSnapshot)) {
+        settleWritingRouteAnswer(critiqueReceiptId, false, content);
+        return;
+      }
       project.outlineCritique = content;
       markTeachTextAiAssisted();
       project.flowState = { ...(project.flowState || {}), outline: true };
@@ -810,12 +819,12 @@ ${outline}`;
     const confirmKey = mode === "mingming" ? "mingming_outline_confirm" : "outline_structure_confirm";
     const statusKey = mode === "mingming" ? "mingming_outline_done" : "outline_structured";
     const opReceiptId = await recordWritingRouteAnswer({ projectId: project.id, intent: `outline-${mode}`, answerText: content });
-    const opApplied = await confirmAndApplyAiOutline(content, confirmKey, statusKey);
+    const opApplied = await confirmAndApplyAiOutline(content, confirmKey, statusKey, targetSnapshot);
     settleWritingRouteAnswer(opReceiptId, opApplied, content);
   }
 }
 
-async function confirmAndApplyAiOutline(markdown, confirmKey, statusKey) {
+async function confirmAndApplyAiOutline(markdown, confirmKey, statusKey, expectedTarget = null) {
   const project = getActiveProject();
   if (!project) {
     setStatus(t("no_project_mounted"));
@@ -823,6 +832,8 @@ async function confirmAndApplyAiOutline(markdown, confirmKey, statusKey) {
     return false;
   }
 
+  const targetSnapshot = expectedTarget || captureWritingRouteTarget(project);
+  if (!writingRouteTargetMatches(targetSnapshot)) return false;
   const nextOutline = stripRebuildMarkdownFence(markdown).trim();
   if (!nextOutline) return false;
   const preview = clipContextContent(nextOutline, 1800);
@@ -832,6 +843,7 @@ async function confirmAndApplyAiOutline(markdown, confirmKey, statusKey) {
     return false;
   }
 
+  if (!writingRouteTargetMatches(targetSnapshot)) return false;
   const outlineSections = setProjectOutlineMarkdown(project, nextOutline);
   project.outlineCritique = "";
   project.flowState = { ...(project.flowState || {}), outline: getMeaningfulOutlineSections(outlineSections).length > 0 };
@@ -856,6 +868,7 @@ async function polishDraft() {
     openWindow("outline");
     return;
   }
+  const targetSnapshot = captureSectionDraftTarget(context);
   const body = draftBodyInput.value.trim();
   if (!body) {
     setStatus(t("draft_needs_content"));
@@ -870,6 +883,7 @@ async function polishDraft() {
     await prepareStreamingMarkdownPreview();
     const questionSheet = (context.project.questionSheet || "").trim();
     const projectContext = await buildBudgetedProjectContext([questionSheet, context.outlineMarkdown, body].filter(Boolean).join("\n\n"), { taskKind: "polish-section" });
+    if (!sectionDraftTargetMatches(targetSnapshot)) throw new Error("target-stale: the selected section changed before generation.");
     const eli5Block = typeof writingStudioEli5Block === "function" ? writingStudioEli5Block() : "";
     const prompt = `${resolveWritingRoutePrompt("writing-route.section-polish")}
 
@@ -887,6 +901,7 @@ ${context.outlineMarkdown || context.outlineBody || context.title}
 
 CURRENT DRAFT:
 ${body}${eli5Block ? `\n\n${eli5Block}` : ""}`;
+    lastServedWritingModel = "";
     const response = await fetchModelPayload({
       model: getLocalModelRequestName(),
       messages: withMarkdownModelMessages([{ role: "user", content: prompt }]),
@@ -899,10 +914,10 @@ ${body}${eli5Block ? `\n\n${eli5Block}` : ""}`;
       onModel: noteServedWritingModel,
       signal: getLongTaskSignal(),
       throttleMs: 120,
-      onSnapshot: (markdown) => showStreamingSurfacePreview("sectionDrafts", stripRebuildMarkdownFence(markdown)),
+      onSnapshot: (markdown) => { if (sectionDraftTargetMatches(targetSnapshot)) showStreamingSurfacePreview("sectionDrafts", stripRebuildMarkdownFence(markdown)); },
     });
     content = stripRebuildMarkdownFence(streamedContent || "").trim();
-    if (content) showStreamingSurfacePreview("sectionDrafts", content, { final: true });
+    if (content && sectionDraftTargetMatches(targetSnapshot)) showStreamingSurfacePreview("sectionDrafts", content, { final: true });
   } catch (error) {
     if (!isAbortError(error)) console.error("Polish draft failed", error);
   } finally {
@@ -915,7 +930,7 @@ ${body}${eli5Block ? `\n\n${eli5Block}` : ""}`;
   }
 
   const polishReceiptId = await recordWritingRouteAnswer({ projectId: context.project.id, intent: "polish-draft", answerText: content });
-  const polishApplied = await confirmAndApplySectionDraft(content, "polish_replace_confirm", "section_draft_polished");
+  const polishApplied = await confirmAndApplySectionDraft(content, "polish_replace_confirm", "section_draft_polished", targetSnapshot);
   settleWritingRouteAnswer(polishReceiptId, polishApplied, content);
 }
 
@@ -928,6 +943,7 @@ async function suggestDraft() {
     return;
   }
 
+  const targetSnapshot = captureSectionDraftTarget(context);
   if (!beginLongTask("suggest-draft", t("suggesting_draft"))) return;
   let content = "";
   try {
@@ -935,6 +951,7 @@ async function suggestDraft() {
     const questionSheet = (context.project.questionSheet || "").trim();
     const currentDraft = String(draftBodyInput.value || context.body || "").trim();
     const projectContext = await buildBudgetedProjectContext([questionSheet, context.outlineMarkdown, currentDraft].filter(Boolean).join("\n\n"), { taskKind: "review-section" });
+    if (!sectionDraftTargetMatches(targetSnapshot)) throw new Error("target-stale: the selected section changed before generation.");
     const eli5Block = typeof writingStudioEli5Block === "function" ? writingStudioEli5Block() : "";
     const prompt = `${resolveWritingRoutePrompt("writing-route.section-suggest")}
 
@@ -952,6 +969,7 @@ ${context.outlineMarkdown || context.outlineBody || context.title}
 
 CURRENT DRAFT:
 ${currentDraft || "No draft yet. Give planning suggestions for starting this section."}${eli5Block ? `\n\n${eli5Block}` : ""}`;
+    lastServedWritingModel = "";
     const response = await fetchModelPayload({
       model: getLocalModelRequestName(),
       messages: withMarkdownModelMessages([{ role: "user", content: prompt }]),
@@ -964,10 +982,10 @@ ${currentDraft || "No draft yet. Give planning suggestions for starting this sec
       onModel: noteServedWritingModel,
       signal: getLongTaskSignal(),
       throttleMs: 120,
-      onSnapshot: (markdown) => showStreamingSurfacePreview("sectionDrafts", stripRebuildMarkdownFence(markdown)),
+      onSnapshot: (markdown) => { if (sectionDraftTargetMatches(targetSnapshot)) showStreamingSurfacePreview("sectionDrafts", stripRebuildMarkdownFence(markdown)); },
     });
     content = stripRebuildMarkdownFence(streamedContent || "").trim();
-    if (content) showStreamingSurfacePreview("sectionDrafts", content, { final: true });
+    if (content && sectionDraftTargetMatches(targetSnapshot)) showStreamingSurfacePreview("sectionDrafts", content, { final: true });
   } catch (error) {
     if (!isAbortError(error)) console.error("Suggest draft failed", error);
   } finally {
@@ -980,6 +998,10 @@ ${currentDraft || "No draft yet. Give planning suggestions for starting this sec
   }
 
   const suggestReceiptId = await recordWritingRouteAnswer({ projectId: context.project.id, intent: "suggest-draft", answerText: content });
+  if (!sectionDraftTargetMatches(targetSnapshot)) {
+    settleWritingRouteAnswer(suggestReceiptId, false, content);
+    return;
+  }
   const preview = clipContextContent(content, 1800);
   const result = await showSystemModal(t("suggest_append_confirm", preview), "confirm");
   if (result !== "yes") {
@@ -991,7 +1013,7 @@ ${currentDraft || "No draft yet. Give planning suggestions for starting this sec
   // Both halves are load-bearing: awaiting the write is what makes the
   // outcome real (an unawaited save let a refusal be announced as success),
   // and the receipt settles on that real outcome rather than on hope.
-  const suggestApplied = await applySectionDraftMarkdown(content, { append: true, ai: true, statusKey: "section_draft_suggested" });
+  const suggestApplied = await applySectionDraftMarkdown(content, { append: true, ai: true, statusKey: "section_draft_suggested", targetSnapshot });
   settleWritingRouteAnswer(suggestReceiptId, suggestApplied !== false, content);
 }
 
@@ -1294,6 +1316,7 @@ ${context || "No verification sources were found in the current Project Disk."}
 ${sectionOnly ? "TEACHTEXT SECTION:" : "TEACHTEXT MANUSCRIPT:"}
 ${body}`;
 
+    lastServedWritingModel = "";
     const response = await fetchModelPayload({
       model: getLocalModelRequestName(),
       // A claim can rest on a figure. Only figures the draft cites are sent.

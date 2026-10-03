@@ -45,6 +45,9 @@ const writingStudioOwnedWindowNames = new Set([
   "imageManager",
 ]);
 
+// The Picture Album (open-image-manager) is deliberately absent: Joyride, a
+// desktop-profile game, files its photographs there, so the desktop must be
+// able to open what it saved (Aaron, 2026-10-02).
 const studioActionNames = new Set([
   "open-question-sheet",
   "open-outline",
@@ -54,7 +57,6 @@ const studioActionNames = new Set([
   "open-claim-check",
   "open-project-cd",
   "open-rebuild-flow",
-  "open-image-manager",
   "export-teachtext-project-cd",
   "generate-marp-open-clio-stage",
   "print-to-slides",
