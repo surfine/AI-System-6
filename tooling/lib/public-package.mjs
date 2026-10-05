@@ -71,6 +71,9 @@ export const publicScriptNames = new Set([
   "verify:public",
   "verify:public-tree",
   "verify:theme-icons",
+  // Operator convenience: replace /Applications from a prepared beta app/zip.
+  // The script ships; release:publish (private) is the optional soft caller.
+  "install:local-mac",
 ]);
 
 /**

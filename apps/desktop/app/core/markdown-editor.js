@@ -805,6 +805,16 @@ function mdeStoreFocusMode(mode) {
   } catch {}
 }
 
+// Calm-desktop "只看正文": writing focus hides the desk icon column so the
+// paper stays the only object. Same preference as the Focus cycle (⌥⌘F).
+function mdeSyncWritingFocusDesk(mode = mdeStoredFocusMode()) {
+  const asked = mode === "paragraph" ? "sentence" : mode;
+  const on = asked === "sentence" || asked === "typewriter";
+  document.body.classList.toggle("is-writing-focus", on);
+  // Journey desk-focus gate: keep the measurable probe in sync with focus mode.
+  window.AISystem6JourneyGates?.syncDeskProbe?.();
+}
+
 function mdeSetFocusMode(textarea, mode, { remember = true } = {}) {
   const surface = textarea?.closest(".mde-surface");
   if (!surface) return "off";
@@ -816,6 +826,7 @@ function mdeSetFocusMode(textarea, mode, { remember = true } = {}) {
   surface.classList.toggle("is-typewriter-mode", next === "typewriter" || next === "sentence");
   surface.classList.toggle("is-focus-mode", next === "sentence");
   if (remember) mdeStoreFocusMode(next);
+  mdeSyncWritingFocusDesk(next);
   if (next === "off") {
     surface.style.removeProperty("--mde-typewriter-pad");
   } else {

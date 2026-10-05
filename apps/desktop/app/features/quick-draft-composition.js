@@ -252,21 +252,38 @@ function syncQuickDraftMobileAdjustmentActions(record = activeProjectQuickDraft(
   const enabled = darkroomOf(record).adjustmentLayers.some((layer) => layer.enabled);
   const previewButton = quickDraftQuery("[data-quick-draft-adjustment-apply]");
   const developButton = quickDraftQuery("[data-quick-draft-adjustment-develop]");
-  if (previewButton) previewButton.disabled = !hasBody || !enabled || !quickDraftModelAvailable();
+  // 兴趣｜内容｜并排 reuses the same Preview / Develop keys. Content and
+  // Side by Side do not wait on adjustment layers; Interest still does.
+  const trackOwns = typeof quickDraftTrackOwnsPaper === "function" && quickDraftTrackOwnsPaper();
+  const trackReady = typeof quickDraftTrackShouldDevelop === "function" && quickDraftTrackShouldDevelop();
+  const trackBusy = Boolean(typeof quickDraftTrackBusy !== "undefined" && quickDraftTrackBusy);
+  if (previewButton) {
+    previewButton.disabled = trackOwns
+      ? !hasBody || !quickDraftModelAvailable() || trackBusy
+      : !hasBody || !enabled || !quickDraftModelAvailable();
+  }
   // A proof is waiting only when 试看 has produced one for an enabled stack.
   // With no layer on, "ready" is trivially true and 冲洗 would write the body
   // onto itself and leave a version saying nothing happened -- the menu row
   // already waits for a proof, and the key it shortcuts must say the same.
+  // The content track's proof is the traffic rewrite, not a composite.
   const compositeReady = enabled
     && Boolean(darkroomOf(record).composite)
     && currentCompositeState(normalized).ready;
+  const proofReady = trackOwns ? trackReady : compositeReady;
   if (developButton) {
-    developButton.disabled = lightroomIsReadOnly() || !hasBody || !compositeReady;
+    developButton.disabled = trackOwns
+      ? lightroomIsReadOnly() || !trackReady || trackBusy
+      : lightroomIsReadOnly() || !hasBody || !compositeReady;
   }
-  // One default key, and it is the verb that comes next: 冲洗 once a proof is
-  // waiting, 试看 until then. "Back to the Draft" is a door, never the default.
-  previewButton?.classList.toggle("default", !compositeReady);
-  developButton?.classList.toggle("default", compositeReady);
+  // One default key in the footer. Listen owns its own Play default inside the
+  // paper, so the footer must not compete with it. Empty paper: the door back
+  // is the only live next step. A waiting proof: 冲洗. Otherwise 试看.
+  const listenMode = document.querySelector('[data-quick-draft-display="listen"]')?.classList.contains("is-active");
+  const backButton = document.getElementById("quick-draft-display-body");
+  previewButton?.classList.toggle("default", Boolean(hasBody && !proofReady && !listenMode));
+  developButton?.classList.toggle("default", Boolean(hasBody && proofReady && !listenMode));
+  backButton?.classList.toggle("default", !hasBody);
 }
 
 async function updateAdjustmentLayer(kind = "", patch = {}) {

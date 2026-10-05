@@ -86,6 +86,8 @@ test.assertIncludes(writingFlow, "const draftsOwnDocument = manuscriptPhase() ==
 test.assertIncludes(html, 'data-action="advance-drafts-to-manuscript"', "Section Drafts forwards to the manuscript, the route's next stop");
 test.assertIncludes(html, 'data-action="advance-manuscript-to-review"', "the manuscript carries the step into review");
 test.assertIncludes(html, 'data-action="return-document-to-section-drafts"', "the manuscript phase has a way back to the sections");
+test.assertIncludes(html, 'data-balloon-help-disabled="balloon_outline_needs_content"', "empty Outline/Drafts advance greys with a reason (R16)");
+test.assertIncludes(windowManager, "getMeaningfulOutlineSections", "Outline advance availability reads meaningful sections");
 test.assertIncludes(actions, '"advance-drafts-to-manuscript": () => advanceDraftsToManuscript()', "the forward action is wired");
 test.assertIncludes(actions, '"advance-manuscript-to-review": () => advanceManuscriptToReview()', "the review step is wired");
 test.assertIncludes(actions, '"return-document-to-section-drafts": () => returnDocumentToSectionDrafts()', "the way back is wired");

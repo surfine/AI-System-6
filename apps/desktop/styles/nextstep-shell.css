@@ -63,8 +63,16 @@
   /* The 3.3 tile: 2px white top/left, #443344 then black bottom/right, on
      the purple-grey tile face (native 01 x1053..1116 y0..63). The face is a
      gradient approximation of the textured original. */
-  background: linear-gradient(to bottom right, #aaaaaa, #9988aa 35%, #889999 65%, #778888);
-  box-shadow: inset 2px 2px 0 #fff, inset -1px -1px 0 #000, inset -2px -2px 0 #443344;
+  background:
+    linear-gradient(160deg, #c4b8c8 0%, #9a8aa0 38%, #887a90 62%, #6e6278 100%);
+  box-shadow:
+    inset 2px 2px 0 #f3f0f4,
+    inset 1px 1px 0 #ddd4e0,
+    inset -1px -1px 0 #221822,
+    inset -2px -2px 0 #443344,
+    1px 1px 0 #000;
+  outline: 1px solid #000;
+  outline-offset: -1px;
 }
 
 .nextstep-dock-tile[data-state="stopped"]::after { content: "…";

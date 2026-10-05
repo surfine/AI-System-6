@@ -376,9 +376,12 @@ them.
 </table>
 
 Twelve frames, one live desktop, captured by `npm run site:capture-frames`.
-System 6 starts from real System 6.0.8 resources and observed Macintosh
-behavior; later eras own independent, Retina-ready icon families. Nothing here
-is a mockup, because a script re-shoots all of it from the running app.
+System 7 and Lion sit on the main 1988-2026 line with the other release eras;
+NeXTSTEP and Drawing Board stay branches (visible on the site's Other Road
+scene, never stops on the dissolve). System 6 starts from real System 6.0.8
+resources and observed Macintosh behavior; later eras own independent,
+Retina-ready icon families. Nothing here is a mockup, because a script
+re-shoots all of it from the running app.
 
 <div align="center">
 
@@ -391,7 +394,7 @@ The writing runtime keeps author, recipient, voice and medium independent, share
 ## Built under a 1988 constraint
 
 ```text
-boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,776,060 bytes
+boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,831,262 bytes
 two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 bytes
 heavy tools             load lazily, from a third disk
 ```
@@ -489,4 +492,4 @@ If AI writing tools should leave your voice alone, **[★ star AI System 6](http
 
 </div>
 
-<!-- claim-check: npm run site:check | site/data/floppy-budget.json (bytes 2945088, budget 2954624, written by verify:floppy) | npm run verify:floppy, verify:docs, verify:public | site/img/frames (twelve appearances) -->
+<!-- claim-check: npm run site:check | site/data/floppy-budget.json (bytes 2776060, budget 2954624, written by verify:floppy) | npm run verify:floppy, verify:docs, verify:public | site/img/frames (twelve appearances) -->

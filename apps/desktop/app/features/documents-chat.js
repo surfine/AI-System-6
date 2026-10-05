@@ -691,6 +691,17 @@ function renderDocuments() {
           <span>${new Date(folder.updatedAt || folder.createdAt).toLocaleDateString()}</span>
         `;
         row.onclick = (event) => {
+          const alreadySelected = selectedDocumentFolderId === folder.id
+            && selectedDocumentItemKeys.has(documentSelectionKey("folder", folder.id));
+          if (
+            alreadySelected
+            && !event.metaKey && !event.ctrlKey && !event.shiftKey
+            && typeof window.matchMedia === "function"
+            && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+          ) {
+            openDocumentFolder(folder.id);
+            return;
+          }
           selectDocumentItemFromEvent("folder", folder.id, event, sortedItems);
         };
         row.ondblclick = () => {
@@ -714,6 +725,17 @@ function renderDocuments() {
           <span>${new Date(file.updatedAt || file.createdAt).toLocaleDateString()}</span>
         `;
         row.onclick = (event) => {
+          const alreadySelected = selectedChatFileId === file.id
+            && selectedDocumentItemKeys.has(documentSelectionKey("file", file.id));
+          if (
+            alreadySelected
+            && !event.metaKey && !event.ctrlKey && !event.shiftKey
+            && typeof window.matchMedia === "function"
+            && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+          ) {
+            openDocumentFileOrAttachToClioTalk(file);
+            return;
+          }
           selectDocumentItemFromEvent("file", file.id, event, sortedItems);
         };
         row.ondblclick = () => {
@@ -748,6 +770,17 @@ function renderDocuments() {
       button.dataset.documentItemId = folder.id;
       button.innerHTML = `${renderSystemIcon("folder", { size: "finder"})}<span>${escapeHtml(displayFolderName(folder.name))}</span>`;
       button.addEventListener("click", (event) => {
+        const alreadySelected = selectedDocumentFolderId === folder.id
+          && selectedDocumentItemKeys.has(documentSelectionKey("folder", folder.id));
+        if (
+          alreadySelected
+          && !event.metaKey && !event.ctrlKey && !event.shiftKey
+          && typeof window.matchMedia === "function"
+          && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+        ) {
+          openDocumentFolder(folder.id);
+          return;
+        }
         selectDocumentItemFromEvent("folder", folder.id, event, sortedItems);
       });
       button.addEventListener("dblclick", () => {
@@ -772,6 +805,17 @@ function renderDocuments() {
       const iconId = file.iconId || (file.type === "text" ? "teachText" : "chatFile");
       button.innerHTML = `${renderSystemIcon(iconId, { size: "finder"})}<span>${escapeHtml(file.name)}</span>${file.label ? `<small>${escapeHtml(labelName(file.label))}</small>` : ""}`;
       button.addEventListener("click", (event) => {
+        const alreadySelected = selectedChatFileId === file.id
+          && selectedDocumentItemKeys.has(documentSelectionKey("file", file.id));
+        if (
+          alreadySelected
+          && !event.metaKey && !event.ctrlKey && !event.shiftKey
+          && typeof window.matchMedia === "function"
+          && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+        ) {
+          openDocumentFileOrAttachToClioTalk(file);
+          return;
+        }
         selectDocumentItemFromEvent("file", file.id, event, sortedItems);
       });
       button.addEventListener("dblclick", () => {
@@ -2257,9 +2301,83 @@ async function openChatFile() {
   openWindow("assistant");
 }
 
+function syncChatFileActionControls() {
+  const go = document.querySelector("#chat-file-more-go");
+  const select = document.querySelector("#chat-file-more");
+  const emptyNote = document.querySelector("#chat-file-empty-note");
+  const hasFile = !!chatFiles.find((item) => item.id === selectedChatFileId && item.type !== "text" && isInActiveProject(item));
+  const action = select?.value || "open";
+  // Empty record is legal. Primary path without a file is still Open Chat → ClioTalk.
+  const openChatOk = action === "open";
+  if (go) {
+    go.disabled = !hasFile && !openChatOk;
+    if (!hasFile && openChatOk) {
+      delete go.dataset.balloonHelpDisabled;
+    } else {
+      go.dataset.balloonHelpDisabled = "balloon_chat_file_empty_first";
+    }
+  }
+  if (emptyNote) emptyNote.classList.toggle("is-hidden", hasFile);
+  [
+    openChatFileButton,
+    insertChatFileButton,
+    document.querySelector("#chat-file-docmap"),
+    downloadChatMarkdownButton,
+    trashChatFileButton,
+  ].forEach((button) => {
+    if (button) button.disabled = !hasFile;
+  });
+}
+
+function runChatFileMoreAction() {
+  const select = document.querySelector("#chat-file-more");
+  const action = select?.value || "open";
+  const file = chatFiles.find((item) => item.id === selectedChatFileId && item.type !== "text" && isInActiveProject(item));
+  if (!file) {
+    if (action === "open") {
+      openWindow("assistant");
+      setStatus(t("open_chat"));
+      return;
+    }
+    setStatus(t("balloon_chat_file_empty_first"));
+    return;
+  }
+  if (action === "open") return openChatFile();
+  if (action === "insert") return insertChatFileIntoPrompt();
+  if (action === "docmap") return handleAction("make-docmap");
+  if (action === "download") return downloadChatFileMarkdown();
+  if (action === "trash") return moveChatFileToTrash();
+}
+
+function renderChatFileEmptyState() {
+  if (!chatFileBodyEl) return;
+  chatFileBodyEl.replaceChildren();
+  const empty = document.createElement("div");
+  empty.className = "empty-folder-note";
+  const title = document.createElement("p");
+  title.dataset.i18n = "chat_file_empty";
+  title.textContent = t("chat_file_empty");
+  const detail = document.createElement("p");
+  detail.className = "hint";
+  detail.dataset.i18n = "chat_file_empty_detail";
+  detail.textContent = t("chat_file_empty_detail");
+  empty.append(title, detail);
+  chatFileBodyEl.append(empty);
+  if (chatFileTitleEl) chatFileTitleEl.textContent = t("chat_file_title");
+  if (chatFileMetaEl) chatFileMetaEl.textContent = t("messages_count", 0);
+  const select = document.querySelector("#chat-file-more");
+  if (select) select.value = "open";
+  syncChatFileActionControls();
+}
+
 function openChatFileWindow(fileId) {
   const file = chatFiles.find((item) => item.id === fileId && item.type !== "text" && isInActiveProject(item));
-  if (!file) return;
+  if (!file) {
+    selectedChatFileId = null;
+    renderChatFileEmptyState();
+    openWindow("chatFile");
+    return;
+  }
   if (activeChatFileId && activeChatFileId !== file.id) persistActiveChatFile();
   normalizeChatFileMetadata(file);
 
@@ -2273,6 +2391,8 @@ function openChatFileWindow(fileId) {
   const transcript = document.createElement("div");
   transcript.innerHTML = renderChatTranscript(file.messages);
   chatFileBodyEl.append(...transcript.childNodes);
+  document.querySelector("#chat-file-empty-note")?.classList.add("is-hidden");
+  syncChatFileActionControls();
   openWindow("chatFile");
   // The Open Recent row for the transcript now on screen carries the mark
   // that says so; without this the mark stays where it was.
@@ -2301,6 +2421,7 @@ function insertChatFileIntoPrompt() {
   promptInput.value = promptInput.value.trim()
     ? `${promptInput.value.trim()}\n\n${text}`
     : text;
+  promptInput.dispatchEvent(new Event("input", { bubbles: true }));
   openWindow("assistant");
   promptInput.focus();
 }
@@ -2329,6 +2450,7 @@ function moveChatFileToTrash() {
   renderDocuments();
   renderProjectDisks();
   renderTrash();
+  renderChatFileEmptyState();
   playSystemSound("trash");
 }
 
@@ -3188,6 +3310,11 @@ function downloadChatFileMarkdown() {
   }
 
   downloadMarkdown(formatChatFileMarkdown(file), file.name);
+  // Download does not mutate the file, but the Chat File window still needs a
+  // fresh paint so empty-state / selection chrome never looks stale after the
+  // browser save sheet closes.
+  renderDocuments();
+  if (typeof renderChatFileEmptyState === "function") renderChatFileEmptyState();
 }
 
 function copyActiveMarkdown() {

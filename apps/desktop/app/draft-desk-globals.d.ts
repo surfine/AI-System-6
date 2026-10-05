@@ -171,6 +171,11 @@ interface Window {
   // The translation tables, by language. Read to tell a title the product
   // wrote from one the writer chose — see isDerivedQuickDraftTitle.
   AISystem6Data?: { translations?: Record<string, Record<string, any>> };
+  AISystem6TranslationsEn?: Record<string, any>;
+  AISystem6TranslationsZh?: Record<string, any>;
+  // Boot installs this in app.js so lazily-built chrome can re-run the
+  // language sweep over a subtree after the first paint.
+  AISystem6TranslateWithin?: (root?: ParentNode | Element | null) => void;
   AISystem6PromptFilesRuntime?: {
     resolvePromptFile?: (id: string, args?: any, language?: string) => { body?: string } | undefined;
   };

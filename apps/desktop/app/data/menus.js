@@ -68,10 +68,22 @@ const editWithWriting = [
   ...flatSelectionTools,
 ];
 
-// One item per release-ready appearance, in registry order: the registry is
-// the only list, so adding an appearance never edits this menu.
-const appearanceItems = (window.AISystem6Theme?.getReleaseReadyThemes() || [])
-  .map(({ id, labelKey }) => menuItem(`set-theme-${id}`, labelKey, "", { themeId: id }));
+// Appearance menu lists every registered era. Release-ready ones switch the
+// desk; any still behind releaseReady stay visible but disabled with
+// 「尚未接入」. Eras that ship with polishPending stay clickable and name the
+// open fidelity/docs work in Balloon Help so the todos are not forgotten.
+const appearanceItems = (window.AISystem6Theme?.themes || window.AISystem6Theme?.getReleaseReadyThemes() || [])
+  .map(({ id, labelKey, releaseReady, polishPending }) => menuItem(
+    `set-theme-${id}`,
+    labelKey,
+    "",
+    {
+      themeId: id,
+      disabled: releaseReady === false,
+      unavailableReason: releaseReady === false ? "balloon_appearance_not_ready" : "",
+      balloonHelp: releaseReady !== false && polishPending ? "balloon_appearance_polish_pending" : "",
+    },
+  ));
 
 const systemSpecialItems = [
   menuItem("tile-windows", "tile_windows"),
@@ -244,6 +256,8 @@ const teachTextMenus = [
       menuItem("suggest-draft", "suggest_draft"),
       menuItem("eli5-rewrite-section", "quick_draft_eli5_rewrite"),
       menuItem("eli5-review-section", "quick_draft_eli5_review"),
+      menuItem("one-sentence-rewrite-section", "one_sentence_rewrite"),
+      menuItem("one-sentence-check-section", "one_sentence_check"),
       menuItem("return-document-to-section-drafts", "edit_sections_again"),
       menuItem("advance-drafts-to-manuscript", "to_manuscript"),
     ], { surface: "sectionDrafts" }),
@@ -891,6 +905,17 @@ function renderApplicationMenuItem(item) {
   // hooks (e.g. Bonsai's data-bonsai-display for checked view toggles).
   if (item.dataset) {
     Object.entries(item.dataset).forEach(([key, value]) => { button.dataset[key] = value; });
+  }
+  if (item.disabled) {
+    button.disabled = true;
+    button.classList.add("is-disabled");
+    if (item.unavailableReason) {
+      button.dataset.balloonHelpDisabled = item.unavailableReason;
+      button.dataset.balloonHelp = item.unavailableReason;
+      button.dataset.balloonHelpGenerated = "true";
+    }
+  } else if (item.balloonHelp) {
+    button.dataset.balloonHelp = item.balloonHelp;
   }
   button.textContent = typeof t === "function" ? t(item.labelKey) : item.labelKey;
   return button;

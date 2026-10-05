@@ -1,5 +1,5 @@
 <!-- canonical-source: tooling/games/openttd/build.md -->
-<!-- source-sha256: 5f7fd91c83dea21b09a1b6c803754cfd6e966fc221a868fa3a7fb4f1e8dec439 -->
+<!-- source-sha256: 9285cc7d09ba595c774b35edc41e37d1c46f3b3a1d1f7422f3604711ce852dc7 -->
 
 > 英文版为准 ・ 仅供人类参考
 

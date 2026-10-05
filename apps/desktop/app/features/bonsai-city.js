@@ -354,9 +354,32 @@ window.AISystem6BonsaiCityLoaded = true;
     while (list.length) list.pop()();
   }
 
+  function syncHostContract(host) {
+    // Bonsai City is a JS/WebGL sim shell — no Wasm engine binary (v223 honesty).
+    const next = host || (
+      state.latestMessage?.key === "bonsai_status_renderer_failed"
+        || state.latestMessage?.key === "bonsai_status_load_failed"
+        ? "fail"
+        : state.latestMessage?.key === "bonsai_status_loading"
+          ? "loading"
+          : state.current || state.rendererMounted
+            ? "ready"
+            : "loading"
+    );
+    window.AISystem6WasmHostContract?.apply?.(bonsaiWindow(), {
+      kind: "bonsai",
+      host: next,
+      wasm: 0,
+      binary: 0,
+      fail: true,
+      crash: true,
+    });
+  }
+
   function setMessage(key, ...args) {
     state.latestMessage = { key, args };
     maybeDemandBlink(key);
+    syncHostContract();
     const target = query("[data-bonsai-status-message]");
     if (!target) return;
     // The ticker repeats its last line while the city keeps asking for the
@@ -507,6 +530,7 @@ window.AISystem6BonsaiCityLoaded = true;
         </div>
       </div>`;
     document.querySelector(".desktop")?.append(win);
+    syncHostContract("loading");
     return win;
   }
 
@@ -561,9 +585,10 @@ window.AISystem6BonsaiCityLoaded = true;
     return icon;
   }
 
-  // The sub-palette (M2 §3.4): one category at a time, keeping today's
-  // .bonsai-tool markup and data-bonsai-tool attributes. CSS decides whether
-  // it is docked (container ≥ 820px) or a sheet (below), via a @container
+  // The sub-palette (M2 §3.4): one category at a time. Early-harvest X collapses
+  // the tool-button wall into a System 6 select — choose a tool, then act on
+  // the map. Rail cells still pick the category. CSS decides whether the
+  // column is docked (container ≥ 820px) or a sheet (below), via a @container
   // query on .bonsai-workspace — not a viewport media query.
   function renderSubPalette() {
     const palette = query("[data-bonsai-sub-palette]");
@@ -583,31 +608,30 @@ window.AISystem6BonsaiCityLoaded = true;
     section.className = "bonsai-tool-group";
     const heading = document.createElement("h3");
     heading.textContent = t(`bonsai_tool_group_${group.id}`);
-    const controls = document.createElement("div");
-    controls.className = "bonsai-tool-grid";
+    const picker = document.createElement("label");
+    picker.className = "bonsai-tool-picker";
+    const pickerLabel = document.createElement("span");
+    pickerLabel.className = "bonsai-tool-picker-label";
+    pickerLabel.textContent = t("bonsai_tool_picker");
+    const wrap = document.createElement("span");
+    wrap.className = "select-wrap";
+    const select = document.createElement("select");
+    select.dataset.bonsaiToolSelect = "true";
+    select.dataset.bonsaiCategory = group.id;
+    select.setAttribute("aria-label", t("bonsai_tool_picker"));
     group.tools.forEach((tool) => {
       const cost = unitCost(tool);
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "btn mini-btn bonsai-tool";
-      button.dataset.bonsaiTool = tool.id;
-      button.dataset.bonsaiCategory = group.id;
-      setArmed(button, state.tool === tool.id);
-      button.setAttribute("aria-label", `${t(`bonsai_tool_${tool.id.replaceAll("-", "_")}`)} · ${t("bonsai_unit_cost", cost)} · ${tool.shortcut || "—"}`);
-      // A tool may carry a longer note (the avenue's); it rides as the
-      // button's tooltip. Tools without one keep the bare label as before.
-      if (tool.description) button.title = t(tool.description);
-      const icon = toolIconElement(tool, "bonsai-tool-icon");
-      const label = document.createElement("span");
-      label.className = "bonsai-tool-label";
-      label.textContent = t(`bonsai_tool_${tool.id.replaceAll("-", "_")}`);
-      const meta = document.createElement("span");
-      meta.className = "bonsai-tool-meta";
-      meta.textContent = `${tool.shortcut || "—"} · $${cost}`;
-      button.append(icon, label, meta);
-      controls.append(button);
+      const option = document.createElement("option");
+      option.value = tool.id;
+      option.selected = state.tool === tool.id;
+      const shortcut = tool.shortcut ? ` · ${tool.shortcut}` : "";
+      option.textContent = `${t(`bonsai_tool_${tool.id.replaceAll("-", "_")}`)} · $${cost}${shortcut}`;
+      if (tool.description) option.title = t(tool.description);
+      select.append(option);
     });
-    section.append(heading, controls);
+    wrap.append(select);
+    picker.append(pickerLabel, wrap);
+    section.append(heading, picker);
     palette.append(section);
     if (editing && group.id === "terrain") {
       const editor = document.createElement("section");
@@ -4337,8 +4361,6 @@ window.AISystem6BonsaiCityLoaded = true;
         openCategory(category);
         return;
       }
-      const toolButton = event.target.closest("[data-bonsai-tool]");
-      if (toolButton) return selectTool(toolButton.dataset.bonsaiTool);
       if (event.target.closest("[data-bonsai-open-graphs]")) return openGraphs();
       // 翻盆: choose the plan, tick the depot, confirm, or walk away.
       const flipPlan = event.target.closest("[data-bonsai-flip-plan]");
@@ -4492,6 +4514,9 @@ window.AISystem6BonsaiCityLoaded = true;
         importCityFile(event.target.files?.[0]);
         event.target.value = "";
       }
+      if (event.target.matches("[data-bonsai-tool-select]")) {
+        selectTool(event.target.value, { keepPaletteOpen: true });
+      }
     });
     listen(document, "visibilitychange", () => {
       if (document.visibilityState === "hidden") runBestEffortAutosave();
@@ -4505,6 +4530,8 @@ window.AISystem6BonsaiCityLoaded = true;
       const wasPlaying = state.playing;
       stopLoop();
       if ((state.dirty || state.saving) && !await flushCurrentCitySave()) {
+        // Leave blocked: surface an honest leave/flush failure on the status line.
+        setMessage("bonsai_status_leave_failed");
         if (wasPlaying) startLoop();
         return;
       }
@@ -4574,6 +4601,7 @@ window.AISystem6BonsaiCityLoaded = true;
         stopLoop();
         cancelPointers();
         if ((state.dirty || state.saving) && !await flushCurrentCitySave()) {
+          setMessage("bonsai_status_leave_failed");
           state.lifecycleUnregister?.();
           state.lifecycleUnregister = null;
           registerLifecycle();
@@ -5041,6 +5069,12 @@ window.AISystem6BonsaiCityLoaded = true;
           const active = document.querySelector(".window.is-active");
           if (active?.dataset.window !== "bonsaiCity") return false;
           return !commandsNeedingCity.has(command) || !!state.current;
+        },
+        unavailableReason: () => {
+          const active = document.querySelector(".window.is-active");
+          return active?.dataset.window !== "bonsaiCity"
+            ? "balloon_disabled_menu_host_window"
+            : "balloon_disabled_menu_context";
         },
       });
     });

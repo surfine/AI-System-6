@@ -37,6 +37,8 @@ const modelBackedActions = new Set([
   "suggest-draft",
   "eli5-rewrite-section",
   "eli5-review-section",
+  "one-sentence-rewrite-section",
+  "one-sentence-check-section",
   // Manuscript
   "translate-teachtext",
   "print-to-ai",

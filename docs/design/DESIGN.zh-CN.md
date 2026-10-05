@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/DESIGN.md -->
-<!-- source-sha256: 5626d02429a202dc67189acb4a2659518996df4f67ea8a07caa6c11fd96472f0 -->
+<!-- source-sha256: 161e96136fee640204bf2dcf4bee7b6fe30700d8b4563af750b77f03a764573b -->
 
 # AI System 6 设计合约
 
@@ -129,16 +129,20 @@ Classic Mac OS 思想，只要能改善产品，就可以被引进、消化和�
 各自的定向证据；夹具通过不代表所有应用画面都正确。大范围 Liquid Glass 几何改动
 使用已有的完整 `--url` 窗口审计；需要对照运行中的构建时用 `--url ... --select-only`。
 
-## 八套 Appearance，一套对象语法
+## 十二套 Appearance，一套对象语法
 
-System 6、Platinum、Aqua、Snow Leopard、Yosemite、Big Sur、Liquid Glass 和 NeXTSTEP 是同一桌面
-语言的材质皮肤。它们共享对象名称、DOM 结构、任务流程、文案、状态模型、键盘行为和功能合约。
+System 6、System 7、Platinum、Drawing Board、Aqua、Tiger、Snow Leopard、Lion、
+Yosemite、Big Sur、Liquid Glass 和 NeXTSTEP 是同一桌面语言的材质皮肤。它们共享对象
+名称、DOM 结构、任务流程、文案、状态模型、键盘行为和功能合约。十二套的计算样式与
+截图仪表见 [APPEARANCE-QA.zh-CN.md](APPEARANCE-QA.zh-CN.md)「十二套外观仪表」；
+Theme Lab Surfaces 打磨对照板产品化 key-window／vibrancy／灰阶／quiet-focus 量测，
+且不会清空未完成的 `polishTodos`。
 
 维护谱系刻意分为四条：
 
-- Classic → Platinum
-- Aqua → Snow Leopard
-- Liquid Glass → Yosemite / Big Sur
+- Classic → System 7／Platinum → Drawing Board
+- Aqua → Tiger／Snow Leopard／Lion
+- Liquid Glass → Yosemite／Big Sur
 - NeXTSTEP（独立材质适配；专用图标押后，暂用 Classic）
 
 `recipeBase` 指定比较与编写时的基底，不会激活第二个主题 class。每个子主题拥有可评审的

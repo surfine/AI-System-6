@@ -164,6 +164,15 @@ body.is-writer-mode .icon-column {
   display: none;
 }
 
+/* Writing Focus (⌥⌘F typewriter/sentence), Review Desk key-window focus, and
+   Quick Draft / 文字亮室 deep mode: quiet the desk icons, same intent as
+   calm-desktop focus-mode hiding desktop-objects. */
+body.is-writing-focus .icon-column,
+body.is-review-focus .icon-column,
+body.quick-draft-focus .icon-column {
+  display: none;
+}
+
 body.is-writer-mode .writing-spine-panel {
   display: none;
 }
@@ -750,6 +759,11 @@ select:focus {
 .reader-content {
   max-width: none;
   padding: var(--writing-preview-padding-y) var(--writing-preview-padding-x);
+}
+
+/* The manuscript preview keeps the paper's line height, including the
+   MacWrite ruler. A fixed 1.72 here used to win over that token. */
+.reader-content {
   line-height: 1.72;
 }
 
@@ -2231,13 +2245,15 @@ body.use-modern-fonts .mde-surface * {
 .project-switcher-button,
 .multifinder-button,
 .notification-center-button {
-  height: calc(var(--system-menu-height) - 2px);
-  min-height: calc(var(--system-menu-height) - 2px);
+  /* Eras that fill the bar (Platinum) override --menu-title-* tokens; the
+     fallback keeps every other appearance on the shared 2px lip. */
+  height: var(--menu-title-height, calc(var(--system-menu-height) - 2px));
+  min-height: var(--menu-title-min-height, calc(var(--system-menu-height) - 2px));
   padding: 0 10px;
   font-family: var(--title-font);
   font-size: var(--system-readable-min);
   font-weight: var(--system-title-weight);
-  line-height: calc(var(--system-menu-height) - 2px);
+  line-height: var(--menu-title-line-height, calc(var(--system-menu-height) - 2px));
 }
 
 .menu-popover,
@@ -2858,12 +2874,709 @@ input[type="radio"] {
     display: flex;
   }
 
-  /* A writing step keeps all three common actions readable. The next step
-     gets its own full-width row instead of squeezing its neighbours. */
+  /* A writing step keeps Commands + one primary. The next-step primary takes
+     its own full-width row; never a second row of peer primaries. */
+  .teachtext-surface-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
   .teachtext-surface-actions > .teachtext-command-group {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     flex: 1 0 100%;
+  }
+
+  .teachtext-surface-actions > .btn.default {
+    flex: 1 0 100%;
+    margin-left: 0;
+  }
+}
+
+/* Early-harvest A1–A5 (proposal v210 / v213–v215): narrow window chrome goes
+   vertical, the one primary fills the row at 44px, Finder-family icon grids
+   collapse to a single readable column, and ClioTalk Send owns its own row.
+   Container-driven so a narrow desk window on a wide screen gets the same calm
+   density as a phone. */
+@container (max-width: 470px) {
+  :is(
+    .disk-window,
+    .finder-window,
+    .applications-window,
+    .trash-window,
+    .note-pad-window,
+    .todo-da-window,
+    .hold-thought-window,
+    .clipboard-window,
+    .project-peek-window,
+    .disk-peek-window,
+    .project-cd-window,
+    .documents-window,
+    .project-disks-window,
+    .find-file-window,
+    .image-manager-window,
+    .project-disk-window,
+    .text-disk-window,
+    .reader-window,
+    .scrapbook-window,
+    .find-path-window,
+    .clio-stage-window,
+    .cmf-studio-window,
+    .liquid-cover-window,
+    .rebuild-flow-window
+  ) .button-row:not(.composer-hidden-actions) {
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+  }
+
+  :is(
+    .disk-window,
+    .finder-window,
+    .applications-window,
+    .trash-window,
+    .note-pad-window,
+    .todo-da-window,
+    .hold-thought-window,
+    .clipboard-window,
+    .project-peek-window,
+    .disk-peek-window,
+    .project-cd-window,
+    .documents-window,
+    .project-disks-window,
+    .find-file-window,
+    .image-manager-window,
+    .project-disk-window,
+    .text-disk-window,
+    .reader-window,
+    .scrapbook-window,
+    .find-path-window,
+    .clio-stage-window,
+    .cmf-studio-window,
+    .liquid-cover-window,
+    .rebuild-flow-window
+  ) .button-row:not(.composer-hidden-actions) > .btn.default {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+    margin-left: 0;
+  }
+
+  :is(
+    .trash-window,
+    .project-disk-window,
+    .scrapbook-window,
+    .chat-file-window
+  ) .button-row > .select-wrap {
+    width: 100%;
+  }
+
+  :is(
+    .disk-window,
+    .finder-window,
+    .applications-window,
+    .documents-window,
+    .project-disk-window,
+    .project-cd-window,
+    .project-disks-window,
+    .text-disk-window
+  ) :is(.finder-grid, .disk-grid, .project-disk-grid, .project-cd-grid, .document-icon-grid, .text-disk-grid) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  :is(
+    .disk-window,
+    .finder-window,
+    .applications-window,
+    .documents-window,
+    .project-disk-window,
+    .project-cd-window,
+    .project-disks-window,
+    .text-disk-window
+  ) .finder-item {
+    min-height: 52px;
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .image-manager-window .image-manager-list:not(.is-list-view) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .note-pad-window .note-pad-details-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .find-file-window .find-file-search-row,
+  .find-path-window .find-path-query-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .find-file-window #find-file-query,
+  .find-path-window #find-path-query {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .find-file-window .find-file-search-row > .btn.default,
+  .find-path-window .find-path-query-row > .btn.default,
+  .find-file-window .button-row > [data-action="open-selected-find-file"],
+  .find-path-window .find-path-actions > [data-action="open-selected-in-reader"] {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .find-file-window .find-file-result,
+  .find-path-window .find-path-result {
+    min-height: 48px;
+  }
+
+  .assistant-window .composer-action-row {
+    flex-wrap: wrap;
+  }
+
+  .assistant-window .composer .composer-submit-button {
+    flex: 1 0 100%;
+    width: 100%;
+    min-width: 0;
+    height: 44px;
+    min-height: 44px;
+    margin-left: 0;
+  }
+
+  .assistant-window .clio-welcome-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .assistant-window .clio-welcome-actions .btn {
+    width: 100%;
+    min-height: 48px;
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .scrapbook-window .scrapbook-pane {
+    grid-template-columns: var(--scrapbook-mobile-pane-columns);
+    grid-template-rows: var(--scrapbook-mobile-pane-rows);
+  }
+
+  .clio-stage-window .clio-stage-slide,
+  .clio-stage-window .clio-stage-pane {
+    min-height: 160px;
+  }
+
+  .rebuild-flow-window .rebuild-actions > .btn.default {
+    order: 3;
+  }
+
+  .draft-desk-window .draft-desk-actions > .btn.default,
+  .draft-desk-window .lightroom-actions > .btn.default,
+  .draft-desk-window .quick-draft-editor-actions > .btn.default {
+    min-height: 44px;
+  }
+
+  .project-peek-window .project-peek-list {
+    max-height: 140px;
+  }
+
+  .disk-peek-window .disk-peek-actions > .btn.default {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+
+/* Early-harvest C11 (proposal v216): system shell narrow chrome — Control
+   Panel / System Messages / Control Strip settings. Vertical chrome, one
+   primary full-width, list-first strip modules; ADHD one thing at a time. */
+@container (max-width: 470px) {
+  .control-panel .control-chooser {
+    flex-wrap: nowrap;
+  }
+
+  .control-panel .control-section .button-row,
+  .control-panel .control-strip-module-actions,
+  .control-panel .control-strip-hotkey-row,
+  .control-panel .liquid-tint-row {
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .control-panel .control-wide-button,
+  .control-panel .btn.default.control-wide-button,
+  .control-panel .control-strip-module-actions > .btn.default {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+    margin-left: 0;
+  }
+
+  .control-panel .control-strip-module-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .notification-center-window .details-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .notification-center-window .details-bar > .btn {
+    width: 100%;
+    min-height: 40px;
+    justify-content: center;
+  }
+
+  .notification-center-window .notification-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .notification-center-window .notification-open-button {
+    width: 100%;
+    min-height: 40px;
+    justify-content: center;
+  }
+}
+
+/* Early-harvest E5 leftovers (proposal v216): journey / shutdown / startup /
+   recovery narrow — beyond C11 settings/notify/strip. Overlays use viewport
+   media; Hold That Thought remains the product journey pad (already A2). */
+@media (max-width: 470px) {
+  .boot-failure-button-row,
+  .startup-settings-actions,
+  .boot-recovery-modal .finder-operation-actions {
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .boot-failure-button-row > .btn.default,
+  .startup-settings-actions > .btn.default,
+  .boot-recovery-modal .finder-operation-actions > .btn.default,
+  .shutdown-screen .shutdown-ledger > .btn.default {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+    margin-left: 0;
+  }
+
+  .startup-settings-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .writing-spine-panel .spine-actions button {
+    min-height: 44px;
+  }
+}
+
+/* Early-harvest E6–E10 (proposal v217–v221): rest/games, DA/receipt/utility,
+   import/help/lab, creative/map pads, about/info/sound/dict. Same Harvest A
+   grammar — vertical chrome, one primary full-width 44px, calm density. */
+@container (max-width: 470px) {
+  :is(
+    .one-more-tune-window,
+    .one-more-tune-film-window,
+    .joyride-window,
+    .rootline-window,
+    .bonsai-window,
+    .puzzle-window,
+    .memory-cards-window,
+    .finishing-receipt-window,
+    .alarm-clock-window,
+    .calculator-window,
+    .print-directory-window,
+    .dictation-window,
+    .chooser-panel,
+    .model-meter-window,
+    .key-caps-window,
+    .import-utility-window,
+    .system-help-window,
+    .page-setup-window,
+    .writing-bell-window,
+    .system-status-window,
+    .save-chat-window,
+    .endfield-terminal-window,
+    .bureaucracy-meme-window,
+    .clio-chart-window,
+    .image-prompt-studio-window,
+    .clio-paint-window,
+    .docmap-window,
+    .clio-project-window,
+    .sideask-pad-window,
+    .find-change-window,
+    .translation-pad-window,
+    .context-panel-window,
+    .about-window,
+    .info-window,
+    .time-machine-window,
+    .soundscape-window,
+    .dictionary-window
+  ) .button-row:not(.composer-hidden-actions) {
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  :is(
+    .one-more-tune-window,
+    .one-more-tune-film-window,
+    .joyride-window,
+    .rootline-window,
+    .bonsai-window,
+    .puzzle-window,
+    .memory-cards-window,
+    .finishing-receipt-window,
+    .alarm-clock-window,
+    .calculator-window,
+    .print-directory-window,
+    .dictation-window,
+    .chooser-panel,
+    .model-meter-window,
+    .key-caps-window,
+    .import-utility-window,
+    .system-help-window,
+    .page-setup-window,
+    .writing-bell-window,
+    .system-status-window,
+    .save-chat-window,
+    .endfield-terminal-window,
+    .bureaucracy-meme-window,
+    .clio-chart-window,
+    .image-prompt-studio-window,
+    .clio-paint-window,
+    .docmap-window,
+    .clio-project-window,
+    .sideask-pad-window,
+    .find-change-window,
+    .translation-pad-window,
+    .context-panel-window,
+    .about-window,
+    .info-window,
+    .time-machine-window,
+    .soundscape-window,
+    .dictionary-window
+  ) .button-row:not(.composer-hidden-actions) > .btn.default {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+    margin-left: 0;
+  }
+
+  /* E6 rest / games */
+  .one-more-tune-window .btn.default,
+  .one-more-tune-film-window .btn.default {
+    min-height: 44px;
+  }
+
+  .one-more-tune-window .one-more-tune-play,
+  .bonsai-window .bonsai-setup-actions > .btn.default,
+  .joyride-window .button-row > .btn.default {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .puzzle-window .puzzle-board,
+  .memory-cards-window .memory-cards-board {
+    width: 100%;
+    max-width: none;
+  }
+
+  .bonsai-window .bonsai-map-shell,
+  .rootline-window .rootline-map,
+  .joyride-window .joyride-stage {
+    min-height: 140px;
+  }
+
+  /* E7 DA / receipt / utility */
+  .calculator-window .calculator-keys {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .calculator-window .calculator-keys button {
+    min-height: 48px;
+  }
+
+  .calculator-window #calculator-display {
+    width: 100%;
+  }
+
+  .alarm-clock-window .alarm-clock-readout,
+  .alarm-clock-window .alarm-clock-modes {
+    width: 100%;
+  }
+
+  .key-caps-window .shortcut-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .key-caps-window .character-map {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .key-caps-window .character-map > button {
+    min-height: 48px;
+  }
+
+  .print-directory-window .print-directory-preview {
+    width: 100%;
+    min-height: 120px;
+  }
+
+  .dictation-window .dictation-bottom-actions > .btn.default,
+  .dictation-window .dictation-capture-actions > button:first-child {
+    min-height: 44px;
+  }
+
+  .chooser-panel .chooser-settings > section {
+    padding: 12px;
+  }
+
+  .model-meter-window .meter-stats {
+    gap: 6px;
+  }
+
+  /* E8 import / help / lab / bell / status / save */
+  .import-utility-window .memory-transfer-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .import-utility-window .memory-transfer-footer > .btn.default,
+  .import-utility-window #import-documents {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .import-utility-window .backup-action-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .system-help-window .system-help-control-row,
+  .system-help-window .system-help-layout {
+    flex-direction: column;
+    align-items: stretch;
+    display: flex;
+    gap: 8px;
+  }
+
+  .system-help-window #system-help-query {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .writing-bell-window .writing-bell-actions > .btn.default,
+  .writing-bell-window #writing-bell-start {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .writing-bell-window .writing-bell-presets,
+  .writing-bell-window .writing-bell-mode {
+    width: 100%;
+  }
+
+  .writing-bell-window .writing-bell-time {
+    min-height: 100px;
+    width: 100%;
+  }
+
+  .system-status-window #keep-projects-on-device {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .save-chat-window .button-row > .btn.default {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .page-setup-window .button-row > .btn.default {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .finder-window[data-window="helpFolder"] .finder-grid,
+  .finder-window[data-window="helpFolder"] .help-folder-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  /* E9 creative / map / pads */
+  .clio-chart-window .clio-chart-details-bar,
+  .docmap-window .docmap-map-toolbar,
+  .docmap-window .ask-bar-row,
+  .sideask-pad-window .button-row,
+  .image-prompt-studio-window .ips-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .docmap-window .ask-bar-row > .btn.default,
+  .docmap-window #docmap-ask-button,
+  .image-prompt-studio-window #ips-go,
+  .sideask-pad-window #sideask-pad-ask,
+  .clio-chart-window .btn.default {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+    margin-left: 0;
+  }
+
+  .docmap-window .docmap-drop-zone,
+  .docmap-window .docmap-tree,
+  .clio-paint-window .clio-paint-viewport,
+  .image-prompt-studio-window .ips-plate,
+  .clio-project-window .clio-project-canvas-scroll {
+    width: 100%;
+    min-height: 140px;
+  }
+
+  .clio-project-window .clio-project-plan {
+    grid-template-columns: 1fr;
+  }
+
+  .translation-pad-window .translation-pad-textareas {
+    flex-direction: column;
+    display: flex;
+    gap: 10px;
+  }
+
+  .find-change-window .find-change-pane input[type="text"] {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* E10 about / getinfo / timemachine / sound / dict */
+  .about-window .about-pane > .btn.default,
+  .about-window .about-links {
+    width: 100%;
+  }
+
+  .about-window .about-pane > .btn.default {
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .about-window .about-links {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .about-window .about-links > .btn {
+    width: 100%;
+    min-height: 40px;
+    justify-content: center;
+  }
+
+  .info-window .info-kind-actions,
+  .info-window .button-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .info-window .button-row > .btn {
+    width: 100%;
+    min-height: 40px;
+    justify-content: center;
+  }
+
+  .dictionary-window .dictionary-query-row,
+  .dictionary-window .dictionary-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .dictionary-window #dictionary-query,
+  .dictionary-window .dictionary-query-row > .btn,
+  .dictionary-window .dictionary-actions > .btn.default {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .dictionary-window .dictionary-actions > .btn.default {
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .time-machine-window .time-machine-navigation,
+  .time-machine-window .time-machine-address-form {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .time-machine-window #time-machine-address {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .time-machine-window .time-machine-reader,
+  .time-machine-window .time-machine-frame {
+    width: 100%;
+    min-height: 120px;
+  }
+
+  .soundscape-window .soundscape-transport,
+  .soundscape-window .soundscape-now,
+  .soundscape-window .soundscape-artwork {
+    width: 100%;
+  }
+
+  .soundscape-window .soundscape-artwork {
+    min-height: 120px;
+  }
+
+  .soundscape-window #soundscape-save-moment,
+  .soundscape-window .soundscape-save-moment {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .soundscape-window .button-row,
+  .soundscape-window .soundscape-source-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    display: flex;
+  }
+
+  .soundscape-window #soundscape-connect-apple {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
   }
 }
 

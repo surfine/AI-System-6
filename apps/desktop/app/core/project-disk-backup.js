@@ -683,8 +683,28 @@ window.AISystem6ProjectDiskBackup = (() => {
   // An id with no counterpart is cleared, which is the rule the working
   // session already follows: an empty id is a tab that has to be re-pointed,
   // while a foreign id is a tab that looks healthy and resolves to nothing.
+  // A figure is cited inside prose as `![alt](aisystem6-image:<id>)`. The
+  // file body is rewritten below; a tab, a draft, a revision or a CD copy
+  // that still names the old id renders the caption as a paragraph, because
+  // the picture itself has already moved.
+  function remapImageCitations(text, idMaps) {
+    return String(text || "").replace(
+      /(\]\(aisystem6-image:)([^)]+)(\))/g,
+      (match, open, oldImageId, close) => {
+        const mapped = idMaps.imageAttachment.get(recordId(oldImageId));
+        return mapped ? `${open}${mapped}${close}` : match;
+      },
+    );
+  }
+
+  function remapProseImageCitations(value, idMaps) {
+    if (typeof value !== "string" || !value.includes("aisystem6-image:")) return value;
+    return remapImageCitations(value, idMaps);
+  }
+
   // Everything else on the tab -- above all `state.body`, which is the
-  // writer's own text and not a cache -- is carried through unchanged.
+  // writer's own text and not a cache -- is carried through unchanged,
+  // except a picture citation, which has to follow the picture.
   function remapDocumentTabs(project, idMaps) {
     if (!Array.isArray(project?.documentTabs)) return;
     const mapId = (type, id) => (id ? idMaps[type]?.get(recordId(id)) || "" : "");
@@ -702,6 +722,7 @@ window.AISystem6ProjectDiskBackup = (() => {
         if (typeof state.activeTextFileId === "string") {
           state.activeTextFileId = mapId("file", state.activeTextFileId);
         }
+        if (typeof state.body === "string") state.body = remapProseImageCitations(state.body, idMaps);
         if (isPlainObject(state.origin) && typeof state.origin.documentId === "string") {
           state.origin = { ...state.origin, documentId: mapId("file", state.origin.documentId) };
         }
@@ -937,9 +958,7 @@ window.AISystem6ProjectDiskBackup = (() => {
         });
       }
       // Figures cited in the body follow their picture to its new id.
-      if (typeof copy.body === "string" && copy.body.includes("aisystem6-image:")) {
-        copy.body = remapImageCitations(copy.body);
-      }
+      copy.body = remapProseImageCitations(copy.body, idMaps);
       // Remap receipt relations from the original record (single pass). The
       // generic walker above already handled scalar relation fields; the
       // receipt-specific object-id arrays are handled here under the
@@ -1003,6 +1022,15 @@ window.AISystem6ProjectDiskBackup = (() => {
       const mappedDocumentId = idMaps.file.get(importedProject.quickDraft.workspace.projectDocId);
       if (mappedDocumentId) importedProject.quickDraft.workspace.projectDocId = mappedDocumentId;
     }
+    if (Array.isArray(importedProject.drafts)) {
+      importedProject.drafts = importedProject.drafts.map((draft) => {
+        if (!isPlainObject(draft)) return draft;
+        const copy = { ...draft };
+        if (typeof copy.body === "string") copy.body = remapProseImageCitations(copy.body, idMaps);
+        if (typeof copy.sourceMarkdown === "string") copy.sourceMarkdown = remapProseImageCitations(copy.sourceMarkdown, idMaps);
+        return copy;
+      });
+    }
     remapDocumentTabs(importedProject, idMaps);
 
     const importedDocumentRevisions = (bundle.documentRevisions || []).map((revision, index) => {
@@ -1016,24 +1044,9 @@ window.AISystem6ProjectDiskBackup = (() => {
       if (revision?.parentRevisionId) {
         copy.parentRevisionId = idMaps.revision.get(revision.parentRevisionId) || "";
       }
+      copy.body = remapProseImageCitations(copy.body, idMaps);
       return copy;
     });
-
-    // A manuscript cites a picture by id INSIDE its body text, as
-    // `![alt](aisystem6-image:<id>)`. Every other pointer in a backup is a
-    // field the remapper can see; this one is prose. Rewriting it is what keeps
-    // a restored figure attached to its picture -- and remapping the picture
-    // ids without this step would break every figure in the disk, which is
-    // worse than not remapping at all.
-    function remapImageCitations(text) {
-      return String(text || "").replace(
-        /(\]\(aisystem6-image:)([^)]+)(\))/g,
-        (match, open, oldImageId, close) => {
-          const mapped = idMaps.imageAttachment.get(recordId(oldImageId));
-          return mapped ? `${open}${mapped}${close}` : match;
-        },
-      );
-    }
 
     // A darkroom record has no id of its own — the document it belongs to IS
     // its identity — so only the two pointers are remapped. Validation already
@@ -1055,7 +1068,11 @@ window.AISystem6ProjectDiskBackup = (() => {
       files: importedFiles,
       scraps: remapRecords("scrap", bundle.scraps),
       trash: bundle.trash.map(remapTrashRecord),
-      projectCdItems: remapRecords("projectCdItem", bundle.projectCdItems),
+      projectCdItems: remapRecords("projectCdItem", bundle.projectCdItems).map((item) => (
+        typeof item?.body === "string"
+          ? { ...item, body: remapProseImageCitations(item.body, idMaps) }
+          : item
+      )),
       references: importedReferences,
       documentRevisions: importedDocumentRevisions,
       darkroomRecords: importedDarkroomRecords,

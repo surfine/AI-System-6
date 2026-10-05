@@ -98,6 +98,7 @@ body[data-theme="lion"] {
   --desktop: #1d3a64;
   --desktop-surface:
     radial-gradient(ellipse 13% 9% at 47% 46%, rgba(255, 244, 228, 1), rgba(240, 208, 180, 0.8) 35%, transparent 100%),
+    radial-gradient(ellipse 28% 10% at 48% 47%, rgba(255, 220, 180, 0.55), transparent 70%),
     radial-gradient(ellipse 24% 8% at 37% 51%, rgba(210, 166, 164, 0.65), transparent 75%),
     radial-gradient(ellipse 24% 8% at 59% 41%, rgba(210, 166, 164, 0.6), transparent 75%),
     radial-gradient(ellipse 20% 9% at 19% 60%, rgba(115, 130, 195, 0.7), transparent 75%),
@@ -109,9 +110,19 @@ body[data-theme="lion"] {
     radial-gradient(1px 1px at 17px 23px, rgba(255, 255, 255, 0.85), transparent 1.5px) 0 0 / 97px 83px,
     radial-gradient(1px 1px at 61px 9px, rgba(255, 255, 255, 0.6), transparent 1.5px) 0 0 / 131px 107px,
     radial-gradient(1px 1px at 5px 44px, rgba(220, 230, 255, 0.5), transparent 1.5px) 0 0 / 59px 71px,
+    radial-gradient(1px 1px at 88px 61px, rgba(255, 255, 255, 0.45), transparent 1.5px) 0 0 / 73px 91px,
     radial-gradient(ellipse 48% 20% at 52% 45%, rgba(90, 120, 190, 0.35), transparent 75%),
     radial-gradient(ellipse 70% 60% at 15% 75%, rgba(30, 90, 160, 0.45), transparent 70%),
-    linear-gradient(to bottom, #171d2e 0%, #1b2f50 22%, #174277 50%, #134680 64%, #0f2f5c 86%, #0a152d 100%);
+    linear-gradient(to bottom, #12182a 0%, #1b2f50 22%, #174277 50%, #134680 64%, #0f2f5c 86%, #070e1c 100%);
+  /* Overlay / full-screen accept + era-rail thumb
+     (polishTodos overlay-scrollbars-accept, full-screen-accept,
+     thumbnail-vs-snow-leopard). */
+  --overlay-scroll-accept: 1;
+  --fullscreen-accept: 1;
+  --era-rail-thumb-bg: linear-gradient(to bottom, #f1f1f1, #b7b7b7);
+  --era-rail-thumb-border: 1px solid #696969;
+  --era-rail-thumb-radius: 4px;
+  --era-rail-thumb-shadow: inset 0 1px 0 #ffffff;
 }
 
 body[data-theme="lion"] .desktop {

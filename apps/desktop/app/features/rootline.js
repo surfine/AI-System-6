@@ -325,9 +325,26 @@ window.AISystem6RootlineLoaded = true;
 
   const dom = {};
 
+  function syncHostContract(host = "loading") {
+    // Rootline is a pure JS map shell — no Wasm engine binary (v223 honesty).
+    const win = document.querySelector('[data-window="rootline"]');
+    window.AISystem6WasmHostContract?.apply?.(win, {
+      kind: "rootline",
+      host,
+      wasm: 0,
+      binary: 0,
+      fail: true,
+      crash: true,
+    });
+  }
+
   function installRootlineWindow() {
     if (typeof document === "undefined") return;
-    if (document.querySelector('[data-window="rootline"]')) return;
+    const existing = document.querySelector('[data-window="rootline"]');
+    if (existing) {
+      syncHostContract(state.built ? "ready" : "loading");
+      return;
+    }
     window.AISystem6ApplicationShell.createWindow({
       windowName: "rootline",
       windowClass: "rootline-window",
@@ -336,6 +353,7 @@ window.AISystem6RootlineLoaded = true;
       title: tf("rootline_title"),
       paneClass: "rootline-pane",
     });
+    syncHostContract("loading");
   }
 
   function build() {
@@ -1450,6 +1468,7 @@ window.AISystem6RootlineLoaded = true;
   function attachRootline() {
     installRootlineWindow();
     build();
+    syncHostContract(state.built ? "ready" : "loading");
     syncVisibility();
   }
 
@@ -1546,6 +1565,12 @@ window.AISystem6RootlineLoaded = true;
         if (command === "open-pot") return state.screen !== "pots";
         if (command === "save-plan") return Boolean(state.pot?.cityId) && Boolean(state.game?.lines?.length);
         return true;
+      },
+      unavailableReason: () => {
+        const active = document.querySelector(".window.is-active");
+        return active?.dataset.window !== "rootline"
+          ? "balloon_disabled_menu_host_window"
+          : "balloon_disabled_menu_context";
       },
     });
   });

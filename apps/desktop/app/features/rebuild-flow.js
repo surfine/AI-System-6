@@ -559,12 +559,19 @@ function rebuildFlowCanHandIn() {
 async function handInRebuildFlow() {
   if (rebuildFlow.phase === "sent" || rebuildFlow.phase === "created") {
     openRebuildFlowResult();
+    setStatus(rebuildFlow.phase === "sent" ? t("rebuild_sent_status") : t("rebuild_result_reopened"));
     return;
   }
-  if (!rebuildFlowCanHandIn()) return;
+  if (!rebuildFlowCanHandIn()) {
+    // Available() can race the Checks panel; never leave Hand In silent.
+    setStatus(t("balloon_disabled_rebuild_checks"));
+    return;
+  }
+  setStatus(t("rebuild_handing_in"));
   const { pack } = await checkRebuildFlowPack();
   if (!rebuildFlow.verdict.ok) {
     renderRebuildFlow();
+    setStatus(t("rebuild_summary_fix"));
     return;
   }
   const tools = window.AISystem6GuestTools;
@@ -620,7 +627,11 @@ function mergeRebuildSection() {
   const index = rebuildFlow.selected;
   const next = rebuildFlow.sections[index + 1];
   const here = rebuildFlow.sections[index];
-  if (!here || !next || rebuildFlow.phase === "running") return;
+  if (!here || !next || rebuildFlow.phase === "running") {
+    // Same honesty as Hand In: a race with selection/running must say why.
+    setStatus(rebuildFlow.phase === "running" ? t("rebuild_state_running") : t("balloon_disabled_rebuild_merge"));
+    return;
+  }
   const merged = { ...here, chars: (here.chars || 0) + (next.chars || 0) };
   if (here.covers) merged.covers = [...here.covers, ...(next.covers || [])];
   rebuildFlow.sections.splice(index, 2, merged);
@@ -953,4 +964,13 @@ function openRebuildFlow() {
   rebuildFlowParts()?.source?.focus();
 }
 
+window.AISystem6RebuildFlow = Object.freeze({
+  canHandIn: () => rebuildFlowCanHandIn() || rebuildFlow.phase === "sent" || rebuildFlow.phase === "created",
+  canMerge: () => {
+    const index = rebuildFlow.selected;
+    return rebuildFlow.phase !== "running"
+      && index >= 0
+      && Boolean(rebuildFlow.sections[index] && rebuildFlow.sections[index + 1]);
+  },
+});
 window.AISystem6RebuildFlowLoaded = true;

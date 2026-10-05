@@ -205,3 +205,20 @@ has no canonical Theme Lab board: `verify-nextstep-workflow` and its edge-case
 companion are its instruments, and a green `verify:theme-lab:fidelity` says
 nothing about it. Its release does not upgrade the earlier historical fidelity
 results or certify all icon families.
+
+## Twelve-appearance instrumentation (2026-10-04)
+
+The registry ships twelve selectable appearances. Repeatable product checks
+split into what is automated now and what stays human / deferred:
+
+| Instrument | What it locks | Gate |
+| --- | --- | --- |
+| `appearance-system` + `harvest-ux` contracts | Registry timeline, polishPending honesty, Theme Lab calm hooks (`quiet-focus` / key-window / vibrancy / grayscale measure attributes), Drawing Board sketch asset wiring | `verify:quick -- --feature appearance-system` / `harvest-ux` |
+| `tooling/verify-appearance-app-coverage.mjs` | Per-appearance computed styles on every registered window; Retina raster floor; menu-bar model; role screenshots for representatives only | ship-only `appearance-real-apps` |
+| `tests/visual/theme-lab/<id>.png` | Twelve Theme Lab regression baselines (web adaptation, not native fidelity) | ship `theme-lab-regression` |
+| Theme Lab Surfaces → Polish boards | Live `measurePolishBoards()` writes `data-theme-lab-measure-*` for key-window distinctness, vibrancy `backdrop-filter`, and L0–L3 grey steps; calm select is product UI | manual / future probe |
+
+**Deferred (not required for this harvest):** full twelve × every-window screenshot CI,
+canonical historical fidelity (`verify:theme-lab:fidelity`, human cache), and
+clearing remaining docs/P5 `polishTodos` (System 7 / Lion / Drawing Board).
+Theme Lab displays open polishTodos; it does not clear the registry.

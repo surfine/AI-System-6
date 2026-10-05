@@ -1099,6 +1099,9 @@ function sendNotePadPage(dest = notePadDestination) {
     assistant: t("assistant"),
   };
   sendTextToDestination(text, dest);
+  // Destination paint is owned by sendTextToDestination; refresh this pad so
+  // multi-page chrome (slip index / destination label) never lags the send.
+  renderNotePadPage();
   // A Desk Accessory has no status strip of its own, so this receipt lands in
   // ClioTalk's info bar -- invisible whenever ClioTalk is closed, which is most
   // of the time someone is using the Note Pad. Handing a slip to another window
@@ -1212,6 +1215,7 @@ function sendTextToDestination(text, dest) {
     teachTextBodyInput.focus();
   } else if (dest === "assistant") {
     promptInput.value = content;
+    promptInput.dispatchEvent(new Event("input", { bubbles: true }));
     openWindow("assistant");
     promptInput.focus();
   } else if (dest === "scrapbook") {

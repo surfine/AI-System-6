@@ -414,11 +414,14 @@ test.assertNotIncludes(shellSource, "Math.random", "the shell draws its seed fro
 
 const config = read("app/core/config.js");
 const loader = config.slice(config.indexOf("const ensureJoyrideModule"), config.indexOf("]", config.indexOf("const ensureJoyrideModule")));
-["app/features/bonsai-city-sim.js", "app/features/bonsai-renderer-voxel.js", "app/features/joyride-core.js", "app/features/joyride.js"].forEach((path) => {
+["app/core/wasm-host-contract.js", "app/features/bonsai-city-sim.js", "app/features/bonsai-renderer-voxel.js", "app/features/joyride-core.js", "app/features/joyride.js"].forEach((path) => {
   test.assertIncludes(loader, `"${path}"`, `the Joyride loader brings ${path}`);
 });
 test.assert(loader.indexOf("joyride-core.js") < loader.indexOf("joyride.js\""), "the core loads before the shell");
 test.assertIncludes(config, '["styles.joyride.css"]', "the loader brings the lazy stylesheet with the module");
+test.assertIncludes(shellSource, "AISystem6WasmHostContract", "Joyride applies the shared host honesty contract");
+test.assertIncludes(shellSource, "wasm: 0", "Joyride is an honest non-Wasm shell (data-wasm=0)");
+test.assertIncludes(shellSource, "binary: 0", "Joyride never claims a Wasm binary");
 const runtimeManifest = read("tooling/runtime-manifest.mjs");
 const lazyBlock = runtimeManifest.slice(runtimeManifest.indexOf("export const lazyRuntimePaths"));
 test.assert(lazyBlock.includes('"app/features/joyride-core.js"') && lazyBlock.includes('"app/features/joyride.js"'), "both files are lazy runtime paths");

@@ -142,6 +142,79 @@
             </div>
 
             <div class="system-tab-panel theme-lab-panel" id="theme-lab-panel-surfaces" role="tabpanel" aria-labelledby="theme-lab-tab-surfaces" data-theme-lab-panel="surfaces" hidden>
+              <!-- Polish fidelity boards: measurable data-* specimens for the
+                   eras that still (or recently) carried polishTodos. Pattern
+                   ported from calm-desktop Theme Lab v211–v212; product CSS
+                   tokens own the paint. -->
+              <section class="theme-lab-group theme-lab-polish-boards" aria-labelledby="theme-lab-polish-title" data-theme-lab-polish-boards data-theme-lab-calm="quiet-focus">
+                <h3 id="theme-lab-polish-title" data-i18n="theme_lab_polish">Polish boards</h3>
+                <!-- v222 calm productized: quiet-focus / key-pair / vibrancy-depth /
+                     gray-quiet / eraser are measurable here. Remaining polishTodos
+                     stay honest — Theme Lab displays them; it does not clear the registry. -->
+                <div class="theme-lab-polish-toolbar">
+                  <label class="theme-lab-calm-field">
+                    <span data-i18n="theme_lab_calm">Calm</span>
+                    <span class="select-wrap"><select data-theme-lab-calm-select aria-label="Theme Lab calm">
+                      <option value="quiet-focus" data-i18n="theme_lab_calm_quiet_focus">Quiet focus</option>
+                      <option value="key-pair" data-i18n="theme_lab_calm_key_pair">Key-window pair</option>
+                      <option value="vibrancy-depth" data-i18n="theme_lab_calm_vibrancy_depth">Vibrancy depth</option>
+                      <option value="gray-quiet" data-i18n="theme_lab_calm_gray_quiet">Grey quiet</option>
+                      <option value="eraser" data-i18n="theme_lab_calm_eraser">Edge eraser</option>
+                    </select></span>
+                  </label>
+                  <p class="theme-lab-polish-pending" data-theme-lab-polish-pending aria-live="polite"></p>
+                </div>
+                <p class="theme-lab-polish-measures" data-theme-lab-polish-measures aria-live="polite"></p>
+                <div class="theme-lab-polish-grid">
+                  <div class="theme-lab-polish-board" data-theme-lab-polish="key-window-selection-surfaces">
+                    <p class="theme-lab-polish-label">key-window</p>
+                    <div class="theme-lab-keywin-pair">
+                      <div class="window is-active theme-lab-polish-mini" data-theme-lab-keywin="key"><ul class="theme-lab-polish-list"><li class="is-selected">Selected</li><li>Idle</li></ul></div>
+                      <div class="window theme-lab-polish-mini" data-theme-lab-keywin="inactive"><ul class="theme-lab-polish-list"><li class="is-selected">Selected</li><li>Idle</li></ul></div>
+                    </div>
+                  </div>
+                  <div class="theme-lab-polish-board theme-lab-vibrancy-board" data-theme-lab-polish="vibrancy-sidebar-fidelity">
+                    <p class="theme-lab-polish-label">vibrancy</p>
+                    <div class="theme-lab-vibrancy-stage">
+                      <div class="theme-lab-vibrancy-desk" aria-hidden="true"></div>
+                      <aside class="theme-lab-sidebar theme-lab-polish-vibrancy" data-theme-lab-vibrancy="sidebar"><strong>Sidebar</strong></aside>
+                      <div class="theme-lab-vibrancy-paper"><span data-i18n="theme_lab_vibrancy_paper">Paper first</span></div>
+                    </div>
+                  </div>
+                  <div class="theme-lab-polish-board" data-theme-lab-polish="grayscale-depth-board">
+                    <p class="theme-lab-polish-label">grey depth</p>
+                    <div class="theme-lab-gray-steps" data-theme-lab-gray-board>
+                      <span data-level="0">L0</span><span data-level="1">L1</span><span data-level="2">L2</span><span data-level="3">L3</span>
+                    </div>
+                  </div>
+                  <div class="theme-lab-polish-board" data-theme-lab-polish="textured-painter-board">
+                    <p class="theme-lab-polish-label">textured</p>
+                    <div class="theme-lab-textured-pair">
+                      <span class="theme-lab-textured-swatch is-brushed" data-theme-lab-metal="brushed"></span>
+                      <span class="theme-lab-textured-swatch is-unified" data-theme-lab-metal="unified"></span>
+                    </div>
+                  </div>
+                  <div class="theme-lab-polish-board" data-theme-lab-polish="icon-palette-verify">
+                    <p class="theme-lab-polish-label">icon palette</p>
+                    <div class="theme-lab-icon-palette" data-theme-lab-icon-palette>
+                      <i data-swatch="0"></i><i data-swatch="1"></i><i data-swatch="2"></i><i data-swatch="3"></i>
+                      <i data-swatch="4"></i><i data-swatch="5"></i><i data-swatch="6"></i><i data-swatch="7"></i>
+                    </div>
+                  </div>
+                  <div class="theme-lab-polish-board" data-theme-lab-polish="pencil-line-content-safe">
+                    <p class="theme-lab-polish-label">pencil safe</p>
+                    <div class="theme-lab-pencil-safe" data-theme-lab-pencil="safe"><span>Readable line</span></div>
+                  </div>
+                  <div class="theme-lab-polish-board" data-theme-lab-polish="overlay-scrollbars-accept">
+                    <p class="theme-lab-polish-label">overlay scroll</p>
+                    <div class="theme-lab-overlay-scroll" data-theme-lab-overlay-scroll="accept"></div>
+                  </div>
+                  <div class="theme-lab-polish-board" data-theme-lab-polish="full-screen-accept">
+                    <p class="theme-lab-polish-label">full-screen</p>
+                    <button class="theme-lab-fullscreen-lamp" type="button" data-theme-lab-fullscreen="idle" aria-label="Full Screen"></button>
+                  </div>
+                </div>
+              </section>
               <section class="theme-lab-group theme-lab-navigation" aria-labelledby="theme-lab-navigation-title">
                 <h3 id="theme-lab-navigation-title"><span class="theme-lab-navigation-generic-label" data-i18n="theme_lab_navigation">Lists &amp; sidebar</span><span class="theme-lab-column-browser-label" data-i18n="theme_lab_column_browser">Column browser</span></h3>
                 <div class="theme-lab-split-view theme-lab-generic-browser theme-lab-generic-fixture">
@@ -297,7 +370,7 @@
                      title bar. The fixture reproduces the era's Finder body; its
                      chrome is the System window's, so Close stays at the leading
                      edge and Zoom at the trailing one in every era. -->
-                <div class="window theme-lab-finder-window is-active" data-theme-lab-specimen="finder-window" data-theme-lab-reference="guidebook.macosx102.finder">
+                <div class="window theme-lab-finder-window is-active" data-app="finder" data-theme-lab-specimen="finder-window" data-theme-lab-reference="guidebook.macosx102.finder">
                   <div data-theme-lab-finder-titlebar></div>
                   <div class="theme-lab-toolbar">
                     <button class="btn theme-lab-toolbar-back" type="button" data-i18n="theme_lab_back">Back</button>
@@ -354,7 +427,7 @@
                    edit sets the custom property on <body>, which repaints the
                    whole desktop, and the result leaves as pasteable CSS; the
                    Lab never writes a stylesheet or persists an experiment. -->
-              
+
             </div>
           </div>`,
     });
@@ -418,6 +491,15 @@
   // A group needs this many tokens to earn its own entry in the chooser;
   // everything below it collects under "Other" so the list stays readable.
   const TOKEN_GROUP_FLOOR = 6;
+  // Product calm modes ported from calm-desktop Theme Lab v222. Specimens only;
+  // they never clear theme-registry polishTodos.
+  const CALM_MODES = Object.freeze([
+    "quiet-focus",
+    "key-pair",
+    "vibrancy-depth",
+    "gray-quiet",
+    "eraser",
+  ]);
 
   let activePanel = "chrome";
   let inspectedObjectId = OBJECTS[0][0];
@@ -427,6 +509,7 @@
   let tokenIndex = null;
   let lastRenderedThemeId = null;
   let sessionOpen = false;
+  let calmMode = "quiet-focus";
   // Until the user picks a scope, the Lab picks the one that has rows: an era
   // with a delta opens on its delta, and System 6 — which is the baseline and
   // overrides nothing — opens on the whole table instead of on an empty box.
@@ -1426,6 +1509,129 @@
     );
   }
 
+  // ----------------------------------------------------------- polish boards --
+
+  function normalizeCalmMode(value) {
+    return CALM_MODES.includes(value) ? value : "quiet-focus";
+  }
+
+  function readListedSelection(listRoot) {
+    const selected = listRoot?.querySelector(".is-selected");
+    if (!selected) return { backgroundColor: "", color: "" };
+    const style = getComputedStyle(selected);
+    return { backgroundColor: style.backgroundColor, color: style.color };
+  }
+
+  // Computed-style probe for the four v222 calm surfaces plus the v224
+  // painter matrix (blur px / radius / single default). Values land on
+  // data-theme-lab-measure-* so appearance-system / harvest-ux /
+  // theme-lab-painter-contract can lock the hooks without a full
+  // twelve-era screenshot CI matrix.
+  function measurePolishBoards(win = lab()) {
+    const boards = win?.querySelector("[data-theme-lab-polish-boards]");
+    if (!boards) return null;
+    const keyActive = readListedSelection(
+      boards.querySelector('[data-theme-lab-keywin="key"] .theme-lab-polish-list'),
+    );
+    const keyInactive = readListedSelection(
+      boards.querySelector('[data-theme-lab-keywin="inactive"] .theme-lab-polish-list'),
+    );
+    const vibrancy = boards.querySelector("[data-theme-lab-vibrancy]");
+    const vibrancyStyle = vibrancy ? getComputedStyle(vibrancy) : null;
+    const gray = [...boards.querySelectorAll("[data-theme-lab-gray-board] > span")].map((step) => {
+      const style = getComputedStyle(step);
+      return {
+        level: step.dataset.level || "",
+        backgroundColor: style.backgroundColor,
+      };
+    });
+    const desk = document.getElementById("desktop") || document.body;
+    const deskStyle = getComputedStyle(desk);
+    const painterBlurPx = (deskStyle.getPropertyValue("--painter-blur-px") || "").trim() || "0";
+    const painterBlur = (deskStyle.getPropertyValue("--painter-blur") || "").trim() || "none";
+    const windowRadius = (deskStyle.getPropertyValue("--window-radius") || "").trim();
+    const windowBackdrop = (deskStyle.getPropertyValue("--window-backdrop-filter") || "").trim() || "none";
+    const primaryCount = win.querySelectorAll(".theme-lab-button-row .btn.primary").length;
+    const defaultCount = win.querySelectorAll(".theme-lab-button-row .btn.default").length;
+    const measures = {
+      calm: boards.dataset.themeLabCalm || calmMode,
+      keyWindow: {
+        activeBackground: keyActive.backgroundColor,
+        activeColor: keyActive.color,
+        inactiveBackground: keyInactive.backgroundColor,
+        inactiveColor: keyInactive.color,
+        distinct: keyActive.backgroundColor !== keyInactive.backgroundColor,
+      },
+      vibrancy: {
+        backdropFilter: vibrancyStyle?.backdropFilter || vibrancyStyle?.webkitBackdropFilter || "none",
+        backgroundColor: vibrancyStyle?.backgroundColor || "",
+      },
+      painter: {
+        blurPx: painterBlurPx,
+        blur: painterBlur,
+        windowRadius,
+        windowBackdropFilter: windowBackdrop,
+        primaryCount,
+        defaultCount,
+      },
+      grayscale: gray,
+    };
+    boards.dataset.themeLabMeasureKeywinActive = measures.keyWindow.activeBackground;
+    boards.dataset.themeLabMeasureKeywinInactive = measures.keyWindow.inactiveBackground;
+    boards.dataset.themeLabMeasureKeywinDistinct = measures.keyWindow.distinct ? "1" : "0";
+    boards.dataset.themeLabMeasureVibrancy = measures.vibrancy.backdropFilter;
+    boards.dataset.themeLabMeasureGray = gray.map((step) => step.backgroundColor).join("|");
+    boards.dataset.themeLabMeasureBlurPx = painterBlurPx;
+    boards.dataset.themeLabMeasurePainterBlur = painterBlur;
+    boards.dataset.themeLabMeasureWindowRadius = windowRadius;
+    boards.dataset.themeLabMeasureWindowBackdrop = windowBackdrop;
+    boards.dataset.themeLabMeasurePrimaryCount = String(primaryCount);
+    boards.dataset.themeLabMeasureDefaultCount = String(defaultCount);
+    return measures;
+  }
+
+  function formatPolishMeasures(measures) {
+    if (!measures) return "";
+    const key = measures.keyWindow.distinct
+      ? t("theme_lab_measure_keywin_ok")
+      : t("theme_lab_measure_keywin_same");
+    const blur = measures.vibrancy.backdropFilter || "none";
+    const gray = measures.grayscale.map((step) => `L${step.level}`).join(" · ") || "—";
+    return t("theme_lab_measure_summary", key, blur, gray);
+  }
+
+  function renderPolishBoards(theme) {
+    const win = lab();
+    const boards = win?.querySelector("[data-theme-lab-polish-boards]");
+    if (!boards || !theme) return null;
+    calmMode = normalizeCalmMode(calmMode);
+    boards.dataset.themeLabCalm = calmMode;
+    win.dataset.themeLabCalm = calmMode;
+    const select = boards.querySelector("[data-theme-lab-calm-select]");
+    if (select && select.value !== calmMode) select.value = calmMode;
+
+    const pending = win.querySelector("[data-theme-lab-polish-pending]");
+    if (pending) {
+      const todos = Array.isArray(theme.polishTodos) ? theme.polishTodos : [];
+      if (theme.polishPending === true && todos.length) {
+        pending.hidden = false;
+        pending.textContent = t("theme_lab_polish_pending_list", theme.label, todos.join(", "));
+        pending.dataset.polishPending = "1";
+        pending.dataset.polishTodos = todos.join(",");
+      } else {
+        pending.hidden = false;
+        pending.textContent = t("theme_lab_polish_pending_none", theme.label);
+        pending.dataset.polishPending = "0";
+        delete pending.dataset.polishTodos;
+      }
+    }
+
+    const measures = measurePolishBoards(win);
+    const readout = win.querySelector("[data-theme-lab-polish-measures]");
+    if (readout) readout.textContent = formatPolishMeasures(measures);
+    return measures;
+  }
+
   // ------------------------------------------------------------------ wiring --
 
   function wire(win) {
@@ -1513,6 +1719,12 @@
         travelTo(stop.theme.id);
         return;
       }
+      const calmSelect = event.target.closest("[data-theme-lab-calm-select]");
+      if (calmSelect) {
+        calmMode = normalizeCalmMode(calmSelect.value);
+        renderPolishBoards(currentTheme());
+        return;
+      }
       if (event.target.closest("[data-theme-lab-token-scope]")) tokenScopeChosen = true;
       if (event.target.closest("[data-theme-lab-token-group]") || event.target.closest("[data-theme-lab-token-scope]")) {
         renderTokenDesk(currentTheme());
@@ -1551,6 +1763,7 @@
     else win.querySelector("[data-theme-lab-object-grid]")?.replaceChildren();
     if (captureAll || activePanel === "tokens") renderTokenDesk(theme);
     else win.querySelector("[data-theme-lab-token-table]")?.replaceChildren();
+    if (captureAll || activePanel === "surfaces") renderPolishBoards(theme);
     buildIconSet(win);
     renderIconSet(theme);
     syncInspectedTile(win);
@@ -1616,8 +1829,18 @@
     selectorScope,
     buildTokenIndexFromStyleSheets,
     tokenRowsForIndex,
+    CALM_MODES,
   });
-  window.AISystem6ThemeLab = Object.freeze({ attach, cleanup, restore, sync, refreshLanguage, showPanel });
+  window.AISystem6ThemeLab = Object.freeze({
+    attach,
+    cleanup,
+    restore,
+    sync,
+    refreshLanguage,
+    showPanel,
+    measurePolishBoards,
+    renderPolishBoards,
+  });
   window.AISystem6Runtime?.registerApplication({
     id: "themeLab",
     windowName: "themeLab",

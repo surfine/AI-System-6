@@ -31,25 +31,61 @@ function registerRuntimeRenderTasks() {
   });
 }
 
+// Sad Mac recovery must work even while boot() is still awaiting a hung
+// promise. Guarding on bootInProgress left Retry / Start-without-windows as
+// dead controls on iPhone (stall → Sad Mac → taps do nothing).
+const BOOT_SKIP_SESSION_KEY = "ai-system6-boot-skip-session";
+
+function forceBootReload() {
+  try {
+    bootInProgress = false;
+  } catch {}
+  window.location.reload();
+}
+
 async function retryBoot() {
-  if (bootInProgress) return false;
   // A fresh runtime is the only reliable retry: partial boot state, listeners,
   // timers and lazy-module state are discarded by reloading.
-  window.location.reload();
+  forceBootReload();
   return true;
 }
 
 // Safe-mode-lite: clear only the Working Session (windows, cursor, scroll
 // scene), never projects, files, or IndexedDB data, then retry startup.
 async function startBootWithoutSession() {
-  if (bootInProgress) return false;
   try {
-    await clearWorkingSession();
+    sessionStorage.setItem(BOOT_SKIP_SESSION_KEY, "1");
+  } catch {}
+  try {
+    // IndexedDB can be the hang that put us on Sad Mac — do not wait on it.
+    await Promise.race([
+      clearWorkingSession().catch(() => {}),
+      new Promise((resolve) => setTimeout(resolve, 1200)),
+    ]);
   } catch (error) {
     console.warn("Could not clear the Working Session for safe startup.", error);
   }
-  window.location.reload();
+  forceBootReload();
   return true;
+}
+
+function consumeBootSkipSessionFlag() {
+  try {
+    if (sessionStorage.getItem(BOOT_SKIP_SESSION_KEY) === "1") {
+      sessionStorage.removeItem(BOOT_SKIP_SESSION_KEY);
+      return true;
+    }
+  } catch {}
+  return false;
+}
+
+function wireBootFailureActions() {
+  const retryControl = document.getElementById("boot-retry");
+  if (!retryControl || retryControl.dataset.wired === "true") return;
+  retryControl.dataset.wired = "true";
+  retryControl.addEventListener("click", () => retryBoot());
+  document.getElementById("boot-without-session")?.addEventListener("click", () => startBootWithoutSession());
+  document.getElementById("boot-recovery")?.addEventListener("click", () => openBootRecovery());
 }
 
 async function bootRecoveryStatus() {
@@ -145,6 +181,21 @@ function openBootRecovery() {
     document.getElementById("boot-recovery-projects").textContent = String(status.projectsCount);
     document.getElementById("boot-recovery-session").textContent = label(status.session === "available");
     document.getElementById("boot-recovery-ai").textContent = label(status.aiConfig === "available");
+    const exportBtn = document.getElementById("boot-recovery-export");
+    const resetSession = document.getElementById("boot-recovery-reset-session");
+    const resetAi = document.getElementById("boot-recovery-reset-ai");
+    if (exportBtn) {
+      exportBtn.disabled = !selectedRecoveryProjectId && !(status.projectsCount > 0);
+      exportBtn.dataset.balloonHelpDisabled = "balloon_recovery_needs_project";
+    }
+    if (resetSession) {
+      resetSession.disabled = status.session !== "available";
+      resetSession.dataset.balloonHelpDisabled = "balloon_recovery_no_session";
+    }
+    if (resetAi) {
+      resetAi.disabled = status.aiConfig !== "available";
+      resetAi.dataset.balloonHelpDisabled = "balloon_recovery_no_ai";
+    }
     await renderRecoveryProjectList();
   };
   const setNote = (message) => {
@@ -225,10 +276,10 @@ function startupTaskWithTimeout(promise, label, ms = 1600) {
 // desk if it throws. This runs the step, and on failure records the failure
 // where a person can read it (Notification Center) and where a developer can
 // grep it (console.error) instead of letting the throw escape to boot()'s
-// outer catch, which would abort every step after it. Essential steps
-// (write-lease acquisition, desk-state load, the boot sequence itself) are
-// deliberately left outside this wrapper: their failure is supposed to stop
-// boot and show the existing Sad Mac recovery screen.
+// outer catch, which would abort every step after it. Write-lease and desk
+// state now degrade inside boot() (timeout / in-memory desk) so iOS first
+// paint is a desk; Sad Mac remains for a throw the rest of boot cannot
+// recover from, and for the safety-net stall/ceiling.
 // `notify` defaults to the real Notification Center push, but loadDeskState()
 // restores the persisted notification list wholesale (a splice-replace, not a
 // merge) — a notification pushed before that point is silently overwritten a
@@ -268,16 +319,11 @@ async function boot() {
     // Single-writer lease: acquire before any durable write can run. A second
     // instance starts read-only and gets the conflict dialog after first paint.
     window.AISystem6WriteLease?.initUi?.();
-    await window.AISystem6WriteLease?.acquireAtBoot?.();
+    await startupTaskWithTimeout(window.AISystem6WriteLease?.acquireAtBoot?.(), "write lease", 3500);
     markBootProgress("write lease");
-    // Sad Mac recovery controls (wired once; boot may retry).
-    const retryControl = document.getElementById("boot-retry");
-    if (retryControl && retryControl.dataset.wired !== "true") {
-      retryControl.dataset.wired = "true";
-      retryControl.addEventListener("click", () => retryBoot());
-      document.getElementById("boot-without-session")?.addEventListener("click", () => startBootWithoutSession());
-      document.getElementById("boot-recovery")?.addEventListener("click", () => openBootRecovery());
-    }
+    // Sad Mac recovery controls (wired once; handlers must force-reload even
+    // when boot is still hung — see forceBootReload).
+    wireBootFailureActions();
     // Every step until loadDeskState() runs before that call restores the
     // persisted Notification Center list wholesale, which would otherwise
     // erase a notification pushed here a moment after it lands — so these
@@ -307,8 +353,39 @@ async function boot() {
     ensureMarkdownParser().catch(() => {});
     await runBootStep(t("alarm_clock"), () => initializeAlarmClock(), queueEarlyBootFailure);
     await runBootStep("Version", () => loadAppVersion(), queueEarlyBootFailure);
-    await loadDeskState();
-    markBootProgress("desk state");
+    {
+      // openAppDb already has a 15s guard; a wedged transaction must not sit
+      // past the safety-net stall with bootInProgress still true.
+      let deskTimeoutId = null;
+      const deskOutcome = await Promise.race([
+        loadDeskState()
+          .then((value) => ({ ok: true, value }))
+          .catch((error) => ({ ok: false, error })),
+        new Promise((resolve) => {
+          deskTimeoutId = setTimeout(() => resolve({ ok: false, timeout: true }), 8000);
+        }),
+      ]).finally(() => {
+        clearTimeout(deskTimeoutId);
+        markBootProgress("desk state");
+      });
+      if (!deskOutcome.ok) {
+        // IndexedDB hang/timeout/throw used to abort the whole boot and leave
+        // the iPhone on Sad Mac. Durable storage stays off; the desk paints.
+        deskPersistenceWritable = false;
+        if (deskOutcome.timeout) {
+          console.warn("AI System 6 boot: desk state timed out; continuing without durable storage.");
+        } else {
+          console.error("AI System 6 boot: desk state failed; continuing without durable storage.", deskOutcome.error);
+        }
+        try {
+          if (typeof ensureActiveProject === "function") ensureActiveProject();
+          if (typeof assignProjectScope === "function") assignProjectScope(typeof activeProjectId === "undefined" ? "" : activeProjectId);
+        } catch (nested) {
+          console.warn("AI System 6 boot: could not assemble an in-memory Project Hard Disk.", nested);
+        }
+        queueEarlyBootFailure(t("project_storage_unavailable_message"));
+      }
+    }
     earlyBootFailures.forEach(defaultBootStepNotify);
     // A saved setting may have switched the active language away from the
     // system default; make sure its table is present before the first paint.
@@ -342,7 +419,9 @@ async function boot() {
     // Searcher paints itself when its window opens (openWindow loads the lazy
     // module first); startup must not reach into it, or the module is no longer
     // lazy.
-    await runBootStep(t("references"), () => loadActiveProjectReferences());
+    // Each of these can open IndexedDB; a wedged open must not occupy the
+    // whole stall window with no progress mark (iPhone Sad Mac mid-boot).
+    await startupTaskWithTimeout(runBootStep(t("references"), () => loadActiveProjectReferences()), "project references", 5000);
     await runBootStep("Writing Flow pipeline", () => renderPipeline());
     await runBootStep(t("writing_tools"), () => applyWritingToolsViewMode());
     await runBootStep(t("local_model"), () => updateLocalModelState({ selected: !!modelInput.value.trim() }));
@@ -351,7 +430,7 @@ async function boot() {
     } else {
       renderLocalConnectionStatus("local_connection_waiting");
     }
-    await runBootStep("File Floppy import status", () => refreshImporterStatus());
+    await startupTaskWithTimeout(runBootStep("File Floppy import status", () => refreshImporterStatus()), "importer status", 3500);
     await runBootStep("Drag and drop", () => initDragAndDrop());
 
     // A true first launch opens ClioTalk, but recoverable work still wins.
@@ -363,8 +442,10 @@ async function boot() {
     // The writer's words are not part of onboarding. A snapshot exists only if
     // someone already worked here, so resuming one cannot disturb a true first
     // launch. The persisted onboarding bit is deliberately independent from
-    // the Working Session snapshot.
-    const resumedWorkingSession = !writerMode
+    // the Working Session snapshot. Sad Mac "Start without restoring windows"
+    // sets a one-shot skip so a hung clearWorkingSession cannot leave restore on.
+    const skipWorkingSession = consumeBootSkipSessionFlag();
+    const resumedWorkingSession = !writerMode && !skipWorkingSession
       && await startupTaskWithTimeout(restoreWorkingSession(), "restoreWorkingSession", 3500);
     // The saved scene has now had its chance to come back (Writer Mode skips
     // restore, and that counts as its chance), so the desk may write scenes
@@ -397,7 +478,7 @@ async function boot() {
     await runBootSequence();
     markBootProgress("boot sequence done");
     if (bootDebugTheme?.releaseReady === false && developmentPreviewAllowed) await window.AISystem6Theme.previewExperimentalTheme(bootDebugTheme.id);
-    await window.AISystem6Theme?.whenReady();
+    await startupTaskWithTimeout(window.AISystem6Theme?.whenReady?.(), "appearance", 8000);
     markBootProgress("appearance");
     // The appearance is final only now (boot passes through the release theme
     // on its way to a preview), so this is where a restored miniwindow learns

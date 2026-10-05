@@ -50,6 +50,38 @@ function balloonHelpKeyFor(target) {
     : target.dataset.balloonHelp || "";
 }
 
+const balloonHelpCensusNoOpReasons = {
+  "open-about-multifinder": "balloon_disabled_menu_multifinder",
+  "open-heading-navigator": "balloon_disabled_menu_headings",
+  "show-writing-flow": "balloon_disabled_menu_writing_flow_open",
+  "close-writing-flow": "balloon_disabled_menu_writing_flow_closed",
+  "toggle-writing-flow-shade": "balloon_disabled_menu_writing_flow_closed",
+  "hand-in-rebuild-flow": "balloon_disabled_rebuild_checks",
+  "rebuild-merge-section": "balloon_disabled_rebuild_merge",
+  "rootline-recenter": "balloon_disabled_menu_host_window",
+  "rootline-sound": "balloon_disabled_menu_host_window",
+  "rootline-speed": "balloon_disabled_menu_host_window",
+  "clear-notifications": "balloon_notifications_empty_clear",
+  "advance-outline-to-drafts": "balloon_outline_needs_content",
+  "advance-drafts-to-manuscript": "balloon_draft_needs_content",
+};
+
+function runtimeUnavailableReasonKey(action = "") {
+  const name = String(action || "");
+  if (!name) return "";
+  const runtime = typeof window !== "undefined" ? window.AISystem6Runtime?.commandAvailability?.(name) : null;
+  if (runtime && runtime.available === false && runtime.reason && runtime.reason !== "unregistered") {
+    return runtime.reason;
+  }
+  return "";
+}
+
+function actionUnavailableReasonKey(action = "") {
+  const name = String(action || "");
+  if (!name) return "";
+  return runtimeUnavailableReasonKey(name) || disabledMenuBalloonHelpKey({ dataset: { action: name } });
+}
+
 function disabledMenuBalloonHelpKey(button) {
   const action = button?.dataset.action || button?.dataset.submenuAction || "";
   // A lazy module that failed to load names itself, instead of falling
@@ -60,6 +92,12 @@ function disabledMenuBalloonHelpKey(button) {
   if (typeof failedLazyCommandActions !== "undefined" && failedLazyCommandActions.has(action)) {
     return failedLazyCommandActions.get(action);
   }
+  // Host-window games and creative labs register their own reason; prefer
+  // that over the generic context line so a grey joyride/cmf/rootline row
+  // does not look like a broken primary.
+  const runtimeReason = runtimeUnavailableReasonKey(action);
+  if (runtimeReason) return runtimeReason;
+  if (balloonHelpCensusNoOpReasons[action]) return balloonHelpCensusNoOpReasons[action];
   // "Why is this unavailable?" is Balloon Help's job, and with no model
   // connected it is the answer for every model-backed command at once.
   if (typeof actionNeedsModel === "function"

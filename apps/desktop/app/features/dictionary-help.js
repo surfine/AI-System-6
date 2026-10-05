@@ -755,6 +755,14 @@ function syncDictionaryEntryButtons() {
   const term = normalizeDictionaryTerm(dictionaryEntryTerm || dictionaryQueryInput?.value || "");
   parts.keep.disabled = readOnly || !term || !parts.definition.value.trim() || !getActiveProject();
   parts.remove.disabled = readOnly || !selectedDictionaryTermId;
+  parts.keep.dataset.balloonHelpDisabled = !getActiveProject()
+    ? "balloon_disabled_menu_project"
+    : !term
+      ? "balloon_dictionary_unlooked"
+      : "balloon_dictionary_needs_definition";
+  parts.remove.dataset.balloonHelpDisabled = selectedDictionaryTermId
+    ? "balloon_disabled_menu_context"
+    : "balloon_dictionary_unlooked";
 }
 
 function fillDictionaryEntry(term, saved = null) {

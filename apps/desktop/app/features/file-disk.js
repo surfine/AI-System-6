@@ -147,6 +147,16 @@ function renderMountedTextDisk() {
       `;
       button.title = mountedFileDiagnosticTitle(name, report);
       button.addEventListener("click", (event) => {
+        if (
+          !event.metaKey && !event.ctrlKey && !event.shiftKey
+          && selectedMountedFile === name
+          && selectedMountedFileNames.has(name)
+          && typeof window.matchMedia === "function"
+          && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+        ) {
+          openMountedTextFile(name);
+          return;
+        }
         if (event.metaKey || event.ctrlKey) {
           if (selectedMountedFileNames.has(name) && selectedMountedFileNames.size > 1) selectedMountedFileNames.delete(name);
           else selectedMountedFileNames.add(name);
@@ -187,6 +197,7 @@ function renderMountedTextDisk() {
   } else {
     ragStatusEl.textContent = t("no_text_disk_mounted");
   }
+  syncTextDiskActionControls();
 
   if (!getWindow("projects")?.classList.contains("is-hidden")) {
     renderProjectDisks();
@@ -197,6 +208,51 @@ function renderMountedTextDisk() {
   updateProjectLabels();
   updateDocMapEntryButtons();
   updateMenuState();
+}
+
+function syncTextDiskActionControls() {
+  const go = document.querySelector("#text-disk-more-go");
+  const select = document.querySelector("#text-disk-more");
+  if (!go || !select) return;
+  const mountedChunkCount = typeof getMountedTextDiskChunks === "function"
+    ? getMountedTextDiskChunks().length
+    : 0;
+  const mounted = !!isProjectMounted
+    && mountedChunkCount > 0
+    && mountedTextDisk.projectId === activeProjectId;
+  const needsMount = select.value === "write" || select.value === "eject";
+  const blocked = needsMount && !mounted;
+  go.disabled = blocked;
+  go.dataset.balloonHelpDisabled = blocked
+    ? "balloon_text_disk_mount_first"
+    : "balloon_text_disk_select_first";
+  go.classList.toggle("danger", !blocked && select.value === "eject");
+  go.classList.toggle("default", true);
+}
+
+function runTextDiskMoreAction() {
+  const select = document.querySelector("#text-disk-more");
+  const value = select?.value || "insert";
+  const mountedChunkCount = typeof getMountedTextDiskChunks === "function"
+    ? getMountedTextDiskChunks().length
+    : 0;
+  const mounted = !!isProjectMounted
+    && mountedChunkCount > 0
+    && mountedTextDisk.projectId === activeProjectId;
+  if ((value === "write" || value === "eject") && !mounted) {
+    setStatus(t("balloon_text_disk_mount_first"));
+    return;
+  }
+  if (value === "write") {
+    addMountedTextDiskToProject();
+    return;
+  }
+  if (value === "eject") {
+    ejectTextDisk();
+    return;
+  }
+  if (typeof insertFileFloppyFromWindow === "function") insertFileFloppyFromWindow();
+  else if (typeof openWindow === "function") openWindow("rag");
 }
 
 function ejectTextDisk({ silent = false } = {}) {

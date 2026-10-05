@@ -1575,18 +1575,37 @@ body[data-theme="classic"] .one-more-tune-window {
    and the Next button 34px, all of them missable by a thumb. The pane scrolls
    to pay for the extra height; nothing is clamped to make it fit. */
 @media (hover: none) and (pointer: coarse) {
-  .one-more-tune-window .choice,
-.one-more-tune-window .rating,
-.one-more-tune-window .toolbar .btn,
-.one-more-tune-window .toolbar .linkbutton,
-.one-more-tune-window .toolbar .textbtn,
-.one-more-tune-window .one-more-tune-tabs .system-tab {
+  .one-more-tune-window .one-more-tune-tabs .system-tab {
     min-height: 44px;
   }
   /* These labels are 24-39px wide on their own; the padding is what makes the
      target the size of the thumb rather than the size of the word. */
   .one-more-tune-window .one-more-tune-tabs .system-tab {
     padding-inline: 8px;
+  }
+  .one-more-tune-window .choice,
+  .one-more-tune-window .rating,
+  .one-more-tune-window .btn,
+  .one-more-tune-window .btn.smallbtn,
+  .one-more-tune-window .toolbar .btn,
+  .one-more-tune-window .toolbar .linkbutton,
+  .one-more-tune-window .toolbar .textbtn,
+  .one-more-tune-window .textbtn,
+  .one-more-tune-window .omt-next,
+  .one-more-tune-window .omt-2nd,
+  .one-more-tune-window .omt-opt {
+    min-height: 44px;
+  }
+  /* Skip / plain links outside a padded toolbar still need a thumb-sized hit. */
+  .one-more-tune-window .textbtn {
+    min-height: 44px;
+    padding-block: 12px;
+  }
+  .one-more-tune-window .one-more-tune-line-source a {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
   }
 }
 
@@ -1774,8 +1793,11 @@ body[data-theme="classic"] .one-more-tune-window {
 .one-more-tune-window :is(.omt-next,.omt-2nd):active { transform:scale(.97) }
 .one-more-tune-window .omt-room[data-omt-enter] .omt-act { animation:omt-rise 260ms 380ms var(--omt-ease-out) both }
 
-/* Where the music came from, and the two doors. */
+/* Where the music came from, and the two doors.
+   The title is the reveal's own explanation line — song and player named in
+   the liner notes, not only on the card's back and not only for AT. */
 .one-more-tune-window .omt-notes { display:grid;gap:3px }
+.one-more-tune-window .omt-title { margin:0;font-size:18px;font-weight:700;line-height:1.25;letter-spacing:-.015em;text-wrap:balance }
 .one-more-tune-window .omt-meta { display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin:0;font-size:13px;font-weight:500;line-height:1.4;color:var(--omt-room-ink-3) }
 .one-more-tune-window .omt-links { display:flex;gap:14px;margin-left:auto }
 .one-more-tune-window .omt-links :is(a,.omt-link) { padding:0;border:0;background:none;color:var(--omt-room-ink);font-size:14px;font-weight:600;line-height:1.4;text-decoration:underline;text-decoration-color:var(--omt-room-hair);text-decoration-thickness:1px;text-underline-offset:4px }
@@ -1832,6 +1854,7 @@ body[data-theme="classic"] .one-more-tune-window {
   /* A short room keeps the answer and the miss and lets the other two go. */
   .one-more-tune-window .omt-opt[data-state="idle"] { display:none }
   .one-more-tune-window .omt-qtext { font-size:19px }
+  .one-more-tune-window .omt-title { font-size:16px }
   .one-more-tune-window .omt-opt { min-height:64px;font-size:15.5px }
   .one-more-tune-window .omt-step-title { font-size:21px }
   .one-more-tune-window .omt-step-title br,
@@ -1884,9 +1907,19 @@ body[data-theme="classic"] .one-more-tune-window {
   .one-more-tune-window .omt-spread { --omt-dial-h:52px }
 }
 /* The two links are words, not buttons, but a finger still needs 44pt to land
-   on one: the hit area grows and the line does not move. */
+   on one. Give the link row a real 44px box — negative padding/margins used to
+   inflate scrollHeight and make the liner notes look truncated to the
+   standalone geometry gate. */
 @media (hover:none) and (pointer:coarse) {
-  .one-more-tune-window .omt-links :is(a,.omt-link) { padding-block:12px;margin-block:-12px }
+  .one-more-tune-window .omt-links {
+    align-items: center;
+    min-height: 44px;
+  }
+  .one-more-tune-window .omt-links :is(a,.omt-link) {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
 }
 @media (hover:hover) and (pointer:fine) {
   .one-more-tune-window button.omt-opt:not([data-state]):hover { background:var(--omt-key-press) }

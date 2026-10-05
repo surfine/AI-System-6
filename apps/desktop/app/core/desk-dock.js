@@ -218,6 +218,8 @@
     const bar = document.createElement("span");
     bar.className = "desk-dock-miniature-bar";
     bar.textContent = applicationWindowTitle(win) || "";
+    figure.dataset.window = win.dataset.window || "";
+    figure.dataset.app = appId || win.dataset.app || "";
     const page = document.createElement("span");
     page.className = "desk-dock-miniature-page";
     const field = win.querySelector("textarea, [contenteditable='true']");

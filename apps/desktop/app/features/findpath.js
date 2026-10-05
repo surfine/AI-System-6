@@ -204,7 +204,16 @@ function wireFindPathResults() {
   findPathResultsEl.addEventListener("click", (event) => {
     if (event.target.closest("[data-find-path-translate]")) return;
     const index = rowIndex(event);
-    if (index >= 0) selectFindPathResult(index);
+    if (index < 0) return;
+    if (
+      index === selectedFindPathIndex
+      && typeof window.matchMedia === "function"
+      && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+    ) {
+      openSelectedFindPathInReader();
+      return;
+    }
+    selectFindPathResult(index);
   });
   findPathResultsEl.addEventListener("dblclick", (event) => {
     const index = rowIndex(event);
@@ -267,6 +276,7 @@ function renderWebAnswerSummary(deepSeekProvider) {
   body.textContent = answer;
   const note = document.createElement("div");
   note.className = "hint";
+  note.setAttribute("data-evidence", "0");
   note.textContent = t("search_answer_note");
   findPathSummaryEl.append(label, body, note);
   findPathSummaryEl.scrollTop = 0;
@@ -807,6 +817,14 @@ function renderFindFileResults() {
       <small>${escapeHtml(modified)}</small>
     `;
     button.addEventListener("click", () => {
+      if (
+        selectedFindFileIndex === index
+        && typeof window.matchMedia === "function"
+        && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+      ) {
+        openFindFileResult(result);
+        return;
+      }
       selectedFindFileIndex = index;
       renderFindFileResults();
       updateMenuState();

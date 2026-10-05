@@ -611,19 +611,21 @@ function testPayload() {
 const config = read("app/core/config.js");
 test.assertMatches(
   config,
-  /ensureRootlineModule = createLazyModuleLoader\("AISystem6RootlineLoaded", \[\s*"app\/core\/pot-world\.js",\s*"app\/features\/bonsai-city-sim\.js",\s*"app\/features\/rootline-pot\.js",\s*"app\/core\/application-shell\.js",\s*"app\/features\/rootline-core\.js",\s*"app\/features\/rootline-view\.js",\s*"app\/features\/rootline\.js",/,
-  "the loader brings the world core, the Bonsai simulation and the pot converter, the core, then the map, then the shell whose flag proves they all arrived",
+  /ensureRootlineModule = createLazyModuleLoader\("AISystem6RootlineLoaded", \[\s*"app\/core\/pot-world\.js",\s*"app\/core\/wasm-host-contract\.js",\s*"app\/features\/bonsai-city-sim\.js",\s*"app\/features\/rootline-pot\.js",\s*"app\/core\/application-shell\.js",\s*"app\/features\/rootline-core\.js",\s*"app\/features\/rootline-view\.js",\s*"app\/features\/rootline\.js",/,
+  "the loader brings the world core, the host contract, the Bonsai simulation and the pot converter, the core, then the map, then the shell whose flag proves they all arrived",
 );
 test.assertMatches(
   config,
-  /ensureJoyrideModule = createLazyModuleLoader\("AISystem6JoyrideLoaded", \[\s*"app\/core\/pot-world\.js",\s*"app\/core\/application-shell\.js",\s*"app\/features\/bonsai-translations\.js",/,
-  "Joyride's loader brings Bonsai City's translations right after the application shell",
+  /ensureJoyrideModule = createLazyModuleLoader\("AISystem6JoyrideLoaded", \[\s*"app\/core\/pot-world\.js",\s*"app\/core\/application-shell\.js",\s*"app\/core\/wasm-host-contract\.js",\s*"app\/features\/bonsai-translations\.js",/,
+  "Joyride's loader brings the host contract and Bonsai City's translations right after the application shell",
 );
 test.assertIncludes(read("tooling/runtime-manifest.mjs"), '"app/features/rootline-pot.js",', "the pot converter is a lazy runtime path");
 test.assertIncludes(read("app/core/app-admissions.js"), 'repaint: "renderRootline"', "a language switch repaints the game's bars and panels");
 test.assertIncludes(read("app/features/rootline.js"), "window.renderRootline =", "the repaint hook the admission row names exists");
 
 const shell = read("app/features/rootline.js");
+test.assertIncludes(shell, "AISystem6WasmHostContract", "Rootline applies the shared host honesty contract");
+test.assertIncludes(shell, "wasm: 0", "Rootline is an honest non-Wasm shell");
 // Space is the pause key. A panel that hands focus to its first button turns
 // "pause" at the end of a week into "take the first reward", and at the end of
 // a round into "restart the city", wiping the result before anyone reads it.

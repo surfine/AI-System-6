@@ -672,10 +672,18 @@ async function prepareFinderModeForApp(appId) {
 
 function updateQuickDraftFocusChrome() {
   const quickDraft = getWindow("quickDraft");
+  const lightroom = getWindow("lightroom");
   const visible = !isMultiFinderMode()
-    && quickDraft
-    && !quickDraft.classList.contains("is-hidden")
-    && !quickDraft.classList.contains("is-app-hidden");
+    && (
+      (quickDraft
+        && !quickDraft.classList.contains("is-hidden")
+        && !quickDraft.classList.contains("is-app-hidden"))
+      || (lightroom
+        && !lightroom.classList.contains("is-hidden")
+        && !lightroom.classList.contains("is-app-hidden"))
+    );
+  // quick-draft-focus also quiets .icon-column (see 60-responsive.css), so
+  // Quick Draft / 文字亮室 deep work shares the writing-focus desk calm.
   document.body.classList.toggle("quick-draft-focus", !!visible);
 }
 
@@ -1122,6 +1130,7 @@ function focusWindow(win, reveal=false) {
     // window (toggleCollapsed) takes the mark off.
     windowsForApp(activeAppId).forEach((appWin) => appWin.classList.remove("is-app-hidden"));
   }
+  syncReviewDeskFocusQuiet(win);
 
   if (win.dataset.window === "about") {
     win.style.zIndex = systemModalZ;
@@ -1158,6 +1167,15 @@ function focusWindow(win, reveal=false) {
   updateMenuState();
   renderMultiFinderMenu();
   scheduleWorkingSessionSave?.();
+}
+
+// Harvest: when Review Desk is the key window, quiet desktop icons the same
+// way writing Focus / 文字亮室 deep mode do — without inventing a new Focus menu.
+function syncReviewDeskFocusQuiet(win = document.querySelector(".window[data-window].is-active")) {
+  const reviewFront = win?.dataset?.window === "reviewDesk"
+    && !win.classList.contains("is-hidden")
+    && !win.classList.contains("is-collapsed");
+  document.body.classList.toggle("is-review-focus", !!reviewFront);
 }
 
 // A phone is a device class, not a width, and both halves of this query are
@@ -2754,7 +2772,13 @@ function getActionAvailability() {
     "structure-outline": routeWinName === "outline",
     "expand-outline": routeWinName === "outline",
     "reduce-outline": routeWinName === "outline",
-    "advance-outline-to-drafts": routeWinName === "outline",
+    // Empty Outline stays grey with a reason (R16) instead of a live advance
+    // that only prints outline_needs_content after the click.
+    "advance-outline-to-drafts": routeWinName === "outline"
+      && (!!routeHasProject)
+      && (typeof getMeaningfulOutlineSections === "function"
+        ? getMeaningfulOutlineSections(getProjectOutlineSections?.(getActiveProject?.() || {}) || []).length > 0
+        : !!(outlineContentEl?.value || "").trim()),
     "previous-section-draft": routeWinName === "sectionDrafts" && typeof canNavigateSectionDraft === "function" && canNavigateSectionDraft(-1),
     "next-section-draft": routeWinName === "sectionDrafts" && typeof canNavigateSectionDraft === "function" && canNavigateSectionDraft(1),
     "draft-current-section": routeWinName === "sectionDrafts",
@@ -2766,12 +2790,21 @@ function getActionAvailability() {
     "eli5-review-section": routeWinName === "sectionDrafts" && (typeof writingStudioExplanationLens === "function"
       ? writingStudioExplanationLens().enabled === true
       : false),
+    // A new reader can ask for one action per sentence without turning on
+    // the one-pass listening lens. The command edits the section on screen.
+    "one-sentence-rewrite-section": routeWinName === "sectionDrafts",
+    "one-sentence-check-section": routeWinName === "sectionDrafts",
     "open-find-change": true,
     "find-change-next": true,
     "find-change-current": true,
     "find-change-all": true,
     "advance-writing-route": typeof currentWritingRouteStop === "function" && !!currentWritingRouteStop(),
-    "advance-drafts-to-manuscript": routeWinName === "sectionDrafts",
+    "advance-drafts-to-manuscript": routeWinName === "sectionDrafts"
+      && (!!routeHasProject)
+      && (typeof getMeaningfulOutlineSections === "function"
+        ? getMeaningfulOutlineSections(getProjectOutlineSections?.(getActiveProject?.() || {}) || []).length > 0
+        : true)
+      && !!(String(typeof draftBodyInput !== "undefined" && draftBodyInput?.value || "").trim()),
     "return-document-to-section-drafts": routeWinName === "sectionDrafts"
       && typeof manuscriptPhase === "function" && manuscriptPhase() === "manuscript",
     "advance-manuscript-to-review": ["teachText", "reviewDesk"].includes(routeWinName) && routeHasProject && !!teachTextBodyInput?.value.trim()
@@ -2850,6 +2883,11 @@ function getActionAvailability() {
     "open-system-concepts-docmap": true,
     "open-system-concepts-clio-stage": true,
     "open-about-multifinder": isMultiFinderMode(),
+    "show-writing-flow": Boolean(writingToolsPanelEl?.classList.contains("is-closed")),
+    "close-writing-flow": Boolean(writingToolsPanelEl && !writingToolsPanelEl.classList.contains("is-closed")),
+    "toggle-writing-flow-shade": Boolean(writingToolsPanelEl && !writingToolsPanelEl.classList.contains("is-closed")),
+    "hand-in-rebuild-flow": winName === "rebuildFlow" && window.AISystem6RebuildFlow?.canHandIn?.() === true,
+    "rebuild-merge-section": winName === "rebuildFlow" && window.AISystem6RebuildFlow?.canMerge?.() === true,
     "open-applications": true,
     // Reading every project at once needs projects to read. A desk with none
     // would open a window that can only say so.
@@ -2908,6 +2946,9 @@ function getActionAvailability() {
     "open-context-panel": true,
     "focus-sideask-source": sideAskEnabled && !isMultiFinderMode(),
     "open-model-meter": performanceMeterInput.checked && !!lastModelMetrics,
+    // System Messages Clear is secondary and must not look clickable when the
+    // list is empty — quiet feedback, not a pretend primary.
+    "clear-notifications": Array.isArray(systemNotifications) && systemNotifications.length > 0,
     // The Dictation Pad names the Note Pad as its destination when no field is
     // open, so it has no state to refuse on.
     "open-dictation": true,
@@ -3313,6 +3354,9 @@ async function openWindowInner(name, options = {}, nestedOpen = false) {
     skipLiquidCoverEntrypoint = false,
     skipQuickDraftEntrypoint = false,
     skipSideAsk = false,
+    // Journey shell exclusivity (Hold→notify→resume→bell／todo): off during
+    // Working Session restore so a saved multi-DA desk can come back whole.
+    skipJourneyExclusive = false,
   } = options;
 
   if (name === "styleSheet" || name === "claimCheck") {
@@ -3352,6 +3396,14 @@ async function openWindowInner(name, options = {}, nestedOpen = false) {
   // startup disk while preserving the ordinary window-manager contract.
   if (!getWindow(name) && lazyWindowRecord(name)) await loadLazyWindowModule(name);
   const win = getWindow(name);
+  // ADHD journey shell: summoning Hold / notify / bell / todo closes the other
+  // journey accessories so the chain does not stack-open (harvest O / v228).
+  if (
+    !skipJourneyExclusive
+    && window.AISystem6JourneyGates?.isJourneyShellWindow?.(name)
+  ) {
+    await window.AISystem6JourneyGates.closeSiblingJourneyAccessories(name);
+  }
   // A lazy module injects its own window long after the boot loop bound the
   // title-bar controls, so guarantee the chrome here rather than trusting each
   // module to remember: a window whose close box does nothing is not a window.
@@ -3547,6 +3599,10 @@ async function openWindowInner(name, options = {}, nestedOpen = false) {
     modalScrim.classList.remove("is-hidden");
   }
   syncMobileAppForeground();
+  if (window.AISystem6JourneyGates?.isJourneyShellWindow?.(name)) {
+    window.AISystem6JourneyGates.markShellWindow?.(win, name);
+  }
+  window.AISystem6JourneyGates?.syncDeskProbe?.();
   updateMenuState();
   // A lazy application registers its lifecycle while attaching above, after the
   // class flips the observer watches. Reconcile once here so a restored window

@@ -519,6 +519,79 @@ test.assertIncludes(host, 'data.event === "shutdown-ack"', "Quit recognizes an e
 test.assertIncludes(host, "DOOM_SHUTDOWN_TIMEOUT_MS", "Quit has a bounded fallback");
 test.assertIncludes(host, "renderDoomRetry", "load failure has a visible retry path");
 test.assertIncludes(host, "DOOM_ENGINE_READY_TIMEOUT_MS", "a hung iframe becomes a visible timeout");
+test.assertIncludes(read("app/core/config.js"), '"app/core/wasm-host-contract.js"', "DOOM loader pulls the shared host contract");
+test.assertIncludes(host, "AISystem6WasmHostContract", "the host applies the shared honesty contract");
+test.assertIncludes(host, "wasm: 1", "DOOM claims a real Wasm host");
+test.assertIncludes(host, 'syncHostContract(doomState.statusKey === "doom_status_crashed" ? "crash" : "fail")',
+  "crash/timeout Retry never advertise data-ready success");
+// Harvest R18: missing binary / needs-data / Retry note / fail≠ready copy.
+test.assertIncludes(host, "probeDoomBinary", "DOOM probes chocolate-doom.wasm before attaching");
+test.assertIncludes(host, "doom_status_missing_binary", "missing binary has its own honest status key");
+test.assertIncludes(host, "doom-host-note", "Retry pane shows the fail/timeout/missing reason, not a bare button");
+test.assertIncludes(host, 'data.event === "needs-data"', "missing IWAD posts an honest needs-data receipt");
+test.assertIncludes(host, 'setDoomStatus("doom_status_needs_data")', "missing IWAD updates the status line instead of faking play-ready");
+test.assertIncludes(shell, 'setState("needs-data")', "the shell enters needs-data when no IWAD is catalogued");
+{
+  const contractSource = read("app/core/wasm-host-contract.js");
+  const attrs = new Map();
+  const fakeWin = {
+    setAttribute(name, value) { attrs.set(String(name), String(value)); },
+    getAttribute(name) { return attrs.has(String(name)) ? attrs.get(String(name)) : null; },
+  };
+  const contractContext = vm.createContext({ window: {} });
+  vm.runInContext(contractSource, contractContext);
+  const contract = contractContext.window.AISystem6WasmHostContract;
+  for (const failHost of ["fail", "crash"]) {
+    attrs.clear();
+    contract.apply(fakeWin, { kind: "doom", host: failHost, wasm: 1, binary: 1, fail: true, crash: true });
+    test.assert(attrs.get("data-ready") === "0", `R18 ${failHost} never advertises data-ready success`);
+  }
+  attrs.clear();
+  contract.apply(fakeWin, { kind: "doom", host: "fail", wasm: 1, binary: 0, fail: true, crash: true });
+  test.assert(attrs.get("data-binary") === "0", "missing binary records data-binary=0");
+  test.assert(attrs.get("data-ready") === "0", "missing binary never looks ready");
+}
+// §7 acceptance (wasm-engine-auth-brief v229): executable host contract —
+// engine-present trees advertise data-wasm=1; fail/crash never set data-ready=1;
+// missing IWAD stays an honest needs-data chooser, not a fake ready-to-play claim.
+{
+  const contractSource = read("app/core/wasm-host-contract.js");
+  const attrs = new Map();
+  const fakeWin = {
+    setAttribute(name, value) { attrs.set(String(name), String(value)); },
+    getAttribute(name) { return attrs.has(String(name)) ? attrs.get(String(name)) : null; },
+  };
+  const contractContext = vm.createContext({ window: {} });
+  vm.runInContext(contractSource, contractContext);
+  const contract = contractContext.window.AISystem6WasmHostContract;
+  test.assert(!!contract?.apply, "the shared Wasm host contract exports apply()");
+
+  function applied(options) {
+    attrs.clear();
+    contract.apply(fakeWin, options);
+    return Object.fromEntries(attrs);
+  }
+
+  if (enginePresent) {
+    const readyAttrs = applied({ kind: "doom", host: "ready", wasm: 1, binary: 1, fail: true, crash: true });
+    test.assert(readyAttrs["data-contract"] === "1", "engine-present DOOM applies data-contract=1");
+    test.assert(readyAttrs["data-wasm"] === "1", "engine-present DOOM advertises data-wasm=1");
+    test.assert(readyAttrs["data-binary"] === "1", "engine-present DOOM claims data-binary=1 while loading/ready");
+    test.assert(readyAttrs["data-ready"] === "1", "only host ready may set data-ready=1");
+    test.assert(readyAttrs["data-adhd"] === "no-streak", "DOOM keeps ADHD no-streak chrome off failure");
+  }
+
+  for (const failHost of ["fail", "crash"]) {
+    const failAttrs = applied({ kind: "doom", host: failHost, wasm: 1, binary: 1, fail: true, crash: true });
+    test.assert(failAttrs["data-host"] === failHost, `${failHost} records data-host=${failHost}`);
+    test.assert(failAttrs["data-ready"] === "0", `${failHost} never advertises data-ready success`);
+    test.assert(failAttrs["data-wasm"] === "1", `${failHost} still records the Wasm host intent`);
+  }
+}
+
+test.assertIncludes(host, 'data.event === "needs-data"', "missing IWAD posts an honest needs-data receipt");
+test.assertIncludes(host, 'setDoomStatus("doom_status_needs_data")', "missing IWAD updates the status line instead of faking play-ready");
+test.assertIncludes(shell, 'setState("needs-data")', "the shell enters needs-data when no IWAD is catalogued");
 test.assertIncludes(shell, 'cwrap("AI_DoomWebReleaseAll"', "zeroing reaches the native bridge");
 test.assertIncludes(shell, 'cwrap("AI_DoomWebPause"', "backgrounding reaches the native main-loop pause");
 test.assertIncludes(shell, 'cwrap("AI_DoomWebResume"', "foregrounding resumes only an existing game loop");
@@ -599,6 +672,7 @@ for (const key of [
   "doom_status_save_failed",
   "doom_status_crashed",
   "doom_status_timeout",
+  "doom_status_missing_binary",
   "doom_retry",
 ]) {
   test.assertIncludes(en, `${key}:`, `English copy includes ${key}`);

@@ -1488,21 +1488,54 @@ function selectedSettingsModule() {
   return stripModuleRegistry.has(stripSelectedModuleId) ? stripSelectedModuleId : "";
 }
 
+function syncStripSettingsButtonReason(button, unavailable, reasonKey) {
+  if (!button) return;
+  if (unavailable) {
+    button.dataset.balloonHelpDisabled = reasonKey;
+    button.dataset.balloonHelp = reasonKey;
+  } else if (button.dataset.balloonHelpDisabled === reasonKey) {
+    delete button.dataset.balloonHelpDisabled;
+    delete button.dataset.balloonHelp;
+  }
+}
+
 function updateModuleSettingsButtons() {
   const selected = selectedSettingsModule();
+  const selectReason = "balloon_control_strip_select_module";
   if (!selected) {
     [controlStripMoveUpButton, controlStripMoveDownButton, controlStripEnableButton, controlStripDisableButton]
-      .forEach((button) => { if (button) button.disabled = true; });
+      .forEach((button) => {
+        if (!button) return;
+        button.disabled = true;
+        button.classList.remove("default");
+        syncStripSettingsButtonReason(button, true, selectReason);
+      });
     return;
   }
   const prefs = stripPrefs();
   const ordered = (prefs.moduleOrder || []).filter((id) => stripModuleRegistry.has(id));
   const index = ordered.indexOf(selected);
   const disabled = new Set(prefs.disabledModules || []);
+  const canEnable = disabled.has(selected);
+  const canDisable = !disabled.has(selected);
+  // Module already chosen: clear the "select first" reason so a top-of-list
+  // Move Up does not pretend the selection is missing.
+  [controlStripMoveUpButton, controlStripMoveDownButton, controlStripEnableButton, controlStripDisableButton]
+    .forEach((button) => syncStripSettingsButtonReason(button, false, selectReason));
   if (controlStripMoveUpButton) controlStripMoveUpButton.disabled = index <= 0;
-  if (controlStripMoveDownButton) controlStripMoveDownButton.disabled = index < 0 || index >= ordered.length - 1;
-  if (controlStripEnableButton) controlStripEnableButton.disabled = !disabled.has(selected);
-  if (controlStripDisableButton) controlStripDisableButton.disabled = disabled.has(selected);
+  if (controlStripMoveDownButton) {
+    controlStripMoveDownButton.disabled = index < 0 || index >= ordered.length - 1;
+  }
+  if (controlStripEnableButton) {
+    controlStripEnableButton.disabled = !canEnable;
+    // One primary path: Enable is the default only while the selected module
+    // is off. Disable stays a secondary verb beside it.
+    controlStripEnableButton.classList.toggle("default", canEnable);
+  }
+  if (controlStripDisableButton) {
+    controlStripDisableButton.disabled = !canDisable;
+    controlStripDisableButton.classList.remove("default");
+  }
 }
 
 function moveModuleInSettings(direction) {

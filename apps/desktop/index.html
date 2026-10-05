@@ -11,18 +11,18 @@
     <!-- Let the system choose status glyph contrast. -->
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20260929.1" />
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20260929.1" />
-    <link rel="manifest" href="assets/app-icon/manifest.json?v=20260929.1" />
-    <script src="app/core/theme-registry.js?v=20260929.1"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20260929.1" />
+    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20261005.3" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20261005.3" />
+    <link rel="manifest" href="assets/app-icon/manifest.json?v=20261005.3" />
+    <script src="app/core/theme-registry.js?v=20261005.3"></script>
+    <link rel="stylesheet" href="styles.bundle.css?v=20261005.3" />
     <!-- Preload the application while parsing the desktop. -->
-    <link rel="preload" as="script" href="app.bundle.js?v=20260929.1" />
+    <link rel="preload" as="script" href="app.bundle.js?v=20261005.3" />
   </head>
   <body class="is-booting">
-    <script src="app/core/theme-body-init.js?v=20260929.1"></script>
+    <script src="app/core/theme-body-init.js?v=20261005.3"></script>
     <!-- Register crash recovery before the application bundle. -->
-    <script src="app/core/boot-safety-net.js?v=20260929.1"></script>
+    <script src="app/core/boot-safety-net.js?v=20261005.3"></script>
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
         <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
@@ -503,6 +503,7 @@
            reversible, so nobody must decide a conversation is worth keeping
            before starting one. -->
           <button class="btn mini-btn clio-keep-temporary is-hidden" id="clio-keep-temporary" type="button" data-action="save-conversation" data-i18n="save_as_conversation_file">Save as Conversation File…</button>
+          <button class="btn mini-btn clio-connect-ai" id="clio-connect-ai" type="button" data-action="open-clio-model-settings" hidden data-i18n="clio_connect_ai">Connect AI…</button>
         </div>
         <div class="messages-stage">
           <div id="messages" class="window-pane messages window-frame-scroller" aria-live="polite" aria-busy="false">
@@ -589,7 +590,7 @@
               <span class="visually-hidden" data-i18n="clio_web_search_switch">Web search</span>
             </button>
             <button class="clio-entry-loadout" id="clio-entry-loadout" type="button" data-action="open-context-panel" aria-label="Memory Inspector" data-i18n-aria-label="context_panel" disabled></button>
-            <span class="composer-key-hint" data-i18n="clio_composer_key_hint">Enter to send · Shift+Enter for a new line</span>
+            <span class="composer-key-hint" data-i18n="clio_composer_key_hint">Shift+Enter for a new line</span>
             <div class="button-row composer-hidden-actions">
               <button id="assistant-context-space" type="button" data-action="open-context-panel" data-i18n="clio_context_space_empty" hidden>Context available --</button>
               <button class="btn" type="button" id="clip-selection" data-i18n="clip" hidden>Clip</button>
@@ -624,7 +625,7 @@
 
           <section class="control-section control-model-section" id="control-panel-local" role="tabpanel" aria-labelledby="control-tab-local" data-control-panel="local" hidden>
             <h3 data-i18n="control_connection">Local Model</h3>
-            <button class="btn default control-wide-button" type="button" id="detect-local-models" data-i18n="detect_local_models">Find LM Studio or Ollama</button>
+            <button class="btn control-wide-button" type="button" id="detect-local-models" data-i18n="detect_local_models">Find LM Studio or Ollama</button>
             <p class="hint control-status" id="local-detection-status" data-i18n="local_detection_ready">Checks this device for a running local model.</p>
             <details class="control-diagnostics" id="local-manual-connection">
               <summary data-i18n="advanced_settings">Advanced Settings…</summary>
@@ -645,7 +646,7 @@
               </label>
             </div>
 
-            <button class="btn default control-wide-button" type="button" id="connect-local-model" data-i18n="open_and_connect_lm_studio">Open and Connect to LM Studio</button>
+            <button class="btn default control-wide-button" type="button" id="connect-local-model" data-i18n="open_and_connect_lm_studio">Open and Connect to LM Studio</button><!-- local default: Connect until a model is loaded -->
             <p class="hint control-status" id="local-connection-status" data-i18n="local_connection_waiting">Start the LM Studio server, enable CORS, then connect.</p>
 
             <details class="control-diagnostics" id="local-connection-details">
@@ -703,7 +704,7 @@
                 </div>
               </label>
 
-              <button class="btn default control-wide-button" type="button" id="load-model" data-i18n="load_model">Load Model</button>
+              <button class="btn control-wide-button" type="button" id="load-model" data-i18n="load_model">Load Model</button>
               <p class="hint control-status" id="load-model-status" data-i18n="load_model_hint">Choose a model and context length, then load it explicitly.</p>
 
               <details class="control-diagnostics" id="local-advanced-details">
@@ -762,14 +763,15 @@
               <span id="cloud-balance" class="cloud-balance"></span>
             </div>
 
-            <button class="btn default control-wide-button" type="button" id="cloud-check-status" data-i18n="cloud_check_status">Check Status</button>
+            <button class="btn control-wide-button" type="button" id="cloud-check-status" data-i18n="cloud_check_status">Check Status</button>
             <p class="hint control-status" id="cloud-status-hint" data-i18n="cloud_status_hint">The key is kept for this tab session only; project files and exports never include it.</p>
             </details>
             <button class="btn control-wide-button" type="button" id="reset-ai-connection" data-i18n="reset_ai_connection">Reset AI Connection</button>
           </section>
           <div id="control-panel-general" role="tabpanel" aria-labelledby="control-tab-general" data-control-panel="general" hidden>
-          <section class="control-section">
+          <section class="control-section" data-control-job="preferences">
             <h3 data-i18n="control_interface">Preferences</h3>
+            <p class="hint control-status" data-i18n="control_preferences_note">Each preference stands alone. Nothing here infers an ADHD or personality label.</p>
             <div class="control-checkbox-grid">
               <div class="field-row">
                 <input id="remember" type="checkbox" />
@@ -886,10 +888,10 @@
             <div class="control-stack control-strip-modules-stack">
               <ol id="control-strip-module-list" class="control-strip-module-list"></ol>
               <div class="button-row control-strip-module-actions">
-                <button class="btn mini-btn" type="button" id="control-strip-move-up" data-i18n="control_strip_move_up">Move Up</button>
-                <button class="btn mini-btn" type="button" id="control-strip-move-down" data-i18n="control_strip_move_down">Move Down</button>
-                <button class="btn mini-btn" type="button" id="control-strip-enable" data-i18n="control_strip_enable">Enable</button>
-                <button class="btn mini-btn" type="button" id="control-strip-disable" data-i18n="control_strip_disable">Disable</button>
+                <button class="btn mini-btn" type="button" id="control-strip-move-up" data-i18n="control_strip_move_up" data-balloon-help-disabled="balloon_control_strip_select_module">Move Up</button>
+                <button class="btn mini-btn" type="button" id="control-strip-move-down" data-i18n="control_strip_move_down" data-balloon-help-disabled="balloon_control_strip_select_module">Move Down</button>
+                <button class="btn mini-btn" type="button" id="control-strip-enable" data-i18n="control_strip_enable" data-balloon-help-disabled="balloon_control_strip_select_module">Enable</button>
+                <button class="btn mini-btn" type="button" id="control-strip-disable" data-i18n="control_strip_disable" data-balloon-help-disabled="balloon_control_strip_select_module">Disable</button>
               </div>
               <p class="hint" data-i18n="control_strip_modules_hint">Reorder with Move Up / Move Down, or hold Option while dragging a module inside the Control Strip.</p>
             </div>
@@ -903,12 +905,13 @@
         </div>
       </aside>
 
-      <aside class="window chooser-panel is-collapsed" data-window="chooser" aria-labelledby="chooser-title">
+      <aside class="window chooser-panel is-collapsed" data-window="chooser" data-object-picker="0" aria-labelledby="chooser-title">
         <div class="title-bar">
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="chooser-title" data-i18n="chooser">Chooser</h2>
         </div>
         <div class="window-pane settings chooser-settings">
+          <p class="hint control-status chooser-honesty-note" data-i18n="chooser_not_object_picker" data-balloon-help="balloon_chooser_not_object_picker">Chooser is a service preference — not an object picker for desk files or windows.</p>
           <section class="control-section chooser-section">
             <h3 id="chooser-search-title" data-i18n="search_source">Search Engine</h3>
             <label class="chooser-source" for="search-provider">
@@ -1032,10 +1035,18 @@
           <span data-i18n="mounted_context">Mounted context</span>
         </div>
         <div class="window-pane text-disk-pane">
-          <div class="button-row">
-            <button class="btn" type="button" data-action="insert-text-disk" data-i18n="mount_text_disk">Insert File Floppy</button>
-            <button class="btn" type="button" data-action="add-text-disk-project" data-i18n="add_to_project_disk">Write to Project Hard Disk</button>
-            <button class="btn danger" type="button" data-action="eject-text-disk" data-i18n="eject">Eject</button>
+          <div class="button-row text-disk-actions">
+            <span class="select-wrap select-wrap-inline">
+              <select id="text-disk-more" class="mini-select" aria-label="File Floppy actions" data-i18n-aria-label="text_disk_more">
+                <option value="insert" data-i18n="mount_text_disk">Insert File Floppy</option>
+                <option value="write" data-i18n="add_to_project_disk">Write to Project Hard Disk</option>
+                <option value="eject" data-i18n="eject">Eject</option>
+              </select>
+            </span>
+            <button class="btn default" type="button" id="text-disk-more-go" data-i18n="do_selected" data-balloon-help-disabled="balloon_text_disk_select_first">Do Selected</button>
+            <button class="btn" type="button" data-action="insert-text-disk" hidden data-i18n="mount_text_disk">Insert File Floppy</button>
+            <button class="btn" type="button" data-action="add-text-disk-project" hidden data-i18n="add_to_project_disk">Write to Project Hard Disk</button>
+            <button class="btn danger" type="button" data-action="eject-text-disk" hidden data-i18n="eject">Eject</button>
           </div>
           <div id="text-disk-grid" class="finder-grid text-disk-grid window-frame-scroller"></div>
         </div>
@@ -1369,7 +1380,7 @@
             </div>
             <p class="cmf-autosave-note" data-i18n="cmf_autosave">Saved in this browser.</p>
             <div class="cmf-button-stack">
-              <button class="btn default" type="button" id="cmf-reset-view" data-i18n-aria-label="cmf_reset_view" aria-label="Reset View" data-balloon-help="balloon_cmf_reset_view">
+              <button class="btn" type="button" id="cmf-reset-view" data-i18n-aria-label="cmf_reset_view" aria-label="Reset View" data-balloon-help="balloon_cmf_reset_view">
                 <span class="mobile-control-long" data-i18n="cmf_reset_view">Reset View</span>
                 <span class="mobile-control-short" data-i18n="cmf_reset_view_short">View</span>
               </button>
@@ -1760,7 +1771,7 @@
           </div>
           <div class="memory-transfer-footer">
             <p id="import-status" class="hint" data-i18n="import_ready">Ready to write files</p>
-            <button class="btn default" type="button" id="import-documents" data-i18n="import_to_documents">Write to Project Hard Disk</button>
+            <button class="btn default" type="button" id="import-documents" data-i18n="import_to_documents" disabled data-balloon-help-disabled="balloon_import_needs_files">Write to Project Hard Disk</button>
           </div>
           <details class="backup-preview-section">
             <summary data-i18n="project_backup">Project backup</summary>
@@ -1770,7 +1781,7 @@
                 <button id="project-backup-file-button" class="btn file-picker-button" type="button" data-i18n="select_backup_button">Choose Backup</button>
                 <span id="project-backup-selection" class="file-picker-name" data-file-picker-empty="no_backup_selected">No backup selected</span>
               </div>
-              <button class="btn default" type="button" id="import-project-backup" data-i18n="import_as_new_project" disabled>Import as New Project Hard Disk</button>
+              <button class="btn" type="button" id="import-project-backup" data-i18n="import_as_new_project" disabled data-balloon-help-disabled="balloon_import_backup_needs_file">Import as New Project Hard Disk</button>
             </div>
             <div id="project-backup-preview" class="import-preview backup-preview">
               <div class="empty-folder-note" data-i18n="backup_preview_empty">Choose a Project Hard Disk backup JSON to inspect it. Nothing will be imported.</div>
@@ -1801,9 +1812,14 @@
             <button class="btn" type="button" id="project-disk-up" data-i18n="all_documents">All Documents</button>
             <span id="project-disk-path" class="visually-hidden">Project Hard Disk</span>
             <div class="project-finder-actions">
-              <button class="btn" type="button" data-action="open-import-utility" data-i18n="add_ellipsis">Add…</button>
-              <button class="btn" type="button" data-action="open-project-backup" data-i18n="project_backup_action" data-i18n-aria-label="open_project_backup">Backup…</button>
-              <button class="btn" type="button" data-action="open-clio-project" data-i18n="project_plan_action">Plan…</button>
+              <span class="select-wrap select-wrap-inline">
+                <select id="project-disk-more" class="mini-select" aria-label="Project Hard Disk actions" data-i18n-aria-label="project_disk_more">
+                  <option value="open-import-utility" data-i18n="add_ellipsis">Add…</option>
+                  <option value="open-project-backup" data-i18n="project_backup_action">Backup…</option>
+                  <option value="open-clio-project" data-i18n="project_plan_action">Plan…</option>
+                </select>
+              </span>
+              <button class="btn" type="button" id="project-disk-more-go" data-i18n="do_selected" data-balloon-help-disabled="balloon_project_disk_empty_first">Do Selected</button>
             </div>
           </div>
           <div class="project-disk-content-grid">
@@ -1846,12 +1862,23 @@
         </div>
         <div class="window-pane chat-file-pane">
           <div id="chat-file-body" class="file-preview-body"></div>
-          <div class="button-row">
-            <button class="btn" type="button" id="open-chat-file" data-i18n="open_chat">Open Chat</button>
-            <button class="btn" type="button" id="insert-chat-file" data-i18n="insert">Insert</button>
-            <button class="btn" type="button" id="chat-file-docmap" data-action="make-docmap" data-i18n="docmap">DocMap</button>
-            <button class="btn" type="button" id="download-chat-markdown" data-i18n="download_md">Download .md</button>
-            <button class="btn danger" type="button" id="trash-chat-file" data-i18n="move_to_trash">Move to Trash</button>
+          <div id="chat-file-empty-note" class="empty-folder-note is-hidden" data-i18n="chat_file_empty">No messages yet.</div>
+          <div class="button-row chat-file-actions">
+            <span class="select-wrap select-wrap-inline">
+              <select id="chat-file-more" class="mini-select" aria-label="Chat File actions" data-i18n-aria-label="chat_file_more">
+                <option value="open" data-i18n="open_chat">Open Chat</option>
+                <option value="insert" data-i18n="insert">Insert</option>
+                <option value="docmap" data-i18n="docmap">DocMap</option>
+                <option value="download" data-i18n="download_md">Download .md</option>
+                <option value="trash" data-i18n="move_to_trash">Move to Trash</option>
+              </select>
+            </span>
+            <button class="btn default" type="button" id="chat-file-more-go" data-i18n="do_selected" data-balloon-help-disabled="balloon_chat_file_empty_first">Do Selected</button>
+            <button class="btn" type="button" id="open-chat-file" hidden data-i18n="open_chat">Open Chat</button>
+            <button class="btn" type="button" id="insert-chat-file" hidden data-i18n="insert">Insert</button>
+            <button class="btn" type="button" id="chat-file-docmap" hidden data-action="make-docmap" data-i18n="docmap">DocMap</button>
+            <button class="btn" type="button" id="download-chat-markdown" hidden data-i18n="download_md">Download .md</button>
+            <button class="btn danger" type="button" id="trash-chat-file" hidden data-i18n="move_to_trash">Move to Trash</button>
           </div>
         </div>
       </section>
@@ -1901,10 +1928,10 @@
           <div class="teachtext-actions teachtext-surface-actions">
             <div class="teachtext-command-group" aria-label="Writing commands" data-i18n-aria-label="writing_commands">
               <button class="btn writing-mode-toggle" type="button" id="teachtext-toggle-preview" data-i18n="preview">Preview</button>
-              <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#teachtext-body" data-i18n="teachtext_focus_off">Focus: Off</button>
               <details class="teachtext-command-menu">
                 <summary class="btn"><span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span><span class="mobile-control-short" data-i18n="commands_short">Cmds</span></summary>
                 <div class="teachtext-command-popover">
+                  <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#teachtext-body" data-i18n="teachtext_focus_off">Focus: Off</button>
                   <button class="btn" type="button" data-action="open-heading-navigator" data-i18n="heading_navigator_ellipsis">Go to Heading…</button>
                   <button class="btn" type="button" id="teachtext-docmap" data-i18n="docmap">DocMap</button>
                   <button class="btn" type="button" data-action="make-docmap-selection" data-i18n="docmap_from_selection">Map Selection</button>
@@ -1960,6 +1987,22 @@
         </div>
         <div class="window-pane review-desk-pane">
           <select id="review-section-source" hidden aria-label="Review Section" data-i18n-aria-label="review_section"></select>
+          <div class="review-lens-chrome" role="group" aria-label="Review lens" data-i18n-aria-label="review_lens">
+            <span class="select-wrap select-wrap-inline">
+              <select id="review-lens" class="mini-select review-mode-select" data-i18n-aria-label="review_lens" data-balloon-help="balloon_review_lens_style">
+                <option value="style" data-i18n="style_sheet">Style Sheet</option>
+                <option value="facts" data-i18n="claim_check">Claim Check</option>
+                <option value="hkrr" data-i18n="quick_draft_chip_hkrr">HKRR Lift</option>
+                <option value="mingming" data-i18n="quick_draft_chip_mingming">Reader's Eye</option>
+                <option value="luoluo" data-i18n="quick_draft_chip_luoluo">Listener's Ear</option>
+              </select>
+            </span>
+            <span id="review-lens-hint" class="review-lens-hint" data-i18n="review_lens_hint_style">Sounds like a mouthpiece / missing personal detail. Not a score.</span>
+            <p class="review-density-note" id="review-density-note">
+              <span data-i18n="review_density_lives_in_lightroom">Density and adjustment layers live in 文字亮室 / Lightroom — not in this lens.</span>
+              <button class="text-btn" type="button" data-action="open-lightroom" data-i18n="review_go_to_lightroom">Open Lightroom</button>
+            </p>
+          </div>
           <div class="style-section-nav review-section-nav">
             <button class="btn" type="button" id="review-section-prev" data-action="previous-style-section" data-i18n="previous_section">Previous section</button>
             <div id="review-section-meta" class="draft-section-label style-section-meta" data-i18n="style_section_empty">No TeachText sections yet.</div>
@@ -1970,9 +2013,9 @@
             <div id="review-desk-preview" class="review-desk-preview teachtext-preview is-hidden"></div>
             <button id="review-desk-splitter" class="review-desk-splitter" type="button" aria-label="Resize review panes" data-i18n-aria-label="resize_review_panes"></button>
             <section class="review-result-column is-active" aria-labelledby="review-result-title">
-              <h3 id="review-result-title" data-i18n="review_results">Review Results</h3>
+              <h3 id="review-result-title" data-i18n="style_sheet">Style Sheet</h3>
               <div id="style-sheet-results" class="style-sheet-results" data-review-result="style">
-                <p class="empty-folder-note" data-i18n="style_sheet_empty">Run Style Check from Manuscript.</p>
+                <p class="empty-folder-note" data-i18n="style_sheet_empty">No mouthpiece check yet. Suggestions stay off the manuscript.</p>
               </div>
               <div id="claim-section-meta" class="claim-section-meta empty-folder-note" hidden></div>
               <div id="claim-results" class="claim-results is-hidden" data-review-result="facts">
@@ -1983,14 +2026,14 @@
               </div>
             </section>
           </div>
-          <div id="review-desk-empty-note" class="empty-folder-note review-desk-empty-note is-hidden"><p data-i18n="review_desk_requires_final">The Review Desk reviews a finished manuscript. Mark the Manuscript as Final to start.</p><button class="btn default" type="button" data-action="advance-manuscript-to-review" data-i18n="to_review">To Review</button></div>
+          <div id="review-desk-empty-note" class="empty-folder-note review-desk-empty-note is-hidden"><p data-i18n="review_desk_requires_final">No review yet. Suggestions stay off the manuscript.</p><p class="review-lens-empty-follow" id="review-lens-empty-follow" data-i18n="review_lens_empty_style">No mouthpiece pass yet. Suggestions stay off the manuscript.</p><button class="btn default" type="button" data-action="advance-manuscript-to-review" data-i18n="to_review">To Review</button></div>
           <div class="teachtext-actions teachtext-surface-actions review-desk-actions">
             <div class="teachtext-command-group" aria-label="Review commands" data-i18n-aria-label="review_commands">
               <button class="btn writing-mode-toggle" type="button" data-action="toggle-review-preview" data-i18n="preview">Preview</button>
-              <button class="btn" type="button" data-action="review-edit-manuscript" data-i18n="to_manuscript">Edit Full Manuscript</button>
               <details class="teachtext-command-menu specialized-command-menu">
                 <summary class="btn"><span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span><span class="mobile-control-short" data-i18n="commands_short">Cmds</span></summary>
                 <div class="teachtext-command-popover">
+                  <button class="btn" type="button" data-action="review-edit-manuscript" data-i18n="to_manuscript">Edit Full Manuscript</button>
                   <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#review-desk-body" data-i18n="teachtext_focus_off">Focus: Off</button>
                   <button class="btn" type="button" data-action="review-style-section" data-i18n="review_style_section">Style Check This Section</button>
                   <button class="btn" type="button" data-action="review-facts-section" data-i18n="review_facts_section">Fact Check This Section</button>
@@ -2116,17 +2159,26 @@
                   <button class="btn" type="button" id="read-scrap-picture" data-action="scrapbook-read-picture" data-i18n="scrap_read_picture">Read Picture</button>
                 </div>
               </details>
-              <button class="btn default" type="button" id="insert-scrap" data-action="scrapbook-insert" data-i18n="insert">Insert</button>
+              <button class="btn default" type="button" id="insert-scrap" data-action="scrapbook-insert" data-i18n="insert" data-balloon-help-disabled="balloon_scrapbook_empty">Insert</button>
             </div>
             <button class="btn" type="button" id="attach-scrap-to-assistant" data-action="scrapbook-attach" data-i18n="attach_to_assistant" hidden>Attach to ClioTalk</button>
             <div class="scrap-selection-actions">
               <div id="scrap-selection-count" class="scrap-selection-count" data-i18n="no_scraps_selected">No scraps selected</div>
               <p class="small-muted" data-i18n="scrap_multi_hint">These act on every selected scrap. Click one scrap on its own to edit it.</p>
-              <div class="button-row">
-                <button class="btn" type="button" id="send-scraps-to-question" data-action="scrapbook-send-question" data-i18n="to_question_sheet">To Question Sheet</button>
-                <button class="btn" type="button" id="outline-scraps" data-action="scrapbook-outline" data-i18n="make_outline">Make Outline</button>
-                <button class="btn" type="button" id="scrapbook-docmap" data-action="make-docmap" data-i18n="docmap">DocMap</button>
-                <button class="btn" type="button" id="download-scraps-bilingual" data-action="scrapbook-export-bilingual" data-i18n="download_bilingual_md">Bilingual .md</button>
+              <div class="button-row scrap-multi-actions">
+                <span class="select-wrap select-wrap-inline">
+                  <select id="scrap-multi-more" class="mini-select" aria-label="Scrapbook selection actions" data-i18n-aria-label="scrap_multi_more">
+                    <option value="scrapbook-send-question" data-i18n="to_question_sheet">To Question Sheet</option>
+                    <option value="scrapbook-outline" data-i18n="make_outline">Make Outline</option>
+                    <option value="make-docmap" data-i18n="docmap">DocMap</option>
+                    <option value="scrapbook-export-bilingual" data-i18n="download_bilingual_md">Bilingual .md</option>
+                  </select>
+                </span>
+                <button class="btn" type="button" id="scrap-multi-go" data-i18n="do_selected" data-balloon-help-disabled="balloon_scrapbook_empty">Do Selected</button>
+                <button class="btn" type="button" id="send-scraps-to-question" hidden data-action="scrapbook-send-question" data-i18n="to_question_sheet">To Question Sheet</button>
+                <button class="btn" type="button" id="outline-scraps" hidden data-action="scrapbook-outline" data-i18n="make_outline">Make Outline</button>
+                <button class="btn" type="button" id="scrapbook-docmap" hidden data-action="make-docmap" data-i18n="docmap">DocMap</button>
+                <button class="btn" type="button" id="download-scraps-bilingual" hidden data-action="scrapbook-export-bilingual" data-i18n="download_bilingual_md">Bilingual .md</button>
               </div>
             </div>
           </form>
@@ -2145,7 +2197,7 @@
             <label class="visually-hidden" for="scrapbook-question" data-i18n="scrapbook_ask_label">Ask these scraps</label>
             <div class="ask-bar-row">
               <input id="scrapbook-question" type="text" data-i18n-placeholder="scrapbook_ask_hint" placeholder="Ask selected Scrapbook clips..." disabled data-balloon-help="balloon_ask_bar" />
-              <button class="btn default" type="submit" id="scrapbook-ask-button" data-i18n="ask" data-i18n-aria-label="scrapbook_ask_label" disabled>Ask</button>
+              <button class="btn" type="submit" id="scrapbook-ask-button" data-i18n="ask" data-i18n-aria-label="scrapbook_ask_label" disabled>Ask</button>
             </div>
           </form>
         </div>
@@ -2160,9 +2212,16 @@
           <span id="trash-project-label">Project Hard Disk</span>
         </div>
         <div class="window-pane trash-pane">
-          <div class="button-row">
-            <button class="btn" type="button" id="restore-trash" data-i18n="restore_latest">Restore Latest</button>
-            <button class="btn danger" type="button" id="empty-trash" data-i18n="empty">Empty</button>
+          <div class="button-row trash-actions">
+            <span class="select-wrap select-wrap-inline">
+              <select id="trash-more" class="mini-select" aria-label="Trash actions" data-i18n-aria-label="trash_more">
+                <option value="restore" data-i18n="restore_latest">Restore Latest</option>
+                <option value="empty" data-i18n="empty">Empty</option>
+              </select>
+            </span>
+            <button class="btn default" type="button" id="trash-more-go" data-i18n="do_selected" data-balloon-help-disabled="balloon_trash_empty_first">Do Selected</button>
+            <button class="btn" type="button" id="restore-trash" hidden disabled aria-hidden="true" tabindex="-1" data-i18n="restore_latest">Restore Latest</button>
+            <button class="btn danger" type="button" id="empty-trash" hidden disabled aria-hidden="true" tabindex="-1" data-i18n="empty">Empty</button>
           </div>
           <div id="trash-list" class="trash-list window-frame-scroller"></div>
         </div>
@@ -2202,6 +2261,8 @@
               <summary class="btn" id="reader-command-summary" data-i18n="reader_commands">Commands...</summary>
               <div class="teachtext-command-popover reader-command-popover">
                 <button class="btn" type="button" id="reader-open-another" data-action="reader-open-another" disabled data-i18n="reader_open_another">Open Another Source...</button>
+                <button class="btn" type="button" id="reader-clip-translate-button" data-action="reader-clip-translate" data-i18n="clip_translate" disabled hidden data-balloon-help-disabled="balloon_reader_clip_needs_selection">Clip + Translate</button>
+                <button class="btn" type="button" id="reader-docmap-selection-command" data-action="reader-docmap-selection" data-i18n="docmap_from_selection" disabled data-balloon-help-disabled="balloon_reader_clip_needs_selection">Map Selection</button>
                 <button class="btn" type="button" id="reader-docmap-source-command" data-action="reader-docmap-source" data-i18n="docmap_from_source" disabled>Map Entire Source</button>
                 <button class="btn" type="button" id="reader-open-clio-stage" data-action="reader-open-clio-stage" data-i18n="open_in_clio_stage" disabled data-balloon-help-disabled="balloon_reader_open_clio_stage_disabled">Open in ClioStage</button>
                 <button class="btn" type="button" id="reader-send-manuscript" data-action="reader-send-manuscript" data-i18n="send_copy_to_manuscript" disabled>Send Copy to Manuscript</button>
@@ -2228,9 +2289,7 @@
             </div>
             <div class="reader-selection-bar" id="reader-selection-bar" role="toolbar" aria-label="Selection" data-i18n-aria-label="reader_selection_bar" inert>
               <output class="reader-selection-count" id="reader-selection-count"></output>
-              <button class="btn default" type="button" id="reader-clip-button" data-action="reader-clip" data-i18n="clip" disabled>Clip</button>
-              <button class="btn" type="button" id="reader-clip-translate-button" data-action="reader-clip-translate" data-i18n="clip_translate" disabled hidden>Clip + Translate</button>
-              <button class="btn" type="button" id="reader-docmap-selection-command" data-action="reader-docmap-selection" data-i18n="docmap_from_selection" disabled>Map Selection</button>
+              <button class="btn" type="button" id="reader-clip-button" data-action="reader-clip" data-i18n="clip" disabled data-balloon-help-disabled="balloon_reader_clip_needs_selection">Clip</button>
             </div>
           </div>
           <form id="reader-ask-form" class="ask-bar" data-ask-source="reader">
@@ -2238,7 +2297,7 @@
             <div class="ask-bar-row">
               <button class="btn ask-bar-lead" type="button" id="reader-docmap-button" data-action="reader-make-docmap" data-i18n="docmap" disabled>DocMap</button>
               <input id="reader-question" type="text" data-i18n-placeholder="reader_ask_hint" placeholder="Ask this Reader source..." disabled data-balloon-help="balloon_ask_bar" />
-              <button class="btn default" type="submit" id="reader-ask-button" data-i18n="ask" data-i18n-aria-label="reader_ask_label" disabled>Ask</button>
+              <button class="btn" type="submit" id="reader-ask-button" data-i18n="ask" data-i18n-aria-label="reader_ask_label" disabled>Ask</button>
             </div>
           </form>
         </div>
@@ -2368,7 +2427,7 @@
         </div>
         <div class="window-pane teachtext-surface-pane question-sheet-pane">
           <div class="teachtext-editor-container specialized-teachtext-editor window-frame-scroller">
-            <textarea id="question-sheet-body" data-requires-write rows="12" placeholder="What are we trying to solve? List key terms and must-remember points." data-i18n-placeholder="question_sheet_hint" data-drop-target="editor-insert" data-editor-surface="questionSheet"></textarea>
+            <textarea id="question-sheet-body" data-requires-write rows="12" placeholder="You can leave this messy. A question, a reader, or a rough observation is enough. You do not need a complete plan first." data-i18n-placeholder="question_sheet_hint" data-drop-target="editor-insert" data-editor-surface="questionSheet"></textarea>
             <div id="question-sheet-cards" class="question-sheet-cards is-hidden" role="list" aria-label="Question Sheet cards" data-i18n-aria-label="question_sheet_cards"></div>
             <div id="question-sheet-preview" class="specialized-teachtext-preview teachtext-preview is-hidden"></div>
           </div>
@@ -2376,10 +2435,10 @@
           <div class="teachtext-actions teachtext-surface-actions">
             <div class="teachtext-command-group" aria-label="Question Sheet commands" data-i18n-aria-label="question_sheet_commands">
               <button class="btn writing-mode-toggle" type="button" data-action="toggle-question-preview" data-i18n="preview">Preview</button>
-              <button class="btn" type="button" data-action="generate-outline" data-i18n="writing_ai_outline">AI Outline</button>
               <details class="teachtext-command-menu specialized-command-menu">
                 <summary class="btn"><span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span><span class="mobile-control-short" data-i18n="commands_short">Cmds</span></summary>
                 <div class="teachtext-command-popover">
+                  <button class="btn" type="button" data-action="generate-outline" data-i18n="writing_ai_outline">AI Outline</button>
                   <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#question-sheet-body" data-i18n="teachtext_focus_off">Focus: Off</button>
                   <button class="btn" type="button" data-action="question-sheet-view-page" aria-pressed="true" data-i18n="question_sheet_view_page">As Page</button>
                   <button class="btn" type="button" data-action="question-sheet-view-cards" aria-pressed="false" data-i18n="question_sheet_view_cards">As Cards</button>
@@ -2421,10 +2480,10 @@
           <div class="teachtext-actions teachtext-surface-actions">
             <div class="teachtext-command-group" aria-label="Outline commands" data-i18n-aria-label="outline_commands">
               <button class="btn writing-mode-toggle" type="button" data-action="toggle-outline-preview" data-i18n="preview">Preview</button>
-              <button class="btn" type="button" data-action="add-outline-section" data-i18n="add_outline_section">Add Section</button>
               <details class="teachtext-command-menu specialized-command-menu">
                 <summary class="btn"><span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span><span class="mobile-control-short" data-i18n="commands_short">Cmds</span></summary>
                 <div class="teachtext-command-popover">
+                  <button class="btn" type="button" data-action="add-outline-section" data-i18n="add_outline_section">Add Section</button>
                   <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#outline-content" data-i18n="teachtext_focus_off">Focus: Off</button>
                   <button class="btn" type="button" data-action="outline-tree-up" data-i18n="outline_tree_up">Move Section Up</button>
                   <button class="btn" type="button" data-action="outline-tree-down" data-i18n="outline_tree_down">Move Section Down</button>
@@ -2442,7 +2501,7 @@
                   </div>
               </details>
             </div>
-            <button class="btn default" type="button" data-action="advance-outline-to-drafts" data-i18n="to_section_drafts">To Section Drafts</button>
+            <button class="btn default" type="button" data-action="advance-outline-to-drafts" data-i18n="to_section_drafts" data-balloon-help-disabled="balloon_outline_needs_content">To Section Drafts</button>
           </div>
         </div>
       </section>
@@ -2470,16 +2529,16 @@
               <button class="btn" type="button" data-action="next-section-draft" data-i18n="next_section" data-i18n-aria-label="next_section">Next section</button>
             </div>
             <div class="teachtext-editor-container specialized-teachtext-editor window-frame-scroller">
-              <textarea id="draft-body" data-requires-write class="section-draft-markdown" rows="12" spellcheck="true" data-i18n-placeholder="section_draft_markdown_hint" placeholder="Write this section in Markdown..."></textarea>
+              <textarea id="draft-body" data-requires-write class="section-draft-markdown" rows="12" spellcheck="true" data-i18n-placeholder="section_draft_markdown_hint" placeholder="Write this section first. AI drafting is optional."></textarea>
               <div id="draft-preview" class="specialized-teachtext-preview teachtext-preview is-hidden"></div>
             </div>
             <div class="teachtext-actions teachtext-surface-actions">
               <div class="teachtext-command-group" aria-label="Section Draft commands" data-i18n-aria-label="section_draft_commands">
                 <button class="btn writing-mode-toggle" type="button" data-action="toggle-draft-preview" data-i18n="preview">Preview</button>
-                <button class="btn" type="button" data-action="draft-current-section" data-i18n="writing_ai_draft">AI Draft</button>
                 <details class="teachtext-command-menu specialized-command-menu">
                   <summary class="btn"><span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span><span class="mobile-control-short" data-i18n="commands_short">Cmds</span></summary>
                   <div class="teachtext-command-popover">
+                  <button class="btn" type="button" data-action="draft-current-section" data-i18n="writing_ai_draft">AI Draft</button>
                   <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#draft-body" data-i18n="teachtext_focus_off">Focus: Off</button>
                     <button class="btn" type="button" data-action="polish-draft" data-i18n="polish_draft">AI Polish</button>
                     <button class="btn" type="button" data-action="suggest-draft" data-i18n="suggest_draft">AI Suggestions</button>
@@ -2492,7 +2551,7 @@
                   </div>
                 </details>
               </div>
-              <button class="btn default" type="button" data-action="advance-drafts-to-manuscript" data-i18n="to_manuscript">To Manuscript</button>
+              <button class="btn default" type="button" data-action="advance-drafts-to-manuscript" data-i18n="to_manuscript" data-balloon-help-disabled="balloon_draft_needs_content">To Manuscript</button>
             </div>
           </div>
         </div>
@@ -2523,13 +2582,13 @@
             <details class="teachtext-command-menu find-path-send-menu" id="find-path-send-menu">
               <summary class="btn" data-i18n="searcher_send_menu">Send To...</summary>
               <div class="teachtext-command-popover find-path-send-popover">
+                <button class="btn" type="button" data-action="clip-selected-find-path" data-i18n="clip" data-balloon-help-disabled="balloon_searcher_needs_result">Clip</button>
                 <button class="btn" type="button" data-action="find-path-to-floppy" data-i18n="find_path_to_floppy">To File Floppy</button>
                 <button class="btn" type="button" id="copy-find-path" data-action="copy-search-result-markdown" data-i18n="copy_markdown">Copy Markdown</button>
                 <button class="btn" type="button" id="insert-find-path" data-action="insert-search-result" data-i18n="insert">Insert</button>
               </div>
             </details>
-            <button class="btn" type="button" data-action="clip-selected-find-path" data-i18n="clip">Clip</button>
-            <button class="btn" type="button" data-action="open-selected-in-reader" data-i18n-aria-label="open_in_reader">
+            <button class="btn" type="button" data-action="open-selected-in-reader" data-balloon-help-disabled="balloon_searcher_needs_result" data-i18n-aria-label="open_in_reader">
               <span class="mobile-control-long" data-i18n="open_in_reader">Open in Reader</span>
               <span class="mobile-control-short" data-i18n="searcher_open_reader_short">Reader</span>
             </button>
@@ -2642,7 +2701,7 @@
             </div>
             <div id="docmap-drop-zone" class="docmap-drop-zone drop-target" data-i18n-drop-label="docmap_drop_files">
               <div id="docmap-tree" class="docmap-tree window-frame-scroller">
-                <div class="empty-folder-note docmap-empty-note" data-i18n="docmap_empty">Make a DocMap from Reader, TeachText, Clipboard, or saved Markdown.</div>
+                <div class="empty-folder-note docmap-empty-note" data-i18n="docmap_empty">No structure map yet. An empty map is not a blank outline.</div>
               </div>
               <p class="docmap-mobile-hint" data-i18n="docmap_mobile_hint">Drag to explore · pinch to zoom · tap a branch's words to pick it, its dot to fold it</p>
             </div>
@@ -2800,9 +2859,9 @@
           </div>
           <div id="dictionary-recent" class="dictionary-recent" aria-label="Recent Dictionary lookups" data-i18n-aria-label="dictionary_recent"></div>
           <div class="button-row dictionary-actions">
-            <button class="btn" type="button" id="dictionary-delete-word" data-action="dictionary-delete-word" data-requires-write data-i18n="delete" disabled>Delete</button>
+            <button class="btn" type="button" id="dictionary-delete-word" data-action="dictionary-delete-word" data-requires-write data-i18n="delete" disabled data-balloon-help-disabled="balloon_dictionary_unlooked">Delete</button>
             <span class="spacer"></span>
-            <button class="btn default" type="button" id="dictionary-keep-word" data-action="dictionary-keep-word" data-requires-write data-i18n="dictionary_keep_word" disabled>Keep as my word</button>
+            <button class="btn default" type="button" id="dictionary-keep-word" data-action="dictionary-keep-word" data-requires-write data-i18n="dictionary_keep_word" disabled data-balloon-help-disabled="balloon_dictionary_unlooked">Keep as my word</button>
           </div>
         </div>
       </section>
@@ -3127,7 +3186,8 @@
           <h2 id="model-meter-title" data-i18n="model_meter">Model Meter</h2>
         </div>
         <div class="window-pane model-meter-pane">
-          <dl class="meter-stats">
+          <p id="model-meter-empty" class="empty-folder-note" data-i18n="model_meter_empty" hidden>No model run yet. Turn on the meter in Control Panel, then ask ClioTalk something.</p>
+          <dl class="meter-stats" id="model-meter-stats">
             <dt data-i18n="speed">Speed</dt>
             <dd id="meter-speed">--</dd>
             <dt data-i18n="tokens">Tokens</dt>
@@ -3238,7 +3298,7 @@
         </div>
         <div class="details-bar">
           <span id="notification-center-summary" data-i18n="notifications_empty">No messages</span>
-          <button class="btn mini-btn" type="button" data-action="clear-notifications" data-i18n="clear">Clear</button>
+          <button class="btn mini-btn" type="button" data-action="clear-notifications" data-i18n="clear" data-balloon-help-disabled="balloon_notifications_empty_clear">Clear</button>
         </div>
         <div class="window-pane notification-center-pane">
           <div id="notification-center-list" class="notification-center-list"></div>
@@ -3418,9 +3478,9 @@
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20260929.1"></script>
+    <script src="app/generated/build-info.js?v=20261005.3"></script>
     <template id="standard-window-controls"><button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button><button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button><button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button></template>
-    <script src="app.bundle.js?v=20260929.1"></script>
+    <script src="app.bundle.js?v=20261005.3"></script>
 
   </body>
 </html>

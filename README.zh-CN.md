@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: 01e3af8c4b4cebf4bc6df0f92ce760da612d77f708dd0285a44de94f0b9fea93 -->
+<!-- source-sha256: dd9ef73d818c8eb5ce97b256970f96adc2b44f3de89f0febf5765e97a5836d61 -->
 
 > 英文版为准 / 仅供人类参考
 
@@ -329,10 +329,11 @@ flowchart LR
   </tr>
 </table>
 
-十二帧画面，一台活的桌面，由 `npm run site:capture-frames` 拍下。System 6 从真实的
-System 6.0.8 资源和实际观察到的 Macintosh 行为出发；后面几个时代各有独立的、
-适配 Retina 的图标家族。这里没有一张是摆拍，因为有一个脚本会从运行中的应用里
-把它们全部重拍一遍。
+十二帧画面，一台活的桌面，由 `npm run site:capture-frames` 拍下。System 7 与 Lion
+在 1988-2026 主时间轴上，与其他正史外观同列；NeXTSTEP 与 Drawing Board 仍是岔路
+（官网「另一条路」场景可见，却不进入溶解时间轴）。System 6 从真实的 System 6.0.8
+资源和实际观察到的 Macintosh 行为出发；后面几个时代各有独立的、适配 Retina 的
+图标家族。这里没有一张是摆拍，因为有一个脚本会从运行中的应用里把它们全部重拍一遍。
 
 <div align="center">
 
@@ -345,7 +346,7 @@ System 6.0.8 资源和实际观察到的 Macintosh 行为出发；后面几个�
 ## 在一个 1988 年的约束下建造
 
 ```text
-启动关键载荷            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,776,060 字节
+启动关键载荷            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,831,262 字节
 两张 1.44 MB 软盘       ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 字节
 重型工具                按需懒加载，从第三张盘上来
 ```

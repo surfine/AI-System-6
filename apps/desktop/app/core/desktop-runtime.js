@@ -194,35 +194,49 @@ async function switchProject(projectId, options = {}) {
   playSystemSound("disk");
 
   const previousProjectId = activeProjectId;
+  const previousMounted = isProjectMounted;
   parkConversationInProject(previousProjectId);
 
   const wasArchived = project.archived;
-  project.archived = false;
-  isProjectMounted = true;
-  activeProjectId = project.id;
-  window.AISystem6AssistantActivity?.resetForProject?.(project.id);
-  selectedProjectId = project.id;
-  selectedFolderId = "all";
-  clearProjectTransientState();
-  selectedScrapId = getProjectScraps()[0]?.id || null;
-  if (selectedScrapId) selectedScrapIds.add(selectedScrapId);
-  selectedProjectCdItemId = getProjectCdItems(project.id)[0]?.id || null;
-  if (selectedProjectCdItemId) selectedProjectCdItemIds.add(selectedProjectCdItemId);
-  lastClipScrapId = selectedScrapId;
-  closeProjectScopedWindows();
-  scheduleWorkspaceRender({ projectReferences: true, mountedTextDisk: true, menuState: true });
-  resetAssistantForProject(project.name);
-  await loadActiveProjectReferences();
-  // The disk is mounted; give it back the desk it had. Startup Items open only
-  // when this disk has no scene of its own yet.
-  if (options.resumeScene !== false && typeof restoreWorkingSession === "function") {
-    const resumed = await restoreWorkingSession({ projectId: project.id, mounted: true });
-    if (!resumed) openStartupItems();
+  try {
+    project.archived = false;
+    isProjectMounted = true;
+    activeProjectId = project.id;
+    window.AISystem6AssistantActivity?.resetForProject?.(project.id);
+    selectedProjectId = project.id;
+    selectedFolderId = "all";
+    clearProjectTransientState();
+    selectedScrapId = getProjectScraps()[0]?.id || null;
+    if (selectedScrapId) selectedScrapIds.add(selectedScrapId);
+    selectedProjectCdItemId = getProjectCdItems(project.id)[0]?.id || null;
+    if (selectedProjectCdItemId) selectedProjectCdItemIds.add(selectedProjectCdItemId);
+    lastClipScrapId = selectedScrapId;
+    closeProjectScopedWindows();
+    scheduleWorkspaceRender({ projectReferences: true, mountedTextDisk: true, menuState: true });
+    resetAssistantForProject(project.name);
+    await loadActiveProjectReferences();
+    // The disk is mounted; give it back the desk it had. Startup Items open only
+    // when this disk has no scene of its own yet.
+    if (options.resumeScene !== false && typeof restoreWorkingSession === "function") {
+      const resumed = await restoreWorkingSession({ projectId: project.id, mounted: true });
+      if (!resumed) openStartupItems();
+    }
+    saveDeskState();
+    scheduleDesktopMaintenance("project");
+    setStatus(wasArchived ? t("project_unarchived", project.name) : t("project_opened", project.name));
+    return true;
+  } catch (error) {
+    // Mount failure must be visible on the Startup Disk / switcher path —
+    // silent mid-switch left the desk looking mounted with no status.
+    activeProjectId = previousProjectId;
+    isProjectMounted = previousMounted;
+    selectedProjectId = previousProjectId;
+    scheduleWorkspaceRender({ projectReferences: true, mountedTextDisk: true, menuState: true });
+    const detail = typeof friendlyErrorDetail === "function" ? friendlyErrorDetail(error) : String(error?.message || error || "");
+    const name = typeof projectDisplayName === "function" ? projectDisplayName(project) : (project.name || t("project_disk"));
+    setStatus(t("project_mount_failed", name, detail));
+    return false;
   }
-  saveDeskState();
-  scheduleDesktopMaintenance("project");
-  setStatus(wasArchived ? t("project_unarchived", project.name) : t("project_opened", project.name));
-  return true;
 }
 
 async function createProjectFromInput() {

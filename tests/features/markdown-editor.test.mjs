@@ -143,6 +143,8 @@ test.assertIncludes(editor, "runs.reverse().forEach", "later runs are wrapped fi
 test.assertIncludes(editor, 'const MDE_FOCUS_STORAGE_KEY = "ai-system6-writing-focus"', "the preference is stored");
 test.assertMatches(editor, /paint\(\);\s*\n\s*\n\s*\/\/[\s\S]*?const restored = mdeStoredFocusMode\(\);/, "and a surface that opens later opens in it");
 test.assertIncludes(wireup, "if (restored !== \"off\") syncMdeFocusButton(button, restored);", "so the button opens saying so too");
+test.assertIncludes(editor, "function mdeSyncWritingFocusDesk", "focus also quiets the desk icons");
+test.assertIncludes(editor, 'classList.toggle("is-writing-focus"', "by toggling a body class the focus cycle owns");
 
 // The command follows the caret, not the frontmost window.
 test.assertIncludes(actionsSource, 'id: "writing-focus"', "focus mode has a key");

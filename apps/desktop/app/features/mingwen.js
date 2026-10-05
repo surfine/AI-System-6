@@ -25,6 +25,8 @@ window.AISystem6MingwenLoaded = true;
   }
 
   installMingwenWindow();
+  // Contract helper lands with the lazy loader; apply once the API exists.
+  syncHostContract("idle");
 
   const MINGWEN_SHELL_PATH = "assets/mingwen/index.html";
   // A landscape novel reads best in a 16:9 box: 1024x576 is the starting size,
@@ -50,10 +52,25 @@ window.AISystem6MingwenLoaded = true;
     return mingwenWindow()?.querySelector(".mingwen-pane") || null;
   }
 
+  function syncHostContract(host = "loading") {
+    // 明文 is a same-origin static novel host — no Wasm engine (v223 honesty).
+    window.AISystem6WasmHostContract?.apply?.(mingwenWindow(), {
+      kind: "mingwen",
+      host,
+      wasm: 0,
+      binary: 0,
+      fail: true,
+      crash: true,
+    });
+  }
+
   function setMingwenStatus(key) {
     const next = key || "";
     const previous = mingwenState.statusKey;
     mingwenState.statusKey = next;
+    if (next === "mingwen_status_failed") syncHostContract("fail");
+    else if (next === "mingwen_status_loading") syncHostContract("loading");
+    else if (!next && mingwenState.frame) syncHostContract("ready");
     if (typeof setStatus !== "function") return;
     // Loading and failure belong on the desk's status line. An empty details
     // bar under the title was a chrome strip with nothing to say.
@@ -110,8 +127,16 @@ window.AISystem6MingwenLoaded = true;
   function watchMingwenFrame(frame) {
     frame.addEventListener("load", () => {
       if (mingwenState.frame !== frame) return;
+      // A prior timeout already said fail — load must not overwrite that as
+      // success (fail ≠ loaded success).
+      if (mingwenState.statusKey === "mingwen_status_failed") return;
       clearTimer("readyTimer");
       setMingwenStatus("");
+    });
+    frame.addEventListener("error", () => {
+      if (mingwenState.frame !== frame) return;
+      clearTimer("readyTimer");
+      setMingwenStatus("mingwen_status_failed");
     });
   }
 
@@ -243,15 +268,42 @@ window.AISystem6MingwenLoaded = true;
     mingwenMenuHandlers[`mingwen-jump-${no}`] = () => callMingwen("jump", no);
   }
 
-  function mingwenCommandAvailable(action) {
-    if (mingwenWindow()?.classList.contains("is-hidden")) return false;
-    if (!mingwenReady()) return action === "close-active-window";
+  function mingwenCommandAvailability(action) {
+    if (mingwenWindow()?.classList.contains("is-hidden") || !mingwenWindow()) {
+      return { available: false, reason: "balloon_disabled_menu_host_window" };
+    }
+    if (!mingwenReady()) {
+      return {
+        available: action === "close-active-window",
+        reason: action === "close-active-window" ? "" : "balloon_disabled_menu_context",
+      };
+    }
     const snap = mingwenSnapshot() || {};
-    if (action === "mingwen-continue") return !!snap.hasSave;
-    if (action === "mingwen-save" || action === "mingwen-pause" || action === "mingwen-end-chapter" || action === "mingwen-log" || action === "mingwen-ledger") return !!snap.inGame;
-    if (action === "mingwen-hidden") return !!snap.hidden;
-    if (action === "mingwen-title") return !!snap.inGame;
-    return true;
+    if (action === "mingwen-continue") {
+      return snap.hasSave
+        ? { available: true, reason: "" }
+        : { available: false, reason: "balloon_disabled_menu_context" };
+    }
+    if (action === "mingwen-save" || action === "mingwen-pause" || action === "mingwen-end-chapter" || action === "mingwen-log" || action === "mingwen-ledger") {
+      return snap.inGame
+        ? { available: true, reason: "" }
+        : { available: false, reason: "balloon_disabled_menu_context" };
+    }
+    if (action === "mingwen-hidden") {
+      return snap.hidden
+        ? { available: true, reason: "" }
+        : { available: false, reason: "balloon_disabled_menu_context" };
+    }
+    if (action === "mingwen-title") {
+      return snap.inGame
+        ? { available: true, reason: "" }
+        : { available: false, reason: "balloon_disabled_menu_context" };
+    }
+    return { available: true, reason: "" };
+  }
+
+  function mingwenCommandAvailable(action) {
+    return mingwenCommandAvailability(action).available;
   }
 
   Object.entries(mingwenMenuHandlers).forEach(([action, handler]) => {
@@ -261,6 +313,7 @@ window.AISystem6MingwenLoaded = true;
         handler();
       },
       isAvailable: () => mingwenCommandAvailable(action),
+      unavailableReason: () => mingwenCommandAvailability(action).reason,
     });
   });
 

@@ -34,6 +34,9 @@ test.assertIncludes(shellSource, "drainEvents", "the shell drains typed events")
 test.assertIncludes(shellSource, "submitCommand", "pointer input becomes commands, never direct mutation");
 test.assertIncludes(shellSource, "AISystem6BonsaiCanvasRenderer", "the shell keeps the Canvas backend");
 test.assertIncludes(shellSource, "AISystem6BonsaiVoxelRenderer", "the shell offers the phase 9 voxel backend");
+test.assertIncludes(shellSource, "AISystem6WasmHostContract", "Bonsai applies the shared host honesty contract");
+test.assertIncludes(shellSource, "wasm: 0", "Bonsai is an honest non-Wasm shell");
+test.assertIncludes(read("app/core/config.js"), '"app/core/wasm-host-contract.js"', "Bonsai loader pulls the shared host contract");
 test.assertIncludes(shellSource, 'rendererBackend: "canvas-2d"', "the Canvas backend stays the default until the flip is validated");
 test.assertIncludes(shellSource, "bonsai-voxel-webgl-unavailable", "a WebGL-less mount falls back to Canvas by typed error");
 test.assertIncludes(shellSource, 'AISystem6RegisterApplicationMenuSet?.("bonsaiCity"', "the shell registers the Bonsai application menu set");
@@ -64,7 +67,12 @@ test.assertNotIncludes(shellSource, "data-bonsai-toolbox", "the flat toolbox ele
 test.assertNotIncludes(shellSource, "buildToolbox", "the flat toolbox builder is gone");
 test.assertIncludes(shellSource, 'data-bonsai-rail', "the rail is the new tool surface");
 test.assertIncludes(shellSource, "bonsai-sub-palette", "the sub-palette holds one category at a time");
-test.assertIncludes(shellSource, "dataset.bonsaiCategory", "rail cells and tool buttons share the category key the gate opens");
+test.assertIncludes(shellSource, "dataset.bonsaiCategory", "rail cells and the tool select share the category key the gate opens");
+test.assertIncludes(shellSource, "data-bonsai-tool-select", "sub-palette tool wall collapsed to a System 6 select");
+test.assertIncludes(shellSource, "bonsai_status_leave_failed", "leave/flush failure is an honest visible status");
+test.assertIncludes(shellSource, "binary: 0", "Bonsai host honesty keeps data-binary=0");
+test.assertIncludes(shellSource, "wasm: 0", "Bonsai host honesty keeps data-wasm=0");
+test.assertNotIncludes(shellSource, "micropolis-engine", "Bonsai MIT path does not pull the Micropolis GPL engine");
 test.assertIncludes(shellSource, 'id: "pan"', "the 手 pan tool is a rail cell like any other");
 test.assertIncludes(shellSource, "PAN_TOOL", "pan is a first-class tool");
 test.assertIncludes(shellSource, "BONSAI_TOUCH_TOOL_DELAY_MS", "a touch commit holds a grace delay for a second finger");
@@ -192,6 +200,8 @@ test.assertIncludes(read("app/core/app-admissions.js"), 'repaint: "renderBonsaiC
 
 // 8. Chinese File menu copy: the scenario item and the full-width ellipses.
 const transSource = read("app/features/bonsai-translations.js");
+test.assertIncludes(transSource, "bonsai_tool_picker:", "tool select has bilingual picker copy");
+test.assertIncludes(transSource, "bonsai_status_leave_failed:", "leave/flush failure has bilingual status copy");
 test.assertIncludes(transSource, 'bonsai_open_scenario: "\u6253\u5f00\u5267\u672c\u2026\u2026"', "the Chinese scenario item reads \u6253\u5f00\u5267\u672c\u2026\u2026");
 test.assertNotIncludes(transSource, "\u6253\u5f00 scenario", "no Chinese menu item still leaves scenario in English");
 test.assertIncludes(transSource, 'bonsai_open_cities: "\u6253\u5f00\u57ce\u5e02\u2026\u2026"', "Chinese File menu ellipses stay full-width");

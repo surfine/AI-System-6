@@ -478,7 +478,11 @@
   user-select: text;
   background: var(--teachtext-preview-bg);
   color: var(--ink);
-  word-break: break-word;
+  /* Same breaks as the paper. break-word here used to split a line in a
+     different place from the editor, so the turned-over sheet no longer
+     matched the one the writer composed. */
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 /* The optional modern face (moved from 00-foundation.css's use-modern-fonts
@@ -517,8 +521,11 @@ body.use-modern-fonts .teachtext-preview {
    Latin run ("Developer Transition Kit") was stretched by pulling its Han
    characters apart -- "DTK 封 面 卡 ：". The space between the scripts is the
    type engine's job where it can do it. */
+/* Horizontal margins stay auto. A shorthand of `1.2em 0` used to cancel the
+   centered column on `.teachtext-preview > *`, so the title and the figure
+   sat in the middle of the window and every paragraph stuck to the left. */
 .teachtext-preview p {
-  margin: 1.2em 0;
+  margin: 1.2em auto;
   text-indent: 2em;
   text-align: start;
   text-autospace: ideograph-alpha ideograph-numeric;
@@ -568,13 +575,15 @@ body.use-modern-fonts .teachtext-preview {
   background: var(--teachtext-preview-image-bg);
 }
 
+/* Same column as the paragraphs. `1em 0` zeroed the horizontal auto margins,
+   so a list sat on the left edge while the prose beside it stayed centred. */
 .teachtext-preview ul, .teachtext-preview ol {
   padding-left: 40px;
-  margin: 1em 0;
+  margin: 1em auto;
 }
 
 .teachtext-preview blockquote {
-  margin: 20px 0;
+  margin: 20px auto;
   padding: 10px 20px;
   border: var(--teachtext-blockquote-border);
   background: var(--teachtext-preview-blockquote-bg);
@@ -592,7 +601,7 @@ body.use-modern-fonts .teachtext-preview {
 .teachtext-preview h6 {
   font-family: var(--title-font);
   font-size: 15px;
-  margin: 1.8em 0 0.6em;
+  margin: 1.8em auto 0.6em;
   line-height: 1.3;
 }
 
@@ -605,13 +614,13 @@ body.use-modern-fonts .teachtext-preview {
 }
 
 .teachtext-preview hr {
-  margin: 2em 0;
+  margin: 2em auto;
   border: 0;
   border-top: var(--teachtext-preview-title-divider);
 }
 
 .teachtext-preview pre {
-  margin: 1.4em 0;
+  margin: 1.4em auto;
   padding: 10px 12px;
   overflow-x: auto;
   border: var(--system-border);
@@ -626,10 +635,14 @@ body.use-modern-fonts .teachtext-preview {
   font-size: 0.9em;
 }
 
+/* Width-neutral, like the editor's highlight. Padding and a border made the
+   token wider than the source, so a sentence broke in the middle of a word
+   ("写 / 成") around the chip. */
 .teachtext-preview :not(pre) > code {
-  padding: 0 3px;
-  border: var(--system-border);
-  background: var(--quiet-panel);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 1em;
 }
 
 /* One grid for both rendered surfaces. A model reaches for a table constantly
@@ -645,6 +658,11 @@ body.use-modern-fonts .teachtext-preview {
   overflow-x: auto;
   margin: 1em 0;
   border-collapse: collapse;
+}
+
+.teachtext-preview table {
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .teachtext-preview th,
@@ -2336,7 +2354,7 @@ body:not([data-theme="liquid-glass"]) .scrap-list button.is-multi-selected:not(.
 }
 
 .notification-center-pane {
-  min-height: 220px;
+  min-height: 160px;
   max-height: calc(100vh - 132px);
   overflow: auto;
 }
@@ -2346,10 +2364,15 @@ body:not([data-theme="liquid-glass"]) .scrap-list button.is-multi-selected:not(.
   gap: 0;
 }
 
+.notification-center-window .details-bar {
+  /* Quiet chrome: summary + Clear only — no third dense strip. */
+  gap: 6px;
+}
+
 .notification-item,
 .notification-empty {
   border-bottom: var(--notification-item-divider);
-  padding: 7px 8px;
+  padding: 6px 8px;
 }
 
 .notification-item {

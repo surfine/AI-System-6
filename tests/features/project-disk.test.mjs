@@ -23,7 +23,9 @@ test.assertIncludes(projectDisk, "function getProjectFiles()", "documents are sc
 test.assertIncludes(projectDisk, "function getProjectScraps()", "Scrapbook items are scoped through Project Disk helpers");
 test.assertIncludes(projectDisk, "function getProjectTrashItems()", "Trash is scoped to the current Project Disk");
 test.assertIncludes(app, "function getProjectCdItems(projectId = activeProjectId)", "Project CD items default to the active Project Disk");
-test.assertIncludes(app, 'data-action="open-project-backup"', "Project Hard Disk surface exposes a visible backup action");
+test.assertIncludes(indexHtml, 'id="project-disk-more"', "Project Hard Disk folds disk actions into one select");
+test.assertIncludes(indexHtml, 'value="open-project-backup"', "Project Hard Disk surface exposes a visible backup action");
+test.assertIncludes(indexHtml, 'id="project-disk-more-go"', "Project Hard Disk runs the chosen action with Do Selected");
 test.assertIncludes(app, "function openProjectBackupPanel()", "Project Backup action opens the existing backup preview path");
 test.assertIncludes(app, "backupSection.open = true", "Project Backup action expands backup preview by default");
 test.assertIncludes(app, "project_backup_action: \"Backup…\"", "English UI names the Project Disk backup action");

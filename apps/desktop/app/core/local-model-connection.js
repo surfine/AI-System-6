@@ -384,6 +384,8 @@ function syncLocalModelPhase(connected) {
   const modelFields = section.querySelector(".local-model-fields");
   const advanced = section.querySelector("#local-advanced-details");
   const connectButton = section.querySelector("#connect-local-model");
+  const detectButton = section.querySelector("#detect-local-models");
+  const loadButton = section.querySelector("#load-model");
   if (!connectFields || !modelFields || !advanced || !connectButton) return;
 
   modelFields.hidden = !connected;
@@ -392,6 +394,10 @@ function syncLocalModelPhase(connected) {
   } else if (advanced.contains(connectFields)) {
     connectButton.before(connectFields);
   }
+  // One default per Local Model phase: Connect before a link exists, Load after.
+  detectButton?.classList.remove("default");
+  connectButton.classList.toggle("default", !connected);
+  loadButton?.classList.toggle("default", !!connected);
   if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
 }
 

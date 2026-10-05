@@ -108,6 +108,8 @@ window.AISystem6Config = (() => {
     '[data-action="suggest-draft"]',
     '[data-action="eli5-rewrite-section"]',
     '[data-action="eli5-review-section"]',
+    '[data-action="one-sentence-rewrite-section"]',
+    '[data-action="one-sentence-check-section"]',
     '[data-action="run-claim-check"]',
     '[data-action="review-mingming-handoff"]',
     '[data-action="review-mingming-handoff-backstage"]',
@@ -610,6 +612,7 @@ const ensureQuickDraftModule = createLazyModuleLoader("AISystem6QuickDraftLoaded
   "app/core/grain-diff.js",
   "app/features/quick-draft-composition.js",
   "app/features/quick-draft-ai.js",
+  "app/features/quick-draft-tracks.js",
   "app/features/quick-draft-listen.js",
   "app/features/quick-draft-handoff.js",
 ], false, ["styles.draft-desk.css"]);
@@ -630,6 +633,7 @@ window.AISystem6EnsureThemeLabModule = ensureThemeLabModule;
 // flag proves both arrived. Styles ride along as a lazy bundle.
 const ensureMicropolisModule = createLazyModuleLoader("AISystem6MicropolisLoaded", [
   "app/core/application-shell.js",
+  "app/core/wasm-host-contract.js",
   "app/vendor/micropolis/micropolis-engine.js",
   "app/features/micropolis-views.js",
   "app/features/micropolis-audio.js",
@@ -642,6 +646,7 @@ const ensureMicropolisModule = createLazyModuleLoader("AISystem6MicropolisLoaded
 // loader; this only fetches the thin System 6 chrome module.
 const ensureOpenTTDModule = createLazyModuleLoader("AISystem6OpenTTDLoaded", [
   "app/core/application-shell.js",
+  "app/core/wasm-host-contract.js",
   "app/features/openttd.js",
 ], false, ["styles.openttd.css"]);
 // Bonsai City loads the shared world core (app/core/pot-world.js, first in
@@ -649,6 +654,7 @@ const ensureOpenTTDModule = createLazyModuleLoader("AISystem6OpenTTDLoaded", [
 // the System 6 shell together; the shell's flag proves all three arrived.
 const ensureBonsaiCityModule = createLazyModuleLoader("AISystem6BonsaiCityLoaded", [
   "app/core/pot-world.js",
+  "app/core/wasm-host-contract.js",
   "app/features/bonsai-translations.js",
   "app/features/city-demand-gauge.js",
   "app/features/bonsai-city-sim.js",
@@ -675,12 +681,14 @@ const ensureBonsaiCityModule = createLazyModuleLoader("AISystem6BonsaiCityLoaded
 // remains inside assets/doom/ and is fetched only by its same-origin shell.
 const ensureDoomModule = createLazyModuleLoader("AISystem6DoomLoaded", [
   "app/core/application-shell.js",
+  "app/core/wasm-host-contract.js",
   "app/features/doom.js",
 ], false, ["styles.openttd.css"]);
 // The visual novel travels the same way DOOM's engine does: the story stays
 // inside assets/mingwen/ and is fetched only by its same-origin frame.
 const ensureMingwenModule = createLazyModuleLoader("AISystem6MingwenLoaded", [
   "app/core/application-shell.js",
+  "app/core/wasm-host-contract.js",
   "app/features/mingwen.js",
 ], false, ["styles.openttd.css"]);
 // Rootline: the world core it takes names and hours from, the Bonsai City
@@ -689,6 +697,7 @@ const ensureMingwenModule = createLazyModuleLoader("AISystem6MingwenLoaded", [
 // shell that paces it; the shell's flag proves they all arrived.
 const ensureRootlineModule = createLazyModuleLoader("AISystem6RootlineLoaded", [
   "app/core/pot-world.js",
+  "app/core/wasm-host-contract.js",
   "app/features/bonsai-city-sim.js",
   "app/features/rootline-pot.js",
   "app/core/application-shell.js",
@@ -703,6 +712,7 @@ const ensureRootlineModule = createLazyModuleLoader("AISystem6RootlineLoaded", [
 const ensureJoyrideModule = createLazyModuleLoader("AISystem6JoyrideLoaded", [
   "app/core/pot-world.js",
   "app/core/application-shell.js",
+  "app/core/wasm-host-contract.js",
   "app/features/bonsai-translations.js",
   "app/features/bonsai-city-sim.js",
   "app/features/bonsai-catalog.js",
@@ -944,6 +954,8 @@ function installLazyWritingFlowStub(name) {
 [
   "eli5RewriteSection",
   "eli5ReviewSection",
+  "oneSentenceRewriteSection",
+  "oneSentenceCheckSection",
 ].forEach((name) => installLazyFunctionStub(name, ensureWritingFlowModule));
 
 function installLazyMemoryCardsStub(name) {

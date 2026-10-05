@@ -1983,6 +1983,12 @@ html:lang(zh-Hans) .title-bar h2 {
    the browsers and the trash instead of a rule per surface — and the pair moves
    together, neutral fill under neutral ink.
 
+   Surfaces that still bind their own selection aliases at body scope
+   (--help-row-*, --find-path-result-*, Theme Lab list/finder, alarm/CMF/
+   timeline) would otherwise keep the accent blue behind a non-key window.
+   Re-bind those aliases here too so the sweep is one projection, not a
+   per-surface chase (polishTodo key-window-selection-surfaces).
+
    Measured before this rule: a background Project Hard Disk kept its selected
    row at rgb(0,105,217) with white text while its title bar had already gone
    inactive. After: rgba(0,0,0,0.1) with the document ink in the light mode, and
@@ -1990,6 +1996,22 @@ html:lang(zh-Hans) .title-bar h2 {
 body[data-selection-model="key-window"] .window[data-window]:not(.is-active) {
   --system-selection-bg: var(--sidebar-selection-bg);
   --system-selection-fg: var(--sidebar-selection-fg);
+  --help-row-selected-bg: var(--sidebar-selection-bg);
+  --help-row-selected-fg: var(--sidebar-selection-fg);
+  --find-path-result-selected-bg: var(--sidebar-selection-bg);
+  --find-path-result-selected-fg: var(--sidebar-selection-fg);
+  --find-path-result-selected-title-color: var(--sidebar-selection-fg);
+  --find-path-result-selected-detail-color: var(--sidebar-selection-fg);
+  --alarm-clock-selection-bg: var(--sidebar-selection-bg);
+  --alarm-clock-selection-fg: var(--sidebar-selection-fg);
+  --cmf-selected-bg: var(--sidebar-selection-bg);
+  --cmf-selected-fg: var(--sidebar-selection-fg);
+  --video-timeline-selected-bg: var(--sidebar-selection-bg);
+  --video-timeline-selected-fg: var(--sidebar-selection-fg);
+  --theme-lab-list-selected-bg: var(--sidebar-selection-bg);
+  --theme-lab-list-selected-fg: var(--sidebar-selection-fg);
+  --theme-lab-finder-icon-selected-bg: var(--sidebar-selection-bg);
+  --theme-lab-finder-icon-selected-fg: var(--sidebar-selection-fg);
 }
 
 .finder-citation-jump {

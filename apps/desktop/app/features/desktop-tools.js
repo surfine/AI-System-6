@@ -336,6 +336,7 @@ function completeWritingBell() {
   // work it was measuring. The bell already rings in the desk's own channels —
   // the status line says the interval is over, the knock below carries the way
   // back to the sentence, and the next interval loads straight away.
+  // Journey gates: never auto-open the bell or a streak modal; Start stays voluntary.
   knockAfterWritingBell();
   playSystemSound("alert");
   writingBellMode = completedMode === "work" ? "break" : "work";
@@ -344,6 +345,7 @@ function completeWritingBell() {
   renderWritingBell();
   saveDeskState();
   window.AISystem6ControlStrip?.refreshStrip?.();
+  window.AISystem6JourneyGates?.syncDeskProbe?.();
 }
 
 function getWritingBellState() {

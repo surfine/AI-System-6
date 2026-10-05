@@ -7,14 +7,11 @@
 // a required state does not render, a computed-style contract fails, or the
 // capture is unstable.
 //
-// Four appearances in the registry are NOT in this gate, and the run says so
-// in its own output every time. System 6 and Liquid Glass have no historical
-// screenshot target. Big Sur is an adaptation of the system surfaces described
-// in WWDC20 session 10104, not a copy of a captured one, so it has no canonical
-// board to be measured against either. NeXTSTEP (released 1.0.55) has no
-// canonical board; its instruments are verify-nextstep-workflow/edgecases. A green run here is therefore never
-// evidence about those four, and the guard below refuses a new registry
-// appearance that is neither measured here nor declared uncovered.
+// Eight appearances in the registry are NOT in this gate, and the run says so
+// in its own output every time. Desk-chrome pixels for all twelve live in
+// verify:appearance showcase (wallpaper + Dock / NeXT column). A green run
+// here is never evidence about uncovered ids, and the guard below refuses a
+// new registry appearance that is neither measured here nor declared uncovered.
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";

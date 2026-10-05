@@ -144,6 +144,9 @@ test.assertIncludes(read("apps/desktop/app/core/config.js"), '"app/features/rebu
 test.assertIncludes(read("tooling/runtime-manifest.mjs"), '"app/features/rebuild-flow.js",', "the module is a lazy runtime path");
 test.assertIncludes(flow, 'role="radiogroup" aria-labelledby="rebuild-flow-mode-label"', "whose article it is is a labelled radio group");
 test.assertIncludes(flow, '<div class="select-wrap"><select id="rebuild-flow-source-kind">', "the source is chosen with the System 6 select harness");
+test.assertIncludes(flow, 'setStatus(t("balloon_disabled_rebuild_checks"))', "Hand In refusal names the Checks gate instead of going silent");
+test.assertIncludes(flow, 'setStatus(t("rebuild_handing_in"))', "Hand In shows in-progress feedback before the pack write");
+test.assertIncludes(flow, 'setStatus(rebuildFlow.phase === "running" ? t("rebuild_state_running") : t("balloon_disabled_rebuild_merge"))', "Merge refusal names selection/running instead of going silent");
 test.assertIncludes(read("apps/desktop/app/features/guest-tools.js"), "async function submitDeskRebuildPack(", "a desk round is handed in through the guests' receipt path");
 
 test.finish();

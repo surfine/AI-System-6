@@ -58,7 +58,12 @@ const test = createFeatureTest("project-backup-roundtrip");
     manuscriptTab.backing.id !== "file-1" && manuscriptTab.state.activeTextFileId !== "file-1",
     "no tab keeps the exporting machine's file id",
   );
-  test.assert(manuscriptTab.state.body === "正文", "remapping ids does not disturb the writer's own tab text");
+  test.assert(
+    manuscriptTab.state.body.startsWith("正文")
+      && manuscriptTab.state.body.includes(`aisystem6-image:${remapped.imageAttachments[0].id}`)
+      && !manuscriptTab.state.body.includes("aisystem6-image:img-1"),
+    "the writer's tab text stays, and its picture citation follows the picture",
+  );
   const scratchTab = tabs.find((tab) => tab.role === "scratch_file");
   test.assert(
     resolvable(scratchTab.backing.id) && resolvable(scratchTab.state.activeTextFileId),
@@ -111,6 +116,12 @@ const test = createFeatureTest("project-backup-roundtrip");
   test.assert(
     !manuscript.body.includes("aisystem6-image:img-1"),
     "and no citation is left pointing at the id the picture had on the other disk",
+  );
+  const openTab = remapped.project.documentTabs.find((tab) => tab.role === "manuscript");
+  test.assert(
+    openTab.state.body.includes(`aisystem6-image:${picture.id}`)
+      && !openTab.state.body.includes("aisystem6-image:img-1"),
+    "the open manuscript tab follows the picture too, so reading mode does not print the caption as a paragraph",
   );
 
   const scrap = remapped.scraps.find((item) => Array.isArray(item.images) && item.images.length);

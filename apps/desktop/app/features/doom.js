@@ -46,6 +46,7 @@ window.AISystem6DoomLoaded = true;
     shutdownTimer: 0,
     resizeObserver: null,
     windowObserver: null,
+    binaryPresent: null,
   };
 
   function doomWindow() {
@@ -56,10 +57,41 @@ window.AISystem6DoomLoaded = true;
     return doomWindow()?.querySelector(".doom-pane") || null;
   }
 
+  function syncHostContract(host) {
+    // Chocolate Doom Wasm is a real engine host (data-wasm=1). Binary presence
+    // is claimed while loading/ready; fail/crash/missing_binary keep
+    // data-ready=0. Missing IWAD is honest via doom_status_needs_data +
+    // disabled Play — not a fake "already playing" host (v223 / §7 / R18).
+    let next = host;
+    if (!next) {
+      const key = doomState.statusKey;
+      if (key === "doom_status_crashed") next = "crash";
+      else if (
+        key === "doom_status_timeout"
+        || key === "doom_status_import_failed"
+        || key === "doom_status_missing_binary"
+      ) next = "fail";
+      else if (!key || key === "doom_status_loading") next = key ? "loading" : "idle";
+      // needs-data / engine-ready / wad-ready / running all mean the host
+      // itself is up; Play stays disabled inside the shell until an IWAD lands.
+      else next = "ready";
+    }
+    const binary = doomState.binaryPresent === false ? 0 : 1;
+    window.AISystem6WasmHostContract?.apply?.(doomWindow(), {
+      kind: "doom",
+      host: next,
+      wasm: 1,
+      binary,
+      fail: true,
+      crash: true,
+    });
+  }
+
   function setDoomStatus(key) {
     doomState.statusKey = key || "";
     const status = document.querySelector("[data-doom-status]");
     if (status) status.textContent = doomState.statusKey ? t(doomState.statusKey) : "";
+    syncHostContract();
   }
 
   function clearTimer(name) {
@@ -73,6 +105,35 @@ window.AISystem6DoomLoaded = true;
     const separator = DOOM_SHELL_PATH.includes("?") ? "&" : "?";
     const src = `${DOOM_SHELL_PATH}${separator}lang=${language}&r=${doomState.retryNonce}`;
     return typeof lazyScriptUrl === "function" ? lazyScriptUrl(src) : src;
+  }
+
+  function doomBinaryUrl(name) {
+    const path = `assets/doom/${name}`;
+    return typeof lazyScriptUrl === "function" ? lazyScriptUrl(path) : path;
+  }
+
+  async function probeDoomBinary() {
+    try {
+      const response = await fetch(doomBinaryUrl("chocolate-doom.wasm"), {
+        method: "HEAD",
+        cache: "no-store",
+      });
+      doomState.binaryPresent = response.ok;
+      return response.ok;
+    } catch {
+      try {
+        const response = await fetch(doomBinaryUrl("chocolate-doom.wasm"), {
+          method: "GET",
+          headers: { Range: "bytes=0-3" },
+          cache: "no-store",
+        });
+        doomState.binaryPresent = response.ok;
+        return response.ok;
+      } catch {
+        doomState.binaryPresent = null;
+        return null;
+      }
+    }
   }
 
   function viewportDetail() {
@@ -171,15 +232,19 @@ window.AISystem6DoomLoaded = true;
     removeDoomFrame();
     if (!pane) return;
     pane.textContent = "";
+    const note = document.createElement("p");
+    note.className = "empty-folder-note doom-host-note";
+    note.textContent = doomState.statusKey ? t(doomState.statusKey) : t("doom_status_timeout");
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "btn";
+    button.className = "btn default";
     button.textContent = t("doom_retry");
     button.addEventListener("click", () => {
       doomState.retryNonce += 1;
       attachDoom();
     }, { once: true });
-    pane.appendChild(button);
+    pane.append(note, button);
+    syncHostContract(doomState.statusKey === "doom_status_crashed" ? "crash" : "fail");
   }
 
   function finishDoomShutdown(frame) {
@@ -248,13 +313,20 @@ window.AISystem6DoomLoaded = true;
     });
   }
 
-  function attachDoom() {
+  async function attachDoom() {
     const pane = doomPane();
     if (!pane) return;
     installDoomListeners();
     if (doomState.frame && pane.contains(doomState.frame)) {
       postToDoom("resume");
       sendDoomViewport();
+      return;
+    }
+
+    const probe = await probeDoomBinary();
+    if (probe === false) {
+      setDoomStatus("doom_status_missing_binary");
+      renderDoomRetry();
       return;
     }
 
@@ -269,6 +341,7 @@ window.AISystem6DoomLoaded = true;
     pane.textContent = "";
     pane.appendChild(frame);
     doomState.frame = frame;
+    doomState.binaryPresent = true;
     observeViewport();
     observeDoomWindow();
     setDoomStatus("doom_status_loading");

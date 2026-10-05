@@ -835,8 +835,16 @@ function renderScraps() {
   // activeOwnedControlEnabled instead of the mirrored is-disabled class).
   if (sendScrapsToQuestionButton) sendScrapsToQuestionButton.disabled = !selectedCount;
   if (outlineScrapsButton) outlineScrapsButton.disabled = !selectedCount;
-  if (insertScrapButton) insertScrapButton.disabled = !selectedCount;
+  if (insertScrapButton) {
+    insertScrapButton.disabled = !selectedCount;
+    insertScrapButton.dataset.balloonHelpDisabled = "balloon_scrapbook_empty";
+  }
   if (deleteScrapButton) deleteScrapButton.disabled = !selectedCount;
+  const scrapMultiGo = document.querySelector("#scrap-multi-go");
+  if (scrapMultiGo) {
+    scrapMultiGo.disabled = !selectedCount;
+    scrapMultiGo.dataset.balloonHelpDisabled = "balloon_scrapbook_empty";
+  }
   if (downloadScrapsBilingualButton) {
     const canExportBilingual = getSelectedScraps().some(scrapHasTranslation);
     downloadScrapsBilingualButton.disabled = !canExportBilingual;
@@ -853,6 +861,7 @@ function renderScraps() {
     showingScrapTranslation,
     currentLanguage,
     collectionVersion(visibleScraps),
+    visibleScraps.map((scrap) => `${scrap.id}:${(scrap.tags || []).join(",")}:${String(scrap.body || "").length}`).join("|"),
   ].join("::");
   if (shouldSkipRender("scraps", signature)) return;
   const fragment = document.createDocumentFragment();
@@ -864,7 +873,15 @@ function renderScraps() {
     const empty = document.createElement("button");
     empty.type = "button";
     empty.className = "scrap-empty-card";
-    const emptyMessage = scrapFilterQuery ? t("scrap_filter_empty", scrapFilterQuery) : t("no_scraps");
+    const emptyMessage = scrapFilterQuery
+      ? t("scrap_filter_empty", scrapFilterQuery)
+      : selectedScrapStack === "sources"
+        ? t("no_scraps_sources")
+        : selectedScrapStack === "ideas"
+          ? t("no_scraps_ideas")
+          : selectedScrapStack === "assistant"
+            ? t("no_scraps_clio")
+            : t("no_scraps");
     empty.innerHTML = `<span class="mini-icon scrapbook-desk-icon"></span><b>${escapeHtml(t("scrapbook"))}</b><small>${escapeHtml(emptyMessage)}</small>`;
     empty.disabled = true;
     fragment.append(empty);
@@ -1338,6 +1355,45 @@ function putAwaySelectedTrashItem() {
   putAwayTrashItem(item);
 }
 
+function syncTrashActionControls() {
+  const go = document.querySelector("#trash-more-go");
+  const select = document.querySelector("#trash-more");
+  if (!go) return;
+  const empty = getProjectTrashItems().length === 0;
+  go.disabled = empty;
+  go.dataset.balloonHelpDisabled = "balloon_trash_empty_first";
+  go.classList.toggle("danger", !empty && select?.value === "empty");
+  go.classList.toggle("default", empty || select?.value !== "empty");
+  // Legacy Restore/Empty stay hidden — one primary Do Selected only (no dual primary).
+  if (restoreTrashButton) {
+    restoreTrashButton.hidden = true;
+    restoreTrashButton.disabled = true;
+  }
+  if (emptyTrashButton) {
+    emptyTrashButton.hidden = true;
+    emptyTrashButton.disabled = true;
+  }
+}
+
+function runTrashMoreAction() {
+  const select = document.querySelector("#trash-more");
+  if (getProjectTrashItems().length === 0) {
+    setStatus(t("balloon_trash_empty_first"));
+    return;
+  }
+  if (select?.value === "empty") {
+    emptyActiveProjectTrash();
+    return;
+  }
+  const selected = getSelectedTrashItem();
+  const item = selected || getProjectTrashItems()[0];
+  if (!item) {
+    setStatus(t("balloon_trash_empty_first"));
+    return;
+  }
+  putAwayTrashItem(item);
+}
+
 function renderTrash() {
   const visibleTrash = getProjectTrashItems();
   if (!visibleTrash.includes(selectedTrashItem)) selectedTrashItem = null;
@@ -1350,6 +1406,7 @@ function renderTrash() {
     trashIcon.dataset.systemIcon = isFull ? "trashFull" : "trash";
     trashIcon.innerHTML = systemIconSvg(trashIcon.dataset.systemIcon);
   });
+  syncTrashActionControls();
 
   if (!visibleTrash.length) {
     const empty = document.createElement("div");
@@ -1432,8 +1489,23 @@ function insertScrapIntoPrompt() {
   promptInput.value = promptInput.value.trim()
     ? `${promptInput.value.trim()}\n\n${text}`
     : text;
+  promptInput.dispatchEvent(new Event("input", { bubbles: true }));
   openWindow("assistant");
   promptInput.focus();
+  // Insert is durable only when the destination paints the new text; ClioTalk
+  // and any open scrap stack must both show the change without a second click.
+  if (typeof renderScraps === "function") renderScraps();
+}
+
+function runScrapMultiAction() {
+  const select = document.querySelector("#scrap-multi-more");
+  const action = select?.value || "scrapbook-send-question";
+  if (!getSelectedScraps().length) {
+    setStatus(t("balloon_scrapbook_empty"));
+    return;
+  }
+  if (typeof handleAction === "function") handleAction(action);
+  else window.AISystem6Runtime?.dispatchCommand?.(action);
 }
 
 async function askScrapbookQuestion(event) {
@@ -1591,7 +1663,7 @@ function deleteSelectedScrap() {
   if (selected.length) playSystemSound("trash");
 }
 
-let smounted=!1;function mountScrapbookRuntime(){if(smounted)return!0;smounted=!0;scrapbookAskForm?.addEventListener("submit",askScrapbookQuestion);registerAskBarSource("scrapbook",describeScrapbookAskScope);toggleScrapTranslationButton?.addEventListener("click",toggleScrapTranslationView);const filter=document.getElementById("scrap-filter");filter?.addEventListener("input",()=>setScrapFilter(filter.value));filter?.addEventListener("keydown",event=>{if(event.key==="Escape"&&filter.value){event.preventDefault();filter.value="";setScrapFilter("")}});return!0}
+let smounted=!1;function mountScrapbookRuntime(){if(smounted)return!0;smounted=!0;scrapbookAskForm?.addEventListener("submit",askScrapbookQuestion);registerAskBarSource("scrapbook",describeScrapbookAskScope);toggleScrapTranslationButton?.addEventListener("click",toggleScrapTranslationView);document.querySelector("#scrap-multi-go")?.addEventListener("click",runScrapMultiAction);const filter=document.getElementById("scrap-filter");filter?.addEventListener("input",()=>setScrapFilter(filter.value));filter?.addEventListener("keydown",event=>{if(event.key==="Escape"&&filter.value){event.preventDefault();filter.value="";setScrapFilter("")}});return!0}
 function swin(){return document.querySelector(".window.is-active")?.dataset.window==="scrapbook"}function sctrl(s){const c=document.querySelector(s);return!!c&&!c.disabled&&!c.hidden}
 const sav={"open-scrapbook":()=>!0,"scrapbook-open-source":()=>sctrl("#open-scrap-source"),"scrapbook-page-previous":()=>canMoveScrapbookPage(-1),"scrapbook-page-next":()=>canMoveScrapbookPage(1),"scrapbook-keep-reading":()=>!!scrapReadingProposal,"scrapbook-discard-reading":()=>!!scrapReadingProposal,"scrapbook-toggle-translation":()=>sctrl("#toggle-scrap-translation"),"scrapbook-insert":()=>sctrl("#insert-scrap"),"scrapbook-attach":()=>sctrl("#attach-scrap-to-assistant"),"scrapbook-send-question":()=>sctrl("#send-scraps-to-question"),"scrapbook-outline":()=>sctrl("#outline-scraps"),"scrapbook-export-bilingual":()=>sctrl("#download-scraps-bilingual"),"scrapbook-delete":()=>sctrl("#delete-scrap"),"focus-scrapbook-question":()=>getSelectedScraps().length>0};
 
@@ -1718,6 +1790,14 @@ function renderScrapReadingProposal() {
     : null;
   panel.classList.toggle("is-hidden", !active);
   output.textContent = active ? active.text : "";
+  // One content primary: Keep Reading while a proposal is up; otherwise Insert.
+  // Ask stays in the ask-bar and must not become a second chrome default (R17).
+  const keep = panel.querySelector('[data-action="scrapbook-keep-reading"]');
+  const insert = document.getElementById("insert-scrap");
+  const ask = document.getElementById("scrapbook-ask-button");
+  keep?.classList.toggle("default", !!active);
+  insert?.classList.toggle("default", !active);
+  ask?.classList.toggle("default", false);
 }
 
 async function readSelectedScrapPicture() {

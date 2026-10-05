@@ -14,10 +14,11 @@ function harness() {
   let timers = [];
   const failures = [];
   const dataset = {};
+  const listeners = {};
   const window = {
     performance: { now: () => clock },
     setTimeout: (fn, ms) => { timers.push({ at: clock + ms, fn }); return timers.length; },
-    addEventListener() {},
+    addEventListener(type, fn) { listeners[type] = fn; },
     showBootFailure: (error) => failures.push(error.message),
   };
   const document = { body: { dataset, classList: { add() {} } }, getElementById: () => null };
@@ -35,7 +36,7 @@ function harness() {
     }
     clock = end;
   };
-  return { window, dataset, failures, advance };
+  return { window, dataset, failures, advance, listeners };
 }
 
 {
@@ -71,6 +72,34 @@ function harness() {
   h.advance(200000);
   test.assert(h.failures.length === 0, "a ready desk is never replaced by the failure screen");
 }
+{
+  const h = harness();
+  h.listeners.error({
+    target: { nodeName: "SCRIPT" },
+    filename: "app/features/project-cd-print.js",
+    error: null,
+    message: "Script error.",
+  });
+  test.assert(h.failures.length === 0, "a missed lazy script does not show Sad Mac");
+}
+{
+  const h = harness();
+  h.listeners.error({
+    error: new Error("Cannot access 'x' before initialization"),
+    message: "Cannot access 'x' before initialization",
+    filename: "app.bundle.js",
+    lineno: 12,
+  });
+  test.assert(h.failures.length === 1, "a real exception still shows Sad Mac");
+}
+{
+  const h = harness();
+  h.listeners.unhandledrejection({ reason: new Error("AbortError") });
+  test.assert(h.failures.length === 0, "an unhandled rejection during boot does not show Sad Mac by itself");
+}
+
+test.assertIncludes(source, "wirePlainRecoveryButtons", "the safety net wires Reload on every Sad Mac control");
+test.assertIncludes(source, "ai-system6-boot-skip-session", "plain Start-without-windows still marks the skip flag");
 
 test.assertIncludes(bootSource, "function markBootProgress(step)", "boot reports its progress to the safety net");
 test.assertIncludes(bootSource, "} finally {\n    markBootProgress(label);", "every boot step reports when it ends, failed or not");

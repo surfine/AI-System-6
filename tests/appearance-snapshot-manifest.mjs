@@ -6,8 +6,8 @@
 // the part the product actually promises, so a machine can hold that part and
 // a human can stop re-checking the rest.
 //
-//   Showcase  — what sells the six eras: the desktop, one frame per era.
-//               These are the six images on the site and in the README.
+//   Showcase  — what sells the twelve eras: the desktop, one frame per era.
+//               These are the images on the site and in the README.
 //   Working   — where a writer spends hours: the five route windows, at every
 //               width, in the two appearances the beta promises.
 //   Controls  — the Control Panel chooser and the Theme Lab specimens, the
@@ -20,10 +20,16 @@
 
 export const SHOWCASE_THEMES = [
   "classic",
+  "system-7",
+  "nextstep",
+  "drawing-board",
   "platinum",
   "aqua",
+  "tiger",
   "snow-leopard",
+  "lion",
   "yosemite",
+  "big-sur",
   "liquid-glass",
 ];
 
@@ -122,7 +128,7 @@ export const TOKEN_COMPARED_THEMES = [
   "liquid-glass",
 ];
 
-/** Every cell in the promised matrix: 5 showcase + 25 working + 3 controls + 4 games = 37. */
+/** Every cell in the promised matrix: 11 showcase + 25 working + 3 controls + 4 games = 43. */
 export function snapshotCells() {
   const cells = [];
   for (const theme of SHOWCASE_PIXEL_THEMES) {

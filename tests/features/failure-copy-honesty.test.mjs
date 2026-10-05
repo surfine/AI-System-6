@@ -26,6 +26,7 @@
 //    reloading over unsaved state, shutdown claiming "safe to shut down."
 //    Both must now surface the failure instead.
 
+import { readFileSync } from "node:fs";
 import { createAppBootVm } from "../helpers/app-boot-vm.mjs";
 import { createFeatureTest } from "../helpers/feature-test-harness.mjs";
 
@@ -68,6 +69,21 @@ ctx.currentLanguage = "zh";
 const humanMessage = "ELI5 检查没有返回可解析的 JSON。";
 test.assert(ctx.friendlyErrorDetail({ message: humanMessage }) === humanMessage, "an already-localized human message passes through unchanged");
 
+// Context-budget refusals from assertFinalChatPayloadBudget must not leak as
+// raw English under zh, and must not be misread as a generic connection error.
+ctx.currentLanguage = "en";
+const budgetEn = ctx.friendlyErrorDetail({
+  message: "Final chat payload exceeds context budget: 20436 > 8192 (conservative-utf8-bytes-v1)",
+  code: "context-budget-exceeded",
+});
+test.assert(/context/i.test(budgetEn) && !/connection did not respond/i.test(budgetEn), `EN context-budget detail names context (got "${budgetEn}")`);
+ctx.currentLanguage = "zh";
+const budgetZh = ctx.friendlyErrorDetail({
+  message: "Final chat payload exceeds context budget: 20436 > 8192 (conservative-utf8-bytes-v1)",
+  code: "context-budget-exceeded",
+});
+test.assert(/上下文/.test(budgetZh) && !budgetZh.includes("Final chat payload"), `ZH context-budget detail is localized (got "${budgetZh}")`);
+
 // --- 2. reportWritingRouteModelFailure never surfaces the raw code ---------
 
 async function captureRouteFailure(error, label, { modelReady = true } = {}) {
@@ -107,6 +123,20 @@ ctx.currentLanguage = "zh";
   test.assert(!allText.includes("lmstudio_server_offline"), `ZH: no surfaced text carries the raw code (got "${allText}")`);
   test.assert(!allText.includes("Connect to LM Studio"), `ZH: no surfaced text carries the raw English sentence (got "${allText}")`);
   test.assert(allText.includes("没有完成"), `ZH: the status names the failed task (got "${allText}")`);
+}
+
+// Section Drafts AI Draft / Suggestions used to clearStatus() after reporting
+// a model refusal, which made census see silence + console.error. Both paths
+// must keep the receipt when reportedFailure is set.
+{
+  const writingFlow = readFileSync(new URL("../../apps/desktop/app/features/writing-flow.js", import.meta.url), "utf8");
+  const outlineClaim = readFileSync(new URL("../../apps/desktop/app/features/outline-claim.js", import.meta.url), "utf8");
+  test.assertIncludes(writingFlow, "let reportedFailure = false", "AI Draft tracks whether a model refusal was already reported");
+  test.assertIncludes(writingFlow, "if (!reportedFailure) clearStatus()", "AI Draft does not wipe an honest failure receipt");
+  test.assertNotIncludes(writingFlow, 'console.error("Drafting failed"', "AI Draft does not console.error expected model refusals");
+  test.assertIncludes(outlineClaim, "await reportWritingRouteModelFailure(error, t(\"section_drafts\"))", "AI Suggestions uses the shared route failure reporter");
+  test.assertIncludes(outlineClaim, "if (!reportedFailure) clearStatus()", "AI Suggestions does not wipe an honest failure receipt");
+  test.assertNotIncludes(outlineClaim, 'console.error("Suggest draft failed"', "AI Suggestions does not console.error expected model refusals");
 }
 
 // --- 3. writeHeldThoughts() reports a real persistence failure -------------

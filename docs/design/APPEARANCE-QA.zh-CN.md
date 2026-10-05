@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/APPEARANCE-QA.md -->
-<!-- source-sha256: 44ca9a721db935cf2adddb62e2039e4c788ee4d93f58696255779ef51b527d76 -->
+<!-- source-sha256: b74dde5a55bb1b684bdd62a08c52a66d5f342601195663772bb175298b2853b5 -->
 
 英文版为准。本文档仅供人类参考。
 
@@ -163,3 +163,19 @@ Dock、最小化窗口、列式 Finder/Shelf、滚动条、输入法切换、离
 已经取消。NeXTSTEP 没有 canonical 的 Theme Lab 基准板：`verify-nextstep-workflow` 及其
 边界配套是它的检测工具，`verify:theme-lab:fidelity` 通过并不说明它的情况。它的发布
 不提升此前历史相似度结论，也不代表所有图标族已获历史审核通过。
+
+## 十二套外观仪表（2026-10-04）
+
+注册表现有十二套可选用外观。可重复的产品检查分成「现已自动化」与「人工／延后」：
+
+| 仪表 | 锁定内容 | 闸门 |
+| --- | --- | --- |
+| `appearance-system` + `harvest-ux` 契约 | 注册表时间线、polishPending 诚实性、Theme Lab calm 钩子（`quiet-focus`／key-window／vibrancy／灰阶量测属性）、Drawing Board 素描资产接线 | `verify:quick -- --feature appearance-system`／`harvest-ux` |
+| `tooling/verify-appearance-app-coverage.mjs` | 每套外观对每个已注册窗口的计算样式；Retina 栅格底线；菜单栏模型；仅代表窗口截图 | ship-only `appearance-real-apps` |
+| `tests/visual/theme-lab/<id>.png` | 十二套 Theme Lab 回归基线（网页适配，非原生保真） | ship `theme-lab-regression` |
+| Theme Lab Surfaces → 打磨对照板 | 现场 `measurePolishBoards()` 写入 `data-theme-lab-measure-*`（key-window 可区分性、vibrancy `backdrop-filter`、L0–L3 灰阶）；calm 选择是产品 UI | 人工／未来探针对 |
+
+**本轮延后（不要求）：** 十二套 × 每个窗口的完整截图 CI、canonical 历史保真
+（`verify:theme-lab:fidelity`，人工缓存）、以及剩余 docs／P5 `polishTodos`
+（System 7／Lion／Drawing Board）的清空。Theme Lab 会显示未完成的 polishTodos，
+但不会清空注册表。

@@ -102,12 +102,20 @@ function getControlStripState() {
   return controlStripState;
 }
 
+function syncControlStripSettingsPanel() {
+  // Quiet feedback: when prefs change from restore or another path, the Strip
+  // tab must repaint if the module is already loaded — not only when the user
+  // re-clicks the tab.
+  window.AISystem6ControlStrip?.renderSettings?.();
+}
+
 function setControlStripState(patch = {}) {
   controlStripState = normalizeControlStripState({ ...controlStripState, ...patch });
   controlStripCollapsed = controlStripState.collapsed;
   if (typeof controlStripShowInput !== "undefined" && controlStripShowInput) {
     controlStripShowInput.checked = controlStripState.enabled;
   }
+  syncControlStripSettingsPanel();
   saveDeskState();
   return controlStripState;
 }
@@ -132,6 +140,7 @@ function restoreControlStripState(settings) {
   if (typeof controlStripShowInput !== "undefined" && controlStripShowInput) {
     controlStripShowInput.checked = controlStripState.enabled;
   }
+  syncControlStripSettingsPanel();
   return controlStripState;
 }
 
@@ -2653,6 +2662,23 @@ function updateNotificationIndicator() {
     : t("notification_center"));
 }
 
+function syncNotificationClearControl() {
+  const clearButton = document.querySelector('[data-action="clear-notifications"]');
+  if (!clearButton) return;
+  const empty = systemNotifications.length === 0;
+  clearButton.disabled = empty;
+  clearButton.classList.toggle("is-disabled", empty);
+  if (empty) {
+    clearButton.dataset.balloonHelpDisabled = "balloon_notifications_empty_clear";
+    clearButton.dataset.balloonHelp = "balloon_notifications_empty_clear";
+  } else {
+    delete clearButton.dataset.balloonHelpDisabled;
+    if (clearButton.dataset.balloonHelp === "balloon_notifications_empty_clear") {
+      delete clearButton.dataset.balloonHelp;
+    }
+  }
+}
+
 function renderNotificationCenter() {
   if (!notificationCenterListEl) return;
   unreadSystemNotifications = 0;
@@ -2663,6 +2689,8 @@ function renderNotificationCenter() {
       ? t("notifications_count", systemNotifications.length)
       : t("notifications_empty");
   }
+
+  syncNotificationClearControl();
 
   notificationCenterListEl.replaceChildren();
   if (!systemNotifications.length) {
@@ -2874,6 +2902,8 @@ function pushSystemNotification(message, options = {}) {
   // messages of its own, so this cannot feed itself.
   saveDeskState();
 
+  // Quiet return (journey gate): a knock updates the badge and the open list
+  // only. It must never open notificationCenter or steal focus from the page.
   const center = getWindow("notificationCenter");
   if (center && !center.classList.contains("is-hidden")) {
     renderNotificationCenter();
@@ -2881,6 +2911,7 @@ function pushSystemNotification(message, options = {}) {
     unreadSystemNotifications += 1;
     updateNotificationIndicator();
   }
+  window.AISystem6JourneyGates?.syncDeskProbe?.();
   return item.id;
 }
 
@@ -3097,6 +3128,8 @@ function longTaskReceiptInfo(key, statusText = "") {
     "suggest-draft": { label: t("section_drafts"), windowName: "sectionDrafts" },
     "eli5-rewrite-section": { label: t("section_drafts"), windowName: "sectionDrafts" },
     "eli5-review-section": { label: t("section_drafts"), windowName: "sectionDrafts" },
+    "one-sentence-rewrite-section": { label: t("section_drafts"), windowName: "sectionDrafts" },
+    "one-sentence-check-section": { label: t("section_drafts"), windowName: "sectionDrafts" },
     "draft-section": { label: t("section_drafts"), windowName: "sectionDrafts" },
     "claim-check": { label: t("review_desk"), windowName: "reviewDesk" },
     "claim-check-section": { label: t("review_desk"), windowName: "reviewDesk" },
@@ -3238,7 +3271,7 @@ function explainStatusError(message) {
       key: "lm_context_mismatch_error",
     },
     {
-      match: /(lmstudio_context_length|context length|tokens to keep|too many tokens|prompt.*too long|input.*too long|shorter input|larger context|上下文|输入.*太长)/,
+      match: /(lmstudio_context_length|context-budget-exceeded|context budget|payload exceeds context|context length|tokens to keep|too many tokens|prompt.*too long|input.*too long|shorter input|larger context|上下文|输入.*太长)/,
       zh: "说明：超上下文限制。请缩短输入或调大 context length。",
       en: "Note: Exceeds context. Shorten input or raise context length.",
     },
@@ -3364,7 +3397,7 @@ function classifyLmStudioError(error, response = null) {
     ))
   ) return "cloud_service_unavailable";
   if (/lmstudio_context_mismatch/.test(lower)) return "lmstudio_context_mismatch";
-  if (/context length|tokens to keep|too many tokens|prompt.*too long|input.*too long|shorter input|larger context/.test(lower)) return "lmstudio_context_length";
+  if (/context-budget-exceeded|context budget|payload exceeds context|context length|tokens to keep|too many tokens|prompt.*too long|input.*too long|shorter input|larger context/.test(lower)) return "lmstudio_context_length";
   if (/failed to fetch|fetch failed|networkerror|econnrefused|connection refused|not responding/.test(lower)) return "lmstudio_server_offline";
   if (/timeout|timed out|aborted/.test(lower)) return "lmstudio_timeout";
   if (/model .*not found|model_not_found|model does not exist|model .*not loaded|no model loaded/.test(lower)) return "lmstudio_model_not_loaded";

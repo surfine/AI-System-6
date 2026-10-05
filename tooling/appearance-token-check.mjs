@@ -73,7 +73,11 @@ const { chromium } = require("playwright");
 const BASELINE_PATH = join(root, "internal/evidence/drafts/appearance-baseline/token-deltas.json");
 const SHEET_PATHS = [
   "apps/desktop/styles/65-appearance-themes.css",
+  "apps/desktop/styles/65-system-7-appearance.css",
+  "apps/desktop/styles/65-drawing-board-appearance.css",
   "apps/desktop/styles/67-aqua-appearance.css",
+  "apps/desktop/styles/67-tiger-appearance.css",
+  "apps/desktop/styles/67-lion-appearance.css",
   "apps/desktop/styles/68-big-sur-appearance.css",
   "apps/desktop/styles/69-nextstep-appearance.css",
   "apps/desktop/styles/70-liquid-glass.css",

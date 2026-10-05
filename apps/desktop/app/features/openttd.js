@@ -3,9 +3,19 @@
 // The game itself is a WebAssembly build of OpenTTD 15.3 (GPLv2) that lives
 // in assets/openttd/ (openttd.js/.wasm/.data plus its own shell page). This
 // module only owns the System 6 side: the window, the iframe lifecycle, the
-// status line, and the quit handshake. The shell page owns the touch layer
-// and the first-run configuration; see assets/openttd/index.html and
-// tooling/games/openttd/build.md.
+// status line, the quit handshake, and the honest host contract (v223).
+//
+// Required binary/runtime (not eager-boot; iframe-only):
+//   - apps/desktop/assets/openttd/openttd.js
+//   - apps/desktop/assets/openttd/openttd.wasm
+//   - apps/desktop/assets/openttd/openttd.data
+// Rebuild with tooling/games/openttd/build.md (emsdk + OpenTTD 15.3 + OpenGFX).
+// N6 public-snapshot boundary (Aaron 2026-10-04): Public snapshot / slim trees omit
+// those generated outputs (see tooling/public-snapshot-manifest.mjs). The private
+// tree and full web/Mac releases keep the play path when the three files exist.
+// Omitted → probeOpenTTDBinary → openttd_status_missing_binary + Retry; never
+// pretend ready. Do not download new engines or raise floppyBudgetBytes.
+// See assets/openttd/index.html and tooling/games/openttd/build.md.
 window.AISystem6OpenTTDLoaded = true;
 
 (function initOpenTTDFeature() {
@@ -31,11 +41,17 @@ window.AISystem6OpenTTDLoaded = true;
   const OPENTTD_SHELL_PATH = "assets/openttd/index.html";
   // Give the shell time to flush IDBFS before the iframe goes away on quit.
   const OPENTTD_QUIT_SYNC_MS = 400;
+  // Match DOOM's honesty: a hung or missing Wasm payload must not look like a
+  // successful load. The OpenTTD .data pack is large; keep the watchdog long.
+  const OPENTTD_ENGINE_READY_TIMEOUT_MS = 90000;
 
   const openttdState = {
     frame: null,
     statusKey: "",
     listening: false,
+    retryNonce: 0,
+    readyTimer: 0,
+    binaryPresent: null,
   };
 
   function openttdWindow() {
@@ -46,18 +62,115 @@ window.AISystem6OpenTTDLoaded = true;
     return document.querySelector('[data-window="openttd"] .openttd-pane');
   }
 
+  function syncHostContract(host) {
+    const next = host || (
+      openttdState.statusKey === "openttd_status_crashed"
+        ? "crash"
+        : openttdState.statusKey === "openttd_status_timeout"
+          || openttdState.statusKey === "openttd_status_missing_binary"
+          ? "fail"
+          : openttdState.statusKey === "openttd_status_loading"
+            ? "loading"
+            : openttdState.statusKey === "openttd_status_running"
+              || openttdState.statusKey === "openttd_status_paused"
+              ? "ready"
+              : openttdState.statusKey
+                ? "ready"
+                : "idle"
+    );
+    const binary = openttdState.binaryPresent === false ? 0 : 1;
+    window.AISystem6WasmHostContract?.apply?.(openttdWindow(), {
+      kind: "openttd",
+      host: next,
+      wasm: 1,
+      binary,
+      fail: true,
+      crash: true,
+    });
+  }
+
   function setOpenTTDStatus(key) {
     openttdState.statusKey = key;
     const status = document.querySelector("[data-openttd-status]");
     if (!status) return;
     status.textContent = key ? t(key) : "";
+    syncHostContract();
+  }
+
+  function clearReadyTimer() {
+    if (!openttdState.readyTimer) return;
+    window.clearTimeout(openttdState.readyTimer);
+    openttdState.readyTimer = 0;
   }
 
   function openttdShellSrc() {
     const language = typeof currentLanguage === "string" && currentLanguage === "en" ? "en" : "zh";
-    const src = `${OPENTTD_SHELL_PATH}?lang=${language}`;
+    const separator = OPENTTD_SHELL_PATH.includes("?") ? "&" : "?";
+    const src = `${OPENTTD_SHELL_PATH}${separator}lang=${language}&r=${openttdState.retryNonce}`;
     // lazyScriptUrl appends the canonical ?v=<build> cache-buster.
     return typeof lazyScriptUrl === "function" ? lazyScriptUrl(src) : src;
+  }
+
+  function openttdBinaryUrl(name) {
+    const path = `assets/openttd/${name}`;
+    return typeof lazyScriptUrl === "function" ? lazyScriptUrl(path) : path;
+  }
+
+  async function probeOpenTTDBinary() {
+    try {
+      const response = await fetch(openttdBinaryUrl("openttd.wasm"), {
+        method: "HEAD",
+        cache: "no-store",
+      });
+      openttdState.binaryPresent = response.ok;
+      return response.ok;
+    } catch {
+      // Some hosts reject HEAD; try a ranged GET as a second opinion.
+      try {
+        const response = await fetch(openttdBinaryUrl("openttd.wasm"), {
+          method: "GET",
+          headers: { Range: "bytes=0-3" },
+          cache: "no-store",
+        });
+        openttdState.binaryPresent = response.ok;
+        return response.ok;
+      } catch {
+        openttdState.binaryPresent = null;
+        return null;
+      }
+    }
+  }
+
+  function removeOpenTTDFrame(frame = openttdState.frame) {
+    clearReadyTimer();
+    if (frame) frame.remove();
+    if (openttdState.frame === frame) openttdState.frame = null;
+  }
+
+  function renderOpenTTDRetry() {
+    const pane = openttdPane();
+    removeOpenTTDFrame();
+    if (!pane) return;
+    pane.textContent = "";
+    // Fail ≠ ready: keep the status line reason in the pane so Retry is not a
+    // bare button that looks like a successful host (harvest R18).
+    const note = document.createElement("p");
+    note.className = "empty-folder-note openttd-host-note";
+    note.textContent = openttdState.statusKey
+      ? t(openttdState.statusKey)
+      : t("openttd_status_timeout");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn default";
+    button.textContent = t("openttd_retry");
+    button.addEventListener("click", () => {
+      openttdState.retryNonce += 1;
+      attachOpenTTD();
+    }, { once: true });
+    pane.append(note, button);
+    syncHostContract(
+      openttdState.statusKey === "openttd_status_crashed" ? "crash" : "fail",
+    );
   }
 
   function listenForShellMessages() {
@@ -68,19 +181,37 @@ window.AISystem6OpenTTDLoaded = true;
       if (!openttdState.frame || event.source !== openttdState.frame.contentWindow) return;
       const data = event.data;
       if (!data || data.type !== "openttd") return;
-      if (data.event === "ready") setOpenTTDStatus("openttd_status_running");
-      if (data.event === "running") setOpenTTDStatus("openttd_status_running");
+      if (data.event === "ready" || data.event === "running") {
+        clearReadyTimer();
+        openttdState.binaryPresent = true;
+        setOpenTTDStatus("openttd_status_running");
+      }
       if (data.event === "paused") setOpenTTDStatus("openttd_status_paused");
-      if (data.event === "exited") setOpenTTDStatus("openttd_status_exited");
-      if (data.event === "crashed") setOpenTTDStatus("openttd_status_crashed");
+      if (data.event === "exited") {
+        clearReadyTimer();
+        setOpenTTDStatus("openttd_status_exited");
+      }
+      if (data.event === "crashed") {
+        clearReadyTimer();
+        setOpenTTDStatus("openttd_status_crashed");
+        renderOpenTTDRetry();
+      }
     });
   }
 
-  function attachOpenTTD() {
+  async function attachOpenTTD() {
     const pane = openttdPane();
     if (!pane) return;
     listenForShellMessages();
     if (openttdState.frame && pane.contains(openttdState.frame)) return;
+
+    const probe = await probeOpenTTDBinary();
+    if (probe === false) {
+      setOpenTTDStatus("openttd_status_missing_binary");
+      renderOpenTTDRetry();
+      return;
+    }
+
     // One live game per session: a second attach reuses the same iframe.
     const frame = document.createElement("iframe");
     frame.className = "openttd-frame";
@@ -91,6 +222,12 @@ window.AISystem6OpenTTDLoaded = true;
     pane.appendChild(frame);
     openttdState.frame = frame;
     setOpenTTDStatus("openttd_status_loading");
+    clearReadyTimer();
+    openttdState.readyTimer = window.setTimeout(() => {
+      if (openttdState.frame !== frame) return;
+      setOpenTTDStatus("openttd_status_timeout");
+      renderOpenTTDRetry();
+    }, OPENTTD_ENGINE_READY_TIMEOUT_MS);
   }
 
   // Quit handshake: ask the shell to flush IDBFS, then drop the iframe so the
@@ -98,6 +235,7 @@ window.AISystem6OpenTTDLoaded = true;
   function handleOpenTTDQuit() {
     const frame = openttdState.frame;
     openttdState.frame = null;
+    clearReadyTimer();
     if (!frame) return;
     try {
       frame.contentWindow?.postMessage({ type: "openttd-host", command: "sync" }, location.origin);

@@ -25,7 +25,8 @@ test.assertIncludes(
   "background: var(--liquid-disabled-control-bg);",
   "the shared disabled-control rule reads its surface from a scoped token",
 );
-test.assertIncludes(menus, "getReleaseReadyThemes()", "Special → Appearance exposes every release-ready registry appearance");
+test.assertIncludes(menus, "getReleaseReadyThemes()", "Special → Appearance still knows the release-ready registry list");
+test.assertIncludes(menus, "balloon_appearance_not_ready", "unfinished appearances are not faked as ready");
 test.assertNotIncludes(menus, 'themeId: "unknown-theme"', "Special → Appearance never fabricates an unregistered theme");
 test.assertIncludes(menus, 'submenu("appearance", appearanceItems)', "Special owns one Appearance submenu instead of a second theme system");
 

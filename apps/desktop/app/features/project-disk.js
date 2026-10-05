@@ -2191,12 +2191,33 @@ function renderProjectRootListItem(item, project, mode, orderedItems = []) {
   `;
   attachCitationJumpHandler(row);
   row.addEventListener("click", (event) => {
-    if (isSystem) selectProjectRootItem(item.id);
-    else {
-      const selectionType = isFolder ? "folder" : isReference ? "projectReference" : "file";
-      selectDocumentItemFromEvent(selectionType, item.id, event, orderedItems);
-      updateProjectRootSelectionView();
+    if (isSystem) {
+      if (
+        selectedProjectRootItemId === item.id
+        && typeof window.matchMedia === "function"
+        && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+      ) {
+        openProjectRootItem(item);
+        return;
+      }
+      selectProjectRootItem(item.id);
+      return;
     }
+    const selectionType = isFolder ? "folder" : isReference ? "projectReference" : "file";
+    const alreadySelected = isFolder
+      ? selectedDocumentFolderId === item.id
+      : selectedChatFileId === item.id || selectedProjectReferenceId === item.id;
+    if (
+      alreadySelected
+      && !event.metaKey && !event.ctrlKey && !event.shiftKey
+      && typeof window.matchMedia === "function"
+      && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+    ) {
+      openProjectRootItem(item);
+      return;
+    }
+    selectDocumentItemFromEvent(selectionType, item.id, event, orderedItems);
+    updateProjectRootSelectionView();
   });
   row.addEventListener("dblclick", () => openProjectRootItem(item));
   return row;
@@ -2258,12 +2279,33 @@ function renderProjectRootIconItem(item, orderedItems = []) {
   button.innerHTML = `${renderSystemIcon(item.iconId || item.iconClass, { size: "finder"})}<span>${escapeHtml(getFinderItemName(item))}</span><small>${metaInner}</small>`;
   attachCitationJumpHandler(button);
   button.addEventListener("click", (event) => {
-    if (isSystem) selectProjectRootItem(item.id);
-    else {
-      const selectionType = isFolder ? "folder" : isReference ? "projectReference" : "file";
-      selectDocumentItemFromEvent(selectionType, item.id, event, orderedItems);
-      updateProjectRootSelectionView();
+    if (isSystem) {
+      if (
+        selectedProjectRootItemId === item.id
+        && typeof window.matchMedia === "function"
+        && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+      ) {
+        openProjectRootItem(item);
+        return;
+      }
+      selectProjectRootItem(item.id);
+      return;
     }
+    const selectionType = isFolder ? "folder" : isReference ? "projectReference" : "file";
+    const alreadySelected = isFolder
+      ? selectedDocumentFolderId === item.id
+      : selectedChatFileId === item.id || selectedProjectReferenceId === item.id;
+    if (
+      alreadySelected
+      && !event.metaKey && !event.ctrlKey && !event.shiftKey
+      && typeof window.matchMedia === "function"
+      && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+    ) {
+      openProjectRootItem(item);
+      return;
+    }
+    selectDocumentItemFromEvent(selectionType, item.id, event, orderedItems);
+    updateProjectRootSelectionView();
   });
   button.addEventListener("dblclick", () => openProjectRootItem(item));
   return button;
@@ -2287,6 +2329,38 @@ function attachCitationJumpHandler(root) {
   });
 }
 
+function syncProjectDiskMoreActions() {
+  const select = document.querySelector("#project-disk-more");
+  const go = document.querySelector("#project-disk-more-go");
+  if (!go || !select) return;
+  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  const items = project && typeof getProjectRootFinderItems === "function" ? getProjectRootFinderItems() : [];
+  const action = select.value || "open-import-utility";
+  const needsDocs = action === "open-project-backup" || action === "open-clio-project";
+  const blocked = !project || (needsDocs && !items.length);
+  go.disabled = blocked;
+  go.dataset.balloonHelpDisabled = !project
+    ? "balloon_disabled_menu_project"
+    : "balloon_project_disk_empty_first";
+}
+
+function runProjectDiskMoreAction() {
+  const select = document.querySelector("#project-disk-more");
+  const action = select?.value || "open-import-utility";
+  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  const items = project && typeof getProjectRootFinderItems === "function" ? getProjectRootFinderItems() : [];
+  if (!project) {
+    setStatus(t("balloon_disabled_menu_project"));
+    return;
+  }
+  if ((action === "open-project-backup" || action === "open-clio-project") && !items.length) {
+    setStatus(t("balloon_project_disk_empty_first"));
+    return;
+  }
+  if (typeof handleAction === "function") handleAction(action);
+  else window.AISystem6Runtime?.dispatchCommand?.(action);
+}
+
 function renderProjectDisks() {
   window.AISystem6FinderColumns?.sync();
   ensureActiveProject();
@@ -2295,6 +2369,7 @@ function renderProjectDisks() {
   }
   selectedProjectId = activeProjectId;
   updateProjectLabels();
+  syncProjectDiskMoreActions();
 
   const project = getActiveProject();
   const titleEl = document.querySelector("#project-disk-title");
@@ -2369,6 +2444,7 @@ function renderProjectDisks() {
     projectDiskGridEl.append(empty);
     updateFinderViewButtons(getWindow("projects"), mode);
     setFinderViewClasses(projectDiskGridEl, mode);
+    syncProjectDiskMoreActions();
     if (typeof settlePendingFinderFit === "function") settlePendingFinderFit(getWindow("projects"));
     return;
   }

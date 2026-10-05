@@ -375,26 +375,141 @@ function runClaimCheckFromMenu() {
   runClaimCheck();
 }
 
+function normalizeReviewDeskLens(mode = "style") {
+  return ["facts", "hkrr", "guests", "mingming", "luoluo"].includes(mode) ? mode : "style";
+}
+
+function getReviewDeskLens() {
+  return normalizeReviewDeskLens(reviewDeskMode);
+}
+
+function reviewDeskLensCopyKeys(lens = getReviewDeskLens()) {
+  const table = {
+    style: {
+      title: "style_sheet",
+      hint: "review_lens_hint_style",
+      empty: "review_lens_empty_style",
+      balloon: "balloon_review_lens_style",
+      panelEmpty: "style_sheet_empty",
+    },
+    facts: {
+      title: "claim_check",
+      hint: "review_lens_hint_facts",
+      empty: "review_lens_empty_facts",
+      balloon: "balloon_review_lens_facts",
+      panelEmpty: "claim_check_empty",
+    },
+    hkrr: {
+      title: "quick_draft_chip_hkrr",
+      hint: "review_lens_hint_hkrr",
+      empty: "review_lens_empty_hkrr",
+      balloon: "balloon_review_lens_hkrr",
+      panelEmpty: "review_lens_empty_hkrr",
+    },
+    mingming: {
+      title: "quick_draft_chip_mingming",
+      hint: "review_lens_hint_mingming",
+      empty: "review_lens_empty_mingming",
+      balloon: "balloon_review_lens_mingming",
+      panelEmpty: "review_lens_empty_mingming",
+    },
+    luoluo: {
+      title: "quick_draft_chip_luoluo",
+      hint: "review_lens_hint_luoluo",
+      empty: "review_lens_empty_luoluo",
+      balloon: "balloon_review_lens_luoluo",
+      panelEmpty: "review_lens_empty_luoluo",
+    },
+    guests: {
+      title: "guest_reviews",
+      hint: "review_lens_hint_guests",
+      empty: "guest_reviews_empty",
+      balloon: "balloon_review_desk",
+      panelEmpty: "guest_reviews_empty",
+    },
+  };
+  return table[normalizeReviewDeskLens(lens)] || table.style;
+}
+
+function reviewDeskResultPanelForLens(lens = getReviewDeskLens()) {
+  const normalized = normalizeReviewDeskLens(lens);
+  if (normalized === "style") return "style";
+  if (normalized === "guests") return "guests";
+  return "facts";
+}
+
+function syncReviewDeskLensEmptyPanel(panel, emptyKey) {
+  if (!panel) return;
+  const note = panel.querySelector(":scope > .empty-folder-note");
+  if (!note || panel.children.length !== 1) return;
+  note.dataset.i18n = emptyKey;
+  note.textContent = t(emptyKey);
+}
+
+function syncReviewDeskLensCopy(lens = getReviewDeskLens()) {
+  const normalized = normalizeReviewDeskLens(lens);
+  const keys = reviewDeskLensCopyKeys(normalized);
+  const win = typeof getWindow === "function" ? getWindow("reviewDesk") : document.querySelector('[data-window="reviewDesk"]');
+  win?.setAttribute("data-review-lens", normalized);
+
+  const select = document.querySelector("#review-lens");
+  if (select) {
+    // Guest Reviews stays a Commands destination; the closed-set select only
+    // carries the writer-facing lenses, so leave its value alone for guests.
+    if (normalized !== "guests" && select.value !== normalized) select.value = normalized;
+    select.dataset.balloonHelp = keys.balloon;
+  }
+
+  const title = document.querySelector("#review-result-title");
+  if (title) {
+    title.dataset.i18n = keys.title;
+    title.textContent = t(keys.title);
+  }
+
+  const hint = document.querySelector("#review-lens-hint");
+  if (hint) {
+    hint.dataset.i18n = keys.hint;
+    hint.textContent = t(keys.hint);
+  }
+
+  const emptyFollow = document.querySelector("#review-lens-empty-follow");
+  if (emptyFollow) {
+    emptyFollow.dataset.i18n = keys.empty;
+    emptyFollow.textContent = t(keys.empty);
+  }
+
+  if (normalized === "style") {
+    syncReviewDeskLensEmptyPanel(styleSheetResultsEl, keys.panelEmpty);
+  } else if (normalized === "guests") {
+    syncReviewDeskLensEmptyPanel(document.querySelector("#guest-review-results"), keys.panelEmpty);
+  } else {
+    syncReviewDeskLensEmptyPanel(claimResultsEl, keys.panelEmpty);
+  }
+}
+
 function setReviewDeskMode(mode = "style") {
-  const normalizedMode = ["facts", "hkrr", "guests"].includes(mode) ? mode : "style";
+  const normalizedMode = normalizeReviewDeskLens(mode);
   reviewDeskMode = normalizedMode;
-  const resultMode = normalizedMode === "style" ? "style" : normalizedMode === "guests" ? "guests" : "facts";
+  const resultMode = reviewDeskResultPanelForLens(normalizedMode);
   document.querySelectorAll("[data-review-result]").forEach((panel) => {
     panel.classList.toggle("is-hidden", panel.dataset.reviewResult !== resultMode);
   });
+  syncReviewDeskLensCopy(normalizedMode);
 }
 
-function clearReviewFeedbackSlot(mode = getReviewDeskMode(), message = "") {
-  const resultMode = mode === "style" ? "style" : "facts";
-  setReviewDeskMode(mode);
+function clearReviewFeedbackSlot(mode = getReviewDeskLens(), message = "") {
+  const lens = normalizeReviewDeskLens(mode);
+  const resultMode = reviewDeskResultPanelForLens(lens);
+  const emptyKey = reviewDeskLensCopyKeys(lens).panelEmpty;
+  setReviewDeskMode(lens);
   if (styleSheetResultsEl) {
     styleSheetResultsEl.innerHTML = resultMode === "style"
-      ? `<p class="empty-folder-note">${escapeHtml(message || t("style_sheet_empty"))}</p>`
+      ? `<p class="empty-folder-note">${escapeHtml(message || t(emptyKey))}</p>`
       : "";
   }
   if (claimResultsEl) {
     claimResultsEl.innerHTML = resultMode === "facts"
-      ? `<p class="empty-folder-note">${escapeHtml(message || t("claim_check_empty"))}</p>`
+      ? `<p class="empty-folder-note">${escapeHtml(message || t(emptyKey))}</p>`
       : "";
   }
 }
@@ -509,7 +624,7 @@ function syncReviewDeskAvailability() {
     startButton.dataset.i18n = hasManuscript ? "to_review" : "to_manuscript";
     startButton.textContent = t(startButton.dataset.i18n);
   }
-  const emptyMessage = reviewDeskEmptyNoteEl?.querySelector("p");
+  const emptyMessage = reviewDeskEmptyNoteEl?.querySelector("p:not(.review-lens-empty-follow)");
   if (emptyMessage) {
     emptyMessage.dataset.i18n = hasManuscript ? "review_desk_requires_final" : "writing_review_needs_text";
     emptyMessage.textContent = t(emptyMessage.dataset.i18n);
@@ -522,6 +637,7 @@ function syncReviewDeskAvailability() {
   }
   updateReviewDeskStatusTitle();
   updateReviewDeskStats();
+  syncReviewDeskLensCopy(getReviewDeskLens());
   updateMenuState();
 }
 
@@ -542,7 +658,9 @@ function syncReviewDeskFromTeachText({ force = false } = {}) {
 function appendReviewFeedbackToBody(markdown) {
   const clean = stripRebuildMarkdownFence(String(markdown || "")).trim();
   if (!clean) return;
-  setReviewDeskMode(getReviewDeskMode());
+  // Keep the active lens (Reader's Eye / Listener's Ear / …); do not collapse
+  // it back to the shared facts panel label.
+  setReviewDeskMode(getReviewDeskLens());
   const target = getReviewDeskMode() === "style" ? styleSheetResultsEl : claimResultsEl;
   if (target) target.innerHTML = markdownToSystemHtml(clean);
   updateMenuState();
@@ -730,7 +848,11 @@ window.AISystem6ReviewDesk = Object.freeze({
 });
 
 function getReviewDeskMode() {
-  return ["facts", "hkrr"].includes(reviewDeskMode) ? reviewDeskMode : "style";
+  const lens = getReviewDeskLens();
+  if (lens === "style") return "style";
+  if (lens === "hkrr") return "hkrr";
+  if (lens === "guests") return "guests";
+  return "facts";
 }
 
 function runReviewDeskStyleSectionCheck() {
@@ -766,11 +888,11 @@ function runReviewDeskHkrrSectionCheck() {
 function runReviewDeskMingmingHandoffReview() {
   if (!isReviewDeskLinkedToFinal()) return syncReviewDeskAvailability();
   if (!syncReviewDeskToTeachText()) return;
-  setReviewDeskMode("facts");
-  clearReviewFeedbackSlot("facts", currentLanguage === "zh" ? "正在生成若是落落会怎么接..." : "Generating How Luoluo Would Receive It...");
+  setReviewDeskMode("luoluo");
+  clearReviewFeedbackSlot("luoluo", currentLanguage === "zh" ? "正在生成听者会怎么接..." : "Generating How a Listener Would Receive It...");
   ensureLazyModuleForUserAction(t("review_mingming_handoff"), ensureMingmingHandoffReviewModule)
     .then(() => runMingmingHandoffReview({ mode: "card", sectionOnly: true }))
-    .catch((error) => clearReviewFeedbackSlot("facts", t("lazy_load_failed", t("review_mingming_handoff"), error?.message || String(error))));
+    .catch((error) => clearReviewFeedbackSlot("luoluo", t("lazy_load_failed", t("review_mingming_handoff"), error?.message || String(error))));
 }
 
 function runReviewDeskMingmingHandoffBackstageReview() {
@@ -1300,11 +1422,23 @@ function getApplicationActionHandlers() {
     // undefined and the optional-chain calls below silently do nothing.
     "eli5-rewrite-section": async () => {
       if (typeof ensureWritingFlowModule === "function") await ensureWritingFlowModule();
+      if (typeof eli5RewriteSection === "function") return eli5RewriteSection();
       return window.AISystem6QuickDraftAI?.requestEli5Rewrite?.();
     },
     "eli5-review-section": async () => {
       if (typeof ensureWritingFlowModule === "function") await ensureWritingFlowModule();
+      if (typeof eli5ReviewSection === "function") return eli5ReviewSection();
       return window.AISystem6QuickDraftAI?.requestEli5Review?.();
+    },
+    "one-sentence-rewrite-section": async () => {
+      if (typeof ensureWritingFlowModule === "function") await ensureWritingFlowModule();
+      if (typeof oneSentenceRewriteSection === "function") return oneSentenceRewriteSection();
+      return window.oneSentenceRewriteSection?.();
+    },
+    "one-sentence-check-section": async () => {
+      if (typeof ensureWritingFlowModule === "function") await ensureWritingFlowModule();
+      if (typeof oneSentenceCheckSection === "function") return oneSentenceCheckSection();
+      return window.oneSentenceCheckSection?.();
     },
     // Find/Change loads with its first use. Availability stays true so ⌘F can
     // summon it from any writing surface; the panel itself reports what it can
@@ -1514,9 +1648,21 @@ function getApplicationActionHandlers() {
     // Wrapped, not bare: these resolve at boot into the lazy module's stub and
     // a bare reference would throw once the module moved out of the bundle.
     "focus-sideask-source": focusSideAskSource,
-    // Register every selectable appearance from the boot-safe registry.
-    ...Object.fromEntries(window.AISystem6Theme.getReleaseReadyThemes().map(({ id }) => [
-      `set-theme-${id}`, () => applyTheme(id),
+    // Register every Appearance row from the boot-safe registry. Release-ready
+    // eras switch the desk; unfinished ones stay click-safe and name why they
+    // are grey instead of silently no-opping if a disabled row is forced.
+    ...Object.fromEntries((window.AISystem6Theme.themes || window.AISystem6Theme.getReleaseReadyThemes() || []).map(({ id, releaseReady, polishPending }) => [
+      `set-theme-${id}`, () => {
+        if (releaseReady === false) {
+          if (typeof setStatus === "function") setStatus(typeof t === "function" ? t("appearance_not_ready") : "Not ready");
+          return false;
+        }
+        const applied = applyTheme(id);
+        if (polishPending && typeof setStatus === "function") {
+          setStatus(typeof t === "function" ? t("appearance_polish_pending_status") : "Appearance applied; polish todos remain.");
+        }
+        return applied;
+      },
     ])),
     "toggle-balloon-help": toggleBalloonHelp,
     "restart-system": restartSystem,
@@ -1627,6 +1773,10 @@ async function handleAction(action, commandContext = {}) {
   }
   if (!command?.isAvailable() || commandContext.isCurrent?.() === false) {
     updateMenuState();
+    const reasonKey = typeof actionUnavailableReasonKey === "function"
+      ? actionUnavailableReasonKey(action)
+      : "";
+    if (reasonKey && typeof setStatus === "function") setStatus(t(reasonKey));
     return;
   }
   // A write-required command used to have to win the lease first, and was
@@ -1727,7 +1877,7 @@ Object.entries({
 // surface in front (markdown-editor.js decides which one that is).
 ["heading-0","heading-1","heading-2","heading-3","bold","italic","strike","code","link","quote","bullet","numbered","task","indent","outdent","table","rule","code-block"]
   .forEach((command)=>window.AISystem6Runtime?.registerCommand?.(`format-${command}`,{handler:()=>mdeRunFormat(command),isAvailable:()=>!!mdeFormatTarget()}));
-window.AISystem6Runtime?.registerCommand?.("open-heading-navigator",{handler:mdeOpenHeadings});
+window.AISystem6Runtime?.registerCommand?.("open-heading-navigator",{handler:mdeOpenHeadings,isAvailable:()=>!!mdeFormatTarget(false),unavailableReason:()=>"balloon_disabled_menu_headings"});
 window.AISystem6Runtime?.registerCommand?.("open-project-info",{handler:openProjectInfo,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-file-info",{handler:openFileInfo,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-project-disks",{handler:()=>{openWindow("projects");if(!isProjectMounted)setStatus(t("no_project_mounted"));},isAvailable:()=>!0});
@@ -1737,7 +1887,7 @@ window.AISystem6Runtime?.registerCommand?.("open-documents",{handler:()=>{render
 window.AISystem6Runtime?.registerCommand?.("open-github-repo",{handler:()=>window.open("https://github.com/surfine/AI-System-6","_blank","noopener"),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-project-site",{handler:()=>window.open("https://aisystem6.pages.dev/","_blank","noopener"),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-guide-promo",{handler:()=>window.open("https://www.bilibili.com/video/BV1ht3m6UEDb/","_blank","noopener"),isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-about-multifinder",{handler:showAboutMultiFinder,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-about-multifinder",{handler:showAboutMultiFinder,isAvailable:()=>typeof isMultiFinderMode==="function"&&isMultiFinderMode(),unavailableReason:()=>"balloon_disabled_menu_multifinder"});
 window.AISystem6Runtime?.registerCommand?.("replay-clio-introduction",{handler:()=>openClioIntroduction({replay:true}),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-clio-model-settings",{handler:openModelSettings,isAvailable:()=>!0});
 // The 说明 folder's four documents are one shape — a key, an id, and the same

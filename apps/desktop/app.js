@@ -538,11 +538,16 @@ const bootDebugTheme = bootDebugId ? window.AISystem6Theme?.getTheme?.(bootDebug
 const developmentPreviewAllowed = isDevelopmentSurface();
 // The Appearance choices are the registry's release list, built here rather
 // than written into index.html, so a new appearance is one declaration.
-appearanceThemeInput?.append(...window.AISystem6Theme.getReleaseReadyThemes().map(({ id, label, labelKey }) => {
+appearanceThemeInput?.append(...window.AISystem6Theme.getReleaseReadyThemes().map(({ id, label, labelKey, polishPending }) => {
   const option = document.createElement("option");
   option.value = id;
   option.textContent = label;
   option.dataset.i18n = labelKey;
+  if (polishPending) {
+    option.dataset.polishPending = "true";
+    option.dataset.i18nTitle = "appearance_polish_pending";
+    if (typeof t === "function") option.title = t("appearance_polish_pending");
+  }
   return option;
 }));
 if (bootDebugTheme && bootDebugTheme.releaseReady === false && developmentPreviewAllowed) {
@@ -2174,6 +2179,9 @@ function applyLanguage() {
   if (typeof renderAllFinderNavigationBars === "function") renderAllFinderNavigationBars();
   updateFilePickerLabels();
   updateReviewDeskStats?.();
+  // Review Desk lens chrome is painted from the active lens, not only static
+  // data-i18n keys — refresh after the sweep so title/hint/empty follow language.
+  if (typeof syncReviewDeskLensCopy === "function") syncReviewDeskLensCopy();
   // Quick Draft owns live receipts, layer descriptions, and generated object
   // labels that do not participate in the static [data-i18n] sweep.
   window.AISystem6QuickDraft?.render?.();
@@ -2881,7 +2889,9 @@ async function insertFilesIntoFileFloppy(files, { source = "fileFloppy", openAft
     if (openAfter) openWindow(openAfter);
     return { mountedFileNames, embeddedChunks, failures, embeddingFailed };
   } catch (error) {
-    ragStatusEl.textContent = isAbortError(error) ? t("file_disk_canceled") : error.message;
+    const message = isAbortError(error) ? t("file_disk_canceled") : (error.message || t("file_disk_mount_failed_all", selectedFiles.length));
+    ragStatusEl.textContent = message;
+    setStatus(message);
     return null;
   } finally {
     fileDiskImportController = null;

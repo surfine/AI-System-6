@@ -362,12 +362,61 @@
 
 .review-desk-pane {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 8px;
   min-height: 0;
   overflow: hidden;
   padding: 10px;
   background: var(--review-desk-pane-bg);
+}
+
+.review-lens-chrome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 0 2px;
+}
+
+.review-lens-chrome .select-wrap {
+  flex: 0 0 auto;
+}
+
+.review-density-note {
+  flex: 1 1 100%;
+  margin: 4px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--muted, #505050);
+}
+
+.review-density-note .text-btn {
+  margin-left: 0.35em;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.review-lens-hint {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--muted, #505050);
+  font-size: 11px;
+  line-height: 1.45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.review-lens-empty-follow {
+  margin: 10px 0 0;
+  color: var(--muted, #505050);
+  font-size: 12px;
+  line-height: 1.55;
 }
 
 .review-section-nav .btn {
@@ -451,14 +500,27 @@
 }
 
 .review-desk-window.is-review-locked .review-desk-pane {
-  grid-template-rows: minmax(0, 1fr);
-  gap: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
   background: var(--review-locked-pane-bg);
 }
 
 .review-desk-window.is-review-locked .review-section-nav,
 .review-desk-window.is-review-locked .review-desk-results {
   display: none;
+}
+
+/* Empty desk still keeps the lens selector — chrome follows the chosen lens. */
+.review-desk-window.is-review-locked .review-lens-chrome {
+  justify-content: center;
+  padding: 4px 8px 0;
+}
+
+.review-desk-window.is-review-locked .review-lens-hint {
+  white-space: normal;
+  text-overflow: unset;
+  overflow: visible;
+  max-width: 36em;
 }
 
 .review-desk-window.is-review-locked .review-desk-empty-note {

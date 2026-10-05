@@ -124,6 +124,11 @@ test.assertIncludes(css, "container-type: inline-size", "the details bar is a co
 test.assert(!/\.micropolis-details-bar[^}]*flex-wrap\s*:/.test(css), "the details bar no longer wraps its cells");
 test.assertIncludes(shellSource, 'data-micropolis-rci-panel width="58" height="36"', "the toolbar footer carries the 58x36 panel gauge");
 test.assertIncludes(shellSource, "micropolis-toolbar-footer", "the palette gains a bottom footer");
+test.assertIncludes(shellSource, "data-micropolis-tool-select", "tool wall collapsed to a System 6 select");
+test.assertIncludes(shellSource, "flushMicropolisLeaveSave", "leave flushes a named dirty city before close/suspend");
+test.assertIncludes(shellSource, "micropolis_status_leave_failed", "leave/flush failure stays visible on the status line");
+test.assertIncludes(shellSource, "binary: 0", "Micropolis host honesty keeps data-binary=0 (JS GPL, not Wasm)");
+test.assertIncludes(shellSource, "wasm: 0", "Micropolis host honesty keeps data-wasm=0");
 
 // --- C3 data overlays and the city map (micropolis-views.js) -----------------
 
@@ -151,7 +156,10 @@ test.assertMatches(shellSource, /id: "view",[\s\S]{0,200}item\("maps", "micropol
 test.assertIncludes(css, ".micropolis-overlay {", "the overlay has a scoped style");
 test.assertIncludes(css, "pointer-events: none;", "the overlay never takes input");
 test.assertIncludes(manifest, '"app/features/micropolis-views.js"', "the views module is a lazy runtime file");
-test.assertMatches(config, /ensureMicropolisModule[\s\S]{0,300}"app\/features\/micropolis-views\.js"/, "the Micropolis loader names the views module");
+test.assertMatches(config, /ensureMicropolisModule[\s\S]{0,400}"app\/features\/micropolis-views\.js"/, "the Micropolis loader names the views module");
+test.assertIncludes(config, '"app/core/wasm-host-contract.js"', "Micropolis loader pulls the shared host contract");
+test.assertIncludes(shellSource, "AISystem6WasmHostContract", "Micropolis applies the shared host honesty contract");
+test.assertIncludes(shellSource, "wasm: 0", "Micropolis is a JS engine host, not Wasm");
 for (const kind of views.OVERLAY_KINDS) {
   const key = `micropolis_overlay_${kind.replace(/([A-Z])/g, "_$1").toLowerCase()}`;
   test.assertIncludes(en, `${key}:`, `English copy exists for ${key}`);
@@ -432,7 +440,7 @@ test.assertIncludes(shellSource, "AISystem6StorageTransactions.runTransaction", 
 
 test.assertIncludes(shellSource, "window.AISystem6MicropolisLoaded = true;", "the lazy module installs its loaded flag");
 test.assertIncludes(config, 'createLazyModuleLoader("AISystem6MicropolisLoaded"', "config.js owns the lazy loader");
-test.assertMatches(config, /ensureMicropolisModule[\s\S]{0,400}styles\.micropolis\.css/,
+test.assertMatches(config, /ensureMicropolisModule[\s\S]{0,800}styles\.micropolis\.css/,
   "the lazy loader pulls the Micropolis stylesheet with the module");
 test.assert(
   /ensure: \(\) => ensureMicropolisModule\(\)/.test(windowRegistryRecords().micropolis?.lazy || ""),
@@ -471,7 +479,7 @@ const staticKeys = [
   "micropolis_evaluation_title", "micropolis_eval_approval",
   "micropolis_status_generating", "micropolis_status_ready", "micropolis_status_paused",
   "micropolis_status_needs_bulldoze", "micropolis_status_no_money", "micropolis_status_assets_failed",
-  "micropolis_status_saved", "micropolis_status_loaded", "micropolis_status_save_failed",
+  "micropolis_status_saved", "micropolis_status_loaded", "micropolis_status_save_failed", "micropolis_status_leave_failed",
   "micropolis_status_load_failed", "micropolis_msg_budget_applied",
   "micropolis_disaster_fire", "micropolis_disaster_flood", "micropolis_disaster_tornado",
   "micropolis_disaster_earthquake", "micropolis_disaster_monster", "micropolis_disaster_crash",
@@ -516,5 +524,9 @@ for (const key of ["micropolis_map_label"]) {
 // The separator belongs to the price: Query and the other free tools read
 // "Query ·" with nothing after the dot.
 test.assertIncludes(shellSource, 'armed.textContent = t(`micropolis_tool_${tool.id}`) + (tool.cost > 0 ? ` · $${tool.cost}` : "");', "a free tool's readout ends at its name");
+test.assertIncludes(en, "micropolis_tool_picker:", "English copy names the tool select");
+test.assertIncludes(zh, "micropolis_tool_picker:", "Chinese copy names the tool select");
+test.assertIncludes(en, "micropolis_status_leave_failed:", "English copy covers leave/flush failure");
+test.assertIncludes(zh, "micropolis_status_leave_failed:", "Chinese copy covers leave/flush failure");
 
 test.finish();

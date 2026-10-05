@@ -26,6 +26,9 @@ test.assertIncludes(host, "AISystem6ApplicationShell.createWindow", "the lazy mo
 test.assertNotIncludes(host, "statusClass", "the window has no details bar");
 test.assertNotIncludes(host, "statusHtml", "the window has no details-bar markup");
 test.assertIncludes(host, 'setStatus(t(next), { windowName: "mingwen" })', "loading and failure speak on the desk status line");
+test.assertIncludes(host, "AISystem6WasmHostContract", "明文 applies the shared host honesty contract");
+test.assertIncludes(host, "wasm: 0", "明文 is not a Wasm host");
+test.assertIncludes(host, 'mingwenState.statusKey === "mingwen_status_failed"', "a prior fail is not overwritten by a late load success");
 test.assert(admittedApplicationGroup("open-mingwen") === "games", "the dynamic Games folder includes 明文");
 test.assert(windowApp("mingwen") === "mingwen", "the window declares its own app id");
 test.assert(admissionRows().mingwen?.phone === 2, "phones give the novel one foreground work area");

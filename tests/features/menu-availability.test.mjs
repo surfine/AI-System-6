@@ -139,9 +139,13 @@ const ALWAYS_AVAILABLE = new Map([
   ["new-note", "creating an empty note needs no selection"],
   // Appearance choices are always valid and update their own checked state.
   ["set-theme-classic", "Appearance choice is valid from every application"],
+  ["set-theme-system-7", "Appearance choice is valid from every application"],
   ["set-theme-platinum", "Appearance choice is valid from every application"],
+  ["set-theme-drawing-board", "Appearance choice is valid from every application"],
   ["set-theme-aqua", "Appearance choice is valid from every application"],
+  ["set-theme-tiger", "Appearance choice is valid from every application"],
   ["set-theme-snow-leopard", "Appearance choice is valid from every application"],
+  ["set-theme-lion", "Appearance choice is valid from every application"],
   ["set-theme-yosemite", "Appearance choice is valid from every application"],
   ["set-theme-big-sur", "Appearance choice is valid from every application"],
   ["set-theme-nextstep", "Appearance choice is valid from every application"],

@@ -1157,6 +1157,44 @@
   background: var(--quick-draft-actions-bg);
 }
 
+.quick-draft-track-embrace {
+  margin: 0 0 12px;
+  white-space: pre-wrap;
+}
+
+.quick-draft-track-title {
+  margin: 0 0 4px;
+  font-weight: 700;
+}
+
+.quick-draft-track-cover {
+  margin: 0 0 12px;
+  opacity: 0.82;
+}
+
+.quick-draft-track-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.quick-draft-track-split > div + div {
+  border-left: 1px solid currentColor;
+  padding-left: 16px;
+}
+
+.quick-draft-track-ledger {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  opacity: 0.82;
+}
+
+.quick-draft-track-ledger li + li {
+  margin-top: 4px;
+}
+
 @container (max-width: 800px) {
   /* A narrow darkroom puts the instruments under the negative rather than
      squeezing the thing being read. */
@@ -1481,6 +1519,10 @@
 
   .lightroom-actions > .draft-desk-action-gap {
     display: none;
+  }
+
+  .lightroom-actions > .quick-draft-track-toggle {
+    grid-area: 2 / 1 / 3 / 4;
   }
 
   .lightroom-actions > .draft-desk-display-switch {

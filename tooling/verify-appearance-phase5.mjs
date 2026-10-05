@@ -21,10 +21,16 @@ const { chromium } = require("playwright");
 
 const THEME_IDS = Object.freeze([
   "classic",
+  "system-7",
+  "nextstep",
+  "drawing-board",
   "platinum",
   "aqua",
+  "tiger",
   "snow-leopard",
+  "lion",
   "yosemite",
+  "big-sur",
   "liquid-glass",
 ]);
 

@@ -71,6 +71,18 @@ test.assertIncludes(shell, "window.openttd_syncfs", "shell flushes persistent st
 test.assertIncludes(shell, '"pagehide"', "shell syncs when the page goes away");
 test.assertIncludes(shell, "syncInFlight", "lifecycle signals cannot overlap IDBFS writes");
 
+// --- honest Wasm host contract (v223 productization) ---
+test.assertIncludes(read("app/core/config.js"), "app/core/wasm-host-contract.js", "OpenTTD loader pulls the shared host contract");
+test.assertIncludes(openttd, "AISystem6WasmHostContract", "the host applies the shared honesty contract");
+test.assertIncludes(openttd, 'wasm: 1', "OpenTTD claims a real Wasm host");
+test.assertIncludes(openttd, "OPENTTD_ENGINE_READY_TIMEOUT_MS", "a hung iframe becomes a visible timeout");
+test.assertIncludes(openttd, "renderOpenTTDRetry", "crash/timeout/missing binary have a visible Retry");
+test.assertIncludes(openttd, "probeOpenTTDBinary", "missing Wasm is probed before pretending the engine loaded");
+test.assertIncludes(openttd, "openttd_status_missing_binary", "missing binary has its own status key");
+test.assertIncludes(openttd, 'host: next', "fail/crash map into data-host via the shared contract");
+test.assertIncludes(openttd, "tooling/games/openttd/build.md", "missing-binary path documents the required rebuild");
+test.assertIncludes(openttd, "openttd-host-note", "Retry pane keeps the missing/fail reason beside Retry (R18)");
+
 // --- Chinese + touch are the point of this port ---
 test.assertIncludes(shell, "simplified_chinese.lng", "first-run config starts the game in Chinese");
 test.assertIncludes(shell, "fusion-pixel-12px-proportional-zh_hans.ttf", "first-run config wires the CJK pixel font");
@@ -86,7 +98,10 @@ test.assertIncludes(shell, "rotate-hint", "narrow portrait suggests landscape wi
 if (releaseManifest && snapshotManifest) {
   test.assertIncludes(releaseManifest, '"assets/openttd"', "web release ships the game directory");
   test.assertIncludes(releaseManifest, '"styles.openttd.css"', "web release ships the lazy style bundle");
-  test.assertIncludes(snapshotManifest, "apps/desktop/assets/openttd/openttd.wasm", "public snapshot excludes the wasm binary");
+  test.assertIncludes(snapshotManifest, "apps/desktop/assets/openttd/openttd.wasm", "public snapshot excludes the wasm binary (N6 omit policy)");
+test.assertIncludes(snapshotManifest, "apps/desktop/assets/openttd/openttd.js", "public snapshot excludes the js glue (N6 omit policy)");
+test.assertIncludes(snapshotManifest, "apps/desktop/assets/openttd/openttd.data", "public snapshot excludes the data pack (N6 omit policy)");
+test.assertIncludes(openttd, "Public snapshot / slim trees omit", "host documents N6 public omit → missing_binary");
   test.assertIncludes(packageJson, '"apps/desktop/assets/openttd/**/*"', "native packaging includes the complete wasm payload");
   test.assertIncludes(packageJson, '"apps/desktop/styles.openttd.css"', "native packaging includes the lazy stylesheet");
 } else {
@@ -107,7 +122,7 @@ test.assertIncludes(
 );
 
 // --- localization parity for the visible chrome ---
-["openttd_label", "openttd_title", "openttd_status_loading", "applications_games"].forEach((key) => {
+["openttd_label", "openttd_title", "openttd_status_loading", "openttd_status_timeout", "openttd_status_missing_binary", "openttd_retry", "applications_games"].forEach((key) => {
   test.assertIncludes(en, `${key}:`, `en table has ${key}`);
   test.assertIncludes(zh, `${key}:`, `zh table has ${key}`);
 });

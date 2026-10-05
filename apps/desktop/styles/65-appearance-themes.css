@@ -908,8 +908,16 @@ body[data-lineage~="platinum"] {
   --menu-item-line-height-menu: 16px;
   /* P24: the panel starts at the bar's own height, drops its top rule, and
      carries the native #222 shadow and the two #6666cc/#000088 selection
-     columns. */
-  --menu-popover-offset-top: var(--system-menu-height);
+     columns. The shared top is already the bar height minus 2px, so this
+     offset only gives those 2px back. A full bar height here was added a
+     second time, and the menu hung below the title with the desktop between. */
+  --menu-popover-offset-top: 2px;
+  /* Shared title is 2px short of the bar; Platinum's highlight is the bar
+     itself, so titles fill via tokens consumed by 60-responsive (not charged
+     geometry in this sheet). */
+  --menu-title-height: 100%;
+  --menu-title-min-height: 0;
+  --menu-title-line-height: var(--system-menu-height);
   --menu-panel-border-top-width: 0;
   --menu-panel-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #999999, 1px 1px 0 #222222;
   --menu-button-active-shadow: inset 0 1px 0 #6666cc, inset 0 -1px 0 #000088;
@@ -1228,8 +1236,9 @@ body[data-theme="yosemite"] {
      valley below. Measured vertical ramp, no raster payload. */
   --desktop: #464955;
   --desktop-surface:
-    radial-gradient(circle at 50% 6%, rgba(255, 214, 200, 0.55), transparent 28%),
-    linear-gradient(180deg, #e8a79e 0%, #d4a294 12%, #b98b74 26%, #8c756f 46%, #5e5961 68%, #464955 86%, #515765 100%);
+    radial-gradient(ellipse 70% 28% at 50% 4%, rgb(255 230 210 / 0.7), transparent 55%),
+    radial-gradient(ellipse 120% 18% at 50% 38%, rgb(140 100 90 / 0.35), transparent 70%),
+    linear-gradient(180deg, #f0b8a8 0%, #e8a79e 8%, #d4a294 16%, #b98b74 28%, #8c756f 46%, #5e5961 64%, #3d424c 82%, #515765 100%);
   /* Endfield terminal: warm-paper survey, contour lines (等高线) and a
      chartreuse glow over the 10.10 peach. */
   --endfield-pane-bg:
@@ -1271,6 +1280,10 @@ body[data-theme="yosemite"] {
   /* 10.10 window content is opaque; only the chrome surfaces keep
      translucency. The whole-window blur is a Liquid Glass feature. */
   --window-backdrop-filter: none;
+  /* Painter contract: Yosemite is translucent chrome without Liquid blur.
+     --painter-blur-px stays 0 so Theme Lab cannot pass a reduced-glass Liquid. */
+  --painter-blur: none;
+  --painter-blur-px: 0;
   /* 10.10 vibrancy is surface-specific and restrained: the fused
      titlebar/toolbar is a solid light-gray gradient (no blur), the sidebar
      keeps a subtle frosted blur, and the menu owns its own material. This is
@@ -1885,6 +1898,7 @@ body[data-lineage~="platinum"] :is(input[type="checkbox"], input[type="radio"]):
 body[data-lineage~="platinum"] .menu-bar {
   padding-inline: 4px;
 }
+
 body[data-lineage~="platinum"] :is(.menu-popover, .menu-sub-popover) hr {
   border-top: 1px solid #888888;
   border-bottom: 1px solid #ffffff;

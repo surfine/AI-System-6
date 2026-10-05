@@ -206,6 +206,8 @@ function renderClioTalkWelcome() {
   const item = document.createElement("article");
   item.className = "message assistant clio-welcome";
   item.setAttribute("aria-label", clioTalkAssistantDisplayName());
+  // Welcome must not steal keyboard focus from the writer's current surface.
+  // Starters and Send focus the prompt only after an explicit click.
 
   item.insertAdjacentHTML("beforeend", renderSystemIcon("assistant", {
     size: "ordinary",
@@ -277,24 +279,6 @@ function renderClioTalkWelcome() {
       if (starter === "explore") button.dataset.balloonHelp = "balloon_clio_starter_explore";
       actions.append(button);
     });
-    if (!modelReady && !providerResolving) {
-      const connect = document.createElement("button");
-      connect.type = "button";
-      connect.className = "btn";
-      connect.dataset.action = "open-clio-model-settings";
-      connect.textContent = t("clio_connect_ai");
-      actions.append(connect);
-    }
-    body.append(actions);
-  } else if (!modelReady && !providerResolving) {
-    const actions = document.createElement("div");
-    actions.className = "clio-welcome-actions";
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "btn default";
-    button.dataset.action = "open-clio-model-settings";
-    button.textContent = t("clio_connect_ai");
-    actions.append(button);
     body.append(actions);
   } else if (modelReady && !sideAskEnabled && !clioTalkTemporaryMode) {
     const actions = document.createElement("div");
@@ -317,6 +301,7 @@ function renderClioTalkWelcome() {
 
   item.append(speaker, body);
   messagesEl.append(item);
+  if (typeof syncClioTalkConnectTitlebar === "function") syncClioTalkConnectTitlebar();
 }
 
 function clioTalkModelReady() {
@@ -794,7 +779,11 @@ async function preparePendingClioImages(signal) {
     staged.forEach(releaseActiveClioImageSource);
     pendingClioImageInputs.forEach((input) => { input.state = signal?.aborted ? "pending" : "failed"; });
     renderAttachedClips();
-    if (!signal?.aborted) {
+    if (signal?.aborted) {
+      // Abort must leave a visible status — silent cancel looked like a dual Send
+      // (button idle, no receipt).
+      setStatus(t("stopped"));
+    } else {
       const budgetError = ["clio_image_chat_budget", "clio_image_project_budget", "clio_image_request_budget"]
         .includes(error?.message);
       setStatus(t(budgetError ? error.message : "clio_image_upload_failed", ""));
@@ -1105,7 +1094,17 @@ function renderClioTalkFileBar() {
   button.title = path.textContent || name.textContent;
 }
 
+function syncClioTalkConnectTitlebar() {
+  const button = document.getElementById("clio-connect-ai");
+  if (!button) return;
+  const ready = clioTalkModelReady();
+  const resolving = !ready && ["idle", "resolving"].includes(window.AISystem6ClioProvider?.snapshot?.()?.status || "idle");
+  button.hidden = ready || resolving;
+  button.textContent = t("clio_connect_ai");
+}
+
 function syncClioTalkSendButton() {
+  syncClioTalkConnectTitlebar();
   const sendButton = form?.querySelector("#send");
   if (!sendButton) return;
   if (sendButton.dataset.mode === "stop") {
@@ -4391,11 +4390,17 @@ function updateModelMeterVisibility() {
 
 function updateModelMeter(metrics) {
   lastModelMetrics = metrics;
+  const emptyNote = document.getElementById("model-meter-empty");
+  const stats = document.getElementById("model-meter-stats");
   if (!metrics) {
+    if (emptyNote) emptyNote.hidden = false;
+    if (stats) stats.hidden = true;
     updateModelMeterVisibility();
     return;
   }
 
+  if (emptyNote) emptyNote.hidden = true;
+  if (stats) stats.hidden = false;
   const speedText = metrics.tokensPerSecond ? `${metrics.tokensPerSecond.toFixed(1)} tok/s` : "-- tok/s";
   const tokenText = `${metrics.tokens} tok`;
   const elapsedText = formatMetricDuration(metrics.elapsedMs);

@@ -56,10 +56,19 @@ body[data-theme="nextstep"] {
   --quiet-panel: #eeeeee;
   --shade: #888888;
   --shade-dark: #555555;
+  /* Four measurable grey steps (polishTodo grayscale-depth-board). Theme Lab
+     reads these via the quiet-panel → shade-dark ramp already on the desk. */
+  --gray-depth-0: #eeeeee;
+  --gray-depth-1: #cccccc;
+  --gray-depth-2: #aaaaaa;
+  --gray-depth-3: #555555;
   --rule: #555555;
   --separator: #555555;
   --desktop: #555555;
-  --desktop-surface: #555555;
+  /* 3.3 Dark Gray desk: 2-bit dither, not a flat fill (Visual Guide ch.1). */
+  --desktop-surface:
+    repeating-linear-gradient(135deg, rgb(0 0 0 / 0.18) 0 1px, transparent 1px 3px),
+    repeating-conic-gradient(#4a4a4a 0% 25%, #616161 0% 50%) 0 0 / 2px 2px;
   --surface-primary: #aaaaaa;
   --surface-secondary: #cccccc;
   --surface-inset: #ffffff;

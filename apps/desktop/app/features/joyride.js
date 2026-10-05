@@ -137,7 +137,10 @@ window.AISystem6JoyrideLoaded = true;
   function installJoyrideWindow() {
     if (typeof document === "undefined") return null;
     const existing = document.querySelector('[data-window="joyride"]');
-    if (existing) return existing;
+    if (existing) {
+      syncHostContract();
+      return existing;
+    }
     const win = window.AISystem6ApplicationShell.createWindow({
       windowName: WINDOW_NAME,
       windowClass: "joyride-window",
@@ -244,6 +247,7 @@ window.AISystem6JoyrideLoaded = true;
         </form>`,
     });
     wireWindow(win);
+    syncHostContract();
     return win;
   }
 
@@ -261,12 +265,24 @@ window.AISystem6JoyrideLoaded = true;
       && !win.classList.contains("is-minimized") && !document.hidden);
   }
 
+  function syncHostContract() {
+    // Joyride is a WebGL/JS street shell — no Wasm engine binary (v223 honesty).
+    window.AISystem6WasmHostContract?.syncFromPhase?.(windowElement(), game.phase, {
+      kind: "joyride",
+      wasm: 0,
+      binary: 0,
+      fail: true,
+      crash: true,
+    });
+  }
+
   function setMessage(key, ...args) {
     game.message = key || "";
     const node = part("message");
     if (!node) return;
     node.textContent = key ? t(key, ...args) : "";
     node.hidden = !key;
+    syncHostContract();
   }
 
   function syncStatus() {
@@ -2469,27 +2485,48 @@ window.AISystem6JoyrideLoaded = true;
     },
   ]);
 
-  const ready = () => Boolean(game.car);
+  // Menu rows that act on the drive must have the Joyride window in front.
+  // Without a host they used to stay black and no-op — census dead that looked
+  // like a clickable primary. Open stays available so the writer can summon it.
+  const hostReady = () => {
+    const active = document.querySelector(".window.is-active");
+    return active?.dataset.window === WINDOW_NAME && Boolean(windowElement());
+  };
+  const ready = () => hostReady() && Boolean(game.car);
+  const joyrideUnavailableReason = () => (
+    hostReady() ? "balloon_disabled_menu_context" : "balloon_disabled_menu_host_window"
+  );
+  const joyrideCommand = (handler, isAvailable) => ({
+    handler,
+    isAvailable,
+    unavailableReason: joyrideUnavailableReason,
+  });
   const commands = {
     "open-joyride": { handler: () => openWindow(WINDOW_NAME), isAvailable: () => true },
-    "joyride-new-drive": { handler: () => { newDrive(); if (game.phase !== "driving") drawFrame(); }, isAvailable: ready },
-    "joyride-pause": { handler: togglePause, isAvailable: ready },
-    "joyride-preferences": { handler: openPrefs, isAvailable: () => Boolean(windowElement()) },
-    "joyride-open-city": { handler: openCities, isAvailable: () => game.phase !== "loading" && Boolean(windowElement()) },
+    "joyride-new-drive": joyrideCommand(() => { newDrive(); if (game.phase !== "driving") drawFrame(); }, ready),
+    "joyride-pause": joyrideCommand(togglePause, ready),
+    "joyride-preferences": joyrideCommand(openPrefs, hostReady),
+    "joyride-open-city": joyrideCommand(openCities, () => hostReady() && game.phase !== "loading"),
   };
   CAMERAS.forEach((camera) => {
-    commands[`joyride-camera-${camera}`] = { handler: () => setCamera(camera), isAvailable: () => true };
+    commands[`joyride-camera-${camera}`] = joyrideCommand(() => setCamera(camera), hostReady);
   });
   STYLES.forEach((style) => {
-    commands[`joyride-style-${style}`] = { handler: () => setStyle(style), isAvailable: ready };
+    commands[`joyride-style-${style}`] = joyrideCommand(() => setStyle(style), ready);
   });
-  commands["joyride-next-screen"] = { handler: cycleScreen, isAvailable: ready };
-  commands["joyride-start-shift"] = { handler: startShift, isAvailable: ready };
-  commands["joyride-take-photo"] = { handler: takePhoto, isAvailable: ready };
-  commands["joyride-ride-train"] = { handler: openRide, isAvailable: () => Boolean(game.traffic && game.car && street().stationHere(game.traffic, game.car)) };
-  commands["joyride-high-scores"] = { handler: () => showScores(t("joyride_high_scores_title"), game.town?.name || "", readScores().filter((item) => scoreCity(item) === cityKey()).sort((a, b) => b.score - a.score).slice(0, 10)), isAvailable: () => Boolean(windowElement()) };
+  commands["joyride-next-screen"] = joyrideCommand(cycleScreen, ready);
+  commands["joyride-start-shift"] = joyrideCommand(startShift, ready);
+  commands["joyride-take-photo"] = joyrideCommand(takePhoto, ready);
+  commands["joyride-ride-train"] = joyrideCommand(
+    openRide,
+    () => hostReady() && Boolean(game.traffic && game.car && street().stationHere(game.traffic, game.car))
+  );
+  commands["joyride-high-scores"] = joyrideCommand(
+    () => showScores(t("joyride_high_scores_title"), game.town?.name || "", readScores().filter((item) => scoreCity(item) === cityKey()).sort((a, b) => b.score - a.score).slice(0, 10)),
+    hostReady
+  );
   RADIO_STATIONS.forEach((station) => {
-    commands[`joyride-radio-${station || "off"}`] = { handler: () => tuneRadio(station), isAvailable: () => true };
+    commands[`joyride-radio-${station || "off"}`] = joyrideCommand(() => tuneRadio(station), hostReady);
   });
 
   window.AISystem6Joyride = Object.freeze({

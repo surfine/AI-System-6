@@ -76,6 +76,10 @@ function todoDaFields() {
 function renderTodoDa() {
   const parts = todoDaFields();
   if (!parts) return;
+  // Journey nag gate: To Do is a checklist, not a win-count board.
+  parts.root?.setAttribute?.("data-nag", "0");
+  parts.root?.setAttribute?.("data-adhd", "no-streak");
+  window.AISystem6JourneyGates?.markShellWindow?.(parts.root, "todo");
   todoDaItems = normalizeTodoDaItems(todoDaItems);
   const open = todoDaItems.filter((item) => !item.done).length;
 

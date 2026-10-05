@@ -62,6 +62,9 @@ body[data-theme="liquid-glass"] {
      the point where the backdrop is still readable, and lifts its chroma
      back up so the glass stays coloured by what it covers. */
   --window-backdrop-filter: blur(18px) saturate(185%) brightness(1.06);
+  /* Painter glass contract: Liquid = 18 (≠ Big Sur 12 ≠ Yosemite 0). */
+  --painter-blur: blur(18px);
+  --painter-blur-px: 18;
   /* The title bar and status strip frost again over the window. A window
      whose content repaints every frame (Bonsai City's map) turns both
      filters off and takes the solid surface: a blurred backdrop over a
@@ -2010,10 +2013,11 @@ body[data-theme="liquid-glass"] {
    it was written as the class plus data-theme. */
 body[data-theme="liquid-glass"][data-theme-family="liquid-glass"] .desktop {
   background:
-    linear-gradient(rgba(255, 255, 255, 0.32) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.26) 1px, transparent 1px),
-    linear-gradient(135deg, #eef2f4 0%, #d6dee4 56%, #f2f3ee 100%);
-  background-size: 22px 22px, 22px 22px, auto;
+    radial-gradient(circle at 18% 12%, rgb(255 255 255 / 0.45), transparent 32%),
+    linear-gradient(rgba(255, 255, 255, 0.38) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.3) 1px, transparent 1px),
+    linear-gradient(135deg, #f4f7f8 0%, #d6dee4 48%, #cfd8de 72%, #eef1ea 100%);
+  background-size: auto, 22px 22px, 22px 22px, auto;
 }
 
 body[data-theme="liquid-glass"] #liquid-glass-overlay {

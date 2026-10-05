@@ -45,6 +45,9 @@ test.assertNotIncludes(html, 'data-i18n-aria-label="scrap_stack" hidden', "the s
 test.assertIncludes(scrapbook, "(selectedScrapStack === \"all\" || getScrapStack(scrap) === selectedScrapStack) && scrapMatchesFilter(scrap)", "stack and filter narrow the scraps in one place");
 test.assertIncludes(scrapbook, "const visibleScraps = scrapbookPageScraps();\n  syncScrapSelection(visibleScraps);", "the list draws from the same answer as the page rail");
 test.assertIncludes(scrapbook, 't("scrap_filter_empty", scrapFilterQuery)', "an empty filter result says what was filtered for");
+test.assertIncludes(scrapbook, 't("no_scraps_sources")', "empty Sources stack uses proposal-aligned copy");
+test.assertIncludes(scrapbook, "openRegistrySource(source)", "registry Open Source is still the registry row action");
+test.assertIncludes(read("app/core/review-sections.js"), "function openRegistrySource", "registry Open Source lives beside openCitationContextItem");
 
 // A row previews what the scrap says, not the source its meta line already names.
 test.assertIncludes(scrapbook, "function scrapPreviewLine(scrap, meta)", "the row preview skips section labels and the source line");

@@ -310,10 +310,13 @@ if (index.includes('id="hero-dissolve"') && !index.includes('id="era-strip"')) {
   const onLine = branches.filter((id) => lineSource.includes(`id: "${id}"`));
   const menuTail = index.slice(index.lastIndexOf('data-appearance="liquid-glass"'));
   const grouped = branches.every((id) => /menu-sep[^]*?data-appearance="/.test(menuTail) && menuTail.includes(`data-appearance="${id}"`));
-  if (branches.includes("nextstep") && !onLine.length && grouped && index.includes('id="branch"')) {
+  const branchSceneHasDrawingBoard = index.includes('id="branch-drawing-board"')
+    && index.includes("img/frames/drawing-board.webp");
+  if (branches.includes("nextstep") && !onLine.length && grouped && index.includes('id="branch"')
+    && (!branches.includes("drawing-board") || branchSceneHasDrawingBoard)) {
     ok(`the branch appearance (${branches.join(", ")}) stays off the 1988-2026 line, in its own menu group and scene`);
   } else {
-    fail("NeXTSTEP must be a branch: listed in BRANCHES not ERAS, after a separator in the Special menu, with its #branch scene");
+    fail("branch appearances must stay in BRANCHES not ERAS, after a separator in the Special menu, with a #branch scene (Drawing Board needs #branch-drawing-board)");
   }
 }
 // The floppies scene states how many disks ship, and that sentence is the only

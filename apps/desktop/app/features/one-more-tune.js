@@ -1627,6 +1627,9 @@ async function openOneMoreTuneFilmWindow(card, { videoId, startSeconds = 0 } = {
     }
   }
   await openWindow(ONE_MORE_TUNE_FILM_WINDOW);
+  // Idle before probe: "还没探测" / Not probed yet — never pretend the network
+  // was already checked. Failure then replaces this with the blocked note.
+  oneMoreTuneFilmNote("one_more_tune_film_idle");
   // A network that cannot reach the platform gets the honest state rather than
   // a player that never paints: the film is named, the ways to it are listed,
   // and the game's own sound (which never comes from here) is unaffected.
@@ -1640,7 +1643,16 @@ async function openOneMoreTuneFilmWindow(card, { videoId, startSeconds = 0 } = {
     startSeconds: Number.isFinite(startSeconds) ? startSeconds : 0,
     playWhenReady: true,
   });
-  if (!mounted) oneMoreTuneFilmNote("one_more_tune_film_no_word");
+  if (!mounted) {
+    oneMoreTuneFilmNote("one_more_tune_film_no_word");
+  } else {
+    const note = document.getElementById("one-more-tune-film-note");
+    if (note) {
+      note.hidden = true;
+      note.textContent = "";
+      delete note.dataset.i18n;
+    }
+  }
   oneMoreTuneInstanceResources().add(stopOneMoreTuneFilm, "one-more-tune-film-stop");
   return true;
 }
@@ -4522,7 +4534,7 @@ function renderOneMoreTuneChallenge(body) {
           ${oneMoreTuneRoundStage(question, { status: `<span class="omt-verdict" data-s="${verdict}"><span aria-hidden="true">${verdict === "right" ? "✓" : verdict === "skip" ? "–" : "✕"}</span><span data-i18n="${verdictKey}">${oneMoreTuneEscape(t(verdictKey))}</span></span>` })}
           <div class="omt-gap"></div>
           <div class="omt-q"><div class="omt-notes">
-            <h2 class="omt-sr" id="one-more-tune-step-title">${oneMoreTuneEscape([notes.song, notes.artist].filter(Boolean).join(" — "))}</h2>
+            <h2 class="omt-title" id="one-more-tune-step-title">${oneMoreTuneEscape([notes.song, notes.artist].filter(Boolean).join(" — "))}</h2>
             <p class="omt-meta">${notes.film ? `<span>${oneMoreTuneEscape(notes.film)}</span>` : ""}${links}</p>
             ${question.mediaFailed ? `<p class="omt-note" data-i18n="one_more_tune_result_broken">${oneMoreTuneEscape(t("one_more_tune_result_broken"))}</p>` : ""}
           </div></div>
@@ -5529,7 +5541,9 @@ function oneMoreTuneCommandAvailability(action) {
   if (action === "open-one-more-tune") return { available: true, reason: "" };
   const activeWindow = document.querySelector(".window.is-active");
   if (activeWindow?.dataset.window !== "oneMoreTune") {
-    return { available: false, reason: "one_more_tune_needs_window" };
+    // Shared host-window reason so rest/film menus match joyride/rootline
+    // honesty instead of looking like a broken primary while the pad is closed.
+    return { available: false, reason: "balloon_disabled_menu_host_window" };
   }
   const cardId = oneMoreTuneCurrentCardId();
   const inSession = Boolean(oneMoreTuneSession && oneMoreTuneSession.queue.length);

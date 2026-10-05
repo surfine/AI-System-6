@@ -503,68 +503,27 @@
   text-transform: uppercase;
 }
 
-/* Fit the columns to the label, not to a fixed count. Two columns came from
-   the old toolbox, which had to stack eight groups in 175px; the sub-palette
-   shows one group in 123px, and the same two columns cut "Subway station"
-   down to "Su…". Below 223px this resolves to one column and the names read;
-   the wider phone sheet still gets two or three. */
-.bonsai-window .bonsai-tool-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 3px;
+/* Sub-palette tools are a closed-set select (early-harvest X): choose, then
+   act on the map. Rail cells still pick the category. Legacy .bonsai-tool
+   button-grid rules are gone so the wall cannot return by CSS alone. */
+.bonsai-window .bonsai-tool-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.bonsai-window .bonsai-tool {
-  display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
-  grid-template-rows: auto auto;
-  min-width: 0;
-  padding: 2px 3px;
-  text-align: left;
+.bonsai-window .bonsai-tool-picker-label {
+  font-size: 10px;
+  line-height: 1.2;
 }
 
-.bonsai-window .bonsai-tool[aria-pressed="true"],
+.bonsai-window .bonsai-tool-picker .select-wrap {
+  width: 100%;
+}
+
 .bonsai-window .bonsai-speed-controls [aria-pressed="true"] {
   color: var(--paper);
   background: var(--ink);
-}
-
-.bonsai-window .bonsai-tool-icon {
-  --icon-size: 18px;
-  grid-row: 1 / 3;
-  align-self: center;
-  font-family: monospace;
-  font-size: 13px;
-  line-height: 16px;
-  text-align: center;
-  image-rendering: pixelated;
-}
-
-.bonsai-window .bonsai-tool-label,
-.bonsai-window .bonsai-tool-meta {
-  min-width: 0;
-  overflow: hidden;
-  line-height: 1.15;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.bonsai-window .bonsai-tool-label {
-  font-size: 10px;
-}
-
-/* --muted-ink is defined nowhere in this stylesheet tree, so this always fell
-   back to --shade — a SURFACE token used as ink. Grey-on-grey measured 1.8 in
-   Classic and exactly 1.0 in Liquid Glass, where the fallback equals the
-   surface it sits on and the shortcut and price vanished. Derive the muted ink
-   from the era's own two tokens instead, the way 00-foundation.css does. */
-.bonsai-window .bonsai-tool-meta {
-  color: color-mix(in srgb, var(--ink) 76%, var(--paper));
-  font-size: 8px;
-}
-
-.bonsai-window .bonsai-tool[aria-pressed="true"] .bonsai-tool-meta {
-  color: inherit;
 }
 
 .bonsai-window .bonsai-map-shell {

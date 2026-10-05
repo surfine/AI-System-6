@@ -1631,7 +1631,7 @@ function renderDocMapTree(map) {
             <div class="docmap-markmap-frame video-docmap-markmap-frame">
               <svg class="docmap-markmap-svg video-docmap-markmap-svg" aria-label="${escapeHtml(t("docmap"))}"></svg>
             </div>
-          ` : `<div class="empty-folder-note">${escapeHtml(t(docMapMarkmapLoadFailed ? "docmap_visual_failed" : "docmap_mapping"))}</div>`}
+          ` : docMapVisualFailedMarkup()}
         </div>
         <aside class="video-docmap-inspector">
           <div class="video-docmap-timeline">
@@ -1660,9 +1660,7 @@ function renderDocMapTree(map) {
     `;
   }
   if (!window.markmap?.Markmap || !window.markmap?.Transformer) {
-    return `
-      <div class="empty-folder-note">${escapeHtml(t(docMapMarkmapLoadFailed ? "docmap_visual_failed" : "docmap_mapping"))}</div>
-    `;
+    return docMapVisualFailedMarkup();
   }
   return `
     <div class="docmap-markmap-frame">
@@ -2074,14 +2072,28 @@ function restoreDocMapCanvasView() {
   }
 }
 
+function syncDocMapZoomDom() {
+  const win = document.querySelector('[data-window="docMap"]');
+  if (!win) return;
+  win.dataset.docmapZoom = docMapZoomMode || "fit";
+  const host = docMapTreeEl || win.querySelector(".docmap-canvas, #docmap-tree");
+  if (host) host.dataset.docmapZoom = docMapZoomMode || "fit";
+}
+
+function docMapVisualFailedMarkup() {
+  return `<div class="empty-folder-note"${docMapMarkmapLoadFailed ? ' data-failed="1"' : ""}>${escapeHtml(t(docMapMarkmapLoadFailed ? "docmap_visual_failed" : "docmap_mapping"))}</div>`;
+}
+
 function zoomDocMapIn() {
   docMapMarkmapInstance?.rescale(1.15);
   docMapZoomMode = "manual";
+  syncDocMapZoomDom();
 }
 
 function zoomDocMapOut() {
   docMapMarkmapInstance?.rescale(1 / 1.15);
   docMapZoomMode = "manual";
+  syncDocMapZoomDom();
 }
 
 function renderDocMap() {

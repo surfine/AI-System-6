@@ -233,6 +233,7 @@ function renderQuickDraftPreviewPane() {
   if (typeof lightroomPeekFrame !== "undefined" && lightroomPeekFrame) return;
   if (quickDraftDisplayMode === "grain") renderQuickDraftGrain();
   else if (quickDraftDisplayMode === "listen") window.AISystem6QuickDraftListen?.renderQuickDraftListenView?.();
+  else if (typeof quickDraftTrackOwnsPaper === "function" && quickDraftTrackOwnsPaper()) renderQuickDraftTrackPaper();
   else renderQuickDraftReadingView();
 }
 
@@ -353,6 +354,7 @@ function noteLightroomClosed() {
   // Closing the darkroom by any door hands back the writer's own draft: the
   // read-only subject must not survive the window it was opened in, or the
   // next open shows a foreign document nothing on screen accounts for.
+  if (typeof resetQuickDraftTrack === "function") resetQuickDraftTrack();
   if (typeof clearLightroomSubject === "function") clearLightroomSubject();
   if (quickDraftDisplayMode === "body") return;
   if (quickDraftDisplayMode === "listen") window.AISystem6QuickDraftListen?.stop?.();
@@ -369,6 +371,7 @@ function leaveQuickDraftPreview() {
   if (!refs.preview || !refs.draft) return;
   const container = quickDraftPreviewHost();
   if (quickDraftDisplayMode === "listen") window.AISystem6QuickDraftListen?.stop?.();
+  if (typeof resetQuickDraftTrack === "function") resetQuickDraftTrack();
   const wasReading = quickDraftDisplayMode === "read";
   quickDraftDisplayMode = "body";
   container?.classList.remove("is-previewing", "is-graining", "is-listening");

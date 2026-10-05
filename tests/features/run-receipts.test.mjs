@@ -414,6 +414,7 @@ test.assert(!adoptedBody.includes("reuse it here"), "an adopted answer carries n
 // a future edit routes a call site around the shared helper instead of
 // through it.
 const quickDraftAi = read("app/features/quick-draft-ai.js");
+const quickDraftTracks = read("app/features/quick-draft-tracks.js");
 const quickDraftComposition = read("app/features/quick-draft-composition.js");
 const quickDraftListen = read("app/features/quick-draft-listen.js");
 const outlineClaim = read("app/features/outline-claim.js");
@@ -422,6 +423,7 @@ const hkrrReview = read("app/features/hkrr-review.js");
 const chatMessages = read("app/core/chat-messages.js");
 [
   ["quick-draft-ai.js (Quick Draft's four request sites)", quickDraftAi],
+  ["quick-draft-tracks.js (interest / content rewrite)", quickDraftTracks],
   ["quick-draft-composition.js (adjustment-layer composite)", quickDraftComposition],
   ["quick-draft-listen.js (fix-one)", quickDraftListen],
   ["outline-claim.js (generate/expand/organize/polish/suggest/claim-check)", outlineClaim],
@@ -511,6 +513,7 @@ test.assertIncludes(outlineClaim, "lastServedWritingModel = \"\";\n  const recor
 const forbiddenReceiptModelSources = ["getLocalModelRequestName", "currentTranslationModel"];
 for (const [label, source] of [
   ["quick-draft-ai.js", quickDraftAi],
+  ["quick-draft-tracks.js", quickDraftTracks],
   ["quick-draft-composition.js", quickDraftComposition],
   ["quick-draft-listen.js", quickDraftListen],
   ["outline-claim.js", outlineClaim],

@@ -71,15 +71,43 @@
     var actions = document.getElementById("boot-failure-actions");
     if (actions) {
       actions.classList.remove("is-hidden");
-      var retry = document.getElementById("boot-retry");
-      // boot.js normally wires this button; if it never got the chance, a
-      // reload still recovers most causes (a one-off script error).
-      if (retry && retry.dataset.wired !== "true") {
-        retry.dataset.wired = "true";
-        retry.addEventListener("click", function () {
-          window.location.reload();
-        });
-      }
+      // Wire every recovery control to a hard reload. boot.js may be hung with
+      // bootInProgress true — those handlers must not be the only path.
+      wirePlainRecoveryButtons();
+    }
+  }
+
+  function wirePlainRecoveryButtons() {
+    function bind(id, beforeReload) {
+      var button = document.getElementById(id);
+      if (!button || button.dataset.wired === "true") return;
+      button.dataset.wired = "true";
+      button.addEventListener("click", function () {
+        try {
+          if (typeof beforeReload === "function") beforeReload();
+        } catch (error) {}
+        window.location.reload();
+      });
+    }
+    bind("boot-retry");
+    bind("boot-without-session", function () {
+      try {
+        sessionStorage.setItem("ai-system6-boot-skip-session", "1");
+      } catch (error) {}
+    });
+    // Recovery panel needs boot.js; fall back to reload if it is unavailable.
+    var recovery = document.getElementById("boot-recovery");
+    if (recovery && recovery.dataset.wired !== "true") {
+      recovery.dataset.wired = "true";
+      recovery.addEventListener("click", function () {
+        if (typeof window.openBootRecovery === "function") {
+          try {
+            window.openBootRecovery();
+            return;
+          } catch (error) {}
+        }
+        window.location.reload();
+      });
     }
   }
 
@@ -91,13 +119,40 @@
     console.error("AI System 6: an uncaught error stopped startup before boot() could record it.", error);
     markError();
     if (!tryRichFailure(error)) plainFailure();
+    else wirePlainRecoveryButtons();
+  }
+
+  // A refused lazy script or stylesheet fires window `error` with no
+  // exception object (the tag is the target). Until 2026-10-05 that was
+  // treated as a failed boot — Sad Mac over a desk that was still loading,
+  // which is how iPhone Safari / home-screen WebClips never reached first
+  // paint (H18 shape ~0.18). Resource misses stay in the console; only a
+  // real exception, a stall, or boot()'s own catch may show recovery.
+  function isResourceLoadError(event) {
+    if (!event) return false;
+    var target = event.target;
+    if (target && target !== window && typeof target.nodeName === "string") {
+      var tag = target.nodeName.toUpperCase();
+      if (tag === "SCRIPT" || tag === "LINK" || tag === "IMG" || tag === "VIDEO"
+        || tag === "AUDIO" || tag === "SOURCE" || tag === "IFRAME") {
+        return true;
+      }
+    }
+    return event.error == null && !!event.filename && !event.lineno;
   }
 
   window.addEventListener("error", function (event) {
+    if (isResourceLoadError(event)) {
+      console.error("AI System 6: a startup resource failed to load.", event.filename || event.message || event);
+      return;
+    }
     handle(event.error || event.message || event);
   }, true);
   window.addEventListener("unhandledrejection", function (event) {
-    handle(event.reason);
+    // Safari/iOS IndexedDB and a failed lazy fetch reject here even when
+    // boot() is still moving. window `error` still catches a thrown
+    // exception; the stall net still catches a hang.
+    console.error("AI System 6: unhandled rejection during startup.", event && event.reason);
   });
 
   // Last resort for a hang with no throw at all (a wedged promise chain, an

@@ -2636,21 +2636,27 @@
     "cmf-view-side",
   ];
 
-  function cmfStudioCommandAvailable(action) {
-    if (action === "open-cmf-studio") return true;
-    if (cmfBusy) return false;
+  function cmfStudioCommandAvailability(action) {
+    if (action === "open-cmf-studio") return { available: true, reason: "" };
     const activeWindow = document.querySelector(".window.is-active");
-    if (activeWindow?.dataset.window !== "cmfStudio") return false;
-    if (action === "cmf-view-front") {
-      return !!document.querySelector('[data-cmf-view="01-front"]');
+    if (activeWindow?.dataset.window !== "cmfStudio") {
+      return { available: false, reason: "balloon_disabled_menu_host_window" };
     }
-    if (action === "cmf-view-back") {
-      return !!document.querySelector('[data-cmf-view="02-back"]');
+    if (cmfBusy) return { available: false, reason: "balloon_disabled_menu_context" };
+    if (action === "cmf-view-front" && !document.querySelector('[data-cmf-view="01-front"]')) {
+      return { available: false, reason: "balloon_disabled_menu_context" };
     }
-    if (action === "cmf-view-side") {
-      return !!document.querySelector('[data-cmf-view="05-buttons-side"]');
+    if (action === "cmf-view-back" && !document.querySelector('[data-cmf-view="02-back"]')) {
+      return { available: false, reason: "balloon_disabled_menu_context" };
     }
-    return true;
+    if (action === "cmf-view-side" && !document.querySelector('[data-cmf-view="05-buttons-side"]')) {
+      return { available: false, reason: "balloon_disabled_menu_context" };
+    }
+    return { available: true, reason: "" };
+  }
+
+  function cmfStudioCommandAvailable(action) {
+    return cmfStudioCommandAvailability(action).available;
   }
 
   window.AISystem6Runtime?.registerApplication({
@@ -2666,6 +2672,7 @@
         return [action, {
           handler,
           isAvailable: () => cmfStudioCommandAvailable(action),
+          unavailableReason: () => cmfStudioCommandAvailability(action).reason,
         }];
       })
     ),

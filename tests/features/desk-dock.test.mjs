@@ -323,4 +323,41 @@ test.assert(
 );
 vmw.run("window.AISystem6WindowMinimize.setMinimizeEnabled(true)");
 
+test.assert(
+  vmw.run('document.querySelector(\'.desk-dock-items [data-dock-key="applications"]\') !== null'),
+  "Snow Leopard's Dock includes the Applications stack (J3, 10.5+)",
+);
+
+await vmw.context.AISystem6Theme.applyTheme("aqua", { persist: false });
+await vmw.context.AISystem6Theme.whenReady();
+vmw.run("window.AISystem6WindowMinimize.setDockVisible(true); window.AISystem6WindowMinimize.setMinimizeEnabled(true)");
+await vmw.waitFor(() => vmw.run('document.querySelectorAll(".desk-dock").length === 1'));
+test.assert(
+  vmw.run('document.querySelector(\'.desk-dock-items [data-dock-key="applications"]\') === null'),
+  "Jaguar's Dock has no Applications stack — documents and Trash only on the right (J3)",
+);
+
+await vmw.context.AISystem6Theme.applyTheme("tiger", { persist: false });
+await vmw.context.AISystem6Theme.whenReady();
+vmw.run("window.AISystem6WindowMinimize.setDockVisible(true)");
+await vmw.waitFor(() => vmw.run('document.querySelectorAll(".desk-dock").length === 1'));
+test.assert(
+  vmw.run('document.querySelector(\'.desk-dock-items [data-dock-key="applications"]\') === null'),
+  "Tiger's Dock likewise has no Applications stack (J3)",
+);
+
+await vmw.context.AISystem6Theme.applyTheme("snow-leopard", { persist: false });
+await vmw.context.AISystem6Theme.whenReady();
+vmw.run("window.AISystem6WindowMinimize.setDockVisible(true); window.AISystem6WindowMinimize.setMinimizeEnabled(true)");
+await vmw.waitFor(() => vmw.run('document.querySelectorAll(".desk-dock").length === 1'));
+vmw.run('runtimeEnvironment = "multifinder"');
+if (!vmw.run('!!getWindow("notePad")')) await vmw.context.openWindow("notePad");
+vmw.run('focusWindow(getWindow("notePad")); minimizeWindow(getWindow("notePad"));');
+vmw.run("window.AISystem6DeskDock.sync()");
+await vmw.waitFor(() => vmw.run('!!document.querySelector(\'.desk-dock-items [data-miniwindow="notePad"] .desk-dock-miniature-bar\')'));
+test.assert(
+  vmw.run('document.querySelector(\'.desk-dock-items [data-miniwindow="notePad"] .desk-dock-miniature-bar\')?.textContent.length > 0'),
+  "a put-away window's Dock cell shows the window title on a miniature title bar (J1)",
+);
+
 test.finish();

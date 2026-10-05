@@ -30,6 +30,7 @@
     "features/quick-draft-editor.js",
     "features/quick-draft-composition.js",
     "features/quick-draft-ai.js",
+    "features/quick-draft-tracks.js",
     "features/quick-draft-handoff.js",
     "draft-desk-globals.d.ts"
   ]

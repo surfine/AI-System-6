@@ -17,22 +17,22 @@
     "north": {
       "url": "/assets/bonsai/atlas-north.png",
       "file": "assets/bonsai/atlas-north.png",
-      "sha256": "e0fb33666fc1b997e5ff0cf32b9ff5f5c09ec99e0ec32254bbe4b01d1922251f"
+      "sha256": "28b08782f3e9904f8fc3c815ab42c067e2592e8f78c2f09cff710e042242135b"
     },
     "east": {
       "url": "/assets/bonsai/atlas-east.png",
       "file": "assets/bonsai/atlas-east.png",
-      "sha256": "d806bc89cb0400fd1d23c6fb80fa7b860fa25e9d4bab8668c18ab153a4c75637"
+      "sha256": "cf69f7e52de88eb8221f1b0efa2121a28cc3a913ddfb60a63431f68afa3de369"
     },
     "south": {
       "url": "/assets/bonsai/atlas-south.png",
       "file": "assets/bonsai/atlas-south.png",
-      "sha256": "602961c6211359cfd84db0021bb89d85686689809a798892da992c06f3849a1a"
+      "sha256": "043744207047732dadb4adf5a0b8ab1d47bd853c375e4e79897147d7472fdb34"
     },
     "west": {
       "url": "/assets/bonsai/atlas-west.png",
       "file": "assets/bonsai/atlas-west.png",
-      "sha256": "fe151d5196d5fc474df924a2ecb5c952b330792559fd1c29d84c01c8f0002018"
+      "sha256": "34393f7c7b278e6926b7a7393924c2893fe10255167c225a484551dc500d5268"
     }
   },
   "frames": {
@@ -19774,8 +19774,152 @@
       "windows": [],
       "lighting": "baked-emission-mask"
     },
-    "agent.car.1.px": {
+    "agent.bus.1": {
       "x": 1300,
+      "y": 10248,
+      "w": 30,
+      "h": 36,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 15,
+        "y": 28
+      },
+      "height": 12,
+      "state": "normal",
+      "animation": null,
+      "variant": 1,
+      "category": "agent",
+      "zone": null,
+      "stage": 0,
+      "density": null,
+      "license": "MIT",
+      "source": "original"
+    },
+    "agent.bus.brt.front": {
+      "x": 1330,
+      "y": 10248,
+      "w": 42,
+      "h": 42,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 21,
+        "y": 31
+      },
+      "height": 15,
+      "state": "normal",
+      "animation": null,
+      "variant": 1,
+      "category": "agent",
+      "zone": null,
+      "stage": 0,
+      "density": null,
+      "license": "MIT",
+      "source": "original"
+    },
+    "agent.bus.brt.rear": {
+      "x": 1372,
+      "y": 10248,
+      "w": 42,
+      "h": 42,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 21,
+        "y": 31
+      },
+      "height": 15,
+      "state": "normal",
+      "animation": null,
+      "variant": 1,
+      "category": "agent",
+      "zone": null,
+      "stage": 0,
+      "density": null,
+      "license": "MIT",
+      "source": "original"
+    },
+    "street.bus-stop": {
+      "x": 1414,
+      "y": 10248,
+      "w": 18,
+      "h": 36,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 9,
+        "y": 33
+      },
+      "height": 17,
+      "state": "normal",
+      "animation": null,
+      "variant": 1,
+      "category": "street",
+      "zone": null,
+      "stage": 0,
+      "density": null,
+      "license": "MIT",
+      "source": "original"
+    },
+    "street.bus-platform": {
+      "x": 1432,
+      "y": 10248,
+      "w": 42,
+      "h": 42,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 21,
+        "y": 31
+      },
+      "height": 15,
+      "state": "normal",
+      "animation": null,
+      "variant": 1,
+      "category": "street",
+      "zone": null,
+      "stage": 0,
+      "density": null,
+      "license": "MIT",
+      "source": "original"
+    },
+    "street.camera": {
+      "x": 1474,
+      "y": 10248,
+      "w": 22,
+      "h": 39,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 11,
+        "y": 36
+      },
+      "height": 20,
+      "state": "normal",
+      "animation": null,
+      "variant": 1,
+      "category": "street",
+      "zone": null,
+      "stage": 0,
+      "density": null,
+      "license": "MIT",
+      "source": "original"
+    },
+    "agent.car.1.px": {
+      "x": 1496,
       "y": 10248,
       "w": 22,
       "h": 22,
@@ -19799,7 +19943,7 @@
       "source": "original"
     },
     "agent.car.1.ny": {
-      "x": 1322,
+      "x": 1518,
       "y": 10248,
       "w": 22,
       "h": 22,
@@ -19823,7 +19967,7 @@
       "source": "original"
     },
     "agent.car.1.nx": {
-      "x": 1344,
+      "x": 1540,
       "y": 10248,
       "w": 22,
       "h": 22,
@@ -19847,7 +19991,7 @@
       "source": "original"
     },
     "agent.car.1.py": {
-      "x": 1366,
+      "x": 1562,
       "y": 10248,
       "w": 22,
       "h": 22,
@@ -19871,7 +20015,7 @@
       "source": "original"
     },
     "agent.car.2.px": {
-      "x": 1388,
+      "x": 1584,
       "y": 10248,
       "w": 22,
       "h": 22,
@@ -19895,7 +20039,7 @@
       "source": "original"
     },
     "agent.car.2.ny": {
-      "x": 1410,
+      "x": 1606,
       "y": 10248,
       "w": 22,
       "h": 22,
@@ -19919,7 +20063,7 @@
       "source": "original"
     },
     "agent.car.2.nx": {
-      "x": 1432,
+      "x": 1628,
       "y": 10248,
       "w": 22,
       "h": 22,
@@ -19943,7 +20087,7 @@
       "source": "original"
     },
     "agent.car.2.py": {
-      "x": 1454,
+      "x": 1650,
       "y": 10248,
       "w": 22,
       "h": 22,
@@ -19967,7 +20111,7 @@
       "source": "original"
     },
     "agent.car.3.px": {
-      "x": 1476,
+      "x": 1672,
       "y": 10248,
       "w": 22,
       "h": 22,
@@ -19991,7 +20135,7 @@
       "source": "original"
     },
     "agent.car.3.ny": {
-      "x": 1498,
+      "x": 1694,
       "y": 10248,
       "w": 22,
       "h": 22,
@@ -20015,7 +20159,7 @@
       "source": "original"
     },
     "agent.car.3.nx": {
-      "x": 1520,
+      "x": 1716,
       "y": 10248,
       "w": 22,
       "h": 22,
@@ -20039,7 +20183,7 @@
       "source": "original"
     },
     "agent.car.3.py": {
-      "x": 1542,
+      "x": 1738,
       "y": 10248,
       "w": 22,
       "h": 22,
@@ -20063,7 +20207,7 @@
       "source": "original"
     },
     "agent.car.4.px": {
-      "x": 1564,
+      "x": 1760,
       "y": 10248,
       "w": 22,
       "h": 22,
@@ -20087,7 +20231,7 @@
       "source": "original"
     },
     "agent.car.4.ny": {
-      "x": 1586,
+      "x": 1782,
       "y": 10248,
       "w": 22,
       "h": 22,
@@ -20111,7 +20255,7 @@
       "source": "original"
     },
     "agent.car.4.nx": {
-      "x": 1608,
+      "x": 1804,
       "y": 10248,
       "w": 22,
       "h": 22,
@@ -20135,7 +20279,7 @@
       "source": "original"
     },
     "agent.car.4.py": {
-      "x": 1630,
+      "x": 1826,
       "y": 10248,
       "w": 22,
       "h": 22,
@@ -20159,7 +20303,7 @@
       "source": "original"
     },
     "agent.pedestrian.1.px": {
-      "x": 1652,
+      "x": 1848,
       "y": 10248,
       "w": 22,
       "h": 24,
@@ -20183,7 +20327,7 @@
       "source": "original"
     },
     "agent.pedestrian.1.py": {
-      "x": 1674,
+      "x": 1870,
       "y": 10248,
       "w": 22,
       "h": 24,
@@ -20207,7 +20351,7 @@
       "source": "original"
     },
     "agent.pedestrian.2.px": {
-      "x": 1696,
+      "x": 1892,
       "y": 10248,
       "w": 22,
       "h": 24,
@@ -20231,7 +20375,7 @@
       "source": "original"
     },
     "agent.pedestrian.2.py": {
-      "x": 1718,
+      "x": 1914,
       "y": 10248,
       "w": 22,
       "h": 24,
@@ -20255,7 +20399,7 @@
       "source": "original"
     },
     "agent.train.1.px": {
-      "x": 1740,
+      "x": 1936,
       "y": 10248,
       "w": 38,
       "h": 35,
@@ -20279,7 +20423,7 @@
       "source": "original"
     },
     "agent.train.1.ny": {
-      "x": 1778,
+      "x": 1974,
       "y": 10248,
       "w": 38,
       "h": 35,
@@ -20303,8 +20447,8 @@
       "source": "original"
     },
     "agent.train.1.nx": {
-      "x": 1816,
-      "y": 10248,
+      "x": 0,
+      "y": 10694,
       "w": 38,
       "h": 35,
       "footprint": {
@@ -20327,8 +20471,8 @@
       "source": "original"
     },
     "agent.train.1.py": {
-      "x": 1854,
-      "y": 10248,
+      "x": 38,
+      "y": 10694,
       "w": 38,
       "h": 35,
       "footprint": {
@@ -20351,8 +20495,8 @@
       "source": "original"
     },
     "agent.train.2.px": {
-      "x": 1892,
-      "y": 10248,
+      "x": 76,
+      "y": 10694,
       "w": 38,
       "h": 35,
       "footprint": {
@@ -20375,8 +20519,8 @@
       "source": "original"
     },
     "agent.train.2.ny": {
-      "x": 1930,
-      "y": 10248,
+      "x": 114,
+      "y": 10694,
       "w": 38,
       "h": 35,
       "footprint": {
@@ -20399,8 +20543,8 @@
       "source": "original"
     },
     "agent.train.2.nx": {
-      "x": 1968,
-      "y": 10248,
+      "x": 152,
+      "y": 10694,
       "w": 38,
       "h": 35,
       "footprint": {
@@ -20423,8 +20567,8 @@
       "source": "original"
     },
     "agent.train.2.py": {
-      "x": 2006,
-      "y": 10248,
+      "x": 190,
+      "y": 10694,
       "w": 38,
       "h": 35,
       "footprint": {
@@ -20447,7 +20591,7 @@
       "source": "original"
     },
     "agent.service.police.px": {
-      "x": 0,
+      "x": 228,
       "y": 10694,
       "w": 22,
       "h": 22,
@@ -20471,7 +20615,7 @@
       "source": "original"
     },
     "agent.service.police.ny": {
-      "x": 22,
+      "x": 250,
       "y": 10694,
       "w": 22,
       "h": 22,
@@ -20495,7 +20639,7 @@
       "source": "original"
     },
     "agent.service.police.nx": {
-      "x": 44,
+      "x": 272,
       "y": 10694,
       "w": 22,
       "h": 22,
@@ -20519,7 +20663,7 @@
       "source": "original"
     },
     "agent.service.police.py": {
-      "x": 66,
+      "x": 294,
       "y": 10694,
       "w": 22,
       "h": 22,
@@ -20543,7 +20687,7 @@
       "source": "original"
     },
     "agent.service.fire.px": {
-      "x": 88,
+      "x": 316,
       "y": 10694,
       "w": 26,
       "h": 26,
@@ -20567,7 +20711,7 @@
       "source": "original"
     },
     "agent.service.fire.ny": {
-      "x": 114,
+      "x": 342,
       "y": 10694,
       "w": 26,
       "h": 26,
@@ -20591,7 +20735,7 @@
       "source": "original"
     },
     "agent.service.fire.nx": {
-      "x": 140,
+      "x": 368,
       "y": 10694,
       "w": 26,
       "h": 26,
@@ -20615,7 +20759,7 @@
       "source": "original"
     },
     "agent.service.fire.py": {
-      "x": 166,
+      "x": 394,
       "y": 10694,
       "w": 26,
       "h": 26,
@@ -20639,7 +20783,7 @@
       "source": "original"
     },
     "agent.service.medical.px": {
-      "x": 192,
+      "x": 420,
       "y": 10694,
       "w": 26,
       "h": 26,
@@ -20663,7 +20807,7 @@
       "source": "original"
     },
     "agent.service.medical.ny": {
-      "x": 218,
+      "x": 446,
       "y": 10694,
       "w": 26,
       "h": 26,
@@ -20687,7 +20831,7 @@
       "source": "original"
     },
     "agent.service.medical.nx": {
-      "x": 244,
+      "x": 472,
       "y": 10694,
       "w": 26,
       "h": 26,
@@ -20711,7 +20855,7 @@
       "source": "original"
     },
     "agent.service.medical.py": {
-      "x": 270,
+      "x": 498,
       "y": 10694,
       "w": 26,
       "h": 26,
@@ -20734,200 +20878,8 @@
       "license": "MIT",
       "source": "original"
     },
-    "park.small.1": {
-      "x": 296,
-      "y": 10694,
-      "w": 66,
-      "h": 58,
-      "footprint": {
-        "w": 1,
-        "h": 1
-      },
-      "anchor": {
-        "x": 33,
-        "y": 41
-      },
-      "height": 25,
-      "state": "normal",
-      "animation": null,
-      "variant": 1,
-      "category": "scenery",
-      "zone": null,
-      "stage": 0,
-      "density": null,
-      "license": "MIT",
-      "source": "original"
-    },
-    "park.small.2": {
-      "x": 362,
-      "y": 10694,
-      "w": 66,
-      "h": 42,
-      "footprint": {
-        "w": 1,
-        "h": 1
-      },
-      "anchor": {
-        "x": 33,
-        "y": 25
-      },
-      "height": 9,
-      "state": "normal",
-      "animation": null,
-      "variant": 2,
-      "category": "scenery",
-      "zone": null,
-      "stage": 0,
-      "density": null,
-      "license": "MIT",
-      "source": "original"
-    },
-    "agent.bus.1": {
-      "x": 428,
-      "y": 10694,
-      "w": 30,
-      "h": 36,
-      "footprint": {
-        "w": 1,
-        "h": 1
-      },
-      "anchor": {
-        "x": 15,
-        "y": 28
-      },
-      "height": 12,
-      "state": "normal",
-      "animation": null,
-      "variant": 1,
-      "category": "agent",
-      "zone": null,
-      "stage": 0,
-      "density": null,
-      "license": "MIT",
-      "source": "original"
-    },
-    "agent.bus.brt.front": {
-      "x": 458,
-      "y": 10694,
-      "w": 42,
-      "h": 42,
-      "footprint": {
-        "w": 1,
-        "h": 1
-      },
-      "anchor": {
-        "x": 21,
-        "y": 31
-      },
-      "height": 15,
-      "state": "normal",
-      "animation": null,
-      "variant": 1,
-      "category": "agent",
-      "zone": null,
-      "stage": 0,
-      "density": null,
-      "license": "MIT",
-      "source": "original"
-    },
-    "agent.bus.brt.rear": {
-      "x": 500,
-      "y": 10694,
-      "w": 42,
-      "h": 42,
-      "footprint": {
-        "w": 1,
-        "h": 1
-      },
-      "anchor": {
-        "x": 21,
-        "y": 31
-      },
-      "height": 15,
-      "state": "normal",
-      "animation": null,
-      "variant": 1,
-      "category": "agent",
-      "zone": null,
-      "stage": 0,
-      "density": null,
-      "license": "MIT",
-      "source": "original"
-    },
-    "street.bus-stop": {
-      "x": 542,
-      "y": 10694,
-      "w": 18,
-      "h": 36,
-      "footprint": {
-        "w": 1,
-        "h": 1
-      },
-      "anchor": {
-        "x": 9,
-        "y": 33
-      },
-      "height": 17,
-      "state": "normal",
-      "animation": null,
-      "variant": 1,
-      "category": "street",
-      "zone": null,
-      "stage": 0,
-      "density": null,
-      "license": "MIT",
-      "source": "original"
-    },
-    "street.bus-platform": {
-      "x": 560,
-      "y": 10694,
-      "w": 42,
-      "h": 42,
-      "footprint": {
-        "w": 1,
-        "h": 1
-      },
-      "anchor": {
-        "x": 21,
-        "y": 31
-      },
-      "height": 15,
-      "state": "normal",
-      "animation": null,
-      "variant": 1,
-      "category": "street",
-      "zone": null,
-      "stage": 0,
-      "density": null,
-      "license": "MIT",
-      "source": "original"
-    },
-    "street.camera": {
-      "x": 602,
-      "y": 10694,
-      "w": 22,
-      "h": 39,
-      "footprint": {
-        "w": 1,
-        "h": 1
-      },
-      "anchor": {
-        "x": 11,
-        "y": 36
-      },
-      "height": 20,
-      "state": "normal",
-      "animation": null,
-      "variant": 1,
-      "category": "street",
-      "zone": null,
-      "stage": 0,
-      "density": null,
-      "license": "MIT",
-      "source": "original"
-    },
     "agent.bus.1.px": {
-      "x": 624,
+      "x": 524,
       "y": 10694,
       "w": 30,
       "h": 36,
@@ -20951,7 +20903,7 @@
       "source": "original"
     },
     "agent.bus.1.ny": {
-      "x": 654,
+      "x": 554,
       "y": 10694,
       "w": 30,
       "h": 36,
@@ -20975,7 +20927,7 @@
       "source": "original"
     },
     "agent.bus.1.nx": {
-      "x": 684,
+      "x": 584,
       "y": 10694,
       "w": 30,
       "h": 36,
@@ -20999,7 +20951,7 @@
       "source": "original"
     },
     "agent.bus.1.py": {
-      "x": 714,
+      "x": 614,
       "y": 10694,
       "w": 30,
       "h": 36,
@@ -21023,7 +20975,7 @@
       "source": "original"
     },
     "agent.bus.brt.front.px": {
-      "x": 744,
+      "x": 644,
       "y": 10694,
       "w": 42,
       "h": 42,
@@ -21047,7 +20999,7 @@
       "source": "original"
     },
     "agent.bus.brt.front.ny": {
-      "x": 786,
+      "x": 686,
       "y": 10694,
       "w": 42,
       "h": 42,
@@ -21071,7 +21023,7 @@
       "source": "original"
     },
     "agent.bus.brt.front.nx": {
-      "x": 828,
+      "x": 728,
       "y": 10694,
       "w": 42,
       "h": 42,
@@ -21095,7 +21047,7 @@
       "source": "original"
     },
     "agent.bus.brt.front.py": {
-      "x": 870,
+      "x": 770,
       "y": 10694,
       "w": 42,
       "h": 42,
@@ -21119,7 +21071,7 @@
       "source": "original"
     },
     "agent.bus.brt.rear.px": {
-      "x": 912,
+      "x": 812,
       "y": 10694,
       "w": 42,
       "h": 42,
@@ -21143,7 +21095,7 @@
       "source": "original"
     },
     "agent.bus.brt.rear.ny": {
-      "x": 954,
+      "x": 854,
       "y": 10694,
       "w": 42,
       "h": 42,
@@ -21167,7 +21119,7 @@
       "source": "original"
     },
     "agent.bus.brt.rear.nx": {
-      "x": 996,
+      "x": 896,
       "y": 10694,
       "w": 42,
       "h": 42,
@@ -21191,7 +21143,7 @@
       "source": "original"
     },
     "agent.bus.brt.rear.py": {
-      "x": 1038,
+      "x": 938,
       "y": 10694,
       "w": 42,
       "h": 42,
@@ -21215,7 +21167,7 @@
       "source": "original"
     },
     "street.bus-stop.px": {
-      "x": 1080,
+      "x": 980,
       "y": 10694,
       "w": 18,
       "h": 36,
@@ -21239,7 +21191,7 @@
       "source": "original"
     },
     "street.bus-stop.ny": {
-      "x": 1098,
+      "x": 998,
       "y": 10694,
       "w": 18,
       "h": 36,
@@ -21263,7 +21215,7 @@
       "source": "original"
     },
     "street.bus-stop.nx": {
-      "x": 1116,
+      "x": 1016,
       "y": 10694,
       "w": 18,
       "h": 36,
@@ -21287,7 +21239,7 @@
       "source": "original"
     },
     "street.bus-stop.py": {
-      "x": 1134,
+      "x": 1034,
       "y": 10694,
       "w": 18,
       "h": 36,
@@ -21311,7 +21263,7 @@
       "source": "original"
     },
     "street.bus-platform.px": {
-      "x": 1152,
+      "x": 1052,
       "y": 10694,
       "w": 42,
       "h": 42,
@@ -21335,7 +21287,7 @@
       "source": "original"
     },
     "street.bus-platform.ny": {
-      "x": 1194,
+      "x": 1094,
       "y": 10694,
       "w": 42,
       "h": 42,
@@ -21359,7 +21311,7 @@
       "source": "original"
     },
     "street.bus-platform.nx": {
-      "x": 1236,
+      "x": 1136,
       "y": 10694,
       "w": 42,
       "h": 42,
@@ -21383,7 +21335,7 @@
       "source": "original"
     },
     "street.bus-platform.py": {
-      "x": 1278,
+      "x": 1178,
       "y": 10694,
       "w": 42,
       "h": 42,
@@ -21407,7 +21359,7 @@
       "source": "original"
     },
     "street.camera.px": {
-      "x": 1320,
+      "x": 1220,
       "y": 10694,
       "w": 22,
       "h": 39,
@@ -21431,7 +21383,7 @@
       "source": "original"
     },
     "street.camera.ny": {
-      "x": 1342,
+      "x": 1242,
       "y": 10694,
       "w": 22,
       "h": 39,
@@ -21455,7 +21407,7 @@
       "source": "original"
     },
     "street.camera.nx": {
-      "x": 1364,
+      "x": 1264,
       "y": 10694,
       "w": 22,
       "h": 39,
@@ -21479,7 +21431,7 @@
       "source": "original"
     },
     "street.camera.py": {
-      "x": 1386,
+      "x": 1286,
       "y": 10694,
       "w": 22,
       "h": 39,
@@ -21496,6 +21448,54 @@
       "animation": null,
       "variant": 1,
       "category": "agent",
+      "zone": null,
+      "stage": 0,
+      "density": null,
+      "license": "MIT",
+      "source": "original"
+    },
+    "park.small.1": {
+      "x": 1308,
+      "y": 10694,
+      "w": 66,
+      "h": 58,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 33,
+        "y": 41
+      },
+      "height": 25,
+      "state": "normal",
+      "animation": null,
+      "variant": 1,
+      "category": "scenery",
+      "zone": null,
+      "stage": 0,
+      "density": null,
+      "license": "MIT",
+      "source": "original"
+    },
+    "park.small.2": {
+      "x": 1374,
+      "y": 10694,
+      "w": 66,
+      "h": 42,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      },
+      "anchor": {
+        "x": 33,
+        "y": 25
+      },
+      "height": 9,
+      "state": "normal",
+      "animation": null,
+      "variant": 2,
+      "category": "scenery",
       "zone": null,
       "stage": 0,
       "density": null,

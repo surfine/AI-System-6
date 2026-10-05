@@ -18,8 +18,8 @@ function installFinishingReceiptWindow() {
           <div class="info-header">
             <span class="large-mini-icon sys-icon" data-system-icon="projectDisc" aria-hidden="true"></span>
             <div class="info-main">
-              <h3 id="finishing-receipt-name">--</h3>
-              <p class="hint" id="finishing-receipt-kind">--</p>
+              <h3 id="finishing-receipt-name" data-i18n="finishing_receipt_empty">No receipt yet</h3>
+              <p class="hint" id="finishing-receipt-kind" data-i18n="finishing_receipt_empty_detail">Burn a Project CD to see words, drafts, and what was kept.</p>
             </div>
           </div>
           <hr />
@@ -695,8 +695,8 @@ function clearFinishingReceipt() {
   delete win.dataset.receiptItemId;
   const nameEl = win.querySelector("#finishing-receipt-name");
   const kindEl = win.querySelector("#finishing-receipt-kind");
-  if (nameEl) nameEl.textContent = "--";
-  if (kindEl) kindEl.textContent = "--";
+  if (nameEl) nameEl.textContent = t("finishing_receipt_empty");
+  if (kindEl) kindEl.textContent = t("finishing_receipt_empty_detail");
   win.querySelector("#finishing-receipt-stats")?.replaceChildren();
   const keptEl = win.querySelector("#finishing-receipt-kept");
   if (keptEl) {

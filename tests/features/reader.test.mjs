@@ -55,7 +55,12 @@ test.assertNotIncludes(`${styles}\n${responsive}`, ".reader-pane:has(#reader-doc
 test.assertIncludes(index, 'id="reader-open-another" data-action="reader-open-another"', "Commands offers another source without reopening the window");
 test.assertIncludes(reader, 'event.key==="Escape"&&dismissReaderSourceEntry()', "Escape folds the entry row away again");
 test.assertIncludes(index, '<div class="reader-selection-bar" id="reader-selection-bar" role="toolbar"', "selection verbs sit in a bar beside the selection");
-test.assertMatches(index, /id="reader-selection-bar"[\s\S]*id="reader-clip-button" data-action="reader-clip"[\s\S]*id="reader-clip-translate-button"[\s\S]*id="reader-docmap-selection-command"/, "Clip, Clip + Translate and Map Selection live together in the selection bar");
+test.assertMatches(index, /id="reader-selection-bar"[\s\S]*id="reader-clip-button"[^>]*data-action="reader-clip"/, "Clip is the one default in the selection bar");
+test.assertMatches(index, /id="reader-command-menu"[\s\S]*id="reader-clip-translate-button"[\s\S]*id="reader-docmap-selection-command"/, "Clip + Translate and Map Selection live in Reader Commands, not as peer primaries");
+test.assert(
+  !/id="reader-selection-bar"[\s\S]*id="reader-clip-translate-button"/.test(index),
+  "Clip + Translate is not a second primary beside Clip in the selection bar"
+);
 test.assertIncludes(reader, "bar.inert = !active;", "the closed bar cannot be tabbed into or clicked");
 test.assertIncludes(reader, 'bar.classList.toggle("is-open", active);', "the bar opens by class: a [data-open] ancestor is the desk's open-this-window target and swallowed the Clip click");
 test.assertNotIncludes(reader, "bar.dataset.open", "the selection bar never carries data-open");

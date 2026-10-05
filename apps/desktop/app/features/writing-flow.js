@@ -1394,6 +1394,8 @@ async function advanceQuestionSheetToOutline() {
     return;
   }
 
+  // Show progress before revision/save work so a slow advance is never silent.
+  setStatus(t("writing_phase_advancing"));
   if (typeof createDocumentRevision === "function") {
     try {
       await createDocumentRevision({ origin: "system", operation: "phase-advance" });
@@ -1431,6 +1433,7 @@ async function advanceOutlineToSectionDrafts() {
     return;
   }
 
+  setStatus(t("writing_phase_advancing"));
   savePipelineData();
   const outlineSections = getMeaningfulOutlineSections(getProjectOutlineSections(project));
   if (!outlineSections.length) {
@@ -1483,6 +1486,13 @@ async function advanceDraftsToManuscript() {
   const outlineSections = getMeaningfulOutlineSections(getProjectOutlineSections(project));
   if (!outlineSections.length) {
     setStatus(t("outline_needs_content"));
+    openWindow("sectionDrafts");
+    requestAnimationFrame(() => draftBodyInput?.focus());
+    return;
+  }
+  const draftBody = String(draftBodyInput?.value || "").trim();
+  if (!draftBody) {
+    setStatus(t("draft_needs_content"));
     openWindow("sectionDrafts");
     requestAnimationFrame(() => draftBodyInput?.focus());
     return;
@@ -1544,6 +1554,7 @@ async function advanceManuscriptToReview() {
   if (typeof teachTextReviewLabel === "function" && teachTextReviewLabel()) {
     // Already finalized: this is a way back to the desk, not a second finalize.
     if (typeof openReviewDesk === "function") openReviewDesk("style");
+    setStatus(t("review_desk_reopened"));
     return;
   }
   if (!teachTextBodyInput?.value.trim()) {
@@ -1564,6 +1575,7 @@ async function advanceManuscriptToReview() {
   // The question belongs to setTeachTextFileLabel's finalize, so it is asked
   // with that same words and handed forward as already answered rather than
   // asked twice.
+  setStatus(t("writing_phase_advancing"));
   const confirmed = await showSystemModal(t("final_label_confirm"), "confirm");
   if (confirmed !== "yes") {
     setStatus(t("review_desk_requires_final"));
@@ -1992,6 +2004,10 @@ async function draftOutlineSection(sectionTitle) {
   openWindow("sectionDrafts");
 
   let content = "";
+  // Honest failure receipts must survive the empty-content exit below.
+  // Clearing the status after reportWritingRouteModelFailure made census see
+  // silence + console.error → handler-logs-error for offline / budget refusals.
+  let reportedFailure = false;
   try {
     await prepareStreamingMarkdownPreview();
     const questionSheet = (project.questionSheet || "").trim();
@@ -2035,8 +2051,11 @@ ${context.outlineMarkdown || context.outlineBody || cleanSectionTitle}${eli5Bloc
     if (content && sectionDraftTargetMatches(targetSnapshot)) showStreamingSurfacePreview("sectionDrafts", content, { final: true });
   } catch (error) {
     if (!isAbortError(error)) {
-      console.error("Drafting failed", error);
+      // Expected model/transport refusals are product receipts (status +
+      // notification). Keep diagnostics off console.error so a leftover empty
+      // status cannot be reclassified as handler-logs-error.
       content = "";
+      reportedFailure = true;
       await reportWritingRouteModelFailure(error, t("section_drafts"));
     }
   } finally {
@@ -2044,7 +2063,7 @@ ${context.outlineMarkdown || context.outlineBody || cleanSectionTitle}${eli5Bloc
   }
 
   if (!content) {
-    clearStatus();
+    if (!reportedFailure) clearStatus();
     return;
   }
 
@@ -2193,6 +2212,143 @@ async function eli5ReviewSection() {
     return false;
   } finally {
     endLongTask("eli5-review-section");
+  }
+}
+
+function oneSentenceSystemInstruction(kind = "rewrite") {
+  const zh = currentLanguage === "zh";
+  if (kind === "check") {
+    return zh
+      ? "你是 AI System 6 的「一句一件事」检查器。只指出当前章节草稿里哪一句同时做了两件事、指代不清，或让读者跟丢。逐条引用原句，说明读者会在哪里卡住，以及最小改法。不要整段重写，不要打分，不要加新事实。用简洁中文回复。"
+      : "You are AI System 6's one-thing-per-sentence checker. Name only the sentences in this section draft that do two jobs at once, leave a reference unclear, or make a reader lose the thread. Quote each sentence, say where the reader gets stuck, and the smallest fix. Do not rewrite the whole draft, score it, or add facts.";
+  }
+  return zh
+    ? "你是 AI System 6 的「一句一件事」改写器。把当前章节草稿改成一句只做一件事：必要时拆句，理清指代，但不改事实、数字、人名、引文、不确定表述，也不抹平作者自己的语气与判断。只返回改写后的 Markdown 正文，不要说明、不要选项、不要代码围栏。"
+    : "You are AI System 6's one-thing-per-sentence rewriter. Rewrite this section draft so each sentence does one job: split overloaded sentences and clarify references, without changing facts, numbers, names, quotes, or stated uncertainty, and without smoothing away the writer's voice or judgment. Return only the rewritten Markdown body — no commentary, options, or code fences.";
+}
+
+async function oneSentenceRewriteSection() {
+  const context = currentSectionDraftContext({ ensureDraft: true });
+  if (!context) {
+    setStatus(t("section_draft_needs_section"));
+    openWindow("outline");
+    return false;
+  }
+  const targetSnapshot = captureSectionDraftTarget(context);
+  const body = String(draftBodyInput?.value || context.body || "").trim();
+  if (!body) {
+    setStatus(t("draft_needs_content"));
+    openWindow("sectionDrafts");
+    requestAnimationFrame(() => draftBodyInput?.focus());
+    return false;
+  }
+  const promptBody = window.AISystem6PromptFilesRuntime?.resolvePromptFile?.("lenses.one-sentence-rewrite", null, currentLanguage)?.body
+    || oneSentenceSystemInstruction("rewrite");
+  if (!promptBody) {
+    setStatus(t("section_draft_one_sentence_unavailable"));
+    return false;
+  }
+  if (!beginLongTask("one-sentence-rewrite-section", t("section_draft_one_sentence_rewriting"))) return false;
+  let content = "";
+  let servedModel = "";
+  try {
+    const response = await fetchModelPayload({
+      model: getLocalModelRequestName(),
+      messages: withMarkdownModelMessages([
+        { role: "system", content: promptBody },
+        { role: "user", content: `${currentLanguage === "zh" ? "当前章节草稿：" : "Current section draft:"}\n\n${body}` },
+      ]),
+      temperature: 0.3,
+      max_tokens: 2600,
+      ai_system6_task_kind: "writing.one-sentence-rewrite",
+      stream: false,
+    }, getLongTaskSignal());
+    if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
+    const result = await response.json().catch(() => ({}));
+    servedModel = String(result?.ai_system6_metrics?.model || result?.model || "");
+    content = stripRebuildMarkdownFence(String(result?.choices?.[0]?.message?.content || "").trim());
+  } catch (error) {
+    if (!isAbortError(error)) {
+      console.error("One-sentence rewrite failed", error);
+      await reportWritingRouteModelFailure(error, t("section_drafts"));
+    }
+  } finally {
+    endLongTask("one-sentence-rewrite-section");
+  }
+  if (!content) {
+    clearStatus();
+    return false;
+  }
+  const receipt = await window.AISystem6RunReceipts?.recordModelAnswer?.({
+    projectId: context.project.id,
+    sourceAppId: "sectionDrafts",
+    intent: "writing.one-sentence-rewrite",
+    model: servedModel,
+    answerText: content,
+  });
+  const applied = await confirmAndApplySectionDraft(
+    content,
+    "section_draft_one_sentence_replace_confirm",
+    "section_draft_one_sentence_applied",
+    targetSnapshot,
+  );
+  if (receipt?.receiptId) await window.AISystem6RunReceipts?.recordUserAction?.(receipt.receiptId, { action: applied ? "accept" : "reject" });
+  return applied;
+}
+
+async function oneSentenceCheckSection() {
+  const context = currentSectionDraftContext({ ensureDraft: true });
+  if (!context) {
+    setStatus(t("section_draft_needs_section"));
+    openWindow("outline");
+    return false;
+  }
+  const body = String(draftBodyInput?.value || context.body || "").trim();
+  if (!body) {
+    setStatus(t("draft_needs_content"));
+    openWindow("sectionDrafts");
+    requestAnimationFrame(() => draftBodyInput?.focus());
+    return false;
+  }
+  const promptBody = window.AISystem6PromptFilesRuntime?.resolvePromptFile?.("lenses.one-sentence-check", null, currentLanguage)?.body
+    || oneSentenceSystemInstruction("check");
+  if (!promptBody) {
+    setStatus(t("section_draft_one_sentence_unavailable"));
+    return false;
+  }
+  if (!beginLongTask("one-sentence-check-section", t("section_draft_one_sentence_checking"))) return false;
+  try {
+    const response = await fetchModelPayload({
+      model: getLocalModelRequestName(),
+      messages: [
+        { role: "system", content: promptBody },
+        { role: "user", content: body },
+      ],
+      temperature: 0.2,
+      max_tokens: 2200,
+      ai_system6_task_kind: "writing.one-sentence-check",
+      stream: false,
+    }, getLongTaskSignal());
+    if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
+    const result = await response.json().catch(() => ({}));
+    const content = String(result?.choices?.[0]?.message?.content || "").trim();
+    if (!content) throw new Error(t("section_draft_one_sentence_unavailable"));
+    if (typeof arrangeWindowAssistantSplit === "function") {
+      await arrangeWindowAssistantSplit("sectionDrafts");
+    } else if (typeof openWindow === "function") {
+      await openWindow("assistant");
+    }
+    if (typeof addMessage === "function") addMessage("assistant", content);
+    clearStatus();
+    return true;
+  } catch (error) {
+    if (!isAbortError(error)) {
+      console.error("One-sentence check failed", error);
+      await reportWritingRouteModelFailure(error, t("section_drafts"));
+    }
+    return false;
+  } finally {
+    endLongTask("one-sentence-check-section");
   }
 }
 

@@ -1173,9 +1173,9 @@ async function reviewSectionAsMingming() {
   }
   const runningLabel = currentLanguage === "zh" ? "正在代入读者视角..." : "Reviewing as the Reader...";
   if (!beginLongTask("mingming-review-section", runningLabel)) return;
-  setReviewDeskMode("facts");
-  clearReviewFeedbackSlot("facts", runningLabel);
-  openReviewDesk("facts");
+  setReviewDeskMode("mingming");
+  clearReviewFeedbackSlot("mingming", runningLabel);
+  openReviewDesk("mingming");
   try {
     // The style contract is a lazy module: load it before the prompt is built.
     if (typeof ensureMingmingLensModule === "function") await ensureMingmingLensModule();

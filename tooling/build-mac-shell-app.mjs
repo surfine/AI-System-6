@@ -3,6 +3,11 @@ import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 
+import {
+  MAC_APP_ICONSET_SIZES,
+  renderVersionedMacAppIcon,
+} from "./lib/mac-app-icon.mjs";
+
 const repoRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const packagePath = join(repoRoot, "platform", "macos", "shell", "macos-webview");
 const packageManifestPath = join(repoRoot, "package.json");
@@ -84,32 +89,27 @@ function buildIcon(resourcesDir) {
   rmSync(iconsetDir, { recursive: true, force: true });
   mkdirSync(iconsetDir, { recursive: true });
 
-  const sizes = [
-    ["icon_16x16.png", 16],
-    ["icon_16x16@2x.png", 32],
-    ["icon_32x32.png", 32],
-    ["icon_32x32@2x.png", 64],
-    ["icon_128x128.png", 128],
-    ["icon_128x128@2x.png", 256],
-    ["icon_256x256.png", 256],
-    ["icon_256x256@2x.png", 512],
-    ["icon_512x512.png", 512],
-    ["icon_512x512@2x.png", 1024],
-  ];
-
   try {
-    for (const [fileName, size] of sizes) {
-      execFileSync("/usr/bin/sips", ["-z", String(size), String(size), iconSource, "--out", join(iconsetDir, fileName)], {
-        stdio: "ignore",
-      });
+    // Paint the release version onto every iconset tier in International
+    // Orange so each beta is visually distinct in Finder and the Dock.
+    for (const [fileName, size] of MAC_APP_ICONSET_SIZES) {
+      writeFileSync(
+        join(iconsetDir, fileName),
+        renderVersionedMacAppIcon({
+          sourcePath: iconSource,
+          version: packageVersion,
+          size,
+        }),
+      );
     }
 
     execFileSync("/usr/bin/iconutil", ["-c", "icns", iconsetDir, "-o", join(resourcesDir, `${iconName}.icns`)], {
       stdio: "inherit",
     });
+    console.log(`AppIcon.icns labeled ${packageVersion} (International Orange)`);
     return true;
-  } catch {
-    console.warn("Failed to generate AppIcon.icns, continuing without icon.");
+  } catch (error) {
+    console.warn(`Failed to generate AppIcon.icns, continuing without icon.\n${error?.message || error}`);
     return false;
   } finally {
     rmSync(iconsetDir, { recursive: true, force: true });

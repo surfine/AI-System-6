@@ -78,7 +78,7 @@ function installLiquidCoverWindow() {
               <button type="button" data-k="3:4" aria-pressed="false">3:4</button>
             </div>
           </div>
-          <button class="btn default lc-toolbar-export" type="button" id="lc-tab-export" data-lc-inspector-tab="export" aria-pressed="false" aria-controls="lc-panel-export" data-i18n-aria-label="liquid_cover_tab_export">
+          <button class="btn lc-toolbar-export" type="button" id="lc-tab-export" data-lc-inspector-tab="export" aria-pressed="false" aria-controls="lc-panel-export" data-i18n-aria-label="liquid_cover_tab_export">
             <span class="mobile-control-long" data-i18n="liquid_cover_tab_export">Export</span>
             <span class="mobile-control-short" data-i18n="liquid_cover_export_short">Export</span>
           </button>
@@ -295,7 +295,7 @@ Glass</textarea>
                 <label for="lc-ask-input" class="lc-ask-label" data-i18n="liquid_cover_ask_label">Describe a look</label>
                 <div class="lc-ask-row">
                   <input id="lc-ask-input" type="text" data-i18n-placeholder="liquid_cover_ask_hint" placeholder="e.g. calm tech blue, cinematic…" />
-                  <button class="btn default" type="submit" id="lc-ask-go" data-i18n="liquid_cover_ask_go">Apply</button>
+                  <button class="btn" type="submit" id="lc-ask-go" data-i18n="liquid_cover_ask_go">Apply</button>
                 </div>
                 <label class="lc-row lc-ai-vision-setting"><span data-i18n="liquid_cover_ai_vision">Read background</span><input type="checkbox" id="lc-ask-vision" class="lc-check" checked></label>
               </form>
@@ -377,7 +377,7 @@ Glass</textarea>
               <label class="lc-row"><span data-i18n="liquid_cover_motion_audio">Original Audio</span><input type="checkbox" id="lc-motion-audio" class="lc-check"></label>
               <div class="lc-button-row">
                 <button class="btn" type="button" id="lc-motion-preview" aria-pressed="false" data-i18n="liquid_cover_preview_video">Preview Once</button>
-                <button class="btn default" type="button" id="lc-motion-export" data-i18n="liquid_cover_export_video">Export Video</button>
+                <button class="btn" type="button" id="lc-motion-export" data-i18n="liquid_cover_export_video">Export Video</button>
               </div>
               <p class="lc-note" data-i18n="liquid_cover_motion_export_note">Exports the current canvas as a browser-encoded video; MP4 is used when the browser supports it, otherwise WebM.</p>
             </div>
@@ -3438,6 +3438,12 @@ installLiquidCoverWindow();
     $("lc-layer-down").disabled = primaryLocked || !canMoveSelected("down");
     $("lc-layer-up").disabled = primaryLocked || !canMoveSelected("up");
     $("lc-layer-top").disabled = primaryLocked || !canMoveSelected("up");
+    const exportBtn = $("lc-export");
+    if (exportBtn) {
+      const hasScene = !!lastBgSource || layers.some((layer) => String(layer?.text || "").trim());
+      exportBtn.disabled = !hasScene;
+      exportBtn.dataset.balloonHelpDisabled = "balloon_cover_needs_image";
+    }
     syncWorkbenchReadout();
     updateSelectionOverlay();
   }

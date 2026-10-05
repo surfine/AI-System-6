@@ -96,12 +96,28 @@
 .micropolis-toolbar {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
   padding: 6px;
   overflow-y: auto;
   flex: 0 0 auto;
+  min-width: 132px;
   border-right: var(--system-border);
   background: var(--paper);
+}
+
+.micropolis-tool-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.micropolis-tool-picker-label {
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.micropolis-tool-picker .select-wrap {
+  width: 100%;
 }
 
 .micropolis-toolbar-footer {
@@ -130,42 +146,12 @@
 
 /* Wherever the mobile shell hands the screen to one app, the gauge-bar cell in
    the details bar is the only RCI (the same rule as Bonsai's docked-edge). The
-   footer is the last child of a column the shell can make far shorter than its
-   content: held sideways, a phone gives the palette 344px for 817px of tools,
-   so the second gauge parked at the end of that scroll sits about 428px below
-   the fold while the details-bar gauge is already on screen. This used to read
-   `max-width: 700px`, which is a portrait-only test — a phone on its side is
-   912px wide, so the duplicate came back exactly where there is least room for
-   it. The device-class query is the shell's own boundary, so the rule now
-   follows the shell instead of a width. */
+   device-class query is the shell's own boundary, so the rule follows the shell
+   instead of a width. */
 @media (max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px) {
   .micropolis-toolbar-footer {
     display: none;
   }
-}
-
-.micropolis-tool {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  min-width: 118px;
-  padding: 3px 6px;
-  border: var(--system-border);
-  background: var(--paper);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.micropolis-tool.is-selected {
-  background: var(--ink);
-  color: var(--paper);
-}
-
-.micropolis-tool-cost {
-  font-size: 10px;
-  opacity: 0.8;
 }
 
 .micropolis-map-area {
@@ -395,6 +381,7 @@
 
   .micropolis-toolbar {
     flex-direction: row;
+    align-items: center;
     overflow-x: auto;
     overflow-y: hidden;
     border-right: 0;
@@ -402,21 +389,9 @@
     -webkit-overflow-scrolling: touch;
   }
 
-  .micropolis-tool {
-    flex-direction: column;
-    align-items: center;
-    gap: 0;
-    min-width: 64px;
-    justify-content: center;
-  }
-}
-
-/* Touch targets grow to a finger-safe size; the game palette is in-app
-   content, so it may grow past System 6 control sizes (product rule keeps
-   the menu bar and window chrome small). */
-@media (hover: none) and (pointer: coarse) {
-  .micropolis-tool {
-    min-height: 44px;
+  .micropolis-tool-picker {
+    flex: 1 1 auto;
+    min-width: 160px;
   }
 }
 .micropolis-window {

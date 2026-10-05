@@ -67,6 +67,9 @@
       family: "classic",
       recipeBase: "classic",
       menuBarModel: "application-owned",
+      // Selectable now (owner 2026-10-04). Product fidelity for thumbnails and
+      // the icon palette closed in harvest B (2026-10-04); site/README P5
+      // placement on the main era axis closed in harvest D (2026-10-04).
       releaseReady: true,
       systemFont: "Chicago",
       systemFontSize: 12,
@@ -103,6 +106,16 @@
       family: "classic",
       recipeBase: "platinum",
       menuBarModel: "application-owned",
+      // Selectable now (owner 2026-10-04). Thumbnail grid + pencil-line content
+      // safety closed with sketch assets (era-thumb / paper-tile / pencil-safe
+      // board under assets/themes/drawing-board/); harvest D (2026-10-04) placed
+      // the branch on the site/README P5 surface (off the main dissolve axis).
+      // Harvest E / v227 (2026-10-04): Mac OS 8.5 beta Theme File evidence
+      // closed — Mac-OS-8-5b6-Beta-Themes.sit Drawing Board (type thme,
+      // Apple 1996–1998 About, AM resource map, embedded PICT previews) is
+      // in internal/evidence/drafts/drawing-board/primary-8.5-beta-search-v226-*
+      // with v227 cross-verify receipts. Product CSS tokens remain historically
+      // sampled from the 1999 WindowBlinds port and corroborated by thme clut.
       releaseReady: true,
       systemFont: "Charcoal",
       systemFontSize: 12,
@@ -141,6 +154,8 @@
       family: "aqua",
       recipeBase: "snow-leopard",
       menuBarModel: "system-owned",
+      // Selectable now (owner 2026-10-04). Harvest B closed Theme Lab metal,
+      // thumbnail distinguishability, and the textured painter board.
       releaseReady: true,
       systemFont: "Lucida Grande",
       systemFontSize: 13,
@@ -180,6 +195,9 @@
       family: "aqua",
       recipeBase: "snow-leopard",
       menuBarModel: "system-owned",
+      // Selectable now (owner 2026-10-04). Overlay scrollbars, full-screen, and
+      // thumbnail distinguishability accepted in harvest B; site/README P5
+      // placement on the main era axis closed in harvest D (2026-10-04).
       releaseReady: true,
       systemFont: "Lucida Grande",
       systemFontSize: 13,
@@ -218,6 +236,9 @@
       // than the desk hard-coding one appearance's id into a shared rule.
       selectionModel: "key-window",
       releaseReady: true,
+      // Ships as a saved Appearance. Harvest B (2026-10-04) closed key-window
+      // selection sweep, vibrancy sidebar fidelity, Dock/lamp pref polish, and
+      // the independent icon family sweep.
       systemFont: "SF Pro",
       systemFontSize: 13,
       fontStrategy: "theme",
@@ -255,7 +276,9 @@
       // Released 2026-09-23 on the owner's decision: its workflow and edge-case
       // gates, 59/59 icons and touch targets were recorded in the Big Sur /
       // NeXTSTEP / One More Tune review (internal/plans/BIGSUR-NEXTSTEP-OMT-
-      // HANDOFF.zh-CN.md §2.8). Narrow screens keep the merged switcher.
+      // HANDOFF.zh-CN.md §2.8). Harvest B closed narrow merged switcher, Dock
+      // three-region edge cases, left scroller fidelity, and the grayscale
+      // depth board.
       menuBarModel: "application-owned",
       releaseReady: true,
       systemFont: "Helvetica",
@@ -664,6 +687,12 @@
     return registry.filter((theme) => theme.releaseReady !== false);
   }
 
+  // Appearances that already ship as saved preferences but still carry open
+  // fidelity / docs todos. Clearing polishPending requires emptying polishTodos.
+  function getPolishPendingThemes() {
+    return registry.filter((theme) => theme.polishPending === true);
+  }
+
   function getRecipeChain(value = currentThemeId) {
     const chain = [];
     const visited = new Set();
@@ -714,6 +743,7 @@
     getCommittedTheme,
     getTheme,
     getReleaseReadyThemes,
+    getPolishPendingThemes,
     getRecipeChain,
     appearanceStylePaths,
     loadAppearanceStylesheet,

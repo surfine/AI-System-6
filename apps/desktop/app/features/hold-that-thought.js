@@ -55,7 +55,7 @@ function installHoldThoughtWindow() {
           <div class="button-row hold-thought-actions">
             <button class="btn" type="button" id="hold-thought-remove" data-action="hold-thought-remove" data-i18n="delete" hidden>Delete</button>
             <span class="spacer"></span>
-            <button class="btn default" type="button" id="hold-thought-back" data-action="resume-my-place" hidden>Back</button>
+            <button class="btn" type="button" id="hold-thought-back" data-action="resume-my-place" hidden>Back</button>
             <button class="btn default" type="button" id="hold-thought-done" data-action="hold-thought-done" data-i18n="held_thought_done">Done</button>
           </div>`,
   });
@@ -203,6 +203,17 @@ function renderHoldThought() {
   parts.remove.hidden = !pile || !thought;
   parts.back.hidden = !pile || !thought;
   parts.done.hidden = pile;
+  parts.back.classList.toggle("default", pile && !!thought);
+  parts.done.classList.toggle("default", !pile);
+  const emptyPile = pile && !thoughts.length;
+  parts.remove.disabled = emptyPile || !thought;
+  parts.back.disabled = emptyPile || !thought;
+  if (parts.remove) {
+    parts.remove.dataset.balloonHelpDisabled = "balloon_hold_empty_first";
+  }
+  if (parts.back) {
+    parts.back.dataset.balloonHelpDisabled = "balloon_hold_empty_first";
+  }
   if (thought) parts.back.textContent = t("held_place_resume_at", heldThoughtWhere(thought));
 }
 
@@ -299,9 +310,11 @@ function mountHoldThoughtRuntime() {
   const parts = holdThoughtFields();
   if (!parts || parts.root.dataset.holdThoughtWired === "true") {
     renderHoldThought();
+    window.AISystem6JourneyGates?.markShellWindow?.(parts?.root, "holdThought");
     return;
   }
   parts.root.dataset.holdThoughtWired = "true";
+  window.AISystem6JourneyGates?.markShellWindow?.(parts.root, "holdThought");
 
   [parts.doing, parts.next].forEach((field) => {
     field.addEventListener("input", syncHeldThoughtFields);

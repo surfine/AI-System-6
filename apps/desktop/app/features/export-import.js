@@ -635,6 +635,17 @@ function renderProjectCd() {
       <small>${escapeHtml(t("export_item_meta", updatedAt, bytes))}</small>
     `;
     button.addEventListener("click", (event) => {
+      const alreadySelected = selectedProjectCdItemId === item.id
+        && selectedProjectCdItemIds.has(item.id);
+      if (
+        alreadySelected
+        && !event.metaKey && !event.ctrlKey && !event.shiftKey
+        && typeof window.matchMedia === "function"
+        && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+      ) {
+        openProjectCdItemInReader(item);
+        return;
+      }
       if (event.shiftKey && selectedProjectCdItemId) {
         const anchorIndex = visibleItems.findIndex((entry) => entry.id === selectedProjectCdItemId);
         const itemIndex = visibleItems.findIndex((entry) => entry.id === item.id);
@@ -1565,6 +1576,11 @@ async function previewImportFiles() {
 
 function renderImportPreview() {
   importPreviewEl.replaceChildren();
+  const readyCount = importCandidates.filter((item) => item.supported).length;
+  if (importDocumentsButton) {
+    importDocumentsButton.disabled = readyCount === 0;
+    importDocumentsButton.dataset.balloonHelpDisabled = "balloon_import_needs_files";
+  }
   if (!importCandidates.length) {
     const empty = document.createElement("div");
     empty.className = "empty-folder-note";
@@ -1593,7 +1609,10 @@ function renderBackupPreview(bundle, fileName = "", validation = null) {
   if (!projectBackupPreviewEl) return;
   projectBackupPreviewEl.replaceChildren();
   previewedProjectBackup = null;
-  if (importProjectBackupButton) importProjectBackupButton.disabled = true;
+  if (importProjectBackupButton) {
+    importProjectBackupButton.disabled = true;
+    importProjectBackupButton.dataset.balloonHelpDisabled = "balloon_import_backup_needs_file";
+  }
 
   if (
     !bundle

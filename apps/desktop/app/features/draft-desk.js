@@ -1076,10 +1076,17 @@ function installLightroomWindow() {
               </aside>
           </div>
           <footer class="lightroom-actions">
-              <!-- Real segmented control (.view-switch / .view-switch-option --
+              <!-- Segmented control, not a row of push buttons. aria-pressed
+                   is the slider; the tab strip beside it uses aria-selected. -->
+              <span class="view-switch quick-draft-track-toggle" role="group" data-i18n-aria-label="lightroom_track_group">
+                <button type="button" class="view-switch-option" data-quick-draft-track="interest" aria-pressed="true" data-i18n="lightroom_track_interest" data-balloon-help="balloon_lightroom_tracks">Interest</button>
+                <button type="button" class="view-switch-option" data-quick-draft-track="content" aria-pressed="false" data-i18n="lightroom_track_content">Content</button>
+                <button type="button" class="view-switch-option" data-quick-draft-track="split" aria-pressed="false" data-i18n="lightroom_track_split">Side by Side</button>
+              </span>
+              <!-- Real segmented control (.view-switch / .view-switch-option —
                    the same part ClioStage's and Time Machine's view rows use),
                    here in its tab-strip ARIA pattern: three real panels, one
-                   selected. The row used to be three loose .btn.mini-btn. -->
+                   selected. -->
               <span class="view-switch draft-desk-display-switch" role="tablist" data-i18n-aria-label="quick_draft_view_label">
                 <button class="view-switch-option" type="button" role="tab" id="quick-draft-toggle-grain" data-quick-draft-display="grain" aria-controls="lightroom-paper-view" aria-selected="false" data-i18n="quick_draft_grain" data-balloon-help="quick_draft_grain_balloon">Grain</button>
                 <button class="view-switch-option is-active" type="button" role="tab" id="quick-draft-toggle-composite" data-quick-draft-display="read" aria-controls="lightroom-paper-view" aria-selected="true" data-i18n="quick_draft_composite" data-balloon-help="quick_draft_composite_balloon">Read</button>
@@ -1105,6 +1112,7 @@ async function openLightroomWindow() {
   await openWindow("lightroom", { skipQuickDraftEntrypoint: true });
   renderLightroomSubject({ force: true });
   renderQuickDraft(activeProjectQuickDraft({ create: false })?.record);
+  if (typeof syncQuickDraftTrackToggle === "function") syncQuickDraftTrackToggle();
 }
 
 /**
@@ -2089,6 +2097,39 @@ function bind() {
       setQuickDraftDisplayMode(mode);
     });
   });
+  // 兴趣｜内容｜并排, 试看 and 冲洗 sit on the lightroom window. The form
+  // listener below never sees them, so a click there used to do nothing.
+  getWindow("lightroom")?.addEventListener("click", async (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target) return;
+    const trackButton = target.closest("[data-quick-draft-track]");
+    if (trackButton) {
+      closeQuickDraftMenus();
+      if (typeof setQuickDraftTrack === "function") {
+        await setQuickDraftTrack(trackButton.getAttribute("data-quick-draft-track") || "interest");
+      }
+      return;
+    }
+    const applyButton = target.closest("[data-quick-draft-adjustment-apply]");
+    if (applyButton) {
+      closeQuickDraftMenus();
+      if (typeof quickDraftTrackOwnsPaper === "function" && quickDraftTrackOwnsPaper()) {
+        await generateQuickDraftTraffic({ force: true });
+        return;
+      }
+      await applyAdjustmentLayers();
+      return;
+    }
+    const developButton = target.closest("[data-quick-draft-adjustment-develop]");
+    if (developButton) {
+      closeQuickDraftMenus();
+      if (typeof quickDraftTrackShouldDevelop === "function" && quickDraftTrackShouldDevelop()) {
+        await developQuickDraftTraffic();
+        return;
+      }
+      await developAdjustmentLayers();
+    }
+  });
   document.querySelectorAll("[data-quick-draft-drawer]").forEach((element) => {
     const button = /** @type {HTMLElement} */ (element);
     button.addEventListener("click", () => {
@@ -2253,15 +2294,31 @@ function bind() {
       await scopeSelectionToLayer(quickDraftActiveLayerKind);
       return;
     }
+    const trackButton = event.target.closest("[data-quick-draft-track]");
+    if (trackButton) {
+      closeQuickDraftMenus();
+      if (typeof setQuickDraftTrack === "function") {
+        await setQuickDraftTrack(trackButton.dataset.quickDraftTrack || "interest");
+      }
+      return;
+    }
     const applyButton = event.target.closest("[data-quick-draft-adjustment-apply]");
     if (applyButton) {
       closeQuickDraftMenus();
+      if (typeof quickDraftTrackOwnsPaper === "function" && quickDraftTrackOwnsPaper()) {
+        await generateQuickDraftTraffic({ force: true });
+        return;
+      }
       await applyAdjustmentLayers();
       return;
     }
     const developButton = event.target.closest("[data-quick-draft-adjustment-develop]");
     if (developButton) {
       closeQuickDraftMenus();
+      if (typeof quickDraftTrackShouldDevelop === "function" && quickDraftTrackShouldDevelop()) {
+        await developQuickDraftTraffic();
+        return;
+      }
       await developAdjustmentLayers();
       return;
     }

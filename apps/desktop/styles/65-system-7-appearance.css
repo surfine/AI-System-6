@@ -39,7 +39,7 @@ body[data-theme="system-7"] {
   /* The desktop pattern System 7.5 boots with: a one-pixel #666666/#aaaaaa
      checkerboard. */
   --desktop: #888888;
-  --desktop-surface: repeating-conic-gradient(#666666 0 25%, #aaaaaa 0 50%) 0 0 / 2px 2px;
+  --desktop-surface: repeating-conic-gradient(#666666 0 25%, #aaaaaa 0 50%) 0 0 / 1px 1px;
   /* Scroll bars: an empty lane is #eeeeee, not System 6's grey dither. The
      thumb takes the lavender set of the window frame (not measured: the
      captured window had nothing to scroll). */
@@ -47,6 +47,21 @@ body[data-theme="system-7"] {
   --window-frame-arrow-bg: #eeeeee;
   --window-frame-thumb-bg: #ccccff;
   --scrollbar-corner-bg: #eeeeee;
+  /* Era-rail thumb + icon palette (polishTodos thumbnail-vs-classic,
+     icon-palette-verify). Consumed by Theme Lab; names stay era-generic so
+     this sheet never dresses a Theme Lab replica. */
+  --era-rail-thumb-bg: linear-gradient(to bottom, #dddddd 0 2px, #bbbbdd 2px, #9999bb 100%);
+  --era-rail-thumb-border: 1px solid #666699;
+  --era-rail-thumb-radius: 2px;
+  --era-rail-thumb-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #666699;
+  --icon-palette-swatch-0: #000000;
+  --icon-palette-swatch-1: #ffffff;
+  --icon-palette-swatch-2: #dd0000;
+  --icon-palette-swatch-3: #00aa00;
+  --icon-palette-swatch-4: #0000dd;
+  --icon-palette-swatch-5: #dddd00;
+  --icon-palette-swatch-6: #aa55aa;
+  --icon-palette-swatch-7: #55aaaa;
 }
 
 /* The title sits on the bar's #eeeeee (7.5.3 leaves a gap of bar colour

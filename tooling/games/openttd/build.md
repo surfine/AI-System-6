@@ -70,6 +70,20 @@ copies `openttd.js` / `openttd.wasm` / `openttd.data` into
 the public GitHub snapshot excludes them (see
 `tooling/public-snapshot-manifest.mjs`).
 
+## Host honesty (product)
+
+The desktop host (`app/features/openttd.js`) loads these binaries only inside
+the lazy iframe. It never puts them on the eager boot path. **N6
+(2026-10-04):** the public GitHub snapshot / slim trees **omit** the three
+generated files (`tooling/public-snapshot-manifest.mjs`); the private tree and
+full web/Mac releases keep the play path. When the three files are missing or
+the engine hangs, the host sets `openttd_status_missing_binary` / timeout /
+crash with a visible Retry — it does not advertise `data-ready=1`. Do not
+download a second engine copy into the public tree or raise
+`floppyBudgetBytes`. Rebuild with the script above before claiming a playable
+OpenTTD session. See
+`internal/design-proposals/2026-10-01-calm-desktop/evidence/wasm-engine-auth-brief-v229-2026-10-04/openttd-n6-boundary.md`.
+
 ## First-run configuration (written by the shell page)
 
 `[misc]`: `language = simplified_chinese.lng`, `gui_scale = 200` on phones

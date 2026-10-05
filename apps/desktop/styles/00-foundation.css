@@ -213,8 +213,10 @@
   --md-table-heading-bg: var(--quiet-panel);
 
   --desktop: #b6b6b6;
+  /* System 6.0.8 desktop: 8px grey stipple, not a 12px web grid. */
   --desktop-surface:
-    radial-gradient(rgba(0, 0, 0, 0.16) 1px, transparent 1px) 0 0 / 12px 12px,
+    radial-gradient(rgba(0, 0, 0, 0.22) 0.7px, transparent 0.8px) 0 0 / 8px 8px,
+    radial-gradient(rgba(255, 255, 255, 0.12) 0.6px, transparent 0.7px) 4px 4px / 8px 8px,
     var(--desktop);
   --panel: #ededed;
   --quiet-panel: #f8f8f8;
@@ -1094,6 +1096,11 @@
   --window-shadow: none;
   --inactive-window-shadow: 2px 2px 0 #5e5e5e;
   --window-backdrop-filter: none;
+  /* Painter glass contract (Theme Lab / verify:theme-lab:painter): eras
+     through Yosemite stay at 0; Big Sur and Liquid override. Distinct from
+     Yosemite's restrained sidebar frost (blur 7), which is not this token. */
+  --painter-blur: none;
+  --painter-blur-px: 0;
   --surface-primary: var(--paper);
   --surface-secondary: var(--panel);
   --surface-inset: var(--quiet-panel);

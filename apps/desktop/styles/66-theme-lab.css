@@ -91,19 +91,19 @@
   height: var(--theme-lab-era-thumb-height, var(--theme-lab-era-thumb));
   margin-top: var(--theme-lab-era-thumb-offset, -6px);
   appearance: none;
-  border: var(--theme-lab-era-thumb-border, 1px solid var(--ink));
-  border-radius: var(--theme-lab-era-thumb-radius, 50%);
-  background: var(--theme-lab-era-thumb-bg, var(--paper));
-  box-shadow: var(--theme-lab-era-thumb-shadow, var(--system-inset));
+  border: var(--era-rail-thumb-border, var(--theme-lab-era-thumb-border, 1px solid var(--ink)));
+  border-radius: var(--era-rail-thumb-radius, var(--theme-lab-era-thumb-radius, 50%));
+  background: var(--era-rail-thumb-bg, var(--theme-lab-era-thumb-bg, var(--paper)));
+  box-shadow: var(--era-rail-thumb-shadow, var(--theme-lab-era-thumb-shadow, var(--system-inset)));
 }
 
 .theme-lab-era-range::-moz-range-thumb {
   width: var(--theme-lab-era-thumb);
   height: var(--theme-lab-era-thumb-height, var(--theme-lab-era-thumb));
-  border: var(--theme-lab-era-thumb-border, 1px solid var(--ink));
-  border-radius: var(--theme-lab-era-thumb-radius, 50%);
-  background: var(--theme-lab-era-thumb-bg, var(--paper));
-  box-shadow: var(--theme-lab-era-thumb-shadow, var(--system-inset));
+  border: var(--era-rail-thumb-border, var(--theme-lab-era-thumb-border, 1px solid var(--ink)));
+  border-radius: var(--era-rail-thumb-radius, var(--theme-lab-era-thumb-radius, 50%));
+  background: var(--era-rail-thumb-bg, var(--theme-lab-era-thumb-bg, var(--paper)));
+  box-shadow: var(--era-rail-thumb-shadow, var(--theme-lab-era-thumb-shadow, var(--system-inset)));
 }
 
 .theme-lab-era-range:focus-visible {
@@ -1446,8 +1446,8 @@ body[data-lineage~="platinum"] {
 }
 
 .theme-lab-list button.is-selected {
-  background: var(--theme-lab-list-selected-bg, var(--selection-bg));
-  color: var(--theme-lab-list-selected-fg, var(--selection-fg));
+  background: var(--theme-lab-list-selected-bg, var(--system-selection-bg, var(--selection-bg)));
+  color: var(--theme-lab-list-selected-fg, var(--system-selection-fg, var(--selection-fg)));
 }
 
 .theme-lab-layer-grid {
@@ -2751,4 +2751,280 @@ so the base is where the state
   box-shadow: inset 0 1px 0 #5896d0;
   color: #ffffff;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
+}
+
+/* Polish fidelity boards (v211–v212 product port + v222 calm). Each board
+   exposes a data-theme-lab-polish id matching theme-registry polishTodos so
+   contracts can lock the specimen without reading proposal markup. Calm modes
+   are Theme Lab-local; they never clear registry polishTodos. */
+.theme-lab-polish-boards {
+  margin-bottom: 8px;
+}
+
+.theme-lab-polish-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  margin: 0 0 6px;
+}
+
+.theme-lab-calm-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.theme-lab-polish-pending,
+.theme-lab-polish-measures {
+  margin: 0 0 6px;
+  font-size: 11px;
+  color: var(--shade-dark);
+}
+
+.theme-lab-polish-pending[data-polish-pending="1"] {
+  color: var(--ink);
+}
+
+.theme-lab-polish-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.theme-lab-polish-board {
+  display: grid;
+  gap: 4px;
+  min-height: 72px;
+  padding: 6px;
+  border: 1px solid var(--separator, var(--rule));
+  background: var(--surface-secondary, var(--panel));
+}
+
+.theme-lab-polish-label {
+  margin: 0;
+  font-size: 11px;
+  color: var(--shade-dark);
+}
+
+.theme-lab-keywin-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+/* quiet-focus is the default ADHD calm: demote inactive era ticks; spotlight
+   modes below demote the boards that are not the current measure target. */
+.window[data-window="themeLab"][data-theme-lab-calm="quiet-focus"] .theme-lab-era-tick:not(.is-active),
+.window[data-window="themeLab"][data-theme-lab-calm="eraser"] .theme-lab-era-tick:not(.is-active) {
+  opacity: 0.42;
+}
+
+.theme-lab-polish-boards[data-theme-lab-calm="key-pair"] .theme-lab-keywin-pair {
+  gap: 6px;
+}
+
+.theme-lab-polish-boards[data-theme-lab-calm="key-pair"] .theme-lab-polish-board:not([data-theme-lab-polish="key-window-selection-surfaces"]),
+.theme-lab-polish-boards[data-theme-lab-calm="vibrancy-depth"] .theme-lab-polish-board:not([data-theme-lab-polish="vibrancy-sidebar-fidelity"]),
+.theme-lab-polish-boards[data-theme-lab-calm="gray-quiet"] .theme-lab-polish-board:not([data-theme-lab-polish="grayscale-depth-board"]) {
+  opacity: 0.42;
+}
+
+.theme-lab-vibrancy-stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(4rem, 0.9fr) minmax(0, 1.2fr);
+  min-height: 48px;
+  overflow: hidden;
+  /* Desk is painted first (DOM order) as an absolute underlay; sidebar/paper
+     stay in normal flow so Theme Lab needs no local z-index budget. */
+  isolation: isolate;
+}
+
+.theme-lab-vibrancy-desk {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.55;
+  background:
+    radial-gradient(circle at 18% 30%, color-mix(in srgb, var(--system-accent, var(--ink)) 18%, transparent) 0 18%, transparent 42%),
+    radial-gradient(circle at 78% 70%, color-mix(in srgb, var(--shade-dark) 22%, transparent) 0 22%, transparent 48%),
+    linear-gradient(135deg, var(--panel), var(--paper));
+}
+
+.theme-lab-vibrancy-stage > .theme-lab-polish-vibrancy,
+.theme-lab-vibrancy-stage > .theme-lab-vibrancy-paper {
+  position: relative;
+}
+
+.theme-lab-vibrancy-paper {
+  padding: 4px;
+  font-size: 10px;
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+}
+
+.theme-lab-polish-boards[data-theme-lab-calm="vibrancy-depth"] .theme-lab-vibrancy-desk,
+.theme-lab-polish-boards[data-theme-lab-calm="eraser"] .theme-lab-vibrancy-desk {
+  opacity: 0.78;
+}
+
+.theme-lab-polish-boards[data-theme-lab-calm="gray-quiet"] .theme-lab-gray-steps > span,
+.theme-lab-polish-boards[data-theme-lab-calm="eraser"] .theme-lab-gray-steps > span {
+  box-shadow: none;
+  border: 1px solid color-mix(in srgb, var(--ink) 28%, transparent);
+}
+
+.theme-lab-polish-boards[data-theme-lab-calm="eraser"] .theme-lab-polish-board {
+  border-style: dashed;
+  opacity: 0.9;
+}
+
+.theme-lab-polish-boards[data-theme-lab-calm="eraser"] .theme-lab-polish-board[data-theme-lab-polish="key-window-selection-surfaces"],
+.theme-lab-polish-boards[data-theme-lab-calm="eraser"] .theme-lab-polish-board[data-theme-lab-polish="vibrancy-sidebar-fidelity"],
+.theme-lab-polish-boards[data-theme-lab-calm="eraser"] .theme-lab-polish-board[data-theme-lab-polish="grayscale-depth-board"] {
+  opacity: 1;
+  border-style: solid;
+}
+
+.theme-lab-polish-mini {
+  min-height: 48px;
+  padding: 0;
+  position: relative;
+}
+
+.theme-lab-polish-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.theme-lab-polish-list li {
+  padding: 2px 4px;
+  font-size: 11px;
+}
+
+.theme-lab-polish-mini.is-active .theme-lab-polish-list .is-selected,
+.theme-lab-keywin-pair .window.is-active .theme-lab-polish-list .is-selected {
+  background: var(--system-selection-bg, var(--selection-bg));
+  color: var(--system-selection-fg, var(--selection-fg));
+}
+
+.theme-lab-keywin-pair .window:not(.is-active) {
+  --system-selection-bg: var(--sidebar-selection-bg);
+  --system-selection-fg: var(--sidebar-selection-fg);
+}
+
+.theme-lab-keywin-pair .window:not(.is-active) .theme-lab-polish-list .is-selected {
+  background: var(--system-selection-bg, var(--sidebar-selection-bg));
+  color: var(--system-selection-fg, var(--sidebar-selection-fg));
+}
+
+.theme-lab-polish-vibrancy {
+  min-height: 40px;
+  border-right: 0;
+}
+
+.theme-lab-gray-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  min-height: 36px;
+}
+
+.theme-lab-gray-steps > span {
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  color: var(--ink);
+  background: var(--gray-depth-0, #eeeeee);
+}
+
+.theme-lab-gray-steps > span[data-level="1"] { background: var(--gray-depth-1, #cccccc); }
+.theme-lab-gray-steps > span[data-level="2"] { background: var(--gray-depth-2, #aaaaaa); }
+.theme-lab-gray-steps > span[data-level="3"] { background: var(--gray-depth-3, #555555); color: #fff; }
+
+.theme-lab-textured-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  min-height: 36px;
+}
+
+.theme-lab-textured-swatch {
+  display: block;
+  min-height: 36px;
+  border: 1px solid var(--rule);
+}
+
+.theme-lab-textured-swatch.is-brushed {
+  background: var(--textured-board-brushed, var(--panel));
+}
+
+.theme-lab-textured-swatch.is-unified {
+  background: var(--textured-board-unified, var(--paper));
+}
+
+.theme-lab-icon-palette {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  min-height: 36px;
+}
+
+.theme-lab-icon-palette > i {
+  display: block;
+  min-height: 16px;
+  background: var(--icon-palette-swatch-0, var(--ink));
+}
+
+.theme-lab-icon-palette > i[data-swatch="1"] { background: var(--icon-palette-swatch-1, var(--paper)); border: 1px solid var(--rule); }
+.theme-lab-icon-palette > i[data-swatch="2"] { background: var(--icon-palette-swatch-2, #dd0000); }
+.theme-lab-icon-palette > i[data-swatch="3"] { background: var(--icon-palette-swatch-3, #00aa00); }
+.theme-lab-icon-palette > i[data-swatch="4"] { background: var(--icon-palette-swatch-4, #0000dd); }
+.theme-lab-icon-palette > i[data-swatch="5"] { background: var(--icon-palette-swatch-5, #dddd00); }
+.theme-lab-icon-palette > i[data-swatch="6"] { background: var(--icon-palette-swatch-6, #aa55aa); }
+.theme-lab-icon-palette > i[data-swatch="7"] { background: var(--icon-palette-swatch-7, #55aaaa); }
+
+.theme-lab-pencil-safe {
+  min-height: 36px;
+  padding: 8px;
+  border: var(--pencil-safe-border, 1px solid var(--drawing-board-pencil, var(--ink)));
+  background: var(--pencil-safe-bg, var(--paper));
+  font-size: 11px;
+  color: var(--ink);
+}
+
+.theme-lab-pencil-safe > span {
+  display: inline-block;
+  padding: 1px 3px;
+  background: var(--paper);
+}
+
+.theme-lab-overlay-scroll {
+  position: relative;
+  min-height: 40px;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+
+.theme-lab-overlay-scroll::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 2px;
+  width: 7px;
+  height: 22px;
+  border-radius: 5px;
+  background: var(--scrollbar-thumb, rgba(0, 0, 0, 0.5));
+  opacity: calc(0.25 + (var(--overlay-scroll-accept, 0) * 0.5));
+}
+
+.theme-lab-fullscreen-lamp {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 0;
+  background: var(--shade, #a8a8a8);
+  opacity: calc(0.35 + (var(--fullscreen-accept, 0) * 0.45));
 }

@@ -946,6 +946,9 @@ async function suggestDraft() {
   const targetSnapshot = captureSectionDraftTarget(context);
   if (!beginLongTask("suggest-draft", t("suggesting_draft"))) return;
   let content = "";
+  // Same honesty contract as draft-current-section: keep the failure receipt
+  // and do not console.error expected model refusals (offline / budget).
+  let reportedFailure = false;
   try {
     await prepareStreamingMarkdownPreview();
     const questionSheet = (context.project.questionSheet || "").trim();
@@ -987,13 +990,17 @@ ${currentDraft || "No draft yet. Give planning suggestions for starting this sec
     content = stripRebuildMarkdownFence(streamedContent || "").trim();
     if (content && sectionDraftTargetMatches(targetSnapshot)) showStreamingSurfacePreview("sectionDrafts", content, { final: true });
   } catch (error) {
-    if (!isAbortError(error)) console.error("Suggest draft failed", error);
+    if (!isAbortError(error)) {
+      content = "";
+      reportedFailure = true;
+      await reportWritingRouteModelFailure(error, t("section_drafts"));
+    }
   } finally {
     endLongTask("suggest-draft");
   }
 
   if (!content) {
-    clearStatus();
+    if (!reportedFailure) clearStatus();
     return;
   }
 

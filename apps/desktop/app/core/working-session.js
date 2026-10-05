@@ -593,6 +593,8 @@ async function restoreWindowWorkingSession(state = {}) {
         skipPlacement: true,
         skipFocus: true,
         skipSideAsk: entry.name === "quickDraft",
+        // Keep a saved multi-DA desk intact; journey exclusivity is for summons.
+        skipJourneyExclusive: true,
       });
     } catch (error) {
       console.warn(`Working Session could not reopen "${entry.name}".`, error);

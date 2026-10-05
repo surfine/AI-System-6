@@ -1,6 +1,7 @@
 // Event binding for app.js.
 
 let desktopTapHintShown = false;
+let finderTapHintShown = false;
 
 function liquidTintLabelKey(value) {
   if (value < 0.34) return "liquid_tint_clear";
@@ -247,6 +248,10 @@ function wireAppEvents() {
     const restored = typeof mdeStoredFocusMode === "function" ? mdeStoredFocusMode() : "off";
     if (restored !== "off") syncMdeFocusButton(button, restored);
   });
+  if (typeof mdeSyncWritingFocusDesk === "function") {
+    mdeSyncWritingFocusDesk(typeof mdeStoredFocusMode === "function" ? mdeStoredFocusMode() : "off");
+  }
+  window.AISystem6JourneyGates?.syncDeskProbe?.();
 
   // One preference, every writing surface: the menu command cycles whichever
   // surface the writer is in, and every button that points at it follows.
@@ -255,6 +260,7 @@ function wireAppEvents() {
       document.querySelectorAll("[data-mde-focus-cycle]").forEach((button) => {
         syncMdeFocusButton(button, mode);
       });
+      if (typeof mdeSyncWritingFocusDesk === "function") mdeSyncWritingFocusDesk(mode);
     },
   };
 
@@ -431,6 +437,34 @@ function wireAppEvents() {
 
   emptyTrashButton.addEventListener("click", emptyActiveProjectTrash);
 
+  document.querySelector("#trash-more-go")?.addEventListener("click", () => {
+    if (typeof runTrashMoreAction === "function") runTrashMoreAction();
+  });
+  document.querySelector("#trash-more")?.addEventListener("change", () => {
+    if (typeof syncTrashActionControls === "function") syncTrashActionControls();
+  });
+
+  document.querySelector("#project-disk-more-go")?.addEventListener("click", () => {
+    if (typeof runProjectDiskMoreAction === "function") runProjectDiskMoreAction();
+  });
+  document.querySelector("#project-disk-more")?.addEventListener("change", () => {
+    if (typeof syncProjectDiskMoreActions === "function") syncProjectDiskMoreActions();
+  });
+
+  document.querySelector("#text-disk-more-go")?.addEventListener("click", () => {
+    if (typeof runTextDiskMoreAction === "function") runTextDiskMoreAction();
+  });
+  document.querySelector("#text-disk-more")?.addEventListener("change", () => {
+    if (typeof syncTextDiskActionControls === "function") syncTextDiskActionControls();
+  });
+
+  document.querySelector("#chat-file-more-go")?.addEventListener("click", () => {
+    if (typeof runChatFileMoreAction === "function") runChatFileMoreAction();
+  });
+  document.querySelector("#chat-file-more")?.addEventListener("change", () => {
+    if (typeof syncChatFileActionControls === "function") syncChatFileActionControls();
+  });
+
   printDirectoryDownloadButton?.addEventListener("click", downloadPrintedDirectoryMarkdown);
 
   findFileForm?.addEventListener("submit", async (event) => {
@@ -553,6 +587,10 @@ function wireAppEvents() {
     });
     reviewDeskSplitterEl?.addEventListener("pointerdown", startReviewDeskSplitterDrag);
     reviewDeskSplitterEl?.addEventListener("dblclick", () => setReviewDeskSourceRatio(0.5));
+    document.querySelector("#review-lens")?.addEventListener("change", (event) => {
+      const lens = event.target?.value || "style";
+      if (typeof setReviewDeskMode === "function") setReviewDeskMode(lens);
+    });
     document.querySelector('[data-action="review-export"]')?.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -998,6 +1036,17 @@ function wireAppEvents() {
     if (desktopIconTarget) {
       event.preventDefault();
       closeMenus();
+      const alreadySelected = selectedDesktopIconEl === desktopIconTarget;
+      // Coarse pointers rarely synthesize detail=2; a second tap on the same
+      // desktop icon is the open step (select-then-open), matching Finder.
+      if (
+        alreadySelected
+        && typeof window.matchMedia === "function"
+        && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+      ) {
+        openDesktopIcon(desktopIconTarget);
+        return;
+      }
       selectDesktopIcon(desktopIconTarget);
       if (
         !desktopTapHintShown
@@ -1024,7 +1073,29 @@ function wireAppEvents() {
         openStaticFinderTarget(staticFinderTarget);
         return;
       }
-      selectStaticFinderItem(staticFinderTarget.dataset.staticFinderWindow, staticFinderTarget.dataset.staticFinderAction);
+      const winName = staticFinderTarget.dataset.staticFinderWindow;
+      const action = staticFinderTarget.dataset.staticFinderAction;
+      const alreadySelected = selectedStaticFinderWindowName === winName && selectedStaticFinderAction === action;
+      // Coarse pointers rarely synthesize detail=2; a second tap on the same
+      // object is the open step (select-then-open), matching desktop icons.
+      if (
+        alreadySelected
+        && typeof window.matchMedia === "function"
+        && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+      ) {
+        openStaticFinderTarget(staticFinderTarget);
+        return;
+      }
+      selectStaticFinderItem(winName, action);
+      if (
+        !finderTapHintShown
+        && event.detail < 2
+        && typeof window.matchMedia === "function"
+        && !window.matchMedia("(hover: hover)").matches
+      ) {
+        finderTapHintShown = true;
+        showBalloonHelp(staticFinderTarget, "desktop_tap_hint", { force: true, autoHideMs: 3200 });
+      }
       return;
     }
   
@@ -1586,7 +1657,12 @@ function wireAppEvents() {
   // perfectly valid one.
   importProjectBackupButton?.addEventListener("click", () => importProjectBackupAsNewProject());
 
-  modernFontsInput.addEventListener("change", applyModernFonts);
+  modernFontsInput.addEventListener("change", () => {
+    applyModernFonts();
+    // Quiet feedback: the font strategy must paint immediately, not only
+    // persist for the next launch.
+    if (typeof updateMenuState === "function") updateMenuState();
+  });
 
   appearanceThemeInput?.addEventListener("change", () => applyTheme(appearanceThemeInput.value));
   document.querySelector("#appearance-color-mode")?.addEventListener("change", (event) => {
@@ -1600,11 +1676,18 @@ function wireAppEvents() {
     scheduleSettingsSave();
   });
 
-  soundEffectsInput.addEventListener("change", () => saveDeskState());
+  soundEffectsInput.addEventListener("change", () => {
+    saveDeskState();
+    if (typeof setStatus === "function") {
+      setStatus(t(soundEffectsInput.checked ? "sound_effects_on" : "sound_effects_off"), { notify: false });
+    }
+  });
 
   classicLineIconsInput?.addEventListener("change", () => {
     setClassicLineArtEverywhere(classicLineIconsInput.checked);
     hydrateSystemIcons();
+    if (typeof renderProjectDiskDesktopIcons === "function") renderProjectDiskDesktopIcons();
+    window.AISystem6ControlStrip?.refreshStrip?.("appearance");
     saveDeskState();
   });
 

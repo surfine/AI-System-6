@@ -108,6 +108,38 @@ function openCitationContextItem(contextItem) {
   setStatus(t("citation_not_found"));
 }
 
+// Source Registry Open Source uses the same router as recent-context Open Source
+// (openCitationContextItem). Registry rows are not citation context items yet —
+// map them the same way ClioTalk citations do, then hand off.
+function openRegistrySource(source) {
+  if (!source) {
+    setStatus(t("citation_not_found"));
+    return;
+  }
+  const projectId = activeProjectId;
+  const registryContextItem = source.kind === "file"
+    ? { ...source.item, kind: "file", projectId }
+    : source.key?.startsWith("scrap:")
+      ? { ...source.item, kind: "scrap", projectId }
+      : source.key?.startsWith("reference:")
+        ? {
+          ...source.item,
+          kind: "reference",
+          fromProjectReference: true,
+          referenceId: source.item?.id,
+          projectId,
+        }
+        : source.kind === "textDisk" || source.key?.startsWith("textdisk:")
+          ? {
+            ...source.item,
+            kind: "chunk",
+            source: source.item?.source || source.title,
+            projectId,
+          }
+          : { ...source.item, kind: "chunk", projectId };
+  openCitationContextItem(registryContextItem);
+}
+
 function resolveCitationRef(ref) {
   const rawRef = String(ref || "");
   const exact = claimCitationContextItems.find((contextItem) =>

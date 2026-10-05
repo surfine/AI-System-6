@@ -20,6 +20,11 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 
+// Twelve selectable appearances. This gate locks computed-style propagation
+// on real app windows for every id below. Theme Lab calm measures
+// (key-window / vibrancy / grayscale / quiet-focus) are product UI hooks
+// asserted by appearance-system + harvest-ux; full twelve×window screenshot
+// CI remains deferred — see APPEARANCE-QA.md “Twelve-appearance instrumentation”.
 const THEME_IDS = Object.freeze([
   "classic",
   "system-7",
@@ -34,10 +39,13 @@ const THEME_IDS = Object.freeze([
   "liquid-glass",
   "nextstep",
 ]);
-// Preview-only appearances are registered and isolated here; they are not
-// production styles until their independent acceptance is complete.
-// System 7, Drawing Board, Tiger and Lion left the research gate on 2026-09-25.
-const EXPERIMENTAL_THEME_IDS = Object.freeze([]);
+if (THEME_IDS.length !== 12) {
+  throw new Error(`Appearance coverage expects twelve themes, got ${THEME_IDS.length}`);
+}
+// Harvest B/D/E cleared polishPending on every selectable era. Keep the list
+// empty until a future promotion reintroduces open fidelity/docs todos.
+const POLISH_PENDING_THEME_IDS = Object.freeze([]);
+const EXPERIMENTAL_THEME_IDS = POLISH_PENDING_THEME_IDS;
 
 const REGISTERED_WINDOWS = Object.freeze(Object.entries(windowInterfaceRegistry).map(([id, contract]) => Object.freeze({
   id,
@@ -379,17 +387,32 @@ try {
     recipeBase: theme.recipeBase,
     menuBarModel: theme.menuBarModel,
     releaseReady: theme.releaseReady,
+    polishPending: theme.polishPending === true,
+    polishTodos: Array.isArray(theme.polishTodos) ? theme.polishTodos : [],
     systemFont: theme.systemFont,
     fontStrategy: theme.fontStrategy,
   })));
   assert(JSON.stringify(registry.map(({ id }) => id)) === JSON.stringify(THEME_IDS), "Theme registry is not the canonical appearance timeline");
   assert(
-    registry.every(({ id, releaseReady }) => releaseReady !== false || EXPERIMENTAL_THEME_IDS.includes(id)),
-    "Every appearance outside the experimental gate must be release-ready",
+    registry.every(({ releaseReady }) => releaseReady !== false),
+    "Every registered appearance is a saved preference (twelve selectable)",
   );
   assert(
-    EXPERIMENTAL_THEME_IDS.every((id) => registry.some((theme) => theme.id === id && theme.releaseReady === false)),
-    "The experimental appearance is still gated instead of shipping as a saved preference",
+    POLISH_PENDING_THEME_IDS.every((id) => registry.some((theme) => (
+      theme.id === id
+      && theme.releaseReady === true
+      && theme.polishPending === true
+      && Array.isArray(theme.polishTodos)
+      && theme.polishTodos.length > 0
+    ))),
+    "Promoted eras keep polishPending + non-empty polishTodos until fidelity/docs close",
+  );
+  assert(
+    registry.every((theme) => (
+      POLISH_PENDING_THEME_IDS.includes(theme.id)
+      || (theme.polishPending !== true && (!theme.polishTodos || theme.polishTodos.length === 0))
+    )),
+    "harvest B/D/E cleared polishPending on eras that are not still listed as pending",
   );
 
   const results = [];

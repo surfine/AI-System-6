@@ -170,16 +170,21 @@ not a claim that every application screen is visually correct. Use the existing
 full `--url` window audit for broad Liquid Glass geometry changes, and the
 `--url ... --select-only` mode to compare controls in a running build.
 
-## Eight Appearances, One Object Grammar
+## Twelve Appearances, One Object Grammar
 
-System 6, Platinum, Aqua, Snow Leopard, Yosemite, Big Sur, Liquid Glass, and NeXTSTEP are material
-skins over the same desktop language. They share object names, DOM structure,
-task flow, copy, state model, keyboard behavior, and feature contracts.
+System 6, System 7, Platinum, Drawing Board, Aqua, Tiger, Snow Leopard, Lion,
+Yosemite, Big Sur, Liquid Glass, and NeXTSTEP are material skins over the same
+desktop language. They share object names, DOM structure, task flow, copy,
+state model, keyboard behavior, and feature contracts. Computed-style and
+screenshot instrumentation for the twelve is catalogued in
+[APPEARANCE-QA.md](APPEARANCE-QA.md) (“Twelve-appearance instrumentation”);
+Theme Lab Surfaces polish boards productize key-window / vibrancy / grayscale /
+quiet-focus measures without clearing open `polishTodos`.
 
 The maintenance lineage has four deliberate branches:
 
-- Classic → Platinum
-- Aqua → Snow Leopard
+- Classic → System 7 / Platinum → Drawing Board
+- Aqua → Tiger / Snow Leopard / Lion
 - Liquid Glass → Yosemite / Big Sur
 - NeXTSTEP (independent material adaptation; dedicated icons deferred; Classic art retained)
 

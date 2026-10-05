@@ -3,10 +3,13 @@
 
    A child of Platinum: it inherits every rule Platinum scopes by
    [data-lineage~="platinum"] - the same controls, the same geometry - and
-   redraws them. Evidence is second-hand and says so: the 1999 WindowBlinds
-   port in internal/evidence/drafts/drawing-board (its author states the
-   parts were redrawn from the original theme). Values below are sampled from
-   its bitmaps and its .uis colour table; nothing from it ships.
+   redraws them. Primary Theme File evidence (v226/v227): archival
+   Mac-OS-8-5b6-Beta-Themes.sit Drawing Board `thme` under
+   internal/evidence/drafts/drawing-board/primary-8.5-beta-search-v226-*
+   (Apple About 1996–1998, AM resource map, embedded PICT previews). CSS
+   token numbers below were historically sampled from the 1999 WindowBlinds
+   port in the same drafts folder and corroborated against the thme clut
+   (button face ≈ 205,198,189); WindowBlinds bitmaps still do not ship.
 
    The roughness is the point. A drawing-board desk says a piece of work may
    be a draft and still be the work. */
@@ -187,12 +190,14 @@ body[data-theme="drawing-board"] {
   --system-titlebar-background-clip: border-box;
   --titlebar-border: 1px solid #625c58;
   --titlebar-title-bg: transparent;
-  /* Drafting-board desktop: warm paper under a faint pencil grid, one cell
-     every 128/11 px as in the reference tile. */
+  /* Drafting-board desktop: sketch paper tile (GenerateImage pencil paper)
+     under a faint grid so the desk reads as Drawing Board without chrome. */
   --desktop: #c6b59c;
   --desktop-surface:
-    linear-gradient(rgba(110, 100, 80, 0.13) 1px, transparent 1px) 0 0 / 11.64px 11.64px,
-    linear-gradient(90deg, rgba(110, 100, 80, 0.13) 1px, transparent 1px) 0 0 / 11.64px 11.64px,
+    linear-gradient(rgba(90, 78, 58, 0.16) 1px, transparent 1px) 0 0 / 11.64px 11.64px,
+    linear-gradient(90deg, rgba(90, 78, 58, 0.16) 1px, transparent 1px) 0 0 / 11.64px 11.64px,
+    linear-gradient(rgba(255, 248, 236, 0.18), transparent 40%),
+    url("./assets/themes/drawing-board/paper-tile-96.png") left top / 96px 96px repeat,
     #c6b59c;
   --drawing-board-pencil: #3f3a35;
   /* The reference separates window content (237,227,218) from control face
@@ -200,6 +205,22 @@ body[data-theme="drawing-board"] {
      content colour so writing stays easy to read. */
   --paper: #ede3da;
   --pane-bg: #ede3da;
+  /* Pencil crosses stay paint-contained on title-bar controls
+     (polishTodo pencil-line-content-safe). Era-rail thumb is a 2×2 paper grid
+     asset so the knob reads as Drawing Board without the year label
+     (polishTodo thumbnail-grid). */
+  --drawing-board-pencil-content-safe: 1;
+  --era-rail-thumb-bg: url("./assets/themes/drawing-board/era-thumb-16.svg") center / 16px 16px no-repeat;
+  --era-rail-thumb-border: 1px solid #625c58;
+  --era-rail-thumb-radius: 2px;
+  --era-rail-thumb-shadow: inset 1px 1px 0 #f4efe7;
+  /* Surfaces specimens: textured sketch board + pencil-safe specimen. */
+  --textured-board-brushed: url("./assets/themes/drawing-board/paper-tile-96.png") center / 48px 48px repeat, #d0c8c0;
+  --textured-board-unified: url("./assets/themes/drawing-board/era-thumb-32.png") center / cover no-repeat, #ede3da;
+  --pencil-safe-bg:
+    linear-gradient(#ede3da, #ede3da) center / calc(100% - 22px) calc(100% - 18px) no-repeat,
+    url("./assets/themes/drawing-board/pencil-safe-board.png") center / cover no-repeat;
+  --pencil-safe-border: 0;
 }
 
 body[data-theme="drawing-board"] .desktop {
@@ -212,6 +233,9 @@ body[data-theme="drawing-board"] .desktop {
 body[data-theme="drawing-board"] .title-bar > :is(.close-box, .resize-box, .shade-box) {
   --x: var(--system-titlebar-control-art-offset-x);
   --y: var(--system-titlebar-control-art-offset-y);
+  /* Registration crosses may extend past the 11px square; keep them inside
+     the control so pencil art never paints over window content. */
+  contain: paint;
   background:
     linear-gradient(var(--drawing-board-pencil), var(--drawing-board-pencil)) calc(var(--x) - 2px) calc(var(--y) + 5px) / 15px 1px no-repeat,
     linear-gradient(var(--drawing-board-pencil), var(--drawing-board-pencil)) calc(var(--x) + 5px) calc(var(--y) - 2px) / 1px 15px no-repeat,
@@ -263,6 +287,7 @@ body[data-theme-family="classic"][data-theme="drawing-board"] .window:not(.is-ac
 body[data-theme="drawing-board"] .title-bar :is(.close-box, .resize-box, .shade-box):active::before {
   background: rgba(63, 58, 53, 0.35);
 }
+
 
 /* The system's higher-contrast request. The global answer lives in a boot
    sheet this lazy sheet follows, so Drawing Board restates it in its own ink. */

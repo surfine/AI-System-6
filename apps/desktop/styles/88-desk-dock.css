@@ -178,11 +178,15 @@
 
 .desk-dock-miniature-bar {
   flex: none;
-  height: 6px;
+  height: 8px;
   overflow: hidden;
-  background: linear-gradient(#f2f2f2, #c8c8c8);
+  padding: 0 2px;
+  background: var(--system-titlebar-active-bg, linear-gradient(#f2f2f2, #c8c8c8));
   border-bottom: 1px solid rgb(0 0 0 / 0.25);
-  color: transparent;
+  color: var(--ink, #222);
+  font: 700 6px/8px var(--theme-ui-font, "Lucida Grande", sans-serif);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .desk-dock-miniature-page {
@@ -267,7 +271,8 @@ body.desk-dock-shown[data-desk-dock-owner="desk-dock"] .icon-column :is(.desktop
 /* ---- Each era's Dock --------------------------------------------------- */
 
 /* Jaguar (10.2, the Aqua appearance) and Tiger: the flat translucent panel.
-   Jaguar keeps the 10.0-10.2 pinstripes; Tiger's panel is plain. */
+   Jaguar 10.2 is a plain plate (pinstripes are 10.0–10.1 only). Tiger's plate
+   is the same geometry, a hair more opaque. */
 body:is([data-theme="aqua"], [data-theme="tiger"]) .desk-dock {
   --desk-dock-shelf-depth: 58px; /* M04: plate = tile + 10 (4 above, 6 below) */
   --desk-dock-foot: 52px; /* M04 */
@@ -302,8 +307,8 @@ body[data-theme="yosemite"] .desk-dock {
   --desk-dock-foot: 54px;
   --desk-dock-lean: 0px;
   --desk-dock-radius: 5px 5px 0 0;
-  --desk-dock-shelf-bg: rgb(236 236 240 / 0.42); /* M17: approximate; blurred backdrop */
-  --desk-dock-shelf-edges: none; /* M16: no rim on the 10.10 plate edge */
+  --desk-dock-shelf-bg: rgb(228 228 234 / 0.55);
+  --desk-dock-shelf-edges: inset 0 0.5px 0 rgb(255 255 255 / 0.28);
   --desk-dock-backdrop: blur(20px) saturate(160%);
   --desk-dock-reflection: none;
   --desk-dock-mark: #000; /* M18: native 2pt dot at tile 64 */
@@ -339,7 +344,7 @@ body[data-theme="liquid-glass"] .desk-dock {
   --desk-dock-shelf-depth: 66px; /* M25: plate 1.37x tile, tile centred; proportional from 78pt at tile ~57 */
   --desk-dock-foot: 57px; /* M25 */
   --desk-dock-radius: 18px; /* M24: native ~22pt at tile ~57, proportional at tile 48 */
-  --desk-dock-shelf-bg: linear-gradient(to bottom, rgb(255 255 255 / 0.20), rgb(255 255 255 / 0.12)); /* M29: approximate */
+  --desk-dock-shelf-bg: linear-gradient(to bottom, rgb(255 255 255 / 0.28), rgb(240 244 248 / 0.16));
   --desk-dock-shelf-edges: inset 0 0 0 1px rgb(255 255 255 / 0.3), 0 10px 30px rgb(0 0 0 / 0.16); /* M28: drop the 0.7 top highlight; uniform 1px white .3 ring */
   --desk-dock-backdrop: blur(12px) saturate(190%);
   --desk-dock-mark: #000; /* M26: native 4pt at tile ~57 */
@@ -367,6 +372,10 @@ body[data-theme="aqua"] .title-bar {
   --dock-lamp-art: url("./assets/themes/aqua/lamp-minimize.png") center / 13px 13px no-repeat;
   --dock-lamp-round: 50%;
   --dock-lamp-shadow: 0 2px 2px #000b;
+}
+
+body[data-theme="tiger"] .title-bar {
+  --dock-lamp-pitch: 21px; /* M08: 10.4 Finder, same pitch as Snow Leopard */
 }
 
 /* Snow Leopard's yellow lamp is drawn at 2x like its red and green ones. The

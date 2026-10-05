@@ -134,7 +134,9 @@ test.assertNotIncludes(quickWindowHtml, "draft-desk-mobile-inspector-actions", "
   test.assert(!/class="btn default" id="quick-draft-display-body"/.test(lightroomFooter), "Back to the Draft is a door, not the default key");
 }
 test.assertMatches(read("app/features/quick-draft-composition.js"), /const compositeReady = enabled\s*&& Boolean\(darkroomOf\(record\)\.composite\)/, "冲洗 waits for a proof, like the menu row it shortcuts");
-test.assertMatches(read("app/features/quick-draft-composition.js"), /developButton\?\.classList\.toggle\("default", compositeReady\)/, "the default key follows the pending proof");
+test.assertMatches(read("app/features/quick-draft-composition.js"), /const proofReady = trackOwns \? trackReady : compositeReady/, "内容轨 and adjustment proofs share one footer default key");
+test.assertMatches(read("app/features/quick-draft-composition.js"), /developButton\?\.classList\.toggle\("default", Boolean\(hasBody && proofReady && !listenMode\)\)/, "the default key follows the pending proof, and never shares the footer with Listen Play");
+test.assertMatches(read("app/features/quick-draft-composition.js"), /backButton\?\.classList\.toggle\("default", !hasBody\)/, "an empty darkroom makes Back to the Draft the one default");
 test.assertNotIncludes(quickWindowHtml, 'id="quick-draft-restore-dump"', "Versions do not add a second restore control below their rows");
 test.assertIncludes(quickWindowHtml, 'id="quick-draft-deliver"', "delivery is one action away from the paper");
 test.assertIncludes(quickWindowHtml, 'data-quick-draft-delivery="teachtext"', "TeachText handoff remains available");
@@ -144,6 +146,7 @@ test.assertIncludes(quickWindowHtml, 'aria-haspopup="menu" aria-expanded="false"
 test.assertIncludes(quickWindowHtml, 'aria-haspopup="menu" aria-expanded="false" aria-controls="quick-draft-deliver-menu"', "Deliver announces a pull-down menu and its controlled surface");
 test.assertIncludes(quickWindowHtml, 'data-quick-draft-delivery="copy-markdown"', "Markdown copy remains available");
 test.assertIncludes(quickWindowHtml, 'data-quick-draft-delivery="export-markdown"', "Markdown export remains available");
+test.assertIncludes(quickWindowHtml, 'class="view-switch quick-draft-track-toggle" role="group"', "Interest, Content, and Side by Side are the segmented control");
 test.assertIncludes(quickWindowHtml, 'class="view-switch draft-desk-display-switch" role="tablist"', "Grain, Read, and Listen use the shared roving tab pattern, on the real segmented-control part");
 // The tablist and the panel it controls must be in the SAME window. They were
 // not: the tabs moved into 文字亮室 with the split and kept naming the paper

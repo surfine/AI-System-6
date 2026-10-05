@@ -12,6 +12,18 @@ window.AISystem6MicropolisLoaded = true;
 (function initMicropolisFeature() {
   "use strict";
 
+  function syncHostContract(host = "loading") {
+    // Micropolis uses a JS GPL engine bundle, not a Wasm binary (v223 honesty).
+    window.AISystem6WasmHostContract?.apply?.(micropolisWindow(), {
+      kind: "micropolis",
+      host,
+      wasm: 0,
+      binary: 0,
+      fail: true,
+      crash: true,
+    });
+  }
+
   function installMicropolisWindow() {
     if (typeof document === "undefined") return;
     if (document.querySelector('[data-window="micropolis"]')) return;
@@ -29,8 +41,6 @@ window.AISystem6MicropolisLoaded = true;
       paneClass: "micropolis-pane",
     });
   }
-
-  installMicropolisWindow();
 
   const MICROPOLIS_VENDOR_BASE = "app/vendor/micropolis/";
   const MICROPOLIS_MAP_WIDTH = 120;
@@ -225,6 +235,9 @@ window.AISystem6MicropolisLoaded = true;
     return !!win && !win.classList.contains("is-hidden") && !document.hidden;
   }
 
+  installMicropolisWindow();
+  syncHostContract("loading");
+
   // --- interior markup -------------------------------------------------------
 
   function buildMicropolisPane() {
@@ -255,20 +268,24 @@ window.AISystem6MicropolisLoaded = true;
   function renderMicropolisToolbar() {
     const toolbar = micropolisWindow()?.querySelector("[data-micropolis-toolbar]");
     if (!toolbar) return;
-    toolbar.innerHTML = MICROPOLIS_TOOLS.map((tool) => {
-      const selected = tool.id === micropolisState.toolId;
-      return `<button type="button" class="micropolis-tool${selected ? " is-selected" : ""}"
-        data-micropolis-tool="${tool.id}" aria-pressed="${selected}">
-        <span class="micropolis-tool-name">${t(`micropolis_tool_${tool.id}`)}</span>
-        <span class="micropolis-tool-cost">${tool.cost > 0 ? `$${tool.cost}` : ""}</span>
-      </button>`;
-    }).join("")
-      + `<div class="micropolis-toolbar-footer" data-micropolis-toolbar-footer>
+    // One closed-set select replaces the old tool-button wall: choose a tool,
+    // then act on the map. Keeps System 6 select harness + armed readout.
+    const options = MICROPOLIS_TOOLS.map((tool) => {
+      const selected = tool.id === micropolisState.toolId ? " selected" : "";
+      const cost = tool.cost > 0 ? ` · $${tool.cost}` : "";
+      return `<option value="${tool.id}"${selected}>${t(`micropolis_tool_${tool.id}`)}${cost}</option>`;
+    }).join("");
+    toolbar.innerHTML = `<label class="micropolis-tool-picker">
+        <span class="micropolis-tool-picker-label">${t("micropolis_tool_picker")}</span>
+        <span class="select-wrap"><select data-micropolis-tool-select aria-label="${t("micropolis_tool_picker")}">${options}</select></span>
+      </label>
+      <div class="micropolis-toolbar-footer" data-micropolis-toolbar-footer>
           <div class="micropolis-armed-tool" data-micropolis-armed-tool></div>
           <button type="button" class="btn micropolis-rci-panel-button" data-micropolis-rci-panel-button aria-label="Demand">
             <canvas class="micropolis-rci-panel" data-micropolis-rci-panel width="58" height="36" role="img" aria-label="RCI"></canvas>
           </button>
         </div>`;
+    renderMicropolisPanelGauge();
   }
 
   function renderMicropolisHud() {
@@ -363,6 +380,9 @@ window.AISystem6MicropolisLoaded = true;
   function setMicropolisStatus(key) {
     micropolisState.lastStatusKey = key || "";
     renderMicropolisStatus();
+    const fail = key === "micropolis_status_assets_failed";
+    const loading = key === "micropolis_status_generating";
+    syncHostContract(fail ? "fail" : loading ? "loading" : micropolisState.game ? "ready" : "loading");
   }
 
   function renderMicropolisStatus() {
@@ -1357,13 +1377,16 @@ window.AISystem6MicropolisLoaded = true;
     toolbar.addEventListener("click", (event) => {
       if (event.target.closest("[data-micropolis-rci-panel-button]")) {
         if (micropolisState.sim) openMicropolisPanel("evaluation");
-        return;
       }
-      const button = event.target.closest("[data-micropolis-tool]");
-      if (!button) return;
-      micropolisState.toolId = button.dataset.micropolisTool;
+    });
+    toolbar.addEventListener("change", (event) => {
+      const select = event.target.closest("[data-micropolis-tool-select]");
+      if (!select) return;
+      const next = String(select.value || "");
+      if (!MICROPOLIS_TOOLS.some((tool) => tool.id === next)) return;
+      micropolisState.toolId = next;
       setMicropolisStatus("micropolis_status_ready");
-      renderMicropolisToolbar();
+      renderMicropolisPanelGauge();
     });
 
     win.querySelector("[data-micropolis-panel]")?.addEventListener("click", handleMicropolisPanelClick);
@@ -1651,7 +1674,7 @@ window.AISystem6MicropolisLoaded = true;
 
   async function saveMicropolisCity() {
     const saveData = serializeMicropolisCity();
-    if (!saveData) return;
+    if (!saveData) return false;
     let name = micropolisState.cityName;
     if (!name) {
       name = await showInputDialog({
@@ -1659,7 +1682,7 @@ window.AISystem6MicropolisLoaded = true;
         message: t("micropolis_city_name_prompt"),
         defaultValue: t("micropolis_untitled_city"),
       });
-      if (name === null) return;
+      if (name === null) return false;
       name = name.trim() || t("micropolis_untitled_city");
     }
     const now = new Date().toISOString();
@@ -1679,7 +1702,7 @@ window.AISystem6MicropolisLoaded = true;
       await withMicropolisCityStore("readwrite", (store) => idbRequest(store.put(record)));
     } catch {
       setMicropolisStatus("micropolis_status_save_failed");
-      return;
+      return false;
     }
     micropolisState.cityId = record.id;
     micropolisState.cityName = record.name;
@@ -1687,6 +1710,18 @@ window.AISystem6MicropolisLoaded = true;
     micropolisState.dirty = false;
     setMicropolisStatus("micropolis_status_saved");
     if (typeof updateMenuState === "function") updateMenuState();
+    return true;
+  }
+
+  // Named dirty cities flush before leave; failure stays on the status line and
+  // blocks the close so the mayor can retry. Unnamed cities still do not invent
+  // a save record on the way out (name dialog is a Save command, not leave).
+  async function flushMicropolisLeaveSave() {
+    if (!micropolisState.sim || !micropolisState.cityId || !micropolisState.dirty) return true;
+    const ok = await saveMicropolisCity();
+    if (ok) return true;
+    setMicropolisStatus("micropolis_status_leave_failed");
+    return false;
   }
 
   async function listMicropolisCities() {
@@ -2388,6 +2423,12 @@ window.AISystem6MicropolisLoaded = true;
           if (activeWindow?.dataset.window !== "micropolis") return false;
           return alwaysAvailable.has(command) || !!micropolisState.sim;
         },
+        unavailableReason: () => {
+          const activeWindow = document.querySelector(".window.is-active");
+          return activeWindow?.dataset.window !== "micropolis"
+            ? "balloon_disabled_menu_host_window"
+            : "balloon_disabled_menu_context";
+        },
       });
     });
   }
@@ -2406,8 +2447,9 @@ window.AISystem6MicropolisLoaded = true;
       cancelMicropolisPendingTouchTool();
       micropolisState.pointers.clear();
       micropolisState.panning = false;
-      if (micropolisState.sim && micropolisState.cityId && micropolisState.dirty) {
-        await saveMicropolisCity();
+      if (!await flushMicropolisLeaveSave()) {
+        if (micropolisWindowVisible() && micropolisState.sim) startMicropolisLoop();
+        throw new Error("micropolis-suspend-save-failed");
       }
     },
     onResume: () => {
@@ -2425,6 +2467,27 @@ window.AISystem6MicropolisLoaded = true;
       micropolisState.audio = null;
     },
   });
+
+  // Close-box: same leave flush as suspend — failure keeps the window open with
+  // an honest status, never a silent discard of a named dirty city.
+  (function bindMicropolisCloseFlush() {
+    const win = micropolisWindow();
+    const close = win?.querySelector(".close-box");
+    if (!win || !close || close.dataset.micropolisLeaveBound === "1") return;
+    close.dataset.micropolisLeaveBound = "1";
+    close.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const wasRunning = !!micropolisState.sim && !micropolisState.sim.isPaused?.();
+      stopMicropolisLoop();
+      if (!await flushMicropolisLeaveSave()) {
+        if (wasRunning) startMicropolisLoop();
+        return;
+      }
+      if (typeof closeWindow === "function") await closeWindow("micropolis", true);
+      else win.classList.add("is-hidden");
+    }, true);
+  })();
 
   window.AISystem6Micropolis = Object.freeze({
     open: openMicropolis,

@@ -109,7 +109,7 @@ export function seedComplexProject() {
         role: "manuscript",
         title: "Integrity Article",
         backing: { type: "manuscript", id: "file-1" },
-        state: { activeTextFileId: "file-1", documentRole: "manuscript", body: "正文" },
+        state: { activeTextFileId: "file-1", documentRole: "manuscript", body: "正文\n\n![白板照片](aisystem6-image:img-1)\n" },
         order: 0,
       },
       {

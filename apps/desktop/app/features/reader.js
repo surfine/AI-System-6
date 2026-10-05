@@ -1123,7 +1123,20 @@ function updateReaderTranslationClipButton() {
       ? t("clip_translate_to_chinese")
       : targetLanguage ? t("clip_translate_to_english") : t("clip_translate");
   }
+  syncReaderSurfacePrimary({ hasSelection: active });
   updateDocMapEntryButtons();
+}
+
+// Harvest R17: one chrome default at a time. Open while empty / no selection;
+// Clip while a passage is selected; Ask never competes as a second primary.
+function syncReaderSurfacePrimary({ hasSelection = false } = {}) {
+  const openBtn = document.getElementById("reader-fetch-button");
+  const clipBtn = readerClipButton || document.getElementById("reader-clip-button");
+  const askBtn = document.getElementById("reader-ask-button");
+  const pageReady = !!currentReaderPage;
+  openBtn?.classList.toggle("default", !hasSelection);
+  clipBtn?.classList.toggle("default", !!hasSelection);
+  askBtn?.classList.toggle("default", pageReady && !hasSelection && !askBtn.disabled);
 }
 
 function clipReaderSelection() {
@@ -1201,8 +1214,9 @@ function clipReaderSelection() {
     currentReaderClipCount += 1;
     saveDeskState();
     renderScraps();
+    // Clip success must paint both sides: Reader's count and the Scrapbook stack.
+    if (readerStatusEl) readerStatusEl.textContent = t("reader_clips_count", currentReaderClipCount);
     updateFlowGuideChecklist({ render: false });
-    readerStatusEl.textContent = t("reader_clips_count", currentReaderClipCount);
     readerSelectionReceipt = text;
     setStatus(t("reader_clipped"));
   }

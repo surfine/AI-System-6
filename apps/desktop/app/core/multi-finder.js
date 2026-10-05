@@ -377,10 +377,44 @@ function cycleToNextApp() {
   if (next) switchToApp(next.id);
 }
 
+// NeXTSTEP's Dock and desk row hide under the same narrow media query that
+// nextstep-shell.css owns (max-width 860px / coarse short screens). Without a
+// replacement, App and window switching disappear. On that surface the right-end
+// control becomes one merged App／window menu — portrait one list, landscape
+// can still split via the Dock when the desk is wide enough again
+// (polishTodo narrow-merged-switcher-polish).
+const NEXTSTEP_NARROW_MERGED_SWITCHER_QUERY = "(max-width: 860px) and (not ((hover: hover) and (pointer: fine) and (min-width: 640px) and (min-height: 540px))), (hover: none) and (pointer: coarse) and (max-height: 660px)";
+
+function prefersNextstepNarrowMergedSwitcher() {
+  try {
+    if (window.AISystem6Theme?.getCurrentTheme?.() !== "nextstep") return false;
+    return window.matchMedia?.(NEXTSTEP_NARROW_MERGED_SWITCHER_QUERY)?.matches === true;
+  } catch (error) {
+    return false;
+  }
+}
+
+let nextstepMergedSwitcherMedia = null;
+function watchNextstepNarrowMergedSwitcher() {
+  if (typeof window.matchMedia !== "function" || nextstepMergedSwitcherMedia) return;
+  try {
+    nextstepMergedSwitcherMedia = window.matchMedia(NEXTSTEP_NARROW_MERGED_SWITCHER_QUERY);
+    const refresh = () => {
+      if (window.AISystem6Theme?.getCurrentTheme?.() === "nextstep") renderMultiFinderMenu();
+    };
+    if (typeof nextstepMergedSwitcherMedia.addEventListener === "function") {
+      nextstepMergedSwitcherMedia.addEventListener("change", refresh);
+    } else if (typeof nextstepMergedSwitcherMedia.addListener === "function") {
+      nextstepMergedSwitcherMedia.addListener(refresh);
+    }
+  } catch (error) { /* matchMedia unavailable: stay on the cycle indicator. */ }
+}
+
 function renderMultiFinderMenu() {
   window.AISystem6NextstepShell?.syncMain();
   window.AISystem6NextstepDock?.sync();
   window.AISystem6DeskDock?.sync();
+  watchNextstepNarrowMergedSwitcher();
   if (activeAppId !== "accessories" && activeAppId !== "system") menuOwnerAppId = activeAppId;
   if (typeof renderAppMenuBar === "function") renderAppMenuBar(menuOwnerAppId);
   // MultiFinder-only, on every screen size. A phone presents apps full-screen
@@ -389,7 +423,9 @@ function renderMultiFinderMenu() {
   // the close box is the way back to the desktop.
   const showSwitcher = isMultiFinderMode();
   const applicationOwned = usesApplicationOwnedMenuBar();
+  const nextstepMerged = prefersNextstepNarrowMergedSwitcher();
   document.querySelector(".multifinder-menu")?.classList.toggle("is-hidden", !showSwitcher);
+  document.body?.classList?.toggle("nextstep-merged-switcher", nextstepMerged);
   syncWorkspaceDesktopIcon();
   renderAppleMultiFinderSection(showSwitcher && applicationOwned);
   // The Apple menu's minimized-windows section is drawn by the miniaturize
@@ -404,17 +440,20 @@ function renderMultiFinderMenu() {
   if (!labelEl || !button || !popover) return;
   labelEl.textContent = activeAppLabel();
 
-  if (applicationOwned) {
+  if (applicationOwned && !nextstepMerged) {
     // An indicator, not a menu: it reports the application in front and pages
     // to the next one. Nothing drops down, so nothing is rendered into the
     // popover and the control does not advertise one.
     button.dataset.appSwitchIndicator = "cycle";
+    delete button.dataset.appSwitchMerged;
     button.removeAttribute("aria-haspopup");
     button.setAttribute("aria-label", t("multifinder_indicator"));
     button.dataset.balloonHelp = "balloon_multifinder_indicator";
     popover.replaceChildren();
   } else {
     delete button.dataset.appSwitchIndicator;
+    if (nextstepMerged) button.dataset.appSwitchMerged = "app-window";
+    else delete button.dataset.appSwitchMerged;
     button.setAttribute("aria-haspopup", "menu");
     button.setAttribute("aria-label", t("multifinder_switcher"));
     button.dataset.balloonHelp = "balloon_multifinder_switcher";
@@ -616,6 +655,11 @@ function installApplicationLifecycleWatch() {
 
 function bringAppToFront(appId = activeAppId) {
   const windows = visibleWindowsForApp(appId);
+  if (!windows.length) {
+    // isAvailable should block this; if a race still dispatches, say so.
+    if (typeof setStatus === "function") setStatus(t("bring_all_to_front_none"));
+    return false;
+  }
   const ordered = windows
     .slice()
     .sort((a, b) => Number(a.style.zIndex || 0) - Number(b.style.zIndex || 0));
@@ -629,6 +673,8 @@ function bringAppToFront(appId = activeAppId) {
   });
   if (ordered.length) focusWindow(ordered[ordered.length - 1], 1);
   const moved = ordered.some((win, index) => (win.style.zIndex || "") !== before[index]);
-  if (!moved && typeof setStatus === "function") setStatus(t("bring_all_to_front_already"));
+  if (typeof setStatus === "function") {
+    setStatus(moved ? t("bring_all_to_front_done") : t("bring_all_to_front_already"));
+  }
   return moved;
 }
