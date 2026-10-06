@@ -983,6 +983,11 @@ window.AISystem6ProjectDiskBackup = (() => {
     }));
     const originalProject = remapRelations(clone(bundle.project), idMaps);
     const baseName = String(originalProject.name || "Untitled Project");
+    // The desk's Restore path always supplies projectName(), where the suffix
+    // comes from the translation table (translations-*.js
+    // "project_name_restored_suffix") so a Chinese desk never shows an English
+    // "Restored". This literal is only the language-agnostic default for a
+    // direct API call that has no table.
     const projectName = typeof options.projectName === "function"
       ? options.projectName(baseName)
       : `${baseName} Restored`;

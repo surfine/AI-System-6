@@ -3426,13 +3426,22 @@ installLiquidCoverWindow();
       clearLayerDropIndicators(true);
     };
     const removable = selectedLayersInStack().filter((L) => !L.locked).length;
+    const layersFull = layers.length >= MAX_LAYERS;
     $("lc-del-layer").disabled = !removable || layers.length - removable < 1;
-    $("lc-duplicate-layer").disabled = layers.length >= MAX_LAYERS;
-    $("lc-add-layer").disabled = layers.length >= MAX_LAYERS;
-    ["lc-add-shape", "lc-shape-circle", "lc-shape-squircle", "lc-shape-capsule"].forEach((id) => {
-      const b = $(id); if (b) b.disabled = layers.length >= MAX_LAYERS;
+    $("lc-duplicate-layer").disabled = layersFull;
+    $("lc-add-layer").disabled = layersFull;
+    ["lc-add-layer", "lc-duplicate-layer", "lc-add-shape", "lc-shape-circle", "lc-shape-squircle", "lc-shape-capsule", "lc-add-inside-text"].forEach((id) => {
+      const b = $(id);
+      if (!b) return;
+      if (layersFull) b.dataset.balloonHelpDisabled = "balloon_cover_layers_full";
+      else if (b.dataset.balloonHelpDisabled === "balloon_cover_layers_full") {
+        delete b.dataset.balloonHelpDisabled;
+      }
     });
-    $("lc-add-inside-text").disabled = !isShapeLayer(layers[sel]) || layers.length >= MAX_LAYERS;
+    ["lc-add-shape", "lc-shape-circle", "lc-shape-squircle", "lc-shape-capsule"].forEach((id) => {
+      const b = $(id); if (b) b.disabled = layersFull;
+    });
+    $("lc-add-inside-text").disabled = !isShapeLayer(layers[sel]) || layersFull;
     const primaryLocked = !!layers[sel]?.locked;
     $("lc-layer-bottom").disabled = primaryLocked || !canMoveSelected("down");
     $("lc-layer-down").disabled = primaryLocked || !canMoveSelected("down");

@@ -128,6 +128,20 @@
     var(--paper);
 }
 
+.find-path-notice.empty-next-note,
+.find-file-window .find-file-results > .empty-next-note {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.find-path-notice.empty-next-note > .btn,
+.find-file-window .find-file-results > .empty-next-note > .btn {
+  min-height: var(--touch-primary-min-height);
+}
+
 /* Era result-table chrome (Sherlock idiom). The header row and per-result
    relevance bar are always in the DOM; every visual decision rides on
    --find-path-* tokens so the historical appearance layers stay app-free.
@@ -332,25 +346,40 @@
      search-field recipe in 10-windows (also two classes, earlier file). */
   .find-path-window .find-path-query-row input,
   .find-path-query-row .btn {
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
   }
 
-  /* One equal column per visible control: Synthesize only exists once there
-     are results, so a fixed four-column grid left a hole before it did. */
-  .find-path-pane > .button-row:last-child {
+  /* Idle / zero-hit: stack grey Send+Reader (Harvest A), not a cramped row. */
+  .find-path-window[data-empty] .find-path-pane > .button-row:last-child {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .find-path-window[data-empty] .find-path-send-menu > summary,
+  .find-path-window[data-empty] .find-path-pane > .button-row:last-child .btn {
+    width: 100%;
+    min-width: 0;
+    min-height: var(--touch-primary-min-height);
+    justify-content: center;
+  }
+
+  /* With results: one equal column per visible handoff control. */
+  .find-path-window:not([data-empty]) .find-path-pane > .button-row:last-child {
     display: grid;
     grid-auto-columns: minmax(0, 1fr);
     grid-auto-flow: column;
     gap: 6px;
   }
 
-  .find-path-send-menu > summary {
+  .find-path-window:not([data-empty]) .find-path-send-menu > summary {
     width: 100%;
   }
 
-  .find-path-pane > .button-row:last-child .btn {
+  .find-path-window:not([data-empty]) .find-path-pane > .button-row:last-child .btn {
     min-width: 0;
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
     padding-inline: 5px;
   }
 }

@@ -192,20 +192,21 @@ body[data-theme="liquid-glass"] {
      screen the desk's dot pattern read straight through the menu labels. The
      0.9 base is the same figure --glass-reading-surface settled on for the same
      reason. */
+  /* Tahoe: denser glass stack + stronger blur than Big Sur warm frost (P2). */
   --menu-bar-bg:
-    radial-gradient(120% 170% at 8% 0%, rgba(255, 255, 255, 0.42), transparent 44%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.12)),
-    rgba(255, 255, 255, 0.9);
-  /* The opaque white under that 0.9, for the strip a home-screen web app runs
-     under the status area: the two gradients above stay, the desk stops showing
-     through them. See 60-responsive.css's installed-surface block. */
+    radial-gradient(120% 170% at 8% 0%, rgba(255, 255, 255, 0.52), transparent 44%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.14)),
+    rgba(255, 255, 255, 0.68);
+  /* Frost so the pale desk grid reads through (Tahoe); opaque base for the
+     installed-surface strip in 60-responsive.css. */
+  --menu-bar-backdrop-filter: blur(32px) saturate(215%);
   --menu-bar-base: #ffffff;
   --menu-bar-shadow:
-    inset 1.25px 0 0 -0.75px rgba(230, 230, 230, 0.72),
-    inset -1.25px 0 0 -0.75px rgba(229, 229, 229, 0.72),
-    inset 0 1px 0 rgba(255, 255, 255, 0.82),
-    inset 0 -1px 0 rgba(16, 17, 20, 0.08),
-    0 12px 34px rgba(18, 28, 38, 0.09);
+    inset 1.25px 0 0 -0.75px rgba(230, 230, 230, 0.78),
+    inset -1.25px 0 0 -0.75px rgba(229, 229, 229, 0.78),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    inset 0 -1px 0 rgba(16, 17, 20, 0.1),
+    0 14px 36px rgba(18, 28, 38, 0.11);
   --menu-button-height: 24px;
   --menu-button-radius: var(--r-pill);
   --menu-button-transition: background 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
@@ -381,6 +382,9 @@ body[data-theme="liquid-glass"] {
   --window-frame-thumb-radius: var(--r-pill);
   --ink: #101114;
   --paper: rgba(255, 255, 255, 0.5);
+  /* Glass --paper is half-transparent, so the pair for an element that paints
+     its own --ink field is opaque white, not --paper. Feeds --selected-fg. */
+  --selected-fg: #ffffff;
   --shade: rgba(255, 255, 255, 0.46);
   /* 2.71:1 over this era's panel, where the token carries 13px text as well as
      chrome. 0.62 measures 5.02:1. */
@@ -1977,7 +1981,7 @@ body[data-theme="liquid-glass"] {
   --quick-draft-divider-border: 1px solid rgba(16, 17, 20, 0.1);
   --quick-draft-actions-bg: rgba(255, 255, 255, 0.28);
   --quick-draft-secondary-fg: rgba(16, 17, 20, 0.68);
-  --quick-draft-selected-fg: #ffffff;
+  --quick-draft-selected-fg: var(--selected-fg);
   --quick-draft-field-focus-bg: transparent;
   --quick-draft-field-focus-shadow: none;
   --quick-draft-grain-model-fg: rgba(16, 17, 20, 0.44);
@@ -2011,13 +2015,18 @@ body[data-theme="liquid-glass"] {
 
 /* Two attributes keep this rule's (0,2,1): it outranked the era root when
    it was written as the class plus data-theme. */
+/* Tahoe pale desk: soft blue-grey wash + light grid (structure only; not the
+   stock photo). Slightly cooler and more layered so the floating Dock reads
+   against a real surface rather than a flat sheet. */
 body[data-theme="liquid-glass"][data-theme-family="liquid-glass"] .desktop {
   background:
-    radial-gradient(circle at 18% 12%, rgb(255 255 255 / 0.45), transparent 32%),
-    linear-gradient(rgba(255, 255, 255, 0.38) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.3) 1px, transparent 1px),
-    linear-gradient(135deg, #f4f7f8 0%, #d6dee4 48%, #cfd8de 72%, #eef1ea 100%);
-  background-size: auto, 22px 22px, 22px 22px, auto;
+    radial-gradient(ellipse 70% 45% at 12% 8%, rgb(255 255 255 / 0.55), transparent 42%),
+    radial-gradient(ellipse 55% 40% at 88% 18%, rgb(190 210 230 / 0.35), transparent 55%),
+    radial-gradient(ellipse 80% 50% at 50% 100%, rgb(160 180 200 / 0.22), transparent 55%),
+    linear-gradient(rgba(255, 255, 255, 0.42) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.34) 1px, transparent 1px),
+    linear-gradient(148deg, #f6f9fb 0%, #e2eaf0 38%, #d5dee6 62%, #e8ece8 100%);
+  background-size: auto, auto, auto, 20px 20px, 20px 20px, auto;
 }
 
 body[data-theme="liquid-glass"] #liquid-glass-overlay {

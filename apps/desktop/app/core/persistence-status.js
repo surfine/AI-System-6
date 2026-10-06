@@ -2010,7 +2010,10 @@ async function loadDeskState() {
   if (projectStateChanged || shouldRewriteSanitizedSettings || migratedClipBodies) {
     if (shouldRewriteSanitizedSettings) markDeskDirty("settings");
     const saved = await saveDeskState();
-    if (!saved) throw new Error("The initial Project Hard Disk could not be saved.");
+    if (!saved) {
+      deskPersistenceWritable = false;
+      console.error("The initial Project Hard Disk could not be saved; the desk will stay in memory only.");
+    }
   }
   return {
     status: projects.length ? "ready" : "empty",
@@ -2168,10 +2171,8 @@ function applySettings(settings) {
   if (typeof settings.soundEffects === "boolean") {
     soundEffectsInput.checked = settings.soundEffects;
   }
-  if (typeof settings.menuClock === "boolean") {
-    menuClockInput.checked = settings.menuClock;
-  } else {
-    menuClockInput.checked = false;
+  if (menuClockInput) {
+    menuClockInput.checked = settings.menuClock === true;
   }
   if (showUnmountedDisksInput) {
     showUnmountedDisksInput.checked = settings.showUnmountedDisks === true;
@@ -2183,7 +2184,7 @@ function applySettings(settings) {
   const pauseAudioInput = document.getElementById("pause-audio-in-background");
   if (pauseAudioInput) pauseAudioInput.checked = settings.pauseAudioInBackground === true;
   restoreControlStripState(settings);
-  if (typeof settings.performanceMeter === "boolean") {
+  if (typeof settings.performanceMeter === "boolean" && performanceMeterInput) {
     performanceMeterInput.checked = settings.performanceMeter;
   }
   const clioWebSearchInput = document.getElementById("clio-web-search");
@@ -2213,7 +2214,9 @@ function applySettings(settings) {
   restoreWritingBellState(settings.writingBell);
   if (typeof restoreAlarmClockState === "function") restoreAlarmClockState(settings.alarmClock);
   restorePuzzleState(settings.puzzle);
-  restorePageSetupState(settings.pageSetup);
+  // Defined by the lazy project-cd-print module. A missed fetch must not
+  // abort loadDeskState() — that was the Sad Mac on iOS Safari / WebClip.
+  if (typeof restorePageSetupState === "function") restorePageSetupState(settings.pageSetup);
   if (Array.isArray(settings.notePadPages)) {
     notePadPages = normalizeNotePadPages(settings.notePadPages);
   } else if (typeof settings.notePadText === "string") {

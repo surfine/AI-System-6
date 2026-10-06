@@ -153,11 +153,32 @@ function syncSideAskPad() {
   // control, and a run you cannot stop is the thing that broke here before.
   pad.ask.dataset.i18n = sideAskBusy ? "stop" : "ask";
   pad.ask.textContent = t(sideAskBusy ? "stop" : "ask");
-  pad.ask.disabled = sideAskBusy ? !sideAskAbort : !asked;
-  pad.clear.disabled = sideAskBusy || !(asked || sideAskExchange);
+  const askBlocked = sideAskBusy ? !sideAskAbort : !asked;
+  const clearBlocked = sideAskBusy || !(asked || sideAskExchange);
   // Promotion carries a real exchange across. With nothing asked yet there is
   // nothing to carry, and an empty split would just be another window.
-  pad.promote.disabled = sideAskBusy || !sideAskExchange;
+  const promoteBlocked = sideAskBusy || !sideAskExchange;
+  const askReason = sideAskBusy
+    ? "balloon_disabled_menu_context"
+    : "balloon_sideask_needs_question";
+  const clearReason = sideAskBusy
+    ? "balloon_disabled_menu_context"
+    : "balloon_sideask_nothing_to_clear";
+  const promoteReason = sideAskBusy
+    ? "balloon_disabled_menu_context"
+    : "balloon_sideask_needs_exchange";
+  if (typeof markGrayAffordance === "function") {
+    markGrayAffordance(pad.ask, askBlocked, askReason);
+    markGrayAffordance(pad.clear, clearBlocked, clearReason);
+    markGrayAffordance(pad.promote, promoteBlocked, promoteReason);
+  } else {
+    pad.ask.disabled = askBlocked;
+    pad.clear.disabled = clearBlocked;
+    pad.promote.disabled = promoteBlocked;
+    if (askBlocked) pad.ask.dataset.balloonHelpDisabled = askReason;
+    if (clearBlocked) pad.clear.dataset.balloonHelpDisabled = clearReason;
+    if (promoteBlocked) pad.promote.dataset.balloonHelpDisabled = promoteReason;
+  }
   // The interview only makes sense against the surface that collects material.
   const onSheet = sideAskSubject?.name === "questionSheet";
   pad.interview.hidden = !onSheet;

@@ -113,11 +113,38 @@ function renderFindChangeTarget() {
   const name = findChangeResolveTargetName();
   const target = name ? document.querySelector(findChangeSurfaceSelectors[name]) : null;
   const writable = findChangeTargetIsWritable(target);
+  const win = typeof getWindow === "function"
+    ? getWindow("findChange")
+    : document.querySelector('[data-window="findChange"]');
   if (!name) {
     label.textContent = t("find_no_target");
+    win?.setAttribute("data-empty", "");
   } else {
     const surface = t(findChangeSurfaceLabelKeys[name] || name);
     label.textContent = writable ? t("find_target", surface) : t("find_target_read_only", surface);
+    win?.removeAttribute("data-empty");
+  }
+  // Goal #2 empty-next: no writing surface → one TeachText step, not a demo wall.
+  let emptyNext = win?.querySelector?.(".find-change-empty-next");
+  if (!name) {
+    if (!emptyNext && win) {
+      emptyNext = document.createElement("div");
+      emptyNext.className = "empty-folder-note empty-next-note find-change-empty-next";
+      emptyNext.dataset.emptyNext = "1";
+      const cue = document.createElement("p");
+      cue.dataset.i18n = "find_no_target";
+      cue.textContent = t("find_no_target");
+      const go = document.createElement("button");
+      go.type = "button";
+      go.className = "btn default";
+      go.dataset.action = "open-teachtext";
+      go.dataset.i18n = "teachtext";
+      go.textContent = t("teachtext");
+      emptyNext.append(cue, go);
+      win.querySelector(".find-change-pane")?.prepend(emptyNext);
+    }
+  } else {
+    emptyNext?.remove();
   }
   // Change is impossible on a read-only projection; say so by greying the
   // controls rather than by failing after the click. The greying is a

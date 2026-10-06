@@ -36,11 +36,12 @@ body[data-theme="tiger"] {
   --toolbar-border: 1px solid #8c8c8c;
   /* Brushed metal, Figure 13-11 (iSync): the light runs ACROSS the sheet,
      not down it - #a8adb4 at the edges to #d5d7dd at the middle, faintly
-     blue - under fine one-pixel horizontal streaks. */
+     blue - under fine one-pixel horizontal streaks. Streak contrast raised
+     so Finder metal still reads against Aqua's flat silver at desk scale. */
   --tiger-metal-streaks: repeating-linear-gradient(to bottom,
-    rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 2px,
-    rgba(0, 0, 0, 0.05) 2px 3px, transparent 3px 5px,
-    rgba(255, 255, 255, 0.06) 5px 6px, transparent 6px 7px);
+    rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 2px,
+    rgba(0, 0, 0, 0.08) 2px 3px, transparent 3px 5px,
+    rgba(255, 255, 255, 0.1) 5px 6px, transparent 6px 7px);
   --tiger-metal: var(--tiger-metal-streaks),
     linear-gradient(to right, #a8adb4 0%, #b2b7be 11%, #bfc3ca 25%,
       #cfd1d7 44%, #d5d7dd 51%, #cccfd5 58%, #c2c5cb 72%, #aeb3ba 91%, #acb0b8 100%);
@@ -71,6 +72,19 @@ body[data-theme="tiger"] {
   --era-rail-thumb-border: 1px solid #6a6e74;
   --era-rail-thumb-radius: 3px;
   --era-rail-thumb-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  /* P2: 10.4 menu bar reads as brushed metal, not 10.6's grey ramp.
+     Opaque (no frost) — Tiger menubar did not transmit the desktop. */
+  --menu-bar-bg: var(--tiger-metal-streaks),
+    linear-gradient(to bottom, #c8ccd2 0%, #b8bdc4 45%, #aeb3ba 100%);
+  --menu-bar-border-color: #6a6e74;
+  --menu-bar-border: 1px solid var(--menu-bar-border-color);
+  --menu-bar-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  --menu-bar-backdrop-filter: none;
+  /* HIG 2005-09-08 p.180 iSync gumdrops (1x keyed), not 10.6's brighter
+     Snow Leopard sprites. Box stays the lineage 14px; art is 14x14. */
+  --traffic-light-close-bg: url("./assets/themes/tiger/lamp-close.png");
+  --traffic-light-resize-bg: url("./assets/themes/tiger/lamp-zoom.png");
+  --traffic-light-sprite-size: 14px 14px;
 }
 
 /* The Finder's windows are one sheet of metal: the title bar and the toolbar

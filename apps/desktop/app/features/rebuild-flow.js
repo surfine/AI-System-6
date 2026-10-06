@@ -792,7 +792,22 @@ function renderRebuildFlow() {
   parts.paste.hidden = rebuildFlow.sourceKind !== "paste" || rebuildFlow.sections.length > 0;
 
   renderRebuildFlowSections(parts);
-  parts.merge.disabled = running || done || rebuildFlow.selected < 0 || rebuildFlow.selected >= rebuildFlow.sections.length - 1;
+  // Greying a button never leaves the writer guessing: Merge says whether it
+  // needs two sections or a picked row, Split names the missing source.
+  const markRebuild = (control, blocked, reasonKey) => {
+    if (!control) return;
+    if (typeof markGrayAffordance === "function") markGrayAffordance(control, blocked, reasonKey);
+    else {
+      control.disabled = blocked;
+      if (blocked && reasonKey) control.dataset.balloonHelpDisabled = reasonKey;
+      else delete control.dataset.balloonHelpDisabled;
+    }
+  };
+  const busy = running || done;
+  const mergeBlocked = busy || rebuildFlow.selected < 0 || rebuildFlow.selected >= rebuildFlow.sections.length - 1;
+  markRebuild(parts.merge, mergeBlocked, busy
+    ? "balloon_disabled_working"
+    : "balloon_disabled_rebuild_merge");
 
   const drafted = rebuildFlow.drafted;
   parts.carry.hidden = !drafted?.complete || running;
@@ -835,11 +850,12 @@ function renderRebuildFlow() {
   parts.cancel.textContent = running ? t("stop") : (done ? t("close") : t("cancel"));
   parts.split.hidden = done;
   parts.split.textContent = rebuildFlow.sections.length ? t("rebuild_resplit") : t("rebuild_split");
-  parts.split.disabled = running || rebuildFlow.text.length < rebuildMinSourceChars && rebuildFlow.sourceKind !== "paste" && rebuildFlow.sourceKind !== "clipboard";
+  const splitShort = rebuildFlow.text.length < rebuildMinSourceChars && rebuildFlow.sourceKind !== "paste" && rebuildFlow.sourceKind !== "clipboard";
+  markRebuild(parts.split, running || splitShort, running ? "balloon_disabled_working" : "balloon_rebuild_split_needs_source");
   parts.handIn.textContent = done
     ? (rebuildFlow.phase === "sent" ? t("rebuild_open_review_desk") : t("rebuild_open_new_disk"))
     : (isNew ? t("rebuild_create_disk") : t("rebuild_hand_in"));
-  parts.handIn.disabled = !done && !rebuildFlowCanHandIn();
+  markRebuild(parts.handIn, !done && !rebuildFlowCanHandIn(), "balloon_disabled_rebuild_checks");
   const defaultButton = rebuildFlow.sections.length || done ? parts.handIn : parts.split;
   parts.split.classList.toggle("default", defaultButton === parts.split);
   parts.handIn.classList.toggle("default", defaultButton === parts.handIn);
@@ -944,7 +960,13 @@ function renderRebuildFlowCountOnly() {
   if (!parts) return;
   const chars = rebuildFlowCharCount(rebuildFlow.text);
   parts.count.textContent = chars ? t("rebuild_count_chars", chars) : t("rebuild_no_source");
-  parts.split.disabled = rebuildFlow.text.length < rebuildMinSourceChars;
+  const short = rebuildFlow.text.length < rebuildMinSourceChars;
+  if (typeof markGrayAffordance === "function") markGrayAffordance(parts.split, short, "balloon_rebuild_split_needs_source");
+  else {
+    parts.split.disabled = short;
+    if (short) parts.split.dataset.balloonHelpDisabled = "balloon_rebuild_split_needs_source";
+    else delete parts.split.dataset.balloonHelpDisabled;
+  }
 }
 
 function openRebuildFlow() {

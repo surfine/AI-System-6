@@ -349,6 +349,174 @@ cssFiles
     }
   });
 
+// --- Material token used in a colour slot ------------------------------------
+//
+// A token that some loaded appearance declares as a gradient or url() is a
+// MATERIAL, not a <color>. In `color` / `border-color` / `outline` /
+// `fill` / `stroke` / `caret-color` / `-webkit-text-fill-color` /
+// `text-decoration-color` / `column-rule-color` / `accent-color` the
+// substituted value is not a valid colour, so the whole declaration is
+// invalid at computed-value time and the property falls back to its inherited
+// value. Liquid Glass's --window-bg is a gradient there, so
+// `color: var(--window-bg)` on an `--ink` background rendered the selected
+// writing-mode segment as an ink-on-ink black box (reported 2026-10-05).
+//
+// The check only fires when the token really is a material somewhere it can
+// reach the usage, so length/keyword tokens used in shorthands stay clean.
+// A usage scoped to one exact `data-theme`/`data-lineage` token is only
+// compared against declarations that reach it (unscoped, or the same token).
+// Paint properties (background/background-color) are counted but not blocked:
+// an era may legitimately cover the slot with its own art layer, as Aqua's
+// checkbox art covers a dropped `background-color: var(--choice-bg)`.
+
+const MATERIAL_VALUE_PATTERN = /\b(?:repeating-)?(?:linear|radial|conic)-gradient\s*\(|\burl\s*\(/;
+// Only slots whose grammar is a <color>. mask / box-reflect / background-image
+// legitimately take an image, so they must never be inspected here.
+const COLOR_SLOT_EXACT = new Set([
+  "color", "outline", "outline-color", "column-rule", "column-rule-color",
+  "text-decoration-color", "fill", "stroke", "caret-color", "accent-color",
+  "-webkit-text-fill-color", "-webkit-text-stroke-color",
+]);
+const COLOR_SLOT_PATTERN = /^border(?:-(?:top|right|bottom|left|block|block-start|block-end|inline|inline-start|inline-end))?(?:-color)?$/;
+// Paint properties are counted, not blocked: an era may cover the slot with
+// its own art layer, as Aqua's checkbox art covers a dropped
+// `background-color: var(--choice-bg)`.
+const PAINT_SLOT_PATTERN = /^background(?:-color)?$/;
+const CUSTOM_PROPERTY_PATTERN = /^--/;
+
+function isColorSlot(prop) {
+  return COLOR_SLOT_EXACT.has(prop) || COLOR_SLOT_PATTERN.test(prop);
+}
+
+function lineStartsAt(text) {
+  const starts = [0];
+  for (let i = 0; i < text.length; i += 1) if (text[i] === "\n") starts.push(i + 1);
+  return starts;
+}
+
+// Walk one stylesheet and return every "prop: value" declaration with the
+// selector block it sits in and the 1-based line it starts on. At-rule
+// preludes are kept as block labels but never mistaken for selectors.
+function scanCssDeclarations(source) {
+  const text = stripComments(source);
+  const starts = lineStartsAt(text);
+  const lineAt = (index) => {
+    let lo = 0;
+    let hi = starts.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (starts[mid] <= index) lo = mid;
+      else hi = mid - 1;
+    }
+    return lo + 1;
+  };
+  const out = [];
+  const blocks = [];
+  let buffer = "";
+  let bufferIndex = 0;
+  let quote = "";
+  let escaped = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (escaped) { buffer += ch; escaped = false; continue; }
+    if (quote) {
+      buffer += ch;
+      if (ch === quote) quote = "";
+      continue;
+    }
+    if (ch === "\\") { buffer += ch; escaped = true; continue; }
+    if (ch === "\"" || ch === "'") { buffer += ch; quote = ch; continue; }
+    if (ch === "{") {
+      blocks.push(buffer.trim());
+      buffer = "";
+      bufferIndex = i + 1;
+      continue;
+    }
+    if (ch === "}") {
+      blocks.pop();
+      buffer = "";
+      bufferIndex = i + 1;
+      continue;
+    }
+    if (ch === ";") {
+      const declaration = buffer.trim();
+      buffer = "";
+      bufferIndex = i + 1;
+      if (declaration && !declaration.startsWith("@")) {
+        const split = declaration.indexOf(":");
+        if (split > 0) {
+          out.push({
+            prop: declaration.slice(0, split).trim(),
+            value: declaration.slice(split + 1).trim(),
+            line: lineAt(Math.max(0, bufferIndex - declaration.length - 1)),
+            selector: blocks.filter((label) => label && !label.startsWith("@")).join(" "),
+          });
+        }
+      }
+      continue;
+    }
+    if (!buffer) bufferIndex = i;
+    buffer += ch;
+  }
+  return out;
+}
+
+function exactScopeOf(selector) {
+  const theme = selector.match(/data-theme="([a-z0-9-]+)"|data-theme=([a-z0-9-]+)/);
+  if (theme) return theme[1] || theme[2];
+  const lineage = selector.match(/data-lineage~="([a-z0-9-]+)"/);
+  return lineage ? lineage[1] : null;
+}
+
+function materialTokenGuard() {
+  const perFile = new Map(
+    allCssFiles.map((relPath) => [relPath, scanCssDeclarations(readFileSync(resolveProjectPath(relPath), "utf8"))]),
+  );
+  // token -> [{ scope, file, line }] for every appearance that declares it material
+  const materialSites = new Map();
+  for (const [relPath, declarations] of perFile) {
+    for (const { prop, value, line, selector } of declarations) {
+      if (!CUSTOM_PROPERTY_PATTERN.test(prop) || !MATERIAL_VALUE_PATTERN.test(value)) continue;
+      if (!materialSites.has(prop)) materialSites.set(prop, []);
+      materialSites.get(prop).push({ scope: exactScopeOf(selector), file: relPath, line });
+    }
+  }
+  if (!materialSites.size) return { blocked: [], paint: [] };
+  const blocked = [];
+  const paint = [];
+  for (const [relPath, declarations] of perFile) {
+    for (const { prop, value, line, selector } of declarations) {
+      if (CUSTOM_PROPERTY_PATTERN.test(prop)) continue;
+      const colorSlot = isColorSlot(prop);
+      const paintSlot = !colorSlot && PAINT_SLOT_PATTERN.test(prop);
+      if (!colorSlot && !paintSlot) continue;
+      const usageScope = exactScopeOf(selector);
+      for (const reference of value.matchAll(/var\(\s*(--[a-z0-9-]+)/gi)) {
+        const sites = materialSites.get(reference[1]);
+        if (!sites) continue;
+        const reachable = sites.filter((site) => site.scope === null || usageScope === null || site.scope === usageScope);
+        if (!reachable.length) continue;
+        const where = `${relPath}:${line} ${prop}: var(${reference[1]})`;
+        if (paintSlot) {
+          paint.push(`${where} — material in ${reachable[0].file}:${reachable[0].line}`);
+        } else {
+          blocked.push(`${where} — ${reference[1]} is a material in ${reachable[0].file}:${reachable[0].line}`);
+        }
+      }
+    }
+  }
+  return { blocked, paint };
+}
+
+const materialGuard = materialTokenGuard();
+if (materialGuard.blocked.length) {
+  fail(
+    `${materialGuard.blocked.length} colour declaration(s) take a material token. A gradient/url() is not a <color>: the declaration is invalid at computed-value time and the property falls back to its inherited value (ink on ink). Give the slot a solid companion token instead.\n      ${materialGuard.blocked.slice(0, 12).join("\n      ")}`
+  );
+} else {
+  ok(`no colour slot takes a material token (paint slots, not blocked: ${materialGuard.paint.length})`);
+}
+
 // --- Liquid-glass twin checks ------------------------------------------------
 
 const LIQUID_FILE = "styles/70-liquid-glass.css";

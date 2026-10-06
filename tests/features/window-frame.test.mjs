@@ -611,10 +611,19 @@ test.assertMatches(
   /function keepWindowCornerAfterShade\(win, before\) \{[\s\S]*win\.style\.transform = "none"/,
   "the shade corner is held in the window's own positioning context"
 );
+// Expand, the orphan release and reopening a shaded window share one restore
+// (windowshade.test.mjs owns that shape). What matters here is that the captured
+// width is still released on the way out, so a window that shaded wide comes
+// back to its responsive width rather than keeping the captured one.
 test.assertMatches(
   windowManager,
-  /classList\.remove\("is-collapsed"\);\s*setInlineStyleValue\(win, "--window-shade-width", ""\)/,
+  /classList\.remove\("is-collapsed"\);\s*restoreWindowShadeDimensions\(win\)/,
   "Unshading releases the captured width so responsive layout can resume"
+);
+test.assertMatches(
+  windowManager,
+  /function restoreWindowShadeDimensions\(win\) \{[\s\S]*?setInlineStyleValue\(win, "--window-shade-width", ""\)/,
+  "the shared shade restore is what releases the captured width"
 );
 
 // A finger does not grow the title bar. Every appearance keeps, on a phone and

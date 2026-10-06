@@ -86,7 +86,16 @@ function renderTodoDa() {
   parts.count.textContent = t("todo_da_count", open, todoDaItems.length);
   parts.list.hidden = !todoDaItems.length;
   parts.empty.hidden = !!todoDaItems.length;
-  parts.removeDone.disabled = !todoDaItems.some((item) => item.done);
+  const hasDone = todoDaItems.some((item) => item.done);
+  if (parts.removeDone) {
+    if (typeof markGrayAffordance === "function") {
+      markGrayAffordance(parts.removeDone, !hasDone, "balloon_todo_no_done");
+    } else {
+      parts.removeDone.disabled = !hasDone;
+      if (!hasDone) parts.removeDone.dataset.balloonHelpDisabled = "balloon_todo_no_done";
+      else delete parts.removeDone.dataset.balloonHelpDisabled;
+    }
+  }
 
   const project = typeof getActiveProject === "function" ? getActiveProject() : null;
   const mounted = project && (typeof isProjectMounted === "undefined" || isProjectMounted);

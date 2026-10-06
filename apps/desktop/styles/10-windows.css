@@ -101,6 +101,12 @@ body[data-finder-layout="two-row-plain"] {
   display: none;
 }
 
+/* Briefly re-shown (visibility:hidden) so dock-minimize-fx can paint a
+   restore frame at the window's last on-screen box. */
+.window.is-minimized.is-minimize-fx-measure {
+  display: flex;
+}
+
 /* MultiFinder "Hide <app>" state. Lives next to .window.is-hidden so the
    window display states stay in the same file (and, after the layer
    migration, the same cascade layer) as the .window base rule they beat. */
@@ -364,6 +370,26 @@ body.quick-draft-focus .writing-spine-panel {
 .window.is-collapsed {
   height: auto;
   min-height: 0;
+}
+
+/* Temporary shade peek: durable state stays is-collapsed; presentation only. */
+.window.is-collapsed.is-shade-peeking .window-pane,
+.window.is-collapsed.is-shade-peeking .details-bar,
+.window.is-collapsed.is-shade-peeking .composer {
+  display: flex;
+}
+
+.window.is-collapsed.is-shade-peeking .composer {
+  display: block;
+}
+
+.window.is-collapsed.is-shade-peeking > .title-bar {
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--ink);
+}
+
+.window.is-collapsed.is-shade-peeking .grow-box {
+  display: none;
 }
 
 /* WindowShade ends at the shared outer window frame. Once the content is
@@ -745,6 +771,20 @@ body.quick-draft-focus .writing-spine-panel {
 
 .model-meter-pane {
   padding: 10px 12px;
+}
+
+.model-meter-empty-note.empty-next-note {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 0;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.model-meter-empty-note.empty-next-note > .btn {
+  min-height: var(--touch-primary-min-height);
+  width: 100%;
 }
 
 .meter-stats {
@@ -4952,4 +4992,27 @@ body.is-cloud-configured .cloud-state-panel {
    winning by specificity as it does today. */
 body.is-balloon-help [data-balloon-help] {
   cursor: help;
+}
+
+/* WM5 window browse: the Window menu's list mode. It reuses the shared
+   .menu-popover surface (theme material, layering, keyboard focus) and adds
+   only its own geometry, so no era needs a bespoke rule. */
+.window-browse-menu {
+  position: fixed;
+  top: 30px;
+  left: 12px;
+}
+.window-browse-popover {
+  top: 0;
+  left: 0;
+  min-width: 260px;
+  max-height: min(70vh, 520px);
+  overflow: hidden;
+}
+.window-browse-search {
+  margin: 4px 6px 0;
+}
+.window-browse-list {
+  overflow-y: auto;
+  max-height: min(60vh, 440px);
 }

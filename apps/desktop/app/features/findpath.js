@@ -7,6 +7,14 @@
 // popover label before this module exists.
 
 
+// True after the writer has asked Searcher at least once this session. Idle
+// empty copy must not pretend a scan already finished.
+let findPathHasSearched = false;
+
+function markFindPathSearched() {
+  findPathHasSearched = true;
+}
+
 function searchProviderLabel(provider) {
   if (provider === "bing") return t("search_bing");
   if (provider === "duckduckgo") return t("search_duckduckgo");
@@ -74,6 +82,11 @@ async function fetchMoreResults() {
   }
 }
 
+function focusFindPathQuery() {
+  findPathQueryInput?.focus?.();
+  findPathQueryInput?.select?.();
+}
+
 function renderFindPathResults() {
   wireFindPathResults();
   updateFindPathStatusBar();
@@ -87,8 +100,18 @@ function renderFindPathResults() {
   if (!findPathResults.length) {
     if (deepSeekProvider && findPathWebAnswer?.answer) {
       renderFindPathNotice(t("search_answer_no_sources"));
+    } else if (!findPathHasSearched) {
+      // Goal #2/#6: idle Searcher still needs a tappable next step in the
+      // empty pane — the query row is easy to miss once the eye lands here.
+      renderFindPathEmptyNext(t("searcher_idle_empty"), {
+        label: t("search"),
+        onClick: focusFindPathQuery,
+      });
     } else {
-      renderFindPathNotice(t("no_find_path_results"));
+      renderFindPathEmptyNext(t("no_find_path_results"), {
+        label: t("searcher_try_another"),
+        onClick: focusFindPathQuery,
+      });
     }
     synthesizeFindPathButton.hidden = true;
     syncFindPathActions();
@@ -176,6 +199,18 @@ function openSelectedFindPathInReader() {
   window.AISystem6Runtime?.dispatchCommand?.("open-selected-in-reader");
 }
 
+// Goal #2: idle / zero-hit Searcher marks data-empty so narrow CSS can stack
+// grey handoff chrome instead of packing Send+Reader side-by-side.
+function syncFindPathEmptyMarker() {
+  const win = typeof getWindow === "function"
+    ? getWindow("findPath")
+    : document.querySelector('[data-window="findPath"]');
+  if (!win) return;
+  const empty = !findPathHasSearched || !findPathResults.length;
+  if (empty) win.setAttribute("data-empty", "");
+  else win.removeAttribute("data-empty");
+}
+
 // The handoff verbs act on the selected result; with none selected they are
 // unavailable, and Balloon Help says why, instead of answering a click with a
 // status line.
@@ -183,15 +218,45 @@ function syncFindPathActions() {
   const hasResult = !!getSelectedFindPath();
   const pane = findPathResultsEl?.closest(".find-path-pane");
   if (!pane) return;
+  // One reason per state: empty search vs results present but none picked.
+  const why = !findPathHasSearched || !findPathResults.length
+    ? "balloon_searcher_needs_search"
+    : "balloon_searcher_needs_result";
   pane.querySelectorAll('[data-action="open-selected-in-reader"], [data-action="clip-selected-find-path"], [data-action="find-path-to-floppy"], [data-action="copy-search-result-markdown"], [data-action="insert-search-result"]').forEach((button) => {
     button.disabled = !hasResult;
-    button.dataset.balloonHelpDisabled = "balloon_searcher_needs_result";
+    button.classList.toggle("is-disabled", !hasResult);
+    button.dataset.balloonHelpDisabled = why;
+    button.dataset.grayAffordance = hasResult ? "0" : "1";
   });
   const menu = pane.querySelector(".find-path-send-menu");
   if (menu) {
     menu.classList.toggle("is-disabled", !hasResult);
+    const summary = menu.querySelector(":scope > summary");
+    if (summary) {
+      summary.classList.toggle("is-disabled", !hasResult);
+      summary.dataset.balloonHelpDisabled = why;
+    }
     if (!hasResult) menu.open = false;
   }
+  syncFindPathEmptyMarker();
+}
+
+// Find File Open / Reveal mirror Searcher: grey + balloon when nothing is
+// picked, instead of a status-line scold after the click.
+function syncFindFileActions() {
+  const hasResult = !!getSelectedFindFileResult();
+  const pane = findFileResultsEl?.closest(".find-file-pane");
+  if (!pane) return;
+  const query = findFileQueryInput?.value.trim() || "";
+  const why = !query || !findFileResults.length
+    ? "balloon_find_file_needs_search"
+    : "balloon_find_file_needs_result";
+  pane.querySelectorAll('[data-action="open-selected-find-file"], [data-action="reveal-selected-find-file"]').forEach((button) => {
+    button.disabled = !hasResult;
+    button.classList.toggle("is-disabled", !hasResult);
+    button.dataset.balloonHelpDisabled = why;
+    button.dataset.grayAffordance = hasResult ? "0" : "1";
+  });
 }
 
 function wireFindPathResults() {
@@ -214,6 +279,8 @@ function wireFindPathResults() {
       return;
     }
     selectFindPathResult(index);
+    const row = event.target.closest(".find-path-result");
+    if (row) revealSelectOpenTapHint(row, { detail: event.detail });
   });
   findPathResultsEl.addEventListener("dblclick", (event) => {
     const index = rowIndex(event);
@@ -419,6 +486,23 @@ function renderFindPathNotice(message, tone = "") {
   const note = document.createElement("div");
   note.className = `empty-folder-note find-path-notice${tone ? ` is-${tone}` : ""}`;
   note.textContent = message;
+  findPathResultsEl.append(note);
+}
+
+function renderFindPathEmptyNext(message, action) {
+  const note = document.createElement("div");
+  note.className = "empty-folder-note find-path-notice empty-next-note";
+  const text = document.createElement("p");
+  text.textContent = message;
+  note.append(text);
+  if (action?.label && typeof action.onClick === "function") {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn default";
+    button.textContent = action.label;
+    button.addEventListener("click", action.onClick);
+    note.append(button);
+  }
   findPathResultsEl.append(note);
 }
 
@@ -791,18 +875,39 @@ function renderFindFileResults() {
   findFileResultsEl.replaceChildren();
 
   if (!findFileQueryInput?.value.trim()) {
+    // Goal #2/#6: empty Find File is not a finished scan — offer a focus step
+    // in the results pane so the eye does not stop on a dead note.
     const empty = document.createElement("div");
-    empty.className = "empty-folder-note";
-    empty.textContent = t("find_file_empty");
+    empty.className = "empty-folder-note empty-next-note";
+    const text = document.createElement("p");
+    text.textContent = t("find_file_empty");
+    const focusQuery = document.createElement("button");
+    focusQuery.type = "button";
+    focusQuery.className = "btn default";
+    focusQuery.textContent = t("search");
+    focusQuery.addEventListener("click", () => {
+      findFileQueryInput?.focus?.();
+      findFileQueryInput?.select?.();
+    });
+    empty.append(text, focusQuery);
     findFileResultsEl.append(empty);
+    syncFindFileActions();
     return;
   }
 
   if (!findFileResults.length) {
     const empty = document.createElement("div");
-    empty.className = "empty-folder-note";
-    empty.textContent = t("find_file_no_results");
+    empty.className = "empty-folder-note empty-next-note";
+    const text = document.createElement("p");
+    text.textContent = t("find_file_no_results");
+    const openDisk = document.createElement("button");
+    openDisk.type = "button";
+    openDisk.className = "btn default";
+    openDisk.dataset.action = "open-project-disks";
+    openDisk.textContent = t("open_project_disks");
+    empty.append(text, openDisk);
     findFileResultsEl.append(empty);
+    syncFindFileActions();
     return;
   }
 
@@ -816,7 +921,7 @@ function renderFindFileResults() {
       <span>${escapeHtml(result.kind)} · ${escapeHtml(result.path)}</span>
       <small>${escapeHtml(modified)}</small>
     `;
-    button.addEventListener("click", () => {
+    button.addEventListener("click", (event) => {
       if (
         selectedFindFileIndex === index
         && typeof window.matchMedia === "function"
@@ -826,12 +931,16 @@ function renderFindFileResults() {
         return;
       }
       selectedFindFileIndex = index;
+      const hintDetail = event.detail;
       renderFindFileResults();
       updateMenuState();
+      const next = findFileResultsEl?.querySelector(".find-file-result.is-selected");
+      revealSelectOpenTapHint(next, { detail: hintDetail });
     });
     button.addEventListener("dblclick", () => openFindFileResult(result));
     findFileResultsEl.append(button);
   });
+  syncFindFileActions();
 }
 
 function getSelectedFindFileResult() {
@@ -886,5 +995,5 @@ function revealSelectedFindFileResult() {
   result.reveal?.();
 }
 
-window.AISystem6Runtime?.registerApplication({id:"findPath",windowName:"findPath",commands:{"open-find-path":{handler:async()=>{const selection=teachTextBodyInput.value.slice(teachTextBodyInput.selectionStart||0,teachTextBodyInput.selectionEnd||0).trim();if(selection&&!findPathQueryInput.value.trim())findPathQueryInput.value=selection;await openWindow("findPath");findPathQueryInput.focus()},isAvailable:()=>!0},"open-find-file":{handler:async()=>{await openWindow("findFile");findFileQueryInput?.focus()},isAvailable:()=>!0}}});
+window.AISystem6Runtime?.registerApplication({id:"findPath",windowName:"findPath",commands:{"open-find-path":{handler:async()=>{const selection=teachTextBodyInput.value.slice(teachTextBodyInput.selectionStart||0,teachTextBodyInput.selectionEnd||0).trim();if(selection&&!findPathQueryInput.value.trim())findPathQueryInput.value=selection;await openWindow("findPath");renderFindPathResults();findPathQueryInput.focus()},isAvailable:()=>!0},"open-find-file":{handler:async()=>{await openWindow("findFile");renderFindFileResults();findFileQueryInput?.focus()},isAvailable:()=>!0}}});
 window.AISystem6FindPathLoaded = true;

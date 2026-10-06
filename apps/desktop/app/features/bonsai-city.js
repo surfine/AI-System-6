@@ -311,6 +311,17 @@ window.AISystem6BonsaiCityLoaded = true;
     : window.AISystem6BonsaiCanvasRenderer);
   const bonsaiWindow = () => document.querySelector(`[data-window="${WINDOW_NAME}"]`);
   const query = (selector) => bonsaiWindow()?.querySelector(selector) || null;
+  // A greyed city key carries one reason for the shared shell to read on tap.
+  const markGray = (control, unavailable, reasonKey) => {
+    if (!control) return;
+    if (typeof markGrayAffordance === "function") {
+      markGrayAffordance(control, unavailable, reasonKey);
+      return;
+    }
+    control.disabled = !!unavailable;
+    if (unavailable && reasonKey) control.dataset.balloonHelpDisabled = reasonKey;
+    else delete control.dataset.balloonHelpDisabled;
+  };
 
   function captureSaveGuard(city) {
     return Object.freeze({
@@ -557,7 +568,7 @@ window.AISystem6BonsaiCityLoaded = true;
       button.title = label;
       // The terrain editor trims the rest of the rail until the city is
       // founded, exactly as the flat toolbox did.
-      if (editing && category.id !== "terrain") button.disabled = true;
+      if (editing && category.id !== "terrain") markGray(button, true, "balloon_bonsai_terrain_only");
       button.append(toolIconElement(tool, "bonsai-rail-glyph"));
       rail.append(button);
     });
@@ -1710,8 +1721,10 @@ window.AISystem6BonsaiCityLoaded = true;
     const coreHistory = typeof sim()?.undo === "function";
     const undo = query('[data-bonsai-action="undo"]');
     const redo = query('[data-bonsai-action="redo"]');
-    if (undo) undo.disabled = !state.current || (coreHistory ? !state.current.undoStack?.length : state.fallbackUndo.length === 0);
-    if (redo) redo.disabled = !state.current || (coreHistory ? !state.current.redoStack?.length : state.fallbackRedo.length === 0);
+    const undoEmpty = !state.current || (coreHistory ? !state.current.undoStack?.length : state.fallbackUndo.length === 0);
+    const redoEmpty = !state.current || (coreHistory ? !state.current.redoStack?.length : state.fallbackRedo.length === 0);
+    markGray(undo, undoEmpty, state.current ? "balloon_bonsai_nothing_to_undo" : "balloon_bonsai_needs_city");
+    markGray(redo, redoEmpty, state.current ? "balloon_bonsai_nothing_to_redo" : "balloon_bonsai_needs_city");
   }
 
   function performUndo() {
@@ -3107,13 +3120,18 @@ window.AISystem6BonsaiCityLoaded = true;
           return `<li><strong>${escapeHtml(name || line.lineId)}</strong> ${escapeHtml(items)} — $${formatMoney(line.cost)}${blocked ? ` ${blocked}` : ""}</li>`;
         }).join("");
         const needsDepot = bill.blocked.some((item) => item.code === "depot");
+        const flipConfirmReason = bill.blocked.length
+          ? "bonsai_flip_blocked_note"
+          : !bill.affordable
+            ? "balloon_bonsai_flip_unaffordable"
+            : "";
         controls = [
           `<ul class="bonsai-flip-lines">${lineRows}</ul>`,
           `<div class="button-row">`,
           (needsDepot || state.flipDepot)
             ? `<label class="bonsai-flip-depot"><input type="checkbox" data-bonsai-flip-depot${state.flipDepot ? " checked" : ""}> ${t("bonsai_flip_depot_option")}</label>`
             : "",
-          `<button class="btn" type="button" data-bonsai-flip-confirm${(bill.blocked.length || !bill.affordable) ? " disabled" : ""}>${t("bonsai_flip_confirm")}</button>`,
+          `<button class="btn" type="button" data-bonsai-flip-confirm${flipConfirmReason ? ` disabled data-balloon-help-disabled="${flipConfirmReason}"` : ""}>${t("bonsai_flip_confirm")}</button>`,
           `<button class="btn" type="button" data-bonsai-flip-cancel>${t("close")}</button>`,
           `</div>`,
           bill.blocked.length ? `<p class="bonsai-flip-note">${escapeHtml(t("bonsai_flip_blocked_note"))}</p>` : "",

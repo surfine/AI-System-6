@@ -373,8 +373,12 @@ function renderTdiDocumentStack(container, tabs, options = {}) {
     close.className = "tdi-stack-close";
     close.setAttribute("aria-label", t("reader_close_tab"));
     close.title = t("reader_close_tab");
-    close.disabled = !closable;
-    close.classList.toggle("is-disabled", !closable);
+    if (typeof markGrayAffordance === "function") {
+      markGrayAffordance(close, !closable, "balloon_last_tab_keeps_open");
+    } else {
+      close.disabled = !closable;
+      close.classList.toggle("is-disabled", !closable);
+    }
     close.addEventListener("click", (event) => {
       event.stopPropagation();
       if (closable) onClose(tab);
@@ -485,8 +489,12 @@ function renderTdiTabStrip(container, tabs, options = {}) {
     close.textContent = "×";
     close.setAttribute("aria-label", t("reader_close_tab"));
     close.title = t("reader_close_tab");
-    close.disabled = !closable;
-    close.classList.toggle("is-disabled", !closable);
+    if (typeof markGrayAffordance === "function") {
+      markGrayAffordance(close, !closable, "balloon_last_tab_keeps_open");
+    } else {
+      close.disabled = !closable;
+      close.classList.toggle("is-disabled", !closable);
+    }
     close.addEventListener("click", (event) => {
       event.stopPropagation();
       if (!closable) return;
@@ -860,11 +868,19 @@ function openAppDb() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(indexedDbName, indexedDbVersion);
     let settled = false;
+    // Keep well under the boot safety-net's 20s stall: a wedged open that
+    // sat at 15s left no progress mark and put iPhone on Sad Mac mid-boot.
+    const coarse = typeof window !== "undefined"
+      && window.matchMedia?.("(pointer: coarse)")?.matches === true;
+    const standalone = typeof window !== "undefined"
+      && (window.navigator?.standalone === true
+        || window.matchMedia?.("(display-mode: standalone)")?.matches === true);
+    const openTimeoutMs = (coarse || standalone) ? 6000 : 12000;
     const timeout = setTimeout(() => {
       if (settled) return;
       settled = true;
       reject(new Error("Opening the project database timed out."));
-    }, 15000);
+    }, openTimeoutMs);
 
     const finish = (callback, value) => {
       if (settled) {
@@ -2201,6 +2217,9 @@ function renderProjectRootListItem(item, project, mode, orderedItems = []) {
         return;
       }
       selectProjectRootItem(item.id);
+      if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
+        revealSelectOpenTapHint(row, { detail: event.detail });
+      }
       return;
     }
     const selectionType = isFolder ? "folder" : isReference ? "projectReference" : "file";
@@ -2218,6 +2237,9 @@ function renderProjectRootListItem(item, project, mode, orderedItems = []) {
     }
     selectDocumentItemFromEvent(selectionType, item.id, event, orderedItems);
     updateProjectRootSelectionView();
+    if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
+      revealSelectOpenTapHint(row, { detail: event.detail });
+    }
   });
   row.addEventListener("dblclick", () => openProjectRootItem(item));
   return row;
@@ -2289,6 +2311,9 @@ function renderProjectRootIconItem(item, orderedItems = []) {
         return;
       }
       selectProjectRootItem(item.id);
+      if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
+        revealSelectOpenTapHint(button, { detail: event.detail });
+      }
       return;
     }
     const selectionType = isFolder ? "folder" : isReference ? "projectReference" : "file";
@@ -2306,6 +2331,9 @@ function renderProjectRootIconItem(item, orderedItems = []) {
     }
     selectDocumentItemFromEvent(selectionType, item.id, event, orderedItems);
     updateProjectRootSelectionView();
+    if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
+      revealSelectOpenTapHint(button, { detail: event.detail });
+    }
   });
   button.addEventListener("dblclick", () => openProjectRootItem(item));
   return button;
@@ -2382,11 +2410,18 @@ function renderProjectDisks() {
     if (projectDiskCountEl) projectDiskCountEl.textContent = "";
     selectedProjectRootItemId = null;
     if (selectedProjectLabelEl) selectedProjectLabelEl.textContent = t("finder_no_selection");
-    const empty = document.createElement("button");
-    empty.type = "button";
-    empty.className = "finder-empty-object project-empty-object";
-    empty.innerHTML = `${renderSystemIcon("projectDisk", { size: "ordinary"})}<b>${escapeHtml(t("project_disk"))}</b><small>${escapeHtml(t("spine_no_project"))}</small>`;
-    empty.addEventListener("click", () => openWindow("projects"));
+    // Goal #2/#6 shared shell: no mounted project → New Project Hard Disk.
+    const empty = document.createElement("div");
+    empty.className = "empty-folder-note empty-next-note project-disk-empty-next";
+    empty.dataset.emptyNext = "1";
+    const text = document.createElement("p");
+    text.textContent = t("spine_no_project");
+    const go = document.createElement("button");
+    go.type = "button";
+    go.className = "btn default";
+    go.dataset.action = "new-project-disk";
+    go.textContent = t("new_project_disk");
+    empty.append(text, go);
     projectDiskGridEl.append(empty);
     return;
   }
@@ -2436,11 +2471,19 @@ function renderProjectDisks() {
   }
 
   if (!items.length) {
-    const empty = document.createElement("button");
-    empty.type = "button";
-    empty.className = "finder-empty-object project-empty-object";
-    empty.innerHTML = `${renderSystemIcon("projectDisk", { size: "ordinary" })}<b>${escapeHtml(t("project_disk_empty_title"))}</b><small>${escapeHtml(t("project_disk_empty_hint"))}</small>`;
-    empty.addEventListener("click", () => handleAction("open-import-utility"));
+    // Goal #2/#6 shared shell: empty project root → Import as the in-pane step.
+    const empty = document.createElement("div");
+    empty.className = "empty-folder-note empty-next-note project-disk-empty-next";
+    empty.dataset.emptyNext = "1";
+    const text = document.createElement("p");
+    text.textContent = t("project_disk_empty_hint");
+    const go = document.createElement("button");
+    go.type = "button";
+    go.className = "btn default";
+    go.dataset.action = "open-import-utility";
+    go.textContent = t("project_disk_empty_title");
+    go.addEventListener("click", () => handleAction("open-import-utility"));
+    empty.append(text, go);
     projectDiskGridEl.append(empty);
     updateFinderViewButtons(getWindow("projects"), mode);
     setFinderViewClasses(projectDiskGridEl, mode);

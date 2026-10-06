@@ -25,8 +25,16 @@ function renderAskBar(appId, scope) {
   const input = form.querySelector("input");
   const button = form.querySelector('button[type="submit"]');
   form.classList.toggle("is-empty", !ready);
-  if (input) input.disabled = !ready;
-  if (button) button.disabled = !ready;
+  // A grey ask bar still has to say why. The sentence it greys to is the same
+  // one the accessible description carries, so one tap on the field or Ask
+  // speaks the reason instead of silently swallowing the question.
+  const reasonKey = ready ? "" : "balloon_ask_bar_needs_source";
+  [input, button].forEach((control) => {
+    if (!control) return;
+    control.disabled = !ready;
+    if (reasonKey) control.dataset.balloonHelpDisabled = reasonKey;
+    else delete control.dataset.balloonHelpDisabled;
+  });
   // Say what the next question will actually carry. The same describe() answer
   // that decides whether the bar can be used already names the object and the
   // range ("Whole source" / "Selected passage" / "3 selected scraps"); a bar

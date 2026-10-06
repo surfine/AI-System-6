@@ -67,8 +67,8 @@ body[data-theme="nextstep"] {
   --desktop: #555555;
   /* 3.3 Dark Gray desk: 2-bit dither, not a flat fill (Visual Guide ch.1). */
   --desktop-surface:
-    repeating-linear-gradient(135deg, rgb(0 0 0 / 0.18) 0 1px, transparent 1px 3px),
-    repeating-conic-gradient(#4a4a4a 0% 25%, #616161 0% 50%) 0 0 / 2px 2px;
+    repeating-linear-gradient(135deg, rgb(0 0 0 / 0.32) 0 1px, transparent 1px 4px),
+    repeating-conic-gradient(#3c3c3c 0% 25%, #6a6a6a 0% 50%) 0 0 / 2px 2px;
   --surface-primary: #aaaaaa;
   --surface-secondary: #cccccc;
   --surface-inset: #ffffff;
@@ -119,6 +119,7 @@ body[data-theme="nextstep"] {
   --sidebar-selection-bg: #ffffff;
   --sidebar-selection-fg: #000000;
   --selection-bg: #000000;
+  --selection-edge: #000000;
   --selection-fg: #ffffff;
   --details-bar-bg: #aaaaaa;
   --details-bar-border: #555555;
@@ -183,9 +184,16 @@ body[data-theme="nextstep"] {
   --choice-radius: 0px;
   --choice-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #555555;
   --choice-checked-bg: #ffffff;
+  /* P2 menu bar: NeXT 3.3 light-grey fill with a black key line under a
+     white/dark side bevel — distinct from Platinum soft #dddddd inset and
+     from System 7 lavender. Opaque; frost stays foundation. */
   --menu-bar-bg: #aaaaaa;
   --menu-bar-border: 1px solid #000000;
-  --menu-bar-shadow: var(--system-shadow);
+  --menu-bar-shadow:
+    inset 1px 0 0 #ffffff,
+    inset -1px 0 0 #555555,
+    inset 0 1px 0 #ffffff,
+    inset 0 -1px 0 #000000;
   --menu-panel-bg: #aaaaaa;
   --menu-panel-border: 1px solid #000000;
   --menu-panel-radius: 0px;

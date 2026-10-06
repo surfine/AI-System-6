@@ -89,16 +89,17 @@ async function waitForRevision(vmw) {
   `);
 }
 
-function bootDesk(cdItems = "") {
+async function bootDesk(cdItems = "") {
   const vmw = createAppBootVm();
   vmw.run(seedDesk(cdItems));
+  await vmw.settleBoot();
   return vmw;
 }
 
 // --- The reviewed race: overwrite B while another burn inserts C -------------
 
 {
-  const vmw = bootDesk(cdSeed([["A", "A.md", "old-A"], ["B", "B.md", "old-B"]]));
+  const vmw = await bootDesk(cdSeed([["A", "A.md", "old-A"], ["B", "B.md", "old-B"]]));
   await vmw.run(`window.__holdNextRevision(); window.__burnB = addProjectCdItem("new-B", "B"); "started";`);
   const held = await waitForRevision(vmw);
   const inserted = await vmw.run(`
@@ -148,7 +149,7 @@ function bootDesk(cdItems = "") {
 // --- The wait crosses a project switch ---------------------------------------
 
 {
-  const vmw = bootDesk(cdSeed([["B", "B.md", "old-B"]]));
+  const vmw = await bootDesk(cdSeed([["B", "B.md", "old-B"]]));
   await vmw.run(`window.__holdNextRevision(); window.__burnB = addProjectCdItem("new-B", "B"); "started";`);
   await waitForRevision(vmw);
   // The writer mounts the other disk while the burn waits for its version
@@ -189,7 +190,7 @@ function bootDesk(cdItems = "") {
 // deliverable the writer had just removed.
 
 {
-  const vmw = bootDesk(cdSeed([["A", "A.md", "old-A"], ["B", "B.md", "old-B"]]));
+  const vmw = await bootDesk(cdSeed([["A", "A.md", "old-A"], ["B", "B.md", "old-B"]]));
   await vmw.run(`window.__holdNextRevision(); window.__burnB = addProjectCdItem("new-B", "B"); "started";`);
   await waitForRevision(vmw);
   await vmw.run(`
@@ -239,7 +240,7 @@ function bootDesk(cdItems = "") {
 // file named B.md" would write this burn's body onto a file the writer never
 // asked to touch.
 {
-  const vmw = bootDesk(cdSeed([["A", "A.md", "old-A"], ["B", "B.md", "old-B"]]));
+  const vmw = await bootDesk(cdSeed([["A", "A.md", "old-A"], ["B", "B.md", "old-B"]]));
   await vmw.run(`window.__holdNextRevision(); window.__burnB = addProjectCdItem("new-B", "B"); "started";`);
   await waitForRevision(vmw);
   await vmw.run(`
@@ -283,7 +284,7 @@ function bootDesk(cdItems = "") {
 // asking for the burn. Replacing it now would discard that edit without ever
 // asking, so the burn is cancelled and the edit stays.
 {
-  const vmw = bootDesk(cdSeed([["B", "B.md", "old-B"]]));
+  const vmw = await bootDesk(cdSeed([["B", "B.md", "old-B"]]));
   await vmw.run(`window.__holdNextRevision(); window.__burnB = addProjectCdItem("new-B", "B"); "started";`);
   await waitForRevision(vmw);
   await vmw.run(`
@@ -314,7 +315,7 @@ function bootDesk(cdItems = "") {
 // conflict, and overwriting would need the writer to ask again, against the file
 // that is really there.
 {
-  const vmw = bootDesk(cdSeed([["A", "A.md", "old-A"]]));
+  const vmw = await bootDesk(cdSeed([["A", "A.md", "old-A"]]));
   await vmw.run(`window.__holdNextRevision(); window.__burnOne = addProjectCdItem("first body", "One"); "started";`);
   await waitForRevision(vmw);
   await vmw.run(`
@@ -343,7 +344,7 @@ function bootDesk(cdItems = "") {
 // --- The target is renamed while the burn waits -------------------------------
 
 {
-  const vmw = bootDesk(cdSeed([["B", "B.md", "old-B"]]));
+  const vmw = await bootDesk(cdSeed([["B", "B.md", "old-B"]]));
   await vmw.run(`window.__holdNextRevision(); window.__burnB = addProjectCdItem("new-B", "B"); "started";`);
   await waitForRevision(vmw);
   await vmw.run(`
@@ -384,7 +385,7 @@ function bootDesk(cdItems = "") {
 // --- Two burns of one file name, started together -----------------------------
 
 {
-  const vmw = bootDesk();
+  const vmw = await bootDesk();
   const outcome = await vmw.run(`
     (async () => {
       const first = addProjectCdItem("first body", "One");
@@ -413,7 +414,7 @@ function bootDesk(cdItems = "") {
 // --- A failed pre-burn revision writes nothing --------------------------------
 
 {
-  const vmw = bootDesk(cdSeed([["A", "A.md", "old-A"], ["B", "B.md", "old-B"]]));
+  const vmw = await bootDesk(cdSeed([["A", "A.md", "old-A"], ["B", "B.md", "old-B"]]));
   const outcome = await vmw.run(`
     (async () => {
       window.__failRevisions();
@@ -439,7 +440,7 @@ function bootDesk(cdItems = "") {
 // --- The whole project disappears while the burn waits ------------------------
 
 {
-  const vmw = bootDesk(cdSeed([["A", "A.md", "old-A"]]));
+  const vmw = await bootDesk(cdSeed([["A", "A.md", "old-A"]]));
   await vmw.run(`window.__holdNextRevision(); window.__burnB = addProjectCdItem("new-B", "B"); "started";`);
   await waitForRevision(vmw);
   await vmw.run(`

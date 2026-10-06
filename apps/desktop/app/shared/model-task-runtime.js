@@ -156,6 +156,13 @@
     "writing.outline-review": registerTask("writing.outline-review", "critic"),
     "writing.draft": registerTask("writing.draft", "writer", "markdown", "manuscript", "registered-only", "lint"),
     "writing.polish-section": registerTask("writing.polish-section", "writer", "markdown", "manuscript", "registered-only", "lint"),
+    // The Section Drafts one-sentence pair: rewrite returns a whole section
+    // body the writer confirms, check returns a reading in the assistant.
+    // Both are reached from the same window and had no contract until the
+    // registry sweep in tests/features/writing-task-contracts.test.mjs found
+    // the kinds used but unregistered.
+    "writing.one-sentence-rewrite": registerTask("writing.one-sentence-rewrite", "writer", "markdown", "manuscript", "registered-only", "lint"),
+    "writing.one-sentence-check": registerTask("writing.one-sentence-check", "critic"),
     "writing.review-section": registerTask("writing.review-section", "critic"),
     "writing.critique": registerTask("writing.critique", "critic"),
     "writing.style-review": registerTask("writing.style-review", "critic"),
@@ -182,6 +189,10 @@
   });
   const taskContractAliases = Object.freeze({
     "quick-draft": "writing.quick-draft",
+    // Quick Draft's Traffic track asks for the same JSON shape as the rest of
+    // Quick Draft (title / cover / body / ledger) and only differs in the
+    // prompt, so it shares the contract rather than becoming a second one.
+    "traffic_rewrite": "writing.quick-draft",
     "generate-first-body": "writing.quick-draft",
     "shorten": "writing.quick-draft",
     "hook": "writing.quick-draft",

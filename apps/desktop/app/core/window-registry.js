@@ -58,6 +58,9 @@ const windowRegistry = Object.freeze({
     width: 208,
     mobileOverlay: true,
     sidebar: true,
+    // Verified for WM4: no editor, iframe, video or running canvas, so the
+    // collapsed shade may temporarily reveal this window's own DOM read-only.
+    preview: "same-dom-readonly",
   },
   chatFile: {
     app: "teachText",
@@ -107,6 +110,8 @@ const windowRegistry = Object.freeze({
     width: ["--da-width-pad", 340],
     mobileOverlay: true,
     sidebar: true,
+    // Read-only by nature; verified safe for the WM4 glance preview.
+    preview: "same-dom-readonly",
   },
   cmfStudio: {
     app: "cmfStudio",
@@ -150,6 +155,7 @@ const windowRegistry = Object.freeze({
     width: ["--da-width-wide-pad", 380],
     mobileOverlay: true,
     sidebar: true,
+    preview: "same-dom-readonly",
     onOpen: () => renderDictionaryResult(),
     lazy: {
     ensure: async () => {
@@ -237,6 +243,7 @@ const windowRegistry = Object.freeze({
     width: ["--da-width-pad", 340],
     mobileOverlay: true,
     sidebar: true,
+    preview: "same-dom-readonly",
     onOpen: () => { if (typeof mountHoldThoughtRuntime === "function") mountHoldThoughtRuntime(); },
     lazy: {
     ensure: () => ensureHoldThatThoughtModule(),
@@ -268,6 +275,7 @@ const windowRegistry = Object.freeze({
     width: 380,
     mobileOverlay: true,
     sidebar: true,
+    preview: "same-dom-readonly",
   },
   // 文字亮室 is its own application, task and all. Finder mode is single-task,
   // so the darkroom and the draft cannot share the screen there; seeing the
@@ -313,6 +321,8 @@ const windowRegistry = Object.freeze({
     width: ["--da-width-pad", 340],
     mobileOverlay: true,
     sidebar: true,
+    // A plain textarea, no iframe/media; verified for the WM4 glance.
+    preview: "same-dom-readonly",
     onOpen: () => renderNotePadPage(),
   },
   notificationCenter: {
@@ -496,6 +506,7 @@ const windowRegistry = Object.freeze({
     width: 430,
     mobileOverlay: true,
     sidebar: true,
+    preview: "same-dom-readonly",
     onOpen: () => renderSystemStatus(),
   },
   teachText: {
@@ -527,6 +538,7 @@ const windowRegistry = Object.freeze({
     width: ["--da-width-pad", 340],
     mobileOverlay: true,
     sidebar: true,
+    preview: "same-dom-readonly",
     lazy: {
       ensure: () => ensureTodoDaModule(),
       attach: () => window.AISystem6TodoDa?.attach?.(),
@@ -597,6 +609,23 @@ function isCenteredWindow(name) {
 
 function sidebarWindowNames() {
   return Object.keys(windowRegistry).filter((name) => windowRegistry[name].sidebar === true);
+}
+
+// WM4 peek capability. Default is "metadata": a collapsed window may only be
+// described by its title and icon. "same-dom-readonly" is the explicit,
+// reviewed upgrade for windows whose collapsed body is safe to show read-only
+// (no editor sizing to preserve, no password field, no cross-origin iframe, no
+// running WebGL/video). "none" never previews. window-manager.canPeekWindow
+// reads this, so the display adapter and the geometry gate cannot disagree.
+const sameDomReadonlyPreviewNames = new Set([
+  "calculator", "keyCaps", "systemStatus", "clipboard", "dictionary",
+  "notePad", "holdThought", "todo",
+]);
+
+function windowPreviewCapability(name) {
+  const record = getWindowRecord(name);
+  if (record?.preview) return record.preview;
+  return sameDomReadonlyPreviewNames.has(String(name || "")) ? "same-dom-readonly" : "metadata";
 }
 
 function lazyWindowRecord(name) {

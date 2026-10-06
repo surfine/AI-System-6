@@ -368,7 +368,23 @@ async function captureCell(page, cell, outDir) {
       if (typeof renderSystemClock === "function") {
         renderSystemClock(new Date(epoch));
       }
+      // The era promise is desktop + Dock / NeXT column + a front window.
+      // OS X Dock starts off ("需要时再打开"); the showcase turns it on so
+      // Jaguar's plate, the glass shelf and NeXT's 64px column are in frame.
+      const theme = window.AISystem6Theme;
+      if (theme?.getCurrentTheme?.() === "nextstep" || theme?.hasCapability?.("dock") === true) {
+        window.AISystem6WindowMinimize?.setDockVisible?.(true);
+        window.AISystem6WindowMinimize?.setMinimizeEnabled?.(true);
+        window.AISystem6DeskDock?.sync?.();
+        window.AISystem6NextstepDock?.sync?.();
+      }
     }, FROZEN_EPOCH);
+    await page.waitForFunction(() => {
+      const id = window.AISystem6Theme?.getCurrentTheme?.();
+      if (id === "nextstep") return !!document.querySelector(".nextstep-dock");
+      if (window.AISystem6Theme?.hasCapability?.("dock")) return !!document.querySelector(".desk-dock");
+      return !document.querySelector(".desk-dock") && !document.querySelector(".nextstep-dock");
+    }, null, { timeout: 10000 }).catch(() => {});
     await page.waitForFunction(() => {
       const clioTalk = document.querySelector('.window[data-window="assistant"]');
       return clioTalk

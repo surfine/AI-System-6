@@ -17,13 +17,18 @@ const dragDrop = read("app/core/drag-drop.js");
 // is the pattern; this is the same rule one surface over.
 test.assertIncludes(
   dragDrop,
-  "#scrap-form, #scrap-pictures",
-  "a picture dropped in the Scrapbook is routed to the clip path"
+  'dropTargetType === "scrap"',
+  "Scrapbook is a first-class drop surface for outside pictures"
 );
 test.assertIncludes(
   dragDrop,
-  "return clipPictureToScrapbook(scrapbookPictures);",
+  "return clipPictureToScrapbook(pictures);",
   "and it goes through the same function the Clip Picture button calls"
+);
+test.assertIncludes(
+  html,
+  'data-window="scrapbook" data-drop-target="scrap"',
+  "the Scrapbook window carries the scrap drop target"
 );
 
 test.assertIncludes(app, 'data-action="new-note"', "Scrapbook exposes a direct New Scrap action");

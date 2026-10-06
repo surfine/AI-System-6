@@ -1,5 +1,7 @@
 // Event binding for app.js.
 
+// Session aliases for harvest-ux contracts; both share revealSelectOpenTapHint's
+// one-shot flag so desktop and Finder never nag twice for the same gesture.
 let desktopTapHintShown = false;
 let finderTapHintShown = false;
 
@@ -418,14 +420,6 @@ function wireAppEvents() {
     renderDocuments();
   });
 
-  openChatFileButton.addEventListener("click", openChatFile);
-
-  insertChatFileButton.addEventListener("click", insertChatFileIntoPrompt);
-
-  downloadChatMarkdownButton.addEventListener("click", downloadChatFileMarkdown);
-
-  trashChatFileButton.addEventListener("click", moveChatFileToTrash);
-
   restoreTrashButton.addEventListener("click", () => {
     const selected = getSelectedTrashItem();
     const itemIndex = selected ? trashItems.indexOf(selected) : trashItems.findIndex(isInActiveProject);
@@ -483,6 +477,7 @@ function wireAppEvents() {
     findPathResultsEl.replaceChildren();
     findPathResults.length = 0;
     selectedFindPathIndex = null;
+    if (typeof markFindPathSearched === "function") markFindPathSearched();
     findPathSummaryEl.classList.add("is-hidden");
     findPathSummaryEl.textContent = "";
   
@@ -720,7 +715,10 @@ function wireAppEvents() {
       .test(el.getAttribute("type") || "text");
   }
 
-  function updateKeyboardInset() {
+  let keyboardInsetFrame = 0;
+  let keyboardInsetRevealPending = false;
+  let lastPublishedKeyboardInset = -1;
+  function updateKeyboardInset({ reveal = false } = {}) {
     const vv = window.visualViewport;
     if (!vv) return;
     const covered = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
@@ -728,19 +726,42 @@ function wireAppEvents() {
     document.documentElement.style.setProperty("--keyboard-inset", `${keyboard}px`);
     // Floating windows re-fit the one owning the focused field above the keys.
     syncKeyboardWindowFrame?.();
+    // Portrait DAs are CSS-slotted (is-mobile-*); re-rail when the inset moves
+    // enough that Note Pad / Clipboard would otherwise sit under the keys.
+    const insetMoved = Math.abs(keyboard - lastPublishedKeyboardInset) >= 12
+      || (keyboard === 0) !== (lastPublishedKeyboardInset <= 0);
+    if (insetMoved) {
+      lastPublishedKeyboardInset = keyboard;
+      syncKeyboardPortraitDeskAccessories?.();
+      reveal = true;
+    }
+    // Reveal only on focus or a real inset step — not on every visualViewport
+    // tick, which would fight a writer scrolling the field while the keyboard
+    // is up.
+    if (reveal && keyboard > 0) revealFocusedFieldAboveKeyboard?.();
+  }
+  function scheduleKeyboardInset(options = {}) {
+    if (options.reveal) keyboardInsetRevealPending = true;
+    if (keyboardInsetFrame) return;
+    keyboardInsetFrame = requestAnimationFrame(() => {
+      keyboardInsetFrame = 0;
+      const reveal = keyboardInsetRevealPending;
+      keyboardInsetRevealPending = false;
+      updateKeyboardInset({ reveal });
+    });
   }
   if (window.visualViewport) {
-    window.visualViewport.addEventListener("resize", updateKeyboardInset);
-    window.visualViewport.addEventListener("scroll", updateKeyboardInset);
+    window.visualViewport.addEventListener("resize", () => scheduleKeyboardInset());
+    window.visualViewport.addEventListener("scroll", () => scheduleKeyboardInset());
     updateKeyboardInset();
   }
   // Focus decides whether the shrink counts, so recompute when focus moves.
-  document.addEventListener("focusin", updateKeyboardInset);
-  document.addEventListener("focusout", () => setTimeout(updateKeyboardInset, 0));
-
+  document.addEventListener("focusin", () => scheduleKeyboardInset({ reveal: true }));
+  document.addEventListener("focusout", () => setTimeout(() => scheduleKeyboardInset(), 0));
   // iOS still nudges the page to reveal a focused field even when the shell has
   // already made room for it. The app is fixed and fills the screen, so any
-  // scroll here is displacement, not navigation: undo it.
+  // scroll here is displacement, not navigation: undo it. Caret reveal lives in
+  // the field/pane scrollers (revealFocusedFieldAboveKeyboard), not here.
   document.addEventListener("focusin", () => {
     if (!document.body.classList.contains("mobile-app-foreground")) return;
     requestAnimationFrame(() => {
@@ -938,8 +959,10 @@ function wireAppEvents() {
     endpointInput.value = p === "lm-studio" ? `${localHttp}1234` : p === "ollama" ? `${localHttp}11434` : `${localHttp}1234`;
     localLmStudioConnectionEnabled = false;
     renderLocalConnectionStatus("local_connection_waiting");
-    loadModelButton.disabled = p !== "lm-studio";
-    loadModelStatusEl.textContent = t(p === "lm-studio" ? "load_model_hint" : p === "ollama" ? "ollama_auto_load_hint" : "custom_auto_load_hint");
+    const lmStudio = p === "lm-studio";
+    loadModelButton.disabled = !lmStudio;
+    loadModelButton.dataset.balloonHelpDisabled = "balloon_load_model_needs_lm_studio";
+    loadModelStatusEl.textContent = t(lmStudio ? "load_model_hint" : p === "ollama" ? "ollama_auto_load_hint" : "custom_auto_load_hint");
     syncLocalProviderUi();
     scheduleSettingsSave();
   });
@@ -1048,14 +1071,8 @@ function wireAppEvents() {
         return;
       }
       selectDesktopIcon(desktopIconTarget);
-      if (
-        !desktopTapHintShown
-        && event.detail < 2
-        && typeof window.matchMedia === "function"
-        && !window.matchMedia("(hover: hover)").matches
-      ) {
+      if (revealSelectOpenTapHint(desktopIconTarget, { detail: event.detail })) {
         desktopTapHintShown = true;
-        showBalloonHelp(desktopIconTarget, "desktop_tap_hint", { force: true, autoHideMs: 3200 });
       }
       return;
     }
@@ -1087,14 +1104,8 @@ function wireAppEvents() {
         return;
       }
       selectStaticFinderItem(winName, action);
-      if (
-        !finderTapHintShown
-        && event.detail < 2
-        && typeof window.matchMedia === "function"
-        && !window.matchMedia("(hover: hover)").matches
-      ) {
+      if (revealSelectOpenTapHint(staticFinderTarget, { detail: event.detail })) {
         finderTapHintShown = true;
-        showBalloonHelp(staticFinderTarget, "desktop_tap_hint", { force: true, autoHideMs: 3200 });
       }
       return;
     }
@@ -1107,7 +1118,15 @@ function wireAppEvents() {
   
     const actionTarget = event.target.closest("[data-action]");
     if (actionTarget) {
-      if (actionTarget.disabled || actionTarget.classList.contains("is-disabled")) {
+      if (
+        actionTarget.disabled
+        || actionTarget.classList.contains("is-disabled")
+        || actionTarget.getAttribute("aria-disabled") === "true"
+      ) {
+        // Gray primary: one tap names why (shared shell helper). Not a second live action.
+        if (typeof revealUnavailableControlWhy === "function") {
+          revealUnavailableControlWhy(actionTarget);
+        }
         closeMenus();
         return;
       }
@@ -1477,7 +1496,13 @@ function wireAppEvents() {
       // what actually stops it, in every engine. The title bar holds no field
       // and buttons returned above, so nothing here needs the default focus.
       event.preventDefault();
+      if (typeof cancelAllWindowPeeks === "function") cancelAllWindowPeeks();
       focusWindow(win);
+      // WM0: this press owns the frame now; any pending spine alignment for the
+      // previous frame is stale and must not move the window mid-drag.
+      if (typeof window.AISystem6InvalidateWindowAutoLayout === "function") {
+        window.AISystem6InvalidateWindowAutoLayout(win);
+      }
       const rect = win.getBoundingClientRect();
       const offsetX = event.clientX - rect.left;
       const offsetY = event.clientY - rect.top;

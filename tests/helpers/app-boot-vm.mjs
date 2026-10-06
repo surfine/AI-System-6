@@ -1326,6 +1326,21 @@ export function createAppBootVm(overrides = {}) {
     return event;
   }
 
+  // The harness never calls boot() itself, but app.js runs it at the end of
+  // the concatenated script, and boot now survives a missing IndexedDB instead
+  // of aborting there (calm-desktop: an unwritable disk must still paint the
+  // desk). That means boot's later steps — renderPipeline, runBootSequence,
+  // the status/write-lease timers — continue on the microtask queue and can
+  // land in the middle of a test's own setup, resetting the desk state the
+  // test just seeded. boot parks on its next (deliberately inert) timer, so
+  // draining the microtask chain here lets it reach that park before the test
+  // touches anything. Tests that drive the writing route call this right after
+  // createAppBootVm(); the drain is bounded so it can never deadlock.
+  async function settleBoot() {
+    for (let turn = 0; turn < 4000; turn += 1) await Promise.resolve();
+    return true;
+  }
+
   return {
     context,
     document: documentStub,
@@ -1338,5 +1353,6 @@ export function createAppBootVm(overrides = {}) {
     storageMap,
     run,
     waitFor,
+    settleBoot,
   };
 }

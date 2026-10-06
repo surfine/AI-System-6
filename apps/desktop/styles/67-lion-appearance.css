@@ -23,14 +23,20 @@
    - the Andromeda galaxy as the default desktop picture. */
 html[data-theme="lion"],
 body[data-theme="lion"] {
-  /* Title bar, HIG p.142 at 1x (512 Pixels agrees at 2x). */
+  /* Title bar, HIG p.142 / p.160 at 1x (512 Pixels agrees at 2x).
+     The full 22pt stack lives in the gradient: #f1f1f1 highlight, silver
+     ramp to #b7b7b7, #bcbcbc light band, then the #696969 baseline. A CSS
+     border-bottom would steal that last pixel under border-box and hide
+     the light band; Snow Leopard's inset white titlebar-shadow would also
+     bleach row 0 past the measured #f1f1f1. */
   --system-titlebar-active-bg: linear-gradient(to bottom,
     #f1f1f1 0 1px, #e5e5e5 1px, #dcdcdc 6px, #d3d3d3 10px, #cacaca 13px,
-    #c0c0c0 16px, #b7b7b7 21px, #bcbcbc 21px 22px);
+    #c0c0c0 16px, #b7b7b7 20px, #bcbcbc 20px 21px, #696969 21px 22px);
   --system-titlebar-inactive-bg: linear-gradient(to bottom,
-    #fbfbfb 0 1px, #f7f7f7 1px, #e2e2e2 21px, #e7e7e7 21px 22px);
-  --titlebar-border: 1px solid #696969;
-  --titlebar-border-inactive: 1px solid #a7a7a7;
+    #fbfbfb 0 1px, #f7f7f7 1px, #e2e2e2 20px, #e7e7e7 20px 21px, #a7a7a7 21px 22px);
+  --titlebar-border: 0;
+  --titlebar-border-inactive: 0;
+  --titlebar-shadow: none;
   --titlebar-title-fg: #313131;
   --system-titlebar-inactive-title-color: #858585;
   /* Unified toolbar: the same ramp continued down to #b2b2b2 over a
@@ -47,6 +53,15 @@ body[data-theme="lion"] {
   --window-bg: #ededed;
   /* Both sources fit a 4 pt corner, top and bottom (10.6 drew 5 px). */
   --window-radius: 4px;
+  --window-border: 1px solid #696969;
+  /* Lion's frame is a hair lighter than 10.6; keep the falloff short so the
+     Andromeda desk stays readable behind stacked windows (HIG p.142). */
+  --window-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.22),
+    0 3px 8px rgba(0, 0, 0, 0.18),
+    0 7px 14px rgba(0, 0, 0, 0.12);
+  --active-window-shadow: var(--window-shadow);
+  --inactive-window-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   /* Source list: #e8ecf1 -> #d2d8e0 in a focused window, flat #f0f0f0
      behind; selection a #6ab1e5 -> #3787d2 ramp between a #5ca4df top line
      and a #317ac2 base (HIG p.153; 512 Pixels' Applications). */
@@ -96,9 +111,12 @@ body[data-theme="lion"] {
   --surface-backdrop-filter: none;
   --window-backdrop-filter: none;
   --desktop: #1d3a64;
+  /* Lion "Andromeda Galaxy": warm core, dual dust lanes, blue halo, star field
+     (512 Pixels 10.7; structure only). */
   --desktop-surface:
     radial-gradient(ellipse 13% 9% at 47% 46%, rgba(255, 244, 228, 1), rgba(240, 208, 180, 0.8) 35%, transparent 100%),
     radial-gradient(ellipse 28% 10% at 48% 47%, rgba(255, 220, 180, 0.55), transparent 70%),
+    radial-gradient(ellipse 18% 7% at 50% 44%, rgba(255, 200, 160, 0.4), transparent 70%),
     radial-gradient(ellipse 24% 8% at 37% 51%, rgba(210, 166, 164, 0.65), transparent 75%),
     radial-gradient(ellipse 24% 8% at 59% 41%, rgba(210, 166, 164, 0.6), transparent 75%),
     radial-gradient(ellipse 20% 9% at 19% 60%, rgba(115, 130, 195, 0.7), transparent 75%),
@@ -111,18 +129,32 @@ body[data-theme="lion"] {
     radial-gradient(1px 1px at 61px 9px, rgba(255, 255, 255, 0.6), transparent 1.5px) 0 0 / 131px 107px,
     radial-gradient(1px 1px at 5px 44px, rgba(220, 230, 255, 0.5), transparent 1.5px) 0 0 / 59px 71px,
     radial-gradient(1px 1px at 88px 61px, rgba(255, 255, 255, 0.45), transparent 1.5px) 0 0 / 73px 91px,
+    radial-gradient(1px 1px at 42px 71px, rgba(255, 255, 255, 0.55), transparent 1.5px) 0 0 / 113px 97px,
     radial-gradient(ellipse 48% 20% at 52% 45%, rgba(90, 120, 190, 0.35), transparent 75%),
     radial-gradient(ellipse 70% 60% at 15% 75%, rgba(30, 90, 160, 0.45), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 85% 20%, rgba(40, 70, 140, 0.35), transparent 70%),
     linear-gradient(to bottom, #12182a 0%, #1b2f50 22%, #174277 50%, #134680 64%, #0f2f5c 86%, #070e1c 100%);
   /* Overlay / full-screen accept + era-rail thumb
      (polishTodos overlay-scrollbars-accept, full-screen-accept,
      thumbnail-vs-snow-leopard). */
   --overlay-scroll-accept: 1;
   --fullscreen-accept: 1;
+  /* HIG 2011-07-26 p.135 in-situ 14×14 control tile (glyph + local titlebar
+     wash). SVG arrows were short on material + mark; polish specimen reads
+     the token. */
+  --fullscreen-lamp-bg: url("./assets/themes/lion/lamp-fullscreen.png") center / 14px 14px no-repeat;
   --era-rail-thumb-bg: linear-gradient(to bottom, #f1f1f1, #b7b7b7);
   --era-rail-thumb-border: 1px solid #696969;
   --era-rail-thumb-radius: 4px;
   --era-rail-thumb-shadow: inset 0 1px 0 #ffffff;
+  /* P2 menu bar: 10.7 lets Andromeda show through (translucent menu bar).
+     Opaque SL gradient is wrong here; frost is lighter than Yosemite's 20px. */
+  --menu-bar-bg: rgba(230, 230, 230, 0.78);
+  --menu-bar-base: #e6e6e6;
+  --menu-bar-backdrop-filter: blur(12px) saturate(140%);
+  --menu-bar-border-color: rgba(0, 0, 0, 0.22);
+  --menu-bar-border: 1px solid var(--menu-bar-border-color);
+  --menu-bar-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
 body[data-theme="lion"] .desktop {
@@ -130,13 +162,12 @@ body[data-theme="lion"] .desktop {
 }
 
 /* The title bar's right end: Lion's full-screen button in place of 10.6's
-   green lamp. Two outward arrows, 14 px, #a8a8a8 with a #5e5e5e edge and a
-   light emboss below, no bezel (HIG p.135; identical in Safari, Preview and
-   iCal on 512 Pixels). */
+   green lamp. Two outward arrows, 14 px, no bezel (HIG p.135; identical in
+   Safari, Preview and iCal on 512 Pixels). Art is the keyed HIG crop. */
 body[data-theme="lion"] .title-bar > .resize-box {
   width: 14px;
   height: 14px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='15' viewBox='0 0 14 15'%3E%3Cg fill='%23f0f0f0' transform='translate(0 1)'%3E%3Cpath d='M7.5.5h6v6l-1.9-1.9-2.2 2.2-2.2-2.2 2.2-2.2z'/%3E%3Cpath d='M6.5 13.5h-6v-6l1.9 1.9 2.2-2.2 2.2 2.2-2.2 2.2z'/%3E%3C/g%3E%3Cg fill='%23a8a8a8' stroke='%235e5e5e' stroke-linejoin='round'%3E%3Cpath d='M7.5.5h6v6l-1.9-1.9-2.2 2.2-2.2-2.2 2.2-2.2z'/%3E%3Cpath d='M6.5 13.5h-6v-6l1.9 1.9 2.2-2.2 2.2 2.2-2.2 2.2z'/%3E%3C/g%3E%3C/svg%3E") center / 14px 15px no-repeat;
+  background: var(--fullscreen-lamp-bg);
 }
 
 body[data-theme="lion"] .title-bar > .resize-box::before {

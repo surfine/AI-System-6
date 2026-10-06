@@ -605,6 +605,45 @@
   }
 }
 
+/* Empty captions: one next step. Tone / vision / templates / language wait. */
+.bureaucracy-meme-window[data-empty] .bureaucracy-composer {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "topic"
+    "error";
+}
+
+.bureaucracy-meme-window[data-empty] .bureaucracy-tone-section,
+.bureaucracy-meme-window[data-empty] .bureaucracy-vision-row,
+.bureaucracy-meme-window[data-empty] .bureaucracy-composer #bureaucracy-generate-button,
+.bureaucracy-meme-window[data-empty] .bureaucracy-assets,
+.bureaucracy-meme-window[data-empty] .bureaucracy-preview-panel,
+.bureaucracy-meme-window[data-empty] .bureaucracy-caption-editor,
+.bureaucracy-meme-window[data-empty] .bureaucracy-language,
+.bureaucracy-meme-window[data-empty] .bureaucracy-candidates-panel > h3 {
+  display: none;
+}
+
+.bureaucracy-meme-window[data-empty] .bureaucracy-layout {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: "copy";
+}
+
+.bureaucracy-empty-next.empty-next-note {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 16px auto;
+  max-width: 42ch;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.bureaucracy-empty-next.empty-next-note > .btn {
+  min-height: var(--touch-primary-min-height);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bureaucracy-template,
   .bureaucracy-tone,

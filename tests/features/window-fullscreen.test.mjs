@@ -61,6 +61,76 @@ test.assert(!vmw.run('getWindow("control").classList.contains("is-fullscreen")')
 test.assert(frameOf() === before, "and the window returns to the frame it had");
 test.assert(!vmw.run('document.body.classList.contains("window-fullscreen-active")'), "the desk is no longer in full screen");
 
+// --- WM0: the pre-full-screen frame is a read-only projection ---------------
+// Full screen is a view, not a saved state, so the Working Session must read
+// the frame the window had before it, never the 100vw view it shows now.
+vmw.run('window.AISystem6WindowFullscreen.enter(getWindow("control"))');
+test.assert(
+  vmw.run(`(() => {
+    const f = window.AISystem6WindowFullscreen.frameForPersistence(getWindow("control"));
+    return !!f && f.left === "120px" && f.top === "80px" && f.width === "480px" && !("z-index" in f);
+  })()`),
+  "frameForPersistence projects the pre-full-screen frame without z-index",
+);
+// Re-entering the same window must not overwrite the first baseline, or a
+// double Enter would save the 100vw view as the frame to come back to.
+vmw.run('window.AISystem6WindowFullscreen.enter(getWindow("control"))');
+vmw.run('window.AISystem6WindowFullscreen.exit(getWindow("control"))');
+test.assert(frameOf() === before, "a repeated Enter keeps the first baseline, so Exit restores the original frame");
+test.assert(
+  vmw.run('window.AISystem6WindowFullscreen.frameForPersistence(getWindow("control")) === null'),
+  "a floating window has no persistence projection",
+);
+
+// --- hardening: one owner, held by identity ---------------------------------
+await vmw.context.openWindow("calculator");
+await vmw.waitFor(() => vmw.run('!!getWindow("calculator")'));
+const bystander = () => vmw.run('JSON.stringify(["left", "top", "width"].map((name) => getWindow("calculator").style.getPropertyValue(name)))');
+const bystanderFrame = bystander();
+// Exiting a window this module never entered must be a no-op, not a wipe of
+// that window's inline frame.
+vmw.run('window.AISystem6WindowFullscreen.exit(getWindow("calculator"))');
+test.assert(
+  bystander() === bystanderFrame && !vmw.run('getWindow("calculator").classList.contains("is-fullscreen")'),
+  "exiting a window the module never entered is a no-op, not a frame wipe",
+);
+// A stale is-fullscreen class is not ownership either: the default exit() only
+// leaves the window the module actually entered.
+vmw.run('getWindow("calculator").classList.add("is-fullscreen")');
+test.assert(
+  vmw.run('window.AISystem6WindowFullscreen.exit() === false'),
+  "a stale full-screen class is not an owner, so the default exit leaves nothing",
+);
+vmw.run('getWindow("calculator").classList.remove("is-fullscreen")');
+// A put-away window is refused: a full-screen layer over a minimized window
+// would keep covering the desk after it is gone from view.
+vmw.run('getWindow("calculator").classList.add("is-minimized")');
+test.assert(
+  vmw.run('window.AISystem6WindowFullscreen.enter(getWindow("calculator")) === false'),
+  "a minimized window is refused full screen",
+);
+vmw.run('getWindow("calculator").classList.remove("is-minimized")');
+// The layer a window had before full screen is projected separately from the
+// geometry, so a refresh never saves the priority-band token as its own layer.
+// (The VM's style stub does not round-trip an inline z-index, so this pins the
+// refusal: whatever it projects, it is never the full-screen band token.)
+vmw.run('window.AISystem6WindowFullscreen.enter(getWindow("control"))');
+test.assert(
+  vmw.run(`(() => {
+    const layer = window.AISystem6WindowFullscreen.layerForPersistence(getWindow("control"));
+    return layer === null || (typeof layer === "string" && !layer.includes("var("));
+  })()`),
+  "layerForPersistence never projects the full-screen priority-band token",
+);
+test.assert(
+  vmw.run('window.AISystem6WindowFullscreen.layerForPersistence(getWindow("calculator")) === null'),
+  "a floating window has no layer projection",
+);
+test.assert(
+  vmw.run('window.AISystem6WindowFullscreen.exit() === true'),
+  "the default exit leaves the window the module actually entered",
+);
+
 // Escape leaves it too, unless the writer is typing.
 vmw.run('window.AISystem6WindowFullscreen.enter(getWindow("control"))');
 vmw.run('document.dispatchEvent(Object.assign(new Event("keydown", { bubbles: true }), { key: "Escape" }))');

@@ -170,15 +170,23 @@ async function listWorkingSessionScopeKeys() {
 
 function captureWorkingSessionSnapshot() {
   const adapters = {};
+  let failed = false;
   workingSessionAdapters.forEach((adapter, id) => {
     if (typeof adapter.capture !== "function") return;
     try {
       const value = adapter.capture();
       if (value !== undefined) adapters[id] = value;
     } catch (error) {
+      // The windows adapter is the scene itself. If it cannot capture — a window
+      // that is full screen without a restorable frame, say — the scene is
+      // untrustworthy, so refuse the whole snapshot and keep the last good one.
+      // Other adapters keep the older, isolated warn-and-continue so their
+      // failure never cancels an unrelated document's save.
+      if (id === "windows") failed = true;
       console.warn(`Failed to capture Working Session adapter "${id}".`, error);
     }
   });
+  if (failed) return null;
   const ownerId = currentWorkingSessionProjectId();
   return {
     version: workingSessionVersion,
@@ -205,6 +213,8 @@ function flushWorkingSessionSave() {
   clearTimeout(workingSessionSaveTimer);
   workingSessionSaveTimer = null;
   const snapshot = captureWorkingSessionSnapshot();
+  // A refused (incomplete) snapshot must not overwrite the saved scene.
+  if (!snapshot) return workingSessionSavePromise;
   // Bind the scope key at capture time. The mounted disk can move before the
   // queued write runs, and one disk's scene must never land under another's.
   const key = workingSessionScopeKey(snapshot.projectId);
@@ -468,9 +478,23 @@ function captureWindowWorkingSession() {
     })
     .map((win) => {
       const sideAskRestore = win.dataset.sideaskRestoreActive === "true";
-      const frameValue = (property, restoreKey) => (
-        sideAskRestore ? win.dataset[restoreKey] || "" : inlineStyleValue(win, property)
-      );
+      // WM0: a full-screen window's own frame is 100vw/100dvh while it is up.
+      // Read the module's read-only pre-full-screen projection instead of the
+      // live inline style, and refuse the snapshot outright when that baseline
+      // is gone rather than saving a transient full-screen-sized window.
+      const fullscreenRestore = window.AISystem6WindowFullscreen?.frameForPersistence?.(win) ?? null;
+      // The layer the window had before full screen, so a refresh restores its
+      // z-order instead of the live priority band. Kept separate from the
+      // geometry projection, which deliberately carries no z-index.
+      const fullscreenLayer = window.AISystem6WindowFullscreen?.layerForPersistence?.(win) ?? null;
+      if (win.classList.contains("is-fullscreen") && !fullscreenRestore && !sideAskRestore) {
+        throw new Error(`Window "${win.dataset.window}" is full screen without a restorable frame.`);
+      }
+      const frameValue = (property, restoreKey) => {
+        if (sideAskRestore) return win.dataset[restoreKey] || "";
+        if (fullscreenRestore) return fullscreenRestore[property] ?? "";
+        return inlineStyleValue(win, property);
+      };
       return {
         name: win.dataset.window,
         appId: getWindowAppId(win),
@@ -479,17 +503,23 @@ function captureWindowWorkingSession() {
         active: win.classList.contains("is-active"),
         collapsed: win.classList.contains("is-collapsed"),
         minimized: win.classList.contains("is-minimized"),
+        // Pin is stack ownership, not geometry. Persist it with the same window
+        // layout adapter so a refresh restores the pinned band without a second store.
+        pinned: typeof isWindowPinned === "function"
+          ? isWindowPinned(win)
+          : win.dataset.windowPinned === "true",
         shadeWidth: inlineStyleValue(win, "--window-shade-width"),
         desklet: win.classList.contains("is-desklet"),
         zoomed: sideAskRestore ? win.dataset.sideaskRestoreZoomed === "true" : win.dataset.zoomed === "true",
         userPositioned: win.dataset.userPositioned === "true",
         layoutGroup: win.dataset.layoutGroup || "",
         frameOwner: sideAskRestore ? "sideask-restore" : "window",
-        zIndex: workingSessionNumber(win.style.zIndex, 0),
+        zIndex: workingSessionNumber(fullscreenLayer ?? win.style.zIndex, 0),
         frame: {
           left: frameValue("left", "sideaskRestoreLeft"),
           top: frameValue("top", "sideaskRestoreTop"),
           right: frameValue("right", "sideaskRestoreRight"),
+          bottom: frameValue("bottom", "sideaskRestoreBottom"),
           width: frameValue("width", "sideaskRestoreWidth"),
           height: frameValue("height", "sideaskRestoreHeight"),
           maxHeight: frameValue("max-height", "sideaskRestoreMaxHeight"),
@@ -500,6 +530,17 @@ function captureWindowWorkingSession() {
           top: win.dataset.restoreTop || "",
           width: win.dataset.restoreWidth || "",
           height: win.dataset.restoreHeight || "",
+        },
+        // WM0 presentation extension (local version 1, global session stays v3).
+        // A collapsed window's frame carries no height, so the height it had
+        // before shading is kept here. An empty string means "let CSS decide",
+        // not "missing"; the restore must not turn it into a measured value.
+        presentation: {
+          version: 1,
+          shadeRestoreHeight: win.classList.contains("is-collapsed")
+            ? win.dataset.shadeRestoreHeight ?? "" : "",
+          shadeRestoreMaxHeight: win.classList.contains("is-collapsed")
+            ? win.dataset.shadeRestoreMaxHeight ?? "" : "",
         },
       };
     });
@@ -554,12 +595,31 @@ function applyWindowSessionFrame(win, frame = {}) {
   setInlineStyleValue(win, "left", left !== null ? `${clampWorkingSessionNumber(left, 0, Math.max(0, maxWidth - 80), 18)}px` : frame.left || "");
   setInlineStyleValue(win, "top", top !== null ? `${clampWorkingSessionNumber(top, 0, Math.max(0, maxHeight - 40), 18)}px` : frame.top || "");
   setInlineStyleValue(win, "right", frame.right || "auto");
+  setInlineStyleValue(win, "bottom", frame.bottom || "");
   setInlineStyleValue(win, "max-height", restoresIntrinsicSize ? "" : frame.maxHeight || "");
   setInlineStyleValue(win, "transform", frame.transform || "none");
 }
 
+// Restore a collapsed window's saved expanded size from the scene record.
+// Older v3 records have no presentation object: fall back to the frame's own
+// height so an upgraded record still expands to what it showed. An empty
+// string stays empty -- CSS owns that height, it is not a missing value.
+function restoreWindowSessionPresentation(win, entry) {
+  // Clear per-DOM leftovers even when switching to an older scene record.
+  delete win.dataset.shadeRestoreHeight;
+  delete win.dataset.shadeRestoreMaxHeight;
+  if (!entry.collapsed) return;
+  const presentation = entry.presentation?.version === 1 ? entry.presentation : null;
+  const text = (value) => (typeof value === "string" ? value : "");
+  win.dataset.shadeRestoreHeight = text(presentation ? presentation.shadeRestoreHeight : entry.frame?.height);
+  win.dataset.shadeRestoreMaxHeight = text(presentation ? presentation.shadeRestoreMaxHeight : entry.frame?.maxHeight);
+}
+
 async function restoreWindowWorkingSession(state = {}) {
   const windows = Array.isArray(state.windows) ? state.windows : [];
+  // Moving to a new scene retires every pending title alignment: the delayed
+  // callbacks were scheduled against the previous project's frames.
+  document.querySelectorAll(".window[data-window]").forEach((win) => invalidateWindowAutoLayout(win));
   if (!windows.length) return false;
 
   runtimeEnvironment = state.runtimeEnvironment === "multifinder" ? "multifinder" : startupEnvironment;
@@ -622,8 +682,18 @@ async function restoreWindowWorkingSession(state = {}) {
       win.dataset.restoreHeight = entry.restoreFrame.height || "";
     }
     applyWindowSessionFrame(win, entry.frame || {});
+    // A collapsed window's height is CSS-owned (the title-bar stub). Clear any
+    // inline height the frame pass just wrote, or the shade would open at a
+    // pixel height instead of the stub, and remember the saved expanded size
+    // for Expand to use.
+    if (entry.collapsed) {
+      setInlineStyleValue(win, "height", "");
+      setInlineStyleValue(win, "max-height", "");
+    }
+    restoreWindowSessionPresentation(win, entry);
     if (
-      typeof isCenteredSystemWindow === "function"
+      !entry.collapsed && !entry.userPositioned
+      && typeof isCenteredSystemWindow === "function"
       && isCenteredSystemWindow(win)
       && typeof placeCenteredSystemWindow === "function"
     ) {
@@ -638,6 +708,15 @@ async function restoreWindowWorkingSession(state = {}) {
     const quickDraftWidth = Number(String(entry.frame?.width || "").match(/^(-?\d+(?:\.\d+)?)px$/)?.[1] || 0);
     if (entry.name === "quickDraft" && !shouldArrangeQuickDraftPair && (!entry.frame?.width || quickDraftWidth < 360)) {
       requestAnimationFrame(() => maximizeWindow(win));
+    }
+    // Restore pin before the saved z-index so setWindowLayerZ clamps into the
+    // pinned band. Unpinned peers and system-modal layers stay on their paths.
+    if (typeof setWindowPinned === "function") {
+      setWindowPinned(win, !!entry.pinned);
+    } else if (entry.pinned) {
+      win.dataset.windowPinned = "true";
+    } else {
+      delete win.dataset.windowPinned;
     }
     if (entry.zIndex) setWindowLayerZ(win, entry.zIndex);
   }

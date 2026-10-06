@@ -244,23 +244,94 @@ function frontApplicationId() {
   return menuOwnerAppId || activeAppId || "finder";
 }
 
+// Visibility vocabulary for window browse: never flatten to a boolean.
+// closed / app-hidden / minimized / collapsed / open stay distinct so restore
+// can call the matching existing entry instead of only clearing display:none.
+function applicationWindowPresentation(win) {
+  if (!win?.isConnected) return "closed";
+  if (win.classList.contains("is-hidden")) return "closed";
+  if (win.classList.contains("is-app-hidden") || hiddenAppIds.has(getWindowAppId(win))) return "app-hidden";
+  if (win.classList.contains("is-minimized")) return "minimized";
+  if (win.classList.contains("is-collapsed")) return "collapsed";
+  return "open";
+}
+
 function applicationWindowOrder(appId = frontApplicationId()) {
   // A window shaded into its title bar is still open: WindowShade puts a
   // window aside without it leaving the desk (a verb of its own beside
   // minimize, never replaced by it), so a list that dropped those would lose
-  // the windows a writer is most likely to be looking for. Front-most first, the order the
-  // window switcher in 98.js used (z-index as a last-used proxy).
-  const visible = visibleWindowsForApp(appId);
-  const minimized = windowsForApp(appId).filter((win) => win.classList.contains("is-minimized")
-    && !win.classList.contains("is-hidden") && !win.classList.contains("is-app-hidden"));
-  return [...visible, ...minimized]
-    .sort((a, b) => Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0));
+  // the windows a writer is most likely to be looking for. App-hidden and
+  // minimized peers stay listed with their own state. Front-most first, the
+  // order the window switcher in 98.js used (z-index as a last-used proxy).
+  return windowsForApp(appId)
+    .filter((win) => applicationWindowPresentation(win) !== "closed")
+    // WM1: last-used order comes from the focus rank a real focus wrote, not
+    // from z-index. Raising a pinned window no longer looks like "most recently
+    // used", so the walk keeps its true order across a pin.
+    .sort((a, b) => windowFocusRank(b) - windowFocusRank(a)
+      || Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0));
 }
 
-function applicationWindowTitle(win) {
-  return win?.querySelector(".title-bar h1, .title-bar h2")?.textContent?.trim()
+function applicationWindowTitle(win, { markState = false } = {}) {
+  const base = win?.querySelector(".title-bar h1, .title-bar h2")?.textContent?.trim()
     || win?.dataset.window
     || "";
+  if (!markState || typeof t !== "function") return base;
+  const state = applicationWindowPresentation(win);
+  if (state === "open" || state === "closed") return base;
+  const mark = t(`window_state_${state.replace(/-/g, "_")}`);
+  return mark ? `${base} (${mark})` : base;
+}
+
+function restoreApplicationWindow(win) {
+  if (!win?.isConnected) return false;
+  const state = applicationWindowPresentation(win);
+  if (state === "closed") return false;
+  if (state === "app-hidden") unhideApp(getWindowAppId(win));
+  if (win.classList.contains("is-minimized")) return !!restoreMinimizedWindow(win);
+  // Collapsed stays collapsed: bringing the application window forward is not
+  // a WindowShade unroll. Focus raises it through the real focus path.
+  focusWindow(win, true);
+  return true;
+}
+
+// WM5: one cross-application projection over the real window IDs. Every field
+// a browse row needs (title, application, the distinct collapsed / minimized /
+// app-hidden state, pin and focus rank) comes from the live DOM and the
+// existing focus-rank owner — never from a second, drifting runningApps copy.
+// Closed windows never appear; two windows of one application stay separate.
+// Titles are plain text on purpose: a caller sets them with textContent.
+function windowBrowseEntries() {
+  const entries = [];
+  if (typeof document === "undefined") return entries;
+  document.querySelectorAll(".window[data-window]").forEach((win) => {
+    const state = applicationWindowPresentation(win);
+    if (state === "closed") return;
+    const appId = getWindowAppId(win);
+    entries.push({
+      name: win.dataset.window,
+      appId,
+      appLabel: multiFinderAppLabels[appId] || appId,
+      title: applicationWindowTitle(win),
+      state,
+      pinned: typeof isWindowPinned === "function" ? !!isWindowPinned(win) : false,
+      focusRank: typeof windowFocusRank === "function" ? windowFocusRank(win) : 0,
+    });
+  });
+  // Front-most first. Focus rank, not z-index: raising a pinned window must not
+  // reshuffle the list the writer is reading.
+  return entries.sort((a, b) => b.focusRank - a.focusRank || Number(b.pinned) - Number(a.pinned));
+}
+
+// Recovery reads the entry's actual state and calls the matching existing
+// entry point. It never calls openWindow: a window that is already open is
+// brought back, not summoned again, so the writing route's summon / restore
+// exclusivity is preserved. A stale (closed) id returns false and the caller
+// drops the row.
+function restoreWindowBrowseEntry(name) {
+  const win = typeof getWindow === "function" ? getWindow(name) : null;
+  if (!win) return false;
+  return restoreApplicationWindow(win);
 }
 
 /**
@@ -283,12 +354,25 @@ function cycleApplicationWindows(direction = 1) {
   const appId = frontApplicationId();
   const windows = applicationWindowOrder(appId);
   const frontName = windows.find((win) => win.classList.contains("is-active"))?.dataset.window || "";
-  if (windowWalk.appId !== appId || windowWalk.names[windowWalk.index] !== frontName) {
-    windowWalk = { appId, names: windows.map((win) => win.dataset.window), index: 0 };
+  // The snapshot follows live membership: a window opened or closed since the
+  // last press must join (or leave) the walk, and the cursor must point at the
+  // window the writer is actually in, not at a stale name's old slot.
+  const currentNames = new Set(windows.map((win) => win.dataset.window));
+  const membershipChanged = currentNames.size !== windowWalk.names.length
+    || windowWalk.names.some((name) => !currentNames.has(name));
+  if (windowWalk.appId !== appId || membershipChanged || windowWalk.names[windowWalk.index] !== frontName) {
+    const names = windows.map((win) => win.dataset.window);
+    windowWalk = { appId, names, index: Math.max(0, names.indexOf(frontName)) };
   }
-  if (windows.length === 1 && windows[0].classList.contains("is-minimized")) {
-    focusWindow(windows[0], true);
-    return true;
+  if (windows.length === 1 && (windows[0].classList.contains("is-minimized")
+      || windows[0].classList.contains("is-collapsed"))) {
+    // One put-away window: the walk's only job is to bring it back, so it goes
+    // through the shared application-window restore path (unhide, minimize
+    // entry point, real focus) instead of saying "only one window". A shaded
+    // window still returns shaded -- bringing it forward is not an unroll.
+    const restored = restoreApplicationWindow(windows[0]);
+    if (restored) setStatus(t("window_front_now", applicationWindowTitle(windows[0])));
+    return restored;
   }
   if (windows.length < 2) {
     // The application is named because a desk accessory in front does not own
@@ -304,18 +388,19 @@ function cycleApplicationWindows(direction = 1) {
   for (let hop = 0; hop < count && !next; hop += 1) {
     windowWalk.index = ((windowWalk.index + step) % count + count) % count;
     const candidate = getWindow(windowWalk.names[windowWalk.index]);
-    // A window can close while the walk is still open; the snapshot skips it
-    // rather than stopping the key dead.
-    if (candidate && !candidate.classList.contains("is-hidden")) next = candidate;
+    // A window can close, or another application's window can reuse the name,
+    // while the walk is still open; the snapshot skips stale identities rather
+    // than stopping the key dead or landing in the wrong app.
+    if (candidate?.isConnected && currentNames.has(candidate.dataset.window)
+        && !candidate.classList.contains("is-hidden") && getWindowAppId(candidate) === appId) next = candidate;
   }
   if (!next) {
     windowWalk = { appId, names: [], index: 0 };
     setStatus(t("window_none_open", multiFinderAppLabels[appId] || appId));
     return false;
   }
-  const nextAppId = getWindowAppId(next);
-  if (hiddenAppIds.has(nextAppId)) unhideApp(nextAppId);
-  focusWindow(next, 1);
+  const restored = restoreApplicationWindow(next);
+  if (!restored) return false;
   setStatus(t("window_front_now", applicationWindowTitle(next)));
   return true;
 }

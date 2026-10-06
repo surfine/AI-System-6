@@ -662,7 +662,18 @@
   function updateCheckButtonState() {
     const hasKey = !!cloudApiKeyEl.value.trim() || cloudCredentialReady();
     const hasProvider = !!cloudProviderEl.value;
-    cloudCheckBtn.disabled = !(hasKey && hasProvider);
+    // A grey Check now says which half is missing instead of failing quietly.
+    const reasonKey = hasProvider
+      ? (hasKey ? "" : "balloon_cloud_needs_key")
+      : "balloon_cloud_needs_provider";
+    const blocked = !(hasKey && hasProvider);
+    if (typeof markGrayAffordance === "function") {
+      markGrayAffordance(cloudCheckBtn, blocked, reasonKey);
+    } else {
+      cloudCheckBtn.disabled = blocked;
+      if (blocked && reasonKey) cloudCheckBtn.dataset.balloonHelpDisabled = reasonKey;
+      else delete cloudCheckBtn.dataset.balloonHelpDisabled;
+    }
   }
 
   // Provider change

@@ -115,12 +115,18 @@ test.assert(
   "loaded records reach global state only after the readonly transaction completes"
 );
 
-test.assertIncludes(bootSource, "await loadDeskState();", "boot waits for the workspace load without a late timeout race");
+// Boot still calls loadDeskState, but races it with an 8s timeout so a wedged
+// IndexedDB cannot leave the iPhone on Sad Mac with dead recovery buttons.
+// On timeout/failure boot sets deskPersistenceWritable = false (degrade, not
+// empty-workspace fake success via startupTaskWithTimeout swallow).
+test.assertIncludes(bootSource, "loadDeskState()", "boot still invokes the workspace load");
+test.assertIncludes(bootSource, "deskPersistenceWritable = false", "a timed-out/failed load blocks later automatic writes");
 test.assertNotIncludes(
   bootSource,
   'startupTaskWithTimeout(loadDeskState(), "loadDeskState"',
-  "a timed-out load cannot mutate the workspace after boot continues"
+  "desk load is not swallowed by the soft startupTaskWithTimeout helper"
 );
+test.assertIncludes(bootSource, "timeout: true", "desk load has an explicit timeout race that degrades to in-memory");
 test.assertIncludes(
   workingSessionSource,
   "AISystem6StorageTransactions.runTransaction",

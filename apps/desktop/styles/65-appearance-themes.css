@@ -119,6 +119,7 @@ body[data-lineage~="platinum"] {
   --toolbar-border: 1px solid #000000;
   --sidebar-bg: #eeeeee;
   --selection-bg: #ccccff;
+  --selection-edge: #ccccff;
   --selection-fg: #000000;
   /* Mac OS 9 document chrome: a compact inset placard for the leading
      receipt, beside a grooved source rail. These are shared system roles;
@@ -876,12 +877,15 @@ body[data-lineage~="platinum"] {
 
   /* P12: native desktop labels are a ~70% white tag with no edge, one line,
      weight 400. P13: the selected object inverts to black/white and darkens
-     its artwork. */
+     its artwork. P20: the native tag grows with its name, so a short name
+     still sits on one line; `nowrap` forced every long name to stay one line
+     and spill past the tag instead of wrapping inside it (2026-10-06 report),
+     so the lineage wraps only when the name would not otherwise fit. */
   --desktop-label-bg: rgba(255, 255, 255, 0.7);
   --desktop-label-box-shadow: none;
   --desktop-label-font-weight: 400;
   --desktop-label-font-variation: "wdth" 100;
-  --desktop-label-white-space: nowrap;
+  --desktop-label-white-space: normal;
   --desktop-label-selected-bg: #000000;
   --desktop-label-selected-fg: #ffffff;
   --desktop-icon-selected-filter: brightness(0.5);
@@ -1040,12 +1044,16 @@ body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .desktop
 
 html[data-theme="yosemite"],
 body[data-theme="yosemite"] {
-  /* The 10.10 alert surface, measured from the System Preferences capture:
-     a hair brighter and a hair more opaque than this era's window paper. */
-  --modal-bg: rgba(255, 255, 255, 0.95);
+  /* The 10.10 alert sheet fill, measured from the Empty Trash capture
+     (512 Pixels, solid #ececec). The older rgba(255,255,255,0.95) read as
+     pure white on the Theme Lab stage and could not calibrate the sheet. */
+  --modal-bg: #ececec;
   /* A background 10.10 window shows one flat grey lamp, not a dimmed red one.
-     Flattening the sprite is how the era does it. */
-  --titlebar-inactive-control-filter: contrast(0) brightness(1.66);
+     Ship the grey disc from the Mail capture; do not flatten the coloured
+     sprite (filter AA left a 1.6px edge over the 1.5 floor). */
+  --titlebar-inactive-control-filter: none;
+  --system-titlebar-inactive-control-filter: none;
+  --system-titlebar-inactive-control-opacity: 1;
   /* The base sheet owns the progress recipe; the era supplies its numbers. */
   --progress-height: 12px;
   --progress-radius: 6px;
@@ -1082,7 +1090,6 @@ body[data-theme="yosemite"] {
   --system-titlebar-margin-y: 0;
   --system-titlebar-padding-y: 0;
   --system-titlebar-padding-x: 8px;
-  --system-titlebar-inactive-control-filter: grayscale(1);
   --system-titlebar-inactive-title-color: rgba(36, 36, 36, 0.48);
   --system-control-min-height: 22px;
   --system-button-min-height: 26px;
@@ -1127,18 +1134,20 @@ body[data-theme="yosemite"] {
   --theme-lab-list-row-font-size: var(--system-control-size);
   --theme-lab-list-row-line-height: 16px;
   --theme-lab-list-row-border-bottom: 1px solid rgba(0, 0, 0, 0.09);
-  /* Theme Lab sidebar/list icons: the flat 16px Yosemite glyphs (folder,
-     document, drive, trash) replace the inline Liquid Glass pill glyphs. */
+  /* Theme Lab sidebar/list icons: point at the PNGs. The SVG wrappers embed
+     icons/*.png via relative <image href>, which CSS background-image does not
+     resolve — the sidebar previously painted label text with empty icon slots. */
   --theme-lab-sidebar-icon-size: 16px;
   --theme-lab-sidebar-icon-bg: transparent;
   --theme-lab-sidebar-system-svg-opacity: 0;
-  --theme-lab-sidebar-startup-disk-image: url("./assets/themes/yosemite/startup-disk-16.svg");
-  --theme-lab-sidebar-applications-image: url("./assets/themes/yosemite/applications-16.svg");
-  --theme-lab-sidebar-trash-image: url("./assets/themes/yosemite/trash-16.svg");
+  --theme-lab-sidebar-startup-disk-image: url("./assets/themes/yosemite/icons/startupDisk-16.png");
+  --theme-lab-sidebar-applications-image: url("./assets/themes/yosemite/icons/applications-16.png");
+  --theme-lab-sidebar-trash-image: url("./assets/themes/yosemite/icons/trash-16.png");
+  --theme-lab-sidebar-document-image: url("./assets/themes/yosemite/icons/folder-16.png");
   --theme-lab-list-icon-display: block;
   --theme-lab-list-icon-size: 16px;
-  --theme-lab-list-icon-image: url("./assets/themes/yosemite/folder-16.svg");
-  --theme-lab-list-document-image: url("./assets/themes/yosemite/document-16.svg");
+  --theme-lab-list-icon-image: url("./assets/themes/yosemite/icons/folder-16.png");
+  --theme-lab-list-document-image: url("./assets/themes/yosemite/icons/document-16.png");
   /* Theme Lab Finder surface renders the full 10.10 window: the product's own
      title bar, the 36px unified toolbar, status, content. */
   --theme-lab-finder-window-display: block;
@@ -1162,6 +1171,8 @@ body[data-theme="yosemite"] {
      #df4744 / #27aa35 rims — no synthetic highlight; 10.10 has none. */
   --traffic-light-close-bg: url("./assets/themes/yosemite/lamp-close.png");
   --traffic-light-resize-bg: url("./assets/themes/yosemite/lamp-zoom.png");
+  --traffic-light-close-inactive-bg: url("./assets/themes/yosemite/lamp-inactive.png");
+  --traffic-light-resize-inactive-bg: url("./assets/themes/yosemite/lamp-inactive.png");
   --traffic-light-sprite-size: 12px 12px;
   /* Real 10.10: the 12px lamps sit ~4px below the window top edge. */
   /* Cut from the same 10.10 Finder capture as its siblings, at their 26 px
@@ -1235,10 +1246,17 @@ body[data-theme="yosemite"] {
      warm peach sunset sky at the top, tan ridge, then the dark blue-slate
      valley below. Measured vertical ramp, no raster payload. */
   --desktop: #464955;
+  /* Yosemite "Valley" structure: peach sky, warm ridge, cool valley floor
+     (512 Pixels 10.10; CSS abstraction, not the 6K raster). */
   --desktop-surface:
-    radial-gradient(ellipse 70% 28% at 50% 4%, rgb(255 230 210 / 0.7), transparent 55%),
-    radial-gradient(ellipse 120% 18% at 50% 38%, rgb(140 100 90 / 0.35), transparent 70%),
-    linear-gradient(180deg, #f0b8a8 0%, #e8a79e 8%, #d4a294 16%, #b98b74 28%, #8c756f 46%, #5e5961 64%, #3d424c 82%, #515765 100%);
+    radial-gradient(ellipse 55% 18% at 50% 0%, rgb(255 242 228 / 0.85), transparent 60%),
+    radial-gradient(ellipse 70% 28% at 50% 6%, rgb(255 220 198 / 0.72), transparent 55%),
+    radial-gradient(ellipse 40% 14% at 28% 42%, rgb(120 88 72 / 0.48), transparent 70%),
+    radial-gradient(ellipse 45% 16% at 72% 40%, rgb(100 78 68 / 0.45), transparent 68%),
+    radial-gradient(ellipse 70% 20% at 22% 52%, rgb(90 68 60 / 0.55), transparent 72%),
+    radial-gradient(ellipse 80% 18% at 78% 48%, rgb(78 62 58 / 0.5), transparent 70%),
+    radial-gradient(ellipse 120% 30% at 50% 68%, rgb(28 32 42 / 0.78), transparent 62%),
+    linear-gradient(180deg, #f4c4b4 0%, #ebb0a4 10%, #d4a294 22%, #b98b74 34%, #8c756f 50%, #545860 68%, #3a404c 86%, #4a515c 100%);
   /* Endfield terminal: warm-paper survey, contour lines (等高线) and a
      chartreuse glow over the 10.10 peach. */
   --endfield-pane-bg:
@@ -1295,11 +1313,19 @@ body[data-theme="yosemite"] {
   --titlebar-toolbar-backdrop-filter: none;
   --surface-backdrop-filter: none;
   --system-titlebar-active-bg: linear-gradient(#f5f5f5 0%, #e9e9e9 10%, #e2e2e2 52%, #d2d2d2 100%);
+  /* P2 inactive frame honesty: backdrop 10.10 windows fall back to a flat
+     opaque chrome (512 Pixels). That flat chrome is #f6f6f6, measured at the
+     background Mail window's own grey Close lamp — the active/inactive cut is
+     carried by the flat fill vs the active gradient, not by darkening the
+     bar. #e8e8e8 was too dark: the grey lamp (222) then sat only ~10 levels
+     off its bar, so the silhouette no longer read as a disc and the Fidelity
+     floor's geometry pass could not see an edge. */
   --system-titlebar-inactive-bg: #f6f6f6;
   --system-titlebar-background-origin: padding-box;
   --system-titlebar-background-clip: border-box;
   --system-titlebar-inactive-control-visibility: visible;
-  --system-titlebar-inactive-control-opacity: 0.38;
+  /* Opacity stays 1: inactive lamps are authored grey discs (see tokens above). */
+  --system-titlebar-inactive-control-opacity: 1;
   --titlebar-title-bg: transparent;
   --titlebar-title-fg: #363636;
   --titlebar-border: 1px solid #afafaf;
@@ -1318,12 +1344,16 @@ body[data-theme="yosemite"] {
   /* 512 Pixels Finder capture: the 10.10 sidebar is a near-opaque light gray
      with a soft blur — not a saturated glass panel. */
   --sidebar-bg: rgba(248, 248, 248, 0.94);
-  /* Measured on the native 10.10 Apple menu (selected row): #0d72f3.
-     The old #0e6bff was a plausible guess, 7 points off in green. */
-  --selection-bg: #0d72f3;
+  /* Focused list / desktop selection: Force Quit native row #116cd6
+     (512 Pixels 2x). Menu tracking keeps its own --menu-item-active-*
+     ramp (#1680f5…); do not conflate the two blues. */
+  --selection-bg: #116cd6;
+  --selection-edge: #116cd6;
   --selection-fg: #ffffff;
-  --sidebar-selection-bg: var(--selection-bg);
-  --sidebar-selection-fg: #ffffff;
+  /* Source-list selection stays flat grey in both key and backdrop windows
+     (Applications／Mail captures); vibrancy changes, not selection colour. */
+  --sidebar-selection-bg: #cecece;
+  --sidebar-selection-fg: #1c1c1c;
   /* Tier 2 selection states. Yosemite has no --tdi-tab-* recipe of its own
      yet (the rail still paints with the System 6 baseline), so these read
      against that plain tab rather than a flat 10.10 one; a flat --tdi-tab-*
@@ -1398,12 +1428,13 @@ body[data-theme="yosemite"] {
   --btn-active-bg: #afafaf;
   --btn-active-fg: #242424;
   --btn-active-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
-  /* GTK 03b6f721 suggested-action: solid #3484e2 with #1c6bc7 border. */
-  --btn-default-bg: #3484e2;
+  /* Native Force Quit suggested-action (2x crop): bright #4c9af8→#1f6ff0
+     ramp, not the flatter GTK solid #3484e2 (material 17.2 vs floor 12). */
+  --btn-default-bg: linear-gradient(#4c9af8 0%, #3a8ef6 42%, #2a7ef5 72%, #1f6ff0 100%);
   --btn-default-fg: #ffffff;
   --btn-default-text-shadow: 0 -1px 0 rgba(0, 58, 130, 0.32);
   --btn-default-shadow: 0 1px 1px rgba(19, 71, 132, 0.06), 0 1px 2px rgba(19, 71, 132, 0.02);
-  --btn-default-active-bg: #1c6bc7;
+  --btn-default-active-bg: linear-gradient(#3a8ef6 0%, #1c6bc7 100%);
   --btn-default-active-fg: #ffffff;
   /* 10.10 suggested-action hover: GTK 03b6f721 gtk-light.css pins
      button.suggested-action:hover background-color #619fe8 (lighter than the
@@ -1461,16 +1492,19 @@ body[data-theme="yosemite"] {
   --theme-lab-checkbox-mark-content: none;
   --theme-lab-radio-checked-bg: var(--radio-checked-image);
   --theme-lab-radio-dot-content: none;
-  --menu-bar-bg: rgba(248, 248, 248, 0.9);
-  /* The opaque colour under that 0.9. See 60-responsive.css's installed-surface
+  /* 10.10: denser cool frost than Big Sur's warm vibrancy (P2 differentiation). */
+  --menu-bar-bg: rgba(245, 245, 247, 0.88);
+  /* The opaque colour under that fill. See 60-responsive.css's installed-surface
      block: a home-screen web app gets a system blur painted over the top of the
      screen, and a blur over a translucent material is the desk showing through
      it. The bar keeps its material everywhere else; the strip that runs under
      the status area is flat. */
-  --menu-bar-base: #f8f8f8;
-  --menu-bar-border-color: rgba(0, 0, 0, 0.14);
+  --menu-bar-base: #f5f5f7;
+  /* 10.10 translucent menu bar frosts the wallpaper (512 Pixels desktop). */
+  --menu-bar-backdrop-filter: blur(20px) saturate(165%);
+  --menu-bar-border-color: rgba(0, 0, 0, 0.16);
   --menu-bar-border: 1px solid var(--menu-bar-border-color);
-  --menu-bar-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --menu-bar-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
   --menu-panel-bg: rgba(255, 255, 255, 0.95);
   --menu-panel-border: 1px solid rgba(0, 0, 0, 0.11);
   --menu-panel-radius: 6px;
@@ -2065,6 +2099,20 @@ body[data-theme="yosemite"] .title-bar > .resize-box {
   background: var(--traffic-light-resize-bg) center / 12px 12px no-repeat;
 }
 
+/* Inactive 10.10 lamps are authored grey discs — opacity/filter flattening
+   of the red/green sprites left a measurable edge against the Mail crop. */
+body[data-theme="yosemite"] .window:not(.is-active) .title-bar > .close-box {
+  background: var(--traffic-light-close-inactive-bg) center / 12px 12px no-repeat;
+  filter: none;
+  opacity: 1;
+}
+
+body[data-theme="yosemite"] .window:not(.is-active) .title-bar > .resize-box {
+  background: var(--traffic-light-resize-inactive-bg) center / 12px 12px no-repeat;
+  filter: none;
+  opacity: 1;
+}
+
 body[data-theme="yosemite"] .title-bar > :is(.close-box, .resize-box)::before,
 body[data-theme="yosemite"] .title-bar > .close-box::after {
   content: none;
@@ -2188,14 +2236,16 @@ body[data-theme="yosemite"] .theme-lab-form-grid :where(
   box-shadow: var(--field-focus-ring);
 }
 
-/* 10.10 pressed button: blue gradient with white text (vinceliuice active
-   recipe #4c97fe -> #0564e3), not the Liquid Glass white-down state. */
+/* 10.10 pressed / suggested-action fill: same Force Quit / Empty Trash
+   ramp as --btn-default-bg. The 512 Pixels set has no mouse-down capture;
+   Theme Lab .is-active is scored against that native blue push-button
+   fill, not the Appearance «Blue» swatch and not the GTK #4c97fe→#0564e3. */
 body[data-theme="yosemite"] .theme-lab-button-row .btn:is(
   :active,
   .is-active
 ):not(:disabled):not(.is-disabled):not(.default) {
-  border-color: var(--btn-active-bg, #8fb3d8);
-  background: linear-gradient(#4c97fe 0%, #0564e3 100%);
+  border-color: rgb(28, 107, 199);
+  background: var(--btn-default-bg);
   color: #ffffff;
   text-shadow: 0 -1px 0 rgba(0, 58, 130, 0.32);
   box-shadow: none;

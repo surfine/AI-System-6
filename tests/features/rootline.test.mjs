@@ -626,6 +626,10 @@ test.assertIncludes(read("app/features/rootline.js"), "window.renderRootline =",
 const shell = read("app/features/rootline.js");
 test.assertIncludes(shell, "AISystem6WasmHostContract", "Rootline applies the shared host honesty contract");
 test.assertIncludes(shell, "wasm: 0", "Rootline is an honest non-Wasm shell");
+test.assertIncludes(shell, 'command === "speed"', "Speed greys until a live map is playing");
+test.assertIncludes(shell, 'command === "recenter"', "Recenter greys until the map view exists");
+test.assertIncludes(shell, "rootline_recentered", "Recenter leaves a status receipt");
+test.assertIncludes(shell, "setStatus(line)", "Sound toggle also announces on the status line");
 // Space is the pause key. A panel that hands focus to its first button turns
 // "pause" at the end of a week into "take the first reward", and at the end of
 // a round into "restart the city", wiping the result before anyone reads it.

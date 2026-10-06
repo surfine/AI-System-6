@@ -799,6 +799,33 @@ body .clio-chart-projection-switcher .btn {
   }
 }
 
+/* The narrow-desk grammar this window shares with the other apps belongs in
+   this sheet, not in the shared override layer: the sheet is lazy and loads
+   after 60-responsive.css, so the same rules written there would lose the
+   cascade. Same container width (470px) the other apps use. */
+@container (max-width: 470px) {
+  .clio-chart-window .clio-chart-details-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .clio-chart-window .button-row:not(.composer-hidden-actions) {
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .clio-chart-window .button-row:not(.composer-hidden-actions) > .btn.default,
+  .clio-chart-window .btn.default {
+    width: 100%;
+    min-height: var(--touch-primary-min-height);
+    justify-content: center;
+    margin-left: 0;
+  }
+}
+
 @container (max-width: 430px) {
   .clio-chart-pane {
     padding: 6px;

@@ -103,6 +103,29 @@ const specialMenu = (appItems = []) => menu("special", "menu_special", [
   ...systemSpecialItems,
 ]);
 
+// The Window menu is a Mac OS X-and-later convention, so it is declared with a
+// menuCondition rather than as a stable fifth top-level menu: the appearance
+// registry decides whether the era has one ("window-menu"), and window-manager
+// hides it in the classic, Platinum, Drawing Board and NeXTSTEP eras. Every
+// row routes through windowshade-entry.js's one command registry, which owns
+// the single availability question and the arrangement geometry.
+const windowMenu = () => menu("window", "menu_window", [
+  menuItem("window-browse", "window_browse"),
+  menuSeparator,
+  menuItem("window-shade", "window_shade"),
+  menuItem("window-expand", "window_expand"),
+  menuSeparator,
+  menuItem("window-layout-left", "window_arrange_left"),
+  menuItem("window-layout-right", "window_arrange_right"),
+  menuItem("window-layout-fill", "window_arrange_fill"),
+  menuSeparator,
+  menuItem("window-layout-undo", "window_arrange_undo"),
+  menuItem("window-layout-recover", "window_arrange_recover"),
+  menuSeparator,
+  menuItem("window-pin", "window_pin"),
+  menuItem("window-unpin", "window_unpin"),
+], { menuCondition: "window-menu" });
+
 // Finder's File menu holds only verbs that make sense for *any* selected
 // object. Two other kinds of verb used to live here and made it 32 rows long:
 // kind-specific verbs (install a Skill, promote a draft) moved to Get Info,
@@ -159,6 +182,7 @@ const finderMenus = [
     menuItem("create-task-checkpoint", "task_checkpoint_create"),
     menuItem("restore-task-checkpoint", "task_checkpoint_restore"),
   ], { menuCondition: "task-menu" }),
+  windowMenu(),
   specialMenu([
     menuItem("empty-trash", "empty_trash"),
     menuItem("erase-disk", "erase_disk"),
@@ -288,6 +312,7 @@ const teachTextMenus = [
     menuItem("open-image-manager", "image_manager"),
     menuItem("generate-marp-open-clio-stage", "generate_marp_open_clio_stage"),
   ]),
+  windowMenu(),
   specialMenu(),
 ];
 
@@ -465,6 +490,7 @@ const quickDraftMenus = [
     menuItem("quick-draft-toggle-sideask", "quick_draft_show_sideask"),
     menuItem("quick-draft-open-writing-studio", "enter_writing_studio"),
   ], { menuCondition: "quick-draft-menu" }),
+  windowMenu(),
   specialMenu(),
 ];
 
@@ -504,6 +530,7 @@ const clioTalkMenus = [
     menuSeparator,
     menuItem("remember-chat-as-project-memory", "remember_project_memory"),
   ]),
+  windowMenu(),
   specialMenu(),
 ];
 
@@ -525,6 +552,7 @@ const readerMenus = [
     menuItem("reader-open-clio-stage", "open_in_clio_stage"),
     menuItem("focus-reader-question", "ask"),
   ]),
+  windowMenu(),
   specialMenu(),
 ];
 
@@ -559,6 +587,7 @@ const timeMachineMenus = [
     menuItem("time-machine-preserve-wayback", "time_machine_preserve_wayback"),
     menuItem("time-machine-preserve-archive-is", "time_machine_preserve_archive_is"),
   ]),
+  windowMenu(),
   specialMenu(),
 ];
 
@@ -588,6 +617,7 @@ const docMapMenus = [
     menuItem("docmap-zoom-out", "zoom_out"),
     menuItem("docmap-zoom-in", "zoom_in"),
   ]),
+  windowMenu(),
   specialMenu(),
 ];
 
@@ -615,6 +645,7 @@ const scrapbookMenus = [
     menuSeparator,
     menuItem("scrapbook-delete", "delete"),
   ]),
+  windowMenu(),
   specialMenu(),
 ];
 
@@ -631,6 +662,7 @@ const searcherMenus = [
       menuItem("insert-search-result", "insert"),
     ]),
   ]),
+  windowMenu(),
   specialMenu(),
 ];
 
@@ -662,6 +694,7 @@ const clioStageMenus = [
     ]),
     menuItem("focus-clio-stage-question", "ask"),
   ]),
+  windowMenu(),
   specialMenu(),
 ];
 
@@ -689,6 +722,7 @@ const liquidCoverMenus = [
     menuItem("cover-preview-motion", "preview"),
     menuItem("cover-ai-compose", "liquid_cover_ai_compose"),
   ]),
+  windowMenu(),
   specialMenu(),
 ];
 
@@ -711,6 +745,7 @@ const cmfStudioMenus = [
     menuItem("cmf-view-back", "cmf_view_back", "", { dataset: { cmfViewChoice: "02-back" } }),
     menuItem("cmf-view-side", "cmf_view_side", "", { dataset: { cmfViewChoice: "05-buttons-side" } }),
   ]),
+  windowMenu(),
   specialMenu(),
 ];
 
@@ -741,6 +776,7 @@ const soundscapeMenus = [
     menuItem("soundscape-reset-style", "soundscape_reset_style"),
     menuItem("soundscape-link-project", "soundscape_add_project"),
   ]),
+  windowMenu(),
   specialMenu(),
 ];
 
@@ -754,6 +790,7 @@ const endfieldMenus = [
     menuItem("endfield-menu-clip", "endfield_menu_clip"),
     menuItem("endfield-sideask", "endfield_sideask"),
   ]),
+  windowMenu(),
   specialMenu(),
 ];
 
@@ -768,6 +805,7 @@ const bureaucracyMemeMenus = [
     menuItem("meme-focus-topic", "bureaucracy_meme_topic"),
     menuItem("meme-generate", "bureaucracy_meme_generate"),
   ]),
+  windowMenu(),
   specialMenu(),
 ];
 

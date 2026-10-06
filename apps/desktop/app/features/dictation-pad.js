@@ -74,6 +74,19 @@ function renderDictation() {
     && !state.cleanIncomplete;
   const insertText = session.insertText().text.trim();
 
+  // A grey dictation verb says what the transcript is waiting for: stop first,
+  // speak first, organize first, or insert something first. One reason per
+  // control, so an ADHD tap answers instead of doing nothing.
+  const markDictation = (control, blocked, reasonKey) => {
+    if (!control) return;
+    if (typeof markGrayAffordance === "function") markGrayAffordance(control, blocked, reasonKey);
+    else {
+      control.disabled = blocked;
+      if (blocked && reasonKey) control.dataset.balloonHelpDisabled = reasonKey;
+      else delete control.dataset.balloonHelpDisabled;
+    }
+  };
+
   // The raw textarea mirrors the session; typing in it is an edit of the
   // writer's own words and goes back through the same revision path.
   if (dictationRawInput.value !== state.raw) dictationRawInput.value = state.raw;
@@ -84,34 +97,47 @@ function renderDictation() {
   dictationCleanedInput.readOnly = state.cleanBusy || capturing;
 
   dictationStatusEl.textContent = t(state.status);
-  dictationRecordButton.disabled = busy || state.cleanBusy || !!state.pendingTail;
+  markDictation(dictationRecordButton, busy || state.cleanBusy || !!state.pendingTail, "balloon_disabled_working");
   dictationRecordButton.textContent = hasRaw ? t("dictation_continue") : t("record");
-  dictationStopButton.disabled = !(capture === "starting" || capture === "listening");
+  markDictation(dictationStopButton, !(capture === "starting" || capture === "listening"), "balloon_dictation_not_recording");
   dictationStopButton.textContent = capture === "starting" ? t("dictation_cancel_start") : t("stop");
-  dictationShapeButton.disabled = !hasRaw || busy || state.cleanBusy || !!state.pendingTail;
+  const shapeBlocked = !hasRaw || busy || state.cleanBusy || !!state.pendingTail;
+  markDictation(dictationShapeButton, shapeBlocked, hasRaw ? "balloon_disabled_working" : "balloon_dictation_needs_raw");
   if (state.cleanBusy) {
-    dictationCleanButton.disabled = false;
+    markDictation(dictationCleanButton, false, "");
     dictationCleanButton.textContent = t("dictation_cancel_clean");
   } else {
-    dictationCleanButton.disabled = !hasRaw || busy || !!state.pendingTail;
+    markDictation(dictationCleanButton, !hasRaw || busy || !!state.pendingTail, hasRaw ? "balloon_disabled_working" : "balloon_dictation_needs_raw");
     dictationCleanButton.textContent = t("clean_transcript");
   }
-  dictationClearButton.disabled = (!hasRaw && !hasCleaned && !state.pendingTail) || busy;
-  dictationSendButton.disabled = !insertText || busy || state.cleanBusy || !!state.pendingTail || state.inserting;
+  markDictation(
+    dictationClearButton,
+    (!hasRaw && !hasCleaned && !state.pendingTail) || busy,
+    (!hasRaw && !hasCleaned) ? "balloon_dictation_nothing_to_clear" : "balloon_disabled_working",
+  );
+  markDictation(
+    dictationSendButton,
+    !insertText || busy || state.cleanBusy || !!state.pendingTail || state.inserting,
+    insertText ? "balloon_disabled_working" : "balloon_dictation_nothing_to_insert",
+  );
   dictationSendButton.textContent = t("dictation_insert_into", dictationInsertDestinationLabel());
   const copyButton = dictationEl("dictation-copy");
-  if (copyButton) copyButton.disabled = !insertText || busy || state.cleanBusy || !!state.pendingTail;
+  markDictation(
+    copyButton,
+    !insertText || busy || state.cleanBusy || !!state.pendingTail,
+    insertText ? "balloon_disabled_working" : "balloon_dictation_nothing_to_insert",
+  );
 
   const sourceRaw = dictationEl("dictation-source-raw");
   const sourceCleaned = dictationEl("dictation-source-cleaned");
   const usingCleaned = state.selectedSource === "cleaned" && cleanedUsable;
   if (sourceRaw) {
-    sourceRaw.disabled = busy || state.cleanBusy;
+    markDictation(sourceRaw, busy || state.cleanBusy, "balloon_disabled_working");
     sourceRaw.setAttribute("aria-pressed", usingCleaned ? "false" : "true");
     sourceRaw.classList.toggle("is-selected", !usingCleaned);
   }
   if (sourceCleaned) {
-    sourceCleaned.disabled = !cleanedUsable || busy || state.cleanBusy;
+    markDictation(sourceCleaned, !cleanedUsable || busy || state.cleanBusy, cleanedUsable ? "balloon_disabled_working" : "balloon_dictation_needs_clean");
     sourceCleaned.setAttribute("aria-pressed", usingCleaned ? "true" : "false");
     sourceCleaned.classList.toggle("is-selected", usingCleaned);
   }

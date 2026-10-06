@@ -46,6 +46,8 @@ test.assertIncludes(bureaucracy, "setControlLoading(els.generateButton", "Captio
 test.assertIncludes(bureaucracy, "bindRovingButtons", "Meme choice groups support arrow-key navigation");
 test.assertIncludes(bureaucracy, 'button.setAttribute("aria-pressed"', "Meme choice groups expose committed selection");
 test.assertIncludes(bureaucracy, "currentEditedCaption", "Edited captions are the source of the rendered preview");
+test.assertIncludes(bureaucracy, "bureaucracy-empty-next", "Empty caption list parks Draft captions as the one next step");
+test.assertIncludes(bureaucracyStyles, ".bureaucracy-meme-window[data-empty]", "Empty meme chrome hides tone/template walls until captions exist");
 test.assertIncludes(bureaucracyStyles, "@container bureaucracy-meme", "Meme workbench owns narrow-window layouts through its container");
 test.assertIncludes(foundationStyles, "--bureaucracy-copy-min-height: 328px", "Meme workbench reserves enough narrow-window height for the caption editor's bottom inset");
 // The floor moved from the grid TRACK to the panel itself (2026-09-05). When

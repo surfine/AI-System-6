@@ -391,11 +391,11 @@ test.assert(
     return { placeWindowForExplicitLayout, scheduleWritingSpineTitleAlignment };
   `)({ requestAnimationFrame: (fn) => queued.push(fn), setTimeout: (fn) => queued.push(fn), aligned });
   const drain = () => { while (queued.length) queued.shift()(); };
-  const solo = { id: "questionSheet", dataset: {}, classList: { remove() {} } };
+  const solo = { id: "questionSheet", dataset: {}, classList: { remove() {}, contains: () => false } };
   runtime.scheduleWritingSpineTitleAlignment(solo);
   drain();
   test.assert(aligned.includes("questionSheet"), "a window nothing re-lays out still gets its spine title alignment");
-  const lower = { id: "teachText", dataset: {}, classList: { remove() {} } };
+  const lower = { id: "teachText", dataset: {}, classList: { remove() {}, contains: () => false } };
   runtime.scheduleWritingSpineTitleAlignment(lower);
   runtime.placeWindowForExplicitLayout(lower, { top: "387px", height: "353px" });
   drain();

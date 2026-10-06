@@ -26,14 +26,14 @@ for (const sheet of ["styles.liquid-glass.css", "styles.desk-dock.css", "styles.
 // Big Sur's Dock and yellow lamp shipped (owner decision B, 2026-09-25): the
 // miniaturize state machine and the Dock renderer travel with it offline, or a
 // restart without a network would draw a lamp whose window has nowhere to go.
-for (const path of ["app/core/window-minimize.js", "app/core/desk-dock.js"]) {
+for (const path of ["app/core/window-minimize.js", "app/core/desk-dock.js", "app/core/dock-minimize-fx.js", "app/vendor/dock-minimize-fx.js"]) {
   test.assert(requests.includes(`https://example.test/${path}?v=test-build`), `Big Sur retains ${path} for offline restart`);
 }
 await message("big-sur");
-test.assert(requests.length === 5, "repeated appearance notifications reuse the retained responses");
+test.assert(requests.length === 7, "repeated appearance notifications reuse the retained responses");
 
 await message("nextstep");
-test.assert(requests[5] === "https://example.test/styles.nextstep.css?v=test-build", "selected NeXTSTEP caches its own versioned material stylesheet");
+test.assert(requests[7] === "https://example.test/styles.nextstep.css?v=test-build", "selected NeXTSTEP caches its own versioned material stylesheet");
 await message("nextstep");
 const beforeYosemite = requests.length;
 await message("yosemite");
@@ -42,8 +42,8 @@ test.assert(requests.length === beforeYosemite, "Yosemite's sheets -- Liquid Gla
 // path already in the shell cache is never fetched again, and an icon family
 // is never part of it.
 test.assert(
-  new Set(requests).size === requests.length && new Set(requests).size === 10,
-  "Big Sur, NeXTSTEP and Yosemite together retain ten URLs -- four stylesheets, the miniaturize state machine, the Dock renderer and four NeXTSTEP shell modules -- fetching none of them twice and downloading no icon family",
+  new Set(requests).size === requests.length && new Set(requests).size === 12,
+  "Big Sur, NeXTSTEP and Yosemite together retain twelve URLs -- four stylesheets, the miniaturize state machine, the Dock renderer, the 3D minimize warp+vendor and four NeXTSTEP shell modules -- fetching none of them twice and downloading no icon family",
 );
 for (const path of ["app/core/window-minimize.js", "app/core/nextstep-shell.js", "app/core/nextstep-dock.js", "app/core/nextstep-menus.js", "app/features/finder-columns.js"]) {
   test.assert(requests.includes(`https://example.test/${path}?v=test-build`), `NeXTSTEP retains ${path} for offline restart`);

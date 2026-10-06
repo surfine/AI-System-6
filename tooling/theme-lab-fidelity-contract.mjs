@@ -5,7 +5,15 @@ export const HISTORICAL_FIDELITY_THEMES = Object.freeze([
   "platinum",
   "aqua",
   "snow-leopard",
+  "lion",
   "yosemite",
+  "tiger",
+  "system-7",
+  "classic",
+  "drawing-board",
+  "nextstep",
+  "big-sur",
+  "liquid-glass",
 ]);
 
 // This is a removal ratchet, not a quota. Every specimen that was part of the
@@ -83,6 +91,15 @@ export const REQUIRED_FIDELITY_SPECIMENS = Object.freeze({
     "titlebar-lamps",
     "titlebar-lamps-zoom",
   ]),
+  // Lion board is the Lion-distinctive set: title-bar material, 12px close
+  // lamp, trailing full-screen control (not 10.6's green zoom), and the
+  // overlay scroll capsule. Broader control coverage stays on Snow Leopard.
+  lion: Object.freeze([
+    "active-titlebar",
+    "titlebar-lamps",
+    "titlebar-fullscreen",
+    "overlay-scrollbar",
+  ]),
   yosemite: Object.freeze([
     "checkbox-checked",
     "checkbox-unchecked",
@@ -110,6 +127,58 @@ export const REQUIRED_FIDELITY_SPECIMENS = Object.freeze({
     "button-default",
     "inactive-titlebar",
     "search-field-focused",
+  ]),
+  // Tiger narrow board (Ask A): authored metal Finder freeze + text-free metal
+  // title band, plus one HIG p.180 close-lamp crop with an honest gap ledger.
+  tiger: Object.freeze([
+    "finder-metal",
+    "metal-titleband",
+    "titlebar-lamps",
+    "checkbox-checked",
+  ]),
+  // Authored Theme Lab specimen boards — not native OS captures. Credit fields
+  // in each manifest say so; floors may be met (freeze↔live) without inventing
+  // historical claims.
+  "system-7": Object.freeze([
+    "active-titlebar",
+    "close-box",
+    "default-ok",
+    "checkbox-checked",
+  ]),
+  classic: Object.freeze([
+    "active-titlebar",
+    "close-box",
+    "default-ok",
+    "popup-normal",
+    "checkbox-checked",
+  ]),
+  "drawing-board": Object.freeze([
+    "active-titlebar",
+    "close-box",
+    "default-ok",
+    "selected-tab",
+    "checkbox-checked",
+  ]),
+  nextstep: Object.freeze([
+    "active-titlebar",
+    "default-ok",
+    "popup-normal",
+    "scroll-thumb",
+    "checkbox-checked",
+  ]),
+  "big-sur": Object.freeze([
+    "active-titlebar",
+    "titlebar-lamps",
+    "default-ok",
+    "sidebar-active",
+    "checkbox-checked",
+  ]),
+  "liquid-glass": Object.freeze([
+    "active-titlebar",
+    "titlebar-lamps",
+    "default-ok",
+    "selected-tab",
+    "checkbox-checked",
   ]),
 });
 

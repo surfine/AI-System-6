@@ -195,7 +195,15 @@
     });
     if (labelsChanged) scheduleSettingsSave();
     const add = button(t("nextstep_shelf_add"), () => pin(selected || ref("project", getActiveProject())));
-    add.disabled = !selected && !getActiveProject(); shelfNode.append(add);
+    const addUnavailable = !selected && !getActiveProject();
+    // A shelf with nothing to pin is greyed, not silently inert: one reason.
+    if (typeof markGrayAffordance === "function") {
+      markGrayAffordance(add, addUnavailable, "balloon_nextstep_shelf_needs_item");
+    } else {
+      add.disabled = addUnavailable;
+      if (addUnavailable) add.dataset.balloonHelpDisabled = "balloon_nextstep_shelf_needs_item";
+    }
+    shelfNode.append(add);
     shelfNode.addEventListener("dragover", (event) => event.preventDefault());
     shelfNode.addEventListener("drop", (event) => {
       event.preventDefault();

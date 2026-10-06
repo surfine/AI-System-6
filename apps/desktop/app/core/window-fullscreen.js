@@ -32,32 +32,64 @@
     }
   }
 
+  // One owner, held as identity rather than re-derived from the DOM: a stale
+  // `is-fullscreen` node (or a second one) must never be mistaken for the
+  // window this module entered, or Exit could tear down the wrong frame.
+  let fullscreenOwner = null;
+
   function current() {
-    return document.querySelector(".window[data-window].is-fullscreen");
+    return fullscreenOwner;
   }
 
   // The frame a window had before full screen, restored on the way out. The
   // desk positions windows with inline styles, so full screen writes inline
   // styles too rather than outranking them from a sheet.
   const frames = new WeakMap();
-  const framed = ["left", "top", "width", "height", "max-height", "z-index"];
+  // right/bottom/transform are captured too: the desk positions some panes with
+  // right/bottom and themes animate transform, so restoring only four sides
+  // would leave a freed window pinned to the wrong edge after Exit Full Screen.
+  const framed = ["left", "top", "right", "bottom", "width", "height", "max-height", "transform", "z-index"];
   let watcher = null;
   let reveal = null;
 
   function enter(win) {
-    if (!win || !enabled() || win.classList.contains("is-hidden")) return false;
+    if (!win?.isConnected || !enabled()
+      || ["is-hidden", "is-app-hidden", "is-minimized"].some((name) => win.classList.contains(name))) return false;
+    // Re-entering the same window must not overwrite the first baseline: a
+    // double Enter/Control-Command-F would otherwise save the 100vw frame as
+    // the "restore" frame and Exit Full Screen could never get the window back.
+    if (fullscreenOwner === win && frames.has(win)) return true;
+    invalidateWindowAutoLayout(win);
     const other = current();
     if (other && other !== win) exit(other);
     if (win.classList.contains("is-collapsed")) toggleCollapsed(win);
     frames.set(win, Object.fromEntries(framed.map((name) => [name, win.style.getPropertyValue(name)])));
+    fullscreenOwner = win;
     win.classList.add("is-fullscreen");
-    Object.assign(win.style, { left: "0px", top: "0px", width: "100vw", height: "100dvh", maxHeight: "none" });
+    Object.assign(win.style, {
+      left: "0px",
+      top: "0px",
+      right: "auto",
+      bottom: "auto",
+      width: "100vw",
+      height: "100dvh",
+      maxHeight: "none",
+      transform: "none",
+    });
     win.style.setProperty("z-index", "var(--z-window-priority)");
     document.body.classList.add("window-fullscreen-active");
     focusWindow(win);
     // Leaving the desk (closed, hidden, put away) leaves full screen as well.
+    // A fresh observer replaces the old one, and exit() only tears down the
+    // observer it still owns, so exiting one window never unobserves another.
+    watcher?.disconnect();
     watcher = new MutationObserver(() => {
-      if (win.classList.contains("is-hidden") || win.classList.contains("is-minimized")) exit(win);
+      // Leaving the desk any way at all -- hidden, put away, app-hidden,
+      // shaded, or detached from the document -- leaves full screen, so no
+      // invisible full-screen layer is left covering the desk.
+      if (!win.isConnected
+        || ["is-hidden", "is-app-hidden", "is-minimized", "is-collapsed"]
+          .some((name) => win.classList.contains(name))) exit(win);
     });
     watcher.observe(win, { attributes: true, attributeFilter: ["class"] });
     showRevealZone();
@@ -66,7 +98,11 @@
   }
 
   function exit(win = current()) {
-    if (!win) return false;
+    // Only the window this module actually entered may be exited. Exiting a
+    // window that is not the owner (a direct call with someone else's window)
+    // must be a no-op, not a wipe of that window's inline frame.
+    if (!win || fullscreenOwner !== win || !frames.has(win)) return false;
+    invalidateWindowAutoLayout(win);
     watcher?.disconnect();
     watcher = null;
     win.classList.remove("is-fullscreen");
@@ -76,11 +112,35 @@
       else win.style.removeProperty(name);
     });
     frames.delete(win);
+    fullscreenOwner = null;
     document.body.classList.remove("window-fullscreen-active", "fullscreen-menu-revealed");
     reveal?.remove();
     reveal = null;
     window.AISystem6DeskDock?.sync?.();
     return true;
+  }
+
+  // Read-only projection of the pre-full-screen frame for the Working Session.
+  // It never measures the live full-screen view and never leaves full screen;
+  // returns null when this window is not full screen or has no baseline, so the
+  // capture can refuse a transient snapshot rather than save 100vw.
+  function frameForPersistence(win) {
+    if (!win?.classList?.contains("is-fullscreen")) return null;
+    const saved = frames.get(win);
+    if (!saved) return null;
+    const copy = { ...saved };
+    delete copy["z-index"];
+    return copy;
+  }
+
+  // The layer the window had before full screen, for the Working Session's
+  // z-order. Kept separate from frameForPersistence, whose contract is geometry
+  // only: the pre-full-screen frame is a geometric projection, not a layer, and
+  // the live full-screen z (var(--z-window-priority)) must never be saved.
+  function layerForPersistence(win) {
+    if (!win?.classList?.contains("is-fullscreen")) return null;
+    const value = frames.get(win)?.["z-index"];
+    return typeof value === "string" && value ? value : null;
   }
 
   // Lion's menu bar slides away in full screen and comes back while the
@@ -160,7 +220,7 @@
   document.addEventListener("ai-system6-themechange", syncAll);
   window.addEventListener("resize", syncAll);
 
-  window.AISystem6WindowFullscreen = Object.freeze({ enter, exit, toggle, syncAll });
+  window.AISystem6WindowFullscreen = Object.freeze({ enter, exit, toggle, syncAll, frameForPersistence, layerForPersistence });
   window.AISystem6WindowFullscreenLoaded = true;
   syncAll();
 })();

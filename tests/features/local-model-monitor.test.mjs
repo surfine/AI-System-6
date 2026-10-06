@@ -11,6 +11,9 @@ import { createAppBootVm } from "../helpers/app-boot-vm.mjs";
 const test = createFeatureTest("local-model-monitor");
 
 const vmw = createAppBootVm();
+// Boot now survives a missing IndexedDB and keeps running its later steps;
+// let it park before the test seeds the desk it will assert on.
+await vmw.settleBoot();
 vmw.run(`
   window.__visibility = "visible";
   Object.defineProperty(document, "visibilityState", {

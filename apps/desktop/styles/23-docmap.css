@@ -63,6 +63,26 @@
   color: var(--selection-fg);
 }
 
+/* Goal #2: idle / pending DocMap keeps the empty note primary; demote the
+   grey layout＋handoff chrome that cannot act until a map exists. */
+.docmap-window[data-empty] .docmap-map-toolbar {
+  opacity: 0.78;
+}
+
+.docmap-window[data-empty] .docmap-tree .empty-folder-note[data-docmap-state="idle"] {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 18px auto;
+  max-width: 42ch;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.docmap-window[data-empty] .docmap-tree .empty-folder-note[data-docmap-state="idle"] > .btn {
+  min-height: var(--touch-primary-min-height);
+}
+
 .docmap-node-strip {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -387,7 +407,7 @@ body .docmap-map-toolbar .btn {
   body .docmap-map-toolbar .btn,
   .docmap-map-toolbar .view-switch-option {
     min-width: 0;
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
     padding: 6px 8px;
     justify-content: center;
     text-align: center;

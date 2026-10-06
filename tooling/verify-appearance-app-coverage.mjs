@@ -699,7 +699,93 @@ try {
         );
       }
     }
-    results.push({ theme, projection, windows });
+    // Desktop icon labels are the one text surface this gate can read without
+    // mounting a route, and they were the 2026-10-06 report: a Chinese project
+    // name is a single unbroken CJK run, `word-break: keep-all` gives it no
+    // legal break opportunity, so the label drew straight out of its fixed box
+    // (103px of content in a 92px Liquid Glass label). The desk's own labels
+    // are measured, plus one injected CJK probe, because the desk normally
+    // runs in English and a short label would pass this by accident.
+    //
+    // The toggle probe is the other half of the same report: a segmented
+    // control paints `color: var(--selected-fg)` on `background: var(--ink)`.
+    // Reading the computed pair proves the foreground is a solid colour and
+    // not the era's material (a gradient in `color` dies at computed-value
+    // time and falls back to ink on ink). It is injected rather than queried
+    // because the writing mode toggle only exists once the editor mounts,
+    // which is not part of this window sweep.
+    const deskProbes = await page.evaluate(() => {
+      const measure = (element) => {
+        const style = getComputedStyle(element);
+        return {
+          scrollWidth: element.scrollWidth,
+          clientWidth: element.clientWidth,
+          maxWidth: style.maxWidth,
+          wordBreak: style.wordBreak,
+          overflowWrap: style.overflowWrap,
+          color: style.color,
+          backgroundColor: style.backgroundColor,
+        };
+      };
+      const read = (label, text) => ({ text, ...measure(label) });
+      const own = [...document.querySelectorAll(".desktop-icon span:last-child")]
+        .filter((label) => (label.textContent || "").trim())
+        .map((label) => read(label, (label.textContent || "").trim()));
+      const host = document.querySelector(".desktop-icon");
+      let labelProbe = null;
+      if (host && host.parentElement) {
+        const clone = host.cloneNode(false);
+        const label = document.createElement("span");
+        label.textContent = "桌面级性能的预演";
+        clone.append(document.createElement("span"), label);
+        clone.style.visibility = "hidden";
+        clone.style.pointerEvents = "none";
+        host.parentElement.append(clone);
+        labelProbe = read(label, label.textContent);
+        clone.remove();
+      }
+      let writingModeSeg = null;
+      if (host && host.parentElement) {
+        const toggle = document.createElement("div");
+        toggle.className = "writing-mode-toggle";
+        const segment = document.createElement("span");
+        segment.className = "writing-mode-seg is-on";
+        segment.textContent = "read";
+        toggle.append(segment);
+        toggle.style.visibility = "hidden";
+        toggle.style.pointerEvents = "none";
+        host.parentElement.append(toggle);
+        const style = getComputedStyle(segment);
+        writingModeSeg = { color: style.color, backgroundColor: style.backgroundColor };
+        toggle.remove();
+      }
+      return { own, probe: labelProbe, writingModeSeg };
+    });
+    assert(
+      deskProbes.own.length > 0 && deskProbes.probe,
+      `${theme.id}: the desk rendered no desktop icon labels to measure (own=${deskProbes.own.length}, probe=${Boolean(deskProbes.probe)})`,
+    );
+    const overflowingLabels = [...deskProbes.own, deskProbes.probe]
+      .filter((label) => label.scrollWidth > label.clientWidth + 1)
+      .map((label) => `${JSON.stringify(label.text)} draws ${label.scrollWidth}px of text in a ${label.clientWidth}px box (max-width ${label.maxWidth}, word-break ${label.wordBreak}, overflow-wrap ${label.overflowWrap})`);
+    assert(
+      overflowingLabels.length === 0,
+      `${theme.id}: desktop icon labels spill outside their box — ${overflowingLabels.join("; ")}`,
+    );
+    // Named invariant for the reported black box: the selected segment's ink
+    // must be a parsed colour and must not equal the fill behind it.
+    const segColor = /rgba?\(\s*([\d.]+)[ ,]+([\d.]+)[ ,]+([\d.]+)/.exec(deskProbes.writingModeSeg?.color || "");
+    const segBack = /rgba?\(\s*([\d.]+)[ ,]+([\d.]+)[ ,]+([\d.]+)/.exec(deskProbes.writingModeSeg?.backgroundColor || "");
+    assert(
+      segColor && segBack,
+      `${theme.id}: .writing-mode-seg.is-on did not compute to solid colours (color ${deskProbes.writingModeSeg?.color}, background ${deskProbes.writingModeSeg?.backgroundColor})`,
+    );
+    assert(
+      segColor.slice(1).join(",") !== segBack.slice(1).join(","),
+      `${theme.id}: .writing-mode-seg.is-on paints ink on ink (${deskProbes.writingModeSeg.color} on ${deskProbes.writingModeSeg.backgroundColor})`,
+    );
+
+    results.push({ theme, projection, windows, desktopLabels: deskProbes });
     console.log(`OK  ${theme.id}: ${windows.length} registered windows share system chrome; ${REPRESENTATIVE_WINDOW_IDS.size} role screenshots captured`);
   }
 

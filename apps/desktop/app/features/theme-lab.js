@@ -219,8 +219,15 @@
                 <h3 id="theme-lab-navigation-title"><span class="theme-lab-navigation-generic-label" data-i18n="theme_lab_navigation">Lists &amp; sidebar</span><span class="theme-lab-column-browser-label" data-i18n="theme_lab_column_browser">Column browser</span></h3>
                 <div class="theme-lab-split-view theme-lab-generic-browser theme-lab-generic-fixture">
                   <nav class="theme-lab-sidebar" aria-label="Icon list">
-                    <button class="is-selected" type="button"><span class="sys-icon" data-system-icon="startupDisk" aria-hidden="true"></span><span data-i18n="startup_disk">Startup Disk</span></button>
-                    <button type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span data-i18n="applications">Applications</span></button>
+                    <!-- 10.10 Applications source list: Favorites rows + a Devices
+                         group. Three plain rows could not silhouette-match the
+                         native eight-row capture; icons must paint (PNG tokens). -->
+                    <button class="is-selected" type="button"><span class="sys-icon" data-system-icon="applications" aria-hidden="true"></span><span data-i18n="applications">Applications</span></button>
+                    <button type="button"><span class="sys-icon" data-system-icon="document" aria-hidden="true"></span><span>Desktop</span></button>
+                    <button type="button"><span class="sys-icon" data-system-icon="document" aria-hidden="true"></span><span data-i18n="documents">Documents</span></button>
+                    <button type="button"><span class="sys-icon" data-system-icon="document" aria-hidden="true"></span><span>Downloads</span></button>
+                    <strong class="theme-lab-sidebar-group">Devices</strong>
+                    <button type="button"><span class="sys-icon" data-system-icon="startupDisk" aria-hidden="true"></span><span data-i18n="startup_disk">Startup Disk</span></button>
                     <button type="button"><span class="sys-icon" data-system-icon="trash" aria-hidden="true"></span><span data-i18n="trash">Trash</span></button>
                   </nav>
                   <!-- Finder's own list view (.finder-list / .finder-list-row),

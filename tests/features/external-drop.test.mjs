@@ -124,8 +124,29 @@ test.assertIncludes(
 );
 test.assertIncludes(
   dragDrop,
-  'const externalDropTargets = new Set(["desktop", "editor-insert", "clio-attachment"]);',
-  "only the desktop and the two content surfaces take outside material"
+  'const externalDropTargets = new Set(["desktop", "editor-insert", "clio-attachment", "scrap", "file-floppy"]);',
+  "desktop, editable surfaces, Scrapbook, and File Floppy take outside material"
+);
+test.assertIncludes(dragDrop, "function externalDropHitKind", "outside material hit feedback distinguishes accept from reject");
+test.assertIncludes(dragDrop, "function markDropHitReject", "a refuse hit is a visible class, not a silent no-op");
+test.assertIncludes(dragDrop, 'markDropHitReject(dropTarget)', "dragover paints reject on surfaces that will not file the drop");
+test.assertIncludes(dragDrop, 'event.dataTransfer.dropEffect = "none"', "a refuse hit asks the browser for the none cursor");
+test.assertIncludes(html, 'data-drop-target="scrap"', "Scrapbook is a named drop surface");
+test.assertIncludes(html, 'data-drop-target="file-floppy"', "File Floppy is a named drop surface");
+test.assertIncludes(en, "external_drop_scrap_needs_picture:", "a non-picture Scrapbook drop explains the refuse in English");
+test.assertIncludes(zh, "external_drop_scrap_needs_picture:", "a non-picture Scrapbook drop explains the refuse in Chinese");
+test.assertIncludes(en, "external_drop_floppy_needs_file:", "a non-file File Floppy drop explains the refuse in English");
+test.assertIncludes(zh, "external_drop_floppy_needs_file:", "a non-file File Floppy drop explains the refuse in Chinese");
+const responsiveCss = read("styles/60-responsive.css");
+test.assertIncludes(responsiveCss, ".is-drop-reject", "accept and reject hit frames are styled");
+test.assertIncludes(responsiveCss, '[data-drop-target="project"].is-drag-over', "Project Hard Disk desk icon accept is thickened");
+test.assertIncludes(responsiveCss, '[data-drop-target="project"].is-drop-reject', "Project Hard Disk desk icon refuse is thickened");
+test.assertIncludes(responsiveCss, '[data-drop-target="droplet"].is-drag-over', "droplet accept hit is thickened");
+test.assertIncludes(html, 'id="desktop-file-floppy-starter"', "File Floppy starter icon is on the desk");
+test.assertMatches(
+  html,
+  /id="desktop-file-floppy-starter"[^>]*data-drop-target="file-floppy"/,
+  "unmounted File Floppy starter is a named drop surface"
 );
 test.assertIncludes(
   dragDrop,

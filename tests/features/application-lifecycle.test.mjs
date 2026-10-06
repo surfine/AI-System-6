@@ -160,7 +160,12 @@ test.assertIncludes(openttdShell, 'data.command === "resume"', "the shell honour
 
 const micropolis = read("app/features/micropolis.js");
 test.assertIncludes(micropolis, "stopMicropolisLoop();", "Micropolis stops its animation loop on suspend");
-test.assertIncludes(micropolis, "micropolisState.cityId && micropolisState.dirty", "Micropolis writes back only a city the player already named");
+// Read the leave-flush function itself: the guard may be written as an early
+// return or as a positive condition, and pinning one sentence in the whole file
+// let an equivalent rewrite read as a regression.
+const leaveFlush = micropolis.match(/async function flushMicropolisLeaveSave\(\) \{([\s\S]*?)\n {2}\}/)?.[1] || "";
+test.assertIncludes(leaveFlush, "!micropolisState.cityId", "Micropolis writes back only a city the player already named");
+test.assertIncludes(leaveFlush, "!micropolisState.dirty", "and only when that city has unsaved edits");
 test.assertIncludes(micropolis, "if (micropolisState.sim) startMicropolisLoop();", "a resumed city restarts its loop instead of rebuilding");
 
 const cmf = read("app/features/cmf-studio.js");

@@ -140,6 +140,7 @@ body[data-theme="big-sur"] {
   --painter-blur: blur(12px);
   --painter-blur-px: 12;
   --selection-bg: #0069d9;
+  --selection-edge: #0069d9;
   --selection-fg: #ffffff;
   --sidebar-selection-bg: rgba(0, 0, 0, 0.1);
   --sidebar-selection-fg: var(--ink);
@@ -218,14 +219,16 @@ body[data-theme="big-sur"] {
   --radio-checked-focus-image: var(--radio-checked-image);
   --system-check-size: 15px;
   --system-radio-size: 15px;
-  --menu-bar-bg: rgba(248, 244, 242, 0.86);
-  /* The opaque colour under that 0.86, for the strip a home-screen web app
+  /* 11: warmer, more open frost than Yosemite's cool dense bar (P2). */
+  --menu-bar-bg: rgba(250, 244, 238, 0.64);
+  /* The opaque colour under that fill, for the strip a home-screen web app
      runs under the status area. See 60-responsive.css's installed-surface
      block for why the strip has to be flat there. */
-  --menu-bar-base: #f8f4f2;
+  --menu-bar-base: #faf4ee;
+  --menu-bar-backdrop-filter: blur(26px) saturate(205%);
   --menu-bar-border-color: transparent;
   --menu-bar-border: 0;
-  --menu-bar-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+  --menu-bar-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
   --menu-panel-bg: rgba(248, 246, 245, 0.97);
   --menu-panel-border: 1px solid rgba(0, 0, 0, 0.18);
   --menu-panel-radius: 7px;
@@ -240,10 +243,14 @@ body[data-theme="big-sur"] {
   --modal-bg: var(--paper);
   --modal-radius: 12px;
   --desktop: #183465;
+  /* Big Sur "Big Sur" abstract: warm headland left, peach right, cyan mid-bay
+     over deep blue (512 Pixels 11 light; structure only, no Apple raster). */
   --desktop-surface:
     radial-gradient(ellipse 55% 40% at 88% 8%, #ffd7b0 0%, #fa9376 32%, transparent 58%),
     radial-gradient(ellipse 48% 36% at 8% -2%, #ff6b8a 0%, #ed5372 22%, #b94673 40%, transparent 68%),
-    radial-gradient(ellipse 40% 30% at 52% 48%, rgb(80 160 210 / 0.35), transparent 70%),
+    radial-gradient(ellipse 36% 28% at 62% 62%, rgb(255 200 140 / 0.28), transparent 72%),
+    radial-gradient(ellipse 40% 30% at 52% 48%, rgb(80 160 210 / 0.42), transparent 70%),
+    radial-gradient(ellipse 70% 45% at 40% 85%, rgb(12 40 90 / 0.55), transparent 65%),
     linear-gradient(145deg, #4a2e72 12%, #345b9e 42%, #1a88c4 52%, #123a70 78%, #0c2850 100%);
   --desktop-label-bg: transparent;
   --desktop-label-fg: #fff;
@@ -504,8 +511,10 @@ body[data-theme="big-sur"][data-color-mode="dark"] {
   --btn-active-bg: #494747;
   --field-bg: #1e1e1e;
   --selection-bg: #0065cf;
-  --menu-bar-bg: rgba(31, 27, 35, 0.9);
+  --selection-edge: #0065cf;
+  --menu-bar-bg: rgba(31, 27, 35, 0.72);
   --menu-bar-base: #1f1b23;
+  --menu-bar-backdrop-filter: blur(26px) saturate(170%);
   --menu-panel-bg: rgba(48, 45, 47, 0.98);
   --menu-panel-border: 1px solid rgba(255, 255, 255, 0.2);
   --menu-button-active-bg: rgba(255, 255, 255, 0.16);

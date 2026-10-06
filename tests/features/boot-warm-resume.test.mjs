@@ -2,7 +2,7 @@
 // (≤300ms human delay), while a new session or explicit Restart keeps the full
 // Happy Mac ceremony. Data loads are never skipped.
 
-import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
+import { createFeatureTest, forEachAstChild, parseJsSource, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("boot-warm-resume");
 const desktopRuntime = read("app/core/desktop-runtime.js");
@@ -16,7 +16,28 @@ test.assertIncludes(desktopRuntime, "warmResume ? (index === steps.length - 1 ? 
 test.assertIncludes(desktopRuntime, "warmResume ? 140 : 260", "warm fade is shorter than the cold fade");
 test.assertIncludes(desktopRuntime, "if (!warmResume) markSessionBootSeen()", "only a cold boot records the flag");
 test.assertIncludes(windowManager, "clearSessionBootSeen()", "explicit Restart clears the warm flag");
-test.assertIncludes(boot, "await loadDeskState()", "warm boot never skips desk-state load");
+// Warm resume only shortens the visual holds; it never skips storage. The
+// desk-state load is now raced against an 8s IndexedDB guard so a wedged
+// transaction cannot leave a phone on Sad Mac, and it is still awaited before
+// the desk paints — so the contract follows the call, not the old
+// `await loadDeskState()` line.
+test.assertMatches(
+  boot,
+  /await Promise\.race\(\[\s*loadDeskState\(\)/,
+  "warm boot never skips desk-state load: the restore is raced and awaited"
+);
+test.assert(
+  (() => {
+    const calls = [];
+    const visit = (node) => {
+      if (node.type === "CallExpression" && node.callee?.name === "loadDeskState") calls.push(node);
+      forEachAstChild(node, visit);
+    };
+    visit(parseJsSource(boot));
+    return calls.length === 1;
+  })(),
+  "boot reaches loadDeskState through exactly one call expression, so no warm branch sidesteps it"
+);
 test.assertIncludes(boot, "restoreWorkingSession()", "warm boot never skips the Working Session restore");
 test.assertIncludes(desktopRuntime, "const warmResume = sessionBootSeen();", "warm detection precedes the boot sound decision");
 const soundOrderBlock = desktopRuntime.match(/const warmResume = sessionBootSeen\(\);[\s\S]*?if \(!warmResume\) playSystemSound\("boot"\);[\s\S]*?playSystemSound\("boot"\);?/)?.[0] || "";

@@ -3,6 +3,9 @@ import { createFeatureTest } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("writing-studio-usability");
 const vmw = createAppBootVm();
+// Boot now survives a missing IndexedDB and keeps running its later steps;
+// let it park before the test seeds the desk it will assert on.
+await vmw.settleBoot();
 vmw.run(`
   projects.length = 0;
   projects.push({id:"studio",name:"Paper",questionSheet:"作者：Aaron\\n接收者：落落\\n媒介：专栏文章",outline:"# Paper\\n\\n## First\\n\\nalpha\\n\\n## Second\\n\\nbeta\\n\\n## Third\\n\\ngamma",drafts:[],scraps:[],flowState:{}});

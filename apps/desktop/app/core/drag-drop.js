@@ -82,7 +82,7 @@ function initDragAndDrop() {
   document.addEventListener("dragend", (event) => {
     const target = event.target.closest("[data-drag-type]");
     if (target) target.classList.remove("is-dragging");
-    document.querySelectorAll(".is-drag-over").forEach(el => el.classList.remove("is-drag-over"));
+    clearAllDropHitFeedback();
     endSpringFolderSession();
   });
 
@@ -103,11 +103,18 @@ function initDragAndDrop() {
       // A drop inside a window belongs to that window, not the desktop behind it.
       if (dropTarget.dataset.dropTarget === "desktop" && event.target.closest(".window")) return;
       event.preventDefault();
-      // Outside material is always a copy. Asking for "move" on a drag whose
-      // source only allows copy cancels the drop before it starts.
+      // Outside material: copy only on surfaces that will file it. Reject hits
+      // show dropEffect "none" plus is-drop-reject so trash/folder/etc. never
+      // look like a File Floppy import (ADHD/HIG: accept and refuse are visible).
       if (isExternalDrop(event)) {
-        event.dataTransfer.dropEffect = "copy";
-        if (externalDropTargetAccepts(dropTarget.dataset.dropTarget)) dropTarget.classList.add("is-drag-over");
+        const kind = externalDropHitKind(dropTarget.dataset.dropTarget, event);
+        if (kind === "accept") {
+          event.dataTransfer.dropEffect = "copy";
+          markDropHitAccept(dropTarget);
+        } else {
+          event.dataTransfer.dropEffect = "none";
+          markDropHitReject(dropTarget);
+        }
         return;
       }
       if (dropTarget.dataset.dropTarget === "editor-insert") {
@@ -124,8 +131,15 @@ function initDragAndDrop() {
       if (dropTarget.dataset.dropTarget === "document-folder") {
         maybeSpringFolder(dropTarget);
       }
+      // Scrap and File Floppy are outside-material surfaces; an internal Finder
+      // object over them is a refuse hit, not a silent invert.
+      if (dropTarget.dataset.dropTarget === "scrap" || dropTarget.dataset.dropTarget === "file-floppy") {
+        event.dataTransfer.dropEffect = "none";
+        markDropHitReject(dropTarget);
+        return;
+      }
       event.dataTransfer.dropEffect = ["clio-attachment", "droplet", "control-strip"].includes(dropTarget.dataset.dropTarget) ? "copy" : "move";
-      dropTarget.classList.add("is-drag-over");
+      markDropHitAccept(dropTarget);
     }
   });
 
@@ -134,7 +148,7 @@ function initDragAndDrop() {
     if (dropTarget) {
       const rect = dropTarget.getBoundingClientRect();
       if (event.clientX <= rect.left || event.clientX >= rect.right || event.clientY <= rect.top || event.clientY >= rect.bottom) {
-        dropTarget.classList.remove("is-drag-over");
+        clearDropHitFeedback(dropTarget);
         window.AISystem6FinderObjects?.clearEditorInsertCaret?.(dropTarget);
         if (dropTarget.dataset.dropTarget === "document-folder" && dropTarget.dataset.folderId === springTimerFolderId) {
           cancelSpringFolderTimer();
@@ -151,13 +165,13 @@ function initDragAndDrop() {
       // Outside material takes the external route before the Finder payload is
       // read, because it never carries one.
       if (isExternalDrop(event)) {
-        dropTarget.classList.remove("is-drag-over");
+        clearDropHitFeedback(dropTarget);
         await handleExternalDropOnTarget(event, dropTarget.dataset.dropTarget);
         return;
       }
 
       event.preventDefault();
-      dropTarget.classList.remove("is-drag-over");
+      clearDropHitFeedback(dropTarget);
 
       try {
         const rawData = event.dataTransfer.getData("application/json");
@@ -171,6 +185,12 @@ function initDragAndDrop() {
 
         if (dropTargetType === "trash") {
           handleDropToTrash(dragData);
+        } else if (dropTargetType === "scrap") {
+          // Scrapbook is for outside pictures; an internal Finder object has its
+          // own home and must not vanish into a silent refuse.
+          setStatus(t("external_drop_scrap_needs_picture"));
+        } else if (dropTargetType === "file-floppy") {
+          setStatus(t("external_drop_floppy_needs_file"));
         } else if (dropTargetType === "droplet") {
           withScripting(() => runDropletDrop(dropTarget.dataset.dropletAction || "", dragData));
         } else if (dropTargetType === "desktop") {
@@ -210,20 +230,99 @@ function initDragAndDrop() {
   initExternalDropSafetyNet();
 }
 
-// Which Finder drop targets have something to do with outside material. The
-// Trash, a project, a folder, and the Control Strip are internal-object
-// targets: an external drop on them is refused in place rather than quietly
-// turned into an import the user did not ask for.
-const externalDropTargets = new Set(["desktop", "editor-insert", "clio-attachment"]);
+// Which Finder drop targets can file outside material. Trash, project, folder,
+// and Control Strip stay internal-object targets: an external drop on them is
+// refused in place rather than quietly turned into an import.
+const externalDropTargets = new Set(["desktop", "editor-insert", "clio-attachment", "scrap", "file-floppy"]);
 
 function externalDropTargetAccepts(dropTargetType) {
   return externalDropTargets.has(dropTargetType);
+}
+
+// Hit feedback for outside material. Desktop always accepts (it routes by type).
+// Scrap and File Floppy accept only real files; text/link drags refuse in place
+// with a visible reject hit. Editable surfaces accept files; bare text keeps the
+// browser caret and is not a dashed accept frame here.
+function externalDropHitKind(dropTargetType, event) {
+  if (!externalDropTargetAccepts(dropTargetType)) return "reject";
+  if (dropTargetType === "desktop") return "accept";
+  if (dropTargetType === "scrap" || dropTargetType === "file-floppy") {
+    return externalDropHasFiles(event) ? "accept" : "reject";
+  }
+  if (dropTargetType === "editor-insert" || dropTargetType === "clio-attachment") {
+    return externalDropHasFiles(event) ? "accept" : "reject";
+  }
+  return "reject";
+}
+
+function clearDropHitFeedback(el) {
+  if (!el?.classList) return;
+  el.classList.remove("is-drag-over", "is-drop-reject");
+}
+
+function clearAllDropHitFeedback() {
+  document.querySelectorAll(".is-drag-over, .is-drop-reject").forEach((el) => {
+    el.classList.remove("is-drag-over", "is-drop-reject");
+  });
+}
+
+function markDropHitAccept(el) {
+  if (!el?.classList) return;
+  el.classList.remove("is-drop-reject");
+  el.classList.add("is-drag-over");
+}
+
+let lastDropRejectStatusKey = "";
+let lastDropRejectStatusAt = 0;
+
+function markDropHitReject(el) {
+  if (!el?.classList) return;
+  el.classList.remove("is-drag-over");
+  el.classList.add("is-drop-reject");
+  // Goal #2/#4: refuse is visible AND sayable — silhouette alone is easy to
+  // miss mid-drag. One status per target kind per short window (no nag).
+  const kind = el.dataset?.dropTarget || "";
+  const reasonKey = kind === "scrap"
+    ? "external_drop_scrap_needs_picture"
+    : kind === "file-floppy"
+      ? "external_drop_floppy_needs_file"
+      : "";
+  if (!reasonKey || typeof t !== "function" || typeof setStatus !== "function") return;
+  const now = Date.now();
+  if (reasonKey === lastDropRejectStatusKey && now - lastDropRejectStatusAt < 1600) return;
+  lastDropRejectStatusKey = reasonKey;
+  lastDropRejectStatusAt = now;
+  setStatus(t(reasonKey));
 }
 
 async function handleExternalDropOnTarget(event, dropTargetType) {
   if (dropTargetType === "desktop") {
     event.preventDefault();
     return routeExternalDropToDesktop(event);
+  }
+
+  if (dropTargetType === "file-floppy") {
+    // The File Floppy window is the named destination for outside files; text
+    // and links still belong on the desktop router, not this volume.
+    if (!externalDropHasFiles(event)) {
+      event.preventDefault();
+      setStatus(t("external_drop_floppy_needs_file"));
+      return false;
+    }
+    event.preventDefault();
+    return routeExternalDropFilesOnly(event);
+  }
+
+  if (dropTargetType === "scrap") {
+    // Scrapbook clips pictures; it does not mount File Floppy context or keep
+    // bare text. Refuse with a reason instead of a silent snap-back.
+    event.preventDefault();
+    const pictures = imageFilesFromList(event.dataTransfer?.files);
+    if (pictures.length && typeof clipPictureToScrapbook === "function") {
+      return clipPictureToScrapbook(pictures);
+    }
+    setStatus(t("external_drop_scrap_needs_picture"));
+    return false;
   }
 
   if (dropTargetType === "editor-insert" || dropTargetType === "clio-attachment") {

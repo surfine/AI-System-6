@@ -106,6 +106,12 @@ declare function leavePreviewToCaret(input: any, preview: any): void;
 declare function countTextWords(text: string): number;
 declare function estimateVoiceoverSeconds(text: string): number;
 declare function estimateBilibiliVoiceoverSeconds(text: string): number;
+// The grey-with-a-reason helper from app/core/balloon-help.js. The darkroom
+// footer keys are the one place that greys a control itself, so the chain calls
+// it here; the site guards on typeof for the same lazy-loading reason as every
+// other declaration above, and checkJs was reporting the name before this
+// branch. Declared, not repaired.
+declare function markGrayAffordance(control: any, unavailable: boolean, reasonKey?: string): void;
 
 interface Window {
   AISystem6ApplicationShell?: any;

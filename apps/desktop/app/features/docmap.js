@@ -2096,6 +2096,43 @@ function zoomDocMapOut() {
   syncDocMapZoomDom();
 }
 
+// Handoff verbs act on a generated map. With none, they stay grey and Balloon
+// Help says why — same pattern as Searcher / Find File, instead of a status
+// scold after the click.
+function syncDocMapHandoffActions({ hasMap = false } = {}) {
+  const needsMap = "balloon_docmap_needs_map";
+  if (docMapCommandSummary) {
+    docMapCommandSummary.dataset.balloonHelpDisabled = needsMap;
+    docMapCommandSummary.classList.toggle("is-disabled", !hasMap);
+  }
+  docMapLayoutButtons?.forEach((button) => {
+    button.dataset.balloonHelpDisabled = needsMap;
+  });
+  const askButton = document.querySelector("#docmap-ask-button");
+  if (askButton) askButton.dataset.balloonHelpDisabled = needsMap;
+  [
+    [docMapSendQuestionButton, needsMap],
+    [docMapAskHkrrButton, needsMap],
+    [docMapInsertOutlineButton, needsMap],
+    [docMapSaveButton, "balloon_docmap_save_disabled"],
+    [docMapPrintPdfButton, needsMap],
+  ].forEach(([button, key]) => {
+    if (!button) return;
+    button.dataset.balloonHelpDisabled = key;
+  });
+}
+
+function syncDocMapEmptyMarker(hasMap = false) {
+  const win = typeof getWindow === "function"
+    ? getWindow("docMap")
+    : document.querySelector('[data-window="docMap"]');
+  if (!win) return;
+  // Goal #2: empty / pending DocMap marks data-empty so narrow CSS can calm
+  // grey toolbar chrome and keep the idle note readable.
+  if (hasMap) win.removeAttribute("data-empty");
+  else win.setAttribute("data-empty", "");
+}
+
 function renderDocMap() {
   if (!docMapTreeEl) return;
   const map = currentDocMap;
@@ -2114,11 +2151,14 @@ function renderDocMap() {
       const note = failed
         ? t("docmap_pending_failed", pending.message || t("docmap_model_quality_failed"))
         : t("docmap_pending_note", pending.label || t("docmap"), docMapRangeLabel(pending.rangeMode), pending.chars || 0);
-      docMapTreeEl.innerHTML = `<div class="empty-folder-note"><p>${escapeHtml(note)}</p>${pending.retryable ? `<button class="btn" type="button" data-action="docmap-retry-pending">${escapeHtml(t("docmap_retry"))}</button>` : ""}</div>`;
+      docMapTreeEl.innerHTML = `<div class="empty-folder-note" data-docmap-state="${failed ? "failed" : "pending"}"><p>${escapeHtml(note)}</p>${pending.retryable ? `<button class="btn" type="button" data-action="docmap-retry-pending">${escapeHtml(t("docmap_retry"))}</button>` : ""}</div>`;
     } else {
       docMapTreeEl.removeAttribute("aria-busy");
       docMapCountEl.textContent = t("docmap_nodes_count", 0);
-      docMapTreeEl.innerHTML = `<div class="empty-folder-note">${escapeHtml(t("docmap_empty"))}</div>`;
+      // Goal #2/#6: idle DocMap offers Reader as the one next source step
+      // (retry already owns the pending/failed empty). Map remains honest —
+      // opening Reader never pretends a structure already exists.
+      docMapTreeEl.innerHTML = `<div class="empty-folder-note" data-docmap-state="idle"><p>${escapeHtml(t("docmap_empty"))}</p><button class="btn default" type="button" data-action="open-reader">${escapeHtml(t("reader"))}</button></div>`;
     }
     if (docMapCommandMenu) {
       docMapCommandMenu.classList.add("is-disabled");
@@ -2130,6 +2170,8 @@ function renderDocMap() {
     [docMapSendQuestionButton, docMapAskHkrrButton, docMapInsertOutlineButton, docMapSaveButton, docMapPrintPdfButton].forEach((button) => {
       if (button) button.disabled = true;
     });
+    syncDocMapHandoffActions({ hasMap: false });
+    syncDocMapEmptyMarker(false);
     renderDocMapNodeStrip();
     return;
   }
@@ -2158,6 +2200,8 @@ function renderDocMap() {
   if (docMapInsertOutlineButton && map.kind === "videoDocMap") {
     docMapInsertOutlineButton.disabled = true;
   }
+  syncDocMapHandoffActions({ hasMap: true });
+  syncDocMapEmptyMarker(true);
   renderDocMapNodeStrip();
 }
 

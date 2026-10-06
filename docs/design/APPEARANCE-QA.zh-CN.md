@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/APPEARANCE-QA.md -->
-<!-- source-sha256: b74dde5a55bb1b684bdd62a08c52a66d5f342601195663772bb175298b2853b5 -->
+<!-- source-sha256: c2d56442313dc673255db1ae54531bdce9eebd8a12ea7fe2cc5e4638b156e0a1 -->
 
 英文版为准。本文档仅供人类参考。
 
@@ -41,9 +41,9 @@ reference、一边自称 canonical。详见
 | Board | specimen 数 | 达到 floor | 已记录差距 | reference 不可用 |
 | --- | --- | --- | --- | --- |
 | Platinum | 20 | 12 | 2 | 6（3 个照片缩略图裁片，加 3 个裁错对象的裁片） |
-| Aqua | 18 | 17 | 1 | 0（默认按钮：参照框的是修正前的 21px 盒子） |
+| Aqua | 18 | 18 | 0 | 0 |
 | Snow Leopard | 19 | 19 | 0 | 0 |
-| Yosemite | 17 | 5 | 10 | 2（checkbox/radio 标记只有 clone 资产） |
+| Yosemite | 17 | 15 | 0 | 2（checkbox/radio 标记只有 clone 资产） |
 | Yosemite 2x | 4 | 3 | 0 | 1（checkbox 只有缩放后的 clone 资产） |
 
 `tests/features/appearance-qa-ledger.test.mjs` 从各 manifest 的

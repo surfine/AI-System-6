@@ -146,13 +146,15 @@ const APPEARANCE_STYLES = Object.freeze({
 // Only NeXTSTEP does today; a Mac OS X era joins this list together with its
 // Dock (owner decision 2026-09-25), never with a lamp alone.
 const APPEARANCE_MODULES = Object.freeze({
-  "aqua": ["app/core/window-minimize.js", "app/core/desk-dock.js"],
-  "tiger": ["app/core/window-minimize.js", "app/core/desk-dock.js"],
-  "snow-leopard": ["app/core/window-minimize.js", "app/core/desk-dock.js"],
-  "lion": ["app/core/window-minimize.js", "app/core/desk-dock.js", "app/core/window-fullscreen.js"],
-  "yosemite": ["app/core/window-minimize.js", "app/core/desk-dock.js"],
-  "big-sur": ["app/core/window-minimize.js", "app/core/desk-dock.js"],
-  "liquid-glass": ["app/core/window-minimize.js", "app/core/desk-dock.js"],
+  // Mac OS X Dock eras also retain the lazy three.js Genie/Scale/Suck warp
+  // (and its slim vendor) so offline minimize still has the 3D picture.
+  "aqua": ["app/core/window-minimize.js", "app/core/desk-dock.js", "app/core/dock-minimize-fx.js", "app/vendor/dock-minimize-fx.js"],
+  "tiger": ["app/core/window-minimize.js", "app/core/desk-dock.js", "app/core/dock-minimize-fx.js", "app/vendor/dock-minimize-fx.js"],
+  "snow-leopard": ["app/core/window-minimize.js", "app/core/desk-dock.js", "app/core/dock-minimize-fx.js", "app/vendor/dock-minimize-fx.js"],
+  "lion": ["app/core/window-minimize.js", "app/core/desk-dock.js", "app/core/window-fullscreen.js", "app/core/dock-minimize-fx.js", "app/vendor/dock-minimize-fx.js"],
+  "yosemite": ["app/core/window-minimize.js", "app/core/desk-dock.js", "app/core/dock-minimize-fx.js", "app/vendor/dock-minimize-fx.js"],
+  "big-sur": ["app/core/window-minimize.js", "app/core/desk-dock.js", "app/core/dock-minimize-fx.js", "app/vendor/dock-minimize-fx.js"],
+  "liquid-glass": ["app/core/window-minimize.js", "app/core/desk-dock.js", "app/core/dock-minimize-fx.js", "app/vendor/dock-minimize-fx.js"],
   nextstep: [
     "app/core/window-minimize.js", "app/core/nextstep-shell.js", "app/core/nextstep-dock.js",
     "app/core/nextstep-menus.js", "app/features/finder-columns.js",

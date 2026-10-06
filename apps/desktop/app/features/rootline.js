@@ -88,6 +88,17 @@ window.AISystem6RootlineLoaded = true;
     return node;
   };
   const tf = (key, ...args) => (typeof t === "function" ? t(key, ...args) : key);
+  // A game key that cannot run says why on one tap, through the shared shell.
+  const markGray = (control, unavailable, reasonKey) => {
+    if (!control) return;
+    if (typeof markGrayAffordance === "function") {
+      markGrayAffordance(control, unavailable, reasonKey);
+      return;
+    }
+    control.disabled = !!unavailable;
+    if (unavailable && reasonKey) control.dataset.balloonHelpDisabled = reasonKey;
+    else delete control.dataset.balloonHelpDisabled;
+  };
 
   function readJson(key, fallback) {
     try {
@@ -1106,7 +1117,13 @@ window.AISystem6RootlineLoaded = true;
     dom.score.title = tf("rootline_stat_delivered");
     const pausedNow = state.pause.user || state.pause.assistant;
     dom.pauseButton.textContent = pausedNow ? tf("rootline_resume") : tf("rootline_pause");
-    dom.pauseButton.disabled = state.screen !== "play" || Boolean(game.planning);
+    markGray(
+      dom.pauseButton,
+      state.screen !== "play" || Boolean(game.planning),
+      state.screen !== "play"
+        ? "balloon_rootline_pause_not_playing"
+        : "balloon_rootline_pause_planning"
+    );
     dom.speedButton.textContent = `${state.speed}×`;
     dom.speedButton.title = tf("rootline_speed");
     dom.canvas.setAttribute("aria-label", tf("rootline_map_label", cityLabel(game), ck.week, game.delivered));
@@ -1209,7 +1226,7 @@ window.AISystem6RootlineLoaded = true;
         requestAnimationFrame(() => paintSwatch(swatch, slot));
       } else {
         item.classList.add("is-locked");
-        item.disabled = true;
+        markGray(item, true, "balloon_rootline_slot_locked");
         item.setAttribute("aria-label", tf("rootline_slot_locked"));
       }
       dom.slots.append(item);
@@ -1332,13 +1349,15 @@ window.AISystem6RootlineLoaded = true;
     const label = el("span", "rootline-linebar-label", text);
     const avail = core.available(game);
     const add = button("", tf(road ? "rootline_add_bus" : "rootline_add_train"), () => run({ type: "train.add", lineId: record.id }));
-    add.disabled = road ? avail.buses <= 0 : avail.trains <= 0;
+    const addEmpty = road ? avail.buses <= 0 : avail.trains <= 0;
+    markGray(add, addEmpty, "balloon_rootline_no_stock");
     const remove = button("", tf(road ? "rootline_remove_bus" : "rootline_remove_train"), () => run({ type: "train.remove", lineId: record.id }));
-    remove.disabled = trains.length === 0;
+    markGray(remove, trains.length === 0, "balloon_rootline_no_vehicles");
     const parts = [swatch, label, add, remove];
     if (!road) {
       const car = button("", tf("rootline_add_carriage"), () => run({ type: "carriage.add", lineId: record.id }));
-      car.disabled = avail.carriages <= 0 || trains.length === 0;
+      const carUnavailable = avail.carriages <= 0 || trains.length === 0;
+      markGray(car, carUnavailable, trains.length === 0 ? "balloon_rootline_needs_vehicle" : "balloon_rootline_no_carriages");
       parts.push(car);
     } else if (mode === "bus" && game.modes.includes("brt")) {
       parts.push(button("rootline-upgrade", tf("rootline_to_brt"), () => run({ type: "line.mode", lineId: record.id, mode: "brt" })));
@@ -1411,7 +1430,7 @@ window.AISystem6RootlineLoaded = true;
     if (!s.interchange) {
       const avail = core.available(game);
       const upgrade = button("", tf("rootline_upgrade", avail.interchanges), () => run({ type: "station.interchange", stationId: s.id }));
-      upgrade.disabled = avail.interchanges <= 0;
+      markGray(upgrade, avail.interchanges <= 0, "balloon_rootline_no_interchange");
       dom.card.append(upgrade);
     }
     positionCard();
@@ -1545,10 +1564,18 @@ window.AISystem6RootlineLoaded = true;
     sound: () => {
       state.sound = !state.sound;
       writeJson(PREFS_KEY, { ...readJson(PREFS_KEY, {}), sound: state.sound });
-      toast(tf(state.sound ? "rootline_sound_on" : "rootline_sound_off"));
+      const line = tf(state.sound ? "rootline_sound_on" : "rootline_sound_off");
+      toast(line);
+      // Status line receipt so census / ADHD hear the toggle even when the
+      // in-window toast is easy to miss (Goal #7/#8 host honesty).
+      if (typeof setStatus === "function") setStatus(line);
       if (state.sound) audio();
     },
-    recenter: () => state.view?.resetCamera(),
+    recenter: () => {
+      if (!state.view) return;
+      state.view.resetCamera();
+      if (typeof setStatus === "function") setStatus(tf("rootline_recentered"));
+    },
   };
   Object.entries(MENU).forEach(([command, handler]) => {
     window.AISystem6Runtime?.registerCommand?.(`rootline-${command}`, {
@@ -1560,6 +1587,10 @@ window.AISystem6RootlineLoaded = true;
         const active = document.querySelector(".window.is-active");
         if (active?.dataset.window !== "rootline") return false;
         if (command === "pause") return state.screen === "play" && !state.game?.planning;
+        // Speed / recenter only act on a live map — start/pots screens used to
+        // stay black and look like dead primaries (census no-op residual).
+        if (command === "speed") return state.screen === "play" && Boolean(state.game);
+        if (command === "recenter") return state.screen === "play" && Boolean(state.view);
         if (command === "restart") return Boolean(state.game);
         if (command === "return-pot") return Boolean(state.pot?.cityId);
         if (command === "open-pot") return state.screen !== "pots";

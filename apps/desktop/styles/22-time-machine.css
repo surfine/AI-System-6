@@ -500,6 +500,20 @@ body .time-machine-navigation .btn {
   font-size: 10px;
 }
 
+.time-machine-reader-empty.empty-next-note {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 24px auto;
+  max-width: 42ch;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.time-machine-reader-empty.empty-next-note > .btn {
+  min-height: var(--touch-primary-min-height);
+}
+
 /* DocMap sits on its own row above the ask bar, so the ask bar reads as the
    same window footer it is in Reader, Scrapbook, DocMap, and ClioStage. */
 .time-machine-reader-actions {

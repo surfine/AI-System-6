@@ -83,6 +83,18 @@
   min-height: 300px;
 }
 
+.chat-file-pane .empty-folder-note {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 10px;
+  min-height: 132px;
+}
+
+.chat-file-pane .empty-folder-note > .btn {
+  min-height: var(--touch-primary-min-height);
+}
+
 @container (max-width: 760px) {
 	  .quick-draft-intake,
 	  .quick-draft-editor{
@@ -148,7 +160,11 @@
 }
 .writing-mode-seg.is-on {
   background: var(--ink);
-  color: var(--window-bg);
+  /* The reversed pair is a FOREGROUND token, not the window material: under
+     Aqua Sierra and Liquid Glass --window-bg is a gradient, and a gradient in
+     `color` dies at computed-value time, falling back to --ink — ink on ink,
+     an invisible label. --selected-fg is solid in every appearance. */
+  color: var(--selected-fg);
 }
 
 .teachtext-desk-strip {
@@ -785,11 +801,22 @@ body.use-modern-fonts .teachtext-preview {
 }
 
 .teachtext-attachments-empty {
+  display: block;
+  width: 100%;
+  margin: 0;
   padding: 10px 6px;
   border: var(--teachtext-attachments-empty-border);
+  background: transparent;
   color: var(--shade-dark);
+  font: inherit;
   line-height: 1.35;
   text-align: center;
+  cursor: pointer;
+}
+
+.teachtext-attachments-empty:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
 }
 
 /* MacWrite ruler (line spacing only, Writing > Line Spacing): the writer's
@@ -1483,7 +1510,7 @@ body[data-line-spacing="relaxed"] {
   grid-template-columns: 44px minmax(128px, 1.8fr) minmax(110px, 1fr) 78px 88px auto;
   align-items: center;
   gap: 8px;
-  min-height: 48px;
+  min-height: var(--touch-primary-min-height);
   border-width: 0 0 1px;
   padding: 5px 8px;
 }
@@ -1682,6 +1709,68 @@ body[data-line-spacing="relaxed"] {
   overflow: auto;
 }
 
+.import-empty-next.empty-next-note {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 16px auto;
+  max-width: 42ch;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.import-empty-next.empty-next-note > .btn {
+  min-height: var(--touch-primary-min-height);
+}
+
+.documents-folder-empty-next.empty-next-note {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 16px auto;
+  max-width: 42ch;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.documents-folder-empty-next.empty-next-note > .btn {
+  min-height: var(--touch-primary-min-height);
+}
+
+.project-disk-empty-next.empty-next-note {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 16px auto;
+  max-width: 42ch;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.project-disk-empty-next.empty-next-note > .btn,
+.file-floppy-empty-next.empty-next-note > .btn {
+  min-height: var(--touch-primary-min-height);
+}
+
+.file-floppy-empty-next.empty-next-note {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 16px auto;
+  max-width: 42ch;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.import-utility-window[data-empty] > .import-utility-pane > .memory-transfer-field,
+.import-utility-window[data-empty] > .import-utility-pane > .file-picker {
+  display: none;
+}
+
+.import-utility-window[data-empty] .memory-transfer-footer {
+  opacity: var(--control-disabled-opacity);
+}
+
 .backup-preview-section {
   display: grid;
   gap: 8px;
@@ -1797,6 +1886,9 @@ body[data-line-spacing="relaxed"] {
 }
 
 .trash-empty-state {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
   margin: 18px 20px;
   max-width: none;
   color: var(--ink);
@@ -1804,6 +1896,12 @@ body[data-line-spacing="relaxed"] {
   line-height: 1.35;
   text-align: left;
   white-space: normal;
+}
+
+.trash-empty-state.empty-next-note > .btn {
+  width: auto;
+  min-height: var(--touch-primary-min-height);
+  border-bottom: 0;
 }
 
 .scrap-list button,
@@ -2260,6 +2358,50 @@ body:not([data-theme="liquid-glass"]) .scrap-list button.is-multi-selected:not(.
    one narrows by kind, the other by words, and both feed scrapbookPageScraps(). */
 .scrap-stack-wrap {
   flex: none;
+}
+
+/* Goal #2: on a narrow Scrapbook bar, New Scrap stays primary; stack + filter
+   wrap to a second row so count / New Scrap / status are not crushed into one
+   5-control ribbon (ADHD clutter). */
+@media (max-width: 640px) {
+  .scrapbook-details-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+  }
+
+  .scrapbook-details-bar > #scrap-count {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .scrapbook-details-bar > [data-action="new-note"] {
+    flex: 0 0 auto;
+    min-height: var(--touch-primary-min-height);
+  }
+
+  .scrapbook-details-bar > .window-status-strip {
+    flex: 1 1 100%;
+    order: 5;
+  }
+
+  .scrapbook-details-bar > .scrap-stack-wrap,
+  .scrapbook-details-bar > .scrap-filter {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+    order: 4;
+  }
+
+  .scrapbook-details-bar > .scrap-filter {
+    flex: 1 1 calc(50% - 4px);
+  }
+
+  /* ClioTalk: soft-keyboard hint is desktop chrome; on touch it steals a row
+     under the composer without teaching a usable gesture. */
+  .assistant-window .composer-key-hint {
+    display: none;
+  }
 }
 
 /* Height and vertical padding come from the field recipe
@@ -2736,7 +2878,12 @@ input[type="radio"]:checked:disabled {
   /* P12: an era hook with today's values as defaults. Platinum answers with
      Geneva-view weight/width and a single line (native 02-desktop-clean). */
   word-break: var(--desktop-label-word-break, keep-all);
-  overflow-wrap: var(--desktop-label-wrap, normal);
+  /* break-word, not normal: keep-all forbids a break inside a Chinese run, so
+     without an emergency break a long name ("桌面级性能的预演") cannot wrap at
+     all and overflows its 92px box — the text ran past the balloon in the
+     2026-10-06 report. break-word only breaks a run that would not otherwise
+     fit, so a short term stays whole and a long one wraps instead of spilling. */
+  overflow-wrap: var(--desktop-label-wrap, break-word);
   font-weight: var(--desktop-label-font-weight, 600);
   font-variation-settings: var(--desktop-label-font-variation, "wdth" 113);
   white-space: var(--desktop-label-white-space, normal);

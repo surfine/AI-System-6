@@ -107,7 +107,9 @@
 .clio-paint-pattern:focus-visible,
 .clio-paint-tool:focus-visible,
 .clio-paint-width:focus-visible {
-  outline: 2px solid var(--selection-bg);
+  /* --selection-edge, not --selection-bg: the latter is a ramp under Aqua
+     Sierra, which an outline colour cannot take. */
+  outline: 2px solid var(--selection-edge);
   outline-offset: -3px;
 }
 

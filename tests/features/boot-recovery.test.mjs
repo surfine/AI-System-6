@@ -10,16 +10,21 @@ const workingSession = read("app/core/working-session.js");
 const recoveryStorage = read("app/core/recovery-storage.js");
 const html = read("index.html");
 
-// Retry is guarded so two boots can never run at once.
+// Boot re-entry is guarded; recovery reloads must NOT wait on that guard —
+// a hung boot left Retry / Start-without-windows dead on iPhone (Aaron 2026-10-05).
 test.assertIncludes(boot, "let bootInProgress = false", "boot has a re-entry guard");
-test.assertIncludes(boot, "if (bootInProgress) return false", "retry refuses to double-boot");
+test.assertIncludes(boot, "if (bootInProgress) return false", "boot() itself still refuses to double-enter");
+test.assertIncludes(boot, "function forceBootReload", "recovery force-reloads even while boot is hung");
 test.assertIncludes(boot, "finally {\n    bootInProgress = false;\n  }", "the guard releases when boot settles");
+test.assertIncludes(boot, "continuing without durable storage", "a desk-state load failure still paints the desk");
+test.assertIncludes(boot, 'startupTaskWithTimeout(window.AISystem6WriteLease?.acquireAtBoot?.()', "write-lease acquisition cannot hang boot");
 test.assertIncludes(boot, "window.location.reload()", "Retry / safe-start / Recovery retry all reload into a fresh runtime");
 test.assertIncludes(boot, "async function retryBoot", "retryBoot remains as an internal helper");
 
 // Start without restoring windows clears ONLY the Working Session.
 test.assertIncludes(boot, "async function startBootWithoutSession", "safe-mode-lite exists");
-test.assertIncludes(boot, "await clearWorkingSession()", "start-without-windows clears the Working Session");
+test.assertIncludes(boot, "clearWorkingSession()", "start-without-windows clears the Working Session");
+test.assertIncludes(boot, "BOOT_SKIP_SESSION_KEY", "safe-start sets a one-shot skip if clearWorkingSession cannot finish");
 test.assertNotIncludes(boot.slice(boot.indexOf("async function startBootWithoutSession"), boot.indexOf("function startupTaskWithTimeout")), "resetSystemStorage", "safe-mode-lite never resets projects");
 test.assertIncludes(workingSession, "deleteWorkingSessionSnapshot", "clearing the session only removes the session key");
 
@@ -34,6 +39,7 @@ test.assertNotIncludes(recoveryStorage, "renderProjectDisks", "recovery-storage 
 
 // The Sad Mac exposes the three recovery actions and a minimal panel.
 test.assertIncludes(desktopRuntime, 'getElementById("boot-failure-actions")?.classList.remove("is-hidden")', "boot failure reveals the recovery actions");
+test.assertIncludes(desktopRuntime, 'getElementById("boot-without-session")?.classList.add("default")', "phone / WebClip recovery defaults to continuing without restoring windows");
 test.assertIncludes(html, 'id="boot-retry"', "Retry exists on the Sad Mac");
 test.assertIncludes(html, 'id="boot-without-session"', "Start without restoring windows exists");
 test.assertIncludes(html, 'id="boot-recovery"', "Recovery exists");

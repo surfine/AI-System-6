@@ -296,7 +296,7 @@ function duplicateSelectedDocumentFile() {
     ...structuredClone(file),
     id: crypto.randomUUID(),
     projectId: activeProjectId,
-    name: `${file.name} copy`,
+    name: `${file.name}${t("project_name_copy_suffix")}`,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -703,6 +703,9 @@ function renderDocuments() {
             return;
           }
           selectDocumentItemFromEvent("folder", folder.id, event, sortedItems);
+          if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
+            revealSelectOpenTapHint(row, { detail: event.detail });
+          }
         };
         row.ondblclick = () => {
           openDocumentFolder(folder.id);
@@ -737,6 +740,9 @@ function renderDocuments() {
             return;
           }
           selectDocumentItemFromEvent("file", file.id, event, sortedItems);
+          if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
+            revealSelectOpenTapHint(row, { detail: event.detail });
+          }
         };
         row.ondblclick = () => {
           openDocumentFileOrAttachToClioTalk(file);
@@ -747,10 +753,32 @@ function renderDocuments() {
 
   } else {
     if (!visibleFolders.length && !visibleFiles.length) {
-      const empty = document.createElement("div");
-      empty.className = "empty-folder-note";
-      empty.textContent = selectedFolder ? t("folder_empty") : t("save_chat_empty");
-      fragment.append(empty);
+      // Goal #2/#6: empty Documents offers one next step (TeachText), matching
+      // Project Hard Disk's clickable empty object. Nested empty folders stay
+      // a note — the Up control already owns leaving the folder.
+      if (selectedFolder) {
+        // Goal #2/#6: nested empty folder still needs one next step (TeachText),
+        // not a dead note. Up already leaves the folder; New scrap is not Documents.
+        const empty = document.createElement("div");
+        empty.className = "empty-folder-note empty-next-note documents-folder-empty-next";
+        empty.dataset.emptyNext = "1";
+        const text = document.createElement("p");
+        text.textContent = t("folder_empty");
+        const openTeach = document.createElement("button");
+        openTeach.type = "button";
+        openTeach.className = "btn default";
+        openTeach.dataset.action = "open-teachtext";
+        openTeach.textContent = t("teachtext");
+        empty.append(text, openTeach);
+        fragment.append(empty);
+      } else {
+        const empty = document.createElement("button");
+        empty.type = "button";
+        empty.className = "finder-empty-object project-empty-object";
+        empty.innerHTML = `${renderSystemIcon("document", { size: "ordinary" })}<b>${escapeHtml(t("documents"))}</b><small>${escapeHtml(t("save_chat_empty"))}</small>`;
+        empty.addEventListener("click", () => handleAction("open-teachtext"));
+        fragment.append(empty);
+      }
     }
 
     sortedItems.forEach((item) => {
@@ -782,6 +810,9 @@ function renderDocuments() {
           return;
         }
         selectDocumentItemFromEvent("folder", folder.id, event, sortedItems);
+        if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
+          revealSelectOpenTapHint(button, { detail: event.detail });
+        }
       });
       button.addEventListener("dblclick", () => {
         openDocumentFolder(folder.id);
@@ -817,6 +848,9 @@ function renderDocuments() {
           return;
         }
         selectDocumentItemFromEvent("file", file.id, event, sortedItems);
+        if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
+          revealSelectOpenTapHint(button, { detail: event.detail });
+        }
       });
       button.addEventListener("dblclick", () => {
         openDocumentFileOrAttachToClioTalk(file);
@@ -2318,15 +2352,6 @@ function syncChatFileActionControls() {
     }
   }
   if (emptyNote) emptyNote.classList.toggle("is-hidden", hasFile);
-  [
-    openChatFileButton,
-    insertChatFileButton,
-    document.querySelector("#chat-file-docmap"),
-    downloadChatMarkdownButton,
-    trashChatFileButton,
-  ].forEach((button) => {
-    if (button) button.disabled = !hasFile;
-  });
 }
 
 function runChatFileMoreAction() {
@@ -2361,7 +2386,15 @@ function renderChatFileEmptyState() {
   detail.className = "hint";
   detail.dataset.i18n = "chat_file_empty_detail";
   detail.textContent = t("chat_file_empty_detail");
-  empty.append(title, detail);
+  // Goal #2/#6: keep Open Chat as an in-note primary so empty records do not
+  // force hunting the More+Go row (that path still works for Insert/DocMap).
+  const openChat = document.createElement("button");
+  openChat.type = "button";
+  openChat.className = "btn default";
+  openChat.dataset.action = "open-assistant";
+  openChat.dataset.i18n = "open_chat";
+  openChat.textContent = t("open_chat");
+  empty.append(title, detail, openChat);
   chatFileBodyEl.append(empty);
   if (chatFileTitleEl) chatFileTitleEl.textContent = t("chat_file_title");
   if (chatFileMetaEl) chatFileMetaEl.textContent = t("messages_count", 0);
@@ -2553,7 +2586,17 @@ function syncTeachTextLabelControl() {
   // document, a mounted file or a help page has no review phase to enter, so the
   // button is absent there rather than present and inert.
   const toReviewButton = document.querySelector("#teachtext-to-review");
-  if (toReviewButton) toReviewButton.hidden = !canEditLabel;
+  if (toReviewButton) {
+    toReviewButton.hidden = !canEditLabel;
+    // Visible chrome still greys with a one-tap why when the body is empty
+    // (menu availability already gates advance-manuscript-to-review).
+    const needsBody = canEditLabel && !String(teachTextBodyInput?.value || "").trim();
+    if (typeof markGrayAffordance === "function") {
+      markGrayAffordance(toReviewButton, needsBody, "balloon_manuscript_needs_body");
+    } else if (needsBody) {
+      toReviewButton.dataset.balloonHelpDisabled = "balloon_manuscript_needs_body";
+    }
+  }
 
   teachTextLabelSelect.value = normalizeTeachTextWorkflowState(teachTextWorkflowState);
   teachTextLabelSelect.disabled = !canEditLabel;
@@ -2745,7 +2788,7 @@ function duplicateActiveFile() {
     ...structuredClone(file),
     id: crypto.randomUUID(),
     projectId: activeProjectId,
-    name: `${file.name} copy`,
+    name: `${file.name}${t("project_name_copy_suffix")}`,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -2883,7 +2926,7 @@ function duplicateDocumentFolderById(folderId) {
       id: crypto.randomUUID(),
       projectId: activeProjectId,
       parentId: targetParentId || null,
-      name: isRoot ? nextAvailableFolderName(`${displayFolderName(folder.name)} copy`, targetParentId || null) : folder.name,
+      name: isRoot ? nextAvailableFolderName(`${displayFolderName(folder.name)}${t("project_name_copy_suffix")}`, targetParentId || null) : folder.name,
       createdAt: now,
       updatedAt: now,
     };

@@ -534,6 +534,24 @@ function selectedOutlineDraftBlock(project = getActiveProject()) {
   return blocks[index] || blocks[0] || null;
 }
 
+// The Section Drafts picker is a .select-wrap the system-select harness drives:
+// the native <select> is hidden behind a button, so greying only the select
+// leaves a button that still looks live and then silently does nothing. Mark
+// both with the shared one-tap reason the shell reads, and keep the native
+// disabled state so the harness button paints grey.
+function markDraftSectionSelect(unavailable) {
+  if (!draftSectionSelectEl) return;
+  const reasonKey = "balloon_draft_needs_section";
+  const mark = (control) => {
+    if (!control) return;
+    control.disabled = unavailable;
+    if (unavailable) control.dataset.balloonHelpDisabled = reasonKey;
+    else delete control.dataset.balloonHelpDisabled;
+  };
+  mark(draftSectionSelectEl);
+  mark(draftSectionSelectEl.closest(".select-wrap")?.querySelector(":scope > .system-select-button"));
+}
+
 function renderDraftSectionSource(outlineSections) {
   if (!draftSectionSelectEl) return;
 
@@ -547,7 +565,7 @@ function renderDraftSectionSource(outlineSections) {
     draftSectionSelectEl.append(option);
   });
 
-  draftSectionSelectEl.disabled = outlineSections.length === 0;
+  markDraftSectionSelect(outlineSections.length === 0);
   draftSectionSelectEl.value = [...draftSectionSelectEl.options].some((option) => option.value === previous)
     ? previous
     : "0";
@@ -1788,6 +1806,7 @@ function renderPipeline() {
     readerTabsEl.classList.add("is-hidden");
     renderFlowProgress(null);
     renderClaimCheckSections();
+    syncWritingRouteEmptyMarkers(null);
     return;
   }
 
@@ -1900,6 +1919,28 @@ function renderPipeline() {
   project.flowState = { ...progress.states };
   renderFlowProgress(project, progress);
   renderClaimCheckSections();
+  syncWritingRouteEmptyMarkers(project);
+}
+
+// Goal #2 batch A: surface data-empty the way DocMap/Searcher mark idle —
+// empty is legal; chrome and balloons speak the reason.
+function syncWritingRouteEmptyMarkers(project = getActiveProject()) {
+  const questionWin = typeof getWindow === "function" ? getWindow("questionSheet") : document.querySelector('[data-window="questionSheet"]');
+  const outlineWin = typeof getWindow === "function" ? getWindow("outline") : document.querySelector('[data-window="outline"]');
+  const draftsWin = typeof getWindow === "function" ? getWindow("sectionDrafts") : document.querySelector('[data-window="sectionDrafts"]');
+  const questionEmpty = !String(project?.questionSheet || questionSheetBodyInput?.value || "").trim();
+  const outlineEmpty = getMeaningfulOutlineSections(getProjectOutlineSections(project || {})).length === 0;
+  const draftEmpty = !String(draftBodyInput?.value || "").trim()
+    && !(project?.drafts || []).some((draft) => String(draft?.body || "").trim());
+  // Prefer set/removeAttribute: boot-VM / linkedom may lack toggleAttribute(force).
+  const markEmpty = (win, empty) => {
+    if (!win) return;
+    if (empty) win.setAttribute("data-empty", "");
+    else win.removeAttribute("data-empty");
+  };
+  markEmpty(questionWin, questionEmpty);
+  markEmpty(outlineWin, outlineEmpty);
+  markEmpty(draftsWin, draftEmpty);
 }
 
 function cleanRebuildLine(line) {

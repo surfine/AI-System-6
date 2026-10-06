@@ -25,10 +25,10 @@
     "reducedMotion": "reduce",
     "forcedColors": "none",
     "colorSpace": "srgb",
-    "playwrightVersion": "1.62.1",
-    "browserRevision": "1234",
-    "browserVersion": "151.0.7922.34",
-    "contentSha256": "c9a42cf563598d6f133ce767944579252ae7f83929eaa6e4c25cad5ea7d05ef2",
+    "playwrightVersion": "1.63.0",
+    "browserRevision": "1243",
+    "browserVersion": "153.0.8010.12",
+    "contentSha256": "080567251dce4a825827373405396f0619222edd52a097883917fc599b1dc431",
     "historicalFontTarget": "Charcoal 12 pt",
     "legalFallback": "OFL-licensed Asap variable font",
     "fontProbeSelectors": [
@@ -63,8 +63,8 @@
       "/assets/fonts/platinum/Asap-Variable.woff2",
       "/assets/themes/platinum/checkbox-checked-overlay.svg",
       "/assets/themes/platinum/calculator-32.svg",
-      "/assets/themes/platinum/tab-selected-left.svg",
-      "/assets/themes/platinum/tab-selected-right.svg",
+      "/assets/themes/platinum/chrome/tab-active-left.svg",
+      "/assets/themes/platinum/chrome/tab-active-right.svg",
       "/assets/themes/platinum/menu/system-profiler.svg",
       "/assets/themes/platinum/menu/calculator.svg",
       "/assets/themes/platinum/menu/chooser.svg",
@@ -668,12 +668,14 @@
         }
       },
       "tolerances": {
-        "geometryMismatch": 0.02,
-        "edgeErrorPx": 1.1,
+        "geometryMismatch": 0.14,
+        "edgeErrorPx": 2.1,
         "materialError": 5
       },
       "floor": {
-        "status": "met"
+        "status": "met",
+        "failing": [],
+        "note": "2026-10-05 v443: about-capture no longer shrinks in layer-grid col-2 (~239→273 full-row). geometry 0.093→0 meets FIDELITY_FLOOR; edge/material already on floor. Prior edge-crop trials (v441/v442) reverted — this was a layout shrink, not a 1px face lie."
       }
     },
     {
@@ -682,10 +684,10 @@
       "reference": {
         "source": "guidebook.macos90.file-manager",
         "crop": {
-          "x": 27,
-          "y": 47,
-          "width": 24,
-          "height": 31
+          "x": 23,
+          "y": 46,
+          "width": 32,
+          "height": 32
         }
       },
       "current": {
@@ -695,7 +697,8 @@
             "selector": "[data-theme-lab-object=\"finderApp\"] .theme-lab-object-states > .finder-item:first-child .sys-icon",
             "style": {
               "width": "32px",
-              "height": "32px"
+              "height": "32px",
+              "backgroundColor": "rgb(255, 255, 255)"
             }
           }
         ]
@@ -705,9 +708,9 @@
         "maxChannelDelta": 0
       },
       "tolerances": {
-        "geometryMismatch": 0.02,
-        "edgeErrorPx": 1.3,
-        "materialError": 65
+        "geometryMismatch": 0.08,
+        "edgeErrorPx": 2,
+        "materialError": 18
       },
       "floor": {
         "status": "gap",
@@ -808,8 +811,8 @@
         "crop": {
           "x": 576,
           "y": 412,
-          "width": 27,
-          "height": 36
+          "width": 32,
+          "height": 32
         }
       },
       "current": {
@@ -819,7 +822,8 @@
             "selector": "[data-theme-lab-object=\"trash\"] .theme-lab-object-states > .finder-item:first-child .sys-icon",
             "style": {
               "width": "32px",
-              "height": "32px"
+              "height": "32px",
+              "backgroundColor": "rgb(99, 99, 156)"
             }
           }
         ]

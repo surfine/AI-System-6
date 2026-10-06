@@ -64,6 +64,24 @@ const balloonHelpCensusNoOpReasons = {
   "clear-notifications": "balloon_notifications_empty_clear",
   "advance-outline-to-drafts": "balloon_outline_needs_content",
   "advance-drafts-to-manuscript": "balloon_draft_needs_content",
+  "mingming-outline": "balloon_outline_needs_content",
+  "structure-outline": "balloon_outline_needs_content",
+  "expand-outline": "balloon_outline_needs_content",
+  "reduce-outline": "balloon_outline_needs_content",
+  "draft-current-section": "balloon_draft_needs_section",
+  "polish-draft": "balloon_draft_needs_content",
+  "suggest-draft": "balloon_draft_needs_content",
+  "eli5-rewrite-section": "balloon_draft_needs_content",
+  "eli5-review-section": "balloon_draft_needs_content",
+  "one-sentence-rewrite-section": "balloon_draft_needs_content",
+  "one-sentence-check-section": "balloon_draft_needs_content",
+  "open-selected-find-file": "balloon_find_file_needs_result",
+  "reveal-selected-find-file": "balloon_find_file_needs_result",
+  "advance-manuscript-to-review": "balloon_manuscript_needs_body",
+  "docmap-save": "balloon_docmap_save_disabled",
+  "docmap-print-pdf": "balloon_docmap_needs_map",
+  "docmap-send-question": "balloon_docmap_needs_map",
+  "docmap-insert-outline": "balloon_docmap_needs_map",
 };
 
 function runtimeUnavailableReasonKey(action = "") {
@@ -616,6 +634,144 @@ function hideBalloonHelp() {
   if (balloon?.matches?.(":popover-open")) balloon.hidePopover();
 }
 
+// Coarse/touch select-then-open: one first-use balloon across desktop icons,
+// Finder, Documents, Project Hard Disk, Project CD, File Floppy, Find File,
+// and Searcher. ADHD/HIG: explain once, then get out of the way (no nag loop).
+let selectOpenTapHintShown = false;
+
+function revealSelectOpenTapHint(target, options = {}) {
+  if (selectOpenTapHintShown || !target) return false;
+  if (Number(options.detail) >= 2) return false;
+  if (
+    typeof window.matchMedia === "function"
+    && window.matchMedia("(hover: hover)").matches
+  ) {
+    return false;
+  }
+  selectOpenTapHintShown = true;
+  showBalloonHelp(target, "desktop_tap_hint", { force: true, autoHideMs: 3200 });
+  return true;
+}
+
+// Gray / unavailable primary: one tap explains why (balloon + quiet status).
+// Distinct from system Balloon Help mode — works with Help off. ADHD: same
+// window+reason does not nag again until the control becomes available.
+const grayAffordanceExplained = new Set();
+
+function controlIsUnavailable(target) {
+  if (!target || target.nodeType !== 1) return false;
+  if (target.matches?.(":disabled, .is-disabled, [aria-disabled='true']")) return true;
+  return target.disabled === true || target.getAttribute?.("aria-disabled") === "true";
+}
+
+function unavailableControlReasonKey(target) {
+  if (!target) return "";
+  const stored = target.dataset?.balloonHelpDisabled || "";
+  if (stored) return stored;
+  const action = target.dataset?.action || target.dataset?.submenuAction || "";
+  if (action && typeof actionUnavailableReasonKey === "function") {
+    return actionUnavailableReasonKey(action);
+  }
+  return balloonHelpKeyFor(target) || "";
+}
+
+function grayAffordanceScopeKey(target, reasonKey) {
+  const win = target?.closest?.(".window");
+  const scope = win?.dataset?.window || target?.id || "desk";
+  return `${scope}::${reasonKey}`;
+}
+
+function markGrayAffordance(control, unavailable, reasonKey = "") {
+  if (!control) return;
+  const blocked = Boolean(unavailable);
+  control.classList.toggle("is-disabled", blocked);
+  if (blocked) {
+    control.setAttribute("aria-disabled", "true");
+    // Prefer aria-disabled so one tap can still ask why. Native disabled
+    // swallows the click on many surfaces; keep html disabled only when the
+    // caller already set it and we are not owning the affordance.
+    if (reasonKey) {
+      control.disabled = false;
+      control.dataset.balloonHelpDisabled = reasonKey;
+      control.dataset.grayAffordance = "1";
+    }
+  } else {
+    control.removeAttribute("aria-disabled");
+    if (control.dataset.grayAffordance === "1") {
+      // We set the grey flag and the reason together, so clearing the flag
+      // also clears the reason. Without this a control whose reason changes
+      // (running -> needs-something) keeps a stale reason after it ungreys.
+      control.disabled = false;
+      delete control.dataset.grayAffordance;
+      delete control.dataset.balloonHelpDisabled;
+    }
+    if (reasonKey && control.dataset.balloonHelpDisabled === reasonKey) {
+      delete control.dataset.balloonHelpDisabled;
+    }
+    const scope = grayAffordanceScopeKey(control, reasonKey || control.dataset.balloonHelpDisabled || "");
+    if (scope.endsWith("::")) grayAffordanceExplained.delete(scope);
+    else if (reasonKey) grayAffordanceExplained.delete(grayAffordanceScopeKey(control, reasonKey));
+  }
+}
+
+function revealUnavailableControlWhy(target, options = {}) {
+  if (!target || !controlIsUnavailable(target)) return false;
+  const key = options.reasonKey || unavailableControlReasonKey(target);
+  if (!key) return false;
+  const scope = grayAffordanceScopeKey(target, key);
+  if (!options.force && grayAffordanceExplained.has(scope)) {
+    // Already explained this window+reason; quiet status only, no second balloon.
+    if (typeof setStatus === "function") setStatus(t(key));
+    return true;
+  }
+  grayAffordanceExplained.add(scope);
+  showBalloonHelp(target, key, { force: true, autoHideMs: options.autoHideMs || 3600 });
+  if (typeof setStatus === "function") setStatus(t(key));
+  return true;
+}
+
+function unavailableControlFromEvent(event) {
+  const direct = event.target?.closest?.(
+    "button:disabled, button.is-disabled, [aria-disabled='true'], summary.is-disabled, .is-disabled[data-action], textarea:disabled, input:disabled, select:disabled",
+  );
+  if (direct && controlIsUnavailable(direct) && unavailableControlReasonKey(direct)) return direct;
+  // Native :disabled does not receive the click; hit-test recovers the control.
+  if (typeof document.elementsFromPoint !== "function") return null;
+  const x = event.clientX;
+  const y = event.clientY;
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+  const stack = document.elementsFromPoint(x, y);
+  return stack.find((el) => {
+    if (!el?.matches) return false;
+    if (!el.matches("button, summary, [role='button'], [data-action], textarea, input, select")) return false;
+    if (!controlIsUnavailable(el)) return false;
+    return !!unavailableControlReasonKey(el);
+  }) || null;
+}
+
+function installGrayAffordanceClicks() {
+  if (typeof document === "undefined" || document.documentElement?.dataset?.grayAffordanceClicks === "1") {
+    return;
+  }
+  document.documentElement.dataset.grayAffordanceClicks = "1";
+  document.addEventListener("click", (event) => {
+    if (event.defaultPrevented) return;
+    // Balloon Help touch-inspect owns the first tap when that mode is on.
+    if (balloonHelpTouchedInspect && event.pointerType === "touch") return;
+    const target = unavailableControlFromEvent(event);
+    if (!target) return;
+    // Menu-bar greys keep the existing menu path (status via handleAction).
+    if (target.closest(".menu-popover, .menu-submenu-popover, .menu-sub-popover, .menu-bar")) {
+      return;
+    }
+    if (!revealUnavailableControlWhy(target)) return;
+    // Native :disabled lets the click fall through; stop that so one tap only
+    // explains, never activates whatever sits under the grey control.
+    event.preventDefault();
+    event.stopPropagation();
+  }, true);
+}
+
 function showBalloonHelp(target, key = balloonHelpKeyFor(target), options = {}) {
   const balloon = balloonHelpElement();
   const text = document.querySelector("#balloon-help-text");
@@ -702,6 +858,7 @@ function revealMultiFinderSwitcherHint() {
 function initializeBalloonHelp() {
   if (!balloonHelpElement()) return;
   setBalloonHelpEnabled(loadBalloonHelpPreference(), { announce: false, persist: false });
+  installGrayAffordanceClicks();
 
   document.addEventListener("pointerover", (event) => {
     if (!balloonHelpEnabled || event.pointerType === "touch") return;

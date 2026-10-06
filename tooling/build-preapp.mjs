@@ -74,6 +74,12 @@ export function preappGenerators(root, { publicOnly = false } = {}) {
       outputs: ["apps/desktop/app/vendor/bonsai-renderer.js"],
     },
     {
+      name: "dock-minimize-fx-vendor",
+      script: "tooling/build-dock-minimize-fx-vendor.mjs",
+      inputs: [...common, "node_modules/three", "tooling/vendor/dock-minimize-fx-entry.mjs"],
+      outputs: ["apps/desktop/app/vendor/dock-minimize-fx.js"],
+    },
+    {
       // The study window's scheduler. A dependency with its own lockfile entry,
       // declared the same way as the renderers above so a version bump that
       // changes nothing on disk is still a cache miss.
@@ -110,6 +116,7 @@ export const PUBLIC_PREAPP_GENERATOR_NAMES = Object.freeze([
   "bonsai-textures",
   "bonsai-atlas",
   "bonsai-renderer-vendor",
+  "dock-minimize-fx-vendor",
   "fsrs-vendor",
   "writing-editor-vendor",
 ]);

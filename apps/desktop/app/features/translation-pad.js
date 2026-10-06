@@ -119,13 +119,41 @@ function updateTranslationPadButtons() {
   const hasSource = !!source;
   const hasTranslation = !!translationPadTranslatedText.trim();
   const needsTranslation = translationPadSourceNeedsTranslation(source);
-  if (padEl("translate")) padEl("translate").disabled = !hasSource || !needsTranslation;
-  if (padEl("clear")) padEl("clear").disabled = !hasSource && !hasTranslation;
-  if (padEl("send")) padEl("send").disabled = !hasTranslation;
+  const translateBlocked = !hasSource || !needsTranslation;
+  const clearBlocked = !hasSource && !hasTranslation;
+  const sendBlocked = !hasTranslation;
+  const translateReason = !hasSource
+    ? "balloon_translation_pad_needs_source"
+    : "balloon_translation_pad_already_language";
+  const clearReason = "balloon_translation_pad_nothing_to_clear";
+  const sendReason = "balloon_translation_pad_needs_result";
+  const translateBtn = padEl("translate");
+  const clearBtn = padEl("clear");
+  const sendBtn = padEl("send");
+  // Prefer shared grey affordance so one tap still explains (native disabled
+  // swallows the click on many surfaces).
+  if (typeof markGrayAffordance === "function") {
+    markGrayAffordance(translateBtn, translateBlocked, translateReason);
+    markGrayAffordance(clearBtn, clearBlocked, clearReason);
+    markGrayAffordance(sendBtn, sendBlocked, sendReason);
+  } else {
+    if (translateBtn) {
+      translateBtn.disabled = translateBlocked;
+      if (translateBlocked) translateBtn.dataset.balloonHelpDisabled = translateReason;
+    }
+    if (clearBtn) {
+      clearBtn.disabled = clearBlocked;
+      if (clearBlocked) clearBtn.dataset.balloonHelpDisabled = clearReason;
+    }
+    if (sendBtn) {
+      sendBtn.disabled = sendBlocked;
+      if (sendBlocked) sendBtn.dataset.balloonHelpDisabled = sendReason;
+    }
+  }
   // One default at a time, and it is whatever comes next: translate the
   // passage, then send it. A default button that cannot run is not a default.
-  padEl("translate")?.classList.toggle("default", !hasTranslation);
-  padEl("send")?.classList.toggle("default", hasTranslation);
+  translateBtn?.classList.toggle("default", !hasTranslation);
+  sendBtn?.classList.toggle("default", hasTranslation);
 }
 
 function syncTranslationPadStateFromInputs() {

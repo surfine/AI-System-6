@@ -510,7 +510,6 @@ function updateDocMapEntryButtons() {
   syncDocMapEntryButton(teachTextDocMapButton, teachTextReadiness);
   syncDocMapEntryButton(clipboardDocMapButton, clipboardReadiness);
   syncDocMapEntryButton(scrapbookDocMapButton, scrapbookReadiness);
-  syncDocMapEntryButton(chatFileDocMapButton, documentsReadiness);
 
   const timeMachineButton = document.querySelector("#time-machine-docmap");
   const timeMachineReadiness = window.AISystem6TimeMachine?.docMapReadiness?.();

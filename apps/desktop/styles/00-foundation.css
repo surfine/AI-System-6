@@ -60,8 +60,13 @@
   --compose-menu-hover-fg: var(--paper);
   --compose-tool-copy-b: inherit;
   --compose-tool-copy-small: var(--shade-dark);
+  /* P2 System 6 / Classic menubar: flat paper + hard black bottom rule
+     (--menu-bar-border). Shadow stays none — ≠ Platinum soft #dddddd inset,
+     ≠ System 7 lavender bevel. Era sheets override --menu-bar-* as needed. */
   --menu-bar-bg: var(--paper);
-  --menu-bar-shadow: inset 0 -1px 0 var(--paper);
+  --menu-bar-shadow: none;
+  /* Translucent bars (10.10+) answer this; Classic stays none. */
+  --menu-bar-backdrop-filter: none;
   --menu-button-height: 22px;
   --menu-button-radius: 0;
   --menu-button-transition: none;
@@ -215,8 +220,8 @@
   --desktop: #b6b6b6;
   /* System 6.0.8 desktop: 8px grey stipple, not a 12px web grid. */
   --desktop-surface:
-    radial-gradient(rgba(0, 0, 0, 0.22) 0.7px, transparent 0.8px) 0 0 / 8px 8px,
-    radial-gradient(rgba(255, 255, 255, 0.12) 0.6px, transparent 0.7px) 4px 4px / 8px 8px,
+    radial-gradient(rgba(0, 0, 0, 0.28) 0.7px, transparent 0.85px) 0 0 / 8px 8px,
+    radial-gradient(rgba(255, 255, 255, 0.16) 0.6px, transparent 0.75px) 4px 4px / 8px 8px,
     var(--desktop);
   --panel: #ededed;
   --quiet-panel: #f8f8f8;
@@ -995,6 +1000,10 @@
      2236px line on the same display. */
   --reading-measure: 72ch;
   --touch-safe-inset: env(safe-area-inset-bottom, 0px);
+  /* Narrow / phone primary controls: HIG-adjacent ≥48 computed hit floor.
+     Classic desktop keeps --control-hit-target / era button recipes; narrow
+     harvest and phone portrait rules consume this token instead of 44. */
+  --touch-primary-min-height: 48px;
 
   /* Writing editor */
   --writing-editor-font-size: 14px;
@@ -1116,7 +1125,24 @@
   --sidebar-selection-bg: var(--ink);
   --separator: var(--rule);
   --selection-bg: var(--ink);
+  /* The solid companion to --selection-bg. Six appearances declare the
+     selection as one colour; Aqua Sierra declares a ramp
+     (linear-gradient(#577dea, #3766f2 50%, #1d5bf2) in 67-aqua-appearance).
+     A ramp substitutes fine into background/background-image but is INVALID in
+     a colour-only property — the declaration dies at computed-value time and
+     `outline-color` / `border-color` fall back to currentColor. So any rule that
+     needs the selection as a STROKE or a FOREGROUND reads --selection-edge,
+     never --selection-bg. Kept equal to --selection-bg everywhere the latter is
+     a colour. */
+  --selection-edge: var(--ink);
   --selection-fg: var(--paper);
+  /* Reversed pair for a control that paints its own --ink field: a selected
+     segment, a chosen chip. The base is the era's --paper; Liquid Glass replaces
+     it with #ffffff. This is a FOREGROUND token, deliberately solid in every
+     appearance — the material tokens (--window-bg, --glass-surface) are
+     gradients under Aqua Sierra and Liquid Glass and must never be read as a
+     colour. */
+  --selected-fg: var(--paper);
   /* The writing surfaces mix a translucent selection out of --selection-bg (see
      .mde-surface > .mde-input::selection in 50-apps.css). An era whose selection
      is a ramp cannot be mixed, so it — and only it — declares a flat
@@ -2013,7 +2039,7 @@
   --quick-draft-divider-border: var(--system-secondary-divider);
   --quick-draft-actions-bg: var(--panel);
   --quick-draft-secondary-fg: var(--shade-dark);
-  --quick-draft-selected-fg: var(--paper);
+  --quick-draft-selected-fg: var(--selected-fg);
   --quick-draft-field-focus-bg: var(--paper);
   --quick-draft-field-focus-shadow: var(--system-shadow);
   /* Compression grain. A 1-bit screen would draw the model's share as a 50%
@@ -2282,6 +2308,8 @@ textarea,
   background: var(--menu-bar-bg);
   border-bottom: var(--menu-bar-border);
   box-shadow: var(--menu-bar-shadow);
+  backdrop-filter: var(--menu-bar-backdrop-filter);
+  -webkit-backdrop-filter: var(--menu-bar-backdrop-filter);
   z-index: var(--z-system-menu);
   overflow: visible;
 }

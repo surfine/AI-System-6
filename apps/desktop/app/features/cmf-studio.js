@@ -1510,15 +1510,21 @@
     if (cmfEl("cmf-reset-view")) {
       cmfEl("cmf-reset-view").dataset.capabilityDisabled = String(!canRenderModel);
       cmfEl("cmf-reset-view").disabled = !canRenderModel;
+      cmfEl("cmf-reset-view").dataset.balloonHelpDisabled = "balloon_cmf_needs_model";
     }
     if (cmfEl("cmf-export")) {
+      const duoBlocked = activeModel().motion === "duo";
       cmfEl("cmf-export").dataset.capabilityDisabled = String(!canExport);
       cmfEl("cmf-export").disabled = !canExport;
-      cmfEl("cmf-export").title = activeModel().motion === "duo" ? t("cmf_duo_usdz_unavailable") : "";
+      cmfEl("cmf-export").title = duoBlocked ? t("cmf_duo_usdz_unavailable") : "";
+      cmfEl("cmf-export").dataset.balloonHelpDisabled = duoBlocked
+        ? "balloon_cmf_duo_export_disabled"
+        : "balloon_cmf_needs_model";
     }
     if (cmfEl("cmf-export-views")) {
       cmfEl("cmf-export-views").dataset.capabilityDisabled = String(!canRenderModel);
       cmfEl("cmf-export-views").disabled = !canRenderModel;
+      cmfEl("cmf-export-views").dataset.balloonHelpDisabled = "balloon_cmf_needs_model";
     }
     const empty = cmfEl("cmf-preview-empty");
     syncCmfMotionControls();

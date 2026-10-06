@@ -1518,23 +1518,41 @@ function updateModuleSettingsButtons() {
   const disabled = new Set(prefs.disabledModules || []);
   const canEnable = disabled.has(selected);
   const canDisable = !disabled.has(selected);
-  // Module already chosen: clear the "select first" reason so a top-of-list
-  // Move Up does not pretend the selection is missing.
-  [controlStripMoveUpButton, controlStripMoveDownButton, controlStripEnableButton, controlStripDisableButton]
-    .forEach((button) => syncStripSettingsButtonReason(button, false, selectReason));
-  if (controlStripMoveUpButton) controlStripMoveUpButton.disabled = index <= 0;
+  const atTop = index <= 0;
+  const atBottom = index < 0 || index >= ordered.length - 1;
+  // Module already chosen: replace the "select first" reason with the real
+  // edge / already-on reasons so a grey Move Up says "already at the top".
+  if (controlStripMoveUpButton) {
+    controlStripMoveUpButton.disabled = atTop;
+    syncStripSettingsButtonReason(controlStripMoveUpButton, false, selectReason);
+    syncStripSettingsButtonReason(controlStripMoveUpButton, atTop, "balloon_control_strip_move_top");
+  }
   if (controlStripMoveDownButton) {
-    controlStripMoveDownButton.disabled = index < 0 || index >= ordered.length - 1;
+    controlStripMoveDownButton.disabled = atBottom;
+    syncStripSettingsButtonReason(controlStripMoveDownButton, false, selectReason);
+    syncStripSettingsButtonReason(controlStripMoveDownButton, atBottom, "balloon_control_strip_move_bottom");
   }
   if (controlStripEnableButton) {
     controlStripEnableButton.disabled = !canEnable;
     // One primary path: Enable is the default only while the selected module
     // is off. Disable stays a secondary verb beside it.
     controlStripEnableButton.classList.toggle("default", canEnable);
+    syncStripSettingsButtonReason(controlStripEnableButton, false, selectReason);
+    syncStripSettingsButtonReason(
+      controlStripEnableButton,
+      !canEnable,
+      "balloon_control_strip_already_enabled",
+    );
   }
   if (controlStripDisableButton) {
     controlStripDisableButton.disabled = !canDisable;
     controlStripDisableButton.classList.remove("default");
+    syncStripSettingsButtonReason(controlStripDisableButton, false, selectReason);
+    syncStripSettingsButtonReason(
+      controlStripDisableButton,
+      !canDisable,
+      "balloon_control_strip_already_disabled",
+    );
   }
 }
 

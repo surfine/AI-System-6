@@ -60,6 +60,11 @@ const windowLayerCompactBaseZ = readZLayerToken("--z-window-layer-compact-base",
 const windowLayerCompactThresholdZ = readZLayerToken("--z-window-layer-compact-threshold", 8800);
 const windowLayerMaxZ = readZLayerToken("--z-window-layer-max", 8990);
 const windowPinnedZ = readZLayerToken("--z-window-pinned", 9000);
+// Pinned windows share a band below priority surfaces (Control Strip, menus).
+// Ordinary focus/raise never crosses into this band; local MRU stays inside it.
+const windowPriorityZ = readZLayerToken("--z-window-priority", 9200);
+const windowPinnedMaxZ = Math.max(windowPinnedZ, windowPriorityZ - 1);
+let pinnedTopZ = windowPinnedZ;
 // About is the one window that dims the desk behind it, so it has to sit above
 // its own scrim; the pinned-window layer is below it.
 const systemModalZ = readZLayerToken("--z-system-modal", 9510);
@@ -84,15 +89,71 @@ function visibleLayeredWindows() {
   return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)"));
 }
 
+function isWindowPinned(win) {
+  return !!win && win.dataset.windowPinned === "true";
+}
+
+// normal / pinned / system-modal ownership — one place for focus, raise, hide.
+function windowStackLayer(win) {
+  if (!win) return "normal";
+  if (win.dataset.window === "about") return "system-modal";
+  if (isWindowPinned(win)) return "pinned";
+  return "normal";
+}
+
+// Writing-mode split panes are CSS-owned layers (--z-local-base /
+// --z-local-popover): an inline z-index would override those tokens and stack
+// the panes above menus and popovers. One predicate so focus, compaction and
+// reservation all agree on which windows the core must not touch.
+function windowUsesCssLayer(win) {
+  return writerMode
+    && (writerModeCssOwnedWindows.has(win.dataset.window) || win.dataset.window === "systemHelp");
+}
+
+// Only a known presentation role may reserve a layer. A large numeric request
+// alone never grants an ordinary window permission to cross menus or modals.
+// About and the save sheet own system bands; a full-screen window owns the
+// priority band; a phone shade and a mobile system page own the pinned band.
+function reservedWindowLayerZ(win) {
+  if (win.dataset.window === "about") return systemModalZ;
+  if (win.dataset.window === "saveChat") return windowSaveZ;
+  if (win.classList.contains("is-fullscreen")) return windowPriorityZ;
+  if (isNarrowViewport() && (win.classList.contains("is-collapsed")
+      || (isPortraitDocumentFlow() && mobileWindowPresentation(win) === "system-page"))) {
+    return windowPinnedZ;
+  }
+  return null;
+}
+
+function normalLayerWindows() {
+  return visibleLayeredWindows().filter((win) => windowStackLayer(win) === "normal"
+    && !windowUsesCssLayer(win) && reservedWindowLayerZ(win) === null);
+}
+
+function pinnedLayerWindows() {
+  return visibleLayeredWindows().filter((win) => windowStackLayer(win) === "pinned");
+}
+
 function compactWindowLayerStack() {
-  visibleLayeredWindows()
-    .filter((win) => !(writerMode && (writerModeCssOwnedWindows.has(win.dataset.window) || win.dataset.window === "systemHelp")))
+  const ordinary = normalLayerWindows()
+    .sort((a, b) => Number(a.style.zIndex || 0) - Number(b.style.zIndex || 0));
+  if (ordinary.length > windowLayerMaxZ - windowLayerCompactBaseZ + 1) {
+    throw new RangeError("The ordinary window layer is full.");
+  }
+  ordinary.forEach((win, index) => {
+    win.style.zIndex = windowLayerCompactBaseZ + index;
+  });
+  topZ = Math.min(windowLayerMaxZ, windowLayerCompactBaseZ + ordinary.length);
+}
+
+function compactPinnedWindowLayerStack() {
+  pinnedLayerWindows()
     .sort((a, b) => Number(a.style.zIndex || 0) - Number(b.style.zIndex || 0))
     .forEach((win, index) => {
-      win.style.zIndex = windowLayerCompactBaseZ + index;
+      win.style.zIndex = windowPinnedZ + index;
     });
-  topZ = windowLayerCompactBaseZ
-    + visibleLayeredWindows().filter((win) => !(writerMode && (writerModeCssOwnedWindows.has(win.dataset.window) || win.dataset.window === "systemHelp"))).length;
+  pinnedTopZ = windowPinnedZ + pinnedLayerWindows().length - 1;
+  if (pinnedTopZ < windowPinnedZ) pinnedTopZ = windowPinnedZ;
 }
 
 function nextWindowLayerZ(minimum = windowLayerBaseZ) {
@@ -101,21 +162,72 @@ function nextWindowLayerZ(minimum = windowLayerBaseZ) {
   return topZ;
 }
 
+function nextPinnedWindowLayerZ(minimum = windowPinnedZ) {
+  if (pinnedTopZ >= windowPinnedMaxZ) compactPinnedWindowLayerStack();
+  pinnedTopZ = Math.min(windowPinnedMaxZ, Math.max(minimum, Number(pinnedTopZ || windowPinnedZ) + 1));
+  return pinnedTopZ;
+}
+
 function setWindowLayerZ(win, value) {
   if (!win) return windowLayerBaseZ;
   // Writing-mode split panes are CSS-owned layers (--z-local-base /
   // --z-local-popover): an inline z-index would override those tokens and
   // stack the panes above menus and popovers.
-  if (writerMode && (writerModeCssOwnedWindows.has(win.dataset.window) || win.dataset.window === "systemHelp")) {
+  if (windowUsesCssLayer(win)) {
     return windowLayerBaseZ;
   }
+  // WM1 + hardening: a reserved presentation role owns its band through the
+  // focus path; an ordinary raise must never clamp it back down into the normal
+  // range. Set the declared layer rather than trusting whatever was inline.
+  const reserved = reservedWindowLayerZ(win);
+  if (reserved !== null) {
+    win.style.zIndex = reserved;
+    return reserved;
+  }
   const numeric = Number(value);
+  if (windowStackLayer(win) === "pinned") {
+    const z = Number.isFinite(numeric)
+      ? Math.min(windowPinnedMaxZ, Math.max(windowPinnedZ, numeric))
+      : nextPinnedWindowLayerZ();
+    win.style.zIndex = z;
+    pinnedTopZ = Math.min(windowPinnedMaxZ, Math.max(Number(pinnedTopZ || windowPinnedZ), z));
+    return z;
+  }
   const z = Number.isFinite(numeric)
     ? Math.min(windowLayerMaxZ, Math.max(windowLayerBaseZ, numeric))
     : nextWindowLayerZ();
   win.style.zIndex = z;
   topZ = Math.min(windowLayerMaxZ, Math.max(Number(topZ || windowLayerBaseZ), z));
   return z;
+}
+
+function canPinWindow(win) {
+  if (!win?.isConnected || !win.matches?.(".window[data-window]")) return false;
+  if (win.matches(".is-hidden, .is-fullscreen, .is-mobile-fullscreen")) return false;
+  if (win.dataset.window === "about" || win.dataset.window === "saveChat") return false;
+  if (typeof isCenteredSystemWindow === "function" && isCenteredSystemWindow(win)) return false;
+  if (writerMode && (writerModeCssOwnedWindows.has(win.dataset.window) || win.dataset.window === "systemHelp")) return false;
+  return true;
+}
+
+function setWindowPinned(win, pinned = true) {
+  if (!canPinWindow(win)) return false;
+  const next = !!pinned;
+  if (isWindowPinned(win) === next) {
+    if (next) setWindowLayerZ(win, nextPinnedWindowLayerZ());
+    return true;
+  }
+  if (next) {
+    win.dataset.windowPinned = "true";
+    setWindowLayerZ(win, nextPinnedWindowLayerZ());
+  } else {
+    delete win.dataset.windowPinned;
+    setWindowLayerZ(win, nextWindowLayerZ());
+  }
+  if (typeof updateMenuState === "function") updateMenuState();
+  if (typeof renderMultiFinderMenu === "function") renderMultiFinderMenu();
+  scheduleWorkingSessionSave?.();
+  return true;
 }
 
 function windowLayoutGroup(nameOrWin) {
@@ -131,9 +243,23 @@ function setWindowLayoutMetadata(win) {
 
 function markWindowUserPositioned(win) {
   if (!win) return;
+  // The writer owns this frame now: any title alignment scheduled against the
+  // frame it replaced no longer applies.
+  invalidateWindowAutoLayout(win);
   win.dataset.userPositioned = "true";
   win.dataset.systemPositioned = "false";
 }
+
+// WM0: the pointer now owns this window's frame. Any title alignment scheduled
+// before this press belongs to the frame it replaced, so bump the same
+// generation the explicit-layout writers use; the delayed 80/220ms callbacks
+// then no-op instead of yanking a window the writer is dragging. Cancelling the
+// drag must not revive that expired alignment, so this only ever increments.
+function invalidateWindowAutoLayout(win) {
+  if (!win) return;
+  explicitLayoutGeneration.set(win, (explicitLayoutGeneration.get(win) || 0) + 1);
+}
+window.AISystem6InvalidateWindowAutoLayout = invalidateWindowAutoLayout;
 
 function markWindowSystemPositioned(win) {
   if (!win) return;
@@ -372,6 +498,63 @@ function syncKeyboardWindowFrame() {
   if (current.dataset.userPositioned === "true" || current.className.includes("is-mobile-")) return;
   if (current.dataset.keyboardRestoreActive !== "true") saveKeyboardWindowFrame(current);
   clampWindowToViewport(current);
+}
+
+// Portrait Desk Accessories skip syncKeyboardWindowFrame (CSS owns their slot).
+// Re-measure the rail against visualViewport so Note Pad / Clipboard sit above
+// the soft keyboard instead of under it.
+function syncKeyboardPortraitDeskAccessories() {
+  if (typeof isPortraitDocumentFlow !== "function" || !isPortraitDocumentFlow()) return;
+  if (!document.querySelector(".window.is-mobile-da-arranged:not(.is-hidden)")) return;
+  const front = document.activeElement?.closest?.(".window") || null;
+  arrangePortraitDeskAccessories(front);
+}
+
+// Keep the caret/field inside the visible viewport once the shell or DA rail
+// has already made room. iOS page-scroll is undone for the full-screen shell;
+// this scrolls the field's own scroller (textarea or pane) instead.
+function revealFocusedFieldAboveKeyboard() {
+  const inset = keyboardInsetValue();
+  if (!inset) return;
+  const el = document.activeElement;
+  if (!el || el === document.body) return;
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const visibleBottom = vv.offsetTop + vv.height;
+  const margin = 16;
+
+  if (el.tagName === "TEXTAREA") {
+    const caret = Number.isFinite(el.selectionEnd) ? el.selectionEnd : String(el.value || "").length;
+    if (typeof scrollTextareaToOffset === "function") scrollTextareaToOffset(el, caret);
+    const rect = el.getBoundingClientRect();
+    const line = typeof textareaLineHeight === "function" ? textareaLineHeight(el) : 20;
+    if (rect.bottom - line > visibleBottom - margin) {
+      const overflow = rect.bottom - line - (visibleBottom - margin);
+      let node = el.parentElement;
+      while (node && node !== document.body && overflow > 0) {
+        if (node.scrollHeight > node.clientHeight + 1) {
+          node.scrollTop += overflow;
+          break;
+        }
+        node = node.parentElement;
+      }
+    }
+    return;
+  }
+
+  if (el.isContentEditable || el.tagName === "INPUT") {
+    const rect = el.getBoundingClientRect();
+    if (rect.bottom <= visibleBottom - margin && rect.top >= vv.offsetTop + margin) return;
+    let node = el.parentElement;
+    while (node && node !== document.body) {
+      if (node.scrollHeight > node.clientHeight + 1) {
+        const delta = rect.bottom - (visibleBottom - margin);
+        if (delta > 0) node.scrollTop += delta;
+        break;
+      }
+      node = node.parentElement;
+    }
+  }
 }
 
 function saveSideAskRestoreFrame(win) {
@@ -1094,6 +1277,15 @@ function releaseOrphanedMiniwindows() {
 
 document.addEventListener("ai-system6-themechange", releaseOrphanedMiniwindows);
 
+// WM1: focus rank is independent of z-index and pinning. Only a real focus
+// command advances it, so pin/unpin, hover, compaction and theme changes never
+// reorder the window walk; the walk keeps following true last-used order.
+const windowFocusRanks = new WeakMap();
+let windowFocusRankCounter = 0;
+function windowFocusRank(win) {
+  return (win && windowFocusRanks.get(win)) || 0;
+}
+
 function focusWindow(win, reveal=false) {
   if (!win) return;
   const restoredMiniwindow = win.classList.contains("is-minimized");
@@ -1115,6 +1307,8 @@ function focusWindow(win, reveal=false) {
     item.classList.remove("is-active");
   });
   win.classList.add("is-active");
+  // WM1: a real focus is the only thing that advances last-used order.
+  windowFocusRanks.set(win, ++windowFocusRankCounter);
   // The status line follows the active window, so a message set while another
   // window was in front is still readable where the writer now is.
   if (typeof syncStatusHost === "function") syncStatusHost();
@@ -1156,7 +1350,11 @@ function focusWindow(win, reveal=false) {
     return;
   }
 
-  setWindowLayerZ(win, nextWindowLayerZ());
+  // Pinned windows raise only inside the pinned band. Ordinary windows stay in
+  // the normal band, so clicking B/C never buries a pinned A, and A does not
+  // need to steal keyboard focus to remain painted above them.
+  if (isWindowPinned(win)) setWindowLayerZ(win, nextPinnedWindowLayerZ());
+  else setWindowLayerZ(win, nextWindowLayerZ());
   if (isDeskAccessorySidecar(win)) {
     raiseVisibleDeskAccessorySidecars(win);
   } else if (getWindowAppId(win) === "accessories") {
@@ -2119,22 +2317,45 @@ function writingSpineAlignedTopForWindow(win, fallback = 18) {
 }
 
 function alignWindowTitleBottomToWritingSpine(win) {
-  if (!win || writerMode || isPortraitDocumentFlow()) return;
+  // WM0: a window the writer has positioned (or one already detached by a close
+  // / project switch) must not be pulled back to the spine by a late callback.
+  if (!win || !win.isConnected || win.dataset.userPositioned === "true") return;
+  if (writerMode || isPortraitDocumentFlow()) return;
   if (["about", "saveChat"].includes(win.dataset.window)) return;
-  if (win.classList.contains("is-hidden") || win.classList.contains("is-collapsed")) return;
+  // Hardening: every put-away presentation owns its own frame, so a stale
+  // callback must not move a hidden, app-hidden, minimized, shaded or
+  // full-screen window back to the spine line.
+  if (["is-hidden", "is-app-hidden", "is-minimized", "is-collapsed", "is-fullscreen"]
+    .some((name) => win.classList.contains(name))) return;
   win.style.top = `${writingSpineAlignedTopForWindow(win, parsePositiveInteger(win.style.top) || 18)}px`;
 }
 
 function scheduleWritingSpineTitleAlignment(win) {
-  if (!win || writerMode || isPortraitDocumentFlow()) return;
+  // `isConnected === false` is the detached case; a stand-in object without the
+  // property is treated as attached, and the writer re-checks it before moving.
+  if (!win || win.isConnected === false || writerMode || isPortraitDocumentFlow()) return;
   // The writing route lays its windows out right after this is scheduled
   // (Section Drafts over TeachText, one paper width apart). An alignment that
   // then pulled the lower window back to the spine line put TeachText exactly
   // on top of Section Drafts in every appearance, so an explicit layout
   // written since scheduling wins.
   const generation = explicitLayoutGeneration.get(win) || 0;
+  // The delayed callbacks belong to the scene that scheduled them. Capture the
+  // context they were planned against and discard them when any part of it has
+  // changed: a new project, appearance or viewport would otherwise receive a
+  // write meant for the old one.
+  const project = typeof activeProjectId === "undefined" ? null : activeProjectId;
+  const theme = typeof getCurrentTheme === "function" ? getCurrentTheme() : "";
+  const viewport = `${window.innerWidth}:${window.innerHeight}`;
   const align = () => {
-    if ((explicitLayoutGeneration.get(win) || 0) !== generation) return;
+    if (win.isConnected === false || writerMode || isPortraitDocumentFlow()
+        || win.dataset.userPositioned === "true"
+        || (explicitLayoutGeneration.get(win) || 0) !== generation
+        || (typeof activeProjectId === "undefined" ? null : activeProjectId) !== project
+        || (typeof getCurrentTheme === "function" ? getCurrentTheme() : "") !== theme
+        || `${window.innerWidth}:${window.innerHeight}` !== viewport
+        || ["is-hidden", "is-app-hidden", "is-minimized", "is-collapsed", "is-fullscreen"]
+          .some((name) => win.classList.contains(name))) return;
     alignWindowTitleBottomToWritingSpine(win);
     // Alignment is delayed until content strips have their final height. Run
     // collision placement after that shift as well, or a clear lower slot can
@@ -2504,6 +2725,13 @@ function getActionAvailability() {
   // The writing route is a set of views onto one mounted project.
   const routeHasProject = typeof getActiveProject === "function" && !!getActiveProject();
   const hasOutlineBody = winName === "outline" && !!outlineContentEl?.value?.trim();
+  const hasMeaningfulOutline = typeof getMeaningfulOutlineSections === "function"
+    ? getMeaningfulOutlineSections(getProjectOutlineSections?.(getActiveProject?.() || {}) || []).length > 0
+    : !!(outlineContentEl?.value || "").trim();
+  const hasOutlineSectionForDraft = typeof getProjectOutlineSections === "function"
+    ? getProjectOutlineSections(getActiveProject?.() || {}).length > 0
+    : hasMeaningfulOutline;
+  const hasSectionDraftBody = !!(String(typeof draftBodyInput !== "undefined" && draftBodyInput?.value || "").trim());
   // What the darkroom would actually receive: the mounted document, not the
   // textarea of whichever stop happens to be in front.
   const developableDocument = typeof activeTextFileId === "string" && activeTextFileId
@@ -2635,6 +2863,39 @@ function getActionAvailability() {
   const selectedTaskLifecycle = selectedArtifactIs("task-config")
     ? String(selectedArtifact.taskLifecycle?.state || "")
     : "";
+
+  // The Window menu (Mac OS X and later) is era-gated and front-window gated.
+  // The capability is the era decision; the front window is the object, and
+  // eligible() is the arrangement engine's own test when it has loaded. Before
+  // the lazy engine loads, a front arrangeable window is enough for the row to
+  // stay reachable — the first use loads it, and windowshade-entry.js re-checks
+  // on the click. Geometry stays in the engine; this never recreates it.
+  const windowMenuEra = window.AISystem6Theme?.hasCapability?.("window-menu") === true;
+  const windowMenuFrontWindow = document.querySelector(
+    ".window[data-window].is-active:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)"
+  );
+  const windowMenuAvailable = windowMenuEra && !!windowMenuFrontWindow && !isNarrowViewport()
+    && (!window.AISystem6WindowShade || window.AISystem6WindowShade.eligible(windowMenuFrontWindow));
+  const windowMenuPinAvailable = windowMenuAvailable
+    && (typeof canPinWindow !== "function" || canPinWindow(windowMenuFrontWindow));
+  // A slot arrangement needs a window the grow box can own. That is the same
+  // fact the engine's own target() refuses on: it returns null for a window
+  // isResizableWindow() rejects, and dispatch() then reports noRoom without a
+  // word. Pin already greys with canPinWindow; the slots had no counterpart,
+  // so with a fixed-size Desk Accessory in front — Note Pad, which opens at
+  // one size by design and is deliberately absent from resizableWindowNames —
+  // Left, Right and Fill stayed black and then did nothing when chosen.
+  // Undo is not gated here: roll-up and recovery also record history, so a
+  // window that cannot be slotted can still have something to undo. Shade,
+  // Expand and Recover are not gated either; every eligible window can be
+  // rolled up, unrolled and brought back into view.
+  const windowMenuArrangeAvailable = windowMenuAvailable
+    && typeof isResizableWindow === "function" && isResizableWindow(windowMenuFrontWindow);
+  // WM5's All Windows row is a browse list, not an arrangement: it needs the
+  // Window-menu era and at least one window on the desk, but no front window to
+  // act on (a desk of only minimized windows is exactly when it is most useful).
+  const windowMenuBrowseAvailable = windowMenuEra && !isNarrowViewport()
+    && !!document.querySelector(".window[data-window]:not(.is-hidden):not(.is-app-hidden)");
 
   const availability = {
     // Both open a scratch document, which never touches the project — that is
@@ -2768,32 +3029,32 @@ function getActionAvailability() {
     "outline-tree-promote": routeWinName === "outline" && outlineTreeIsOpen() && !!outlineTreeSelectedId,
     "outline-tree-demote": routeWinName === "outline" && outlineTreeIsOpen() && !!outlineTreeSelectedId,
     "outline-tree-write": routeWinName === "outline" && outlineTreeIsOpen() && !!outlineTreeSelectedId,
-    "mingming-outline": routeWinName === "outline",
-    "structure-outline": routeWinName === "outline",
-    "expand-outline": routeWinName === "outline",
-    "reduce-outline": routeWinName === "outline",
+    // Empty Outline greys structure / Reader's Eye tools with a reason —
+    // same honesty as To Section Drafts (Goal #2 batch A / v245).
+    "mingming-outline": routeWinName === "outline" && hasMeaningfulOutline,
+    "structure-outline": routeWinName === "outline" && hasMeaningfulOutline,
+    "expand-outline": routeWinName === "outline" && hasMeaningfulOutline,
+    "reduce-outline": routeWinName === "outline" && hasMeaningfulOutline,
     // Empty Outline stays grey with a reason (R16) instead of a live advance
     // that only prints outline_needs_content after the click.
     "advance-outline-to-drafts": routeWinName === "outline"
       && (!!routeHasProject)
-      && (typeof getMeaningfulOutlineSections === "function"
-        ? getMeaningfulOutlineSections(getProjectOutlineSections?.(getActiveProject?.() || {}) || []).length > 0
-        : !!(outlineContentEl?.value || "").trim()),
+      && hasMeaningfulOutline,
     "previous-section-draft": routeWinName === "sectionDrafts" && typeof canNavigateSectionDraft === "function" && canNavigateSectionDraft(-1),
     "next-section-draft": routeWinName === "sectionDrafts" && typeof canNavigateSectionDraft === "function" && canNavigateSectionDraft(1),
-    "draft-current-section": routeWinName === "sectionDrafts",
-    "polish-draft": routeWinName === "sectionDrafts",
-    "suggest-draft": routeWinName === "sectionDrafts",
-    "eli5-rewrite-section": routeWinName === "sectionDrafts" && (typeof writingStudioExplanationLens === "function"
+    "draft-current-section": routeWinName === "sectionDrafts" && hasOutlineSectionForDraft,
+    "polish-draft": routeWinName === "sectionDrafts" && hasSectionDraftBody,
+    "suggest-draft": routeWinName === "sectionDrafts" && hasSectionDraftBody,
+    "eli5-rewrite-section": routeWinName === "sectionDrafts" && hasSectionDraftBody && (typeof writingStudioExplanationLens === "function"
       ? writingStudioExplanationLens().enabled === true
       : false),
-    "eli5-review-section": routeWinName === "sectionDrafts" && (typeof writingStudioExplanationLens === "function"
+    "eli5-review-section": routeWinName === "sectionDrafts" && hasSectionDraftBody && (typeof writingStudioExplanationLens === "function"
       ? writingStudioExplanationLens().enabled === true
       : false),
     // A new reader can ask for one action per sentence without turning on
     // the one-pass listening lens. The command edits the section on screen.
-    "one-sentence-rewrite-section": routeWinName === "sectionDrafts",
-    "one-sentence-check-section": routeWinName === "sectionDrafts",
+    "one-sentence-rewrite-section": routeWinName === "sectionDrafts" && hasSectionDraftBody,
+    "one-sentence-check-section": routeWinName === "sectionDrafts" && hasSectionDraftBody,
     "open-find-change": true,
     "find-change-next": true,
     "find-change-current": true,
@@ -2801,10 +3062,8 @@ function getActionAvailability() {
     "advance-writing-route": typeof currentWritingRouteStop === "function" && !!currentWritingRouteStop(),
     "advance-drafts-to-manuscript": routeWinName === "sectionDrafts"
       && (!!routeHasProject)
-      && (typeof getMeaningfulOutlineSections === "function"
-        ? getMeaningfulOutlineSections(getProjectOutlineSections?.(getActiveProject?.() || {}) || []).length > 0
-        : true)
-      && !!(String(typeof draftBodyInput !== "undefined" && draftBodyInput?.value || "").trim()),
+      && hasMeaningfulOutline
+      && hasSectionDraftBody,
     "return-document-to-section-drafts": routeWinName === "sectionDrafts"
       && typeof manuscriptPhase === "function" && manuscriptPhase() === "manuscript",
     "advance-manuscript-to-review": ["teachText", "reviewDesk"].includes(routeWinName) && routeHasProject && !!teachTextBodyInput?.value.trim()
@@ -2995,7 +3254,23 @@ function getActionAvailability() {
     // darkroom's two contextual menus never both apply and the bar stays at
     // five.
     "lightroom-document": winName === "lightroom" && lightroomHasBody && lightroomView !== "listen",
-    "lightroom-listen": winName === "lightroom" && lightroomView === "listen"
+    "lightroom-listen": winName === "lightroom" && lightroomView === "listen",
+    // The Window menu's own gate, and its rows. The condition is false in the
+    // classic / Platinum / Drawing Board / NeXTSTEP eras (no "window-menu"
+    // capability), and in a narrow viewport where title-bar gestures stand
+    // down. Pin follows the engine's canPinWindow, so a full-screen or
+    // centered system sheet greys it.
+    "window-menu": windowMenuAvailable,
+    "window-shade": windowMenuAvailable,
+    "window-expand": windowMenuAvailable,
+    "window-layout-left": windowMenuArrangeAvailable,
+    "window-layout-right": windowMenuArrangeAvailable,
+    "window-layout-fill": windowMenuArrangeAvailable,
+    "window-layout-undo": windowMenuAvailable,
+    "window-layout-recover": windowMenuAvailable,
+    "window-pin": windowMenuPinAvailable,
+    "window-unpin": windowMenuPinAvailable,
+    "window-browse": windowMenuBrowseAvailable
   };
   // A lazy command answers for itself once its admission row exists: the row is
   // the declaration that the window, its loader and its opener are real, so the
@@ -3437,6 +3712,9 @@ async function openWindowInner(name, options = {}, nestedOpen = false) {
 
   await mountWindowApplication(name, { reentrant: nestedOpen });
   runWindowHook(name, "onOpen", { win, wasAlreadyOpen });
+  // Reopening a window that was shaded must restore the size the shade saved
+  // before the collapsed class comes off, or Expand would measure the stub.
+  if (win.classList.contains("is-collapsed")) restoreWindowShadeDimensions(win);
   win.classList.remove("is-hidden", "is-collapsed");
   if (isPortraitDocumentFlow() && mobileFinderPageWindowNames.has(name)) {
     mobileFinderDesktopPreferred = false;
@@ -4942,12 +5220,19 @@ async function closeWindow(name, force = false) {
   }
 
   if (name === "themeLab") window.AISystem6ThemeLab?.cleanup?.();
+  // A closed window must not be moved by a callback scheduled before the close.
+  invalidateWindowAutoLayout(win);
+  endPeek(win);
+  delete win.dataset.windowPinned;
   win.classList.add("is-hidden");
   win.classList.remove("is-minimized");
   // 文字亮室 shows a view of the draft, so the window going away has to put the
   // view back. Closing it with ⌘W used to leave the display mode on "grain"
   // with no window to show one.
   if (name === "lightroom") window.AISystem6QuickDraft?.noteLightroomClosed?.();
+  if (name === "writingBell" && typeof noteWritingBellClosed === "function") {
+    noteWritingBellClosed();
+  }
   if (name === "memoryCards") {
     pauseMemoryCardsGame();
   }
@@ -5058,10 +5343,31 @@ async function closeWindow(name, force = false) {
   return true;
 }
 
+// A shade's own height is CSS-owned; the size it had is remembered on the
+// element so Expand puts it back exactly. Shared by the shade verb, the orphan
+// release and reopening an already-open shaded window, so all three restore the
+// saved dimensions the same way. An empty string is intentional CSS ownership,
+// not a missing value.
+function restoreWindowShadeDimensions(win) {
+  if (!win) return;
+  setInlineStyleValue(win, "--window-shade-width", "");
+  setInlineStyleValue(win, "height", win.dataset.shadeRestoreHeight || "");
+  setInlineStyleValue(win, "max-height", win.dataset.shadeRestoreMaxHeight || "");
+  delete win.dataset.shadeRestoreHeight;
+  delete win.dataset.shadeRestoreMaxHeight;
+}
+
 function toggleCollapsed(win) {
+  if (!win?.isConnected) return;
+  invalidateWindowAutoLayout(win);
+  // Relinquish temporary full-screen geometry before recording the shade. A
+  // 100dvh window cannot shade, and the shade must remember the real frame,
+  // not the priority-band view it is leaving.
+  if (win.classList.contains("is-fullscreen")) window.AISystem6WindowFullscreen?.exit(win);
   const willCollapse = !win.classList.contains("is-collapsed");
   // The writer's own roll up or down: from here the shade is theirs, not Hide's.
   delete win.dataset.appHiddenCollapsed;
+  endPeek(win);
   const before = win.getBoundingClientRect();
   if (willCollapse) {
     const width = Math.round(before.width);
@@ -5081,11 +5387,7 @@ function toggleCollapsed(win) {
     }
   } else {
     win.classList.remove("is-collapsed");
-    setInlineStyleValue(win, "--window-shade-width", "");
-    setInlineStyleValue(win, "height", win.dataset.shadeRestoreHeight || "");
-    setInlineStyleValue(win, "max-height", win.dataset.shadeRestoreMaxHeight || "");
-    delete win.dataset.shadeRestoreHeight;
-    delete win.dataset.shadeRestoreMaxHeight;
+    restoreWindowShadeDimensions(win);
     // Expanding must reclaim the foreground: another window may have taken
     // the phone's full-screen shell while this one was shaded. Focus raises
     // the z-index so the following foreground sync picks this window again.
@@ -5100,6 +5402,73 @@ function toggleCollapsed(win) {
   syncMobileAppForeground();
   scheduleWorkingSessionSave?.();
 }
+
+// Temporary shade peek: the durable state stays collapsed. No Working Session
+// write, no MRU change, no focus steal, no second DOM identity.
+let shadePeekWindow = null;
+
+function canPeekWindow(win) {
+  if (!win?.isConnected || !win.classList.contains("is-collapsed")) return false;
+  if (win.matches(".is-hidden, .is-app-hidden, .is-minimized, .is-fullscreen, .is-mobile-fullscreen")) return false;
+  if (win.dataset.windowShadePeek === "false") return false;
+  if (win.querySelector("input[type='password']")) return false;
+  if (win.querySelector("iframe")) return false;
+  return !!win.querySelector(":scope > .title-bar");
+}
+
+function isWindowPeeking(win = shadePeekWindow) {
+  return !!win && win === shadePeekWindow && win.classList.contains("is-shade-peeking");
+}
+
+function beginPeek(win) {
+  if (!canPeekWindow(win)) return false;
+  if (isWindowPeeking(win)) return true;
+  if (shadePeekWindow && shadePeekWindow !== win) endPeek(shadePeekWindow);
+  const height = win.dataset.shadeRestoreHeight || "";
+  const maxHeight = win.dataset.shadeRestoreMaxHeight || "";
+  if (height) setInlineStyleValue(win, "height", height);
+  if (maxHeight) setInlineStyleValue(win, "max-height", maxHeight);
+  win.classList.add("is-shade-peeking");
+  shadePeekWindow = win;
+  return true;
+}
+
+function endPeek(win = shadePeekWindow) {
+  if (!win?.classList?.contains("is-shade-peeking")) {
+    if (shadePeekWindow === win) shadePeekWindow = null;
+    return false;
+  }
+  win.classList.remove("is-shade-peeking");
+  if (win.classList.contains("is-collapsed")) {
+    setInlineStyleValue(win, "height", "");
+    setInlineStyleValue(win, "max-height", "");
+  }
+  if (shadePeekWindow === win) shadePeekWindow = null;
+  return true;
+}
+
+function commitPeek(win = shadePeekWindow) {
+  if (!win) return false;
+  const wasPeeking = isWindowPeeking(win);
+  endPeek(win);
+  if (!win.classList.contains("is-collapsed")) return wasPeeking;
+  toggleCollapsed(win);
+  return true;
+}
+
+function cancelAllWindowPeeks() {
+  if (shadePeekWindow) endPeek(shadePeekWindow);
+}
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") cancelAllWindowPeeks();
+}, true);
+window.addEventListener("blur", cancelAllWindowPeeks);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) cancelAllWindowPeeks();
+});
+document.addEventListener("ai-system6-themechange", cancelAllWindowPeeks);
+window.addEventListener("resize", cancelAllWindowPeeks);
 
 // WindowShade rolls up and down in place. Start Here is centred by a transform,
 // and compact layouts re-anchor a collapsed window from the viewport to the
@@ -5499,6 +5868,7 @@ function startWindowResize(event, win, edge = "right") {
   event.preventDefault();
   event.stopPropagation();
   focusWindow(win);
+  invalidateWindowAutoLayout(win);
   clearFinderContentFit(win, { preserveSize: true });
   // The grow box performs manual sizing, while the Zoom box chooses the
   // standard size. Dragging out of the full-screen shell restores the window
@@ -5692,6 +6062,10 @@ function tileWindows(candidateWindows = null) {
   const desktopWidth = desktop.clientWidth - avoidance.left - avoidance.right - padding;
   const desktopHeight = desktop.clientHeight;
   const tileableWindows = openWindows.filter((win) => tileableWindowNames.has(win.dataset.window));
+  // With only fixed-size windows (a desk accessory, a dialog) there is nothing
+  // to tile and nothing to write: return before the fixed-column measurement
+  // clears their inline size, so a no-op tile leaves the manual frame alone.
+  if (!tileableWindows.length) return false;
   const fixedWindows = openWindows.filter((win) => !tileableWindowNames.has(win.dataset.window));
   const fixedGap = fixedWindows.length ? 20 : 0;
   const minTileAreaWidth = 520;
@@ -5705,7 +6079,6 @@ function tileWindows(candidateWindows = null) {
   const useFixedColumn = fixedWindows.length > 0
     && desktopWidth - fixedColumnWidth - fixedGap - padding >= minTileAreaWidth;
 
-  if (!tileableWindows.length) return;
 
   const tileAreaWidth = useFixedColumn
     ? desktopWidth - fixedColumnWidth - fixedGap - padding

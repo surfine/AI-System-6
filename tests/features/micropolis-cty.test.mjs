@@ -99,7 +99,13 @@ test.assert(Buffer.compare(Buffer.from(cty.encodeCty(round)), Buffer.from(bytes)
 // --- wiring: one lazy module, named by both windows' loaders -----------------
 test.assertIncludes(manifest, '"app/features/micropolis-cty-codec.js"', "the codec is a lazy runtime file");
 test.assertMatches(config, /ensureMicropolisModule[\s\S]{0,600}"app\/features\/micropolis-cty-codec\.js"/, "the Micropolis loader names the codec");
-test.assertMatches(config, /ensureBonsaiCityModule[\s\S]{0,600}"app\/features\/micropolis-cty-codec\.js"/, "the Bonsai City loader names the same codec");
+// Read the loader's own file list rather than a character window: the Bonsai
+// City loader has grown past a fixed distance more than once, and a window
+// that has to be widened every batch stops being a statement about wiring.
+const bonsaiLoaderFiles = config.match(
+  /const ensureBonsaiCityModule = createLazyModuleLoader\([^)]*?\[([\s\S]*?)\]/
+)?.[1] || "";
+test.assertIncludes(bonsaiLoaderFiles, '"app/features/micropolis-cty-codec.js"', "the Bonsai City loader names the same codec");
 test.assertIncludes(shellSource, 'accept=".cty"', "import uses one file input behind the menu command");
 test.assertIncludes(shellSource, 'item("import-cty", "micropolis_import_cty")', "Import .cty lives in the File menu");
 test.assertIncludes(shellSource, 'item("export-cty", "micropolis_export_cty")', "Export .cty lives in the File menu");

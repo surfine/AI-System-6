@@ -1,0 +1,603 @@
+{
+  "profile": "glance-intent-v1",
+  "timeUnit": "milliseconds",
+  "source": "WindowShade tests/GlanceIntentTests.swift @ b271fcfb843e5caeb89c4e4960c9c8524f232ed6",
+  "scenarios": [
+    {
+      "name": "brief pass never opens later",
+      "steps": [
+        {
+          "method": "entered",
+          "expect": [
+            {
+              "kind": "prewarm",
+              "id": "a"
+            }
+          ],
+          "at": 0,
+          "id": "a"
+        },
+        {
+          "method": "sample",
+          "expect": [],
+          "at": 100,
+          "sample": {
+            "strip": "a"
+          }
+        },
+        {
+          "method": "sample",
+          "expect": [
+            {
+              "kind": "discard",
+              "id": "a"
+            }
+          ],
+          "at": 150,
+          "sample": {}
+        },
+        {
+          "method": "sample",
+          "expect": [],
+          "at": 500,
+          "sample": {
+            "strip": "a"
+          }
+        }
+      ]
+    },
+    {
+      "name": "dwell and panel crossing with leave grace",
+      "steps": [
+        {
+          "method": "entered",
+          "expect": [
+            {
+              "kind": "prewarm",
+              "id": "a"
+            }
+          ],
+          "at": 0,
+          "id": "a"
+        },
+        {
+          "method": "sample",
+          "expect": [
+            {
+              "kind": "open",
+              "id": "a"
+            }
+          ],
+          "at": 230,
+          "sample": {
+            "strip": "a"
+          }
+        },
+        {
+          "method": "sample",
+          "expect": [],
+          "at": 400,
+          "sample": {
+            "overGlance": true
+          }
+        },
+        {
+          "method": "sample",
+          "expect": [],
+          "at": 500,
+          "sample": {}
+        },
+        {
+          "method": "sample",
+          "expect": [],
+          "at": 550,
+          "sample": {
+            "overGlance": true
+          }
+        },
+        {
+          "method": "sample",
+          "expect": [],
+          "at": 600,
+          "sample": {}
+        },
+        {
+          "method": "sample",
+          "expect": [],
+          "at": 700,
+          "sample": {}
+        },
+        {
+          "method": "sample",
+          "expect": [
+            {
+              "kind": "close",
+              "id": "a"
+            }
+          ],
+          "at": 770,
+          "sample": {}
+        }
+      ]
+    },
+    {
+      "name": "controls reset dwell",
+      "steps": [
+        {
+          "method": "entered",
+          "expect": [
+            {
+              "kind": "prewarm",
+              "id": "a"
+            }
+          ],
+          "at": 0,
+          "id": "a"
+        },
+        {
+          "method": "sample",
+          "expect": [],
+          "at": 300,
+          "sample": {
+            "strip": "a",
+            "overControls": true
+          }
+        },
+        {
+          "method": "sample",
+          "expect": [],
+          "at": 900,
+          "sample": {
+            "strip": "a",
+            "overControls": true
+          }
+        },
+        {
+          "method": "sample",
+          "expect": [],
+          "at": 1000,
+          "sample": {
+            "strip": "a"
+          }
+        },
+        {
+          "method": "sample",
+          "expect": [
+            {
+              "kind": "open",
+              "id": "a"
+            }
+          ],
+          "at": 1200,
+          "sample": {
+            "strip": "a"
+          }
+        }
+      ]
+    },
+    {
+      "name": "neighbor needs its own dwell",
+      "steps": [
+        {
+          "method": "entered",
+          "expect": [
+            {
+              "kind": "prewarm",
+              "id": "a"
+            }
+          ],
+          "at": 0,
+          "id": "a"
+        },
+        {
+          "method": "sample",
+          "expect": [
+            {
+              "kind": "open",
+              "id": "a"
+            }
+          ],
+          "at": 300,
+          "sample": {
+            "strip": "a"
+          }
+        },
+        {
+          "method": "sample",
+          "expect": [
+            {
+              "kind": "close",
+              "id": "a"
+            },
+            {
+              "kind": "prewarm",
+              "id": "b"
+            }
+          ],
+          "at": 400,
+          "sample": {
+            "strip": "b"
+          }
+        },
+        {
+          "method": "sample",
+          "expect": [
+            {
+              "kind": "open",
+              "id": "b"
+            }
+          ],
+          "at": 630,
+          "sample": {
+            "strip": "b"
+          }
+        },
+        {
+          "method": "entered",
+          "expect": [
+            {
+              "kind": "close",
+              "id": "b"
+            },
+            {
+              "kind": "prewarm",
+              "id": "a"
+            }
+          ],
+          "at": 700,
+          "id": "a"
+        }
+      ]
+    },
+    {
+      "name": "freshly folded strip is blocked until leave",
+      "steps": [
+        {
+          "method": "block",
+          "expect": [],
+          "id": "a"
+        },
+        {
+          "method": "entered",
+          "expect": [],
+          "at": 0,
+          "id": "a"
+        },
+        {
+          "method": "unblock",
+          "expect": [],
+          "id": "a"
+        },
+        {
+          "method": "entered",
+          "expect": [
+            {
+              "kind": "prewarm",
+              "id": "a"
+            }
+          ],
+          "at": 1000,
+          "id": "a"
+        }
+      ]
+    },
+    {
+      "name": "click unblocks and duplicate click is a no-op",
+      "steps": [
+        {
+          "method": "block",
+          "expect": [],
+          "id": "a"
+        },
+        {
+          "method": "clicked",
+          "expect": [
+            {
+              "kind": "prewarm",
+              "id": "a"
+            },
+            {
+              "kind": "open",
+              "id": "a"
+            }
+          ],
+          "at": 0,
+          "id": "a"
+        },
+        {
+          "method": "clicked",
+          "expect": [],
+          "at": 50,
+          "id": "a"
+        }
+      ]
+    },
+    {
+      "name": "blocked neighbor never steals the preview",
+      "steps": [
+        {
+          "method": "clicked",
+          "expect": [
+            {
+              "kind": "prewarm",
+              "id": "a"
+            },
+            {
+              "kind": "open",
+              "id": "a"
+            }
+          ],
+          "at": 0,
+          "id": "a"
+        },
+        {
+          "method": "block",
+          "expect": [],
+          "id": "b"
+        },
+        {
+          "method": "sample",
+          "expect": [],
+          "at": 100,
+          "sample": {
+            "strip": "b"
+          }
+        },
+        {
+          "method": "sample",
+          "expect": [
+            {
+              "kind": "close",
+              "id": "a"
+            }
+          ],
+          "at": 300,
+          "sample": {
+            "strip": "b"
+          }
+        }
+      ]
+    },
+    {
+      "name": "forget and cancel are identity scoped",
+      "steps": [
+        {
+          "method": "clicked",
+          "expect": [
+            {
+              "kind": "prewarm",
+              "id": "a"
+            },
+            {
+              "kind": "open",
+              "id": "a"
+            }
+          ],
+          "at": 0,
+          "id": "a"
+        },
+        {
+          "method": "forget",
+          "expect": [],
+          "id": "b"
+        },
+        {
+          "method": "forget",
+          "expect": [
+            {
+              "kind": "close",
+              "id": "a"
+            }
+          ],
+          "id": "a"
+        },
+        {
+          "method": "entered",
+          "expect": [
+            {
+              "kind": "prewarm",
+              "id": "b"
+            }
+          ],
+          "at": 1000,
+          "id": "b"
+        },
+        {
+          "method": "cancel",
+          "expect": [
+            {
+              "kind": "discard",
+              "id": "b"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "menu handoff expires and never leaks into next interaction",
+      "steps": [
+        {
+          "method": "menuSelected",
+          "expect": [
+            {
+              "kind": "prewarm",
+              "id": "a"
+            },
+            {
+              "kind": "open",
+              "id": "a"
+            }
+          ],
+          "at": 0,
+          "id": "a"
+        },
+        {
+          "method": "sample",
+          "expect": [],
+          "at": 200,
+          "sample": {}
+        },
+        {
+          "method": "sample",
+          "expect": [],
+          "at": 1000,
+          "sample": {}
+        },
+        {
+          "method": "sample",
+          "expect": [],
+          "at": 1050,
+          "sample": {
+            "overGlance": true
+          }
+        },
+        {
+          "method": "sample",
+          "expect": [],
+          "at": 1060,
+          "sample": {}
+        },
+        {
+          "method": "sample",
+          "expect": [
+            {
+              "kind": "close",
+              "id": "a"
+            }
+          ],
+          "at": 1230,
+          "sample": {}
+        },
+        {
+          "method": "menuSelected",
+          "expect": [
+            {
+              "kind": "prewarm",
+              "id": "a"
+            },
+            {
+              "kind": "open",
+              "id": "a"
+            }
+          ],
+          "at": 2000,
+          "id": "a"
+        },
+        {
+          "method": "cancel",
+          "expect": [
+            {
+              "kind": "close",
+              "id": "a"
+            }
+          ]
+        },
+        {
+          "method": "clicked",
+          "expect": [
+            {
+              "kind": "prewarm",
+              "id": "a"
+            },
+            {
+              "kind": "open",
+              "id": "a"
+            }
+          ],
+          "at": 2100,
+          "id": "a"
+        },
+        {
+          "method": "sample",
+          "expect": [],
+          "at": 2200,
+          "sample": {}
+        },
+        {
+          "method": "sample",
+          "expect": [
+            {
+              "kind": "close",
+              "id": "a"
+            }
+          ],
+          "at": 2400,
+          "sample": {}
+        },
+        {
+          "method": "menuSelected",
+          "expect": [
+            {
+              "kind": "prewarm",
+              "id": "a"
+            },
+            {
+              "kind": "open",
+              "id": "a"
+            }
+          ],
+          "at": 3000,
+          "id": "a"
+        },
+        {
+          "method": "sample",
+          "expect": [
+            {
+              "kind": "close",
+              "id": "a"
+            },
+            {
+              "kind": "prewarm",
+              "id": "b"
+            }
+          ],
+          "at": 3050,
+          "sample": {
+            "strip": "b"
+          }
+        },
+        {
+          "method": "cancel",
+          "expect": [
+            {
+              "kind": "discard",
+              "id": "b"
+            }
+          ]
+        },
+        {
+          "method": "menuSelected",
+          "expect": [
+            {
+              "kind": "prewarm",
+              "id": "a"
+            },
+            {
+              "kind": "open",
+              "id": "a"
+            }
+          ],
+          "at": 4000,
+          "id": "a"
+        },
+        {
+          "method": "sample",
+          "expect": [],
+          "at": 5210,
+          "sample": {}
+        },
+        {
+          "method": "sample",
+          "expect": [
+            {
+              "kind": "close",
+              "id": "a"
+            }
+          ],
+          "at": 5380,
+          "sample": {}
+        }
+      ]
+    }
+  ]
+}

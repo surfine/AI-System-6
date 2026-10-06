@@ -35,8 +35,8 @@ test.assertIncludes(app, "export_project_backup: \"导出备份…\"", "Chinese 
 
 test.assertIncludes(projectDisk, "function createProjectRecord", "new Project Hard Disks are created through a single record factory");
 test.assertIncludes(projectDisk, "project_disk_empty_title", "an empty Project Hard Disk renders a visible empty-state object");
-test.assertIncludes(app, 'project_disk_empty_title: "Empty Project Hard Disk"', "English names the empty Project Hard Disk");
-test.assertIncludes(app, 'project_disk_empty_title: "空项目硬盘"', "Chinese names the empty Project Hard Disk");
+test.assertIncludes(app, 'project_disk_empty_title: "This disk is still empty"', "English names the empty Project Hard Disk");
+test.assertIncludes(app, 'project_disk_empty_title: "这块盘还是空的"', "Chinese names the empty Project Hard Disk");
 test.assertIncludes(indexHtml, 'id="new-project-disk-modal"', "New Project Hard Disk uses an in-app dialog instead of a native browser prompt");
 test.assertNotIncludes(desktopRuntime, "window.prompt(t(\"new_project_prompt\")", "new project naming never falls back to a native browser prompt");
 test.assertIncludes(app, 'new_project_disk_create: "Create"', "English UI names the create action");

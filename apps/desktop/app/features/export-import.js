@@ -570,7 +570,17 @@ function syncProjectCdBurnActionVisibility(visibleItems = getProjectCdItems()) {
   if (!spineBurnProjectCdButtonEl) return;
   const burned = visibleItems.length > 0;
   const ready = !burned && projectCdBurnIsAvailable();
-  spineBurnProjectCdButtonEl.disabled = !burned && !ready;
+  // Grey stop: the writer is told to mark the manuscript final first, not told
+  // the piece is ready. The hover copy above describes ready/burned; the
+  // one-tap reason is the locked sentence only while the stop is actually grey.
+  const stopBlocked = !burned && !ready;
+  if (typeof markGrayAffordance === "function") {
+    markGrayAffordance(spineBurnProjectCdButtonEl, stopBlocked, "balloon_project_cd_stop_locked");
+  } else {
+    spineBurnProjectCdButtonEl.disabled = stopBlocked;
+    if (stopBlocked) spineBurnProjectCdButtonEl.dataset.balloonHelpDisabled = "balloon_project_cd_stop_locked";
+    else delete spineBurnProjectCdButtonEl.dataset.balloonHelpDisabled;
+  }
   spineBurnProjectCdButtonEl.dataset.action = burned ? "open-project-cd" : "export-teachtext-project-cd";
   spineBurnProjectCdButtonEl.dataset.balloonHelp = burned
     ? "balloon_project_cd_stop_burned"
@@ -606,13 +616,17 @@ function renderProjectCd() {
   projectCdGridEl.replaceChildren();
 
   if (!visibleItems.length) {
-    const empty = document.createElement("div");
-    empty.className = "empty-folder-note export-empty-note";
+    // Goal #2/#6: blank Project CD is a next-step object (like Project Hard
+    // Disk empty → Add…), not a dead note. TeachText is where a burn starts.
+    const empty = document.createElement("button");
+    empty.type = "button";
+    empty.className = "finder-empty-object project-empty-object export-empty-note";
     empty.innerHTML = `
       <span class="mini-icon export-empty-icon"></span>
       <b>${escapeHtml(t("export_empty_title"))}</b>
-      <span>${escapeHtml(t("export_empty_body"))}</span>
+      <small>${escapeHtml(t("export_empty_body"))}</small>
     `;
+    empty.addEventListener("click", () => handleAction("open-teachtext"));
     projectCdGridEl.append(empty);
     return;
   }
@@ -669,6 +683,9 @@ function renderProjectCd() {
       }
       selectedProjectCdItemId = selectedProjectCdItemIds.has(item.id) ? item.id : selectedProjectCdItemIds.values().next().value || null;
       syncProjectCdSelectionControls(visibleItems);
+      if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
+        revealSelectOpenTapHint(button, { detail: event.detail });
+      }
     });
     button.addEventListener("dblclick", () => openProjectCdItemInReader(item));
     projectCdGridEl.append(button);
@@ -684,12 +701,26 @@ function syncProjectCdSelectionControls(visibleItems = getProjectCdItems()) {
     document.querySelector("[data-action='share-project-cd-markdown']"),
   ].forEach((button) => {
     if (!button) return;
-    button.disabled = !hasSelectedItem;
-    button.classList.toggle("is-disabled", !hasSelectedItem);
+    const blocked = !hasSelectedItem;
+    if (typeof markGrayAffordance === "function") {
+      markGrayAffordance(button, blocked, "balloon_project_cd_select_first");
+    } else {
+      button.disabled = blocked;
+      if (blocked) button.dataset.balloonHelpDisabled = "balloon_project_cd_select_first";
+      else delete button.dataset.balloonHelpDisabled;
+    }
+    button.classList.toggle("is-disabled", blocked);
   });
   if (clearProjectCdButton) {
-    clearProjectCdButton.disabled = visibleItems.length === 0;
-    clearProjectCdButton.classList.toggle("is-disabled", visibleItems.length === 0);
+    const blocked = visibleItems.length === 0;
+    if (typeof markGrayAffordance === "function") {
+      markGrayAffordance(clearProjectCdButton, blocked, "balloon_project_cd_nothing_to_clear");
+    } else {
+      clearProjectCdButton.disabled = blocked;
+      if (blocked) clearProjectCdButton.dataset.balloonHelpDisabled = "balloon_project_cd_nothing_to_clear";
+      else delete clearProjectCdButton.dataset.balloonHelpDisabled;
+    }
+    clearProjectCdButton.classList.toggle("is-disabled", blocked);
   }
   projectCdGridEl?.querySelectorAll("[data-project-cd-item-id]").forEach((button) => {
     button.classList.toggle("is-selected", selectedProjectCdItemIds.has(button.dataset.projectCdItemId));
@@ -1525,10 +1556,7 @@ async function previewImportFiles() {
   importPreviewEl.replaceChildren();
 
   if (!files.length) {
-    const empty = document.createElement("div");
-    empty.className = "empty-folder-note";
-    empty.textContent = t("import_empty");
-    importPreviewEl.append(empty);
+    paintImportEmptyNext();
     importStatusEl.textContent = t("import_ready");
     return;
   }
@@ -1574,6 +1602,33 @@ async function previewImportFiles() {
   renderImportPreview();
 }
 
+function syncImportEmptyChrome(isEmpty) {
+  const win = typeof getWindow === "function"
+    ? getWindow("importUtility")
+    : document.querySelector('[data-window="importUtility"]');
+  if (isEmpty) win?.setAttribute("data-empty", "");
+  else win?.removeAttribute("data-empty");
+}
+
+function paintImportEmptyNext() {
+  importPreviewEl.replaceChildren();
+  syncImportEmptyChrome(true);
+  const empty = document.createElement("div");
+  empty.className = "empty-folder-note empty-next-note import-empty-next";
+  empty.dataset.emptyNext = "1";
+  const cue = document.createElement("p");
+  cue.dataset.i18n = "import_empty";
+  cue.textContent = t("import_empty");
+  const go = document.createElement("button");
+  go.type = "button";
+  go.className = "btn default";
+  go.dataset.i18n = "select_files_button";
+  go.textContent = t("select_files_button");
+  go.addEventListener("click", () => importFilesButton?.click());
+  empty.append(cue, go);
+  importPreviewEl.append(empty);
+}
+
 function renderImportPreview() {
   importPreviewEl.replaceChildren();
   const readyCount = importCandidates.filter((item) => item.supported).length;
@@ -1582,12 +1637,10 @@ function renderImportPreview() {
     importDocumentsButton.dataset.balloonHelpDisabled = "balloon_import_needs_files";
   }
   if (!importCandidates.length) {
-    const empty = document.createElement("div");
-    empty.className = "empty-folder-note";
-    empty.textContent = t("import_empty");
-    importPreviewEl.append(empty);
+    paintImportEmptyNext();
     return;
   }
+  syncImportEmptyChrome(false);
 
   importCandidates.forEach((item) => {
     const row = document.createElement("div");
@@ -1659,7 +1712,7 @@ async function remapProjectDiskBackup(bundle) {
   if (typeof ensureProjectDiskBackupModule === "function") await ensureProjectDiskBackupModule();
   return window.AISystem6ProjectDiskBackup.remapBackup(bundle, {
     projectName(name) {
-      return uniqueProjectName(`${name || t("untitled_project")} Restored`);
+      return uniqueProjectName(`${name || t("untitled_project")}${t("project_name_restored_suffix")}`);
     },
   });
 }

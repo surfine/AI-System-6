@@ -557,10 +557,36 @@ function renderTeachTextImageAttachments() {
   teachTextAttachmentsListEl.classList.toggle("is-small-icons", mode === "small-icon");
   teachTextAttachmentsListEl.replaceChildren();
 
+  const addImagesLabel = document.querySelector('label.file-picker-button[for="teachtext-image-input"]');
+  const albumFull = sourceAttachments.length >= teachTextImageAttachmentLimit;
+  if (addImagesLabel) {
+    if (typeof markGrayAffordance === "function") {
+      markGrayAffordance(addImagesLabel, albumFull, "balloon_image_album_full");
+    } else {
+      addImagesLabel.classList.toggle("is-disabled", albumFull);
+      if (albumFull) addImagesLabel.dataset.balloonHelpDisabled = "balloon_image_album_full";
+      else delete addImagesLabel.dataset.balloonHelpDisabled;
+    }
+  }
+
   if (!sourceAttachments.length) {
-    const empty = document.createElement("div");
+    // Goal #2/#6: blank Picture Album is a next-step Choose, not a dead note
+    // under the Add Images picker (native file input stays behind the label).
+    const empty = document.createElement("button");
+    empty.type = "button";
     empty.className = "teachtext-attachments-empty";
     empty.textContent = t("image_attachments_empty");
+    empty.addEventListener("click", () => {
+      if (albumFull) {
+        if (typeof revealUnavailableControlWhy === "function" && addImagesLabel) {
+          revealUnavailableControlWhy(addImagesLabel, { force: true });
+        } else if (typeof setStatus === "function") {
+          setStatus(t("balloon_image_album_full"));
+        }
+        return;
+      }
+      addImagesLabel?.click?.();
+    });
     teachTextAttachmentsListEl.append(empty);
     return;
   }
@@ -628,17 +654,48 @@ function renderTeachTextImageAttachments() {
       setStatus(t("image_inserted", attachment.name || t("image_attachment")));
     });
 
+    const modelReady = typeof modelReadyForRequests === "function" ? modelReadyForRequests() : true;
     const readButton = document.createElement("button");
     readButton.className = "btn mini-btn";
     readButton.type = "button";
     readButton.textContent = t("image_read");
-    readButton.addEventListener("click", () => analyzeTeachTextImageAttachment(attachment, "writing-context"));
+    if (typeof markGrayAffordance === "function") {
+      markGrayAffordance(readButton, !modelReady, "balloon_disabled_menu_model");
+    } else if (!modelReady) {
+      readButton.classList.add("is-disabled");
+      readButton.setAttribute("aria-disabled", "true");
+      readButton.dataset.balloonHelpDisabled = "balloon_disabled_menu_model";
+    }
+    readButton.addEventListener("click", () => {
+      if (!modelReady) {
+        if (typeof revealUnavailableControlWhy === "function") {
+          revealUnavailableControlWhy(readButton, { force: true });
+        }
+        return;
+      }
+      analyzeTeachTextImageAttachment(attachment, "writing-context");
+    });
 
     const ocrButton = document.createElement("button");
     ocrButton.className = "btn mini-btn";
     ocrButton.type = "button";
     ocrButton.textContent = t("image_ocr");
-    ocrButton.addEventListener("click", () => analyzeTeachTextImageAttachment(attachment, "ocr"));
+    if (typeof markGrayAffordance === "function") {
+      markGrayAffordance(ocrButton, !modelReady, "balloon_disabled_menu_model");
+    } else if (!modelReady) {
+      ocrButton.classList.add("is-disabled");
+      ocrButton.setAttribute("aria-disabled", "true");
+      ocrButton.dataset.balloonHelpDisabled = "balloon_disabled_menu_model";
+    }
+    ocrButton.addEventListener("click", () => {
+      if (!modelReady) {
+        if (typeof revealUnavailableControlWhy === "function") {
+          revealUnavailableControlWhy(ocrButton, { force: true });
+        }
+        return;
+      }
+      analyzeTeachTextImageAttachment(attachment, "ocr");
+    });
 
     const removeButton = document.createElement("button");
     removeButton.className = "btn mini-btn danger";
@@ -1028,6 +1085,8 @@ function renderNotePadPage() {
   // Sending is the only thing this window does with a page, so it is the one
   // default. Going back to where you were belongs to Hold That Thought.
   parts.send.classList.add("default");
+  // Empty slip: grey Send and explain once (shared grey-affordance shell).
+  parts.send.disabled = !String(notePadTextInput.value || "").trim();
 }
 
 function goToNotePadPage(index) {
@@ -1250,17 +1309,23 @@ function insertClipboardIntoTeachText() {
 
 function getCharacterInsertTarget() {
   if (lastTextTarget && document.contains(lastTextTarget) && !lastTextTarget.disabled && !lastTextTarget.readOnly) {
-    return lastTextTarget;
+    const host = lastTextTarget.closest?.("[data-window]");
+    if (!host || !host.classList.contains("is-hidden")) return lastTextTarget;
   }
 
-  if (!getWindow("teachText").classList.contains("is-hidden")) return teachTextBodyInput;
-  if (!getWindow("assistant").classList.contains("is-hidden")) return promptInput;
-  return teachTextBodyInput;
+  const teachText = typeof getWindow === "function" ? getWindow("teachText") : null;
+  if (teachText && !teachText.classList.contains("is-hidden")) return teachTextBodyInput;
+  const assistant = typeof getWindow === "function" ? getWindow("assistant") : null;
+  if (assistant && !assistant.classList.contains("is-hidden")) return promptInput;
+  return null;
 }
 
 function insertCharacter(character) {
   const target = getCharacterInsertTarget();
-  if (!target) return;
+  if (!target) {
+    setStatus(t("key_caps_needs_text_field"));
+    return;
+  }
 
   const start = target.selectionStart ?? target.value.length;
   const end = target.selectionEnd ?? target.value.length;
@@ -1268,10 +1333,13 @@ function insertCharacter(character) {
   target.setRangeText(character, start, end, "end");
   target.dispatchEvent(new Event("input", { bubbles: true }));
 
-  setStatus(t("character_inserted"), { notify: true });
+  const host = target.closest?.("[data-window]");
+  const where = host?.querySelector?.(".title-bar h2")?.textContent?.trim()
+    || (target === teachTextBodyInput ? t("teachtext") : (target === promptInput ? t("assistant_title") : ""));
+  setStatus(where ? t("character_inserted_into", where) : t("character_inserted"), { notify: true });
 }
 
-let npmounted=!1;function mountNotePadRuntime(){if(npmounted)return!0;npmounted=!0;notePadTextInput.addEventListener("input",()=>{syncCurrentNotePadPage();saveDeskState()});notePadPrevButton.addEventListener("click",()=>goToNotePadPage(notePadPageIndex-1));notePadNextButton.addEventListener("click",goToNextNotePadPage);return!0}
+let npmounted=!1;function mountNotePadRuntime(){if(npmounted)return!0;npmounted=!0;notePadTextInput.addEventListener("input",()=>{syncCurrentNotePadPage();const parts=notePadFields();if(parts?.send)parts.send.disabled=!String(notePadTextInput.value||"").trim();saveDeskState()});notePadPrevButton.addEventListener("click",()=>goToNotePadPage(notePadPageIndex-1));notePadNextButton.addEventListener("click",goToNextNotePadPage);return!0}
 function nwin(){return document.querySelector(".window.is-active")?.dataset.window==="notePad"}
 const nav={"open-note-pad":()=>!0,"note-pad-new-slip":()=>nwin(),"note-pad-send":()=>nwin(),"note-pad-cycle-destination":()=>nwin()};
 const nlist=[["open-note-pad",()=>openWindow("notePad")],["note-pad-new-slip",()=>addNotePadPage()],["note-pad-send",()=>sendNotePadPage()],["note-pad-cycle-destination",cycleNotePadDestination]];

@@ -25,6 +25,19 @@ function describeReaderAskScope() {
   };
 }
 
+// One reason per grey Reader control: the shared shell explains a blocked tap
+// once, so a pane with nothing open never leaves a silent dead button.
+function readerMarkGray(control, unavailable, reasonKey) {
+  if (!control) return;
+  if (typeof markGrayAffordance === "function") {
+    markGrayAffordance(control, unavailable, reasonKey || "");
+    return;
+  }
+  control.disabled = unavailable;
+  if (unavailable && reasonKey) control.dataset.balloonHelpDisabled = reasonKey;
+  else delete control.dataset.balloonHelpDisabled;
+}
+
 function updateReaderClioStageButton() {
   if (!readerOpenClioStageButton) return;
   const enabled = !!currentReaderPage?.text && readerHasMarpFrontmatter(currentReaderPage.text);
@@ -166,7 +179,7 @@ function setReaderPaneState(state) {
   pane.dataset.readerState = state;
   if (state !== "loaded") delete pane.dataset.readerEntry;
   const another = document.getElementById("reader-open-another");
-  if (another) another.disabled = state !== "loaded";
+  if (another) readerMarkGray(another, state !== "loaded", "balloon_reader_needs_document");
 }
 
 // "Open Another Source..." over a loaded document: the entry row comes back
@@ -198,7 +211,7 @@ function showReaderNote(message) {
 // This was three hand-kept copies that had already started to drift.
 function disableReaderDocumentControls() {
   for (const button of [readerDocMapButton, readerSendManuscriptButton, readerFindSourcesButton]) {
-    if (button) button.disabled = true;
+    readerMarkGray(button, true, "balloon_reader_needs_document");
   }
   updateReaderClioStageButton();
   updateReaderTranslationClipButton();
@@ -312,7 +325,7 @@ function setReaderLoadingState(message) {
   currentReaderClipCount = 0;
   setReaderWindowTitle();
   setReaderPaneState("loading");
-  readerFetchButton.disabled = true;
+  readerMarkGray(readerFetchButton, true, "balloon_disabled_working");
   readerStatusEl.textContent = message;
   readerUrlDisplayEl.textContent = "";
   showReaderNote(message);
@@ -390,9 +403,9 @@ async function openReaderDocument(readerDoc, options = {}) {
   readerUrlDisplayEl.textContent = readerDocumentDisplaySource(currentReaderPage);
   setReaderPaneState("loaded");
   if (readerUrlInput) readerUrlInput.value = "";
-  if (readerDocMapButton) readerDocMapButton.disabled = false;
-  if (readerSendManuscriptButton) readerSendManuscriptButton.disabled = false;
-  if (readerFindSourcesButton) readerFindSourcesButton.disabled = false;
+  for (const button of [readerDocMapButton, readerSendManuscriptButton, readerFindSourcesButton]) {
+    readerMarkGray(button, false, "balloon_reader_needs_document");
+  }
   updateReaderClioStageButton();
   updateReaderTranslationClipButton();
   updateMenuState();
@@ -756,7 +769,7 @@ async function fetchReaderPage(urlArg = null) {
     readerStatusEl.textContent = t("ready");
   } finally {
     document.body.classList.remove("is-busy");
-    readerFetchButton.disabled = false;
+    readerMarkGray(readerFetchButton, false, "balloon_disabled_working");
     updateMenuState();
   }
 }
@@ -989,7 +1002,7 @@ async function importFilesIntoReader(files) {
   } finally {
     document.body.classList.remove("is-busy");
     readerWorkspaceEl?.classList.remove("is-importing", "is-dragging");
-    readerFetchButton.disabled = false;
+    readerMarkGray(readerFetchButton, false, "balloon_disabled_working");
     renderMountedTextDisk();
     updateMenuState();
   }

@@ -169,7 +169,7 @@ test.assertIncludes(exportImport, "function projectCdBurnIsAvailable()", "Projec
 test.assertIncludes(exportImport, "if (!getActiveProject()) return false;", "burning stays hidden until a project is mounted");
 test.assertIncludes(exportImport, 'const body = String(teachTextBodyInput?.value || "").trim();', "burning stays hidden while the manuscript is empty");
 test.assertIncludes(exportImport, 'activeTeachTextAllows("projectCdExport")', "burning follows the active TeachText document role");
-test.assertIncludes(exportImport, "spineBurnProjectCdButtonEl.disabled = !burned && !ready;", "the Writing Flow terminus stays visible and disables instead of hiding when nothing can burn");
+test.assertIncludes(exportImport, 'markGrayAffordance(spineBurnProjectCdButtonEl, stopBlocked, "balloon_project_cd_stop_locked")', "the Writing Flow terminus stays visible and disables with a one-tap reason instead of hiding when nothing can burn");
 test.assertIncludes(windowManager, "syncProjectCdBurnActionVisibility();", "Writing Flow burn visibility refreshes with shared menu and document state");
 test.assertIncludes(actions, '"export-teachtext-project-cd": exportTeachTextToProjectCd', "the Writing Flow burn action creates a real Project CD item");
 test.assertIncludes(en, 'burn_project_cd: "Burn Project CD"', "English names the pre-media action as a burn operation");

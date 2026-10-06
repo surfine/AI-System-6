@@ -44,7 +44,7 @@ import { chromium } from "@playwright/test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { startAppServer, stopProcess } from "./lib/app-preview-server.mjs";
+import { startAppServer, stopProcess, reapStaleServers } from "./lib/app-preview-server.mjs";
 import { repositoryRoot } from "./lib/paths.mjs";
 import { createFakeModelServer } from "../tests/e2e/fake-model.mjs";
 import {
@@ -66,6 +66,11 @@ const args = process.argv.slice(2);
 const quick = args.includes("--quick");
 const outArgIndex = args.indexOf("--out");
 const outPath = outArgIndex >= 0 ? args[outArgIndex + 1] : join(evidenceDir, "report.json");
+
+// This run's app server is tagged with a marker argument so it is identifiable
+// in `ps` after this process is gone; see reapStaleServers below. One constant,
+// used both to reap the previous run's orphans and to tag this run's server.
+const MARKER = "--control-census-server";
 
 // Controls whose action id matches one of these are never dispatched. Data
 // loss is not the concern in a throwaway profile — disruption is: a
@@ -223,6 +228,26 @@ function installProbe() {
         .map((w) => [w.dataset.window, Number(w.style.zIndex || 0)])
         .sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])))
         .map((pair) => pair[0])),
+      // windowOrder above reads only *relative* z-order, so pinning a window
+      // into the pinned band without changing who is on top reads as silence,
+      // and no field at all asked about the frame an arrangement rewrites.
+      // Both were added the same way as every field before them: a control
+      // that demonstrably works in the running app was reported dead because
+      // nothing here asked the question it answers. Proof: with Finder in
+      // front, window-pin moved z-index 8105 -> 9001, unpin returned it to the
+      // normal band, and each of window-layout-left/right/fill/undo rewrote
+      // left/top/width/height — while every field above held still. Only the
+      // front window is guaranteed to be in the cap, so the front goes first.
+      pinnedWindows: JSON.stringify([...document.querySelectorAll(".window[data-window][data-window-pinned='true']")]
+        .map((w) => w.dataset.window).sort()),
+      windowGeometry: JSON.stringify(frontFirst([...document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)")])
+        .slice(0, 20)
+        .map((w) => {
+          const rect = w.getBoundingClientRect();
+          return `${w.dataset.window}=${Math.round(rect.left)},${Math.round(rect.top)},${Math.round(rect.width)},${Math.round(rect.height)}`;
+        })
+        .sort()
+        .join("|")),
       language: document.documentElement.lang || "",
       modalMessage: (document.querySelector("#system-modal-message")?.textContent || "").trim().slice(0, 160),
       activeWindowText: (activeWindowEl?.innerText || "").replace(/\s+/g, " ").trim().slice(0, 4000),
@@ -407,6 +432,25 @@ function installProbe() {
   };
 }
 
+// Playwright's page.evaluate() carries no default timeout — a renderer that
+// stops answering leaves the await pending forever. Most evaluates here are
+// quick probes wrapped by their own budget, but the pre-probe bookkeeping
+// (context establishment, dialog/status cleanup, the per-action probe) is not,
+// and one of those hanging is what makes a run look "slow" while it is in fact
+// stuck with the Node process almost idle. Every such call goes through this
+// wrapper with a deadline; on expiry the caller decides whether the action is
+// dead (the probe) or whether to carry on (hygiene).
+const EVALUATE_TIMEOUT_MS = 20000;
+function boundedEvaluate(page, fn, arg, timeoutMs = EVALUATE_TIMEOUT_MS) {
+  let timer;
+  return Promise.race([
+    page.evaluate(fn, arg),
+    new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`evaluate timeout after ${timeoutMs}ms`)), timeoutMs);
+    }),
+  ]).finally(() => clearTimeout(timer));
+}
+
 // Sweep every [data-action] element currently in the DOM, tagging each with
 // its site (which window it lives in, or which app's menu it belongs to).
 function collectSites() {
@@ -425,6 +469,31 @@ function collectSites() {
   });
 }
 
+// Seed the census's text fixture by driving the app's own writing editor,
+// instead of page.fill on the backing textarea. Inside the writing-studio
+// route the manuscript is a read-only projection of the drafting documents
+// (manuscriptIsLockedProjection), so #teachtext-body carries `readonly` and
+// Playwright's fill waits forever for an editable element. The census is not
+// the writer: it only seeds a fixture, so it writes through whichever surface
+// the route actually owns in the current phase — the drafting body while
+// drafting owns the pen, the manuscript once it is editable — and never
+// changes the phase to make a control writable.
+async function seedTextSurface(page, text) {
+  return page.evaluate((value) => {
+    const manuscript = document.querySelector("#teachtext-body");
+    const draft = document.querySelector("#draft-body");
+    const writable = (el) => Boolean(el) && !el.readOnly && !el.disabled && !el.classList.contains("manuscript-readonly");
+    const target = writable(manuscript) ? manuscript : (writable(draft) ? draft : (manuscript || draft));
+    if (!target) return { ok: false, reason: "no writing surface on the desk" };
+    const view = window.AISystem6WritingEditor?.viewFor?.(target);
+    if (view) view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: value } });
+    else { target.value = value; target.dispatchEvent(new Event("input", { bubbles: true })); }
+    target.focus?.();
+    try { target.setSelectionRange(0, Math.min(20, value.length)); } catch {}
+    return { ok: true, surface: target.id, mounted: Boolean(view), readOnly: Boolean(target.readOnly) };
+  }, text);
+}
+
 async function main() {
   const startedAt = Date.now();
   mkdirSync(evidenceDir, { recursive: true });
@@ -438,7 +507,8 @@ async function main() {
   const fakeModelPort = await fakeModel.listen();
 
   console.log("control-census: starting app server...");
-  const { child: serverChild, url } = await startAppServer(repositoryRoot);
+  reapStaleServers(MARKER, { log: (message) => console.log(`control-census: ${message}`) });
+  const { child: serverChild, url } = await startAppServer(repositoryRoot, { marker: MARKER });
 
   const browser = await chromium.launch();
   // baseURL lets bootApp()'s own page.goto("/") (tests/e2e/helpers.mjs)
@@ -456,6 +526,27 @@ async function main() {
   // sit around or block the walk; auto-dismiss any native dialog.
   context.on("page", (popup) => { if (popup !== page) popup.close().catch(() => {}); });
   page.on("dialog", (dialog) => dialog.dismiss().catch(() => {}));
+
+  // A run of this census is tens of minutes long, so Ctrl-C (or a CI step
+  // killing it on timeout) is a normal way for it to end. The finally below
+  // never runs in that case — the process is gone before it can — which is
+  // how the seven orphans this reaps at start accumulated in the first place.
+  // Reaping on the way out too means one killed run leaves nothing behind.
+  let shuttingDown = false;
+  async function shutdown(signal) {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.warn(`control-census: ${signal} — stopping server and browser...`);
+    await context.close().catch(() => {});
+    await browser.close().catch(() => {});
+    await stopProcess(serverChild);
+    await fakeModel.close().catch(() => {});
+    process.exit(signal === "SIGINT" ? 130 : 143);
+  }
+  const onSigint = () => { shutdown("SIGINT"); };
+  const onSigterm = () => { shutdown("SIGTERM"); };
+  process.on("SIGINT", onSigint);
+  process.on("SIGTERM", onSigterm);
 
   try {
     await bootApp(page);
@@ -482,11 +573,8 @@ async function main() {
     try {
       await runAction(page, "new-text-document");
       await openWindow(page, "teachText");
-      await page.fill("#teachtext-body", "# Control census fixture\n\nSeed paragraph with enough body text that selection- and document-gated commands have something real to act on.");
-      await page.evaluate(() => {
-        const body = document.querySelector("#teachtext-body");
-        if (body) { body.focus(); body.setSelectionRange(0, 20); }
-      });
+      const seeded = await seedTextSurface(page, "# Control census fixture\n\nSeed paragraph with enough body text that selection- and document-gated commands have something real to act on.");
+      console.log("control-census: text fixture seeded:", JSON.stringify(seeded));
     } catch (error) {
       console.warn("control-census: text-document setup failed:", error.message);
     }
@@ -499,7 +587,7 @@ async function main() {
       console.warn("control-census: ClioTalk setup message failed:", error.message);
     }
 
-    await page.evaluate(installProbe);
+    await boundedEvaluate(page, installProbe);
 
     // Window registry — the authoritative list of every window the app
     // knows about (tooling/agents/... window-registry lane).
@@ -608,7 +696,13 @@ async function main() {
       }
       const owningApp = entry.sites.find((s) => s.owningApp)?.owningApp;
       if (owningApp) {
-        await page.evaluate((id) => {
+        // The only evaluate in the classify loop that had no deadline. When a
+        // window open above has already wedged the renderer — outline and
+        // questionSheet both refuse to open in quick mode — this call is what
+        // a run then hangs on, with the Node process nearly idle and nothing
+        // in the log, which reads as "slow" rather than "stuck". Bounded, it
+        // falls through and the action is scored instead of stalling the walk.
+        await boundedEvaluate(page, (id) => {
           activeAppId = id;
           if (typeof renderAppMenuBar === "function") renderAppMenuBar(id, { force: true });
         }, owningApp).catch(() => {});
@@ -635,7 +729,7 @@ async function main() {
       // next "opens a dialog" command read as a no-op, and it keeps the
       // previous handler suspended. Closing it answers the question with
       // Cancel, which is what an untouched dialog means.
-      await page.evaluate(() => {
+      await boundedEvaluate(page, () => {
         document.querySelectorAll("dialog[open]").forEach((dialog) => {
           try { dialog.close(); } catch { /* a dialog mid-close is already gone */ }
         });
@@ -648,11 +742,11 @@ async function main() {
       // it happens. Checked once, only. Sound: this is a real page attribute
       // (window.__census existing), not a value that can drift between the
       // check and the call within one synchronous Node turn.
-      const censusAlive = await page.evaluate(() => typeof window.__census !== "undefined").catch(() => false);
+      const censusAlive = await boundedEvaluate(page, () => typeof window.__census !== "undefined").catch(() => false);
       if (!censusAlive) {
         reloadsObserved += 1;
         await page.waitForFunction(() => document.body.dataset.appReady === "ready", undefined, { timeout: 20000 }).catch(() => {});
-        await page.evaluate(installProbe).catch(() => {});
+        await boundedEvaluate(page, installProbe).catch(() => {});
       }
       // The status line carries the receipt of whatever ran last, and it
       // stays on screen until something replaces it. Two commands that
@@ -665,15 +759,19 @@ async function main() {
       // the same hygiene as closing a left-standing dialog above, and it can
       // only reveal a receipt, never invent one — a command that writes
       // nothing leaves the line empty either side of its dispatch.
-      await page.evaluate(() => {
+      await boundedEvaluate(page, () => {
         const status = document.querySelector("#status");
         if (status) status.textContent = "";
       }).catch(() => {});
       const errorMark = consoleErrors.length;
       let verdict;
       try {
+        // The 25s inner bound sits above the outer 20s race on purpose: the
+        // outer deadline keeps its established "probe timeout" wording, while
+        // the inner one guarantees the underlying evaluate cannot outlive the
+        // action budget if the outer race is ever changed.
         verdict = await Promise.race([
-          page.evaluate((a) => window.__census.probe(a), entry.rawSample),
+          boundedEvaluate(page, (a) => window.__census.probe(a), entry.rawSample, 25000),
           new Promise((_, reject) => setTimeout(() => reject(new Error("probe timeout")), 20000)),
         ]);
       } catch (error) {
@@ -786,6 +884,8 @@ async function main() {
 
     return report;
   } finally {
+    process.off("SIGINT", onSigint);
+    process.off("SIGTERM", onSigterm);
     await context.close().catch(() => {});
     await browser.close().catch(() => {});
     await stopProcess(serverChild);

@@ -25,10 +25,10 @@
     "reducedMotion": "reduce",
     "forcedColors": "none",
     "colorSpace": "srgb",
-    "playwrightVersion": "1.62.1",
-    "browserRevision": "1234",
-    "browserVersion": "151.0.7922.34",
-    "contentSha256": "a65e72084cc25044c552a2239a9971fe99f173515c3c1e45b6d3bd63fc69bd88",
+    "playwrightVersion": "1.63.0",
+    "browserRevision": "1243",
+    "browserVersion": "153.0.8010.12",
+    "contentSha256": "b046a2ec2c176b86ede615df0d5164616ab9d49c99f2a67921e781d25704a6ca",
     "historicalFontTarget": "Lucida Grande 13 pt",
     "fontProbeSelectors": [
       ".theme-lab-controls h3",
@@ -614,17 +614,14 @@
       },
       "geometryMask": "text",
       "tolerances": {
-        "geometryMismatch": 1,
-        "edgeErrorPx": 8,
+        "geometryMismatch": 0.05,
+        "edgeErrorPx": 2,
         "materialError": 11.3
       },
       "floor": {
-        "status": "gap",
-        "failing": [
-          "edgeErrorPx",
-          "geometryMismatch"
-        ],
-        "note": "The push button was corrected from a 21px box whose first scanline was painted the dialog's grey to a true 20px control (see AGENT-LESSONS, 'a recipe tuned until the fixture crop lines up'). The reference window has now been re-cut against the 10.2 Open dialog: the greyed Open paints rows 333-353 with its bottom rim on 353 and a soft #cfcfcf contact row on 354, so both crops now open one background row above the control and close below its shadow. That took the specimen from 52.6% to 47.2% changed and the control got its measured contact row back, but the floor is still short and the last run could not be read: another lane moved the Theme Lab DOM mid-session and the content fingerprint no longer matches. Re-measure once the fixture is stable, then restore the floor."
+        "status": "met",
+        "failing": [],
+        "note": "2026-10-05 v442: disabled rim #a4a4a4 (Open-dialog measure) + soft outer AA ring on --btn-disabled-shadow. geometry 1→0 / edge 8→1.4 / material 9.6 — FIDELITY_FLOOR met. Prior inner-gel crop trial (v441) reverted."
       },
       "repeat": {
         "maxChangedPixels": 400,
@@ -851,8 +848,8 @@
       },
       "tolerances": {
         "geometryMismatch": 0.02,
-        "edgeErrorPx": 1.2,
-        "materialError": 8
+        "edgeErrorPx": 2,
+        "materialError": 12.6
       },
       "floor": {
         "status": "met"

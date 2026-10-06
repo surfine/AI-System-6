@@ -104,6 +104,10 @@ test.assertMatches(
 // 5. The way back is Tools ▸ Writing Flow... -- present for the writing family,
 //    absent for every other owner. Inspected through the rendered root palette.
 const rootMenuLabels = async () => {
+  // The label we assert on is a translated string; the tables are lazy, so
+  // wait for the product's own language signal before reading a palette that
+  // would otherwise still be painting raw keys.
+  await vmw.context.whenLanguageReady?.();
   await vmw.context.AISystem6NextstepMenus.sync();
   await vmw.waitFor(() => vmw.run('document.querySelectorAll(".nextstep-menu-palette").length > 0'));
   return vmw.run(`(() => {

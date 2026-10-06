@@ -125,22 +125,25 @@ function tdzError(name) {
   );
 }
 
-// 6. Essential steps are the deliberate exception: loadDeskState is not
-// wrapped, so its failure is still supposed to stop boot and hand off to the
-// existing Sad Mac recovery screen — degrading everything would hide a
-// genuinely broken Project Hard Disk load behind an empty desk instead of
-// the recovery UI built for exactly that case.
+// 6. loadDeskState is still special, but not fatal to first paint: a broken
+// IndexedDB (iOS Safari / WebClip) must leave an in-memory desk, not Sad Mac.
+// The failure still leaves a user-visible notification and a console trace.
 {
   const shownFailures = [];
-  const { context, bodyDataset } = createBootContext({
+  const { context, bodyDataset, notifications, consoleErrors } = createBootContext({
     loadDeskState: async () => { throw new Error("IndexedDB unavailable"); },
     showBootFailure: (error) => { shownFailures.push(error); },
   });
   await context.boot();
-  test.assert(bodyDataset.appReady === "error", "an essential step's failure still aborts boot instead of degrading");
+  test.assert(bodyDataset.appReady === "ready", "a desk-state failure still reaches the desk instead of Sad Mac");
+  test.assert(shownFailures.length === 0, "Sad Mac is not shown when storage fails and the desk can still paint");
   test.assert(
-    shownFailures.length === 1 && shownFailures[0].message === "IndexedDB unavailable",
-    "the existing Sad Mac recovery screen still receives the real error"
+    notifications.some((n) => String(n.message).includes("project_storage_unavailable_message")),
+    "the storage failure still reaches Notification Center"
+  );
+  test.assert(
+    consoleErrors.some((args) => String(args[0]).includes("desk state failed")),
+    "the storage failure is still logged for a developer"
   );
 }
 

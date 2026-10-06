@@ -130,8 +130,10 @@
 .one-more-tune-window .tag { display:inline-flex;align-items:center;padding:4px 10px;border:1px solid var(--separator);border-radius:40px;font-size:11px;letter-spacing:.04em;white-space:nowrap }
 /* "on" is a state — heard, right, in force. It takes the appearance's own
    selection pair so Classic inverts it the way System 6 marks a selection, and
-   so no verdict ever borrows a colour that means an era. */
-.one-more-tune-window .tag.on { background:var(--selection-bg);border-color:var(--selection-bg);color:var(--selection-fg) }
+   so no verdict ever borrows a colour that means an era. The fill keeps
+   --selection-bg (a ramp is valid there); the stroke reads --selection-edge
+   because a ramp under Aqua Sierra cannot be a border colour. */
+.one-more-tune-window .tag.on { background:var(--selection-bg);border-color:var(--selection-edge);color:var(--selection-fg) }
 .one-more-tune-window .mono { font-family:var(--mono-font);font-variant-numeric:tabular-nums }
 .one-more-tune-window .eyebrow { font-family:var(--mono-font);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--omt-muted) }
 .one-more-tune-window .collection-head { display:grid;grid-template-columns:.92fr 1.08fr;gap:68px;align-items:center;padding:68px 0 56px }
@@ -181,7 +183,7 @@
 .one-more-tune-window .choice { min-height:55px;border:var(--system-control-line) solid var(--btn-border-color);border-radius:var(--btn-radius);text-align:left;padding:13px 14px;background:var(--btn-bg);box-shadow:var(--btn-shadow);font-size:13px;color:var(--btn-fg);display:flex;align-items:center;gap:11px;transition:background .15s,border-color .15s }
 .one-more-tune-window .choice .letter { color:inherit;opacity:.6;font-family:var(--mono-font);font-size:10px }
 .one-more-tune-window .choice:hover:not(:disabled) { background:var(--btn-hover-bg);color:var(--btn-hover-fg) }
-.one-more-tune-window .choice.chosen { border-color:var(--selection-bg);background:var(--selection-bg);color:var(--selection-fg) }
+.one-more-tune-window .choice.chosen { border-color:var(--selection-edge);background:var(--selection-bg);color:var(--selection-fg) }
 .one-more-tune-window .linkbutton { background:none;border:0;padding:0;text-decoration:underline;text-underline-offset:4px;color:inherit;font-size:inherit }
 .one-more-tune-window .reveal { display:none }
 .one-more-tune-window .reveal.show { display:block }
@@ -933,7 +935,7 @@
 .one-more-tune-window nav button { border:0;background:transparent;border-radius:24px;padding:10px 18px;font-size:13px;min-height:44px }
 .one-more-tune-window nav button[aria-current=page] { background:var(--ink);color:var(--omt-stage-ink) }
 .one-more-tune-window .chip { display:inline-block;border:1px solid var(--separator);border-radius:30px;padding:3px 10px;font-size:11px }
-.one-more-tune-window .chip.on { background:var(--selection-bg);border-color:var(--selection-bg);color:var(--selection-fg) }
+.one-more-tune-window .chip.on { background:var(--selection-bg);border-color:var(--selection-edge);color:var(--selection-fg) }
 .one-more-tune-window .buttons { display:flex;gap:10px;flex-wrap:wrap;align-items:center }
 .one-more-tune-window .btn.ghost { background:transparent;box-shadow:none }
 .one-more-tune-window .btn.compact { min-height:39px;padding:7px 14px;font-size:12px }
@@ -1334,7 +1336,7 @@
 .one-more-tune-window .facetrow { display:flex;flex-wrap:wrap;align-items:center;gap:6px }
 .one-more-tune-window .facetlabel { min-width:64px;font:10px var(--mono-font);letter-spacing:.06em;text-transform:uppercase;color:var(--omt-muted) }
 .one-more-tune-window .facetrow .chip { cursor:pointer;background:transparent;color:inherit }
-.one-more-tune-window .facetrow .chip.on { background:var(--selection-bg);border-color:var(--selection-bg);color:var(--selection-fg) }
+.one-more-tune-window .facetrow .chip.on { background:var(--selection-bg);border-color:var(--selection-edge);color:var(--selection-fg) }
 .one-more-tune-window .one-more-tune-source-rows > .datarow {
   width: 100%;
   text-align: left;

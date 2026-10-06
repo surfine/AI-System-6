@@ -73,6 +73,19 @@ function createWorkingSessionVm({ failWrites = false, booted = true } = {}) {
     scheduleStatusRender: () => {},
     renderMultiFinderMenu: () => {},
     updateMenuState: () => {},
+    // The `windows` adapter is the scene itself: if it throws, the module now
+    // refuses the whole snapshot so a transient frame cannot overwrite a
+    // restorable desk. It reads these app-wide globals, so the stub must be
+    // real enough for it to capture instead of throwing ReferenceError. The
+    // other built-in adapters only warn-and-continue on a missing global.
+    activeAppId: "finder",
+    runtimeEnvironment: "finder",
+    startupEnvironment: "finder",
+    sideAskEnabled: false,
+    topZ: 0,
+    cascadeOffset: 0,
+    windowLayerMaxZ: 100,
+    writerMode: false,
   });
   vm.runInContext(source, context);
   if (booted) context.settleWorkingSessionRestore();
@@ -527,6 +540,16 @@ test.assertIncludes(
   "only transient system sheets are excluded from the recoverable Working Session"
 );
 test.assertIncludes(
+  source,
+  "pinned: typeof isWindowPinned === \"function\"",
+  "Working Session captures WindowShade pin ownership with the window layout adapter"
+);
+test.assertIncludes(
+  source,
+  "setWindowPinned(win, !!entry.pinned)",
+  "Working Session restore reapplies pin through the shared window-core entry"
+);
+test.assertIncludes(
   bootSource,
   "migrateWorkingSessionStorage()",
   "Boot Recovery reports on scenes only after the legacy record has moved"
@@ -542,9 +565,20 @@ test.assertIncludes(
 // Floppy is closed. Anyone who wrote before closing it lost the work, and
 // autosave then wrote the empty desk over their only copy. Nothing about
 // keeping someone's words may depend on whether they finished onboarding.
-test.assertMatches(
-  bootSource,
-  /const resumedWorkingSession = !writerMode\s*&&\s*await startupTaskWithTimeout\(restoreWorkingSession\(\)/,
+const resumedWorkingSessionBlock =
+  bootSource.match(/const resumedWorkingSession =[\s\S]{0,240}?startupTaskWithTimeout\(restoreWorkingSession\(\)[^;]*;/)?.[0] || "";
+test.assert(
+  resumedWorkingSessionBlock.length > 0,
+  "the desk resume still goes through restoreWorkingSession()"
+);
+test.assertNotIncludes(
+  resumedWorkingSessionBlock,
+  "guideSeen",
+  "resuming the desk never depends on the Welcome Floppy being closed"
+);
+test.assertNotIncludes(
+  resumedWorkingSessionBlock,
+  "clioOnboardingCompleted",
   "resuming the desk never depends on onboarding being finished"
 );
 test.assertMatches(

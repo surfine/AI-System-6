@@ -99,6 +99,9 @@ for (const key of [
   test.assertIncludes(zh, `${key}:`, `Chinese balloon copy exists for ${key}`);
 }
 test.assertMatches(balloon, /function balloonHelpKeyFor\(target\)[\s\S]*balloonHelpDisabled/, "balloon copy follows the target's live availability state");
+test.assertIncludes(balloon, "function revealUnavailableControlWhy", "grey controls can explain once without Balloon Help mode");
+test.assertIncludes(balloon, "function installGrayAffordanceClicks", "one shared shell click path owns grey one-tap why");
+test.assertIncludes(balloon, "grayAffordanceExplained", "same window+reason does not nag a second balloon");
 test.assertMatches(balloon, /pointerover[\s\S]*focusin[\s\S]*pointerdown/, "pointer, keyboard, and explicit touch help are supported");
 test.assertMatches(balloon, /showPopover[\s\S]*positionBalloonHelp/, "showing a balloon promotes it above dialog top layers before positioning it");
 test.assertIncludes(balloon, 'matches?.(":popover-open")', "hiding a balloon also removes it from the browser top layer");

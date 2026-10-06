@@ -1378,6 +1378,20 @@ body[data-lineage~="platinum"] {
   outline-offset: var(--theme-lab-sidebar-selected-outline-offset, 0);
 }
 
+/* 10.10 source-list section label (Applications capture “Devices”): smaller,
+   quiet grey, title case — not the Snow Leopard uppercase Places header.
+   Shared board furniture (no era selector here — appearance-system keeps
+   Theme Lab to one component stylesheet). Eras that hide the generic browser
+   never paint this node. */
+.theme-lab-sidebar-group {
+  display: block;
+  margin: 10px 0 2px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 14px;
+  color: #6e6e6e;
+}
+
 .theme-lab-sidebar .sys-icon {
   width: var(--theme-lab-sidebar-icon-size, 20px);
   height: var(--theme-lab-sidebar-icon-size, 20px);
@@ -1670,15 +1684,18 @@ body[data-lineage~="platinum"] {
   transform: translateY(-50%);
 }
 
-/* AUDIT1-72: the Surfaces About/Calculator fixture is 273px wide and used to
-   run past its two-column group (right edge 1079) and get clipped by the
-   window. Cap it against the cell instead. */
+/* AUDIT1-72 / v443: About/Calculator is a 273×110 face. Sitting in column 2
+   of the layer grid with max-width:100% it shrank to ~239px and the fidelity
+   crop walked off the right border into white — geometry could not close.
+   Own the full row (same honesty as .theme-lab-dialog-specimen) and keep the
+   native capture width so the black outline lands on the crop edge. */
 .theme-lab-about-capture {
   width: 273px;
-  max-width: 100%;
+  min-width: 273px;
+  max-width: 273px;
   height: 110px;
-  grid-column: 2;
-  grid-row: 2;
+  grid-column: 1 / -1;
+  justify-self: start;
   overflow: hidden;
   background: #ffffff;
 }
@@ -3017,7 +3034,8 @@ so the base is where the state
   height: 22px;
   border-radius: 5px;
   background: var(--scrollbar-thumb, rgba(0, 0, 0, 0.5));
-  opacity: calc(0.25 + (var(--overlay-scroll-accept, 0) * 0.5));
+  /* accept=1 paints at full strength so fidelity boards measure ink, not a fade. */
+  opacity: calc(0.25 + (var(--overlay-scroll-accept, 0) * 0.75));
 }
 
 .theme-lab-fullscreen-lamp {
@@ -3025,6 +3043,6 @@ so the base is where the state
   height: 14px;
   padding: 0;
   border: 0;
-  background: var(--shade, #a8a8a8);
-  opacity: calc(0.35 + (var(--fullscreen-accept, 0) * 0.45));
+  background: var(--fullscreen-lamp-bg, var(--shade, #a8a8a8));
+  opacity: calc(0.35 + (var(--fullscreen-accept, 0) * 0.65));
 }

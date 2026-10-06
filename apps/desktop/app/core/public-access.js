@@ -33,9 +33,16 @@
 
   async function loadCapabilities() {
     if (!capabilitiesPromise) {
+      // A hung /api/capabilities fetch used to stall boot on iPhone (importer
+      // status awaits this with no timeout). Cap the wait; degrade to static.
+      const controller = typeof AbortController === "function" ? new AbortController() : null;
+      const abortTimer = controller
+        ? window.setTimeout(() => controller.abort(), 3500)
+        : 0;
       capabilitiesPromise = nativeFetch("/api/capabilities", {
         headers: { "Accept": "application/json" },
         cache: "no-store",
+        signal: controller?.signal,
       })
         .then(async (response) => {
           if (!response.ok) throw new Error(`Capabilities HTTP ${response.status}`);
@@ -69,6 +76,9 @@
             detail: capabilities,
           }));
           return capabilities;
+        })
+        .finally(() => {
+          if (abortTimer) window.clearTimeout(abortTimer);
         });
     }
     return capabilitiesPromise;

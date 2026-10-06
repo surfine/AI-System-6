@@ -245,14 +245,27 @@ function updateClioStageTimer() {
 function syncClioStageControls() {
   const els = clioStageElements();
   const hasSlides = !!clioStageState.parsed;
-  [els.source, els.document, els.slide, els.cue, els.prev, els.next].forEach((button) => {
-    if (button) button.disabled = !hasSlides;
-  });
+  // A grey deck control says what ClioStage is waiting for: a deck, the slide
+  // or cue view, or the other end of the deck. One reason per control.
+  const markStage = (control, blocked, reasonKey) => {
+    if (!control) return;
+    if (typeof markGrayAffordance === "function") markGrayAffordance(control, blocked, reasonKey);
+    else {
+      control.disabled = blocked;
+      if (blocked && reasonKey) control.dataset.balloonHelpDisabled = reasonKey;
+      else delete control.dataset.balloonHelpDisabled;
+    }
+  };
+  const needsSlides = "balloon_clio_stage_needs_slides";
+  const slideMode = ["document", "source"].includes(clioStageState.mode);
+  [els.source, els.document, els.slide, els.cue].forEach((button) => markStage(button, !hasSlides, needsSlides));
   syncDocMapEntryButton(els.docMap, chooseDocMapSourceCandidate(null, clioStageDocMapSource()));
   [["source", els.source], ["document", els.document], ["slide", els.slide], ["cue", els.cue]]
     .forEach(([mode, button]) => button?.setAttribute("aria-pressed", clioStageState.mode === mode ? "true" : "false"));
-  if (els.prev) els.prev.disabled = !hasSlides || clioStageState.index <= 0 || ["document", "source"].includes(clioStageState.mode);
-  if (els.next) els.next.disabled = !hasSlides || clioStageState.index >= (clioStageState.parsed?.slides.length || 1) - 1 || ["document", "source"].includes(clioStageState.mode);
+  const atStart = !hasSlides || slideMode || clioStageState.index <= 0;
+  const atEnd = !hasSlides || slideMode || clioStageState.index >= (clioStageState.parsed?.slides.length || 1) - 1;
+  markStage(els.prev, atStart, !hasSlides ? needsSlides : slideMode ? "balloon_clio_stage_slide_mode" : "balloon_clio_stage_first_slide");
+  markStage(els.next, atEnd, !hasSlides ? needsSlides : slideMode ? "balloon_clio_stage_slide_mode" : "balloon_clio_stage_last_slide");
   if (els.page) {
     els.page.textContent = hasSlides
       ? `${clioStageState.index + 1} / ${clioStageState.parsed.slides.length}`
@@ -273,9 +286,23 @@ function renderClioStageEmpty(message = "") {
   if (!els.viewport) return;
   els.viewport.className = "clio-stage-viewport";
   els.viewport.replaceChildren();
+  // Goal #2/#6: empty deck names Reader / TeachText in the hint — make those
+  // steps tappable in-pane (Import Files stays in the details bar).
   const empty = document.createElement("div");
-  empty.className = "empty-folder-note clio-stage-empty-note";
-  empty.textContent = message || t("clio_stage_empty_hint");
+  empty.className = "empty-folder-note clio-stage-empty-note empty-next-note";
+  const text = document.createElement("p");
+  text.textContent = message || t("clio_stage_empty_hint");
+  const teachText = document.createElement("button");
+  teachText.type = "button";
+  teachText.className = "btn default";
+  teachText.dataset.action = "open-teachtext";
+  teachText.textContent = t("teachtext");
+  const reader = document.createElement("button");
+  reader.type = "button";
+  reader.className = "btn";
+  reader.dataset.action = "open-reader";
+  reader.textContent = t("reader");
+  empty.append(text, teachText, reader);
   els.viewport.append(empty);
   syncClioStageControls();
 }

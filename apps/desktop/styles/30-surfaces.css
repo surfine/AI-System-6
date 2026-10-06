@@ -510,7 +510,7 @@
   display: none;
 }
 
-/* Empty desk still keeps the lens selector — chrome follows the chosen lens. */
+/* Empty desk: one next step. Lens select stays; density/旁路墙 hides. */
 .review-desk-window.is-review-locked .review-lens-chrome {
   justify-content: center;
   padding: 4px 8px 0;
@@ -523,11 +523,16 @@
   max-width: 36em;
 }
 
+.review-desk-window.is-review-locked .review-density-note {
+  display: none;
+}
+
 .review-desk-window.is-review-locked .review-desk-empty-note {
   align-self: center;
   justify-self: center;
   display: grid;
   place-items: center;
+  gap: 10px;
   width: min(var(--mde-page-width), calc(100% - 48px));
   min-height: 156px;
   padding: 24px 28px;
@@ -535,6 +540,10 @@
   background: var(--paper);
   text-align: center;
   line-height: 1.45;
+}
+
+.review-desk-window.is-review-locked .review-desk-empty-note.empty-next-note > .btn {
+  min-height: var(--touch-primary-min-height);
 }
 
 .review-result-column {
@@ -912,6 +921,21 @@
   flex: 0 0 auto;
 }
 
+/* Goal #2: empty writing-route windows keep the paper primary. Demote the
+   Commands overflow so ADHD attention lands on the legal empty field rather
+   than a wall of grey tools that cannot act yet. */
+.question-sheet-window[data-empty] .specialized-command-menu,
+.outline-window[data-empty] .specialized-command-menu,
+.section-drafts-window[data-empty] .specialized-command-menu {
+  opacity: 0.72;
+}
+
+.question-sheet-window[data-empty] .specialized-teachtext-editor,
+.outline-window[data-empty] .specialized-teachtext-editor,
+.section-drafts-window[data-empty] .specialized-teachtext-editor {
+  min-height: 12em;
+}
+
 /* The writing route's own info strip. System 6 drew a window's info bar as a
    permanent frame rather than one that appears and shoves the layout, so this
    keeps its height whether or not there is a message. It is the destination of
@@ -1088,6 +1112,23 @@
 .find-change-actions {
   justify-content: flex-end;
   margin-top: 6px;
+}
+
+.find-change-empty-next.empty-next-note {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.find-change-empty-next.empty-next-note > .btn {
+  min-height: var(--touch-primary-min-height);
+}
+
+.find-change-window[data-empty] .find-change-actions {
+  opacity: var(--control-disabled-opacity);
 }
 
 .specialized-command-menu .teachtext-command-popover {
@@ -1294,6 +1335,20 @@
   padding: 10px;
   background: var(--context-panel-list-bg);
   overscroll-behavior: contain;
+}
+
+.context-panel-empty-note.empty-next-note {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 12px auto;
+  max-width: 42ch;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.context-panel-empty-note.empty-next-note > .btn {
+  min-height: var(--touch-primary-min-height);
 }
 
 .context-item {

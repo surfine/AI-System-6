@@ -126,11 +126,6 @@ function getElements() {
   const chatFileTitleEl = document.querySelector("#chat-file-title");
   const chatFileMetaEl = document.querySelector("#chat-file-meta");
   const chatFileBodyEl = document.querySelector("#chat-file-body");
-  const openChatFileButton = document.querySelector("#open-chat-file");
-  const insertChatFileButton = document.querySelector("#insert-chat-file");
-  const chatFileDocMapButton = document.querySelector("#chat-file-docmap");
-  const downloadChatMarkdownButton = document.querySelector("#download-chat-markdown");
-  const trashChatFileButton = document.querySelector("#trash-chat-file");
   const newFolderNameInput = document.querySelector("#new-folder-name");
   const newFolderButton = document.querySelector("#new-folder");
   const saveChatTitleEl = document.querySelector("#save-chat-title");
@@ -523,11 +518,6 @@ function getElements() {
     chatFileTitleEl,
     chatFileMetaEl,
     chatFileBodyEl,
-    openChatFileButton,
-    insertChatFileButton,
-    chatFileDocMapButton,
-    downloadChatMarkdownButton,
-    trashChatFileButton,
     newFolderNameInput,
     newFolderButton,
     saveChatTitleEl,

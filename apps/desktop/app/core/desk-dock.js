@@ -54,6 +54,81 @@
   let queued = false;
   let menu = null;
   let clampDone = false;
+  let magBound = false;
+  let magRaf = 0;
+  let magPointerX = null;
+
+  // OS X Dock magnification: a cosine falloff along the icon row, expressed
+  // as CSS custom properties the sheet turns into perspective / translateZ /
+  // scale. Reduced motion keeps icons at rest.
+  function reducedMotion() {
+    try {
+      return Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function clearMagnification() {
+    magPointerX = null;
+    if (!root) return;
+    root.classList.remove("is-magnifying");
+    root.querySelectorAll(".desk-dock-item").forEach((cell) => {
+      cell.style.removeProperty("--dock-mag");
+      cell.style.removeProperty("--dock-mag-z");
+    });
+  }
+
+  // Peak / range vary by era: Jaguar's magnification is the most dramatic;
+  // Big Sur / Tahoe keep a quieter lift so the floating pill stays readable.
+  function magnificationCurve() {
+    const theme = currentThemeId();
+    if (theme === "aqua" || theme === "tiger") return { peak: 1.72, range: 120, z: 36 };
+    if (theme === "big-sur" || theme === "liquid-glass") return { peak: 1.32, range: 96, z: 18 };
+    if (theme === "yosemite") return { peak: 1.4, range: 100, z: 22 };
+    return { peak: 1.55, range: 110, z: 28 };
+  }
+
+  function applyMagnification() {
+    magRaf = 0;
+    if (!root || magPointerX == null || reducedMotion()) {
+      clearMagnification();
+      return;
+    }
+    const items = root.querySelectorAll(".desk-dock-item");
+    if (!items.length) return;
+    root.classList.add("is-magnifying");
+    const { peak, range, z: zPeak } = magnificationCurve();
+    items.forEach((cell) => {
+      const rect = cell.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const dist = Math.abs(magPointerX - cx);
+      const t = Math.max(0, 1 - dist / range);
+      const ease = 0.5 - 0.5 * Math.cos(Math.PI * t);
+      const mag = 1 + (peak - 1) * ease;
+      const z = zPeak * ease;
+      cell.style.setProperty("--dock-mag", mag.toFixed(3));
+      cell.style.setProperty("--dock-mag-z", `${z.toFixed(1)}px`);
+    });
+  }
+
+  function onMagPointerMove(event) {
+    if (!root?.contains(event.target)) return;
+    magPointerX = event.clientX;
+    if (!magRaf) magRaf = requestAnimationFrame(applyMagnification);
+  }
+
+  function onMagPointerLeave(event) {
+    if (event.relatedTarget && root?.contains(event.relatedTarget)) return;
+    clearMagnification();
+  }
+
+  function bindMagnification() {
+    if (!root || magBound) return;
+    magBound = true;
+    root.addEventListener("pointermove", onMagPointerMove);
+    root.addEventListener("pointerleave", onMagPointerLeave);
+  }
 
   function active() {
     try {
@@ -148,7 +223,11 @@
     }
     if (cell.dataset.action) {
       if (cell.dataset.action === "exit-writing-studio") {
-        openWritingStudioDefaultSurface();
+        // Never quit from the Dock: enter Writing Studio (profile + default
+        // surface). openWritingStudioDefaultSurface alone leaves the desk on
+        // the desktop profile when no project is mounted.
+        if (typeof openWritingStudio === "function") openWritingStudio();
+        else openWritingStudioDefaultSurface();
         return;
       }
       handleAction(cell.dataset.action);
@@ -207,33 +286,54 @@
 
   // A minimized window's cell is a picture of the window with its
   // application's icon in the corner (J1: Jaguar's Dock; Apple HT3739 for
-  // 10.6), not a generic document. The desk cannot photograph a hidden DOM
-  // window, so the picture is drawn from what the window holds: its title in a
-  // title bar, and its first lines of text as grey rules of their own lengths.
-  // It is read once when the cell is built and never wakes the window.
+  // 10.6), not a generic document. Prefer the bitmap captured at minimize
+  // (DOM foreignObject miniature when available; schematic paint otherwise).
+  // Fall back to a title bar + grey rules when no capture was stored.
   function miniatureFor(win, appId) {
     const figure = document.createElement("span");
     figure.className = "desk-dock-miniature";
     figure.setAttribute("aria-hidden", "true");
-    const bar = document.createElement("span");
-    bar.className = "desk-dock-miniature-bar";
-    bar.textContent = applicationWindowTitle(win) || "";
     figure.dataset.window = win.dataset.window || "";
     figure.dataset.app = appId || win.dataset.app || "";
-    const page = document.createElement("span");
-    page.className = "desk-dock-miniature-page";
-    const field = win.querySelector("textarea, [contenteditable='true']");
-    const source = field
-      ? (typeof field.value === "string" ? field.value : field.textContent)
-      : (win.querySelector(".window-pane, .window-body, .window-content") || win).textContent;
-    const lines = String(source || "").split(/\n+/).map((line) => line.trim()).filter(Boolean).slice(0, 7);
-    lines.forEach((line) => {
-      const rule = document.createElement("span");
-      rule.className = "desk-dock-miniature-line";
-      rule.style.width = `${Math.max(18, Math.min(100, Math.round(line.length * 2.2)))}%`;
-      page.append(rule);
-    });
-    figure.append(bar, page);
+    const photoUrl = window.AISystem6WindowMinimize?.getMiniatureDataUrl?.(win);
+    if (photoUrl) {
+      figure.classList.add("is-photo");
+      const img = document.createElement("img");
+      img.className = "desk-dock-miniature-photo";
+      img.alt = "";
+      img.draggable = false;
+      img.src = photoUrl;
+      figure.append(img);
+    } else {
+      const bar = document.createElement("span");
+      bar.className = "desk-dock-miniature-bar";
+      const lamps = document.createElement("span");
+      lamps.className = "desk-dock-miniature-lamps";
+      lamps.setAttribute("aria-hidden", "true");
+      ["close", "minimize", "zoom"].forEach((role) => {
+        const lamp = document.createElement("span");
+        lamp.className = `desk-dock-miniature-lamp is-${role}`;
+        lamps.append(lamp);
+      });
+      const caption = document.createElement("span");
+      caption.className = "desk-dock-miniature-title";
+      caption.textContent = applicationWindowTitle(win) || "";
+      bar.append(lamps, caption);
+      const page = document.createElement("span");
+      page.className = "desk-dock-miniature-page";
+      const field = win.querySelector("textarea, [contenteditable='true']");
+      const source = field
+        ? (typeof field.value === "string" ? field.value : field.textContent)
+        : (win.querySelector(".window-pane, .window-body, .window-content") || win).textContent;
+      const lines = String(source || "").split(/\n+/).map((line) => line.trim()).filter(Boolean).slice(0, 7);
+      lines.forEach((line) => {
+        const rule = document.createElement("span");
+        rule.className = "desk-dock-miniature-line";
+        rule.style.width = `${Math.max(18, Math.min(100, Math.round(line.length * 2.2)))}%`;
+        page.append(rule);
+      });
+      figure.append(bar, page);
+    }
     const badge = document.createElement("span");
     badge.className = "desk-dock-miniature-badge";
     badge.innerHTML = renderSystemIcon(win.dataset.window || appId || "document", { size: "large" });
@@ -522,6 +622,12 @@
 
   function release() {
     closeMenu();
+    clearMagnification();
+    if (root && magBound) {
+      root.removeEventListener("pointermove", onMagPointerMove);
+      root.removeEventListener("pointerleave", onMagPointerLeave);
+    }
+    magBound = false;
     root?.remove();
     root = null;
     signature = "";
@@ -537,6 +643,29 @@
     if (!root) return;
     const height = Math.round((root.getBoundingClientRect().height || 0) + 4);
     document.body.style.setProperty("--desk-dock-reserve", `${height}px`);
+  }
+
+  // Jaguar / Tiger: punch a 1px slot through the plate at the separator so the
+  // desktop shows between the white rims (M05). Other eras leave the shelf whole.
+  function syncShelfCut() {
+    const shelf = root?.querySelector?.(".desk-dock-shelf");
+    if (!shelf) return;
+    const theme = currentThemeId();
+    const sep = root.querySelector(".desk-dock-separator");
+    if (!sep || (theme !== "aqua" && theme !== "tiger")) {
+      shelf.classList.remove("has-cut");
+      shelf.style.removeProperty("--desk-dock-cut-at");
+      return;
+    }
+    const shelfRect = shelf.getBoundingClientRect();
+    const sepRect = sep.getBoundingClientRect();
+    if (!shelfRect.width || !sepRect.width) {
+      shelf.classList.remove("has-cut");
+      return;
+    }
+    const at = sepRect.left + sepRect.width / 2 - shelfRect.left;
+    shelf.style.setProperty("--desk-dock-cut-at", `${at.toFixed(1)}px`);
+    shelf.classList.add("has-cut");
   }
 
   function claimReserve() {
@@ -568,7 +697,16 @@
     const nextSignature = JSON.stringify([
       running.map((app) => [app.id, app.hidden, app.windowCount]),
       shown.map((cell) => [cell.id || "", cell.dataset.action || cell.dataset.open || "", cellLabel(cell)]),
-      minimized.map((win) => [win.dataset.window, applicationWindowTitle(win)]),
+      // The bitmap is part of the signature: minimizing stores the schematic
+      // paint synchronously and the true DOM miniature arrives a frame or two
+      // later. Without this, the Dock redraw the DOM capture triggers found an
+      // unchanged signature and kept the schematic tile -- a "photo" whose
+      // pixels were never the window's.
+      minimized.map((win) => [
+        win.dataset.window,
+        applicationWindowTitle(win),
+        window.AISystem6WindowMinimize?.getMiniatureDataUrl?.(win) || "",
+      ]),
       t("dock"), t("hide_dock"), t("applications"), t("trash"),
       isMultiFinderMode(),
       readOrder(),
@@ -576,8 +714,10 @@
     ]);
     if (signature === nextSignature && root) {
       // Nothing to redraw, but a resize or a font change can still move the
-      // Dock's height, and window placement reads the reserve.
+      // Dock's height, and window placement reads the reserve. The Aqua/Tiger
+      // plate cut tracks the separator's new x as well.
       measureReserve();
+      syncShelfCut();
       return;
     }
     signature = nextSignature;
@@ -598,10 +738,12 @@
       root.addEventListener("contextmenu", onContextmenu);
       items.addEventListener("keydown", onItemsKeydown);
       document.body.append(root);
+      bindMagnification();
     }
 
     const items = root.querySelector(".desk-dock-items");
     items.replaceChildren(...buildItems());
+    clearMagnification();
 
     // Roving tabindex: the toolbar is a single Tab stop, so exactly one cell
     // carries tabindex 0 and the rest -1.
@@ -614,6 +756,9 @@
     deselectProjectedSelectedIcon();
     claimReserve();
     clampWindows();
+    // After items replace, wait a frame so the separator has a real box before
+    // the Aqua/Tiger plate cut is measured.
+    requestAnimationFrame(syncShelfCut);
   }
 
   function schedule() {

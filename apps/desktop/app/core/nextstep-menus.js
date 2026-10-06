@@ -80,7 +80,13 @@
   function rootItems(appId) {
     return [
       submenu("nextstep_workspace", workspaceItems()),
-      ...menuSetForApp(appId).map((definition) => ({ ...definition, type: "submenu" })),
+      // The Window menu is Mac OS X's. NeXTSTEP already owns nextstep_windows
+      // below, and this palette does not carry data-menu-condition, so the
+      // era-gated top-level menu is dropped here rather than shown
+      // unconditionally (NeXTSTEP never has the "window-menu" capability).
+      ...menuSetForApp(appId)
+        .filter((definition) => definition.menuCondition !== "window-menu")
+        .map((definition) => ({ ...definition, type: "submenu" })),
       ...(writingFamily.has(appId)
         ? [submenu("nextstep_tools", [menuItem("nextstep-writing-flow", "nextstep_writing_flow_command")])]
         : []),
@@ -88,7 +94,7 @@
       submenu("nextstep_windows", [
         menuItem("nextstep-zoom-window", "nextstep_zoom"),
         menuItem("nextstep-shade-window", "nextstep_shade"),
-        ...applicationWindowOrder(appId).map((win) => ({ type: "window", win, label: applicationWindowTitle(win) })),
+        ...applicationWindowOrder(appId).map((win) => ({ type: "window", win, label: applicationWindowTitle(win, { markState: true }) })),
       ]),
       menuSeparator,
       ...applicationVerbRows().map((node) => node.dataset.action ? menuItem(node.dataset.action, node.textContent) : menuSeparator),

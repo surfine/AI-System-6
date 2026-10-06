@@ -83,7 +83,15 @@
     }
     well.dataset.dropLabel = tr("ips_ref_drop_here", "Drop to attach");
     if (choose) {
-      choose.disabled = !available;
+      // With no vision model the picker is greyed, so it carries the same one
+      // reason the well's own copy states.
+      if (typeof markGrayAffordance === "function") {
+        markGrayAffordance(choose, !available, "ips_ref_unavailable_cloud");
+      } else {
+        choose.disabled = !available;
+        if (!available) choose.dataset.balloonHelpDisabled = "ips_ref_unavailable_cloud";
+        else delete choose.dataset.balloonHelpDisabled;
+      }
       choose.hidden = attached;
     }
     if (remove) remove.hidden = !attached;

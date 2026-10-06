@@ -154,3 +154,6 @@ HANDOFF.zh-CN.md
 # local capture evidence (screenshots, CLI logs, Playwright traces) from a
 # working session; durable evidence lives under internal/evidence/
 output/
+# downloaded third-party reference art for the aaronlau-me proposal; local
+# only, never committed or deployed (see that proposal's CONTINUE.md)
+internal/design-proposals/aaronlau-me/assets/_ref/

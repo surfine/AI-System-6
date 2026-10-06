@@ -24,6 +24,10 @@ export const THEME_STANDALONE_PNG_PATHS = Object.freeze([
   "apps/desktop/assets/themes/snow-leopard/snow-leopard-sprite.png",
   "apps/desktop/assets/themes/yosemite/lamp-close.png",
   "apps/desktop/assets/themes/yosemite/lamp-zoom.png",
+  "apps/desktop/assets/themes/yosemite/lamp-inactive.png",
+  "apps/desktop/assets/themes/tiger/lamp-close.png",
+  "apps/desktop/assets/themes/tiger/lamp-zoom.png",
+  "apps/desktop/assets/themes/lion/lamp-fullscreen.png",
 ]);
 
 const moduleDirectory = dirname(fileURLToPath(import.meta.url));

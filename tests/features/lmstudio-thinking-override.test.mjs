@@ -2,16 +2,23 @@
 // LM Studio. LM Studio's MLX engine ignores the request-level switch, so the
 // desk pins it in the per-model template override LM Studio reads on load.
 // These cases run against a scratch home directory, never the real one.
+//
+// The route that performs the pin is not read as text: this contract requires
+// apps/server/server/routes/models-load.js and drives its exported handler,
+// with only the two things that would leave the machine (the `lms` CLI listing
+// and LM Studio's own HTTP calls) stubbed. The ratchet counts the route module
+// as real execution for exactly that reason.
 
 import { mkdtemp, mkdir, readFile, rm, writeFile, stat } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
+import { createFeatureTest } from "../helpers/feature-test-harness.mjs";
 
 const require = createRequire(import.meta.url);
 const test = createFeatureTest("lmstudio-thinking-override");
-const { PIN_LINE, ensureLmStudioThinkingOff } = require("../../apps/server/server/lib/lmstudio-thinking-override.js");
+const overrideModule = require("../../apps/server/server/lib/lmstudio-thinking-override.js");
+const { PIN_LINE, ensureLmStudioThinkingOff } = overrideModule;
 
 const template = "{%- if add_generation_prompt %}{%- if enable_thinking is defined and enable_thinking is false %}<think>\n\n</think>{%- endif %}{%- endif %}";
 const home = await mkdtemp(join(tmpdir(), "lmstudio-override-"));
@@ -67,12 +74,76 @@ try {
   await writeFile(qwenConfig, "{ not json");
   const unreadable = await run("qwen3.5-4b-mlx");
   test.assert(unreadable.reason === "existing_config_unreadable" && (await readFile(qwenConfig, "utf8")) === "{ not json", "an override it cannot parse is left exactly as it was");
+
+  // --- The shipped load route really pins thinking off before it loads ------
+  //
+  // A fresh model, never touched above, so the route's own write is the only
+  // thing that can have produced the override on disk. The `lms` listing and
+  // LM Studio's HTTP calls are stubbed because they would leave the machine;
+  // the route module, its body parsing, its response shape and the override
+  // writer are all the real ones.
+  await addModel("vendor/Qwen3.5-Route", { "chat_template.jinja": template });
+  listed.push({ modelKey: "qwen3.5-route", path: "vendor/Qwen3.5-Route", format: "safetensors" });
+
+  const lmsCli = require("../../apps/server/server/lib/lms-cli.js");
+  const lmstudio = require("../../apps/server/server/lmstudio.js");
+  const fetchLib = require("../../apps/server/server/lib/fetch.js");
+  const order = [];
+  const realRunLms = lmsCli.runLms;
+  const realUnloadAll = lmstudio.unloadAllLoadedLmStudioModels;
+  const realPostJson = fetchLib.postJsonWithFallback;
+  const realEnsure = overrideModule.ensureLmStudioThinkingOff;
+  lmsCli.runLms = async () => { order.push("list"); return { stdout: JSON.stringify(listed), stderr: "" }; };
+  lmstudio.unloadAllLoadedLmStudioModels = async () => { order.push("unload"); return []; };
+  fetchLib.postJsonWithFallback = async () => {
+    order.push("load");
+    return { response: { ok: true, status: 200, text: async () => JSON.stringify({ model: "qwen3.5-route", load_config: { context_length: 32768 } }) } };
+  };
+  overrideModule.ensureLmStudioThinkingOff = async (options) => { order.push("pin"); return realEnsure(options); };
+
+  const realHome = process.env.HOME;
+  process.env.HOME = home;
+  let routePayload = null;
+  try {
+    const route = require("../../apps/server/server/routes/models-load.js");
+    const body = Buffer.from(JSON.stringify({ model: "qwen3.5-route", max_context_length: 32768, max_context_source: "user" }));
+    const req = {
+      method: "POST",
+      headers: { "content-type": "application/json", "content-length": String(body.length) },
+      on() {},
+      async *[Symbol.asyncIterator]() { yield body; },
+    };
+    const res = {
+      destroyed: false,
+      writableEnded: false,
+      statusCode: 0,
+      body: "",
+      on() {},
+      writeHead(status, headers) { this.statusCode = status; this.headers = headers; },
+      end(chunk) { this.writableEnded = true; this.body = chunk || ""; },
+    };
+    await route.handleModelsLoad(req, res);
+    routePayload = { status: res.statusCode, json: JSON.parse(res.body) };
+  } finally {
+    process.env.HOME = realHome;
+    lmsCli.runLms = realRunLms;
+    lmstudio.unloadAllLoadedLmStudioModels = realUnloadAll;
+    fetchLib.postJsonWithFallback = realPostJson;
+    overrideModule.ensureLmStudioThinkingOff = realEnsure;
+  }
+
+  const routeConfig = join(configRoot, "vendor/Qwen3.5-Route.json");
+  const routeWritten = JSON.parse(await readFile(routeConfig, "utf8"));
+  const routeTemplate = routeWritten.load.fields
+    .find((field) => field.key === "llm.load.promptTemplate")?.value?.jinjaPromptTemplate?.template;
+  test.assert(routePayload.status === 200, "the load route answers a Qwen-family load through the real handler");
+  test.assert(order.indexOf("pin") !== -1 && order.indexOf("pin") < order.indexOf("load"),
+    "the route calls the thinking-off writer before it asks LM Studio to load the model");
+  test.assert(routeTemplate?.startsWith(PIN_LINE), "and the override the route wrote on disk is the pinned template");
+  test.assert(routePayload.json.thinking_override?.status === "written",
+    "the route reports the override it wrote without failing the load");
 } finally {
   await rm(home, { recursive: true, force: true });
 }
-
-const loadRoute = read("apps/server/server/routes/models-load.js");
-test.assertIncludes(loadRoute, "ensureLmStudioThinkingOff", "the model load route pins thinking off before LM Studio loads the model");
-test.assertIncludes(loadRoute, "thinking_override: thinkingOverride", "and reports what it did without failing the load");
 
 test.finish();

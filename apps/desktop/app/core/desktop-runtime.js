@@ -106,9 +106,27 @@ function showBootFailure(error) {
     bootScreenEl.hidden = false;
     bootScreenEl.classList.remove("is-done");
   }
-  if (bootMessageEl) bootMessageEl.textContent = t("boot_failed_recovery");
+  const failureCopy = typeof t === "function" ? t("boot_failed_recovery") : "AI System 6 couldn't finish starting.";
+  const resolvedCopy = failureCopy && failureCopy !== "boot_failed_recovery"
+    ? failureCopy
+    : "AI System 6 couldn't finish starting.";
+  if (bootMessageEl) bootMessageEl.textContent = resolvedCopy;
+  const failureMessage = document.getElementById("boot-failure-message");
+  if (failureMessage) failureMessage.textContent = resolvedCopy;
   if (bootProgressFillEl) bootProgressFillEl.style.setProperty("--boot-progress-fill", "100%");
   document.getElementById("boot-failure-actions")?.classList.remove("is-hidden");
+  // Ensure the three buttons work even when boot() hung after wiring, or
+  // never reached wiring (safety-net rich failure path).
+  if (typeof wireBootFailureActions === "function") wireBootFailureActions();
+  // Phone / home-screen WebClip: the safe default is to continue to the desk
+  // without restoring windows, not Recovery. Recovery stays available.
+  const standalone = window.navigator?.standalone === true
+    || window.matchMedia?.("(display-mode: standalone)")?.matches === true;
+  const coarse = window.matchMedia?.("(pointer: coarse)")?.matches === true;
+  if (standalone || coarse) {
+    document.getElementById("boot-without-session")?.classList.add("default");
+    document.getElementById("boot-recovery")?.classList.remove("default");
+  }
 }
 
 function setBootLedgerItem(el, label, value = "", state = "pending") {
@@ -466,7 +484,7 @@ async function duplicateSelectedProjectDisk() {
   const folderIdMap = new Map();
 
   copyProject.id = crypto.randomUUID();
-  copyProject.name = nextAvailableProjectName(`${source.name} copy`);
+  copyProject.name = nextAvailableProjectName(`${source.name}${t("project_name_copy_suffix")}`);
   copyProject.createdAt = now;
   copyProject.updatedAt = now;
   copyProject.archived = false;
@@ -1000,6 +1018,24 @@ function openFileInfo() {
   });
 
   renderFileInfoKindActions(item);
+  // Download .md is for text-bearing objects. Folders, volumes, and aliases have
+  // nothing honest to serialize — grey the control and say why once.
+  if (fileInfoDownloadMarkdownButton) {
+    const blockedKind = item.type === "folder"
+      || item.type === "finder-root"
+      || item.type === "finder-volume"
+      || item.type === "alias";
+    const downloadOk = !blockedKind && (
+      item.type === "text"
+      || item.type === "chat"
+      || item.artifactKind === "clipping"
+      || Boolean(typeof scrapDocumentText === "function" && String(scrapDocumentText(item) || "").trim())
+      || Boolean(String(item.body || "").trim())
+    );
+    fileInfoDownloadMarkdownButton.disabled = !downloadOk;
+    if (downloadOk) delete fileInfoDownloadMarkdownButton.dataset.balloonHelpDisabled;
+    else fileInfoDownloadMarkdownButton.dataset.balloonHelpDisabled = "balloon_get_info_download";
+  }
   openWindow("fileInfo");
 }
 

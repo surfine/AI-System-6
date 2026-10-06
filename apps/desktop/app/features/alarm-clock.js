@@ -126,11 +126,16 @@ function renderAlarmClock(now = new Date()) {
     elements.toggle.classList.toggle("is-on", alarmClockEnabled);
     elements.toggle.setAttribute("aria-pressed", String(alarmClockEnabled));
     elements.toggle.setAttribute("aria-label", t(alarmClockEnabled ? "alarm_clock_disable" : "alarm_clock_enable"));
+    // Grey while Time/Date is selected: Balloon Help names the mode switch.
+    if (alarmMode) delete elements.toggle.dataset.balloonHelpDisabled;
+    else elements.toggle.dataset.balloonHelpDisabled = "balloon_alarm_clock_alarm_mode";
   }
   if (elements.steppers) {
     elements.steppers.classList.toggle("is-available", alarmMode);
     elements.steppers.querySelectorAll("button").forEach((button) => {
       button.disabled = !alarmMode;
+      if (alarmMode) delete button.dataset.balloonHelpDisabled;
+      else button.dataset.balloonHelpDisabled = "balloon_alarm_clock_alarm_mode";
     });
   }
   if (elements.value && document.activeElement !== elements.value) {
@@ -141,6 +146,8 @@ function renderAlarmClock(now = new Date()) {
     elements.value.setAttribute("aria-label", t(
       alarmMode ? "alarm_clock_alarm_time" : (alarmClockMode === "date" ? "alarm_clock_date" : "alarm_clock_time"),
     ));
+    if (alarmMode) delete elements.value.dataset.balloonHelpDisabled;
+    else elements.value.dataset.balloonHelpDisabled = "balloon_alarm_clock_alarm_mode";
   }
   elements.modes?.querySelectorAll("[data-alarm-clock-mode]").forEach((button) => {
     const selected = button.dataset.alarmClockMode === alarmClockMode;

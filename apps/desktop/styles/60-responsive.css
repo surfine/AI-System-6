@@ -87,8 +87,8 @@
 }
 
 /* Drag and Drop visual feedback */
-/* JS only ever adds .is-drag-over to an element with [data-drop-target], so
-   the attribute is an exact scope. Repeating it raises specificity above
+/* JS adds .is-drag-over (accept) or .is-drop-reject (refuse) on
+   [data-drop-target]. Repeating the attribute raises specificity above
    every Liquid Glass twin and descendant label rule (span:last-of-type etc.)
    without relying on priority. */
 [data-drop-target][data-drop-target].is-drag-over {
@@ -98,6 +98,61 @@
 
 [data-drop-target][data-drop-target][data-drop-target].is-drag-over * {
   color: var(--paper);
+}
+
+/* Refuse hit: visible reject, never a silent no-op (ADHD/HIG). Classic keeps
+   hard ink; later eras tint via --system-danger when present. */
+[data-drop-target][data-drop-target].is-drop-reject {
+  background: var(--paper);
+  color: var(--ink);
+  outline: 2px dashed var(--system-danger, #b44);
+  outline-offset: -3px;
+  box-shadow: inset 0 0 0 1px var(--system-danger, #b44);
+}
+
+[data-drop-target][data-drop-target][data-drop-target].is-drop-reject * {
+  color: var(--ink);
+}
+
+/* Trash / File Floppy / Project Hard Disk / droplet desk icons and Dock
+   Trash: stronger hit frames so accept and refuse read before release. */
+.desktop-icon[data-drop-target="trash"].is-drag-over,
+.desk-dock-item[data-drop-target="trash"].is-drag-over,
+.desktop-icon[data-drop-target="file-floppy"].is-drag-over,
+.desktop-icon[data-drop-target="project"].is-drag-over,
+.desktop-icon[data-drop-target="droplet"].is-drag-over,
+.finder-item[data-drop-target="droplet"].is-drag-over {
+  outline: 2px solid var(--paper);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.desktop-icon[data-drop-target="trash"].is-drop-reject,
+.desk-dock-item[data-drop-target="trash"].is-drop-reject,
+.desktop-icon[data-drop-target="file-floppy"].is-drop-reject,
+.desktop-icon[data-drop-target="project"].is-drop-reject,
+.desktop-icon[data-drop-target="droplet"].is-drop-reject,
+.finder-item[data-drop-target="droplet"].is-drop-reject,
+.window[data-drop-target="file-floppy"].is-drop-reject,
+.window[data-drop-target="scrap"].is-drop-reject {
+  outline: 2px dashed var(--system-danger, #b44);
+  outline-offset: 2px;
+  box-shadow: inset 0 0 0 1px var(--system-danger, #b44);
+  background: color-mix(in srgb, var(--system-danger, #b44) 10%, var(--paper));
+}
+
+.window[data-drop-target="file-floppy"].is-drag-over,
+.window[data-drop-target="scrap"].is-drag-over {
+  background: var(--paper);
+  color: var(--ink);
+  outline: 2px solid var(--ink);
+  outline-offset: -4px;
+  box-shadow: inset 0 0 0 2px var(--paper), inset 0 0 0 4px var(--ink);
+}
+
+.window[data-drop-target="file-floppy"].is-drag-over *,
+.window[data-drop-target="scrap"].is-drag-over * {
+  color: inherit;
 }
 
 /* Liquid Glass headings carry their own dark color at (0,3,1); restore them
@@ -1585,7 +1640,7 @@ body.is-writer-mode .system-help-window .system-help-pane {
    instead of one number per consumer. A fine pointer changes nothing. */
 @media (hover: none) and (pointer: coarse) {
   body[data-theme]:not(.is-writer-mode) {
-    --menu-bar-height: max(var(--system-menu-height), 44px);
+    --menu-bar-height: max(var(--system-menu-height), var(--touch-primary-min-height));
     --menu-popover-top: calc(var(--menu-bar-height) + var(--safe-area-top));
   }
 
@@ -1638,8 +1693,9 @@ body.is-writer-mode .system-help-window .system-help-pane {
   /* A foregrounded app is fixed and already fills the screen, so there is
      nothing under it to scroll. Locking the page keeps iOS from scrolling the
      whole desk up when the keyboard opens — that scroll is what pushed the
-     window's title bar under the status bar. */
-  body.mobile-app-foreground:not(.is-writer-mode) {
+     window's title bar under the status bar. Writer mode boots the writing
+     profile into the same phone shell, so it must lock too. */
+  body.mobile-app-foreground {
     overflow: hidden;
     overscroll-behavior: none;
   }
@@ -1655,7 +1711,8 @@ body.is-writer-mode .system-help-window .system-help-pane {
      instead of a portrait-phone copy of it here. No stacking token needed:
      the 00-foundation.css base .menu-bar rule already sets it, and nothing
      between the two files touches the value. */
-  body:not(.is-writer-mode) .menu-bar {
+  body:not(.is-writer-mode) .menu-bar,
+  body.is-writer-mode.mobile-app-foreground .menu-bar {
     position: fixed;
     inset: 0 0 auto 0;
   }
@@ -1779,7 +1836,9 @@ body.is-writer-mode .system-help-window .system-help-pane {
   /* Mobile page shell. Application pages and Finder folders share one work
      area below the fixed menu bar; dialogs, system pages, and Desk Accessories
      use their own overlay roles instead of competing for the same frame. */
-  body.mobile-app-foreground:not(.is-writer-mode) .window.is-mobile-fullscreen:not(.is-collapsed) {
+  /* Writer mode included: writing profile boots into is-writer-mode, and the
+     phone still presents one writing/ClioTalk surface through this shell. */
+  body.mobile-app-foreground .window.is-mobile-fullscreen:not(.is-collapsed) {
     position: fixed;
     /* The window material fills to the true bottom edge. Bottom still lifts by
        --keyboard-inset when the keyboard is up; an inner safe-area rule below
@@ -1817,7 +1876,7 @@ body.is-writer-mode .system-help-window .system-help-pane {
      protection at the shell, so its lowest toolbar or content control cannot
      land under the home indicator. System Help has a separate system-page
      role and keeps its existing scroll-safe treatment. */
-  body.mobile-app-foreground:not(.is-writer-mode)
+  body.mobile-app-foreground
     .window.is-mobile-fullscreen:not(.assistant-window) {
     /* Horizontal insets for the same reason, written as one shorthand because
        the boot budget is counted in bytes: the window material still reaches
@@ -1828,14 +1887,44 @@ body.is-writer-mode .system-help-window .system-help-pane {
 
   /* Inside the full-screen shell the pane between title bar and composer takes
      the slack and scrolls; the composer stays pinned at the bottom. */
-  body.mobile-app-foreground:not(.is-writer-mode) .window.is-mobile-fullscreen .window-pane,
-  body.mobile-app-foreground:not(.is-writer-mode) .window.is-mobile-fullscreen #messages {
+  body.mobile-app-foreground .window.is-mobile-fullscreen .window-pane,
+  body.mobile-app-foreground .window.is-mobile-fullscreen #messages {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
   }
 
-  body.mobile-app-foreground:not(.is-writer-mode) .window.is-mobile-fullscreen .composer {
+  /* Typing-lift parity with ClioTalk's pinned composer: Reader / DocMap /
+     Searcher already own an internal column (ask bar / query row / results).
+     Letting the whole pane scroll as one unit buried those fields under the
+     soft keyboard after the shell lifted. Keep overflow on the inner scroller. */
+  body.mobile-app-foreground .window.is-mobile-fullscreen:is(
+    .reader-window,
+    .docmap-window,
+    .find-path-window
+  ) .window-pane {
+    overflow: hidden;
+  }
+
+  body.mobile-app-foreground .window.is-mobile-fullscreen:is(
+    .reader-window,
+    .docmap-window
+  ) .ask-bar,
+  body.mobile-app-foreground .window.is-mobile-fullscreen.find-path-window .find-path-query-row,
+  body.mobile-app-foreground .window.is-mobile-fullscreen.find-path-window .find-path-actions {
+    flex: 0 0 auto;
+  }
+
+  body.mobile-app-foreground .window.is-mobile-fullscreen.reader-window .reader-workspace,
+  body.mobile-app-foreground .window.is-mobile-fullscreen.docmap-window .docmap-layout,
+  body.mobile-app-foreground .window.is-mobile-fullscreen.find-path-window .find-path-results {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    scroll-padding-bottom: 2.5em;
+  }
+
+  body.mobile-app-foreground .window.is-mobile-fullscreen .composer {
     flex: 0 0 auto;
     /* The window's own background already reaches the true edge; this keeps
        the send button and text clear of the home indicator without pulling the
@@ -1901,7 +1990,7 @@ body.is-writer-mode .system-help-window .system-help-pane {
      only the frontmost real app. Remove the other app windows from portrait
      layout without marking their MultiFinder processes hidden; Desk
      Accessories and system overlays still float above the foreground app. */
-  body.mobile-app-foreground:not(.is-writer-mode) .window:not(.is-mobile-fullscreen):not(.is-mobile-dialog):not(.is-mobile-system-page):not([data-app="accessories"]):not([data-app="system"]):not(.is-collapsed) {
+  body.mobile-app-foreground .window:not(.is-mobile-fullscreen):not(.is-mobile-dialog):not(.is-mobile-system-page):not([data-app="accessories"]):not([data-app="system"]):not(.is-collapsed) {
     display: none;
   }
 
@@ -1910,7 +1999,7 @@ body.is-writer-mode .system-help-window .system-help-pane {
      can always find it again. Width/position come from the narrow collapse
      rule above; the window-manager raises the inline z-index to the pinned
      layer while the shade is up. */
-  body.mobile-app-foreground:not(.is-writer-mode) .window.is-collapsed {
+  body.mobile-app-foreground .window.is-collapsed {
     display: flex;
   }
 
@@ -2009,7 +2098,7 @@ body.is-writer-mode .system-help-window .system-help-pane {
   }
 
   body:not(.is-writer-mode) .finder-navigation-bar {
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
     gap: 4px;
     padding: 3px 6px;
   }
@@ -2018,11 +2107,11 @@ body.is-writer-mode .system-help-window .system-help-pane {
     position: relative;
     width: 36px;
     min-width: 36px;
-    min-height: 40px;
+    min-height: var(--touch-primary-min-height);
     margin-inline: 2px;
   }
 
-  /* Keep a 44px tap width while letting the painted glass button stay narrow. */
+  /* Keep a touch-primary tap width while letting the painted glass button stay narrow. */
   body:not(.is-writer-mode) .finder-navigation-back::after {
     content: "";
     position: absolute;
@@ -2030,7 +2119,7 @@ body.is-writer-mode .system-help-window .system-help-pane {
   }
 
   body:not(.is-writer-mode) :is(.finder-breadcrumb, .finder-breadcrumb-current) {
-    min-height: 40px;
+    min-height: var(--touch-primary-min-height);
     padding-inline: 5px;
   }
 
@@ -2108,6 +2197,48 @@ body.is-writer-mode .system-help-window .system-help-pane {
   body:not(.is-writer-mode) .window.is-mobile-da-arranged:not(.is-hidden):not(.is-collapsed) > .window-pane {
     min-height: 0;
     overflow: auto;
+    /* Typing-lift: keep the last editable line clear of the soft keyboard when
+       the pane itself scrolls (Note Pad, Clipboard, Dictation). */
+    scroll-padding-bottom: 2.5em;
+  }
+
+  /* Long writing fields: browser caret scroll respects padding so selectionEnd
+     does not land under the keys after the shell already lifted. Includes
+     writer-mode TeachText / Question Sheet / Outline / Section Drafts /
+     ClioTalk compose — those boot into is-writer-mode on the writing profile.
+     Searcher / Reader / DocMap / Scrapbook / Side Ask / Dictionary share the
+     same clearance (Goal #2/#4 typing-lift consistency). */
+  .window.is-mobile-fullscreen textarea,
+  body:not(.is-writer-mode) .window.is-mobile-da-arranged textarea,
+  .window.is-mobile-fullscreen [contenteditable="true"],
+  .assistant-window .composer textarea,
+  body.is-writer-mode :is(.teachtext-window, .question-sheet-window, .outline-window, .section-drafts-window) textarea,
+  body.is-writer-mode :is(.teachtext-window, .question-sheet-window, .outline-window, .section-drafts-window) [contenteditable="true"],
+  .window.is-mobile-fullscreen:is(.find-path-window, .reader-window, .docmap-window, .scrapbook-window, .sideask-pad-window, .dictionary-window) input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
+  .window.is-mobile-fullscreen.scrapbook-window #scrap-body-input,
+  .window.is-mobile-fullscreen.sideask-pad-window textarea,
+  .window.is-mobile-fullscreen.dictionary-window textarea {
+    scroll-padding-bottom: 2.5em;
+  }
+
+  /* Writing-route panes: same caret clearance the DA rail pane already has.
+     Utility panes (Searcher / Reader / DocMap / Scrapbook / Side Ask /
+     Dictionary) match when their inner scroller still needs a nudge after the
+     shell lifts. */
+  body.mobile-app-foreground .window.is-mobile-fullscreen:is(
+    .teachtext-window,
+    .question-sheet-window,
+    .outline-window,
+    .section-drafts-window,
+    .teachtext-surface-window,
+    .find-path-window,
+    .reader-window,
+    .docmap-window,
+    .scrapbook-window,
+    .sideask-pad-window,
+    .dictionary-window
+  ) .window-pane {
+    scroll-padding-bottom: 2.5em;
   }
 
   body:not(.is-writer-mode) .assistant-window:not(.is-collapsed):not(.is-mobile-fullscreen) {
@@ -2890,15 +3021,23 @@ input[type="radio"] {
 
   .teachtext-surface-actions > .btn.default {
     flex: 1 0 100%;
+    min-height: var(--touch-primary-min-height);
     margin-left: 0;
+  }
+
+  /* Review Desk shares teachtext-surface-actions; keep empty-note primary and
+     section nav on the same ≥48 floor (title bar chrome stays era-sized). */
+  .review-desk-window .review-desk-empty-note > .btn.default,
+  .review-desk-window .review-section-nav .btn {
+    min-height: var(--touch-primary-min-height);
   }
 }
 
 /* Early-harvest A1–A5 (proposal v210 / v213–v215): narrow window chrome goes
-   vertical, the one primary fills the row at 44px, Finder-family icon grids
-   collapse to a single readable column, and ClioTalk Send owns its own row.
-   Container-driven so a narrow desk window on a wide screen gets the same calm
-   density as a phone. */
+   vertical, the one primary fills the row at --touch-primary-min-height (48),
+   Finder-family icon grids collapse to a single readable column, and ClioTalk
+   Send owns its own row. Container-driven so a narrow desk window on a wide
+   screen gets the same calm density as a phone. */
 @container (max-width: 470px) {
   :is(
     .disk-window,
@@ -2920,6 +3059,7 @@ input[type="radio"] {
     .text-disk-window,
     .reader-window,
     .scrapbook-window,
+    .chat-file-window,
     .find-path-window,
     .clio-stage-window,
     .cmf-studio-window,
@@ -2951,6 +3091,7 @@ input[type="radio"] {
     .text-disk-window,
     .reader-window,
     .scrapbook-window,
+    .chat-file-window,
     .find-path-window,
     .clio-stage-window,
     .cmf-studio-window,
@@ -2958,7 +3099,7 @@ input[type="radio"] {
     .rebuild-flow-window
   ) .button-row:not(.composer-hidden-actions) > .btn.default {
     width: 100%;
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
     justify-content: center;
     margin-left: 0;
   }
@@ -2966,10 +3107,73 @@ input[type="radio"] {
   :is(
     .trash-window,
     .project-disk-window,
+    .text-disk-window,
     .scrapbook-window,
     .chat-file-window
   ) .button-row > .select-wrap {
     width: 100%;
+  }
+
+  /* Chat File More+Go was in the select-wrap full-width set but missing from
+     the column stack — select and Do Selected shared a crushed row on narrow. */
+  .chat-file-window .button-row > .btn {
+    width: 100%;
+    min-height: var(--touch-primary-min-height);
+  }
+
+  /* Finder-family path/action chrome leftover: Documents toolbar and Project
+     Hard Disk pathbar stack so Up / New Folder / More+Go never share a crushed
+     row on narrow (ADHD one thing at a time). */
+  .documents-toolbar {
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .documents-toolbar #new-folder-name {
+    flex: 1 1 100%;
+    min-width: 0;
+    min-height: var(--touch-primary-min-height);
+  }
+
+  .documents-toolbar #documents-up,
+  .documents-toolbar #new-folder {
+    min-height: var(--touch-primary-min-height);
+  }
+
+  .documents-toolbar #new-folder {
+    flex: 1 1 auto;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .project-finder-pathbar,
+  .project-finder-pathbar:has(#project-disk-up:not([hidden])),
+  .project-finder-pathbar:has(#project-disk-path.visually-hidden):not(:has(#project-disk-up:not([hidden]))) {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .project-finder-pathbar #project-disk-up {
+    width: 100%;
+    min-height: var(--touch-primary-min-height);
+    justify-content: center;
+  }
+
+  .project-finder-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .project-finder-actions .select-wrap,
+  .project-finder-actions .btn {
+    width: 100%;
+    min-height: var(--touch-primary-min-height);
   }
 
   :is(
@@ -3012,6 +3216,26 @@ input[type="radio"] {
     gap: 6px;
   }
 
+  /* Note Pad slip nav / destination + Clipboard row (Clear／Translate／DocMap／
+     Insert) — primary desk actions still on mini-btn / plain .btn floors. */
+  .note-pad-window .note-pad-details-bar .btn,
+  .clipboard-window .button-row > .btn {
+    min-height: var(--touch-primary-min-height);
+  }
+
+  /* Picture Album list rows + per-item actions share the same ≥48 floor. */
+  .image-manager-window .image-manager-list.is-list-view .image-manager-item,
+  .image-manager-window .image-manager-actions .btn {
+    min-height: var(--touch-primary-min-height);
+  }
+
+  /* Reader URL／tabs／selection clip — not only phone-portrait media. */
+  .reader-window .reader-url-row :is(input, .btn),
+  .reader-window .reader-tabs .btn,
+  .reader-window .reader-selection-bar .btn {
+    min-height: var(--touch-primary-min-height);
+  }
+
   .find-file-window .find-file-search-row,
   .find-path-window .find-path-query-row {
     display: flex;
@@ -3024,20 +3248,22 @@ input[type="radio"] {
   .find-path-window #find-path-query {
     width: 100%;
     min-width: 0;
+    min-height: var(--touch-primary-min-height);
   }
 
   .find-file-window .find-file-search-row > .btn.default,
   .find-path-window .find-path-query-row > .btn.default,
   .find-file-window .button-row > [data-action="open-selected-find-file"],
+  .find-file-window .button-row > [data-action="reveal-selected-find-file"],
   .find-path-window .find-path-actions > [data-action="open-selected-in-reader"] {
     width: 100%;
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
     justify-content: center;
   }
 
   .find-file-window .find-file-result,
   .find-path-window .find-path-result {
-    min-height: 48px;
+    min-height: var(--touch-primary-min-height);
   }
 
   .assistant-window .composer-action-row {
@@ -3048,9 +3274,18 @@ input[type="radio"] {
     flex: 1 0 100%;
     width: 100%;
     min-width: 0;
-    height: 44px;
-    min-height: 44px;
+    height: var(--touch-primary-min-height);
+    min-height: var(--touch-primary-min-height);
     margin-left: 0;
+  }
+
+  /* Add stays a square at the touch-primary floor (overrides the 32px phone
+     compact rule); Send owns the full row above. */
+  .assistant-window .composer .composer-file-button {
+    width: var(--touch-primary-min-height);
+    min-width: var(--touch-primary-min-height);
+    height: var(--touch-primary-min-height);
+    min-height: var(--touch-primary-min-height);
   }
 
   .assistant-window .clio-welcome-actions {
@@ -3061,9 +3296,19 @@ input[type="radio"] {
 
   .assistant-window .clio-welcome-actions .btn {
     width: 100%;
-    min-height: 48px;
+    min-height: var(--touch-primary-min-height);
     justify-content: flex-start;
     text-align: left;
+  }
+
+  .todo-da-window .todo-da-item {
+    min-height: var(--touch-primary-min-height);
+    align-items: center;
+  }
+
+  .scrapbook-window .scrap-list button:not(.scrap-empty-card),
+  .trash-window .trash-list button {
+    min-height: var(--touch-primary-min-height);
   }
 
   .scrapbook-window .scrapbook-pane {
@@ -3083,7 +3328,7 @@ input[type="radio"] {
   .draft-desk-window .draft-desk-actions > .btn.default,
   .draft-desk-window .lightroom-actions > .btn.default,
   .draft-desk-window .quick-draft-editor-actions > .btn.default {
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
   }
 
   .project-peek-window .project-peek-list {
@@ -3092,7 +3337,7 @@ input[type="radio"] {
 
   .disk-peek-window .disk-peek-actions > .btn.default {
     width: 100%;
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
   }
 }
 
@@ -3118,9 +3363,14 @@ input[type="radio"] {
   .control-panel .btn.default.control-wide-button,
   .control-panel .control-strip-module-actions > .btn.default {
     width: 100%;
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
     justify-content: center;
     margin-left: 0;
+  }
+
+  /* Control Panel section chooser tabs are primary navigation on narrow. */
+  .control-panel .control-chooser .system-tab {
+    min-height: var(--touch-primary-min-height);
   }
 
   .control-panel .control-strip-module-list {
@@ -3172,7 +3422,7 @@ input[type="radio"] {
   .boot-recovery-modal .finder-operation-actions > .btn.default,
   .shutdown-screen .shutdown-ledger > .btn.default {
     width: 100%;
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
     justify-content: center;
     margin-left: 0;
   }
@@ -3183,13 +3433,14 @@ input[type="radio"] {
   }
 
   .writing-spine-panel .spine-actions button {
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
   }
 }
 
 /* Early-harvest E6–E10 (proposal v217–v221): rest/games, DA/receipt/utility,
    import/help/lab, creative/map pads, about/info/sound/dict. Same Harvest A
-   grammar — vertical chrome, one primary full-width 44px, calm density. */
+   grammar — vertical chrome, one primary full-width at
+   --touch-primary-min-height (48), calm density. */
 @container (max-width: 470px) {
   :is(
     .one-more-tune-window,
@@ -3215,7 +3466,6 @@ input[type="radio"] {
     .save-chat-window,
     .endfield-terminal-window,
     .bureaucracy-meme-window,
-    .clio-chart-window,
     .image-prompt-studio-window,
     .clio-paint-window,
     .docmap-window,
@@ -3260,7 +3510,6 @@ input[type="radio"] {
     .save-chat-window,
     .endfield-terminal-window,
     .bureaucracy-meme-window,
-    .clio-chart-window,
     .image-prompt-studio-window,
     .clio-paint-window,
     .docmap-window,
@@ -3276,7 +3525,7 @@ input[type="radio"] {
     .dictionary-window
   ) .button-row:not(.composer-hidden-actions) > .btn.default {
     width: 100%;
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
     justify-content: center;
     margin-left: 0;
   }
@@ -3284,14 +3533,14 @@ input[type="radio"] {
   /* E6 rest / games */
   .one-more-tune-window .btn.default,
   .one-more-tune-film-window .btn.default {
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
   }
 
   .one-more-tune-window .one-more-tune-play,
   .bonsai-window .bonsai-setup-actions > .btn.default,
   .joyride-window .button-row > .btn.default {
     width: 100%;
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
     justify-content: center;
   }
 
@@ -3308,13 +3557,18 @@ input[type="radio"] {
   }
 
   /* E7 DA / receipt / utility */
+  .calculator-window {
+    --calculator-keys-row-height: var(--touch-primary-min-height);
+    --calculator-key-height: var(--touch-primary-min-height);
+  }
+
   .calculator-window .calculator-keys {
     width: 100%;
     gap: 8px;
   }
 
   .calculator-window .calculator-keys button {
-    min-height: 48px;
+    min-height: var(--touch-primary-min-height);
   }
 
   .calculator-window #calculator-display {
@@ -3324,6 +3578,16 @@ input[type="radio"] {
   .alarm-clock-window .alarm-clock-readout,
   .alarm-clock-window .alarm-clock-modes {
     width: 100%;
+  }
+
+  /* Alarm Clock mode strip is the primary control (title-bar chrome untouched). */
+  .alarm-clock-window {
+    --alarm-clock-modes-height: var(--touch-primary-min-height);
+  }
+
+  .alarm-clock-window .alarm-clock-modes,
+  .alarm-clock-window .alarm-clock-mode {
+    min-height: var(--touch-primary-min-height);
   }
 
   .key-caps-window .shortcut-grid {
@@ -3337,7 +3601,7 @@ input[type="radio"] {
   }
 
   .key-caps-window .character-map > button {
-    min-height: 48px;
+    min-height: var(--touch-primary-min-height);
   }
 
   .print-directory-window .print-directory-preview {
@@ -3347,7 +3611,7 @@ input[type="radio"] {
 
   .dictation-window .dictation-bottom-actions > .btn.default,
   .dictation-window .dictation-capture-actions > button:first-child {
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
   }
 
   .chooser-panel .chooser-settings > section {
@@ -3368,7 +3632,7 @@ input[type="radio"] {
   .import-utility-window .memory-transfer-footer > .btn.default,
   .import-utility-window #import-documents {
     width: 100%;
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
     justify-content: center;
   }
 
@@ -3394,7 +3658,7 @@ input[type="radio"] {
   .writing-bell-window .writing-bell-actions > .btn.default,
   .writing-bell-window #writing-bell-start {
     width: 100%;
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
     justify-content: center;
   }
 
@@ -3410,18 +3674,18 @@ input[type="radio"] {
 
   .system-status-window #keep-projects-on-device {
     width: 100%;
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
     justify-content: center;
   }
 
   .save-chat-window .button-row > .btn.default {
     width: 100%;
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
   }
 
   .page-setup-window .button-row > .btn.default {
     width: 100%;
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
   }
 
   .finder-window[data-window="helpFolder"] .finder-grid,
@@ -3431,7 +3695,6 @@ input[type="radio"] {
   }
 
   /* E9 creative / map / pads */
-  .clio-chart-window .clio-chart-details-bar,
   .docmap-window .docmap-map-toolbar,
   .docmap-window .ask-bar-row,
   .sideask-pad-window .button-row,
@@ -3444,10 +3707,9 @@ input[type="radio"] {
   .docmap-window .ask-bar-row > .btn.default,
   .docmap-window #docmap-ask-button,
   .image-prompt-studio-window #ips-go,
-  .sideask-pad-window #sideask-pad-ask,
-  .clio-chart-window .btn.default {
+  .sideask-pad-window #sideask-pad-ask {
     width: 100%;
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
     justify-content: center;
     margin-left: 0;
   }
@@ -3483,7 +3745,7 @@ input[type="radio"] {
   }
 
   .about-window .about-pane > .btn.default {
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
     justify-content: center;
   }
 
@@ -3526,7 +3788,7 @@ input[type="radio"] {
   }
 
   .dictionary-window .dictionary-actions > .btn.default {
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
     justify-content: center;
   }
 
@@ -3561,7 +3823,7 @@ input[type="radio"] {
   .soundscape-window #soundscape-save-moment,
   .soundscape-window .soundscape-save-moment {
     width: 100%;
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
     justify-content: center;
   }
 
@@ -3575,8 +3837,44 @@ input[type="radio"] {
 
   .soundscape-window #soundscape-connect-apple {
     width: 100%;
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
     justify-content: center;
+  }
+
+  /* Goal #2 narrow: empty writing-route / locked Review / idle DocMap keep
+     the paper or empty note readable — less chrome fighting the one job. */
+  :is(
+    .question-sheet-window[data-empty],
+    .outline-window[data-empty],
+    .section-drafts-window[data-empty]
+  ) .teachtext-details-bar {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .review-desk-window.is-review-locked .review-desk-empty-note {
+    width: min(100%, calc(100% - 24px));
+    min-height: 120px;
+    padding: 18px 16px;
+  }
+
+  .review-desk-window.is-review-locked .review-lens-chrome {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .docmap-window[data-empty] .docmap-layout-picker {
+    display: none;
+  }
+
+  .clipboard-window .empty-folder-note,
+  .todo-da-window .empty-folder-note,
+  .image-manager-window .empty-folder-note {
+    margin-inline: auto;
+    max-width: 36ch;
+    text-align: center;
+    line-height: 1.45;
   }
 }
 
@@ -3623,7 +3921,7 @@ input[type="radio"] {
 
   .clio-stage-controls {
     display: grid;
-    grid-template-columns: auto minmax(44px, auto) auto;
+    grid-template-columns: auto minmax(var(--touch-primary-min-height), auto) auto;
     justify-content: center;
     align-items: center;
   }
@@ -3660,32 +3958,32 @@ input[type="radio"] {
      desk window. What belongs to touch is the target size. */
   .quick-draft-editor-actions .btn,
   .quick-draft-editor-actions summary.btn {
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
   }
 
-  body.mobile-app-foreground:not(.is-writer-mode) .assistant-window.is-mobile-fullscreen .messages {
+  body.mobile-app-foreground .assistant-window.is-mobile-fullscreen .messages {
     overflow-x: hidden;
     overscroll-behavior: contain;
   }
 
-  body.mobile-app-foreground:not(.is-writer-mode) .assistant-window.is-mobile-fullscreen .message-content {
+  body.mobile-app-foreground .assistant-window.is-mobile-fullscreen .message-content {
     box-sizing: border-box;
     width: 100%;
     max-width: 100%;
     overflow-wrap: anywhere;
   }
 
-  body.mobile-app-foreground:not(.is-writer-mode) .assistant-window.is-mobile-fullscreen .message-content :is(pre, table, img, video, iframe) {
+  body.mobile-app-foreground .assistant-window.is-mobile-fullscreen .message-content :is(pre, table, img, video, iframe) {
     max-width: 100%;
   }
 
-  body.mobile-app-foreground:not(.is-writer-mode) .assistant-window.is-mobile-fullscreen .message-content :is(pre, table) {
+  body.mobile-app-foreground .assistant-window.is-mobile-fullscreen .message-content :is(pre, table) {
     overflow-x: auto;
     overscroll-behavior-inline: contain;
   }
 
 
-  body.mobile-app-foreground:not(.is-writer-mode) .assistant-window.is-mobile-fullscreen .composer textarea {
+  body.mobile-app-foreground .assistant-window.is-mobile-fullscreen .composer textarea {
     min-height: 42px;
     max-height: min(108px, 20vh);
   }
@@ -3696,7 +3994,7 @@ input[type="radio"] {
   }
 
   .reader-url-row :is(input, .btn) {
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
   }
 
   .reader-selection-bar {
@@ -3706,7 +4004,7 @@ input[type="radio"] {
   }
 
   .reader-selection-bar .btn {
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
   }
 
   .reader-content {
@@ -3738,7 +4036,7 @@ input[type="radio"] {
   }
 
   .view-switch-option {
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
   }
 
   /* One touch-target rule for every ask bar. Written as two descendant
@@ -3746,7 +4044,7 @@ input[type="radio"] {
      `:is(...)`, which silently kills the rule in the bundle. */
   .ask-bar-row input,
   .ask-bar-row .btn {
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
   }
 
   .clio-stage-window .window-pane.clio-stage-pane {
@@ -3759,7 +4057,7 @@ input[type="radio"] {
   }
 
   .clio-stage-controls {
-    grid-template-columns: 44px auto 44px;
+    grid-template-columns: var(--touch-primary-min-height) auto var(--touch-primary-min-height);
     gap: 4px;
   }
 
@@ -3770,7 +4068,7 @@ input[type="radio"] {
   .clio-stage-pane .clio-stage-view-switcher .view-switch-option,
   .clio-stage-pane .clio-stage-nav-button {
     min-width: 0;
-    min-height: 44px;
+    min-height: var(--touch-primary-min-height);
     white-space: normal;
     overflow-wrap: anywhere;
   }
@@ -3802,14 +4100,14 @@ input[type="radio"] {
   }
 
   body .control-strip {
-    --control-strip-handle-width: 44px;
+    --control-strip-handle-width: var(--touch-primary-min-height);
     top: auto;
     left: 0;
     right: 0;
     bottom: 0;
     width: auto;
     max-width: none;
-    height: 44px;
+    height: var(--touch-primary-min-height);
     border-left: 0;
     border-right: 0;
     border-bottom: 0;
@@ -3952,6 +4250,38 @@ input[type="radio"] {
     padding-bottom: var(--safe-area-bottom);
   }
 
+  /* Landscape typing-lift parity: same pin as portrait — ask / query chrome
+     stays above --keyboard-inset; results / map / article / scrap scroll inside. */
+  body.mobile-landscape-shell .window.is-mobile-fullscreen:is(
+    .reader-window,
+    .docmap-window,
+    .find-path-window,
+    .scrapbook-window,
+    .sideask-pad-window,
+    .dictionary-window
+  ) .window-pane {
+    overflow: hidden;
+    scroll-padding-bottom: 2.5em;
+  }
+
+  body.mobile-landscape-shell .window.is-mobile-fullscreen:is(
+    .reader-window,
+    .docmap-window
+  ) .ask-bar,
+  body.mobile-landscape-shell .window.is-mobile-fullscreen.find-path-window .find-path-query-row,
+  body.mobile-landscape-shell .window.is-mobile-fullscreen.find-path-window .find-path-actions {
+    flex: 0 0 auto;
+  }
+
+  body.mobile-landscape-shell .window.is-mobile-fullscreen.reader-window .reader-workspace,
+  body.mobile-landscape-shell .window.is-mobile-fullscreen.docmap-window .docmap-layout,
+  body.mobile-landscape-shell .window.is-mobile-fullscreen.find-path-window .find-path-results {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    scroll-padding-bottom: 2.5em;
+  }
+
   /* An immersive app's artifact is the screen: the canvas reaches the safe-area
      edge instead of sitting inside the pane's reading padding. Every other app
      keeps its padding, because its content is text and controls. */
@@ -4052,7 +4382,7 @@ input[type="radio"] {
   /* The composer's Add and Send are the two controls a thumb hits most — 36px
      is a mouse size. */
   html[data-installed] .assistant-window .composer :is(.composer-submit-button, .composer-file-button) {
-    width: 44px;
-    height: 44px;
+    width: var(--touch-primary-min-height);
+    height: var(--touch-primary-min-height);
   }
 }

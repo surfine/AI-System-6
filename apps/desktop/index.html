@@ -11,18 +11,18 @@
     <!-- Let the system choose status glyph contrast. -->
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20261005.3" />
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20261005.3" />
-    <link rel="manifest" href="assets/app-icon/manifest.json?v=20261005.3" />
-    <script src="app/core/theme-registry.js?v=20261005.3"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20261005.3" />
+    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20261006.1" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20261006.1" />
+    <link rel="manifest" href="assets/app-icon/manifest.json?v=20261006.1" />
+    <script src="app/core/theme-registry.js?v=20261006.1"></script>
+    <link rel="stylesheet" href="styles.bundle.css?v=20261006.1" />
     <!-- Preload the application while parsing the desktop. -->
-    <link rel="preload" as="script" href="app.bundle.js?v=20261005.3" />
+    <link rel="preload" as="script" href="app.bundle.js?v=20261006.1" />
   </head>
   <body class="is-booting">
-    <script src="app/core/theme-body-init.js?v=20261005.3"></script>
+    <script src="app/core/theme-body-init.js?v=20261006.1"></script>
     <!-- Register crash recovery before the application bundle. -->
-    <script src="app/core/boot-safety-net.js?v=20261005.3"></script>
+    <script src="app/core/boot-safety-net.js?v=20261006.1"></script>
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
         <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
@@ -165,7 +165,8 @@
         </div>
         <div class="shutdown-ledger">
           <p data-i18n="shutdown_message">It is now safe to shut down AI System 6.</p>
-          <button class="btn default" type="button" data-action="restart-system" data-i18n="restart">Restart</button>
+          <p class="hint" data-i18n="shutdown_restart_hint">Restart brings the desk back. Closing the tab or quitting the app leaves it shut down.</p>
+          <button class="btn default" type="button" data-action="restart-system" data-i18n="restart" data-balloon-help="balloon_shutdown_restart">Restart</button>
         </div>
       </section>
 
@@ -704,7 +705,7 @@
                 </div>
               </label>
 
-              <button class="btn control-wide-button" type="button" id="load-model" data-i18n="load_model">Load Model</button>
+              <button class="btn control-wide-button" type="button" id="load-model" data-i18n="load_model" data-balloon-help-disabled="balloon_load_model_needs_lm_studio">Load Model</button>
               <p class="hint control-status" id="load-model-status" data-i18n="load_model_hint">Choose a model and context length, then load it explicitly.</p>
 
               <details class="control-diagnostics" id="local-advanced-details">
@@ -970,8 +971,8 @@
                  over the internet lands here and nowhere else. Renaming the desk
                  revokes every invitation at once. -->
             <div class="button-row">
-              <button class="btn" type="button" id="chooser-guest-invite" data-i18n="guest_invite">Invite a Guest...</button>
-              <button class="btn" type="button" id="chooser-guest-rotate" data-i18n="guest_rotate_desk">New Desk Name</button>
+              <button class="btn" type="button" id="chooser-guest-invite" data-i18n="guest_invite" data-balloon-help="balloon_chooser_guest_invite">Invite a Guest...</button>
+              <button class="btn" type="button" id="chooser-guest-rotate" data-i18n="guest_rotate_desk" data-balloon-help="balloon_chooser_guest_rotate">New Desk Name</button>
             </div>
             <p id="chooser-guest-invitation" class="hint control-status" hidden></p>
           </section>
@@ -990,7 +991,7 @@
         </div>
       </aside>
 
-      <aside class="window rag-panel is-collapsed memory-transfer-window" data-window="rag" aria-labelledby="rag-title">
+      <aside class="window rag-panel is-collapsed memory-transfer-window" data-window="rag" data-metaphor="rag" aria-labelledby="rag-title">
         <div class="title-bar">
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="rag-title" data-i18n="mount_text_disk">Insert File Floppy</h2>
@@ -1005,7 +1006,7 @@
             <span class="compose-tool-icon compose-floppy-icon" aria-hidden="true"></span>
             <div>
               <b data-i18n="short_term_memory">Short-term memory</b>
-              <span data-i18n="short_term_memory_note">Mounted only for lookup during this startup; reinsert after restart.</span>
+              <span data-i18n="short_term_memory_note">Insert sources for lookup this session — not a mounted File Floppy window. Reinsert after restart.</span>
             </div>
           </section>
 
@@ -1019,13 +1020,13 @@
           </div>
 
           <div class="memory-transfer-footer">
-            <p id="rag-status" class="hint" data-i18n="no_text_disk_mounted">No File Floppy inserted.</p>
+            <p id="rag-status" class="hint" data-i18n="no_text_disk_mounted">Nothing inserted yet.</p>
             <button class="btn default" type="button" id="index-files" data-i18n="mount">Insert</button>
           </div>
         </div>
       </aside>
 
-      <section class="window text-disk-window is-hidden" data-window="textDisk" aria-labelledby="text-disk-title">
+      <section class="window text-disk-window is-hidden" data-window="textDisk" data-drop-target="file-floppy" aria-labelledby="text-disk-title">
         <div class="title-bar">
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="text-disk-title" data-i18n="mounted_text_disk">File Floppy</h2>
@@ -1380,15 +1381,15 @@
             </div>
             <p class="cmf-autosave-note" data-i18n="cmf_autosave">Saved in this browser.</p>
             <div class="cmf-button-stack">
-              <button class="btn" type="button" id="cmf-reset-view" data-i18n-aria-label="cmf_reset_view" aria-label="Reset View" data-balloon-help="balloon_cmf_reset_view">
+              <button class="btn" type="button" id="cmf-reset-view" data-i18n-aria-label="cmf_reset_view" aria-label="Reset View" data-balloon-help="balloon_cmf_reset_view" data-balloon-help-disabled="balloon_cmf_needs_model">
                 <span class="mobile-control-long" data-i18n="cmf_reset_view">Reset View</span>
                 <span class="mobile-control-short" data-i18n="cmf_reset_view_short">View</span>
               </button>
-              <button class="btn" type="button" id="cmf-export" data-i18n-aria-label="cmf_export_usdz" aria-label="Export USDZ" data-balloon-help="balloon_cmf_export">
+              <button class="btn" type="button" id="cmf-export" data-i18n-aria-label="cmf_export_usdz" aria-label="Export USDZ" data-balloon-help="balloon_cmf_export" data-balloon-help-disabled="balloon_cmf_needs_model">
                 <span class="mobile-control-long" data-i18n="cmf_export_usdz">Export USDZ</span>
                 <span class="mobile-control-short" data-i18n="cmf_export_short">Export</span>
               </button>
-              <button class="btn" type="button" id="cmf-export-views" data-i18n-aria-label="cmf_export_views" aria-label="Export Views"><span class="mobile-control-long" data-i18n="cmf_export_views">Export Views</span><span class="mobile-control-short" data-i18n="cmf_export_views_short">Views</span></button>
+              <button class="btn" type="button" id="cmf-export-views" data-i18n-aria-label="cmf_export_views" aria-label="Export Views" data-balloon-help-disabled="balloon_cmf_needs_model"><span class="mobile-control-long" data-i18n="cmf_export_views">Export Views</span><span class="mobile-control-short" data-i18n="cmf_export_views_short">Views</span></button>
             </div>
           </aside>
           <section class="cmf-preview-panel" aria-labelledby="cmf-preview-title">
@@ -1468,7 +1469,7 @@
               <span class="soundscape-control-label" data-i18n="soundscape_volume">Volume</span>
               <div id="soundscape-volume" class="system-segments" role="slider" tabindex="0" data-segments="12" aria-valuemin="0" aria-valuemax="100" aria-valuenow="32" data-i18n-aria-label="soundscape_volume" aria-label="Volume"></div>
             </div>
-            <button class="btn default soundscape-save-moment" type="button" id="soundscape-save-moment" disabled data-i18n="soundscape_save_moment">Save This Moment</button>
+            <button class="btn default soundscape-save-moment" type="button" id="soundscape-save-moment" disabled data-i18n="soundscape_save_moment" data-balloon-help-disabled="balloon_soundscape_save_disabled">Save This Moment</button>
           </main>
 
           <section class="soundscape-workbench" data-i18n-aria-label="soundscape_controls" aria-label="Soundscape controls">
@@ -1573,11 +1574,11 @@
                 </div>
                 <div id="soundscape-saved-list" class="soundscape-list soundscape-saved-list window-frame-scroller"></div>
                 <div class="soundscape-saved-actions">
-                  <button class="btn default" type="button" id="soundscape-restore" disabled data-i18n="soundscape_restore">Return to Moment</button>
-                  <button class="btn" type="button" id="soundscape-link-project" disabled data-i18n="soundscape_add_project">Add to Current Project</button>
-                  <button class="btn" type="button" id="soundscape-recover-moment" disabled data-i18n="soundscape_find_again">Find It Again</button>
-                  <button class="btn" type="button" id="soundscape-rename-moment" disabled data-i18n="soundscape_rename_moment">Rename…</button>
-                  <button class="btn" type="button" id="soundscape-delete-moment" disabled data-i18n="soundscape_delete_moment">Remove</button>
+                  <button class="btn default" type="button" id="soundscape-restore" disabled data-i18n="soundscape_restore" data-balloon-help-disabled="balloon_soundscape_moment_needs_selection">Return to Moment</button>
+                  <button class="btn" type="button" id="soundscape-link-project" disabled data-i18n="soundscape_add_project" data-balloon-help-disabled="balloon_soundscape_moment_needs_selection">Add to Current Project</button>
+                  <button class="btn" type="button" id="soundscape-recover-moment" disabled data-i18n="soundscape_find_again" data-balloon-help-disabled="balloon_soundscape_moment_needs_selection">Find It Again</button>
+                  <button class="btn" type="button" id="soundscape-rename-moment" disabled data-i18n="soundscape_rename_moment" data-balloon-help-disabled="balloon_soundscape_moment_needs_selection">Rename…</button>
+                  <button class="btn" type="button" id="soundscape-delete-moment" disabled data-i18n="soundscape_delete_moment" data-balloon-help-disabled="balloon_soundscape_moment_needs_selection">Remove</button>
                 </div>
               </section>
             </div>
@@ -1741,7 +1742,7 @@
         </div>
       </section>
 
-      <section class="window import-utility-window is-hidden memory-transfer-window" data-window="importUtility" aria-labelledby="import-utility-title">
+      <section class="window import-utility-window is-hidden memory-transfer-window" data-window="importUtility" data-empty aria-labelledby="import-utility-title">
         <div class="title-bar">
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="import-utility-title" data-i18n="import_utility">Write to Project Hard Disk</h2>
@@ -1874,11 +1875,6 @@
               </select>
             </span>
             <button class="btn default" type="button" id="chat-file-more-go" data-i18n="do_selected" data-balloon-help-disabled="balloon_chat_file_empty_first">Do Selected</button>
-            <button class="btn" type="button" id="open-chat-file" hidden data-i18n="open_chat">Open Chat</button>
-            <button class="btn" type="button" id="insert-chat-file" hidden data-i18n="insert">Insert</button>
-            <button class="btn" type="button" id="chat-file-docmap" hidden data-action="make-docmap" data-i18n="docmap">DocMap</button>
-            <button class="btn" type="button" id="download-chat-markdown" hidden data-i18n="download_md">Download .md</button>
-            <button class="btn danger" type="button" id="trash-chat-file" hidden data-i18n="move_to_trash">Move to Trash</button>
           </div>
         </div>
       </section>
@@ -1947,7 +1943,7 @@
                   </div>
               </details>
             </div>
-            <button class="btn default" type="button" id="teachtext-to-review" data-workspace-capability="studio" data-action="advance-manuscript-to-review" data-i18n="to_review" hidden>To Review</button>
+            <button class="btn default" type="button" id="teachtext-to-review" data-workspace-capability="studio" data-action="advance-manuscript-to-review" data-i18n="to_review" data-balloon-help-disabled="balloon_manuscript_needs_body" hidden>To Review</button>
           </div>
         </form>
         </div>
@@ -2026,7 +2022,7 @@
               </div>
             </section>
           </div>
-          <div id="review-desk-empty-note" class="empty-folder-note review-desk-empty-note is-hidden"><p data-i18n="review_desk_requires_final">No review yet. Suggestions stay off the manuscript.</p><p class="review-lens-empty-follow" id="review-lens-empty-follow" data-i18n="review_lens_empty_style">No mouthpiece pass yet. Suggestions stay off the manuscript.</p><button class="btn default" type="button" data-action="advance-manuscript-to-review" data-i18n="to_review">To Review</button></div>
+          <div id="review-desk-empty-note" class="empty-folder-note review-desk-empty-note is-hidden"><p data-i18n="review_desk_requires_final">No review yet. Nothing writes into the manuscript from here.</p><p class="review-lens-empty-follow" id="review-lens-empty-follow" data-i18n="review_lens_empty_style">No mouthpiece pass yet.</p><button class="btn default" type="button" data-action="advance-manuscript-to-review" data-i18n="to_review">To Review</button></div>
           <div class="teachtext-actions teachtext-surface-actions review-desk-actions">
             <div class="teachtext-command-group" aria-label="Review commands" data-i18n-aria-label="review_commands">
               <button class="btn writing-mode-toggle" type="button" data-action="toggle-review-preview" data-i18n="preview">Preview</button>
@@ -2108,7 +2104,7 @@
         </form>
       </section>
 
-      <section class="window scrapbook-window is-hidden" data-window="scrapbook" aria-labelledby="scrapbook-title">
+      <section class="window scrapbook-window is-hidden" data-window="scrapbook" data-drop-target="scrap" aria-labelledby="scrapbook-title">
         <div class="title-bar" data-standard-controls>
           <h2 id="scrapbook-title" data-i18n="scrapbook">Scrapbook</h2>
         </div>
@@ -2212,7 +2208,7 @@
           <span id="trash-project-label">Project Hard Disk</span>
         </div>
         <div class="window-pane trash-pane">
-          <div class="button-row trash-actions">
+          <div class="button-row">
             <span class="select-wrap select-wrap-inline">
               <select id="trash-more" class="mini-select" aria-label="Trash actions" data-i18n-aria-label="trash_more">
                 <option value="restore" data-i18n="restore_latest">Restore Latest</option>
@@ -2427,7 +2423,7 @@
         </div>
         <div class="window-pane teachtext-surface-pane question-sheet-pane">
           <div class="teachtext-editor-container specialized-teachtext-editor window-frame-scroller">
-            <textarea id="question-sheet-body" data-requires-write rows="12" placeholder="You can leave this messy. A question, a reader, or a rough observation is enough. You do not need a complete plan first." data-i18n-placeholder="question_sheet_hint" data-drop-target="editor-insert" data-editor-surface="questionSheet"></textarea>
+            <textarea id="question-sheet-body" data-requires-write rows="12" placeholder="Nothing written yet is fine. A question, a reader, or a rough observation is enough. You do not need a complete plan first." data-i18n-placeholder="question_sheet_hint" data-drop-target="editor-insert" data-editor-surface="questionSheet"></textarea>
             <div id="question-sheet-cards" class="question-sheet-cards is-hidden" role="list" aria-label="Question Sheet cards" data-i18n-aria-label="question_sheet_cards"></div>
             <div id="question-sheet-preview" class="specialized-teachtext-preview teachtext-preview is-hidden"></div>
           </div>
@@ -2472,7 +2468,7 @@
         <div class="window-pane teachtext-surface-pane outline-pane">
           <div id="outline-notes" class="outline-notes is-hidden"></div>
           <div class="teachtext-editor-container specialized-teachtext-editor window-frame-scroller">
-            <textarea id="outline-content" class="outline-content" rows="12" spellcheck="true" data-requires-write data-i18n-placeholder="outline_markdown_hint" placeholder="Write Markdown freely. Use ## for draftable sections.">## New Section</textarea>
+            <textarea id="outline-content" class="outline-content" rows="12" spellcheck="true" data-requires-write data-i18n-placeholder="outline_markdown_hint" placeholder="No outline yet. An empty tree is fine — add a section when you have one.">## New Section</textarea>
             <div id="outline-tree" class="outline-tree is-hidden" role="tree" tabindex="0" aria-label="Outline tree" data-i18n-aria-label="outline_tree"></div>
             <div id="outline-cards" class="outline-cards is-hidden" role="list" aria-label="Outline cards" data-i18n-aria-label="outline_cards"></div>
             <div id="outline-preview" class="specialized-teachtext-preview teachtext-preview is-hidden"></div>
@@ -2490,9 +2486,9 @@
                   <button class="btn" type="button" data-action="outline-tree-promote" data-i18n="outline_tree_promote">Raise a Level</button>
                   <button class="btn" type="button" data-action="outline-tree-demote" data-i18n="outline_tree_demote">Lower a Level</button>
                   <button class="btn" type="button" data-action="outline-tree-write" data-i18n="outline_tree_write">Write This Section</button>
-                  <button class="btn" type="button" data-action="mingming-outline" data-i18n="mingming_outline">Rewrite through the Reader's Eye</button>
-                  <button class="btn" type="button" data-action="structure-outline" data-i18n="structure_outline">Structure</button>
-                  <button class="btn" type="button" data-action="expand-outline" data-i18n="expand_weak_topic">Expand Weak Topic</button>
+                  <button class="btn" type="button" data-action="mingming-outline" data-i18n="mingming_outline" data-balloon-help-disabled="balloon_outline_needs_content">Rewrite through the Reader's Eye</button>
+                  <button class="btn" type="button" data-action="structure-outline" data-i18n="structure_outline" data-balloon-help-disabled="balloon_outline_needs_content">Structure</button>
+                  <button class="btn" type="button" data-action="expand-outline" data-i18n="expand_weak_topic" data-balloon-help-disabled="balloon_outline_needs_content">Expand Weak Topic</button>
                 <hr />
                   <button class="btn" type="button" data-action="toggle-outline-tree" aria-pressed="false" data-i18n="outline_tree_view">Outline Tree</button>
                   <button class="btn" type="button" data-action="toggle-outline-cards" aria-pressed="false" data-i18n="outline_cards_view">As Cards</button>
@@ -2529,7 +2525,7 @@
               <button class="btn" type="button" data-action="next-section-draft" data-i18n="next_section" data-i18n-aria-label="next_section">Next section</button>
             </div>
             <div class="teachtext-editor-container specialized-teachtext-editor window-frame-scroller">
-              <textarea id="draft-body" data-requires-write class="section-draft-markdown" rows="12" spellcheck="true" data-i18n-placeholder="section_draft_markdown_hint" placeholder="Write this section first. AI drafting is optional."></textarea>
+              <textarea id="draft-body" data-requires-write class="section-draft-markdown" rows="12" spellcheck="true" data-i18n-placeholder="section_draft_markdown_hint" placeholder="No body for this section yet. Write in your own words first."></textarea>
               <div id="draft-preview" class="specialized-teachtext-preview teachtext-preview is-hidden"></div>
             </div>
             <div class="teachtext-actions teachtext-surface-actions">
@@ -2538,10 +2534,10 @@
                 <details class="teachtext-command-menu specialized-command-menu">
                   <summary class="btn"><span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span><span class="mobile-control-short" data-i18n="commands_short">Cmds</span></summary>
                   <div class="teachtext-command-popover">
-                  <button class="btn" type="button" data-action="draft-current-section" data-i18n="writing_ai_draft">AI Draft</button>
+                  <button class="btn" type="button" data-action="draft-current-section" data-i18n="writing_ai_draft" data-balloon-help-disabled="balloon_draft_needs_section">AI Draft</button>
                   <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#draft-body" data-i18n="teachtext_focus_off">Focus: Off</button>
-                    <button class="btn" type="button" data-action="polish-draft" data-i18n="polish_draft">AI Polish</button>
-                    <button class="btn" type="button" data-action="suggest-draft" data-i18n="suggest_draft">AI Suggestions</button>
+                    <button class="btn" type="button" data-action="polish-draft" data-i18n="polish_draft" data-balloon-help-disabled="balloon_draft_needs_content">AI Polish</button>
+                    <button class="btn" type="button" data-action="suggest-draft" data-i18n="suggest_draft" data-balloon-help-disabled="balloon_draft_needs_content">AI Suggestions</button>
                     <button class="btn writing-eli5-action" type="button" data-action="eli5-rewrite-section" data-i18n="quick_draft_eli5_rewrite" hidden>Make it listenable</button>
                     <button class="btn writing-eli5-action" type="button" data-action="eli5-review-section" data-i18n="quick_draft_eli5_review" hidden>Find where it gets lost</button>
                     <hr />
@@ -2583,9 +2579,9 @@
               <summary class="btn" data-i18n="searcher_send_menu">Send To...</summary>
               <div class="teachtext-command-popover find-path-send-popover">
                 <button class="btn" type="button" data-action="clip-selected-find-path" data-i18n="clip" data-balloon-help-disabled="balloon_searcher_needs_result">Clip</button>
-                <button class="btn" type="button" data-action="find-path-to-floppy" data-i18n="find_path_to_floppy">To File Floppy</button>
-                <button class="btn" type="button" id="copy-find-path" data-action="copy-search-result-markdown" data-i18n="copy_markdown">Copy Markdown</button>
-                <button class="btn" type="button" id="insert-find-path" data-action="insert-search-result" data-i18n="insert">Insert</button>
+                <button class="btn" type="button" data-action="find-path-to-floppy" data-i18n="find_path_to_floppy" data-balloon-help-disabled="balloon_searcher_needs_result">To File Floppy</button>
+                <button class="btn" type="button" id="copy-find-path" data-action="copy-search-result-markdown" data-i18n="copy_markdown" data-balloon-help-disabled="balloon_searcher_needs_result">Copy Markdown</button>
+                <button class="btn" type="button" id="insert-find-path" data-action="insert-search-result" data-i18n="insert" data-balloon-help-disabled="balloon_searcher_needs_result">Insert</button>
               </div>
             </details>
             <button class="btn" type="button" data-action="open-selected-in-reader" data-balloon-help-disabled="balloon_searcher_needs_result" data-i18n-aria-label="open_in_reader">
@@ -2613,8 +2609,8 @@
           </div>
           <div id="find-file-results" class="find-file-results"></div>
           <div class="button-row">
-            <button class="btn" type="button" data-action="open-selected-find-file" data-i18n="open">Open</button>
-            <button class="btn" type="button" data-action="reveal-selected-find-file" data-i18n="reveal_in_project_disk">Reveal in Project Hard Disk</button>
+            <button class="btn" type="button" data-action="open-selected-find-file" data-i18n="open" data-balloon-help-disabled="balloon_find_file_needs_result">Open</button>
+            <button class="btn" type="button" data-action="reveal-selected-find-file" data-i18n="reveal_in_project_disk" data-balloon-help-disabled="balloon_find_file_needs_result">Reveal in Project Hard Disk</button>
           </div>
         </form>
       </section>
@@ -2645,14 +2641,14 @@
           <div class="status-bar-trailing docmap-status-actions">
             <div class="window-status-strip" aria-live="polite"><span class="window-status-slot" data-status-host></span></div>
             <details class="teachtext-command-menu command-menu-opens-down docmap-command-menu is-disabled" id="docmap-command-menu">
-              <summary class="btn" id="docmap-command-summary" data-i18n="docmap_commands">Commands...</summary>
+              <summary class="btn" id="docmap-command-summary" data-i18n="docmap_commands" data-balloon-help-disabled="balloon_docmap_needs_map">Commands...</summary>
               <div class="teachtext-command-popover docmap-command-popover">
                 <button class="btn" type="button" data-action="docmap-from-picture" data-i18n="docmap_from_picture">Map a Picture</button>
-                <button class="btn" type="button" id="docmap-send-question" data-i18n="send_to_question_sheet">Send to Question Sheet</button>
-                <button class="btn" type="button" id="docmap-ask-hkrr" data-i18n="docmap_hkrr_review_map">Review This Map with HKRR Theory</button>
-                <button class="btn" type="button" id="docmap-insert-outline" data-i18n="insert_as_outline">Replace Outline</button>
+                <button class="btn" type="button" id="docmap-send-question" data-i18n="send_to_question_sheet" data-balloon-help-disabled="balloon_docmap_needs_map">Send to Question Sheet</button>
+                <button class="btn" type="button" id="docmap-ask-hkrr" data-i18n="docmap_hkrr_review_map" data-balloon-help-disabled="balloon_docmap_needs_map">Review This Map with HKRR Theory</button>
+                <button class="btn" type="button" id="docmap-insert-outline" data-i18n="insert_as_outline" data-balloon-help-disabled="balloon_docmap_needs_map">Replace Outline</button>
                 <button class="btn" type="button" id="docmap-save" data-i18n="save_docmap" data-balloon-help-disabled="balloon_docmap_save_disabled">Save DocMap</button>
-                <button class="btn" type="button" id="docmap-print-pdf" data-i18n="docmap_print_pdf">Print Map to PDF</button>
+                <button class="btn" type="button" id="docmap-print-pdf" data-i18n="docmap_print_pdf" data-balloon-help-disabled="balloon_docmap_needs_map">Print Map to PDF</button>
               </div>
             </details>
           </div>
@@ -2992,7 +2988,7 @@
         </div>
         <div class="details-bar compact-status-bar note-pad-details-bar">
           <span class="status-bar-leading note-pad-pager">
-            <button class="btn mini-btn" type="button" id="note-pad-prev" aria-label="Previous slip" data-i18n-aria-label="previous_page">&#9664;</button>
+            <button class="btn mini-btn" type="button" id="note-pad-prev" aria-label="Previous slip" data-i18n-aria-label="previous_page" data-balloon-help-disabled="balloon_note_pad_first_slip">&#9664;</button>
             <span id="note-pad-page-label">Slip 1 of 1</span>
             <button class="btn mini-btn" type="button" id="note-pad-next" aria-label="Next slip" data-i18n-aria-label="next_page">&#9654;</button>
           </span>
@@ -3003,7 +2999,7 @@
           <div class="button-row note-pad-actions">
             <button class="btn" type="button" id="note-pad-new" data-action="note-pad-new-slip" data-i18n="note_pad_new_slip">New Slip</button>
             <span class="spacer"></span>
-            <button class="btn default" type="button" id="note-pad-send" data-action="note-pad-send" data-i18n="send">Send</button>
+            <button class="btn default" type="button" id="note-pad-send" data-action="note-pad-send" data-i18n="send" data-balloon-help-disabled="balloon_note_pad_empty_send">Send</button>
           </div>
         </div>
       </section>
@@ -3028,10 +3024,10 @@
           <textarea id="clipboard-text" rows="10" readonly aria-labelledby="clipboard-title"></textarea>
           <!-- No .spacer: four buttons plus it need 328px of a 322px row. -->
           <div class="button-row is-one-line">
-            <button class="btn" type="button" id="clipboard-clear" data-i18n="clear">Clear</button>
-            <button class="btn" type="button" id="clipboard-translate" data-i18n="translate_clipboard">Translate</button>
-            <button class="btn" type="button" id="clipboard-docmap" data-i18n="docmap">DocMap</button>
-            <button class="btn default" type="button" id="clipboard-insert" data-i18n="insert">Insert</button>
+            <button class="btn" type="button" id="clipboard-clear" data-i18n="clear" data-balloon-help-disabled="balloon_clipboard_empty">Clear</button>
+            <button class="btn" type="button" id="clipboard-translate" data-i18n="translate_clipboard" data-balloon-help-disabled="balloon_clipboard_empty">Translate</button>
+            <button class="btn" type="button" id="clipboard-docmap" data-i18n="docmap" data-balloon-help-disabled="balloon_clipboard_empty">DocMap</button>
+            <button class="btn default" type="button" id="clipboard-insert" data-i18n="insert" data-balloon-help-disabled="balloon_clipboard_empty">Insert</button>
           </div>
         </div>
       </section>
@@ -3123,13 +3119,13 @@
         </div>
       </section>
 
-      <section class="window writing-bell-window is-hidden" data-window="writingBell" aria-labelledby="writing-bell-title">
+      <section class="window writing-bell-window is-hidden" data-window="writingBell" data-tick-after-close="1" data-nag="0" aria-labelledby="writing-bell-title">
         <div class="title-bar">
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
           <h2 id="writing-bell-title" data-i18n="writing_bell">Writing Bell</h2>
         </div>
         <div class="details-bar compact-status-bar">
-          <span class="status-bar-leading" id="writing-bell-status" data-i18n="bell_ready">Ready for one quiet writing interval.</span>
+          <span class="status-bar-leading" id="writing-bell-status" data-i18n="bell_ready">Ready.</span>
           <span class="status-bar-trailing" id="writing-bell-holds"></span>
         </div>
         <div class="window-pane writing-bell-pane">
@@ -3146,7 +3142,7 @@
           <div class="button-row writing-bell-actions">
             <button class="btn" type="button" id="writing-bell-reset" data-i18n="reset">Reset</button>
             <span class="spacer"></span>
-            <button class="btn" type="button" id="writing-bell-pause" data-i18n="pause" disabled>Pause</button>
+            <button class="btn" type="button" id="writing-bell-pause" data-i18n="pause" disabled data-balloon-help-disabled="balloon_writing_bell_pause">Pause</button>
             <button class="btn default" type="button" id="writing-bell-start" data-i18n="start">Start</button>
           </div>
         </div>
@@ -3186,7 +3182,11 @@
           <h2 id="model-meter-title" data-i18n="model_meter">Model Meter</h2>
         </div>
         <div class="window-pane model-meter-pane">
-          <p id="model-meter-empty" class="empty-folder-note" data-i18n="model_meter_empty" hidden>No model run yet. Turn on the meter in Control Panel, then ask ClioTalk something.</p>
+          <div id="model-meter-empty" class="empty-folder-note empty-next-note model-meter-empty-note" hidden>
+            <p data-i18n="model_meter_empty">No model run yet. Turn on the meter in Control Panel, then ask ClioTalk something.</p>
+            <button class="btn default" type="button" data-action="open-control" data-i18n="control_panel">Control Panel</button>
+            <button class="btn" type="button" data-action="open-assistant" data-i18n="assistant_title">ClioTalk</button>
+          </div>
           <dl class="meter-stats" id="model-meter-stats">
             <dt data-i18n="speed">Speed</dt>
             <dd id="meter-speed">--</dd>
@@ -3210,22 +3210,22 @@
           <div class="shortcut-grid" id="shortcut-grid" data-i18n-aria-label="keyboard_shortcuts" aria-label="Keyboard shortcuts"></div>
           <p data-i18n="character_map">Character Map</p>
           <div class="character-map" id="character-map" aria-label="Character Map" data-i18n-aria-label="character_map">
-            <button type="button" data-character="—">—</button>
-            <button type="button" data-character="–">–</button>
-            <button type="button" data-character="…">…</button>
-            <button type="button" data-character="“">“</button>
-            <button type="button" data-character="”">”</button>
-            <button type="button" data-character="‘">‘</button>
-            <button type="button" data-character="’">’</button>
-            <button type="button" data-character="•">•</button>
-            <button type="button" data-character="·">·</button>
-            <button type="button" data-character="§">§</button>
-            <button type="button" data-character="¶">¶</button>
-            <button type="button" data-character="※">※</button>
-            <button type="button" data-character="→">→</button>
-            <button type="button" data-character="←">←</button>
-            <button type="button" data-character="✓">✓</button>
-            <button type="button" data-character="★">★</button>
+            <button type="button" data-character="—" data-balloon-help="balloon_key_caps_character">—</button>
+            <button type="button" data-character="–" data-balloon-help="balloon_key_caps_character">–</button>
+            <button type="button" data-character="…" data-balloon-help="balloon_key_caps_character">…</button>
+            <button type="button" data-character="“" data-balloon-help="balloon_key_caps_character">“</button>
+            <button type="button" data-character="”" data-balloon-help="balloon_key_caps_character">”</button>
+            <button type="button" data-character="‘" data-balloon-help="balloon_key_caps_character">‘</button>
+            <button type="button" data-character="’" data-balloon-help="balloon_key_caps_character">’</button>
+            <button type="button" data-character="•" data-balloon-help="balloon_key_caps_character">•</button>
+            <button type="button" data-character="·" data-balloon-help="balloon_key_caps_character">·</button>
+            <button type="button" data-character="§" data-balloon-help="balloon_key_caps_character">§</button>
+            <button type="button" data-character="¶" data-balloon-help="balloon_key_caps_character">¶</button>
+            <button type="button" data-character="※" data-balloon-help="balloon_key_caps_character">※</button>
+            <button type="button" data-character="→" data-balloon-help="balloon_key_caps_character">→</button>
+            <button type="button" data-character="←" data-balloon-help="balloon_key_caps_character">←</button>
+            <button type="button" data-character="✓" data-balloon-help="balloon_key_caps_character">✓</button>
+            <button type="button" data-character="★" data-balloon-help="balloon_key_caps_character">★</button>
           </div>
         </div>
       </section>
@@ -3243,13 +3243,13 @@
           <div class="model-state-panel" id="model-state-panel">
             <b data-i18n="model_state">Model State</b>
             <ol>
-              <li data-model-step="server"><span data-i18n="model_step_server">LM Studio server</span><small data-i18n="model_step_waiting">Waiting</small></li>
-              <li data-model-step="models"><span data-i18n="model_step_models">Models found</span><small data-i18n="model_step_waiting">Waiting</small></li>
-              <li data-model-step="selected"><span data-i18n="model_step_selected">Model selected</span><small data-i18n="model_step_waiting">Waiting</small></li>
-              <li data-model-step="loaded"><span data-i18n="model_step_loaded">Model loaded</span><small data-i18n="model_step_waiting">Waiting</small></li>
-              <li data-model-step="ready"><span data-i18n="model_step_ready">Ready</span><small data-i18n="model_step_waiting">Waiting</small></li>
+              <li data-model-step="server"><span data-i18n="model_step_server">LM Studio server</span><small data-i18n="model_step_waiting">Not yet</small></li>
+              <li data-model-step="models"><span data-i18n="model_step_models">Models found</span><small data-i18n="model_step_waiting">Not yet</small></li>
+              <li data-model-step="selected"><span data-i18n="model_step_selected">Model selected</span><small data-i18n="model_step_waiting">Not yet</small></li>
+              <li data-model-step="loaded"><span data-i18n="model_step_loaded">Model loaded</span><small data-i18n="model_step_waiting">Not yet</small></li>
+              <li data-model-step="ready"><span data-i18n="model_step_ready">Ready</span><small data-i18n="model_step_waiting">Not yet</small></li>
             </ol>
-            <p id="model-state-next" class="hint" data-i18n="model_next_start_lm">Start LM Studio, then open Control Panel.</p>
+            <p id="model-state-next" class="hint" data-i18n="model_next_start_lm">Local model is not connected yet. Open Control Panel when you are ready.</p>
           </div>
           <div class="cloud-state-panel" id="cloud-state-panel">
             <b data-i18n="cloud_model">Cloud Model</b>
@@ -3344,7 +3344,7 @@
                File menu. Populated by openFileInfo(). -->
           <div class="button-row info-kind-actions" id="info-kind-actions" hidden></div>
           <div class="button-row">
-            <button class="btn" type="button" id="info-download-markdown" data-i18n="download_md">Download .md</button>
+            <button class="btn" type="button" id="info-download-markdown" data-i18n="download_md" data-balloon-help-disabled="balloon_get_info_download">Download .md</button>
           </div>
           <div class="info-comments">
             <label for="info-file-stationery">
@@ -3431,7 +3431,7 @@
           <span class="sys-icon sys-icon-desktop" data-system-icon="startupDisk" aria-hidden="true"></span>
           <span data-i18n="startup_disk">Startup Disk</span>
         </button>
-        <button class="desktop-icon" id="desktop-file-floppy-starter" type="button" data-action="open-rag" data-balloon-help="balloon_text_disk">
+        <button class="desktop-icon" id="desktop-file-floppy-starter" type="button" data-action="open-rag" data-balloon-help="balloon_text_disk" data-drop-target="file-floppy">
           <span class="sys-icon sys-icon-desktop" data-system-icon="fileFloppy" aria-hidden="true"></span>
           <span data-i18n="file_floppy">File Floppy</span>
         </button>
@@ -3463,7 +3463,7 @@
         </button>
 <!-- The desktop is the current working set. The complete catalogue
              remains in Applications and MultiFinder. -->
-        <button class="desktop-icon is-mounted-disk" data-drag-type="mounted-disk" draggable="true" type="button" data-open="textDisk" id="mounted-text-disk" hidden data-balloon-help="balloon_text_disk">
+        <button class="desktop-icon is-mounted-disk" data-drag-type="mounted-disk" draggable="true" type="button" data-open="textDisk" id="mounted-text-disk" hidden data-balloon-help="balloon_text_disk" data-drop-target="file-floppy">
           <span class="sys-icon sys-icon-desktop" data-system-icon="fileFloppy" aria-hidden="true"></span>
           <span data-i18n="mounted_text_disk">File Floppy</span>
         </button>
@@ -3478,9 +3478,9 @@
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20261005.3"></script>
+    <script src="app/generated/build-info.js?v=20261006.1"></script>
     <template id="standard-window-controls"><button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button><button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button><button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button></template>
-    <script src="app.bundle.js?v=20261005.3"></script>
+    <script src="app.bundle.js?v=20261006.1"></script>
 
   </body>
 </html>

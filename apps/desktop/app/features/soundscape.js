@@ -590,6 +590,19 @@
   function updateTransport() {
     const playing = isPlaying();
     const available = hasQueue();
+    // A grey transport still says why: with nothing queued, the next tap on
+    // Play, Shuffle, Repeat or Mute speaks the empty-queue sentence instead of
+    // doing nothing. One reason per control, shared with the empty state.
+    const emptyQueueReason = "soundscape_empty_queue";
+    const markTransport = (control, blocked, reasonKey) => {
+      if (!control) return;
+      if (typeof markGrayAffordance === "function") markGrayAffordance(control, blocked, reasonKey);
+      else {
+        control.disabled = blocked;
+        if (blocked && reasonKey) control.dataset.balloonHelpDisabled = reasonKey;
+        else delete control.dataset.balloonHelpDisabled;
+      }
+    };
     const glyph = ui("soundscape-play-glyph");
     const toggle = ui("soundscape-toggle-play");
     const nextGlyph = playing ? "pause" : "play";
@@ -599,21 +612,21 @@
     }
     if (toggle) {
       toggle.setAttribute("aria-label", playing ? translate("pause", "Pause") : translate("play", "Play"));
-      toggle.disabled = !available;
+      markTransport(toggle, !available, emptyQueueReason);
     }
-    if (ui("soundscape-previous")) ui("soundscape-previous").disabled = !available;
-    if (ui("soundscape-next")) ui("soundscape-next").disabled = !available;
+    markTransport(ui("soundscape-previous"), !available, emptyQueueReason);
+    markTransport(ui("soundscape-next"), !available, emptyQueueReason);
 
     const shuffle = ui("soundscape-shuffle");
     if (shuffle) {
-      shuffle.disabled = !available;
+      markTransport(shuffle, !available, emptyQueueReason);
       shuffle.classList.toggle("is-active", state.shuffle);
       shuffle.setAttribute("aria-pressed", String(state.shuffle));
     }
 
     const repeat = ui("soundscape-repeat");
     if (repeat) {
-      repeat.disabled = !available;
+      markTransport(repeat, !available, emptyQueueReason);
       repeat.classList.toggle("is-active", state.repeat !== "off");
       repeat.dataset.repeat = state.repeat;
       repeat.setAttribute("aria-pressed", String(state.repeat !== "off"));
@@ -626,7 +639,7 @@
     // than a second icon.
     const mute = ui("soundscape-mute");
     if (mute) {
-      mute.disabled = state.source === "none";
+      markTransport(mute, state.source === "none", emptyQueueReason);
       mute.classList.toggle("is-active", state.muted);
       mute.setAttribute("aria-pressed", String(state.muted));
     }
@@ -717,7 +730,16 @@
     const count = ui("soundscape-queue-count");
     if (count) count.textContent = String(state.queue.length);
     const clear = ui("soundscape-clear-queue");
-    if (clear) clear.disabled = state.source === "system" || !state.queue.length;
+    if (clear) {
+      const clearBlocked = state.source === "system" || !state.queue.length;
+      if (typeof markGrayAffordance === "function") {
+        markGrayAffordance(clear, clearBlocked, "soundscape_empty_queue");
+      } else {
+        clear.disabled = clearBlocked;
+        if (clearBlocked) clear.dataset.balloonHelpDisabled = "soundscape_empty_queue";
+        else delete clear.dataset.balloonHelpDisabled;
+      }
+    }
     if (!list) return;
     list.replaceChildren();
     if (!state.queue.length) {
@@ -779,9 +801,23 @@
     if (!list) return;
     list.replaceChildren();
     if (!state.saved.length) {
-      const empty = document.createElement("p");
-      empty.className = "soundscape-empty";
-      empty.textContent = translate("soundscape_no_saved", "Your saved listening moments will appear here.");
+      // Goal #2/#6: empty Saved names Choose Music — switch to Queue and open
+      // the local picker so the step is tappable, not only descriptive.
+      const empty = document.createElement("div");
+      empty.className = "soundscape-empty empty-next-note";
+      const text = document.createElement("p");
+      text.textContent = translate("soundscape_no_saved", "Your saved listening moments will appear here.");
+      const choose = document.createElement("button");
+      choose.type = "button";
+      choose.className = "btn default";
+      choose.textContent = translate("soundscape_choose_local", "Choose Music");
+      choose.addEventListener("click", () => {
+        setActivePanel("queue", true);
+        const local = ui("soundscape-choose-local");
+        if (local && !local.disabled) local.click();
+        else local?.focus({ preventScroll: true });
+      });
+      empty.append(text, choose);
       list.append(empty);
     }
     state.saved.forEach((moment) => {

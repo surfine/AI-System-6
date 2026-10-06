@@ -17,8 +17,11 @@
 
 import { createHash } from "node:crypto";
 
-// route id -> the backup that route mounts. The route ids are the ones in
-// tooling/build-launch-links.mjs; a disk here needs a route there.
+// route id -> the backup that route mounts. This list is the registry: the
+// three /go/ route tables (apps/server/server/routes/go.js,
+// functions/go/[route].js, apps/desktop/app/core/launch-intent.js) and the
+// bare-route retirement list in platform/web/install-release.sh are told the
+// same ids, and launch-intent.test.mjs fails when any of them drifts.
 //
 // `label` is the name the disk wears in the demonstration folder: the object on
 // it, not the article inside, because thirty-five article titles folded into

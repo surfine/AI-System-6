@@ -135,13 +135,52 @@ test.assertIncludes(scrapbook, "function runScrapMultiAction", "Scrapbook multi 
 test.assertIncludes(index, 'id="chat-file-more"', "Chat File folds Open/Insert/DocMap into one select");
 test.assertIncludes(documentsChat, "function runChatFileMoreAction", "Chat File select-then-act is wired");
 test.assertIncludes(documentsChat, "function renderChatFileEmptyState", "Chat File paints an honest empty state");
+test.assertIncludes(documentsChat, 'dataset.action = "open-assistant"', "Chat File empty note offers Open Chat in-place");
+test.assertIncludes(documentsChat, 'handleAction("open-teachtext")', "Documents empty root offers TeachText as next step");
+test.assertIncludes(scrapbook, 'handleAction("open-reader")', "Scrapbook empty card opens Reader to clip");
+test.assertIncludes(docmap, 'data-action="open-reader"', "DocMap idle empty offers Reader as next source step");
+test.assertIncludes(read("app/features/findpath.js"), 'dataset.action = "open-project-disks"', "Find File zero results offers Project Hard Disk as next step");
+test.assertIncludes(read("app/features/findpath.js"), "function renderFindPathEmptyNext", "Searcher empty panes can offer a tappable next step");
+test.assertIncludes(read("app/features/file-disk.js"), 'insertFileFloppyFromWindow()', "File Floppy empty object inserts a floppy");
+test.assertIncludes(read("app/features/clio-stage.js"), 'dataset.action = "open-teachtext"', "ClioStage empty offers TeachText as next step");
+test.assertIncludes(read("app/features/teachtext-accessories.js"), 'for="teachtext-image-input"', "Picture Album empty taps the Add Images picker");
+test.assertIncludes(scrapbook, 'dataset.action = "open-project-disks"', "Trash empty offers Project Hard Disk as next step");
+test.assertIncludes(scrapbook, 'dataset.action = "open-rag"', "Context Panel empty offers File Floppy as next step");
+test.assertIncludes(read("app/features/export-import.js"), "paintImportEmptyNext", "Import empty note offers Choose Files as next step");
+test.assertIncludes(read("app/features/bureaucracy-meme.js"), "bureaucracy-empty-next", "Bureaucracy empty offers Draft captions as next step");
+test.assert(
+  /id="model-meter-empty"[\s\S]*?data-action="open-control"/.test(index),
+  "Model Meter empty offers Control Panel as next step",
+);
+test.assert(
+  /id="model-meter-empty"[\s\S]*?data-action="open-assistant"/.test(index),
+  "Model Meter empty offers ClioTalk as next step",
+);
+test.assertIncludes(index, 'data-balloon-help-disabled="balloon_soundscape_save_disabled"', "Soundscape Save This Moment says why it is grey with no track");
+test.assertIncludes(index, 'data-balloon-help-disabled="balloon_soundscape_moment_needs_selection"', "Soundscape saved actions say select a moment first");
+test.assertIncludes(index, 'data-balloon-help-disabled="balloon_cmf_needs_model"', "CMF export/view chrome says wait for the model");
+test.assertIncludes(read("app/features/soundscape.js"), 'translate("soundscape_choose_local"', "Soundscape saved empty offers Choose Music as next step");
+test.assertIncludes(read("app/features/time-machine.js"), 'dataset.action = "time-machine-web-view"', "Time Machine reader-empty offers Web View as next step");
 
 test.assertIncludes(index, 'data-balloon-help-disabled="balloon_reader_clip_needs_selection"', "Reader Clip says why it is grey on an empty page");
 test.assertIncludes(index, 'data-balloon-help-disabled="balloon_scrapbook_empty"', "Scrapbook Insert says why it is grey with no scrap");
+test.assertIncludes(scrapbook, "balloon_scrapbook_needs_translation", "Scrapbook bilingual export says why it is grey without a translation");
+test.assertIncludes(scrapbook, 'markGrayAffordance(scrapbookPagePreviousButton', "Scrapbook page arrows use shared grey affordance");
 test.assertIncludes(index, 'data-balloon-help-disabled="balloon_trash_empty_first"', "Trash Do Selected says why it is grey when empty");
 test.assertIncludes(index, 'data-balloon-help-disabled="balloon_project_disk_empty_first"', "Project Hard Disk Do Selected says what to do first");
 test.assertIncludes(index, 'data-balloon-help-disabled="balloon_chat_file_empty_first"', "Chat File Do Selected says what to open first");
 test.assertIncludes(index, 'data-balloon-help-disabled="balloon_dictionary_unlooked"', "Dictionary Keep/Delete say look up first");
+test.assertIncludes(index, 'data-balloon-help-disabled="balloon_manuscript_needs_body"', "TeachText Review greys with a body-needed reason");
+test.assertIncludes(index, 'data-balloon-help="balloon_chooser_guest_invite"', "Chooser Invite explains the token path");
+test.assertIncludes(index, 'data-balloon-help="balloon_chooser_guest_rotate"', "Chooser New Desk Name explains revoke");
+test.assertIncludes(read("app/features/teachtext-accessories.js"), "balloon_image_album_full", "Picture Album full greys Add Images with a reason");
+test.assertIncludes(read("app/features/control-strip.js"), "balloon_control_strip_move_top", "Control Strip Move Up explains top-of-list");
+test.assertIncludes(index, 'data-balloon-help-disabled="balloon_load_model_needs_lm_studio"', "Control Panel Load Model greys until LM Studio is the provider");
+test.assertIncludes(balloon, "function revealUnavailableControlWhy", "grey one-tap why is a shared Balloon Help shell helper");
+test.assertIncludes(wireup, "revealUnavailableControlWhy(actionTarget)", "wireup routes grey data-action taps to the shared explainer");
+test.assertIncludes(actions, 'reviewDeskEmptyNoteEl?.classList.add("empty-next-note")', "Review Desk empty note marks one next step");
+test.assertIncludes(read("app/features/find-change.js"), "find-change-empty-next", "Find/Change empty offers TeachText as next step");
+test.assertIncludes(read("app/features/liquid-cover.js"), "balloon_cover_layers_full", "Cover Glass full layer budget explains on one tap");
 test.assertIncludes(index, 'data-action="reader-clip-translate"', "Clip + Translate stays available from Reader Commands");
 test.assert(
   !/reader-selection-bar[\s\S]*data-action="reader-clip-translate"/.test(index),
@@ -318,6 +357,10 @@ const harvestKeys = [
   "appearance_polish_pending_status",
   "balloon_import_needs_files",
   "balloon_import_backup_needs_file",
+  "balloon_soundscape_save_disabled",
+  "balloon_soundscape_moment_needs_selection",
+  "balloon_cmf_needs_model",
+  "balloon_cmf_duo_export_disabled",
   "balloon_hold_empty_first",
   "balloon_cover_needs_image",
   "balloon_recovery_needs_project",
@@ -325,6 +368,7 @@ const harvestKeys = [
   "balloon_recovery_no_ai",
   "balloon_outline_needs_content",
   "balloon_draft_needs_content",
+  "balloon_draft_needs_section",
   "balloon_text_disk_select_first",
   "balloon_text_disk_mount_first",
   "text_disk_more",
@@ -390,8 +434,18 @@ test.assertIncludes(markdownEditor, "AISystem6JourneyGates?.syncDeskProbe", "des
 // disk select-then-act leftovers, and rest/games host honesty copy.
 test.assertIncludes(read("app/core/balloon-help.js"), '"advance-outline-to-drafts": "balloon_outline_needs_content"', "empty Outline greys To Section Drafts with a reason");
 test.assertIncludes(read("app/core/balloon-help.js"), '"advance-drafts-to-manuscript": "balloon_draft_needs_content"', "empty Section Drafts greys To Manuscript with a reason");
+test.assertIncludes(read("app/core/balloon-help.js"), '"structure-outline": "balloon_outline_needs_content"', "empty Outline greys Structure with a reason");
+test.assertIncludes(read("app/core/balloon-help.js"), '"draft-current-section": "balloon_draft_needs_section"', "Section Drafts AI Draft greys without a section");
 test.assertIncludes(index, 'data-balloon-help-disabled="balloon_outline_needs_content"', "Outline advance button carries the empty-state balloon");
 test.assertIncludes(index, 'data-balloon-help-disabled="balloon_draft_needs_content"', "Section Drafts advance button carries the empty-body balloon");
+test.assertIncludes(index, 'data-balloon-help-disabled="balloon_draft_needs_section"', "AI Draft carries the needs-section balloon");
+test.assertIncludes(read("app/features/writing-flow.js"), "function syncWritingRouteEmptyMarkers", "writing route marks data-empty on Question/Outline/Drafts");
+test.assertIncludes(read("styles/30-surfaces.css"), ".question-sheet-window[data-empty] .specialized-command-menu", "empty writing-route demotes Commands chrome for ADHD calm");
+test.assertIncludes(responsive, ".review-desk-window.is-review-locked .review-desk-empty-note", "narrow Review locked empty note keeps readable padding");
+test.assertIncludes(responsive, ".docmap-window[data-empty] .docmap-layout-picker", "narrow idle DocMap hides layout picker noise");
+test.assertIncludes(read("styles/24-searcher.css"), ".find-path-window[data-empty] .find-path-pane > .button-row:last-child", "idle Searcher stacks grey handoff chrome on phone portrait");
+test.assertIncludes(translationsEn, 'outline_markdown_hint: "No outline yet.', "Outline placeholder drops Markdown instruction tone");
+test.assertIncludes(translationsZh, 'outline_markdown_hint: "还没有大纲。', "Outline placeholder is human empty-state Chinese");
 test.assertIncludes(index, 'id="text-disk-more"', "File Floppy folds Insert/Write/Eject into one select");
 test.assertIncludes(index, 'id="text-disk-more-go"', "File Floppy acts with Do Selected");
 test.assertIncludes(read("app/features/file-disk.js"), "function runTextDiskMoreAction", "File Floppy select-then-act is wired");
@@ -427,29 +481,63 @@ test.assertIncludes(responsive, ".image-manager-window", "A3 Album is in the nar
 test.assertIncludes(responsive, ".project-disk-window", "A3 Projects is in the narrow harvest set");
 test.assertIncludes(responsive, ".text-disk-window", "A3 Text Disk is in the narrow harvest set");
 test.assertIncludes(responsive, ".assistant-window .composer .composer-submit-button", "A4 ClioTalk Send is full-width on narrow");
+test.assertIncludes(responsive, ".assistant-window .composer .composer-file-button", "A4 ClioTalk Add keeps a touch-primary floor on narrow");
 test.assertIncludes(responsive, ".reader-window", "A4 Reader is in the narrow harvest set");
 test.assertIncludes(responsive, ".scrapbook-window", "A4 Scrapbook is in the narrow harvest set");
+test.assertIncludes(responsive, ".scrapbook-window .scrap-list button:not(.scrap-empty-card)", "A4 Scrapbook list rows keep a touch-primary floor on narrow");
+test.assertIncludes(responsive, ".chat-file-window", "Chat File joins the narrow button-row column stack");
+test.assertIncludes(responsive, ".chat-file-window .button-row > .btn", "Chat File Do Selected keeps a touch-primary floor on narrow");
 test.assertIncludes(responsive, ".find-path-window", "A4 Searcher is in the narrow harvest set");
 test.assertIncludes(responsive, ".clio-stage-window", "A4 ClioStage is in the narrow harvest set");
 test.assertIncludes(responsive, ".cmf-studio-window", "A4 CMF is in the narrow harvest set");
 test.assertIncludes(responsive, ".liquid-cover-window", "A4 Cover Glass is in the narrow harvest set");
 test.assertIncludes(responsive, ".rebuild-flow-window", "A5 Rebuild is in the narrow harvest set");
-test.assertIncludes(responsive, ".draft-desk-window .draft-desk-actions > .btn.default", "A5 Quick Draft primary keeps a 44px floor on narrow");
-test.assertIncludes(responsive, ".draft-desk-window .lightroom-actions > .btn.default", "A5 Lightroom primary keeps a 44px floor on narrow");
+test.assertIncludes(responsive, ".draft-desk-window .draft-desk-actions > .btn.default", "A5 Quick Draft primary keeps a touch-primary floor on narrow");
+test.assertIncludes(responsive, ".draft-desk-window .lightroom-actions > .btn.default", "A5 Lightroom primary keeps a touch-primary floor on narrow");
+test.assertIncludes(
+  responsive,
+  ".teachtext-surface-actions > .btn.default {\n    flex: 1 0 100%;\n    min-height: var(--touch-primary-min-height);",
+  "writing-route surface primaries keep a touch-primary floor on narrow"
+);
+test.assertIncludes(responsive, ".review-desk-window .review-desk-empty-note > .btn.default", "Review Desk empty primary keeps a touch-primary floor on narrow");
+test.assertIncludes(responsive, ".todo-da-window .todo-da-item {\n    min-height: var(--touch-primary-min-height);", "A2 To Do rows keep a touch-primary floor on narrow");
+test.assertIncludes(responsive, ".note-pad-window .note-pad-details-bar .btn", "Note Pad details nav keeps a touch-primary floor on narrow");
+test.assertIncludes(responsive, ".clipboard-window .button-row > .btn", "Clipboard row buttons keep a touch-primary floor on narrow");
+test.assertIncludes(responsive, ".image-manager-window .image-manager-list.is-list-view .image-manager-item", "Picture Album list rows keep a touch-primary floor on narrow");
+test.assertIncludes(responsive, ".reader-window .reader-url-row :is(input, .btn)", "Reader URL row keeps a touch-primary floor on narrow");
+test.assertIncludes(responsive, ".control-panel .control-chooser .system-tab", "Control Panel chooser tabs keep a touch-primary floor on narrow");
+test.assertIncludes(responsive, "--alarm-clock-modes-height: var(--touch-primary-min-height)", "Alarm Clock mode strip keeps a touch-primary floor on narrow");
+test.assertIncludes(responsive, "--calculator-keys-row-height: var(--touch-primary-min-height)", "Calculator keys keep a touch-primary row floor on narrow");
 test.assertIncludes(responsive, "grid-template-columns: minmax(0, 1fr)", "narrow Finder-family grids collapse to one column");
-test.assertIncludes(responsive, "min-height: 44px", "narrow harvest primaries keep a 44px tap floor");
+test.assertIncludes(responsive, "min-height: var(--touch-primary-min-height)", "narrow harvest primaries keep a ≥48 touch-primary tap floor");
 
 test.assertIncludes(wireup, "finderTapHintShown", "Finder select-then-open shows the first-use tap hint on touch");
 test.assertIncludes(wireup, "alreadySelected", "Finder second tap on a coarse pointer opens the selected object");
-test.assertIncludes(wireup, 'showBalloonHelp(staticFinderTarget, "desktop_tap_hint"', "Finder reuses the desktop tap-again hint");
+test.assertIncludes(wireup, "revealSelectOpenTapHint(staticFinderTarget", "Finder reuses the shared select-open tap hint");
 // Early-harvest H19: coarse select-then-open beyond Finder (desktop icons +
 // Project CD), keeping the same first-use balloon / second-tap open grammar.
 test.assertIncludes(wireup, "selectedDesktopIconEl === desktopIconTarget", "desktop icons use select-then-open on coarse pointers");
 test.assertIncludes(wireup, "openDesktopIcon(desktopIconTarget)", "desktop second tap opens the selected icon");
-test.assertIncludes(wireup, 'showBalloonHelp(desktopIconTarget, "desktop_tap_hint"', "desktop first touch shows the tap-again balloon");
+test.assertIncludes(wireup, "revealSelectOpenTapHint(desktopIconTarget", "desktop first touch shows the tap-again balloon");
+test.assertIncludes(balloon, "function revealSelectOpenTapHint", "one helper owns the select-open first-use balloon");
+test.assertIncludes(balloon, "selectOpenTapHintShown", "the select-open balloon fires once across Finder-family surfaces");
 const exportImport = read("app/features/export-import.js");
+test.assertIncludes(exportImport, 'handleAction("open-teachtext")', "Project CD empty offers TeachText as next step");
 test.assertIncludes(exportImport, "alreadySelected", "Project CD select-then-open is wired for coarse pointers");
 test.assertIncludes(exportImport, "openProjectCdItemInReader(item)", "Project CD second tap opens the selected disc item");
+test.assertIncludes(exportImport, "revealSelectOpenTapHint(button", "Project CD first select shows the shared tap-again balloon");
+test.assertIncludes(documentsChat, "revealSelectOpenTapHint(", "Documents first select shows the shared tap-again balloon");
+test.assertIncludes(projectDisk, "revealSelectOpenTapHint(", "Project Hard Disk first select shows the shared tap-again balloon");
+test.assertIncludes(responsive, ".documents-toolbar #new-folder-name", "Documents narrow toolbar stacks the folder name field");
+test.assertIncludes(responsive, ".project-finder-actions .select-wrap", "Project Hard Disk narrow pathbar stacks More+Go");
+test.assertIncludes(responsive, '.desktop-icon[data-drop-target="project"].is-drag-over', "Project Hard Disk desk icon has a strong accept hit frame");
+test.assertIncludes(responsive, '.desktop-icon[data-drop-target="project"].is-drop-reject', "Project Hard Disk desk icon has a strong refuse hit frame");
+test.assertIncludes(responsive, '.finder-item[data-drop-target="droplet"].is-drag-over', "droplet Finder icons have a strong accept hit frame");
+test.assertMatches(
+  index,
+  /id="desktop-file-floppy-starter"[^>]*data-drop-target="file-floppy"/,
+  "unmounted File Floppy starter accepts outside files"
+);
 
 // Early-harvest C11–C13: system shell quiet feedback, rest/games host honesty,
 // and context-dependent joyride/rootline/cmf menus (proposal v216 / v217 / v209).
@@ -508,9 +596,11 @@ test.assertIncludes(documentsChatSource, "alreadySelected", "Documents select-th
 test.assertIncludes(projectDisk, "alreadySelected", "Project Hard Disk select-then-open is wired for coarse pointers");
 const fileDisk = read("app/features/file-disk.js");
 test.assertIncludes(fileDisk, "openMountedTextFile(name)", "Text Disk second tap opens the selected mounted file");
+test.assertIncludes(fileDisk, "revealSelectOpenTapHint(", "File Floppy first select shows the shared tap-again balloon");
 const findPath = read("app/features/findpath.js");
 test.assertIncludes(findPath, "openSelectedFindPathInReader()", "Searcher second tap opens the selected result");
 test.assertIncludes(findPath, "openFindFileResult(result)", "Find File second tap opens the selected hit");
+test.assertIncludes(findPath, "revealSelectOpenTapHint(", "Find File / Searcher first select shows the shared tap-again balloon");
 
 const projectDisksCss = read("styles/98-project-disks.css");
 test.assertIncludes(projectDisksCss, ".disk-peek-actions > .btn.default", "diskPeek narrow primary stays full-width");
@@ -522,7 +612,7 @@ test.assertIncludes(responsive, ".boot-failure-button-row", "E5 boot failure sta
 test.assertIncludes(responsive, ".startup-settings-actions", "E5 startup settings stacks on narrow");
 test.assertIncludes(responsive, ".boot-recovery-modal .finder-operation-actions", "E5 recovery actions stack on narrow");
 test.assertIncludes(responsive, ".shutdown-screen .shutdown-ledger > .btn.default", "E5 shutdown Restart is full-width on narrow");
-test.assertIncludes(responsive, ".writing-spine-panel .spine-actions button", "E5 journey spine keeps 44px taps on narrow");
+test.assertIncludes(responsive, ".writing-spine-panel .spine-actions button", "E5 journey spine keeps touch-primary taps on narrow");
 test.assertIncludes(responsive, "Early-harvest E6–E10", "harvest E6–E10 narrow block is named");
 test.assertIncludes(responsive, ".one-more-tune-window", "E6 rest One More Tune is in the narrow harvest set");
 test.assertIncludes(responsive, ".joyride-window", "E6 Joyride is in the narrow harvest set");
@@ -542,7 +632,10 @@ test.assertIncludes(responsive, ".writing-bell-window #writing-bell-start", "E8 
 test.assertIncludes(responsive, ".system-status-window #keep-projects-on-device", "E8 System Status Keep is full-width on narrow");
 test.assertIncludes(responsive, ".save-chat-window", "E8 Save Chat is in the narrow harvest set");
 test.assertIncludes(responsive, ".endfield-terminal-window", "E8 Endfield lab is in the narrow harvest set");
-test.assertIncludes(responsive, ".clio-chart-window", "E9 ClioChart is in the narrow harvest set");
+// ClioChart's narrow grammar is the same E9 set, but its sheet is lazy and
+// loads after the shared responsive layer, so the rules live in
+// styles/87-clio-chart.css (tests/features/clio-chart.test.mjs pins that).
+test.assertIncludes(read("styles/87-clio-chart.css"), ".clio-chart-window", "E9 ClioChart is in the narrow harvest set, from its own lazy sheet");
 test.assertIncludes(responsive, ".image-prompt-studio-window #ips-go", "E9 Image Prompt primary is full-width on narrow");
 test.assertIncludes(responsive, ".clio-paint-window", "E9 ClioPaint is in the narrow harvest set");
 test.assertIncludes(responsive, ".docmap-window #docmap-ask-button", "E9 DocMap Ask is full-width on narrow");
@@ -638,5 +731,124 @@ test.assertIncludes(docmap, "data-failed", "Z6 DocMap visual failure stays in th
 test.assertIncludes(translationsZh, 'review_lens_hint_style: "像被代言', "Z7 Review mouthpiece hint has no score");
 test.assertIncludes(translationsZh, "建议不会写入正文", "Z7 Review empty says suggestions stay off the manuscript");
 test.assertIncludes(windowManager, 'draftBodyInput?.value || "").trim()', "Z7 empty Section Drafts greys To Manuscript");
+
+// --- Harvest v448 (Goal #2 shell residual) --------------------------------
+// One reason per grey control across windows the v437–v446 batches did not
+// cover: Reader, Time Machine, Soundscape, Dictation Pad, ClioStage, Hold
+// That Thought, To Do DA, Rebuild Flow, the cloud subpanel, and the shared
+// Ask bar. Each assertion names the shell helper the module uses and the copy
+// that resolves, so a raw identifier can never reach the balloon.
+const readerModule = read("app/features/reader.js");
+const clioStageModule = read("app/features/clio-stage.js");
+const holdThoughtModule = read("app/features/hold-that-thought.js");
+const todoDaModule = read("app/features/todo-da.js");
+const rebuildFlowModule = read("app/features/rebuild-flow.js");
+const cloudModelModule = read("app/features/cloud-model.js");
+const askBarModule = read("app/core/ask-bar.js");
+
+test.assertIncludes(balloon, "textarea:disabled, input:disabled, select:disabled", "grey non-button fields are reachable by the shared one-tap explainer");
+test.assertIncludes(askBarModule, '"balloon_ask_bar_needs_source"', "the shared Ask bar names what a grey question is missing");
+test.assertIncludes(readerModule, "function readerMarkGray", "Reader owns one grey helper for its document controls");
+test.assertIncludes(readerModule, '"balloon_reader_needs_document"', "Reader DocMap/Send/Find say to open an article first");
+test.assertIncludes(timeMachine, '"balloon_time_machine_forward"', "Time Machine Forward names the end of the visit history");
+test.assertIncludes(timeMachine, '"balloon_time_machine_day_outside"', "Time Machine calendar days off the saved range say why");
+test.assertIncludes(read("app/features/soundscape.js"), '"soundscape_empty_queue"', "Soundscape transport greys on the existing empty-queue copy");
+test.assertIncludes(read("app/features/dictation-pad.js"), '"balloon_dictation_needs_raw"', "Dictation Shape/Organize say to speak or paste first");
+test.assertIncludes(clioStageModule, '"balloon_clio_stage_slide_mode"', "ClioStage paging says to switch to Slide or Cue");
+test.assertIncludes(holdThoughtModule, '"balloon_hold_empty_first"', "Hold That Thought's held fields say to hold a thought first");
+test.assertIncludes(todoDaModule, "balloon_todo_no_done", "To Do's Remove Done says nothing is finished yet");
+test.assertIncludes(rebuildFlowModule, '"balloon_disabled_rebuild_merge"', "Rebuild Merge reuses the shared merge reason");
+test.assertIncludes(cloudModelModule, '"balloon_cloud_needs_provider"', "the cloud Check names the missing provider or key");
+const exportImportModule = read("app/features/export-import.js");
+test.assertIncludes(exportImportModule, '"balloon_project_cd_select_first"', "Project CD item actions say to choose an item first");
+test.assertIncludes(exportImportModule, '"balloon_project_cd_stop_locked"', "Project CD's grey burn stop says to mark the manuscript final first");
+
+const shellKeys = [
+  "balloon_disabled_working",
+  "balloon_ask_bar_needs_source",
+  "balloon_dictation_not_recording",
+  "balloon_dictation_needs_raw",
+  "balloon_dictation_nothing_to_clear",
+  "balloon_dictation_nothing_to_insert",
+  "balloon_dictation_needs_clean",
+  "balloon_time_machine_calendar",
+  "balloon_time_machine_back",
+  "balloon_time_machine_forward",
+  "balloon_time_machine_stop",
+  "balloon_time_machine_reader_view",
+  "balloon_time_machine_day_outside",
+  "balloon_clio_stage_needs_slides",
+  "balloon_clio_stage_slide_mode",
+  "balloon_clio_stage_first_slide",
+  "balloon_clio_stage_last_slide",
+  "balloon_todo_no_done",
+  "balloon_rebuild_split_needs_source",
+  "balloon_cloud_needs_key",
+  "balloon_cloud_needs_provider",
+  "balloon_reader_needs_document",
+  "balloon_project_cd_select_first",
+  "balloon_project_cd_nothing_to_clear",
+];
+shellKeys.forEach((key) => {
+  test.assertIncludes(translationsEn, `${key}:`, `English copy exists for ${key}`);
+  test.assertIncludes(translationsZh, `${key}:`, `Chinese copy exists for ${key}`);
+});
+
+// --- Harvest v450 (Goal #2 shell residual) --------------------------------
+// One reason per grey control across windows the v437–v449 batches did not
+// cover: Writing Flow's Section Drafts picker, ClioProject's stamp checkbox,
+// Quick Draft Listen's unavailable transport and darkroom footer, the shared
+// tab-stack close, Image Prompt Studio's reference picker, ClioPaint history,
+// the NeXTSTEP shelf, Rootline, One More Tune and Bonsai City. Each assertion
+// names the helper or the copy the control resolves through.
+const clioProjectModule = read("app/features/clio-project-window.js");
+const quickDraftListenModule = read("app/features/quick-draft-listen.js");
+test.assertIncludes(writingFlow, "function markDraftSectionSelect", "Writing Flow owns one grey helper for the Section Drafts picker");
+test.assertIncludes(writingFlow, '"balloon_draft_needs_section"', "the grey Section Drafts picker says a section comes first");
+test.assertIncludes(clioProjectModule, 'check.dataset.balloonHelpDisabled = "clio_project_fact_awaiting_stamp"', "an unstamped plan fact says why it cannot be ticked");
+test.assertIncludes(quickDraftListenModule, "quick_draft_listen_no_voice", "the Listen transport explains an unavailable voice");
+test.assertIncludes(composition, "function markDarkroomAction", "the darkroom footer greys through one shared helper");
+test.assertIncludes(composition, '"balloon_qd_develop_needs_preview"', "Develop says a proof comes first");
+test.assertIncludes(composition, '"balloon_qd_darkroom_readonly"', "Develop says when the manuscript holds the pen");
+test.assertIncludes(projectDisk, '"balloon_last_tab_keeps_open"', "the last open tab's close explains why it is grey");
+test.assertIncludes(ips, '"ips_ref_unavailable_cloud"', "Image Prompt's reference picker names the vision-model reason");
+test.assertIncludes(read("app/features/clio-paint.js"), "markGrayAffordance(button, !canRun, control.emptyKey)", "ClioPaint history greys with its empty-history reason");
+test.assertIncludes(finderColumns, '"balloon_nextstep_shelf_needs_item"', "the NeXTSTEP shelf Add says to select something first");
+test.assertIncludes(rootline, '"balloon_rootline_no_interchange"', "the interchange upgrade names the empty allowance");
+test.assertIncludes(rootline, "const markGray =", "Rootline greys its game keys through one helper");
+test.assertIncludes(oneMoreTune, "balloon_omt_clip_needs_audio", "Audition from 0:00 says choose audio first");
+test.assertIncludes(oneMoreTune, "balloon_omt_no_cards", "Start a round says the set has no playable card yet");
+test.assertIncludes(bonsaiCity, '"balloon_bonsai_nothing_to_undo"', "Bonsai undo says there is nothing to undo yet");
+test.assertIncludes(bonsaiCity, '"balloon_bonsai_terrain_only"', "Bonsai's rail says only terrain works before founding");
+test.assertIncludes(bonsaiCity, "const markGray =", "Bonsai greys its city keys through one helper");
+test.assertIncludes(read("app/features/bonsai-translations.js"), "balloon_bonsai_flip_unaffordable", "Bonsai's flip confirm names the shortfall reason");
+
+const v450Keys = [
+  "balloon_nextstep_shelf_needs_item",
+  "balloon_last_tab_keeps_open",
+  "balloon_qd_darkroom_needs_body",
+  "balloon_qd_darkroom_readonly",
+  "balloon_qd_preview_needs_layer",
+  "balloon_qd_develop_needs_preview",
+  "balloon_omt_clip_needs_audio",
+  "balloon_omt_no_cards",
+  "balloon_rootline_pause_planning",
+  "balloon_rootline_pause_not_playing",
+  "balloon_rootline_slot_locked",
+  "balloon_rootline_no_stock",
+  "balloon_rootline_no_vehicles",
+  "balloon_rootline_needs_vehicle",
+  "balloon_rootline_no_carriages",
+  "balloon_rootline_no_interchange",
+];
+v450Keys.forEach((key) => {
+  test.assertIncludes(translationsEn, `${key}:`, `English copy exists for ${key}`);
+  test.assertIncludes(translationsZh, `${key}:`, `Chinese copy exists for ${key}`);
+});
+
+const bonsaiTranslations = read("app/features/bonsai-translations.js");
+["balloon_bonsai_needs_city", "balloon_bonsai_nothing_to_undo", "balloon_bonsai_nothing_to_redo", "balloon_bonsai_flip_unaffordable", "balloon_bonsai_terrain_only"].forEach((key) => {
+  test.assertIncludes(bonsaiTranslations, `${key}:`, `Bonsai carries ${key}`);
+});
 
 test.finish();

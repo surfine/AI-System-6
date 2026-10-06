@@ -174,6 +174,7 @@ test.assert(
 
 const priorAllowLan = process.env.AI_SYSTEM6_ALLOW_LAN;
 const priorAuthToken = process.env.AI_SYSTEM6_AUTH_TOKEN;
+const priorLanHost = process.env.AI_SYSTEM6_HOST;
 process.env.AI_SYSTEM6_ALLOW_LAN = "1";
 delete process.env.AI_SYSTEM6_AUTH_TOKEN;
 let missingLanTokenRejected = false;
@@ -183,10 +184,19 @@ try {
   missingLanTokenRejected = true;
 }
 test.assert(missingLanTokenRejected, "LAN mode fails closed without a long access token");
+process.env.AI_SYSTEM6_AUTH_TOKEN = "x".repeat(32);
+process.env.AI_SYSTEM6_HOST = "192.168.5.28";
+const lanDeskPolicy = localRequest.configuredLocalRequestPolicy(4173);
+test.assert(
+  lanDeskPolicy.allowLan && lanDeskPolicy.allowedHostnames.has("192.168.5.28"),
+  "LAN mode with AI_SYSTEM6_HOST trusts the phone's Host name for the desk",
+);
 if (priorAllowLan === undefined) delete process.env.AI_SYSTEM6_ALLOW_LAN;
 else process.env.AI_SYSTEM6_ALLOW_LAN = priorAllowLan;
 if (priorAuthToken === undefined) delete process.env.AI_SYSTEM6_AUTH_TOKEN;
 else process.env.AI_SYSTEM6_AUTH_TOKEN = priorAuthToken;
+if (priorLanHost === undefined) delete process.env.AI_SYSTEM6_HOST;
+else process.env.AI_SYSTEM6_HOST = priorLanHost;
 
 let remoteLocalEndpointRejected = false;
 try {

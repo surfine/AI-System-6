@@ -827,6 +827,20 @@ body .soundscape-source-actions .btn {
   text-align: center;
 }
 
+.soundscape-empty.empty-next-note {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.soundscape-empty.empty-next-note > p {
+  margin: 0;
+}
+
+.soundscape-empty.empty-next-note > .btn {
+  min-height: var(--touch-primary-min-height);
+}
+
 .soundscape-window button:focus-visible,
 .soundscape-window input:focus-visible,
 .soundscape-window textarea:focus-visible,

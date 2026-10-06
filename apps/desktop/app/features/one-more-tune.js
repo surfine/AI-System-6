@@ -3103,7 +3103,7 @@ function oneMoreTunePlayerBlock(card, { blind = false } = {}) {
           <button class="btn" type="button" data-one-more-tune-command="one-more-tune-choose-audio" data-i18n="${hasAudio ? "one_more_tune_replace_audio" : "one_more_tune_choose_audio"}">Choose audio…</button>
           <label class="one-more-tune-clip-field"><span data-i18n="one_more_tune_clip_start">Start (s)</span><input type="number" min="0" step="0.5" id="one-more-tune-clip-start" value="${clip.start === null ? "" : clip.start}" placeholder="—" /></label>
           <label class="one-more-tune-clip-field"><span data-i18n="one_more_tune_clip_end">End (s)</span><input type="number" min="0" step="0.5" id="one-more-tune-clip-end" value="${clip.end === null ? "" : clip.end}" placeholder="—" /></label>
-          <button class="btn mini-btn" type="button" data-one-more-tune-command="one-more-tune-clip-from-start"${hasAudio ? "" : " disabled"} data-i18n="one_more_tune_clip_from_start">Audition from 0:00</button>
+          <button class="btn mini-btn" type="button" data-one-more-tune-command="one-more-tune-clip-from-start"${hasAudio ? "" : " disabled data-balloon-help-disabled=\"balloon_omt_clip_needs_audio\""} data-i18n="one_more_tune_clip_from_start">Audition from 0:00</button>
         </div>
         <label class="one-more-tune-clip-reason"><span data-i18n="one_more_tune_clip_reason">Why this range</span><input type="text" id="one-more-tune-clip-reason" value="${oneMoreTuneEscape(clip.reason || "")}" placeholder="—" data-i18n-placeholder="one_more_tune_clip_reason_placeholder" /></label>
         <p class="hint one-more-tune-clip-reason-note" data-i18n="one_more_tune_clip_reason_note">The reason is saved with the range.</p>
@@ -4485,7 +4485,7 @@ function renderOneMoreTuneChallenge(body) {
           <div class="omt-gap"></div>
           <div class="omt-q"><h2 class="omt-step-title" id="one-more-tune-step-title">${t("one_more_tune_hero_line")}</h2><p class="omt-intro">${t("one_more_tune_hero_intro")}</p></div>
           <div class="omt-opts">
-            <div class="omt-start">${resumeLine}<button class="${resumable ? "omt-2nd" : "omt-next"}" type="button" data-one-more-tune-command="one-more-tune-start-round"${count ? "" : " disabled"} data-i18n="one_more_tune_start_round">Start a round</button></div>
+            <div class="omt-start">${resumeLine}<button class="${resumable ? "omt-2nd" : "omt-next"}" type="button" data-one-more-tune-command="one-more-tune-start-round"${count ? "" : " disabled data-balloon-help-disabled=\"balloon_omt_no_cards\""} data-i18n="one_more_tune_start_round">Start a round</button></div>
             <div class="omt-code">
               <label class="omt-code-label" for="one-more-tune-challenge-input" data-i18n="one_more_tune_challenge_code_label">Sent a set?</label>
               <input id="one-more-tune-challenge-input" type="text" autocomplete="off" spellcheck="false" data-i18n-placeholder="one_more_tune_challenge_code_placeholder" placeholder="OMT.1.xxxxxxxx" />

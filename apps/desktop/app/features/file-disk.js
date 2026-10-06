@@ -174,7 +174,13 @@ function renderMountedTextDisk() {
           selectedMountedFileNames.add(name);
         }
         selectedMountedFile = selectedMountedFileNames.has(name) ? name : selectedMountedFileNames.values().next().value || null;
+        const hintDetail = event.detail;
+        const hintAfterSelect = !event.metaKey && !event.ctrlKey && !event.shiftKey;
         renderMountedTextDisk();
+        if (hintAfterSelect) {
+          const next = textDiskGridEl?.querySelector(`.finder-item.is-selected[data-mounted-file="${CSS.escape(name)}"]`);
+          revealSelectOpenTapHint(next, { detail: hintDetail });
+        }
       });
       button.addEventListener("dblclick", () => {
         selectedMountedFileNames.clear();
@@ -186,9 +192,23 @@ function renderMountedTextDisk() {
       textDiskGridEl.append(button);
     });
   } else {
+    // Goal #2/#6 shared shell: blank File Floppy → Insert as empty-next.
     const empty = document.createElement("div");
-    empty.className = "empty-folder-note";
-    empty.textContent = t("no_mounted_files");
+    empty.className = "empty-folder-note empty-next-note file-floppy-empty-next";
+    empty.dataset.emptyNext = "1";
+    const text = document.createElement("p");
+    text.textContent = t("no_mounted_files");
+    const go = document.createElement("button");
+    go.type = "button";
+    go.className = "btn default";
+    go.dataset.action = "open-rag";
+    go.textContent = t("file_floppy");
+    go.addEventListener("click", () => {
+      if (typeof insertFileFloppyFromWindow === "function") insertFileFloppyFromWindow();
+      else if (typeof handleAction === "function") handleAction("open-rag");
+      else if (typeof openWindow === "function") openWindow("rag");
+    });
+    empty.append(text, go);
     textDiskGridEl.append(empty);
   }
 

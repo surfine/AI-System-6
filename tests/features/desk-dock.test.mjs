@@ -22,7 +22,7 @@
 //     if a Dock were still there.
 
 import { createAppBootVm } from "../helpers/app-boot-vm.mjs";
-import { createFeatureTest } from "../helpers/feature-test-harness.mjs";
+import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("desk-dock");
 const vmw = createAppBootVm();
@@ -324,7 +324,7 @@ test.assert(
 vmw.run("window.AISystem6WindowMinimize.setMinimizeEnabled(true)");
 
 test.assert(
-  vmw.run('document.querySelector(\'.desk-dock-items [data-dock-key="applications"]\') !== null'),
+  vmw.run('document.querySelector(\'.desk-dock-items [data-dock-key="folder:applications"]\') !== null'),
   "Snow Leopard's Dock includes the Applications stack (J3, 10.5+)",
 );
 
@@ -333,7 +333,7 @@ await vmw.context.AISystem6Theme.whenReady();
 vmw.run("window.AISystem6WindowMinimize.setDockVisible(true); window.AISystem6WindowMinimize.setMinimizeEnabled(true)");
 await vmw.waitFor(() => vmw.run('document.querySelectorAll(".desk-dock").length === 1'));
 test.assert(
-  vmw.run('document.querySelector(\'.desk-dock-items [data-dock-key="applications"]\') === null'),
+  vmw.run('document.querySelector(\'.desk-dock-items [data-dock-key="folder:applications"]\') === null'),
   "Jaguar's Dock has no Applications stack — documents and Trash only on the right (J3)",
 );
 
@@ -342,7 +342,7 @@ await vmw.context.AISystem6Theme.whenReady();
 vmw.run("window.AISystem6WindowMinimize.setDockVisible(true)");
 await vmw.waitFor(() => vmw.run('document.querySelectorAll(".desk-dock").length === 1'));
 test.assert(
-  vmw.run('document.querySelector(\'.desk-dock-items [data-dock-key="applications"]\') === null'),
+  vmw.run('document.querySelector(\'.desk-dock-items [data-dock-key="folder:applications"]\') === null'),
   "Tiger's Dock likewise has no Applications stack (J3)",
 );
 
@@ -354,10 +354,43 @@ vmw.run('runtimeEnvironment = "multifinder"');
 if (!vmw.run('!!getWindow("notePad")')) await vmw.context.openWindow("notePad");
 vmw.run('focusWindow(getWindow("notePad")); minimizeWindow(getWindow("notePad"));');
 vmw.run("window.AISystem6DeskDock.sync()");
-await vmw.waitFor(() => vmw.run('!!document.querySelector(\'.desk-dock-items [data-miniwindow="notePad"] .desk-dock-miniature-bar\')'));
-test.assert(
-  vmw.run('document.querySelector(\'.desk-dock-items [data-miniwindow="notePad"] .desk-dock-miniature-bar\')?.textContent.length > 0'),
-  "a put-away window's Dock cell shows the window title on a miniature title bar (J1)",
-);
+await vmw.waitFor(() => vmw.run('!!document.querySelector(\'.desk-dock-items [data-miniwindow="notePad"] .desk-dock-miniature\')'));
+{
+  const j1 = vmw.run(`(() => {
+    const cell = document.querySelector('.desk-dock-items [data-miniwindow="notePad"]');
+    const photo = cell?.querySelector(".desk-dock-miniature-photo");
+    const lamps = cell?.querySelectorAll(".desk-dock-miniature-lamp")?.length || 0;
+    const title = cell?.querySelector(".desk-dock-miniature-title")?.textContent || "";
+    const badge = !!cell?.querySelector(".desk-dock-miniature-badge");
+    return { photo: !!(photo && photo.getAttribute("src")), lamps, titleLen: title.length, badge };
+  })()`);
+  test.assert(j1.badge, "J1 keeps the application icon badge in the corner");
+  test.assert(
+    j1.photo || (j1.lamps === 3 && j1.titleLen > 0),
+    "J1 shows the minimize-time window paint, or a schematic title bar with three lamps",
+  );
+}
+
+// 3D minimize / Dock magnification: lazy three.js warp + perspective mag.
+{
+  const fx = read("app/core/dock-minimize-fx.js");
+  const minimize = read("app/core/window-minimize.js");
+  const manifest = read("tooling/runtime-manifest.mjs");
+  const dockCss = read("styles/88-desk-dock.css");
+  const dockJs = read("app/core/desk-dock.js");
+  test.assert(fx.includes("genie") && fx.includes("scale") && fx.includes("suck"), "dock-minimize-fx names Genie, Scale and Suck");
+  test.assert(fx.includes("/app/vendor/dock-minimize-fx.js?v="), "the three.js vendor URL is versioned");
+  test.assert(minimize.includes("dock-minimize-fx.js"), "window-minimize loads the 3D warp lazily");
+  test.assert(manifest.includes('"app/core/dock-minimize-fx.js"'), "dock-minimize-fx stays in lazyRuntimePaths");
+  test.assert(dockCss.includes("perspective:") && dockJs.includes("applyMagnification"), "the Dock row magnifies in 3D under the pointer");
+  test.assert(dockJs.includes("syncShelfCut") && dockCss.includes(".has-cut"), "Jaguar/Tiger punch a 1px desktop cut through the plate at the separator");
+  test.assert(dockCss.includes("--desk-dock-mark-width: 8px"), "Tiger's running triangle is the even 8px native width");
+  test.assert(dockCss.includes("--desk-dock-gap-below: 5px"), "Big Sur / Tahoe float ~5pt above the screen edge");
+  // J1 DOM miniature (foreignObject) + schematic fallback (System 7 / NeXT).
+  test.assert(minimize.includes("captureDomWindowBitmap") && minimize.includes("foreignObject"), "minimize prefers a true DOM miniature via SVG foreignObject");
+  test.assert(minimize.includes('theme === "system-7"') && minimize.includes("#eeeeee") && minimize.includes("#777777"), "eager minimize paint approximates System 7 title-bar stripes as fallback");
+  test.assert(fx.includes('theme === "system-7"') && fx.includes("#ccccff"), "3D capture paint matches System 7 lavender edge");
+  test.assert(minimize.includes('theme === "nextstep"') && fx.includes('theme === "nextstep"'), "NeXTSTEP minimize paint uses the grey title bar, not traffic lights");
+}
 
 test.finish();

@@ -242,6 +242,20 @@ function renderAdjustmentLayers(record = activeProjectQuickDraft({ create: false
   if (typeof updateMenuState === "function") updateMenuState();
 }
 
+// The darkroom footer keys are greyed here and nowhere else. Give the grey one
+// reason the shared shell can read on tap (and clear it when the key returns);
+// a transient model run is left to its loading label, not a second reason.
+function markDarkroomAction(control, unavailable, reasonKey = "") {
+  if (!control) return;
+  if (typeof markGrayAffordance === "function") {
+    markGrayAffordance(control, unavailable, reasonKey);
+    return;
+  }
+  control.disabled = Boolean(unavailable);
+  if (unavailable && reasonKey) control.dataset.balloonHelpDisabled = reasonKey;
+  else delete control.dataset.balloonHelpDisabled;
+}
+
 function syncQuickDraftMobileAdjustmentActions(record = activeProjectQuickDraft({ create: false })?.record) {
   const normalized = normalizeQuickDraftRecord(record);
   // The buttons follow the darkroom's subject, like the menu rows they
@@ -258,9 +272,17 @@ function syncQuickDraftMobileAdjustmentActions(record = activeProjectQuickDraft(
   const trackReady = typeof quickDraftTrackShouldDevelop === "function" && quickDraftTrackShouldDevelop();
   const trackBusy = Boolean(typeof quickDraftTrackBusy !== "undefined" && quickDraftTrackBusy);
   if (previewButton) {
-    previewButton.disabled = trackOwns
+    const previewUnavailable = trackOwns
       ? !hasBody || !quickDraftModelAvailable() || trackBusy
       : !hasBody || !enabled || !quickDraftModelAvailable();
+    const previewReason = !hasBody
+      ? "balloon_qd_darkroom_needs_body"
+      : !quickDraftModelAvailable()
+        ? "balloon_disabled_menu_model"
+        : !trackOwns && !enabled
+          ? "balloon_qd_preview_needs_layer"
+          : "";
+    markDarkroomAction(previewButton, previewUnavailable, previewReason);
   }
   // A proof is waiting only when 试看 has produced one for an enabled stack.
   // With no layer on, "ready" is trivially true and 冲洗 would write the body
@@ -272,9 +294,19 @@ function syncQuickDraftMobileAdjustmentActions(record = activeProjectQuickDraft(
     && currentCompositeState(normalized).ready;
   const proofReady = trackOwns ? trackReady : compositeReady;
   if (developButton) {
-    developButton.disabled = trackOwns
+    const developUnavailable = trackOwns
       ? lightroomIsReadOnly() || !trackReady || trackBusy
       : lightroomIsReadOnly() || !hasBody || !compositeReady;
+    const developReason = lightroomIsReadOnly()
+      ? "balloon_qd_darkroom_readonly"
+      : !hasBody
+        ? "balloon_qd_darkroom_needs_body"
+        : !trackOwns && !enabled
+          ? "balloon_qd_preview_needs_layer"
+          : !proofReady
+            ? "balloon_qd_develop_needs_preview"
+            : "";
+    markDarkroomAction(developButton, developUnavailable, developReason);
   }
   // One default key in the footer. Listen owns its own Play default inside the
   // paper, so the footer must not compete with it. Empty paper: the door back

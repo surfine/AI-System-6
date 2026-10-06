@@ -195,8 +195,15 @@ function renderHoldThought() {
   renderHeldThoughtContext(thought);
   parts.doing.value = thought?.doing || "";
   parts.next.value = thought?.next || "";
-  parts.doing.disabled = !thought;
-  parts.next.disabled = !thought;
+  // The two fields are the writer's own words while a thought is held. With
+  // nothing held they grey out, and a tap on the grey field says to hold one
+  // first rather than swallowing the attempt to type.
+  [parts.doing, parts.next].forEach((field) => {
+    if (!field) return;
+    field.disabled = !thought;
+    if (!thought) field.dataset.balloonHelpDisabled = "balloon_hold_empty_first";
+    else delete field.dataset.balloonHelpDisabled;
+  });
 
   // One default per moment. Catching ends with "done"; picking up ends by
   // going back, which is the only place a thought can be sent.

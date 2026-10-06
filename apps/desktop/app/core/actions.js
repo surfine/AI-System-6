@@ -606,7 +606,12 @@ window.AISystem6WriteLease?.registerReadOnlyRule?.(
 
 function syncReviewDeskAvailability() {
   const ready = isReviewDeskLinkedToFinal();
-  getWindow("reviewDesk")?.classList.toggle("is-review-locked", !ready);
+  const reviewWin = getWindow("reviewDesk");
+  reviewWin?.classList.toggle("is-review-locked", !ready);
+  // Goal #2 empty-next: locked desk marks one next step; lens chrome stays
+  // secondary until a final manuscript is linked.
+  if (ready) reviewWin?.removeAttribute("data-empty");
+  else reviewWin?.setAttribute("data-empty", "");
   if (reviewDeskBodyInput) {
     setReviewDeskBodyLocked(!ready);
     reviewDeskBodyInput.classList.toggle("is-hidden", !ready);
@@ -617,12 +622,15 @@ function syncReviewDeskAvailability() {
   }
   reviewDeskPreviewEl?.classList.add("is-hidden");
   reviewDeskEmptyNoteEl?.classList.toggle("is-hidden", ready);
+  reviewDeskEmptyNoteEl?.classList.add("empty-next-note");
+  if (reviewDeskEmptyNoteEl) reviewDeskEmptyNoteEl.dataset.emptyNext = ready ? "0" : "1";
   const startButton = reviewDeskEmptyNoteEl?.querySelector("button");
   const hasManuscript = typeof isTeachTextManuscriptRole === "function" && isTeachTextManuscriptRole() && !!teachTextBodyInput?.value.trim();
   if (startButton) {
     startButton.dataset.action = hasManuscript ? "advance-manuscript-to-review" : "open-teachtext";
     startButton.dataset.i18n = hasManuscript ? "to_review" : "to_manuscript";
     startButton.textContent = t(startButton.dataset.i18n);
+    startButton.classList.add("default");
   }
   const emptyMessage = reviewDeskEmptyNoteEl?.querySelector("p:not(.review-lens-empty-follow)");
   if (emptyMessage) {

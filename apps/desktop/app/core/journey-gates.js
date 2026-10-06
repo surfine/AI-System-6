@@ -137,6 +137,9 @@
       win.setAttribute("data-nag", "0");
       win.setAttribute("data-adhd", "no-streak");
     }
+    if (name === "writingBell") {
+      win.setAttribute("data-tick-after-close", "1");
+    }
     if (name === "notificationCenter") {
       win.setAttribute("data-welcome", "0");
       win.setAttribute("data-accept-quiet", "1");

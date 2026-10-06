@@ -753,16 +753,29 @@ function syncDictionaryEntryButtons() {
   if (!parts) return;
   const readOnly = window.AISystem6WriteLease?.canMutate?.() === false;
   const term = normalizeDictionaryTerm(dictionaryEntryTerm || dictionaryQueryInput?.value || "");
-  parts.keep.disabled = readOnly || !term || !parts.definition.value.trim() || !getActiveProject();
-  parts.remove.disabled = readOnly || !selectedDictionaryTermId;
-  parts.keep.dataset.balloonHelpDisabled = !getActiveProject()
-    ? "balloon_disabled_menu_project"
-    : !term
-      ? "balloon_dictionary_unlooked"
-      : "balloon_dictionary_needs_definition";
-  parts.remove.dataset.balloonHelpDisabled = selectedDictionaryTermId
+  const keepBlocked = readOnly || !term || !parts.definition.value.trim() || !getActiveProject();
+  const removeBlocked = readOnly || !selectedDictionaryTermId;
+  const keepReason = readOnly
+    ? "balloon_disabled_menu_context"
+    : !getActiveProject()
+      ? "balloon_disabled_menu_project"
+      : !term
+        ? "balloon_dictionary_unlooked"
+        : "balloon_dictionary_needs_definition";
+  const removeReason = readOnly
     ? "balloon_disabled_menu_context"
     : "balloon_dictionary_unlooked";
+  // Prefer shared grey affordance so one tap still explains (native disabled
+  // swallows the click on many surfaces). Bare test hosts may omit dataset.
+  if (typeof markGrayAffordance === "function") {
+    markGrayAffordance(parts.keep, keepBlocked, keepReason);
+    markGrayAffordance(parts.remove, removeBlocked, removeReason);
+  } else {
+    parts.keep.disabled = keepBlocked;
+    if (parts.remove) parts.remove.disabled = removeBlocked;
+    if (parts.keep.dataset) parts.keep.dataset.balloonHelpDisabled = keepReason;
+    if (parts.remove?.dataset) parts.remove.dataset.balloonHelpDisabled = removeReason;
+  }
 }
 
 function fillDictionaryEntry(term, saved = null) {

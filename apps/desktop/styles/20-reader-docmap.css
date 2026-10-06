@@ -1545,6 +1545,20 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   color: var(--clio-stage-view-disabled-fg);
 }
 
+.clio-stage-empty-note.empty-next-note {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 18px auto;
+  max-width: 46ch;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.clio-stage-empty-note.empty-next-note > .btn {
+  min-height: var(--touch-primary-min-height);
+}
+
 .clio-stage-viewport {
   min-height: var(--clio-stage-viewport-min-height);
   border: var(--clio-stage-viewport-border);

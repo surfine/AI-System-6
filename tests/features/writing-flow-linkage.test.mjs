@@ -88,6 +88,9 @@ test.assertIncludes(html, 'data-action="advance-manuscript-to-review"', "the man
 test.assertIncludes(html, 'data-action="return-document-to-section-drafts"', "the manuscript phase has a way back to the sections");
 test.assertIncludes(html, 'data-balloon-help-disabled="balloon_outline_needs_content"', "empty Outline/Drafts advance greys with a reason (R16)");
 test.assertIncludes(windowManager, "getMeaningfulOutlineSections", "Outline advance availability reads meaningful sections");
+test.assertIncludes(windowManager, "hasMeaningfulOutline", "Outline structure tools share the meaningful-section gate");
+test.assertIncludes(windowManager, "hasSectionDraftBody", "Section Draft AI polish/suggest require body text");
+test.assertIncludes(writingFlow, "syncWritingRouteEmptyMarkers", "route empty markers stay in sync with project state");
 test.assertIncludes(actions, '"advance-drafts-to-manuscript": () => advanceDraftsToManuscript()', "the forward action is wired");
 test.assertIncludes(actions, '"advance-manuscript-to-review": () => advanceManuscriptToReview()', "the review step is wired");
 test.assertIncludes(actions, '"return-document-to-section-drafts": () => returnDocumentToSectionDrafts()', "the way back is wired");
@@ -143,7 +146,7 @@ test.assertMatches(
   "stop 6 ships visible but disabled, and Balloon Help carries the reason"
 );
 test.assertIncludes(flowPanel, '<span class="spine-step-number" aria-hidden="true">6</span>', "the Project CD is a numbered stop, not an appearing shortcut");
-test.assertIncludes(flowExportImport, "spineBurnProjectCdButtonEl.disabled = !burned && !ready;", "the terminus disables instead of hiding when there is nothing to burn");
+test.assertIncludes(flowExportImport, 'markGrayAffordance(spineBurnProjectCdButtonEl, stopBlocked, "balloon_project_cd_stop_locked")', "the terminus disables with a one-tap reason instead of hiding when there is nothing to burn");
 test.assertIncludes(flowExportImport, 'spineBurnProjectCdButtonEl.dataset.action = burned ? "open-project-cd" : "export-teachtext-project-cd";', "a burned CD opens read-only; an unburned one burns");
 test.assertIncludes(flowExportImport, 'const labelKey = ready ? "burn_project_cd" : "project_cd";', "only the ready state shows the verb; otherwise the stop carries the object name");
 test.assertMatches(

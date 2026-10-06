@@ -94,12 +94,14 @@ function calculateExpression() {
   if (!/^[\d+\-*/().\s]+$/.test(expression)) {
     calculatorExpression = "Error";
     renderCalculator();
+    setStatus(t("calculator_error_hint"));
     return;
   }
 
   const value = evaluateArithmetic(expression);
   calculatorExpression = value === null ? "Error" : String(Number(value.toFixed(8)));
   renderCalculator();
+  if (calculatorExpression === "Error") setStatus(t("calculator_error_hint"));
 }
 
 function pressCalculatorKey(key) {
@@ -206,19 +208,29 @@ function renderWritingBell() {
     writingBellModeEl.querySelectorAll("[data-bell-mode]").forEach((button) => {
       button.classList.toggle("is-active", button.dataset.bellMode === writingBellMode);
       button.disabled = writingBellRunning;
+      if (writingBellRunning) button.dataset.balloonHelpDisabled = "balloon_writing_bell_running";
+      else delete button.dataset.balloonHelpDisabled;
     });
   }
   if (writingBellPresetsEl) {
     writingBellPresetsEl.querySelectorAll("[data-bell-preset]").forEach((button) => {
       button.disabled = writingBellRunning;
       button.classList.toggle("is-active", Number(button.dataset.bellPreset) * 60 === writingBellDurations[writingBellMode]);
+      if (writingBellRunning) button.dataset.balloonHelpDisabled = "balloon_writing_bell_running";
+      else delete button.dataset.balloonHelpDisabled;
     });
   }
   if (writingBellStartButton) {
     writingBellStartButton.disabled = writingBellRunning;
     writingBellStartButton.textContent = t("start");
+    if (writingBellRunning) writingBellStartButton.dataset.balloonHelpDisabled = "balloon_writing_bell_running";
+    else delete writingBellStartButton.dataset.balloonHelpDisabled;
   }
-  if (writingBellPauseButton) writingBellPauseButton.disabled = !writingBellRunning;
+  if (writingBellPauseButton) {
+    writingBellPauseButton.disabled = !writingBellRunning;
+    if (writingBellRunning) delete writingBellPauseButton.dataset.balloonHelpDisabled;
+    else writingBellPauseButton.dataset.balloonHelpDisabled = "balloon_writing_bell_pause";
+  }
   if (writingBellResetButton) writingBellResetButton.disabled = false;
 }
 
@@ -263,6 +275,23 @@ function pauseWritingBell() {
   clearWritingBellTimer();
   setWritingBellStatus(t("bell_paused", formatWritingBellTime(writingBellRemaining)));
   setStatus(t("bell_paused", formatWritingBellTime(writingBellRemaining)));
+  renderWritingBell();
+  saveDeskState();
+  window.AISystem6ControlStrip?.refreshStrip?.();
+}
+
+/** Closing the window while a tick is live must pause honestly — not keep a silent clock. */
+function noteWritingBellClosed() {
+  const win = typeof getWindow === "function" ? getWindow("writingBell") : document.querySelector('[data-window="writingBell"]');
+  win?.setAttribute?.("data-tick-after-close", "1");
+  win?.setAttribute?.("data-nag", "0");
+  if (!writingBellRunning) return;
+  writingBellRemaining = Math.max(1, Math.ceil((writingBellEndsAt - Date.now()) / 1000));
+  writingBellRunning = false;
+  writingBellEndsAt = 0;
+  clearWritingBellTimer();
+  setWritingBellStatus(t("bell_closed_while_running", formatWritingBellTime(writingBellRemaining)));
+  setStatus(t("bell_closed_while_running", formatWritingBellTime(writingBellRemaining)));
   renderWritingBell();
   saveDeskState();
   window.AISystem6ControlStrip?.refreshStrip?.();

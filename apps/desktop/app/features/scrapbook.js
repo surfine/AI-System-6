@@ -583,8 +583,17 @@ function renderScrapbookPager(visibleScraps, selectedScrap = null) {
     : -1;
   const current = selectedIndex >= 0 ? selectedIndex + 1 : 0;
   scrapbookPagePositionEl.textContent = t("scrapbook_page_position", current, visibleScraps.length);
-  scrapbookPagePreviousButton.disabled = current <= 1;
-  scrapbookPageNextButton.disabled = current === 0 || current >= visibleScraps.length;
+  const prevBlocked = current <= 1;
+  const nextBlocked = current === 0 || current >= visibleScraps.length;
+  // Prefer shared grey affordance so one tap still explains end-of-stack
+  // (native disabled alone swallows the click on many surfaces).
+  if (typeof markGrayAffordance === "function") {
+    markGrayAffordance(scrapbookPagePreviousButton, prevBlocked, "balloon_scrapbook_page_end");
+    markGrayAffordance(scrapbookPageNextButton, nextBlocked, "balloon_scrapbook_page_end");
+  } else {
+    scrapbookPagePreviousButton.disabled = prevBlocked;
+    scrapbookPageNextButton.disabled = nextBlocked;
+  }
 
   const fragment = document.createDocumentFragment();
   visibleScraps.forEach((scrap, index) => {
@@ -833,22 +842,34 @@ function renderScraps() {
   }
   // These buttons own their real availability (the menu reads it back through
   // activeOwnedControlEnabled instead of the mirrored is-disabled class).
-  if (sendScrapsToQuestionButton) sendScrapsToQuestionButton.disabled = !selectedCount;
-  if (outlineScrapsButton) outlineScrapsButton.disabled = !selectedCount;
+  // Grey affordances keep a one-tap why (ADHD) — empty scrap vs no bilingual.
+  const emptyScrapReason = "balloon_scrapbook_empty";
+  if (sendScrapsToQuestionButton) {
+    sendScrapsToQuestionButton.disabled = !selectedCount;
+    sendScrapsToQuestionButton.dataset.balloonHelpDisabled = emptyScrapReason;
+  }
+  if (outlineScrapsButton) {
+    outlineScrapsButton.disabled = !selectedCount;
+    outlineScrapsButton.dataset.balloonHelpDisabled = emptyScrapReason;
+  }
   if (insertScrapButton) {
     insertScrapButton.disabled = !selectedCount;
-    insertScrapButton.dataset.balloonHelpDisabled = "balloon_scrapbook_empty";
+    insertScrapButton.dataset.balloonHelpDisabled = emptyScrapReason;
   }
-  if (deleteScrapButton) deleteScrapButton.disabled = !selectedCount;
+  if (deleteScrapButton) {
+    deleteScrapButton.disabled = !selectedCount;
+    deleteScrapButton.dataset.balloonHelpDisabled = emptyScrapReason;
+  }
   const scrapMultiGo = document.querySelector("#scrap-multi-go");
   if (scrapMultiGo) {
     scrapMultiGo.disabled = !selectedCount;
-    scrapMultiGo.dataset.balloonHelpDisabled = "balloon_scrapbook_empty";
+    scrapMultiGo.dataset.balloonHelpDisabled = emptyScrapReason;
   }
   if (downloadScrapsBilingualButton) {
     const canExportBilingual = getSelectedScraps().some(scrapHasTranslation);
     downloadScrapsBilingualButton.disabled = !canExportBilingual;
     downloadScrapsBilingualButton.classList.toggle("is-disabled", !canExportBilingual);
+    downloadScrapsBilingualButton.dataset.balloonHelpDisabled = "balloon_scrapbook_needs_translation";
   }
   if (scrapStackSelect) scrapStackSelect.value = selectedScrapStack;
   const signature = [
@@ -883,7 +904,11 @@ function renderScraps() {
             ? t("no_scraps_clio")
             : t("no_scraps");
     empty.innerHTML = `<span class="mini-icon scrapbook-desk-icon"></span><b>${escapeHtml(t("scrapbook"))}</b><small>${escapeHtml(emptyMessage)}</small>`;
-    empty.disabled = true;
+    // Goal #2/#6: empty Scrapbook is a next-step into Reader (clip path), not
+    // a disabled decoration. Filter/stack empties still open Reader — the
+    // honest empty copy stays on the card.
+    empty.setAttribute("aria-label", t("reader"));
+    empty.addEventListener("click", () => handleAction("open-reader"));
     fragment.append(empty);
     scrapListEl.append(fragment);
     scrapTitleDisplay.textContent = t("untitled_scrap");
@@ -1171,12 +1196,31 @@ function renderContextPanel() {
     listEl.append(receipt);
   }
 
-  if (!lastRetrievedContextItems.length) {
+  const sourceRegistry = buildProjectSourceRegistry().filter((source) => sourceTextForRegistryItem(source).trim());
+  const contextWin = typeof getWindow === "function"
+    ? getWindow("contextPanel")
+    : document.querySelector('[data-window="contextPanel"]');
+  const contextEmpty = !lastRetrievedContextItems.length && !loadout?.entries?.length && !sourceRegistry.length;
+  if (contextEmpty) contextWin?.setAttribute("data-empty", "");
+  else contextWin?.removeAttribute("data-empty");
+
+  if (contextEmpty) {
+    // Goal #2/#6 empty-next: materials live on File Floppy, not a demo load
+    // or a ClioTalk hunt. One real next step.
     const empty = document.createElement("div");
-    empty.className = "empty-folder-note";
-    empty.textContent = t("no_recent_context");
+    empty.className = "empty-folder-note empty-next-note context-panel-empty-note";
+    empty.dataset.emptyNext = "1";
+    const text = document.createElement("p");
+    text.textContent = t("no_recent_context");
+    const openFloppy = document.createElement("button");
+    openFloppy.type = "button";
+    openFloppy.className = "btn default";
+    openFloppy.dataset.action = "open-rag";
+    openFloppy.dataset.i18n = "file_floppy";
+    openFloppy.textContent = t("file_floppy");
+    empty.append(text, openFloppy);
     listEl.append(empty);
-  } else {
+  } else if (lastRetrievedContextItems.length) {
     const retrievedTitle = document.createElement("div");
     retrievedTitle.className = "context-section-title";
     retrievedTitle.textContent = t("context_boundary_records");
@@ -1249,7 +1293,6 @@ function renderContextPanel() {
     });
   }
 
-  const sourceRegistry = buildProjectSourceRegistry().filter((source) => sourceTextForRegistryItem(source).trim());
   if (sourceRegistry.length) {
     const sourceTitle = document.createElement("div");
     sourceTitle.className = "context-section-title";
@@ -1409,9 +1452,18 @@ function renderTrash() {
   syncTrashActionControls();
 
   if (!visibleTrash.length) {
+    // Goal #2/#6: empty Trash is a resting state — still offer Project Hard
+    // Disk so "put something away" has a tappable next step in-pane.
     const empty = document.createElement("div");
-    empty.className = "trash-empty-state";
-    empty.textContent = t("trash_empty");
+    empty.className = "empty-folder-note trash-empty-state empty-next-note";
+    const text = document.createElement("p");
+    text.textContent = t("trash_empty");
+    const openDisk = document.createElement("button");
+    openDisk.type = "button";
+    openDisk.className = "btn default";
+    openDisk.dataset.action = "open-project-disks";
+    openDisk.textContent = t("open_project_disks");
+    empty.append(text, openDisk);
     trashListEl.append(empty);
     return;
   }

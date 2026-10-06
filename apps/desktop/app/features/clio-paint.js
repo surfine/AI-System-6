@@ -2677,7 +2677,15 @@ function syncClioPaintHistoryButtons() {
     const button = root.querySelector(`.clio-paint-touchbar [data-action="${control.action}"]`);
     if (!button) return;
     const canRun = control.canRun();
-    button.disabled = !canRun;
+    // The empty-history grey already explains itself in title/copy; route the
+    // same reason through the shared shell so a tap on touch answers too.
+    if (typeof markGrayAffordance === "function") {
+      markGrayAffordance(button, !canRun, control.emptyKey);
+    } else {
+      button.disabled = !canRun;
+      if (!canRun) button.dataset.balloonHelpDisabled = control.emptyKey;
+      else delete button.dataset.balloonHelpDisabled;
+    }
     button.dataset.clioPaintUnavailable = canRun ? "" : control.emptyKey;
     button.title = canRun ? "" : t(control.emptyKey);
   });

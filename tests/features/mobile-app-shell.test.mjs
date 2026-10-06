@@ -29,9 +29,11 @@ function declaredStringSet(source, setName) {
 }
 
 // The full-screen shell figure keys off two classes the JS toggles.
+// Writer mode is included: the writing profile boots into is-writer-mode and
+// still needs the phone shell + keyboard inset for TeachText / route / ClioTalk.
 test.assertIncludes(
   responsive,
-  "body.mobile-app-foreground:not(.is-writer-mode) .window.is-mobile-fullscreen:not(.is-collapsed) {",
+  "body.mobile-app-foreground .window.is-mobile-fullscreen:not(.is-collapsed) {",
   "portrait shell pins a foregrounded app full-screen"
 );
 test.assertIncludes(
@@ -118,9 +120,19 @@ test.assertIncludes(
   "Reader removes source-entry chrome after a document is open on phone and desktop"
 );
 test.assertIncludes(
+  foundation,
+  "--touch-primary-min-height: 48px;",
+  "foundation owns the narrow/phone ≥48 primary touch floor"
+);
+test.assertIncludes(
+  foundation,
+  "--menu-bar-shadow: none;",
+  "Classic/System 6 menubar stays flat paper (no soft Platinum inset)"
+);
+test.assertIncludes(
   responsive,
-  ".ask-bar-row input,\n  .ask-bar-row .btn {\n    min-height: 44px;",
-  "every ask bar keeps a phone-sized touch target in one shared rule"
+  ".ask-bar-row input,\n  .ask-bar-row .btn {\n    min-height: var(--touch-primary-min-height);",
+  "every ask bar keeps a phone-sized ≥48 touch target in one shared rule"
 );
 test.assertIncludes(
   foundation,
@@ -382,7 +394,7 @@ test.assertIncludes(
 );
 test.assertIncludes(
   wireup,
-  'window.visualViewport.addEventListener("resize", updateKeyboardInset)',
+  'window.visualViewport.addEventListener("resize", () => scheduleKeyboardInset())',
   "the keyboard inset tracks the visual viewport"
 );
 // iOS shrinks the visual viewport for its collapsing address bar as well, so a
@@ -396,7 +408,7 @@ test.assertIncludes(
 );
 test.assertIncludes(
   wireup,
-  'document.addEventListener("focusin", updateKeyboardInset)',
+  'document.addEventListener("focusin", () => scheduleKeyboardInset({ reveal: true }))',
   "moving focus re-decides whether the viewport shrink counts as a keyboard"
 );
 // Floating windows have no shell to read the inset, so the window that owns
@@ -433,6 +445,71 @@ test.assertIncludes(
   wireup,
   "syncKeyboardWindowFrame?.()",
   "the keyboard inset update also re-fits the floating window that owns the focused field"
+);
+test.assertIncludes(
+  wireup,
+  "scheduleKeyboardInset",
+  "keyboard inset updates coalesce on animation frames instead of every visualViewport event"
+);
+test.assertIncludes(
+  wireup,
+  "syncKeyboardPortraitDeskAccessories?.()",
+  "portrait Desk Accessories re-rail when the soft keyboard inset changes"
+);
+test.assertIncludes(
+  wireup,
+  "revealFocusedFieldAboveKeyboard?.()",
+  "after the shell lifts, the caret/field scrolls into the visible band"
+);
+test.assertIncludes(
+  windowManager,
+  "function revealFocusedFieldAboveKeyboard()",
+  "the window manager exposes caret reveal for typing-lift"
+);
+test.assertIncludes(
+  windowManager,
+  "function syncKeyboardPortraitDeskAccessories()",
+  "portrait DA keyboard sync is owned beside the floating-window keyboard frame sync"
+);
+test.assertIncludes(
+  responsive,
+  "scroll-padding-bottom: 2.5em;",
+  "phone writing fields keep scroll padding so the caret clears the soft keyboard"
+);
+test.assertIncludes(
+  responsive,
+  "body.is-writer-mode :is(.teachtext-window, .question-sheet-window, .outline-window, .section-drafts-window) textarea",
+  "writer-mode writing-route fields get the same caret scroll-padding as the phone shell"
+);
+test.assertIncludes(
+  responsive,
+  ".assistant-window .composer textarea",
+  "ClioTalk compose keeps scroll-padding whether or not writer mode is on"
+);
+test.assertIncludes(
+  responsive,
+  "body.mobile-app-foreground .window.is-mobile-fullscreen:is(",
+  "writing-route fullscreen panes keep scroll-padding like Desk Accessory panes"
+);
+test.assertIncludes(
+  responsive,
+  ".find-path-window,\n    .reader-window,\n    .docmap-window,\n    .scrapbook-window,\n    .sideask-pad-window,\n    .dictionary-window",
+  "Searcher / Reader / DocMap / Scrapbook / Side Ask / Dictionary panes share the writing-route caret scroll-padding"
+);
+test.assertIncludes(
+  responsive,
+  "body.mobile-app-foreground .window.is-mobile-fullscreen:is(\n    .reader-window,\n    .docmap-window,\n    .find-path-window\n  ) .window-pane",
+  "phone shell keeps Reader / DocMap / Searcher panes from scrolling as one unit"
+);
+test.assertIncludes(
+  responsive,
+  "body.mobile-app-foreground .window.is-mobile-fullscreen.find-path-window .find-path-query-row",
+  "Searcher query row stays pinned above the soft keyboard like ClioTalk compose"
+);
+test.assertIncludes(
+  responsive,
+  "body.mobile-landscape-shell .window.is-mobile-fullscreen:is(\n    .reader-window,\n    .docmap-window,\n    .find-path-window,\n    .scrapbook-window,\n    .sideask-pad-window,\n    .dictionary-window\n  ) .window-pane",
+  "landscape shell mirrors the same Reader / DocMap / Searcher / Scrapbook typing-lift pin"
 );
 
 // Landscape is its own design, not a fallback to a cramped desktop. It used to
@@ -479,7 +556,7 @@ test.assertIncludes(
 // fills the screen, so the page is locked and any scroll iOS performs is undone.
 test.assertIncludes(
   responsive,
-  "body.mobile-app-foreground:not(.is-writer-mode) {\n    overflow: hidden;",
+  "body.mobile-app-foreground {\n    overflow: hidden;",
   "the page cannot scroll while an app is foregrounded"
 );
 test.assertIncludes(
@@ -505,7 +582,9 @@ for (const helpId of ["multifinder", "desk-accessories", "puzzle", "shutdown-res
 }
 test.assertIncludes(dictionary, "one horizontally centered column", "Desk Accessory help pins the non-overlapping mobile stack");
 test.assertIncludes(dictionary, "shows the safe-to-shut-down screen", "System Help matches the real shutdown ending");
-test.assertIncludes(wireup, '"desktop_tap_hint"', "the first touch tap on a desktop icon teaches the double-tap gesture");
+test.assertIncludes(wireup, "revealSelectOpenTapHint(desktopIconTarget", "the first touch tap on a desktop icon teaches the double-tap gesture");
+const balloonHelpSource = read("app/core/balloon-help.js");
+test.assertIncludes(balloonHelpSource, '"desktop_tap_hint"', "the shared select-open helper names the tap-again balloon key");
 test.assertIncludes(en, 'desktop_tap_hint: "Tap again to open."', "English names the touch hint");
 test.assertIncludes(zh, 'desktop_tap_hint: "再点一次打开。"', "Chinese names the touch hint");
 

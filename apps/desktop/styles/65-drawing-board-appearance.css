@@ -38,6 +38,7 @@ body[data-theme="drawing-board"] {
   --toolbar-bg: #cec7bd;
   --sidebar-bg: #e7e3de;
   --selection-bg: #fffcdf;
+  --selection-edge: #fffcdf;
   --status-placard-bg: #e7e3de;
   --status-placard-shadow: inset 1px 1px 0 #857765, inset -1px -1px 0 #f4efe7;
   --tdi-rail-bg: #c0b6aa;
@@ -190,13 +191,13 @@ body[data-theme="drawing-board"] {
   --system-titlebar-background-clip: border-box;
   --titlebar-border: 1px solid #625c58;
   --titlebar-title-bg: transparent;
-  /* Drafting-board desktop: sketch paper tile (GenerateImage pencil paper)
-     under a faint grid so the desk reads as Drawing Board without chrome. */
+  /* Drafting-board desktop: sketch paper tile under a readable grid so the
+     desk reads as Drawing Board at a glance (not Platinum Azul). */
   --desktop: #c6b59c;
   --desktop-surface:
-    linear-gradient(rgba(90, 78, 58, 0.16) 1px, transparent 1px) 0 0 / 11.64px 11.64px,
-    linear-gradient(90deg, rgba(90, 78, 58, 0.16) 1px, transparent 1px) 0 0 / 11.64px 11.64px,
-    linear-gradient(rgba(255, 248, 236, 0.18), transparent 40%),
+    linear-gradient(rgba(90, 78, 58, 0.22) 1px, transparent 1px) 0 0 / 11.64px 11.64px,
+    linear-gradient(90deg, rgba(90, 78, 58, 0.22) 1px, transparent 1px) 0 0 / 11.64px 11.64px,
+    linear-gradient(rgba(255, 248, 236, 0.22), transparent 42%),
     url("./assets/themes/drawing-board/paper-tile-96.png") left top / 96px 96px repeat,
     #c6b59c;
   --drawing-board-pencil: #3f3a35;

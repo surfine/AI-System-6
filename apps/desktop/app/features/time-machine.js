@@ -65,6 +65,20 @@ let timeMachineReceiptTimer = 0;
 const timeMachineSaveWaybackLink = document.querySelector("#time-machine-save-wayback");
 const timeMachineSaveArchiveIsLink = document.querySelector("#time-machine-save-archive-is");
 
+// A grey Time Machine control tells the writer which end of the visit it is at,
+// or that there is nothing to load yet. One reason per control, shared with the
+// desk's grey-affordance tap.
+function timeMachineMarkGray(control, blocked, reasonKey) {
+  if (!control) return;
+  if (typeof markGrayAffordance === "function") {
+    markGrayAffordance(control, blocked, reasonKey);
+    return;
+  }
+  control.disabled = Boolean(blocked);
+  if (blocked && reasonKey) control.dataset.balloonHelpDisabled = reasonKey;
+  else delete control.dataset.balloonHelpDisabled;
+}
+
 function timeMachineToday() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -156,8 +170,11 @@ function timeMachineUpdateSourceSwitch(provider = "") {
   const switchLabel = t("time_machine_switch_to_source", timeMachineProviderLabel(next));
   timeMachineSourceSwitchButton.setAttribute("aria-label", switchLabel);
   timeMachineSourceSwitchButton.title = switchLabel;
-  timeMachineSourceSwitchButton.disabled = !timeMachineEnabledInput?.checked
-    || !timeMachineAddressInput?.value?.trim();
+  timeMachineMarkGray(
+    timeMachineSourceSwitchButton,
+    !timeMachineEnabledInput?.checked || !timeMachineAddressInput?.value?.trim(),
+    "time_machine_switch_source",
+  );
 }
 
 function timeMachineCalendarLocale() {
@@ -378,7 +395,7 @@ function timeMachineRenderMonthCalendar() {
       || (firstAvailable && date < firstAvailable)
       || (lastAvailable && date > lastAvailable)
       || date > timeMachineToday();
-    button.disabled = !!outsideRange;
+    timeMachineMarkGray(button, outsideRange, "balloon_time_machine_day_outside");
     const number = document.createElement("span");
     number.textContent = String(day);
     button.append(number);
@@ -404,12 +421,20 @@ function timeMachineRenderMonthCalendar() {
     timeMachineCalendarGridEl.append(blank);
   }
   if (timeMachineCalendarPreviousButton) {
-    timeMachineCalendarPreviousButton.disabled = !timeline || !!(firstAvailable
-      && timeMachineCalendarDateKey(year, month, 1) <= firstAvailable.slice(0, 8) + "01");
+    timeMachineMarkGray(
+      timeMachineCalendarPreviousButton,
+      !timeline || !!(firstAvailable
+        && timeMachineCalendarDateKey(year, month, 1) <= firstAvailable.slice(0, 8) + "01"),
+      "balloon_time_machine_calendar",
+    );
   }
   if (timeMachineCalendarNextButton) {
-    timeMachineCalendarNextButton.disabled = !timeline || !!(lastAvailable
-      && timeMachineCalendarDateKey(year, month, 1) >= lastAvailable.slice(0, 8) + "01");
+    timeMachineMarkGray(
+      timeMachineCalendarNextButton,
+      !timeline || !!(lastAvailable
+        && timeMachineCalendarDateKey(year, month, 1) >= lastAvailable.slice(0, 8) + "01"),
+      "balloon_time_machine_calendar",
+    );
   }
 }
 
@@ -690,9 +715,13 @@ function timeMachinePushHistory(entry) {
 
 function timeMachineUpdateNavigationButtons() {
   const state = timeMachineHistoryState();
-  if (timeMachineBackButton) timeMachineBackButton.disabled = state.historyIndex <= 0;
-  if (timeMachineForwardButton) timeMachineForwardButton.disabled = state.historyIndex < 0 || state.historyIndex >= state.history.length - 1;
-  if (timeMachineStopButton) timeMachineStopButton.disabled = !currentTimeMachineRequest;
+  timeMachineMarkGray(timeMachineBackButton, state.historyIndex <= 0, "balloon_time_machine_back");
+  timeMachineMarkGray(
+    timeMachineForwardButton,
+    state.historyIndex < 0 || state.historyIndex >= state.history.length - 1,
+    "balloon_time_machine_forward",
+  );
+  timeMachineMarkGray(timeMachineStopButton, !currentTimeMachineRequest, "balloon_time_machine_stop");
 }
 
 function timeMachineSetLoading(active, message = "") {
@@ -700,7 +729,7 @@ function timeMachineSetLoading(active, message = "") {
     timeMachineLoadingEl.hidden = !active;
     if (message) timeMachineLoadingEl.textContent = message;
   }
-  if (timeMachineStopButton) timeMachineStopButton.disabled = !active;
+  timeMachineMarkGray(timeMachineStopButton, !active, "balloon_time_machine_stop");
   if (active) document.body.classList.add("is-busy");
   else document.body.classList.remove("is-busy");
 }
@@ -759,7 +788,7 @@ function timeMachineSetReaderActions(enabled) {
   // buttons on the page: those three ids appear nowhere in the markup, so the
   // handles they were read into were always null. The menu-state painter owns
   // their availability. Only the reader-view button is a real control.
-  if (timeMachineReaderViewButton) timeMachineReaderViewButton.disabled = !enabled;
+  timeMachineMarkGray(timeMachineReaderViewButton, !enabled, "balloon_time_machine_reader_view");
   syncDocMapEntryButton(timeMachineDocMapButton, enabled ? timeMachineDocMapReadiness() : { state: "empty", ready: false });
   // The ask bar's own input and button are owned by describeTimeMachineAskScope
   // so all five ask bars gate on the same rule.
@@ -813,9 +842,18 @@ function timeMachineRenderReader() {
   const reader = currentTimeMachinePage?.reader;
   timeMachineReaderEl.replaceChildren();
   if (!reader?.text?.trim()) {
+    // Goal #2/#6: Reading View with no extractable text still offers Web View
+    // in-pane so the empty note is not a dead end beside grey chrome.
     const empty = document.createElement("div");
-    empty.className = "empty-folder-note";
-    empty.textContent = t("time_machine_reader_unavailable");
+    empty.className = "empty-folder-note empty-next-note time-machine-reader-empty";
+    const text = document.createElement("p");
+    text.textContent = t("time_machine_reader_unavailable");
+    const webView = document.createElement("button");
+    webView.type = "button";
+    webView.className = "btn default";
+    webView.dataset.action = "time-machine-web-view";
+    webView.textContent = t("web_view");
+    empty.append(text, webView);
     timeMachineReaderEl.append(empty);
     return;
   }

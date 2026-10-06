@@ -119,6 +119,31 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
   falling back honestly to AAC. A VPS or Pages page only asks the paired Mac
   through the loopback bridge; Apple credentials and audio never go to the
   cloud.
+- **A Window menu appears in the Mac OS X eras, and only there.** Aqua, Tiger,
+  Snow Leopard, Lion, Yosemite, Big Sur and Liquid Glass gain a Window menu with
+  All Windows…, Shade and Expand, Arrange Left, Arrange Right, Fill, Undo
+  Arrangement, Bring Back Into View, and Pin Window / Unpin Window. The classic
+  and NeXTSTEP-lineage appearances (System 6, System 7, Platinum, Drawing Board
+  and NeXTSTEP) do not have one, and keep their own way back to a put-away
+  window.
+- **All Windows… lists every open window, and restores the one you mean.** The
+  list spans every application, filters through a search field that leaves a
+  composing input method alone, moves its cursor with the arrow keys without
+  reordering the list, and restores the chosen window in its real state: a
+  hidden application is shown, a minimized window returns from the Dock, and
+  otherwise the window comes forward. Escape closes it and returns focus, and it
+  loads the first time you open it. ⌘` walks the open windows of the front
+  application; a window you rolled up stays rolled up as the walk passes it.
+- **A put-away window can be glanced at, and a flick arranges one.** Resting on
+  a rolled-up window's title bar for about 220 ms shows a temporary, read-only
+  look at the window that writes nothing and ends when you move away or start a
+  real action; a right-click hands off to the arrange menu. A title-bar drag
+  followed by a flick runs the same shade, expand and fill command path as the
+  menu.
+- **A window comes back where you left it.** Place, size and layer now hold
+  across full screen, WindowShade, Hide, Dock minimize and returning to a
+  project, so a window that has been put away and brought back returns to the
+  spot you left rather than a default one.
 
 ## What this protects
 
@@ -394,7 +419,7 @@ The writing runtime keeps author, recipient, voice and medium independent, share
 ## Built under a 1988 constraint
 
 ```text
-boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,831,262 bytes
+boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,890,800 bytes
 two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 bytes
 heavy tools             load lazily, from a third disk
 ```

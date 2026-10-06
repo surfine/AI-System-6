@@ -502,6 +502,12 @@ const ensureDarkroomModule = createLazyModuleLoader("AISystem6DarkroomStore", [
   "app/core/darkroom-record.js",
   "app/core/darkroom-store.js",
 ]);
+// Mac OS X Dock Genie / Scale / Suck: named here (eager) so the lazy
+// window-minimize module can call it without the path vanishing from the boot
+// bundle. The three.js vendor rides a dynamic import inside the FX module.
+const ensureDockMinimizeFxModule = createLazyModuleLoader("AISystem6DockMinimizeFxLoaded", [
+  "app/core/dock-minimize-fx.js",
+]);
 const ensureContextGistModule = createLazyModuleLoader("AISystem6ContextGist", ["app/core/context-gist.js"]);
 const ensureDocMapSourcePolicyModule = createLazyModuleLoader("AISystem6DocMapSourcePolicy", ["app/core/docmap-source-policy.js"]);
 const ensureUserRecoveryMessagesModule = createLazyModuleLoader("AISystem6UserRecoveryMessages", ["app/core/user-recovery-messages.js"]);

@@ -353,7 +353,7 @@ vmw.run('toggleCollapsed(getWindow("notePad"))');
 test.assert(!has("notePad", "is-collapsed"), "and the ordinary WindowShade toggle unrolls it");
 test.assertMatches(
   read("app/core/boot.js"),
-  /await window\.AISystem6Theme\?\.whenReady\(\);[\s\S]{0,400}releaseOrphanedMiniwindows\(\);\s*document\.body\.dataset\.appReady = "ready";/,
+  /await (?:startupTaskWithTimeout\()?window\.AISystem6Theme\?\.whenReady\?\.\(\)[\s\S]{0,500}releaseOrphanedMiniwindows\(\);\s*document\.body\.dataset\.appReady = "ready";/,
   "boot asks the same question once the appearance is final, so a saved miniwindow cannot reopen hidden",
 );
 

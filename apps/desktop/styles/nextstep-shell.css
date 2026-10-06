@@ -61,9 +61,11 @@
   border-radius: 0;
   padding: 4px;
   /* The 3.3 tile: 2px white top/left, #443344 then black bottom/right, on
-     the purple-grey tile face (native 01 x1053..1116 y0..63). The face is a
-     gradient approximation of the textured original. */
+     the purple-grey tile face (native 01 x1053..1116 y0..63). Face is a
+     gradient + 2px dither approximation of the textured original — not a
+     native pixmap decode. */
   background:
+    repeating-conic-gradient(#0000 0% 25%, rgb(0 0 0 / 0.06) 0% 50%) 0 0 / 2px 2px,
     linear-gradient(160deg, #c4b8c8 0%, #9a8aa0 38%, #887a90 62%, #6e6278 100%);
   box-shadow:
     inset 2px 2px 0 #f3f0f4,

@@ -85,6 +85,7 @@ function installBureaucracyMemeWindow() {
             </aside>
           </div>`,
   });
+  document.querySelector('[data-window="bureaucracyMeme"]')?.setAttribute("data-empty", "");
 }
 
 installBureaucracyMemeWindow();
@@ -239,16 +240,37 @@ installBureaucracyMemeWindow();
     }).join("");
   }
 
+  function memeWindow() {
+    return document.querySelector('[data-window="bureaucracyMeme"]');
+  }
+
+  function parkGenerateButton(host) {
+    if (!els.generateButton || !host) return;
+    if (els.generateButton.parentElement !== host) host.append(els.generateButton);
+  }
+
   function renderCandidates() {
     if (!els.candidates) return;
-    if (state.loading) {
-      els.candidates.innerHTML = `<p class="bureaucracy-empty">${escapeHtml(t("bureaucracy_meme_loading"))}</p>`;
+    const win = memeWindow();
+    const composer = win?.querySelector(".bureaucracy-composer");
+    const empty = !state.captions.length;
+    if (empty) win?.setAttribute("data-empty", "");
+    else win?.removeAttribute("data-empty");
+    if (empty) {
+      // Detach before rebuild so innerHTML cannot destroy the generate control.
+      els.generateButton?.remove();
+      const note = document.createElement("div");
+      note.className = "empty-folder-note empty-next-note bureaucracy-empty-next";
+      note.dataset.emptyNext = "1";
+      const text = document.createElement("p");
+      text.className = "bureaucracy-empty";
+      text.textContent = state.loading ? t("bureaucracy_meme_loading") : t("bureaucracy_meme_candidates_empty");
+      note.append(text);
+      parkGenerateButton(note);
+      els.candidates.replaceChildren(note);
       return;
     }
-    if (!state.captions.length) {
-      els.candidates.innerHTML = `<p class="bureaucracy-empty">${escapeHtml(t("bureaucracy_meme_candidates_empty"))}</p>`;
-      return;
-    }
+    parkGenerateButton(composer);
     els.candidates.innerHTML = state.captions.map((caption, index) => {
       const active = caption.id === state.selectedCaptionId ? " is-active" : "";
       return [

@@ -302,12 +302,20 @@ async function runWithLocalRequestGuard(req, res, policy, handler) {
     return;
   }
 
-  if (policy.allowLan && String(req.headers["x-ai-system-6-token"] || "") !== policy.authToken) {
-    sendJson(res, 401, {
-      error: "Invalid LAN access token",
-      code: "invalid_lan_token",
-    });
-    return;
+  // LAN mode: the desk on a phone uses Host = AI_SYSTEM6_HOST (already in
+  // allowedHostnames). That same-origin browser must not need a custom header
+  // the page cannot set. External / non-Host clients still send the token.
+  if (policy.allowLan) {
+    const lanHost = hostHeaderParts(req.headers.host);
+    const hostTrusted = policy.allowedHostnames.has(lanHost.hostname);
+    const tokenOk = String(req.headers["x-ai-system-6-token"] || "") === policy.authToken;
+    if (!hostTrusted && !tokenOk) {
+      sendJson(res, 401, {
+        error: "Invalid LAN access token",
+        code: "invalid_lan_token",
+      });
+      return;
+    }
   }
 
   const method = String(req.method || "GET").toUpperCase();

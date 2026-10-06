@@ -442,7 +442,12 @@ function renderClioProjectCanvas(parts, plan, layout, chainSet, evidence) {
     const check = document.createElement("input");
     check.type = "checkbox";
     check.checked = node.done;
+    // A pending node keeps its real disabled state (the dotted card is the
+    // grey hatching), and carries the shared one-tap reason the hit-test reads
+    // so a tap on an untickable section answers instead of doing nothing.
     check.disabled = !node.addressable;
+    if (!node.addressable) check.dataset.balloonHelpDisabled = "clio_project_fact_awaiting_stamp";
+    else delete check.dataset.balloonHelpDisabled;
     check.tabIndex = -1;
     check.dataset.clioProjectDone = node.id;
     check.setAttribute("aria-label", t("clio_project_mark_done", clioProjectNodeTitle(node)));

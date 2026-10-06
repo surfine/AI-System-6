@@ -140,7 +140,10 @@
       systemFontSize: 13,
       fontStrategy: "theme",
       overlay: "none",
-      capabilities: Object.freeze(["solid-material", "pinstripe", "traffic-lights", "minimize-lamp", "dock"]),
+      // The Window menu is a Mac OS X convention; Aqua is where it starts. The
+      // capability gates the conditional top-level menu, so classic and
+      // NeXTSTEP appearances never grow one.
+      capabilities: Object.freeze(["solid-material", "pinstripe", "traffic-lights", "minimize-lamp", "dock", "window-menu"]),
     }),
     Object.freeze({
       id: "tiger",
@@ -161,7 +164,7 @@
       systemFontSize: 13,
       fontStrategy: "theme",
       overlay: "none",
-      capabilities: Object.freeze(["textured-material", "unified-toolbar", "traffic-lights", "minimize-lamp", "dock"]),
+      capabilities: Object.freeze(["textured-material", "unified-toolbar", "traffic-lights", "minimize-lamp", "dock", "window-menu"]),
     }),
     Object.freeze({
       id: "snow-leopard",
@@ -182,7 +185,7 @@
       overlay: "none",
       // The first era whose Dock ships (owner decision B, 2026-09-25): the lamp
       // and the Dock are granted together, never the lamp alone.
-      capabilities: Object.freeze(["solid-material", "unified-toolbar", "traffic-lights", "minimize-lamp", "dock"]),
+      capabilities: Object.freeze(["solid-material", "unified-toolbar", "traffic-lights", "minimize-lamp", "dock", "window-menu"]),
     }),
     Object.freeze({
       id: "lion",
@@ -203,7 +206,7 @@
       systemFontSize: 13,
       fontStrategy: "theme",
       overlay: "none",
-      capabilities: Object.freeze(["solid-material", "unified-toolbar", "traffic-lights", "overlay-scrollbars", "minimize-lamp", "dock", "full-screen"]),
+      capabilities: Object.freeze(["solid-material", "unified-toolbar", "traffic-lights", "overlay-scrollbars", "minimize-lamp", "dock", "full-screen", "window-menu"]),
     }),
     Object.freeze({
       id: "yosemite",
@@ -219,7 +222,7 @@
       systemFontSize: 13,
       fontStrategy: "theme",
       overlay: "none",
-      capabilities: Object.freeze(["vibrancy", "translucent-sidebar", "traffic-lights", "minimize-lamp", "dock"]),
+      capabilities: Object.freeze(["vibrancy", "translucent-sidebar", "traffic-lights", "minimize-lamp", "dock", "window-menu"]),
     }),
     Object.freeze({
       id: "big-sur",
@@ -248,7 +251,7 @@
       // Dock evidence is recorded (internal/evidence/drafts/dock-reference):
       // the yellow lamp is real only where the window it puts away has a place
       // to go and a way back. Both start off as preferences.
-      capabilities: Object.freeze(["vibrancy", "translucent-sidebar", "traffic-lights", "independent-icons", "minimize-lamp", "dock"]),
+      capabilities: Object.freeze(["vibrancy", "translucent-sidebar", "traffic-lights", "independent-icons", "minimize-lamp", "dock", "window-menu"]),
     }),
     Object.freeze({
       id: "liquid-glass",
@@ -264,7 +267,7 @@
       systemFontSize: 13,
       fontStrategy: "modern",
       overlay: "liquid-glass",
-      capabilities: Object.freeze(["vibrancy", "continuous-glass", "liquid-overlay", "traffic-lights", "minimize-lamp", "dock"]),
+      capabilities: Object.freeze(["vibrancy", "continuous-glass", "liquid-overlay", "traffic-lights", "minimize-lamp", "dock", "window-menu"]),
     }),
     Object.freeze({
       id: "nextstep",
