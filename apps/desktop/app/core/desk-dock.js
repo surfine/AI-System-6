@@ -53,6 +53,7 @@
   let signature = "";
   let queued = false;
   let menu = null;
+  let menuOwner = null;
   let clampDone = false;
   let magBound = false;
   let magRaf = 0;
@@ -212,6 +213,10 @@
         return;
       }
     }
+    if (appId && hiddenAppIds.has(appId)) {
+      const win = applicationWindowOrder(appId)[0];
+      if (win) { restoreApplicationWindow(win); return; }
+    }
     // (3) Nothing of the application is on the desk: run the source cell's own
     // command. A Dock click never quits -- exit-writing-studio (the Writing
     // Studio cell's action while the studio is open) opens the studio's default
@@ -266,10 +271,21 @@
     node.type = "button";
     node.className = `desk-dock-item${extraClass ? ` ${extraClass}` : ""}`;
     node.dataset.dockKey = key;
-    if (appId) node.dataset.appId = appId;
+    if (appId) {
+      node.dataset.appId = appId;
+      if (!key.startsWith("window:")) window.AISystem6WindowShadePreferences?.bindDockHover?.(node, appId);
+    }
     node.setAttribute("aria-label", label);
     if (LABEL_ERAS.has(currentThemeId())) node.dataset.dockLabel = label;
-    else node.title = label;
+    node.title = label;
+    // Later eras have no approved native label plate. Use the existing hint
+    // surface for keyboard names instead of inventing another era treatment.
+    node.addEventListener("focus", () => {
+      if (!node.dataset.dockLabel && node.matches(":focus-visible") && typeof showBalloonHelp === "function") {
+        showBalloonHelp(node, label, { force: true });
+      }
+    });
+    node.addEventListener("blur", () => { if (typeof hideBalloonHelp === "function") hideBalloonHelp(); });
     if (balloonHelp) node.dataset.balloonHelp = balloonHelp;
     if (content) node.append(content);
     else node.innerHTML = renderSystemIcon(iconId, { size: "large" });
@@ -370,8 +386,11 @@
       label: app.label || app.id,
       key: `app:${app.id}`,
       appId: app.id,
-      extraClass: "is-running",
-      onActivate: () => dockLaunch(app.id, null),
+      extraClass: runningIds().has(app.id) ? "is-running" : "",
+      onActivate: () => {
+        if (runningIds().has(app.id)) dockLaunch(app.id, null);
+        else openWindow(app.lastWindowName);
+      },
     });
   }
 
@@ -425,7 +444,7 @@
     shown.forEach((cell) => {
       const appId = appIdForCell(cell);
       if (appId) projectedIds.add(appId);
-      appNodes.push(makeAppCell(cell, running));
+      if (!appId || kept(appId, true) || running.has(appId)) appNodes.push(makeAppCell(cell, running));
     });
 
     // Running applications the desk does not already show a cell for. Finder,
@@ -435,6 +454,12 @@
       if (!app.id || app.id === "finder" || app.id === "accessories" || app.id === "system") return;
       if (projectedIds.has(app.id)) return;
       appNodes.push(makeRunningCell(app));
+    });
+    const known = appCatalog();
+    preferences().keep.forEach((id) => {
+      if (projectedIds.has(id) || running.has(id)) return;
+      const app = known.get(id);
+      if (app && isWorkspaceWindowAllowed(app.lastWindowName)) appNodes.push(makeRunningCell(app));
     });
     nodes.push(...ordered(appNodes).map(makeDraggable));
 
@@ -479,6 +504,45 @@
   // order is its own small preference, so hiding the Dock never forgets it,
   // and a cell it does not name keeps its place after the named ones.
   const orderStorageKey = "ai-system-6-dock-order";
+
+  const favoritesStorageKey = "ai-system-6-dock-favorites";
+  let sessionPreferences = null;
+
+  function appCatalog() {
+    const apps = new Map();
+    Object.entries(windowRegistry).forEach(([name, record]) => {
+      const id = record.app || window.AISystem6Admissions?.windowRecord(name)?.app;
+      if (!id || ["finder", "system", "accessories"].includes(id)) return;
+      if (!apps.has(id) || name === id) apps.set(id, { id, lastWindowName: name, label: multiFinderAppLabels[id] || id });
+    });
+    return apps;
+  }
+
+  function preferences() {
+    try {
+      const value = sessionPreferences || JSON.parse(localStorage.getItem(favoritesStorageKey));
+      if (!value || !Array.isArray(value.keep) || !Array.isArray(value.remove)
+        || ![...value.keep, ...value.remove].every((id) => typeof id === "string")) return { keep: [], remove: [] };
+      const ids = new Set([...appCatalog().keys(), ...Object.values(ACTION_APP_IDS)]);
+      return { keep: [...new Set(value.keep.filter((id) => ids.has(id)))], remove: [...new Set(value.remove.filter((id) => ids.has(id)))] };
+    } catch { return { keep: [], remove: [] }; }
+  }
+
+  function kept(id, byDefault = shownDesktopAppCells().some((cell) => appIdForCell(cell) === id)) {
+    const prefs = preferences();
+    return !prefs.remove.includes(id) && (byDefault || prefs.keep.includes(id));
+  }
+
+  function setKept(id, keep) {
+    const prefs = preferences();
+    sessionPreferences = {
+      keep: [...prefs.keep.filter((value) => value !== id), ...(keep ? [id] : [])],
+      remove: [...prefs.remove.filter((value) => value !== id), ...(keep ? [] : [id])],
+    };
+    try { localStorage.setItem(favoritesStorageKey, JSON.stringify(sessionPreferences)); } catch { /* Session preference remains usable. */ }
+    signature = "";
+    schedule();
+  }
 
   function readOrder() {
     try {
@@ -555,7 +619,11 @@
     if (!all.length) return;
     const current = root.contains(document.activeElement) ? document.activeElement : all[0];
     const index = Math.max(0, all.indexOf(current));
-    if (event.key === "ArrowLeft") {
+    if (event.key === "ContextMenu" || (event.shiftKey && event.key === "F10")) {
+      event.preventDefault();
+      const rect = current.getBoundingClientRect();
+      openMenu(rect.left, rect.top, current);
+    } else if (event.key === "ArrowLeft") {
       event.preventDefault();
       setCurrentCell(all[(index - 1 + all.length) % all.length]);
     } else if (event.key === "ArrowRight") {
@@ -575,11 +643,14 @@
 
   // ---- Context menu ------------------------------------------------------
 
-  function closeMenu() {
+  function closeMenu(returnFocus = false) {
+    const owner = menuOwner;
     menu?.remove();
     menu = null;
+    menuOwner = null;
     document.removeEventListener("pointerdown", onOutsidePointer, true);
     document.removeEventListener("keydown", onMenuKeydown, true);
+    if (returnFocus && owner?.isConnected) owner.focus({ preventScroll: true });
   }
 
   function onOutsidePointer(event) {
@@ -587,40 +658,77 @@
   }
 
   function onMenuKeydown(event) {
-    if (event.key === "Escape") closeMenu();
+    if (!menu || event.isComposing) return;
+    if (event.key === "Escape" || event.key === "Tab") {
+      if (event.key === "Escape") event.preventDefault();
+      event.stopPropagation();
+      closeMenu(true);
+      return;
+    }
+    const items = Array.from(menu.querySelectorAll("button"));
+    const index = items.indexOf(document.activeElement);
+    if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+      event.preventDefault(); event.stopPropagation();
+      const next = event.key === "Home" ? 0 : event.key === "End" ? items.length - 1
+        : (index + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+      items[next]?.focus();
+    }
   }
 
-  function openMenu(clientX, clientY) {
+  function openMenu(clientX, clientY, owner = null) {
     closeMenu();
+    menuOwner = owner || document.activeElement;
     menu = document.createElement("div");
     menu.className = "menu-popover desk-dock-menu";
-    const hide = document.createElement("button");
-    hide.type = "button";
-    hide.textContent = t("hide_dock");
-    hide.addEventListener("click", () => {
-      window.AISystem6WindowMinimize?.setDockVisible?.(false);
-      closeMenu();
-    });
-    menu.append(hide);
-    menu.style.left = `${Math.round(clientX)}px`;
-    menu.style.top = `${Math.round(clientY)}px`;
+    menu.setAttribute("role", "menu");
+    menu.setAttribute("aria-label", owner?.getAttribute("aria-label") || t("dock"));
+    const add = (label, run) => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.setAttribute("role", "menuitem");
+      item.textContent = label;
+      item.style.whiteSpace = "normal";
+      item.style.overflowWrap = "anywhere";
+      item.addEventListener("click", () => { closeMenu(true); run(); });
+      menu.append(item);
+    };
+    const appId = owner?.dataset.appId;
+    if (appId && !owner.dataset.miniwindow) {
+      applicationWindowOrder(appId).forEach((win) => {
+        add(applicationWindowTitle(win, { markState: true }), () => restoreApplicationWindow(win));
+      });
+      if (appId !== "finder") {
+        const keep = kept(appId);
+        add(t(keep ? "dock_remove" : "dock_keep"), () => setKept(appId, !keep));
+        if (runningIds().has(appId)) {
+          const hidden = hiddenAppIds.has(appId);
+          add(t(hidden ? "dock_show_app" : "dock_hide_app"), () => hidden ? unhideApp(appId) : hideApp(appId));
+        }
+      }
+    } else {
+      add(t("hide_dock"), () => window.AISystem6WindowMinimize?.setDockVisible?.(false));
+    }
+    if (!menu.children.length) { closeMenu(); return; }
+    Object.assign(menu.style, { display: "block", position: "fixed", zIndex: "var(--z-system-menu)", maxWidth: "calc(100vw - 16px)", maxHeight: "calc(100dvh - 48px)", overflowY: "auto" });
     document.body.append(menu);
+    const rect = menu.getBoundingClientRect();
+    menu.style.left = `${Math.max(8, Math.min(clientX, window.innerWidth - rect.width - 8))}px`;
+    menu.style.top = `${Math.max(30, Math.min(clientY - rect.height, window.innerHeight - rect.height - 8))}px`;
+    menu.querySelector("button")?.focus();
     document.addEventListener("pointerdown", onOutsidePointer, true);
     document.addEventListener("keydown", onMenuKeydown, true);
   }
 
   function onContextmenu(event) {
     if (!root) return;
-    // Anywhere on the Dock that is not an item: the shelf itself sits under
-    // the item row, so the row's own background is the shelf to a pointer.
-    if (event.target.closest?.(".desk-dock-item")) return;
     event.preventDefault();
-    openMenu(event.clientX || 0, event.clientY || 0);
+    openMenu(event.clientX || 0, event.clientY || 0, event.target.closest?.(".desk-dock-item"));
   }
 
   // ---- Reserve -----------------------------------------------------------
 
   function release() {
+    if (root?.contains(document.activeElement) && typeof hideBalloonHelp === "function") hideBalloonHelp();
     closeMenu();
     clearMagnification();
     if (root && magBound) {
@@ -709,7 +817,7 @@
       ]),
       t("dock"), t("hide_dock"), t("applications"), t("trash"),
       isMultiFinderMode(),
-      readOrder(),
+      readOrder(), preferences(),
       currentThemeId(),
     ]);
     if (signature === nextSignature && root) {
@@ -721,6 +829,10 @@
       return;
     }
     signature = nextSignature;
+    if (root) {
+      root.setAttribute("aria-label", t("dock"));
+      root.querySelector('[role="toolbar"]')?.setAttribute("aria-label", t("dock"));
+    }
 
     const focusedKey = root && root.contains(document.activeElement) ? document.activeElement.dataset?.dockKey : "";
     if (!root) {
@@ -752,6 +864,7 @@
     const restored = focusedKey ? all.find((cell) => cell.dataset.dockKey === focusedKey) : null;
     const target = restored || all[0];
     all.forEach((cell) => { cell.tabIndex = cell === target ? 0 : -1; });
+    if (focusedKey) target.focus({ preventScroll: true });
 
     deselectProjectedSelectedIcon();
     claimReserve();
@@ -767,7 +880,12 @@
     queueMicrotask(sync);
   }
 
-  document.addEventListener("ai-system6-themechange", schedule);
+  window.addEventListener("storage", (event) => {
+    if (event.key === favoritesStorageKey || event.key === orderStorageKey) {
+      sessionPreferences = null; signature = ""; schedule();
+    }
+  });
+  document.addEventListener("ai-system6-themechange", () => { closeMenu(); schedule(); });
   document.addEventListener("ai-system6-dockchange", schedule);
   window.addEventListener("resize", schedule);
   window.visualViewport?.addEventListener?.("resize", schedule);

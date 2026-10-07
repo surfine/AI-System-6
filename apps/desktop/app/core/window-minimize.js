@@ -29,6 +29,8 @@
   // Prefer a true DOM miniature (SVG foreignObject / html2canvas-class); fall
   // back to the schematic paint path shared with the 3D warp.
   const miniatureBitmaps = new WeakMap();
+  const domMiniatureBitmaps = new WeakMap();
+  const captureEpochs = new WeakMap();
 
   function rememberMiniatureBitmap(win, capture) {
     if (!win || !capture) return;
@@ -37,7 +39,10 @@
       // canvas is exportable before it resolves) is stored as-is; a raw canvas
       // is encoded here.
       const url = capture.dataUrl || capture.canvas?.toDataURL("image/jpeg", 0.85);
-      if (url && url.length > 32) miniatureBitmaps.set(win, url);
+      if (url && url.length > 32) {
+        miniatureBitmaps.set(win, url);
+        if (capture.source === "dom") domMiniatureBitmaps.set(win, url);
+      }
     } catch (error) { /* optional picture */ }
   }
 
@@ -46,7 +51,10 @@
   }
 
   function forgetMiniatureBitmap(win) {
-    if (win) miniatureBitmaps.delete(win);
+    if (win) {
+      captureEpochs.set(win, (captureEpochs.get(win) || 0) + 1);
+      miniatureBitmaps.delete(win); domMiniatureBitmaps.delete(win);
+    }
   }
 
   function rememberFocus(win) {
@@ -140,44 +148,94 @@
         const ch = Math.max(24, Math.round(height * scale));
 
         const source = win;
+        // Keep the capture bounded while allowing a busy release/test renderer
+        // to finish the same DOM walk; rejecting a real frame under load makes
+        // the preview look unavailable even though the window is capturable.
+        const captureDeadline = performance.now() + 200;
+        // A partial tree would look like a photograph but omit actual work.
+        // Refuse expensive or non-DOM surfaces instead of silently sketching them.
+        const descendants = source.querySelectorAll("*");
+        if (descendants.length > 1200) return finish(null);
+        const unsupported = source.querySelectorAll("canvas, iframe, video, object, embed");
+        for (const node of unsupported) {
+          const bounds = node.getBoundingClientRect();
+          const cs = getComputedStyle(node);
+          if (bounds.width > 0 && bounds.height > 0 && cs.display !== "none" && cs.visibility !== "hidden") return finish(null);
+        }
         const clone = source.cloneNode(true);
-        clone.querySelectorAll?.("script, iframe, video, object, embed")?.forEach((node) => node.remove());
-        clone.classList.remove("is-minimized", "is-hidden", "is-app-hidden");
-        clone.style.cssText = `${clone.getAttribute("style") || ""};position:relative;left:0;top:0;margin:0;transform:none;width:${width}px;height:${height}px;box-sizing:border-box;`;
-
-        const inlinePair = (live, copy, depth) => {
-          if (!live || !copy || depth > 5) return;
-          try {
-            const cs = getComputedStyle(live);
-            const bits = [];
-            const props = [
-              "display", "flex-direction", "flex-wrap", "align-items", "justify-content", "gap",
-              "grid-template-columns", "grid-template-rows", "background", "background-color",
-              "background-image", "color", "border", "border-radius", "box-shadow", "opacity",
-              "overflow", "padding", "margin", "font", "font-family", "font-size", "font-weight",
-              "line-height", "letter-spacing", "text-align", "text-shadow", "filter",
-              "backdrop-filter", "-webkit-backdrop-filter", "box-sizing", "width", "height",
-              "min-width", "min-height", "max-width", "max-height", "white-space", "word-break",
-            ];
-            props.forEach((prop) => {
-              const value = cs.getPropertyValue(prop);
-              if (value) bits.push(`${prop}:${value}`);
-            });
-            for (let i = 0; i < cs.length; i += 1) {
-              const name = cs.item(i);
-              if (name && name.startsWith("--")) bits.push(`${name}:${cs.getPropertyValue(name)}`);
+        const inlinePair = (live, copy) => {
+          if (performance.now() > captureDeadline) throw new Error("Window capture exceeded its frame budget");
+          const cs = getComputedStyle(live);
+          // All values here are already resolved by computed style: copying
+          // hundreds of inherited theme custom properties into every node is
+          // redundant and makes an ordinary editor exceed the capture budget.
+          // Keep the actual painting/layout properties, including deep flex and
+          // positioned descendants, and assign one declaration string per node.
+          const props = [
+            "display", "position", "left", "top", "right", "bottom", "z-index",
+            "width", "height", "min-width", "min-height", "max-width", "max-height", "box-sizing",
+            "flex-direction", "flex-wrap", "flex-grow", "flex-shrink", "flex-basis", "order",
+            "align-items", "align-self", "align-content", "justify-content", "justify-items", "justify-self",
+            "gap", "row-gap", "column-gap", "grid-template-columns", "grid-template-rows", "grid-auto-flow",
+            "grid-column", "grid-row", "grid-auto-columns", "grid-auto-rows",
+            "background-color", "background-image", "background-size", "background-position", "background-repeat",
+            "color", "border-top", "border-right", "border-bottom", "border-left", "border-radius",
+            "box-shadow", "opacity", "visibility", "overflow-x", "overflow-y", "clip-path",
+            "padding-top", "padding-right", "padding-bottom", "padding-left",
+            "margin-top", "margin-right", "margin-bottom", "margin-left",
+            "font-family", "font-size", "font-weight", "font-style", "font-variant", "line-height",
+            "letter-spacing", "text-align", "text-decoration", "text-transform", "text-shadow",
+            "white-space", "word-break", "overflow-wrap", "text-overflow", "vertical-align",
+            "transform", "transform-origin", "translate", "rotate", "scale", "filter",
+            "object-fit", "object-position", "list-style", "appearance", "-webkit-appearance",
+            "fill", "stroke", "stroke-width", "stroke-linecap", "stroke-linejoin",
+          ];
+          const declarations = props.map((name) => {
+            const value = cs.getPropertyValue(name);
+            return value ? `${name}:${value}` : "";
+          }).filter(Boolean);
+          copy.style.cssText = `${declarations.join(";")};animation:none;transition:none;`;
+          if (live.tagName === "TEXTAREA") copy.textContent = live.value;
+          if (live.tagName === "INPUT") {
+            copy.setAttribute("value", live.type === "password" ? "" : live.value);
+            if (live.checked) copy.setAttribute("checked", ""); else copy.removeAttribute("checked");
+          }
+          if (live.tagName === "OPTION") {
+            if (live.selected) copy.setAttribute("selected", ""); else copy.removeAttribute("selected");
+          }
+          const liveKids = [...live.children];
+          const copyKids = [...copy.children];
+          liveKids.forEach((child, index) => inlinePair(child, copyKids[index]));
+          // SVG foreignObject serialization does not preserve scrollTop. Move
+          // each child's painted content inside the original overflow clip.
+          const x = live.scrollLeft || 0;
+          const y = live.scrollTop || 0;
+          if (x || y) {
+            if (live.tagName === "TEXTAREA" || live.tagName === "INPUT"
+              || [...live.childNodes].some((node) => node.nodeType === 3 && node.textContent.trim())) {
+              throw new Error("Window capture cannot serialize this scrolling text surface");
             }
-            copy.style.cssText = `${copy.getAttribute("style") || ""};${bits.join(";")}`;
-          } catch (error) { /* optional style copy */ }
-          const liveKids = live.children || [];
-          const copyKids = copy.children || [];
-          const n = Math.min(liveKids.length, copyKids.length, depth < 2 ? 48 : 24);
-          for (let i = 0; i < n; i += 1) inlinePair(liveKids[i], copyKids[i], depth + 1);
+            copy.style.setProperty("overflow", "hidden");
+            copyKids.forEach((child) => {
+              const transform = child.style.getPropertyValue("transform");
+              child.style.setProperty("transform", `translate(${-x}px, ${-y}px) ${transform && transform !== "none" ? transform : ""}`);
+            });
+          }
         };
-        inlinePair(source, clone, 0);
+        inlinePair(source, clone);
+        clone.querySelectorAll("script, iframe, video, audio, object, embed").forEach((node) => node.remove());
+        // Root layout must be normalized AFTER copying computed styles. The
+        // original desk transform/offset must not move it outside the bitmap.
+        Object.assign(clone.style, {
+          position: "relative", left: "0px", top: "0px", right: "auto", bottom: "auto",
+          margin: "0px", transform: "none", translate: "none", rotate: "none", scale: "none",
+          width: `${width}px`, height: `${height}px`, minWidth: "0px", minHeight: "0px",
+          maxWidth: "none", maxHeight: "none", boxSizing: "border-box",
+        });
 
         clone.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
         const serialized = new XMLSerializer().serializeToString(clone);
+        if (performance.now() > captureDeadline) return finish(null);
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${cw}" height="${ch}"><foreignObject x="0" y="0" width="${width}" height="${height}" transform="scale(${scale})"><div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;overflow:hidden;">${serialized}</div></foreignObject></svg>`;
         // A data: URL, never a blob: URL. Chromium loads an SVG <img> holding a
         // <foreignObject> from a blob URL as cross-origin data, so drawing it
@@ -194,6 +252,9 @@
             canvas.height = ch;
             const ctx = canvas.getContext("2d");
             if (!ctx) return finish(null);
+            const background = getComputedStyle(win).backgroundColor;
+            ctx.fillStyle = background && background !== "transparent" && background !== "rgba(0, 0, 0, 0)" ? background : "#fff";
+            ctx.fillRect(0, 0, cw, ch);
             ctx.drawImage(img, 0, 0);
             // Prove now that the picture is exportable. A tainted or blocked
             // canvas must read as a failed capture, not as a "photo" whose
@@ -469,6 +530,7 @@
   }
 
   function minimize(win) {
+    window.AISystem6WindowShade?.detach(win, true);
     if (!minimizeEnabled()) return false;
     // Writer Mode draws no lamp and has no Dock: a window put away there would
     // vanish with no list to reach it back from, so the verb refuses outright
@@ -481,20 +543,25 @@
     // schematic paint so the warp never waits on foreignObject.
     const schematicCapture = paintMinimizeCapture(win);
     rememberMiniatureBitmap(win, schematicCapture);
+    const captureEpoch = (captureEpochs.get(win) || 0) + 1;
+    captureEpochs.set(win, captureEpoch);
+    const captureCurrent = () => win.isConnected && !win.classList.contains("is-hidden") && captureEpochs.get(win) === captureEpoch;
     const domPromise = captureDomWindowBitmap(win);
     // Store the true DOM miniature whenever it lands, whether or not it beats
     // the warp race below. A foreignObject raster can take a few frames, and the
     // Dock tile must still upgrade from the schematic stand-in to the window's
     // real picture -- silently keeping the stand-in is the bug this guards.
     domPromise.then((domCapture) => {
-      if (!domCapture?.canvas) return;
+      if (!domCapture?.canvas || !captureCurrent()) return;
       rememberMiniatureBitmap(win, domCapture);
+      window.AISystem6WindowPreview?.rememberBitmap?.(win, domCapture);
       try { window.AISystem6DeskDock?.sync?.(); } catch (error) { /* optional */ }
     }).catch(() => {});
     Promise.race([
       domPromise,
       new Promise((resolve) => setTimeout(() => resolve(null), 120)),
     ]).then((domCapture) => {
+      if (!captureCurrent()) return;
       const preparedCapture = domCapture?.canvas ? domCapture : schematicCapture;
       if (domCapture?.canvas) rememberMiniatureBitmap(win, preparedCapture);
       flyToDock(win, preparedCapture);
@@ -867,6 +934,7 @@
     input.type = "checkbox";
     input.id = "dock-visible";
     const span = document.createElement("span");
+    span.dataset.i18n = "show_dock";
     span.textContent = typeof t === "function" ? t("show_dock") : "Show Dock";
     field.append(input, span);
     input.addEventListener("change", () => setDockVisible(input.checked));
@@ -896,6 +964,7 @@
     input.type = "checkbox";
     input.id = "minimize-enabled";
     const span = document.createElement("span");
+    span.dataset.i18n = "minimize_windows_setting";
     span.textContent = typeof t === "function" ? t("minimize_windows_setting") : "Allow minimizing windows";
     field.append(input, span);
     input.addEventListener("change", () => setMinimizeEnabled(input.checked));
@@ -933,6 +1002,8 @@
     lampEnabled: enabled,
     getMiniatureDataUrl,
     captureDomWindowBitmap,
+    releaseCapture: forgetMiniatureBitmap,
+    getDomMiniatureDataUrl: (win) => domMiniatureBitmaps.get(win) || null,
   });
   window.AISystem6WindowMinimizeLoaded = true;
   syncLamps();

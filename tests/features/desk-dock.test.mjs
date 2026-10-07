@@ -393,4 +393,73 @@ await vmw.waitFor(() => vmw.run('!!document.querySelector(\'.desk-dock-items [da
   test.assert(minimize.includes('theme === "nextstep"') && fx.includes('theme === "nextstep"'), "NeXTSTEP minimize paint uses the grey title bar, not traffic lights");
 }
 
+// Exercise the application menu through its real pointer and keyboard handlers.
+vmw.run('writerMode = false; window.AISystem6WindowMinimize.setDockVisible(true); window.AISystem6DeskDock.sync()');
+await vmw.waitFor(() => vmw.run('!!document.querySelector(".desk-dock-items")'));
+vmw.run(`(() => {
+  const cell = document.querySelector('.desk-dock-item[data-app-id="quickDraft"]');
+  window.__dockMenuCell = cell;
+  document.querySelector('.desk-dock').dispatchEvent({type: 'contextmenu', target: cell, clientX: 500, clientY: 900, preventDefault() {}});
+})()`);
+test.assert(vmw.run('!!document.querySelector(".desk-dock-menu[role=menu]")'), "right click opens the application menu");
+test.assert(vmw.run('document.querySelector(".desk-dock-menu").style.display === "block"'), "standalone menu explicitly overrides the shared hidden popover default (style contract, not browser visibility)");
+test.assert(vmw.run('!localStorage.getItem("ai-system-6-dock-favorites")'), "opening the menu does not change shortcuts");
+vmw.run(`document.querySelector('.desk-dock-menu button').dispatchEvent(new Event('click'))`);
+await vmw.waitFor(() => vmw.run(`!document.querySelector('.desk-dock-item[data-app-id="quickDraft"]')`));
+test.assert(vmw.run('JSON.parse(localStorage.getItem("ai-system-6-dock-favorites")).remove.includes("quickDraft")'), "Remove from Dock persists a shortcut preference");
+vmw.run('window.AISystem6WindowMinimize.setDockVisible(false); window.AISystem6WindowMinimize.setDockVisible(true)');
+await new Promise((resolve) => setTimeout(resolve, 20));
+test.assert(vmw.run(`!document.querySelector('.desk-dock-item[data-app-id="quickDraft"]')`), "hiding and showing Dock preserves removed shortcuts");
+vmw.run(`(() => {
+  const cell = document.querySelector('.desk-dock-item[data-app-id="lightroom"]');
+  cell.focus(); window.__dockMenuCell = cell;
+  document.querySelector('.desk-dock-items').dispatchEvent({type: 'keydown', key: 'F10', shiftKey: true, preventDefault() {}});
+})()`);
+test.assert(vmw.run('!!document.querySelector(".desk-dock-menu")'), "Shift F10 opens the same application menu");
+vmw.run(`document.dispatchEvent({type: 'keydown', key: 'Escape', target: document.activeElement, preventDefault() {}, stopPropagation() {}})`);
+test.assert(vmw.run('!document.querySelector(".desk-dock-menu") && document.activeElement === window.__dockMenuCell'), "Escape closes the menu and returns focus to its application icon");
+
+await vmw.context.openWindow("quickDraft");
+vmw.run('window.AISystem6DeskDock.sync()');
+await vmw.waitFor(() => vmw.run(`!!document.querySelector('.desk-dock-item[data-app-id="quickDraft"]')`));
+test.assert(vmw.run('!getWindow("quickDraft").classList.contains("is-hidden")'), "a removed shortcut remains visible while its application runs");
+vmw.run(`(() => {
+ const win = getWindow('quickDraft'); win.classList.add('is-collapsed');
+ window.__dockRestoredWindow = win;
+ const cell = document.querySelector('.desk-dock-item[data-app-id="quickDraft"]');
+ document.querySelector('.desk-dock').dispatchEvent({type:'contextmenu', target:cell, clientX:400, clientY:800, preventDefault(){}});
+})()`);
+test.assert(vmw.run('document.querySelector(".desk-dock-menu button").textContent.includes(t("window_state_collapsed"))'), "application menu marks the existing rolled window state");
+vmw.run(`document.querySelector('.desk-dock-menu button').dispatchEvent(new Event('click'))`);
+test.assert(vmw.run('getWindow("quickDraft") === window.__dockRestoredWindow && getWindow("quickDraft").classList.contains("is-collapsed")'), "choosing a rolled window restores the same window without unfolding it");
+vmw.run(`localStorage.setItem('ai-system-6-dock-favorites', '{broken'); window.dispatchEvent({type:'storage', key:'ai-system-6-dock-favorites'})`);
+await new Promise((resolve) => setTimeout(resolve, 20));
+test.assert(vmw.run(`!!document.querySelector('.desk-dock-item[data-app-id="lightroom"]')`), "corrupt preference falls back to the default application projection");
+
+await vmw.context.AISystem6Theme.applyTheme("liquid-glass", { persist: false });
+await vmw.context.AISystem6Theme.whenReady();
+vmw.run('window.AISystem6WindowMinimize.setDockVisible(true); window.AISystem6DeskDock.sync()');
+await vmw.waitFor(() => vmw.run('!!document.querySelector(".desk-dock-item")'));
+// The DOM shim has no input-modality engine: supply only :focus-visible,
+// then dispatch the real focus handler into the real shared help implementation.
+vmw.run(`(() => {
+  balloonHelpEnabled = false;
+  hideBalloonHelp();
+  const icon = document.querySelector('.desk-dock-item');
+  window.__focusNameIcon = icon;
+  const matches = icon.matches.bind(icon);
+  icon.matches = (selector) => selector === ':focus-visible' || matches(selector);
+  icon.focus();
+  icon.dispatchEvent({type:'focus', target:icon});
+})()`);
+test.assert(vmw.run('!document.querySelector("#balloon-help").classList.contains("is-hidden") && document.querySelector("#balloon-help-text").textContent === window.__focusNameIcon.getAttribute("aria-label")'), "keyboard focus shows the application name through existing Balloon Help even when Help is off");
+test.assert(vmw.run('balloonHelpEnabled === false'), "name fallback does not switch the global Help preference on");
+vmw.run(`window.__focusNameIcon.dispatchEvent({type:'blur', target:window.__focusNameIcon})`);
+test.assert(vmw.run('document.querySelector("#balloon-help").classList.contains("is-hidden") && !window.__focusNameIcon.hasAttribute("aria-describedby")'), "blur clears the shared name balloon and its accessible description");
+
+vmw.run(`window.__dockLabelBefore = translations[currentLanguage].dock; translations[currentLanguage].dock = 'Dock label after lazy translation'; window.AISystem6DeskDock.sync()`);
+await new Promise((resolve) => setTimeout(resolve, 20));
+test.assert(vmw.run('document.querySelector(".desk-dock").getAttribute("aria-label") === t("dock") && document.querySelector(".desk-dock [role=toolbar]").getAttribute("aria-label") === t("dock")'), "existing Dock root and toolbar refresh their accessible names when a translation arrives");
+vmw.run('translations[currentLanguage].dock = window.__dockLabelBefore; window.AISystem6DeskDock.sync()');
+
 test.finish();

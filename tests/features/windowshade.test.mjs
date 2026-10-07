@@ -159,20 +159,104 @@ test("WM6: WheelEvent units are normalized and a stream never claims to prove fi
   assert.equal(p.classifyWheel({ deltaY: 40, deltaMode: 2, ctrlKey: true }), null);
 });
 
-test("WM6: the arrangement preview is theme-gated, cancellable and record-free", () => {
-  const engine = readFileSync(new URL("../../apps/desktop/app/core/windowshade.js", import.meta.url), "utf8");
-  // One rule computes the candidate for both the preview and the release.
-  assert.match(engine, /function flickCandidate\(/);
-  assert.match(engine, /function showFlickOutline\(/);
-  assert.match(engine, /function clearFlickOutline\(/);
-  // Only eras whose own chrome draws a dotted frame preview get one.
-  assert.match(engine, /hasCapability\?\.\("native-window-outline"\)/);
-  // Every cancel path drops the preview: pointercancel, lostpointercapture,
-  // Escape, blur, theme change, resize and visibility.
-  assert.match(engine, /"lostpointercapture"/);
-  assert.match(engine, /pointercancel", \(\) => \{ flickTrack = null; clearFlickOutline\(\); \}/);
-  // The preview writes no undo/history record of its own.
-  assert.doesNotMatch(engine, /setInterval/);
+async function previewHarness(count = 2) {
+  const { createAppBootVm } = await import("../helpers/app-boot-vm.mjs");
+  const h = createAppBootVm();
+  await h.settleBoot();
+  h.document.querySelectorAll(".window[data-window]").forEach((win) => win.classList.add("is-hidden"));
+  h.document.querySelectorAll('.system-modal, dialog, [aria-modal="true"]').forEach((el) => { el.getClientRects = () => []; });
+  const desktop = h.document.querySelector(".desktop");
+  desktop.getBoundingClientRect = () => ({ left: 0, top: 0, right: 1200, bottom: 840, width: 1200, height: 840 });
+  desktop.clientLeft = desktop.clientTop = desktop.scrollLeft = desktop.scrollTop = 0;
+  h.context.innerWidth = 1200;
+  h.context.innerHeight = 840;
+  h.context.isNarrowViewport = () => false;
+  h.context.getDesktopAvoidanceInsets = () => ({ left: 0, right: 0, bottom: 0 });
+  h.context.deskBottomReserve = () => 0;
+  h.context.getComputedStyle = () => ({ position: "absolute", visibility: "visible", minWidth: "100px", minHeight: "80px" });
+  h.context.isResizableWindow = () => true;
+  h.context.aspectRatioForWindow = () => 0;
+  h.context.isCenteredSystemWindow = () => false;
+  h.context.scheduleWorkingSessionSave = () => {};
+  h.context.updateMenuState = () => {};
+  h.context.focusWindow = () => {};
+  const wins = Array.from({ length: count }, (_, index) => {
+    const win = h.document.createElement("section");
+    win.className = "window";
+    win.dataset.window = `tile-contract-${index}`;
+    win.offsetParent = desktop;
+    const values = new Map();
+    // A CSSStyleDeclaration adapter: geometry is derived from the styles the
+    // production engine writes, rather than echoing its requested result.
+    win.__style = {
+      [Symbol.iterator]: function* () { yield* values.keys(); },
+      setProperty: (key, value) => values.set(key, String(value)),
+      removeProperty: (key) => values.delete(key),
+      getPropertyValue: (key) => values.get(key) || "",
+      getPropertyPriority: () => "",
+    };
+    for (const [key, value] of Object.entries({ left: 70 + index * 100, top: 90 + index * 50, width: 350, height: 220 })) win.style.setProperty(key, `${value}px`);
+    win.getBoundingClientRect = () => Object.fromEntries(["left", "top", "width", "height"].map((key) => [key, parseFloat(win.style.getPropertyValue(key))]));
+    win.getClientRects = () => [win.getBoundingClientRect()];
+    const title = h.document.createElement("header");
+    title.className = "title-bar";
+    title.getBoundingClientRect = () => ({ height: 22 });
+    win.append(title);
+    desktop.append(win);
+    return win;
+  });
+  let reject = false;
+  let writes = 0;
+  h.context.placeWindowForExplicitLayout = (win, frame) => {
+    if (Object.keys(frame).length) writes++;
+    for (const [key, value] of Object.entries(frame)) {
+      if (reject && win === wins[1] && key === "width") continue;
+      win.style.setProperty(key, `${value}px`);
+    }
+  };
+  h.context.setWindowLayerZ = () => {};
+  h.context.applicationWindowTitle = (win) => win.dataset.window;
+  h.context.refreshApplicationLifecycle = () => {};
+  h.context.applicationWindowPresentation = () => "open";
+  wins.forEach((win) => { const field = h.document.createElement("textarea"); field.value = "Unsaved document"; win.append(field); });
+  const windowListeners = new Map();
+  h.context.addEventListener = (name, handler) => { const listeners = windowListeners.get(name) || []; listeners.push(handler); windowListeners.set(name, listeners); };
+  h.run(source);
+  const api = h.context.AISystem6WindowShade;
+  const geometry = () => wins.map((win) => win.getBoundingClientRect());
+  return { ...h, api, wins, geometry, fireWindow: (name) => windowListeners.get(name)?.forEach((listener) => listener()), reject: (value) => { reject = value; }, writes: () => writes };
+}
+test("WM6: all twelve eras execute cancellable target previews without layout or undo writes", async () => {
+  const h = await previewHarness();
+  const win = h.wins[0];
+  const bar = win.querySelector(":scope > .title-bar");
+  let now = 0;
+  h.context.performance.now = () => now;
+  const themes = ["classic", "system-7", "platinum", "drawing-board", "aqua", "tiger", "snow-leopard", "lion", "yosemite", "big-sur", "liquid-glass", "nextstep"];
+  const send = (type, more = {}) => h.document.dispatchEvent({ type, target: bar, button: 0, pointerId: 42,
+    preventDefault() {}, stopPropagation() {}, ...more });
+  for (const theme of themes) {
+    h.context.AISystem6Theme = { getCurrentTheme: () => theme, hasCapability: () => false };
+    win.offsetLeft = 70; win.offsetTop = 90;
+    now += 1000;
+    send("pointerdown", { clientX: 200, clientY: 100 });
+    now += 20;
+    win.offsetLeft = 170;
+    const before = h.geometry();
+    const writes = h.writes();
+    send("pointermove", { clientX: 300, clientY: 100 });
+    const outline = h.document.querySelector(".window-arrangement-outline");
+    assert.ok(outline, `${theme} shows a target even without native-window-outline capability`);
+    assert.equal(outline.dataset.windowOutlineAction, "rightHalf");
+    assert.ok(h.document.querySelector(".window-gesture-hint"));
+    assert.deepEqual(h.geometry(), before, "preview leaves the frame untouched");
+    assert.equal(h.writes(), writes, "preview performs no arrangement writes");
+    assert.equal(h.api.canUndo(win), false);
+    send("pointercancel");
+    assert.equal(h.document.querySelector(".window-arrangement-outline"), null);
+    assert.equal(h.document.querySelector(".window-gesture-hint"), null);
+    assert.equal(h.api.canUndo(win), false);
+  }
 });
 
 test("2200 deterministic odd-sized layouts stay finite, positive, inside the usable desk", () => {
@@ -187,4 +271,119 @@ test("2200 deterministic odd-sized layouts stay finite, positive, inside the usa
       assert.ok(r.top + r.height <= area.top + area.height);
     }
   }
+});
+
+test("tile refuses the whole plan when a fixed window cannot fit", () => {
+  assert.equal(p.tileFrames([{ fixed: true, width: 1201, height: 100 }, { minWidth: 20, minHeight: 20 }], box), null);
+  assert.equal(p.tileFrames([{ minWidth: 1201 }, { minWidth: 20 }], box), null);
+});
+
+test("tile preserves fixed sizes, minimums and aspect without overlaps", () => {
+  const specs = [{ fixed: true, width: 300, height: 200 }, { minWidth: 250, minHeight: 100, aspect: 16 / 9 }, { minWidth: 200, minHeight: 150 }];
+  const frames = p.tileFrames(specs, box);
+  assert.ok(frames);
+  assert.equal(frames[0].width, 300);
+  assert.equal(frames[0].height, 200);
+  assert.ok(Math.abs(frames[1].width / frames[1].height - 16 / 9) < 0.01);
+  frames.forEach((frame, index) => {
+    assert.ok(frame.left >= box.left && frame.top >= box.top);
+    assert.ok(frame.left + frame.width <= box.left + box.width);
+    assert.ok(frame.top + frame.height <= box.top + box.height);
+    assert.ok(frame.width >= (specs[index].minWidth || 1));
+    assert.ok(frame.height >= (specs[index].minHeight || 1));
+    frames.slice(index + 1).forEach((other) => assert.ok(
+      frame.left + frame.width <= other.left || other.left + other.width <= frame.left
+      || frame.top + frame.height <= other.top || other.top + other.height <= frame.top,
+      "each pair occupies disjoint space",
+    ));
+  });
+});
+
+test("tile commits one undo group and rolls the entire group back on a rejected frame", async () => {
+  const { createAppBootVm } = await import("../helpers/app-boot-vm.mjs");
+  const h = createAppBootVm();
+  await h.settleBoot();
+  h.document.querySelectorAll(".window[data-window]").forEach((win) => win.classList.add("is-hidden"));
+  h.document.querySelectorAll('.system-modal, dialog, [aria-modal="true"]').forEach((el) => { el.getClientRects = () => []; });
+  const desktop = h.document.querySelector(".desktop");
+  desktop.getBoundingClientRect = () => ({ left: 0, top: 0, right: 1200, bottom: 840, width: 1200, height: 840 });
+  desktop.clientLeft = desktop.clientTop = desktop.scrollLeft = desktop.scrollTop = 0;
+  h.context.innerWidth = 1200;
+  h.context.innerHeight = 840;
+  h.context.isNarrowViewport = () => false;
+  h.context.getDesktopAvoidanceInsets = () => ({ left: 0, right: 0, bottom: 0 });
+  h.context.deskBottomReserve = () => 0;
+  h.context.getComputedStyle = () => ({ position: "absolute", visibility: "visible", minWidth: "100px", minHeight: "80px" });
+  h.context.isResizableWindow = () => true;
+  h.context.aspectRatioForWindow = () => 0;
+  h.context.isCenteredSystemWindow = () => false;
+  h.context.scheduleWorkingSessionSave = () => {};
+  h.context.updateMenuState = () => {};
+  h.context.focusWindow = () => {};
+  const wins = [0, 1].map((index) => {
+    const win = h.document.createElement("section");
+    win.className = "window";
+    win.dataset.window = `tile-contract-${index}`;
+    win.offsetParent = desktop;
+    const values = new Map();
+    // A CSSStyleDeclaration adapter: geometry is derived from the styles the
+    // production engine writes, rather than echoing its requested result.
+    win.__style = {
+      [Symbol.iterator]: function* () { yield* values.keys(); },
+      setProperty: (key, value) => values.set(key, String(value)),
+      removeProperty: (key) => values.delete(key),
+      getPropertyValue: (key) => values.get(key) || "",
+      getPropertyPriority: () => "",
+    };
+    for (const [key, value] of Object.entries({ left: 70 + index * 100, top: 90 + index * 50, width: 350, height: 220 })) win.style.setProperty(key, `${value}px`);
+    win.getBoundingClientRect = () => Object.fromEntries(["left", "top", "width", "height"].map((key) => [key, parseFloat(win.style.getPropertyValue(key))]));
+    win.getClientRects = () => [win.getBoundingClientRect()];
+    const title = h.document.createElement("header");
+    title.className = "title-bar";
+    title.getBoundingClientRect = () => ({ height: 22 });
+    win.append(title);
+    desktop.append(win);
+    return win;
+  });
+  let reject = false;
+  let writes = 0;
+  h.context.placeWindowForExplicitLayout = (win, frame) => {
+    if (Object.keys(frame).length) writes++;
+    for (const [key, value] of Object.entries(frame)) {
+      if (reject && win === wins[1] && key === "width") continue;
+      win.style.setProperty(key, `${value}px`);
+    }
+  };
+  h.run(source);
+  const api = h.context.AISystem6WindowShade;
+  const geometry = () => wins.map((win) => win.getBoundingClientRect());
+  const original = geometry();
+  assert.ok(api.tile(wins).ok);
+  assert.notDeepEqual(geometry(), original);
+  assert.ok(wins.every((win) => api.canUndo(win)));
+  assert.ok(api.dispatch(wins[1], "undo").ok);
+  assert.deepEqual(geometry(), original, "undo from either member restores every member");
+  assert.ok(wins.every((win) => !api.canUndo(win)));
+  reject = true;
+  writes = 0;
+  assert.equal(api.tile(wins).ok, false);
+  assert.equal(writes, 2, "the later member rejects after an earlier member was written");
+  assert.deepEqual(geometry(), original, "rollback restores all exact original geometry");
+  assert.ok(wins.every((win) => !api.canUndo(win)), "failed tile creates no undo history");
+  reject = false;
+  h.context.isResizableWindow = () => false;
+  wins[1].style.setProperty("width", "1500px");
+  const tooLarge = geometry();
+  writes = 0;
+  assert.equal(api.tile(wins).ok, false);
+  assert.equal(writes, 0, "no-room is decided before any placement writes");
+  assert.deepEqual(geometry(), tooLarge);
+  h.context.isResizableWindow = () => true;
+  wins[1].style.setProperty("width", "350px");
+  assert.ok(api.tile(wins).ok);
+  wins[0].style.setProperty("left", "500px");
+  const userMoved = geometry();
+  assert.equal(api.dispatch(wins[1], "undo").ok, false, "a changed batch member invalidates group undo");
+  assert.deepEqual(geometry(), userMoved, "stale undo never clobbers the user's later move");
+
 });

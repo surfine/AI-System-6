@@ -45,6 +45,20 @@ vmw.run(`
     const DOM_URL = "data:image/jpeg;base64,REAL-DOM-MINIATURE-0123456789-abcdef";
     const SCHEMATIC_URL = "data:image/png;base64,SCHEMATIC-PAINT-0123456789-abcdef";
     const realCreateElement = document.createElement.bind(document);
+    // The shared boot shim intentionally makes shallow cloneNode stubs. This
+    // contract needs a real deep clone so no descendant silently disappears.
+    const originalWindows = document.querySelectorAll(".window[data-window]");
+    const cloneTree = (source, deep) => {
+      const copy = realCreateElement(source.tagName);
+      copy.className = source.className;
+      Object.assign(copy.style, source.style);
+      Object.assign(copy.dataset, source.dataset);
+      copy.textContent = source.textContent;
+      if (deep) [...source.children].forEach((child) => copy.append(cloneTree(child, true)));
+      return copy;
+    };
+    originalWindows.forEach((win) => { win.cloneNode = (deep) => cloneTree(win, deep); });
+
     const decode = { mode: "load" };
     const pending = [];
     document.createElement = (tag) => {

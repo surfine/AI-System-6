@@ -118,6 +118,7 @@ function reservedWindowLayerZ(win) {
   if (win.dataset.window === "about") return systemModalZ;
   if (win.dataset.window === "saveChat") return windowSaveZ;
   if (win.classList.contains("is-fullscreen")) return windowPriorityZ;
+  if (win.dataset.windowSlide && !isWindowPinned(win)) return windowLayerMaxZ + 1;
   if (isNarrowViewport() && (win.classList.contains("is-collapsed")
       || (isPortraitDocumentFlow() && mobileWindowPresentation(win) === "system-page"))) {
     return windowPinnedZ;
@@ -212,6 +213,7 @@ function canPinWindow(win) {
 
 function setWindowPinned(win, pinned = true) {
   if (!canPinWindow(win)) return false;
+  window.AISystem6WindowPinControls?.changed(win);
   const next = !!pinned;
   if (isWindowPinned(win) === next) {
     if (next) setWindowLayerZ(win, nextPinnedWindowLayerZ());
@@ -1287,6 +1289,7 @@ function windowFocusRank(win) {
 }
 
 function focusWindow(win, reveal=false) {
+  if (win?.classList.contains("is-slide-hidden")) { window.AISystem6WindowShade?.slideVisibility(win, false); return; }
   if (!win) return;
   const restoredMiniwindow = win.classList.contains("is-minimized");
   win.classList.remove("is-minimized");
@@ -2696,6 +2699,28 @@ function resolveMenuContextWindow() {
   return activeWin;
 }
 
+function isWindowArrangementActionAvailable(win, action) {
+  if (["slideLeft", "slideRight", "splitChoose", "peek", "pinList", "pinSuspend", "pinClear", "pinRestore", "slideShow", "slideHide", "slideExit"].includes(action)) {
+    if (window.AISystem6WindowShade) return window.AISystem6WindowShade.available(win, action);
+    if (action === "peek") return !!win?.classList.contains("is-collapsed");
+    if (["slideShow", "slideHide", "slideExit", "pinRestore"].includes(action)) return false;
+    if (["pinSuspend", "pinClear", "pinList"].includes(action)) return !!document.querySelector('.window[data-window-pinned="true"]:not(.is-hidden)');
+    return !!win && !isNarrowViewport() && !writerMode;
+  }
+
+  if (!win || isNarrowViewport() || writerMode || isCenteredSystemWindow(win)
+    || win.matches(".is-hidden, .is-app-hidden, .is-minimized, .is-fullscreen, .is-mobile-fullscreen, .is-desklet")) return false;
+  const api = window.AISystem6WindowShade;
+  if (api) return api.available(win, action);
+  if (action === "undo") return false;
+  if (action === "shade") return !win.classList.contains("is-collapsed");
+  if (action === "expand") return win.classList.contains("is-collapsed");
+  if (action === "pin" || action === "unpin") return canPinWindow(win)
+    && (win.dataset.windowPinned === "true") !== (action === "pin");
+  if (["left", "right", "fill"].includes(action)) return isResizableWindow(win);
+  return action === "recover" || action === "menu";
+}
+
 function getActionAvailability() {
   const activeWin = document.querySelector(".window.is-active");
   const menuContextWin = resolveMenuContextWindow();
@@ -2874,28 +2899,9 @@ function getActionAvailability() {
   const windowMenuFrontWindow = document.querySelector(
     ".window[data-window].is-active:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)"
   );
-  const windowMenuAvailable = windowMenuEra && !!windowMenuFrontWindow && !isNarrowViewport()
-    && (!window.AISystem6WindowShade || window.AISystem6WindowShade.eligible(windowMenuFrontWindow));
-  const windowMenuPinAvailable = windowMenuAvailable
-    && (typeof canPinWindow !== "function" || canPinWindow(windowMenuFrontWindow));
-  // A slot arrangement needs a window the grow box can own. That is the same
-  // fact the engine's own target() refuses on: it returns null for a window
-  // isResizableWindow() rejects, and dispatch() then reports noRoom without a
-  // word. Pin already greys with canPinWindow; the slots had no counterpart,
-  // so with a fixed-size Desk Accessory in front — Note Pad, which opens at
-  // one size by design and is deliberately absent from resizableWindowNames —
-  // Left, Right and Fill stayed black and then did nothing when chosen.
-  // Undo is not gated here: roll-up and recovery also record history, so a
-  // window that cannot be slotted can still have something to undo. Shade,
-  // Expand and Recover are not gated either; every eligible window can be
-  // rolled up, unrolled and brought back into view.
-  const windowMenuArrangeAvailable = windowMenuAvailable
-    && typeof isResizableWindow === "function" && isResizableWindow(windowMenuFrontWindow);
-  // WM5's All Windows row is a browse list, not an arrangement: it needs the
-  // Window-menu era and at least one window on the desk, but no front window to
-  // act on (a desk of only minimized windows is exactly when it is most useful).
-  const windowMenuBrowseAvailable = windowMenuEra && !isNarrowViewport()
-    && !!document.querySelector(".window[data-window]:not(.is-hidden):not(.is-app-hidden)");
+  const windowMenuAvailable = windowMenuEra && !isNarrowViewport();
+  const windowMenuBrowseAvailable = !!document.querySelector(".window[data-window]:not(.is-hidden)");
+  const arrangementAvailable = (action) => isWindowArrangementActionAvailable(windowMenuFrontWindow, action);
 
   const availability = {
     // Both open a scratch document, which never touches the project — that is
@@ -3260,16 +3266,18 @@ function getActionAvailability() {
     // capability), and in a narrow viewport where title-bar gestures stand
     // down. Pin follows the engine's canPinWindow, so a full-screen or
     // centered system sheet greys it.
-    "window-menu": windowMenuAvailable,
-    "window-shade": windowMenuAvailable,
-    "window-expand": windowMenuAvailable,
-    "window-layout-left": windowMenuArrangeAvailable,
-    "window-layout-right": windowMenuArrangeAvailable,
-    "window-layout-fill": windowMenuArrangeAvailable,
-    "window-layout-undo": windowMenuAvailable,
-    "window-layout-recover": windowMenuAvailable,
-    "window-pin": windowMenuPinAvailable,
-    "window-unpin": windowMenuPinAvailable,
+    "window-menu": windowMenuAvailable && windowMenuBrowseAvailable,
+    "window-browse-special": isNarrowViewport() || (getCurrentTheme() !== "nextstep"
+      && (!windowMenuAvailable || !document.querySelector('[data-menu-condition="window-menu"]'))),
+    "window-shade": arrangementAvailable("shade"),
+    "window-expand": arrangementAvailable("expand"),
+    "window-layout-left": arrangementAvailable("left"),
+    "window-layout-right": arrangementAvailable("right"),
+    "window-layout-fill": arrangementAvailable("fill"),
+    "window-layout-undo": arrangementAvailable("undo"),
+    "window-layout-recover": arrangementAvailable("recover"),
+    "window-pin": arrangementAvailable("pin"),
+    "window-unpin": arrangementAvailable("unpin"),
     "window-browse": windowMenuBrowseAvailable
   };
   // A lazy command answers for itself once its admission row exists: the row is
@@ -3419,6 +3427,23 @@ function updateMenuState() {
       btn.dataset.i18n = labelKey;
       btn.textContent = t(labelKey);
       btn.classList.toggle("is-checked", quickDraftSideAskActive);
+    }
+    if (["window-shade", "window-expand", "window-pin", "window-unpin"].includes(action)) {
+      const oppositeState = action === "window-shade" ? !!activeWin?.classList.contains("is-collapsed")
+        : action === "window-expand" ? !activeWin?.classList.contains("is-collapsed")
+          : action === "window-pin" ? activeWin?.dataset.windowPinned === "true"
+            : activeWin?.dataset.windowPinned !== "true";
+      btn.classList.toggle("is-hidden", oppositeState);
+    }
+    if (["window-slide-hide", "window-slide-show", "window-slide-exit", "window-pin-suspend", "window-pin-restore"].includes(action)) {
+      const shade = window.AISystem6WindowShade;
+      const slide = shade?.slideState(activeWin);
+      const hidden = action === "window-slide-hide" ? !slide || slide.hidden
+        : action === "window-slide-show" ? !slide?.hidden
+          : action === "window-slide-exit" ? !slide
+            : action === "window-pin-suspend" ? !!window.AISystem6WindowPinControls?.isSuspended()
+              : !window.AISystem6WindowPinControls?.isSuspended();
+      btn.classList.toggle("is-hidden", hidden);
     }
     if (action === "tile-windows") {
       btn.classList.toggle("is-hidden", isPortraitDocumentFlow());
@@ -4449,6 +4474,7 @@ function getTileCandidateWindows() {
   return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)"))
     .filter((win) => {
       if (["about", "saveChat"].includes(win.dataset.window)) return false;
+      if (isCenteredSystemWindow(win) || applicationWindowPresentation(win) !== "open") return false;
       if (isDeskAccessoryPlacementWindow(win)) return false;
       if (isMultiFinderMode()) return true;
       const appId = getWindowAppId(win);
@@ -5223,6 +5249,9 @@ async function closeWindow(name, force = false) {
   // A closed window must not be moved by a callback scheduled before the close.
   invalidateWindowAutoLayout(win);
   endPeek(win);
+  window.AISystem6WindowShade?.detach(win, true);
+  window.AISystem6WindowPreview?.release(win);
+  window.AISystem6WindowMinimize?.releaseCapture(win);
   delete win.dataset.windowPinned;
   win.classList.add("is-hidden");
   win.classList.remove("is-minimized");
@@ -5364,6 +5393,8 @@ function toggleCollapsed(win) {
   // 100dvh window cannot shade, and the shade must remember the real frame,
   // not the priority-band view it is leaving.
   if (win.classList.contains("is-fullscreen")) window.AISystem6WindowFullscreen?.exit(win);
+  window.AISystem6WindowPreview?.remember(win);
+  window.AISystem6WindowShade?.detach(win, true);
   const willCollapse = !win.classList.contains("is-collapsed");
   // The writer's own roll up or down: from here the shade is theirs, not Hide's.
   delete win.dataset.appHiddenCollapsed;
@@ -6041,131 +6072,24 @@ function installGrowBoxes() {
   });
 }
 
-function tileWindows(candidateWindows = null) {
-  const openWindows = Array.isArray(candidateWindows)
-    ? candidateWindows.filter(visibleWindowOrNull)
-    : getTileCandidateWindows();
-
-  if (openWindows.length === 0) return;
-
-  const desktop = document.querySelector(".desktop");
-  const padding = 18;
-  const topPadding = 28;
-  const bottomPadding = 18;
-  const avoidance = getDesktopAvoidanceInsets({ margin: padding, iconGap: 48 });
-  // Measured from where the launcher IS, not from how wide it is — the same
-  // correction getDesktopAvoidanceInsets() already carries. The two numbers
-  // agreed while the column was glued to the display's right edge; once it
-  // follows the composition inset, a width-derived gutter reserved 132px on a
-  // 2560pt desk where the column starts 470px from the edge, and Tile Windows
-  // laid the last column straight under the launcher.
-  const desktopWidth = desktop.clientWidth - avoidance.left - avoidance.right - padding;
-  const desktopHeight = desktop.clientHeight;
-  const tileableWindows = openWindows.filter((win) => tileableWindowNames.has(win.dataset.window));
-  // With only fixed-size windows (a desk accessory, a dialog) there is nothing
-  // to tile and nothing to write: return before the fixed-column measurement
-  // clears their inline size, so a no-op tile leaves the manual frame alone.
-  if (!tileableWindows.length) return false;
-  const fixedWindows = openWindows.filter((win) => !tileableWindowNames.has(win.dataset.window));
-  const fixedGap = fixedWindows.length ? 20 : 0;
-  const minTileAreaWidth = 520;
-
-  const fixedColumnWidth = fixedWindows.reduce((max, win) => {
-    win.style.width = "";
-    win.style.height = "";
-    const rect = win.getBoundingClientRect();
-    return Math.max(max, rect.width || 0);
-  }, 0);
-  const useFixedColumn = fixedWindows.length > 0
-    && desktopWidth - fixedColumnWidth - fixedGap - padding >= minTileAreaWidth;
-
-
-  const tileAreaWidth = useFixedColumn
-    ? desktopWidth - fixedColumnWidth - fixedGap - padding
-    : desktopWidth - padding;
-  const count = tileableWindows.length;
-  // A window that cannot shrink past its paper floor turns an over-ambitious
-  // column count into a window under the launcher: four writing surfaces hold
-  // 540px each, so two columns need 1098px of a 1024pt desk that has 612 to
-  // give, and the right-hand column landed on the icons. Ask the windows what
-  // width they can actually take before choosing the grid.
-  const minTileWidth = tileableWindows.reduce((widest, win) => {
-    const declared = Number.parseFloat(getComputedStyle(win).minWidth);
-    return Number.isFinite(declared) ? Math.max(widest, declared) : widest;
-  }, 0);
-  const maxCols = minTileWidth > 0
-    ? Math.max(1, Math.floor((tileAreaWidth + padding) / (minTileWidth + padding)))
-    : count;
-  const cols = Math.max(1, Math.min(Math.ceil(Math.sqrt(count)), maxCols));
-  const rows = Math.ceil(count / cols);
-
-  const winWidth = Math.floor((tileAreaWidth - (padding * (cols - 1))) / cols);
-  const winHeight = Math.floor((desktopHeight - topPadding - bottomPadding - (padding * (rows - 1))) / rows);
-
-  tileableWindows.forEach((win, index) => {
-    const col = index % cols;
-    const row = Math.floor(index / cols);
-
-    win.style.left = `${avoidance.left + col * (winWidth + padding)}px`;
-    win.style.top = `${topPadding + row * (winHeight + padding)}px`;
-    win.style.width = `${winWidth}px`;
-    win.style.height = `${winHeight}px`;
-    win.style.right = "auto";
-    win.style.transform = "none";
-    win.classList.remove("is-collapsed");
-    markWindowUserPositioned(win);
-
-    // Special handling for assistant desklet mode
-    if (win.dataset.window === "assistant") {
-      win.classList.remove("is-desklet");
-    }
-  });
-
-  if (useFixedColumn) {
-    arrangeFixedWindows(fixedWindows, {
-      left: Math.max(avoidance.left, avoidance.left + desktopWidth - fixedColumnWidth),
-      top: topPadding,
-      bottom: desktopHeight - bottomPadding,
-      gap: 24,
-    });
-  } else {
-    arrangeFixedWindows(fixedWindows, {
-      left: avoidance.left,
-      top: topPadding + rows * (winHeight + padding),
-      bottom: Number.POSITIVE_INFINITY,
-      gap: 24,
-    });
+let tileRequest = 0;
+async function tileWindows(candidateWindows = null) {
+  const ticket = ++tileRequest;
+  const candidates = getTileCandidateWindows();
+  const windows = Array.isArray(candidateWindows)
+    ? candidates.filter((win) => candidateWindows.includes(win)) : candidates;
+  if (!windows.length) return false;
+  const before = windows.map((win) => [win, win.getAttribute("style"), win.className]);
+  try {
+    await ensureLazySystemModule("app/core/windowshade.js", "AISystem6WindowShadeLoaded");
+    if (ticket !== tileRequest || before.some(([win, style, classes]) => !win.isConnected
+      || win.getAttribute("style") !== style || win.className !== classes)) return false;
+    return window.AISystem6WindowShade.tile(windows).ok;
+  } catch (error) {
+    console.warn("Window tiling could not load", error);
+    setStatus(t("windows_tile_no_room"));
+    return false;
   }
-  scheduleWorkingSessionSave?.();
-  // The move is a pure layout change (inline style on each window), so it has
-  // no other observable trace — the same class of gap CLAUDE.md calls out for
-  // "show visible feedback." A text receipt is also what a screen reader gets
-  // for a rearrangement it cannot otherwise perceive.
-  setStatus(t("windows_tiled"));
-}
-
-function arrangeFixedWindows(windows, bounds) {
-  let top = bounds.top;
-
-  windows.forEach((win) => {
-    win.classList.remove("is-collapsed");
-    win.style.width = "";
-    win.style.height = "";
-    win.style.right = "auto";
-    win.style.transform = "none";
-
-    const rect = win.getBoundingClientRect();
-    const height = rect.height || 0;
-
-    if (top + height > bounds.bottom) {
-      top = bounds.top;
-    }
-
-    win.style.left = `${Math.max(18, bounds.left)}px`;
-    win.style.top = `${top}px`;
-    markWindowUserPositioned(win);
-    top += height + bounds.gap;
-  });
 }
 
 function hideSidebars() {

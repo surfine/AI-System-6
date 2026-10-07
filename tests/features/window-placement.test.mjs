@@ -1,6 +1,7 @@
 // New windows preserve the user's spatial memory: existing frames never move.
 // A clear desktop slot wins; a diagonal cascade is the deterministic fallback.
 
+import { createAppBootVm } from "../helpers/app-boot-vm.mjs";
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("window-placement");
@@ -60,24 +61,42 @@ test.assertMatches(
   /a\.conflicts - b\.conflicts \|\| a\.overlap - b\.overlap \|\| a\.rung - b\.rung/,
   "when overlap is unavoidable the least-covered staircase frame wins",
 );
-// Re-arranging keeps the launcher reachable. Tile Windows reserved the right
-// edge from the column's WIDTH while every other placement path measures where
-// the column IS: on a 2560pt desk whose column starts 470px from the edge that
-// reserved 132px, and the last tiled column landed under the launcher.
-const tileSource = readFunction(windowManager, "tileWindows");
-test.assert(Boolean(tileSource), "tileWindows reads as one function");
-test.assertIncludes(
-  tileSource || "",
-  "desktop.clientWidth - avoidance.left - avoidance.right - padding",
-  "tiling reserves the launcher by the measured inset",
-);
-test.assertNotIncludes(tileSource || "", "iconRect.width", "tiling no longer sizes the launcher gutter from the column's width");
-// Reserving the launcher is not enough on its own: a writing window holds a
-// 540px paper floor, so two columns of them need 1098px of a 1024pt desk that
-// has 612 to give, and the right-hand column landed on the icons anyway. The
-// grid asks the windows what width they can take before it chooses columns.
-test.assertIncludes(tileSource || "", "getComputedStyle(win).minWidth", "the grid reads each window's own minimum width");
-test.assertIncludes(tileSource || "", "Math.min(Math.ceil(Math.sqrt(count)), maxCols)", "and never asks for more columns than those minimums allow");
+// The desktop entry selects actual candidates and hands the whole group to
+// the shared WindowShade transaction. Geometry belongs to that engine.
+{
+  const h = createAppBootVm();
+  await h.settleBoot();
+  h.document.querySelectorAll(".window[data-window]").forEach((win) => win.classList.add("is-hidden"));
+  h.context.isNarrowViewport = () => false;
+  h.context.isMultiFinderMode = () => true;
+  h.context.isCenteredSystemWindow = (win) => win.dataset.window === "tile-centered";
+  h.context.isDeskAccessoryPlacementWindow = (win) => win.dataset.window === "tile-accessory";
+  const desktop = h.document.querySelector(".desktop");
+  const variants = ["open", "is-hidden", "is-app-hidden", "is-minimized", "is-collapsed", "centered", "accessory"];
+  const candidates = variants.map((kind) => {
+    const win = h.document.createElement("section");
+    win.className = `window ${kind.startsWith("is-") ? kind : ""}`;
+    win.dataset.window = `tile-${kind}`;
+    win.dataset.app = "tileContract";
+    desktop.append(win);
+    return win;
+  });
+  const delivered = [];
+  h.context.ensureLazySystemModule = async () => true;
+  h.context.AISystem6WindowShade = { tile: (group) => { delivered.push([...group]); return { ok: true }; } };
+  test.assert(await h.context.tileWindows(), "Tile Windows returns the shared transaction result");
+  test.assert(delivered.length === 1 && delivered[0].length === 1 && delivered[0][0] === candidates[0], "only open ordinary windows reach the transaction; hidden, minimized, collapsed and owned surfaces stay out");
+  test.assert(!(await h.context.tileWindows([candidates[3]])) && delivered.length === 1, "an explicit minimized candidate cannot bypass filtering");
+  h.context.isNarrowViewport = () => true;
+  test.assert(!(await h.context.tileWindows()) && delivered.length === 1, "narrow viewports never start a desktop tile transaction");
+  h.context.isNarrowViewport = () => false;
+  let release;
+  h.context.ensureLazySystemModule = () => new Promise((resolve) => { release = resolve; });
+  const pending = h.context.tileWindows();
+  candidates[0].classList.add("is-hidden");
+  release(true);
+  test.assert(!(await pending) && delivered.length === 1, "a window closed during lazy loading cancels the transaction before any placement");
+}
 
 const overlapSource = readFunction(windowManager, "windowPlacementOverlapArea");
 const overlapArea = overlapSource ? Function(`return (${overlapSource})`)() : null;

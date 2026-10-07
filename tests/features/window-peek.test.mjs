@@ -104,3 +104,59 @@ test("window-peek is a lazy module, never on the boot disk", () => {
   assert.match(lazyBlock, /"app\/core\/window-peek\.js"/);
   assert.match(peekSource, /window\.AISystem6WindowPeekLoaded/);
 });
+
+function coldEntryHarness(collapsed = true) {
+  const listeners = new Map();
+  const windowListeners = new Map();
+  const moves = [], actions = [];
+  let finishPeek;
+  const peekLoaded = new Promise((resolve) => { finishPeek = resolve; });
+  const win = { isConnected: true, dataset: { window: "cold-window" }, className: "window is-active",
+    classList: { contains: (name) => name === "is-collapsed" && collapsed }, getAttribute: () => "" };
+  const bar = { parentElement: win, closest: (selector) => selector === ".window[data-window] > .title-bar" ? bar : null };
+  const context = {
+    window: { addEventListener: (name, fn) => windowListeners.set(name, fn) },
+    document: { hidden: false, addEventListener: (name, fn) => { const list = listeners.get(name) || []; list.push(fn); listeners.set(name, list); },
+      querySelector: (selector) => selector.includes("is-active") ? win : null },
+    isNarrowViewport: () => false, writerMode: false, cancelAllWindowPeeks() {}, console,
+    ensureLazySystemModule: (path) => path.endsWith("window-peek.js") ? peekLoaded : Promise.resolve(),
+  };
+  runInNewContext(entrySource, context);
+  const send = (name, extra = {}) => {
+    const event = { target: bar, preventDefault() { this.defaultPrevented = true; }, stopPropagation() {}, ...extra };
+    (listeners.get(name) || []).forEach((fn) => fn(event));
+    return event;
+  };
+  return { send, context, moves, actions,
+    blur: () => windowListeners.get("blur")(),
+    finishPeek: async () => {
+      context.window.AISystem6WindowPeek = { move: (sample) => moves.push(sample), cancel() {} };
+      finishPeek(); await peekLoaded; await Promise.resolve();
+    },
+    finishEngine: () => { context.window.AISystem6WindowShade = { eligible: () => true, dispatch: (_win, action) => actions.push(action) }; },
+  };
+}
+
+test("cold hover completion cannot replay preview intent cancelled by Escape or blur", async () => {
+  for (const cancel of ["escape", "blur"]) {
+    const h = coldEntryHarness();
+    h.send("pointerover");
+    if (cancel === "escape") h.send("keydown", { key: "Escape" });
+    else h.blur();
+    await h.finishPeek();
+    assert.equal(h.moves.length, 0, `${cancel} invalidates the outstanding sample`);
+  }
+  const h = coldEntryHarness();
+  h.send("pointerover");
+  await h.finishPeek();
+  assert.equal(h.moves.length, 1, "an uncancelled cold hover still reaches the preview adapter");
+});
+
+test("the first line-unit wheel gesture commits after the engine finishes loading", async () => {
+  const h = coldEntryHarness(false);
+  const event = h.send("wheel", { deltaY: 1, deltaMode: 1 });
+  assert.equal(event.defaultPrevented, true);
+  h.finishEngine();
+  await new Promise(setImmediate);
+  assert.deepEqual(h.actions, ["shade"]);
+});

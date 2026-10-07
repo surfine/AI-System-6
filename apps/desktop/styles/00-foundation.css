@@ -738,6 +738,7 @@
   --z-window-layer-max: 8990;
   --z-liquid-glass-overlay: 8992;
   --z-floating-field-control: 8995;
+  --z-window-slide: 8991;
   --z-window-pinned: 9000;
   --z-window-priority: 9200;
   --z-control-strip: 9400;
@@ -2310,8 +2311,13 @@ textarea,
   box-shadow: var(--menu-bar-shadow);
   backdrop-filter: var(--menu-bar-backdrop-filter);
   -webkit-backdrop-filter: var(--menu-bar-backdrop-filter);
-  z-index: var(--z-system-menu);
   overflow: visible;
+}
+
+.menu-bar,
+.window-browse-menu,
+.window-gesture-hint {
+  z-index: var(--z-system-menu);
 }
 
 body.is-booting .menu-bar,

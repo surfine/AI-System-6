@@ -319,4 +319,35 @@ test.assert(
   "under NeXTSTEP a launch leaves the other application's windows and miniwindows on the desk",
 );
 
+vmw.run('window.AISystem6WindowMinimize.setDockVisible(true); window.AISystem6NextstepDock.sync()');
+await vmw.waitFor(() => vmw.run('!!document.querySelector(".nextstep-dock-tile")'));
+vmw.run(`(() => {
+ const tile = document.querySelector('.nextstep-dock .nextstep-dock-tile');
+ window.__pinBefore = localStorage.getItem('ai-system-6-nextstep-dock');
+ window.__pinId = tile.dataset.appId;
+ tile.dispatchEvent({type:'contextmenu', clientX:900, clientY:100, preventDefault(){}});
+})()`);
+test.assert(vmw.run('localStorage.getItem("ai-system-6-nextstep-dock") === window.__pinBefore'), "right click alone never changes pinned applications");
+test.assert(vmw.run(`!!document.querySelector('.nextstep-dock-menu[role="menu"]')`), "right click opens an explicit pin menu");
+test.assert(vmw.run('document.querySelector(".nextstep-dock-menu").style.display === "block"'), "standalone pin menu explicitly overrides the shared hidden popover default (style contract, not browser visibility)");
+vmw.run(`document.querySelector('.nextstep-dock-menu[role="menu"] button').dispatchEvent(new Event('click'))`);
+test.assert(vmw.run('!JSON.parse(localStorage.getItem("ai-system-6-nextstep-dock")).includes(window.__pinId)'), "choosing Remove changes the pin preference");
+
+// The DOM shim has no input-modality engine: supply only :focus-visible,
+// then dispatch the real focus handler into the real shared help implementation.
+vmw.run(`(() => {
+  balloonHelpEnabled = false;
+  hideBalloonHelp();
+  const icon = document.querySelector('.nextstep-dock-tile');
+  window.__focusNameIcon = icon;
+  const matches = icon.matches.bind(icon);
+  icon.matches = (selector) => selector === ':focus-visible' || matches(selector);
+  icon.focus();
+  icon.dispatchEvent({type:'focus', target:icon});
+})()`);
+test.assert(vmw.run('!document.querySelector("#balloon-help").classList.contains("is-hidden") && document.querySelector("#balloon-help-text").textContent === window.__focusNameIcon.getAttribute("aria-label")'), "keyboard focus shows the application name through existing Balloon Help even when Help is off");
+test.assert(vmw.run('balloonHelpEnabled === false'), "name fallback does not switch the global Help preference on");
+vmw.run(`window.__focusNameIcon.dispatchEvent({type:'blur', target:window.__focusNameIcon})`);
+test.assert(vmw.run('document.querySelector("#balloon-help").classList.contains("is-hidden") && !window.__focusNameIcon.hasAttribute("aria-describedby")'), "blur clears the shared name balloon and its accessible description");
+
 test.finish();

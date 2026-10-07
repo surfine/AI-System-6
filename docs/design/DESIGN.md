@@ -56,7 +56,7 @@ Adopting a historical element requires all of the following:
   accessibility instead of reproducing an obsolete input limitation.
 - Keep the default experience quiet. Later-system features should appear on
   demand or at the moment they become relevant, not as a feature inventory.
-- Keep one semantic DOM and state model across all six appearances. Each era
+- Keep one semantic DOM and state model across all twelve appearances. Each era
   changes material and optical geometry, not the object's meaning.
 
 Control meanings are load-bearing:
@@ -81,7 +81,20 @@ Control meanings are load-bearing:
   still launches from the desk icons, switches from the menu bar and lists
   put-away windows in the Apple menu, so hiding it never strands a window.
   Listing windows in the Apple menu is the product's adaptation: Mac OS X's
-  Apple menu never listed windows, and the desk has no Window menu.
+  Apple menu never listed windows. All Windows uses the existing Window menu
+  in Mac OS X appearances, Special in early appearances and narrow layouts,
+  and the Windows palette in desktop NeXTSTEP. Applications without a Window
+  menu retain the Special fallback. Browse and Dock restore the registered
+  window itself, preserving its content, scroll position and manual shade.
+- Arrangement uses one measured desktop area, including the menu bar, Dock,
+  NeXTSTEP icon regions and existing desktop avoidance. Tile excludes hidden,
+  minimized and manually shaded windows. It computes every frame before writing;
+  if minimum or fixed sizes cannot fit, it leaves the entire layout unchanged.
+  A successful tile is one operation in the existing arrangement undo ledger.
+- Dock favorites are local shortcuts, not running state. Removing a running
+  application keeps it visible until it exits; Finder stays first. Closing the
+  Dock preserves favorites and order. Context menus expose explicit choices;
+  opening a menu never changes a pin or restores a window by itself.
 - Full application and document windows may expose Zoom and grow. Fixed system
   windows and Desk Accessories generally omit them unless native evidence or a
   deliberate product contract says otherwise.
@@ -439,6 +452,43 @@ Use the project's native patterns before adding animation libraries.
 For the shared state contract, behavior kernel, appearance ownership, and native
 boundary, follow [Architecture](../ARCHITECTURE.md). Phased migrations remain
 maintainer plans rather than a second public design authority.
+
+### WindowShade multitasking
+
+WindowShade extends the existing window model on the wide desktop. All twelve
+appearances expose the same arrangement commands and gesture target previews;
+the appearance owns their material. Narrow screens, writing focus and system
+modals retain their own layout ownership. Zoom, grow, roll-up, minimize and
+application Hide keep the distinct meanings defined above.
+
+- All Windows is one searchable projection of real windows and their states.
+  Its preview shows a captured image of the actual window when available. A
+  hidden, minimized, rolled-up or tucked-away window uses its last real capture,
+  marked as previous; without one, show title/state and unavailable feedback.
+  Never fabricate document contents or restore a window just to photograph it.
+  Captures are optional memory-only data, released when the window closes.
+- Side placement keeps one window at each edge, with a tab to tuck it away and
+  reveal it. Replacing an occupant returns it to its prior frame; Exit does the
+  same unless an explicit manual move keeps the new position. Split pairs two
+  windows with a draggable separator: arrows adjust 16 px, Shift-arrows 48 px,
+  and Home restores equal shares. Use top/bottom splits in a taller work area.
+- Arrangement admission checks usable space, minimum dimensions and aspect
+  ratios before writing. Paired operations and undo are atomic and scoped to
+  their members; cancellation preserves document nodes, contents and prior
+  undo. Closing, hiding or minimizing a member ends its temporary relation.
+  Viewport and appearance changes must not leave unreachable windows or a
+  half-updated pair. Side/Split relations do not survive session restoration.
+- Pinning remains a window-layer action. The pinned list, suspend, restore and
+  clear commands use that owner; restore respects intervening individual pin
+  choices and skips windows no longer eligible. Suspension is memory-only.
+- Dock hover previews and edge-triggered side placement start enabled and have
+  separate Control Panel preferences. Their saved booleans do not persist
+  previews or temporary relationships. Dock hover waits for intent and yields
+  to click, drag and context menu; touch and keyboard retain explicit entries.
+- Title-bar gestures use observable pointer movement and wheel deltas, with
+  target feedback before commitment and cancellation on interrupted interaction.
+  They do not claim native finger counts, Force Touch, pinch identity, or native
+  operating-system window control. Menu and keyboard routes remain available.
 
 ## Copy Rules
 

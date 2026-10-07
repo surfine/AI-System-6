@@ -8,6 +8,7 @@
 // declaration, the era gate, and the command ids all exist and agree.
 
 import vm from "node:vm";
+import { createAppBootVm } from "../helpers/app-boot-vm.mjs";
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("window-menu");
@@ -59,19 +60,31 @@ test.assert(
   "the darkroom keeps its two-slot conditional budget and does not gain a third",
 );
 
-// WM5's All Windows row leads, then exactly the nine arrangement/pin commands,
-// in the order Windows users expect.
+// All Windows leads; the authorized WindowShade commands stay in their
+// functional sections and all resolve through the live runtime registry.
 const expectedItems = [
   ["window-browse", "window_browse"],
   ["window-shade", "window_shade"],
   ["window-expand", "window_expand"],
+  ["window-peek", "window_peek"],
+  ["windowshade-arrange-menu", "window_arrange_menu"],
   ["window-layout-left", "window_arrange_left"],
   ["window-layout-right", "window_arrange_right"],
   ["window-layout-fill", "window_arrange_fill"],
+  ["window-slide-left", "window_slide_left"],
+  ["window-slide-right", "window_slide_right"],
+  ["window-slide-hide", "window_slide_hide"],
+  ["window-slide-show", "window_slide_show"],
+  ["window-slide-exit", "window_slide_exit"],
+  ["window-split-choose", "window_split_choose"],
   ["window-layout-undo", "window_arrange_undo"],
   ["window-layout-recover", "window_arrange_recover"],
   ["window-pin", "window_pin"],
   ["window-unpin", "window_unpin"],
+  ["window-pinned-list", "window_pinned_list"],
+  ["window-pin-suspend", "window_pin_suspend"],
+  ["window-pin-restore", "window_pin_restore"],
+  ["window-pin-clear", "window_pin_clear"],
 ];
 const windowItems = menuDefinitionItems(windowDefinition(menuSets.finder).items);
 function menuDefinitionItems(definitions) {
@@ -81,7 +94,7 @@ function menuDefinitionItems(definitions) {
 }
 test.assert(
   JSON.stringify(windowItems) === JSON.stringify(expectedItems),
-  `the Window menu carries the ten commands in order (got ${JSON.stringify(windowItems)})`,
+  `the Window menu carries the authorized overview, arrangement and pin commands in order (got ${JSON.stringify(windowItems)})`,
 );
 
 // --- (b) the era gate -------------------------------------------------------
@@ -102,28 +115,91 @@ test.assertIncludes(
   'window.AISystem6Theme?.hasCapability?.("window-menu")',
   "the menu condition is the theme capability, not a hard-coded era list",
 );
-test.assertIncludes(windows, '"window-menu": windowMenuAvailable,', "the condition answers getActionAvailability()");
-for (const [action] of expectedItems) {
-  test.assertIncludes(windows, `"${action}": windowMenu`, `${action} reports its own availability`);
+// Drive the real availability table and menu updater. Appearance is changed
+// through the real registry; only the viewport predicate is controlled.
+const h = createAppBootVm();
+await h.settleBoot();
+h.document.querySelectorAll(".window[data-window]").forEach((win) => { win.classList.add("is-hidden"); win.classList.remove("is-active"); });
+const front = h.document.querySelector('[data-window="notepad"]') || h.document.querySelector(".window[data-window]");
+front.classList.remove("is-hidden");
+front.classList.add("is-active");
+h.context.isCenteredSystemWindow = () => false;
+h.context.canPinWindow = () => true;
+let narrow = false;
+h.context.isNarrowViewport = () => narrow;
+h.context.queueMicrotask = (fn) => Promise.resolve().then(fn);
+for (const era of ["classic", "system-7", "platinum", "drawing-board", "aqua", "tiger", "snow-leopard", "lion", "yosemite", "big-sur", "liquid-glass"]) {
+  await h.context.AISystem6Theme.applyTheme(era, { persist: false, announce: false });
+  for (const phone of [false, true]) {
+    narrow = phone;
+    const state = h.context.getActionAvailability();
+    test.assert(state["window-browse"] === true, `${era} ${phone ? "narrow" : "wide"} keeps All Windows usable`);
+    test.assert(state["window-menu"] || state["window-browse-special"], `${era} ${phone ? "narrow" : "wide"} exposes a menu path to All Windows`);
+  }
 }
-// A slot arrangement needs a window the grow box can own. The engine's own
-// target() returns null for a window isResizableWindow() rejects, and
-// dispatch() then reports noRoom silently — so left/right/fill used to stay
-// black on a fixed-size Desk Accessory (Note Pad) and do nothing when chosen.
-// Pin already greyed with canPinWindow; the slots had no counterpart.
-test.assertMatches(
-  windows,
-  /const windowMenuArrangeAvailable = windowMenuAvailable\s*\n\s*&& typeof isResizableWindow === "function" && isResizableWindow\(windowMenuFrontWindow\);/,
-  "the slot rows require a front window the grow box can own",
-);
-for (const [action] of expectedItems.filter(([id]) => /^window-layout-(left|right|fill)$/.test(id))) {
-  test.assertIncludes(windows, `"${action}": windowMenuArrangeAvailable,`, `${action} greys when the front window is not resizable`);
-}
-// The rest of the family is not a slot: roll-up, unroll and bring-back work on
-// any eligible window, and undo can have history from those as well.
-for (const [action] of expectedItems.filter(([id]) => /^window-(expand|shade|layout-undo|layout-recover)$/.test(id))) {
-  test.assertIncludes(windows, `"${action}": windowMenuAvailable,`, `${action} stays available on any eligible front window`);
-}
+await h.context.AISystem6Theme.applyTheme("nextstep", { persist: false, announce: false });
+narrow = false;
+if (!h.context.AISystem6NextstepMenus) h.run(read("app/core/nextstep-menus.js"));
+h.context.AISystem6NextstepMenus.sync();
+await Promise.resolve();
+const nextstepWindows = [...h.document.querySelectorAll(".nextstep-menu-palette button")].find((button) => button.getAttribute("aria-label") === h.context.t("nextstep_windows"));
+test.assert(Boolean(nextstepWindows), "NeXTSTEP wide view renders its own Windows submenu");
+nextstepWindows?.dispatchEvent({ type: "click", stopPropagation() {} });
+const nextstepBrowse = h.document.querySelector('[data-nextstep-action="window-browse"]');
+test.assert(Boolean(nextstepBrowse) && !nextstepBrowse.disabled, "NeXTSTEP Windows submenu offers an enabled All Windows row");
+narrow = true;
+const nextstepPhoneState = h.context.getActionAvailability();
+test.assert(nextstepPhoneState["window-browse"] && (nextstepPhoneState["window-menu"] || nextstepPhoneState["window-browse-special"]), "NeXTSTEP narrow view exposes All Windows through the shared phone menu bar");
+await h.context.AISystem6Theme.applyTheme("liquid-glass", { persist: false, announce: false });
+narrow = false;
+// The unloaded engine has no undo ledger. Opposite verbs must not both claim
+// to be available, including before the lazy module is fetched.
+front.classList.remove("is-collapsed");
+delete front.dataset.windowPinned;
+let state = h.context.getActionAvailability();
+test.assert(state["window-shade"] && !state["window-expand"], "an open window offers shade only");
+test.assert(state["window-pin"] && !state["window-unpin"], "an unpinned window offers pin only");
+test.assert(!state["window-layout-undo"], "empty arrangement history disables undo");
+test.assert(!state["window-peek"], "an expanded window does not offer Peek");
+test.assert(["window-slide-hide", "window-slide-show", "window-slide-exit", "window-pin-restore"].every((action) => !state[action]), "without a side slot or suspended pins, their state-dependent actions stay unavailable");
+front.classList.add("is-collapsed");
+front.dataset.windowPinned = "true";
+state = h.context.getActionAvailability();
+test.assert(!state["window-shade"] && state["window-expand"], "a collapsed window offers expand only");
+test.assert(!state["window-pin"] && state["window-unpin"], "a pinned window offers unpin only");
+test.assert(state["window-peek"], "a manually rolled-up window exposes Peek without expanding it");
+const commandMenu = h.document.createElement("div");
+commandMenu.className = "menu-popover";
+h.document.body.append(commandMenu);
+const commandRows = Object.fromEntries(["window-shade", "window-expand", "window-pin", "window-unpin", "window-layout-undo"].map((action) => {
+  const row = h.document.createElement("button");
+  row.dataset.action = action;
+  commandMenu.append(row);
+  return [action, row];
+}));
+h.context.invalidateMenuActionCache();
+h.context.updateMenuState();
+test.assert(commandRows["window-shade"].classList.contains("is-hidden") && !commandRows["window-expand"].classList.contains("is-hidden"), "rendered menu hides shade while expand is the relevant verb");
+test.assert(commandRows["window-pin"].classList.contains("is-hidden") && !commandRows["window-unpin"].classList.contains("is-hidden"), "rendered menu hides pin while unpin is the relevant verb");
+test.assert(commandRows["window-layout-undo"].disabled, "rendered undo row is disabled without history");
+front.classList.remove("is-collapsed");
+delete front.dataset.windowPinned;
+h.context.updateMenuState();
+test.assert(!commandRows["window-shade"].classList.contains("is-hidden") && commandRows["window-expand"].classList.contains("is-hidden"), "expanding switches the visible verb back to shade");
+test.assert(!commandRows["window-pin"].classList.contains("is-hidden") && commandRows["window-unpin"].classList.contains("is-hidden"), "unpinning switches the visible verb back to pin");
+
+front.classList.remove("is-collapsed");
+// Slot placement needs a growable window; recovery and shade do not.
+h.context.isResizableWindow = () => false;
+state = h.context.getActionAvailability();
+test.assert(["left", "right", "fill"].every((verb) => !state[`window-layout-${verb}`]), "fixed windows disable every resizing slot");
+test.assert(state["window-shade"] && state["window-layout-recover"], "fixed windows retain shade and recovery");
+front.classList.add("is-minimized");
+front.classList.remove("is-active");
+state = h.context.getActionAvailability();
+test.assert(state["window-browse"] && state["window-menu"], "when every window is minimized the Window menu still exposes All Windows");
+test.assert(!state["window-shade"] && !state["window-layout-fill"], "an all-minimized desk offers no front-window arrangement");
+
 test.assertIncludes(
   read("app/core/nextstep-menus.js"),
   '.filter((definition) => definition.menuCondition !== "window-menu")',
@@ -131,15 +207,9 @@ test.assertIncludes(
 );
 
 // --- (c) the commands live in the one shared registry -----------------------
-const registeredIds = new Set([
-  // The arrangement map is an object literal keyed by command id.
-  ...[...entry.matchAll(/"(window-[a-z0-9-]+)"\s*:\s*"/g)].map((match) => match[1]),
-  ...[...entry.matchAll(/\[\s*"(window-[a-z0-9-]+)",\s*"/g)].map((match) => match[1]),
-  // The browse row registers its own command in the same registry.
-  ...[...entry.matchAll(/registerCommand\?\.\("(window-[a-z0-9-]+)"/g)].map((match) => match[1]),
-]);
 for (const [action] of expectedItems) {
-  test.assert(registeredIds.has(action), `${action} is registered by windowshade-entry.js`);
+  const command = h.context.AISystem6Runtime.getCommand(action);
+  test.assert(typeof command?.handler === "function", `${action} resolves to a callable runtime command`);
 }
 test.assertIncludes(entry, "window-pin", "the pin command is registered beside the arrangement commands");
 test.assertIncludes(

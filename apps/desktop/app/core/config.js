@@ -532,9 +532,20 @@ const ensurePromptFilesData = createLazyModuleLoader("AISystem6PromptFiles", [
   "app/core/writing-tools-prompts.js",
   "app/generated/ai-prompt-files.js",
 ], true);
+const ensureWindowPreviewModule = createLazyModuleLoader("AISystem6WindowPreviewLoaded", ["app/core/window-preview.js"]);
 const ensureTranslationZh = createLazyModuleLoader("AISystem6TranslationsZh", ["app/data/translations-zh.js"], true);
 const ensureTranslationEn = createLazyModuleLoader("AISystem6TranslationsEn", ["app/data/translations-en.js"], true);
-function ensureLanguageFor(language) {
+async function ensureLanguageFor(language) {
+  const flag = language === "zh" ? "AISystem6TranslationsZh" : "AISystem6TranslationsEn";
+  const partial = window[flag];
+  // A lazy application may have supplied only its own extra strings. That
+  // object is not proof that the complete system language table has arrived.
+  if (partial && !partial.menu_special) {
+    await loadClassicScriptOnce(`app/data/translations-${language === "zh" ? "zh" : "en"}.js`);
+    for (const [key, value] of Object.entries(partial)) {
+      if (window[flag]?.[key] == null) window[flag][key] = value;
+    }
+  }
   return language === "zh" ? ensureTranslationZh() : ensureTranslationEn();
 }
 const ensureWritingFlowHelpData = createLazyModuleLoader("AISystem6WritingFlowHelpData", ["app/data/writing-flow-help.js"], true);

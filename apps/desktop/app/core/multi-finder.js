@@ -252,6 +252,7 @@ function applicationWindowPresentation(win) {
   if (win.classList.contains("is-hidden")) return "closed";
   if (win.classList.contains("is-app-hidden") || hiddenAppIds.has(getWindowAppId(win))) return "app-hidden";
   if (win.classList.contains("is-minimized")) return "minimized";
+  if (win.classList.contains("is-slide-hidden")) return "slide-hidden";
   if (win.classList.contains("is-collapsed")) return "collapsed";
   return "open";
 }
@@ -287,6 +288,7 @@ function restoreApplicationWindow(win) {
   if (!win?.isConnected) return false;
   const state = applicationWindowPresentation(win);
   if (state === "closed") return false;
+  if (state === "slide-hidden") return !!window.AISystem6WindowShade?.slideVisibility(win, false).ok;
   if (state === "app-hidden") unhideApp(getWindowAppId(win));
   if (win.classList.contains("is-minimized")) return !!restoreMinimizedWindow(win);
   // Collapsed stays collapsed: bringing the application window forward is not
@@ -555,6 +557,10 @@ function renderAppleMultiFinderSection(visible) {
   const section = document.querySelector("#apple-multifinder-apps");
   if (!section) return;
   section.classList.toggle("is-hidden", !visible);
+  const firstSection = section.parentElement?.querySelector(".menu-section-label");
+  const anchor = getCurrentTheme() === "classic" ? firstSection
+    : section.parentElement?.querySelector(".apple-multifinder-about-separator");
+  if (anchor && section.nextElementSibling !== anchor) section.parentElement.insertBefore(section, anchor);
   // A leading rule separates MultiFinder's contribution from the desk
   // accessories above it, the way the gray line separated the sections of the
   // System 6 Apple menu.
@@ -638,6 +644,8 @@ function hideApp(appId = activeAppId, { preserveActive = false } = {}) {
   if (!windows.length) return;
   hiddenAppIds.add(appId);
   windows.forEach((win) => {
+    window.AISystem6WindowPreview?.remember(win);
+    window.AISystem6WindowShade?.detach(win, true);
     if (getCurrentTheme() === "nextstep") {
       win.classList.add("is-app-hidden");
       win.classList.remove("is-active");
@@ -682,7 +690,7 @@ function showAllApps() {
 
 function foregroundApplicationIds() {
   const ids = new Set();
-  document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)").forEach((win) => {
+  document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed):not(.is-minimized):not(.is-slide-hidden)").forEach((win) => {
     const appId = getWindowAppId(win);
     if (appId && !hiddenAppIds.has(appId)) ids.add(appId);
   });

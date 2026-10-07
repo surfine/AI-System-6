@@ -427,8 +427,8 @@ const controlStripBuiltinModules = Object.freeze([
       source: "finder-environment",
     }),
     menu: () => [
-      { type: "action", label: t("finder"), checked: !isMultiFinderMode(), run: () => setFinderEnvironment("finder") },
-      { type: "action", label: t("multifinder"), checked: isMultiFinderMode(), run: () => setFinderEnvironment("multifinder") },
+      { type: "action", label: t("finder_environment_single_label"), checked: !isMultiFinderMode(), run: () => setFinderEnvironment("finder") },
+      { type: "action", label: t("finder_environment_multi_label"), checked: isMultiFinderMode(), run: () => setFinderEnvironment("multifinder") },
     ],
   },
   {

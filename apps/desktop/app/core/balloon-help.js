@@ -776,6 +776,9 @@ function showBalloonHelp(target, key = balloonHelpKeyFor(target), options = {}) 
   const balloon = balloonHelpElement();
   const text = document.querySelector("#balloon-help-text");
   if (!balloon || !text || !target || !key || (!balloonHelpEnabled && !options.force)) return;
+  // NeXTSTEP hides the traditional menu bar, which initially owns this
+  // shared tooltip. A popover inside display:none still has no layout box.
+  if (balloon.parentElement !== document.body) document.body.append(balloon);
   window.clearTimeout(balloonHelpTimer);
   forgetBalloonHelpTarget(balloonHelpTarget);
   balloonHelpTarget = target;

@@ -124,8 +124,9 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
   All Windows…, Shade and Expand, Arrange Left, Arrange Right, Fill, Undo
   Arrangement, Bring Back Into View, and Pin Window / Unpin Window. The classic
   and NeXTSTEP-lineage appearances (System 6, System 7, Platinum, Drawing Board
-  and NeXTSTEP) do not have one, and keep their own way back to a put-away
-  window.
+  and NeXTSTEP) keep their own menus: All Windows is at the top of Special
+  in the classic appearances and in NeXTSTEP’s Windows submenu. Narrow screens
+  use Special too.
 - **All Windows… lists every open window, and restores the one you mean.** The
   list spans every application, filters through a search field that leaves a
   composing input method alone, moves its cursor with the arrow keys without
@@ -140,10 +141,30 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
   real action; a right-click hands off to the arrange menu. A title-bar drag
   followed by a flick runs the same shade, expand and fill command path as the
   menu.
+- **Preview a window before returning to it.** All Windows shows the selected
+  window’s picture; hovering over a Dock application shows its windows without
+  taking focus. Put-away windows use the last available picture, clearly marked;
+  unsupported captures say so. Keep or remove Dock shortcuts without quitting an
+  application, and suspend or restore pinned windows together.
+- **Slide a window aside, or resize two together.** Slide Over keeps the original
+  window at either edge and can fold into a named tab. Split with Another Window
+  links two visible windows with one draggable, keyboard-adjustable divider.
+  Arrangements check minimum sizes first and undo as one change; hidden work
+  stays hidden. Drag targets show what releasing will do. Dock hover previews
+  and drag-edge Slide Over start on and can be turned off in Control Panel.
 - **A window comes back where you left it.** Place, size and layer now hold
   across full screen, WindowShade, Hide, Dock minimize and returning to a
   project, so a window that has been put away and brought back returns to the
   spot you left rather than a default one.
+
+- **Expression edits keep the author’s meaning and requested language.** Humanizer
+  and Make a Change now explicitly protect conditions, attribution, negation,
+  comparison and certainty. Asking only to flag issues sends suggestions to
+  ClioTalk without replacing the document. Taiwan usage applies only when asked
+  for; requesting Traditional characters alone does not select a regional voice.
+  Results arriving after cancellation, a project switch or an intervening edit
+  cannot overwrite the captured document. Model-output comparisons are still
+  pending; these are editing contracts, not a claim of measured quality gains.
 
 ## What this protects
 
@@ -419,7 +440,7 @@ The writing runtime keeps author, recipient, voice and medium independent, share
 ## Built under a 1988 constraint
 
 ```text
-boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,890,800 bytes
+boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,902,645 bytes
 two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 bytes
 heavy tools             load lazily, from a third disk
 ```

@@ -11,6 +11,7 @@
 // grey itself is the information. So the default here is "gate it", and every
 // exception has to be written down in ALWAYS_AVAILABLE with a reason.
 
+import { createAppBootVm } from "../helpers/app-boot-vm.mjs";
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("menu-availability");
@@ -125,6 +126,22 @@ const gated = new Set([
 test.assert(gated.size > 200, "getActionAvailability() answers for the menu actions");
 test.assert(runtimeCommandIds.size > 0, "registered runtime commands answer for their menu rows");
 test.assertIncludes(runtime, "function dispatchCommand", "runtime commands have an explicit dispatcher");
+
+// WindowShade registers its commands eagerly from a table. Exercise the real
+// registry and map instead of guessing command ownership from source spelling.
+const boot = createAppBootVm();
+const windowActions = menuActions.filter(action => /^(window-|windowshade-)/.test(action));
+const liveAvailability = boot.context.getActionAvailability();
+for (const action of windowActions) {
+  const command = boot.context.AISystem6Runtime.getCommand(action);
+  test.assert(typeof command?.handler === "function", `${action} has a live runtime handler`);
+  test.assert(typeof command?.isAvailable === "function", `${action} has an explicit runtime availability predicate`);
+  if (typeof command?.isAvailable !== "function") continue;
+  const answer = command.isAvailable();
+  test.assert(typeof answer === "boolean", `${action} returns an actual boolean availability`);
+  test.assert(liveAvailability[action] === answer, `${action} menu availability matches its runtime predicate`);
+  gated.add(action);
+}
 
 // --- the written-down exceptions ---------------------------------------------
 // Each entry is an action that is genuinely valid whenever its menu is open.

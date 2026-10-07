@@ -9,6 +9,7 @@
 // exactly as it did before.
 
 import vm from "node:vm";
+import { createAppBootVm } from "../helpers/app-boot-vm.mjs";
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("application-lifecycle");
@@ -106,11 +107,6 @@ test.assert(
 // --- the driver decides foreground from window state, once -------------------
 
 test.assertIncludes(multiFinder, "function foregroundApplicationIds", "one helper answers which apps are on screen");
-test.assertIncludes(
-  multiFinder,
-  '".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed)"',
-  "a collapsed, app-hidden or closed window is not foreground",
-);
 test.assertIncludes(multiFinder, "hiddenAppIds.has(appId)", "a MultiFinder-hidden app is background even with an open window");
 test.assertIncludes(multiFinder, "function installApplicationLifecycleWatch", "the driver installs one watch");
 test.assertIncludes(multiFinder, '"pagehide"', "pagehide suspends every application");
@@ -122,6 +118,113 @@ test.assertIncludes(windowManager, 'disposeApplication?.(appId, "quit")', "quitt
 test.assertIncludes(windowManager, "const lifecycleDisposed = await", "Quit awaits lifecycle disposal before hiding application windows");
 test.assertIncludes(windowManager, 'appId === "bonsaiCity" && !lifecycleDisposed', "Bonsai uses its direct detach only as an unregistered-lifecycle fallback");
 test.assertIncludes(windowManager, "if (detached === false) return", "Quit keeps Bonsai open when its fallback save cannot complete");
+
+// The real foreground selector drives the real lifecycle registry; class
+// transitions of two windows belonging to one app determine hook calls.
+{
+  const h = createAppBootVm();
+  await h.settleBoot();
+  const changes = [];
+  h.context.AISystem6ApplicationRegistry.registerApplicationLifecycle("lifecycleContract", {
+    onSuspend: () => changes.push("suspend"),
+    onResume: () => changes.push("resume"),
+  });
+  const desktop = h.document.querySelector(".desktop");
+  const windows = [1, 2].map((index) => {
+    const win = h.document.createElement("section");
+    win.className = "window";
+    win.dataset.window = `lifecycle-contract-${index}`;
+    win.dataset.app = "lifecycleContract";
+    desktop.append(win);
+    return win;
+  });
+  await h.context.refreshApplicationLifecycle("initial");
+  windows[0].classList.add("is-minimized");
+  await h.context.refreshApplicationLifecycle("one-minimized");
+  test.assert(changes.length === 0, "another visible window keeps the same app active");
+  windows[1].classList.add("is-minimized");
+  await h.context.refreshApplicationLifecycle("last-minimized");
+  test.assert(changes.join() === "suspend", "minimizing the last visible window suspends its app");
+  windows[0].classList.remove("is-minimized");
+  await h.context.refreshApplicationLifecycle("restored");
+  await h.context.refreshApplicationLifecycle("repeat");
+  test.assert(changes.join() === "suspend,resume", "restore resumes once and repeated reconciliation does not resume again");
+  for (const state of ["is-collapsed", "is-app-hidden", "is-slide-hidden", "is-hidden"]) {
+    windows[0].classList.add(state);
+    await h.context.refreshApplicationLifecycle(state);
+    test.assert(!h.context.foregroundApplicationIds().has("lifecycleContract"), `${state} is excluded by the real foreground selector`);
+    test.assert(changes.at(-1) === "suspend", `${state} suspends the app when its other window is minimized`);
+    windows[0].classList.remove(state);
+    await h.context.refreshApplicationLifecycle(`${state}-restored`);
+    const count = changes.length;
+    await h.context.refreshApplicationLifecycle(`${state}-repeat`);
+    test.assert(h.context.foregroundApplicationIds().has("lifecycleContract") && changes.at(-1) === "resume" && changes.length === count, `${state} restores once without duplicate lifecycle hooks`);
+  }
+  windows[0].classList.add("is-slide-hidden");
+  windows[1].classList.remove("is-minimized");
+  const count = changes.length;
+  await h.context.refreshApplicationLifecycle("visible-sibling-of-side-hidden");
+  test.assert(h.context.foregroundApplicationIds().has("lifecycleContract") && changes.length === count, "a visible sibling keeps a side-hidden application's foreground lifecycle active");
+
+}
+
+// A real heavyweight client: its actual hooks stop/resume the actual loop
+// against a real vendored Simulation. Expose only private state for fixture
+// seeding and identity checks; no lifecycle or loop implementation is replaced.
+{
+  const h = createAppBootVm();
+  await h.settleBoot();
+  const frames = new Map();
+  let frameId = 0;
+  h.context.requestAnimationFrame = (callback) => { frames.set(++frameId, callback); return frameId; };
+  h.context.cancelAnimationFrame = (id) => frames.delete(id);
+  const win = h.document.createElement("section");
+  win.className = "window";
+  win.dataset.window = "micropolis";
+  win.dataset.app = "micropolis";
+  h.document.querySelector(".desktop").append(win);
+  h.run(read("app/vendor/micropolis/micropolis-engine.js") + "\nwindow.MicropolisEngine = MicropolisEngine;");
+  const shell = read("app/features/micropolis.js");
+  const apiMarker = "  window.AISystem6Micropolis = Object.freeze({";
+  test.assert(shell.split(apiMarker).length === 2, "Micropolis fixture exposes state at the unique public API boundary");
+  h.run(shell.replace(apiMarker, "  window.__micropolisLifecycleState = micropolisState;\n" + apiMarker));
+  const engine = h.context.MicropolisEngine;
+  const simulation = new engine.Simulation(engine.MapGenerator(120, 100), engine.Simulation.LEVEL_EASY, engine.Simulation.SPEED_FAST);
+  for (let step = 0; step < 5; step++) simulation.simTick();
+  const cityState = h.context.__micropolisLifecycleState;
+  cityState.sim = simulation;
+  // An unnamed city stays in memory; suspension must not invent a disk record.
+  cityState.cityId = null;
+  cityState.dirty = true;
+  const savedBefore = {};
+  simulation.save(savedBefore);
+  const cityBytes = JSON.stringify(savedBefore);
+  const pendingLoops = () => [...frames.values()].filter((callback) => callback.name === "micropolisFrame").length;
+  h.context.AISystem6Micropolis.attach();
+  test.assert(pendingLoops() === 1, "the real Micropolis attachment schedules one simulation loop");
+  await h.context.refreshApplicationLifecycle("micropolis-visible");
+  win.classList.add("is-minimized");
+  await h.context.refreshApplicationLifecycle("micropolis-minimized");
+  test.assert(pendingLoops() === 0 && cityState.rafId === 0, "minimizing its last window cancels Micropolis's scheduled animation frame");
+  test.assert(cityState.sim === simulation && cityState.dirty && !cityState.cityId, "suspension preserves the exact unsaved simulation without inventing a city record");
+  win.classList.remove("is-minimized");
+  await h.context.refreshApplicationLifecycle("micropolis-restored");
+  await h.context.refreshApplicationLifecycle("micropolis-restored-again");
+  test.assert(pendingLoops() === 1 && cityState.sim === simulation, "restoring resumes that simulation once, without duplicate animation loops");
+  win.classList.add("is-slide-hidden");
+  await h.context.refreshApplicationLifecycle("micropolis-side-hidden");
+  await h.context.refreshApplicationLifecycle("micropolis-side-hidden-again");
+  test.assert(pendingLoops() === 0 && cityState.rafId === 0, "collapsing the side window pauses Micropolis's real animation loop");
+  test.assert(cityState.sim === simulation && cityState.dirty && !cityState.cityId, "side hiding preserves the exact unsaved city and simulation identity");
+  win.classList.remove("is-slide-hidden");
+  await h.context.refreshApplicationLifecycle("micropolis-side-restored");
+  await h.context.refreshApplicationLifecycle("micropolis-side-restored-again");
+  test.assert(pendingLoops() === 1 && cityState.sim === simulation, "side restoration restarts exactly one animation frame without recreating the city");
+
+  const savedAfter = {};
+  simulation.save(savedAfter);
+  test.assert(JSON.stringify(savedAfter) === cityBytes, "tiles, funds, time and simulation save state survive minimize and side-hide restoration unchanged");
+}
 
 // --- the seven applications --------------------------------------------------
 

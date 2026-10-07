@@ -1,3 +1,13 @@
+/* One layer declaration, with explicit presentation roles selecting tokens. */
+.window,
+.window-slide-tab,
+.window-split-separator,
+.window-arrangement-outline {
+  z-index: var(--window-presentation-layer, var(--z-local-control));
+}
+.window-slide-tab,
+.window-split-separator,
+.window-arrangement-outline { --window-presentation-layer: var(--z-window-slide); }
 .window {
   background: var(--window-bg);
   border: var(--system-frame-border, var(--window-border));
@@ -6,7 +16,7 @@
   backdrop-filter: var(--window-backdrop-filter);
   -webkit-backdrop-filter: var(--window-backdrop-filter);
   position: absolute;
-  z-index: var(--z-local-control);
+
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -4999,20 +5009,100 @@ body.is-balloon-help [data-balloon-help] {
    only its own geometry, so no era needs a bespoke rule. */
 .window-browse-menu {
   position: fixed;
-  top: 30px;
+  top: calc(var(--system-menu-height) + 6px);
   left: 12px;
+  right: 12px;
+  height: auto;
 }
-.window-browse-popover {
+.window-browse-menu > .window-browse-popover {
+  position: relative;
   top: 0;
   left: 0;
-  min-width: 260px;
-  max-height: min(70vh, 520px);
+  min-width: min(260px, 100%);
+  max-width: 100%;
+  max-height: min(calc(100dvh - var(--system-menu-height) - 24px), 520px);
   overflow: hidden;
 }
 .window-browse-search {
   margin: 4px 6px 0;
+  max-width: calc(100% - 12px);
 }
 .window-browse-list {
   overflow-y: auto;
-  max-height: min(60vh, 440px);
+  max-height: min(calc(100dvh - var(--system-menu-height) - 80px), 440px);
+}
+.window-browse-list button {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.window-browse-list [aria-selected="true"] {
+  background: var(--menu-item-active-bg);
+  color: var(--menu-item-active-fg);
+}
+
+/* WindowShade extensions use the existing era material and the same desktop
+   geometry. No alternate document surface or modern-only chrome. */
+.window-browse-popover > .window-browse-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  max-width: 420px;
+  white-space: normal;
+  overflow: hidden;
+}
+.window-browse-preview img {
+  display: block;
+  width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+}
+.window-browse-popover.is-preview-expanded .window-browse-preview img {
+  max-height: min(50dvh, 420px);
+}
+.window-browse-popover:has(.window-browse-preview) {
+  display: flex;
+  flex-direction: column;
+}
+.window-browse-popover:has(.window-browse-preview) .window-browse-list {
+  min-height: 40px;
+  flex: 1 1 auto;
+}
+.window-browse-preview { flex: 0 1 auto; min-height: 32px; }
+.window.is-slide-hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+.window-slide-tab,
+.window-split-separator,
+.window-gesture-hint {
+  position: absolute;
+  background: var(--menu-panel-bg, var(--paper));
+  color: var(--ink);
+  border: var(--system-border);
+  font: inherit;
+}
+.window-slide-tab {
+  max-width: min(220px, 45vw);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.window-slide-tab[data-side="right"] { transform: translateX(-100%); }
+.window-split-separator {
+  touch-action: none;
+  cursor: col-resize;
+}
+.window-split-separator[data-axis="y"] { cursor: row-resize; }
+.window-split-separator:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.window-gesture-hint {
+  position: fixed;
+  padding: 5px 8px;
+  max-width: min(260px, calc(100vw - 24px));
+  pointer-events: none;
+}
+.window-arrangement-outline {
+  position: absolute;
+  border: 2px dotted var(--ink);
+  pointer-events: none;
+  box-sizing: border-box;
 }

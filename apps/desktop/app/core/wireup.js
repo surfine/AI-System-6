@@ -680,6 +680,7 @@ function wireAppEvents() {
     syncIconColumnDensity?.();
     requestAnimationFrame(() => reconcileVisibleSystemWindowsToViewport());
     renderMultiFinderMenu();
+    updateMenuState();
   });
   window.addEventListener("orientationchange", () => {
     syncStandaloneSurface();

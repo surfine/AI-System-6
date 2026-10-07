@@ -98,6 +98,9 @@ const systemSpecialItems = [
 
 const menu = (id, labelKey, items, extra = {}) => ({ id, labelKey, items, ...extra });
 const specialMenu = (appItems = []) => menu("special", "menu_special", [
+  menuItem("window-browse", "window_browse", "", { menuCondition: "window-browse-special" }),
+  menuItem("windowshade-arrange-menu", "window_arrange_menu"),
+  menuItem("window-peek", "window_peek"),
   ...appItems,
   ...(appItems.length ? [menuSeparator] : []),
   ...systemSpecialItems,
@@ -114,16 +117,28 @@ const windowMenu = () => menu("window", "menu_window", [
   menuSeparator,
   menuItem("window-shade", "window_shade"),
   menuItem("window-expand", "window_expand"),
+  menuItem("window-peek", "window_peek"),
+  menuItem("windowshade-arrange-menu", "window_arrange_menu"),
   menuSeparator,
   menuItem("window-layout-left", "window_arrange_left"),
   menuItem("window-layout-right", "window_arrange_right"),
   menuItem("window-layout-fill", "window_arrange_fill"),
+  menuItem("window-slide-left", "window_slide_left"),
+  menuItem("window-slide-right", "window_slide_right"),
+  menuItem("window-slide-hide", "window_slide_hide"),
+  menuItem("window-slide-show", "window_slide_show"),
+  menuItem("window-slide-exit", "window_slide_exit"),
+  menuItem("window-split-choose", "window_split_choose"),
   menuSeparator,
   menuItem("window-layout-undo", "window_arrange_undo"),
   menuItem("window-layout-recover", "window_arrange_recover"),
   menuSeparator,
   menuItem("window-pin", "window_pin"),
   menuItem("window-unpin", "window_unpin"),
+  menuItem("window-pinned-list", "window_pinned_list"),
+  menuItem("window-pin-suspend", "window_pin_suspend"),
+  menuItem("window-pin-restore", "window_pin_restore"),
+  menuItem("window-pin-clear", "window_pin_clear"),
 ], { menuCondition: "window-menu" });
 
 // Finder's File menu holds only verbs that make sense for *any* selected
@@ -932,6 +947,7 @@ function renderApplicationMenuItem(item) {
   button.type = "button";
   button.dataset.action = item.action;
   button.dataset.i18n = item.labelKey;
+  if (item.menuCondition) button.dataset.menuCondition = item.menuCondition;
   if (item.themeId) button.dataset.themeChoice = item.themeId;
   if (item.layoutChoice) button.dataset.layoutChoice = item.layoutChoice;
   if (item.shortcutId) button.dataset.shortcutId = item.shortcutId;

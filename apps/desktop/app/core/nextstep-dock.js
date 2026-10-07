@@ -106,6 +106,51 @@
     return node;
   }
 
+  let pinMenu = null;
+  let pinMenuOwner = null;
+  function closePinMenu(returnFocus = false) {
+    const owner = pinMenuOwner;
+    pinMenu?.remove(); pinMenu = null; pinMenuOwner = null;
+    document.removeEventListener("pointerdown", outsidePinMenu, true);
+    document.removeEventListener("keydown", pinMenuKey, true);
+    if (returnFocus && owner?.isConnected) owner.focus({ preventScroll: true });
+  }
+  function outsidePinMenu(event) {
+    if (pinMenu && !pinMenu.contains(event.target)) closePinMenu();
+  }
+  function pinMenuKey(event) {
+    if (event.key === "Escape" || event.key === "Tab") {
+      if (event.key === "Escape") event.preventDefault();
+      event.stopPropagation(); closePinMenu(true);
+    }
+  }
+  function openPinMenu(node, id, x, y) {
+    closePinMenu();
+    pinMenuOwner = node;
+    pinMenu = document.createElement("div");
+    pinMenu.className = "menu-popover nextstep-dock-menu";
+    pinMenu.setAttribute("role", "menu");
+    pinMenu.setAttribute("aria-label", node.getAttribute("aria-label"));
+    const pinned = pins.includes(id);
+    const item = button(t(pinned ? "dock_remove" : "dock_keep"), () => {
+      closePinMenu(true);
+      pins = pinned ? pins.filter((value) => value !== id) : [...pins, id];
+      save();
+    });
+    item.setAttribute("role", "menuitem");
+    item.style.whiteSpace = "normal";
+    item.style.overflowWrap = "anywhere";
+    pinMenu.append(item);
+    Object.assign(pinMenu.style, { display: "block", position: "fixed", zIndex: "var(--z-system-menu)", maxWidth: "calc(100vw - 16px)", maxHeight: "calc(100dvh - 48px)", overflowY: "auto" });
+    document.body.append(pinMenu);
+    const rect = pinMenu.getBoundingClientRect();
+    pinMenu.style.left = `${Math.max(8, Math.min(x, window.innerWidth - rect.width - 8))}px`;
+    pinMenu.style.top = `${Math.max(30, Math.min(y, window.innerHeight - rect.height - 8))}px`;
+    item.focus();
+    document.addEventListener("pointerdown", outsidePinMenu, true);
+    document.addEventListener("keydown", pinMenuKey, true);
+  }
+
   function tile(label, run, iconId, key) {
     const node = button("", (event) => {
       if (event.detail === 0 || event.pointerType === "touch" || event.pointerType === "pen") run();
@@ -116,6 +161,10 @@
     node.dataset.dockKey = key;
     node.setAttribute("aria-label", label);
     node.title = label;
+    node.addEventListener("focus", () => {
+      if (node.matches(":focus-visible") && typeof showBalloonHelp === "function") showBalloonHelp(node, label, { force: true });
+    });
+    node.addEventListener("blur", () => { if (typeof hideBalloonHelp === "function") hideBalloonHelp(); });
     node.innerHTML = renderSystemIcon(iconId, { size: "large" });
     return node;
   }
@@ -188,6 +237,9 @@
   // Leaving NeXTSTEP takes every object this module owns off the desk, and
   // gives the bottom reserve back only if this module is the one holding it.
   function teardown() {
+    if ((root?.contains(document.activeElement) || row?.contains(document.activeElement))
+      && typeof hideBalloonHelp === "function") hideBalloonHelp();
+    closePinMenu();
     root?.remove(); root = null;
     row?.remove(); row = null;
     document.body.classList.remove("nextstep-dock-shown");
@@ -232,7 +284,7 @@
     if (root) root.setAttribute("aria-label", t("nextstep_dock"));
     const deskRow = ensureRow();
     deskRow.setAttribute("aria-label", t("nextstep_desk_icons"));
-    const focusedKey = root?.contains(document.activeElement) ? document.activeElement.dataset.dockKey : "";
+    const focusedKey = root?.contains(document.activeElement) || row?.contains(document.activeElement) ? document.activeElement.dataset.dockKey : "";
     function addApp(id, pinned, container) {
       const entry = apps.get(id);
       if (!entry) return;
@@ -240,6 +292,7 @@
       // application icon, not the icon of the window it happens to open.
       const node = tile(entry.label, () => activate(id), id === "finder" ? "finderApp" : entry.name, `app:${id}`);
       node.dataset.appId = id;
+      window.AISystem6WindowShadePreferences?.bindDockHover?.(node, id);
       node.dataset.state = launching.has(id) ? "launching" : failures.has(id) ? "failed"
         : running.some((app) => app.id === id || (id === "teachText" && app.id === "writingStudio")) ? "running" : "stopped";
       node.draggable = true;
@@ -269,8 +322,14 @@
       });
       node.addEventListener("contextmenu", (event) => {
         event.preventDefault();
-        pins = pinned ? pins.filter((value) => value !== id) : [...pins, id];
-        save();
+        openPinMenu(node, id, event.clientX || 0, event.clientY || 0);
+      });
+      node.addEventListener("keydown", (event) => {
+        if (event.key === "ContextMenu" || (event.shiftKey && event.key === "F10")) {
+          event.preventDefault();
+          const rect = node.getBoundingClientRect();
+          openPinMenu(node, id, rect.left, rect.top);
+        }
       });
       container.append(node);
     }
@@ -313,7 +372,10 @@
     minis.forEach((win) => addMiniwindow(win, windowsSection));
     deskRow.replaceChildren(settle(appsSection), settle(windowsSection));
     syncRowReserve();
-    if (focusedKey) Array.from(root?.querySelectorAll("[data-dock-key]") || []).find((node) => node.dataset.dockKey === focusedKey)?.focus({ preventScroll: true });
+    if (focusedKey) {
+      const tiles = [...(root?.querySelectorAll("[data-dock-key]") || []), ...(row?.querySelectorAll("[data-dock-key]") || [])];
+      (tiles.find((node) => node.dataset.dockKey === focusedKey) || tiles[0])?.focus({ preventScroll: true });
+    }
   }
 
   function schedule() {

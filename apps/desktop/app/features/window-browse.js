@@ -15,6 +15,63 @@
   let entries = [];
   let cursor = 0;
   let previousFocus = null;
+  let watcher = null;
+  let options = {};
+  let previewEl = null;
+  let previewTicket = 0;
+  let leaveTimer = null;
+  const project = () => (typeof windowBrowseEntries === "function" ? windowBrowseEntries() : [])
+    .filter((entry) => (!options.appId || entry.appId === options.appId) && (!options.filterEntries || options.filterEntries(entry)));
+  function hoverLeave(anchor) {
+    if (!options.hover || (anchor && anchor !== options.anchor)) return;
+    clearTimeout(leaveTimer);
+    leaveTimer = setTimeout(() => close({ returnFocus: false }), 160);
+  }
+  function closeHover(anchor) {
+    if (options.hover && (!anchor || options.anchor === anchor)) close({ returnFocus: false });
+  }
+  function positionAtAnchor() {
+    if (!host?.isConnected || !panelEl || !options.anchor?.isConnected) return;
+    const anchor = options.anchor.getBoundingClientRect();
+    const panel = panelEl.getBoundingClientRect();
+    const outer = host.getBoundingClientRect();
+    const left = Math.max(8, Math.min(anchor.left, window.innerWidth - panel.width - 8));
+    const top = Math.max(8, Math.min(anchor.top - panel.height - 8, window.innerHeight - panel.height - 8));
+    // Use the painted panel, not the spanning menu host. Account for any
+    // theme-specific inset between the host origin and the popover.
+    host.style.left = `${left - (panel.left - outer.left)}px`;
+    host.style.top = `${top - (panel.top - outer.top)}px`;
+  }
+  async function showPreview(entry) {
+    const ticket = ++previewTicket;
+    if (!previewEl) return;
+    previewEl.replaceChildren();
+    if (!entry) return;
+    const caption = document.createElement("span");
+    caption.textContent = entry.title;
+    previewEl.append(caption);
+    try {
+      if (!window.AISystem6WindowPreview) {
+        if (typeof ensureWindowPreviewModule === "function") await ensureWindowPreviewModule();
+        else await ensureLazySystemModule("app/core/window-preview.js", "AISystem6WindowPreviewLoaded");
+      }
+      if (ticket !== previewTicket || !previewEl) return;
+      const win = typeof getWindow === "function" ? getWindow(entry.name) : null;
+      const picture = await window.AISystem6WindowPreview.get(win);
+      if (ticket !== previewTicket || !previewEl) return;
+      if (picture.url) {
+        const image = document.createElement("img");
+        const reposition = () => { if (ticket === previewTicket) positionAtAnchor(); };
+        image.addEventListener("load", reposition);
+        image.addEventListener("error", reposition);
+        image.alt = entry.title;
+        image.src = picture.url;
+        previewEl.prepend(image);
+      }
+      caption.textContent = `${entry.title} — ${label(picture.unavailable ? "window_preview_unavailable" : picture.stale ? "window_preview_previous" : "window_preview_current")}`;
+      positionAtAnchor();
+    } catch (_) { if (ticket === previewTicket) { caption.textContent = `${entry.title} — ${label("window_preview_unavailable")}`; positionAtAnchor(); } }
+  }
 
   const label = (key) => (typeof t === "function" ? t(key) : key);
   const isOpen = () => !!host;
@@ -30,7 +87,12 @@
       window.removeEventListener("blur", onViewportChange);
       window.removeEventListener("resize", onViewportChange);
     }
+    ++previewTicket;
+    clearTimeout(leaveTimer);
+    previewEl = null;
     host?.remove();
+    watcher?.disconnect();
+    watcher = null;
     host = null;
     panelEl = null;
     searchEl = null;
@@ -65,21 +127,38 @@
     listEl.replaceChildren(...rows.map((entry, index) => {
       const row = document.createElement("button");
       row.type = "button";
-      row.tabIndex = -1;
-      row.setAttribute("role", "menuitem");
+      row.tabIndex = index === cursor ? 0 : -1;
+      row.id = `window-browse-option-${encodeURIComponent(entry.name)}`;
+      row.setAttribute("role", "option");
+      row.setAttribute("aria-selected", String(index === cursor));
       row.dataset.windowBrowseName = entry.name;
       row.textContent = `${entry.appLabel} — ${entry.title}${stateSuffix(entry)}`;
       if (index === cursor) row.setAttribute("aria-current", "true");
       row.addEventListener("click", () => commit(entry.name));
+      row.addEventListener("focus", () => {
+        cursor = index;
+        listEl.querySelectorAll("button").forEach((item) => {
+          const selected = item === row;
+          item.tabIndex = selected ? 0 : -1;
+          item.setAttribute("aria-selected", String(selected));
+          if (selected) item.setAttribute("aria-current", "true"); else item.removeAttribute("aria-current");
+        });
+        searchEl.setAttribute("aria-activedescendant", row.id);
+        showPreview(entry);
+      });
       return row;
     }));
     const active = listEl.querySelector('[aria-current="true"]');
-    listEl.setAttribute("aria-activedescendant", active?.dataset.windowBrowseName || "");
+    if (active) searchEl.setAttribute("aria-activedescendant", active.id);
+    else searchEl.removeAttribute("aria-activedescendant");
+    active?.scrollIntoView?.({ block: "nearest" });
+    showPreview(rows[cursor]);
   }
 
   function refresh() {
-    entries = typeof windowBrowseEntries === "function" ? windowBrowseEntries() : [];
-    cursor = 0;
+    const selected = visibleEntries()[cursor]?.name;
+    entries = project();
+    cursor = Math.max(0, visibleEntries().findIndex((entry) => entry.name === selected));
     render();
     if (!entries.length && typeof setStatus === "function") setStatus(label("window_browse_none"));
   }
@@ -87,8 +166,13 @@
   function commit(name) {
     // Restoring raises the window it names; binding is closed first so the
     // list's own focus rules never fight the restored window.
+    const returnTarget = previousFocus;
+    const select = options.onSelect;
     close({ returnFocus: false });
-    if (typeof restoreWindowBrowseEntry === "function") restoreWindowBrowseEntry(name);
+    if (select) { select(name); return; }
+    if (typeof restoreWindowBrowseEntry === "function" && !restoreWindowBrowseEntry(name)) {
+      returnTarget?.focus?.({ preventScroll: true });
+    }
   }
 
   function moveCursor(delta) {
@@ -97,15 +181,25 @@
     cursor = Math.max(0, Math.min(cursor + delta, rows.length - 1));
     // Arrow selection moves the list cursor only: it must not reorder or raise
     // any window. Enter is the single commit.
+    const rowFocused = document.activeElement?.getAttribute?.("role") === "option";
     render();
-    rows[cursor]?.focus();
+    if (rowFocused) listEl?.querySelector('[aria-current="true"]')?.focus();
   }
 
   function onKeydown(event) {
+    // This surface owns its keyboard interaction; the generic menu navigator
+    // must not move the combobox caret to a preview button (including IME keys).
+    event.stopPropagation?.();
     // An IME composing a search term owns the keys: never treat its Enter or
     // arrows as list navigation.
     if (event.isComposing || event.keyCode === 229) return;
     if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); close(); return; }
+    if (event.key === " " && event.target?.getAttribute?.("role") === "option") {
+      event.preventDefault();
+      panelEl.classList.toggle("is-preview-expanded");
+      positionAtAnchor();
+      return;
+    }
     if (event.key === "Enter") {
       event.preventDefault();
       listEl?.querySelector('[aria-current="true"]')?.click();
@@ -122,25 +216,46 @@
   }
   function onViewportChange() { if (isOpen()) close({ returnFocus: false }); }
 
-  function open() {
+  function open(settings = {}) {
+    const { returnFocus = document.activeElement } = settings;
     close({ returnFocus: false });
-    previousFocus = document.activeElement;
+    options = settings;
+    if (settings.hover && typeof hideBalloonHelp === "function") hideBalloonHelp();
+    previousFocus = returnFocus;
     host = document.createElement("div");
     host.className = "menu is-open window-browse-menu";
     host.dataset.windowBrowseMenu = "true";
+    if (options.anchor) {
+      host.style.right = "auto";
+      host.style.width = "max-content";
+      host.style.maxWidth = "calc(100vw - 16px)";
+    }
     panelEl = document.createElement("div");
     panelEl.className = "menu-popover window-browse-popover";
-    panelEl.setAttribute("role", "menu");
+    panelEl.setAttribute("role", "region");
     panelEl.setAttribute("aria-label", label("window_browse"));
     searchEl = document.createElement("input");
     searchEl.type = "search";
     searchEl.className = "window-browse-search";
     searchEl.setAttribute("aria-label", label("window_browse_search"));
+    searchEl.setAttribute("role", "combobox");
+    searchEl.setAttribute("aria-autocomplete", "list");
+    searchEl.setAttribute("aria-expanded", "true");
+    searchEl.setAttribute("aria-controls", "window-browse-options");
     searchEl.addEventListener("input", () => { cursor = 0; render(); });
     listEl = document.createElement("div");
     listEl.className = "window-browse-list";
-    listEl.setAttribute("role", "presentation");
-    panelEl.append(searchEl, listEl);
+    listEl.id = "window-browse-options";
+    listEl.setAttribute("role", "listbox");
+    listEl.setAttribute("aria-label", label("window_browse"));
+    previewEl = document.createElement("button");
+    previewEl.type = "button";
+    previewEl.className = "window-browse-preview";
+    previewEl.setAttribute("aria-label", label("window_preview_restore"));
+    previewEl.addEventListener("click", () => { const entry = visibleEntries()[cursor]; if (entry) commit(entry.name); });
+    panelEl.append(searchEl, listEl, previewEl);
+    panelEl.addEventListener("pointerenter", () => clearTimeout(leaveTimer));
+    panelEl.addEventListener("pointerleave", () => hoverLeave());
     panelEl.addEventListener("keydown", onKeydown);
     host.append(panelEl);
     document.body.append(host);
@@ -148,7 +263,18 @@
     window.addEventListener("blur", onViewportChange);
     window.addEventListener("resize", onViewportChange);
     refresh();
-    searchEl.focus();
+    if (options.hover && !entries.length) { close({ returnFocus: false }); return false; }
+    watcher = new MutationObserver(() => {
+      if (!host) return;
+      if (options.hover && options.anchor && !options.anchor.isConnected) { close({ returnFocus: false }); return; }
+      const fresh = project();
+      if (JSON.stringify(fresh) !== JSON.stringify(entries)) refresh();
+    });
+    watcher.observe(document.querySelector(".desktop") || document.body, {
+      subtree: true, childList: true, attributes: true, attributeFilter: ["class", "data-window-pinned"],
+    });
+    positionAtAnchor();
+    if (!options.hover) searchEl.focus();
     return true;
   }
 
@@ -156,6 +282,8 @@
     open,
     close: (options) => close(options),
     refresh,
+    hoverLeave,
+    closeHover,
     entries: () => entries.slice(),
   });
   window.AISystem6WindowBrowseLoaded = true;

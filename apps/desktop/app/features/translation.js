@@ -747,6 +747,16 @@ function writingToolTextServiceContract({ directWrite = false } = {}) {
     : "ClioTalk mode: do not claim the source text has already been edited.";
 }
 
+function writingToolLanguageRule() {
+  return writingToolsPromptRegistry()?.languageRule?.({ language: currentLanguage })
+    || `Language priority: explicit task requirements, source language, current default (${currentLanguage}).`;
+}
+
+function writingToolAnnotationOnly(mode, instruction) {
+  return ["describeChange", "transform"].includes(mode)
+    && writingToolsPromptRegistry()?.annotationOnly?.(instruction) === true;
+}
+
 function writingToolChangeRoutingNote(instruction = "") {
   const registry = writingToolsPromptRegistry();
   if (registry?.changeRoutingNote) {
@@ -801,7 +811,7 @@ function buildPrintToAiPrompt(mode, instruction = "", resolvedPrompt = null) {
 
   const systemIntro = mode === "praise"
     ? "你是一个温暖、具体、懂创作者心理的读者。"
-    : "你是 AI System 6，通过 Ask ClioTalk 接收 TeachText 文档并给出中文写作帮助。";
+    : "你是 AI System 6，通过 Ask ClioTalk 接收 TeachText 文档并给出写作帮助。";
   const systemGuard = mode === "praise"
     ? "结果留在 ClioTalk。只给真诚具体的欣赏，不批评，不重写，不泛泛而谈。"
     : "结果留在 ClioTalk。不要声称你已经直接修改了文档。";
@@ -809,10 +819,11 @@ function buildPrintToAiPrompt(mode, instruction = "", resolvedPrompt = null) {
   return [
     systemIntro,
     systemGuard,
-    currentLanguage === "zh" ? "使用自然简体中文，避免翻译腔。" : "Use English.",
+    writingToolLanguageRule(),
     writingToolTextServiceContract({ directWrite: false }),
     targetRule,
     changeRouting,
+    writingToolAnnotationOnly(mode, instruction) ? "只标问题：返回原文位置、问题和建议；不要替换全文或声称已修改原稿。" : "",
     "",
     `TASK:\n${writingToolTaskBody(mode, instruction, resolvedPrompt)}`,
     "",
@@ -883,7 +894,8 @@ function dispatchWritingToolInput(control) {
 
 function applyWritingToolResult(control, target, result) {
   const clean = stripRebuildMarkdownFence(String(result || "")).trim();
-  if (!clean) return false;
+  if (!clean || control.value !== target.value || control.isConnected === false
+    || control.readOnly === true || control.disabled === true) return false;
 
   if (target.append) {
     const insertionPoint = target.selection ? target.end : control.selectionEnd ?? control.value.length;
@@ -912,8 +924,8 @@ function buildDirectWritingToolPrompt(mode, sourceText, instruction = "", resolv
     ? "只返回要插入的文本，不要解释。"
     : "只返回可替换原文的文本，不要解释。";
   return [
-    "你是 AI System 6 的中文写作工具，正在直接处理用户当前输入框里的文本。",
-    currentLanguage === "zh" ? "使用自然中文，避免翻译腔；如果源文本明显是其他语言，可沿用源语言。" : "Use English unless the source text clearly uses another language.",
+    "你是 AI System 6 的写作工具，正在直接处理用户当前输入框里的文本。",
+    writingToolLanguageRule(),
     writingToolTextServiceContract({ directWrite: true }),
     "如果是改写、润色或续写，源文里的 AI 腔套话不要照搬；要换成具体平实的说法，不要编造事实。",
     changeRouting,
@@ -939,6 +951,8 @@ async function runDirectWritingTool(mode) {
     return;
   }
 
+  const invocationProjectId = activeProjectId;
+  const invocationTabId = control === teachTextBodyInput && typeof teachTextLoadedTabId !== "undefined" ? teachTextLoadedTabId : null;
   const resolvedPrompt = resolveWritingToolPrompt(mode);
   if (writingToolPromptUnavailable(resolvedPrompt)) return;
 
@@ -951,7 +965,21 @@ async function runDirectWritingTool(mode) {
     if (!instruction.trim()) return;
   }
 
+  if (activeProjectId !== invocationProjectId || control.value !== target.value || control.isConnected === false
+    || control.readOnly === true || control.disabled === true
+    || (invocationTabId !== null && teachTextLoadedTabId !== invocationTabId)) return;
+  if (writingToolAnnotationOnly(mode, instruction)) {
+    const context = { text: target.target };
+    const hiddenPrompt = buildSelectionToAiPrompt(mode, context, instruction.trim(), resolvedPrompt);
+    await sendPrintToAiRequest(mode, instruction.trim(), hiddenPrompt, "", resolvedPrompt);
+    return;
+  }
   if (!beginLongTask("writing-tool", t("writing_tool_running"))) return;
+  const invocationSignal = getLongTaskSignal();
+  const canAdopt = () => !invocationSignal?.aborted && activeProjectId === invocationProjectId
+    && control.isConnected !== false && control.readOnly !== true && control.disabled !== true
+    && control.value === target.value
+    && (invocationTabId === null || teachTextLoadedTabId === invocationTabId);
   let result = "";
   let failure = "";
   try {
@@ -964,7 +992,7 @@ async function runDirectWritingTool(mode) {
       temperature: printToAiRequestOptions(mode).temperature,
       max_tokens: printToAiRequestOptions(mode).maxTokens,
       ai_system6_task_kind: printToAiRequestOptions(mode).taskKind,
-    }, getLongTaskSignal());
+    }, invocationSignal);
     const data = await readChatJson(response);
     result = stripRebuildMarkdownFence(data?.choices?.[0]?.message?.content || "").trim();
   } catch (error) {
@@ -977,9 +1005,10 @@ async function runDirectWritingTool(mode) {
       failure = friendlyErrorDetail(error);
     }
   } finally {
-    endLongTask("writing-tool");
+    if (getLongTaskSignal() === invocationSignal) endLongTask("writing-tool");
   }
 
+  if (!canAdopt()) return;
   if (!result) {
     if (failure) setStatus(failure);
     else clearStatus();
@@ -994,7 +1023,7 @@ async function runDirectWritingTool(mode) {
     return;
   }
 
-  if (applyWritingToolResult(control, target, result)) {
+  if (canAdopt() && applyWritingToolResult(control, target, result)) {
     setStatus(t("writing_tool_applied"));
   }
 }
@@ -1007,10 +1036,11 @@ function buildSelectionToAiPrompt(mode, context, instruction = "", resolvedPromp
   return [
     "你是 AI System 6 的 Ask ClioTalk 选区服务。",
     "只在 ClioTalk 中回答，不要声称已经编辑来源文本；修改结果要方便直接粘贴。",
-    currentLanguage === "zh" ? "使用自然简体中文。" : "Use English.",
+    writingToolLanguageRule(),
     writingToolTextServiceContract({ directWrite: false }),
     "把 SELECTED PASSAGE 作为目标文本，CONTEXT 只作背景参考。",
     changeRouting,
+    writingToolAnnotationOnly(mode, instruction) ? "只标问题：返回原文位置、问题和建议；不要替换全文或声称已修改原稿。" : "",
     "",
     `TASK:\n${writingToolTaskBody(mode, instruction, resolvedPrompt)}`,
     "",
@@ -1029,12 +1059,15 @@ async function sendPrintToAiRequest(mode, publicRequest, hiddenPrompt, sourceWin
     setStatus(t("task_already_running", localModelState.task || t("working_locally")));
     return;
   }
+  const invocationProjectId = activeProjectId;
   await openAssistantAvoidingWindow(sourceWindowName);
+  if (activeProjectId !== invocationProjectId || activeAbortController) return;
   addMessage("user", publicRequest);
   const pendingMessage = createPendingMessage();
   startWaitCycle(pendingMessage);
 
   activeAbortController = new AbortController();
+  const invocationController = activeAbortController;
   setComposerBusy(true);
   setStatus(t("thinking"));
 
@@ -1042,7 +1075,11 @@ async function sendPrintToAiRequest(mode, publicRequest, hiddenPrompt, sourceWin
     window.AISystem6PromptFilesRuntime?.recordPromptRun(activeProjectId, writingToolPromptId(mode), resolvedPrompt);
     saveDeskState?.();
     updatePendingMessage(pendingMessage, 1, `${t("consulting_model")}.`);
-    const assistantText = await sendToLmStudio(hiddenPrompt, activeAbortController.signal, printToAiRequestOptions(mode));
+    const assistantText = await sendToLmStudio(hiddenPrompt, invocationController.signal, printToAiRequestOptions(mode));
+    if (invocationController.signal.aborted || activeProjectId !== invocationProjectId) {
+      resolvePendingStatus(pendingMessage, t("stopped"));
+      return;
+    }
     updatePendingMessage(pendingMessage, 2, `${t("typesetting_reply")}.`);
     conversation.push({ role: "user", content: publicRequest });
     conversation.push({ role: "assistant", content: assistantText });
@@ -1055,9 +1092,11 @@ async function sendPrintToAiRequest(mode, publicRequest, hiddenPrompt, sourceWin
       resolvePendingStatus(pendingMessage, friendlyErrorDetail(error));
     }
   } finally {
-    stopWaitCycle();
-    activeAbortController = null;
-    setComposerBusy(false);
+    if (activeAbortController === invocationController) {
+      stopWaitCycle();
+      activeAbortController = null;
+      setComposerBusy(false);
+    }
   }
 }
 

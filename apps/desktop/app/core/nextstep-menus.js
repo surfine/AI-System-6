@@ -86,12 +86,16 @@
       // unconditionally (NeXTSTEP never has the "window-menu" capability).
       ...menuSetForApp(appId)
         .filter((definition) => definition.menuCondition !== "window-menu")
-        .map((definition) => ({ ...definition, type: "submenu" })),
+        .map((definition) => ({ ...definition, type: "submenu",
+          items: definition.items.filter((item) => item.menuCondition !== "window-browse-special") })),
       ...(writingFamily.has(appId)
         ? [submenu("nextstep_tools", [menuItem("nextstep-writing-flow", "nextstep_writing_flow_command")])]
         : []),
       submenu("selection_services", selectionTools),
       submenu("nextstep_windows", [
+        menuItem("window-browse", "window_browse"),
+        menuItem("windowshade-arrange-menu", "window_arrange_menu"),
+        menuItem("window-peek", "window_peek"),
         menuItem("nextstep-zoom-window", "nextstep_zoom"),
         menuItem("nextstep-shade-window", "nextstep_shade"),
         ...applicationWindowOrder(appId).map((win) => ({ type: "window", win, label: applicationWindowTitle(win, { markState: true }) })),
@@ -163,7 +167,7 @@
     closeAttached();
     if (!snapshot.isCurrent()) return;
     if (item.type === "window") {
-      focusWindow(item.win, true);
+      restoreApplicationWindow(item.win);
       return;
     }
     if (snapshot.target?.isConnected) snapshot.target.focus({ preventScroll: true });

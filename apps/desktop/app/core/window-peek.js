@@ -308,8 +308,19 @@
     return [];
   }
 
+  let explicitFocus = null;
+  function show(win, returnFocus = document.activeElement) {
+    clearDeadline(); cancel();
+    if (!canPreview(win)) return false;
+    explicitFocus = returnFocus;
+    apply(intent.clicked(win.dataset.window, clock()));
+    return true;
+  }
+  if (typeof document !== "undefined") document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && explicitFocus) { const target = explicitFocus; explicitFocus = null; cancel(); target?.focus?.({ preventScroll: true }); }
+  });
   globalThis.AISystem6WindowPeek = Object.freeze({
-    GlanceIntent,
+    GlanceIntent, show,
     capability,
     canPreview,
     move,

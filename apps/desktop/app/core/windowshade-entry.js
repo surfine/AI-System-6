@@ -10,7 +10,10 @@
   const allowed = (win) => !!win && !isNarrowViewport() && !writerMode
     && !(typeof modalScrim !== "undefined" && modalScrim && !modalScrim.classList.contains("is-hidden") && modalScrim.getClientRects().length)
     && (!window.AISystem6WindowShade || window.AISystem6WindowShade.eligible(win));
-  const load = () => ensureLazySystemModule("app/core/windowshade.js", "AISystem6WindowShadeLoaded");
+  const load = () => Promise.all([
+    ensureLazySystemModule("app/core/window-pin-controls.js", "AISystem6WindowPinControlsLoaded"),
+    ensureLazySystemModule("app/core/windowshade.js", "AISystem6WindowShadeLoaded"),
+  ]);
 
   // WM4: the glance judgement (GlanceIntent) and its read-only DOM adapter live
   // in one lazy module so the hover path, the Escape block and the exact
@@ -50,6 +53,7 @@
     loadPeek().then(() => { if (lastPointerSample === sample) peekApi()?.move(sample); });
   }
   function cancelPeek({ blockUntilLeave = false } = {}) {
+    lastPointerSample = null;
     peekApi()?.cancel?.({ blockUntilLeave });
     if (typeof cancelAllWindowPeeks === "function") cancelAllWindowPeeks();
   }
@@ -107,7 +111,7 @@
   // / 1200ms menu handoff) live in window-peek's GlanceIntent; this entry only
   // feeds it pointer samples and forwards every cancel. Pointer travel between
   // the shade strip and the temporary surface stays one interaction.
-  document.addEventListener("pointerover", (event) => { peekMove(event); });
+  document.addEventListener("pointerover", (event) => { if (barFor(event.target) && !isNarrowViewport()) load(); peekMove(event); });
   // Departing the document fires no pointerover, so the leave grace needs the
   // one pointerout with no related target.
   document.addEventListener("pointerout", (event) => { if (!event.relatedTarget) peekMove(event); });
@@ -142,7 +146,8 @@
     if (!win || !allowed(win)) return;
     const collapsed = win.classList.contains("is-collapsed");
     const action = event.deltaY > 0 ? (collapsed ? null : "shade") : (collapsed ? "expand" : "fill");
-    if (!action || Math.abs(event.deltaY) < 10) return;
+    const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1);
+    if (!action || !Number.isFinite(delta) || Math.abs(delta) < 10) return;
     event.preventDefault();
     event.stopPropagation();
     cancelPeek();
@@ -161,7 +166,7 @@
   const peekScrim = document.querySelector("[data-modal-scrim]");
   if (peekScrim && typeof MutationObserver === "function") {
     new MutationObserver(() => {
-      if (!peekScrim.classList.contains("is-hidden")) cancelPeek();
+      if (!peekScrim.classList.contains("is-hidden")) { cancelPeek(); window.AISystem6WindowShade?.cancelInteractions(); }
     }).observe(peekScrim, { attributes: true, attributeFilter: ["class"] });
   }
   window.AISystem6Runtime?.registerCommand?.("windowshade-arrange-menu", {
@@ -184,21 +189,51 @@
     // pin does not apply (full screen, narrow, writing, system sheets).
     "window-pin": "pin",
     "window-unpin": "unpin",
+
+    "window-slide-left": "slideLeft",
+    "window-slide-right": "slideRight",
+    "window-slide-hide": "slideHide",
+    "window-slide-show": "slideShow",
+    "window-slide-exit": "slideExit",
+    "window-split-choose": "splitChoose",
+    "window-pin-suspend": "pinSuspend",
+    "window-pin-restore": "pinRestore",
+    "window-pin-clear": "pinClear",
+    "window-pinned-list": "pinList",
   };
   // A command table driven by one loop is still a command source, so the
   // interaction audit reads these nine as live commands, not as dead rows.
   Object.entries(arrangementCommands).forEach(([commandId, action]) => {
     window.AISystem6Runtime?.registerCommand?.(commandId, {
       handler: () => request(active(), action),
-      isAvailable: () => allowed(active()),
+      isAvailable: () => allowed(active()) && isWindowArrangementActionAvailable(active(), action),
     });
+  });
+  window.AISystem6Runtime?.registerCommand?.("window-peek", {
+    handler: async () => {
+      const win = active(); const focused = document.activeElement;
+      const returnFocus = focused?.closest?.(".menu")?.querySelector(":scope > button") || focused;
+      if (!win?.classList.contains("is-collapsed")) return;
+      await loadPeek();
+      if (peekApi()?.canPreview(win) && !isNarrowViewport()) peekApi().show(win, returnFocus);
+      else {
+        await ensureLazySystemModule("app/features/window-browse.js", "AISystem6WindowBrowseLoaded");
+        if (win.isConnected && win.classList.contains("is-collapsed")) window.AISystem6WindowBrowse?.open({ filterEntries: (entry) => entry.name === win.dataset.window, returnFocus });
+      }
+    },
+    isAvailable: () => !!active()?.classList.contains("is-collapsed"),
   });
   // WM5: "All Windows" opens the cross-application browse list. The projection
   // and the recovery live in multi-finder; the surface is a lazy module, so the
   // row's command loads it on first use rather than at boot.
   window.AISystem6Runtime?.registerCommand?.("window-browse", {
-    handler: () => ensureLazySystemModule("app/features/window-browse.js", "AISystem6WindowBrowseLoaded")
-      .then(() => window.AISystem6WindowBrowse?.open?.()),
-    isAvailable: () => !!document.querySelector(".window[data-window]:not(.is-hidden):not(.is-app-hidden)"),
+    handler: () => {
+      const focused = document.activeElement;
+      const returnFocus = focused?.closest?.(".menu")?.querySelector(":scope > button")
+        || (focused !== document.body ? focused : active());
+      return ensureLazySystemModule("app/features/window-browse.js", "AISystem6WindowBrowseLoaded")
+        .then(() => window.AISystem6WindowBrowse?.open?.({ returnFocus }));
+    },
+    isAvailable: () => !!document.querySelector(".window[data-window]:not(.is-hidden)"),
   });
 })();
