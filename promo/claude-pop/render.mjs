@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-// Draws index.html frame by frame in headless Chromium at 640x360; ffmpeg upscales 3x with
-// nearest-neighbour, adds the CRT finish and muxes the song.
+// Draws index.html frame by frame in headless Chromium at 640x360; ffmpeg upscales 3x (1080p) or 6x (4K)
+// with nearest-neighbour, adds the CRT finish and muxes the song.
 //
-//   node render.mjs video [--from 0] [--to DUR] [--fps 60] [--out build/claude-pop.mp4]
+//   node render.mjs video [--from 0] [--to END] [--fps 60] [--scale 3|6] [--out build/claude-pop.mp4]
+//                         [--crf 14] [--preset slow] [--audio none]      --scale 6 is 3840x2160
 //   node render.mjs still 23.6 [build/still.png]        one frame at 1920x1080, as it appears in the video
 //   node render.mjs sheet 22 38 0.5 [build/sheet.png]   contact sheet: a frame every 0.5 s, 640x360 tiles (--cols 3)
 //   node render.mjs check [t0] [t1]                     draw every frame of a range; report exceptions and draw times
@@ -22,11 +23,12 @@ const CHROME = process.env.CHROME || ['/opt/pw-browsers/chromium-1194/chrome-lin
 const SONG = path.join(ROOT, 'build/song.wav');
 // The CRT finish. In silhouette mode the toolkit's FINISH_AT(t) asks for no vignette and a lighter grid, so a
 // neon field stays flat to the corners; those spans are switched with ffmpeg timeline expressions.
-const crt = (plain = [], from = 0) => {
+const crt = (plain = [], from = 0, k = 3) => {   // k: whole-number upscale; the scanline is the bottom third of each canvas row
   const off = plain.length ? plain.map(([a, b]) => `between(t,${(a - from).toFixed(4)},${(b - from).toFixed(4)})`).join('+') : '0';
-  return 'scale=1920:1080:flags=neighbor,' +
-    `drawgrid=x=-1:y=2:w=1922:h=3:t=1:c=black@0.10:enable='not(${off})',` +
-    `drawgrid=x=-1:y=2:w=1922:h=3:t=1:c=black@0.05:enable='${off}',` +
+  const grid = `x=-1:y=${k - k / 3}:w=${640 * k + 2}:h=${k}:t=${k / 3}`;
+  return `scale=${640 * k}:${360 * k}:flags=neighbor,` +
+    `drawgrid=${grid}:c=black@0.10:enable='not(${off})',` +
+    `drawgrid=${grid}:c=black@0.05:enable='${off}',` +
     `vignette=PI/9:enable='not(${off})'`;
 };
 const finishSpans = async (times) => { // [[t0,t1]] where FINISH_AT says vignette: false
@@ -70,11 +72,12 @@ try {
   } else {
     const fps = +flags.fps || 60, from = +flags.from || 0, to = +flags.to || await END(), n = Math.round((to - from) * fps);
     const out = outPath(flags.out, 'build/claude-pop.mp4');
-    const audio = fs.existsSync(SONG) ? ['-ss', from, '-i', SONG] : [];
+    const k = +flags.scale || 3, audio = flags.audio !== 'none' && fs.existsSync(SONG) ? ['-ss', from, '-i', SONG] : [];
     const times = Array.from({ length: n }, (_, i) => from + i / fps);
-    if (!audio.length) console.warn('no build/song.wav: rendering a silent video');
-    const ff = ffmpeg(['-f', 'image2pipe', '-framerate', fps, '-c:v', 'png', '-i', '-', ...audio, '-vf', crt(await finishSpans(times), from),
-      '-c:v', 'libx264', '-preset', flags.preset || 'slow', '-crf', flags.crf || 14, '-pix_fmt', 'yuv420p',
+    if (!audio.length) console.warn('no audio: rendering a silent video');
+    const ff = ffmpeg(['-f', 'image2pipe', '-framerate', fps, '-c:v', 'png', '-i', '-', ...audio, '-vf', crt(await finishSpans(times), from, k),
+      '-c:v', 'libx264', '-preset', flags.preset || 'slow', '-crf', flags.crf || 14, '-pix_fmt', 'yuv420p', '-tune', 'animation',
+      ...(k > 3 ? ['-profile:v', 'high', '-level:v', '5.2'] : []),
       ...(audio.length ? ['-af', 'apad', '-c:a', 'aac', '-b:a', '256k'] : []), '-t', (to - from).toFixed(4), '-movflags', '+faststart', out]);
     const start = Date.now();
     for (let i = 0; i < n; i++) {

@@ -32,8 +32,21 @@ GANG = dict(shout=-60.0, dur_comp=0.9, vib_depth=0.0, scoop=0.0, drift=3.0, fall
             max_pre=0.10, coda_hold=0.25)
 GANG_SPREAD = 0.008          # +/- s between the twelve copies: tight enough that a 'd' stays one 'd'
 CALL = dict(dur_comp=1.0)    # the verse shouts ("Flag it.", "(Keep it.)") keep their full length
+CALL_COPIES = 6              # copies in a verse shout (the chorus gang has 12)
+CALL_DETUNE = 6.0            # +/- cents per copy in a verse shout
+CALL_FORMANT = (0.9, 1.08)   # formant range of the amy / jenny copies in a verse shout
 FADE_GAG = True
 KEEP_ROUGH = True
+LOW_PEN = 64                 # "pen" written at E4 or lower is sung with a closed vowel, /pɪn/ (see low_pen)
+
+
+def low_pen(word, notes, st):
+    """Below E4 PSOLA's /ɛ/ before /n/ opens into /æ/: "hold the pen" was heard as "hold the pan" on the
+    lead stem alone.  Sung there with /ɪ/ (the pin-pen vowel a singer closes to on a low note), Whisper
+    hears "pen".  The hook's D5 "pen" and the call's F#4 "pen" keep /ɛ/."""
+    if V.clean(word).lower() == "pen" and notes[0][0] <= LOW_PEN:
+        st["phonemes"] = "pˈɪn"
+    return st
 CHOP = dict(voice="amy", flat=True, glide=0.0, glide_in=0.0, vib_depth=0.0, scoop=0.0, drift=0.0, fall=0.0,
             onset_on_beat=True, max_pre=0.03, kc=1.0, length_scale=1.35, coda_hold=0.35, edge=0.01, raw_onset=False)
 
@@ -61,7 +74,7 @@ class Vocals:
                 name = n
         return name
 
-    def _stream(self, lines):
+    def _stream(self, lines, fric_closure=False):
         """Words of several lines in time order, with each word's neighbours for legato context."""
         ws = []
         for L in lines:
@@ -96,7 +109,7 @@ class Vocals:
                 ctx["next_pre"] = round(V.onset_budget(nph), 4)
                 if V.obstruent_onset(nph):
                     ctx["next_obstruent"] = True
-                cl = V.closure_lead(nph)
+                cl = V.closure_lead(nph, fric_closure)
                 if cl is not None and ns - (notes[-1][1] + notes[-1][2]) < cl:
                     ctx["closure_at"] = round(ns - cl, 4)     # silent before the next word's burst
                 ctx["phrase_end"] = bool(ns - (notes[-1][1] + notes[-1][2]) >= 0.25)
@@ -104,6 +117,21 @@ class Vocals:
                 ctx["phrase_end"] = True
             out.append((L, w, notes, ctx))
         return out
+
+    @staticmethod
+    def _split_oh(L):
+        """The bridge's "Oh-five." is sung as two words, "Oh" and "five.", each on its own note: as one
+        two-note word the f was a seam inside it and Whisper heard only "Oh"."""
+        if not any(w["w"].startswith("Oh-") and len(w["notes"]) == 2 for w in L["words"]):
+            return L
+        ws = []
+        for w in L["words"]:
+            if w["w"].startswith("Oh-") and len(w["notes"]) == 2:
+                ws.append({"w": "Oh", "notes": [w["notes"][0]]})
+                ws.append({"w": w["w"][3:], "notes": [w["notes"][1]]})
+            else:
+                ws.append(w)
+        return dict(L, words=ws)
 
     def _job(self, w, notes, ctx, style, shift=0.0, pitch_override=None):
         notes = [(m, round(s + shift, 6), d) for m, s, d in notes]
@@ -117,7 +145,7 @@ class Vocals:
         S = self.S
         lines = S["lines"]
         lead = [L for L in lines if L["voice"] == "lead"]
-        chant = [L for L in lines if L["voice"] == "chant"]
+        chant = [self._split_oh(L) for L in lines if L["voice"] == "chant"]
         choir = [L for L in lines if L["voice"] == "choir"]
 
         # ---- the lead
@@ -143,6 +171,7 @@ class Vocals:
                 notes = [(notes[0][0], notes[0][1], round(f0 - notes[0][1], 6))]   # sung to the freeze point
             if lid in ("k2", "k3"):
                 st.update(vib_depth=14.0, scoop=-25.0)    # close and soft
+            low_pen(w["w"], notes, st)
             track = "lead"
             if self.sil[0] - 1e-6 <= notes[0][1] < self.sil[1]:
                 track = "lead_the"                    # sung alone, dry, inside the silence window
@@ -157,7 +186,7 @@ class Vocals:
                     self.placements.append(("lead_dbl", self._job(w, notes, ctx, st2, shift + sh, pov), -1.0, p, dict(fx)))
 
         # ---- the chant (robot list) and its octave double
-        for L, w, notes, ctx in self._stream(chant):
+        for L, w, notes, ctx in self._stream(chant, fric_closure=True):   # the robot never voices an f
             st = dict(CHANT)
             lid = L["id"]
             if lid in ("pre1b", "pre2b"):            # the melt: the robot learns portamento
@@ -189,7 +218,7 @@ class Vocals:
                               for st, off, p, g in CHOIR]
                 for st, off, p, g in takes:
                     for _, w, notes, ctx in stream:
-                        s2 = dict(st)
+                        s2 = low_pen(w["w"], notes, dict(st))
                         if s2.get("length_scale") is None and "seed" in s2 and s2["seed"] > 20:
                             s2["length_scale"] = round(V.choose_ls(notes) * 1.15, 3)
                         self.placements.append(("choir", self._job(w, notes, ctx, s2, off), g, max(-1, min(1, p)), {}))
@@ -199,14 +228,15 @@ class Vocals:
                 lss = [0.95, 1.08, 1.2, 0.88]
                 # the verse shouts ("Flag it.", "(Keep it.)") are six tighter copies: twelve detuned
                 # copies of a two-word call smear into "Flyers"; the chorus gang keeps all twelve
-                nc = 6 if role == "call" else 12
-                dt = 6.0 if role == "call" else 15.0
+                nc = CALL_COPIES if role == "call" else 12
+                dt = CALL_DETUNE if role == "call" else 15.0
+                fr = CALL_FORMANT if role == "call" else (0.9, 1.08)
                 pans = np.linspace(-0.95, 0.95, nc)
                 order = r.permutation(nc)
                 for k in range(nc):
                     st = dict(GANG, voice=voices[k % 3], length_scale=None, seed=200 + k,
                               detune=float(r.uniform(-dt, dt)),
-                              formant=float(r.uniform(0.9, 1.08) if voices[k % 3] != "lessac" else r.uniform(0.84, 0.95)))
+                              formant=float(r.uniform(*fr) if voices[k % 3] != "lessac" else r.uniform(0.84, 0.95)))
                     off = float(r.uniform(-1, 1)) * GANG_SPREAD
                     tilt = float(r.uniform(-3, 3))
                     for _, w, notes, ctx in stream:

@@ -37,7 +37,7 @@ PHON_OVERRIDE = {
     "the": "ðiː", "a": "ɐ", "la": "lˈɑː", "insert": "ɪnsˈɜːt", "export": "ɛkspˈɔːɹt",
     "you": "jˈuː", "i'm": "ˈaɪm", "i'll": "ˈaɪl", "i": "ˈaɪ", "your": "jˈʊɹ", "do": "dˈuː",
     "or": "ˈɔːɹ", "and": "ˈænd", "in": "ˈɪn", "it": "ˈɪt", "is": "ˈɪz", "an": "ˈæn", "for": "fˈɔːɹ",
-    "was": "wˈʌz", "but": "bˈʌt", "can": "kˈæn", "could": "kˈʊd", "own": "ˈoʊn",
+    "was": "wˈʌz", "but": "bˈʌt", "can": "kən", "could": "kˈʊd", "own": "ˈoʊn",
     "eras": "ˈɛɹəz", "one": "wˈʌn", "twelve": "twˈɛlv",
 }
 FUNCTION_WORDS = {"i'm", "i'll", "the", "a", "and", "or", "in", "it", "is", "an", "for", "was", "but", "can",
@@ -140,9 +140,9 @@ def _cut_carrier(a, sr):
     return a[max(k, j - int(0.008 * sr)):]
 
 
-def tts(name, text, length_scale=1.0):
-    """Piper audio (float32, 22.05 kHz) for one word; cached."""
-    ph = phonemes_for(name, text)
+def tts(name, text, length_scale=1.0, ph=None):
+    """Piper audio (float32, 22.05 kHz) for one word (or for the given IPA); cached."""
+    ph = ph or phonemes_for(name, text)
     car = needs_carrier(ph)
     key = hashlib.sha1(json.dumps([VOICES[name], ph, round(length_scale, 3), "z1", car]).encode()).hexdigest()[:20]
     path = os.path.join(CACHE, "tts", key + ".npy")
@@ -296,17 +296,23 @@ DEFAULT_STYLE = dict(
     scoop=-40.0, scoop_min=0.45, scoop_time=0.11, glide=0.06, glide_in=0.07, drift=5.0,
     fall=-35.0, flat=False, max_pre=0.16, kc=None, dur_comp=1.0, onset_on_beat=False,
     shout=0.0, edge=0.03, seed=0, coda_hold=0.4, cons_boost=4.0, vowel_fade=0.035, hold_mode="point",
-    raw_onset=True, burst_boost=5.0,
+    raw_onset=True, burst_boost=5.0, phonemes=None, clear_coda=False, fric_boost=0.0,
 )
 RAW_CAP = {"stop": 0.07, "fric": 0.12}     # longest raw onset kept (s): burst + aspiration / a fricative
 CLOSURE = 0.035                            # silence a singer leaves before a stop's burst (s)
 
 
-def closure_lead(ph):
+FRIC_CLOSURE = 0.10                        # a voiceless fricative onset starts about this long before its note
+
+
+def closure_lead(ph, fric=False):
     """Seconds before the note at which the previous word must already be silent (its closure), or
-    None when the word does not start with a stop."""
+    None when the word does not start with a stop.  fric: also a voiceless fricative (f, s, sh, th):
+    the word before stops voicing where the fricative starts, or the f is heard as a v ('can | fetch')."""
     stp, unv = stop_onset(ph)
     if not stp:
+        if fric and _strip_stress(ph)[:1] in "fsʃθ":
+            return FRIC_CLOSURE
         return None
     return (RAW_CAP["stop"] if unv else 0.035) + CLOSURE
 ONSET_BUDGET = {"p": .035, "t": .035, "k": .04, "b": .03, "d": .03, "ɡ": .035, "g": .035, "f": .07, "θ": .06,
@@ -443,7 +449,11 @@ def plan_word(x, sr, notes, nsyl, ctx, st):
             nxt = ctx.get("next_start")
             legato = nxt is not None and nxt - ends[-1] < 0.2
             hold = 0.85 if ctx.get("sonorant_coda") and st["coda_hold"] > 0 else 0.35
-            if legato and ctx.get("next_pre", 0.05) < 0.005:
+            if legato and st["clear_coda"] and ctx.get("obstruent_coda") and not ctx.get("sonorant_coda"):
+                # 'fetch. I', 'desk. And': a stop or fricative coda is over before the next note, even
+                # when the next word starts on a vowel (it used to run on under it: 'fetch I' -> 'vie')
+                core_end = ends[-1] - max(ctx.get("next_pre", 0.0), 0.0) - Q
+            elif legato and ctx.get("next_pre", 0.05) < 0.005:
                 core_end = ends[-1] - 0.15 * Q          # vowel to vowel: keep voicing through the join
             elif legato and ctx.get("coda_clear"):
                 core_end = ends[-1] - ctx.get("next_pre", 0.05) - Q    # 'page / stay': no smear
@@ -607,7 +617,8 @@ def _sing(job, st):
     total = notes[-1][1] + notes[-1][2] - notes[0][1]
     ls = st["length_scale"] or choose_ls(notes)
     st["length_scale"] = ls
-    x, sr = tts(st["voice"], text, ls)
+    ph = st.get("phonemes") or job.get("ph") or phonemes_for(st["voice"], text)
+    x, sr = tts(st["voice"], text, ls, ph)
     x = trim(np.asarray(x, dtype=float), sr)
     x = x / (np.max(np.abs(x)) + 1e-9) * 0.8
     if st["formant"] != 1.0:
@@ -616,8 +627,8 @@ def _sing(job, st):
         num = int(round(1000 / k))
         from scipy import signal as sg
         x = sg.resample_poly(x, num, 1000)
-    ph = job.get("ph") or phonemes_for(st["voice"], text)
     ctx = dict(ctx)
+    ctx.setdefault("obstruent_coda", obstruent_coda(ph))
     ctx.setdefault("onset_budget", onset_budget(ph))
     ctx.setdefault("sonorant_coda", sonorant_coda(ph))
     ctx.setdefault("coda_cluster", bool(sonorant_coda(ph) and obstruent_coda(ph)))
@@ -722,6 +733,8 @@ def _sing(job, st):
         g[is_cons] = boost
         if raw_span is not None and raw_span[2] and st["burst_boost"]:
             g[(tt >= raw_span[0]) & (tt < raw_span[1])] += st["burst_boost"]    # the burst / the h: diction
+        elif raw_span is not None and st["fric_boost"]:
+            g[(tt >= raw_span[0]) & (tt < raw_span[1])] += st["fric_boost"]     # f / s / sh / th onsets
         if ctx.get("sonorant_coda"):
             g[tt >= core_spans[-1][1]] = 0.0
         w = max(1, int(0.008 * SR))
@@ -769,8 +782,8 @@ def prepare(jobs):
         if st.get("length_scale") is None:
             st["length_scale"] = choose_ls(j["notes"])
         v = st.get("voice", "amy")
-        j["ph"] = phonemes_for(v, clean(j["text"]))
-        tts(v, clean(j["text"]), st["length_scale"])
+        j["ph"] = st.get("phonemes") or phonemes_for(v, clean(j["text"]))
+        tts(v, clean(j["text"]), st["length_scale"], j["ph"])
     save_phoneme_cache()
 
 

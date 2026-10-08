@@ -35,6 +35,18 @@ def _decimate2(x):
 
 DOTTED_8TH = 0.375   # at 120 bpm
 CHORUSES = ("chorus1", "chorus2", "chorus3")
+# QA round 2 (mix lens): the lead sat +8 dB over the loudest bed stem in 1-5 kHz in the choruses; the pocket
+# and the chorus presence bell were eased so the bed comes back into the band
+POCKET_DEPTH = {"drums": 1.5, "keys": 2.5, "other": 2.5}     # was 3 / 4.5 / 4.5 dB
+CHORUS_PRESENCE_TRIM = -1.5                                  # the lead's +2.5 dB / 3.6 kHz bell is +1.0 in the choruses
+# the bed steps back under the lines Whisper lost only in the full mix (the stems read them): (start, end, dB)
+INTELLIGIBILITY_DUCKS = [
+    (20.0, 27.8, -2.5),                   # v1c / v1d: the riff returns under "Clip the proof." / "Outline it."
+    (60.0, 63.8, -2.5),                   # v2a "Chat is an app."
+    (82.0, 83.0, -2.0),                   # pre2d "stay in your hand."
+    (40.0, 42.0, -2.0), (88.0, 90.0, -2.0), (132.4, 134.0, -2.5),   # "You say where I land," (not the slam-back)
+    (47.9, 49.8, -1.5), (95.9, 97.8, -1.5), (139.9, 141.8, -3.5),   # "Who holds the pen?" (chorus 3 was lost)
+]
 
 
 class Mixer:
@@ -202,7 +214,7 @@ class Mixer:
         lead = self.lead_chain(V["lead"])
         lead = pan(lead, 0.0)
         # the choruses: the lead and choir fundamentals (D4-D5) are the 400 Hz lump; thin it there
-        lead = self.sec_eq(lead, CHORUSES, ("peak", 420, 1.0, -3.0))
+        lead = self.sec_eq(lead, CHORUSES, ("peak", 420, 1.0, -3.0), ("peak", 3600, 0.9, CHORUS_PRESENCE_TRIM))
         lead = self.calibrate(lead, -14.0, [(35.2, 52.0), (83.2, 100.0)], "lead")
         g_lead = self.report["calibration"]["lead"]["gain_db"]
         dbl = self.lead_chain(V["lead_dbl"], double=True)
@@ -210,6 +222,8 @@ class Mixer:
         # the dry "the" inside the silence window: the lead's own normalisation, chain and level, no sends
         g_norm = float(np.max(np.abs(self.norm_active(V["lead"], -18.0)))) / max(float(np.max(np.abs(V["lead"]))), 1e-12)
         the = pan(self.lead_chain(V["lead_the"] * g_norm, norm=False), 0.0) * undb(g_lead) if np.any(V["lead_the"]) else np.zeros((N, 2))
+        # its release is over by 131.50 s: the keystroke then has 120 ms of true silence on its left
+        the = the * np.clip((self.sil[0] + 0.25 - np.arange(N) / SR) / 0.03, 0.0, 1.0)[:, None]
         # plate and delay automation: space for the bare voice, the melt, the choruses and the end
         plate = sec({"boot": -8.0, "pre*": -13.0, "chorus*": -15.0, "bridge": -13.0, "breakdown": -10.0,
                      "outro": -10.5, "verse2": -18.0, "tail": -9.0}, -40.0, ramp=0.2)
@@ -242,7 +256,7 @@ class Mixer:
         # ---------------- choir (stacks) + gang (12 copies)
         cr = self.choir_chain(V["choir"])
         cr = self.sec_eq(cr, CHORUSES, ("peak", 420, 1.0, -3.0))
-        cr = self.sec_eq(cr, ("post1", "post2"), ("highshelf", 5000, 0.7, 3.5))      # air for the la-la
+        cr = self.sec_eq(cr, ("post1", "post2"), ("highshelf", 5000, 0.7, 3.5), ("peak", 3000, 0.8, 2.0))  # air and presence for the la-la
         cr = self.calibrate(cr, -18.5, [(52.0, 60.0), (100.0, 104.0)], "choir")
         cr = self.pump(cr, {"chorus*": 2.0, "post*": 2.5})
         send("choir", cr, plate=undb(-9.0), delay=undb(-22.0))
@@ -279,6 +293,8 @@ class Mixer:
         drums = self.calibrate(drums, -16.0, [(36.0, 52.0), (84.0, 100.0)], "drums")
         # the bounce: less 63 Hz (the house kick's body), more top
         drums = self.sec_eq(drums, ("post1", "post2"), ("peak", 63, 1.2, -2.5), ("highshelf", 5000, 0.7, 3.0))
+        # the choruses: the house kick owned the 63 Hz octave (6 dB over the bass); a little of it moves to the bass
+        drums = self.sec_eq(drums, CHORUSES, ("peak", 58, 1.2, -1.5))
         gd = undb(self.report["calibration"]["drums"]["gain_db"])
         sn_send = sec({"chorus*": -16.0, "pre*": -18.0, "post*": -18.0, "outro": -18.0}, -24.0, ramp=0.1)
         send("drums", (sn * undb(-3.0) + cl * undb(-5.0)) * gd, plate=undb(sn_send))
@@ -295,11 +311,11 @@ class Mixer:
         ped = pan(B["pedal"], 0.0)
         bass = steppers + subs * undb(-3.0) + s808 * undb(-11.0) + ped * undb(-6.0)
         bass = compressor(bass, thr=-16.0, ratio=3.0, attack=0.01, release=0.1, knee=6.0, makeup=2.0)
-        bass = self.pump(bass, {"chorus*": 6.0, "post*": 5.0, "intro": 3.0, "verse*": 3.0, "pre*": 3.0, "bridge": 3.0,
+        bass = self.pump(bass, {"chorus1": 6.0, "chorus2": 6.0, "chorus3": 7.0, "post*": 5.0, "intro": 3.0, "verse*": 3.0, "pre*": 3.0, "bridge": 3.0,
                                 "outro": 3.0})
         bass = self._mono_lows(bass, 140)
         bass = eq(bass, ("peak", 220, 0.8, 2.5))                                     # body under the voices
-        bass = self.sec_eq(bass, CHORUSES, ("peak", 63, 1.2, -1.5))                  # less boom under the hook
+        bass = self.sec_eq(bass, CHORUSES, ("peak", 63, 1.2, -1.5), ("peak", 118, 0.9, 1.5))   # less boom, more note
         bass = self.sec_eq(bass, ("post1", "post2"), ("peak", 63, 1.2, -3.0))      # ... and in the bounce
         # the breakdown is space: the G pedal and the soft drives 9 dB down and under 110 Hz, the E2 sub -4 dB
         bd = self.windows([(120.0, 126.0)], 1.0, ramp=0.03)
@@ -310,7 +326,7 @@ class Mixer:
         # ---------------- keys
         organ = eq(K["organ"], ("hp", 110), ("peak", 2500, 0.9, 2.0), ("peak", 400, 1.0, -2.0))
         organ = self.pump(organ, {"post*": 3.0, "verse*": 2.0, "intro": 2.0, "outro": 2.0})
-        organ = self.sec_eq(organ, ("post1", "post2"), ("highshelf", 5000, 0.7, 3.5))
+        organ = self.sec_eq(organ, ("post1", "post2"), ("highshelf", 5000, 0.7, 3.5), ("peak", 3000, 0.8, 2.0))
         # the bridge: the comp stabs step back under "Oh-five. Oh-nine." and the last two lines
         organ = organ * undb(self.windows([(110.0, 112.0), (116.0, 120.0)], -2.5, ramp=0.03))[:, None]
         organ = self.calibrate(organ, -19.5, [(4.0, 12.0), (60.0, 68.0)], "organ")
@@ -323,10 +339,11 @@ class Mixer:
         strings = self.pump(strings, {"pre*": 4.0})
         strings = self.calibrate(strings, -22.5, [(28.0, 34.5), (76.0, 82.5)], "strings")
         pad = width(eq(K["pad"], ("hp", 160)), 1.4)
-        pad = self.pump(pad, {"chorus*": 9.0, "bridge": 4.0})
+        # the three choruses pump alike (chorus 3's louder pad and reboot chord measured 3 dB shallower)
+        pad = self.pump(pad, {"chorus1": 8.0, "chorus2": 8.0, "chorus3": 10.5, "bridge": 4.0})
         pad = self.calibrate(pad, -26.0, [(36.0, 52.0)], "pad")
         boot = eq(K["boot"], ("hp", 38))
-        boot = self.pump(boot, {"chorus3": 9.0})        # the reboot chord rings into chorus 3: it pumps with the pad
+        boot = self.pump(boot, {"chorus3": 10.5})       # the reboot chord rings into chorus 3: it pumps with the pad
         boot = self.calibrate(boot, -17.5, [(0.0, 4.0)], "boot")
         keys = organ + piano + felt + strings + pad + boot
         keys = eq(keys, ("peak", 220, 0.8, 2.5))                                     # body under the voices
@@ -355,7 +372,7 @@ class Mixer:
         chops = compressor(self.norm_active(chops, -18.0), thr=-22.0, ratio=4.0, attack=0.002, release=0.05, makeup=3.0)
         chops = pan(chops, 0.0)
         chops = self.pump(chops, {"post*": 3.0})
-        chops = self.sec_eq(chops, ("post1", "post2"), ("highshelf", 5000, 0.7, 3.5))
+        chops = self.sec_eq(chops, ("post1", "post2"), ("highshelf", 5000, 0.7, 3.5), ("peak", 3000, 0.8, 2.0))
         chops = self.calibrate(chops, -21.0, [(4.0, 12.0), (56.0, 60.0)], "chops")
         other = brass + sax + bell + beeps + ris + sfx + chops
         # "You do! You do!": the stabs, the riser and the bell flourish step back 4 dB under the answer
@@ -366,7 +383,7 @@ class Mixer:
         send("other", bell, plate=undb(-11.0), delay=undb(-15.0))
         send("other", chops, delay=undb(sec({"post*": -16.0}, -60.0, ramp=0.1)))
         stems["other"] = other
-        sfx_sil = O["sfx_sil"] * undb(-12.0)       # the writer's one keystroke: a dry click, under the "the"
+        sfx_sil = O["sfx_sil"] * undb(-8.0)        # the writer's one keystroke: a dry click, alone after the "the"
 
         # ---------------- returns (into each stem)
         for stem, x in plate_in.items():
@@ -386,7 +403,7 @@ class Mixer:
 
         # ---------------- the vocal pocket: the band gives each sung or chanted word room in 300 Hz-5 kHz
         key = stereo(lead) + stereo(ch) + stereo(stems["spoken"])
-        for k, dep in (("drums", 3.0), ("keys", 4.5), ("other", 4.5)):
+        for k, dep in POCKET_DEPTH.items():
             stems[k] = pocket(stems[k], key, 300.0, 5000.0, depth=dep)
         # the post-chorus drums and bass give way 1.5 dB (the solver below lifts the band back to its
         # target, so the bounce gets brighter rather than quieter); breakdown bars 2-3 (snaps) -2 dB
@@ -400,6 +417,11 @@ class Mixer:
         stems["bass"] = stems["bass"] * undb(self.windows([(126.0, 128.0)], -4.0, ramp=0.03))[:, None]
         # the punchline "Keep it." (75.0 s): the band steps back for its beat
         en = en + self.windows([(74.95, 75.9)], -4.0, ramp=0.015)
+        # the lines the full mix masked: the bed steps back under each (QA round 2)
+        for a_, b_, g_ in INTELLIGIBILITY_DUCKS:
+            en = en + self.windows([(a_, b_)], g_, ramp=0.03)
+        # breakdown bars 2-3: down to the level the section is meant to have (bar 4's riser and sub keep the slam)
+        en = en + self.block_gains(stems, en)
         for k in ("drums", "bass", "keys", "other"):
             stems[k] = stems[k] * undb(en)[:, None]
 
@@ -410,6 +432,26 @@ class Mixer:
             crushed = bitcrush(x * 4.0, 7, 48000, dither=True, seed=k) / 4.0
             x = x * (1 - dk[:, None]) + (0.4 * x + 0.6 * crushed) * dk[:, None]
             stems[k] = x * (1 - dk * (1 - undb(-6.0)))[:, None]
+
+        # ... into half a beat of real silence (the last half beat of each duck): the band is gone first, the
+        # lead's dissolving tail last; everything is back with "I'm" on the "and"
+        self.holes = [(b - 0.5 * self.spb, b) for a, b in self.ducks]
+        t = np.arange(N) / SR
+        for k in list(stems.keys()):
+            if k.startswith("_"):
+                continue
+            g = np.ones(N)
+            for h0, h1 in self.holes:
+                i0, i1 = n_of(h0 - 0.02), n_of(h1 + 0.01)
+                late = 0.04 if k == "lead" else 0.0      # the band 10 ms before the hole, the lead's tail 40 ms into it
+                tt = t[i0:i1]
+                g[i0:i1] = np.clip(np.clip((h0 + late - tt) / 0.01, 0, 1) + np.clip((tt - (h1 - 0.006)) / 0.004, 0, 1), 0, 1)
+            stems[k] = stems[k] * g[:, None]
+
+        # ---------------- chorus 1 was the darkest chorus at the top (3.6 dB under the line at 10 kHz)
+        for k in list(stems.keys()):
+            if not k.startswith("_"):
+                stems[k] = self.sec_eq(stems[k], ("chorus1",), ("highshelf", 9000, 0.7, 2.0))
 
         # ---------------- the silence window: digital zero, then the dry "the" and the keystroke
         a, b = n_of(self.sil[0]), n_of(self.sil[1])
@@ -458,6 +500,29 @@ class Mixer:
                 c[ia:ib] = gdb
         self.report["section_energy_db"] = solved
         return onepole(c, 0.015)
+
+    # 2 s blocks whose loudness (relative to chorus 1, LU) the band is solved to after the section solve
+    BLOCK_TARGET = {(122.0, 124.0): -6.3, (124.0, 126.0): -6.3}
+
+    def block_gains(self, stems, en):
+        """Band gain (dB) per block so the mix (with the section gains `en` applied) reads BLOCK_TARGET."""
+        band = stems["drums"] + stems["bass"] + stems["keys"] + stems["other"]
+        vox = stems["lead"] + stems["chant"] + stems["choir"] + stems["spoken"]
+        gb = undb(en)[:, None]
+        _, a1, b1 = next(x for x in self.secs if x[0] == "chorus1")
+        ref = self.active_lufs(band * gb + vox, a1, b1)
+        c = np.zeros(self.N)
+        out = {}
+        for (a, b), tgt in self.BLOCK_TARGET.items():
+            pb = 10 ** (self.active_lufs(band * gb, a, b) / 10)
+            pv = 10 ** (self.active_lufs(vox, a, b) / 10)
+            pt = 10 ** ((ref + tgt) / 10)
+            g2 = (pt - pv) / max(pb, 1e-12) if pt > pv * 1.05 else 0.25
+            gdb = float(np.clip(10 * np.log10(max(g2, 1e-6)), -6.0, 0.0))
+            c[n_of(a):n_of(b)] = gdb
+            out["%g-%g" % (a, b)] = round(gdb, 2)
+        self.report["block_gain_db"] = out
+        return onepole(c, 0.03)
 
     def _mono_lows(self, x, f):
         m = (x[:, 0] + x[:, 1]) * 0.5
@@ -559,6 +624,11 @@ class Mixer:
                 f = min(n_of(0.003), i1 - i0)
                 mask[i1 - f:i1] = np.minimum(mask[i1 - f:i1], np.linspace(1, 0, f))
         y[a:b] *= mask[:, None]
+        for h0, h1 in getattr(self, "holes", []):     # the FADE half beats: exact zero inside, 3 ms edges
+            i0, i1 = n_of(h0 + 0.04), n_of(h1 - 0.006)
+            f = n_of(0.003)
+            y[i0:i1] = 0.0
+            y[i0 - f:i0] *= np.linspace(1, 0, f)[:, None]
         # the tail: the boot chord rings out and lands on exact zero at DUR
         fo = n_of(0.35)
         y[-fo:] *= np.linspace(1, 0, fo)[:, None] ** 2
