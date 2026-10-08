@@ -109,7 +109,7 @@ class Vocals:
                 ctx["next_pre"] = round(V.onset_budget(nph), 4)
                 if V.obstruent_onset(nph):
                     ctx["next_obstruent"] = True
-                cl = V.closure_lead(nph, fric_closure)
+                cl = V.closure_lead(nph, fric_closure and V.clean(nxt["w"]).lower() not in V.FUNCTION_WORDS)
                 if cl is not None and ns - (notes[-1][1] + notes[-1][2]) < cl:
                     ctx["closure_at"] = round(ns - cl, 4)     # silent before the next word's burst
                 ctx["phrase_end"] = bool(ns - (notes[-1][1] + notes[-1][2]) >= 0.25)
