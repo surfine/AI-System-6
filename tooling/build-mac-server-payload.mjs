@@ -21,6 +21,7 @@ import {
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { globSync } from "node:fs";
+import { compileBrowseFiltersForRelease } from "./lib/browse-filters-release.mjs";
 
 const repoRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const payloadDir = join(repoRoot, "dist", "mac-server-payload");
@@ -138,6 +139,9 @@ for (const pattern of assetGlobs) {
 
 // 2. The server itself plus its identity files. pkg used to discover server
 //    sources through the require graph; a plain tree names them explicitly.
+//    Time Machine's ad-blocking lists are generated and git-ignored, so they
+//    are compiled here from the pinned download before apps/browse is copied.
+compileBrowseFiltersForRelease(repoRoot);
 for (const relative of ["apps/server", "apps/browse", "package.json", "package-lock.json", "build-info.json"]) {
   cpSync(join(repoRoot, relative), join(payloadDir, relative), { recursive: true });
 }
