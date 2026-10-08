@@ -75,9 +75,11 @@ async function boot() {
   await Promise.all(_loading);
   for (const k in DESKTOPS) deskCanvas(k); // paint every wallpaper once, up front
   metalTexture();
+  for (const e of APPEARANCES) eraThumb(e.id);   // the Control Panel thumbnails, built up front (no first-use spike)
   for (const k of ['dissolve', 'bayer', 'wipe', 'blinds', 'iris', 'checker']) _thresholds(k);
   SCENES.sort((a, b) => a.t0 - b.t0 || a.order - b.order);
   window.SONG_INFO = { missing: SONG_MISSING, scripts: MISSING.slice(), scenes: SCENES.length, dur: DUR, bpm: BPM };
+  window.DUR = DUR; // the render.mjs contract reads DUR; make it a window property whether or not data.js declared it
 
   window.renderFrame = t => { draw(t); return cv.toDataURL('image/png').slice(22); };
   window.renderSheet = (times, cols) => {
@@ -103,6 +105,8 @@ async function boot() {
   preview();
 }
 
+// The preview loop below reads performance.now() for its wall clock (play/pause, seeking). That is player state, not
+// drawing: draw(t) stays a pure function of song time. renderCheck uses it only to time frames.
 function preview() {
   // space = play/pause · arrows = seek 1 s (shift: 5 s) · , . = one frame · h = HUD · ?t=12.5 starts there
   // ?specimen = the toolkit reel · ?era=aqua = force an era. Works without build/song.wav (a silent clock runs).
@@ -110,6 +114,7 @@ function preview() {
   let audioOK = false, vt = clamp(+QS.get('t') || 0, 0, DUR), playing = false, last = performance.now();
   song.addEventListener('canplay', () => { if (!audioOK) { audioOK = true; song.currentTime = vt; } });
   song.addEventListener('error', () => { audioOK = false; });
+  song.preload = 'auto'; song.src = 'build/song.wav';
   const now = () => audioOK ? song.currentTime : vt;
   const seek = t => { t = clamp(t, 0, DUR); vt = t; if (audioOK) song.currentTime = t; };
   const toggle = () => { playing = !playing; if (audioOK) { if (playing) song.play().catch(() => { audioOK = false; }); else song.pause(); } };

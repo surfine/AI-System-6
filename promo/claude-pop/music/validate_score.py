@@ -16,6 +16,12 @@ Hard errors (exit 1):
   - a sung note starting on a strong beat (beats 1 and 3) must be a chord tone, unless it is in
     the chant voice (monotone by design) or the word is flagged "nct": true (deliberate)
   - MIDI 0 appears only in spoken lines or in words flagged "silent": true
+  - parts: riff, bass (with drives A/B), drums (every row and foley voice named in the kit with its UI
+    foley and visible cause), chops (each carrying 'pen' or 'pal'), sub, bells, stabs, sfx, silence;
+    nothing starts inside the silence window; risers are ordered windows
+  - the la-la lines sing the riff note for note
+  - hook doctor: "pen pal" sung at least 10 times; one hook shape across the choruses; at least
+    three gang moments; the la-la riff sung four times; the first chorus by 0:37; the hook in the first 4 s
 Warnings (printed, exit 0):
   - non-chord tones on strong beats in the chant voice (reported, never fatal)
   - sung notes with no chord under them
@@ -187,7 +193,7 @@ def main(path):
 
     # ---- parts sanity
     P = S.get("parts", {})
-    for key in ("riff", "bass", "drums", "hits", "bootChord"):
+    for key in ("riff", "bass", "drums", "hits", "bootChord", "chops", "sub", "bells", "stabs", "sfx", "silence"):
         if key not in P:
             err("parts.%s missing" % key)
     for name, beat in P.get("hits", {}).items():
@@ -208,6 +214,80 @@ def main(path):
     missing = [s for s in names if s not in P.get("drums", {}).get("sections", {})]
     if missing:
         err("sections without a drum pattern: %s" % missing)
+    # the desk as the band: every drum row and every foley part names a kit entry with a visible cause
+    kit = P.get("drums", {}).get("kit", {})
+    rows = {r for pat in P.get("drums", {}).get("patterns", {}).values() for r in pat}
+    for r in sorted(rows | {"crash", "riser", "stab", "bell", "keystroke", "click", "chop", "floppyA", "floppyB"}):
+        k = kit.get(r)
+        if not isinstance(k, dict) or not k.get("foley") or not k.get("cause"):
+            err("drums.kit[%r] must name its UI foley and its visible cause" % r)
+    # the global silence: nothing but the keystroke starts inside it
+    silence = P.get("silence", [])
+    def inside(b):
+        return any(s[0] <= b < s[0] + s[1] for s in silence)
+    note_lists = {
+        "riff": P.get("riff", {}).get("events", []), "flourish": P.get("riff", {}).get("flourish", []),
+        "drive A": P.get("bass", {}).get("drives", {}).get("A", []), "drive B": P.get("bass", {}).get("drives", {}).get("B", []),
+        "sub": P.get("sub", {}).get("events", []), "chops": P.get("chops", {}).get("events", []),
+        "bells": P.get("bells", []), "glockPen": P.get("stabs", {}).get("glockPen", []), "beeps": P.get("beeps", []),
+    }
+    for name, evs in note_lists.items():
+        for ev in evs:
+            if not (0 <= ev[1] < dur):
+                err("%s event %s outside the song" % (name, ev))
+            if inside(ev[1]):
+                err("%s event %s starts inside the silence window" % (name, ev))
+            if ev[2] <= 0:
+                err("%s event %s has no length" % (name, ev))
+    for name in ("brass", "sax"):
+        for st in P.get("stabs", {}).get(name, []):
+            if inside(st["startBeat"]):
+                err("%s stab at %s starts inside the silence window" % (name, st["startBeat"]))
+    for b in P.get("drums", {}).get("crashes", []) + P.get("drums", {}).get("chokedCrashes", []):
+        if inside(b) or not 0 <= b < dur:
+            err("crash at %s is inside the silence or outside the song" % b)
+    for r in P.get("drums", {}).get("risers", []):
+        if not (0 <= r[0] < r[1] <= dur):
+            err("riser %s is not an ordered window inside the song" % r)
+    for k in P.get("sfx", {}).get("keystrokes", []):
+        if not 0 <= k < dur:
+            err("keystroke at %s outside the song" % k)
+    # the pen-pal chops carry a word, and the la-la lines sing the riff note for note
+    for ev in P.get("chops", {}).get("events", []):
+        if len(ev) < 4 or ev[3] not in ("pen", "pal"):
+            err("chop event %s must carry the word 'pen' or 'pal'" % ev)
+    riff = P.get("riff", {}).get("loop", [])
+    riff_shape = [(n[0] - riff[0][0], n[1], n[2]) for n in riff] if riff else []
+    lala = [L for L in S["lines"] if L.get("role") == "lala"]
+    for a, b in zip(lala[::2], lala[1::2]):   # two lines = the two bars of the riff, in any key
+        ns = [n for L in (a, b) for w in L["words"] for n in w["notes"]]
+        shape = [(n[0] - ns[0][0], n[1] - ns[0][1], n[2]) for n in ns]
+        if shape != riff_shape:
+            err("la-la lines %s + %s do not sing the riff note for note (%s vs %s)" % (a["id"], b["id"], shape, riff_shape))
+
+    # ---- hook doctor: the numbers a hit needs (errors, because the owner asked for a singalong)
+    text_all = " ".join(L["text"] for L in S["lines"])
+    n_title = len(re.findall(r"pen pal", text_all, re.I))
+    if n_title < 10:
+        err("'pen pal' is sung only %d times (needs 10)" % n_title)
+    hooks = [L for L in S["lines"] if L["voice"] == "lead" and L["text"].lower().startswith("i'm just your pen pal")]
+    shapes = {tuple((n[0] - L["words"][0]["notes"][0][0], n[2]) for w in L["words"] for n in w["notes"]) for L in hooks[1:]}
+    if len(shapes) != 1:
+        err("the hook 'I'm just your pen pal' is sung with %d different shapes in the choruses; it must be one" % len(shapes))
+    gang = [L for L in S["lines"] if L["voice"] == "choir" and L.get("role") in ("gang", "call", "echo")]
+    if len({round(L["words"][0]["notes"][0][1]) for L in gang}) < 3:
+        err("fewer than three gang moments (choir roles gang/call/echo)")
+    if len(lala) // 2 < 4:
+        err("the la-la riff is sung %d times; it needs 4" % (len(lala) // 2))
+    first_chorus = next((s for s in secs if s["name"].startswith("chorus")), None)
+    if first_chorus and first_chorus["startBeat"] * 60 / bpm > 37:
+        err("the first chorus starts at %.1f s; it must start by 0:37" % (first_chorus["startBeat"] * 60 / bpm))
+    teaser = next((L for L in S["lines"] if "pen pal" in L["text"].lower()), None)
+    if not teaser or teaser["words"][0]["notes"][0][1] * 60 / bpm > 4:
+        err("the hook is not heard in the first 4 s")
+    stats = ("hook doctor: 'pen pal' x%d, hook shapes %d, gang moments %d, la-la x%d, first chorus %.1f s, chops %d"
+             % (n_title, len(shapes), len({round(L["words"][0]["notes"][0][1]) for L in gang}), len(lala) // 2,
+                first_chorus["startBeat"] * 60 / bpm if first_chorus else -1, len(P.get("chops", {}).get("events", []))))
 
     # ---- report
     print("%s: %d beats, %.1f s at %d bpm, %d sections, %d chords, %d lines" % (
@@ -217,6 +297,7 @@ def main(path):
         if pitched:
             notes_ = [x for L in S["lines"] if L["voice"] == v for w in L["words"] for x in w["notes"] if x[0]]
             print("  %-6s %4d notes, range %s-%s" % (v, len(notes_), _nm(min(n[0] for n in notes_)), _nm(max(n[0] for n in notes_))))
+    print("  " + stats)
     if nct_report:
         print("non-chord tones on strong beats (not errors):")
         for m in nct_report:

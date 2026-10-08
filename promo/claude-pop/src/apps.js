@@ -7,14 +7,17 @@
 const APP = {};
 const MANUSCRIPT = ['# The Tide Comes In Twice', '## The bill arrives by moonlight', 'The engineers at La Rance never called it renewable energy. They called it the tide, and they billed it by the moon.',
   '## Both directions count', 'Twice a day the estuary fills, and twice a day it empties. The turbines do not care which direction the water travels.'];
+// headFont(): manuscript headings (a document's own type: serif bold from Aqua on, as in the product's TeachText)
 const headFont = () => E.chrome === 'next' ? 'helvB' : E.chrome === 'plat' || E.chrome === 'board' ? 'charcoal' : E.depth <= 4 ? 'chicago' : 'serifB';
+// uiHead(): headings that belong to the app's own interface (card titles, meters, the disc's name): the era's bold sans
+const uiHead = () => E.chrome === 'next' ? 'helvB' : E.chrome === 'plat' || E.chrome === 'board' ? 'charcoal' : E.depth <= 4 ? 'chicago' : FONTROLE.appName;
 const fillClient = (c, col = P.win) => { if (c.round) rrect(c.x, c.y, c.w, c.h, c.round, col); else rect(c.x, c.y, c.w, c.h, col); };
 const W_ = (o, extra) => ({ k: o.k, from: o.from, active: o.active, ...extra, ...(o.win || {}) });
 const modernEra = () => E.index >= ERA.aqua.index;
 // small status glyphs used across apps: 'ok' (tick), 'flag' (caution), 'dot', 'spin'
-function glyph(kind, x, y, c = P.text) {
-  x = R(x); y = R(y);
-  if (kind === 'ok') { const g = E.depth === 1 ? C.black : modernEra() ? '#28a745' : '#007700'; line(x, y + 4, x + 2, y + 7, g, 2); line(x + 2, y + 7, x + 8, y, g, 2); }
+function glyph(kind, x, y, colour) {
+  x = R(x); y = R(y); const c = colour || P.text;
+  if (kind === 'ok') { const g = colour || (E.depth === 1 ? C.black : modernEra() ? '#28a745' : '#007700'); line(x, y + 4, x + 2, y + 7, g, 2); line(x + 2, y + 7, x + 8, y, g, 2); }
   else if (kind === 'flag') { tri(x + 4, y - 1, x + 9, y + 8, x - 1, y + 8, E.depth === 1 ? C.black : '#000000'); tri(x + 4, y + 1, x + 7, y + 7, x + 1, y + 7, E.depth === 1 ? C.white : '#ffcc00'); vline(x + 4, y + 3, 2, C.black); rect(x + 4, y + 6, 1, 1, C.black); }
   else if (kind === 'spin') { const a = Math.floor(T * 8) % 8; for (let i = 0; i < 8; i++) { const an = i / 8 * Math.PI * 2; rect(x + 4 + R(Math.cos(an) * 3), y + 4 + R(Math.sin(an) * 3), 1, 1, i === a ? c : E.depth === 1 ? c : mix(c, P.win, .6)); } }
   else disc(x + 4, y + 4, 2, c);
@@ -39,7 +42,7 @@ APP.teachText = (x, y, w, h, o = {}) => {
       ws.forEach((r, ri) => {
         const ri0 = rows.length;
         if (o.hiRow === ri0) rect(x0 - 2, yy - 3, tw(r, f) + 4, capH(f) + 6, P.sel);
-        const ww = text(r, x0, yy, { font: f, color: P.text });
+        const ww = text(r, x0, yy, { font: f, color: o.hiRow === ri0 ? P.selText : P.text });
         rows.push({ text: r, x: x0, y: yy, w: ww });
         if (live && ri === ws.length - 1 && o.typing && T < o.typing.t1 + 1.2 && (T < o.typing.t1 || caretOn())) rect(x0 + ww + 1, yy - 2, 1, capH(f) + 4, P.text);
         yy += lh;
@@ -53,7 +56,7 @@ APP.teachText = (x, y, w, h, o = {}) => {
 // ---------------- ClioTalk: chat is an app, not the whole computer ----------------
 // opts: msgs [{who: 'clio'|'you', text, at (song time it appears), typing (show '...' until at)}], input (string),
 //       typing {text, t0, t1} (typed into the field), actions (['Clip', 'Insert', 'Discard'] under Clio's last reply),
-//       pressed (action index), sendPressed
+//       pressed (action index), sendPressed, hero (the welcome shown before any message; false hides it)
 APP.clioTalk = (x, y, w, h, o = {}) => {
   const c = win(x, y, w, h, o.title || 'ClioTalk', W_(o, { header: o.header ?? ['Chat', '', o.model || 'Model: local'] }));
   if (!c) return null;
@@ -70,7 +73,15 @@ APP.clioTalk = (x, y, w, h, o = {}) => {
       const bw = typingNow ? 34 : Math.max(...rows.map(r => tw(r, font))) + 16, bh = rows.length * lh + 9;
       items.push({ m, rows, bw, bh, typingNow, pop: clamp((T - (typingNow ? at - m.typing : at)) / .12) });
     }
-    let total = 8; for (const it of items) total += it.bh + 8 + (it.m.who === 'clio' && o.actions && it === items[items.length - 1] ? 22 : 0);
+    if (!items.length && o.hero !== false) { // the empty conversation: the product's big welcome
+      const hf = E.depth <= 4 && E.chrome !== 'next' ? 'chicagoBig' : FONTROLE.big, hx = c.x + 44, hw = c.w - 56;
+      const rows = wrap(o.hero || 'Hi. I\u2019m Clio, the conversation app.', hw, hf).slice(0, 4), hl = lineH(hf);
+      const hy = c.y + Math.max(10, R((c.h - ih - 14 - rows.length * hl - 16) / 2));
+      icon('assistant', c.x + 8, hy - 4);
+      rows.forEach((r2, i) => text(r2, hx, hy + i * hl, { font: hf, color: P.text }));
+      text(fitText('Her replies stay here until you place them.', hw, 'small'), hx, hy + rows.length * hl + 4, { font: 'small', color: P.textDim });
+    }
+    let total = 8; for (const it of items) total += it.bh + 8 + (it.m.who === 'clio' && o.actions && it === items[items.length - 1] ? 24 : 0);
     let yy = c.y + 8 - Math.max(0, total - (c.h - ih - 14));
     items.forEach((it, i) => {
       const you = it.m.who === 'you', bx = you ? c.x + c.w - it.bw - 12 : c.x + 34, by = yy;
@@ -86,16 +97,17 @@ APP.clioTalk = (x, y, w, h, o = {}) => {
       out.bubbles.push({ x: bx, y: by, w: it.bw, h: it.bh, who: it.m.who });
       yy += it.bh + 8;
       if (!you && o.actions && i === items.length - 1 && !it.typingNow) { // AI output stays temporary until you place it
-        let ax = bx;
-        o.actions.forEach((a, ai) => { const aw = tw(a, 'small') + 14; out.actions.push(button(ax, yy - 2, aw, 15, a, { pressed: o.pressed === ai })); ax += aw + 5; });
-        yy += 22;
+        let ax = bx; // separate, evenly padded pills: text width + 16, 8px apart
+        o.actions.forEach((a, ai) => { const aw = tw(a, 'small') + 16; out.actions.push(button(ax, yy - 2, aw, 16, a, { pressed: o.pressed === ai, font: 'small' })); ax += aw + 8; });
+        yy += 24;
       }
     });
     // the input field
-    const fy = c.y + c.h - ih - 4, fx = c.x + 8, fw = c.w - 56;
+    const fy = c.y + c.h - ih - 4, fx = c.x + 32, fw = c.w - 80;
     if (fam === 'mac1' || fam === 'mac7') hline(c.x, fy - 5, c.w, C.black); else hline(c.x, fy - 5, c.w, P.rule);
     let str = o.input ?? '', caret = false;
     if (o.typing) { str = typed(o.typing.text, o.typing.t0, o.typing.t1); caret = T >= o.typing.t0 - .3 && T < o.typing.t1 + .8 ? 'solid' : false; }
+    out.plus = button(c.x + 8, fy + 2, 18, ih - 10, '+', { font: 'small' }); // attach a file (the composer's + button)
     out.input = textField(fx, fy, fw, ih - 6, str, { caret, focus: !!caret, placeholder: o.placeholder || 'Ask Clio. Her replies stay here until you place them.', font: 'small' });
     out.send = button(c.x + c.w - 42, fy + 2, 34, ih - 10, modernEra() ? '↑' : 'Send', { def: !!str, pressed: o.sendPressed, font: 'small' });
   });
@@ -112,7 +124,7 @@ APP.scrapbook = (x, y, w, h, o = {}) => {
   clipRect(c.x, c.y, c.w, c.h, () => {
     fillClient(c, P.face === '#ffffff' ? P.win : P.face);
     out.newScrap = button(c.x + 8, c.y + 6, tw('New Scrap', 'button') + 18, btnH() - 2, 'New Scrap', { pressed: o.pressed === 0 });
-    text(card.title, c.x + 10, c.y + 33, { font: headFont(), color: P.text });
+    text(fitText(card.title, c.w - 20, uiHead()), c.x + 10, c.y + 33, { font: uiHead(), color: P.text });
     sep(c.x + 8, c.y + 48, c.w - 16);
     const p = panel(c.x + 8, c.y + 54, c.w - 16, c.h - 92);
     para(card.body, p.x + 6, p.y + 6, p.w - 12, { font: 'doc', color: P.text });
@@ -148,7 +160,7 @@ APP.reviewDesk = (x, y, w, h, o = {}) => {
     sep(c.x + 8, my, c.w - 16);
     const you = R(o.you ?? 97);
     const lbl = 'Sounds like: YOU ' + you + '%';
-    text(lbl, c.x + 12, my + 12, { font: E.depth <= 4 ? 'ui' : headFont(), color: P.text });
+    text(lbl, c.x + 12, my + 12, { font: E.depth <= 4 ? 'ui' : uiHead(), color: P.text });
     progress(c.x + 12, my + 30, c.w - 24, 12, you / 100);
     text(o.note ?? 'Your roughness is not a defect.', c.x + 12, my + 52, { font: 'small', color: P.textDim });
     out.meter = { x: c.x + 12, y: my + 30, w: c.w - 24, h: 12 };
@@ -309,7 +321,7 @@ APP.fileFloppy = (x, y, w, h, o = {}) => {
 };
 // projectCD opts: burn (progress 0..1; omitted = indeterminate), doc (the manuscript's title), spin (bool)
 APP.projectCD = (x, y, w, h, o = {}) => {
-  const c = win(x, y, w, h, o.title || 'Project CD', W_(o, { header: o.header ?? ['Project CD', '', o.burn >= 1 ? 'Finished' : 'Writing…'] }));
+  const c = win(x, y, w, h, o.title || 'Project CD', W_(o, { header: o.header ?? ['Burn to disc', '', o.burn >= 1 ? 'Finished' : 'Writing…'] }));
   if (!c) return null;
   clipRect(c.x, c.y, c.w, c.h, () => {
     fillClient(c, modernEra() ? P.face : P.win);
@@ -319,10 +331,12 @@ APP.projectCD = (x, y, w, h, o = {}) => {
     else { ell(cx, cy, r - 1, r - 1, '#dfe4ea'); const a = (o.spin === false ? 0 : T * 7); for (let i = 0; i < 4; i++) { const an = a + i * Math.PI / 2; for (let j = 6; j < r - 2; j += 2) rect(cx + R(Math.cos(an) * j), cy + R(Math.sin(an) * j), 2, 2, ['#f7a8c8', '#a8e0f7', '#f7eba8', '#c1f7a8'][i]); } }
     disc(cx, cy, R(r * .3), E.depth === 1 ? C.white : '#f4f6f8'); disc(cx, cy, 3, E.depth === 1 ? C.black : '#7a828c');
     const tx = cx + r + 16;
-    text(o.doc || 'The Tide Comes In Twice', tx, c.y + 16, { font: headFont(), color: P.text });
-    text(o.burn >= 1 ? 'Manuscript, sources, review: one disc.' : 'Writing manuscript, sources, review…', tx, c.y + 34, { font: 'small', color: P.textDim });
-    progress(tx, c.y + 50, c.x + c.w - tx - 14, 12, o.burn ?? .4, { indeterminate: o.burn == null });
-    text(o.burn >= 1 ? 'Ready to share' : o.burn == null ? '' : R(o.burn * 100) + '%', tx, c.y + 70, { font: 'small', color: P.text });
+    const room = c.x + c.w - tx - 12;
+    text(fitText(o.doc || 'The Tide Comes In Twice', room, uiHead()), tx, c.y + 12, { font: uiHead(), color: P.text });
+    const sub = wrap(o.burn >= 1 ? 'Manuscript, sources, review: one disc.' : 'Writing manuscript, sources, review…', room, 'small').slice(0, 2), sl = lineH('small');
+    sub.forEach((r2, i) => text(r2, tx, c.y + 28 + i * sl, { font: 'small', color: P.textDim }));
+    progress(tx, c.y + 30 + sub.length * sl, room, 12, o.burn ?? .4, { indeterminate: o.burn == null });
+    text(o.burn >= 1 ? 'Ready to share' : o.burn == null ? '' : R(o.burn * 100) + '%', tx, c.y + 48 + sub.length * sl, { font: 'small', color: P.text });
   });
   return c;
 };
@@ -343,71 +357,127 @@ APP.floppyMeter = (x, y, w, h, o = {}) => {
       if (E.depth === 1) { frame(bx, by, 68, 10, C.black); rect(bx + 1, by + 1, R(66 * fill), 8, C.black); } else progress(bx, by, 68, 10, fill);
       text('Disk ' + (i + 1), bx, by + 16, { font: 'small', color: P.text });
     }
-    const tx = c.x + 186;
-    text(fmt(bytes), tx, c.y + 16, { font: E.depth <= 4 ? 'ui' : headFont(), color: P.text, scale: E.depth <= 4 ? 1 : 1 });
-    text('of ' + fmt(budget) + ' bytes', tx, c.y + 34, { font: 'small', color: P.textDim });
-    const pct = (bytes / budget * 100).toFixed(1) + '%';
-    text(pct + ' of two 1.44 MB floppies', tx, c.y + 50, { font: 'small', color: P.text });
+    const tx = c.x + 182, room = c.x + c.w - tx - 8;
+    text(fmt(bytes), tx, c.y + 16, { font: E.depth <= 4 ? 'ui' : uiHead(), color: P.text });
+    text(fitText('of ' + fmt(budget) + ' bytes', room, 'small'), tx, c.y + 34, { font: 'small', color: P.textDim });
+    text(fitText((bytes / budget * 100).toFixed(1) + '% used', room, 'small'), tx, c.y + 50, { font: 'small', color: P.text });
     const pass = o.pass ?? bytes <= budget;
-    if ((o.count ?? 1) >= 1) text(pass ? 'Release gate: PASS' : 'Release gate: FAIL', tx, c.y + 68, { font: E.depth <= 4 ? 'ui' : 'body', color: E.depth === 1 ? C.black : pass ? '#1e7b34' : '#c0392b' });
-    text('Heavy tools load lazily, from a third disk.', c.x + 14, c.y + c.h - 16, { font: 'small', color: P.textDim });
+    if ((o.count ?? 1) >= 1) text(fitText(pass ? 'Release gate: PASS' : 'Release gate: FAIL', room, E.depth <= 4 ? 'ui' : 'body'), tx, c.y + 68, { font: E.depth <= 4 ? 'ui' : 'body', color: E.depth === 1 ? C.black : pass ? '#1e7b34' : '#c0392b' });
+    text(fitText('Heavy tools load lazily, from a third disk.', c.w - 24, 'small'), c.x + 14, c.y + c.h - 16, { font: 'small', color: P.textDim });
   });
   return c;
 };
 
-// ---------------- One More Tune: the white-label record ----------------
-// opts: track (0..9 current position), done ([indices answered]), year, label (era name on the label), title, artist,
-//       options ([strings]), answer (index marked right), wrong (index struck out), spin (default true), arm (0..1)
+// ---------------- One More Tune: the record quiz ----------------
+// A dark panel: the record on the left (blue label with the catalogue number and the year), a vertical tonearm beside
+// it; on the right the ten track dots (A/B sides), 'Not that one', the song, the artist, the ad line, the links, the
+// answers and the 'Next tune' pill.
+// opts: track (0..9 current), done ([indices]), year, label (era name, on the ad line), song (title), artist,
+//       sub ('Meet iPhone 12': the ad), catalog ('A1'), links (['Hear the whole song', 'Watch the original']; false hides),
+//       skip (false hides 'Not that one'), skipPressed, options ([strings]), answer (index marked right), wrong (index
+//       struck out), spin (default true), arm (0 = resting beside the record .. 1 = playing, default 1), labelColor,
+//       nextPressed. -> {record: {cx, cy, r}, options: [rects], next, skip, links: [rects]}
 APP.oneMoreTune = (x, y, w, h, o = {}) => {
-  const c = win(x, y, w, h, o.title || 'One More Tune', W_(o, { body: E.depth === 1 ? C.white : '#14223a' }));
+  const one = E.depth === 1;
+  const c = win(x, y, w, h, o.title || 'One More Tune', W_(o, { body: one ? C.white : '#0b0f17' }));
   if (!c) return null;
-  const one = E.depth === 1, out = {};
+  const out = { options: [], links: [] }, ink = one ? C.black : '#ffffff', dim = one ? C.black : '#93a1b5', blue = o.labelColor || '#1a8cff';
+  const fitFont = (str, maxW, fonts) => fonts.find(f => tw(str, f) <= maxW) || fonts[fonts.length - 1];
   clipRect(c.x, c.y, c.w, c.h, () => {
-    if (!one) { fillClient(c, '#0d1626'); vgrad(c.x, c.y, R(c.w * .45), c.h, ['#163a66', '#0d1d36', '#0b1322'], 3); } else fillClient(c, C.white);
-    // the record
-    const r = Math.min(R(c.h * .4), R(c.w * .17)), cx = c.x + 14 + r, cy = c.y + R(c.h / 2);
-    if (!one) for (let i = 0; i < 48; i++) { const an = i / 48 * Math.PI * 2; rect(cx + R(Math.cos(an) * (r + 6)), cy + R(Math.sin(an) * (r + 6)), 1, 1, '#3d5d86'); }
-    disc(cx, cy, r, C.black);
-    for (let rr = r - 3; rr > r * .42; rr -= 3) ring(cx, cy, rr, one ? (rr % 6 ? '#000000' : '#555555') : '#1f1f1f');
-    if (one) for (let rr = r - 4; rr > r * .45; rr -= 6) { for (let a = 0; a < 40; a++) { const an = a / 40 * Math.PI * 2; if (a % 2) rect(cx + R(Math.cos(an) * rr), cy + R(Math.sin(an) * rr), 1, 1, C.white); } }
+    const lw = R(c.w * .46);
+    if (one) fillClient(c, C.white);
+    else { fillClient(c, '#0a0d14'); hgrad(c.x, c.y, R(c.w * .62), c.h, [[0, '#17416f'], [.55, '#0f2b4f'], [1, '#0a0d14']], 3); }
+    // ---- the record ----
+    const r = Math.max(24, Math.min(R(c.h * .36), R((lw - 38) / 2))), cx = c.x + 12 + r, cy = c.y + R(c.h * .48);
+    if (!one) { const n = Math.max(48, R(r * 1.3)); for (let i = 0; i < n; i++) { const an = i / n * Math.PI * 2; rect(cx + R(Math.cos(an) * (r + 7)), cy + R(Math.sin(an) * (r + 7)), 1, 1, '#3d5d86'); } }
+    disc(cx, cy, r, one ? C.black : '#0c0c0e');
+    for (let rr = r - 3; rr > r * .55; rr -= 3) ring(cx, cy, rr, one ? (rr % 6 ? '#000000' : '#555555') : rr % 6 ? '#1c1c20' : '#26262b');
+    if (one) for (let rr = r - 4; rr > r * .58; rr -= 6) { for (let a = 0; a < 48; a++) { const an = a / 48 * Math.PI * 2; if (a % 2) rect(cx + R(Math.cos(an) * rr), cy + R(Math.sin(an) * rr), 1, 1, C.white); } }
     const ang = o.spin === false ? 0 : T * Math.PI * 2 * (33.3 / 60);
-    for (let k = -2; k <= 2; k++) { const an = ang + k * .05; for (let j = R(r * .5); j < r - 2; j += 1) rect(cx + R(Math.cos(an) * j), cy + R(Math.sin(an) * j), 1, 1, one ? (k === 0 ? C.white : C.black) : '#3a3a3a'); } // the sheen sweeps round
-    const lr = R(r * .4), lab = one ? C.white : (o.labelColor || '#1a8cff');
-    disc(cx, cy, lr, lab); if (one) ring(cx, cy, lr, C.black);
-    const tx = cx + R(Math.cos(ang + 1.2) * lr * .55), ty = cy + R(Math.sin(ang + 1.2) * lr * .55);
-    rect(tx - 1, ty - 1, 3, 3, one ? C.black : '#ffffff'); // a mark on the label, so the spin reads
-    text(String(o.year ?? 1988), cx, cy - R(lr * .45), { font: one ? 'chicago' : 'sfB', align: 'center', color: one ? C.black : C.white });
-    if (o.label) text(o.label, cx, cy + R(lr * .25), { font: 'small', align: 'center', color: one ? C.black : C.white });
-    disc(cx, cy, 2, one ? C.black : '#0b0b0b');
-    // the tonearm
-    const ax = cx + r + 14, ay = cy - r + 6, arm = clamp(o.arm ?? 1), tipx = R(lerp(ax + 4, cx + r * .72, arm)), tipy = R(lerp(ay + 60, cy + r * .2, arm));
-    disc(ax, ay, 6, one ? C.black : '#c9ced6'); disc(ax, ay, 3, one ? C.white : '#5d6570');
-    line(ax, ay, tipx, tipy, one ? C.black : '#d4d9e0', 3); rect(tipx - 4, tipy - 3, 8, 8, one ? C.black : '#2a2d33');
+    for (let k = -2; k <= 2; k++) { const an = ang + k * .05; for (let j = R(r * .6); j < r - 2; j++) rect(cx + R(Math.cos(an) * j), cy + R(Math.sin(an) * j), 1, 1, one ? (k === 0 ? C.white : C.black) : '#3a3a40'); } // the sheen sweeps round
+    // the label: catalogue number small, the year big (era name goes on the ad line)
+    const lr = Math.max(14, R(r * .52));
+    disc(cx, cy, lr, one ? C.white : blue); if (one) ring(cx, cy, lr, C.black);
+    const yr = String(o.year ?? 1988), yf = one ? 'chicago' : fitFont(yr, 2 * lr - 10, [FONTROLE.big, uiHead(), 'small']), ych = capH(yf);
+    text(yr, cx, cy - R(ych / 2), { font: yf, align: 'center', color: one ? C.black : C.white });
+    if (o.catalog !== false) text(o.catalog || 'A1', cx, cy - R(ych / 2) - 4 - capH('small'), { font: 'small', align: 'center', color: one ? C.black : C.white });
+    const mk = [cx + R(Math.cos(ang + 2.4) * lr * .78), cy + R(Math.sin(ang + 2.4) * lr * .78)];
+    rect(mk[0] - 1, mk[1] - 1, 2, 2, one ? C.black : '#bfe0ff');   // a fleck on the label, so the spin reads
+    rect(cx - 1, cy - 1, 2, 2, one ? C.black : '#0b0b0b');           // the spindle hole
+    // ---- the tonearm: a pivot right of the record, a straight rod, the black stylus head ----
+    const ax = Math.min(cx + r + 15, c.x + lw - 9), ay = cy - R(r * .62), arm = clamp(o.arm ?? 1);
+    const tip = [R(lerp(ax, cx + r * .74, arm)), R(lerp(ay + r * 1.3, cy + r * .4, arm))];
+    const ux = (tip[0] - ax) / Math.hypot(tip[0] - ax, tip[1] - ay), uy = (tip[1] - ay) / Math.hypot(tip[0] - ax, tip[1] - ay);
+    line(ax, ay, tip[0], tip[1], one ? C.black : '#cdd3dc', 3); if (!one) line(ax + 1, ay, tip[0] + 1, tip[1], '#8d96a3');
+    const hw = 3, hd = [[tip[0] - uy * hw - ux * 2, tip[1] + ux * hw - uy * 2], [tip[0] + uy * hw - ux * 2, tip[1] - ux * hw - uy * 2], [tip[0] + uy * hw + ux * 11, tip[1] - ux * hw + uy * 11], [tip[0] - uy * hw + ux * 11, tip[1] + ux * hw + uy * 11]];
+    poly(hd, one ? C.black : '#5d6570'); poly(hd.map(([px, py]) => [px + (px < tip[0] ? 1 : -1) * .9, py + .9]), one ? C.black : '#0d0e11');
+    disc(ax, ay, 7, one ? C.black : '#23262c'); disc(ax, ay, 4, one ? C.white : '#c9ced6'); rect(ax - 2, ay - 2, 2, 1, one ? C.white : '#ffffff');
     out.record = { cx, cy, r };
-    // the right side: ten track positions, the question, the answers
-    const rx = c.x + R(c.w * .48), ink = one ? C.black : C.white, dim = one ? C.black : '#9aa7b8';
-    text('A', rx, c.y + 14, { font: 'small', color: dim }); text('B', rx + 82, c.y + 14, { font: 'small', color: dim });
-    for (let i = 0; i < 10; i++) {
-      const dx = rx + 10 + (i % 5) * 13 + (i >= 5 ? 82 : 0), dy = c.y + 12, cur = i === (o.track ?? 0), dn = (o.done || []).includes(i);
-      ovalFrame(dx, dy, 10, 10, cur ? (one ? C.black : '#1a8cff') : dim); if (cur || dn) oval(dx + 2, dy + 2, 6, 6, one ? C.black : cur ? '#1a8cff' : '#5d6b7d');
-    }
-    text(o.song || 'Which ad was this?', rx, c.y + 40, { font: one ? 'chicago' : 'sfBig', color: ink });
-    if (o.artist) text(o.artist, rx, c.y + 66, { font: 'body', color: dim });
-    const opts = o.options || [];
-    out.options = [];
-    opts.forEach((s, i) => {
-      const oy = c.y + c.h - 30 - (opts.length - i) * 24, ow = c.x + c.w - 12 - rx;
-      const right = o.answer === i, wrong = o.wrong === i;
-      if (one) { rrect(rx, oy, ow, 20, 6, C.black); rrect(rx + 1, oy + 1, ow - 2, 18, 5, right ? C.black : C.white); }
-      else { rrect(rx, oy, ow, 20, 7, right ? '#f4f6f8' : '#1b2638'); rframe(rx, oy, ow, 20, 7, right ? '#ffffff' : '#34445c'); }
-      const col = one ? (right ? C.white : C.black) : right ? '#111111' : '#dfe6ef';
-      text(String(i + 1), rx + 10, oy + 6, { font: 'small', color: one ? col : '#8796aa' });
-      const lw = text(s, rx + 26, oy + 6, { font: 'body', color: col });
-      if (wrong) hline(rx + 25, oy + 9, lw + 2, col);
-      if (right) glyph('ok', rx + ow - 18, oy + 5);
-      out.options.push({ x: rx, y: oy, w: ow, h: 20 });
+    // ---- the right column ----
+    const rx = c.x + lw + 8, rw = c.x + c.w - 10 - rx;
+    const d = rw >= 150 ? 9 : 7, st = d + 2, sideW = 8 + 5 * st, dotsW = 2 * sideW + 4, y0 = c.y + 10;
+    ['A', 'B'].forEach((sd, si) => {
+      const sx = rx + si * (sideW + 4);
+      text(sd, sx, y0 + R((d - capH('small')) / 2), { font: 'small', color: dim });
+      for (let j = 0; j < 5; j++) {
+        const i = si * 5 + j, dx = sx + 8 + j * st, cur = i === (o.track ?? 0), dn = (o.done || []).includes(i);
+        ovalFrame(dx, y0, d, d, cur ? (one ? C.black : blue) : one ? C.black : '#4a586c');
+        if (cur) oval(dx + 1, y0 + 1, d - 2, d - 2, one ? C.black : blue); else if (dn) oval(dx + 2, y0 + 2, d - 4, d - 4, one ? C.black : '#6b7a8f');
+      }
     });
-    out.next = button(rx, c.y + c.h - 26, c.x + c.w - 12 - rx, 20, 'Next tune', { def: false });
+    if (o.skip !== false) { // the 'Not that one' pill: on the dots row when it fits, else top-left over the record
+      const sl = 'Not that one', pw = tw(sl, 'small') + 22, ph = 15, inRow = dotsW + 8 + pw <= rw, px = inRow ? rx + rw - pw : c.x + 8, py = inRow ? y0 - 3 : c.y + 7;
+      rrect(px, py, pw, ph, 7, one ? C.black : o.skipPressed ? '#3a4658' : '#2a3442'); rrect(px + 1, py + 1, pw - 2, ph - 2, 6, one ? (o.skipPressed ? C.black : C.white) : o.skipPressed ? '#3a4658' : '#141a24');
+      const sc = one ? (o.skipPressed ? C.white : C.black) : '#e6ebf2', gx = px + 6, gy = py + R(ph / 2) - 2;
+      line(gx, gy, gx + 4, gy + 4, sc); line(gx + 4, gy, gx, gy + 4, sc);
+      text(sl, px + 15, py + R((ph - capH('small')) / 2), { font: 'small', color: sc });
+      out.skip = { x: px, y: py, w: pw, h: ph, cx: px + R(pw / 2), cy: py + R(ph / 2) };
+    }
+    let ty = y0 + d + 12;
+    const song = o.song || 'Which ad was this?', sf = one ? 'chicago' : fitFont(song, rw, [FONTROLE.big, uiHead(), 'body']);
+    text(fitText(song, rw, sf), rx, ty, { font: sf, color: ink }); ty += capH(sf) + 7;
+    if (o.artist) { text(fitText(o.artist, rw, 'body'), rx, ty, { font: 'body', color: dim }); ty += lineH('body') + 2; }
+    // the ad line: 'Meet iPhone 12   2020   • Liquid Glass' (wraps as whole parts)
+    const meta = [o.sub, o.sub || o.label ? String(o.year ?? '') : '', o.label].filter(Boolean);
+    let mx = rx;
+    meta.forEach((m, i) => {
+      const dot = i === meta.length - 1 && o.label, mw = tw(m, 'small') + (dot ? 8 : 0);
+      if (mx > rx && mx + mw > rx + rw) { mx = rx; ty += lineH('small') + 1; }
+      if (dot) { if (one) rect(mx + 1, ty + 2, 4, 4, C.black); else disc(mx + 2, ty + R(capH('small') / 2), 2, blue); }
+      text(fitText(m, rw, 'small'), mx + (dot ? 8 : 0), ty, { font: 'small', color: dot && !one ? '#c8d6ea' : dim });
+      mx += mw + 9;
+    });
+    if (meta.length) ty += lineH('small') + 5;
+    if (o.links !== false) { // underlined links, on one row when they fit
+      const links = o.links || ['Hear the whole song', 'Watch the original'];
+      let lx = rx;
+      links.forEach(l => {
+        const lw2 = tw(l, 'small');
+        if (lx > rx && lx + lw2 > rx + rw) { lx = rx; ty += lineH('small') + 3; }
+        text(fitText(l, rw, 'small'), lx, ty, { font: 'small', color: ink }); hline(lx, ty + capH('small') + 2, Math.min(lw2, rw), one ? C.black : '#7d8da3');
+        out.links.push({ x: lx, y: ty - 2, w: lw2, h: capH('small') + 6 }); lx += lw2 + 10;
+      });
+    }
+    // ---- the answers, bottom-up, and the Next tune pill ----
+    const ny = c.y + c.h - 30, opts = o.options || [], oh = 20, og = 5;
+    opts.forEach((s2, i) => {
+      const oy = ny - (opts.length - i) * (oh + og), right = o.answer === i, wrong = o.wrong === i;
+      if (one) { rrect(rx, oy, rw, oh, 6, C.black); rrect(rx + 1, oy + 1, rw - 2, oh - 2, 5, right ? C.black : C.white); }
+      else { rrect(rx, oy, rw, oh, 7, right ? '#f4f6f8' : '#2b3646'); rrect(rx + 1, oy + 1, rw - 2, oh - 2, 6, right ? '#f4f6f8' : '#121823'); }
+      const col = one ? (right ? C.white : C.black) : right ? '#111111' : wrong ? '#7f8ba0' : '#e3e8ef', ty2 = oy + R((oh - capH('body')) / 2);
+      text(String(i + 1), rx + 9, ty2, { font: 'small', color: one ? col : right ? '#6b7280' : '#7f8ba0' });
+      const lw3 = text(fitText(s2, rw - 44, 'body'), rx + 22, ty2, { font: 'body', color: col });
+      if (wrong) { hline(rx + 21, ty2 + R(capH('body') / 2), lw3 + 2, col); const gx = rx + rw - 15, gy = oy + 7; line(gx, gy, gx + 6, gy + 6, col); line(gx + 6, gy, gx, gy + 6, col); }
+      if (right) glyph('ok', rx + rw - 17, oy + 6, one ? C.white : '#111111');
+      out.options.push({ x: rx, y: oy, w: rw, h: oh, cx: rx + R(rw / 2), cy: oy + R(oh / 2) });
+    });
+    // Next tune: a solid pill with a clear label in every era (never a disabled dither)
+    const nh = 22, pr = o.nextPressed;
+    if (one) { rrect(rx, ny, rw, nh, 8, C.black); rrect(rx + 1, ny + 1, rw - 2, nh - 2, 7, pr ? C.black : C.white); }
+    else { rrect(rx, ny, rw, nh, 11, pr ? '#b9c4d3' : '#f4f6f8'); hline(rx + 11, ny + 1, rw - 22, '#ffffff'); }
+    const nf = one ? 'chicago' : 'body';
+    text('Next tune', rx + R(rw / 2), ny + R((nh - capH(nf)) / 2), { font: nf, align: 'center', color: one ? (pr ? C.white : C.black) : '#111111' });
+    out.next = { x: rx, y: ny, w: rw, h: nh, cx: rx + R(rw / 2), cy: ny + R(nh / 2) };
   });
   return { ...c, ...out };
 };
@@ -427,16 +497,21 @@ APP.controlPanel = (x, y, w, h, o = {}) => {
       const ry = p.y + i * rh, on = i === sel;
       if (on) { if (E.chrome === 'glass') rrect(p.x, ry, p.w, rh, 5, P.listSel); else rect(p.x, ry, p.w, rh, P.listSel); }
       const col = on ? P.listSelText : P.text;
-      text(String(e.year), p.x + 6, ry + R((rh - capH('small')) / 2), { font: 'small', color: col });
-      text(e.name + (e.branch ? '  (branch)' : ''), p.x + 40, ry + R((rh - capH('small')) / 2), { font: 'small', color: on ? col : e.branch ? P.textDim : col });
+      const ty = ry + R((rh - capH('small')) / 2), room = p.x + p.w - 4 - (p.x + 40), tag = '  (branch)';
+      text(String(e.year), p.x + 6, ty, { font: 'small', color: col });
+      // a branch era is dimmed; its "(branch)" tag only shows when it fits beside the name
+      const nm = e.branch && tw(e.name + tag, 'small') <= room ? e.name + tag : fitText(e.name, room, 'small');
+      text(nm, p.x + 40, ty, { font: 'small', color: on ? col : e.branch ? P.textDim : col });
       out.rows.push({ x: p.x, y: ry, w: p.w, h: rh });
     });
     // a thumbnail of the selected appearance: its desktop, shrunk, with a tiny window
-    const tx = c.x + lw + 20, tw2 = c.x + c.w - 10 - tx, th = R(tw2 * 9 / 16);
+    const tx = c.x + lw + 20, tw2 = R(c.x + c.w - 10 - tx), th = R(tw2 * 9 / 16), es = APPEARANCES[sel], cf = E.depth <= 4 ? 'ui' : 'body';
     frame(tx - 1, c.y + 9, tw2 + 2, th + 2, P.text);
-    ctx.drawImage(eraThumb(APPEARANCES[sel].id), tx, c.y + 10, tw2, th);
-    text(APPEARANCES[sel].year + '  ' + APPEARANCES[sel].name, tx, c.y + th + 20, { font: E.depth <= 4 ? 'ui' : 'body', color: P.text });
-    text('The files and windows stay put.', tx, c.y + th + 36, { font: 'small', color: P.textDim });
+    ctx.drawImage(eraThumb(es.id), R(tx), R(c.y + 10), tw2, th);
+    text(fitText(es.year + '  ' + es.name, tw2, cf), tx, c.y + th + 20, { font: cf, color: P.text });
+    let cy2 = c.y + th + 20 + lineH(cf);
+    if (es.branch) { text('(branch)', tx, cy2, { font: 'small', color: P.textDim }); cy2 += lineH('small'); }
+    para('The files and windows stay put.', tx, cy2, tw2, { font: 'small', color: P.textDim, maxRows: 2 });
     out.apply = button(c.x + c.w - 80, c.y + c.h - 28, 70, btnH(), 'Apply', { def: true, pressed: o.pressed === 'apply' });
   });
   return { ...c, ...out };
@@ -448,10 +523,19 @@ function eraThumb(id) {
   const saved = E;
   const big = offscreen(W, H, () => { setEra(id); desktop({}); win(60, 60, 300, 180, 'Manuscript', { noShadow: false }); win(260, 120, 240, 150, 'ClioTalk', {}); clio(420, 220, { scale: 3, expr: 'happy' }); menuBar({ app: 'TeachText', clock: false }); });
   setEra(saved);
+  // shrink 4:1 by a hand-written 4x4 box average (no imageSmoothing anywhere), then Bayer-quantise back to hard pixels
+  const src = big.getContext('2d').getImageData(0, 0, W, H).data;
   return _thumbs[id] = offscreen(160, 90, () => {
-    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.drawImage(big, 0, 0, W, H, 0, 0, 160, 90); ctx.imageSmoothingEnabled = false;
-    const d = ctx.getImageData(0, 0, 160, 90), px = d.data, one = ERA[id].depth === 1, step = one ? 255 : 24;
-    for (let i = 0, p = 0; i < px.length; i += 4, p++) { const off = (BAYER4[((p / 160 | 0) & 3) * 4 + (p % 160 & 3)] + .5) / 16 * step; for (let ch = 0; ch < 3; ch++) px[i + ch] = clamp(Math.floor((px[i + ch] + off) / step) * step, 0, 255); if (one) px[i + 1] = px[i + 2] = px[i]; px[i + 3] = 255; }
+    const d = ctx.createImageData(160, 90), px = d.data, one = ERA[id].depth === 1, step = one ? 255 : 24;
+    for (let ty = 0, p = 0; ty < 90; ty++) for (let tx = 0; tx < 160; tx++, p++) {
+      const off = (BAYER4[(ty & 3) * 4 + (tx & 3)] + .5) / 16 * step, i = p * 4;
+      for (let ch = 0; ch < 3; ch++) {
+        let sum = 0; for (let yy = 0; yy < 4; yy++) for (let xx = 0; xx < 4; xx++) sum += src[((ty * 4 + yy) * W + tx * 4 + xx) * 4 + ch];
+        px[i + ch] = clamp(Math.floor((sum / 16 + off) / step) * step, 0, 255);
+      }
+      if (one) px[i + 1] = px[i + 2] = px[i];
+      px[i + 3] = 255;
+    }
     ctx.putImageData(d, 0, 0);
   });
 }
@@ -466,7 +550,7 @@ APP.doom = (x, y, w, h, o = {}) => {
     const wall = one ? [C.black, C.white] : ['#4a2a12', '#8a5a2a'], floor = one ? [C.black, C.white] : ['#2c2c2c', '#5a5a5a'], ceil = one ? [C.black, C.white] : ['#1a1a1a', '#3a3a3a'];
     rect(c.x, c.y, vw, vh, C.black);
     const ph = ((o.walk ?? T * 2) % 1 + 1) % 1, frames = [];
-    for (let i = 0; i < 8; i++) { const d = i + 1 - ph, s = 1 / d; frames.push({ hw: R(vw / 2 * s * 1.1), hh: R(vh / 2 * s * 1.1), i, d }); }
+    for (let i = 0; i < 8; i++) { const d = Math.max(.6, i + 1 - ph), s = 1 / d; frames.push({ hw: R(vw / 2 * s * 1.1), hh: R(vh / 2 * s * 1.1), i, d }); }
     for (let i = frames.length - 1; i > 0; i--) {
       const a = frames[i - 1], b = frames[i], shade = clamp(1 - b.d / 8), lvl = (b.i + Math.floor(o.walk ?? T * 2)) % 2 ? shade : shade * .7;
       poly([[cx - a.hw, cy + a.hh], [cx + a.hw, cy + a.hh], [cx + b.hw, cy + b.hh], [cx - b.hw, cy + b.hh]], one ? C.black : floor[0]);
@@ -478,11 +562,11 @@ APP.doom = (x, y, w, h, o = {}) => {
     }
     // the imp, coming closer
     const imp = clamp(o.imp ?? .4), is = Math.max(1, R(1 + imp * 3)), sp = SPR.doom_imp;
-    if (o.imp !== false) ctx.drawImage(one ? sp : recolor(sp, { '#000000': '#3a1a0a', '#ffffff': '#c8642a' }), cx - R(sp.width * is / 2), cy + R(vh * .08 * is) - sp.height * is + 8, sp.width * is, sp.height * is);
+    if (o.imp !== false) ctx.drawImage(one ? sp : recolor(sp, { '#000000': '#3a1a0a', '#ffffff': '#c8642a' }), R(cx - sp.width * is / 2), R(cy + vh * .08 * is - sp.height * is + 8), sp.width * is, sp.height * is);
     // the gun, bobbing
     const bob = R(Math.abs(Math.sin((o.walk ?? T * 2) * Math.PI)) * 3), g = SPR.doom_gun;
     if ((o.fire || 0) > .05) { const fy = c.y + vh - 30 - bob, fr = R(3 + o.fire * 5), fc = one ? C.white : '#ffdd55'; poly([[cx, fy - fr * 2], [cx + fr, fy], [cx, fy + fr], [cx - fr, fy]], fc); poly([[cx - fr * 2, fy - 1], [cx + fr * 2, fy - 1], [cx, fy + 2]], fc); }
-    ctx.drawImage(one ? g : recolor(g, { '#ffffff': '#9a9a9a' }), cx - g.width, c.y + vh - g.height * 2 + bob + 2, g.width * 2, g.height * 2);
+    ctx.drawImage(one ? g : recolor(g, { '#ffffff': '#9a9a9a' }), R(cx - g.width), R(c.y + vh - g.height * 2 + bob + 2), g.width * 2, g.height * 2);
     // HUD
     rect(c.x, c.y + vh, vw, hud, one ? C.white : '#5a5a5a'); hline(c.x, c.y + vh, vw, one ? C.black : '#8a8a8a');
     text('AMMO ' + (o.ammo ?? 50), c.x + 6, c.y + vh + 4, { font: 'small', color: one ? C.black : '#d82a2a' });
@@ -526,14 +610,15 @@ APP.micropolis = (x, y, w, h, o = {}) => {
     ['R', 'C', 'I', '#', '~'].forEach((t, i) => { const bx = c.x + 3, by = c.y + 4 + i * 18; frame(bx, by, 15, 15, P.text); text(t, bx + 8, by + 4, { font: 'small', align: 'center', color: P.text }); if (o.tool === t) bayer(bx + 1, by + 1, 13, 13, .5, one ? C.black : '#3a7cf0', null); });
     for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
       const px = gx + i * ts, py = c.y + j * ts, river = Math.abs(i - (cols * .7 + Math.sin(j * .5) * 3)) < 1.6;
-      if (river) { patfill(px, py, ts, ts, 'weave', one ? C.black : '#2a5db0', one ? C.white : '#4a85d8'); continue; }
+      if (river) { if (one) dither(px, py, ts, ts, C.black, C.white); else patfill(px, py, ts, ts, 'weave', '#2a5db0', '#4a85d8'); continue; }
       const road = i % 6 === 0 || j % 5 === 0, order = hash(i * 13.1 + j * 7.7 + seed), built = order < k;
-      if (road && order < k + .25) { rect(px, py, ts, ts, one ? C.black : '#5a5a5a'); if (!one) { if (i % 6 === 0) vline(px + 3, py, ts, '#e8d25a'); else hline(px, py + 3, ts, '#e8d25a'); } else rect(px + 3, py + 3, 2, 2, C.white); continue; }
-      patfill(px, py, ts, ts, 'dots', one ? C.black : '#5f8f3a', one ? C.white : '#7aa84a');
+      if (road && order < k + .25) { rect(px, py, ts, ts, one ? C.black : '#5a5a5a'); if (!one) { if (i % 6 === 0) vline(px + 3, py, ts, '#e8d25a'); else hline(px, py + 3, ts, '#e8d25a'); } else if (i % 6 === 0) { rect(px + 3, py + 1, 1, 2, C.white); rect(px + 3, py + 5, 1, 2, C.white); } else { rect(px + 1, py + 3, 2, 1, C.white); rect(px + 5, py + 3, 2, 1, C.white); } continue; }
+      if (one) { rect(px, py, ts, ts, C.white); if (hash(i * 7.1 + j * 3.3) < .25) rect(px + 2 + (i + j) % 4, py + 2 + i % 3, 1, 1, C.black); }
+      else patfill(px, py, ts, ts, 'dots', '#5f8f3a', '#7aa84a');
       if (built && !road) {
         const zone = 'RCI'[Math.floor(hash(i * 3.3 + j * 5.1) * 3)], zc = one ? C.white : { R: '#6ac46a', C: '#5a8ae8', I: '#e8c84a' }[zone];
-        rect(px, py, ts - 1, ts - 1, zc); frame(px, py, ts - 1, ts - 1, one ? C.black : darken(zc, .4));
-        if (order < k * .6) rect(px + 2, py + 2, 3, 3, one ? C.black : darken(zc, .55));
+        if (one) { const g = SPR['mp_' + zone]; if (g) ctx.drawImage(g, px, py); }
+        else { rect(px, py, ts - 1, ts - 1, zc); frame(px, py, ts - 1, ts - 1, darken(zc, .4)); if (order < k * .6) rect(px + 2, py + 2, 3, 3, darken(zc, .55)); }
       }
     }
     if (o.cursor) { const [ci, cj] = o.cursor; dragOutline(gx + ci * ts - 1, c.y + cj * ts - 1, ts * 3 + 2, ts * 3 + 2, one ? C.black : C.white); }
@@ -541,6 +626,33 @@ APP.micropolis = (x, y, w, h, o = {}) => {
   return c;
 };
 
+defSprite('mp_R', `
+...KK...
+..KWWK..
+.KWWWWK.
+KKKKKKKK
+.KWWWWK.
+.KWKKWK.
+.KWKKWK.
+.KKKKKK.`, { K: '#000000', W: '#ffffff' });
+defSprite('mp_C', `
+.KKKKKK.
+.KWKWKK.
+.KKKKKK.
+.KWKWKK.
+.KKKKKK.
+.KWKWKK.
+.KKKKKK.
+.KKWWKK.`, { K: '#000000', W: '#ffffff' });
+defSprite('mp_I', `
+.K......
+.K......
+.K...K..
+KKK.KK..
+KKKKKKKK
+KWKWKWKK
+KKKKKKKK
+KKKKKKKK`, { K: '#000000', W: '#ffffff' });
 // ---------------- About AI System 6 ----------------
 // opts: memory bars [{name, kb, icon}], used (0..1 animates the bars)
 APP.about = (x, y, w, h, o = {}) => {
@@ -551,15 +663,15 @@ APP.about = (x, y, w, h, o = {}) => {
     fillClient(c, modernEra() ? P.face : P.win);
     const s = 3, mx = c.x + 14, my = c.y + 12;
     spr(markGlyphCanvas(), mx, my, { scale: s });
-    text('AI System 6', mx + 13 * s + 12, my + 2, { font: E.depth <= 4 ? 'chicago' : headFont(), scale: E.depth <= 4 ? 2 : 1, color: P.text });
+    text('AI System 6', mx + 13 * s + 12, my + 2, { font: E.depth <= 4 ? 'chicago' : FONTROLE.big, scale: E.depth <= 4 ? 2 : 1, color: P.text });
     text('1988 OBJECTS / 2026 INTELLIGENCE', mx + 13 * s + 12, my + 26, { font: 'small', color: P.text });
-    text('A local-first writing desk. The AI never becomes your voice.', c.x + 14, c.y + 64, { font: 'small', color: P.textDim });
-    sep(c.x + 10, c.y + 78, c.w - 20);
+    text('A local-first writing desk.', c.x + 14, c.y + 58, { font: 'small', color: P.textDim }); text('The AI never becomes your voice.', c.x + 14, c.y + 70, { font: 'small', color: P.textDim });
+    sep(c.x + 10, c.y + 82, c.w - 20);
     const bars = o.memory || [{ name: 'TeachText', kb: 312, icon: 'teachText' }, { name: 'ClioTalk', kb: 220, icon: 'assistant' }, { name: 'Review Desk', kb: 268, icon: 'reviewDesk' }, { name: 'Searcher', kb: 180, icon: 'searcher' }, { name: 'System', kb: 1840, icon: 'systemFolder' }];
-    text('Two floppies: 2,902,645 of 2,949,120 bytes', c.x + 14, c.y + 86, { font: 'small', color: P.text });
+    text('Two floppies: 2,902,645 of 2,949,120 bytes', c.x + 14, c.y + 90, { font: 'small', color: P.text });
     const max = Math.max(...bars.map(b => b.kb)), bw = c.w - 190;
     bars.forEach((b, i) => {
-      const by = c.y + 104 + i * 18;
+      const by = c.y + 108 + i * 18;
       icon(b.icon, c.x + 14, by - 4, { size: 16 });
       text(b.name, c.x + 36, by, { font: 'small', color: P.text });
       text(b.kb + 'K', c.x + 150, by, { font: 'small', color: P.text, align: 'right' });

@@ -24,7 +24,8 @@
 </style>
 <div id="crt"><canvas id="screen" width="640" height="360"></canvas></div>
 <div id="hud"></div>
-<audio id="song" src="build/song.wav" preload="auto"></audio>
+<!-- the song is attached by main.js in the preview only, so a headless render never requests build/song.wav -->
+<audio id="song" preload="none"></audio>
 
 <script>
   // The scene registry. A chapter registers its shots with scene(name, t0, t1, fn, opts); main.js draws the one

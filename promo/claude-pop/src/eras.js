@@ -20,7 +20,7 @@ const BASE_PAL = {
 };
 const CLASSIC_FONTS = { ui: 'chicago', title: 'chicago', menu: 'chicago', button: 'chicago', small: 'geneva', body: 'geneva', doc: 'geneva', label: 'geneva', mono: 'monaco', big: 'chicago', lyric: 'chicago', appName: 'chicago' };
 const PLAT_FONTS = { ...CLASSIC_FONTS, ui: 'charcoal', title: 'charcoal', menu: 'charcoal', button: 'charcoal', doc: 'serif', big: 'charcoal', lyric: 'charcoal', appName: 'charcoal' };
-const LUCIDA_FONTS = { ui: 'lucida', title: 'lucida', menu: 'lucida', button: 'lucida', small: 'lucida10', body: 'lucida', doc: 'serif', label: 'lucida', mono: 'monaco', big: 'lucidaBig', lyric: 'lucidaBig', appName: 'lucidaB' };
+const LUCIDA_FONTS = { ui: 'lucida', title: 'lucida', menu: 'lucida', button: 'lucida', small: 'lucida', body: 'lucida', doc: 'serif', label: 'lucida', mono: 'monaco', big: 'lucidaBig', lyric: 'lucidaBig', appName: 'lucidaB' };
 const HELV_FONTS = { ui: 'helv11', title: 'helv11', menu: 'helv', button: 'helv11', small: 'helv11', body: 'helv11', doc: 'serif', label: 'helv11', mono: 'monaco', big: 'helvBig', lyric: 'helvBig', appName: 'helvB' };
 const SF_FONTS = { ui: 'sf', title: 'sfB', menu: 'sf', button: 'sf', small: 'sf', body: 'sf', doc: 'serif', label: 'sf', mono: 'monaco', big: 'sfBig', lyric: 'sfBig', appName: 'sfB' };
 
@@ -99,6 +99,8 @@ const songEra = (t = T) => songEraEntry(t).id;
 const songEraKeys = () => ERA_SCHEDULE.length ? ERA_SCHEDULE.map(e => [e.start, e.id]) : [[0, 'system6']];
 let E = APPEARANCES[0];
 function setEra(id) { E = (typeof id === 'object' && id) ? id : ERA[id] || ERA.system6; P = E.pal; FONTROLE = E.fonts; return E; }
+// withEra(id, fn): draw fn in another appearance, then put the current one back (split screens, thumbnails)
+function withEra(id, fn) { const saved = E; setEra(id); try { return fn(); } finally { setEra(saved); } }
 const eraIndex = id => (ERA[id] || ERA.system6).index;
 const eraNext = (id, d = 1) => APPEARANCES[clamp(eraIndex(id) + d, 0, APPEARANCES.length - 1)].id;
 const ONEBIT = () => E.depth === 1;
@@ -115,10 +117,16 @@ function bevel(x, y, w, h, face, hi, sh, outer) {
   rect(x, y, w - 1, 1, hi); rect(x, y, 1, h - 1, hi);
   rect(x + 1, y + h - 1, w - 1, 1, sh); rect(x + w - 1, y + 1, 1, h - 1, sh);
 }
+// internal (span shape of a window with only its top corners rounded)
 const topSpans = (w, h, r) => { const key = 't' + w + 'x' + h + 'r' + r; let s = _spanCache.get(key); if (s) return s; const full = rrSpans(w, 2 * r + 2, r); s = new Array(h).fill(0); for (let j = 0; j < Math.min(r, h); j++) s[j] = full[j]; _spanCache.set(key, s); return s; };
-// soft window shadow made of dithered veils (no alpha)
+// shade(k): a solid darker tint of the desktop, for shadows (no dither: dots along an edge read as corruption)
+const shade = (k, ink = E.chrome === 'glass' ? '#4a5568' : '#000000') => mix(P.desk, ink, clamp(k));
+// winShadow(x, y, w, h, r, size, k): a drop shadow in 2 or 3 solid steps of the desk's own tone. Step 1 (darkest) shows
+// 1px right and 2px below the window; each further step adds a lighter 1px ring. size >= 4 gives three steps.
 function winShadow(x, y, w, h, r, size = 2, k = .28) {
-  for (let i = size; i >= 1; i--) rrectVeil(x - i + 1, y + i - 1 + Math.ceil(size / 2), w + 2 * i - 2, h + 1, r + i, C.black, k * (1 - (i - 1) / size) * .9);
+  x = R(x); y = R(y); w = R(w); h = R(h);
+  const n = size >= 4 ? 3 : 2, glass = E.chrome === 'glass', dark = glass ? k * .9 : k * 1.25;
+  for (let i = n; i >= 1; i--) rrect(x - i + 1, y + i + 1, w + 2 * i - 1, h, r + i - 1, shade(dark * (1 - (i - 1) / n * .62)));
 }
 // traffic-light lamp (Aqua gel, Leopard gloss, Yosemite flat, Big Sur, Liquid Glass): d = diameter
 function lamp(x, y, d, color, style = 'gel', o = {}) {
@@ -207,7 +215,8 @@ const _ramp = (stops, k) => { const st = _stops(stops); let i = 0; while (i < st
 const _add = (c, k, tint = [255, 255, 255]) => [lerp(c[0], tint[0], k), lerp(c[1], tint[1], k), lerp(c[2], tint[2], k)];
 const _star = (x, y, dens = .996) => { const h = hash2(x, y); return h > dens ? (h - dens) / (1 - dens) : 0; };
 const DESKTOPS = {
-  system6() { patfill(0, 0, W, H, 'gray', C.black, C.white); },
+  system6() { patfill(0, 0, W, H, 'ltgray', C.black, C.white); },          // the product's light desk: a sparse 25% dot screen
+  system6gray() { patfill(0, 0, W, H, 'gray', C.black, C.white); },       // the classic 50% grey (opts.desk: 'system6gray')
   system7() { patfill(0, 0, W, H, 'gray', '#6f74aa', '#8a8fc2'); },
   nextstep() { rect(0, 0, W, H, '#555555'); },
   drawingboard() {
@@ -359,7 +368,7 @@ LOOK.mac1 = {
     if (o.def) { rframe(x - 4, y - 4, w + 8, h + 8, r + 4, C.black, 3); }
     rrect(x, y, w, h, r, C.black); rrect(x + 1, y + 1, w - 2, h - 2, r - 1, o.pressed ? C.black : C.white);
     const col = o.pressed ? C.white : C.black;
-    text(label, x + w / 2, y + R((h - capH('button')) / 2), { font: 'button', align: 'center', color: col });
+    text(label, x + w / 2, y + R((h - capH(o.font || 'button')) / 2), { font: o.font || 'button', align: 'center', color: col });
     if (o.disabled) bayer(x + 2, y + 2, w - 4, h - 4, .5, C.white, null);
   },
   field(x, y, w, h, o = {}) { frame(x, y, w, h, C.black); rect(x + 1, y + 1, w - 2, h - 2, C.white); if (o.focus && E.depth > 1) {} },
@@ -426,7 +435,7 @@ LOOK.mac7 = {
     const r = Math.min(R(h / 2) - 1, 7);
     if (o.def) rframe(x - 4, y - 4, w + 8, h + 8, r + 4, C.black, 3);
     rrect(x, y, w, h, r, C.black); rrect(x + 1, y + 1, w - 2, h - 2, r - 1, o.pressed ? C.black : C.white);
-    text(label, x + w / 2, y + R((h - capH('button')) / 2), { font: 'button', align: 'center', color: o.pressed ? C.white : o.disabled ? '#999999' : C.black });
+    text(label, x + w / 2, y + R((h - capH(o.font || 'button')) / 2), { font: o.font || 'button', align: 'center', color: o.pressed ? C.white : o.disabled ? '#999999' : C.black });
   },
   check(x, y, on, o = {}) { frame(x, y, 12, 12, C.black); rect(x + 1, y + 1, 10, 10, o.pressed ? '#cccccc' : C.white); if (on) { line(x + 1, y + 1, x + 10, y + 10, C.black); line(x + 10, y + 1, x + 1, y + 10, C.black); } },
   progress(x, y, w, h, k, o = {}) { frame(x, y, w, h, C.black); rect(x + 1, y + 1, w - 2, h - 2, '#eeeeee'); if (o.indeterminate) { const sh = R((o.t ?? T) * 24) % 16; clipRect(x + 1, y + 1, w - 2, h - 2, () => { ctx.save(); ctx.translate(sh, 0); patfill(x - 15, y + 1, w + 16, h - 2, 'diag2', '#444477', '#ccccff'); ctx.restore(); }); } else { rect(x + 1, y + 1, R((w - 2) * clamp(k)), h - 2, '#444477'); } },
@@ -472,7 +481,7 @@ LOOK.next = {
   button(x, y, w, h, label, o = {}) {
     nxBevel(x, y, w, h, NX.l, o.pressed);
     const cx = x + w / 2 - (o.def ? 8 : 0);
-    text(label, cx, y + R((h - capH('button')) / 2), { font: 'button', align: 'center', color: o.disabled ? NX.d : C.black });
+    text(label, cx, y + R((h - capH(o.font || 'button')) / 2), { font: o.font || 'button', align: 'center', color: o.disabled ? NX.d : C.black });
     if (o.def) { const rx = x + w - 15, ry = y + R(h / 2) - 3; vline(rx + 8, ry, 5, C.black); hline(rx + 1, ry + 4, 8, C.black); arrowTri(rx, ry + 2, 3, 'left', C.black); } // the return-key glyph
   },
   field(x, y, w, h) { rect(x, y, w, h, NX.w); hline(x, y, w, NX.d); vline(x, y, h, NX.d); hline(x + 1, y + 1, w - 2, C.black); vline(x + 1, y + 1, h - 2, C.black); },
@@ -482,7 +491,7 @@ LOOK.next = {
   menubar() {},
   menuBox(x, y, w, h) { rect(x, y, w, h, C.black); },
   menuSel(x, y, w, h) { rect(x, y, w, h, NX.w); },
-  dialog(x, y, w, h, o = {}) { const r = this.win(x, y, w, h, o.title || '', { ...o, close: false, resize: false }); return r; },
+  dialog(x, y, w, h, o = {}) { const r = this.win(x, y, w, h, o.title ?? 'Alert', { ...o, close: false, resize: false }); return r; }, // NeXT panels always carry a title
 };
 // ---- Platinum (Mac OS 8/9) ----
 LOOK.plat = {
@@ -549,15 +558,15 @@ LOOK.plat = {
     const pr = o.pressed;
     rrect(x + 1, y + 1, w - 2, h - 2, 2, pr ? P.dark : P.face);
     if (!pr) { hline(x + 2, y + 1, w - 4, P.hi); vline(x + 1, y + 2, h - 4, P.hi); hline(x + 2, y + h - 2, w - 4, P.shadow); vline(x + w - 2, y + 2, h - 4, P.shadow); }
-    text(label, x + w / 2, y + R((h - capH('button')) / 2), { font: 'button', align: 'center', color: pr ? C.white : o.disabled ? P.textDim : P.text });
+    text(label, x + w / 2, y + R((h - capH(o.font || 'button')) / 2), { font: o.font || 'button', align: 'center', color: pr ? C.white : o.disabled ? P.textDim : P.text });
   },
   field(x, y, w, h, o = {}) { rect(x, y, w, h, P.field); hline(x, y, w, P.shadow); vline(x, y, h, P.shadow); hline(x + 1, y + 1, w - 2, P.dark); vline(x + 1, y + 1, h - 2, P.dark); hline(x, y + h - 1, w, P.hi); vline(x + w - 1, y, h, P.hi); if (o.focus) frame(x - 2, y - 2, w + 4, h + 4, '#8888cc', 2); },
   check(x, y, on, o = {}) { frame(x, y, 12, 12, P.dark); bevel(x + 1, y + 1, 10, 10, o.pressed ? P.shadow : P.face, o.pressed ? P.dark : P.hi, o.pressed ? P.face : P.shadow); if (on) { line(x + 3, y + 5, x + 5, y + 8, C.black, 2); line(x + 5, y + 8, x + 10, y + 1, C.black, 2); } },
   radio(x, y, on, o = {}) { oval(x, y, 12, 12, P.dark); ovalGrad(x + 1, y + 1, 10, 10, [P.hi, P.face, P.shadow], 2); if (on) oval(x + 4, y + 4, 4, 4, C.black); },
   progress(x, y, w, h, k, o = {}) {
     frame(x, y, w, h, P.dark); rect(x + 1, y + 1, w - 2, h - 2, '#cccccc'); hline(x + 1, y + 1, w - 2, P.shadow);
-    if (o.indeterminate) { const sh = R((o.t ?? T) * 30) % 16; clipRect(x + 1, y + 1, w - 2, h - 2, () => { ctx.save(); ctx.translate(sh, 0); patfill(x - 15, y + 1, w + 16, h - 2, 'diag2', '#6666cc', '#ccccff'); ctx.restore(); }); return; }
-    const fw = R((w - 2) * clamp(k)); if (fw > 0) { vgrad(x + 1, y + 1, fw, h - 2, ['#ccccff', '#7777dd', '#5555bb'], 3); }
+    if (o.indeterminate) { const sh = R((o.t ?? T) * 30) % 16; clipRect(x + 1, y + 1, w - 2, h - 2, () => { ctx.save(); ctx.translate(sh, 0); patfill(x - 15, y + 1, w + 16, h - 2, 'diag2', darken(P.thumb, .3), lighten(P.thumb, .5)); ctx.restore(); }); return; }
+    const fw = R((w - 2) * clamp(k)); if (fw > 0) { vgrad(x + 1, y + 1, fw, h - 2, [lighten(P.thumb, .5), darken(P.thumb, .15), darken(P.thumb, .35)], 3); }
   },
   menubar(h) { rect(0, 0, W, h, P.menu); hline(0, 0, W, P.hi); hline(0, h - 2, W, P.shadow); hline(0, h - 1, W, C.black); },
   menuBox(x, y, w, h) { rect(x + 1, y + 1, w, h, darken(P.desk, .5)); rect(x, y, w, h, P.dark); rect(x, y, w - 1, h - 1, P.face); hline(x, y, w - 1, P.hi); vline(x, y, h - 1, P.hi); },
@@ -593,7 +602,7 @@ LOOK.board = {
     rrect(x, y, w, h, 4, o.pressed ? P.dark : P.face); rframe(x, y, w, h, 4, P.ink);
     if (!o.pressed) { hline(x + 3, y + 1, w - 6, P.hi); hline(x + 3, y + h - 2, w - 6, P.shadow); }
     hline(x + 4 + R(hash(x) * 4), y + h, w - 8, '#a59888');
-    text(label, x + w / 2, y + R((h - capH('button')) / 2), { font: 'button', align: 'center', color: o.pressed ? P.hi : o.disabled ? P.textDim : P.text });
+    text(label, x + w / 2, y + R((h - capH(o.font || 'button')) / 2), { font: o.font || 'button', align: 'center', color: o.pressed ? P.hi : o.disabled ? P.textDim : P.text });
   },
   menubar(h) { rect(0, 0, W, h, P.menu); hline(0, h - 2, W, P.shadow); pencil(0, h - 1, W, h - 1, 77, P.ink); },
   thumb(x, y, w, h, vertical = true) { rect(x + 1, y + 1, w - 2, h - 2, P.thumb); frame(x, y, w, h, P.ink); const cx = x + R(w / 2), cy = y + R(h / 2); for (let i = -2; i <= 2; i += 2) { if (vertical) hline(cx - 3, cy + i, 7, '#a07a20'); else vline(cx + i, cy - 3, 7, '#a07a20'); } },
@@ -640,7 +649,7 @@ LOOK.aqua = {
     if (o.pressed) capsule(x, y, w, h, ['#1d4fb5', '#3b78dd', '#6aa6f2', '#9dcbff'], '#163f93');
     else if (blue) capsule(x, y, w, h, [mix('#2a64d6', '#5b9bf4', pul * .6), mix('#4f8ef0', '#7fb6fa', pul * .6), '#8cc2ff', '#c7e3ff'], '#21499e');
     else capsule(x, y, w, h, ['#f9f9f9', '#e9e9e9', '#dcdcdc', '#f4f4f4'], o.disabled ? '#b8b8b8' : '#8d8d8d', { shine: .7 });
-    text(label, x + w / 2, y + R((h - capH('button')) / 2), { font: 'button', align: 'center', color: o.disabled ? P.textDim : C.black });
+    text(label, x + w / 2, y + R((h - capH(o.font || 'button')) / 2), { font: o.font || 'button', align: 'center', color: o.disabled ? P.textDim : C.black });
   },
   field(x, y, w, h, o = {}) { if (o.focus) rrect(x - 3, y - 3, w + 6, h + 6, 3, '#86b4f0'); rect(x, y, w, h, P.field); hline(x, y, w, '#6f6f6f'); vline(x, y, h, '#a0a0a0'); vline(x + w - 1, y, h, '#a0a0a0'); hline(x, y + h - 1, w, '#c4c4c4'); hline(x + 1, y + 1, w - 2, '#dadada'); },
   check(x, y, on, o = {}) { rrect(x, y, 12, 12, 2, '#6f6f6f'); rrectGrad(x + 1, y + 1, 10, 10, 1, on ? ['#3d72d8', '#7fb0f5', '#b9d8ff'] : ['#ffffff', '#e8e8e8', '#f6f6f6'], 2); if (on) { line(x + 3, y + 5, x + 5, y + 8, C.black, 2); line(x + 5, y + 8, x + 10, y + 1, C.black, 2); } },
@@ -654,13 +663,18 @@ LOOK.aqua = {
     }
     const fw = R((w - 2) * clamp(k)); if (fw > 2) { rrectGrad(x + 1, y + 1, fw, h - 2, Math.min(R(h / 2) - 1, R(fw / 2)), ['#3d72d8', '#6fa3ef', '#a9d0ff', '#4f8ef0'], 3); rrectVeil(x + 2, y + 1, fw - 2, R(h * .4), 2, C.white, .5); }
   },
-  menubar(h) { pinstripe(0, 0, W, h - 1, '#f2f2f2', '#fdfdfd'); hline(0, h - 1, W, '#9a9a9a'); veil(0, h, W, 1, C.black, .25); },
+  menubar(h) { pinstripe(0, 0, W, h - 1, '#f2f2f2', '#fdfdfd'); hline(0, h - 1, W, '#9a9a9a'); hline(0, h, W, shade(.3)); },
   menuTitleSel(x, y, w, h) { vgrad(x, y, w, h, ['#5a95ee', '#2f6bd8', '#3a7ae6'], 3); },
-  menuBox(x, y, w, h) { veil(x + 1, y + 2, w, h, C.black, .3); rect(x, y, w, h, '#c4c4c4'); pinstripe(x + 1, y, w - 2, h - 1, '#f4f4f4', '#fcfcfc'); },
+  menuBox(x, y, w, h) { rect(x + 1, y + 2, w, h, shade(.35)); rect(x, y, w, h, '#c4c4c4'); pinstripe(x + 1, y, w - 2, h - 1, '#f4f4f4', '#fcfcfc'); },
   menuSel(x, y, w, h) { vgrad(x, y, w, h, ['#5a95ee', '#2f6bd8', '#3a7ae6'], 3); },
   dialog(x, y, w, h, o = {}) { return this.win(x, y, w, h, o.title || '', { ...o, noMin: true, zoom: false }); },
-  dock(x, y, w, h) { rrectVeil(x, y, w, h, 6, '#eef4ff', .75); rframe(x, y, w, h, 6, '#ffffff'); hline(x + 6, y + 1, w - 12, '#ffffff'); hline(x + 6, y + h - 2, w - 12, '#b9c8dc'); },
+  dock(x, y, w, h) { flatDock(x, y, w, h, 6, mix('#e8f0fc', P.desk, .3), '#ffffff', '#b9c8dc'); },
 };
+// flatDock(x, y, w, h, r, fill, rim, base): the dock as a flat, mostly opaque plate with a 1px highlight (no checker)
+function flatDock(x, y, w, h, r, fill, rim, base) {
+  rrect(x, y, w, h, r, rim); rrect(x + 1, y + 1, w - 2, h - 2, r - 1, fill);
+  hline(x + r, y + 1, w - 2 * r, lighten(fill, .55)); if (base) hline(x + r, y + h - 2, w - 2 * r, base);
+}
 // ---- Tiger (2005): brushed metal ----
 LOOK.metal = {
   ...LOOK.aqua, radius: 5, engrave: true,
@@ -678,9 +692,9 @@ LOOK.metal = {
     rect(ix, iy, iw, ih, o.body || P.win);
     return { x: ix, y: iy, w: iw, h: ih };
   },
-  menubar(h) { vgrad(0, 0, W, h - 1, ['#ffffff', '#f2f2f2', '#e6e6e6'], 3); hline(0, h - 1, W, '#8e8e8e'); veil(0, h, W, 1, C.black, .25); },
-  menuBox(x, y, w, h) { veil(x + 1, y + 2, w, h, C.black, .3); rect(x, y, w, h, '#c4c4c4'); rect(x + 1, y, w - 2, h - 1, '#f7f7f7'); veil(x + 1, y, w - 2, h - 1, '#ffffff', .5); },
-  dock(x, y, w, h) { rrectVeil(x, y, w, h, 6, '#f2f5fa', .75); rframe(x, y, w, h, 6, '#ffffff'); hline(x + 6, y + h - 2, w - 12, '#b9c8dc'); },
+  menubar(h) { vgrad(0, 0, W, h - 1, ['#ffffff', '#f2f2f2', '#e6e6e6'], 3); hline(0, h - 1, W, '#8e8e8e'); hline(0, h, W, shade(.3)); },
+  menuBox(x, y, w, h) { rect(x + 1, y + 2, w, h, shade(.35)); rect(x, y, w, h, '#c4c4c4'); rect(x + 1, y, w - 2, h - 1, '#f9f9f9'); },
+  dock(x, y, w, h) { flatDock(x, y, w, h, 6, mix('#eef1f6', P.desk, .25), '#ffffff', '#b9c8dc'); },
 };
 // ---- Snow Leopard (2009): unified grey gradient title bars, the glass dock shelf ----
 LOOK.unified = {
@@ -704,17 +718,16 @@ LOOK.unified = {
     if (o.pressed) capsule(x, y, w, h, ['#9cc4f7', '#5d97ec', '#3c7ce0'], '#2a5bb5', { shine: .3 });
     else if (o.def && !o.disabled) { const pul = Math.sin((o.t ?? T) * Math.PI * 1.6) * .5 + .5; capsule(x, y, w, h, [mix('#b9d7fb', '#d6e8ff', pul * .5), '#6aa7f2', '#3c82e6', '#7bb8f8'], '#2a5bb5', { shine: .45 }); }
     else capsule(x, y, w, h, ['#ffffff', '#f3f3f3', '#e2e2e2', '#f2f2f2'], o.disabled ? '#c2c2c2' : '#8a8a8a', { shine: .5 });
-    text(label, x + w / 2, y + R((h - capH('button')) / 2), { font: 'button', align: 'center', color: o.disabled ? P.textDim : C.black });
+    text(label, x + w / 2, y + R((h - capH(o.font || 'button')) / 2), { font: o.font || 'button', align: 'center', color: o.disabled ? P.textDim : C.black });
   },
   thumbV(x, y, w, h) { rrect(x, y, w, h, 6, '#3a6fc8'); hgrad(x + 1, y + 1, w - 2, h - 2, ['#5a92e6', '#9cc4f7', '#cfe3ff', '#8ab8f2', '#4d86dd'], 2); rrSpans(w - 2, h - 2, 5).forEach((a, j) => { if (a) { rect(x + 1, y + 1 + j, a, 1, '#3a6fc8'); rect(x + w - 1 - a, y + 1 + j, a, 1, '#3a6fc8'); } }); },
-  menubar(h) { frost(0, 0, W, h - 1, '#f6f6f6', .9); hline(0, 0, W, '#ffffff'); hline(0, h - 1, W, '#7e7e7e'); veil(0, h, W, 1, C.black, .3); },
-  menuBox(x, y, w, h) { veil(x + 2, y + 3, w, h, C.black, .3); rrect(x, y, w, h, 4, '#bdbdbd'); rrectVeil(x + 1, y, w - 2, h - 1, 3, '#f7f7f7', .95); },
+  menubar(h) { rect(0, 0, W, h - 1, '#f4f4f4'); hline(0, 0, W, '#ffffff'); hline(0, h - 1, W, '#7e7e7e'); hline(0, h, W, shade(.3)); },
+  menuBox(x, y, w, h) { rrect(x + 1, y + 2, w, h, 4, shade(.35)); rrect(x, y, w, h, 4, '#bdbdbd'); rrect(x + 1, y, w - 2, h - 1, 3, '#f7f7f7'); },
   menuSel(x, y, w, h) { vgrad(x, y, w, h, ['#6b9ef1', '#3d80df', '#2a6cd4'], 3); },
   menuTitleSel(x, y, w, h) { vgrad(x, y, w, h, ['#6b9ef1', '#3d80df', '#2a6cd4'], 3); },
-  dock(x, y, w, h) { // the 3D glass shelf
-    const top = y + h - 14, inset = 18;
-    poly([[x + inset, top], [x + w - inset, top], [x + w, y + h], [x, y + h]], '#c7d0de');
-    for (let j = 0; j < 14; j++) { const k = j / 13, a = R(lerp(inset, 0, k)); veil(x + a, top + j, w - 2 * a, 1, j < 3 ? '#ffffff' : '#7b8aa3', j < 3 ? .6 : .25 + k * .25); }
+  dock(x, y, w, h) { // the 3D glass shelf: solid rows, light at the back edge, darker toward the front lip
+    const top = y + h - 14, inset = 18, back = mix('#e4eaf3', P.desk, .2), front = mix('#8593aa', P.desk, .3);
+    for (let j = 0; j < 14; j++) { const k = j / 13, a = R(lerp(inset, 0, k)); rect(x + a, top + j, w - 2 * a, 1, j < 2 ? '#f4f7fb' : mix(back, front, (k - .14) / .86)); }
     hline(x + inset, top, w - 2 * inset, '#ffffff'); hline(x, y + h - 1, w, '#e9eef7'); hline(x, y + h - 2, w, '#9aa6ba');
   },
 };
@@ -745,7 +758,7 @@ LOOK.flat = {
     const blue = o.def && !o.disabled;
     if (blue || o.pressed) { rrect(x, y, w, h, 3, o.pressed ? '#0a5fc8' : '#0b70e0'); rrectGrad(x + 1, y + 1, w - 2, h - 2, 2, o.pressed ? ['#3d8cf0', '#0866d6'] : ['#6cb3fa', '#0b80ff'], 3); }
     else { rrect(x, y + 1, w, h, 3, '#a8a8a8'); rrect(x, y, w, h, 3, '#c8c8c8'); rrect(x + 1, y + 1, w - 2, h - 2, 2, '#ffffff'); }
-    text(label, x + w / 2, y + R((h - capH('button')) / 2), { font: 'button', align: 'center', color: blue || o.pressed ? C.white : o.disabled ? P.textDim : '#262626' });
+    text(label, x + w / 2, y + R((h - capH(o.font || 'button')) / 2), { font: o.font || 'button', align: 'center', color: blue || o.pressed ? C.white : o.disabled ? P.textDim : '#262626' });
   },
   field(x, y, w, h, o = {}) { if (o.focus) rrect(x - 3, y - 3, w + 6, h + 6, 4, '#7fb4f6'); rect(x, y, w, h, '#ffffff'); frame(x, y, w, h, '#c5c5c5'); hline(x, y, w, '#adadad'); },
   check(x, y, on, o = {}) { rrect(x, y, 12, 12, 2, on ? '#0b70e0' : '#b5b5b5'); rrect(x + 1, y + 1, 10, 10, 2, on ? '#2b8cf6' : '#ffffff'); if (on) { line(x + 3, y + 6, x + 5, y + 8, C.white); line(x + 5, y + 8, x + 9, y + 3, C.white); line(x + 3, y + 5, x + 5, y + 7, C.white); line(x + 5, y + 7, x + 9, y + 2, C.white); } },
@@ -754,14 +767,14 @@ LOOK.flat = {
     const hh = Math.min(h, 6), yy = y + R((h - hh) / 2);
     rrect(x, yy, w, hh, R(hh / 2), '#dcdcdc');
     if (o.indeterminate) { const p = ((o.t ?? T) * .8) % 1.4 - .2, a = clamp(p - .2) * w, b = clamp(p + .1) * w; if (b > a) rrect(x + R(a), yy, R(b - a), hh, R(hh / 2), '#2b8cf6'); return; }
-    const fw = R(w * clamp(k)); if (fw > 0) rrect(x, yy, Math.max(fw, hh), hh, R(hh / 2), '#2b8cf6');
+    const fw = R(w * clamp(k)); if (fw >= hh) rrect(x, yy, fw >= w - 2 ? w : fw, hh, R(hh / 2), '#2b8cf6');
   },
   vscroll(x, y, h, k, frac, o = {}) { if (frac >= 1 || o.hidden) return; const kh = Math.max(16, R(h * clamp(frac || .3, .1, 1))), ky = y + R((h - kh) * clamp(k)); rrect(x + 8, ky + 2, 6, kh - 4, 3, '#a0a0a0'); },
-  menubar(h) { frost(0, 0, W, h, '#f6f6f6', .86); hline(0, h - 1, W, '#cfcfcf'); },
-  menuBox(x, y, w, h) { veil(x + 2, y + 3, w, h, C.black, .2); rrect(x, y, w, h, 5, '#cfcfcf'); rrectVeil(x + 1, y + 1, w - 2, h - 2, 4, '#f6f6f6', .9); },
+  menubar(h) { rect(0, 0, W, h, mix('#f6f6f6', P.desk, .12)); hline(0, h - 1, W, '#cfcfcf'); },
+  menuBox(x, y, w, h) { winShadow(x, y, w, h, 5, 2, .2); rrect(x, y, w, h, 5, '#cfcfcf'); rrect(x + 1, y + 1, w - 2, h - 2, 4, '#f6f6f6'); },
   menuSel(x, y, w, h) { rect(x, y, w, h, P.menuSel); },
   menuTitleSel(x, y, w, h) { rect(x, y, w, h, P.menuSel); },
-  dock(x, y, w, h) { const s = rrSpans(w, h, 4); spanPat(x, y, w, s, noisePat(.78, '#f4f4f4', null)); spanFrame(x, y, w, s, '#e2e2e2'); },
+  dock(x, y, w, h) { flatDock(x, y, w, h, 4, mix('#f4f4f4', P.desk, .32), mix('#ffffff', P.desk, .15), null); },
 };
 // ---- Big Sur (2020): rounded, roomier, SF ----
 LOOK.sur = {
@@ -782,12 +795,12 @@ LOOK.sur = {
     const blue = o.def && !o.disabled;
     if (blue || o.pressed) { rrect(x, y, w, h, 5, o.pressed ? '#0060d0' : '#0a6fe6'); rrectGrad(x + 1, y + 1, w - 2, h - 2, 4, o.pressed ? ['#2a7ff0', '#0a65d8'] : ['#3f97ff', '#0a7cff'], 2); }
     else { rrect(x, y + 1, w, h, 5, '#c2c2c2'); rrect(x, y, w, h, 5, '#d4d4d4'); rrect(x + 1, y + 1, w - 2, h - 2, 4, '#ffffff'); }
-    text(label, x + w / 2, y + R((h - capH('button')) / 2), { font: 'button', align: 'center', color: blue || o.pressed ? C.white : o.disabled ? P.textDim : '#262626' });
+    text(label, x + w / 2, y + R((h - capH(o.font || 'button')) / 2), { font: o.font || 'button', align: 'center', color: blue || o.pressed ? C.white : o.disabled ? P.textDim : '#262626' });
   },
-  menuBox(x, y, w, h) { veil(x + 2, y + 4, w, h, C.black, .2); rrect(x, y, w, h, 7, '#c9c9c9'); rrectVeil(x + 1, y + 1, w - 2, h - 2, 6, '#f4f4f4', .92); },
+  menuBox(x, y, w, h) { winShadow(x, y, w, h, 7, 2, .2); rrect(x, y, w, h, 7, '#c9c9c9'); rrect(x + 1, y + 1, w - 2, h - 2, 6, '#f4f4f4'); },
   menuSel(x, y, w, h) { rrect(x + 4, y, w - 8, h, 4, P.menuSel); },
   menuTitleSel(x, y, w, h) { rrect(x, y + 1, w, h - 2, 4, '#c9c9cf'); },
-  dock(x, y, w, h) { const s = rrSpans(w, h, 10); spanPat(x, y, w, s, noisePat(.72, '#f6f2f4', null)); spanFrame(x, y, w, s, '#f3eef1'); },
+  dock(x, y, w, h) { flatDock(x, y, w, h, 10, mix('#f6f2f4', P.desk, .3), mix('#ffffff', P.desk, .12), null); },
 };
 // ---- Liquid Glass (2026): translucent everything, by dither ----
 LOOK.glass = {
@@ -796,8 +809,9 @@ LOOK.glass = {
     const act = o.active !== false, r = this.radius, th = this.titleH + (o.toolbar || 0);
     if (!o.noShadow) winShadow(x, y, w, h, r, 5, act ? .2 : .12);
     const s = rrSpans(w, h, r);
-    spanPat(x, y, w, s, noisePat(.9, act ? '#f6f8fb' : '#f1f3f6', null));
+    spanFill(x, y, w, s, act ? '#f6f8fb' : '#f1f3f6');
     spanFrame(x, y, w, s, act ? '#ffffff' : '#f4f6f9');
+    if (act) rrectVeil(x + 3, y + 2, w - 6, 5, r - 3, '#ffffff', .5); // the sheen along the top rim (glass keeps its dither)
     // rim light: bright top-left, cool bottom-right
     hline(x + r, y + h - 1, w - 2 * r, '#cdd5e0'); vline(x + w - 1, y + r, h - 2 * r, '#d9e0ea');
     hline(x + r, y + 1, w - 2 * r, '#ffffff');
@@ -809,16 +823,21 @@ LOOK.glass = {
   button(x, y, w, h, label, o = {}) {
     const blue = o.def && !o.disabled, r = Math.floor(h / 2);
     if (blue || o.pressed) { rrect(x, y, w, h, r, '#4d6f9e'); rrectGrad(x + 1, y + 1, w - 2, h - 2, r - 1, o.pressed ? ['#55779f', '#3f6190'] : ['#86a5cc', '#5f84b5', '#557aab'], 3); hline(x + r, y + 1, w - 2 * r, '#b9cce6'); }
-    else { rrectVeil(x, y, w, h, r, '#ffffff', .8); rframe(x, y, w, h, r, '#d7dde6'); hline(x + r, y + 1, w - 2 * r, '#ffffff'); }
-    text(label, x + w / 2, y + R((h - capH('button')) / 2), { font: 'button', align: 'center', color: blue || o.pressed ? C.white : o.disabled ? P.textDim : '#1d1d1f' });
+    else { rrect(x, y, w, h, r, o.disabled ? '#f3f5f8' : '#fdfdfe'); rframe(x, y, w, h, r, '#d7dde6'); hline(x + r, y + 1, w - 2 * r, '#ffffff'); }
+    text(label, x + w / 2, y + R((h - capH(o.font || 'button')) / 2), { font: o.font || 'button', align: 'center', color: blue || o.pressed ? C.white : o.disabled ? P.textDim : '#1d1d1f' });
   },
-  field(x, y, w, h, o = {}) { const r = Math.min(R(h / 2), 7); if (o.focus) rframe(x - 2, y - 2, w + 4, h + 4, r + 2, '#8fb3e6', 2); rrectVeil(x, y, w, h, r, '#ffffff', .85); rframe(x, y, w, h, r, '#dfe4eb'); },
-  progress(x, y, w, h, k, o = {}) { const hh = Math.min(h, 6), yy = y + R((h - hh) / 2); rrectVeil(x, yy, w, hh, 3, '#9aa4b2', .4); const fw = o.indeterminate ? R(w * .3) : R(w * clamp(k)), fx = o.indeterminate ? x + R((((o.t ?? T) * .7) % 1) * (w - fw)) : x; if (fw > 0) rrect(fx, yy, Math.max(hh, fw), hh, 3, '#5b80b1'); },
+  field(x, y, w, h, o = {}) { const r = Math.min(R(h / 2), 7); if (o.focus) rframe(x - 2, y - 2, w + 4, h + 4, r + 2, '#8fb3e6', 2); rrect(x, y, w, h, r, '#ffffff'); rframe(x, y, w, h, r, '#dfe4eb'); },
+  progress(x, y, w, h, k, o = {}) {
+    const hh = Math.min(h, 6), yy = y + R((h - hh) / 2);
+    rrect(x, yy, w, hh, 3, '#dde2e9');
+    const fw = o.indeterminate ? R(w * .3) : R(w * clamp(k)), fx = o.indeterminate ? x + R((((o.t ?? T) * .7) % 1) * (w - fw)) : x;
+    if (fw >= hh) rrect(fx, yy, fw >= w - 2 ? w : fw, hh, 3, '#5b80b1');
+  },
   menubar(h) { frost(0, 0, W, h, '#f6f8fb', .55); },
-  menuBox(x, y, w, h) { winShadow(x, y, w, h, 10, 3, .14); const s = rrSpans(w, h, 10); spanPat(x, y, w, s, bayerPat(.9, '#f7f9fc', null)); spanFrame(x, y, w, s, '#ffffff'); },
+  menuBox(x, y, w, h) { winShadow(x, y, w, h, 10, 3, .14); const s = rrSpans(w, h, 10); spanFill(x, y, w, s, '#f7f9fc'); spanFrame(x, y, w, s, '#ffffff'); },
   menuSel(x, y, w, h) { rrect(x + 5, y, w - 10, h, 6, P.menuSel); },
-  menuTitleSel(x, y, w, h) { rrectVeil(x, y + 1, w, h - 2, 6, '#ffffff', .9); rframe(x, y + 1, w, h - 2, 6, '#ffffff'); },
-  dock(x, y, w, h) { const s = rrSpans(w, h, 14); spanPat(x, y, w, s, noisePat(.7, '#f9fbfd', null)); spanFrame(x, y, w, s, '#ffffff'); hline(x + 14, y + 1, w - 28, '#ffffff'); hline(x + 14, y + h - 1, w - 28, '#c9d1dc'); },
+  menuTitleSel(x, y, w, h) { rrect(x, y + 1, w, h - 2, 6, '#fbfcfe'); rframe(x, y + 1, w, h - 2, 6, '#ffffff'); },
+  dock(x, y, w, h) { flatDock(x, y, w, h, 14, mix('#f6f8fb', P.desk, .25), '#ffffff', null); rrectVeil(x + 6, y + 2, w - 12, 5, 6, '#ffffff', .5); hline(x + 14, y + h - 1, w - 28, '#c9d1dc'); },
 };
 const look = () => LOOK[E.chrome];
 // winTitle(x, y, w, title, ty, left, color, o): a centred title that slides right (and clips) when the window is narrow

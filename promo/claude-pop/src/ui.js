@@ -125,7 +125,7 @@ function textField(x, y, w, h, str = '', o = {}) {
   const font = o.font || 'body', ty = y + R((h - capH(font)) / 2), pad = E.chrome === 'glass' ? 8 : 4;
   let s = String(str), cx = x + pad;
   while (s && tw(s, font) > w - 2 * pad - 2) s = s.slice(1);
-  if (!s && o.placeholder) text(o.placeholder, x + pad, ty, { font, color: P.textDim });
+  if (!s && o.placeholder) text(fitText(o.placeholder, w - 2 * pad - 2, font), x + pad, ty, { font, color: P.textDim });
   if (o.sel && s) { const a = tw(s.slice(0, o.sel[0]), font), b = tw(s.slice(0, o.sel[1]), font); rect(x + pad + a, ty - 2, b - a, capH(font) + 4, P.sel); }
   if (s) cx += text(s, x + pad, ty, { font, color: o.color || P.text });
   if (o.caret && (o.caret === 'solid' || caretOn())) rect(cx + 1, ty - 2, 1, capH(font) + 4, P.text);
@@ -151,7 +151,7 @@ function tabs(x, y, w, labels, sel = 0) {
     hline(x, y + 16, w, P.frame); return;
   }
   const r = fam === 'glass' ? 9 : 4, h = 17;
-  if (fam === 'glass') { rrectVeil(x, y, w, h, r, '#ffffff', .7); rframe(x, y, w, h, r, '#dfe4eb'); }
+  if (fam === 'glass') { rrect(x, y, w, h, r, '#f9fafc'); rframe(x, y, w, h, r, '#dfe4eb'); }
   else capsule(x, y, w, h, ['#ffffff', '#ececec', '#dedede'], '#8d8d8d', { shine: .5 });
   labels.forEach((l, i) => {
     const tx = x + i * tw_, on = i === sel;
@@ -220,12 +220,18 @@ function menuLayout(o = UI.menu || {}) {
   labels.forEach((l, i) => { const font = modern && i === 0 ? 'appName' : 'menu', w = tw(l, font) + 2 * pad; items.push({ label: l, x: x - pad, w, font, app: modern && i === 0 }); x += w; });
   return items;
 }
+// menuIndex(label, o) -> the `open` index of a menu title in the current era. From Aqua on, index 0 is the bold app
+// name, so 'Writing' is 2 in System 6 and 3 in Aqua: never hard-code the number (or just set UI.menu.open = 'Writing').
+function menuIndex(label, o = UI.menu || {}) { const i = menuLayout(o).findIndex(it => it.label === label); return i < 0 ? undefined : E.chrome === 'next' ? i - 1 : i; }
+// menuAt(label | index, o) -> {label, x, w} of that title in the bar (hang a pullMenu under it: pullMenu(m.x, E.menuH - 1, ...))
+function menuAt(which, o = UI.menu || {}) { const i = typeof which === 'string' ? menuIndex(which, o) : which; return i == null || E.chrome === 'next' ? null : menuLayout(o)[i] || null; }
 // clockText(t): the menu-bar clock (advances a minute every 15 seconds of song)
 const clockText = (t = T, base = 16 * 60 + 12) => { const m = base + Math.floor(t / 15), hh = Math.floor(m / 60) % 12 || 12, mm = String(m % 60).padStart(2, '0'); return (E.index >= ERA.lion.index ? 'Thu ' : '') + hh + ':' + mm + ' ' + (Math.floor(m / 60) % 24 < 12 ? 'AM' : 'PM'); };
-// menuBar(o): the menu bar (main draws it after the scene, from UI.menu). o.open = index of a highlighted title,
+// menuBar(o): the menu bar (main draws it after the scene, from UI.menu). o.open = index (or label) of a highlighted title,
 // o.right = [strings], o.prop = fn(x, y, w, h) drawing the running prop in the right-hand slot (w = o.propW)
 function menuBar(o = {}) {
   const fam = E.chrome, L = look(), h = E.menuH;
+  if (typeof o.open === 'string') o = { ...o, open: menuIndex(o.open, o) };
   if (fam === 'next') return nextMenu(o);
   L.menubar(h);
   const items = menuLayout(o), modern = E.index >= ERA.aqua.index;
@@ -246,6 +252,7 @@ function menuBar(o = {}) {
   if (E.corners && !o.noCorners) screenCorners();
   return items;
 }
+const NX_TILE = 40, NX_GAP = 3;  // NeXT dock column: tile size and gap (x = W - NX_TILE - 1)
 function nextMenu(o = {}) { // NeXTSTEP's vertical main menu, top-left
   const items = menuLayout(o), w = 104, rh = 15;
   rect(0, 0, w + 1, items.length * rh + 1, C.black);
@@ -256,11 +263,11 @@ function nextMenu(o = {}) { // NeXTSTEP's vertical main menu, top-left
     text(it.label, 6, y + 4, { font: 'helv', color: C.black });
     arrowTri(w - 10, y + 4, 4, 'right', C.black);
   });
-  // the right side of the screen: the dock column carries the clock and the running prop
-  const dx = W - 46;
-  nxBevel(dx, 0, 46, 46, NX.l); markGlyph(dx + 16, 16);
-  if (o.clock !== false) { nxBevel(dx, 46, 46, 46, NX.l); rect(dx + 6, 52, 34, 34, C.black); const c = (typeof o.clock === 'string' ? o.clock : clockText()).split(' ')[0]; text(c, dx + 23, 63, { font: 'helvB11', align: 'center', color: C.white }); }
-  if (o.prop) { nxBevel(dx, 92, 46, 46, NX.l); o.prop(dx + 3, 95, 40, 40); }
+  // the right side of the screen: the dock column (NX_TILE px tiles) carries the mark, the clock and the running prop
+  const dx = W - NX_TILE - 1, ty = i => 1 + i * (NX_TILE + NX_GAP);
+  nxBevel(dx, ty(0), NX_TILE, NX_TILE, NX.l); markGlyph(dx + 14, ty(0) + 13);
+  if (o.clock !== false) { nxBevel(dx, ty(1), NX_TILE, NX_TILE, NX.l); rect(dx + 5, ty(1) + 5, NX_TILE - 10, NX_TILE - 10, C.black); const c = (typeof o.clock === 'string' ? o.clock : clockText()).split(' ')[0]; text(c, dx + NX_TILE / 2, ty(1) + 15, { font: 'helvB11', align: 'center', color: C.white }); }
+  if (o.prop) { nxBevel(dx, ty(2), NX_TILE, NX_TILE, NX.l); o.prop(dx + 3, ty(2) + 3, NX_TILE - 6, NX_TILE - 6); }
   return items;
 }
 // pullMenu(x, y, items, sel, o): a pulled-down menu. items: 'Label', 'Label\t⌘K', '-' (separator), '~Disabled', '✓Checked'
@@ -399,14 +406,14 @@ function alert(cx, cy, o = {}) {
 // deskIcon(x, y, name, label, {sel, open, set, labelW}): 32px icon at (x, y), label centred beneath. -> {x, y, w, h, cx, cy}
 function deskIcon(x, y, name, label, o = {}) {
   x = R(x); y = R(y);
-  const fam = E.chrome, font = 'label', lw = tw(label, font), lx = x + 16 - R(lw / 2), ly = y + 36, ch = capH(font);
-  if (o.sel && !['mac1', 'mac7', 'next', 'plat', 'board'].includes(fam)) rrectVeil(x - 4, y - 3, 40, 38, 4, fam === 'glass' ? '#ffffff' : '#000000', fam === 'glass' ? .6 : .3);
+  const fam = E.chrome, font = 'label', lw = tw(label, font), lx = clamp(x + 16 - R(lw / 2), 4, W - lw - 5), ly = y + 36, ch = capH(font); // the label never runs off the screen
+  if (o.sel && !['mac1', 'mac7', 'next', 'plat', 'board'].includes(fam)) rrect(x - 4, y - 3, 40, 38, 4, fam === 'glass' ? mix(P.desk, '#ffffff', .6) : shade(.32));
   icon(name, x, y, { sel: o.sel && ['mac1', 'mac7', 'next', 'plat', 'board'].includes(fam), open: o.open, set: o.set });
   if (!label) return { x, y, w: 32, h: 32, cx: x + 16, cy: y + 16 };
   if (fam === 'mac1' || fam === 'mac7') { rect(lx - 2, ly - 2, lw + 4, ch + 4, o.sel ? C.black : C.white); text(label, lx, ly, { font, color: o.sel ? C.white : C.black }); }
   else if (fam === 'next') { if (o.sel) rect(lx - 2, ly - 2, lw + 4, ch + 4, C.white); text(label, lx, ly, { font, color: o.sel ? C.black : C.white }); }
   else if (fam === 'plat' || fam === 'board') { rect(lx - 2, ly - 2, lw + 4, ch + 4, o.sel ? C.black : P.desk === '#4a71ab' ? '#ffffff' : P.hi); text(label, lx, ly, { font, color: o.sel ? C.white : C.black }); }
-  else if (fam === 'glass') { rrectVeil(lx - 5, ly - 3, lw + 10, ch + 7, 5, o.sel ? '#2c2e33' : '#f7f9fc', o.sel ? 1 : .85); text(label, lx, ly, { font, color: o.sel ? C.white : P.text }); }
+  else if (fam === 'glass') { rrect(lx - 5, ly - 3, lw + 10, ch + 7, 5, o.sel ? '#2c2e33' : '#f7f9fc'); text(label, lx, ly, { font, color: o.sel ? C.white : P.text }); }
   else { if (o.sel) rrect(lx - 4, ly - 2, lw + 8, ch + 5, 4, P.listSel); text(label, lx, ly, { font, color: C.white, shadow: o.sel ? null : ['#000000', 0, 1] }); }
   return { x, y, w: 32, h: 32 + ch + 6, cx: x + 16, cy: y + 16 };
 }
@@ -464,7 +471,8 @@ function dock(o = {}) {
   if (!E.dock && E.chrome !== 'next') return null;
   const items = (o.items || DOCK_DEFAULT).map(it => typeof it === 'string' ? { icon: it } : it);
   if (E.chrome === 'next') { // NeXT's dock: a column of tiles down the right edge, under the clock
-    let y = 138; items.filter(i => i.icon !== '|').slice(0, 4).forEach(it => { nxBevel(W - 46, y, 46, 46, NX.l); icon(it.icon, W - 39, y + 7); y += 46; }); return null;
+    const dx = W - NX_TILE - 1; let y = 1 + 3 * (NX_TILE + NX_GAP);
+    items.filter(i => i.icon !== '|').slice(0, 4).forEach(it => { nxBevel(dx, y, NX_TILE, NX_TILE, NX.l); icon(it.icon, dx + 4, y + 4); y += NX_TILE + NX_GAP; }); return null;
   }
   const n = items.length, gap = 4, sz = 32, divW = 10;
   let w = 10; for (const it of items) w += it.icon === '|' ? divW : sz + gap;
@@ -478,7 +486,7 @@ function dock(o = {}) {
     if (o.bounce && o.bounce.i === i) { const b = T - o.bounce.t0; if (b >= 0 && b < 1.6) iy -= R(Math.abs(Math.sin(b * Math.PI * 2.5)) * 14 * (1 - b / 1.6)); }
     const big = o.hover === i;
     if (big) icon(it.icon, ix - 8, iy - 22, { scale: 2 }); else icon(it.icon, ix, iy);
-    if (it.running || (o.open || []).includes(i)) { const lx = ix + 15; if (E.chrome === 'unified' || E.chrome === 'lion') { rect(lx, y + h - 4, 2, 2, '#bfe0ff'); veil(lx - 1, y + h - 5, 4, 4, '#bfe0ff', .4); } else if (E.chrome === 'aqua' || E.chrome === 'metal') arrowTri(lx - 2, y + h - 4, 3, 'up', '#222222'); else rect(lx, y + h - 3, 2, 2, E.chrome === 'glass' ? '#4a4f57' : '#2a2a2a'); }
+    if (it.running || (o.open || []).includes(i)) { const lx = ix + 15; if (E.chrome === 'unified' || E.chrome === 'lion') { rect(lx - 1, y + h - 4, 4, 2, '#9fc8f0'); rect(lx, y + h - 4, 2, 2, '#e4f2ff'); } else if (E.chrome === 'aqua' || E.chrome === 'metal') arrowTri(lx - 2, y + h - 4, 3, 'up', '#222222'); else rect(lx, y + h - 3, 2, 2, E.chrome === 'glass' ? '#4a4f57' : '#2a2a2a'); }
     if (big && it.label) tooltip(ix + 16 - R(tw(it.label, 'small') / 2) - 5, iy - 42, it.label);
     pos.push({ x: ix, y: iy, cx: ix + 16, cy: iy + 16 });
     ix += sz + gap;
@@ -654,5 +662,8 @@ function mousePath(t, keys, o = {}) {
   if (act === 'press' && since0 >= 0) down = true;
   return { x: R(x), y: R(y), down };
 }
+// trail(t, n, dt, fn): the stale copies a dragged window leaves on a busy machine. Calls fn(t - i*dt, i) for
+// i = n..1 (oldest first), then fn(t, 0) on top. fn draws the window at its position for that time.
+function trail(t, n, dt, fn) { for (let i = n; i >= 1; i--) fn(t - i * dt, i); fn(t, 0); }
 // cursor(t, keys, kind): mousePath() straight into CUR (the usual one-liner in a scene)
 function cursor(t, keys, kind = 'arrow', o = {}) { const p = mousePath(t, keys, o); if (p) CUR = { ...p, kind: o.kind || kind }; return p; }

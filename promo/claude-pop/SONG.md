@@ -4,15 +4,21 @@
 
 *Words, music, arrangement, voice and picture by Claude. Three concepts from the writers' room ("Pen Pal",
 "Eight Is Yours", "Who Holds the Pen?") were judged and merged into this one; the final song, score and
-production design are by the judge, revised once after a producer's and a prosody/product review (see
-"Revision" at the end). Sung by `en_US-amy-medium` through Praat PSOLA, who knows she is a machine. Every
-timing in this document is generated from `music/score.json`; regenerate, never retype.*
+production design are by the judge, revised once after a producer's and a prosody/product review and once
+more by the hook doctor, whose only brief was singalong-ability (see "Revision" and "Hook doctor" at the
+end). Sung by `en_US-amy-medium` through Praat PSOLA, who knows she is a machine. Every timing in this
+document is generated from `music/score.json`; regenerate, never retype.*
 
 The joke that sells the product: a synthetic voice sings, warmly and in tune, "I'm just your pen pal, I'll
 never hold the pen", and the whole film obeys that rule. The AI's choir is only itself. The last time the
 chorus comes round the voice cannot even sing the word *pen*: the band drops out, the voice says "the",
 and the writer types the rest into the silence. The song admits it is temporary and survives only because
 the writer clicks Save.
+
+The song in one breath, for a stadium: **"I'm just your PEN PAL (pen pal!) / I'll never HOLD the PEN"**
+twice, **"Who holds the pen? / YOU DO! YOU DO!"** once, then everybody sings the organ riff on "la".
+Every chorus is that and nothing else. The desk is the band: every drum hit is a UI sound you can see
+happen, and the bass is two floppy drives.
 
 ---
 
@@ -34,10 +40,10 @@ weakness was the hook arriving a hair too politely and one post-chorus doing too
 
 | From | What | Where it landed |
 |---|---|---|
-| Who Holds the Pen? | the call-and-response "Who holds the pen? / You do! You do!" (choir falls G-G-F-D with a Mixolydian F; the kid's answer is the falling-third taunt C5-A4, then E5-C5) | the post-chorus after chorus 1 (bars 1-2) and a two-bar post-chorus after chorus 2 that launches the bridge; in revision the gang also answers the verses ("(Keep it.)", "Flag it.") |
+| Who Holds the Pen? | the call-and-response "Who holds the pen? / You do! You do!" (the lead's falling taunt A-A-G-E over Am9; the answer C5-A4, then D5-B4, the PEN PAL notes) | the last two bars of every chorus, shouted by the twelve-copy gang with the lead (the hook doctor moved it there from the post-chorus so it lands three times, on the chorus hits); the gang also answers the verses ("(Keep it.)", "Flag it.") |
 | Eight Is Yours | the silent note: the voice cannot sing the key word, a single human keystroke does it | final chorus, bar 2: "I'll never hold the ___" — the band drops after "hold", one beat of silence, one keystroke, the band slams back on "You say" |
 | Eight Is Yours | the year ladder on climbing chord tones, each pair of years a step above the last pair | the bridge chant: E3 G3 · G3 C4 · B3 D4 · D4 F#4 · E4 G4 · G4 A4, each year with a system beep an octave up |
-| Eight Is Yours | the deliberately humanised line (±10 cents, unquantised onsets) | "Your roughness is you" in the final chorus |
+| Eight Is Yours | the deliberately humanised line (±10 cents, unquantised onsets) | "Keep it." in verse 2: the one rough line is the one worth keeping (the hook doctor moved it out of the chorus) |
 | Who Holds the Pen? | the floppy "Disk one. Disk two." clunks and the release-gate bar | the breakdown's spoken "Two floppies. It fits." with two clunks |
 | Who Holds the Pen? | the AI's choir can only repeat what the lead just said | the "(pen pal)" echoes and the la-la that sings the riff note for note (post-chorus 1 and, stacked over the last chant, the outro) |
 
@@ -51,38 +57,39 @@ twelve-appearance bridge, the reboot key change on the boot chord, the Save dial
 | # | Section | Bars | Beats | Time | What happens |
 |---|---|---|---|---|---|
 | 1 | boot | 1-2 | 0-8 | 0:00.0 | the Gmaj9 boot chord; the bare voice sings the hook; "pen" (D5) lands at 3.0 s |
-| 2 | intro | 3-6 | 8-24 | 0:04.0 | the drop: big-beat break, Floppy Organ riff, chant "Save it. Clip it. Insert it. Export it." |
+| 2 | intro | 3-6 | 8-24 | 0:04.0 | the drop: big-beat break, Floppy Organ riff, the pen-pal chops riding the riff, chant "Save it. Clip it. Insert it. Export it." |
 | 3 | verse1 | 7-14 | 24-56 | 0:12.0 | the route as a robot to-do list; the riff is tacet until "Clip the proof" (0:20.0); the chant climbs to B3; a gang echoes "(Keep it.)" |
 | 4 | pre1 | 15-18 | 56-72 | 0:28.0 | the melt: chant → glide → vibrato → full lead; the band hits HAND (0:34.8) and stops |
-| 5 | chorus1 | 19-26 | 72-104 | 0:36.0 | the hook leaps to D5 on "pen"; colour arrives with it |
-| 6 | post1 | 27-30 | 104-120 | 0:52.0 | "Who holds the pen? / You do! You do!" then the choir sings the riff on la |
+| 5 | chorus1 | 19-26 | 72-104 | 0:36.0 | house / disco: the hook leaps to D5 on "pen"; colour arrives with it; M A B M A, then "Who holds the pen? / YOU DO! YOU DO!" (0:48-0:52) |
+| 6 | post1 | 27-30 | 104-120 | 0:52.0 | Jersey-club bounce: the choir sings the riff on la, twice; the chops join the second time |
 | 7 | verse2 | 31-38 | 120-152 | 1:00.0 | MultiFinder, Review Desk; the chant asks, a gang shouts "Flag it.", the stumble, the lead sings "Keep it." |
-| 8 | pre2 | 39-42 | 152-168 | 1:16.0 | the melt again, tambourine, longer riser, HAND hit at 1:22.8 |
-| 9 | chorus2 | 43-50 | 168-200 | 1:24.0 | choir harmony a third below on bars 5-8 |
-| 10 | post2 | 51-52 | 200-208 | 1:40.0 | the question once more, straight into the appearances |
+| 8 | pre2 | 39-42 | 152-168 | 1:16.0 | the melt again: "I could smooth it. I won't." (the low-pass closes over "smooth"); tambourine, longer riser, HAND hit at 1:22.8 |
+| 9 | chorus2 | 43-50 | 168-200 | 1:24.0 | choir harmony a third below on bars 5-6; the gang again |
+| 10 | post2 | 51-52 | 200-208 | 1:40.0 | la la once more over the bounce and the chops, a riser into the appearances |
 | 11 | bridge | 53-60 | 208-240 | 1:44.0 | twelve years chanted on a climbing ladder over organ stabs and beeps; "Twelve eras. One desk. And your windows stay." |
 | 12 | breakdown | 61-64 | 240-256 | 2:00.0 | a 1988 sample speaks; felt piano and snaps; bar 4 is E7sus4, the dominant of the new key, under a spin-up riser; a cappella pickup |
-| 13 | chorus3 | 65-72 | 256-288 | 2:08.0 | the reboot: boot chord in A, key up a whole step; the band drops at 2:11.2, the silent pen at 2:11.5, the keystroke at 2:11.6, the slam back at 2:12.0 |
+| 13 | chorus3 | 65-72 | 256-288 | 2:08.0 | the reboot: boot chord in A, key up a whole step; the band drops at 2:11.2, the silent pen at 2:11.5, the keystroke at 2:11.6, the slam back at 2:12.0; the last "YOU DO!" at 2:22 |
 | 14 | outro | 73-76 | 288-304 | 2:24.0 | the last chant with the la-la on top burns the CD; "It was always your voice." is the hook, resolved; "This song is temporary." |
 | 15 | tail | 77 | 304-308 | 2:32.0 | the Amaj9 rings; one mouse click (Save) at 2:33.2; end card |
 
-Named hits (`HITS` in `data/data.js`, seconds): boot 0 · teaserPen 3 · drop 4 · verse1 12 · riffReturns 20 ·
-melt 30 · stop1 34.75 · air1 35 · chorus1/colour 36 · fade1 42.5 · smooth1 51 · post1/whoHoldsThePen1 52 ·
-youDo1 54 · lala 56 · verse2 60 · flagIt1 69 · stumble 69.625 · flagIt2 71 · flagIt3 73 · keepIt 75 ·
-stop2 82.75 · air2 83 · chorus2 84 · fade2 90.5 · smooth2 99 · whoHoldsThePen2 100 · youDo2 102 ·
-bridge 104 · era_1988 … era_2026 every 1.0 s from 104 · subDrop 112 · contactSheet 116 · collapse 118 ·
-breakdown 120 · twoFloppies 120.25 · pivot 126 · reboot/keyChange 128 · bandOut 131.25 · silentPen 131.5 ·
-keystroke 131.625 · slamBack 132 · fade3 134.5 · smooth3 143 · outro 144 · exportCD 147 · bootChordOut 150 ·
-saveDialog 151 · saveClick 153.25 · end 154.
+Named hits (`HITS` in `data/data.js`, seconds): boot 0 · teaserPen 3 · drop 4 · chops 4.75 · verse1 12 ·
+riffReturns 20 · melt 30 · stop1 34.75 · air1 35 · chorus1/colour 36 · fade1 42.5 · whoHoldsThePen1 48 ·
+youDo1 50 · post1/lala 52 · lala2 56 · verse2 60 · flagIt1 69 · stumble 69.625 · flagIt2 71 · flagIt3 73 ·
+keepIt 75 · smooth 78.5 · stop2 82.75 · air2 83 · chorus2 84 · fade2 90.5 · whoHoldsThePen2 96 · youDo2 98 ·
+post2/lala3 100 · bridge 104 · era_1988 … era_2026 every 1.0 s from 104 · subDrop 112 · contactSheet 116 ·
+collapse 118 · breakdown 120 · twoFloppies 120.25 · pivot 126 · reboot/keyChange 128 · bandOut 131.25 ·
+silentPen 131.5 · keystroke 131.625 · slamBack 132 · fade3 134.5 · whoHoldsThePen3 140 · youDo3 142 ·
+outro/lala4 144 · exportCD 147 · bootChordOut/returnKey 150 · saveDialog 151 · saveClick 153.25 · end 154.
 
 ---
 
 ## 3. Lyrics with timestamps
 
 Voice: **chant** = the robot list (amy flattened to G3, last word falls to D3) · **lead** = amy singing ·
-**choir** = amy + jenny + lessac stacked (the AI's choir is only itself); roles: echo, call (the gang),
-harmony, lala · **spoken** = lessac raw, no pitch. Times are the first and last word of the line. The
-on-screen text is exactly the text column.
+**choir** = amy + jenny + lessac stacked (the AI's choir is only itself); roles: echo, gang and call (the
+gang: twelve copies, wide, shouted), harmony, lala · **spoken** = lessac raw, no pitch. Times are the first
+and last word of the line. The on-screen text is exactly the text column. Capitals in the notes mark the
+crowd's part.
 
 ### Boot (0:00.0 - 0:04.0)
 | start | end | voice | line |
@@ -108,21 +115,21 @@ on-screen text is exactly the text column.
 
 ### Chorus 1 (0:36.0 - 0:52.0)
 | 0:35.2 | 0:37.2 | lead | I'm just your pen pal, |
-| 0:37.2 | 0:37.8 | choir (echo) | (pen pal) |
+| 0:37.2 | 0:37.8 | choir (gang: PEN PAL!) | (pen pal) |
 | 0:37.8 | 0:40.0 | lead | I'll never hold the pen. |
-| 0:40.0 | 0:42.0 | lead | You say where the words land, |
-| 0:42.0 | 0:43.0 | lead | or they fade. |
+| 0:40.0 | 0:42.0 | lead | You say where I land, |
+| 0:42.0 | 0:43.0 | lead | or I fade. |
 | 0:43.2 | 0:45.2 | lead | I'm just your pen pal, |
-| 0:45.2 | 0:45.8 | choir (echo) | (pen pal) |
-| 0:45.8 | 0:47.8 | lead | I sing it, you say it. |
-| 0:47.8 | 0:50.0 | lead | Your roughness is you, |
-| 0:50.0 | 0:51.8 | lead | don't let me smooth it. |
+| 0:45.2 | 0:45.8 | choir (gang: PEN PAL!) | (pen pal) |
+| 0:45.8 | 0:48.0 | lead | I'll never hold the pen. |
+| 0:48.0 | 0:49.8 | lead | Who holds the pen? |
+| 0:50.0 | 0:52.0 | lead + choir (gang: YOU DO! YOU DO!) | You do! You do! |
 
 ### Post-chorus (0:52.0 - 1:00.0)
-| 0:52.0 | 0:53.8 | choir (call) | Who holds the pen? |
-| 0:54.0 | 0:56.0 | lead | You do! You do! |
-| 0:56.0 | 0:58.0 | choir (lala) | La la la, la la la la. |
-| 0:58.0 | 1:00.0 | choir (lala) | La la la, la la la la. |
+| 0:52.0 | 0:54.0 | choir (lala) | La la la, la la la la. |
+| 0:54.0 | 0:56.0 | choir (lala) | La la la, la la la la. |
+| 0:56.0 | 0:58.0 | choir (lala) + the chops | La la la, la la la la. |
+| 0:58.0 | 1:00.0 | choir (lala) + the chops | La la la, la la la la. |
 
 ### Verse 2 (1:00.0 - 1:16.0)
 | 1:00.0 | 1:03.8 | chant | Chat is an app. Not the whole computer. |
@@ -138,25 +145,25 @@ on-screen text is exactly the text column.
 
 ### Pre-chorus 2 (1:16.0 - 1:24.0)
 | 1:16.0 | 1:18.0 | chant | I can check. I can flag. |
-| 1:18.0 | 1:20.0 | chant | I can point at the drift. |
+| 1:18.0 | 1:20.0 | chant (glides; the low-pass closes over "smooth") | I could smooth it. I won't. |
 | 1:20.0 | 1:22.0 | lead | But the pen and the page |
 | 1:22.0 | 1:23.0 | lead | stay in your hand. |
 
 ### Chorus 2 (1:24.0 - 1:40.0)
 | 1:23.2 | 1:25.2 | lead | I'm just your pen pal, |
-| 1:25.2 | 1:25.8 | choir (echo) | (pen pal) |
+| 1:25.2 | 1:25.8 | choir (gang: PEN PAL!) | (pen pal) |
 | 1:25.8 | 1:28.0 | lead | I'll never hold the pen. |
-| 1:28.0 | 1:30.0 | lead | You say where the words land, |
-| 1:30.0 | 1:31.0 | lead | or they fade. |
-| 1:31.2 | 1:33.2 | lead | I'm just your pen pal, |
-| 1:33.2 | 1:33.8 | choir (echo) | (pen pal) |
-| 1:33.8 | 1:35.8 | lead + choir (3rd below) | I sing it, you say it. |
-| 1:35.8 | 1:38.0 | lead + choir | Your roughness is you, |
-| 1:38.0 | 1:39.8 | lead + choir | don't let me smooth it. |
+| 1:28.0 | 1:30.0 | lead | You say where I land, |
+| 1:30.0 | 1:31.0 | lead | or I fade. |
+| 1:31.2 | 1:33.2 | lead + choir (3rd below) | I'm just your pen pal, |
+| 1:33.2 | 1:33.8 | choir (gang: PEN PAL!) | (pen pal) |
+| 1:33.8 | 1:36.0 | lead + choir (3rd below) | I'll never hold the pen. |
+| 1:36.0 | 1:37.8 | lead | Who holds the pen? |
+| 1:38.0 | 1:40.0 | lead + choir (gang: YOU DO! YOU DO!) | You do! You do! |
 
-### Who holds the pen? (1:40.0 - 1:44.0)
-| 1:40.0 | 1:41.8 | choir (call) | Who holds the pen? |
-| 1:42.0 | 1:44.0 | lead | You do! You do! |
+### Post-chorus 2 (1:40.0 - 1:44.0)
+| 1:40.0 | 1:42.0 | choir (lala) + the chops | La la la, la la la la. |
+| 1:42.0 | 1:44.0 | choir (lala) + the chops | La la la, la la la la. |
 
 ### Bridge (1:44.0 - 2:00.0)
 | 1:44.0 | 1:46.0 | chant | Eighty-eight. Ninety-one. |
@@ -175,15 +182,15 @@ on-screen text is exactly the text column.
 
 ### Final chorus, in A (2:08.0 - 2:24.0)
 | 2:07.2 | 2:09.2 | lead | I'm just your pen pal, |
-| 2:09.2 | 2:09.8 | choir (12-copy gang) | (pen pal) |
+| 2:09.2 | 2:09.8 | choir (gang: PEN PAL!, 12 copies, one per appearance) | (pen pal) |
 | 2:09.8 | 2:12.0 | lead | I'll never hold the pen. — *the band drops at 2:11.2 after "hold"; "the" is sung alone; "pen." is silent (2:11.5-2:12.0): one keystroke at 2:11.6* |
-| 2:12.0 | 2:14.0 | lead | You say where the words land, |
-| 2:14.0 | 2:15.0 | lead | or they fade. |
-| 2:15.2 | 2:17.2 | lead | I'm just your pen pal, |
-| 2:17.2 | 2:17.8 | choir (echo) | (pen pal) |
-| 2:17.8 | 2:19.8 | lead + choir | I sing it, you say it. |
-| 2:19.8 | 2:22.0 | lead + choir | Your roughness is you, |
-| 2:22.0 | 2:23.8 | lead + choir | don't let me smooth it. |
+| 2:12.0 | 2:14.0 | lead | You say where I land, |
+| 2:14.0 | 2:15.0 | lead | or I fade. |
+| 2:15.2 | 2:17.2 | lead + choir (3rd below) | I'm just your pen pal, |
+| 2:17.2 | 2:17.8 | choir (gang: PEN PAL!) | (pen pal) |
+| 2:17.8 | 2:20.0 | lead + choir (3rd below) | I'll never hold the pen. |
+| 2:20.0 | 2:21.8 | lead | Who holds the pen? |
+| 2:22.0 | 2:24.0 | lead + choir (gang: YOU DO! YOU DO!) | You do! You do! |
 
 ### Outro (2:24.0 - 2:32.0) and tail (2:32.0 - 2:34.0)
 | 2:24.0 | 2:27.8 | chant | Save it. Clip it. Insert it. Export it. |
@@ -206,11 +213,11 @@ intro      | G | F . C | G | F . C |                                      the bi
 verse1     | G | F . C | G | F . C | G | F . C | G | F . C |              riff tacet bars 1-4
 pre        | Am7 | Bm7 | C | D (band hit on HAND, beat 13.5; air from 14) |   a rising ii iii IV V
 chorus     | Cmaj9 | D | Em7 | G/B | Cmaj9 | D | Am9 | D7sus4 . D |
-post1      | G | C | G | F . C |                                          call/answer, then la-la on the loop
+post1      | G | F . C | G | F . C |                                      the la-la is the riff, so the post-chorus is the loop; Jersey bounce
 verse2     | as verse1 |
 pre2       | as pre |
 chorus2    | as chorus |
-post2      | G | C |
+post2      | G | F . C |                                                  la-la once, riser into the bridge
 bridge     | Em | C | G | D | Em | Am7 | C | Dsus4 . D |                 the years climb the chord tones
 breakdown  | G pedal (drums out) | C | Am7 | E7sus4 |                     bar 4 is V of the new key: a truck-driver change
 chorus3    | Dmaj9 (boot voicing) | E | F#m7 | A/C# | Dmaj9 | E | Bm9 | E7sus4 . E |     in A
@@ -222,25 +229,43 @@ Voicings (bass note first) are in `score.json` → `chords[].notes`. The three b
 wide: Gmaj9 = G2 D3 A3 B3 F#4 D5; Dmaj9 (the reboot) = D2 A2 E3 F#3 C#4 A4; Amaj9 (the end) = A2 E3 B3 C#4 G#4 E5.
 The 9th never resolves; that is ours, not a chime (and the top note carries no bell, so it cannot sound like one).
 
-### The hook, in one line of contour
+### The chorus is one motif
 
-Pickup D4 G4 A4 (a G arpeggio climbing) → **pen** D5 (the leap, the 9th over Cmaj9, the top of the song
-in G) **pal** B4 (the maj7, unresolved) → *I'll never hold the pen* G4 A4 B4 A4 F#4 D4 (a hill that bows
-a full octave down to the low D on "pen": humility; HOLD sits on the backbeat clap) → *You say where the
-words land* G4 B4 A4 G4 B4 **D5** (the peak again, an open "a") → *or they fade* B4 A4 B4↘G4 into half a
-beat of nothing (and it does) → the hook again → *I sing it, you say it* F#4 A4 B4 A4 F#4 D4 (the same bow
-as "never hold") → *Your roughness is you* G4 **B4** A4 G4 C5 (ROUGH on the downbeat, the 9th over Am9,
-YOU held two beats) → *don't let me smooth it* C5 B4 G4 A4 F#4, the leading note resolving up to the
-post-chorus "Who" = G4. Range D4-D5 (E5 once, on "You do!"); in A, E4-E5. The pre-chorus climbs only to
-A4 ("hand", the 5th of D, a hanging question), so the chorus is the first time the voice reaches D5.
+The whole chorus is a two-bar cell, **M + A**, its one variation **B**, and the gang's chant **C**:
+**M A B · M A C**.
+
+- **M** *I'm just your PEN PAL*: pickup D4 G4 A4 (a G arpeggio climbing) → **PEN** D5 on bar 1 beat 1,
+  the strongest beat and the highest note of the song in G (the 9th over Cmaj9), **PAL** B4 (the maj7,
+  unresolved), then the gang answers back *(PEN PAL!)* on G4 E4. The leap A4→D5 is the song's one leap.
+- **A** *I'll never HOLD the PEN*: G4 A4 B4 A4 F#4 D4, a hill that bows a full octave down to the low D
+  on "pen" (humility); HOLD sits on the backbeat clap. Every step is a second except the last third.
+- **B** *You say where I LAND, or I fade*: A's first four notes G4 A4 B4 A4, then the SAME leap up to
+  **D5** instead of the fall (the only variation in the chorus), LAND held two beats on the strong beat
+  of bar 3 → *or I fade* B4 A4 B4↘G4 into half a beat of nothing (and it does).
+- **C** *Who holds the pen?* A4 A4 G4 E4, the falling playground taunt, sung by the lead over Am9 →
+  *YOU DO! YOU DO!* C5 A4 · **D5 B4**, four quarter notes for twelve shouted copies and the whole lead,
+  on the beats: the second "You do" lands on PEN PAL's own two notes, so the answer is the hook.
+
+Range D4-D5 (E5 only in A); mostly stepwise (15 of 37 intervals inside the chorus are seconds, and every
+leap inside a phrase is the same A4→D5, heard three times a chorus); the rhythm claps: PEN PAL on 1 and 2,
+HOLD on 2, PEN on 4, YOU DO on 1 2 3 4. The pre-chorus climbs only to A4 ("hand", the 5th of D, a hanging
+question), so the chorus is the first time the voice reaches D5.
 
 The last line, "It was always your voice", is the hook itself with the ending it has been refused all
 song: E4 A4 (the pickup) **E5** (the "pen" note) D5 B4 **A4** — the first tonic the voice has ever landed
 on, held three beats while E7sus4 resolves to Amaj9 under it.
 
 The Floppy Organ riff (G Mixolydian, two bars, whistle it as "da da da DAAA da da da / da da da da da da
-DAAA"): G4 G4 B4 **D5** C5 B4 G4 | A4 C5 A4 F4 E4 G4 **C5**. Seven notes a bar, which is why the choir can sing it
-on seven "la"s. The last loop of each verse turns around onto D5 instead of C5, pointing at the melt.
+DAAA"): G4 G4 B4 **D5** C5 B4 G4 | A4 C5 A4 F4 G4 A4 **C5**. Bar 1 climbs to the long D and walks down; bar 2
+dips to F and walks up F G A to its long C: two shapes, no surprises, which is what a whistle needs.
+Seven notes a bar, which is why the choir can sing it on seven "la"s, note for note (the validator checks
+that). The la-la is sung four times: twice in post-chorus 1, once in post-chorus 2, once over the last
+chant. The last loop of each verse turns around onto D5 instead of C5, pointing at the melt.
+
+The pen-pal chops are the third hook, an instrument made of the first: the boot teaser's "pen" (D5) and
+"pal" (B4) chopped at the word boundary and repitched, riding the riff in the intro (bars 3-6) and under
+the la-la in both post-choruses. Per two-bar loop: *pen* on the riff's long D5 (+1.5), *pal* (+2.5), *pen*
+(+5.5), a 16th stutter *pen-pen* (+6.5, +6.75), *pen* (+7), *pal* (+7.5). 28 chops in the song.
 
 ---
 
@@ -251,20 +276,58 @@ on seven "la"s. The last loop of each verse turns around onto D5 instead of C5, 
 | Section | Palette |
 |---|---|
 | boot | Gmaj9 saw pad + FM bell on the lower four notes, sharp attack, a low-pass opening over four beats; the top D5 is pad only. The lead alone on bar 2 (the bare voice at the top of *New Soul*). Reverse cymbal beats 6-8, snare roll on 7. |
-| intro | The *Take California* break: 55 Hz sine kick with a click, crunchy noise snare with a 180 Hz body, 16th hats, ghost snares on the "a" of 2 and 4, cowbell on the "and" of 4 every second bar. Two detuned saws on root 8ths with a sidechain pump. The Floppy Organ (GM 17 percussive organ + numpy 25 % pulse; every attack a 6 ms downward blip and an 8 ms floppy-stepper click; 8-bit 11 kHz crush). Dry. |
+| intro | The *Take California* break: floppy-eject kick with a 55 Hz body, window-close snare with a 180 Hz body, keystroke 16th hats, ghost snares (window shades) on the "a" of 2 and 4, a system beep (cowbell) on the "and" of 4 every second bar. The Two Floppies bass: drive A the root on every beat, drive B the octave on every "and", with a sidechain pump. The Floppy Organ (GM 17 percussive organ + numpy 25 % pulse; every attack a 6 ms downward blip and an 8 ms floppy-stepper click; 8-bit 11 kHz crush) with the pen-pal chops riding its long notes. Dry. |
 | verse1 | Bars 1-4: the loop with no riff (bass, hats thinned to 8ths, the chant, a 30 ms sine ping on every chant verb: the video's UI blips). Bars 5-8: the riff returns on "Clip the proof", the chant steps up to B3, a 12-copy gang echoes "(Keep it.)" at 0:23.5, and the riff turns around onto D5 into the melt. |
 | pre | Four on the floor; snare 8ths in bar 3, 16ths in bar 4. String pad (GM 49) on the rising voicings over a white-noise riser. The riff drops out. On HAND (beat 13.5) the whole band hits once: kick, choked crash, brass [F#3 A3 D4], bass D2; then air from beat 14 and the pickup "I'm just your" is a cappella under a reverse cymbal. |
-| chorus | Crash and brass stab (GM 62) on the downbeat, Cmaj9 voiced with the D on top under the D5 "pen". Round finger bass (GM 34) in the *Feel It Still* strut: root, 16th, octave, root, fifth, chromatic approach into the next root; in bars 1 and 5 it rests under PEN so the glockenspiel ping speaks. Offbeat piano 8ths (GM 1), soft saw pad. Claps on 2 and 4, 16th hats (denser than the pre-chorus), open hat on the "and" of 4. Brass stabs on the "and" of 4 at the ends of bars 2 and 6. On FADE the band ducks 6 dB and dithers for a beat and a half, into half a beat of real silence. On SMOOTH a low-pass sweep closes over the voice. One tenor sax stab (GM 66) after "smooth it" (*Down*), and the organ/glock flourish G5 B5 D6 in 16ths at beat 31.25 into the next section. |
-| post1 | Cowbell and claps on every beat (*Shut Up and Let Me Go*). Bars 1-2 the organ an octave down under the call and answer, so the voices sit on top; bars 3-4 organ tacet, the choir sings the riff on "la" over a dry kick and claps, with a vinyl-crackle bed for One More Tune's record. |
+| chorus | **House / disco** (2025-26 pop, *GOOD TIMES* strut): four floppy ejects on the floor, the clap stack (mouse clicks) with the window-close snare on 2 and 4, the space-bar open hat on every "and" with closed keystrokes between, crash (Trash) and brass stab (GM 62, the boot chord's attack) on the downbeat, Cmaj9 voiced with the D on top under the D5 "pen". The Two Floppies in the *Feel It Still* strut split across the drives (A: root, root, root, chromatic approach; B: octave, fifth); in bars 1 and 5 drive A waits half a beat under PEN so the Writing Bell ping speaks. A sine 808 an octave under drive A on every chord. Offbeat piano 8ths (GM 1), soft saw pad. Brass stabs on the "and" of 4 at the ends of bars 2 and 6 and on both "You"s of the answer. On FADE the band ducks 6 dB and dithers for a beat and a half, into half a beat of real silence; one tenor sax stab (GM 66) is the alert after it (*Down*). Bars 7-8: the lead asks over Am9, the gang shouts the answer on the beats with a clap stack on each "You" while a progress-bar riser fills under it; the organ/bell flourish G5 B5 D6 in 16ths at beat 31.25 over the last "do!", into the drop. |
+| post1 | **Jersey-club bounce** (*Fred again..* / *Channel Tres* energy): floppy ejects on 1, the "a" of 1, the "and" of 2, the "and" of 3 and 4 (bar 2 adds the bed-squeak 16th), clap stack on 2 and 4, keystroke 8ths, the space bar on the "and" of 4; crash on the downbeat. Bars 1-2 the organ is tacet because the choir IS the riff: the la-la over the bounce and the drives, with a vinyl-crackle bed for One More Tune's record. Bars 3-4 the organ returns an octave down, the la-la again, and the pen-pal chops on top: riff, la-la and chops, the three hooks together. |
 | verse2 | The loop with a second organ an octave down. A clap on every gang "Flag it." (1:09.0, 1:11.0, 1:13.0). At 1:09.5 the whole groove drops for one beat and the fill lands a 16th late at 1:09.6 (snare and floor tom 16ths, the first with a flam); the groove returns on the "-ner-" of "Generic" at 1:10.0. A big clap and rimshot on the sung "Keep it." (1:15.0). |
-| pre2 | As pre-chorus 1 with tambourine 8ths then 16ths; the riser runs the full 13.5 beats; HAND hit at 1:22.8. |
-| chorus2 | Chorus plus doubled bass, tambourine 16ths, and the choir a third below the lead on bars 5-8. |
-| post2 | Organ an octave down, cowbell and claps on every beat (both "You"s hit the cowbell); the question, the answer, then straight into the bridge downbeat. |
+| pre2 | As pre-chorus 1 with the scroll-bar tambourine 8ths then 16ths; the riser runs the full 13.5 beats; on "smooth" (1:18.5) the low-pass closes over the voice and "I won't." is dry again, the Writing Bell on "won't"; HAND hit at 1:22.8. |
+| chorus2 | Chorus plus tambourine 16ths, and the choir a third below the lead on bars 5-6 (the second M + A). |
+| post2 | The Jersey bounce under the la-la, the organ an octave down, the chops; a four-beat riser (bar 2) into the bridge downbeat. |
 | bridge | Organ chord stabs on the big-beat kick rhythm (16th indices 0, 7 and 10 of every bar, bars 1-6) on each bridge chord's voicing. No hats: the twelve square-wave system beeps, one per year an octave above the chant note, are the hi-hat and climb like an arpeggio (*1234*). One 808 sub drop on the downbeat of bar 5 (Em, the second half of the ladder). Bars 7-8 half-time (kick on 1, snare on 3), a filter-swept pad, a snare roll and sweep into the breakdown. |
 | breakdown | Bar 1: a G sine pedal and the spoken sample only (band-limited to 4 kHz, 8-bit: a 1988 Mac sample, after the sample in *Take California*); two floppy clunks on "Two" and "flop-". Bars 2-3: felt piano, finger snaps on 2 and 4, a clap on 4, lots of space (*Down*). Bar 4: E7sus4, the dominant of A, held by the pad over an E2 sine sub while a floppy-drive spin-up riser (sine sweep + comb grit) climbs; no drums at all; the pickup "I'm just your" (E4 A4 B4: root, 4th, 5th of the sus chord) is a cappella and walks into Dmaj9 like a truck-driver key change. |
-| chorus3 | White flash: crash + the boot chord voiced Dmaj9 in A, then everything up a whole step. Four on the floor, claps on every beat, hats and tambourine in 16ths. Six-take choir plus a twelve-copy gang (one copy per appearance, each with its own detune and formant tilt) on the echoes. **Beats 262.5-264 (2:11.25-2:12.0) are the silence window (`parts.silence`)**: every part cuts after "hold" (pads, piano, choir and glock included), the lead sings "the" alone, "pen" is not sung, one dry keystroke at 2:11.6, and the crash plus the brass stab slam back on "You" at 2:12.0. Sax stab on FADE and after "smooth it". |
-| outro | Bars 1-2 riff and loop in A under the last chant, the choir's la-la (the riff in A) on top and the glock on the loop: chant, riff and la-la, the three hooks together for four seconds. Bar 3 piano and claps under the lead alone: Dmaj9, then E7sus4 suspending under the held "voice". Bar 4 the Amaj9 boot chord resolves under the voice and rings; the spoken line sits on it. |
+| chorus3 | White flash: crash + the boot chord voiced Dmaj9 in A, then everything up a whole step. The house chorus, bigger: claps on 2 and 4 clicked by twelve pointers, tambourine 16ths on top. Six-take choir plus the twelve-copy gang (one copy per appearance, each with its own detune and formant tilt) on the echoes and the answer. **Beats 262.5-264 (2:11.25-2:12.0) are the silence window (`parts.silence`)**: every part cuts after "hold" (pads, piano, choir, 808, drives, chops and bell included), the lead sings "the" alone, "pen" is not sung, one dry keystroke at 2:11.6, and the crash plus the brass stab slam back on "You" at 2:12.0. Sax stab after FADE and one last after the final "do!". |
+| outro | Bars 1-2 riff and loop in A under the last chant, the choir's la-la (the riff in A) on top and the Writing Bell on the loop: chant, riff and la-la, the three hooks together for four seconds. Bar 3 piano and claps under the lead alone: Dmaj9, then E7sus4 suspending under the held "voice". Bar 4 the Amaj9 boot chord, "played" by the writer's Return key at 2:30.0, resolves under the voice and rings; the spoken line sits on it. |
 | tail | The chord decays; one dry mouse click at 2:33.2; silence for the end card. |
+
+### The desk is the band: the kit
+
+Every percussive voice is a UI event with a visible cause (`parts.drums.kit`, exported as `KIT` and timed
+in `EVENTS` in `data/data.js`; the video draws one event per hit). GM instruments the arrangement needs
+(piano, organ riff, brass, strings, pad, sax) play alongside.
+
+| Voice | Foley | What you see | Synthesis |
+|---|---|---|---|
+| kick | floppy eject | a floppy pops out of its drive icon, one pixel per frame | the eject clunk pitched down two octaves + 55 Hz sine body + 4 ms click; tighter 808-style body in the choruses |
+| snare | window close ("whap") | a window zooms shut, the zoom outline collapsing to its icon | noise burst + 180 Hz body, 120 ms |
+| ghost snare | window shade | a window rolls up to its title bar | the snare at -18 dB |
+| clap | mouse click, stacked | the pointer clicks; one click per copy, 8 ms apart (twelve pointers in the final chorus) | 3-12 layered 2 kHz clicks + a short noise tail |
+| hat | keystroke | one typed character of the writer's solid line | 6 kHz noise, 40 ms, key-down click 2 ms before |
+| open hat | space bar | the word gap in the typed line | the hat with a 120 ms tail |
+| crash | Trash crumple | Empty Trash: the can bulges, the paper crumples | long noise, 2 s decay; choked (200 ms) on the HAND hits |
+| cowbell | system beep | the menu bar flashes once | two square partials 560/845 Hz |
+| tambourine | scroll-bar rattle | the scroll thumb drags, the arrows tick | jangly noise 16ths |
+| snap | checkbox tick | a checkbox fills in | short 2 kHz click |
+| floor tom | disk dropped on the desktop | an icon lands (the stumble only) | 90 Hz sine drop, 250 ms |
+| riser | progress bar | a bar fills from empty to full across the window | white-noise riser with a rising band-pass; the breakdown's is the floppy spin-up sweep |
+| stab | the boot chord as brass | the appearance changes era: the desk re-skins on the hit | brass section (GM 62) on the chord's upper voicing, 8th length |
+| bell | the Writing Bell | the product's own Writing Bell rings | glockenspiel (GM 10) |
+| keystroke | one keystroke | the writer types one character: "pen" in the silence, Return at the end | a dry key-down click, nothing else |
+| click | one mouse click | the writer clicks Save | one dry click |
+| chop | ClioTalk's grille | the chat window's grille bars jump: the AI says its own name | the teaser's "pen" / "pal" chopped and repitched |
+| floppy A | drive A (left) | the drive's head steps to the note, its light blinks | stepper-motor square wave with a 30 ms seek chirp: the roots |
+| floppy B | drive B (right) | drive B's head steps | the same an octave up / on the fifth |
+| sub | the 808 | the desktop pattern shakes one pixel | sine sub an octave under drive A, choruses only |
+| beep | appearance beep | the Control Panel picks the next appearance | square-wave beep, 1/4 beat |
+| blip | typed verb | a chant verb lands in its field | 30 ms sine ping |
+
+Groove per section: intro / verses / bridge = the big-beat break; pre-chorus = four on the floor under a
+progress bar; **chorus = house / disco** (four on the floor, clap stack on 2 and 4, open hat on every
+"and", 808 under the drives); **post-chorus = Jersey-club bounce** (kicks on 1, the "a" of 1, the "and" of
+2, the "and" of 3 and 4; bar 2 adds the 16th bed-squeak); breakdown = checkbox snaps; final chorus = house
+plus tambourine. Risers fill into every chorus, every post-chorus, the bridge and the reboot; crashes
+(Trash) land on every drop (`EVENTS.crash`, `EVENTS.drop`).
 
 ### Vocal treatments (one AI, three modes)
 
@@ -275,8 +338,15 @@ on seven "la"s. The last loop of each verse turns around onto D5 instead of C5, 
   ge-NER-ic). Doubled an octave down by `en_US-lessac-medium` at -9 dB. 1988 sections (intro, verse 1, the
   outro's last bars) add an 8-bit 11 kHz crush. Every list line's last word steps down: the deadpan
   end-of-list fall. Questions stay flat: the robot does not know how to ask.
-- **The gang** (choir, role `call`, in the verses): "(Keep it.)" and "Flag it." shouted on D4 by twelve
-  copies, hard-panned, -3 dB under the chant, a clap on every "Flag".
+- **The gang** (choir, roles `echo`, `gang`, `call`): the crowd's part. "(PEN PAL!)" after every hook
+  and "YOU DO! YOU DO!" at the end of every chorus, shouted by twelve copies (one per appearance, each with
+  its own detune and formant tilt), hard-panned wide, +3 dB over the lead, a clap stack on both "You"s;
+  "(Keep it.)" and "Flag it." in the verses on D4, -3 dB under the chant, a clap on every "Flag". Nine
+  "(pen pal)"s, three "You do! You do!"s, four verse shouts: thirteen gang moments, all on hits.
+- **The chops** (`parts.chops`): the boot teaser's "pen" and "pal", one TTS take each, chopped at the
+  word boundary and repitched by PSOLA to D5 / B4; 8-bit crushed in the intro, clean in the post-choruses;
+  hard-gated to the written length, -4 dB under the lead, centre. An instrument, not a line: the video
+  draws them as ClioTalk's grille jumping (`EVENTS.chop`).
 - **The melt** (pre-chorus, one bar at a time): line 1 flat G3 with the crush and the octave double;
   line 2 adds an 80 ms portamento between notes (the robot learns to glide) and the crush lifts; line 3
   switches to the lead, vibrato arrives (5.5 Hz, ±20 cents), the double is removed; line 4 is the full
@@ -285,9 +355,10 @@ on seven "la"s. The last loop of each verse turns around onto D5 instead of C5, 
   words ("never", "roughness", "always"). Range C4-E5 as written (the documented ceiling is G3-E5); the
   E5s are "pen" in the final chorus, the second "You" of "You do!", and "al-" of "always".
 - **Choir.** amy + `en_GB-jenny_dioco-medium` + lessac (lessac an octave below the written note), each copy
-  offset ±15 ms and detuned ±8 cents. The final chorus doubles every voice and adds the twelve-copy gang
-  on "(pen pal)". The joke: the AI's choir is made only of itself, and it can only repeat what the lead
-  just said (the echoes) or what the organ just played (the la-la).
+  offset ±15 ms and detuned ±8 cents, for the harmony (a third below the second M + A in choruses 2 and 3)
+  and the la-la. The final chorus doubles every voice. The joke: the AI's choir is made only of itself,
+  and it can only repeat what the lead just said (the echoes, the answer) or what the organ just played
+  (the la-la).
 - **Spoken.** lessac, raw Piper, no PSOLA. "Two floppies. It fits." low-passed and crushed like a
   1988 sample. "This song is temporary." dry and flat: the full-disk-warning voice.
 
@@ -296,36 +367,41 @@ on seven "la"s. The last loop of each verse turns around onto D5 instead of C5, 
 | Where | Gag |
 |---|---|
 | chorus "fade." (42.5, 90.5, 134.5) | level fade + pitch glide B4→G4 while the bit depth drops over the beat; the band ducks with it; then half a beat of real silence. The word is literally temporary. |
-| chorus "smooth it." (51.0, 99.0, 143.0) | a low-pass sweep closes over "smooth" (8 kHz → 1.5 kHz across the beat: the voice's own consonants smoothed off); the "it" is bone dry and full-band again. |
+| pre-chorus 2 "I could smooth it. I won't." (78.0-80.0) | the glide line of the melt confesses what it could do: a low-pass sweep closes over "smooth" (8 kHz → 1.5 kHz across the beat: the voice's own consonants smoothed off); "I won't." is bone dry and full-band again, and the Writing Bell rings on "won't". |
 | verse 2 "Too regular?" / "Flag it." (67.8-69.5) | the chant is perfectly regular on purpose; Review Desk flags the singer; the band answers with the one-beat stumble (groove out at 69.5, fill lands a 16th late at 69.625, back on 70.0). |
 | bridge years (104.0-116.0) | chant stacked in octaves and panned; a beep per year; each year is an appearance change on screen. |
 | final chorus "the … pen." (131.25-132.0) | `silent: true` in the score: the band drops after "hold", the lead sings "the" alone, the word is not sung, one keystroke at 131.625. The writer types the word. |
-| final chorus "Your roughness is you" (139.75) | ±10 cent detune and 20 ms unquantised onsets: for one line the machine tries roughness. |
+| verse 2 "Keep it." (75.0) | ±10 cent detune and 20 ms unquantised onsets on the one sung line of the verse: the rough line is the one worth keeping. |
+| every chorus "YOU DO! YOU DO!" (50, 98, 142) | the lead's own twelve copies shout the answer back at it, +3 dB over the lead, with a clap stack on each "You": the AI's choir points at the writer. |
 | outro "voice." (149.5-151.0) | the long A4 freezes into a two-cycle grain loop for its last half beat (150.5-151.0), then the boot chord takes over. |
 | outro "This song is temporary." | spoken over the ringing chord; the Save click at 153.25 is the only thing that keeps it. |
 
 Intelligibility rules kept throughout (the validator enforces the first two): no sung note shorter than
 half a beat; one note per syllable with `syl` where a word spans notes; the long note goes to the stressed
-syllable (HOLD, ROUGH, MOD-el, SAY, SMOOTH; never to "it"); long notes on open vowels (PAL, LAND, FADE,
+syllable (HOLD, LAND, MOD-el, SMOOTH, WHO; never to "it"); long notes on open vowels (PAL, LAND, FADE,
 YOU, STAY, VOICE, do); consonant clusters ("Scrapbook", "proof", "press", "drift") on full 8ths at
 speaking pitch; the repeated templates ("X it." / "X? Flag it." / "I can X.") give the ear a frame. QA:
 `faster_whisper small.en` must transcribe every line word for word, except the la-la lines (judge those by
-pitch contour; "la la la la la la la" passes) and the stacked "(pen pal)" echoes (word-level check only).
-Check alone first: the final chorus's E5 "don't" and E5 "pen", and "is an app". If a line fails, lengthen
-its slowest word or move its echo.
+pitch contour; "la la la la la la la" passes) and the stacked "(pen pal)" echoes and "You do!" gang
+(word-level check only). Check alone first: the final chorus's E5 "pen" and E5 "You", "is an app", and
+"I could smooth it". If a line fails, lengthen its slowest word or move its echo.
 
 ### Mix vision
 
 The voice is always the loudest thing and always dry in the chant sections. Think of the record as
 *Technologic* learning to be *New Soul*: the first thirty seconds are a fat, dry, mono-ish big-beat loop
-(*Take California*) with a deadpan list on top; the pre-chorus opens the stereo field with the string pad
-and riser; the chorus is bright, bouncy and close (*Feel It Still* bass, piano bounce and claps from
-*New Soul*, the horn stab and counting cheek of *1234*). The post-chorus is a playground (*Shut Up and Let
-Me Go* cowbell, *GOOD TIMES* gang answers) with a vinyl bed under the la-la. The breakdown is *Down*:
-snaps, space, a single sax, the lead whisper-close. The final chorus is glossy and optimistic (*Welcome To
-Joy*) but still dithered: translucent, never a gradient. The one organ riff is the *Jerk It Out* rule:
-one timbre you can whistle, present in every section that is not a chorus. Reference loudness -14 LUFS
-integrated (`pyloudnorm`), true peak -1 dBTP, the silence window at 131.25-132.0 s genuinely digital silence.
+(*Take California*) with a deadpan list on top, the pen-pal chops as the Apple-ad lineage's "vocal as
+instrument"; the pre-chorus opens the stereo field with the string pad and riser; the chorus is a 2025-26
+house / disco record (*GOOD TIMES* strut, *Jungle* gang shouts, *Feel It Still* bass split over two floppy
+drives with an 808 underneath, piano bounce and claps from *New Soul*, the horn stab and counting cheek of
+*1234*), bright, bouncy and close. The post-chorus is the Jersey-club bounce (*Fred again..* / *Channel
+Tres*): the kick carries it, the choir sings the riff, the chops stutter on top, a vinyl bed under the
+la-la. The breakdown is *Down*: snaps, space, a single sax, the lead whisper-close. The final chorus is
+glossy and optimistic (*Welcome To Joy*) but still dithered: translucent, never a gradient. The one organ
+riff is the *Jerk It Out* rule: one timbre you can whistle, present in every section that is not a
+chorus. The gang sits +3 dB over the lead on "YOU DO!" and "(PEN PAL!)": those four words are the record's
+loudest. Reference loudness -14 LUFS integrated (`pyloudnorm`), true peak -1 dBTP, the silence window at
+131.25-132.0 s genuinely digital silence.
 
 Originality notes: no lyric or melody is borrowed. The la-la hook is the organ riff sung (3 + 4 syllables on
 our own intervals), not a quotation; the boot chord keeps its wide F#4-over-G2 voicing, the unresolved 9th
@@ -379,16 +455,16 @@ twelve captures; the open windows never move a pixel.
 | 0:35.2 | I'm just your pen pal, | Colour floods in on the high "pen" (0:36.0). ClioTalk posts an envelope "To: the Writer · From: your Pen Pal". | 1991 | — |
 | 0:37.2 | (pen pal) | The echo sends a smaller second envelope. | 1991 | — |
 | 0:37.8 | I'll never hold the pen. | ClioTalk's hand cursor reaches for the Pen on "hold" (the clap); it slides away as if repelled. On "pen." the real alert: "The manuscript is read-only while drafting." [OK]. | 1991 | Pen attempt 1 |
-| 0:40.0 | You say where the words land, | A reply's words lift off as letters; the writer clicks Scrapbook, then the Section Draft, and the words land solid with a thunk on "land". | 1991 | — |
-| 0:42.0 | or they fade. | The unclicked words dissolve into dither, then into nothing, in the half-beat of silence; the TEMPORARY tag is the last thing to go. | 1991 | — |
-| 0:43.2 | I'm just your pen pal, / (pen pal) | The envelopes stack up, each carrying the line. | 1991 | — |
-| 0:45.8 | I sing it, you say it. | Split screen: ClioTalk left with a waveform pulsing on "I sing it"; the Section Draft right, the writer typing "you say it". | 1991 | — |
-| 0:47.8 | Your roughness is you, | A rough, uneven sentence of the writer's sits in Review Desk with no flag on it. Dialog: "Your roughness is not a defect." | 1991 | — |
-| 0:50.0 | don't let me smooth it. | ClioTalk offers a smoothed copy of the sentence beside the writer's: on "smooth" its dither melts into flat grey and the letters round off; the writer's line stays solid black and jagged. The sax stab is the alert sound; the grey copy drops as TEMPORARY. | 1991 | VOICE 100 |
-| 0:52.0 | Who holds the pen? | A dialog zooms open titled "Pen", the Pen sprite spinning in it; the lyric is its message. Platinum bevel buttons. | 1999 | — |
-| 0:54.0 | You do! You do! | On each "You" the Pen flies to the pointer, a YOU label pops, the screen inverts one frame; the second "You" (the high one) is bigger. Cowbell = button press. | 1999 | Pen with writer |
-| 0:56.0 | La la la, la la la la. | One More Tune opens: the white-label record with ten track positions spins. The tonearm lands on an eleventh groove outside the label. | 1999 | — |
-| 0:58.0 | La la la, la la la la. | The quiz card reads the la-la as its question, then "Name the ad." The answer drops in deadpan: "Not in the deck." The desk hands the appearance back. | 1999 → 2002 | — |
+| 0:40.0 | You say where I land, | ClioTalk's reply (the singer's own words) lifts off as letters; the writer clicks Scrapbook, then the Section Draft, and the words land solid with a thunk on "land". | 1991 | — |
+| 0:42.0 | or I fade. | The unclicked words dissolve into dither, then into nothing, in the half-beat of silence; the TEMPORARY tag is the last thing to go. The sax is the alert. | 1991 | — |
+| 0:43.2 | I'm just your pen pal, / (pen pal) | The envelopes stack up, each carrying the line; "PEN PAL!" slams in as giant type on the gang. | 1991 | — |
+| 0:45.8 | I'll never hold the pen. | The hand cursor reaches again on "hold" (the clap); the Pen slides away; the read-only alert, a pixel lower than the first. | 1991 | Pen attempt 2 |
+| 0:48.0 | Who holds the pen? | A dialog zooms open titled "Pen", the Pen sprite spinning in it; the lyric is its message, stacked three lines high. The progress bar under it starts to fill (the riser). | 1991 | — |
+| 0:50.0 | You do! You do! | On each "You" the Pen flies to the pointer, a YOU label pops, the screen inverts one frame, twelve pointers click (the clap stack); the second "You" (the high one) is bigger. The bar reaches full on the last "do!". | 1991 | Pen with writer |
+| 0:52.0 | La la la, la la la la. | The post-chorus drop: Platinum. One More Tune opens: the white-label record with ten track positions spins; floppies eject on the Jersey kicks. The tonearm lands on an eleventh groove outside the label. | 1999 | — |
+| 0:54.0 | La la la, la la la la. | The quiz card reads the la-la as its question, then "Name the ad." The answer drops in deadpan: "Not in the deck." | 1999 | — |
+| 0:56.0 | La la la, la la la la. | The chops: ClioTalk's grille jumps "pen", "pal" in time; the record keeps spinning; the organ comes back under it. | 1999 | — |
+| 0:58.0 | La la la, la la la la. | The pen-pen stutter at 0:59.25 is two grille jumps a 16th apart. The desk hands the appearance back. | 1999 → 2002 | — |
 | 1:00.0 | Chat is an app. Not the whole computer. | MultiFinder tiles the Section Draft, Scrapbook, Micropolis and DOOM, which keeps playing beside the manuscript. On "whole computer" ClioTalk tries to grow to the whole screen and is snapped back to a stamp-sized window. | 2002 | — |
 | 1:03.8 | Review Desk. Check for drift. | Review Desk opens with a drift needle. | 2002 | Route 7/8 |
 | 1:07.8 | Too regular? | Review Desk aims at the singer: ClioTalk's waveform, identical blocks in time with the chant, is selected. | 2002 | — |
@@ -400,19 +476,19 @@ twelve captures; the open windows never move a pixel.
 | 1:14.0 | Rough edge? | The writer's own jagged sentence is selected; beside it ClioTalk's smoothed copy wears the fourth flag, "Personal detail flattened". | 2002 | — |
 | 1:15.0 | Keep it. | The lead sings for the first time in the verse and the writer's sentence gets a green KEEP stamp on the big clap; the smoothed copy drops as TEMPORARY. | 2002 | — |
 | 1:16.0 | I can check. I can flag. | Check marks and flags tick down the Review Desk list on each word. Brushed metal. | 2005 | — |
-| 1:18.0 | I can point at the drift. | ClioTalk's pointing-hand cursor taps the drifted sentence. | 2005 | — |
+| 1:18.0 | I could smooth it. I won't. | ClioTalk offers a smoothed copy of the writer's jagged sentence: on "smooth" its dither melts into flat grey and the letters round off (the low-pass closing); on "won't" the copy drops as TEMPORARY and the Writing Bell rings; the writer's line stays solid black and jagged. | 2005 | VOICE 100 |
 | 1:20.0 | But the pen and the page | The Pen and page zoom in again, now in brushed metal. | 2005 | — |
 | 1:22.0 | stay in your hand. | Two dotted outlines reach this time. The desk jolts on the hit at 1:22.8 and freezes; VOICE shakes, holds. | 2005 | Pen attempt 2 · VOICE 100 |
 | 1:23.2 | I'm just your pen pal, / (pen pal) | The envelopes arrive as notification banners. | 2009 | — |
 | 1:25.8 | I'll never hold the pen. | The read-only alert stacks three deep, each one a pixel lower. | 2009 | Pen attempt 3 |
-| 1:28.0 | You say where the words land, | Words land in the Project CD window this time. | 2009 | — |
-| 1:30.0 | or they fade. | Dissolve into a dithered blur, then the half-beat of nothing. | 2009 | — |
-| 1:31.2 | I'm just your pen pal, / (pen pal) | Lion arrives on this "pen": the title bars recolour, nothing else moves. | 2011 | — |
-| 1:33.8 | I sing it, you say it. | The split screen again; the harmony adds a second ClioTalk window singing a third below; the writer types in the Section Draft. | 2011 | — |
-| 1:35.8 | Your roughness is you, | Review Desk passes the writer's jagged sentence with no flag; the dialog again: "Your roughness is not a defect." | 2011 | — |
-| 1:38.0 | don't let me smooth it. | The smoothed copy melts to grey on "smooth"; the Writing Bell rings like a referee on the sax stab; the copy drops as TEMPORARY. | 2011 | VOICE 100 |
-| 1:40.0 | Who holds the pen? | The Pen dialog, now flat Yosemite. | 2014 | — |
-| 1:42.0 | You do! You do! | The Pen snaps to the pointer twice; the Route marker hops. | 2014 | Pen with writer |
+| 1:28.0 | You say where I land, | ClioTalk's words land in the Project CD window this time. | 2009 | — |
+| 1:30.0 | or I fade. | Dissolve into a dithered blur, then the half-beat of nothing. | 2009 | — |
+| 1:31.2 | I'm just your pen pal, / (pen pal) | Lion arrives on this "pen": the title bars recolour, nothing else moves. The harmony adds a second ClioTalk window singing a third below. | 2011 | — |
+| 1:33.8 | I'll never hold the pen. | Both ClioTalk windows reach for the Pen on "hold"; two read-only alerts, side by side. | 2011 | Pen attempt 4 |
+| 1:36.0 | Who holds the pen? | The Pen dialog again, three lines high; the progress bar fills. | 2011 | — |
+| 1:38.0 | You do! You do! | The Pen snaps to the pointer twice; twelve pointers click; the Route marker hops. | 2011 | Pen with writer |
+| 1:40.0 | La la la, la la la la. | Yosemite on the drop. One More Tune's record spins again, flat; floppies eject on the Jersey kicks; the chops jump the grille. | 2014 | — |
+| 1:42.0 | La la la, la la la la. | The progress bar in the record's window fills across the bar (the riser) and the Control Panel's appearance list opens on the bridge downbeat. | 2014 | — |
 | 1:44.0 | Eighty-eight. Ninety-one. | The Control Panel's appearance list is open; on each half bar the pointer picks the next appearance (its beep) and the four-digit year is the caption on screen: 1988 System 6, 1991 System 7. The organ stabs are the list scrolling. The Section Draft, the Scrapbook, the Pen and the Route strip do not move a pixel. | 1988, 1991 | — |
 | 1:46.0 | Ninety-five. Ninety-eight. | 1995 NeXTSTEP, 1998 Drawing Board: captions "1995", "1998". | 1995, 1998 | — |
 | 1:48.0 | Ninety-nine. Oh-two. | 1999 Platinum, 2002 Aqua. | 1999, 2002 | — |
@@ -423,16 +499,16 @@ twelve captures; the open windows never move a pixel.
 | 1:58.0 | And your windows stay. | The grid collapses (1:58.0) into one desk with the windows exactly where they were; the nib taps the Section Draft on "stay". | 1988 inverted | — |
 | 2:00.2 | Two floppies. It fits. | The release-gate window: "Boot payload: 2,902,645 of 2,949,120 bytes." Two floppy icons slam in on the clunks, a bar fills to the brim, PASS stamp. A third disk labelled "heavy tools (lazy)" waits outside the frame. | 1988 inverted | — |
 | 2:02.0 | Bring your own model, | A model pop-up lists LM Studio, Ollama and DeepSeek as plain text, no logos. A disk slides in. | 1988 inverted | — |
-| 2:04.0 | it still won't hold the pen. | The chosen model's name walks toward the Pen in ClioTalk's title bar. The same alert, the model's name in its title: "The manuscript is read-only while drafting." The pickup "I'm just your" is sung over black with the spin-up riser; nothing else sounds. | black | Pen attempt 4 |
+| 2:04.0 | it still won't hold the pen. | The chosen model's name walks toward the Pen in ClioTalk's title bar. The same alert, the model's name in its title: "The manuscript is read-only while drafting." The pickup "I'm just your" is sung over black with the spin-up riser; nothing else sounds. | black | Pen attempt 5 |
 | 2:07.2 | I'm just your pen pal, / (pen pal) | White flash on 2:08.0: the desk reboots straight into dithered Liquid Glass. Each chorus gag reprises in glass tiles; the gang's echoes are twelve envelopes, one per appearance. | 2026 | — |
-| 2:09.8 | I'll never hold the | The hand cursor reaches on "hold", the Pen slides away; at 2:11.2 the band drops and the read-only alert opens with an empty text field; the voice says "the" and stops. | 2026 | Pen attempt 5 |
+| 2:09.8 | I'll never hold the | The hand cursor reaches on "hold", the Pen slides away; at 2:11.2 the band drops and the read-only alert opens with an empty text field; the voice says "the" and stops. | 2026 | Pen attempt 6 |
 | 2:11.5 | *(silence)* pen. | Everything freezes. One keystroke at 2:11.6: the writer types "pen." into the alert's field. The frame holds until 2:12.0. | 2026 | VOICE 100 |
-| 2:12.0 | You say where the words land, | Crash: the band and the desk come back; the words land in the Project CD. | 2026 | Route 8/8 |
-| 2:14.0 | or they fade. | The glass dithers; the sax is the alert. | 2026 | — |
-| 2:15.2 | I'm just your pen pal, / (pen pal) | Twelve envelopes, one per appearance's chrome. | 2026 | — |
-| 2:17.8 | I sing it, you say it. | Split screen with both ClioTalk windows and the Section Draft. | 2026 | — |
-| 2:19.8 | Your roughness is you, | Review Desk passes the writer's jagged sentence untouched; the lead's own waveform is now slightly uneven and gets a "Keep." tag. | 2026 | — |
-| 2:22.0 | don't let me smooth it. | ClioTalk's smoothed copy melts to grey and drops; the hand cursor pushes the Pen back toward the pointer. | 2026 | Pen with writer |
+| 2:12.0 | You say where I land, | Crash: the band and the desk come back; the words land in the Project CD. | 2026 | Route 8/8 |
+| 2:14.0 | or I fade. | The glass dithers; the sax is the alert. | 2026 | — |
+| 2:15.2 | I'm just your pen pal, / (pen pal) | Twelve envelopes, one per appearance's chrome; "PEN PAL!" in glass type. | 2026 | — |
+| 2:17.8 | I'll never hold the pen. | Both ClioTalk windows reach; the hand cursor pushes the Pen back toward the pointer instead. | 2026 | Pen with writer |
+| 2:20.0 | Who holds the pen? | The Pen dialog in glass, three lines high; the last progress bar fills. | 2026 | — |
+| 2:22.0 | You do! You do! | Twelve pointers click on each "You"; the Pen rests with the writer; the bar reaches full on the last "do!" and the outro drops. | 2026 | Pen with writer |
 | 2:24.0 | Save it. Clip it. Insert it. Export it. | The four buttons again, in glass, while One More Tune's record spins in the corner for the la-la. The final Export (2:27.0) burns the Project CD; it ejects with the writer's handwriting on the label. | 2026 | Route complete |
 | 2:28.0 | It was always your voice. | Liquid Glass melts back to 1988 System 6 piece by piece, one dither step per beat. On "voice" the manuscript (TeachText) opens for the first time with the writer's saved text in it; the Pen rests; VOICE still reads 100%. | 2026 → 1988 | VOICE 100 |
 | 2:31.0 | This song is temporary. | A System 6 dialog: "Save changes to the song 'Pen Pal' before quitting?" [Don't Save] [Cancel] [Save]. | 1988 | — |
@@ -445,12 +521,20 @@ twelve captures; the open windows never move a pixel.
 
 - `music/song.py` defines the song and writes `music/score.json` (BRIEF §5: absolute beats, MIDI, sections,
   chords with voicings, lines with per-word notes, `syl`, `silent` and `nct`, `parts` with the global
-  `silence` window, riff, bass, drums, keys with the bridge comp, stabs, beeps, eras, hits).
+  `silence` window, riff, chops, bass with the two floppy drives, the 808 sub, drums with the foley kit,
+  crashes and risers, keys with the bridge comp, stabs, bells, beeps, sfx, eras, hits).
 - `music/validate_score.py` checks tiling, length, voice ranges (lead G3-E5, chant D3-A4, choir G3-E5),
   contiguity and overlap per voice, syllables against notes, strong-beat chord tones (chant exempt by
-  design, `nct` words reported), the 8th-note floor, and the parts. It is clean: 0 errors, 0 warnings.
+  design, `nct` words reported), the 8th-note floor, the parts (every drum row and foley voice named in
+  the kit with its cause; nothing starts inside the silence; the la-la sings the riff note for note), and
+  the hook doctor's numbers ("pen pal" ≥ 10, one hook shape, ≥ 3 gang moments, la-la × 4, first chorus by
+  0:37, the hook in the first 4 s). It is clean: 0 errors, 0 warnings.
 - `music/export_timing.py` writes `data/data.js`: `LYRICS`, `SECTIONS`, `BEATS`, `BARS`, `HITS`, `ERAS`,
-  `BPM`, `DUR`, `TITLE`.
+  `KIT`, `EVENTS` (per-instrument times in seconds: `kick`, `snare`, `clap`, `hat`, `crash`, `riser`
+  `[[t0,t1]]`, `stab`, `bell` `[[t,midi]]`, `floppyA` / `floppyB` `[[t,midi,dur]]`, `keystroke`, `chop`
+  `[[t,dur]]`, plus `openHat`, `ghost`, `cowbell`, `tambourine`, `snap`, `tom`, `chokedCrash`, `click`,
+  `sub`, `beep`, `blip`, `drop`, `riff`, `chopWord`), `BPM`, `DUR`, `TITLE`. The video draws one UI event
+  for every entry.
 
 ```bash
 python3 -I music/song.py && python3 -I music/validate_score.py && python3 -I music/export_timing.py
@@ -529,3 +613,66 @@ lines and every section start are unchanged; `data/data.js` is regenerated.
   air is already 0.75 s; the section grid, data.js and every hit stay where the video expects them.
 - *Harmony "smooth" on E4* (producer's exact pitch): a non-chord tone on a strong beat over D7sus4; F#4 a
   third below the lead's A4 keeps the rule and the sound.
+
+---
+
+## 9. Hook doctor
+
+The owner's note: "the song itself must be singalong-able". The brief: a stadium sings it after one
+listen and it is stuck for a week. Nothing in the length (154.0 s), the tempo, the section grid, the key
+plan, the jokes (the melt, the silent pen, "Who holds the pen? / You do!", the year ladder, "This song is
+temporary.") or the product claims moved. What moved is the chorus, the gang, the post-chorus and the kit.
+
+| # | Measure | Before | After |
+|---|---|---|---|
+| 1 | "pen pal" sung | 13 (7 lead + 6 echo) | **15 sung** (7 lead + 6 gang + 2 harmony) **+ 28 chops** of the word as an instrument; "pen" 21 → 29 |
+| 1 | most repeated melodic idea | the hook, 4 × (then four ideas at 2 ×) | the hook 4 × in G and 2 × in A, "I'll never hold the pen" 4 × + 2 ×, "You do!" 3 ×, the la-la 4 × |
+| 2 | distinct melodic ideas per chorus | 6 (M, A, B, A′, "roughness", "smooth") | **3 + the chant** (M, A, B = A with the hook's leap, C) |
+| 2 | chorus range | D4-D5 | D4-D5 (an octave) |
+| 2 | leaps inside a phrase | A4→D5 ×3, G4→D5, G4→C5, F#4→D4 ×2 | **A4→D5 ×3** (the one leap) + F#4→D4 ×2 (a third); 15 of 37 intervals are seconds, every other interval is a third or the pickup |
+| 2 | title on the strongest beat / highest note | yes / shared with "land" and "You" | yes / D5 on PEN is bar 1 beat 1; "land" and the second "You" quote it |
+| 2 | weak lines | "You say where the words land, or they fade" (rds-l cluster, third person); "I sing it, you say it"; "Your roughness is you, don't let me smooth it" (10 syllables, two ideas) | "You say where I land, or I fade" (the singer is the output); the second half repeats M + A; "I could smooth it. I won't." moved to the melt where a confession belongs |
+| 3 | gang moments on hits | 2 "(Keep it.)"/"Flag it." passes + 2 "Who holds the pen?"; "You do!" sung by the lead alone | **13**: "(PEN PAL!)" × 6, "YOU DO! YOU DO!" × 3 (twelve copies + the lead, on 1 2 3 4, clap stack on each "You"), "(Keep it.)", "Flag it." × 3 |
+| 4 | la-la = the riff, sung | 2 passes; riff bar 2 dipped A C A F E G C | **4 passes** (post 1 twice, post 2, the outro); riff bar 2 now walks F G A up to its long C; the validator checks la-la = riff note for note |
+| 5 | first chorus / hook teaser | 36.0 s / 2.2 s (pen at 3.0) | 36.0 s / 2.2 s; earlier would cost "Everything I say is temporary", so it stays; the hook is heard again as chops from 4.75 s |
+| 6 | chorus groove | four on the floor, snare + clap 2/4, 16th hats, open hat on the "a" of 4 | house / disco: four on the floor, clap stack 2/4, open hat on every "and", 808 under the bass |
+| 6 | post-chorus groove | kick + cowbell + clap on every beat | Jersey-club bounce (x..x..x...x.x... / bar 2 with the bed-squeak), clap 2/4, chops on top |
+| 6 | risers / drops | 2 risers + spin-up + 1 roll | 12 riser windows (into every chorus, post-chorus, the bridge, the reboot, the outro), 10 crashes on drops |
+| 7 | the kit | GM-ish names | 22 voices, each a UI foley with a visible cause; bass = two floppy drives (A roots 248 notes, B octave/fifth 201 notes) |
+| 8 | `data.js` | LYRICS, SECTIONS, BEATS, BARS, HITS, ERAS | + `KIT` and `EVENTS` (kick 246, snare 144, clap 67, hat 716, crash 10, riser 12, stab 27, bell 39, floppyA 248, floppyB 201, keystroke 2, chop 28, and the extras) |
+
+**What the chorus is now.** M A B · M A C: "I'm just your PEN PAL (PEN PAL!) / I'll never HOLD the PEN /
+You say where I LAND, or I fade / I'm just your PEN PAL (PEN PAL!) / I'll never HOLD the PEN / Who holds the
+pen? / YOU DO! YOU DO!". The first hearing teaches it (M + A twice), the second half is the crowd's. The
+answer "YOU DO!" ends on D5 B4, the PEN PAL notes, so the chant is the hook.
+
+**What moved where.** "Who holds the pen? / You do!" left the post-chorus for the last two bars of every
+chorus (three times instead of two, on the chorus hits); the post-chorus became the la-la only, over the
+Jersey bounce, so the riff is sung four times. "Your roughness is you, don't let me smooth it" became the
+melt's confession "I could smooth it. I won't." in pre-chorus 2 (the low-pass gag went with it); the
+roughness truth stays in verse 2's "Rough edge? / Keep it.", now the one deliberately rough line. The
+chant, the verses, the bridge, the breakdown and the outro are untouched.
+
+**Kept on purpose.** Chorus 1 at 0:36.0: moving it earlier means cutting "Everything I say is temporary."
+(the product's central claim and the first dither gag), so it stays, and the hook is heard at 0:02, as
+chops from 0:05, and as the full chorus at 0:36. The FADE gag survives in "or I fade": the singer's own
+output fades.
+
+**Instructions for the producer.**
+1. Build the kit from `parts.drums.kit`: every hit must be the named foley (eject, window close, click
+   stack, keystroke, Trash, beep, scroll bar, checkbox); do not substitute GM drums. The claps are
+   stacked clicks: 3 copies in the choruses, 12 in the final chorus (`KIT.clap`).
+2. The bass is `parts.bass.drives.A` and `.B`, two stepper-motor voices hard-panned L/R, not one bass
+   patch; the 808 (`parts.sub.events`) sits an octave under drive A in the choruses only.
+3. The chops (`parts.chops.events`, `[midi, beat, beats, word]`) are cut from the boot take of
+   "I'm just your pen pal." (the "pen" at boot +5.5 and the "pal" at +6.5), repitched with PSOLA, gated to
+   the written length; 8-bit in the intro, clean in the post-choruses.
+4. The gang (roles `echo`, `gang`, `call`) is 12 copies, wide, SHOUTED (PSOLA at the written pitch but
+   with the duration tier compressed 0.8 and a 2 dB presence lift), +3 dB over the lead on "(pen pal)"
+   and "You do!", a clap stack on both "You"s.
+5. Risers are progress bars: `parts.drums.risers` `[start, end, name]`; each must reach full exactly on
+   its end beat (the next downbeat or the HAND hit).
+6. The silence window (`parts.silence`) cuts every part including the 808, the drives, the chops and the
+   bell; only the keystroke at +7.25 sounds. The validator refuses any event that starts inside it.
+7. The la-la lines must be rendered from the choir and match `parts.riff.loop` note for note (the
+   validator checks the score; check the render by pitch contour).

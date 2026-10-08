@@ -308,7 +308,8 @@ function dline(x0, y0, x1, y1, c, on = 1, off = 1) { // dotted / dashed Bresenha
   }
 }
 function path(pts, c, w = 1) { for (let i = 1; i < pts.length; i++) line(pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1], c, w); }
-// spans: per-row left insets of a shape inside its w x h box (cached); used by every filled shape below
+// spans: per-row left insets of a shape inside its w x h box (cached); used by every filled shape below.
+// Internal: ovalSpans, rrSpans, spanFill, spanFrame, spanGrad, spanPat are not for chapters (use oval, rrect, ...).
 const _spanCache = new Map();
 function ovalSpans(w, h) {
   const key = 'o' + w + 'x' + h; let s = _spanCache.get(key);
@@ -349,7 +350,8 @@ function spanPat(x, y, w, s, style) { ctx.fillStyle = style; x = R(x); y = R(y);
 const rrectVeil = (x, y, w, h, r, c, k) => { if (k > 0) spanPat(x, y, R(w), rrSpans(R(w), R(h), r), k >= 1 ? c : bayerPat(k, c, null)); };
 function poly(pts, c) { // scanline polygon fill
   ctx.fillStyle = c;
-  const ys = pts.map(p => p[1]), y0 = Math.ceil(Math.min(...ys) - .5), y1 = Math.floor(Math.max(...ys) - .5);
+  const ys = pts.map(p => p[1]), ch = ctx.canvas.height, y0 = Math.max(-1, Math.ceil(Math.min(...ys) - .5)), y1 = Math.min(ch, Math.floor(Math.max(...ys) - .5));
+  if (!isFinite(y0) || !isFinite(y1)) return;
   for (let y = y0; y <= y1; y++) {
     const yc = y + .5, xs = [];
     for (let i = 0; i < pts.length; i++) {
@@ -357,7 +359,7 @@ function poly(pts, c) { // scanline polygon fill
       if ((ay <= yc && by > yc) || (by <= yc && ay > yc)) xs.push(ax + (yc - ay) / (by - ay) * (bx - ax));
     }
     xs.sort((a, b) => a - b);
-    for (let i = 0; i + 1 < xs.length; i += 2) { const a = R(xs[i]), b = R(xs[i + 1]); if (b > a) ctx.fillRect(a, y, b - a, 1); }
+    for (let i = 0; i + 1 < xs.length; i += 2) { const a = Math.max(-2, R(xs[i])), b = Math.min(ctx.canvas.width + 2, R(xs[i + 1])); if (b > a) ctx.fillRect(a, y, b - a, 1); }
   }
 }
 const tri = (x0, y0, x1, y1, x2, y2, c) => poly([[x0, y0], [x1, y1], [x2, y2]], c);
@@ -381,27 +383,30 @@ function clipRect(x, y, w, h, fn) { ctx.save(); ctx.beginPath(); ctx.rect(R(x), 
 // =====================================================================================================
 const SANS = '"Inter", "Helvetica Neue", "Liberation Sans", Arial, sans-serif';
 const FONTS = {
-  chicago: { css: '16px Chicago12', thr: 128, lh: 16 },                 // Chicago 12: menus, titles, buttons (1988-1997)
-  chicagoFLF: { css: '13px ChicagoFLF', thr: 120, lh: 16 },
-  geneva: { css: '16px Geneva9', thr: 128, lh: 12 },                    // Geneva 9: small UI text
-  monaco: { css: '16px Monaco9', thr: 128, lh: 12 },                    // Monaco 9
+  // ascii: the pixel faces have no accented letters, so text() and tw() fold 'Naïm' to 'Naim' for them
+  chicago: { css: '16px Chicago12', thr: 128, lh: 16, ascii: true },    // Chicago 12: menus, titles, buttons (1988-1997)
+  chicagoFLF: { css: '13px ChicagoFLF', thr: 120, lh: 16, ascii: true },
+  geneva: { css: '16px Geneva9', thr: 128, lh: 12, ascii: true },       // Geneva 9: small UI text
+  monaco: { css: '16px Monaco9', thr: 128, lh: 12, ascii: true },       // Monaco 9
   charcoal: { css: '600 14px Charcoal8', thr: 118, lh: 16 },             // Charcoal-ish condensed face (Platinum)
   helv: { css: '12px "Liberation Sans", Helvetica, Arial, sans-serif', thr: 100, lh: 15 },   // NeXTSTEP / Yosemite Helvetica
   helvB: { css: 'bold 12px "Liberation Sans", Helvetica, Arial, sans-serif', thr: 110, lh: 15 },
   helv11: { css: '11px "Liberation Sans", Helvetica, Arial, sans-serif', thr: 96, lh: 14 },
   helvB11: { css: 'bold 11px "Liberation Sans", Helvetica, Arial, sans-serif', thr: 110, lh: 14 },
-  lucida: { css: '11px "DejaVu Sans", "Lucida Grande", Verdana, sans-serif', thr: 100, lh: 14 },  // Aqua-era Lucida Grande
-  lucidaB: { css: 'bold 11px "DejaVu Sans", "Lucida Grande", Verdana, sans-serif', thr: 110, lh: 14 },
-  lucida10: { css: '10px "DejaVu Sans", "Lucida Grande", Verdana, sans-serif', thr: 96, lh: 13 },
+  lucida: { css: '11px "DejaVu Sans", "Lucida Grande", Verdana, sans-serif', thr: 76, lh: 14 },  // Aqua-era Lucida Grande
+  lucidaB: { css: 'bold 11px "DejaVu Sans", "Lucida Grande", Verdana, sans-serif', thr: 96, lh: 14 },
+  lucida10: { css: '10px "DejaVu Sans", "Lucida Grande", Verdana, sans-serif', thr: 96, lh: 13 },     // tiny captions only: its i dot fuses with the stem
   sf: { css: '11px ' + SANS, thr: 96, lh: 14 },                         // San Francisco-ish (Inter)
   sfB: { css: '600 11px ' + SANS, thr: 105, lh: 14 },
   sf12: { css: '12px ' + SANS, thr: 100, lh: 15 },
   sfB12: { css: '600 12px ' + SANS, thr: 108, lh: 15 },
-  serif: { css: '13px "Liberation Serif", "DejaVu Serif", Georgia, serif', thr: 90, lh: 16 },   // manuscript body
-  serifB: { css: 'bold 13px "Liberation Serif", "DejaVu Serif", Georgia, serif', thr: 128, lh: 16 },
-  serif14: { css: '14px "Liberation Serif", "DejaVu Serif", Georgia, serif', thr: 100, lh: 17 },
+  // serif faces have hairline strokes: a low threshold keeps the T crossbar, the r's arm and the m's stems
+  serif: { css: '13px "Liberation Serif", "DejaVu Serif", Georgia, serif', thr: 72, lh: 16 },   // manuscript body
+  serifB: { css: 'bold 13px "Liberation Serif", "DejaVu Serif", Georgia, serif', thr: 88, lh: 16 },
+  serif14: { css: '14px "Liberation Serif", "DejaVu Serif", Georgia, serif', thr: 80, lh: 17 },
+  serifB14: { css: 'bold 14px "Liberation Serif", "DejaVu Serif", Georgia, serif', thr: 92, lh: 18 },
   // display sizes (for lyrics and titles that must read at a glance)
-  chicagoBig: { css: '26px ChicagoFLF', thr: 128, lh: 30 },
+  chicagoBig: { css: '26px ChicagoFLF', thr: 128, lh: 30, ascii: true },
   helvBig: { css: 'bold 22px "Liberation Sans", Helvetica, Arial, sans-serif', thr: 120, lh: 26 },
   lucidaBig: { css: 'bold 20px "DejaVu Sans", "Lucida Grande", Verdana, sans-serif', thr: 120, lh: 24 },
   sfBig: { css: '700 22px ' + SANS, thr: 120, lh: 26 },
@@ -423,7 +428,7 @@ function _raster(str, key, color) {
   c = document.createElement('canvas'); c.width = w; c.height = h;
   const g = c.getContext('2d', { willReadFrequently: true });
   g.font = f.css; g.textBaseline = 'alphabetic'; g.fillStyle = '#000';
-  g.fillText(str, 1, f.base);
+  g.fillText(str, 1, f.base);            // the one sanctioned fillText: offscreen, then thresholded to hard pixels below
   const d = g.getImageData(0, 0, w, h), [r, gg, b] = rgb(color), px = d.data, thr = f.thr;
   for (let i = 0; i < px.length; i += 4) { const on = px[i + 3] >= thr; px[i] = r; px[i + 1] = gg; px[i + 2] = b; px[i + 3] = on ? 255 : 0; }
   g.putImageData(d, 0, 0);
@@ -441,8 +446,10 @@ function _initFont(key) { // find the cap top / cap height / width of a space fo
 }
 function initFonts() { for (const k in FONTS) _initFont(k); _tc.clear(); }
 const _twc = new Map();
+const _asciiFold = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 function tw(str, font = 'ui', scale = 1) { // width in pixels
-  const key = fontKey(font), ck = key + '\u0001' + str;
+  const key = fontKey(font); if (FONTS[key].ascii) str = _asciiFold(String(str));
+  const ck = key + '\u0001' + str;
   let w = _twc.get(ck);
   if (w == null) { _mc.font = FONTS[key].css; w = R(_mc.measureText(String(str)).width); if (_twc.size > 20000) _twc.clear(); _twc.set(ck, w); }
   return w * scale;
@@ -452,7 +459,9 @@ const lineH = (font = 'ui', scale = 1) => (FONTS[fontKey(font)].lh || R(FONTS[fo
 function text(str, x, y, o = {}) {
   str = String(str);
   if (!str) return 0;
-  const key = fontKey(o.font || 'ui'), f = FONTS[key], s = o.scale || 1, color = o.color || P.text || C.black, w = tw(str, key, s);
+  const key = fontKey(o.font || 'ui'), f = FONTS[key], s = o.scale || 1, color = o.color || P.text || C.black;
+  if (f.ascii) str = _asciiFold(str);
+  const w = tw(str, key, s);
   const x0 = R(o.align === 'center' ? x - w / 2 : o.align === 'right' ? x - w : x) - s, y0 = R(y) - f.top * s;
   const put = (col, dx, dy) => { const c = _raster(str, key, col); ctx.drawImage(c, x0 + dx, y0 + dy, c.width * s, c.height * s); };
   if (o.outline) { const oc = o.outline, n = o.outlineW || s; for (const [dx, dy] of [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]) put(oc, dx * n, dy * n); }
@@ -478,6 +487,14 @@ function wrap(str, maxW, font = 'body', scale = 1) {
   }
   if (_wrapc.size > 4000) _wrapc.clear();
   _wrapc.set(ck, rows); return rows;
+}
+// fitText(str, maxW, font, scale) -> str, shortened with an ellipsis until it fits maxW (cached through tw)
+function fitText(str, maxW, font = 'body', scale = 1) {
+  str = String(str);
+  if (tw(str, font, scale) <= maxW) return str;
+  let s = str;
+  while (s.length > 1 && tw(s + '…', font, scale) > maxW) s = s.slice(0, -1);
+  return s.replace(/[\s,.;:·-]+$/, '') + '…';
 }
 // para(str, x, y, w, {font, color, scale, lh, align, maxRows}) -> height used
 function para(str, x, y, w, o = {}) {
@@ -513,6 +530,11 @@ function kara(ln, x, y, o = {}) {
     if (rw && rw + ww > (o.maxW || 1e9)) { rows.push([]); rw = 0; }
     rows[rows.length - 1].push({ w, ww, x: rw }); rw += ww + sp;
   }
+  if (o.plate) { // a backing plate so the line reads on any desktop (o.plate = true | colour)
+    const widths = rows.map(r => r.length ? r[r.length - 1].x + r[r.length - 1].ww : 0), pw = Math.max(...widths) + 16 * s / (s > 1 ? 2 : 1), ph = (rows.length - 1) * lh + cap + 12 * (s > 1 ? 1.5 : 1);
+    const px = R(o.align === 'center' ? x - pw / 2 : o.align === 'right' ? x - pw + 8 : x - 8), py = R(y - 6 * (s > 1 ? 1.5 : 1));
+    lyricPlate(px, py, R(pw), R(ph), typeof o.plate === 'string' ? o.plate : null);
+  }
   let maxW = 0, caretAt = null; const out = [];
   rows.forEach((row, ri) => {
     const last = row[row.length - 1], roww = last ? last.x + last.ww : 0; maxW = Math.max(maxW, roww);
@@ -546,6 +568,16 @@ function kara(ln, x, y, o = {}) {
   if (mode === 'type' && o.caret !== false && caretAt && ((t >= ln.start && t < ln.end + .05) || caretOn(t)))
     rect(caretAt[0], caretAt[1] - s, s, cap + 2 * s, color);
   return { w: maxW, h: (rows.length - 1) * lh + cap, words: out, rows: rows.length };
+}
+
+// lyricPlate(x, y, w, h, fill): the backing card behind a lyric line, in the current era's manner
+function lyricPlate(x, y, w, h, fill) {
+  const fam = typeof E !== 'undefined' ? E.chrome : 'mac1', f = fill || P.win;
+  if (fam === 'mac1' || fam === 'mac7') { rect(x + 2, y + 2, w, h, C.black); rect(x, y, w, h, C.black); rect(x + 1, y + 1, w - 2, h - 2, f); return; }
+  if (fam === 'next') { rect(x, y, w, h, C.black); rect(x + 1, y + 1, w - 2, h - 2, f); return; }
+  if (fam === 'plat' || fam === 'board') { rect(x + 1, y + 1, w, h, P.dark); rect(x, y, w, h, P.frame); rect(x + 1, y + 1, w - 2, h - 2, f); hline(x + 1, y + 1, w - 2, P.hi); return; }
+  const r = fam === 'glass' ? 12 : fam === 'sur' ? 9 : 6;
+  winShadow(x, y, w, h, r, 2, .2); rrect(x, y, w, h, r, fam === 'glass' ? '#ffffff' : P.rule); rrect(x + 1, y + 1, w - 2, h - 2, r - 1, f);
 }
 
 // =====================================================================================================
@@ -617,7 +649,7 @@ function _iconFile(set, name, size, mask) {
 function _processIcon(img, mask, size, oneBit) {
   const c = document.createElement('canvas'); c.width = c.height = size;
   const g = c.getContext('2d', { willReadFrequently: true });
-  g.imageSmoothingEnabled = true;
+  g.imageSmoothingEnabled = false;      // the sources are drawn at their native size (PNGs are 16/32 px, SVGs rasterise at size)
   g.drawImage(img, 0, 0, size, size);
   const d = g.getImageData(0, 0, size, size), px = d.data;
   let md = null;
@@ -760,7 +792,9 @@ function applyFX(t) {
     }
   }
   if (f.tilt || (f.zoom && f.zoom !== 1) || f.shake || f.dx || f.dy) {
-    const s = snap(3), sh = f.shake || 0, z = f.zoom || 1, [zx, zy] = f.zoomAt || [W / 2, H / 2];
+    // zoom and tilt resample the finished frame nearest-neighbour: still hard pixels, though a fractional zoom or a
+    // rotation gives uneven pixel widths. That is the sanctioned exception to the integer-grid rule (TOOLKIT rule 2).
+    const s = snap(3), sh = f.shake || 0, z = f.zoom || 1, [zx, zy] = (f.zoomAt || [W / 2, H / 2]).map(R);
     rect(0, 0, W, H, f.bg || C.black);
     ctx.save();
     ctx.translate(R(zx + (f.dx || 0) + (hash(fr) - .5) * 2 * sh), R(zy + (f.dy || 0) + (hash(fr + 99) - .5) * 2 * sh));

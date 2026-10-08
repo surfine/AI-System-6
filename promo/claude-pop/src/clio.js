@@ -14,7 +14,7 @@
 
 const CLIO_W = 32, CLIO_H = 28, CLIO_BX = 5, CLIO_BY = 3, CLIO_BW = 22, CLIO_BH = 17;
 
-// how Clio dresses in each era: body fill (stops or colour), outline, eye/mouth ink, highlight
+// internal: how Clio dresses in each era: body fill (stops or colour), outline, eye/mouth ink, highlight
 function clioLook(id) {
   const e = ERA[id] || E;
   switch (e.chrome) {
@@ -59,28 +59,35 @@ function _clioBase(eraId, expr, mo, sh, lx, ly, blink) {
       if (kind === 'closed' || blink) { hline(x, ey + 2, 2, ink); return; }
       if (kind === 'happy') { rect(x - 1, ey + 2, 1, 1, ink); rect(x, ey + 1, 2, 1, ink); rect(x + 2, ey + 2, 1, 1, ink); return; }
       if (kind === 'wide') { rect(x - 1, ey, 3, 4, ink); rect(x - 1, ey, 1, 1, L.fill || '#ffffff'); return; }
-      if (kind === 'flat') { hline(x - 1, ey + 2, 3, ink); hline(x - 1, ey + 1, 3, L.fill ? mix(L.fill, ink, .35) : ink); return; }
+      if (kind === 'flat') { hline(x - 1, ey + 1, 4, ink); rect(x, ey + 2, 2, 1, ink); return; }   // a heavy solid lid over the pupil (reads in 1-bit)
       if (kind === 'wink') { rect(x - 1, ey + 1, 1, 1, ink); rect(x, ey + 2, 2, 1, ink); rect(x - 1, ey + 3, 1, 1, ink); return; }
       if (kind === 'up') { rect(x, ey - 1, 2, 2, ink); return; }
+      if (kind === 'side') { rect(x + 1, ey - 1, 2, 2, ink); return; }                             // a glance up and to the side
       rect(x, ey, 2, 3, ink);
     };
     const eyes = { happy: ['happy', 'happy'], sing: mo >= 3 ? ['happy', 'happy'] : ['dot', 'dot'], wink: ['dot', 'wink'], surprised: ['wide', 'wide'], deadpan: ['flat', 'flat'],
-      shrug: ['flat', 'up'], think: ['up', 'up'], sad: ['dot', 'dot'] }[expr] || ['dot', 'dot'];
+      shrug: ['flat', 'up'], think: ['side', 'side'], sad: ['dot', 'dot'] }[expr] || ['dot', 'dot'];
     eye(ex1, eyes[0]); eye(ex2, eyes[1]);
-    if (expr === 'sad') { rect(ex1 - 1, ey - 2, 2, 1, ink); rect(ex2 + 1, ey - 2, 2, 1, ink); }
+    if (expr === 'sad') { // brows raised at the inner ends, and a tear
+      rect(ex1 - 1, ey - 1, 1, 1, ink); rect(ex1, ey - 2, 1, 1, ink); rect(ex1 + 1, ey - 3, 2, 1, ink);
+      rect(ex2 + 2, ey - 1, 1, 1, ink); rect(ex2 + 1, ey - 2, 1, 1, ink); rect(ex2 - 1, ey - 3, 2, 1, ink);
+      const tear = (ERA[eraId] || E).depth <= 2 ? ink : '#3d9bff'; rect(ex1 - 1, ey + 4, 1, 2, tear); rect(ex1 - 2, ey + 5, 1, 1, tear);
+    }
     if (expr === 'shrug') { rect(ex1 - 1, ey - 2, 3, 1, ink); }
+    if (expr === 'think') { rect(ex2, ey - 3, 3, 1, ink); rect(bx + bw + 1, by + 1, 2, 2, ink); rect(bx + bw + 3, by - 2, 1, 1, ink); } // one raised brow, a thought dot
     if (L.cheek && (expr === 'happy' || expr === 'sing' || expr === 'wink')) { rect(bx + 3, by + 10, 2, 1, L.cheek); rect(bx + bw - 5, by + 10, 2, 1, L.cheek); }
     // mouth
     const mx = bx + 11 + lx, my = by + 11 + Math.max(0, ly);
     if (mo <= 0) {
-      if (expr === 'deadpan' || expr === 'think') hline(mx - 2, my + 1, expr === 'think' ? 2 : 4, ink);
+      if (expr === 'deadpan') hline(mx - 2, my + 1, 4, ink);
+      else if (expr === 'think') { hline(mx + 1, my + 1, 3, ink); rect(mx + 4, my, 1, 1, ink); }   // a pursed 'hmm' at the side
       else if (expr === 'sad' || expr === 'shrug') { hline(mx - 1, my, 3, ink); rect(mx - 2, my + 1, 1, 1, ink); rect(mx + 2, my + 1, 1, 1, ink); }
       else if (expr === 'surprised') { oval(mx - 1, my - 1, 3, 4, ink); }
       else { rect(mx - 3, my, 1, 1, ink); hline(mx - 2, my + 1, 5, ink); rect(mx + 3, my, 1, 1, ink); }
     } else {
       const mw = sh === 'E' ? 6 + (mo > 2 ? 1 : 0) : sh === 'O' ? 3 + (mo > 2 ? 1 : 0) : 4 + (mo > 1 ? 1 : 0), mh = sh === 'E' ? Math.max(1, mo - 1) + 1 : sh === 'O' ? mo + 1 : mo + 1;
       const x0 = mx - Math.floor(mw / 2), y0 = my - (sh === 'O' ? 1 : 0);
-      if (mh <= 2) rect(x0, y0, mw, mh, L.mouthIn);
+      if (mh <= 2) { rect(x0, y0, mw, 1, L.mouthIn); if (mh === 2) rect(x0 + 1, y0 + 1, mw - 2, 1, L.mouthIn); } // an open smile, not a slot
       else { oval(x0, y0, mw, mh, L.mouthIn); if (mh >= 4 && mw >= 4) hline(x0 + 1, y0 + mh - 2, mw - 2, L.ink === '#ffffff' ? '#ff8fa3' : E.depth === 1 && eraId === 'system6' ? '#ffffff' : '#e8657a'); }
       if (L.ink === '#ffffff' && mh >= 3) hline(x0 + 1, y0, mw - 2, '#ffffff');
     }
@@ -171,9 +178,9 @@ KKKYKKK
 .KYYYK.
 .KYKYK.
 KK...KK`, { K: '#000000', Y: '#ffd200' });
-// scaled-pixel Bresenham (Clio's arms stay chunky at any scale)
+// internal: scaled-pixel Bresenham (Clio's arms stay chunky at any scale)
 function sline(x0, y0, x1, y1, s, c) {
-  const u = s >= 4 ? s / 2 : s, g = s / u; // arms are drawn on a grid half as coarse as the body at big scales
+  const u = s >= 4 ? Math.floor(s / 2) : s, g = s / u; // arms are drawn on a grid half as coarse as the body at big scales
   x0 = R(x0 * g); y0 = R(y0 * g); x1 = R(x1 * g); y1 = R(y1 * g); ctx.fillStyle = c; s = u;
   const dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
   let err = dx - dy;
@@ -205,8 +212,22 @@ function singing(t = T, voice) {
   }
   return { open: clamp(open), shape: shape === 'A' ? 'A' : shape };
 }
-// clio(x, y, o): draw her. See the header for options.
+// clio(x, y, o): draw her. See the header for options. o.halo (true | colour): a 1px ring round her silhouette, so a
+// small Clio reads on a busy 1-bit desktop (best without a long reach: the ring is cut 6 units beyond her box).
+const _haloC = document.createElement('canvas'), _haloT = document.createElement('canvas');
 function clio(x, y, o = {}) {
+  if (o.halo) {
+    const s = Math.max(1, R(o.scale || 1)), pad = 6 * s, w = CLIO_W * s + 2 * pad, h = CLIO_H * s + 2 * pad;
+    const X = R(x - (o.center ? CLIO_W * s / 2 : 0)) - pad, Y = R(y - (o.center ? CLIO_H * s / 2 : 0)) - pad;
+    let res; _haloC.width = w; _haloC.height = h;
+    offscreen(w, h, () => { res = clio(pad, pad, { ...o, halo: null, center: false }); }, _haloC);
+    _haloT.width = w; _haloT.height = h; const g = _haloT.getContext('2d');
+    g.drawImage(_haloC, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = o.halo === true ? C.white : o.halo; g.fillRect(0, 0, w, h);
+    for (const [dx, dy] of [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]) ctx.drawImage(_haloT, X + dx, Y + dy);
+    ctx.drawImage(_haloC, X, Y);
+    const ox = X, oy = Y;
+    return { ...res, x: res.x + ox, y: res.y + oy, hand: [res.hand[0] + ox, res.hand[1] + oy], mouth: [res.mouth[0] + ox, res.mouth[1] + oy], eyes: [res.eyes[0] + ox, res.eyes[1] + oy] };
+  }
   const s = Math.max(1, R(o.scale || 1)), eraId = o.era || E.id, L = clioLook(eraId);
   let expr = o.expr || 'happy', m = o.mouth ?? 0, shape = 'A';
   if (m === 'sing') { const sg = singing(o.t ?? T, o.voice); m = sg.open; shape = sg.shape; if (!o.expr) expr = 'sing'; }
@@ -218,7 +239,7 @@ function clio(x, y, o = {}) {
   const bob = o.bob ? -R(pulse(tt, 1, 6) * o.bob) * s : 0;
   x = R(x); y = R(y) + bob;
   const base = _clioBase(eraId, expr, mo, shape, lx, ly, blink);
-  if (o.shadow) { const sw = (CLIO_BW - 4) * s; bayer(x + (CLIO_BX + 2) * s, y - bob + (CLIO_H - 2) * s, sw, 2 * s, .5, C.black, null); }
+  if (o.shadow) { const sw = (CLIO_BW + 2) * s, sh = Math.max(3, 3 * s), sx = x + (CLIO_BX - 1) * s, sy = y - bob + CLIO_H * s - R(sh / 2); ctx.fillStyle = bayerPat(.5, C.black, null); const sp = ovalSpans(sw, sh); for (let j = 0; j < sh; j++) ctx.fillRect(sx + sp[j], sy + j, sw - 2 * sp[j], 1); }
   const flip = !!o.flip;
   ctx.save();
   ctx.translate(x + (flip ? CLIO_W * s : 0), y); if (flip) ctx.scale(-1, 1);
@@ -230,7 +251,7 @@ function clio(x, y, o = {}) {
   const hx = flip ? x + (CLIO_W - hand[0]) * s : x + hand[0] * s, hy = y + hand[1] * s;
   return { x, y, w: CLIO_W * s, h: CLIO_H * s, hand: [hx, hy], mouth: [x + (CLIO_BX + 11) * s, y + (CLIO_BY + 12) * s], eyes: [x + (CLIO_BX + 11) * s, y + (CLIO_BY + 6) * s] };
 }
-// arms are drawn every frame at scale (rubber hose); returns the right hand in base coordinates
+// internal: arms are drawn every frame at scale (rubber hose); returns the right hand in base coordinates
 function clioArms(o, s, L, layer, sx, sy, flip) {
   const ink = L.edge === '#ffffff' ? '#8b95a3' : L.edge, bx = CLIO_BX, by = CLIO_BY, bw = CLIO_BW, tt = o.t ?? T;
   const pose = o.pose || (o.reach ? 'reach' : o.holding ? 'hold' : o.point ? 'point' : o.expr === 'shrug' ? 'shrug' : 'rest');
@@ -241,19 +262,22 @@ function clioArms(o, s, L, layer, sx, sy, flip) {
   else if (pose === 'wave') { const a = Math.sin(tt * 12) * 2; lh = [bx - 3, by + 14]; rh = [bx + bw + 4 + R(a), by + 1]; }
   else if (pose === 'point') { const d = o.point || 'right'; lh = [bx - 3, by + 14]; rh = d === 'up' ? [bx + bw + 2, by - 4] : d === 'down' ? [bx + bw + 2, by + 20] : d === 'left' ? [bx - 9, by + 9] : [bx + bw + 7, by + 9]; }
   else if (pose === 'reach' && o.reach) {
-    lh = [bx - 3, by + 14];
-    const tx = (o.reach[0] - sx) / s, ty = (o.reach[1] - sy) / s; rh = [flip ? CLIO_W - tx : tx, ty];
+    const tx = (o.reach[0] - sx) / s, ty = (o.reach[1] - sy) / s, bxT = flip ? CLIO_W - tx : tx;
+    if (bxT < bx + bw / 2) { lh = [bx + bw + 2, by + 14]; rh = [bxT, ty]; rsh[0] = bx - 1; lsh[0] = bx + bw; } // reach with the near arm
+    else { lh = [bx - 3, by + 14]; rh = [bxT, ty]; }
   }
   else if (pose === 'hold') { lh = [bx - 3, by + 14]; rh = [bx + bw + 5, by + 12]; }
   else { lh = [bx - 3, by + 14]; rh = [bx + bw + 2, by + 14]; }
   if (layer === 'back') return rh;
   sline(lsh[0], lsh[1], lh[0], lh[1], s, ink); sline(rsh[0], rsh[1], rh[0], rh[1], s, ink);
   // little round hands
-  for (const h of [lh, rh]) { ctx.fillStyle = ink; ctx.fillRect(R(h[0]) * s - (s > 1 ? s : 0), R(h[1]) * s - (s > 1 ? s : 0), s * (s > 1 ? 3 : 2), s * (s > 1 ? 3 : 2)); }
+  const u = s >= 4 ? Math.floor(s / 2) : s; // mitten hands on the arm grid: a little plus that reads as round
+  for (const h of [lh, rh]) { ctx.fillStyle = ink; const hx = R(h[0]) * s, hy = R(h[1]) * s; if (s >= 2) { ctx.fillRect(hx - u, hy, 3 * u, u); ctx.fillRect(hx, hy - u, u, 3 * u); } else ctx.fillRect(hx, hy, 2, 2); }
   if (pose === 'point' && (o.point || 'right') === 'right') ctx.fillRect((R(rh[0]) + 1) * s, R(rh[1]) * s, 2 * s, s);
   if (o.holding) {
     const one = (ERA[o.era || E.id] || E).depth <= 2, name = o.holding === 'pencil' && one ? 'it_pencil1' : 'it_' + o.holding, sp = SPR[name];
-    if (sp) { const ox = o.holding === 'pencil' ? -2 : -1, oy = o.holding === 'pencil' ? -7 : -sp.height + 2; ctx.drawImage(one && (o.holding === 'heart' || o.holding === 'star') ? tinted(sp, '#000000') : sp, (R(rh[0]) + ox) * s, (R(rh[1]) + oy) * s, sp.width * s, sp.height * s); }
+    // held things are drawn on the arm grid (u), so at big scales a pencil stays pencil-sized beside her
+    if (sp) { const ox = o.holding === 'pencil' ? -2 : -1, oy = o.holding === 'pencil' ? -7 : -sp.height + 2; ctx.drawImage(one && (o.holding === 'heart' || o.holding === 'star') ? tinted(sp, '#000000') : sp, R(rh[0]) * s + ox * u, R(rh[1]) * s + oy * u, sp.width * u, sp.height * u); }
   }
   return rh;
 }
