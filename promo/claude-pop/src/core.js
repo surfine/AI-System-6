@@ -228,6 +228,12 @@ function bayerPat(level, c1, c2 = null) {
   const n = clamp(R(level * 16), 0, 16);
   return _pattern('b' + n + c1 + c2, 4, 4, (d) => { for (let i = 0; i < 16; i++) _put(d, i * 4, BAYER4[i] < n ? c1 : c2); });
 }
+// noisePat(level, c1, c2): like bayerPat but with an irregular (hashed) threshold: frosted glass instead of a screen
+function noisePat(level, c1, c2 = null) {
+  const n = clamp(R(level * 32), 0, 32);
+  return _pattern('n' + n + c1 + c2, 32, 32, (d) => { for (let i = 0; i < 1024; i++) { const x = i & 31, y = i >> 5, v = (hash2(x * 1.37 + .11, y * 2.21 + .37) * 24 + BAYER4[(y & 3) * 4 + (x & 3)] / 2) / 32 * 32; _put(d, i * 4, v < n ? c1 : c2); } });
+}
+const frost = (x, y, w, h, c, k) => { ctx.fillStyle = noisePat(k, c, null); ctx.fillRect(R(x), R(y), R(w), R(h)); };
 // bayer(x, y, w, h, level, c1, c2): fill a rect with an ordered dither (c2 null leaves those pixels untouched)
 function bayer(x, y, w, h, level, c1, c2 = null) {
   if (level <= 0 && !c2) return;
@@ -390,8 +396,8 @@ const FONTS = {
   sfB: { css: '600 11px ' + SANS, thr: 105, lh: 14 },
   sf12: { css: '12px ' + SANS, thr: 100, lh: 15 },
   sfB12: { css: '600 12px ' + SANS, thr: 108, lh: 15 },
-  serif: { css: '12px "Liberation Serif", "DejaVu Serif", Georgia, serif', thr: 100, lh: 15 },  // manuscript body
-  serifB: { css: 'bold 12px "Liberation Serif", "DejaVu Serif", Georgia, serif', thr: 110, lh: 15 },
+  serif: { css: '13px "Liberation Serif", "DejaVu Serif", Georgia, serif', thr: 90, lh: 16 },   // manuscript body
+  serifB: { css: 'bold 13px "Liberation Serif", "DejaVu Serif", Georgia, serif', thr: 128, lh: 16 },
   serif14: { css: '14px "Liberation Serif", "DejaVu Serif", Georgia, serif', thr: 100, lh: 17 },
   // display sizes (for lyrics and titles that must read at a glance)
   chicagoBig: { css: '26px ChicagoFLF', thr: 128, lh: 30 },
@@ -562,6 +568,17 @@ function tinted(c, color) { // a one-colour copy of a canvas (its opaque pixels 
   o = document.createElement('canvas'); o.width = c.width; o.height = c.height;
   const g = o.getContext('2d'); g.drawImage(c, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = color; g.fillRect(0, 0, o.width, o.height);
   m.set(color, o); return o;
+}
+// recolor(canvas, {'#000000': '#1d4fb8', '#ffffff': null}): a copy with colours swapped (null = clear); cached
+const _recc = new Map();
+function recolor(c, map) {
+  const key = JSON.stringify(map); let m = _recc.get(c); if (!m) _recc.set(c, m = new Map());
+  let o = m.get(key); if (o) return o;
+  o = document.createElement('canvas'); o.width = c.width; o.height = c.height;
+  const g = o.getContext('2d', { willReadFrequently: true }); g.drawImage(c, 0, 0);
+  const d = g.getImageData(0, 0, o.width, o.height), px = d.data;
+  for (let i = 0; i < px.length; i += 4) { if (!px[i + 3]) continue; const hx = hex(px[i], px[i + 1], px[i + 2]); if (hx in map) { const to = map[hx]; if (to == null) px[i + 3] = 0; else { const v = rgb(to); px[i] = v[0]; px[i + 1] = v[1]; px[i + 2] = v[2]; } } }
+  g.putImageData(d, 0, 0); m.set(key, o); return o;
 }
 function spr(name, x, y, o = {}) {
   let c = typeof name === 'string' ? SPR[name] : name;
