@@ -5,6 +5,36 @@ same vision in words, for everyone who builds a shot. BRIEF.md is the contract; 
 the final song (SONG.md, music/score.json) differs from a detail here, the song wins and the device
 adapts.
 
+## The song we are shooting
+
+The final song is **"Pen Pal"** (SONG.md). Hook: "I'm just your PEN PAL / I'll never HOLD the PEN";
+call-and-response "Who holds the pen? / You do!". Its killer device replaces "the unresolved eighth"
+below: in the final chorus the voice cannot sing the word *pen*; one beat of silence, and the writer's
+keystroke types it. Wherever this file says "eighth step", read "the silent pen".
+
+## Style: KINETIC PIXEL × SILHOUETTE (the look must be dripping with cool)
+
+Two modes, switched by the song, inside one continuous take:
+
+- **Desk mode (verses, pre-choruses, bridge).** The pixel-perfect era desk, the one-take camera, the
+  desk-as-band foley you can see. Dense, witty, detailed.
+- **Silhouette mode (every chorus and post-chorus).** A homage to the silhouette ads in One More Tune's
+  lineage (Technologic, Jet): on the chorus downbeat the desk floods to ONE flat neon field (chorus 1 hot
+  magenta, chorus 2 acid lime, chorus 3 electric cyan; post-choruses flip to the complementary field).
+  Everything else becomes pure black silhouette: the windows, the menu bar, and Clio, who DANCES (a
+  silhouette with a big readable pose per beat: bounce, point, spin, jump on the hits). The only white
+  object on screen is **the writer's pen** (and its long white cord to the pointer), the way the white
+  earbuds were the only white thing in those ads. No Apple logo, no iPod: a pen.
+- **Kinetic type, oversized.** The hook words slam in as giant 1-bit pixel letters (Chicago at 8-24x,
+  hard edges), cropped off the frame edges, stacked, stretched, stepped on the beat: "PEN" "PAL" fill the
+  frame; "WHO HOLDS THE PEN?" stacks three lines high; "YOU DO!" punches in on the two hits. Type is
+  part of the choreography, never a subtitle.
+- **Beat-perfect surface FX.** On kicks: a 1-frame invert or a hard 2-pixel RGB split (dithered, palette
+  only). On drops: a pixel-sort smear for 2 frames. On the snare: the zoom outline. Never mushy, never a
+  blur: everything is crisp and on the grid.
+- **Typography system.** Chicago (ChiKareGo2) for everything big; Geneva 9 (FindersKeepers) for small UI;
+  Monaco for counters. Big type is always black-on-neon or white-on-black, never grey.
+
 ## Three spines (these override everything below)
 
 A. **One take, through the pixels.** The film never cuts. It opens on a single white pixel in black,

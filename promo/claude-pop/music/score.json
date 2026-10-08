@@ -70,7 +70,7 @@
    "name": "bridge",
    "startBeat": 208,
    "beats": 32,
-   "label": "Bridge: twelve eras, one desk"
+   "label": "Bridge: twelve appearances, one desk"
   },
   {
    "name": "breakdown",
@@ -356,12 +356,13 @@
   {
    "startBeat": 72,
    "beats": 4,
-   "symbol": "Cmaj7",
+   "symbol": "Cmaj9",
    "notes": [
     48,
     52,
     55,
-    59
+    59,
+    62
    ]
   },
   {
@@ -400,12 +401,13 @@
   {
    "startBeat": 88,
    "beats": 4,
-   "symbol": "Cmaj7",
+   "symbol": "Cmaj9",
    "notes": [
     48,
     52,
     55,
-    59
+    59,
+    62
    ]
   },
   {
@@ -422,12 +424,13 @@
   {
    "startBeat": 96,
    "beats": 4,
-   "symbol": "Am7",
+   "symbol": "Am9",
    "notes": [
     45,
     55,
     60,
-    64
+    64,
+    71
    ]
   },
   {
@@ -686,12 +689,13 @@
   {
    "startBeat": 168,
    "beats": 4,
-   "symbol": "Cmaj7",
+   "symbol": "Cmaj9",
    "notes": [
     48,
     52,
     55,
-    59
+    59,
+    62
    ]
   },
   {
@@ -730,12 +734,13 @@
   {
    "startBeat": 184,
    "beats": 4,
-   "symbol": "Cmaj7",
+   "symbol": "Cmaj9",
    "notes": [
     48,
     52,
     55,
-    59
+    59,
+    62
    ]
   },
   {
@@ -752,12 +757,13 @@
   {
    "startBeat": 192,
    "beats": 4,
-   "symbol": "Am7",
+   "symbol": "Am9",
    "notes": [
     45,
     55,
     60,
-    64
+    64,
+    71
    ]
   },
   {
@@ -938,11 +944,11 @@
   {
    "startBeat": 252,
    "beats": 4,
-   "symbol": "D",
+   "symbol": "E7sus4",
    "notes": [
-    50,
-    54,
+    40,
     57,
+    59,
     62
    ]
   },
@@ -995,12 +1001,13 @@
   {
    "startBeat": 272,
    "beats": 4,
-   "symbol": "Dmaj7",
+   "symbol": "Dmaj9",
    "notes": [
     50,
     54,
     57,
-    61
+    61,
+    64
    ]
   },
   {
@@ -1017,12 +1024,13 @@
   {
    "startBeat": 280,
    "beats": 4,
-   "symbol": "Bm7",
+   "symbol": "Bm9",
    "notes": [
     47,
     57,
     62,
-    66
+    66,
+    73
    ]
   },
   {
@@ -1083,23 +1091,24 @@
   {
    "startBeat": 296,
    "beats": 2,
-   "symbol": "Dmaj7",
+   "symbol": "Dmaj9",
    "notes": [
     50,
     54,
     57,
-    61
+    61,
+    64
    ]
   },
   {
    "startBeat": 298,
    "beats": 2,
-   "symbol": "E",
+   "symbol": "E7sus4",
    "notes": [
     40,
-    56,
+    57,
     59,
-    64
+    62
    ]
   },
   {
@@ -1150,7 +1159,7 @@
      "w": "just",
      "notes": [
       [
-       64,
+       67,
        5.0,
        0.5
       ]
@@ -1160,7 +1169,7 @@
      "w": "your",
      "notes": [
       [
-       67,
+       69,
        5.5,
        0.5
       ]
@@ -1170,7 +1179,7 @@
      "w": "pen",
      "notes": [
       [
-       71,
+       74,
        6.0,
        1.0
       ]
@@ -1180,7 +1189,7 @@
      "w": "pal.",
      "notes": [
       [
-       69,
+       71,
        7.0,
        1.0
       ]
@@ -1239,13 +1248,13 @@
      "notes": [
       [
        55,
-       12.0,
+       11.5,
        0.5
       ],
       [
        55,
-       12.5,
-       0.5
+       12.0,
+       1.0
       ]
      ],
      "syl": [
@@ -1268,13 +1277,13 @@
      "notes": [
       [
        55,
-       14.0,
+       13.5,
        0.5
       ],
       [
        55,
-       14.5,
-       0.5
+       14.0,
+       1.0
       ]
      ],
      "syl": [
@@ -1572,7 +1581,7 @@
      "w": "Clip",
      "notes": [
       [
-       55,
+       59,
        40,
        0.5
       ]
@@ -1582,7 +1591,7 @@
      "w": "the",
      "notes": [
       [
-       55,
+       59,
        40.5,
        0.5
       ]
@@ -1592,7 +1601,7 @@
      "w": "proof.",
      "notes": [
       [
-       55,
+       59,
        41.0,
        1.0
       ]
@@ -1602,12 +1611,12 @@
      "w": "Scrapbook.",
      "notes": [
       [
-       55,
+       59,
        44.0,
        0.5
       ],
       [
-       55,
+       59,
        44.5,
        0.5
       ]
@@ -1621,7 +1630,7 @@
      "w": "Keep",
      "notes": [
       [
-       55,
+       59,
        46.0,
        0.5
       ]
@@ -1631,13 +1640,42 @@
      "w": "it.",
      "notes": [
       [
-       50,
+       55,
        46.5,
        0.5
       ]
      ]
     }
    ]
+  },
+  {
+   "id": "v1c_echo",
+   "section": "verse1",
+   "voice": "choir",
+   "text": "(Keep it.)",
+   "words": [
+    {
+     "w": "(Keep",
+     "notes": [
+      [
+       62,
+       47,
+       0.5
+      ]
+     ]
+    },
+    {
+     "w": "it.)",
+     "notes": [
+      [
+       62,
+       47.5,
+       0.5
+      ]
+     ]
+    }
+   ],
+   "role": "call"
   },
   {
    "id": "v1d",
@@ -1649,12 +1687,12 @@
      "w": "Outline",
      "notes": [
       [
-       55,
+       59,
        48,
        0.5
       ],
       [
-       55,
+       59,
        48.5,
        0.5
       ]
@@ -1668,7 +1706,7 @@
      "w": "it.",
      "notes": [
       [
-       55,
+       59,
        49.0,
        0.5
       ]
@@ -1678,7 +1716,7 @@
      "w": "Draft",
      "notes": [
       [
-       55,
+       59,
        50.0,
        0.5
       ]
@@ -1688,7 +1726,7 @@
      "w": "it.",
      "notes": [
       [
-       55,
+       59,
        50.5,
        0.5
       ]
@@ -1698,7 +1736,7 @@
      "w": "Your",
      "notes": [
       [
-       55,
+       59,
        52.0,
        0.5
       ]
@@ -1708,7 +1746,7 @@
      "w": "words.",
      "notes": [
       [
-       55,
+       59,
        52.5,
        1.0
       ]
@@ -1718,7 +1756,7 @@
      "w": "Not",
      "notes": [
       [
-       55,
+       59,
        54.0,
        0.5
       ]
@@ -1728,7 +1766,7 @@
      "w": "mine.",
      "notes": [
       [
-       50,
+       55,
        54.5,
        1.0
       ]
@@ -1950,7 +1988,7 @@
      "w": "stay",
      "notes": [
       [
-       69,
+       66,
        68,
        0.5
       ]
@@ -1960,7 +1998,7 @@
      "w": "in",
      "notes": [
       [
-       71,
+       67,
        68.5,
        0.5
       ]
@@ -1970,7 +2008,7 @@
      "w": "your",
      "notes": [
       [
-       72,
+       69,
        69.0,
        0.5
       ]
@@ -1980,9 +2018,9 @@
      "w": "hand.",
      "notes": [
       [
-       74,
+       69,
        69.5,
-       1.0
+       0.5
       ]
      ]
     }
@@ -2008,7 +2046,7 @@
      "w": "just",
      "notes": [
       [
-       64,
+       67,
        71.0,
        0.5
       ]
@@ -2018,7 +2056,7 @@
      "w": "your",
      "notes": [
       [
-       67,
+       69,
        71.5,
        0.5
       ]
@@ -2028,7 +2066,7 @@
      "w": "pen",
      "notes": [
       [
-       71,
+       74,
        72.0,
        1.0
       ]
@@ -2038,7 +2076,7 @@
      "w": "pal,",
      "notes": [
       [
-       69,
+       71,
        73.0,
        1.5
       ]
@@ -2097,11 +2135,11 @@
       [
        69,
        76.0,
-       1.0
+       0.5
       ],
       [
        71,
-       77.0,
+       76.5,
        0.5
       ]
      ],
@@ -2115,8 +2153,8 @@
      "notes": [
       [
        69,
-       77.5,
-       1.0
+       77.0,
+       1.5
       ]
      ]
     },
@@ -2242,7 +2280,7 @@
       [
        71,
        85.0,
-       1.5
+       1.0
       ]
      ]
     }
@@ -2268,7 +2306,7 @@
      "w": "just",
      "notes": [
       [
-       64,
+       67,
        87.0,
        0.5
       ]
@@ -2278,7 +2316,7 @@
      "w": "your",
      "notes": [
       [
-       67,
+       69,
        87.5,
        0.5
       ]
@@ -2288,7 +2326,7 @@
      "w": "pen",
      "notes": [
       [
-       71,
+       74,
        88.0,
        1.0
       ]
@@ -2298,7 +2336,7 @@
      "w": "pal,",
      "notes": [
       [
-       69,
+       71,
        89.0,
        1.5
       ]
@@ -2397,7 +2435,7 @@
       [
        62,
        95.0,
-       1.0
+       0.5
       ]
      ]
     }
@@ -2414,7 +2452,7 @@
      "notes": [
       [
        67,
-       96,
+       95.5,
        0.5
       ]
      ]
@@ -2424,12 +2462,12 @@
      "notes": [
       [
        71,
-       96.5,
+       96.0,
        1.0
       ],
       [
        69,
-       97.5,
+       97.0,
        0.5
       ]
      ],
@@ -2443,7 +2481,7 @@
      "notes": [
       [
        67,
-       98.0,
+       97.5,
        0.5
       ]
      ]
@@ -2453,8 +2491,8 @@
      "notes": [
       [
        72,
-       98.5,
-       1.5
+       98.0,
+       2.0
       ]
      ]
     }
@@ -2464,7 +2502,7 @@
    "id": "chorus1h",
    "section": "chorus1",
    "voice": "lead",
-   "text": "don't let me erase it.",
+   "text": "don't let me smooth it.",
    "words": [
     {
      "w": "don't",
@@ -2472,7 +2510,7 @@
       [
        72,
        100,
-       0.5
+       1.0
       ]
      ]
     },
@@ -2481,7 +2519,7 @@
      "notes": [
       [
        71,
-       100.5,
+       101.0,
        0.5
       ]
      ]
@@ -2490,38 +2528,29 @@
      "w": "me",
      "notes": [
       [
-       69,
-       101.0,
+       67,
+       101.5,
        0.5
       ]
      ]
     },
     {
-     "w": "erase",
+     "w": "smooth",
      "notes": [
-      [
-       67,
-       101.5,
-       0.5
-      ],
       [
        69,
        102.0,
        1.0
       ]
-     ],
-     "syl": [
-      "e",
-      "rase"
      ]
     },
     {
      "w": "it.",
      "notes": [
       [
-       67,
+       66,
        103.0,
-       1.0
+       0.5
       ]
      ]
     }
@@ -2588,27 +2617,7 @@
       [
        72,
        108,
-       0.5
-      ]
-     ]
-    },
-    {
-     "w": "do!",
-     "notes": [
-      [
-       67,
-       108.5,
-       1.5
-      ]
-     ]
-    },
-    {
-     "w": "You",
-     "notes": [
-      [
-       72,
-       110.0,
-       0.5
+       1.0
       ]
      ]
     },
@@ -2617,8 +2626,28 @@
      "notes": [
       [
        69,
-       110.5,
-       1.5
+       109.0,
+       1.0
+      ]
+     ]
+    },
+    {
+     "w": "You",
+     "notes": [
+      [
+       76,
+       110.0,
+       1.0
+      ]
+     ]
+    },
+    {
+     "w": "do!",
+     "notes": [
+      [
+       72,
+       111.0,
+       1.0
       ]
      ]
     }
@@ -2824,7 +2853,7 @@
       [
        55,
        121.5,
-       1.0
+       1.5
       ]
      ]
     },
@@ -2896,13 +2925,13 @@
      "notes": [
       [
        55,
-       128,
+       127.5,
        0.5
       ],
       [
        55,
-       128.5,
-       0.5
+       128.0,
+       1.0
       ]
      ],
      "syl": [
@@ -2956,14 +2985,14 @@
    "id": "v2c",
    "section": "verse2",
    "voice": "chant",
-   "text": "Too regular? Flag it. Generic? Flag it.",
+   "text": "Too regular?",
    "words": [
     {
      "w": "Too",
      "notes": [
       [
        55,
-       136,
+       135.5,
        0.5
       ]
      ]
@@ -2973,17 +3002,17 @@
      "notes": [
       [
        55,
+       136.0,
+       0.5
+      ],
+      [
+       55,
        136.5,
        0.5
       ],
       [
        55,
        137.0,
-       0.5
-      ],
-      [
-       55,
-       137.5,
        0.5
       ]
      ],
@@ -2992,13 +3021,21 @@
       "u",
       "lar?"
      ]
-    },
+    }
+   ]
+  },
+  {
+   "id": "v2c_flag",
+   "section": "verse2",
+   "voice": "choir",
+   "text": "Flag it.",
+   "words": [
     {
      "w": "Flag",
      "notes": [
       [
-       55,
-       138.0,
+       62,
+       138,
        0.5
       ]
      ]
@@ -3007,15 +3044,29 @@
      "w": "it.",
      "notes": [
       [
-       55,
+       62,
        138.5,
        0.5
       ]
      ]
-    },
+    }
+   ],
+   "role": "call"
+  },
+  {
+   "id": "v2d",
+   "section": "verse2",
+   "voice": "chant",
+   "text": "Generic?",
+   "words": [
     {
      "w": "Generic?",
      "notes": [
+      [
+       55,
+       139.5,
+       0.5
+      ],
       [
        55,
        140.0,
@@ -3025,11 +3076,6 @@
        55,
        140.5,
        0.5
-      ],
-      [
-       55,
-       141.0,
-       0.5
       ]
      ],
      "syl": [
@@ -3037,34 +3083,44 @@
       "ner",
       "ic?"
      ]
-    },
+    }
+   ]
+  },
+  {
+   "id": "v2d_flag",
+   "section": "verse2",
+   "voice": "choir",
+   "text": "Flag it.",
+   "words": [
     {
      "w": "Flag",
      "notes": [
       [
-       55,
-       142.0,
+       62,
+       142,
        0.5
       ]
-     ]
+     ],
+     "nct": true
     },
     {
      "w": "it.",
      "notes": [
       [
-       50,
+       62,
        142.5,
        0.5
       ]
      ]
     }
-   ]
+   ],
+   "role": "call"
   },
   {
-   "id": "v2d",
+   "id": "v2e",
    "section": "verse2",
    "voice": "chant",
-   "text": "Press release? Flag it. Rough edge? Keep it.",
+   "text": "Press release?",
    "words": [
     {
      "w": "Press",
@@ -3094,13 +3150,21 @@
       "re",
       "lease?"
      ]
-    },
+    }
+   ]
+  },
+  {
+   "id": "v2e_flag",
+   "section": "verse2",
+   "voice": "choir",
+   "text": "Flag it.",
+   "words": [
     {
      "w": "Flag",
      "notes": [
       [
-       55,
-       146.0,
+       62,
+       146,
        0.5
       ]
      ]
@@ -3109,18 +3173,27 @@
      "w": "it.",
      "notes": [
       [
-       55,
+       62,
        146.5,
        0.5
       ]
      ]
-    },
+    }
+   ],
+   "role": "call"
+  },
+  {
+   "id": "v2f",
+   "section": "verse2",
+   "voice": "chant",
+   "text": "Rough edge?",
+   "words": [
     {
      "w": "Rough",
      "notes": [
       [
        55,
-       148.0,
+       148,
        0.5
       ]
      ]
@@ -3134,13 +3207,21 @@
        0.5
       ]
      ]
-    },
+    }
+   ]
+  },
+  {
+   "id": "v2f_keep",
+   "section": "verse2",
+   "voice": "lead",
+   "text": "Keep it.",
+   "words": [
     {
      "w": "Keep",
      "notes": [
       [
-       55,
-       150.0,
+       72,
+       150,
        0.5
       ]
      ]
@@ -3149,7 +3230,7 @@
      "w": "it.",
      "notes": [
       [
-       50,
+       67,
        150.5,
        0.5
       ]
@@ -3371,7 +3452,7 @@
      "w": "stay",
      "notes": [
       [
-       69,
+       66,
        164,
        0.5
       ]
@@ -3381,7 +3462,7 @@
      "w": "in",
      "notes": [
       [
-       71,
+       67,
        164.5,
        0.5
       ]
@@ -3391,7 +3472,7 @@
      "w": "your",
      "notes": [
       [
-       72,
+       69,
        165.0,
        0.5
       ]
@@ -3401,9 +3482,9 @@
      "w": "hand.",
      "notes": [
       [
-       74,
+       69,
        165.5,
-       1.0
+       0.5
       ]
      ]
     }
@@ -3429,7 +3510,7 @@
      "w": "just",
      "notes": [
       [
-       64,
+       67,
        167.0,
        0.5
       ]
@@ -3439,7 +3520,7 @@
      "w": "your",
      "notes": [
       [
-       67,
+       69,
        167.5,
        0.5
       ]
@@ -3449,7 +3530,7 @@
      "w": "pen",
      "notes": [
       [
-       71,
+       74,
        168.0,
        1.0
       ]
@@ -3459,7 +3540,7 @@
      "w": "pal,",
      "notes": [
       [
-       69,
+       71,
        169.0,
        1.5
       ]
@@ -3518,11 +3599,11 @@
       [
        69,
        172.0,
-       1.0
+       0.5
       ],
       [
        71,
-       173.0,
+       172.5,
        0.5
       ]
      ],
@@ -3536,8 +3617,8 @@
      "notes": [
       [
        69,
-       173.5,
-       1.0
+       173.0,
+       1.5
       ]
      ]
     },
@@ -3663,7 +3744,7 @@
       [
        71,
        181.0,
-       1.5
+       1.0
       ]
      ]
     }
@@ -3689,7 +3770,7 @@
      "w": "just",
      "notes": [
       [
-       64,
+       67,
        183.0,
        0.5
       ]
@@ -3699,7 +3780,7 @@
      "w": "your",
      "notes": [
       [
-       67,
+       69,
        183.5,
        0.5
       ]
@@ -3709,7 +3790,7 @@
      "w": "pen",
      "notes": [
       [
-       71,
+       74,
        184.0,
        1.0
       ]
@@ -3719,7 +3800,7 @@
      "w": "pal,",
      "notes": [
       [
-       69,
+       71,
        185.0,
        1.5
       ]
@@ -3818,7 +3899,7 @@
       [
        62,
        191.0,
-       1.0
+       0.5
       ]
      ]
     }
@@ -3886,7 +3967,7 @@
       [
        59,
        191.0,
-       1.0
+       0.5
       ]
      ]
     }
@@ -3904,7 +3985,7 @@
      "notes": [
       [
        67,
-       192,
+       191.5,
        0.5
       ]
      ]
@@ -3914,12 +3995,12 @@
      "notes": [
       [
        71,
-       192.5,
+       192.0,
        1.0
       ],
       [
        69,
-       193.5,
+       193.0,
        0.5
       ]
      ],
@@ -3933,7 +4014,7 @@
      "notes": [
       [
        67,
-       194.0,
+       193.5,
        0.5
       ]
      ]
@@ -3943,8 +4024,8 @@
      "notes": [
       [
        72,
-       194.5,
-       1.5
+       194.0,
+       2.0
       ]
      ]
     }
@@ -3961,7 +4042,7 @@
      "notes": [
       [
        64,
-       192,
+       191.5,
        0.5
       ]
      ]
@@ -3971,12 +4052,12 @@
      "notes": [
       [
        67,
-       192.5,
+       192.0,
        1.0
       ],
       [
        66,
-       193.5,
+       193.0,
        0.5
       ]
      ],
@@ -3990,7 +4071,7 @@
      "notes": [
       [
        64,
-       194.0,
+       193.5,
        0.5
       ]
      ]
@@ -4000,8 +4081,8 @@
      "notes": [
       [
        69,
-       194.5,
-       1.5
+       194.0,
+       2.0
       ]
      ]
     }
@@ -4012,7 +4093,7 @@
    "id": "chorus2h",
    "section": "chorus2",
    "voice": "lead",
-   "text": "don't let me erase it.",
+   "text": "don't let me smooth it.",
    "words": [
     {
      "w": "don't",
@@ -4020,7 +4101,7 @@
       [
        72,
        196,
-       0.5
+       1.0
       ]
      ]
     },
@@ -4029,7 +4110,7 @@
      "notes": [
       [
        71,
-       196.5,
+       197.0,
        0.5
       ]
      ]
@@ -4038,38 +4119,29 @@
      "w": "me",
      "notes": [
       [
-       69,
-       197.0,
+       67,
+       197.5,
        0.5
       ]
      ]
     },
     {
-     "w": "erase",
+     "w": "smooth",
      "notes": [
-      [
-       67,
-       197.5,
-       0.5
-      ],
       [
        69,
        198.0,
        1.0
       ]
-     ],
-     "syl": [
-      "e",
-      "rase"
      ]
     },
     {
      "w": "it.",
      "notes": [
       [
-       67,
+       66,
        199.0,
-       1.0
+       0.5
       ]
      ]
     }
@@ -4079,7 +4151,7 @@
    "id": "chorus2h_h",
    "section": "chorus2",
    "voice": "choir",
-   "text": "don't let me erase it.",
+   "text": "don't let me smooth it.",
    "words": [
     {
      "w": "don't",
@@ -4087,7 +4159,7 @@
       [
        69,
        196,
-       0.5
+       1.0
       ]
      ]
     },
@@ -4096,7 +4168,7 @@
      "notes": [
       [
        67,
-       196.5,
+       197.0,
        0.5
       ]
      ]
@@ -4105,38 +4177,29 @@
      "w": "me",
      "notes": [
       [
-       66,
-       197.0,
+       64,
+       197.5,
        0.5
       ]
      ]
     },
     {
-     "w": "erase",
+     "w": "smooth",
      "notes": [
-      [
-       64,
-       197.5,
-       0.5
-      ],
       [
        66,
        198.0,
        1.0
       ]
-     ],
-     "syl": [
-      "e",
-      "rase"
      ]
     },
     {
      "w": "it.",
      "notes": [
       [
-       64,
+       62,
        199.0,
-       1.0
+       0.5
       ]
      ]
     }
@@ -4204,27 +4267,7 @@
       [
        72,
        204,
-       0.5
-      ]
-     ]
-    },
-    {
-     "w": "do!",
-     "notes": [
-      [
-       67,
-       204.5,
-       1.5
-      ]
-     ]
-    },
-    {
-     "w": "You",
-     "notes": [
-      [
-       72,
-       206.0,
-       0.5
+       1.0
       ]
      ]
     },
@@ -4233,8 +4276,28 @@
      "notes": [
       [
        69,
-       206.5,
-       1.5
+       205.0,
+       1.0
+      ]
+     ]
+    },
+    {
+     "w": "You",
+     "notes": [
+      [
+       76,
+       206.0,
+       1.0
+      ]
+     ]
+    },
+    {
+     "w": "do!",
+     "notes": [
+      [
+       72,
+       207.0,
+       1.0
       ]
      ]
     }
@@ -4771,12 +4834,12 @@
       [
        67,
        246.0,
-       0.5
+       1.0
       ],
       [
        64,
-       246.5,
-       1.0
+       247.0,
+       0.5
       ]
      ],
      "syl": [
@@ -4874,7 +4937,7 @@
      "w": "just",
      "notes": [
       [
-       66,
+       69,
        255.0,
        0.5
       ]
@@ -4884,7 +4947,7 @@
      "w": "your",
      "notes": [
       [
-       69,
+       71,
        255.5,
        0.5
       ]
@@ -4894,7 +4957,7 @@
      "w": "pen",
      "notes": [
       [
-       73,
+       76,
        256.0,
        1.0
       ]
@@ -4904,7 +4967,7 @@
      "w": "pal,",
      "notes": [
       [
-       71,
+       73,
        257.0,
        1.5
       ]
@@ -4963,11 +5026,11 @@
       [
        71,
        260.0,
-       1.0
+       0.5
       ],
       [
        73,
-       261.0,
+       260.5,
        0.5
       ]
      ],
@@ -4981,8 +5044,8 @@
      "notes": [
       [
        71,
-       261.5,
-       1.0
+       261.0,
+       1.5
       ]
      ]
     },
@@ -5109,7 +5172,7 @@
       [
        73,
        269.0,
-       1.5
+       1.0
       ]
      ]
     }
@@ -5135,7 +5198,7 @@
      "w": "just",
      "notes": [
       [
-       66,
+       69,
        271.0,
        0.5
       ]
@@ -5145,7 +5208,7 @@
      "w": "your",
      "notes": [
       [
-       69,
+       71,
        271.5,
        0.5
       ]
@@ -5155,7 +5218,7 @@
      "w": "pen",
      "notes": [
       [
-       73,
+       76,
        272.0,
        1.0
       ]
@@ -5165,7 +5228,7 @@
      "w": "pal,",
      "notes": [
       [
-       71,
+       73,
        273.0,
        1.5
       ]
@@ -5264,7 +5327,7 @@
       [
        64,
        279.0,
-       1.0
+       0.5
       ]
      ]
     }
@@ -5332,7 +5395,7 @@
       [
        61,
        279.0,
-       1.0
+       0.5
       ]
      ]
     }
@@ -5350,7 +5413,7 @@
      "notes": [
       [
        69,
-       280,
+       279.5,
        0.5
       ]
      ]
@@ -5360,12 +5423,12 @@
      "notes": [
       [
        73,
-       280.5,
+       280.0,
        1.0
       ],
       [
        71,
-       281.5,
+       281.0,
        0.5
       ]
      ],
@@ -5379,7 +5442,7 @@
      "notes": [
       [
        69,
-       282.0,
+       281.5,
        0.5
       ]
      ]
@@ -5389,8 +5452,8 @@
      "notes": [
       [
        74,
-       282.5,
-       1.5
+       282.0,
+       2.0
       ]
      ]
     }
@@ -5407,7 +5470,7 @@
      "notes": [
       [
        66,
-       280,
+       279.5,
        0.5
       ]
      ]
@@ -5417,12 +5480,12 @@
      "notes": [
       [
        69,
-       280.5,
+       280.0,
        1.0
       ],
       [
        68,
-       281.5,
+       281.0,
        0.5
       ]
      ],
@@ -5436,7 +5499,7 @@
      "notes": [
       [
        66,
-       282.0,
+       281.5,
        0.5
       ]
      ]
@@ -5446,8 +5509,8 @@
      "notes": [
       [
        71,
-       282.5,
-       1.5
+       282.0,
+       2.0
       ]
      ]
     }
@@ -5458,7 +5521,7 @@
    "id": "chorus3h",
    "section": "chorus3",
    "voice": "lead",
-   "text": "don't let me erase it.",
+   "text": "don't let me smooth it.",
    "words": [
     {
      "w": "don't",
@@ -5466,7 +5529,7 @@
       [
        74,
        284,
-       0.5
+       1.0
       ]
      ]
     },
@@ -5475,7 +5538,7 @@
      "notes": [
       [
        73,
-       284.5,
+       285.0,
        0.5
       ]
      ]
@@ -5484,38 +5547,29 @@
      "w": "me",
      "notes": [
       [
-       71,
-       285.0,
+       69,
+       285.5,
        0.5
       ]
      ]
     },
     {
-     "w": "erase",
+     "w": "smooth",
      "notes": [
-      [
-       69,
-       285.5,
-       0.5
-      ],
       [
        71,
        286.0,
        1.0
       ]
-     ],
-     "syl": [
-      "e",
-      "rase"
      ]
     },
     {
      "w": "it.",
      "notes": [
       [
-       69,
+       68,
        287.0,
-       1.0
+       0.5
       ]
      ]
     }
@@ -5525,7 +5579,7 @@
    "id": "chorus3h_h",
    "section": "chorus3",
    "voice": "choir",
-   "text": "don't let me erase it.",
+   "text": "don't let me smooth it.",
    "words": [
     {
      "w": "don't",
@@ -5533,7 +5587,7 @@
       [
        71,
        284,
-       0.5
+       1.0
       ]
      ]
     },
@@ -5542,7 +5596,7 @@
      "notes": [
       [
        69,
-       284.5,
+       285.0,
        0.5
       ]
      ]
@@ -5551,38 +5605,29 @@
      "w": "me",
      "notes": [
       [
-       68,
-       285.0,
+       66,
+       285.5,
        0.5
       ]
      ]
     },
     {
-     "w": "erase",
+     "w": "smooth",
      "notes": [
-      [
-       66,
-       285.5,
-       0.5
-      ],
       [
        68,
        286.0,
        1.0
       ]
-     ],
-     "syl": [
-      "e",
-      "rase"
      ]
     },
     {
      "w": "it.",
      "notes": [
       [
-       66,
+       64,
        287.0,
-       1.0
+       0.5
       ]
      ]
     }
@@ -5640,13 +5685,13 @@
      "notes": [
       [
        57,
-       292.0,
+       291.5,
        0.5
       ],
       [
        57,
-       292.5,
-       0.5
+       292.0,
+       1.0
       ]
      ],
      "syl": [
@@ -5669,13 +5714,13 @@
      "notes": [
       [
        57,
-       294.0,
+       293.5,
        0.5
       ],
       [
        57,
-       294.5,
-       0.5
+       294.0,
+       1.0
       ]
      ],
      "syl": [
@@ -5696,6 +5741,164 @@
    ]
   },
   {
+   "id": "o_la1",
+   "section": "outro",
+   "voice": "choir",
+   "text": "La la la, la la la la.",
+   "words": [
+    {
+     "w": "La",
+     "notes": [
+      [
+       69,
+       288,
+       0.5
+      ]
+     ]
+    },
+    {
+     "w": "la",
+     "notes": [
+      [
+       69,
+       288.5,
+       0.5
+      ]
+     ]
+    },
+    {
+     "w": "la,",
+     "notes": [
+      [
+       73,
+       289.0,
+       0.5
+      ]
+     ]
+    },
+    {
+     "w": "la",
+     "notes": [
+      [
+       76,
+       289.5,
+       1.0
+      ]
+     ]
+    },
+    {
+     "w": "la",
+     "notes": [
+      [
+       74,
+       290.5,
+       0.5
+      ]
+     ]
+    },
+    {
+     "w": "la",
+     "notes": [
+      [
+       73,
+       291.0,
+       0.5
+      ]
+     ]
+    },
+    {
+     "w": "la.",
+     "notes": [
+      [
+       69,
+       291.5,
+       0.5
+      ]
+     ]
+    }
+   ],
+   "role": "lala"
+  },
+  {
+   "id": "o_la2",
+   "section": "outro",
+   "voice": "choir",
+   "text": "La la la, la la la la.",
+   "words": [
+    {
+     "w": "La",
+     "notes": [
+      [
+       71,
+       292,
+       0.5
+      ]
+     ]
+    },
+    {
+     "w": "la",
+     "notes": [
+      [
+       74,
+       292.5,
+       0.5
+      ]
+     ]
+    },
+    {
+     "w": "la,",
+     "notes": [
+      [
+       71,
+       293.0,
+       0.5
+      ]
+     ]
+    },
+    {
+     "w": "la",
+     "notes": [
+      [
+       67,
+       293.5,
+       0.5
+      ]
+     ]
+    },
+    {
+     "w": "la",
+     "notes": [
+      [
+       66,
+       294.0,
+       0.5
+      ]
+     ]
+    },
+    {
+     "w": "la",
+     "notes": [
+      [
+       69,
+       294.5,
+       0.5
+      ]
+     ]
+    },
+    {
+     "w": "la.",
+     "notes": [
+      [
+       74,
+       295.0,
+       1.0
+      ]
+     ]
+    }
+   ],
+   "role": "lala"
+  },
+  {
    "id": "o2",
    "section": "outro",
    "voice": "lead",
@@ -5705,7 +5908,7 @@
      "w": "It",
      "notes": [
       [
-       66,
+       64,
        296,
        0.5
       ]
@@ -5725,12 +5928,12 @@
      "w": "always",
      "notes": [
       [
-       73,
+       76,
        297.0,
        1.0
       ],
       [
-       71,
+       74,
        298.0,
        0.5
       ]
@@ -5744,7 +5947,7 @@
      "w": "your",
      "notes": [
       [
-       68,
+       71,
        298.5,
        0.5
       ]
@@ -5870,27 +6073,35 @@
    }
   },
   "machineVoice": {
-   "chant": "amy, pitch tier flattened to the written note (G3 = her speaking pitch), no vibrato; durations quantised to the 8th grid; only the vowel nucleus is stretched (duration tier holds onsets/codas at 1.0); doubled an octave down by lessac at -9 dB; 1988 sections add an 8-bit 11 kHz crush; the last word of every list line steps down to D3",
+   "chant": "amy, pitch tier flattened to the written note (G3 = her speaking pitch; B3 in verse 1 bars 5-8), no vibrato; durations quantised to the 8th grid; only the vowel nucleus is stretched (duration tier holds onsets/codas at 1.0); doubled an octave down by lessac at -9 dB; 1988 sections add an 8-bit 11 kHz crush; the last word of every list line steps down (to D3 from G3, to G3 from B3); questions stay flat: the robot does not know how to ask",
    "lead": "amy singing; gentle vibrato (5.5 Hz, +/-20 cents) on notes of 1 beat or longer; 60 ms portamento only where notes are slurred inside a word",
    "choir": "amy + en_GB-jenny_dioco + lessac (an octave down), each offset +/-15 ms and detuned +/-8 cents; the final chorus doubles every voice (6 takes) and adds a 12-copy gang on the echoes, one copy per appearance",
+   "gang": "role 'call' lines in the verses ('(Keep it.)', 'Flag it.'): the choir shouted, 12 copies, hard-panned, -3 dB under the chant, a clap on every 'Flag'",
    "spoken": "lessac, raw Piper, no PSOLA; k1 is low-passed to 4 kHz with an 8-bit crush (a sample from a 1988 Mac); o3 is dry and flat, the full-disk-warning voice",
    "melt": {
     "pre1a / pre2a": "flat chant on G3, octave double, crush",
     "pre1b / pre2b": "chant with an 80 ms glide between notes (the robot learns portamento); crush lifts",
     "pre1c / pre2c": "lead: vibrato arrives, octave double removed",
-    "pre1d / pre2d": "full lead, ending on D5 HAND; everything else stops"
+    "pre1d / pre2d": "full lead, hanging on A4 HAND (the 5th of D, a question); the band hits with it and stops; half a beat of air"
    },
    "gags": {
-    "fade (chorus d lines)": "level fade and pitch glide B4 -> G4 while the bit depth drops over the 1.5 beats: the word is literally temporary",
-    "erase (chorus h lines)": "a reverse-reverb swell before 'erase'; the 'it' is bone dry",
-    "chorus3b 'pen' (silent=true)": "the lead does not sing the word; one beat of silence and a single keystroke; the band slams back on 'You say'",
-    "v2c 'Too regular? Flag it.'": "the chant is perfectly regular on purpose, so Review Desk flags the singer; the band answers with the one-beat stumble (fills.stumble)",
+    "fade (chorus d lines)": "level fade and pitch glide B4 -> G4 while the bit depth drops over the beat, into half a beat of real silence: the word is literally temporary",
+    "smooth (chorus h lines)": "a low-pass sweep closes over 'smooth' (the voice's own consonants are smoothed off, 8 kHz -> 1.5 kHz over the beat); the 'it' is bone dry and full-band again",
+    "chorus3b 'pen' (silent=true)": "the band drops at +6.5 after 'hold', the lead sings 'the' alone, then the word is not sung: silence from +7, one keystroke at +7.25, the crash and brass slam back on 'You' at +8",
+    "v2c 'Too regular?' / 'Flag it.'": "the chant is perfectly regular on purpose, so Review Desk flags the singer; the band answers with the one-beat stumble (fills.stumble)",
     "chorus3g 'Your roughness is you'": "+/-10 cent detune and 20 ms unquantised onsets on the lead: the machine tries roughness for one line",
     "bridge years": "chant stacked in octaves, panned; a system beep on every year (parts.beeps)",
-    "o2 'voice'": "the long A4 freezes into a two-cycle grain loop for its last half beat, then the boot chord takes over"
+    "o2 'voice'": "the long A4 (outro +11 .. +14) freezes into a two-cycle grain loop for its last half beat (+13.5 .. +14), then the boot chord takes over"
    },
-   "qa": "faster_whisper small.en must transcribe every line word for word; if a line fails, lengthen its slowest word or move its echo"
+   "qa": "faster_whisper small.en must transcribe every line word for word, except the 'lala' lines (judge those by pitch contour; 'la la la la la la la' passes) and the stacked '(pen pal)' echoes (word-level check only). Lines to check alone first: chorus3h (E5 'don't'), chorus3a/e (E5 'pen'), v2a ('is an app'). If a line fails, lengthen its slowest word or move its echo"
   },
+  "silence": [
+   [
+    262.5,
+    1.5,
+    "the silent pen: the band drops after 'hold', the voice sings 'the' alone, then one beat of nothing but a keystroke at +7.25; the crash slams back on 'You'"
+   ]
+  ],
   "bootChord": {
    "symbol": "Gmaj9",
    "notes": [
@@ -5903,7 +6114,7 @@
    ],
    "startBeat": 0,
    "beats": 8,
-   "timbre": "saw pad + FM bell, sharp attack, low-pass opening slowly over 4 beats, then ringing; ours, not Apple's"
+   "timbre": "saw pad + FM bell on the lower four notes, sharp attack, low-pass opening slowly over 4 beats, then ringing; the top D5 is pad only (no sine 'ding', so it cannot read as a chime); ours, not Apple's"
   },
   "rebootChord": {
    "symbol": "Dmaj9",
@@ -6025,42 +6236,120 @@
     "G4",
     "C5"
    ],
+   "turnaround": [
+    [
+     67,
+     0,
+     0.5
+    ],
+    [
+     67,
+     0.5,
+     0.5
+    ],
+    [
+     71,
+     1,
+     0.5
+    ],
+    [
+     74,
+     1.5,
+     1
+    ],
+    [
+     72,
+     2.5,
+     0.5
+    ],
+    [
+     71,
+     3,
+     0.5
+    ],
+    [
+     67,
+     3.5,
+     0.5
+    ],
+    [
+     69,
+     4,
+     0.5
+    ],
+    [
+     72,
+     4.5,
+     0.5
+    ],
+    [
+     69,
+     5,
+     0.5
+    ],
+    [
+     65,
+     5.5,
+     0.5
+    ],
+    [
+     64,
+     6,
+     0.5
+    ],
+    [
+     67,
+     6.5,
+     0.5
+    ],
+    [
+     74,
+     7,
+     1
+    ]
+   ],
    "plays": [
     {
      "startBeat": 8,
      "repeats": 2,
      "transpose": 0,
+     "turnaround": false,
      "note": "full loop, 8-bit 11 kHz crush (1988)"
     },
     {
-     "startBeat": 24,
-     "repeats": 4,
+     "startBeat": 40,
+     "repeats": 2,
      "transpose": 0,
-     "note": "full loop"
+     "turnaround": true,
+     "note": "bars 1-4 tacet (bass, drums and chant only); the riff returns at 'Clip the proof' and turns around into the melt"
     },
     {
      "startBeat": 104,
      "repeats": 1,
-     "transpose": 0,
-     "note": "under the call and response; the choir then sings it on la (organ tacet)"
+     "transpose": -12,
+     "turnaround": false,
+     "note": "an octave down under the call and answer so the voices sit on top; the choir then sings it on la (organ tacet)"
     },
     {
      "startBeat": 120,
      "repeats": 4,
      "transpose": 0,
-     "note": "full loop, second organ an octave down"
+     "turnaround": true,
+     "note": "full loop, second organ an octave down; turnaround into pre-chorus 2"
     },
     {
      "startBeat": 200,
      "repeats": 1,
-     "transpose": 0,
-     "note": "full loop"
+     "transpose": -12,
+     "turnaround": false,
+     "note": "an octave down under the question and the answer"
     },
     {
      "startBeat": 288,
      "repeats": 1,
      "transpose": 2,
-     "note": "in A Mixolydian, clean, with the last chant"
+     "turnaround": false,
+     "note": "in A Mixolydian, clean, with the last chant and the choir's la-la on top"
     }
    ],
    "events": [
@@ -6206,146 +6495,6 @@
     ],
     [
      67,
-     24,
-     0.5
-    ],
-    [
-     67,
-     24.5,
-     0.5
-    ],
-    [
-     71,
-     25,
-     0.5
-    ],
-    [
-     74,
-     25.5,
-     1
-    ],
-    [
-     72,
-     26.5,
-     0.5
-    ],
-    [
-     71,
-     27,
-     0.5
-    ],
-    [
-     67,
-     27.5,
-     0.5
-    ],
-    [
-     69,
-     28,
-     0.5
-    ],
-    [
-     72,
-     28.5,
-     0.5
-    ],
-    [
-     69,
-     29,
-     0.5
-    ],
-    [
-     65,
-     29.5,
-     0.5
-    ],
-    [
-     64,
-     30,
-     0.5
-    ],
-    [
-     67,
-     30.5,
-     0.5
-    ],
-    [
-     72,
-     31,
-     1
-    ],
-    [
-     67,
-     32,
-     0.5
-    ],
-    [
-     67,
-     32.5,
-     0.5
-    ],
-    [
-     71,
-     33,
-     0.5
-    ],
-    [
-     74,
-     33.5,
-     1
-    ],
-    [
-     72,
-     34.5,
-     0.5
-    ],
-    [
-     71,
-     35,
-     0.5
-    ],
-    [
-     67,
-     35.5,
-     0.5
-    ],
-    [
-     69,
-     36,
-     0.5
-    ],
-    [
-     72,
-     36.5,
-     0.5
-    ],
-    [
-     69,
-     37,
-     0.5
-    ],
-    [
-     65,
-     37.5,
-     0.5
-    ],
-    [
-     64,
-     38,
-     0.5
-    ],
-    [
-     67,
-     38.5,
-     0.5
-    ],
-    [
-     72,
-     39,
-     1
-    ],
-    [
-     67,
      40,
      0.5
     ],
@@ -6480,77 +6629,77 @@
      0.5
     ],
     [
-     72,
+     74,
      55,
      1
     ],
     [
-     67,
+     55,
      104,
      0.5
     ],
     [
-     67,
+     55,
      104.5,
      0.5
     ],
     [
-     71,
+     59,
      105,
      0.5
     ],
     [
-     74,
+     62,
      105.5,
      1
     ],
     [
-     72,
+     60,
      106.5,
      0.5
     ],
     [
-     71,
+     59,
      107,
      0.5
     ],
     [
-     67,
+     55,
      107.5,
      0.5
     ],
     [
-     69,
+     57,
      108,
      0.5
     ],
     [
-     72,
+     60,
      108.5,
      0.5
     ],
     [
-     69,
+     57,
      109,
      0.5
     ],
     [
-     65,
+     53,
      109.5,
      0.5
     ],
     [
-     64,
+     52,
      110,
      0.5
     ],
     [
-     67,
+     55,
      110.5,
      0.5
     ],
     [
-     72,
+     60,
      111,
      1
     ],
@@ -6720,16 +6869,6 @@
      0.5
     ],
     [
-     71,
-     139,
-     0.5
-    ],
-    [
-     67,
-     139.5,
-     0.5
-    ],
-    [
      69,
      140,
      0.5
@@ -6830,77 +6969,77 @@
      0.5
     ],
     [
-     72,
+     74,
      151,
      1
     ],
     [
-     67,
+     55,
      200,
      0.5
     ],
     [
-     67,
+     55,
      200.5,
      0.5
     ],
     [
-     71,
+     59,
      201,
      0.5
     ],
     [
-     74,
+     62,
      201.5,
      1
     ],
     [
-     72,
+     60,
      202.5,
      0.5
     ],
     [
-     71,
+     59,
      203,
      0.5
     ],
     [
-     67,
+     55,
      203.5,
      0.5
     ],
     [
-     69,
+     57,
      204,
      0.5
     ],
     [
-     72,
+     60,
      204.5,
      0.5
     ],
     [
-     69,
+     57,
      205,
      0.5
     ],
     [
-     65,
+     53,
      205.5,
      0.5
     ],
     [
-     64,
+     52,
      206,
      0.5
     ],
     [
-     67,
+     55,
      206.5,
      0.5
     ],
     [
-     72,
+     60,
      207,
      1
     ],
@@ -6975,140 +7114,114 @@
      1
     ]
    ],
-   "headFills": [
+   "cuts": [
     [
-     67,
-     86.5,
-     0.5
+     139,
+     1,
+     "the stumble: the whole groove drops for a beat"
     ],
     [
-     71,
-     87.0,
-     0.5
-    ],
-    [
-     74,
-     87.5,
-     0.5
-    ],
-    [
-     67,
-     102.5,
-     0.5
-    ],
-    [
-     71,
-     103.0,
-     0.5
-    ],
-    [
-     74,
-     103.5,
-     0.5
-    ],
-    [
-     67,
-     182.5,
-     0.5
-    ],
-    [
-     71,
-     183.0,
-     0.5
-    ],
-    [
-     74,
-     183.5,
-     0.5
-    ],
-    [
-     67,
-     198.5,
-     0.5
-    ],
-    [
-     71,
-     199.0,
-     0.5
-    ],
-    [
-     74,
-     199.5,
-     0.5
-    ],
-    [
-     69,
-     270.5,
-     0.5
-    ],
-    [
-     73,
-     271.0,
-     0.5
-    ],
-    [
-     76,
-     271.5,
-     0.5
-    ],
-    [
-     69,
-     286.5,
-     0.5
-    ],
-    [
-     73,
-     287.0,
-     0.5
-    ],
-    [
-     76,
-     287.5,
-     0.5
+     262.5,
+     1.5,
+     "the silent pen: the band drops after 'hold', the voice sings 'the' alone, then one beat of nothing but a keystroke at +7.25; the crash slams back on 'You'"
     ]
    ],
-   "headFillsNote": "the 3-note head (G B D) as a pickup fill into chorus bars 5 and into the next section; glockenspiel (GM 10) doubles it an octave up in the final chorus",
+   "flourish": [
+    [
+     79,
+     103.25,
+     0.25
+    ],
+    [
+     83,
+     103.5,
+     0.25
+    ],
+    [
+     86,
+     103.75,
+     0.25
+    ],
+    [
+     79,
+     199.25,
+     0.25
+    ],
+    [
+     83,
+     199.5,
+     0.25
+    ],
+    [
+     86,
+     199.75,
+     0.25
+    ],
+    [
+     81,
+     287.25,
+     0.25
+    ],
+    [
+     85,
+     287.5,
+     0.25
+    ],
+    [
+     88,
+     287.75,
+     0.25
+    ]
+   ],
+   "flourishNote": "three 16ths (G5 B5 D6; A5 C#6 E6 in A) at chorus +31.25/+31.5/+31.75, an octave and more above the lead, after 'smooth it' and into the next section; organ, doubled by glockenspiel (GM 10)",
    "glockDouble": {
     "sections": [
+     "chorus1",
+     "chorus2",
      "chorus3"
     ],
-    "transpose": 12,
-    "what": "glockenspiel doubles the head fills and plays the loop on top of the outro"
+    "transpose": 0,
+    "what": "glockenspiel doubles the flourish in every chorus and plays the loop on top of the outro"
    }
   },
   "bass": {
    "styles": {
     "pulse8": "big-beat bass: two detuned saws, root 8ths, sidechain pump from the kick",
-    "octaveBounce": "round finger bass (GM 34) alternating root / octave on 8ths, after Feel It Still",
-    "long": "sustained roots (pre-chorus: under the string pad; breakdown: a soft sine sub)"
+    "strut": "round finger bass (GM 34), after Feel It Still: per 4-beat chord R[0,.75] R[.75,.25] 8va[1.5,.5] R[2.5,.5] 5th[3,.5] chromatic approach to the next root[3.5,.5]; in bars 1 and 5 the figure starts at +.5 so the glock ping on PEN speaks",
+    "long": "sustained roots (pre-chorus: under the string pad; breakdown: a soft sine sub, the E2 held through the spin-up riser)"
    },
    "sections": {
     "boot": "none",
     "intro": "pulse8",
     "verse1": "pulse8",
     "pre1": "long",
-    "chorus1": "octaveBounce",
+    "chorus1": "strut",
     "post1": "pulse8",
     "verse2": "pulse8",
     "pre2": "long",
-    "chorus2": "octaveBounce",
+    "chorus2": "strut",
     "post2": "pulse8",
     "bridge": "pulse8",
     "breakdown": "long",
-    "chorus3": "octaveBounce",
+    "chorus3": "strut",
     "outro": "pulse8",
     "tail": "none"
    },
    "cuts": [
     [
-     69.5,
-     2.5,
-     "stop-time on HAND"
+     70,
+     2,
+     "stop-time after the HAND hit: air, then the a cappella pickup"
     ],
     [
-     165.5,
-     2.5,
-     "stop-time on HAND"
+     166,
+     2,
+     "stop-time after the HAND hit"
+    ],
+    [
+     139,
+     1,
+     "the stumble"
     ],
     [
      240,
@@ -7116,19 +7229,14 @@
      "bar 1 of the breakdown: only the G pedal and the spoken sample"
     ],
     [
-     252,
-     4,
-     "the D pivot bar: riser only, the pickup is a cappella"
-    ],
-    [
-     263,
-     1,
-     "the silent pen"
-    ],
-    [
      296,
      8,
      "voice and piano, then the boot chord"
+    ],
+    [
+     262.5,
+     1.5,
+     "the silent pen: the band drops after 'hold', the voice sings 'the' alone, then one beat of nothing but a keystroke at +7.25; the crash slams back on 'You'"
     ]
    ],
    "events": [
@@ -7630,21 +7738,11 @@
     [
      38,
      68,
-     1.5
+     2
     ],
     [
      36,
-     72,
-     0.5
-    ],
-    [
-     48,
      72.5,
-     0.5
-    ],
-    [
-     36,
-     73.0,
      0.5
     ],
     [
@@ -7654,38 +7752,28 @@
     ],
     [
      36,
-     74.0,
-     0.5
-    ],
-    [
-     48,
      74.5,
      0.5
     ],
     [
-     36,
-     75.0,
+     43,
+     75,
      0.5
     ],
     [
-     48,
+     37,
      75.5,
      0.5
     ],
     [
      38,
      76,
-     0.5
-    ],
-    [
-     50,
-     76.5,
-     0.5
+     0.75
     ],
     [
      38,
-     77.0,
-     0.5
+     76.75,
+     0.25
     ],
     [
      50,
@@ -7694,38 +7782,28 @@
     ],
     [
      38,
-     78.0,
-     0.5
-    ],
-    [
-     50,
      78.5,
      0.5
     ],
     [
-     38,
-     79.0,
+     45,
+     79,
      0.5
     ],
     [
-     50,
+     39,
      79.5,
      0.5
     ],
     [
      40,
      80,
-     0.5
-    ],
-    [
-     52,
-     80.5,
-     0.5
+     0.75
     ],
     [
      40,
-     81.0,
-     0.5
+     80.75,
+     0.25
     ],
     [
      52,
@@ -7734,38 +7812,28 @@
     ],
     [
      40,
-     82.0,
-     0.5
-    ],
-    [
-     52,
      82.5,
      0.5
     ],
     [
-     40,
-     83.0,
+     47,
+     83,
      0.5
     ],
     [
-     52,
+     46,
      83.5,
      0.5
     ],
     [
      47,
      84,
-     0.5
-    ],
-    [
-     59,
-     84.5,
-     0.5
+     0.75
     ],
     [
      47,
-     85.0,
-     0.5
+     84.75,
+     0.25
     ],
     [
      59,
@@ -7774,37 +7842,22 @@
     ],
     [
      47,
-     86.0,
-     0.5
-    ],
-    [
-     59,
      86.5,
      0.5
     ],
     [
-     47,
-     87.0,
+     54,
+     87,
      0.5
     ],
     [
-     59,
+     47,
      87.5,
      0.5
     ],
     [
      36,
-     88,
-     0.5
-    ],
-    [
-     48,
      88.5,
-     0.5
-    ],
-    [
-     36,
-     89.0,
      0.5
     ],
     [
@@ -7814,38 +7867,28 @@
     ],
     [
      36,
-     90.0,
-     0.5
-    ],
-    [
-     48,
      90.5,
      0.5
     ],
     [
-     36,
-     91.0,
+     43,
+     91,
      0.5
     ],
     [
-     48,
+     37,
      91.5,
      0.5
     ],
     [
      38,
      92,
-     0.5
-    ],
-    [
-     50,
-     92.5,
-     0.5
+     0.75
     ],
     [
      38,
-     93.0,
-     0.5
+     92.75,
+     0.25
     ],
     [
      50,
@@ -7854,38 +7897,28 @@
     ],
     [
      38,
-     94.0,
-     0.5
-    ],
-    [
-     50,
      94.5,
      0.5
     ],
     [
-     38,
-     95.0,
+     45,
+     95,
      0.5
     ],
     [
-     50,
+     44,
      95.5,
      0.5
     ],
     [
      45,
      96,
-     0.5
-    ],
-    [
-     57,
-     96.5,
-     0.5
+     0.75
     ],
     [
      45,
-     97.0,
-     0.5
+     96.75,
+     0.25
     ],
     [
      57,
@@ -7894,61 +7927,56 @@
     ],
     [
      45,
-     98.0,
-     0.5
-    ],
-    [
-     57,
      98.5,
      0.5
     ],
     [
-     45,
-     99.0,
+     52,
+     99,
      0.5
     ],
     [
-     57,
+     37,
      99.5,
      0.5
     ],
     [
      38,
      100,
-     0.5
-    ],
-    [
-     50,
-     100.5,
-     0.5
+     0.75
     ],
     [
      38,
-     101.0,
-     0.5
+     100.75,
+     0.25
     ],
     [
      50,
+     101,
+     0.5
+    ],
+    [
+     37,
      101.5,
      0.5
     ],
     [
      38,
      102,
-     0.5
-    ],
-    [
-     50,
-     102.5,
-     0.5
+     0.75
     ],
     [
      38,
-     103.0,
-     0.5
+     102.75,
+     0.25
     ],
     [
      50,
+     103,
+     0.5
+    ],
+    [
+     42,
      103.5,
      0.5
     ],
@@ -8303,16 +8331,6 @@
      0.5
     ],
     [
-     43,
-     139.0,
-     0.5
-    ],
-    [
-     43,
-     139.5,
-     0.5
-    ],
-    [
      41,
      140,
      0.5
@@ -8450,21 +8468,11 @@
     [
      38,
      164,
-     1.5
+     2
     ],
     [
      36,
-     168,
-     0.5
-    ],
-    [
-     48,
      168.5,
-     0.5
-    ],
-    [
-     36,
-     169.0,
      0.5
     ],
     [
@@ -8474,38 +8482,28 @@
     ],
     [
      36,
-     170.0,
-     0.5
-    ],
-    [
-     48,
      170.5,
      0.5
     ],
     [
-     36,
-     171.0,
+     43,
+     171,
      0.5
     ],
     [
-     48,
+     37,
      171.5,
      0.5
     ],
     [
      38,
      172,
-     0.5
-    ],
-    [
-     50,
-     172.5,
-     0.5
+     0.75
     ],
     [
      38,
-     173.0,
-     0.5
+     172.75,
+     0.25
     ],
     [
      50,
@@ -8514,38 +8512,28 @@
     ],
     [
      38,
-     174.0,
-     0.5
-    ],
-    [
-     50,
      174.5,
      0.5
     ],
     [
-     38,
-     175.0,
+     45,
+     175,
      0.5
     ],
     [
-     50,
+     39,
      175.5,
      0.5
     ],
     [
      40,
      176,
-     0.5
-    ],
-    [
-     52,
-     176.5,
-     0.5
+     0.75
     ],
     [
      40,
-     177.0,
-     0.5
+     176.75,
+     0.25
     ],
     [
      52,
@@ -8554,38 +8542,28 @@
     ],
     [
      40,
-     178.0,
-     0.5
-    ],
-    [
-     52,
      178.5,
      0.5
     ],
     [
-     40,
-     179.0,
+     47,
+     179,
      0.5
     ],
     [
-     52,
+     46,
      179.5,
      0.5
     ],
     [
      47,
      180,
-     0.5
-    ],
-    [
-     59,
-     180.5,
-     0.5
+     0.75
     ],
     [
      47,
-     181.0,
-     0.5
+     180.75,
+     0.25
     ],
     [
      59,
@@ -8594,37 +8572,22 @@
     ],
     [
      47,
-     182.0,
-     0.5
-    ],
-    [
-     59,
      182.5,
      0.5
     ],
     [
-     47,
-     183.0,
+     54,
+     183,
      0.5
     ],
     [
-     59,
+     47,
      183.5,
      0.5
     ],
     [
      36,
-     184,
-     0.5
-    ],
-    [
-     48,
      184.5,
-     0.5
-    ],
-    [
-     36,
-     185.0,
      0.5
     ],
     [
@@ -8634,38 +8597,28 @@
     ],
     [
      36,
-     186.0,
-     0.5
-    ],
-    [
-     48,
      186.5,
      0.5
     ],
     [
-     36,
-     187.0,
+     43,
+     187,
      0.5
     ],
     [
-     48,
+     37,
      187.5,
      0.5
     ],
     [
      38,
      188,
-     0.5
-    ],
-    [
-     50,
-     188.5,
-     0.5
+     0.75
     ],
     [
      38,
-     189.0,
-     0.5
+     188.75,
+     0.25
     ],
     [
      50,
@@ -8674,38 +8627,28 @@
     ],
     [
      38,
-     190.0,
-     0.5
-    ],
-    [
-     50,
      190.5,
      0.5
     ],
     [
-     38,
-     191.0,
+     45,
+     191,
      0.5
     ],
     [
-     50,
+     44,
      191.5,
      0.5
     ],
     [
      45,
      192,
-     0.5
-    ],
-    [
-     57,
-     192.5,
-     0.5
+     0.75
     ],
     [
      45,
-     193.0,
-     0.5
+     192.75,
+     0.25
     ],
     [
      57,
@@ -8714,61 +8657,56 @@
     ],
     [
      45,
-     194.0,
-     0.5
-    ],
-    [
-     57,
      194.5,
      0.5
     ],
     [
-     45,
-     195.0,
+     52,
+     195,
      0.5
     ],
     [
-     57,
+     37,
      195.5,
      0.5
     ],
     [
      38,
      196,
-     0.5
-    ],
-    [
-     50,
-     196.5,
-     0.5
+     0.75
     ],
     [
      38,
-     197.0,
-     0.5
+     196.75,
+     0.25
     ],
     [
      50,
+     197,
+     0.5
+    ],
+    [
+     37,
      197.5,
      0.5
     ],
     [
      38,
      198,
-     0.5
-    ],
-    [
-     50,
-     198.5,
-     0.5
+     0.75
     ],
     [
      38,
-     199.0,
-     0.5
+     198.75,
+     0.25
     ],
     [
      50,
+     199,
+     0.5
+    ],
+    [
+     42,
      199.5,
      0.5
     ],
@@ -9183,18 +9121,13 @@
      4
     ],
     [
-     38,
-     256,
-     0.5
+     40,
+     252,
+     4
     ],
     [
-     50,
+     38,
      256.5,
-     0.5
-    ],
-    [
-     38,
-     257.0,
      0.5
     ],
     [
@@ -9204,38 +9137,28 @@
     ],
     [
      38,
-     258.0,
-     0.5
-    ],
-    [
-     50,
      258.5,
      0.5
     ],
     [
-     38,
-     259.0,
+     45,
+     259,
      0.5
     ],
     [
-     50,
+     39,
      259.5,
      0.5
     ],
     [
      40,
      260,
-     0.5
-    ],
-    [
-     52,
-     260.5,
-     0.5
+     0.75
     ],
     [
      40,
-     261.0,
-     0.5
+     260.75,
+     0.25
     ],
     [
      52,
@@ -9243,29 +9166,14 @@
      0.5
     ],
     [
-     40,
-     262.0,
-     0.5
-    ],
-    [
-     52,
-     262.5,
-     0.5
-    ],
-    [
      42,
      264,
-     0.5
-    ],
-    [
-     54,
-     264.5,
-     0.5
+     0.75
     ],
     [
      42,
-     265.0,
-     0.5
+     264.75,
+     0.25
     ],
     [
      54,
@@ -9274,38 +9182,28 @@
     ],
     [
      42,
-     266.0,
-     0.5
-    ],
-    [
-     54,
      266.5,
      0.5
     ],
     [
-     42,
-     267.0,
+     49,
+     267,
      0.5
     ],
     [
-     54,
+     36,
      267.5,
      0.5
     ],
     [
      37,
      268,
-     0.5
-    ],
-    [
-     49,
-     268.5,
-     0.5
+     0.75
     ],
     [
      37,
-     269.0,
-     0.5
+     268.75,
+     0.25
     ],
     [
      49,
@@ -9314,37 +9212,22 @@
     ],
     [
      37,
-     270.0,
-     0.5
-    ],
-    [
-     49,
      270.5,
      0.5
     ],
     [
-     37,
-     271.0,
+     44,
+     271,
      0.5
     ],
     [
-     49,
+     37,
      271.5,
      0.5
     ],
     [
      38,
-     272,
-     0.5
-    ],
-    [
-     50,
      272.5,
-     0.5
-    ],
-    [
-     38,
-     273.0,
      0.5
     ],
     [
@@ -9354,38 +9237,28 @@
     ],
     [
      38,
-     274.0,
-     0.5
-    ],
-    [
-     50,
      274.5,
      0.5
     ],
     [
-     38,
-     275.0,
+     45,
+     275,
      0.5
     ],
     [
-     50,
+     39,
      275.5,
      0.5
     ],
     [
      40,
      276,
-     0.5
-    ],
-    [
-     52,
-     276.5,
-     0.5
+     0.75
     ],
     [
      40,
-     277.0,
-     0.5
+     276.75,
+     0.25
     ],
     [
      52,
@@ -9394,38 +9267,28 @@
     ],
     [
      40,
-     278.0,
-     0.5
-    ],
-    [
-     52,
      278.5,
      0.5
     ],
     [
-     40,
-     279.0,
+     47,
+     279,
      0.5
     ],
     [
-     52,
+     46,
      279.5,
      0.5
     ],
     [
      47,
      280,
-     0.5
-    ],
-    [
-     59,
-     280.5,
-     0.5
+     0.75
     ],
     [
      47,
-     281.0,
-     0.5
+     280.75,
+     0.25
     ],
     [
      59,
@@ -9434,61 +9297,56 @@
     ],
     [
      47,
-     282.0,
-     0.5
-    ],
-    [
-     59,
      282.5,
      0.5
     ],
     [
-     47,
-     283.0,
+     54,
+     283,
      0.5
     ],
     [
-     59,
+     39,
      283.5,
      0.5
     ],
     [
      40,
      284,
-     0.5
-    ],
-    [
-     52,
-     284.5,
-     0.5
+     0.75
     ],
     [
      40,
-     285.0,
-     0.5
+     284.75,
+     0.25
     ],
     [
      52,
+     285,
+     0.5
+    ],
+    [
+     39,
      285.5,
      0.5
     ],
     [
      40,
      286,
-     0.5
-    ],
-    [
-     52,
-     286.5,
-     0.5
+     0.75
     ],
     [
      40,
-     287.0,
-     0.5
+     286.75,
+     0.25
     ],
     [
      52,
+     287,
+     0.5
+    ],
+    [
+     44,
      287.5,
      0.5
     ],
@@ -9576,7 +9434,7 @@
   },
   "drums": {
    "grid": 16,
-   "gridNote": "16 characters per bar, one per 16th; a pattern of 1/2/4 bars repeats through its section",
+   "gridNote": "16 characters per bar, one per 16th; a pattern of 1/2/4/8 bars repeats through its section",
    "kit": {
     "kick": "55 Hz sine + click (big-beat) / tighter 808 in the choruses",
     "snare": "noise + 180 Hz body, crunchy",
@@ -9587,7 +9445,8 @@
     "cowbell": "two square partials 560/845 Hz",
     "tambourine": "jangly noise 16ths",
     "snap": "finger snap: short 2 kHz click",
-    "crash": "long noise, 2 s decay"
+    "crash": "long noise, 2 s decay",
+    "floorTom": "90 Hz sine drop, 250 ms (fills.stumble only)"
    },
    "patterns": {
     "none": {},
@@ -9605,13 +9464,21 @@
      "hat": "x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.",
      "cowbell": "..............................x."
     },
+    "verse2": {
+     "kick": "x......x..x.....x......x..x.....x......x..x.....x......x..x.....x......x..x.....x......x..x.....x......x..x.....x......x..x.....",
+     "snare": "....x.......x.......x.......x.......x.......x.......x.......x.......x.......x.......x.......x.......x.......x.......x.......x...",
+     "ghostSnare": "......x.......x.......x.......x.......x.......x.......x.......x.......x.......x.......x.......x.......x.......x.......x.......x.",
+     "hat": "x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.",
+     "cowbell": "..............................x...............................x...............................x...............................x.",
+     "clap": "........................................................................x...............x...............x......................."
+    },
     "prechorus": {
-     "kick": "x...x...x...x...x...x...x...x...x...x...x...x...x...x...........",
+     "kick": "x...x...x...x...x...x...x...x...x...x...x...x...x...x.x.........",
      "snare": "....x.......x.......x.......x...x.x.x.x.x.x.x.x.xxxxxx..........",
      "hat": "x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x..........."
     },
     "prechorus2": {
-     "kick": "x...x...x...x...x...x...x...x...x...x...x...x...x...x...........",
+     "kick": "x...x...x...x...x...x...x...x...x...x...x...x...x...x.x.........",
      "snare": "....x.......x.......x.......x...x.x.x.x.x.x.x.x.xxxxxx..........",
      "hat": "x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x...........",
      "tambourine": "x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.xxxxxxxxxxxxxxxxxxxxxx.........."
@@ -9620,14 +9487,14 @@
      "kick": "x...x...x...x...x...x...x...x...",
      "snare": "....x.......x.......x.......x...",
      "clap": "....x.......x.......x.......x...",
-     "hat": "x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.",
+     "hat": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
      "openHat": "..............x...............x."
     },
     "chorus2": {
      "kick": "x...x...x...x...x...x...x...x...",
      "snare": "....x.......x.......x.......x...",
      "clap": "....x.......x.......x.......x...",
-     "hat": "x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.",
+     "hat": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
      "openHat": "..............x...............x.",
      "tambourine": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
     },
@@ -9643,14 +9510,20 @@
      "cowbell": "x...x...x...x...x...x...x...x...",
      "hat": "x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x."
     },
+    "bridge": {
+     "kick": "x......x..x.....x......x..x.....",
+     "snare": "....x.......x.......x.......x...",
+     "ghostSnare": "......x.......x.......x.......x.",
+     "cowbell": "..............................x."
+    },
     "halftime": {
      "kick": "x...............x.......x.......",
      "snare": "........x...............x...xxxx",
      "hat": "x.x.x.x.x.x.x.x.xxxxxxxxxxxxxxxx"
     },
     "breakdown": {
-     "snap": "....................x.......x.......x.......x.......x.......x...",
-     "clap": "............................x...............x...............x..."
+     "snap": "....................x.......x.......x.......x...................",
+     "clap": "............................x...............x..................."
     },
     "final": {
      "kick": "x...x...x...x...x...x...x...x...",
@@ -9675,11 +9548,11 @@
     "pre1": "prechorus",
     "chorus1": "chorus",
     "post1": "post",
-    "verse2": "verse",
+    "verse2": "verse2",
     "pre2": "prechorus2",
     "chorus2": "chorus2",
     "post2": "post2",
-    "bridge": "bigbeat",
+    "bridge": "bridge",
     "breakdown": "breakdown",
     "chorus3": "final",
     "outro": "outro",
@@ -9694,19 +9567,24 @@
    ],
    "mutes": [
     [
-     69.5,
-     2.5,
-     "stop-time on HAND: only a reverse cymbal"
+     70,
+     2,
+     "stop-time after the HAND hit: only the reverse cymbal"
     ],
     [
-     165.5,
-     2.5,
-     "stop-time on HAND"
+     166,
+     2,
+     "stop-time after the HAND hit"
     ],
     [
-     263,
+     139,
      1,
-     "the silent pen: one keystroke, nothing else"
+     "the stumble: the groove drops out; only fills.stumble plays"
+    ],
+    [
+     262.5,
+     1.5,
+     "the silent pen: the band drops after 'hold', the voice sings 'the' alone, then one beat of nothing but a keystroke at +7.25; the crash slams back on 'You'"
     ]
    ],
    "ducks": [
@@ -9743,10 +9621,16 @@
      "what": "white-noise riser under the string pad"
     },
     {
+     "name": "stopHit1",
+     "startBeat": 69.5,
+     "beats": 0.5,
+     "what": "unison band hit on HAND: kick, choked crash, brass [54,57,62] (stabs.brass), bass D2 for an 8th; then air"
+    },
+    {
      "name": "reverseCymbal2",
      "startBeat": 70,
      "beats": 2,
-     "what": "into chorus 1"
+     "what": "into chorus 1, alone under the pickup"
     },
     {
      "name": "crash1",
@@ -9757,20 +9641,26 @@
     {
      "name": "stumble",
      "startBeat": 139.25,
-     "beats": 1,
-     "what": "on 'Too regular? Flag it.' the fill lands a 16th late: the band loosening up after the flag"
+     "beats": 0.75,
+     "what": "on 'Too regular?' / 'Flag it.' the groove drops for a beat (drums.mutes, bass.cuts, riff cut at +19) and the fill lands a 16th late: snare + floor tom 16ths at +19.25, +19.5, +19.75, the first with a flam; the full groove returns on +20 ('-ner-' of Generic)"
     },
     {
      "name": "keepIt",
      "startBeat": 150,
      "beats": 0.5,
-     "what": "big clap + rimshot on 'Keep it.'"
+     "what": "big clap + rimshot on the sung 'Keep it.'"
     },
     {
      "name": "riser2",
      "startBeat": 152,
      "beats": 13.5,
      "what": "longer riser, tambourine added"
+    },
+    {
+     "name": "stopHit2",
+     "startBeat": 165.5,
+     "beats": 0.5,
+     "what": "unison band hit on HAND, then air"
     },
     {
      "name": "reverseCymbal3",
@@ -9785,6 +9675,12 @@
      "what": "crash"
     },
     {
+     "name": "subDrop",
+     "startBeat": 224,
+     "beats": 2,
+     "what": "one 808 sub drop on the downbeat of bar 5 (Em, the second half of the ladder)"
+    },
+    {
      "name": "bridgeRoll",
      "startBeat": 236,
      "beats": 4,
@@ -9794,7 +9690,13 @@
      "name": "spinUp",
      "startBeat": 252,
      "beats": 4,
-     "what": "floppy-drive spin-up riser (sine sweep + comb grit) on the D pivot"
+     "what": "floppy-drive spin-up riser (sine sweep + comb grit) over the held E2 sub on E7sus4; no drums; the pickup is a cappella"
+    },
+    {
+     "name": "reverseCymbal4",
+     "startBeat": 254,
+     "beats": 2,
+     "what": "into the reboot"
     },
     {
      "name": "reboot",
@@ -9804,15 +9706,15 @@
     },
     {
      "name": "keystroke",
-     "startBeat": 263,
-     "beats": 1,
-     "what": "one dry keyboard click: the writer types 'pen'"
+     "startBeat": 263.25,
+     "beats": 0.25,
+     "what": "one dry keyboard click inside the silence: the writer types 'pen'"
     },
     {
      "name": "slamBack",
      "startBeat": 264,
      "beats": 1,
-     "what": "crash: the band returns on 'You say'"
+     "what": "crash + brass stab: the band returns on 'You say'"
     },
     {
      "name": "crash3",
@@ -9832,31 +9734,205 @@
    "sections": {
     "boot": "the boot chord only",
     "intro": "organ riff only, no pads; dry",
-    "verse1": "organ riff; a filtered UI blip (sine ping, 30 ms) on every chant verb (use the chant word starts)",
-    "pre1": "string pad (GM 49) sustaining each chord voicing, rising with the riser; the riff drops out",
-    "chorus1": "bouncy offbeat piano 8ths (GM 1) on the chord voicings; soft saw pad; brass stabs (GM 62) listed in stabs.brass; glockenspiel ping on every 'pen' (stabs.glockPen); one tenor sax (GM 66) stab after 'erase it'",
-    "post1": "organ riff bars 1-2; bars 3-4 the choir sings the riff over a vinyl-crackle bed (One More Tune's record)",
-    "verse2": "as verse 1 plus a second organ an octave down",
+    "verse1": "bars 1-4: no riff (bass, drums, chant and the UI blips only); bars 5-8 the riff returns and turns around on D5; a filtered UI blip (sine ping, 30 ms) on every chant verb (use the chant word starts)",
+    "pre1": "string pad (GM 49) sustaining each chord voicing, rising with the riser; the riff drops out; the whole band hits HAND at +13.5 and stops at +14",
+    "chorus1": "bouncy offbeat piano 8ths (GM 1) on the chord voicings (Cmaj9 with the D on top); soft saw pad; brass stabs (GM 62) listed in stabs.brass; glockenspiel ping on every 'pen' (stabs.glockPen); one tenor sax (GM 66) stab after 'smooth it'; the flourish into the post-chorus",
+    "post1": "organ riff an octave down in bars 1-2; bars 3-4 the choir sings the riff over a vinyl-crackle bed (One More Tune's record)",
+    "verse2": "as verse 1 plus a second organ an octave down; the groove drops for the stumble at +19",
     "pre2": "as pre-chorus 1, tambourine added",
     "chorus2": "as chorus 1, bass doubled, tambourine 16ths, choir harmony a third below on bars 5-8",
-    "post2": "organ riff, cowbell and claps on every beat",
-    "bridge": "the loop follows the bridge chords; a system beep per year (parts.beeps) climbing like an arpeggio; bars 7-8 a filter-swept pad, half-time drums building",
-    "breakdown": "bar 1: a G pedal (sine) and the spoken sample only; bars 2-4: felt piano (GM 1, soft) on the voicings, snaps and claps, lots of space; bar 4 the floppy spin-up riser on D, the pickup a cappella",
-    "chorus3": "the reboot chord with a crash, then everything in A: piano, pad, brass, glock doubling the riff head, 12-copy gang on the echoes; bar 2 beat 4 is one beat of silence (the keystroke); sax stab on FADE and after 'erase it'",
-    "outro": "bars 1-2 riff and loop in A under the chant; bar 3 piano and claps under the lead alone; bar 4 the Amaj9 boot chord rings and the spoken line sits over it",
+    "post2": "organ riff an octave down, cowbell and claps on every beat",
+    "bridge": "organ chord stabs on the big-beat kick rhythm (keys.bridgeComp: 16th indices 0, 7, 10 of each bar, bars 1-6); no hats, the twelve beeps (parts.beeps) are the hi-hat; sub drop on bar 5; bars 7-8 a filter-swept pad, half-time drums building",
+    "breakdown": "bar 1: a G pedal (sine) and the spoken sample only; bars 2-3: felt piano (GM 1, soft) on the voicings, snaps and claps, lots of space; bar 4: E7sus4 held by the pad over an E2 sine sub while the floppy spin-up riser climbs; no drums; the pickup 'I'm just your' (E4 A4 B4) is a cappella",
+    "chorus3": "the reboot chord with a crash, then everything in A: piano, pad, brass, glock, 12-copy gang on the echoes; +6.5 to +8 is the silence window (parts.silence): every part out, one keystroke at +7.25, crash and brass on +8; sax stab on FADE and after 'smooth it'",
+    "outro": "bars 1-2 riff and loop in A under the chant, the choir's la-la on top, the glock on the loop; bar 3 piano and claps under the lead alone (Dmaj9, then E7sus4 suspending under the held 'voice'); bar 4 the Amaj9 boot chord resolves under the voice and rings, the spoken line sits over it",
     "tail": "the boot chord decaying; one mouse click at saveClick; silence for the end card"
    },
+   "bridgeComp": [
+    {
+     "startBeat": 208,
+     "beats": 0.5,
+     "notes": [
+      55,
+      59,
+      64
+     ]
+    },
+    {
+     "startBeat": 209.75,
+     "beats": 0.5,
+     "notes": [
+      55,
+      59,
+      64
+     ]
+    },
+    {
+     "startBeat": 210.5,
+     "beats": 0.5,
+     "notes": [
+      55,
+      59,
+      64
+     ]
+    },
+    {
+     "startBeat": 212,
+     "beats": 0.5,
+     "notes": [
+      52,
+      55,
+      60
+     ]
+    },
+    {
+     "startBeat": 213.75,
+     "beats": 0.5,
+     "notes": [
+      52,
+      55,
+      60
+     ]
+    },
+    {
+     "startBeat": 214.5,
+     "beats": 0.5,
+     "notes": [
+      52,
+      55,
+      60
+     ]
+    },
+    {
+     "startBeat": 216,
+     "beats": 0.5,
+     "notes": [
+      55,
+      59,
+      62
+     ]
+    },
+    {
+     "startBeat": 217.75,
+     "beats": 0.5,
+     "notes": [
+      55,
+      59,
+      62
+     ]
+    },
+    {
+     "startBeat": 218.5,
+     "beats": 0.5,
+     "notes": [
+      55,
+      59,
+      62
+     ]
+    },
+    {
+     "startBeat": 220,
+     "beats": 0.5,
+     "notes": [
+      54,
+      57,
+      62
+     ]
+    },
+    {
+     "startBeat": 221.75,
+     "beats": 0.5,
+     "notes": [
+      54,
+      57,
+      62
+     ]
+    },
+    {
+     "startBeat": 222.5,
+     "beats": 0.5,
+     "notes": [
+      54,
+      57,
+      62
+     ]
+    },
+    {
+     "startBeat": 224,
+     "beats": 0.5,
+     "notes": [
+      55,
+      59,
+      64
+     ]
+    },
+    {
+     "startBeat": 225.75,
+     "beats": 0.5,
+     "notes": [
+      55,
+      59,
+      64
+     ]
+    },
+    {
+     "startBeat": 226.5,
+     "beats": 0.5,
+     "notes": [
+      55,
+      59,
+      64
+     ]
+    },
+    {
+     "startBeat": 228,
+     "beats": 0.5,
+     "notes": [
+      55,
+      60,
+      64
+     ]
+    },
+    {
+     "startBeat": 229.75,
+     "beats": 0.5,
+     "notes": [
+      55,
+      60,
+      64
+     ]
+    },
+    {
+     "startBeat": 230.5,
+     "beats": 0.5,
+     "notes": [
+      55,
+      60,
+      64
+     ]
+    }
+   ],
    "voicings": "take each chord's 'notes' from the chords list: bass note first, then a close voicing around C4"
   },
   "stabs": {
    "brass": [
+    {
+     "startBeat": 69.5,
+     "beats": 0.5,
+     "notes": [
+      54,
+      57,
+      62
+     ]
+    },
     {
      "startBeat": 72,
      "beats": 0.5,
      "notes": [
       52,
       55,
-      59
+      59,
+      62
      ]
     },
     {
@@ -9874,11 +9950,21 @@
      "notes": [
       52,
       55,
-      59
+      59,
+      62
      ]
     },
     {
      "startBeat": 95.5,
+     "beats": 0.5,
+     "notes": [
+      54,
+      57,
+      62
+     ]
+    },
+    {
+     "startBeat": 165.5,
      "beats": 0.5,
      "notes": [
       54,
@@ -9892,7 +9978,8 @@
      "notes": [
       52,
       55,
-      59
+      59,
+      62
      ]
     },
     {
@@ -9910,7 +9997,8 @@
      "notes": [
       52,
       55,
-      59
+      59,
+      62
      ]
     },
     {
@@ -9928,11 +10016,12 @@
      "notes": [
       54,
       57,
-      61
+      61,
+      64
      ]
     },
     {
-     "startBeat": 263.5,
+     "startBeat": 264.0,
      "beats": 0.5,
      "notes": [
       56,
@@ -9946,7 +10035,8 @@
      "notes": [
       54,
       57,
-      61
+      61,
+      64
      ]
     },
     {
@@ -9991,7 +10081,7 @@
    ],
    "glockPen": [
     [
-     83,
+     86,
      72.0,
      0.5
     ],
@@ -10001,12 +10091,12 @@
      0.5
     ],
     [
-     83,
+     86,
      88.0,
      0.5
     ],
     [
-     83,
+     86,
      168.0,
      0.5
     ],
@@ -10016,17 +10106,17 @@
      0.5
     ],
     [
-     83,
+     86,
      184.0,
      0.5
     ],
     [
-     85,
+     88,
      256.0,
      0.5
     ],
     [
-     85,
+     88,
      272.0,
      0.5
     ]
@@ -10094,54 +10184,9 @@
     0.25
    ]
   ],
-  "counterChant": {
-   "what": "optional: 'Save it. Clip it. Insert it. Export it.' chanted on A3 at -12 dB under final-chorus bars 3-4 and 7-8; not a captioned line",
-   "notes": [
-    [
-     57,
-     264,
-     0.5
-    ],
-    [
-     57,
-     266,
-     0.5
-    ],
-    [
-     57,
-     268,
-     0.5
-    ],
-    [
-     57,
-     270,
-     0.5
-    ],
-    [
-     57,
-     280,
-     0.5
-    ],
-    [
-     57,
-     282,
-     0.5
-    ],
-    [
-     57,
-     284,
-     0.5
-    ],
-    [
-     57,
-     286,
-     0.5
-    ]
-   ]
-  },
   "sfx": {
    "saveClick": 306.5,
-   "keystroke": 263,
+   "keystroke": 263.25,
    "floppyClunks": [
     240.5,
     241
@@ -10192,62 +10237,62 @@
    {
     "name": "1988 System 6",
     "startBeat": 208,
-    "note": "bridge roll-call, one per half bar"
+    "note": "bridge roll-call, one appearance per half bar; the four-digit year is the caption"
    },
    {
     "name": "1991 System 7",
     "startBeat": 210,
-    "note": "bridge roll-call, one per half bar"
+    "note": "bridge roll-call, one appearance per half bar; the four-digit year is the caption"
    },
    {
     "name": "1995 NeXTSTEP",
     "startBeat": 212,
-    "note": "bridge roll-call, one per half bar"
+    "note": "bridge roll-call, one appearance per half bar; the four-digit year is the caption"
    },
    {
     "name": "1998 Drawing Board",
     "startBeat": 214,
-    "note": "bridge roll-call, one per half bar"
+    "note": "bridge roll-call, one appearance per half bar; the four-digit year is the caption"
    },
    {
     "name": "1999 Platinum",
     "startBeat": 216,
-    "note": "bridge roll-call, one per half bar"
+    "note": "bridge roll-call, one appearance per half bar; the four-digit year is the caption"
    },
    {
     "name": "2002 Aqua",
     "startBeat": 218,
-    "note": "bridge roll-call, one per half bar"
+    "note": "bridge roll-call, one appearance per half bar; the four-digit year is the caption"
    },
    {
     "name": "2005 Tiger",
     "startBeat": 220,
-    "note": "bridge roll-call, one per half bar"
+    "note": "bridge roll-call, one appearance per half bar; the four-digit year is the caption"
    },
    {
     "name": "2009 Snow Leopard",
     "startBeat": 222,
-    "note": "bridge roll-call, one per half bar"
+    "note": "bridge roll-call, one appearance per half bar; the four-digit year is the caption"
    },
    {
     "name": "2011 Lion",
     "startBeat": 224,
-    "note": "bridge roll-call, one per half bar"
+    "note": "bridge roll-call, one appearance per half bar; the four-digit year is the caption"
    },
    {
     "name": "2014 Yosemite",
     "startBeat": 226,
-    "note": "bridge roll-call, one per half bar"
+    "note": "bridge roll-call, one appearance per half bar; the four-digit year is the caption"
    },
    {
     "name": "2020 Big Sur",
     "startBeat": 228,
-    "note": "bridge roll-call, one per half bar"
+    "note": "bridge roll-call, one appearance per half bar; the four-digit year is the caption"
    },
    {
     "name": "2026 Liquid Glass",
     "startBeat": 230,
-    "note": "bridge roll-call, one per half bar"
+    "note": "bridge roll-call, one appearance per half bar; the four-digit year is the caption"
    },
    {
     "name": "1988 System 6 (inverted)",
@@ -10270,24 +10315,33 @@
    "teaserPen": 6,
    "drop": 8,
    "verse1": 24,
+   "riffReturns": 40,
    "melt": 60,
    "stop1": 69.5,
+   "air1": 70,
    "chorus1": 72,
    "colour": 72,
    "fade1": 85,
-   "erase1": 102,
+   "smooth1": 102,
    "post1": 104,
    "whoHoldsThePen1": 104,
+   "youDo1": 108,
    "lala": 112,
    "verse2": 120,
+   "flagIt1": 138,
    "stumble": 139.25,
+   "flagIt2": 142,
+   "flagIt3": 146,
    "keepIt": 150,
    "stop2": 165.5,
+   "air2": 166,
    "chorus2": 168,
    "fade2": 181,
-   "erase2": 198,
+   "smooth2": 198,
    "whoHoldsThePen2": 200,
+   "youDo2": 204,
    "bridge": 208,
+   "subDrop": 224,
    "contactSheet": 232,
    "collapse": 236,
    "breakdown": 240,
@@ -10295,11 +10349,12 @@
    "pivot": 252,
    "reboot": 256,
    "keyChange": 256,
+   "bandOut": 262.5,
    "silentPen": 263,
-   "keystroke": 263,
+   "keystroke": 263.25,
    "slamBack": 264,
    "fade3": 269,
-   "erase3": 286,
+   "smooth3": 286,
    "outro": 288,
    "exportCD": 294,
    "bootChordOut": 300,
