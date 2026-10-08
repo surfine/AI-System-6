@@ -1,5 +1,5 @@
 // eras.js: the twelve appearances of AI System 6, in song order, and how each one paints itself.
-//   ERAS / ERA[id]   year, name, colour depth, palette roles (P), font roles, metrics, icon set, chrome family
+//   APPEARANCES / ERA[id]   year, name, colour depth, palette roles (P), font roles, metrics, icon set, chrome family
 //   setEra(id)       makes an era current for the frame (main calls it from the scene's opts.era)
 //   desktop(opts)    paints the era's desktop (cached full-screen canvas; opts.desk picks a variant)
 //   LOOK[family]     the per-era painters the widget kit dispatches on: window chrome, buttons, scroll bars,
@@ -24,7 +24,7 @@ const LUCIDA_FONTS = { ui: 'lucida', title: 'lucida', menu: 'lucida', button: 'l
 const HELV_FONTS = { ui: 'helv11', title: 'helv11', menu: 'helv', button: 'helv11', small: 'helv11', body: 'helv11', doc: 'serif', label: 'helv11', mono: 'monaco', big: 'helvBig', lyric: 'helvBig', appName: 'helvB' };
 const SF_FONTS = { ui: 'sf', title: 'sfB', menu: 'sf', button: 'sf', small: 'sf', body: 'sf', doc: 'serif', label: 'sf', mono: 'monaco', big: 'sfBig', lyric: 'sfBig', appName: 'sfB' };
 
-const ERAS = [
+const APPEARANCES = [
   { id: 'system6', year: 1988, name: 'System 6', icons: 'classic', chrome: 'mac1', depth: 1, menuH: 20, fonts: CLASSIC_FONTS, corners: true,
     pal: {} },
   { id: 'system7', year: 1991, name: 'System 7', icons: 'system-7', chrome: 'mac7', depth: 4, menuH: 20, fonts: CLASSIC_FONTS, corners: true,
@@ -80,14 +80,27 @@ const ERAS = [
       tip: '#f6f7f9', red: '#ff5f57', yellow: '#febc2e', green: '#28c840', card: '#fbfcfe', rule: '#e1e6ed' } },
 ];
 const ERA = {};
-ERAS.forEach((e, i) => { e.index = i; e.pal = { ...BASE_PAL, ...e.pal }; e.short = String(e.year); ERA[e.id] = e; });
+APPEARANCES.forEach((e, i) => { e.index = i; e.pal = { ...BASE_PAL, ...e.pal }; e.short = String(e.year); ERA[e.id] = e; });
 // aliases a chapter may use for the same appearance
 Object.assign(ERA, { classic: ERA.system6, system_6: ERA.system6, 'system-7': ERA.system7, next: ERA.nextstep, 'drawing-board': ERA.drawingboard,
   'snow-leopard': ERA.snowleopard, 'big-sur': ERA.bigsur, 'liquid-glass': ERA.liquidglass, glass: ERA.liquidglass });
-let E = ERAS[0];
+// The song's own appearance schedule (data.js ERAS: [{name: '1991 System 7', start, note}]) mapped to ids.
+// A scene without opts.era follows it: songEra(t) -> id; ERA_SCHEDULE[i] = {id, start, name, note, inverted}.
+function eraIdFromName(name) {
+  const y = /(\d{4})/.exec(name || ''), byYear = y && APPEARANCES.find(e => e.year === +y[1]);
+  if (byYear) return byYear.id;
+  const n = String(name || '').toLowerCase().replace(/[^a-z]/g, '');
+  const e = APPEARANCES.find(e => n.includes(e.name.toLowerCase().replace(/[^a-z]/g, '')) || n.includes(e.id));
+  return e ? e.id : null;
+}
+const ERA_SCHEDULE = (typeof ERAS !== 'undefined' && Array.isArray(ERAS) ? ERAS : []).map(e => ({ id: eraIdFromName(e.name), start: +e.start || 0, name: e.name, note: e.note || '', inverted: /invert/i.test(e.name || '') })).filter(e => e.id).sort((a, b) => a.start - b.start);
+const songEraEntry = (t = T) => { let r = null; for (const e of ERA_SCHEDULE) if (e.start <= t + 1e-6) r = e; return r || ERA_SCHEDULE[0] || { id: 'system6', start: 0, inverted: false }; };
+const songEra = (t = T) => songEraEntry(t).id;
+const songEraKeys = () => ERA_SCHEDULE.length ? ERA_SCHEDULE.map(e => [e.start, e.id]) : [[0, 'system6']];
+let E = APPEARANCES[0];
 function setEra(id) { E = (typeof id === 'object' && id) ? id : ERA[id] || ERA.system6; P = E.pal; FONTROLE = E.fonts; return E; }
 const eraIndex = id => (ERA[id] || ERA.system6).index;
-const eraNext = (id, d = 1) => ERAS[clamp(eraIndex(id) + d, 0, ERAS.length - 1)].id;
+const eraNext = (id, d = 1) => APPEARANCES[clamp(eraIndex(id) + d, 0, APPEARANCES.length - 1)].id;
 const ONEBIT = () => E.depth === 1;
 setEra('system6');
 
@@ -611,7 +624,7 @@ LOOK.aqua = {
     rrectVeil(x + 2, y + 1, w - 4, 6, 3, C.white, .5);
     hline(x + 1, y + th - 1, w - 2, act ? '#9a9a9a' : '#c8c8c8');
     lamps(x + 8, y + 4, this.lampD, this.lampGap, this.lampStyle, { active: act, hover: o.hover, dirty: o.dirty, noMin: o.noMin, noZoom: o.zoom === false });
-    if (title) clipRect(x + 60, y + 1, w - 120, th - 2, () => text(title, x + w / 2, y + 6, { font: 'title', align: 'center', color: act ? P.titleText : P.titleTextOff, shadow: this.engrave ? [C.white, 0, 1] : null }));
+    if (title) winTitle(x, w, title, y + 6, x + 8 + 2 * this.lampGap + this.lampD + 8, act ? P.titleText : P.titleTextOff, { shadow: this.engrave ? [C.white, 0, 1] : null });
   },
   vscroll(x, y, h, k, frac, o = {}) {
     hgrad(x, y, 15, h, ['#c9c9c9', '#eeeeee', '#fbfbfb', '#e8e8e8'], 2); vline(x, y, h, '#a5a5a5');
@@ -658,7 +671,7 @@ LOOK.metal = {
     spanFill(x, y, w, s, '#5d5d5d'); metalFill(x + 1, y + 1, w - 2, rrSpans(w - 2, h - 2, r - 1));
     if (!act) spanPat(x + 1, y + 1, w - 2, rrSpans(w - 2, h - 2, r - 1), bayerPat(.25, '#ffffff', null));
     lamps(x + 8, y + 4, this.lampD, this.lampGap, 'gel', { active: act, hover: o.hover, dirty: o.dirty, noMin: o.noMin, noZoom: o.zoom === false });
-    if (title) clipRect(x + 60, y + 1, w - 120, th - 2, () => text(title, x + w / 2, y + 6, { font: 'title', align: 'center', color: act ? '#1a1a1a' : '#6a6a6a', shadow: [C.white, 0, 1] }));
+    if (title) winTitle(x, w, title, y + 6, x + 8 + 2 * this.lampGap + this.lampD + 8, act ? '#1a1a1a' : '#6a6a6a', { shadow: [C.white, 0, 1] });
     // the content sits in a sunken well inside the metal
     const ix = x + 6, iy = y + th + 1, iw = w - 12, ih = h - th - 8;
     hline(ix - 1, iy - 1, iw + 2, '#6c6c6c'); vline(ix - 1, iy - 1, ih + 2, '#8a8a8a'); vline(ix + iw, iy - 1, ih + 2, '#8a8a8a'); hline(ix - 1, iy + ih, iw + 2, '#e8e8e8');
@@ -682,7 +695,7 @@ LOOK.unified = {
     hline(x + 1, y + th - 1, w - 2, act ? '#515151' : '#9d9d9d');
     lamps(x + 8, y + 4, this.lampD, this.lampGap, this.lampStyle, { active: act, hover: o.hover, dirty: o.dirty, noMin: o.noMin, noZoom: o.zoom === false });
     if (o.fullscreen) this.fsGlyph(x + w - 16, y + 5);
-    if (title) clipRect(x + 60, y + 1, w - 120, this.titleH - 2, () => text(title, x + w / 2, y + 6, { font: 'title', align: 'center', color: act ? '#222222' : '#8a8a8a', shadow: [act ? '#ececec' : '#f6f6f6', 0, 1] }));
+    if (title) winTitle(x, w, title, y + 6, x + 8 + 2 * this.lampGap + this.lampD + 8, act ? '#222222' : '#8a8a8a', { shadow: [act ? '#ececec' : '#f6f6f6', 0, 1] });
     return { x: x + 1, y: y + th, w: w - 2, h: h - th - 1 };
   },
   tstops: ['#e9e9e9', '#d6d6d6', '#c3c3c3', '#b3b3b3'], tstopsOff: ['#f6f6f6', '#ececec', '#e3e3e3'],
@@ -725,7 +738,7 @@ LOOK.flat = {
     spanGrad(x + 1, y + 1, w - 2, topSpans(w - 2, th - 1, r - 1), act ? ['#ececec', '#e3e3e3'] : ['#f6f6f6', '#f6f6f6'], 2);
     hline(x + 1, y + th - 1, w - 2, act ? '#c6c6c6' : '#dedede');
     lamps(x + 8, y + 4, this.lampD, this.lampGap, 'flat', { active: act, hover: o.hover, dirty: o.dirty, noMin: o.noMin, noZoom: o.zoom === false });
-    if (title) clipRect(x + 60, y + 1, w - 120, this.titleH - 2, () => text(title, x + w / 2, y + 6, { font: 'title', align: 'center', color: act ? P.titleText : P.titleTextOff }));
+    if (title) winTitle(x, w, title, y + 6, x + 8 + 2 * this.lampGap + this.lampD + 8, act ? P.titleText : P.titleTextOff);
     return { x: x + 1, y: y + th, w: w - 2, h: h - th - 1 };
   },
   button(x, y, w, h, label, o = {}) {
@@ -762,7 +775,7 @@ LOOK.sur = {
     spanFill(x + 1, y + 1, w - 2, topSpans(w - 2, th - 1, r - 1), act ? P.title : P.titleOff);
     hline(x + 1, y + th - 1, w - 2, act ? '#d6d6d6' : '#e6e6e6');
     lamps(x + 10, y + R((this.titleH - this.lampD) / 2), this.lampD, this.lampGap, 'flat', { active: act, hover: o.hover, dirty: o.dirty, noMin: o.noMin, noZoom: o.zoom === false });
-    if (title) clipRect(x + 66, y + 1, w - 132, this.titleH - 2, () => text(title, x + w / 2, y + R((this.titleH - capH('title')) / 2), { font: 'title', align: 'center', color: act ? P.titleText : P.titleTextOff }));
+    if (title) winTitle(x, w, title, y + R((this.titleH - capH('title')) / 2), x + 10 + 2 * this.lampGap + this.lampD + 8, act ? P.titleText : P.titleTextOff);
     return { x: x + 1, y: y + th, w: w - 2, h: h - th - 1 - 3, round: r };
   },
   button(x, y, w, h, label, o = {}) {
@@ -789,7 +802,7 @@ LOOK.glass = {
     hline(x + r, y + h - 1, w - 2 * r, '#cdd5e0'); vline(x + w - 1, y + r, h - 2 * r, '#d9e0ea');
     hline(x + r, y + 1, w - 2 * r, '#ffffff');
     lamps(x + 12, y + R((this.titleH - this.lampD) / 2) + 1, this.lampD, this.lampGap, 'glass', { active: act, hover: o.hover, dirty: o.dirty, noMin: o.noMin, noZoom: o.zoom === false });
-    if (title) clipRect(x + 66, y + 1, w - 132, this.titleH - 2, () => text(title, x + w / 2, y + R((this.titleH - capH('title')) / 2) + 1, { font: 'title', align: 'center', color: act ? P.titleText : P.titleTextOff }));
+    if (title) winTitle(x, w, title, y + R((this.titleH - capH('title')) / 2) + 1, x + 12 + 2 * this.lampGap + this.lampD + 8, act ? P.titleText : P.titleTextOff);
     if (o.body) rrect(x + 6, y + th, w - 12, h - th - 6, 7, o.body);
     return { x: x + 6, y: y + th, w: w - 12, h: h - th - 6, round: 7 };
   },
@@ -808,3 +821,10 @@ LOOK.glass = {
   dock(x, y, w, h) { const s = rrSpans(w, h, 14); spanPat(x, y, w, s, noisePat(.7, '#f9fbfd', null)); spanFrame(x, y, w, s, '#ffffff'); hline(x + 14, y + 1, w - 28, '#ffffff'); hline(x + 14, y + h - 1, w - 28, '#c9d1dc'); },
 };
 const look = () => LOOK[E.chrome];
+// winTitle(x, y, w, title, ty, left, color, o): a centred title that slides right (and clips) when the window is narrow
+function winTitle(x, w, title, ty, left, color, extra = {}) {
+  const tw_ = tw(title, 'title'), room = x + w - 8 - left;
+  let cx = x + R(w / 2);
+  if (cx - tw_ / 2 < left) cx = left + R(Math.min(tw_, room) / 2);
+  clipRect(left, ty - 4, room, capH('title') + 8, () => text(title, cx, ty, { font: 'title', align: 'center', color, ...extra }));
+}

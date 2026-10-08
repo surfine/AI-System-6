@@ -9,7 +9,7 @@
 //     holding 'pencil' | 'floppy' | 'note' | 'record' | 'page' | 'mic' | 'heart' | 'star' · era (look override)
 //     bob (px of beat bounce, default 0) · flip · center (x, y is her centre) · blink (default true) · shadow
 //   singing(t, voice) -> {open 0..1, shape}: mouth from LYRICS word timings (open on the word, close at its end,
-//     wider on open vowels). Clio's box at scale 1 is CLIO_W x CLIO_H.
+//     wider on open vowels). voice: undefined = lead + chant + spoken (not choir) · 'choir' · '*' = any. Silent words stay shut. Clio's box at scale 1 is CLIO_W x CLIO_H.
 'use strict';
 
 const CLIO_W = 32, CLIO_H = 28, CLIO_BX = 5, CLIO_BY = 3, CLIO_BW = 22, CLIO_BH = 17;
@@ -188,9 +188,9 @@ function singing(t = T, voice) {
   let w = null;
   for (const l of LYRICS) {
     if (t < l.start - .05 || t > l.end + .1) continue;
-    if (voice && l.voice !== voice) continue;
-    if (!voice && l.voice === 'spoken') continue;
-    for (const x of l.words) if (t >= x.start && t < x.end + .02) { w = x; break; }
+    if (voice && voice !== '*' && l.voice !== voice) continue;
+    if (!voice && l.voice === 'choir') continue;                // Clio sings lead, chant and spoken; the choir is backing
+    for (const x of l.words) if (!x.silent && t >= x.start && t < x.end + .02) { w = x; break; }
     if (w) break;
   }
   if (!w) return { open: 0, shape: 'M' };

@@ -276,11 +276,11 @@ APP.finder = (x, y, w, h, o = {}) => {
   const items = o.items || [['manuscript', 'Manuscript'], ['questionSheet', 'Question Sheet'], ['outline', 'Outline'], ['sectionDrafts', 'Section Drafts'], ['scrapbook', 'Scrapbook'], ['folder', 'Sources']];
   const c = win(x, y, w, h, o.title || 'Project Hard Disk', W_(o, { header: o.header ?? [`${items.length} items`, `${o.used ?? 2835}K in disk`, `${o.free ?? 45}K available`], scroll: o.scroll ?? 'vh', sk: 0, sfrac: 1, hfrac: 1 }));
   if (!c) return null;
-  const out = { icons: [] }, cols = o.cols || Math.max(1, Math.floor((c.w - 10) / 78));
+  const out = { icons: [] }, gap = o.gap || 86, cols = o.cols || Math.max(1, Math.floor((c.w - 10) / gap));
   clipRect(c.x, c.y, c.w, c.h, () => {
     fillClient(c);
     items.forEach((it, i) => {
-      const ix = c.x + 22 + (i % cols) * 78, iy = c.y + 10 + Math.floor(i / cols) * 62;
+      const ix = c.x + R(gap / 2) - 12 + (i % cols) * gap, iy = c.y + 10 + Math.floor(i / cols) * 62;
       const saved = E; const lbl = it[1];
       const r = finderIcon(ix, iy, it[0], lbl, { sel: o.sel === i, open: o.open === i });
       out.icons.push(r); void saved;
@@ -293,6 +293,7 @@ function finderIcon(x, y, name, label, o = {}) {
   const one = ['mac1', 'mac7', 'next', 'plat', 'board'].includes(E.chrome);
   if (o.sel && !one) rrect(x - 3, y - 3, 38, 38, 4, '#d6d6d6');
   icon(name, x, y, { sel: o.sel && one, open: o.open });
+  while (label.length > 4 && tw(label, 'label') > (o.maxW || 80)) label = label.slice(0, -2) + '…';
   const lw = tw(label, 'label'), lx = x + 16 - R(lw / 2), ly = y + 36;
   if (o.sel) { if (one) rect(lx - 2, ly - 2, lw + 4, capH('label') + 4, C.black); else rrect(lx - 3, ly - 2, lw + 6, capH('label') + 5, 3, P.listSel); }
   text(label, lx, ly, { font: 'label', color: o.sel ? (one ? C.white : P.listSelText) : P.text });
@@ -306,9 +307,9 @@ APP.fileFloppy = (x, y, w, h, o = {}) => {
   if (o.ocr != null && o.ocr < 1) { const py = r.y + r.h - 22; rect(r.x, py - 4, r.w, 26, P.win); text('Importing ' + (o.current || 'scan-p12.pdf') + '…', r.x + 10, py, { font: 'small', color: P.text }); progress(r.x + r.w - 130, py - 2, 120, 11, o.ocr); }
   return r;
 };
-// projectCD opts: k (burn progress 0..1), title of the manuscript, spin (bool)
+// projectCD opts: burn (progress 0..1; omitted = indeterminate), doc (the manuscript's title), spin (bool)
 APP.projectCD = (x, y, w, h, o = {}) => {
-  const c = win(x, y, w, h, o.title || 'Project CD', W_(o, { header: o.header ?? ['Project CD', '', o.k >= 1 ? 'Finished' : 'Writing…'] }));
+  const c = win(x, y, w, h, o.title || 'Project CD', W_(o, { header: o.header ?? ['Project CD', '', o.burn >= 1 ? 'Finished' : 'Writing…'] }));
   if (!c) return null;
   clipRect(c.x, c.y, c.w, c.h, () => {
     fillClient(c, modernEra() ? P.face : P.win);
@@ -319,19 +320,19 @@ APP.projectCD = (x, y, w, h, o = {}) => {
     disc(cx, cy, R(r * .3), E.depth === 1 ? C.white : '#f4f6f8'); disc(cx, cy, 3, E.depth === 1 ? C.black : '#7a828c');
     const tx = cx + r + 16;
     text(o.doc || 'The Tide Comes In Twice', tx, c.y + 16, { font: headFont(), color: P.text });
-    text(o.k >= 1 ? 'Manuscript, sources, review: on one disc.' : 'Writing manuscript, sources and review…', tx, c.y + 34, { font: 'small', color: P.textDim });
-    progress(tx, c.y + 50, c.x + c.w - tx - 14, 12, o.k ?? .4, { indeterminate: o.k == null });
-    text(o.k >= 1 ? 'Ready to share' : R((o.k ?? .4) * 100) + '%', tx, c.y + 70, { font: 'small', color: P.text });
+    text(o.burn >= 1 ? 'Manuscript, sources, review: one disc.' : 'Writing manuscript, sources, review…', tx, c.y + 34, { font: 'small', color: P.textDim });
+    progress(tx, c.y + 50, c.x + c.w - tx - 14, 12, o.burn ?? .4, { indeterminate: o.burn == null });
+    text(o.burn >= 1 ? 'Ready to share' : o.burn == null ? '' : R(o.burn * 100) + '%', tx, c.y + 70, { font: 'small', color: P.text });
   });
   return c;
 };
 
 // ---------------- Two Floppies: the release gate ----------------
-// opts: k (0..1 how much of the payload has been counted), bytes (default 2,902,645), budget (2,949,120), pass
+// opts: count (0..1 how much of the payload has been counted), bytes (default 2,902,645), budget (2,949,120), pass
 APP.floppyMeter = (x, y, w, h, o = {}) => {
   const c = win(x, y, w, h, o.title || 'Two Floppies', W_(o, { zoom: false, header: o.header ?? ['Release gate', '', 'boot payload'] }));
   if (!c) return null;
-  const budget = o.budget ?? 2949120, bytes = R((o.bytes ?? 2902645) * clamp(o.k ?? 1)), disk = 1474560;
+  const budget = o.budget ?? 2949120, bytes = R((o.bytes ?? 2902645) * clamp(o.count ?? 1)), disk = 1474560;
   const fmt = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   clipRect(c.x, c.y, c.w, c.h, () => {
     fillClient(c, modernEra() ? P.face : P.win);
@@ -348,7 +349,7 @@ APP.floppyMeter = (x, y, w, h, o = {}) => {
     const pct = (bytes / budget * 100).toFixed(1) + '%';
     text(pct + ' of two 1.44 MB floppies', tx, c.y + 50, { font: 'small', color: P.text });
     const pass = o.pass ?? bytes <= budget;
-    if ((o.k ?? 1) >= 1) text(pass ? 'Release gate: PASS' : 'Release gate: FAIL', tx, c.y + 68, { font: E.depth <= 4 ? 'ui' : 'body', color: E.depth === 1 ? C.black : pass ? '#1e7b34' : '#c0392b' });
+    if ((o.count ?? 1) >= 1) text(pass ? 'Release gate: PASS' : 'Release gate: FAIL', tx, c.y + 68, { font: E.depth <= 4 ? 'ui' : 'body', color: E.depth === 1 ? C.black : pass ? '#1e7b34' : '#c0392b' });
     text('Heavy tools load lazily, from a third disk.', c.x + 14, c.y + c.h - 16, { font: 'small', color: P.textDim });
   });
   return c;
@@ -364,7 +365,7 @@ APP.oneMoreTune = (x, y, w, h, o = {}) => {
   clipRect(c.x, c.y, c.w, c.h, () => {
     if (!one) { fillClient(c, '#0d1626'); vgrad(c.x, c.y, R(c.w * .45), c.h, ['#163a66', '#0d1d36', '#0b1322'], 3); } else fillClient(c, C.white);
     // the record
-    const r = Math.min(R(c.h * .42), R(c.w * .2)), cx = c.x + 16 + r, cy = c.y + R(c.h / 2);
+    const r = Math.min(R(c.h * .4), R(c.w * .17)), cx = c.x + 14 + r, cy = c.y + R(c.h / 2);
     if (!one) for (let i = 0; i < 48; i++) { const an = i / 48 * Math.PI * 2; rect(cx + R(Math.cos(an) * (r + 6)), cy + R(Math.sin(an) * (r + 6)), 1, 1, '#3d5d86'); }
     disc(cx, cy, r, C.black);
     for (let rr = r - 3; rr > r * .42; rr -= 3) ring(cx, cy, rr, one ? (rr % 6 ? '#000000' : '#555555') : '#1f1f1f');
@@ -379,7 +380,7 @@ APP.oneMoreTune = (x, y, w, h, o = {}) => {
     if (o.label) text(o.label, cx, cy + R(lr * .25), { font: 'small', align: 'center', color: one ? C.black : C.white });
     disc(cx, cy, 2, one ? C.black : '#0b0b0b');
     // the tonearm
-    const ax = cx + r + 22, ay = cy - r + 8, arm = clamp(o.arm ?? 1), tipx = R(lerp(ax + 4, cx + r * .72, arm)), tipy = R(lerp(ay + 60, cy + r * .2, arm));
+    const ax = cx + r + 14, ay = cy - r + 6, arm = clamp(o.arm ?? 1), tipx = R(lerp(ax + 4, cx + r * .72, arm)), tipy = R(lerp(ay + 60, cy + r * .2, arm));
     disc(ax, ay, 6, one ? C.black : '#c9ced6'); disc(ax, ay, 3, one ? C.white : '#5d6570');
     line(ax, ay, tipx, tipy, one ? C.black : '#d4d9e0', 3); rect(tipx - 4, tipy - 3, 8, 8, one ? C.black : '#2a2d33');
     out.record = { cx, cy, r };
@@ -422,7 +423,7 @@ APP.controlPanel = (x, y, w, h, o = {}) => {
     const lw = R(c.w * .5), rh = Math.max(15, Math.min(18, R((c.h - 16) / 12)));
     const p = panel(c.x + 8, c.y + 8, lw, rh * 12 + 4);
     out.rows = [];
-    ERAS.forEach((e, i) => {
+    APPEARANCES.forEach((e, i) => {
       const ry = p.y + i * rh, on = i === sel;
       if (on) { if (E.chrome === 'glass') rrect(p.x, ry, p.w, rh, 5, P.listSel); else rect(p.x, ry, p.w, rh, P.listSel); }
       const col = on ? P.listSelText : P.text;
@@ -433,8 +434,8 @@ APP.controlPanel = (x, y, w, h, o = {}) => {
     // a thumbnail of the selected appearance: its desktop, shrunk, with a tiny window
     const tx = c.x + lw + 20, tw2 = c.x + c.w - 10 - tx, th = R(tw2 * 9 / 16);
     frame(tx - 1, c.y + 9, tw2 + 2, th + 2, P.text);
-    ctx.drawImage(eraThumb(ERAS[sel].id), tx, c.y + 10, tw2, th);
-    text(ERAS[sel].year + '  ' + ERAS[sel].name, tx, c.y + th + 20, { font: E.depth <= 4 ? 'ui' : 'body', color: P.text });
+    ctx.drawImage(eraThumb(APPEARANCES[sel].id), tx, c.y + 10, tw2, th);
+    text(APPEARANCES[sel].year + '  ' + APPEARANCES[sel].name, tx, c.y + th + 20, { font: E.depth <= 4 ? 'ui' : 'body', color: P.text });
     text('The files and windows stay put.', tx, c.y + th + 36, { font: 'small', color: P.textDim });
     out.apply = button(c.x + c.w - 80, c.y + c.h - 28, 70, btnH(), 'Apply', { def: true, pressed: o.pressed === 'apply' });
   });
@@ -447,7 +448,12 @@ function eraThumb(id) {
   const saved = E;
   const big = offscreen(W, H, () => { setEra(id); desktop({}); win(60, 60, 300, 180, 'Manuscript', { noShadow: false }); win(260, 120, 240, 150, 'ClioTalk', {}); clio(420, 220, { scale: 3, expr: 'happy' }); menuBar({ app: 'TeachText', clock: false }); });
   setEra(saved);
-  return _thumbs[id] = offscreen(160, 90, () => { ctx.drawImage(big, 0, 0, W, H, 0, 0, 160, 90); });
+  return _thumbs[id] = offscreen(160, 90, () => {
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.drawImage(big, 0, 0, W, H, 0, 0, 160, 90); ctx.imageSmoothingEnabled = false;
+    const d = ctx.getImageData(0, 0, 160, 90), px = d.data, one = ERA[id].depth === 1, step = one ? 255 : 24;
+    for (let i = 0, p = 0; i < px.length; i += 4, p++) { const off = (BAYER4[((p / 160 | 0) & 3) * 4 + (p % 160 & 3)] + .5) / 16 * step; for (let ch = 0; ch < 3; ch++) px[i + ch] = clamp(Math.floor((px[i + ch] + off) / step) * step, 0, 255); if (one) px[i + 1] = px[i + 2] = px[i]; px[i + 3] = 255; }
+    ctx.putImageData(d, 0, 0);
+  });
 }
 
 // ---------------- DOOM: a tiny corridor, in the era's depth ----------------
@@ -464,7 +470,7 @@ APP.doom = (x, y, w, h, o = {}) => {
     for (let i = frames.length - 1; i > 0; i--) {
       const a = frames[i - 1], b = frames[i], shade = clamp(1 - b.d / 8), lvl = (b.i + Math.floor(o.walk ?? T * 2)) % 2 ? shade : shade * .7;
       poly([[cx - a.hw, cy + a.hh], [cx + a.hw, cy + a.hh], [cx + b.hw, cy + b.hh], [cx - b.hw, cy + b.hh]], one ? C.black : floor[0]);
-      ctx.fillStyle = bayerPat(lvl * .6, floor[1], null); poly([[cx - a.hw, cy + a.hh], [cx + a.hw, cy + a.hh], [cx + b.hw, cy + b.hh], [cx - b.hw, cy + b.hh]], bayerPat(lvl * .5, floor[1], floor[0]));
+      poly([[cx - a.hw, cy + a.hh], [cx + a.hw, cy + a.hh], [cx + b.hw, cy + b.hh], [cx - b.hw, cy + b.hh]], bayerPat(lvl * .5, floor[1], floor[0]));
       poly([[cx - a.hw, cy - a.hh], [cx + a.hw, cy - a.hh], [cx + b.hw, cy - b.hh], [cx - b.hw, cy - b.hh]], bayerPat(lvl * .35, ceil[1], ceil[0]));
       poly([[cx - a.hw, cy - a.hh], [cx - b.hw, cy - b.hh], [cx - b.hw, cy + b.hh], [cx - a.hw, cy + a.hh]], bayerPat(lvl * .85, wall[1], wall[0]));
       poly([[cx + a.hw, cy - a.hh], [cx + b.hw, cy - b.hh], [cx + b.hw, cy + b.hh], [cx + a.hw, cy + a.hh]], bayerPat(lvl * .75, wall[1], wall[0]));
@@ -475,7 +481,7 @@ APP.doom = (x, y, w, h, o = {}) => {
     if (o.imp !== false) ctx.drawImage(one ? sp : recolor(sp, { '#000000': '#3a1a0a', '#ffffff': '#c8642a' }), cx - R(sp.width * is / 2), cy + R(vh * .08 * is) - sp.height * is + 8, sp.width * is, sp.height * is);
     // the gun, bobbing
     const bob = R(Math.abs(Math.sin((o.walk ?? T * 2) * Math.PI)) * 3), g = SPR.doom_gun;
-    if ((o.fire || 0) > 0) { disc(cx, c.y + vh - 30 - bob, R(6 + o.fire * 6), one ? C.white : '#ffdd55'); }
+    if ((o.fire || 0) > .05) { const fy = c.y + vh - 30 - bob, fr = R(3 + o.fire * 5), fc = one ? C.white : '#ffdd55'; poly([[cx, fy - fr * 2], [cx + fr, fy], [cx, fy + fr], [cx - fr, fy]], fc); poly([[cx - fr * 2, fy - 1], [cx + fr * 2, fy - 1], [cx, fy + 2]], fc); }
     ctx.drawImage(one ? g : recolor(g, { '#ffffff': '#9a9a9a' }), cx - g.width, c.y + vh - g.height * 2 + bob + 2, g.width * 2, g.height * 2);
     // HUD
     rect(c.x, c.y + vh, vw, hud, one ? C.white : '#5a5a5a'); hline(c.x, c.y + vh, vw, one ? C.black : '#8a8a8a');
@@ -510,11 +516,11 @@ KWWWWWWWWK
 KWWWWWWWWK`, { K: '#000000', W: '#ffffff' });
 
 // ---------------- Micropolis: a little city grid ----------------
-// opts: k (0..1 how built-up the city is), seed, cursor ([col, row] of the tool), tool ('R'|'C'|'I'|'road')
+// opts: built (0..1 how built-up the city is), seed, cursor ([col, row] of the tool), tool ('R'|'C'|'I'|'#'|'~'), year
 APP.micropolis = (x, y, w, h, o = {}) => {
-  const c = win(x, y, w, h, o.title || 'Micropolis', W_(o, { header: o.header ?? ['Funds $' + (20000 - R(clamp(o.k ?? .5) * 14000)), 'Pop. ' + R(clamp(o.k ?? .5) * 4800), (o.year ?? 1900) + ''] }));
+  const c = win(x, y, w, h, o.title || 'Micropolis', W_(o, { header: o.header ?? ['Funds $' + (20000 - R(clamp(o.built ?? .5) * 14000)), 'Pop. ' + R(clamp(o.built ?? .5) * 4800), (o.year ?? 1900) + ''] }));
   if (!c) return null;
-  const one = E.depth === 1, ts = 8, tb = 22, gx = c.x + tb, cols = Math.floor((c.w - tb) / ts), rows = Math.floor(c.h / ts), seed = o.seed ?? 7, k = clamp(o.k ?? .5);
+  const one = E.depth === 1, ts = 8, tb = 22, gx = c.x + tb, cols = Math.floor((c.w - tb) / ts), rows = Math.floor(c.h / ts), seed = o.seed ?? 7, k = clamp(o.built ?? .5);
   clipRect(c.x, c.y, c.w, c.h, () => {
     rect(c.x, c.y, tb, c.h, one ? C.white : P.face); vline(c.x + tb - 1, c.y, c.h, one ? C.black : P.rule);
     ['R', 'C', 'I', '#', '~'].forEach((t, i) => { const bx = c.x + 3, by = c.y + 4 + i * 18; frame(bx, by, 15, 15, P.text); text(t, bx + 8, by + 4, { font: 'small', align: 'center', color: P.text }); if (o.tool === t) bayer(bx + 1, by + 1, 13, 13, .5, one ? C.black : '#3a7cf0', null); });
@@ -547,7 +553,7 @@ APP.about = (x, y, w, h, o = {}) => {
     spr(markGlyphCanvas(), mx, my, { scale: s });
     text('AI System 6', mx + 13 * s + 12, my + 2, { font: E.depth <= 4 ? 'chicago' : headFont(), scale: E.depth <= 4 ? 2 : 1, color: P.text });
     text('1988 OBJECTS / 2026 INTELLIGENCE', mx + 13 * s + 12, my + 26, { font: 'small', color: P.text });
-    text('A local-first writing desk where the AI never becomes your voice.', c.x + 14, c.y + 64, { font: 'small', color: P.textDim });
+    text('A local-first writing desk. The AI never becomes your voice.', c.x + 14, c.y + 64, { font: 'small', color: P.textDim });
     sep(c.x + 10, c.y + 78, c.w - 20);
     const bars = o.memory || [{ name: 'TeachText', kb: 312, icon: 'teachText' }, { name: 'ClioTalk', kb: 220, icon: 'assistant' }, { name: 'Review Desk', kb: 268, icon: 'reviewDesk' }, { name: 'Searcher', kb: 180, icon: 'searcher' }, { name: 'System', kb: 1840, icon: 'systemFolder' }];
     text('Two floppies: 2,902,645 of 2,949,120 bytes', c.x + 14, c.y + 86, { font: 'small', color: P.text });

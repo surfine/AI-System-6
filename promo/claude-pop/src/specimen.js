@@ -27,7 +27,7 @@
   const add = (name, dur, fn, opts = {}) => REEL.push({ name, dur, fn, opts });
 
   // ---------------- one scene per era ----------------
-  ERAS.forEach((e, ei) => add('era ' + e.id, 3, (t, l) => {
+  APPEARANCES.forEach((e, ei) => add('era ' + e.id, 3, (t, l) => {
     const s0 = t - l, ln = fakeLine(LYR[ei % LYR.length], s0 + .3, s0 + 2.5), next = e.chrome === 'next';
     UI.menu = { app: 'TeachText', open: l > 1.5 && l < 2.25 ? 2 : undefined, propW: 40, prop: (x, y, w, h) => text(String(e.year), x + w, y + R((h - capH('menu')) / 2) + 1, { font: 'menu', align: 'right', color: next ? C.black : P.menuText }) };
     const top = E.menuH + 10, left = next ? 116 : 12;
@@ -67,10 +67,10 @@
     ['sectionDrafts', 'platinum', 'bigsur', (t, l, d, ox) => { const s0 = t - l; APP.sectionDrafts(ox + 6, 30, 308, 260, { sel: 1, typing: { text: 'The turbines do not care.', t0: s0 + .3, t1: s0 + 2 } }); }],
     ['notePad + about', 'system6', 'aqua', (t, l, d, ox) => { APP.notePad(ox + 10, 24, 180, 130, { page: 1 + Math.floor(l), typing: { text: ' Check the 1966 report.', t0: t - l + .2, t1: t - l + 1.5 } }); APP.about(ox + 20, 150, 290, 200, { used: prog(l, .2, 1.5) }); }],
     ['finder + fileFloppy', 'system7', 'snowleopard', (t, l, d, ox) => { APP.finder(ox + 8, 24, 300, 160, { sel: Math.floor(l * 2) % 6, open: 0 }); APP.fileFloppy(ox + 20, 196, 290, 150, { ocr: prog(l, .2, 2.6), current: 'scan-p12.pdf' }); }],
-    ['projectCD + floppies', 'platinum', 'liquidglass', (t, l, d, ox) => { APP.projectCD(ox + 8, 26, 304, 140, { k: prog(l, .1, 2.4) }); APP.floppyMeter(ox + 8, 186, 304, 150, { k: easeOut(prog(l, .2, 1.8)) }); }],
+    ['projectCD + floppies', 'platinum', 'liquidglass', (t, l, d, ox) => { APP.projectCD(ox + 8, 26, 304, 140, { burn: prog(l, .1, 2.4) }); APP.floppyMeter(ox + 8, 186, 304, 150, { count: easeOut(prog(l, .2, 1.8)) }); }],
     ['oneMoreTune', 'system6', 'liquidglass', (t, l, d, ox) => { APP.oneMoreTune(ox + 4, 30, 312, 220, { track: 3, done: [0, 1, 2], year: ox ? 2026 : 1988, label: ox ? 'Liquid Glass' : 'System 6', song: 'Name the ad', options: ['A pocket player', 'A thin laptop', 'A tiny music box'], answer: l > 2 ? 1 : undefined, wrong: l > 1.4 ? 0 : undefined }); }],
     ['controlPanel', 'system7', 'yosemite', (t, l, d, ox) => { APP.controlPanel(ox + 6, 24, 308, 300, { sel: Math.floor(l * 4) % 12 }); }],
-    ['doom + micropolis', 'system6', 'platinum', (t, l, d, ox) => { APP.doom(ox + 10, 22, 300, 170, { walk: t * 1.5, fire: Math.max(0, 1 - ((l * 2) % 1) * 4), imp: prog(l, 0, 3) }); APP.micropolis(ox + 10, 200, 300, 150, { k: prog(l, 0, 3), tool: 'R', cursor: [10 + Math.floor(l * 3), 6] }); }],
+    ['doom + micropolis', 'system6', 'platinum', (t, l, d, ox) => { APP.doom(ox + 10, 22, 300, 170, { walk: t * 1.5, fire: Math.max(0, 1 - ((l * 2) % 1) * 4), imp: prog(l, 0, 3) }); APP.micropolis(ox + 10, 200, 300, 150, { built: prog(l, 0, 3), tool: 'R', cursor: [10 + Math.floor(l * 3), 6] }); }],
     ['writingBell + clio', 'aqua', 'liquidglass', (t, l, d, ox) => { APP.writingBell(ox + 20, 30, 160, 90, { seconds: 1500 - Math.floor(l * 60) }); clioSay(ox + 60, 210, 'Want me to take it from here?', { scale: 2, expr: 'happy', above: 50 }); }],
   ];
   apps.forEach(([name, a, b, fn]) => add('app ' + name, 3, both(a, b, fn), { era: a }));
@@ -129,7 +129,7 @@
     ['slide', (t, l) => { FX.dx = -R(easeIn(prog(l, .3, 1.4)) * W); }], ['crt off', (t, l) => { FX.crt = prog(l, .1, 1.4); }],
   ];
   fx.forEach(([name, f]) => add('fx ' + name, 1.5, (t, l, d) => { fxDesk(t, l); f(t, l, d); }, { era: name === 'invert' ? 'system6' : name === 'glitch' ? 'platinum' : name === 'zoom' ? 'system6' : 'aqua' }));
-  ['dissolve', 'bayer', 'wipe', 'blinds', 'iris', 'checker'].forEach((st, i) => add('morph ' + st, 1.5, (t, l) => { fxDesk(t, l); }, { era: [[0, ERAS[i * 2].id], [0.2, ERAS[i * 2 + 1].id, st]], eraLocal: true, morph: 1.1 }));
+  ['dissolve', 'bayer', 'wipe', 'blinds', 'iris', 'checker'].forEach((st, i) => add('morph ' + st, 1.5, (t, l) => { fxDesk(t, l); }, { era: [[0, APPEARANCES[i * 2].id], [0.2, APPEARANCES[i * 2 + 1].id, st]], eraLocal: true, morph: 1.1 }));
 
   // ---------------- the era tour: windows stay put, the computer changes around them ----------------
   add('tour', 12, (t, l) => {
@@ -138,7 +138,7 @@
     APP.clioTalk(330, E.menuH + 40, 260, 210, { msgs: [{ who: 'you', text: 'Change the era.' }, { who: 'clio', text: 'Done. Your files stayed put.' }] });
     clio(40, 250, { scale: 3, mouth: 'sing', expr: 'happy', bob: 1 });
     cursor(t, [[s0, 200, 200], [s0 + 6, 420, 120], [s0 + 12, 200, 200]]);
-  }, { era: ERAS.map((e, i) => [i, e.id]), eraLocal: true, morph: .45 });
+  }, { era: APPEARANCES.map((e, i) => [i, e.id]), eraLocal: true, morph: .45 });
 
   // ---------------- tile the reel over the whole song ----------------
   const total = REEL.reduce((a, s) => a + s.dur, 0);

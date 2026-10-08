@@ -5,6 +5,26 @@ same vision in words, for everyone who builds a shot. BRIEF.md is the contract; 
 the final song (SONG.md, music/score.json) differs from a detail here, the song wins and the device
 adapts.
 
+## Three spines (these override everything below)
+
+A. **One take, through the pixels.** The film never cuts. It opens on a single white pixel in black,
+   blinking with the boot chord; the camera pulls back and it is the full stop at the end of the
+   writer's last sentence in a 1-bit TeachText window. At the end of each chorus the camera dives into
+   one pixel (Clio's eye, the period, a checkbox): nearest-neighbour zoom until that pixel fills a block,
+   and inside the block is the whole desk of the next era, which keeps growing until it is the frame.
+   The bridge is a Powers-of-Ten tunnel: one dive per beat through the remaining eras. The outro is one
+   continuous pull-back from 2026 through every era back to a single dot — the opening full stop, now in
+   the writer's vermilion. Every pixel of 1988 contains 2026.
+B. **The desk is the band.** Every percussive sound is a UI event you can see happen: kick = a floppy
+   ejecting (pitched down), snare = a window closing with its zoom outline, clap = a mouse click,
+   hi-hats = keystrokes (and those keystrokes type the writer's solid line), crash = emptying the Trash,
+   riser = a progress bar filling, stab = our boot chord as brass hits on era changes, glockenspiel = the
+   product's own Writing Bell. The bass is two floppy drives' stepper motors singing pitches (literally
+   "two floppies"); their heads move on screen per note. The rest beat before "eight" is the loudest
+   moment of the song.
+C. **Bring your own model, as a choir.** The choir is three different local synthetic voices singing
+   together.
+
 ## Six devices that make the film
 
 1. **The unresolved eighth.** If the song climbs a scale and stops on the seventh degree (the leading

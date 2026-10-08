@@ -14,8 +14,8 @@ function sceneAt(t) {
 // with opts.eraLocal the key times are seconds from the scene start). Keyframe changes morph over opts.morph seconds.
 function eraFor(s, t) {
   if (QS.get('era')) return { to: QS.get('era') };
-  const e = s.opts.era, dur = s.opts.morph ?? .5, style = s.opts.morphStyle || 'dissolve';
-  if (!e) return { to: 'system6' };
+  let e = s.opts.era, dur = s.opts.morph ?? .5, style = s.opts.morphStyle || 'dissolve';
+  if (!e) { e = songEraKeys(); dur = s.opts.morph ?? .35; }       // no era given: follow the song's schedule (data.js ERAS)
   if (typeof e === 'string') return { to: e };
   if (typeof e === 'function') { const r = e(t, t - s.t0); return typeof r === 'string' ? { to: r } : r; }
   const off = s.opts.eraLocal ? s.t0 : 0;
@@ -35,6 +35,7 @@ function drawScene(s, t, era) {
   UI = { menu: { ...(s.opts.menu || {}) }, dock: s.opts.dock, overlays: [] }; CUR = null;
   ctx.save();
   if (!s.opts.raw) desktop(s.opts);
+  if (!s.opts.era && songEraEntry(t).inverted) FX.invert = true;  // the schedule's '(inverted)' entries; a scene may unset it
   s.fn(t, t - s.t0, s.t1 - s.t0);
   ctx.restore(); resetCtx();
   if (!s.opts.raw) {

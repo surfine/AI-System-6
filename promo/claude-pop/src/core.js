@@ -131,7 +131,8 @@ const kick = (t = T, sharp = 9) => Math.exp(-sharp * Math.max(0, t - barTime(Mat
 const onBeat = (t = T, n = 1) => Math.floor(beatAt(t) / n);  // integer beat counter (in units of n beats)
 const beatsIn = (t, t0) => beatAt(t) - beatAt(t0);          // beats elapsed since t0
 // named accents from HITS
-const hits = name => _hits.filter(h => !name || h.name === name || h.name.startsWith(name + ':')).map(h => h.t);
+const _hitRe = n => new RegExp('^' + n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([_:]?\\d+|:.*)?$');
+const hits = name => { const re = name && _hitRe(name); return _hits.filter(h => !name || re.test(h.name)).map(h => h.t); }; // 'erase' -> erase1, erase2 ...
 const hit = (name, nth = 0) => { const l = hits(name); return l.length ? l[Math.min(nth, l.length - 1)] : NaN; };
 const hitPulse = (t = T, name, sharp = 8) => { const d = since(hits(name), t); return isFinite(d) ? Math.exp(-sharp * d) : 0; };
 const sectionAt = (t = T) => SECTIONS.find(s => t >= s.start && t < s.end) || null;
