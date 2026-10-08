@@ -1,0 +1,1638 @@
+{
+  "schemaVersion": 2,
+  "generatedBy": "tooling/build-completion-icons.mjs",
+  "source": "tooling/lib/completion-icon-inventory.mjs",
+  "nativeReplica": false,
+  "referenceValidated": false,
+  "sourceKind": "original-generated-era-illustration",
+  "historicalReviewStatus": "original-adaptation-not-a-historical-replica",
+  "eras": {
+    "classic": {
+      "icons": {
+        "rootline": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/classic/rootline.png",
+              "sha256": "f31dc4f7de2226e8bac58879981502ef14cce92888274d09ad48f3897cff3304",
+              "prompt": "tooling/icon-generation/completion/prompts/classic/rootline.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/rootline-16.svg",
+            "32": "icons/rootline-32.svg"
+          },
+          "assets": {
+            "icons/rootline-16.svg": {
+              "sha256": "5a28c539e9ea4185f7138b429c8f4cfeb75a15e0a2428ee075f7e2d345987e21",
+              "width": 16,
+              "height": 16
+            },
+            "icons/rootline-mask-16.svg": {
+              "sha256": "bb03762b269e2d9b35e6d181a05b41e3a7c562d20a838894efe1549b1f4b36e8",
+              "width": 16,
+              "height": 16
+            },
+            "icons/rootline-32.svg": {
+              "sha256": "ecb1765af2b1433808e6498299e830b6bc0f314f01cfff2e521a0c72547eded2",
+              "width": 32,
+              "height": 32
+            },
+            "icons/rootline-mask-32.svg": {
+              "sha256": "8a5a53693201bd14e3d045c1776dc4f02949077217d353ccaf9bd00b03ec524c",
+              "width": 32,
+              "height": 32
+            }
+          }
+        },
+        "joyride": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/classic/joyride.png",
+              "sha256": "e44f592d8fadf2d44821e9d6871147875e95554b46cdc6430b041b825a92cb69",
+              "prompt": "tooling/icon-generation/completion/prompts/classic/joyride-final.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/joyride-16.svg",
+            "32": "icons/joyride-32.svg"
+          },
+          "assets": {
+            "icons/joyride-16.svg": {
+              "sha256": "193d611a7d70752e5ae94ad32f7e5b6e74551e5f91e14694c1585e45dedcc0b8",
+              "width": 16,
+              "height": 16
+            },
+            "icons/joyride-mask-16.svg": {
+              "sha256": "002349d3eec6e16600dbfed30947793beca64f39ba6e77172339963dc645057b",
+              "width": 16,
+              "height": 16
+            },
+            "icons/joyride-32.svg": {
+              "sha256": "0d3f06839297fa8b8aac7c8f5608c67e196fc6b1a754f88012eb3ebbd21e0ccc",
+              "width": 32,
+              "height": 32
+            },
+            "icons/joyride-mask-32.svg": {
+              "sha256": "d91673a2f4a986073107265b87e7e1b0385f26b0edb6ebcdd812e66bea099b04",
+              "width": 32,
+              "height": 32
+            }
+          }
+        },
+        "mingwen": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/classic/mingwen.png",
+              "sha256": "10d4b240b3c8a0c45b6fef1d2e50e0956fe37265cc42a69dbbae8ecb645c7170",
+              "prompt": "tooling/icon-generation/completion/prompts/classic/mingwen.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/mingwen-16.svg",
+            "32": "icons/mingwen-32.svg"
+          },
+          "assets": {
+            "icons/mingwen-16.svg": {
+              "sha256": "60392f0c549e26acba3c15bae8dc424073cdddaf86784ea017921858e9de211f",
+              "width": 16,
+              "height": 16
+            },
+            "icons/mingwen-mask-16.svg": {
+              "sha256": "5c5ab81c164d755d69cb78d96c688300e59ca682fdf83991af338f54d943004d",
+              "width": 16,
+              "height": 16
+            },
+            "icons/mingwen-32.svg": {
+              "sha256": "aec813a0e9b8906a18e3fbaa44fc50312835f4ca7e2d247a3fe43b62a9f55b9b",
+              "width": 32,
+              "height": 32
+            },
+            "icons/mingwen-mask-32.svg": {
+              "sha256": "bb444b2a4e5f367f90aaf6e7c450c174c282b0e364b651e6309096a877be4858",
+              "width": 32,
+              "height": 32
+            }
+          }
+        }
+      }
+    },
+    "platinum": {
+      "icons": {
+        "rootline": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/platinum/rootline.png",
+              "sha256": "5c0570d59683c500f4ff91f2392ce029f7af4069ace241314a1cf2a82fd9a10d",
+              "prompt": "tooling/icon-generation/completion/prompts/platinum/rootline.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/rootline-16.png",
+            "32": "icons/rootline-32.png",
+            "42": "icons/rootline-42.png",
+            "64": "icons/rootline-64.png",
+            "128": "icons/rootline-128.png"
+          },
+          "assets": {
+            "icons/rootline-16.png": {
+              "sha256": "2f2f3adeb0da0e0d72371577307a0add521b04587019a7f5e59e061cb70eb381",
+              "width": 16,
+              "height": 16
+            },
+            "icons/rootline-32.png": {
+              "sha256": "a066fad5fd126068a61b1a2380c886e2f20a6e5ef1042e403f9365cdc50ad75b",
+              "width": 32,
+              "height": 32
+            },
+            "icons/rootline-42.png": {
+              "sha256": "93197b67966cd040b6cde13f4a2027638bbb37e693257c337df03d4f142a4dd3",
+              "width": 42,
+              "height": 42
+            },
+            "icons/rootline-64.png": {
+              "sha256": "0c6ddf9178f760e9e307c8d99f3b6a504282c824faf80323f2cc1126d5a7911c",
+              "width": 64,
+              "height": 64
+            },
+            "icons/rootline-128.png": {
+              "sha256": "58baf5b32a0dc0bf20c7bf6013911331e5f5a509da96bc6b9e7e8016eff1a002",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "joyride": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/platinum/joyride.png",
+              "sha256": "d7693f7ef0aa1d26aa503933c490bce7b303a8820b9fa82c9d63599e59a2c21d",
+              "prompt": "tooling/icon-generation/completion/prompts/platinum/joyride.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/joyride-16.png",
+            "32": "icons/joyride-32.png",
+            "42": "icons/joyride-42.png",
+            "64": "icons/joyride-64.png",
+            "128": "icons/joyride-128.png"
+          },
+          "assets": {
+            "icons/joyride-16.png": {
+              "sha256": "caf1f686875e83895884ec9611923ad6a0841acfe7144e616b791e73cad890c6",
+              "width": 16,
+              "height": 16
+            },
+            "icons/joyride-32.png": {
+              "sha256": "6ad3879e714367725a87c4665dd8f9ee70d4438b4831190df1f0c808e16d0c2c",
+              "width": 32,
+              "height": 32
+            },
+            "icons/joyride-42.png": {
+              "sha256": "67363877c42f5af3138fd5d57f02d044a7d07bb015a7fbe56a7487af159d1cef",
+              "width": 42,
+              "height": 42
+            },
+            "icons/joyride-64.png": {
+              "sha256": "993db742466d7af5d10e6a7ce964811dfb8391339386b821090bc0ccde6d1e2e",
+              "width": 64,
+              "height": 64
+            },
+            "icons/joyride-128.png": {
+              "sha256": "0fc65dcec6fb7a28189160940de7c0583823800065ffb39d3d79582bc32fa404",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "mingwen": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/platinum/mingwen.png",
+              "sha256": "35c09e123c6f3d4ef12dcbdf404be85594b95cc2d3e2236c714c4f5bab59c2df",
+              "prompt": "tooling/icon-generation/completion/prompts/platinum/mingwen.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/mingwen-16.png",
+            "32": "icons/mingwen-32.png",
+            "42": "icons/mingwen-42.png",
+            "64": "icons/mingwen-64.png",
+            "128": "icons/mingwen-128.png"
+          },
+          "assets": {
+            "icons/mingwen-16.png": {
+              "sha256": "5e3b77951b74135cfc1bdbb02be874aa3857ec4e84f385cee2cf59e175aa5cf1",
+              "width": 16,
+              "height": 16
+            },
+            "icons/mingwen-32.png": {
+              "sha256": "2a928e33a13de43a655ea88593b7e62636b8c1c2ee82f722a11836e018001ca7",
+              "width": 32,
+              "height": 32
+            },
+            "icons/mingwen-42.png": {
+              "sha256": "04316a00c3b255717b4481b4429b9340b85d396a0762737f2ebb7cab19c56e86",
+              "width": 42,
+              "height": 42
+            },
+            "icons/mingwen-64.png": {
+              "sha256": "aef53c869de22523269c1c07f6f5becf70766485dcb27f11c5bd2e6b3492b7b3",
+              "width": 64,
+              "height": 64
+            },
+            "icons/mingwen-128.png": {
+              "sha256": "7481d3022b2a65b405263bdbdec242c3b3f856fb3b7c36c403f8c769024d42ce",
+              "width": 128,
+              "height": 128
+            }
+          }
+        }
+      }
+    },
+    "aqua": {
+      "icons": {
+        "rootline": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/aqua/rootline.png",
+              "sha256": "b620487d1267144cadc7f8eb30bc03391d3a46c20bf3ac42642b0a8fb76a455f",
+              "prompt": "tooling/icon-generation/completion/prompts/aqua/rootline.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/rootline-16.png",
+            "32": "icons/rootline-32.png",
+            "64": "icons/rootline-64.png",
+            "128": "icons/rootline-128.png"
+          },
+          "assets": {
+            "icons/rootline-16.png": {
+              "sha256": "aef98100e896e4037b237523fca1b68c5011b24a8a1fa88a66a72167df92b5cb",
+              "width": 16,
+              "height": 16
+            },
+            "icons/rootline-32.png": {
+              "sha256": "6e30468ac40c3944058c90e573b41939b30823a152ce42f059f76b25da841d1d",
+              "width": 32,
+              "height": 32
+            },
+            "icons/rootline-64.png": {
+              "sha256": "80544f3a92b22bd3d20c995d4249ef429a8eded3d5fd95c407f94ee8e72c01b9",
+              "width": 64,
+              "height": 64
+            },
+            "icons/rootline-128.png": {
+              "sha256": "e89ee30e49b7bc6dbd36f5d34c244d9021c5690f906d74fb4560a23e7cb4a0b5",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "joyride": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/aqua/joyride.png",
+              "sha256": "c40f25718905c4e575495de1cdddd53fa9db81da7e10962992639e8cee55164e",
+              "prompt": "tooling/icon-generation/completion/prompts/aqua/joyride.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/joyride-16.png",
+            "32": "icons/joyride-32.png",
+            "64": "icons/joyride-64.png",
+            "128": "icons/joyride-128.png"
+          },
+          "assets": {
+            "icons/joyride-16.png": {
+              "sha256": "190e9d3dde717746840e4cc7d5590e61179cf30220fc3f5d29988079f208dbab",
+              "width": 16,
+              "height": 16
+            },
+            "icons/joyride-32.png": {
+              "sha256": "1c09585bb3b3a1b24c2b76798e71d582adfc5d74915db8eb089f5048fcc55168",
+              "width": 32,
+              "height": 32
+            },
+            "icons/joyride-64.png": {
+              "sha256": "f103f879a5395a10748ff9de08a879470724fe31f68860fdd70ed643846ee98f",
+              "width": 64,
+              "height": 64
+            },
+            "icons/joyride-128.png": {
+              "sha256": "2e304399e07a7f12b52a686e75d529745a17110ae6cd2f32f28e173a320082ba",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "mingwen": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/aqua/mingwen.png",
+              "sha256": "d71bd24ca8693acb459a3d4a3f95b2c64cc38159237c3760db71f20aa7b19947",
+              "prompt": "tooling/icon-generation/completion/prompts/aqua/mingwen.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/mingwen-16.png",
+            "32": "icons/mingwen-32.png",
+            "64": "icons/mingwen-64.png",
+            "128": "icons/mingwen-128.png"
+          },
+          "assets": {
+            "icons/mingwen-16.png": {
+              "sha256": "6fb73d64c1973bca90bcecdec2946070bd3e067f720d24a579db95b6ed8fe753",
+              "width": 16,
+              "height": 16
+            },
+            "icons/mingwen-32.png": {
+              "sha256": "ee6c225a7f22b6c6b5b3a16203f046b06b30948aea3a0cd258a3ae1f16726aa2",
+              "width": 32,
+              "height": 32
+            },
+            "icons/mingwen-64.png": {
+              "sha256": "f858f4b7ff0e66de05fe581e4df2c7b86af54ee4f2cfa957a6deb734ba00d172",
+              "width": 64,
+              "height": 64
+            },
+            "icons/mingwen-128.png": {
+              "sha256": "1a53d7f0dc76123750306fd1110e6c46cd97b230fb13b39122cde4c82fad66e6",
+              "width": 128,
+              "height": 128
+            }
+          }
+        }
+      }
+    },
+    "snow-leopard": {
+      "icons": {
+        "rootline": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/snow-leopard/rootline.png",
+              "sha256": "28ca169e2a62cdd5b2548d1c3c7d6a405c6d06bb1ef97bd60201eac41437d797",
+              "prompt": "tooling/icon-generation/completion/prompts/snow-leopard/rootline.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/rootline-16.png",
+            "32": "icons/rootline-32.png",
+            "64": "icons/rootline-64.png",
+            "128": "icons/rootline-128.png",
+            "512": "icons/rootline-512.png"
+          },
+          "assets": {
+            "icons/rootline-16.png": {
+              "sha256": "e5188627f1a49c69d9564117e7b1915f82f5117d6d7427536c8d9518c911111b",
+              "width": 16,
+              "height": 16
+            },
+            "icons/rootline-32.png": {
+              "sha256": "417de3338d9c1cc27b5166c3bfc109e10da6f5c4ce5f0a0c7c5b31a0d0594c8f",
+              "width": 32,
+              "height": 32
+            },
+            "icons/rootline-64.png": {
+              "sha256": "ea020dead895d0740b6db5f0a550c173da73be5e5cd9bad156f54a93c72538a5",
+              "width": 64,
+              "height": 64
+            },
+            "icons/rootline-128.png": {
+              "sha256": "f131c00a488519e218dfca517a938feb63da17a98ceacd2247dde8cc0fd5176d",
+              "width": 128,
+              "height": 128
+            },
+            "icons/rootline-512.png": {
+              "sha256": "c2f308487330c6142cb7bacb29e72c7bd52c6a08818b488c79a2f83156e08094",
+              "width": 512,
+              "height": 512
+            }
+          }
+        },
+        "joyride": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/snow-leopard/joyride.png",
+              "sha256": "41283239384f794d282a845972c97171502a2baba2ecd7d8eabd23b45e45a72e",
+              "prompt": "tooling/icon-generation/completion/prompts/snow-leopard/joyride.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/joyride-16.png",
+            "32": "icons/joyride-32.png",
+            "64": "icons/joyride-64.png",
+            "128": "icons/joyride-128.png",
+            "512": "icons/joyride-512.png"
+          },
+          "assets": {
+            "icons/joyride-16.png": {
+              "sha256": "c7bb029fa4f0f93eba172903f0373b9ac4244a6afe71c7251df6b22584f604c1",
+              "width": 16,
+              "height": 16
+            },
+            "icons/joyride-32.png": {
+              "sha256": "e670ff1b6d20ae3c42460e1bcd4e7392412d51f52b8e2f99fdf37ed4a6654c97",
+              "width": 32,
+              "height": 32
+            },
+            "icons/joyride-64.png": {
+              "sha256": "1173c57037e5167af1964dc1782b86bb82e2b8b2397e7d640c181b3ef07bf360",
+              "width": 64,
+              "height": 64
+            },
+            "icons/joyride-128.png": {
+              "sha256": "6943dcba3ff666f6411b5cca796d27f5f7aa8a762d24213b62e71ed59da362ef",
+              "width": 128,
+              "height": 128
+            },
+            "icons/joyride-512.png": {
+              "sha256": "93f8efd583ac1f8cb3f3177462e8e309fa52e2a640e885e14691aabc87b2f468",
+              "width": 512,
+              "height": 512
+            }
+          }
+        },
+        "mingwen": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/snow-leopard/mingwen.png",
+              "sha256": "949fee3be3a7812a0f5c59adfd85c902e0f60aca273ed346fe13983a81bfb692",
+              "prompt": "tooling/icon-generation/completion/prompts/snow-leopard/mingwen.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/mingwen-16.png",
+            "32": "icons/mingwen-32.png",
+            "64": "icons/mingwen-64.png",
+            "128": "icons/mingwen-128.png",
+            "512": "icons/mingwen-512.png"
+          },
+          "assets": {
+            "icons/mingwen-16.png": {
+              "sha256": "9cf4742febc54b0c44537f295e1e9763af1e4ad445446ceadd19c1f4295cdf18",
+              "width": 16,
+              "height": 16
+            },
+            "icons/mingwen-32.png": {
+              "sha256": "75888521f3f7f69c63e9835e59dc92c904e8d287b287fee71f1bf88db364eb96",
+              "width": 32,
+              "height": 32
+            },
+            "icons/mingwen-64.png": {
+              "sha256": "63f617ad44023eff5635efcb20ee5b0f51a3d19ac4dc1fdb5c9e319467d8fa77",
+              "width": 64,
+              "height": 64
+            },
+            "icons/mingwen-128.png": {
+              "sha256": "f8eaae6b01cee957c7c4d851e0e864413135368ea1fda5552aba57619eb71cde",
+              "width": 128,
+              "height": 128
+            },
+            "icons/mingwen-512.png": {
+              "sha256": "28a6ec1d8dcf17d9aa986a09ee1a18dc6cc2d041df3c8e691ad1e86171714c6b",
+              "width": 512,
+              "height": 512
+            }
+          }
+        }
+      }
+    },
+    "yosemite": {
+      "icons": {
+        "rootline": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/yosemite/rootline.png",
+              "sha256": "81bba544157186c64c91ecb440b9c79d406b8b5592c92f35f47ef736b03a7b9d",
+              "prompt": "tooling/icon-generation/completion/prompts/yosemite/rootline.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/rootline-16.png",
+            "32": "icons/rootline-32.png",
+            "64": "icons/rootline-64.png",
+            "128": "icons/rootline-128.png"
+          },
+          "assets": {
+            "icons/rootline-16.png": {
+              "sha256": "6d657eff38aed37cd1275eac0ea3958f452e25ea3629a51acb698e1a07917a14",
+              "width": 16,
+              "height": 16
+            },
+            "icons/rootline-32.png": {
+              "sha256": "c8ee919f11f77d9b712c4f44b73ee6ce6524bd642bdccbf5dab316ed6e0fe33e",
+              "width": 32,
+              "height": 32
+            },
+            "icons/rootline-64.png": {
+              "sha256": "833641ae1c9e3cecefcae80f94a7e912d2bebce1c001ff4cd6dfff0e7c87fd8e",
+              "width": 64,
+              "height": 64
+            },
+            "icons/rootline-128.png": {
+              "sha256": "d7d736ffd9a2d0c1cfd8996d14d0d839c60d91bf06dc49a90cb96a21975add80",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "joyride": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/yosemite/joyride.png",
+              "sha256": "63747a392c8e889d014de5a2636628b0b0dbfa9670a38de36b520fee75af3828",
+              "prompt": "tooling/icon-generation/completion/prompts/yosemite/joyride.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/joyride-16.png",
+            "32": "icons/joyride-32.png",
+            "64": "icons/joyride-64.png",
+            "128": "icons/joyride-128.png"
+          },
+          "assets": {
+            "icons/joyride-16.png": {
+              "sha256": "cd3a8e860a041d9510bd207b06987306acaac5e7190a2cc58a6821109e73b144",
+              "width": 16,
+              "height": 16
+            },
+            "icons/joyride-32.png": {
+              "sha256": "8ca19f5a536c090359be790f1a9b6be22114255cd3b5cae87ff6ced73e5c81c5",
+              "width": 32,
+              "height": 32
+            },
+            "icons/joyride-64.png": {
+              "sha256": "19fce95cf9f44bbe7d885cfeeea7f98068685095c5dc25d0a3a2963f73a4f8b5",
+              "width": 64,
+              "height": 64
+            },
+            "icons/joyride-128.png": {
+              "sha256": "8e9613d7f4f96aecec52107f6dcf62bfded5b33137d10f9c41a31eaf27f89576",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "mingwen": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/yosemite/mingwen.png",
+              "sha256": "d1988d67aeb436f2eb45bf99a4741d0ac846293db48ecfae5270d0fa37151af5",
+              "prompt": "tooling/icon-generation/completion/prompts/yosemite/mingwen.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/mingwen-16.png",
+            "32": "icons/mingwen-32.png",
+            "64": "icons/mingwen-64.png",
+            "128": "icons/mingwen-128.png"
+          },
+          "assets": {
+            "icons/mingwen-16.png": {
+              "sha256": "5dc4cd31f783ee39c3a9371b2a3f137a68f7aa150d0831498bddeecfb4de7485",
+              "width": 16,
+              "height": 16
+            },
+            "icons/mingwen-32.png": {
+              "sha256": "dafe7435636c0b4a84dc4edc166f4443c036e32fde1e53c9ab9d9ca06d4e3375",
+              "width": 32,
+              "height": 32
+            },
+            "icons/mingwen-64.png": {
+              "sha256": "c3565e14b365441f788ee05b6435d6002b9a5c53237501d3475297cedc1d761c",
+              "width": 64,
+              "height": 64
+            },
+            "icons/mingwen-128.png": {
+              "sha256": "7e67e093017caeeafb8de98060eff408d5ed34d4574fabfeee9de1a2f663eb36",
+              "width": 128,
+              "height": 128
+            }
+          }
+        }
+      }
+    },
+    "big-sur": {
+      "icons": {
+        "rootline": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/big-sur/rootline.png",
+              "sha256": "f1c20722967a909d9f66fa8676e3fbc07564ba6ac2d1c43b09aa6210a540fad6",
+              "prompt": "tooling/icon-generation/completion/prompts/big-sur/rootline.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/rootline-16.png",
+            "32": "icons/rootline-32.png",
+            "64": "icons/rootline-64.png",
+            "128": "icons/rootline-128.png"
+          },
+          "assets": {
+            "icons/rootline-16.png": {
+              "sha256": "283dc7cb771f39083058ccd52ddb0ce124b3cc2dead2abe552d782e0a8cece35",
+              "width": 16,
+              "height": 16
+            },
+            "icons/rootline-32.png": {
+              "sha256": "c29c14a8d8537e71ede1fdda4ee127678ed2dcc67f6ece83e12515fc0d19fd93",
+              "width": 32,
+              "height": 32
+            },
+            "icons/rootline-64.png": {
+              "sha256": "4dfaa66d82f89839e77422120256e10eafd6f26a15c78f30f281ff0ff401f85d",
+              "width": 64,
+              "height": 64
+            },
+            "icons/rootline-128.png": {
+              "sha256": "872703875aec51f42edf34dbcaab8f09725f4fe794664dd837abbf077b821cb2",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "joyride": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/big-sur/joyride.png",
+              "sha256": "523072ee106672e68527c2ad0a010bd7f0c9e3d59eba47198c144bdb072335a6",
+              "prompt": "tooling/icon-generation/completion/prompts/big-sur/joyride.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/joyride-16.png",
+            "32": "icons/joyride-32.png",
+            "64": "icons/joyride-64.png",
+            "128": "icons/joyride-128.png"
+          },
+          "assets": {
+            "icons/joyride-16.png": {
+              "sha256": "990580bd93918d25653972159f431e09c286f823758f79677032c6b931cbb2bb",
+              "width": 16,
+              "height": 16
+            },
+            "icons/joyride-32.png": {
+              "sha256": "3fe5f01ff495c758331b076aac247647b65069e01c151d5654cce3205babdae1",
+              "width": 32,
+              "height": 32
+            },
+            "icons/joyride-64.png": {
+              "sha256": "2d694728bf832d95877fc94097c914d8ca38cc1e6a57201bf42d9ea2a6b45b5a",
+              "width": 64,
+              "height": 64
+            },
+            "icons/joyride-128.png": {
+              "sha256": "a6abc15260dc8d8b067f6d45de4fca5ada2de5a8b5ac3c85f2e569003b4447d4",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "mingwen": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/big-sur/mingwen.png",
+              "sha256": "5e561996c0becb8ef64ca7e3d8902574b27c83b4457d93e868d89ca831c7e7bd",
+              "prompt": "tooling/icon-generation/completion/prompts/big-sur/mingwen.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/mingwen-16.png",
+            "32": "icons/mingwen-32.png",
+            "64": "icons/mingwen-64.png",
+            "128": "icons/mingwen-128.png"
+          },
+          "assets": {
+            "icons/mingwen-16.png": {
+              "sha256": "8b8e2251329de4eba6392149eaef529a7e703705d3574382378d550256f8dffa",
+              "width": 16,
+              "height": 16
+            },
+            "icons/mingwen-32.png": {
+              "sha256": "f225b74d5ded352905ac3968f244a50b83d19d29425fe08e26baa8525a033140",
+              "width": 32,
+              "height": 32
+            },
+            "icons/mingwen-64.png": {
+              "sha256": "ed4dc3336173eced972fab311b50dc95c433058a8b74b5aae1a67097e9d7f174",
+              "width": 64,
+              "height": 64
+            },
+            "icons/mingwen-128.png": {
+              "sha256": "9ad6d7520416e782657ca29dd401fae2e597ea402555225d229c395a0ace1dfa",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "imagePromptStudio": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/big-sur/imagePromptStudio.png",
+              "sha256": "801b2db7782ec4a26ef0048f6e0468e34f58172e392de01f5f5ddb76b3b75a79",
+              "prompt": "tooling/icon-generation/completion/prompts/big-sur/imagePromptStudio.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/imagePromptStudio-16.png",
+            "32": "icons/imagePromptStudio-32.png",
+            "64": "icons/imagePromptStudio-64.png",
+            "128": "icons/imagePromptStudio-128.png"
+          },
+          "assets": {
+            "icons/imagePromptStudio-16.png": {
+              "sha256": "ec6228e27ee3c25c41be840c5da4a2ee68166dc81e2568488d56a4c2e05c59c5",
+              "width": 16,
+              "height": 16
+            },
+            "icons/imagePromptStudio-32.png": {
+              "sha256": "6fe6f46f06a7e90e7b2f5c4d624c064eb0a570fe919d6c1a3154d35c963e5340",
+              "width": 32,
+              "height": 32
+            },
+            "icons/imagePromptStudio-64.png": {
+              "sha256": "4b8a9e52faf35d386f285a4a8d22f15538360903b6367a436a3313ede19c6370",
+              "width": 64,
+              "height": 64
+            },
+            "icons/imagePromptStudio-128.png": {
+              "sha256": "07dcf42f8a718e706bd08eb03a49da9fd6768534a1263ba65cd06a5c8235364d",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "lightroom": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/big-sur/lightroom.png",
+              "sha256": "236698b67f3e099ba040f587893038fccd5c2b3409a9fe61d4022cba5ace582f",
+              "prompt": "tooling/icon-generation/completion/prompts/big-sur/lightroom.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/lightroom-16.png",
+            "32": "icons/lightroom-32.png",
+            "64": "icons/lightroom-64.png",
+            "128": "icons/lightroom-128.png"
+          },
+          "assets": {
+            "icons/lightroom-16.png": {
+              "sha256": "9f239f197d471237ef4c7c00b147706550d312d2e8fbdb405bfd583da4ec6501",
+              "width": 16,
+              "height": 16
+            },
+            "icons/lightroom-32.png": {
+              "sha256": "2d5ce1247264341e74db2d6dbc0e8227e31d20214f68f1736f02ae825e597de2",
+              "width": 32,
+              "height": 32
+            },
+            "icons/lightroom-64.png": {
+              "sha256": "6533277543c3e41443ee9cd65ad6580a9cd701f6dc083d6670f596e988f5eced",
+              "width": 64,
+              "height": 64
+            },
+            "icons/lightroom-128.png": {
+              "sha256": "1da66f4278b048622787c09a99b22bfd07475a6fe977fab10fcbfce6f3fda638",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "micropolis": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/big-sur/micropolis.png",
+              "sha256": "1e7bab0760cf0731344bdc6a82f113b3be011e79c464cf631bc2256caf491790",
+              "prompt": "tooling/icon-generation/completion/prompts/big-sur/micropolis.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/micropolis-16.png",
+            "32": "icons/micropolis-32.png",
+            "64": "icons/micropolis-64.png",
+            "128": "icons/micropolis-128.png"
+          },
+          "assets": {
+            "icons/micropolis-16.png": {
+              "sha256": "6dd4b08417ceea7012e2901c443812d7ba48560fc54971a7e5510b1e26d07c57",
+              "width": 16,
+              "height": 16
+            },
+            "icons/micropolis-32.png": {
+              "sha256": "a385ccf84a196ac75b2903dcc30efb02b276ad88189111a0c7d540cce32e9252",
+              "width": 32,
+              "height": 32
+            },
+            "icons/micropolis-64.png": {
+              "sha256": "88b7b6d1ef70ef2c86e0d0b23d20494545222707444a3cda02f6ec466bb3bb13",
+              "width": 64,
+              "height": 64
+            },
+            "icons/micropolis-128.png": {
+              "sha256": "df3aaf053689d347b2d23ce437cccf681af1a852624c2bde20e41890734726cf",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "openttd": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/big-sur/openttd.png",
+              "sha256": "2b7c82a65b407b9dacff9adc1ad8b742661128fbf69d0473f2c5fcc46640102d",
+              "prompt": "tooling/icon-generation/completion/prompts/big-sur/openttd.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/openttd-16.png",
+            "32": "icons/openttd-32.png",
+            "64": "icons/openttd-64.png",
+            "128": "icons/openttd-128.png"
+          },
+          "assets": {
+            "icons/openttd-16.png": {
+              "sha256": "af6eb3847744f9970d49bd63d7d1ac6dfff46f36469672b8be8719dc25e17aca",
+              "width": 16,
+              "height": 16
+            },
+            "icons/openttd-32.png": {
+              "sha256": "effd5904b800d5c2c5478cbf97de0590c10d0484e2d7fcdb85cc151b37df2bd2",
+              "width": 32,
+              "height": 32
+            },
+            "icons/openttd-64.png": {
+              "sha256": "d95c1aee271a2bd6dd70ce29e489b568766dbd64b7536a5d2a781fec019e8a3a",
+              "width": 64,
+              "height": 64
+            },
+            "icons/openttd-128.png": {
+              "sha256": "af8f20d1c88dd53e75d777aea5ca2e41ceec286ad97ba6d3e4e2bb3443d7d042",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "doom": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/big-sur/doom.png",
+              "sha256": "07ffe6711f05bd751b5e795720fafef95cfbceb060ab15b015ada52afc1568bb",
+              "prompt": "tooling/icon-generation/completion/prompts/big-sur/doom.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/doom-16.png",
+            "32": "icons/doom-32.png",
+            "64": "icons/doom-64.png",
+            "128": "icons/doom-128.png"
+          },
+          "assets": {
+            "icons/doom-16.png": {
+              "sha256": "27917f67b4c7f383aad368aad4e5758972b2eed4237ee71209f2bd9d1d8ed0e9",
+              "width": 16,
+              "height": 16
+            },
+            "icons/doom-32.png": {
+              "sha256": "ab739c25e3e24d51ca16bf88f34c46f3e3432cb273726875823610f85bb82208",
+              "width": 32,
+              "height": 32
+            },
+            "icons/doom-64.png": {
+              "sha256": "b1eab74e00946b2b45c6b540362f3a1c14d9f1c9520b235c3d0d94d6e292b036",
+              "width": 64,
+              "height": 64
+            },
+            "icons/doom-128.png": {
+              "sha256": "401f8a5ac56b65e3f8e5175059cf8ea724e8195c9ccfcbbc435ad304a153c0cf",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "bonsaiCity": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/big-sur/bonsaiCity.png",
+              "sha256": "14e37a941216fa1e8f7d1e71bf304dccf91b299cb04575d3f54c3308b1c1ef26",
+              "prompt": "tooling/icon-generation/completion/prompts/big-sur/bonsaiCity.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/bonsaiCity-16.png",
+            "32": "icons/bonsaiCity-32.png",
+            "64": "icons/bonsaiCity-64.png",
+            "128": "icons/bonsaiCity-128.png"
+          },
+          "assets": {
+            "icons/bonsaiCity-16.png": {
+              "sha256": "9f70bb6dfaaef1d222c9056a99db24121b37196a7482887b5c6f25aea6c0a7aa",
+              "width": 16,
+              "height": 16
+            },
+            "icons/bonsaiCity-32.png": {
+              "sha256": "a315abc505b74d85a7bda90a8398c220efa67036f7e892c2ba1b7537750efd24",
+              "width": 32,
+              "height": 32
+            },
+            "icons/bonsaiCity-64.png": {
+              "sha256": "737116ece378dee5a6869ed542b68e52ae3b6d8e4b00e2103177d887dfc9510b",
+              "width": 64,
+              "height": 64
+            },
+            "icons/bonsaiCity-128.png": {
+              "sha256": "37e2ba02feedd1f0fea6181bc1bf438fc2d60be7089c36deb309e7c8fcebdc7b",
+              "width": 128,
+              "height": 128
+            }
+          }
+        }
+      }
+    },
+    "nextstep": {
+      "icons": {
+        "rootline": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/nextstep/rootline.png",
+              "sha256": "98ba0f7d233140b2f20cf6ed618306e5a9d8317bafbd7989efd43c81e95a53e8",
+              "prompt": "tooling/icon-generation/completion/prompts/nextstep/rootline.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/rootline-16.png",
+            "32": "icons/rootline-32.png",
+            "64": "icons/rootline-64.png",
+            "128": "icons/rootline-128.png"
+          },
+          "assets": {
+            "icons/rootline-16.png": {
+              "sha256": "3a2f73f7b35b9ed4ae22594944bf45e7b3446361a29b0a553c8e3bd41d822fb7",
+              "width": 16,
+              "height": 16
+            },
+            "icons/rootline-32.png": {
+              "sha256": "73b39ae6f2795b875e8d0e926918e31e8d05794506f6c01341512eea27b4413f",
+              "width": 32,
+              "height": 32
+            },
+            "icons/rootline-64.png": {
+              "sha256": "550bdb81dc47f67ec58e6b5a712d9c22f872e8eeef5babc34e856e4458d99e4f",
+              "width": 64,
+              "height": 64
+            },
+            "icons/rootline-128.png": {
+              "sha256": "5b379a084404b80b8c693417301fcfb7cff4a6b1afbadc9f2b65ca77564f6e20",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "joyride": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/nextstep/joyride.png",
+              "sha256": "055004209e29ac1c43cd14add8434d157762639e1eb270e717480b557ac97947",
+              "prompt": "tooling/icon-generation/completion/prompts/nextstep/joyride.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/joyride-16.png",
+            "32": "icons/joyride-32.png",
+            "64": "icons/joyride-64.png",
+            "128": "icons/joyride-128.png"
+          },
+          "assets": {
+            "icons/joyride-16.png": {
+              "sha256": "984c7814a931e47a74c01546a3e32e4ad7f8204fd72505a89beaee83a6c31858",
+              "width": 16,
+              "height": 16
+            },
+            "icons/joyride-32.png": {
+              "sha256": "faabc9b46f9443a346e50169b59ffcaf4324c23cb293ffacada8539b3858cf17",
+              "width": 32,
+              "height": 32
+            },
+            "icons/joyride-64.png": {
+              "sha256": "3fab9046fb925205925fba5246eb6910695b0210f11f113e950a14dd93548286",
+              "width": 64,
+              "height": 64
+            },
+            "icons/joyride-128.png": {
+              "sha256": "079838d4a0a00cd4bb03f3d2fded5afe80adf30d9364c144e7ccd7b917c3a5fa",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "mingwen": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/nextstep/mingwen.png",
+              "sha256": "360e65f1773e69f80ff315a431b060d7117e165cc3df4edc1e4fe21bb66f48f7",
+              "prompt": "tooling/icon-generation/completion/prompts/nextstep/mingwen.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/mingwen-16.png",
+            "32": "icons/mingwen-32.png",
+            "64": "icons/mingwen-64.png",
+            "128": "icons/mingwen-128.png"
+          },
+          "assets": {
+            "icons/mingwen-16.png": {
+              "sha256": "0e3709273520b9bcb5ae8c582df3927927cce4b8878fb61664953f8944e680ea",
+              "width": 16,
+              "height": 16
+            },
+            "icons/mingwen-32.png": {
+              "sha256": "69f92cd3412bed00b0ad5733b92b89c63be4528e4041dc7e0bba09334b920885",
+              "width": 32,
+              "height": 32
+            },
+            "icons/mingwen-64.png": {
+              "sha256": "0279bb4e4caba929428db288e4f141d6a302dd7fb10ba0f63ff1134d7fbcda82",
+              "width": 64,
+              "height": 64
+            },
+            "icons/mingwen-128.png": {
+              "sha256": "d7d2d74a8d376a5ba83861e6d3adadc4ed903fd5d314edd6d1c5a0a256978acd",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "imagePromptStudio": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/nextstep/imagePromptStudio.png",
+              "sha256": "2f55f64538eac5be03d89a61160dcf2c18b22bef578625db1ac6f2e8ad7b1814",
+              "prompt": "tooling/icon-generation/completion/prompts/nextstep/imagePromptStudio.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/imagePromptStudio-16.png",
+            "32": "icons/imagePromptStudio-32.png",
+            "64": "icons/imagePromptStudio-64.png",
+            "128": "icons/imagePromptStudio-128.png"
+          },
+          "assets": {
+            "icons/imagePromptStudio-16.png": {
+              "sha256": "57f69eebe4cbcc8a99cec976f5e5f6ffc633aa62f91301ce14e7d28dcdd53cfa",
+              "width": 16,
+              "height": 16
+            },
+            "icons/imagePromptStudio-32.png": {
+              "sha256": "5850580dc1dcf7db74adcf37823858389405c8cad1b86ad18a0384bda4aafb35",
+              "width": 32,
+              "height": 32
+            },
+            "icons/imagePromptStudio-64.png": {
+              "sha256": "c784cb212df4eb2cee2a400859041ac9980da2ee5a65ace221892845f7826f8e",
+              "width": 64,
+              "height": 64
+            },
+            "icons/imagePromptStudio-128.png": {
+              "sha256": "86cdc8c81b0149dadb0da3b4a07bec4053237fa5e398936397cf689d8ff6c2ef",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "lightroom": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/nextstep/lightroom.png",
+              "sha256": "e1b64d02f6ad1b442e8af6f7578bb402bfbc60e01046f42760d141816f675c26",
+              "prompt": "tooling/icon-generation/completion/prompts/nextstep/lightroom-repair.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/lightroom-16.png",
+            "32": "icons/lightroom-32.png",
+            "64": "icons/lightroom-64.png",
+            "128": "icons/lightroom-128.png"
+          },
+          "assets": {
+            "icons/lightroom-16.png": {
+              "sha256": "21812c35e9096003bf288450dbe4c19a761ab9880cef5018b5640d20ffbe2a96",
+              "width": 16,
+              "height": 16
+            },
+            "icons/lightroom-32.png": {
+              "sha256": "e8f16602037421e1838ca925c5bc07da69161a111a99437b10ab8223402bf525",
+              "width": 32,
+              "height": 32
+            },
+            "icons/lightroom-64.png": {
+              "sha256": "bf93bf96eae0ccdcd09fe83ffc03424c477b7d94d323b8a9032658da4fa2cfbb",
+              "width": 64,
+              "height": 64
+            },
+            "icons/lightroom-128.png": {
+              "sha256": "fc089b1527e0d85bc141a3760cd2e58aeb88569bc93dc7444235bc68dc310d40",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "micropolis": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/nextstep/micropolis.png",
+              "sha256": "e962a858eca7ce3ec79fc19c65b135835808c8da22b8f24ca0e2e3c25f91250c",
+              "prompt": "tooling/icon-generation/completion/prompts/nextstep/micropolis-repair.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/micropolis-16.png",
+            "32": "icons/micropolis-32.png",
+            "64": "icons/micropolis-64.png",
+            "128": "icons/micropolis-128.png"
+          },
+          "assets": {
+            "icons/micropolis-16.png": {
+              "sha256": "f8767085e5d4fd683c8c3535cb40249850a23b9dc65532ea7385fd4c6450c184",
+              "width": 16,
+              "height": 16
+            },
+            "icons/micropolis-32.png": {
+              "sha256": "99739154c6a1142c405b299973e717a225ac49a4ec9afbad38ab9686f415da4f",
+              "width": 32,
+              "height": 32
+            },
+            "icons/micropolis-64.png": {
+              "sha256": "d46c8c7e5c24e161a35f0ab4db7efb911c81f4446d069f7e2692e1ee17e42511",
+              "width": 64,
+              "height": 64
+            },
+            "icons/micropolis-128.png": {
+              "sha256": "235d62bc5e2bbc50f269f4d9fb417fa17a9a54777de95a9ab9d13e298a004c11",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "openttd": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/nextstep/openttd.png",
+              "sha256": "d1607434874a3af21f8b34f83b87699d2e27ce800286c8f3ccbf63e74b4b3e18",
+              "prompt": "tooling/icon-generation/completion/prompts/nextstep/openttd.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/openttd-16.png",
+            "32": "icons/openttd-32.png",
+            "64": "icons/openttd-64.png",
+            "128": "icons/openttd-128.png"
+          },
+          "assets": {
+            "icons/openttd-16.png": {
+              "sha256": "78b74c665c74f78aac780d6d4c0e634d37c1b21f46c794dbb56fc8f88703c96b",
+              "width": 16,
+              "height": 16
+            },
+            "icons/openttd-32.png": {
+              "sha256": "513b21f86dd732edb29add948b56a06efc0a3342eee741ba4d7b027dc5c908bb",
+              "width": 32,
+              "height": 32
+            },
+            "icons/openttd-64.png": {
+              "sha256": "6edfa41918861b22b43b80bc29adc3333f94b5198d2498f2d1633b1fd0a2185c",
+              "width": 64,
+              "height": 64
+            },
+            "icons/openttd-128.png": {
+              "sha256": "3e5e0a1e75a68c6c5b012917af49f6769da826ef116d9cf941b0cc8c29b1b156",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "doom": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/nextstep/doom.png",
+              "sha256": "8bc80f76d8601d425898068b79c95b7ac6c58b82178d5750400cc70b3119f02f",
+              "prompt": "tooling/icon-generation/completion/prompts/nextstep/doom.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/doom-16.png",
+            "32": "icons/doom-32.png",
+            "64": "icons/doom-64.png",
+            "128": "icons/doom-128.png"
+          },
+          "assets": {
+            "icons/doom-16.png": {
+              "sha256": "34b285816b3d6500cdab7d66dd4dc01ba254ae00e7a2c6c3efd65cacba6ac69b",
+              "width": 16,
+              "height": 16
+            },
+            "icons/doom-32.png": {
+              "sha256": "e6d1cb3c192023869599291c14003fc6a14e40b2ef68a5ebc851d6ac4f5f2e35",
+              "width": 32,
+              "height": 32
+            },
+            "icons/doom-64.png": {
+              "sha256": "7ebb689c9779f123ec1897d8e3810b69af000a7294453a90d1d1d4606173cdca",
+              "width": 64,
+              "height": 64
+            },
+            "icons/doom-128.png": {
+              "sha256": "1b72ec064bf11f8c13eb9f8290a4a58964145c16c07b3ed7e558cd2d6c3cf47a",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "bonsaiCity": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/nextstep/bonsaiCity.png",
+              "sha256": "c8e9b61fbf4657b9b559a88d42c33540200064c00e001271e66acbb713e7686a",
+              "prompt": "tooling/icon-generation/completion/prompts/nextstep/bonsaiCity.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/bonsaiCity-16.png",
+            "32": "icons/bonsaiCity-32.png",
+            "64": "icons/bonsaiCity-64.png",
+            "128": "icons/bonsaiCity-128.png"
+          },
+          "assets": {
+            "icons/bonsaiCity-16.png": {
+              "sha256": "4f209fcc9c0c29b411bb91b5b6b5504b4287ad50d6d78ee80e0f3d889b512c58",
+              "width": 16,
+              "height": 16
+            },
+            "icons/bonsaiCity-32.png": {
+              "sha256": "7facf29830c6c0e4aec0a09ac9046154f4f378754761ed95339a7c672fe9d6b2",
+              "width": 32,
+              "height": 32
+            },
+            "icons/bonsaiCity-64.png": {
+              "sha256": "3b81c71b550f7d7602dc827a888c481f9fc3fa2b66e3d1b6adf2a50bbec4a8d7",
+              "width": 64,
+              "height": 64
+            },
+            "icons/bonsaiCity-128.png": {
+              "sha256": "8ed1e945190fc3f6c9c43ac390c65392bd5c98e1704588cdbdbccbf4cbd91405",
+              "width": 128,
+              "height": 128
+            }
+          }
+        }
+      }
+    },
+    "liquid-glass": {
+      "icons": {
+        "rootline": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/liquid-glass/rootline.png",
+              "sha256": "3d18d349a46bf04e3e96e56ed1fd82536917a363ef8316ab1b8bed59162f3810",
+              "prompt": "tooling/icon-generation/completion/prompts/liquid-glass/rootline-final.txt"
+            },
+            "dark": {
+              "file": "tooling/icon-generation/completion/masters/liquid-glass/rootline-dark.png",
+              "sha256": "778f7f9d5121755a0623b65fd172b159ea6b6457f7c4db25364fd6450c8c7513",
+              "prompt": "tooling/icon-generation/completion/prompts/liquid-glass/rootline-dark.txt"
+            },
+            "clear": {
+              "file": "tooling/icon-generation/completion/masters/liquid-glass/rootline-clear.png",
+              "sha256": "a82114bfdde2ba6846c2373ea9bdaf12685308c33caa0235006d145125a13f41",
+              "prompt": "tooling/icon-generation/completion/prompts/liquid-glass/rootline-clear.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/rootline-16-default.png",
+            "32": "icons/rootline-32-default.png",
+            "64": "icons/rootline-64-default.png",
+            "128": "icons/rootline-128-default.png"
+          },
+          "assets": {
+            "icons/rootline-16-default.png": {
+              "sha256": "dcfb2e65e82619248dd10134f288772ae1932a305c21ea09a784a37ca13487d7",
+              "width": 16,
+              "height": 16
+            },
+            "icons/rootline-16-dark.png": {
+              "sha256": "5799008151d6485b164f16a6428502e7b4c4e96d88fa15a8eb26a78d0c564224",
+              "width": 16,
+              "height": 16
+            },
+            "icons/rootline-16-clear.png": {
+              "sha256": "150db482d6ed04b835191c85d019c0ce578b86dd61eb161db649de6f59e5c94e",
+              "width": 16,
+              "height": 16
+            },
+            "icons/rootline-32-default.png": {
+              "sha256": "be48b6c7f6db38750e0ef219e7d7201ceaf3967a7c44c568f0eb0f4848147df7",
+              "width": 32,
+              "height": 32
+            },
+            "icons/rootline-32-dark.png": {
+              "sha256": "ce0cbb9fa7ffaf44a271f16c797b8502e15b36a086c08ccdd16e540acc17cf86",
+              "width": 32,
+              "height": 32
+            },
+            "icons/rootline-32-clear.png": {
+              "sha256": "00368a10ec32594c2de5ff9b6b18fd2b274ef10fb95761a006f31d04ce01cb26",
+              "width": 32,
+              "height": 32
+            },
+            "icons/rootline-64-default.png": {
+              "sha256": "652963b992aa386677496faea4f436517ac9417d41df0224bea3d4f705bfa877",
+              "width": 64,
+              "height": 64
+            },
+            "icons/rootline-64-dark.png": {
+              "sha256": "8f005fcac139f50009ae4b07e6bcef34438b62af8133abe50e14d56bb53ec335",
+              "width": 64,
+              "height": 64
+            },
+            "icons/rootline-64-clear.png": {
+              "sha256": "184ae15b2a4fa61000e7972f524bf40d3d92d66bfa0554f1103df5df64d6a912",
+              "width": 64,
+              "height": 64
+            },
+            "icons/rootline-128-default.png": {
+              "sha256": "b0d3ddaf61d5792e58b3424b274784512292842ab340021c6631945d67c800c2",
+              "width": 128,
+              "height": 128
+            },
+            "icons/rootline-128-dark.png": {
+              "sha256": "cb86a190a73d8d940d5d3081ce6e6cd29079f3d853b1fd9728920ca0fbc229dd",
+              "width": 128,
+              "height": 128
+            },
+            "icons/rootline-128-clear.png": {
+              "sha256": "a8636c913f7cd5dee923b1482b9d6249d1f5b2702ff432d9306362eae339fde3",
+              "width": 128,
+              "height": 128
+            }
+          },
+          "appearanceSizes": {
+            "16-default": "icons/rootline-16-default.png",
+            "16-dark": "icons/rootline-16-dark.png",
+            "16-clear": "icons/rootline-16-clear.png",
+            "32-default": "icons/rootline-32-default.png",
+            "32-dark": "icons/rootline-32-dark.png",
+            "32-clear": "icons/rootline-32-clear.png",
+            "64-default": "icons/rootline-64-default.png",
+            "64-dark": "icons/rootline-64-dark.png",
+            "64-clear": "icons/rootline-64-clear.png",
+            "128-default": "icons/rootline-128-default.png",
+            "128-dark": "icons/rootline-128-dark.png",
+            "128-clear": "icons/rootline-128-clear.png"
+          }
+        },
+        "joyride": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/liquid-glass/joyride.png",
+              "sha256": "89c8471e798349a491f4811da2a3e25a8d6b30026d76a229c7169e8ac48e2dcf",
+              "prompt": "tooling/icon-generation/completion/prompts/liquid-glass/joyride-final.txt"
+            },
+            "dark": {
+              "file": "tooling/icon-generation/completion/masters/liquid-glass/joyride-dark.png",
+              "sha256": "2f72f54a93c9be411e81fac3f3ae8b2f15f520453fa2413fa9c536b7ad4dd78f",
+              "prompt": "tooling/icon-generation/completion/prompts/liquid-glass/joyride-dark-final.txt"
+            },
+            "clear": {
+              "file": "tooling/icon-generation/completion/masters/liquid-glass/joyride-clear.png",
+              "sha256": "2efe90f6f57ae83d31894ba6141cfbd3bab5e36943f29b11b7f0615998e17d30",
+              "prompt": "tooling/icon-generation/completion/prompts/liquid-glass/joyride-clear.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/joyride-16-default.png",
+            "32": "icons/joyride-32-default.png",
+            "64": "icons/joyride-64-default.png",
+            "128": "icons/joyride-128-default.png"
+          },
+          "assets": {
+            "icons/joyride-16-default.png": {
+              "sha256": "34c2e1308e28c1f776ae0a681e1f180b3eba39bb7c509b2f5a702e96567f46ff",
+              "width": 16,
+              "height": 16
+            },
+            "icons/joyride-16-dark.png": {
+              "sha256": "1ae5cbbdff6e947ccab6b70b97e6b505cef049c2e8694b5cf77d21c7ad32927b",
+              "width": 16,
+              "height": 16
+            },
+            "icons/joyride-16-clear.png": {
+              "sha256": "4f6c19bc53d6eeb0934f1c690cb8e951f6dd1c5624ee3396cbfba983a4366836",
+              "width": 16,
+              "height": 16
+            },
+            "icons/joyride-32-default.png": {
+              "sha256": "ad420cd7867df7a1aec8d9f7753e90c675e9d0d431901b4b777f4dc8a8c8c544",
+              "width": 32,
+              "height": 32
+            },
+            "icons/joyride-32-dark.png": {
+              "sha256": "85640f626534550463f18e4cdcfe92b39e5c528481fd77b8f0b844d553c1d363",
+              "width": 32,
+              "height": 32
+            },
+            "icons/joyride-32-clear.png": {
+              "sha256": "4558e624ae972f0af56b5d329d1a824d939a03bc3c8bf2768c20e0f1eeeff7dc",
+              "width": 32,
+              "height": 32
+            },
+            "icons/joyride-64-default.png": {
+              "sha256": "ba4426b9f2747cd7a464df0d7839bb7213e9b5987a2ccd1c5723ab7027dabc5d",
+              "width": 64,
+              "height": 64
+            },
+            "icons/joyride-64-dark.png": {
+              "sha256": "2fffaa131bbfd7ba315dbeede2e87d249a3b9085230bc5a9d8d745d226cb473d",
+              "width": 64,
+              "height": 64
+            },
+            "icons/joyride-64-clear.png": {
+              "sha256": "33846d6d32cde33deec86fce17b7dbf726d5a9e76461dee8084e7c1fcafe01d1",
+              "width": 64,
+              "height": 64
+            },
+            "icons/joyride-128-default.png": {
+              "sha256": "bbdede807e75b11e3912290457e1ac2853197c169bb5c65e49c1a93e0d976be0",
+              "width": 128,
+              "height": 128
+            },
+            "icons/joyride-128-dark.png": {
+              "sha256": "39e773269ef9a2e335916a22c3fc8e802a8d9c1b169bfac69687693b6817be41",
+              "width": 128,
+              "height": 128
+            },
+            "icons/joyride-128-clear.png": {
+              "sha256": "14b384bbe5b14d28b7597e9efffc1e9b2469825a7de0017a2e40667cda0fa687",
+              "width": 128,
+              "height": 128
+            }
+          },
+          "appearanceSizes": {
+            "16-default": "icons/joyride-16-default.png",
+            "16-dark": "icons/joyride-16-dark.png",
+            "16-clear": "icons/joyride-16-clear.png",
+            "32-default": "icons/joyride-32-default.png",
+            "32-dark": "icons/joyride-32-dark.png",
+            "32-clear": "icons/joyride-32-clear.png",
+            "64-default": "icons/joyride-64-default.png",
+            "64-dark": "icons/joyride-64-dark.png",
+            "64-clear": "icons/joyride-64-clear.png",
+            "128-default": "icons/joyride-128-default.png",
+            "128-dark": "icons/joyride-128-dark.png",
+            "128-clear": "icons/joyride-128-clear.png"
+          }
+        },
+        "mingwen": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/liquid-glass/mingwen.png",
+              "sha256": "1009fdf780d1f4c513399d07a58d2324290f3cbefc53e542fcd43a6df222e518",
+              "prompt": "tooling/icon-generation/completion/prompts/liquid-glass/mingwen-repair.txt"
+            },
+            "dark": {
+              "file": "tooling/icon-generation/completion/masters/liquid-glass/mingwen-dark.png",
+              "sha256": "b7378069dbf9222ea1c042ef67f3219adf575f84abbcf0df82670ae52e96f8dc",
+              "prompt": "tooling/icon-generation/completion/prompts/liquid-glass/mingwen-dark.txt"
+            },
+            "clear": {
+              "file": "tooling/icon-generation/completion/masters/liquid-glass/mingwen-clear.png",
+              "sha256": "909f2fd772d144d28a5d61a8ecaf653f85bcb4f17ec4460ee9a900a43caef717",
+              "prompt": "tooling/icon-generation/completion/prompts/liquid-glass/mingwen-clear.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/mingwen-16-default.png",
+            "32": "icons/mingwen-32-default.png",
+            "64": "icons/mingwen-64-default.png",
+            "128": "icons/mingwen-128-default.png"
+          },
+          "assets": {
+            "icons/mingwen-16-default.png": {
+              "sha256": "61c9e01fdb125417ec679944bda88dcefc6ff81575c98fd7c3f3bd7af0900cf5",
+              "width": 16,
+              "height": 16
+            },
+            "icons/mingwen-16-dark.png": {
+              "sha256": "be7e6dd2d0a7527c77f1f7530d6b7afa825f4b63ac9c1db06691aa8c0a3a0e40",
+              "width": 16,
+              "height": 16
+            },
+            "icons/mingwen-16-clear.png": {
+              "sha256": "ab52d2e9404c7ca9632d4c02a66d2d3cbbf3c7255a720ece86bb8717fe374b78",
+              "width": 16,
+              "height": 16
+            },
+            "icons/mingwen-32-default.png": {
+              "sha256": "6343a44b0ca2e7b27c98420a2d6538c252952bbad178516a5f02d31fd2724ae9",
+              "width": 32,
+              "height": 32
+            },
+            "icons/mingwen-32-dark.png": {
+              "sha256": "775651cdae11eadce63c75f16f9368a988125eea404769db4f8b15622aa94937",
+              "width": 32,
+              "height": 32
+            },
+            "icons/mingwen-32-clear.png": {
+              "sha256": "1274069bd9a7bee6af54e8911b550554b7f63360f4d3cad180db524a5f58fe9c",
+              "width": 32,
+              "height": 32
+            },
+            "icons/mingwen-64-default.png": {
+              "sha256": "ce4a887cf7a328da72f5d24ea968c0e0e1c51b955a29ffd8e6452fbd93f2b6da",
+              "width": 64,
+              "height": 64
+            },
+            "icons/mingwen-64-dark.png": {
+              "sha256": "0d18e896116920dd72914baaa436872e681612a7fd7750bc3b3cfe523eb168c9",
+              "width": 64,
+              "height": 64
+            },
+            "icons/mingwen-64-clear.png": {
+              "sha256": "afdac49cf01a18cc976391ac9c5d0ed3a29c5ca9d510282af33ba137e4c8bcb4",
+              "width": 64,
+              "height": 64
+            },
+            "icons/mingwen-128-default.png": {
+              "sha256": "134414e0b344532769ebc9a29d522319cae9b12c3b8acd68ac00d32dd095dc51",
+              "width": 128,
+              "height": 128
+            },
+            "icons/mingwen-128-dark.png": {
+              "sha256": "b843f31f2d150e7ce5b885afb80f11abddc29988a4c1bd63e2f042ea3d4169fc",
+              "width": 128,
+              "height": 128
+            },
+            "icons/mingwen-128-clear.png": {
+              "sha256": "84167133da2e00056caeb3211761331989adeeed582a707b4390812f67e197c9",
+              "width": 128,
+              "height": 128
+            }
+          },
+          "appearanceSizes": {
+            "16-default": "icons/mingwen-16-default.png",
+            "16-dark": "icons/mingwen-16-dark.png",
+            "16-clear": "icons/mingwen-16-clear.png",
+            "32-default": "icons/mingwen-32-default.png",
+            "32-dark": "icons/mingwen-32-dark.png",
+            "32-clear": "icons/mingwen-32-clear.png",
+            "64-default": "icons/mingwen-64-default.png",
+            "64-dark": "icons/mingwen-64-dark.png",
+            "64-clear": "icons/mingwen-64-clear.png",
+            "128-default": "icons/mingwen-128-default.png",
+            "128-dark": "icons/mingwen-128-dark.png",
+            "128-clear": "icons/mingwen-128-clear.png"
+          }
+        }
+      }
+    }
+  },
+  "sourceSha256": "d9ab13b3339a25ae4143ad161d26d4c1cd285b2035ef4ec5f429c292ab9b0c23",
+  "engine": "built-in Image Gen",
+  "modelVersion": "not exposed by tool",
+  "sizePolicy": "Native-size derivatives of individual generated masters; 1-bit optical threshold at 16/32, transparent fitted raster tiers elsewhere.",
+  "complete": true
+}

@@ -883,7 +883,9 @@ function renderFindFileResults() {
     text.textContent = t("find_file_empty");
     const focusQuery = document.createElement("button");
     focusQuery.type = "button";
-    focusQuery.className = "btn default";
+    // The field already has the window's default Search button; a second
+    // default here gave Find File two (2026-10-08).
+    focusQuery.className = "btn";
     focusQuery.textContent = t("search");
     focusQuery.addEventListener("click", () => {
       findFileQueryInput?.focus?.();

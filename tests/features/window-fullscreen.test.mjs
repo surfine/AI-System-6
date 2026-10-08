@@ -61,6 +61,20 @@ test.assert(!vmw.run('getWindow("control").classList.contains("is-fullscreen")')
 test.assert(frameOf() === before, "and the window returns to the frame it had");
 test.assert(!vmw.run('document.body.classList.contains("window-fullscreen-active")'), "the desk is no longer in full screen");
 
+// The desk sits under the menu bar, so a frame of top 0 inside it hung the
+// window 22px below the display and clipped its bottom row (2026-10-08).
+// Full screen measures against the display: the top compensates the desk's
+// own offset, and Exit still restores the frame.
+vmw.run('Object.defineProperty(getWindow("control"), "offsetParent", { configurable: true, value: { getBoundingClientRect: () => ({ top: 22 }) } })');
+vmw.run('window.AISystem6WindowFullscreen.enter(getWindow("control"))');
+test.assert(
+  vmw.run('getWindow("control").style.top === "-22px" && getWindow("control").style.height === "100dvh"'),
+  "a desk offset under the menu bar is compensated, so the window's bottom stays on the display",
+);
+vmw.run('window.AISystem6WindowFullscreen.exit(getWindow("control"))');
+vmw.run('delete getWindow("control").offsetParent');
+test.assert(frameOf() === before, "and Exit still restores the original frame after a compensated full screen");
+
 // --- WM0: the pre-full-screen frame is a read-only projection ---------------
 // Full screen is a view, not a saved state, so the Working Session must read
 // the frame the window had before it, never the 100vw view it shows now.

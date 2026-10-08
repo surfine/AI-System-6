@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/APPEARANCE-QA.md -->
-<!-- source-sha256: c2d56442313dc673255db1ae54531bdce9eebd8a12ea7fe2cc5e4638b156e0a1 -->
+<!-- source-sha256: df5b16ca1b9d777b943c1fe1c2ed89c4e61497b1bccb05fe0177d7caf04f87de -->
 
 英文版为准。本文档仅供人类参考。
 
@@ -40,7 +40,7 @@ reference、一边自称 canonical。详见
 
 | Board | specimen 数 | 达到 floor | 已记录差距 | reference 不可用 |
 | --- | --- | --- | --- | --- |
-| Platinum | 20 | 12 | 2 | 6（3 个照片缩略图裁片，加 3 个裁错对象的裁片） |
+| Platinum | 20 | 14 | 0 | 6（3 个照片缩略图裁片，加 3 个裁错对象的裁片） |
 | Aqua | 18 | 18 | 0 | 0 |
 | Snow Leopard | 19 | 19 | 0 | 0 |
 | Yosemite | 17 | 15 | 0 | 2（checkbox/radio 标记只有 clone 资产） |
@@ -134,6 +134,10 @@ Liquid Glass 正在通过现有主题 ID 与材质 token 重校到 macOS 27 Gold
 
 每个表面的 QA 标准：无裁切、无不清晰文字、无错误对比度、无坏焦点、无错误
 图标、无损坏的窗口边框。
+
+### 保真板与稳定板（2026-10-08）
+
+每个外观都有 Theme Lab 比对板，但不是每块板都在衡量历史。参考图是原生截图或 HIG 截图的样本，是保真检查；参考图是产品自己 Theme Lab 冻结图（来源 id 为 `authored.*`）的样本，是稳定检查，只证明产品没变。比对器现在会标出每个样本和每块板的类别：保真板（Aqua、Snow Leopard、Lion、Platinum、Yosemite），稳定板（System 6、System 7、Drawing Board、NeXTSTEP、Big Sur、Liquid Glass），混合板（Tiger）。有意的外观变更用 `node tooling/theme-lab-fidelity.mjs --theme <id> --refreeze-authored` 重冻稳定板参考图：只有一个样本使用的冻结图会换成比对器自己的截图，原生参考图从不改写。
 
 ## Big Sur 新增外观（2026-09-22）
 

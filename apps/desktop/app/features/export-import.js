@@ -972,7 +972,7 @@ async function refreshImporterStatus() {
 }
 
 function isSupportedImportFile(file) {
-  return /\.(txt|text|srt|rtf|md|mdx|markdown|mdown|mkd|mkdn|csv|tsv|json|js|ts|htm|html|xhtml|webarchive|css|xml|log|pdf|docx|pages|numbers|key|epub|pptx|xlsx|bmp|jpe?g|png|webp|heic|heif)$/i.test(file.name || "")
+  return /\.(txt|text|srt|rtf|md|mdx|markdown|mdown|mkd|mkdn|csv|tsv|json|js|ts|htm|html|xhtml|webarchive|css|xml|log|pdf|docx|doc|pages|numbers|key|epub|pptx|xlsx|odt|ods|odp|ipynb|zip|gz|eml|mbox|mht|mhtml|svg|bmp|jpe?g|png|webp|heic|heif|gif|tiff?)$/i.test(file.name || "")
     || isAudioImportFile(file);
 }
 
@@ -1461,6 +1461,25 @@ async function extractFileText(file, options = {}) {
 
   if ((file.size || 0) > importPayloadMaxRawBytes) {
     throw new Error("This file is too large for direct import. Split it or import a smaller file.");
+  }
+
+  // A saved web page is read for its article, not kept as tag soup: the
+  // server's Reader extractor takes the HTML (text in, text out, on the
+  // public site too). If it finds no article, the file's text is kept as is.
+  if (/\.(htm|html|xhtml)$/i.test(file.name || "")) {
+    const html = decodePlainTextArrayBuffer(await file.arrayBuffer());
+    throwIfAborted(signal);
+    try {
+      const response = await window.AISystem6Capabilities.requestService("reader.extract", { url: "", html, signal });
+      const article = response.ok ? await response.json() : null;
+      if (article?.text) {
+        const heading = article.title ? `# ${article.title}\n\n` : "";
+        return { text: heading + article.text, subtitleTranslations: null, videoTranscript: null };
+      }
+    } catch (error) {
+      if (error?.name === "AbortError") throw error;
+    }
+    return { text: html, subtitleTranslations: null, videoTranscript: null };
   }
 
   if (isPlainTextImportFile(file)) {

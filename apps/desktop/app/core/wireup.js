@@ -1016,7 +1016,7 @@ function wireAppEvents() {
       // Ask the era rather than the rendered attribute: a theme preview can
       // change the era without redrawing the bar, and a stale attribute must
       // never be what decides whether a menu opens.
-      if (menuButton.id === "multifinder-button" && usesApplicationOwnedMenuBar()) {
+      if (menuButton.id === "multifinder-button" && usesApplicationOwnedMenuBar() && !usesApplicationMenuSwitcher()) {
         closeMenus();
         cycleToNextApp();
         menuButton.blur();

@@ -79,6 +79,14 @@ export const GATE_INPUT_RULES = Object.freeze([
     // decides which Playwright, and therefore which browser, takes the picture.
   },
   {
+    id: "ad-block-source",
+    pattern: /^vendor\/ubol\//,
+    gates: ALL,
+    // The pinned uBlock Origin Lite release Time Machine's ad lists are
+    // compiled from (and the Mac app bundles). A new pin changes what the
+    // web engine and the native one block, so it counts as a live input.
+  },
+  {
     id: "device-matrix-baseline",
     pattern: /^tooling\/device-matrix-baseline\.json$/,
     gates: ["device-matrix"],

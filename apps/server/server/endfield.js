@@ -56,6 +56,84 @@ let endfieldLoreCache = null;
 /** @type {any} */
 let endfieldDocumentCache = null;
 
+// ---------------------------------------------------------------------------
+// Version stamp derivation
+//
+// A line's version is not a property of the terminal. It is whatever explicit
+// per-record metadata the corpus carries (a transcript line first, then the
+// mission or entry record), falling back to the dataset's gameVersion, and
+// finally to an honest "unknown" instead of the blanket v1.5 the loaders used
+// to stamp. That keeps a future or mixed record -- e.g. a 丹青渡-era line beside
+// v1.5 evidence -- from being relabeled as whatever the dataset claims.
+// ---------------------------------------------------------------------------
+
+/**
+ * @param {any} value
+ * @returns {string}
+ */
+function endfieldVersionString(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+/**
+ * The first non-empty explicit version wins; with none, "" / "unknown" is the
+ * honest answer. Candidates are ordered most specific first.
+ *
+ * @param {Array<{ version?: any, basis?: string }>} candidates
+ * @returns {{ version: string, versionBasis: string }}
+ */
+function resolveEndfieldVersionStamp(candidates) {
+  for (const candidate of candidates || []) {
+    const version = endfieldVersionString(candidate && candidate.version);
+    if (version) {
+      return { version, versionBasis: (candidate && candidate.basis) || "record" };
+    }
+  }
+  return { version: "", versionBasis: "unknown" };
+}
+
+/**
+ * Build the mission lines, resolving each line's version from its most
+ * specific explicit metadata, then the mission dataset's gameVersion. Mission
+ * lines keep the "mission" basis so missionIndex / chapterKey stay paired with
+ * it for the progress gate.
+ *
+ * @param {any} data
+ * @returns {any[]}
+ */
+function buildEndfieldMissionLines(data) {
+  const lines = [];
+  for (const [missionIndex, mission] of (data.missions || []).entries()) {
+    const official = /skland/i.test(String(mission.source || mission.url || ""));
+    for (const [lineIndex, line] of (mission.transcript || []).entries()) {
+      const stamp = resolveEndfieldVersionStamp([
+        { version: line.version || line.gameVersion, basis: "mission" },
+        { version: mission.version || mission.gameVersion, basis: "mission" },
+        { version: data.gameVersion, basis: "mission" },
+      ]);
+      lines.push({
+        missionId: mission.id,
+        missionTitle: mission.title,
+        section: mission.section || "",
+        chapter: mission.chapter || "",
+        searchAliases: mission.searchAliases || [],
+        process: mission.process || "",
+        missionUrl: mission.url,
+        speaker: line.speaker || "Unknown",
+        initial: line.initial || "",
+        text: line.text || "",
+        lineIndex,
+        kind: official ? (line.speaker ? "通讯" : "日志") : "对话",
+        version: stamp.version,
+        versionBasis: stamp.versionBasis,
+        missionIndex,
+        chapterKey: endfieldChapterKey(mission),
+      });
+    }
+  }
+  return lines;
+}
+
 /**
  * Load the Warfarin mission transcript corpus. Throws if
  * missions.json is missing — every other dataset has a graceful
@@ -68,39 +146,13 @@ async function loadEndfieldStoryData() {
   const filePath = path.join(desktopRoot, "data", "warfarin-missions-lines", "missions.json");
   const raw = await fs.readFile(filePath, "utf8");
   const data = JSON.parse(raw);
-  const lines = [];
-  for (const [missionIndex, mission] of (data.missions || []).entries()) {
-    const official = /skland/i.test(String(mission.source || mission.url || ""));
-    for (const [lineIndex, line] of (mission.transcript || []).entries()) {
-      lines.push({
-        missionId: mission.id,
-        missionTitle: mission.title,
-        section: mission.section || "",
-        chapter: mission.chapter || "",
-        process: mission.process || "",
-        missionUrl: mission.url,
-        speaker: line.speaker || "Unknown",
-        initial: line.initial || "",
-        text: line.text || "",
-        lineIndex,
-        kind: official ? (line.speaker ? "通讯" : "日志") : "对话",
-        // The whole mission corpus was rebuilt from today's live warfarin.wiki
-        // (game version v1.5, last updated 2026-09-02), so every mission line
-        // is v1.5 text regardless of which Skland/wharfarin bucket it came from.
-        version: "v1.5",
-        versionBasis: "mission",
-        missionIndex,
-        chapterKey: endfieldChapterKey(mission),
-      });
-    }
-  }
   endfieldStoryCache = {
     source: data.source,
     scrapedAt: data.scrapedAt,
     gameVersion: data.gameVersion,
     lastUpdated: data.lastUpdated,
     missions: data.missions || [],
-    lines,
+    lines: buildEndfieldMissionLines(data),
   };
   return endfieldStoryCache;
 }
@@ -122,16 +174,23 @@ function endfieldChapterKey(mission) {
 
 /**
  * Add the source-type / version stamp a line carries to the client.
- * Non-mission corpora are dataset-stamped (2026-09-03 = v1.5), mission lines
- * are stamped per source (v1.4 Warfarin / v1.5 Skland).
+ * A non-mission line resolves its record's own explicit version first, then
+ * falls back to the dataset's gameVersion. With neither, the version stays
+ * honestly empty instead of a blanket v1.5. missionIndex / chapterKey stay null
+ * for non-mission lines, so the progress gate only sees mission lines.
  * @param {Array<any>} lines
  * @param {string} kind
+ * @param {string} [datasetVersion]
  */
-function decorateEndfieldLines(lines, kind) {
+function decorateEndfieldLines(lines, kind, datasetVersion = "") {
   for (const line of lines) {
     line.kind = kind;
-    line.version = "v1.5";
-    line.versionBasis = "dataset";
+    const stamp = resolveEndfieldVersionStamp([
+      { version: line.version, basis: "record" },
+      { version: datasetVersion, basis: "dataset" },
+    ]);
+    line.version = stamp.version;
+    line.versionBasis = stamp.versionBasis;
     line.missionIndex = null;
     line.chapterKey = null;
   }
@@ -171,6 +230,7 @@ async function loadEndfieldOperatorData() {
           speaker,
           initial: operator.name?.slice(0, 1) || "",
           text,
+          version: endfieldVersionString(operator.version || operator.gameVersion),
           lineIndex,
         });
         lineIndex += 1;
@@ -190,8 +250,12 @@ async function loadEndfieldOperatorData() {
     }
     for (const line of lines) {
       line.kind = line.section === "干员语音" ? "语音" : "档案";
-      line.version = "v1.5";
-      line.versionBasis = "dataset";
+      const stamp = resolveEndfieldVersionStamp([
+        { version: line.version, basis: "record" },
+        { version: data.gameVersion, basis: "dataset" },
+      ]);
+      line.version = stamp.version;
+      line.versionBasis = stamp.versionBasis;
       line.missionIndex = null;
       line.chapterKey = null;
     }
@@ -239,11 +303,12 @@ async function loadEndfieldTutorialData() {
           speaker: section.title || tutorial.title,
           initial: "教",
           text: section.text,
+          version: endfieldVersionString(tutorial.version || tutorial.gameVersion),
           lineIndex: index,
         });
       }
     }
-    decorateEndfieldLines(lines, "教学");
+    decorateEndfieldLines(lines, "教学", data.gameVersion);
     endfieldTutorialCache = {
       source: data.source,
       scrapedAt: data.scrapedAt,
@@ -288,11 +353,12 @@ async function loadEndfieldLoreData() {
           speaker: entry.type || "见闻辑录",
           initial: "档",
           text: section.text,
+          version: endfieldVersionString(entry.version || entry.gameVersion),
           lineIndex: index,
         });
       }
     }
-    decorateEndfieldLines(lines, "见闻辑录");
+    decorateEndfieldLines(lines, "见闻辑录", data.gameVersion);
     endfieldLoreCache = {
       source: data.source,
       scrapedAt: data.scrapedAt,
@@ -339,11 +405,12 @@ async function loadEndfieldDocumentData() {
           speaker: entry.type || "中枢档案",
           initial: "档",
           text: section.text,
+          version: endfieldVersionString(entry.version || entry.gameVersion),
           lineIndex: index,
         });
       }
     }
-    decorateEndfieldLines(lines, "中枢档案");
+    decorateEndfieldLines(lines, "中枢档案", data.gameVersion);
     endfieldDocumentCache = {
       source: data.source,
       scrapedAt: data.scrapedAt,
@@ -585,7 +652,7 @@ function scoreEndfieldLine(line, query, tokens, mentionedOperators = [], mention
     text: line.text.toLowerCase(),
     speaker: line.speaker.toLowerCase(),
     title: line.missionTitle.toLowerCase(),
-    chapter: line.chapter.toLowerCase(),
+    chapter: [line.chapter, ...(line.searchAliases || [])].join(" ").toLowerCase(),
     section: line.section.toLowerCase(),
   };
   const normalizedQuery = query.toLowerCase().trim();
@@ -648,7 +715,7 @@ function endfieldLineQuestionWeight(line, questionType) {
  * @returns {number}
  */
 function scoreEndfieldMatch(item, query, tokens, mentionedOperators = []) {
-  const haystack = [item.title, item.summary, item.section, item.chapter, item.process]
+  const haystack = [item.title, item.summary, item.section, item.chapter, item.process, ...(item.searchAliases || [])]
     .join(" ")
     .toLowerCase();
   let score = haystack.includes(query.toLowerCase()) ? 60 : 0;
@@ -834,6 +901,7 @@ async function findEndfieldStoryMatches(query, limit = 12, options = {}) {
       id: mission.id,
       title: mission.title,
       summary: mission.description || mission.summary || "",
+      searchAliases: mission.searchAliases || [],
       section: mission.section,
       chapter: mission.chapter,
       process: mission.process,
@@ -1153,6 +1221,9 @@ async function postEndfieldChatPayload(payload, body, signal, req) {
 }
 
 module.exports = {
+  resolveEndfieldVersionStamp,
+  buildEndfieldMissionLines,
+  decorateEndfieldLines,
   loadEndfieldStoryData,
   loadEndfieldOperatorData,
   loadEndfieldTutorialData,

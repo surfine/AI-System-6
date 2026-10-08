@@ -157,3 +157,7 @@ output/
 # downloaded third-party reference art for the aaronlau-me proposal; local
 # only, never committed or deployed (see that proposal's CONTINUE.md)
 internal/design-proposals/aaronlau-me/assets/_ref/
+
+# Time Machine ad blocking: compiled from the pinned uBlock Origin Lite
+# release by `npm run browse:build-filters` (GPL-3.0 data, see vendor/ubol).
+/apps/browse/filters/

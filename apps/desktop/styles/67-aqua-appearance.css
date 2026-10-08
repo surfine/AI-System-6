@@ -16,6 +16,16 @@ body[data-theme-family="aqua"] .desktop {
 
 }
 
+/* Family decisions, declared once for every Mac OS X Aqua-family era: the
+   sheet's 64px warning is drawn on the form, so the message carries no second
+   icon; and body copy's Chinese is the era's Heiti, not Songti (2026-10-08).
+   Snow Leopard's lineage below names its own Hiragino face. */
+body[data-theme-family="aqua"] {
+  --alert-icon-display: none;
+  --alert-icon-gutter: 0;
+  --theme-cjk-font: "STHeiti", "Heiti SC";
+}
+
 html[data-theme="aqua"],
 body[data-theme="aqua"] {
   --btn-fg: var(--ink); /* period token (Platinum N1, 2026-09-25): the value this era already drew */
@@ -576,7 +586,10 @@ body[data-theme="aqua"] {
   --menu-bar-border-color: #8e8e8e;
   --menu-bar-border: 1px solid var(--menu-bar-border-color);
   --menu-bar-shadow: inset 0 1px 0 #fff;
-  --menu-panel-bg: rgba(250, 250, 250, 0.94);
+  /* Near-opaque: the 10.2 capture shows no readable text through a menu
+     (guidebook-desktop-full.png); at 0.94 the Finder labels behind read
+     through the menu items (2026-10-08). */
+  --menu-panel-bg: rgba(250, 250, 250, 0.98);
   --menu-panel-border: 1px solid #666;
   --menu-panel-radius: 4px;
   --menu-panel-shadow: 0 6px 14px rgba(0, 0, 0, 0.42);
@@ -1022,6 +1035,8 @@ body[data-lineage~="snow-leopard"] {
      switch has to show it. */
   --theme-ui-font: "Lucida Grande", "Lucida Sans Unicode", "Hiragino Sans GB", "STHeiti", "Microsoft YaHei", sans-serif;
   --theme-title-font: var(--theme-ui-font);
+  /* Body copy's Chinese in the era's own face (see the family block). */
+  --theme-cjk-font: "Hiragino Sans GB", "STHeiti";
   /* Snow Leopard pop-up arrow: the era's blue double arrow, placed the same
      way Aqua places its own — a fixed top offset in the control's own 22px
      box, no transform. The old glyph drew 6x3 triangles with a 3px gap, so at
@@ -1217,12 +1232,12 @@ body[data-lineage~="snow-leopard"] {
   --progress-fill-active-bg: var(--progress-fill-bg);
   --progress-fill-active-size: 100% 100%;
   --ink: #1f1f1f;
-  --paper: #ededed;
+  --paper: #fff;
   --panel: #d6d6d6;
   --quiet-panel: #f7f7f7;
   --shade: #c4c4c4;
   --shade-dark: #707070;
-  --md-marker-ink: #6b6b6b;  /* ground #ededed */
+  --md-marker-ink: #6b6b6b;  /* ground #fff (was #ededed until 2026-10-08) */
   /* Theme Family Contract §5, the two divider roles. System 6 rules a desk in
      ink — a solid black primary rule and a dotted secondary one — and Platinum
      keeps the dotted hairline. Snow Leopard rules it in grey hairlines and had never
@@ -1232,7 +1247,10 @@ body[data-lineage~="snow-leopard"] {
   --system-primary-divider: 1px solid var(--rule);
   --system-secondary-divider: 1px solid var(--shade);
   --rule: #b5b5b5;
-  --pane-bg: #ededed;
+  /* Content is white in 10.6 (512 Pixels Finder Home and Cover Flow captures);
+     window-grey panes made the composer, transcript, Finder content and Quick
+     Draft materials read as disabled. Tiger and Lion already set #fff. */
+  --pane-bg: #fff;
   --details-bar-bg: linear-gradient(#f3f3f3, #ebebeb);
   --details-bar-border: #cacaca;
   /* Abstracted from the 10.6 default wallpaper (512 Pixels 6k capture): the

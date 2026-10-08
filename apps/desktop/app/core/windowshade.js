@@ -156,24 +156,30 @@
   const blankTitleBar = (node) => !node?.closest?.(
     "button, a, input, select, textarea, [contenteditable]:not([contenteditable='false']), [role='button'], [role='tab'], [role='menuitem']",
   ) && node?.closest?.(".window[data-window] > .title-bar");
-  const messages = {
-    menu: ["排列窗口", "Arrange Window"], shade: ["收起", "Roll Up"], expand: ["展开", "Unroll"],
-    pin: ["置顶", "Keep in Front"], unpin: ["取消置顶", "Release from Front"],
-    leftHalf: ["左半屏", "Left Half"], rightHalf: ["右半屏", "Right Half"],
-    leftTwoThirds: ["左三分之二", "Left Two Thirds"], rightTwoThirds: ["右三分之二", "Right Two Thirds"],
-    leftThird: ["左三分之一", "Left Third"], rightThird: ["右三分之一", "Right Third"],
-    topLeft: ["左上角", "Top Left"], topRight: ["右上角", "Top Right"],
-    bottomLeft: ["左下角", "Bottom Left"], bottomRight: ["右下角", "Bottom Right"],
-    fill: ["铺满工作区", "Fill Work Area"], undo: ["撤销上次排布", "Undo Last Arrangement"],
-    recover: ["移回可见区域", "Bring Into View"],
-    unavailable: ["这个窗口目前不能这样排列。", "This window cannot be arranged this way right now."],
-    noRoom: ["工作区放不下这个窗口的最小尺寸，原位置未变。", "The window's minimum size does not fit. Its position has not changed."],
-    stale: ["窗口已经改动，没有可撤销的排布。", "The window has changed; there is no arrangement to undo."],
-    rejected: ["窗口没有接受这个尺寸，已恢复原样。", "The window did not accept that size; its original frame was restored."],
+  // One vocabulary for one verb. The Window menu, this popover and the Special
+  // menu used to name the same arrangement three ways (Shade / Roll Up,
+  // Arrange Left / Left Half, Fill / Fill Work Area, Pin / Keep in Front; seen
+  // 2026-10-08), so every row here reads the translation key the Window menu
+  // reads, and the strings live in both translation files like all UI copy.
+  const labelKeys = {
+    menu: "window_arrange_menu", shade: "window_shade", expand: "window_expand",
+    pin: "window_pin", unpin: "window_unpin",
+    leftHalf: "window_arrange_left", rightHalf: "window_arrange_right",
+    leftTwoThirds: "window_arrange_left_two_thirds", rightTwoThirds: "window_arrange_right_two_thirds",
+    leftThird: "window_arrange_left_third", rightThird: "window_arrange_right_third",
+    topLeft: "window_arrange_top_left", topRight: "window_arrange_top_right",
+    bottomLeft: "window_arrange_bottom_left", bottomRight: "window_arrange_bottom_right",
+    fill: "window_arrange_fill", undo: "window_arrange_undo", recover: "window_arrange_recover",
+    unavailable: "window_arrange_unavailable", noRoom: "window_arrange_no_room",
+    stale: "window_arrange_stale", rejected: "window_arrange_rejected",
+    slideLeft: "window_slide_left", slideRight: "window_slide_right", slideHide: "window_slide_hide",
+    slideShow: "window_slide_show", slideExit: "window_slide_exit", splitChoose: "window_split_choose",
+    peek: "window_peek", pinSuspend: "window_pin_suspend", pinRestore: "window_pin_restore",
+    pinClear: "window_pin_clear", pinList: "window_pinned_list",
   };
   function label(key) {
-    const english = typeof currentLanguage !== "undefined" ? /^en/.test(currentLanguage) : /^en/.test(document.documentElement.lang);
-    return messages[key]?.[english ? 1 : 0] || t(({ slideLeft: "window_slide_left", slideRight: "window_slide_right", slideHide: "window_slide_hide", slideShow: "window_slide_show", slideExit: "window_slide_exit", splitChoose: "window_split_choose", peek: "window_peek", pinSuspend: "window_pin_suspend", pinRestore: "window_pin_restore", pinClear: "window_pin_clear", pinList: "window_pinned_list" })[key] || key);
+    // The menu title carries its ellipsis on the bar; the popover's own name does not.
+    return key === "menu" ? t(labelKeys.menu).replace(/[…]|\.\.\.$/g, "") : t(labelKeys[key] || key);
   }
   function result(ok, reason) {
     if (!ok && reason && typeof setStatus === "function") setStatus(label(reason));

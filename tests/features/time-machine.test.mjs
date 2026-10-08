@@ -132,6 +132,25 @@ test.assertIncludes(route, 'captures.filter((capture) => capture.provider === pr
 test.assertIncludes(persistence, "timeMachineProvider:", "archive preference persists with other Chooser settings");
 test.assertIncludes(router, 'prefix: "/api/time-machine"', "server exposes the Time Machine route family");
 test.assertNotIncludes(feature, "window.open(", "site navigation remains inside Time Machine");
+
+// --- Live engines (time-machine-engine.js) -------------------------------
+// A real page with its scripts running, on the Mac's WebKit or on the
+// separate browse origin; the snapshot above stays the fallback.
+const engine = read("app/features/time-machine-engine.js");
+test.assertIncludes(feature, "TimeMachineEngines.detect()", "the window asks which engine this deployment has");
+test.assertMatches(feature, /if \(liveTarget && !options\.snapshotOnly\)[\s\S]{0,200}timeMachineOpenLive\(/, "a page opens in a live engine before the snapshot is fetched");
+test.assertIncludes(feature, "TimeMachineEngines.demote(\"open-failed\")", "a live engine that fails gives way to the snapshot");
+test.assertIncludes(feature, "t(\"time_machine_live_snapshot\")", "a snapshot says its page scripts did not run");
+test.assertIncludes(feature, "requestService(\"reader.extract\"", "Reading View reads the page as the engine drew it");
+test.assertIncludes(engine, "window.webkit?.messageHandlers?.aisystem6Browser", "the Mac's own WebKit is used when the shell offers it");
+test.assertIncludes(engine, "event.origin !== detected.origin", "messages from any origin but the browse origin are ignored");
+test.assertIncludes(engine, "event.source === entry.iframe.contentWindow", "page state is believed only from the tab's own frame");
+test.assertNotIncludes(engine, "innerHTML", "nothing a page reports is written into the desk as markup");
+const tmMenus = read("app/data/menus.js");
+for (const command of ["time-machine-open-in-browser", "time-machine-clear-data", "time-machine-block-ads", "time-machine-allow-ads"]) {
+  test.assertIncludes(tmMenus, `"${command}"`, `${command} is a menu command, not a control in the window`);
+  test.assertNotIncludes(read("index.html"), command, `${command} adds nothing to the window itself`);
+}
 test.assertNotIncludes(feature, "window.prompt(", "source questions use visible product controls");
 test.assertNotIncludes(styles, "!important", "new Time Machine CSS does not add priority debt");
 test.assertIncludes(server, "data-srcset", "the replay frame promotes lazy media (data-src / data-srcset) without executing page scripts");

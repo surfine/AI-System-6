@@ -98,6 +98,11 @@ function parsePdfCMap(cmapText) {
     const startCode = Number.parseInt(start, 16);
     const endCode = Number.parseInt(end, 16);
     if (!Number.isFinite(startCode) || !Number.isFinite(endCode)) continue;
+    // A real bfrange spans at most one byte's worth of codes per line. The
+    // pattern also matches unrelated hex pairs in a stream, and one such pair
+    // (<0000> <FFFFFFFF>) used to start a loop of billions of entries that ran
+    // for minutes before the Map gave out.
+    if (endCode < startCode || endCode - startCode > 0xffff || map.size > 200000) continue;
 
     if (targetArray) {
       const values = [...targetArray.matchAll(/<([0-9a-fA-F]+)>/g)].map((item) => item[1]);
@@ -861,6 +866,11 @@ async function extractPdfText(buffer, options = {}) {
     pdfJsTextLayerError = error;
   }
 
+  // The public server reads a PDF link's text but does not OCR scans for
+  // anyone who sends it one; a scan is imported on the writer's own Mac.
+  if (options.allowOcr === false) {
+    throw new Error("This PDF has no text layer. Import it on your own Mac to read it with OCR.");
+  }
   try {
     return await extractScannedPdfText(buffer, options);
   } catch (ocrError) {

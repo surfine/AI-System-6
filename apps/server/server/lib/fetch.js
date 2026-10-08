@@ -51,6 +51,7 @@ const httpsAgent = new https.Agent(sharedAgentOptions);
  * @property {number} [maxBytes]
  * @property {string} [pinnedAddress]
  * @property {number} [pinnedFamily]
+ * @property {boolean} [binary] resolve with `buffer` and no decoded text
  */
 
 /**
@@ -786,7 +787,7 @@ async function proxySubscriptionCliStream(targetUrl, payload, signal, res, optio
  * @param {Record<string, string>} [headers]
  * @param {number} [redirectCount]
  * @param {TextFetchOptions} [options]
- * @returns {Promise<{ ok: boolean, status: number, headers: import("node:http").IncomingHttpHeaders, text: string }>}
+ * @returns {Promise<{ ok: boolean, status: number, headers: import("node:http").IncomingHttpHeaders, text: string, buffer?: Buffer }>}
  */
 function nodeGetText(targetUrl, signal, headers = { "Accept": "application/json" }, redirectCount = 0, options = {}) {
   const maxBytes = normalizedMaxBytes(options.maxBytes);
@@ -854,6 +855,18 @@ function nodeGetText(targetUrl, signal, headers = { "Accept": "application/json"
             resolve(nodeGetText(new URL(location, targetUrl).href, signal, headers, redirectCount + 1, options));
             return;
           }
+          // A caller that may receive a document rather than a page (Reader
+          // opening a PDF link) asks for the bytes and decodes them itself.
+          if (options.binary) {
+            resolve({
+              ok: status >= 200 && status < 300,
+              status,
+              headers: response.headers,
+              text: "",
+              buffer: Buffer.concat(chunks),
+            });
+            return;
+          }
           let text;
           try {
             text = decodeTextBuffer(Buffer.concat(chunks), response.headers, maxBytes);
@@ -886,7 +899,7 @@ function nodeGetText(targetUrl, signal, headers = { "Accept": "application/json"
  * @param {Record<string, string>} [headers]
  * @param {number} [redirectCount]
  * @param {TextFetchOptions} [options]
- * @returns {Promise<{ ok: boolean, status: number, headers: import("node:http").IncomingHttpHeaders, text: string }>}
+ * @returns {Promise<{ ok: boolean, status: number, headers: import("node:http").IncomingHttpHeaders, text: string, buffer?: Buffer }>}
  */
 function nodeGetTextViaProxy(targetUrl, signal, headers = { "Accept": "application/json" }, redirectCount = 0, options = {}) {
   if (signal?.aborted) return Promise.reject(new Error("Request aborted"));
@@ -949,6 +962,16 @@ function nodeGetTextViaProxy(targetUrl, signal, headers = { "Accept": "applicati
             redirectCount < 5
           ) {
             resolve(nodeGetTextViaProxy(new URL(location, targetUrl).href, signal, headers, redirectCount + 1, options));
+            return;
+          }
+          if (options.binary) {
+            resolve({
+              ok: status >= 200 && status < 300,
+              status,
+              headers: response.headers,
+              text: "",
+              buffer: Buffer.concat(chunks),
+            });
             return;
           }
           let text;

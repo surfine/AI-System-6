@@ -13,10 +13,12 @@ const sourcePath = join(root, "index.html");
 const outputPath = join(root, "zh-CN.html");
 
 const replacements = [
+  ["Endfield Terminal now searches 332 missions, 32 operators, 349 tutorials, 548 lore entries and 76 central documents from the refreshed v1.5 archive, including dialogue and radio. Older retained evidence keeps its original dates. Danqingdu preparation is ready for the announced October 15 update; previews are kept out of story answers.", "终末地终端更新了 v1.5 语料：332 个任务、32 位干员、349 条教程、548 条见闻与 76 份中枢档案，对白和无线电均可检索。保留的旧证据沿用原始日期。丹青渡预备工作已就绪，面向已公布的 10 月 15 日更新；前瞻不混入剧情回答。"],
   ["Our own city builder", "我们自己的城市建造游戏"],
   ["Bonsai City.<br>It grows street by street.", "盆景城市。<br>一条街一条街地长大。"],
   ["Bonsai City is the desk's own city builder, written for AI System 6. Lay roads, rail and subway, zone the blocks, and a city grows around them. Maps come in 64², 96² and 128²; transport and public services really move people; advisers tell you what the city is missing; saves stay in your browser; and the 3D view changes from day to night. You can bring in a city from Micropolis, too.", "盆景城市是这张桌面自己的城市建造游戏，为 AI System 6 而写。铺路、架铁路和地铁、划分街区，城市就围着它们长起来。地图有 64²、96²、128² 三种尺寸；交通和公共服务会真的把人运来运去；顾问会告诉你城市还缺什么；存档留在你自己的浏览器里；3D 视图会从白天变到夜晚。也可以把 Micropolis 里的城市带进来。"],
   ["Bonsai City under Platinum: the example mid-size city in 3D, with streets, rail, traffic, the transport tools and the minimap.", "Platinum 外观下的盆景城市：3D 视图里的示例中型城市，有街道、铁路、车流、交通工具栏和小地图。"],
+  ['Rootline, Joyride and Plaintext now have artwork throughout the twelve appearances. Image Prompt Studio, Lightroom and the four games also have their own Big Sur and NeXTSTEP icons, redrawn individually with Image Gen and fitted to native sizes. These are original adaptations to each era.', '根线、兜风与明文现已补齐十二套外观中的图标。Image Prompt Studio、文字亮室与四款游戏也有了各自的 Big Sur 和 NeXTSTEP 图标，由 Image Gen 逐枚重绘并制作原生尺寸。这些图形都是面向各时代的原创适配。'],
   ['<span class="proof-label">Bonsai City</span>', '<span class="proof-label">盆景城市</span>'],
   ["A mid-size city, 1903, population 1,245.", "一座中型城市，1903 年，人口 1,245。"],
   ["Build a City", "建一座城"],

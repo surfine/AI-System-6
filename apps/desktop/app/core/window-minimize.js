@@ -716,8 +716,14 @@
     const section = document.querySelector("#apple-minimized-windows");
     if (!section) return;
     const list = windows();
-    section.classList.toggle("is-hidden", !list.length);
-    if (!list.length) {
+    // With the Dock drawn under MultiFinder, the put-away window already has
+    // its tile and the switcher lists the application; the Apple menu read the
+    // same window a second time (seen 2026-10-08 under Snow Leopard). Finder
+    // mode keeps the list whatever the Dock does: there it is still the one
+    // list a writer can reach.
+    const dockHoldsThem = dockVisible() && typeof isMultiFinderMode === "function" && isMultiFinderMode();
+    section.classList.toggle("is-hidden", !list.length || dockHoldsThem);
+    if (!list.length || dockHoldsThem) {
       section.replaceChildren();
       return;
     }
@@ -859,7 +865,7 @@
   }
 
   document.addEventListener("ai-system6-themechange", () => syncLamps());
-  document.addEventListener("ai-system6-dockchange", () => syncLamps());
+  document.addEventListener("ai-system6-dockchange", () => { syncLamps(); renderAppleMenuSection(); });
 
   // Command-M, the Mac OS X shortcut, only where the lamp is drawn. A browser
   // or host that claims Command-M for its own window never lets it reach the

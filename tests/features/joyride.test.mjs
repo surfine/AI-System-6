@@ -428,7 +428,7 @@ test.assert(lazyBlock.includes('"app/features/joyride-core.js"') && lazyBlock.in
 test.assert(!runtimeManifest.slice(0, runtimeManifest.indexOf("export const lazyRuntimePaths")).includes("joyride"), "neither file is in the eager bundle");
 test.assertIncludes(read("tooling/style-manifest.mjs"), 'output: "styles.joyride.css"', "the stylesheet is a lazy style bundle");
 test.assertIncludes(read("app/core/app-admissions.js"), 'joyride: { app: "joyride", load: ensureJoyrideModule, command: "open-joyride"', "Joyride is admitted by one row in the Games folder");
-test.assertIncludes(read("app/core/system-icons.js"), '"rootline", "joyride"', "the glyph paints in every appearance until its era family exists");
+test.assertIncludes(read("app/core/system-icons.js"), 'rootline joyride mingwen', "Joyride belongs to the complete era artwork vocabulary");
 
 const voxel = read("app/features/bonsai-renderer-voxel.js");
 test.assertIncludes(voxel, "window.AISystem6BonsaiVoxelRendererFactory = createBonsaiVoxelRenderer", "the voxel renderer is a factory, so Joyride's street view is its own instance");

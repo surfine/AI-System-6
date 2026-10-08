@@ -259,7 +259,9 @@ function applySecurityHeaders(res) {
       // Nothing embeds it while a question is open — the film is the answer —
       // and nothing hides or crops it. The privacy-enhanced host is the one
       // that sets no profiling cookies before a person presses play.
-      "frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com",
+      // The browse origin is Time Machine's web engine: proxied pages run
+      // there, never on this origin (see server/browse/relay-node.js).
+      `frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com${browseFrameSource()}`,
       "object-src 'none'",
       "base-uri 'none'",
       "frame-ancestors 'none'",
@@ -276,6 +278,16 @@ function isSignedMediaRequest(req, policy) {
   const host = hostHeaderParts(req.headers.host);
   if (!isLoopbackHostname(host.hostname) || (host.port && host.port !== policy.port)) return false;
   return verifySignedMediaUrl(req.url);
+}
+
+function browseFrameSource() {
+  try {
+    const { browseConfig } = require("../browse/relay-node.js");
+    const config = browseConfig();
+    return config.available ? ` ${config.origin}` : "";
+  } catch {
+    return "";
+  }
 }
 
 async function runWithLocalRequestGuard(req, res, policy, handler) {

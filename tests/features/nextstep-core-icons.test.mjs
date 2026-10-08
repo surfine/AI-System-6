@@ -135,8 +135,9 @@ for (const id of BATCH) {
 // NeXTSTEP path would 404 where the art does not exist.
 for (const id of ["imagePromptStudio", "micropolis", "openttd"]) {
   select("nextstep");
-  test.assertNotIncludes(svg(id), `class="sys-icon-nextstep"`, `${id} is not claimed by the batch`);
-  test.assertNotIncludes(svg(id), "assets/themes/nextstep/", `${id} never requests a file that does not exist`);
+  test.assertIncludes(svg(id), `class="sys-icon-nextstep"`, `${id} now owns supplemental NeXTSTEP art`);
+  test.assertIncludes(svg(id), `assets/themes/nextstep/icons/${id}-32.png`, `${id} resolves its authored supplement`);
+  test.assert(exists(`assets/themes/nextstep/icons/${id}-32.png`), `${id} supplemental file exists`);
 }
 
 test.finish();

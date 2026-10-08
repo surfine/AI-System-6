@@ -191,7 +191,20 @@ function syncReadOnlySurface() {
         return;
       }
       if (tag === "select") element.readOnly = readOnly;
-      element.disabled = readOnly;
+      // A control can be disabled for its own reasons too (ClioTalk Send
+      // with no model, Quick Draft's Draft with nothing to draft). Writing
+      // disabled = readOnly re-enabled all of them whenever any read-only
+      // rule registered, so opening Quick Draft lit ClioTalk's Send while it
+      // could not send (2026-10-08). The lock now undoes only what it did.
+      if (readOnly) {
+        if (!element.disabled) {
+          element.disabled = true;
+          element.dataset.writeLockDisabled = "true";
+        }
+      } else if (element.dataset.writeLockDisabled === "true") {
+        element.disabled = false;
+        delete element.dataset.writeLockDisabled;
+      }
       element.classList?.toggle?.("is-write-locked", readOnly);
     } catch {}
   });

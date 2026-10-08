@@ -181,7 +181,11 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  width: 80px;
+  /* 96, not 80: the label box spends 6px on padding, and at 80 the bold
+     label had 62px for "MultiFinder" (63px in Chicago, 71 in Lucida, 75 in
+     SF), so every era broke it mid-word (2026-10-08 survey). Every era's
+     grid pitch is at least 106px, so the wider cell fits without reflow. */
+  width: 96px;
   text-align: center;
   cursor: pointer;
 }
@@ -207,7 +211,9 @@
   /* P11: the wrap policy is an era hook. Defaults are today's literals, so
      every appearance renders unchanged; Platinum answers via its token block
      (native Geneva view labels break between words, never inside one). */
-  overflow-wrap: var(--finder-label-wrap, anywhere);
+  /* Break inside a word only when the word alone cannot fit the line (a
+     long filename with no spaces); never split an ordinary word. */
+  overflow-wrap: var(--finder-label-wrap, break-word);
   word-break: var(--finder-label-word-break, normal);
   font-weight: var(--finder-label-weight, 600);
   font-variation-settings: var(--finder-label-font-variation, "wdth" 113);
@@ -253,9 +259,21 @@
    Control Panel chooser, strip modules — read as a solid blob. The painter
    draws the same art file a third time through an SVG filter
    (.sys-icon-classic-reverse) and the states below swap which layer paints. */
+.sys-icon-svg.has-classic-mask .sys-icon-classic-paper,
 .sys-icon-svg.has-classic-mask .sys-icon-classic-mask,
 .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse {
   display: none;
+}
+
+/* On the desk an unselected icon is white inside its silhouette and the
+   pattern shows around it, as the System 6 masks draw it; the cell itself
+   paints nothing. Selection keeps the black mask over this layer. */
+.desktop-icon:not(.is-selected) .sys-icon-svg.has-classic-mask .sys-icon-classic-paper {
+  display: inline;
+}
+
+.desktop-icon .sys-icon:has(> .sys-icon-svg.has-classic-mask) {
+  background: transparent;
 }
 
 /* The Control Panel chooser selects the same way: the current tab shows its
@@ -582,13 +600,75 @@
 .finder-navigation-bar {
   min-width: 0;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: var(--finder-navigation-columns, auto minmax(0, 1fr));
   align-items: center;
   gap: 6px;
   min-height: 34px;
-  padding: 3px 8px;
+  padding: var(--finder-navigation-padding, 3px 8px);
   border-bottom: var(--finder-navigation-border);
   background: var(--finder-navigation-bg);
+}
+
+/* Mac OS X 10.0-10.2's toolbar: the places as labelled icons beside Back
+   and View, and a caption under each item. Undisplayed unless an era turns
+   them on (Aqua), so every other era's bar keeps its two columns. */
+.finder-toolbar-places {
+  display: var(--finder-toolbar-places-display, none);
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.finder-toolbar-place {
+  appearance: none;
+  -webkit-appearance: none;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.1;
+  cursor: pointer;
+}
+
+.finder-toolbar-place .finder-toolbar-place-icon {
+  width: 24px;
+  height: 24px;
+  background: transparent;
+}
+
+.finder-toolbar-place:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: 2px;
+}
+
+.finder-toolbar-place-label {
+  max-width: 13ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:is(.finder-navigation-back, .view-controls)[data-toolbar-label]::after {
+  content: attr(data-toolbar-label);
+  display: var(--finder-toolbar-label-display, none);
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.1;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 /* Trackless continuation cue for Finder content. Classic suppresses it because
@@ -661,7 +741,7 @@
 
 .finder-breadcrumbs {
   min-width: 0;
-  display: flex;
+  display: var(--finder-breadcrumbs-display, flex);
   align-items: center;
   gap: 2px;
   overflow-x: auto;
@@ -708,7 +788,15 @@
   text-decoration-color: currentColor;
 }
 
+/* The current name is the one that gives way: it shrinks to an ellipsis
+   before the row starts scrolling, so a narrow one-row toolbar shows
+   "System Fol…" rather than a name cut mid-letter at the edge (2026-10-08). */
 .finder-breadcrumb-current {
+  flex: 0 1 auto;
+  /* A flex container never draws text-overflow, so the current name is a
+     block whose line box carries the row's 26px (22 + 2 + 2). */
+  display: block;
+  line-height: 22px;
   max-width: min(42vw, 34ch);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1002,7 +1090,7 @@
   }
 
   .finder-item span:last-child {
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
   }
 }
 

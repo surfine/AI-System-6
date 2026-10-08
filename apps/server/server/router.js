@@ -42,6 +42,8 @@ function lazyHandler(loadModule, modulePath, exportName) {
 
 const handleHealth = lazyHandler(() => require("./routes/health.js"), "./routes/health.js", "handleHealth");
 const handleReady = lazyHandler(() => require("./routes/health.js"), "./routes/health.js", "handleReady");
+const handleReaderExtract = lazyHandler(() => require("./routes/reader-extract.js"), "./routes/reader-extract.js", "handleReaderExtract");
+const handleBrowseToken = lazyHandler(() => require("./browse/relay-node.js"), "./browse/relay-node.js", "handleBrowseToken");
 const handleCapabilities = lazyHandler(() => require("./routes/capabilities.js"), "./routes/capabilities.js", "handleCapabilities");
 const handleTurnstileSession = lazyHandler(() => require("./routes/public-session.js"), "./routes/public-session.js", "handleTurnstileSession");
 const handleSessionStatus = lazyHandler(() => require("./routes/public-session.js"), "./routes/public-session.js", "handleSessionStatus");
@@ -123,6 +125,8 @@ const localExactRoutes = new Map([
   ["GET /healthz", handleHealth],
   ["GET /readyz", handleReady],
   ["GET /api/capabilities", handleCapabilities],
+  ["POST /api/browse/token", handleBrowseToken],
+  ["POST /api/reader/extract", handleReaderExtract],
   ["POST /api/session/turnstile", handleTurnstileSession],
   ["GET /api/session/status", handleSessionStatus],
   ["POST /api/session/mac-token", handleMacSharedToken],
@@ -198,6 +202,12 @@ const localExactRoutes = new Map([
 ]);
 
 const publicExactRouteKeys = new Set([
+  // Time Machine's web engine. Behind the public guard like every /api route,
+  // so a token is only ever minted for a Turnstile-verified session.
+  "POST /api/browse/token",
+  // Reading View for a page the writer's browser already rendered: text in,
+  // text out, no fetch.
+  "POST /api/reader/extract",
   "GET /healthz",
   "GET /readyz",
   "GET /api/capabilities",

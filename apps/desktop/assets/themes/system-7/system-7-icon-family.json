@@ -202,6 +202,12 @@
         "32": "icons/importUtility-32.png"
       }
     },
+    "joyride": {
+      "sizes": {
+        "16": "icons/joyride-16.png",
+        "32": "icons/joyride-32.png"
+      }
+    },
     "lightroom": {
       "sizes": {
         "16": "icons/lightroom-16.png",
@@ -230,6 +236,12 @@
       "sizes": {
         "16": "icons/micropolis-16.png",
         "32": "icons/micropolis-32.png"
+      }
+    },
+    "mingwen": {
+      "sizes": {
+        "16": "icons/mingwen-16.png",
+        "32": "icons/mingwen-32.png"
       }
     },
     "multiFinderApp": {
@@ -296,6 +308,12 @@
       "sizes": {
         "16": "icons/reviewDesk-16.png",
         "32": "icons/reviewDesk-32.png"
+      }
+    },
+    "rootline": {
+      "sizes": {
+        "16": "icons/rootline-16.png",
+        "32": "icons/rootline-32.png"
       }
     },
     "scrapbook": {

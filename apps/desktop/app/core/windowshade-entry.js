@@ -209,6 +209,13 @@
       isAvailable: () => allowed(active()) && isWindowArrangementActionAvailable(active(), action),
     });
   });
+  // The Window menu's Dock switch (owner, 2026-10-08) is a window-menu row like
+  // the arrangements, so it lives in the same registry; the preference itself
+  // stays window-minimize.js's (actions.js toggleDockFromMenu loads it).
+  window.AISystem6Runtime?.registerCommand?.("window-toggle-dock", {
+    handler: () => (typeof toggleDockFromMenu === "function" ? toggleDockFromMenu() : false),
+    isAvailable: () => window.AISystem6Theme?.hasCapability?.("dock") === true,
+  });
   window.AISystem6Runtime?.registerCommand?.("window-peek", {
     handler: async () => {
       const win = active(); const focused = document.activeElement;

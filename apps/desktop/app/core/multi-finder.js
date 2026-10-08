@@ -181,14 +181,21 @@ function menuBarModel() {
 }
 
 function usesApplicationOwnedMenuBar() {
-  return menuBarModel() === "application-owned";
+  return menuBarModel() !== "system-owned";
 }
 
-// The list of open applications, with a check mark on the current one. In the
-// application-owned eras this belongs at the bottom of the Apple menu, which is
-// where System 6 put it; in the Mac OS X eras it is what the right-end control
-// is for: the way to switch applications on a keyboard, on a phone, and
-// whenever the era's Dock is switched off or has not shipped.
+// System 7 through Mac OS 9: the bar is still the application's, but the right
+// end drops the Application menu instead of paging (owner, 2026-10-08).
+function usesApplicationMenuSwitcher() {
+  return menuBarModel() === "application-menu";
+}
+
+// The list of open applications, with a check mark on the current one. In
+// System 6 this belongs at the bottom of the Apple menu, which is where
+// MultiFinder put it; from System 7 on it is what the right-end control is
+// for, and in the Mac OS X eras that control is also the way to switch
+// applications on a keyboard, on a phone, and whenever the era's Dock is
+// switched off or has not shipped.
 function runningApplicationRows() {
   const rows = [];
   const apps = getRunningApps();
@@ -428,11 +435,35 @@ function applicationVerbRows() {
   ];
 }
 
+// The Application menu's rows (System 7 through Mac OS 9): the three Hide
+// verbs above the open applications, as Mac OS 8's Application menu laid them
+// out. Minimize and Quit do not belong there.
+function applicationMenuRows() {
+  // "Bring All to Front" is Mac OS X's; the Application menu of Mac OS 8
+  // ended with the applications themselves.
+  const rows = runningApplicationRows();
+  const bring = rows.findIndex((row) => row.dataset?.action === "bring-app-front");
+  if (bring !== -1) {
+    const withRule = rows[bring - 1]?.tagName === "HR";
+    rows.splice(withRule ? bring - 1 : bring, withRule ? 2 : 1);
+  }
+  return [
+    applicationRow("hide-active-app", t("hide_app", activeAppLabel())),
+    applicationRow("hide-other-apps", t("hide_others")),
+    applicationRow("show-all-apps", t("show_all")),
+    document.createElement("hr"),
+    ...rows,
+  ];
+}
+
 function applicationRow(action, label) {
   const button = document.createElement("button");
   button.type = "button";
   button.dataset.action = action;
   button.textContent = label;
+  // The verb that has a key says so on its row (actions.js registry), the way
+  // every other menu row with a key equivalent does.
+  if (action === "minimize-window") button.dataset.shortcutId = "minimize-window";
   return button;
 }
 
@@ -510,11 +541,14 @@ function renderMultiFinderMenu() {
   // the close box is the way back to the desktop.
   const showSwitcher = isMultiFinderMode();
   const applicationOwned = usesApplicationOwnedMenuBar();
+  const applicationMenu = usesApplicationMenuSwitcher();
   const nextstepMerged = prefersNextstepNarrowMergedSwitcher();
   document.querySelector(".multifinder-menu")?.classList.toggle("is-hidden", !showSwitcher);
   document.body?.classList?.toggle("nextstep-merged-switcher", nextstepMerged);
   syncWorkspaceDesktopIcon();
-  renderAppleMultiFinderSection(showSwitcher && applicationOwned);
+  // System 6 lists the applications in the Apple menu; System 7 and later
+  // moved that list to the Application menu at the right end.
+  renderAppleMultiFinderSection(showSwitcher && applicationOwned && !applicationMenu);
   // The Apple menu's minimized-windows section is drawn by the miniaturize
   // module, in every menu-bar mode (Finder included, where it is the only
   // list). Rendered through the same optional call the switcher rows use, so a
@@ -527,7 +561,7 @@ function renderMultiFinderMenu() {
   if (!labelEl || !button || !popover) return;
   labelEl.textContent = activeAppLabel();
 
-  if (applicationOwned && !nextstepMerged) {
+  if (applicationOwned && !applicationMenu && !nextstepMerged) {
     // An indicator, not a menu: it reports the application in front and pages
     // to the next one. Nothing drops down, so nothing is rendered into the
     // popover and the control does not advertise one.
@@ -544,7 +578,13 @@ function renderMultiFinderMenu() {
     button.setAttribute("aria-haspopup", "menu");
     button.setAttribute("aria-label", t("multifinder_switcher"));
     button.dataset.balloonHelp = "balloon_multifinder_switcher";
-    popover.replaceChildren(...(showSwitcher ? [...runningApplicationRows(), ...(window.AISystem6WindowMinimize?.rows?.() || [])] : []));
+    // The Application menu of System 7 through Mac OS 9 reads Hide / Hide
+    // Others / Show All, a rule, then the open applications; Quit stays in
+    // the application's own File menu there. Mac OS X's right end is the
+    // product's switcher: applications and put-away windows only.
+    popover.replaceChildren(...(showSwitcher
+      ? (applicationMenu ? applicationMenuRows() : [...runningApplicationRows(), ...(window.AISystem6WindowMinimize?.rows?.() || [])])
+      : []));
   }
   // These rows are rebuilt from scratch, so the element cache updateMenuState()
   // greys from is now stale. Without this the new rows would never be asked

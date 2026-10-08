@@ -211,6 +211,11 @@ function importSignatureRule(name, mimeType) {
  */
 function importSignatureMismatch(name, mimeType, buffer) {
   if (!Buffer.isBuffer(buffer) || !buffer.length) return "";
+  // The peel layer reads these by their container contents (a zip, an
+  // OpenDocument file, a notebook, a gzip wrapper); a coarse signature
+  // rule must not reject a file peel is still able to read.
+  const ext = importExtension(name);
+  if ([".zip", ".gz", ".odt", ".ods", ".odp", ".ipynb"].includes(ext)) return "";
   const rule = importSignatureRule(name, mimeType);
   if (!rule || rule.matches(buffer)) return "";
   return `This file is named as a ${rule.label} but its contents are not a ${rule.label}. `

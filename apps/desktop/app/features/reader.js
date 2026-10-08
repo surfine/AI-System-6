@@ -751,11 +751,17 @@ async function fetchReaderPage(urlArg = null) {
   setReaderLoadingState(t("reader_fetching"));
   try {
     const response = await window.AISystem6Capabilities.requestService("reader.remote", { url });
+    let data = null;
     if (!response.ok) {
-      throw new Error(serviceErrorDetail(response.status, await response.text()));
+      const body = await response.text();
+      // A page that builds its text with JavaScript: the server's ladder
+      // could not read it, so it is drawn by Time Machine's live engine (this
+      // Mac's WebKit, or the browse origin) and the drawn page is read.
+      data = readerNeedsRender(body) ? await readerRenderedArticle(url) : null;
+      if (!data) throw new Error(serviceErrorDetail(response.status, body));
+    } else {
+      data = await response.json();
     }
-
-    const data = await response.json();
     const readerDoc = { ...data, kind: "web", source: data.url };
     createReaderWebDocumentTab(readerDoc, { forceNew: true });
     openReaderDocument(readerDoc);
@@ -771,6 +777,33 @@ async function fetchReaderPage(urlArg = null) {
     document.body.classList.remove("is-busy");
     readerMarkGray(readerFetchButton, false, "balloon_disabled_working");
     updateMenuState();
+  }
+}
+
+function readerNeedsRender(body) {
+  try {
+    return JSON.parse(body)?.code === "reader_needs_render";
+  } catch {
+    return false;
+  }
+}
+
+async function readerRenderedArticle(url) {
+  try {
+    await ensureTimeMachineEngineModule();
+    const engines = window.AISystem6TimeMachineEngines;
+    if (!engines) return null;
+    setReaderLoadingState(t("reader_rendering"));
+    const dom = await engines.renderForReader(url);
+    if (!dom?.html) return null;
+    const response = await window.AISystem6Capabilities.requestService("reader.extract", { url, html: String(dom.html) });
+    if (!response.ok) return null;
+    const article = await response.json();
+    // The address the writer asked for stays the source, as it does for a
+    // page the server read itself.
+    return { ...article, url, via: "rendered" };
+  } catch {
+    return null;
   }
 }
 

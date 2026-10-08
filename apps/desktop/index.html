@@ -11,18 +11,18 @@
     <!-- Let the system choose status glyph contrast. -->
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20261007.1" />
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20261007.1" />
-    <link rel="manifest" href="assets/app-icon/manifest.json?v=20261007.1" />
-    <script src="app/core/theme-registry.js?v=20261007.1"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20261007.1" />
+    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20261008.2" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20261008.2" />
+    <link rel="manifest" href="assets/app-icon/manifest.json?v=20261008.2" />
+    <script src="app/core/theme-registry.js?v=20261008.2"></script>
+    <link rel="stylesheet" href="styles.bundle.css?v=20261008.2" />
     <!-- Preload the application while parsing the desktop. -->
-    <link rel="preload" as="script" href="app.bundle.js?v=20261007.1" />
+    <link rel="preload" as="script" href="app.bundle.js?v=20261008.2" />
   </head>
   <body class="is-booting">
-    <script src="app/core/theme-body-init.js?v=20261007.1"></script>
+    <script src="app/core/theme-body-init.js?v=20261008.2"></script>
     <!-- Register crash recovery before the application bundle. -->
-    <script src="app/core/boot-safety-net.js?v=20261007.1"></script>
+    <script src="app/core/boot-safety-net.js?v=20261008.2"></script>
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
         <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
@@ -32,7 +32,7 @@
           <span class="apple-menu-era-glyph" aria-hidden="true"></span>
         </button>
         <div class="menu-popover apple-menu-popover">
-          <button data-action="open-about" data-i18n="about_menu">About AI System 6...</button>
+          <button data-action="open-about" data-i18n="about_menu">About AI System 6…</button>
           <button data-action="switch-language" data-i18n="switch_language">简体中文</button>
           <hr />
           <div class="menu-section-label" data-i18n="apple_menu_start">Start</div>
@@ -81,7 +81,7 @@
            renderMultiFinderMenu() draws it; empty in the Mac OS X eras. -->
           <div id="apple-multifinder-apps" class="apple-multifinder-apps is-hidden"></div>
           <hr class="apple-multifinder-about-separator" />
-          <button class="apple-multifinder-about-item" data-action="open-about-multifinder" data-i18n="about_multifinder">About MultiFinder...</button>
+          <button class="apple-multifinder-about-item" data-action="open-about-multifinder" data-i18n="about_multifinder">About MultiFinder…</button>
         </div>
       </div>
 <!-- The bold application menu is Mac OS X only: Aqua HIG (June 2002, p.54) calls
@@ -91,7 +91,7 @@
       <div class="menu menu-bar-current-app">
         <button type="button" aria-haspopup="menu"><strong id="current-app-menu-label">Finder</strong></button>
         <div class="menu-popover">
-          <button data-action="open-about" data-i18n="about_menu">About AI System 6...</button>
+          <button data-action="open-about" data-i18n="about_menu">About AI System 6…</button>
           <hr />
           <button data-action="open-control" data-i18n="control_panel">Control Panel</button>
           <div id="current-app-menu-section" class="current-app-menu-section"></div>
@@ -971,7 +971,7 @@
                  over the internet lands here and nowhere else. Renaming the desk
                  revokes every invitation at once. -->
             <div class="button-row">
-              <button class="btn" type="button" id="chooser-guest-invite" data-i18n="guest_invite" data-balloon-help="balloon_chooser_guest_invite">Invite a Guest...</button>
+              <button class="btn" type="button" id="chooser-guest-invite" data-i18n="guest_invite" data-balloon-help="balloon_chooser_guest_invite">Invite a Guest…</button>
               <button class="btn" type="button" id="chooser-guest-rotate" data-i18n="guest_rotate_desk" data-balloon-help="balloon_chooser_guest_rotate">New Desk Name</button>
             </div>
             <p id="chooser-guest-invitation" class="hint control-status" hidden></p>
@@ -985,7 +985,7 @@
             <ul id="chooser-server-list" class="chooser-server-list"></ul>
             <p id="chooser-server-empty" class="hint control-status" data-i18n="chooser_servers_empty">No server has been added yet.</p>
             <div class="button-row">
-              <button class="btn" type="button" id="chooser-add-server" data-i18n="mcp_server_add">Add Server...</button>
+              <button class="btn" type="button" id="chooser-add-server" data-i18n="mcp_server_add">Add Server…</button>
             </div>
           </section>
         </div>
@@ -2256,7 +2256,7 @@
             <details class="teachtext-command-menu command-menu-opens-down reader-command-menu" id="reader-command-menu">
               <summary class="btn" id="reader-command-summary" data-i18n="reader_commands">Commands...</summary>
               <div class="teachtext-command-popover reader-command-popover">
-                <button class="btn" type="button" id="reader-open-another" data-action="reader-open-another" disabled data-i18n="reader_open_another">Open Another Source...</button>
+                <button class="btn" type="button" id="reader-open-another" data-action="reader-open-another" disabled data-i18n="reader_open_another">Open Another Source…</button>
                 <button class="btn" type="button" id="reader-clip-translate-button" data-action="reader-clip-translate" data-i18n="clip_translate" disabled hidden data-balloon-help-disabled="balloon_reader_clip_needs_selection">Clip + Translate</button>
                 <button class="btn" type="button" id="reader-docmap-selection-command" data-action="reader-docmap-selection" data-i18n="docmap_from_selection" disabled data-balloon-help-disabled="balloon_reader_clip_needs_selection">Map Selection</button>
                 <button class="btn" type="button" id="reader-docmap-source-command" data-action="reader-docmap-source" data-i18n="docmap_from_source" disabled>Map Entire Source</button>
@@ -2718,7 +2718,7 @@
           <h2 id="clio-stage-title" data-i18n="clio_stage_title">ClioStage</h2>
         </div>
         <div class="details-bar clio-stage-details-bar">
-          <button class="btn details-bar-button" type="button" id="clio-stage-import-files" data-i18n="docmap_import_files">Import Files...</button>
+          <button class="btn details-bar-button" type="button" id="clio-stage-import-files" data-i18n="docmap_import_files">Import Files…</button>
           <span id="clio-stage-status" data-i18n="clio_stage_empty">Open a slides.md document.</span>
           <span id="clio-stage-meta"></span>
         </div>
@@ -3308,7 +3308,7 @@
       <section class="window info-window is-hidden" data-window="fileInfo" aria-labelledby="file-info-title">
         <div class="title-bar">
           <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
-          <h2 id="file-info-title" data-i18n="file_info">File Info</h2>
+          <h2 id="file-info-title" data-i18n="get_info">Get Info</h2>
         </div>
         <div class="window-pane info-pane">
           <div class="info-header">
@@ -3322,11 +3322,11 @@
           </div>
           <hr />
           <dl class="info-stats">
-            <dt data-i18n="size">Size:</dt>
+            <dt data-i18n="info_size">Size:</dt>
             <dd id="info-file-size">0 bytes</dd>
             <dt data-i18n="where">Where:</dt>
             <dd id="info-file-location">Project Hard Disk</dd>
-            <dt data-i18n="folder">Folder:</dt>
+            <dt data-i18n="info_folder">Folder:</dt>
             <dd id="info-file-folder">--</dd>
             <dt data-i18n="source">Source:</dt>
             <dd id="info-file-source">--</dd>
@@ -3336,7 +3336,7 @@
             <dd id="info-file-context">--</dd>
             <dt data-i18n="created">Created:</dt>
             <dd id="info-file-created">--</dd>
-            <dt data-i18n="modified">Modified:</dt>
+            <dt data-i18n="info_modified">Modified:</dt>
             <dd id="info-file-modified">--</dd>
           </dl>
           <!-- What this particular object can do. System 6 has no contextual
@@ -3478,9 +3478,9 @@
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20261007.1"></script>
+    <script src="app/generated/build-info.js?v=20261008.2"></script>
     <template id="standard-window-controls"><button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button><button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button><button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button></template>
-    <script src="app.bundle.js?v=20261007.1"></script>
+    <script src="app.bundle.js?v=20261008.2"></script>
 
   </body>
 </html>

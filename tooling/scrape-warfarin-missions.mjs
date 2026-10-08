@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { parseDocument } from 'htmlparser2';
 import { textContent, getAttributeValue } from 'domutils';
 import { selectAll, selectOne } from 'css-select';
@@ -18,11 +20,12 @@ const outDir = path.resolve(args.out || DEFAULT_OUT_DIR);
 const delayMs = Number.parseInt(args.delay || '0', 10);
 const limit = args.limit ? Number.parseInt(args.limit, 10) : Infinity;
 const concurrency = Number.parseInt(args.concurrency || '8', 10);
-const includeRadio = args['include-radio'] === 'true';
+const includeRadio = args['include-radio'] !== 'false';
+const cacheDir = args['cache-dir'] ? path.resolve(args['cache-dir']) : '';
 
 const indexUrl = new URL(`/${lang}/missions`, baseUrl).toString();
 
-main().catch((error) => {
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
@@ -123,7 +126,7 @@ function parseMissionIndex(html) {
   };
 }
 
-function parseMissionDetail(html, indexMission) {
+export function parseMissionDetail(html, indexMission) {
   const doc = parseDocument(html);
   const content = selectOne('main .flex-1.max-w-5xl', doc) || selectOne('main', doc) || doc;
   const h1 = selectOne('h1', content);
@@ -136,12 +139,13 @@ function parseMissionDetail(html, indexMission) {
       .filter((value) => value && value !== '任务' && !value.includes(warningText))
   );
 
+  const dialogue = parseDialogueSection(findSection(sections, ['Transcript', '对话']));
+  const radio = includeRadio ? parseDialogueSection(findSection(sections, ['Radio', '无线电'])).map(line => ({ ...line, channel: 'radio' })) : [];
   return {
     title: cleanText(textContent(h1 || '')) || indexMission.title,
     description: description || indexMission.summary,
-    objectives: parseObjectives(findSection(sections, 'Objectives')),
-    transcript: parseDialogueSection(findSection(sections, 'Transcript')),
-    ...(includeRadio ? { radio: parseDialogueSection(findSection(sections, 'Radio')) } : {}),
+    objectives: parseObjectives(findSection(sections, ['Objectives', '任务目标'])),
+    transcript: [...dialogue, ...radio],
   };
 }
 
@@ -161,10 +165,15 @@ function parseDialogueSection(section) {
   }
 
   return cards.flatMap((card) => {
-    const portrait = selectOne('[title]', card);
-    const nameNode = selectOne('.font-bold', card);
-    const initialNode = selectOne('.font-semibold', card);
-    const lineNodes = selectAll('p', card);
+    // Current pages group an entire scene in one card. Each direct child of
+    // divide-y is a speaker turn (or narration); older pages use one card per turn.
+    const group = (card.children || []).find((node) => (node.attribs?.class || '').split(/\s+/).includes('divide-y'));
+    const turns = group ? (group.children || []).filter((node) => node.type === 'tag') : [card];
+    return turns.flatMap((turn) => {
+    const portrait = selectAll('[title]', turn).find((node) => selectOne('img', node));
+    const nameNode = selectOne('.font-bold', turn);
+    const initialNode = selectOne('.font-semibold', turn);
+    const lineNodes = selectAll('p', turn);
     const speaker = cleanText(textContent(nameNode || '')) || (portrait ? getAttributeValue(portrait, 'title') : '') || '';
     const initial = cleanText(textContent(initialNode || ''));
 
@@ -172,13 +181,14 @@ function parseDialogueSection(section) {
       .map((node) => cleanText(textContent(node)))
       .filter(Boolean)
       .map((text) => ({ speaker, initial, text }));
+    });
   }).filter((entry) => entry.speaker || entry.text);
 }
 
-function findSection(sections, heading) {
+function findSection(sections, headings) {
   return sections.find((section) => {
     const h2 = selectOne('h2', section);
-    return h2 && cleanText(textContent(h2)) === heading;
+    return h2 && headings.includes(cleanText(textContent(h2)));
   });
 }
 
@@ -249,7 +259,12 @@ function renderDialogue(lines, entries) {
 }
 
 async function fetchText(url) {
+  const cacheFile = cacheDir ? path.join(cacheDir, createHash('sha256').update(url).digest('hex') + '.html') : '';
+  if (cacheFile) {
+    try { return await readFile(cacheFile, 'utf8'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+  }
   const response = await fetch(url, {
+    signal: AbortSignal.timeout(120000),
     headers: {
       'accept': 'text/html,application/xhtml+xml',
       'user-agent': 'AI-System-6 story archiver (+personal-use)',
@@ -258,7 +273,9 @@ async function fetchText(url) {
   if (!response.ok) {
     throw new Error(`Request failed ${response.status} ${response.statusText}: ${url}`);
   }
-  return response.text();
+  const html = await response.text();
+  if (cacheFile) { await mkdir(cacheDir, { recursive: true }); await writeFile(cacheFile, html); }
+  return html;
 }
 
 function cleanText(value) {

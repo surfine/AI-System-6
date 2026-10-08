@@ -647,8 +647,8 @@ function normalizeSystemIconId(iconId) {
   return systemIconPaths[raw] || completeEraSystemIconIds.has(raw) ? raw : "document";
 }
 
-// Complete renderer vocabulary: the canonical 56 objects, six extended
-// applications and three newly authored apps. Kept as one split string because this module is eager and
+// Complete renderer vocabulary: the 56 core objects and twelve added apps.
+// Kept as one split string because this module is eager and
 // every extra array token spends the two-floppy startup budget.
 const completeEraSystemIconIds = new Set(("startupDisk hardDisk folder document applications trash finderApp fileFloppy "
   + "assistant quickDraft writingStudio projectDisk projectDisc cloudModel cloudModelOff questionSheet outline "
@@ -656,7 +656,7 @@ const completeEraSystemIconIds = new Set(("startupDisk hardDisk folder document 
   + "cmfStudio soundscape scrapbook systemFolder helpFolder importUtility controlPanel chooser systemHelp dictionary "
   + "teachText writingDemo chatFile chatImport systemStatus contextPanel rebuildArticle bureaucracyMeme "
   + "endfieldTerminal documents alias systemFile multiFinderApp daHandler writingBell trashFull control localModel "
-  + "controlStrip imagePromptStudio micropolis openttd doom lightroom bonsaiCity clioPaint clioProject oneMoreTune").split(" "));
+  + "controlStrip imagePromptStudio micropolis openttd doom lightroom bonsaiCity clioPaint clioProject oneMoreTune rootline joyride mingwen").split(" "));
 const supplementarySystemIconIds = new Set("clioPaint clioProject oneMoreTune".split(" "));
 // NeXTSTEP's own objects. The three applications above are "supplementary" to
 // Classic; these are the objects and system applications the era really drew
@@ -674,15 +674,11 @@ const nextstepCoreSystemIconIds = new Set((
   + "rebuildArticle bureaucracyMeme endfieldTerminal "
   + "clioStage clioChart liquidCover cmfStudio soundscape multiFinderApp "
   + "cloudModel cloudModelOff timeMachine systemStatus contextPanel daHandler "
-  + "writingBell control localModel controlStrip"
+  + "writingBell control localModel controlStrip imagePromptStudio micropolis openttd doom lightroom bonsaiCity rootline joyride mingwen"
 ).split(" "));
-const classicBigSurFallbackIds = new Set("imagePromptStudio micropolis openttd doom lightroom bonsaiCity".split(" "));
-// An application admitted before its era family is drawn: every appearance
-// paints its Classic glyph instead of an empty group (or, in Liquid Glass, a
-// request for an SVG that does not exist). Leaves this set when its family
-// joins completeEraSystemIconIds.
-const glyphOnlySystemIconIds = new Set(["rootline", "joyride", "mingwen"]);
-const liquidGlassRoundedRectIconIds = new Set(("finderApp assistant writingStudio cloudModel cloudModelOff reviewDesk searcher reader timeMachine docMap clioStage clioChart liquidCover cmfStudio soundscape scrapbook importUtility controlPanel chooser systemHelp dictionary teachText chatImport systemStatus contextPanel rebuildArticle bureaucracyMeme endfieldTerminal multiFinderApp daHandler writingBell control localModel controlStrip clioPaint clioProject oneMoreTune").split(" "));
+// rootline, joyride and mingwen joined the canonical family, so every id in
+// the vocabulary paints its own era art instead of a Classic glyph substitute.
+const liquidGlassRoundedRectIconIds = new Set(("finderApp assistant writingStudio cloudModel cloudModelOff reviewDesk searcher reader timeMachine docMap clioStage clioChart liquidCover cmfStudio soundscape scrapbook importUtility controlPanel chooser systemHelp dictionary teachText chatImport systemStatus contextPanel rebuildArticle bureaucracyMeme endfieldTerminal multiFinderApp daHandler writingBell control localModel controlStrip clioPaint clioProject oneMoreTune rootline joyride mingwen").split(" "));
 function liquidGlassIconUsesRoundedRect(iconId) {
   return liquidGlassRoundedRectIconIds.has(iconId);
 }
@@ -722,9 +718,14 @@ function classicSystemIconArt(iconId, sourceSize) {
   const stem = systemIconEscape(iconId);
   const mask = systemIconAssetUrl(`assets/themes/classic/icons/${stem}-mask-${sourceSize}.svg`);
   const art = systemIconAssetUrl(`assets/themes/classic/icons/${stem}-${sourceSize}.svg`);
-  return `<image class="sys-icon-classic-mask" href="${mask}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" /><image class="sys-icon-classic-art" href="${art}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" /><image class="sys-icon-classic-reverse" href="${art}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" filter="url(#${classicReverseFilterId})" />`;
+  return `<image class="sys-icon-classic-paper" href="${mask}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" filter="url(#${classicReverseFilterId})" /><image class="sys-icon-classic-mask" href="${mask}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" /><image class="sys-icon-classic-art" href="${art}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" /><image class="sys-icon-classic-reverse" href="${art}" x="0" y="0" width="32" height="32" preserveAspectRatio="xMidYMid meet" filter="url(#${classicReverseFilterId})" />`;
 }
 
+// The paper layer is the same mask reversed to white. On the patterned desk a
+// System 6 icon is white only inside its silhouette (classic-icon-references
+// *-mask.txt); the white square cell behind every desktop icon read as a tile
+// (2026-10-08 survey). Only an unselected desktop icon shows it.
+//
 // The classic reversal (反白) is an SVG filter, not a CSS one. WebKit ignores
 // `filter` on an SVG <image> element, so a reversed surface painted the black
 // art onto the black silhouette mask and read as a solid blob — the desktop,
@@ -791,7 +792,6 @@ function completeEraRasterSystemIconArt(era, iconId, sourceSize) {
 
 function liquidGlassSystemIconArt(iconId, sourceSize = 32) {
   if (transportIconPaths[iconId]) return transportIconPaths[iconId];
-  if (glyphOnlySystemIconIds.has(iconId)) return systemIconPaths[iconId];
   if (classicLineArtEverywhere()) {
     const lineArt = classicLineArtImage(iconId);
     if (lineArt) return lineArt;
@@ -871,14 +871,12 @@ function systemIconSvg(iconId, options = {}) {
   const independentSourceSize = !independent ? modernSourceSize
     : window.AISystem6Theme?.getTheme?.()?.classicIconTiers ? sourceSize
       : systemIconModernSourceSize(options, sourceSize, [16, 32, 64, 128]);
-  const eraArt = independent ? (era === "big-sur" && classicBigSurFallbackIds.has(id) ? paths
-    : completeEraRasterSystemIconArt(era, id, independentSourceSize)) : "";
-  const glyphOnly = glyphOnlySystemIconIds.has(id) ? paths : "";
+  const eraArt = independent ? completeEraRasterSystemIconArt(era, id, independentSourceSize) : "";
   const liquidPaths = liquidGlassSystemIconArt(id, modernSourceSize);
   const maskClass = coreArt ? " has-classic-mask" : "";
   const platinumClass = platinumArt ? " has-platinum-core" : "";
   const liquidShapeClass = liquidGlassIconUsesRoundedRect(id) ? " liquid-glass-rounded" : "";
-  return `<svg class="sys-icon-svg${maskClass}${platinumClass}${liquidShapeClass}" data-classic-source-size="${sourceSize}" data-platinum-source-size="${platinumSourceSize}" data-modern-display-size="${modernDisplaySize}" data-modern-source-size="${independentSourceSize}" viewBox="0 0 32 32" focusable="false" aria-hidden="true"><g class="sys-icon-classic">${paths}</g><g class="sys-icon-platinum-core">${platinumArt}</g><g class="sys-icon-aqua">${aquaArt || glyphOnly}</g><g class="sys-icon-snow-leopard">${snowArt || glyphOnly}</g><g class="sys-icon-yosemite">${yosemiteArt || glyphOnly}</g><g class="sys-icon-liquid">${liquidPaths}</g>${independent ? `<g class="sys-icon-${era}">${eraArt || glyphOnly}</g>` : ""}</svg>`;
+  return `<svg class="sys-icon-svg${maskClass}${platinumClass}${liquidShapeClass}" data-classic-source-size="${sourceSize}" data-platinum-source-size="${platinumSourceSize}" data-modern-display-size="${modernDisplaySize}" data-modern-source-size="${independentSourceSize}" viewBox="0 0 32 32" focusable="false" aria-hidden="true"><g class="sys-icon-classic">${paths}</g><g class="sys-icon-platinum-core">${platinumArt}</g><g class="sys-icon-aqua">${aquaArt}</g><g class="sys-icon-snow-leopard">${snowArt}</g><g class="sys-icon-yosemite">${yosemiteArt}</g><g class="sys-icon-liquid">${liquidPaths}</g>${independent ? `<g class="sys-icon-${era}">${eraArt}</g>` : ""}</svg>`;
 }
 
 function renderSystemIcon(iconId, options = {}) {

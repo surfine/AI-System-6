@@ -202,14 +202,14 @@ test.assertIncludes(zh, 'finder_location: "Finder 位置"', "Chinese exposes the
 // In the Mac OS X eras a Finder page is a unified title-and-toolbar window,
 // and in four of them it carries a sidebar. Which era gets what is a decision
 // of the owner's, recorded in the registry, not in each era's tokens:
-// Aqua is 10.0-10.2 (toolbar, no sidebar yet); Snow Leopard and Yosemite put
+// Aqua is 10.0-10.2 (toolbar, no sidebar yet); Snow Leopard, Lion and Yosemite put
 // the toolbar in its own row over a sidebar; Big Sur and Liquid Glass have one
 // row with the lamps over a full-height sidebar. System 6, Platinum and
 // NeXTSTEP stay spatial: no layout, no sidebar.
 {
   const registry = read("app/core/theme-registry.js");
   const layoutOf = (id) => registry.slice(registry.indexOf(`id: "${id}",`) + id.length + 6).split(/\bid: "/)[0].match(/finderLayout: "([a-z-]+)"/)?.[1] || "";
-  for (const [id, layout] of [["aqua", "two-row-plain"], ["snow-leopard", "two-row-sidebar"], ["yosemite", "two-row-sidebar"], ["big-sur", "one-row"], ["liquid-glass", "one-row"], ["classic", ""], ["platinum", ""], ["nextstep", ""]]) {
+  for (const [id, layout] of [["aqua", "two-row-plain"], ["snow-leopard", "two-row-sidebar"], ["lion", "two-row-sidebar"], ["yosemite", "two-row-sidebar"], ["big-sur", "one-row"], ["liquid-glass", "one-row"], ["classic", ""], ["platinum", ""], ["nextstep", ""]]) {
     test.assert(layoutOf(id) === layout, `${id} Finder layout is ${layout || "the spatial stack"} (got ${layoutOf(id) || "none"})`);
   }
   test.assertIncludes(registry, "element.dataset.finderLayout = theme.finderLayout", "the registry projects the era's Finder layout onto the page");

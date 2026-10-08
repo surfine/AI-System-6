@@ -97,10 +97,13 @@ const systemSpecialItems = [
 ];
 
 const menu = (id, labelKey, items, extra = {}) => ({ id, labelKey, items, ...extra });
+// Special carries the desk-wide window verbs only (the overview, the per-window
+// arrangement popover, Tile). Peek acts on one rolled-up window and already
+// lives in the Window menu and inside Arrange Window…, so a third copy on
+// Special was one more greyed row to read (seen 2026-10-08).
 const specialMenu = (appItems = []) => menu("special", "menu_special", [
   menuItem("window-browse", "window_browse", "", { menuCondition: "window-browse-special" }),
   menuItem("windowshade-arrange-menu", "window_arrange_menu"),
-  menuItem("window-peek", "window_peek"),
   ...appItems,
   ...(appItems.length ? [menuSeparator] : []),
   ...systemSpecialItems,
@@ -139,6 +142,12 @@ const windowMenu = () => menu("window", "menu_window", [
   menuItem("window-pin-suspend", "window_pin_suspend"),
   menuItem("window-pin-restore", "window_pin_restore"),
   menuItem("window-pin-clear", "window_pin_clear"),
+  menuSeparator,
+  // The Dock ships off in the Mac OS X eras (owner, 2026-09-25) and the only
+  // switch was a Control Panel row nobody is told about. The Window menu is
+  // where a put-away window is looked for, so the switch sits here too
+  // (owner, 2026-10-08); the row reads Show or Hide to match the preference.
+  menuItem("window-toggle-dock", "show_dock"),
 ], { menuCondition: "window-menu" });
 
 // Finder's File menu holds only verbs that make sense for *any* selected
@@ -482,7 +491,10 @@ const quickDraftMenus = [
     menuSeparator,
     menuItem("quick-draft-toggle-materials", "quick_draft_hide_materials"),
   ]),
-  menu("quickDraft", "quick_draft_label", [
+  // The application's own menu is not named after the application: the bold
+  // application-name menu already says "Quick Draft" in the Mac OS X eras, so
+  // two menus read the same word (seen 2026-10-08). Owner: 「草稿」/ Draft.
+  menu("quickDraft", "quick_draft_menu_label", [
     menuItem("quick-draft-compose", "quick_draft_start_writing"),
     menuItem("quick-draft-apply", "quick_draft_preview_adjustments"),
     menuSeparator,
@@ -576,6 +588,9 @@ const timeMachineMenus = [
     menuItem("time-machine-new-tab", "new_tab"),
     menuItem("time-machine-close-tab", "close_tab"),
     menuItem("close-active-window", "close", "close-window"),
+    menuSeparator,
+    menuItem("time-machine-open-in-browser", "time_machine_open_in_browser"),
+    menuItem("time-machine-clear-data", "time_machine_clear_browsing_data"),
   ]),
   menu("edit", "menu_edit", [
     menuItem("copy", "copy", "copy"), menuItem("select-all", "select_all", "select-all"),
@@ -601,6 +616,11 @@ const timeMachineMenus = [
     menuSeparator,
     menuItem("time-machine-preserve-wayback", "time_machine_preserve_wayback"),
     menuItem("time-machine-preserve-archive-is", "time_machine_preserve_archive_is"),
+    menuSeparator,
+    // Two rows naming opposite actions, not one conditional checkmark (see
+    // the note above finderMenus).
+    menuItem("time-machine-block-ads", "time_machine_block_ads"),
+    menuItem("time-machine-allow-ads", "time_machine_allow_ads"),
   ]),
   windowMenu(),
   specialMenu(),
@@ -990,7 +1010,21 @@ function syncCurrentApplicationMenu(appId = "finder") {
     ? multiFinderAppLabels[appId]
     : null;
   label.textContent = ownerLabel || (appId === "finder" ? "Finder" : appId);
-  label.closest(".menu-bar-current-app")?.setAttribute("data-current-app-id", appId);
+  const currentAppMenu = label.closest(".menu-bar-current-app");
+  currentAppMenu?.setAttribute("data-current-app-id", appId);
+  // Mac OS X's application menu opens with "About <this application>" (Aqua
+  // HIG 2002 p.55). The row used to carry the Apple menu's "About Finder...",
+  // whichever application the bold name said (seen 2026-10-08 under Quick
+  // Draft), so the name follows the owner here and the workspace profile only
+  // dresses the Apple menu's copy.
+  const aboutRow = currentAppMenu?.querySelector('[data-action="open-about"]');
+  if (aboutRow && typeof t === "function") {
+    // The label takes a name, so it is painted here rather than by the
+    // data-i18n sweep (which only knows string keys); a language switch
+    // reaches it through updateMenuState → renderAppMenuBar.
+    delete aboutRow.dataset.i18n;
+    aboutRow.textContent = t("about_app", label.textContent);
+  }
 
   const section = document.querySelector("#current-app-menu-section");
   if (!section || typeof applicationVerbRows !== "function") return;
@@ -1010,6 +1044,7 @@ function syncCurrentApplicationMenu(appId = "finder") {
   section.replaceChildren(...(applicationOwned
     ? []
     : [document.createElement("hr"), ...applicationVerbRows()]));
+  if (typeof syncKeyboardShortcutLabels === "function") syncKeyboardShortcutLabels();
   if (typeof invalidateMenuActionCache === "function") invalidateMenuActionCache();
   if (typeof applyApplicationRowAvailability === "function") applyApplicationRowAvailability(section);
 }
@@ -1044,6 +1079,19 @@ function renderAppMenuBar(appId = activeAppId || "finder", { force = false } = {
     fragment.append(menuElement);
   });
 
+  // A rebuilt bar starts with no condition applied, and the rebuild can run
+  // after updateMenuState() already judged the old one, so a conditional menu
+  // (Window, Lightroom's pair) came back visible while its condition was false
+  // - a phone's empty desk showed Window and pushed the switcher off screen
+  // (2026-10-08). Judge the new menus before they are inserted.
+  if (typeof getActionAvailability === "function") {
+    try {
+      const state = getActionAvailability();
+      fragment.querySelectorAll("[data-menu-condition]").forEach((element) => {
+        element.classList.toggle("is-hidden", !state[element.dataset.menuCondition]);
+      });
+    } catch {}
+  }
   document.querySelectorAll(".menu-bar > [data-app-menu]").forEach((element) => element.remove());
   slot.before(fragment);
   renderedApplicationMenuSetId = setId;

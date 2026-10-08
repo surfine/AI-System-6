@@ -61,6 +61,28 @@ const PANEL_BACKGROUND = "#f0f0f0";
 // meaning "someone built". Strip only that query value.
 const BUILD_STAMP_QUERY = /\?v=\d{8}\.\d+/g;
 
+
+// Owner decision 2026-10-08: a specimen whose reference is an authored Theme
+// Lab freeze (source id "authored.*") is a stability check -- it proves the
+// product has not changed, not that it looks like the historical system. Only
+// a native capture or HIG crop makes a specimen a fidelity check, and a board
+// is a fidelity board only if at least one specimen is.
+const BOARD_KIND_NOTE = {
+  fidelity: "measured against native captures or HIG crops",
+  mixed: "native references plus authored Theme Lab freezes; only the native specimens speak to fidelity",
+  stability: "authored Theme Lab freezes only; proves the product is unchanged, not that it is historically accurate",
+};
+
+function referenceKind(specimen) {
+  return String(specimen?.reference?.source || "").startsWith("authored.") ? "stability" : "fidelity";
+}
+
+function boardKind(manifest) {
+  const kinds = new Set((manifest.specimens || []).map(referenceKind));
+  if (kinds.size === 1) return [...kinds][0];
+  return "mixed";
+}
+
 function usage() {
   console.log(`Usage: node tooling/theme-lab-fidelity.mjs [options]
 
@@ -70,6 +92,9 @@ Options:
   --fetch             Download missing canonical sources into the local cache
   --update-fingerprint  Accept the current Theme Lab content hash and write it
                        back to the manifest (intentional fixture DOM changes)
+  --refreeze-authored  Stability boards only: replace each authored Theme Lab
+                       freeze with this harness's own capture of the specimen
+                       and write its sha256 back (intentional visual changes)
   --source-dir <dir>  Read canonical sources from an existing local directory
   --output-dir <dir>  Write generated artifacts to this directory
   --help               Print this help
@@ -86,6 +111,7 @@ function parseArgs(argv) {
     manifestPath: null,
     fetch: false,
     updateFingerprint: false,
+    refreezeAuthored: false,
     sourceDir: null,
     outputDir: null,
   };
@@ -101,6 +127,10 @@ function parseArgs(argv) {
     }
     if (argument === "--update-fingerprint") {
       options.updateFingerprint = true;
+      continue;
+    }
+    if (argument === "--refreeze-authored") {
+      options.refreezeAuthored = true;
       continue;
     }
     if (["--theme", "--manifest", "--source-dir", "--output-dir"].includes(argument)) {
@@ -1183,6 +1213,21 @@ try {
   }
   pageContext = await prepareCurrentPage(browser, server.url, manifest, outputDir);
   const results = [];
+  const refrozen = new Map();
+  const writeRefrozen = () => {
+    const manifestPath = options.manifestPath || readManifest(manifest.theme).path;
+    const manifestData = JSON.parse(readFileSync(manifestPath, "utf8"));
+    for (const entry of manifestData.sources) {
+      const frozen = refrozen.get(entry.id);
+      if (!frozen) continue;
+      entry.sha256 = frozen.sha256;
+      entry.width = frozen.width;
+      entry.height = frozen.height;
+      const owner = manifestData.specimens.find((item) => item.id === frozen.specimen);
+      if (owner) owner.reference.crop = { x: 0, y: 0, width: frozen.width, height: frozen.height };
+    }
+    writeFileSync(manifestPath, `${JSON.stringify(manifestData, null, 2)}\n`);
+  };
   for (const specimen of manifest.specimens) {
     const source = prepared.get(specimen.reference.source);
     if (!source) throw new Error(`${specimen.id}: unknown reference source ${specimen.reference.source}`);
@@ -1220,6 +1265,31 @@ try {
       writeCanvas(join(outputDir, `${specimen.id}-unstable-b.png`), closestPair.second.canvas);
       writeCanvas(join(outputDir, `${specimen.id}-unstable-diff.png`), closestPair.comparison.difference);
       throw new Error(`${specimen.id}: current capture is unstable across ${captures.length} identical runs (closest pair ${closestPair.comparison.metrics.exactChangedPixels} pixels, max delta ${closestPair.comparison.metrics.maxChannelDelta}; allowed ${maxRepeatPixels} pixels, max delta ${maxRepeatChannelDelta})`);
+    }
+    // A stability reference is a freeze of this harness's own view. Freezing
+    // it with another tool (element screenshots) left sub-pixel offsets that
+    // read as mismatches, so an intentional change is re-frozen from the
+    // exact canvas this comparison uses. Native references are never touched.
+    if (options.refreezeAuthored && String(source.id).startsWith("authored.")) {
+      const crop = reference.crop;
+      const whole = crop.x === 0 && crop.y === 0 && crop.width === source.width && crop.height === source.height && crop.scale === 1;
+      const sharedBy = manifest.specimens.filter((other) => other.reference.source === source.id).length;
+      if ((whole || sharedBy === 1) && crop.scale === 1) {
+        // One specimen owns this freeze, so the freeze becomes exactly what
+        // the harness captures for it and the crop becomes the whole image.
+        writeCanvas(source.path, current.canvas);
+        refrozen.set(source.id, {
+          sha256: sha256File(source.path),
+          width: current.canvas.width,
+          height: current.canvas.height,
+          specimen: specimen.id,
+        });
+        reference.canvas = current.canvas;
+        writeRefrozen();
+        console.log(`OK  re-froze ${source.id} from the harness capture`);
+      } else {
+        console.log(`--  kept ${source.id}: ${sharedBy} specimens crop the same freeze`);
+      }
     }
     const aligned = alignedCanvases(reference.canvas, current.canvas, specimen.align);
     const comparison = compareCanvases(
@@ -1286,7 +1356,7 @@ try {
       computedAssertions: current.computedAssertions,
     });
     const floorTag = floorResult.status === "met" ? "floor met" : `floor ${floorResult.status}`;
-    console.log(`OK  mapped ${specimen.id}: ${(comparison.metrics.changedRatio * 100).toFixed(2)}% changed, ${floorTag}`);
+    console.log(`OK  mapped ${specimen.id} [${referenceKind(specimen)}]: ${(comparison.metrics.changedRatio * 100).toFixed(2)}% changed, ${floorTag}`);
   }
 
   writeCanvas(join(outputDir, "reference.png"), drawAtlas(results, manifest, "referenceCanvas"));
@@ -1367,7 +1437,10 @@ try {
     specimens: reviewSpecimens,
     topResidualRegions: reviewSpecimens.slice(0, 3).map((entry) => entry.id),
   };
-  writeFileSync(join(outputDir, "review-summary.json"), `${JSON.stringify(reviewSummary, null, 2)}\n`);
+  reviewSummary.boardKind = boardKind(manifest);
+  reviewSummary.boardKindNote = BOARD_KIND_NOTE[reviewSummary.boardKind];
+    writeFileSync(join(outputDir, "review-summary.json"), `${JSON.stringify(reviewSummary, null, 2)}\n`);
+  console.log(`OK  board kind: ${reviewSummary.boardKind} — ${BOARD_KIND_NOTE[reviewSummary.boardKind]}`);
   console.log(`OK  review summary: top residual = ${reviewSummary.topResidualRegions.join(", ") || "(none)"}`);
   const floorLine = Object.entries(floorCounts).map(([status, count]) => `${count} ${status}`).join(", ");
   console.log(`OK  fidelity floor (geometry ${boardFloor.geometryMismatch}, edge ${boardFloor.edgeErrorPx}px, material ${boardFloor.materialError}): ${floorLine} of ${reviewSpecimens.length} specimens`);

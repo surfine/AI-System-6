@@ -87,7 +87,7 @@ private func resolveRepoRoot(options: ShellOptions) -> URL? {
   return nil
 }
 
-private func shellLog(_ message: String) {
+func shellLog(_ message: String) {
   let logsDir = FileManager.default
     .homeDirectoryForCurrentUser
     .appendingPathComponent("Library/Logs/AI System 6 Beta", isDirectory: true)
@@ -115,6 +115,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
   /// A deep link (aisystem6://launch?route=…) received before the local
   /// desktop finished loading. Consumed by the first successful load.
   private var pendingDeepLink: URL?
+  /// Time Machine's native engine (macOS 26+); see TimeMachineBrowser.swift.
+  private var timeMachineBrowser: AnyObject?
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     shellLog("applicationDidFinishLaunching args=\(CommandLine.arguments.joined(separator: " "))")
@@ -248,6 +250,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     container.addSubview(webView)
     container.addSubview(statusLabel)
     window.contentView = container
+    if #available(macOS 26.0, *) {
+      timeMachineBrowser = TimeMachineBrowser(
+        deskWebView: webView,
+        hostView: container,
+        window: window,
+        extensionURL: adBlockerExtensionURL(),
+        isDeskURL: { [weak self] url in self?.isLocalDesktopURL(url) ?? false }
+      )
+    }
     window.makeKeyAndOrderFront(nil)
     window.orderFrontRegardless()
     shellLog("window built frame=\(window.frame)")
@@ -396,6 +407,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     environment["PORT"] = environment["PORT"] ?? String(options.url.port ?? 4173)
     environment["AI_SYSTEM6_HOST"] = "127.0.0.1"
     environment["AI_SYSTEM6_SHELL"] = "macos"
+    // The document reader bundled next to this binary (see build-mac-shell-app).
+    if let vision = Bundle.main.executableURL?.deletingLastPathComponent().appendingPathComponent("AISystem6Vision"),
+       FileManager.default.isExecutableFile(atPath: vision.path) {
+      environment["AI_SYSTEM6_VISION_HELPER"] = vision.path
+    }
     return environment
   }
 
@@ -600,7 +616,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     // to the web page and the only way home was the View menu. Anything the
     // visitor clicks that leaves the local server belongs to their browser,
     // which is also where they are already signed in. The desk stays put.
+    // Only the desk's own top-level page: a link inside a frame (Time
+    // Machine's live page on its browse origin) navigates that frame.
     if navigationAction.navigationType == .linkActivated,
+       navigationAction.targetFrame?.isMainFrame ?? true,
        let url = navigationAction.request.url,
        !isLocalDesktopURL(url) {
       NSWorkspace.shared.open(url)
@@ -608,6 +627,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
       return
     }
     decisionHandler(.allow)
+  }
+
+  /// uBlock Origin Lite's Safari build: bundled in the app, or fetched into
+  /// the checkout's cache by `npm run browse:fetch-filters` during development.
+  private func adBlockerExtensionURL() -> URL? {
+    if let bundled = Bundle.main.resourceURL?.appendingPathComponent("ubol-safari", isDirectory: true),
+       FileManager.default.fileExists(atPath: bundled.appendingPathComponent("manifest.json").path) {
+      return bundled
+    }
+    guard let root = resolveRepoRoot(options: options),
+          let pin = try? Data(contentsOf: root.appendingPathComponent("vendor/ubol/PIN.json")),
+          let json = try? JSONSerialization.jsonObject(with: pin) as? [String: Any],
+          let version = json["version"] as? String
+    else { return nil }
+    return root.appendingPathComponent(".cache/ubol/\(version)/safari", isDirectory: true)
   }
 
   // The desk is whatever this shell is serving; everything else is the web.

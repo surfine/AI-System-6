@@ -9,7 +9,7 @@ vm.runInContext(read("app/core/system-icons.js"), sandbox);
 const api = sandbox.window.AISystem6Theme;
 const svg = (id, size = 32) => sandbox.systemIconSvg(id, { modernSourceSize: size, platinumSourceSize: size, sourceSize: size });
 const select = (id) => api.applyTheme(id, { announce: false, persist: false, experimental: id === "nextstep" });
-const additions = ["clioPaint", "clioProject", "oneMoreTune"];
+const additions = ["clioPaint", "clioProject", "oneMoreTune", "rootline", "joyride", "mingwen", "imagePromptStudio", "micropolis", "openttd", "doom", "lightroom", "bonsaiCity"];
 for (const id of additions) {
   test.assert(sandbox.window.AISystem6SystemIcons.ids.includes(id), `${id} is part of the shared renderer vocabulary`);
   select("classic");
@@ -27,13 +27,6 @@ for (const id of additions) {
       test.assertIncludes(svg(id, size), `${era}/icons/${id}-${size}.png`, `${id} honors the ${size} px ${era} tier`);
     }
   }
-}
-for (const id of ["imagePromptStudio", "micropolis", "openttd", "doom", "lightroom", "bonsaiCity"]) {
-  select("big-sur");
-  test.assertNotIncludes(svg(id), `big-sur/icons/${id}`, `${id} never requests an unauthored Big Sur file`);
-  test.assertIncludes(svg(id).split('class="sys-icon-big-sur"')[1], `classic/icons/${id}-32.svg`, `${id} keeps Classic art in Big Sur`);
-  select("nextstep");
-  test.assertNotIncludes(svg(id), 'class="sys-icon-nextstep"', `${id} retains the existing Classic painter in NeXTSTEP`);
 }
 for (const id of ["play", "pause", "previousTrack", "nextTrack", "shuffleTracks", "repeatTracks", "speaker"]) {
   select("big-sur");
@@ -63,6 +56,6 @@ for (const id of additions) {
   test.assert(artOf("nextstep", id).dir === "nextstep" && artOf("nextstep", id).ext === "png", `${id} inspector exposes NeXTSTEP PNGs`);
   test.assertIncludes(labSource, `["${id}",`, `${id} is inspectable alongside the original core objects`);
 }
-test.assert(artOf("nextstep", "finderApp").dir === "classic", "NeXTSTEP's unchanged core remains explicitly Classic in the inspector");
-test.assert(artOf("big-sur", "doom").dir === "classic", "Big Sur's unauthored extras show their actual fallback source in the inspector");
+test.assert(artOf("nextstep", "finderApp").dir === "nextstep", "NeXTSTEP core uses its real artwork in the inspector");
+test.assert(artOf("big-sur", "doom").dir === "big-sur", "Big Sur extras show their authored source in the inspector");
 test.finish();

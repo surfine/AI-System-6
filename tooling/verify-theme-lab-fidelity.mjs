@@ -75,4 +75,20 @@ if (failed) {
   console.error(`\nCanonical fidelity failed for ${failed} of ${runs.length} boards.`);
   process.exit(1);
 }
-console.log(`\nCanonical fidelity passed for ${runs.length} boards (${THEMES.join(", ")} + Retina acceptance).`);
+// A board whose every reference is an authored Theme Lab freeze is a
+// stability board (owner decision 2026-10-08): green means unchanged, not
+// historically accurate. Name them apart so a pass is never read as both.
+function boardKindOf(theme) {
+  try {
+    const manifest = JSON.parse(readFileSync(join(root, "tests", "visual", "theme-lab-fidelity", `${theme}.json`), "utf8"));
+    const kinds = new Set((manifest.specimens || []).map((specimen) => (String(specimen?.reference?.source || "").startsWith("authored.") ? "stability" : "fidelity")));
+    return kinds.size === 1 ? [...kinds][0] : "mixed";
+  } catch {
+    return "unknown";
+  }
+}
+const byKind = {};
+for (const theme of THEMES) (byKind[boardKindOf(theme)] ||= []).push(theme);
+console.log(`\nBoards passed: ${runs.length} (${THEMES.length} eras + Retina acceptance).`);
+for (const [kind, themes] of Object.entries(byKind)) console.log(`  ${kind}: ${themes.join(", ")}`);
+console.log("  Only fidelity (and the native specimens of mixed) boards speak to historical accuracy; stability boards prove the product is unchanged.");

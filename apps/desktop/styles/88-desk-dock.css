@@ -619,6 +619,19 @@ body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .title-b
   box-shadow: none;
 }
 
+/* 10.7 hides the whole title bar in full screen and slides it back in with
+   the menu bar when the pointer reaches the top edge. The bar leaves the flow
+   so the content takes the full height, and on reveal it lands just under the
+   menu bar rather than beneath it. It spends no stacking slot: the transformed
+   bar already paints in the positioned layer above the window's flow content,
+   and this sheet's only slot belongs to the Control Strip. */
+.window.is-fullscreen > .title-bar {
+  position: absolute;
+  inset: 0 0 auto 0;
+  transform: translateY(-100%);
+  transition: transform 160ms ease-out;
+}
+
 body.window-fullscreen-active .menu-bar {
   transform: translateY(-100%);
   transition: transform 160ms ease-out;
@@ -626,6 +639,10 @@ body.window-fullscreen-active .menu-bar {
 
 body.window-fullscreen-active.fullscreen-menu-revealed .menu-bar {
   transform: none;
+}
+
+body.window-fullscreen-active.fullscreen-menu-revealed .window.is-fullscreen > .title-bar {
+  transform: translateY(var(--menu-bar-height));
 }
 
 .fullscreen-reveal {
@@ -660,4 +677,13 @@ body[data-theme="lion"] .title-bar > .zoom-lamp {
   border: 0;
   background: var(--traffic-light-resize-bg) center / var(--traffic-light-sprite-size, 14px 13px) no-repeat;
   cursor: pointer;
+}
+
+/* A background window greys all three lamps (HIG 2011-07-26 p.160: the two
+   rear windows show three grey rings). Close already took the base inactive
+   rule; the green lamp is added here, so it read as live behind the front
+   window (2026-10-08 survey). Same tokens as Close, so the pair matches. */
+body[data-theme="lion"] .window:not(.is-active) .title-bar > .zoom-lamp {
+  filter: var(--system-titlebar-inactive-control-filter);
+  opacity: var(--system-titlebar-inactive-control-opacity);
 }

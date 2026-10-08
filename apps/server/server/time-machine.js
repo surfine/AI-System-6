@@ -1,10 +1,12 @@
 "use strict";
 
 const { decodeHtml, stripTags, cleanText } = require("./lib/text.js");
-const { getTextOnceWithFallback, headerValue } = require("./lib/fetch.js");
+const { getTextOnceWithFallback, nodeGetTextViaProxy, headerValue } = require("./lib/fetch.js");
+const { localProxyRoute } = require("./lib/proxy-route.js");
 const {
   READER_TIMEOUT_MS,
   resolveReaderTarget,
+  isPrivateAddress,
   cleanHtmlForReader,
   friendlyReaderError,
 } = require("./reader.js");
@@ -136,20 +138,29 @@ async function fetchPinnedPage(value, signal, options = {}) {
     "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
     ...(options.headers || {}),
   };
-  let resolved = await resolveReaderTarget(timeMachineUrl(value));
-  let finalUrl = resolved.url;
+  let finalUrl = timeMachineUrl(value);
   let upstream;
   for (let redirects = 0; redirects <= 3; redirects += 1) {
-    upstream = await getTextOnceWithFallback(finalUrl, signal, headers, {
-      maxBytes: options.maxBytes || TIME_MACHINE_MAX_BYTES,
-      pinnedAddress: resolved.address,
-      pinnedFamily: resolved.family,
-    });
+    // Through the Mac's proxy when it has one (archive.org is unreachable
+    // directly from some networks); otherwise pinned to the checked address.
+    if (await localProxyRoute(finalUrl, isPrivateAddress)) {
+      upstream = await nodeGetTextViaProxy(finalUrl, signal, headers, 0, {
+        followRedirects: false,
+        maxBytes: options.maxBytes || TIME_MACHINE_MAX_BYTES,
+      });
+    } else {
+      const resolved = await resolveReaderTarget(finalUrl);
+      finalUrl = resolved.url;
+      upstream = await getTextOnceWithFallback(finalUrl, signal, headers, {
+        maxBytes: options.maxBytes || TIME_MACHINE_MAX_BYTES,
+        pinnedAddress: resolved.address,
+        pinnedFamily: resolved.family,
+      });
+    }
     if (![301, 302, 303, 307, 308].includes(upstream.status)) break;
     const location = headerValue(upstream.headers, "location");
     if (!location) throw new Error(`Archive service returned ${upstream.status}.`);
-    resolved = await resolveReaderTarget(new URL(location, finalUrl).href);
-    finalUrl = resolved.url;
+    finalUrl = new URL(location, finalUrl).href;
   }
   if ([301, 302, 303, 307, 308].includes(upstream?.status)) {
     throw new Error("Archive service redirected too many times.");

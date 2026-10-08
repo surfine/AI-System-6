@@ -288,4 +288,120 @@ module.exports = {
   extractWebResourceTextFromXml,
   extractWebResourceText,
   extractWebArchiveText,
+  extractWebResourceHtml,
+  extractWebResourceHtmlFromXml,
+  extractWebArchiveResources,
 };
+
+/**
+ * The HTML bytes of a WebResource, when the resource is a page. The peel
+ * layer needs the raw HTML rather than extracted text, because it runs the
+ * same cleanHtmlForReader pipeline a fetched URL goes through -- a saved page
+ * is where that pipeline matters most, since its navigation chrome is saved
+ * with it.
+ *
+ * @param {any} resource
+ * @returns {{ html: string, url: string }}
+ */
+function extractWebResourceHtml(resource) {
+  if (resource === null || resource === undefined || typeof resource !== "object") {
+    return { html: "", url: "" };
+  }
+  const data = decodeWebArchiveData(resource.WebResourceData);
+  const mimeType = String(resource.WebResourceMIMEType || "").toLowerCase();
+  const encoding = resource.WebResourceTextEncodingName || "utf-8";
+  const url = String(resource.WebResourceURL || "");
+  if (data.length === 0 || /html|xhtml/.test(mimeType) === false) return { html: "", url };
+  return { html: decodeTextBuffer(data, encoding), url };
+}
+
+/**
+ * @param {string} resourceXml
+ * @returns {string}
+ */
+function extractWebResourceHtmlFromXml(resourceXml) {
+  if (resourceXml === "") return "";
+  const data = decodeWebArchiveData(extractXmlPlistValue(resourceXml, "WebResourceData"));
+  const mimeType = extractXmlPlistValue(resourceXml, "WebResourceMIMEType").toLowerCase();
+  const encoding = extractXmlPlistValue(resourceXml, "WebResourceTextEncodingName") || "utf-8";
+  if (data.length === 0 || /html|xhtml/.test(mimeType) === false) return "";
+  return decodeTextBuffer(data, encoding);
+}
+
+/**
+ * @param {any} archive
+ * @returns {{ mainHtml: string, mainUrl: string, subframes: Array<{html: string, url: string}> }}
+ */
+function extractWebArchiveResourcesFromObject(archive) {
+  const main = extractWebResourceHtml(archive?.WebMainResource);
+  const subframes = [];
+  const subArchives = Array.isArray(archive?.WebSubframeArchives) ? archive.WebSubframeArchives : [];
+  for (const subArchive of subArchives) {
+    const frame = extractWebResourceHtml(subArchive?.WebMainResource);
+    if (frame.html !== "") subframes.push(frame);
+  }
+  return { mainHtml: main.html, mainUrl: main.url, subframes };
+}
+
+/**
+ * In both the XML and the binary plist every frame archive carries its own
+ * WebMainResource, in document order. Reading those dicts in order therefore
+ * yields the page first and its frames after it, with no array walking.
+ *
+ * @param {string} xml
+ * @returns {{ mainHtml: string, mainUrl: string, subframes: Array<{html: string, url: string}> }}
+ */
+function extractWebArchiveResourcesFromXml(xml) {
+  const dicts = [];
+  const pattern = /<key>WebMainResource<\/key>\s*<dict>((?:.|\n)*?)<\/dict>/gi;
+  let match;
+  while ((match = pattern.exec(xml))) dicts.push(match[1]);
+
+  const mainXml = dicts.length > 0 ? dicts[0] : "";
+  const subframes = [];
+  for (const dictXml of dicts.slice(1)) {
+    const html = extractWebResourceHtmlFromXml(dictXml);
+    if (html !== "") {
+      subframes.push({ html, url: extractXmlPlistValue(dictXml, "WebResourceURL") });
+    }
+  }
+  return {
+    mainHtml: extractWebResourceHtmlFromXml(mainXml),
+    mainUrl: extractXmlPlistValue(mainXml, "WebResourceURL"),
+    subframes,
+  };
+}
+
+/**
+ * The same WebArchive read as raw HTML resources rather than as text: the
+ * main resource plus one entry per subframe's main resource. extractWebArchiveText
+ * keeps its own behaviour; this is the peel layer's entry point.
+ *
+ * @param {Buffer} buffer
+ * @returns {{ mainHtml: string, mainUrl: string, subframes: Array<{html: string, url: string}> }}
+ */
+function extractWebArchiveResources(buffer) {
+  if (buffer.length > webArchiveMaxBytes) {
+    throw new Error("This WebArchive is too large for direct File Disk import. Export the page as HTML or PDF first.");
+  }
+
+  if (process.platform === "darwin") {
+    try {
+      const xml = parseWebArchiveXmlWithPlutil(buffer);
+      const resources = extractWebArchiveResourcesFromXml(xml);
+      if (resources.mainHtml !== "" || resources.subframes.length > 0) return resources;
+    } catch {
+      // Fall through to the bundled parser, as extractWebArchiveText does.
+    }
+  }
+
+  if (buffer.subarray(0, 8).toString("ascii") === "bplist00") {
+    const resources = extractWebArchiveResourcesFromObject(parseBinaryPlist(buffer));
+    if (resources.mainHtml !== "" || resources.subframes.length > 0) return resources;
+  } else {
+    const resources = extractWebArchiveResourcesFromXml(buffer.toString("utf8"));
+    if (resources.mainHtml !== "" || resources.subframes.length > 0) return resources;
+  }
+
+  throw new Error("Could not find readable text in this WebArchive.");
+}

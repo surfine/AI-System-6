@@ -59,7 +59,7 @@ function svgEmbedCoreIds(theme) {
   const sets = vm.runInNewContext(`${source};({
     platinum: [...platinumCoreSystemIconIds],
     yosemite: [...completeEraSystemIconIds],
-    "big-sur": [...completeEraSystemIconIds].filter((id) => !classicBigSurFallbackIds.has(id)),
+    "big-sur": [...completeEraSystemIconIds],
   })`, { window: {} }, { timeout: 1000 });
   return new Set(sets[theme.id] || []);
 }

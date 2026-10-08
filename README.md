@@ -59,9 +59,38 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 
 ## What's new in 1.0.56
 
+- **Endfield Terminal has a refreshed v1.5 archive.** The 2026-10-08 refresh includes 332 missions, 32 operators, 349 tutorials, 548 lore entries and 76 central documents. Dialogue and radio are both searchable; retained older records keep their own dates and versions. [Danqingdu preparation](docs/endfield-corpus.md) is ready for the announced October 15 release, without treating previews as released story.
+
+- **Time Machine browses the current web, not just a cleaned snapshot.** Pages
+  run their own scripts on a separate browse origin, with requests passing
+  through System 6's relay. Sign-ins and cookies are kept per site until
+  File › Clear Browsing Data…, and WebSockets work. Wayback and archive.today
+  captures open in the same view with their replay scripts running. Where
+  the browse origin is not available, Time Machine falls back to the cleaned
+  snapshot and labels it "Snapshot · page scripts not run". DRM video and
+  WebRTC are not supported; File › Open in Your Browser hands a page over.
+- **Ads and trackers are blocked by uBlock Origin Lite's own rules** (GPL-3.0,
+  pinned release 2026.1006.1931): network rules plus each site's hiding
+  rules, on by default, and switched off from Navigate › Stop Blocking Ads.
+- **Reader works its way down a ladder instead of giving up at the first
+  shell.** It tries the page, then the article data embedded in it, the
+  extractor, AMP, Jina and the latest Wayback capture, and finally draws the
+  page in the browse engine and reads what rendered. When nothing works it
+  says which steps it tried. Chinese pages no longer lose their body text to
+  the boilerplate filter. In the local and Mac app, File Floppy now peels
+  containers: zip and gzip, eml and mbox (sender, recipients and date kept,
+  the mail's words quoted verbatim), MHTML, EPUB in spine order, ODT/ODS/ODP,
+  Jupyter notebooks, SVG text, GIF/TIFF OCR and the images inside Office
+  files. A long cloud repair now runs in paragraph chunks and keeps any
+  chunk it would have shortened.
+
 - **Twelve appearances.** System 7, Tiger and Lion join the 1988-2026 line,
   and Drawing Board, the unreleased Mac OS 8.5 theme, joins NeXTSTEP as a
   branch. All twelve are regular choices in Special and the Control Panel.
+- **The newer apps have their own icons in every appearance.** Rootline, Joyride
+  and Plaintext now join the full icon families. Big Sur and NeXTSTEP also gain
+  Image Prompt Studio, Lightroom and the four game icons. Each missing icon is redrawn with Image Gen for its era, then fitted to native
+  sizes. These are original adaptations, not historical replicas.
 - **Minimize is real, and it has a place to go.** Every Mac OS X era can draw
   its yellow lamp beside Close together with its own Dock, measured value by
   value against the era's captures: Jaguar's plain translucent panel, Snow
@@ -157,6 +186,29 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
   project, so a window that has been put away and brought back returns to the
   spot you left rather than a default one.
 
+- **Each era's window controls answer to that era.** System 7, Platinum and
+  Drawing Board gain Mac OS 7-9's Application menu at the right end (Hide,
+  Hide Others, Show All and the open applications). The Mac OS X eras' Window
+  menu ends with Show Dock / Hide Dock and stays on the bar when the desk is
+  empty. The application menu's first line names the application in front,
+  and Minimize Window shows ⌘M.
+- **The twelve appearances were re-checked surface by surface against their
+  native captures.** Lion's background windows grey all three lamps, its
+  buttons have 4-point corners and its Finder has the 10.7 sidebar. Snow
+  Leopard's sidebar reads DEVICES and PLACES and its content is white again.
+  Aqua's Finder toolbar captions Back and View and carries the places as
+  labelled icons. Yosemite's alerts have its hairline frame, System 7's title
+  bar loses a stray white row, Tiger's close lamp is round, and System 6's
+  desktop icons are white only inside their silhouette. Every alert draws its
+  own era's caution icon.
+- **Everyday parts got quieter and more honest.** Icon names wrap at word
+  breaks, list columns no longer run together, and Chinese body text uses
+  each era's own CJK face instead of falling back to Song. A narrow window
+  keeps its era's control sizes unless you are on touch. A help balloon
+  points at what it explains and keeps clear of the menu bar, a menu taller
+  than the screen shows that there is more, and ClioTalk's send button stays
+  grey until a model is connected.
+
 - **Expression edits keep the author’s meaning and requested language.** Humanizer
   and Make a Change now explicitly protect conditions, attribution, negation,
   comparison and certainty. Asking only to flag issues sends suggestions to
@@ -251,7 +303,7 @@ Writing Studio accepts freeform notes, puts AI outlining and drafting beside the
 <div align="center"><sub>FOUR STOPS, PHOTOGRAPHED IN THE RUNNING APP BY <code>npm run site:capture-route</code>.<br>THE MATERIAL IS TYPED IN AS A WRITER WOULD TYPE IT. NO MODEL WAS CONNECTED.</sub></div>
 
 Alongside the route, summoned when you need them: **Searcher** and **Reader**
-for the live web, **Time Machine** for archived pages, **File Floppy** for
+for the live web, **Time Machine** for the current web and its archives, **File Floppy** for
 imports with OCR and transcription, **Scrapbook** for evidence you deliberately
 clipped, **DocMap** for structure, **ClioTalk** for conversation, and desk
 accessories that belong to writing — a **Note Pad** whose slips can be sent to
@@ -440,7 +492,7 @@ The writing runtime keeps author, recipient, voice and medium independent, share
 ## Built under a 1988 constraint
 
 ```text
-boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,902,645 bytes
+boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,914,581 bytes
 two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 bytes
 heavy tools             load lazily, from a third disk
 ```
@@ -525,6 +577,10 @@ an independently verifiable source snapshot.
 ## License
 
 [MIT](LICENSE). Independent project — not affiliated with or endorsed by Apple Inc.
+
+Third-party code and data keep their own licenses. Time Machine's ad blocking
+ships uBlock Origin Lite's rule lists as data (GPL-3.0); the licence and
+provenance are in vendor/ubol/.
 
 <div align="center">
 

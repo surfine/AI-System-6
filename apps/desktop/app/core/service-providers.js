@@ -55,6 +55,41 @@
     },
   });
 
+  // The article inside a page someone already rendered (Time Machine's live
+  // engines, an imported .html file): HTML in, article out, no fetch.
+  window.AISystem6Capabilities?.registerServiceProvider?.("reader.extract", {
+    id: "same-origin-node",
+    request(input = {}) {
+      return sameOriginNode.request({
+        url: "/api/reader/extract",
+        signal: input.signal,
+        init: {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ url: input.url || "", html: String(input.html || "") }),
+        },
+      });
+    },
+  });
+
+  // A short-lived token for Time Machine's browse origin (its relay).
+  window.AISystem6Capabilities?.registerServiceProvider?.("browse.token", {
+    id: "same-origin-node",
+    request(input = {}) {
+      return sameOriginNode.request({
+        url: "/api/browse/token",
+        signal: input.signal,
+        init: {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(input.sid ? { sid: input.sid } : {}),
+        },
+      });
+    },
+  });
+
   window.AISystem6Capabilities?.registerServiceProvider?.("reader.subtitlesTranslate", {
     id: "same-origin-node",
     request(input = {}) {
@@ -494,6 +529,8 @@
     activate(enabledNames) {
       const names = enabledNames || [
         "reader.remote",
+        "reader.extract",
+        "browse.token",
         "reader.subtitlesTranslate",
         "search.remote",
         "timeMachine.remote",

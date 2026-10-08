@@ -27,6 +27,10 @@ body[data-theme="system-7"] {
      and left inner edge, #9999cc shade on the bottom and right. */
   --titlebar-title-bg: #eeeeee;
   --titlebar-shadow: inset 1px 1px 0 #ccccff, inset -1px -1px 0 #9999cc;
+  /* The lavender edge sits directly under the frame's black line (rows 55-56
+     of the dump). System 6's 1 px white margin around the bar showed here
+     as a white first row (2026-10-08 survey). */
+  --system-titlebar-margin-y: 0;
   /* Two layers: the six lines in the content box, #eeeeee under the whole
      bar (hence one clip value per layer). */
   --system-titlebar-active-bg:

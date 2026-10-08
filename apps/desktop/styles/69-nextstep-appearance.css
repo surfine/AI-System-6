@@ -19,6 +19,13 @@
    than claiming it. */
 html[data-theme="nextstep"],
 body[data-theme="nextstep"] {
+  /* The 3.3 close box (native 09c), one art for the main-menu shell and the
+     phone, where the bare #aaaaaa square left the title bar blank. */
+  --nextstep-close-art: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' shape-rendering='crispEdges'%3E%3Cpath fill='%23000' d='M0 0h15v15H0z'/%3E%3Cpath fill='%23555' d='M0 0h14v14H0z'/%3E%3Cpath fill='%23fff' d='M0 0h14v1H0zM0 0h1v14H0z'/%3E%3Cpath fill='%23aaa' d='M1 1h12v12H1z'/%3E%3Cpath fill='%23555' d='M3 2h1v1h-1zM10 2h1v1h-1zM2 3h1v1h-1zM4 3h1v1h-1zM9 3h1v1h-1zM11 3h1v1h-1zM3 4h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM10 4h1v1h-1zM4 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM9 5h1v1h-1zM5 6h1v1h-1zM8 6h1v1h-1zM5 7h1v1h-1zM8 7h1v1h-1zM4 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM9 8h1v1h-1zM3 9h1v1h-1zM5 9h1v1h-1zM8 9h1v1h-1zM10 9h1v1h-1zM2 10h1v1h-1zM4 10h1v1h-1zM9 10h1v1h-1zM11 10h1v1h-1zM3 11h1v1h-1zM10 11h1v1h-1z'/%3E%3Cpath fill='%23000' d='M2 2h1v1h-1zM3 3h1v1h-1zM4 4h1v1h-1zM5 5h1v1h-1zM6 6h1v1h-1zM7 6h1v1h-1zM6 7h1v1h-1zM7 7h1v1h-1zM8 5h1v1h-1zM9 4h1v1h-1zM10 3h1v1h-1zM11 2h1v1h-1zM5 8h1v1h-1zM4 9h1v1h-1zM3 10h1v1h-1zM2 11h1v1h-1zM8 8h1v1h-1zM9 9h1v1h-1zM10 10h1v1h-1zM11 11h1v1h-1z'/%3E%3C/svg%3E") center / 15px 15px no-repeat;
+  /* No NeXTSTEP alert art in the evidence set; show no icon rather than
+     another era's. */
+  --alert-icon-display: none;
+  --alert-icon-gutter: 0;
   /* Period tokens Platinum made shared (2026-09-25, second batch), answered
      with the values this era already drew. */
   --window-frame-arrow-up-order: 0;
@@ -572,7 +579,7 @@ body[data-theme="nextstep"] .title-bar > :is(.close-box, .resize-box) {
    These main-menu rules refine the one above, so they follow it in this sheet
    (moved from nextstep-shell.css) and precede its :active press. The theme
    test sits in :where(): the shell class alone decided, and still does. */
-body:where([data-theme="nextstep"]).nextstep-main-menu .window > .title-bar > :is(.nextstep-miniaturize, .close-box) {
+body:where([data-theme="nextstep"]) .window > .title-bar > :is(.nextstep-miniaturize, .close-box) {
   width: 15px;
   height: 15px;
   align-self: center;
@@ -585,8 +592,8 @@ body:where([data-theme="nextstep"]).nextstep-main-menu .window > .title-bar > .n
 body:where([data-theme="nextstep"]).nextstep-main-menu .window > .title-bar > .nextstep-miniaturize:active {
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' shape-rendering='crispEdges'%3E%3Cpath fill='%23000' d='M0 0h15v15H0z'/%3E%3Cpath fill='%23555' d='M0 0h14v14H0zM14 0h1v1h-1zM0 14h1v1H0z'/%3E%3Cpath fill='%23fff' d='M0 0h14v1H0zM0 0h1v14H0z'/%3E%3Cpath fill='%23fff' d='M1 1h12v12H1z'/%3E%3Cpath fill='%23000' d='M2 2h10v3H2zM2 5h1v7H2zM11 5h1v7h-1zM2 11h10v1H2z'/%3E%3C/svg%3E") center / 15px 15px no-repeat;
 }
-body:where([data-theme="nextstep"]).nextstep-main-menu .window > .title-bar > .close-box {
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' shape-rendering='crispEdges'%3E%3Cpath fill='%23000' d='M0 0h15v15H0z'/%3E%3Cpath fill='%23555' d='M0 0h14v14H0z'/%3E%3Cpath fill='%23fff' d='M0 0h14v1H0zM0 0h1v14H0z'/%3E%3Cpath fill='%23aaa' d='M1 1h12v12H1z'/%3E%3Cpath fill='%23555' d='M3 2h1v1h-1zM10 2h1v1h-1zM2 3h1v1h-1zM4 3h1v1h-1zM9 3h1v1h-1zM11 3h1v1h-1zM3 4h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM10 4h1v1h-1zM4 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM9 5h1v1h-1zM5 6h1v1h-1zM8 6h1v1h-1zM5 7h1v1h-1zM8 7h1v1h-1zM4 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM9 8h1v1h-1zM3 9h1v1h-1zM5 9h1v1h-1zM8 9h1v1h-1zM10 9h1v1h-1zM2 10h1v1h-1zM4 10h1v1h-1zM9 10h1v1h-1zM11 10h1v1h-1zM3 11h1v1h-1zM10 11h1v1h-1z'/%3E%3Cpath fill='%23000' d='M2 2h1v1h-1zM3 3h1v1h-1zM4 4h1v1h-1zM5 5h1v1h-1zM6 6h1v1h-1zM7 6h1v1h-1zM6 7h1v1h-1zM7 7h1v1h-1zM8 5h1v1h-1zM9 4h1v1h-1zM10 3h1v1h-1zM11 2h1v1h-1zM5 8h1v1h-1zM4 9h1v1h-1zM3 10h1v1h-1zM2 11h1v1h-1zM8 8h1v1h-1zM9 9h1v1h-1zM10 10h1v1h-1zM11 11h1v1h-1z'/%3E%3C/svg%3E") center / 15px 15px no-repeat;
+body:where([data-theme="nextstep"]) .window > .title-bar > .close-box {
+  background: var(--nextstep-close-art);
 }
 body:where([data-theme="nextstep"]).nextstep-main-menu .window > .title-bar > .close-box:active {
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' shape-rendering='crispEdges'%3E%3Cpath fill='%23000' d='M0 0h15v15H0z'/%3E%3Cpath fill='%23555' d='M0 0h14v14H0z'/%3E%3Cpath fill='%23fff' d='M0 0h14v1H0zM0 0h1v14H0z'/%3E%3Cpath fill='%23fff' d='M1 1h12v12H1z'/%3E%3Cpath fill='%23555' d='M3 2h1v1h-1zM10 2h1v1h-1zM2 3h1v1h-1zM4 3h1v1h-1zM9 3h1v1h-1zM11 3h1v1h-1zM3 4h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM10 4h1v1h-1zM4 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM9 5h1v1h-1zM5 6h1v1h-1zM8 6h1v1h-1zM5 7h1v1h-1zM8 7h1v1h-1zM4 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM9 8h1v1h-1zM3 9h1v1h-1zM5 9h1v1h-1zM8 9h1v1h-1zM10 9h1v1h-1zM2 10h1v1h-1zM4 10h1v1h-1zM9 10h1v1h-1zM11 10h1v1h-1zM3 11h1v1h-1zM10 11h1v1h-1z'/%3E%3Cpath fill='%23000' d='M2 2h1v1h-1zM3 3h1v1h-1zM4 4h1v1h-1zM5 5h1v1h-1zM6 6h1v1h-1zM7 6h1v1h-1zM6 7h1v1h-1zM7 7h1v1h-1zM8 5h1v1h-1zM9 4h1v1h-1zM10 3h1v1h-1zM11 2h1v1h-1zM5 8h1v1h-1zM4 9h1v1h-1zM3 10h1v1h-1zM2 11h1v1h-1zM8 8h1v1h-1zM9 9h1v1h-1zM10 10h1v1h-1zM11 11h1v1h-1z'/%3E%3C/svg%3E") center / 15px 15px no-repeat;

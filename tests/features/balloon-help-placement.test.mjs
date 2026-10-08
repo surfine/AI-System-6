@@ -277,4 +277,14 @@ test.assertIncludes(balloon, "BALLOON_HELP_NARROW_WIDTH = 200", "near beats wide
 test.assertIncludes(foundation, "var(--balloon-help-max-width,", "the stylesheet lets the placer narrow it");
 test.assertNotIncludes(balloon, "function balloonHelpAnchorRect", "the single anchor that had to be three things at once is gone");
 
+// 2026-10-08 survey: the tail was drawn but clipped by the popover's UA
+// overflow, and a window's close-box balloon chose "above" onto the menu bar.
+{
+  const foundation = read("styles/00-foundation.css");
+  const balloonRule = foundation.slice(foundation.indexOf(".balloon-help {\n  position: fixed;"));
+  test.assert(/overflow: visible;[\s\S]*?\}/.test(balloonRule.slice(0, balloonRule.indexOf("}") + 1)), "the balloon box lets its tail show outside it");
+  const balloonJs = read("app/core/balloon-help.js");
+  test.assertIncludes(balloonJs, "if (menuBar && !menuBar.contains(target)) push(menuBar.getBoundingClientRect(), BALLOON_HELP_WEIGHT.panel);", "outside the menu bar, the bar is kept clear");
+}
+
 test.finish();

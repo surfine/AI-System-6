@@ -497,7 +497,7 @@ try {
     assert(applicationMenu.readerLabel === "Reader", `${theme.id}: foreground Reader is labeled ${applicationMenu.readerLabel}`);
     assert(applicationMenu.readerOwner === "reader", `${theme.id}: current-application owner did not follow Reader`);
     assert(![applicationMenu.finderLabel, applicationMenu.readerLabel].includes("AI System 6"), `${theme.id}: environment name leaked into the current-application title`);
-    // Two menu-bar models, and the appearance registry decides which one an era
+    // The appearance registry decides which menu-bar model an era
     // uses. The classic lineage replaces the whole bar and draws an indicator at
     // the right end; the Mac OS X eras keep the Apple menu with the system and
     // show the bold application menu. See app/core/theme-registry.js.
@@ -505,17 +505,22 @@ try {
       applicationMenu.model === theme.menuBarModel,
       `${theme.id}: projected menu-bar model is ${applicationMenu.model}, expected ${theme.menuBarModel}`,
     );
+    // Three models since 2026-10-08: System 6 and NeXTSTEP cycle at the right
+    // end (application-owned); System 7, Platinum and Drawing Board drop Mac
+    // OS 7-9's Application menu there (application-menu); only the Mac OS X
+    // eras show the bold application menu beside the Apple menu.
     const systemOwned = theme.menuBarModel === "system-owned";
+    const cycles = theme.menuBarModel === "application-owned";
     assert(
       systemOwned === (applicationMenu.display !== "none"),
       `${theme.id}: application-menu visibility does not match the ${theme.menuBarModel} bar (${applicationMenu.display})`,
     );
     assert(
-      systemOwned === (applicationMenu.indicator !== "cycle"),
-      `${theme.id}: the right end should ${systemOwned ? "drop a menu down" : "be a cycling indicator"}`,
+      cycles === (applicationMenu.indicator === "cycle"),
+      `${theme.id}: the right end should ${cycles ? "be a cycling indicator" : "drop a menu down"}`,
     );
     assert(
-      systemOwned === (applicationMenu.hasPopup === "menu"),
+      cycles === (applicationMenu.hasPopup !== "menu"),
       `${theme.id}: the right end advertises aria-haspopup="${applicationMenu.hasPopup}" under a ${theme.menuBarModel} bar`,
     );
     if (systemOwned) {

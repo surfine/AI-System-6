@@ -268,6 +268,7 @@ export const lazyRuntimePaths = [
   "app/features/doom.js",
   "app/features/mingwen.js",
   "app/features/endfield-terminal.js",
+  "app/features/time-machine-engine.js",
   "app/features/time-machine.js",
   "app/features/video-transcript.js",
   "app/features/hkrr-review.js",

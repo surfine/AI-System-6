@@ -97,11 +97,23 @@ body[data-finder-layout^="two-row"] {
   --finder-toolbar-edge: var(--toolbar-border);
   --finder-sidebar-edge: 1px solid var(--rule);
 }
-/* Mac OS X 10.0-10.2: no sidebar yet, and the count stays as the status line. */
+/* Mac OS X 10.0-10.2: no sidebar yet, and the count stays as the status line.
+   Its toolbar (Apple's guidebook Finder capture) captions Back and View and
+   carries the places as labelled icons; there is no path bar, because the
+   folder's name is the window title and Back goes up. */
 body[data-finder-layout="two-row-plain"] {
   --finder-window-grid: "title title" auto "nav details" auto "pane pane" minmax(0, 1fr) / minmax(0, 1fr) auto;
   --finder-sidebar-display: none;
+  --finder-toolbar-places-display: flex;
+  --finder-toolbar-label-display: block;
+  --finder-navigation-padding: 5px 8px 19px;
+  --finder-breadcrumbs-display: none;
 }
+/* The captions hang under Back and View, so the row keeps room for them, and
+   the status keeps the count only (10.2's "2 items"). */
+body[data-finder-layout="two-row-plain"] .is-toolbar-window > .details-bar { padding-bottom: 19px; }
+body[data-finder-layout="two-row-plain"] .is-toolbar-window > .details-bar > span:last-child:not(:first-child) { display: none; }
+body[data-finder-layout="two-row-plain"] .is-toolbar-window :is(.finder-navigation-back, .view-controls)[data-toolbar-label] { position: relative; }
 }
 .finder-sidebar .tdi-tab-icon,
 .finder-sidebar .tdi-tab-icon > * { width: 16px; height: 16px; }
@@ -1915,7 +1927,11 @@ html:lang(zh-Hans) .title-bar h2 {
 .finder-list-header {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(130px, 2fr) minmax(80px, 1fr) minmax(58px, 0.7fr) minmax(78px, 0.8fr);
+  /* One column template for header and rows. Kind is wide enough for "System
+     Component" and the columns keep a gap: with none, Kind ran straight into
+     Size ("System ComponentBuilt-in") in every Mac OS X era (2026-10-08). */
+  grid-template-columns: var(--finder-list-columns, minmax(130px, 2fr) minmax(118px, 1fr) minmax(58px, 0.6fr) minmax(78px, 0.8fr));
+  column-gap: var(--finder-list-column-gap, 12px);
   padding: var(--finder-list-header-padding, 4px 8px);
   background: var(--finder-list-header-bg, var(--paper));
   border-bottom: 1px solid var(--ink);
@@ -1979,7 +1995,7 @@ html:lang(zh-Hans) .title-bar h2 {
 
 .finder-list-row {
   display: grid;
-  grid-template-columns: minmax(130px, 2fr) minmax(80px, 1fr) minmax(58px, 0.7fr) minmax(78px, 0.8fr);
+  grid-template-columns: var(--finder-list-columns, minmax(130px, 2fr) minmax(118px, 1fr) minmax(58px, 0.6fr) minmax(78px, 0.8fr));
   width: 100%;
   padding: 4px 8px;
   align-items: center;
@@ -1995,7 +2011,7 @@ html:lang(zh-Hans) .title-bar h2 {
   font-size: 12px;
   /* P10: the sorted column is tinted on Platinum — first cell #ddd, the rest
      #eee. Unset leaves every other appearance's rows flat. */
-  column-gap: var(--finder-list-column-gap, 0);
+  column-gap: var(--finder-list-column-gap, 12px);
 }
 
 .finder-list-group {
@@ -4877,9 +4893,15 @@ body.is-cloud-configured .cloud-state-panel {
 .finder-grid {
   min-height: 220px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(82px, 1fr));
+  /* 96: the icon cell's own width (40-icons.css), so a narrow window never
+     overlaps two cells. */
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
   gap: 16px;
   align-items: start;
+  /* Rows hug their icons. Without this a tall window stretched the rows to
+     fill it (NeXTSTEP's Chinese Finder spread three rows over ~350px of
+     empty space, 2026-10-08). */
+  align-content: start;
   justify-items: center;
   /* P11: same hook as .finder-list — default is today's --pane-bg. */
   background-color: var(--finder-pane-bg, var(--pane-bg));

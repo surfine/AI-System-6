@@ -31,6 +31,10 @@ const keyboardShortcutRegistry = [
   // right end without the key.
   // Pinned by physical key: with Shift held, `event.key` is "~" on most
   // layouts, so the shifted row would never match on `key` alone.
+  // Display only: window-minimize.js owns the key (it knows which era draws
+  // the lamp and which window takes it), so this row prints ⌘M beside
+  // "Minimize Window" and in Key Caps without dispatching a second minimize.
+  { id: "minimize-window", key: "m", code: "KeyM", action: "minimize-window", display: "⌘M", labelKey: "minimize_window_command", keyCaps: true, dispatch: false, scope: "global" },
   { id: "cycle-window", key: "`", code: "Backquote", action: "cycle-window", display: "⌘`", labelKey: "cycle_window", keyCaps: true, scope: "global" },
   { id: "cycle-window-back", key: "`", code: "Backquote", shift: true, action: "cycle-window-back", display: "⇧⌘`", labelKey: "cycle_window_back", keyCaps: true, scope: "global" },
   // Holding a thought has to work while the writer is typing, so it is
@@ -200,6 +204,21 @@ function renderKeyCapsShortcuts() {
   grid.replaceChildren(fragment);
 }
 
+
+// The Window menu's Dock switch. The preference and the Control Panel row are
+// window-minimize.js's; this only flips the same preference from the menu and
+// loads the module if the era has not pulled it in yet.
+async function toggleDockFromMenu() {
+  if (!window.AISystem6WindowMinimize && typeof ensureLazySystemModule === "function") {
+    await ensureLazySystemModule("app/core/window-minimize.js", "AISystem6WindowMinimizeLoaded").catch(() => {});
+  }
+  const api = window.AISystem6WindowMinimize;
+  if (!api?.setDockVisible) return false;
+  const visible = api.setDockVisible(!api.dockVisible());
+  if (typeof setStatus === "function") setStatus(t(visible ? "dock_shown_status" : "dock_hidden_status"));
+  if (typeof updateMenuState === "function") updateMenuState();
+  return true;
+}
 
 function createFolderFromMenu() {
   if (!isProjectMounted) {

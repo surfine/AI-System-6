@@ -466,6 +466,9 @@
     ["teachText", "TeachText"], ["scrapbook", "Scrapbook"],
     ["assistant", "ClioTalk"], ["controlPanel", "Control / Settings"],
     ["reviewDesk", "Review Desk"], ["docMap", "DocMap"],
+    ["rootline", "Rootline"], ["joyride", "Joyride"], ["mingwen", "Plaintext"],
+    ["imagePromptStudio", "Image Prompt Studio"], ["lightroom", "Lightroom"],
+    ["micropolis", "Micropolis"], ["openttd", "OpenTTD"], ["doom", "DOOM"], ["bonsaiCity", "Bonsai City"],
     ["clioPaint", "ClioPaint"], ["clioProject", "ClioProject"], ["oneMoreTune", "One More Tune"],
   ]);
   const OBJECT_IDS = new Set(OBJECTS.map(([id]) => id));
@@ -533,12 +536,6 @@
   }
 
   function artOf(themeId, id) {
-    if (themeId === "nextstep" && ["clioPaint", "clioProject", "oneMoreTune"].includes(id)) {
-      return { ...artOf("big-sur"), dir: "nextstep" };
-    }
-    if (themeId === "big-sur" && ["imagePromptStudio", "micropolis", "openttd", "doom", "lightroom", "bonsaiCity"].includes(id)) {
-      return artOf("classic");
-    }
     const theme = window.AISystem6Theme?.getTheme?.(themeId);
     return authoringOf(theme)?.art || authoringOf(window.AISystem6Theme?.getTheme?.("classic"))?.art;
   }

@@ -23,6 +23,7 @@ const {
   sharedCloudConfigured,
 } = require("../shared-cloud-budget.js");
 const { embeddingsRelayConfig } = require("../embeddings-relay.js");
+const { browseConfig } = require("../browse/relay-node.js");
 
 /**
  * @param {import("node:http").IncomingMessage} _req
@@ -53,8 +54,16 @@ function handleCapabilities(_req, res) {
       safariHttpLocalOrigin = candidate.origin;
     }
   } catch {}
+  const browse = browseConfig();
   sendJson(res, 200, {
     deployment_profile: deploymentProfile,
+    // Time Machine's web engine: the separate origin its proxied pages run
+    // on. Empty when this server has none, and the window keeps its snapshot.
+    browse: {
+      available: browse.available,
+      origin: browse.available ? browse.origin : "",
+      reason: browse.available ? "" : browse.reason,
+    },
     deployment_target: deploymentTarget,
     public_deployment: isPublicDeployment,
     // Where an agent connects. The page shows this in Chooser as the exact
@@ -100,6 +109,7 @@ function handleCapabilities(_req, res) {
       search: true,
       reader: true,
       time_machine: true,
+      time_machine_web_engine: browse.available,
       endfield_search: true,
       endfield_ask: true,
       bureaucracy_captions: true,

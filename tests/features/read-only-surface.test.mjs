@@ -74,6 +74,34 @@ function isFrozen(control) {
   );
 }
 
+// The lock undoes only what it did (2026-10-08). A button can be disabled for
+// its own reasons - ClioTalk Send with no model - and the sweep used to write
+// disabled = readOnly, so any rule registering re-enabled it. A control that
+// was already disabled must stay disabled through a lock and an unlock, and a
+// control the lock disabled must come back.
+{
+  const storage = new Map();
+  const instance = createWriteLeaseInstance(storage);
+  const ownReason = controlElement("send", "BUTTON");
+  ownReason.disabled = true;
+  const plain = controlElement("quick-draft-draft", "BUTTON");
+  instance.context.document = {
+    body: { dataset: {} },
+    querySelectorAll: () => [ownReason, plain],
+    querySelector: () => null,
+    addEventListener: () => {},
+    visibilityState: "visible",
+  };
+  await instance.lease.acquire();
+  test.assert(ownReason.disabled === true, "a sweep with no lock leaves a control disabled for its own reason disabled");
+  instance.lease.enterHandoff("test");
+  test.assert(ownReason.disabled === true && plain.disabled === true, "handoff freezes both");
+  instance.lease.restoreWriterAfterFailedHandoff();
+  test.assert(plain.disabled === false, "the control the lock disabled comes back");
+  test.assert(ownReason.disabled === true, "the control disabled for its own reason stays disabled");
+  await instance.lease.release();
+}
+
 // Handoff also freezes new mutations (the same sweep), while the lease stays
 // owned and storage writes may finish.
 {

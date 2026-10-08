@@ -7,6 +7,7 @@ const { decodeHtml } = require("../lib/text.js");
 const { cleanImportedText, stripXml } = require("./shared.js");
 const { extractHtmlText } = require("./text.js");
 const { readZipEntries } = require("./zip.js");
+const path = require("node:path");
 
 /**
  * @param {unknown} value
@@ -335,22 +336,6 @@ function extractXlsxText(buffer) {
   return text;
 }
 
-/**
- * @param {Buffer} buffer
- * @returns {string}
- */
-function extractEpubText(buffer) {
-  const entries = readZipEntries(buffer);
-  const names = [...entries.keys()]
-    .filter((name) => /\.(xhtml|html|htm|xml)$/i.test(name) && !/^(META-INF|mimetype)/i.test(name))
-    .sort();
-  const text = names
-    .map((name) => extractHtmlText(entries.get(name)))
-    .filter(Boolean)
-    .join("\n\n");
-  if (!text.trim()) throw new Error("Could not find readable text in EPUB.");
-  return text;
-}
 
 module.exports = {
   extractWordXmlText,
@@ -360,3 +345,175 @@ module.exports = {
   extractXlsxText,
   extractEpubText,
 };
+
+// EPUB reading order lives in the OPF spine, not in the file names. Sorting
+// chapter files alphabetically produced chapters in the wrong order whenever a
+// publisher named them chapter-1.xhtml, chapter-10.xhtml, chapter-2.xhtml, so
+// the spine is followed and nav/toc supplies the chapter titles.
+/**
+ * @param {string} tag
+ * @param {string} name
+ * @returns {string}
+ */
+function epubAttribute(tag, name) {
+  const match = new RegExp(name + "\\s*=\\s*(\"([^\"]*)\"|'([^']*)')", "i").exec(tag);
+  if (match === null) return "";
+  return match[2] !== undefined ? match[2] : (match[3] || "");
+}
+
+/**
+ * @param {string} baseDir
+ * @param {string} href
+ * @returns {string}
+ */
+function resolveEpubPath(baseDir, href) {
+  const clean = String(href || "").split("#")[0].trim();
+  if (clean === "") return "";
+  let decoded = clean;
+  try {
+    decoded = decodeURIComponent(clean);
+  } catch {
+    decoded = clean;
+  }
+  const joined = decoded.startsWith("/") ? decoded.slice(1) : baseDir + decoded;
+  return path.posix.normalize(joined);
+}
+
+/**
+ * @param {string} opfXml
+ * @returns {Map<string, { href: string, mediaType: string, properties: string }>}
+ */
+function parseEpubManifest(opfXml) {
+  const manifest = new Map();
+  const itemPattern = /<item\b[^>]*\/?>/gi;
+  let match;
+  while ((match = itemPattern.exec(opfXml))) {
+    const id = epubAttribute(match[0], "id");
+    const href = epubAttribute(match[0], "href");
+    if (id === "" || href === "") continue;
+    manifest.set(id, {
+      href,
+      mediaType: epubAttribute(match[0], "media-type"),
+      properties: epubAttribute(match[0], "properties"),
+    });
+  }
+  return manifest;
+}
+
+/**
+ * @param {string} opfXml
+ * @returns {string[]}
+ */
+function parseEpubSpine(opfXml) {
+  const spine = [];
+  const itemRefPattern = /<itemref\b[^>]*\/?>/gi;
+  let match;
+  while ((match = itemRefPattern.exec(opfXml))) {
+    const idref = epubAttribute(match[0], "idref");
+    if (idref !== "") spine.push(idref);
+  }
+  return spine;
+}
+
+/**
+ * @param {Map<string, Buffer>} entries
+ * @param {Map<string, { href: string, mediaType: string, properties: string }>} manifest
+ * @param {string} opfDir
+ * @returns {Map<string, string>}
+ */
+function epubChapterTitles(entries, manifest, opfDir) {
+  const titles = new Map();
+
+  function record(href, markup, baseDir) {
+    const title = stripXml(markup).replace(/\s+/g, " ").trim();
+    if (title === "" || href === "") return;
+    const resolved = resolveEpubPath(baseDir, href);
+    if (resolved !== "") titles.set(resolved, title);
+  }
+
+  for (const item of manifest.values()) {
+    if (/nav/i.test(item.properties) === false) continue;
+    const navPath = resolveEpubPath(opfDir, item.href);
+    const nav = entries.get(navPath) || entries.get(item.href);
+    if (nav === undefined) break;
+    const navDir = navPath.includes("/") ? navPath.slice(0, navPath.lastIndexOf("/") + 1) : "";
+    const linkPattern = /<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+    let link;
+    while ((link = linkPattern.exec(nav.toString("utf8")))) {
+      record(link[1], link[2], navDir);
+    }
+    break;
+  }
+  if (titles.size > 0) return titles;
+
+  for (const item of manifest.values()) {
+    if (/dtbncx/i.test(item.mediaType) === false && /\.ncx$/i.test(item.href) === false) continue;
+    const ncxPath = resolveEpubPath(opfDir, item.href);
+    const ncx = entries.get(ncxPath) || entries.get(item.href);
+    if (ncx === undefined) break;
+    const ncxDir = ncxPath.includes("/") ? ncxPath.slice(0, ncxPath.lastIndexOf("/") + 1) : "";
+    const pointPattern = /<navPoint\b[\s\S]*?<text>([\s\S]*?)<\/text>[\s\S]*?<content\b[^>]*src=["']([^"']+)["']/gi;
+    let point;
+    while ((point = pointPattern.exec(ncx.toString("utf8")))) {
+      record(point[2], point[1], ncxDir);
+    }
+    break;
+  }
+  return titles;
+}
+
+/**
+ * @param {Map<string, Buffer>} entries
+ * @returns {string}
+ */
+function extractEpubBySpine(entries) {
+  const container = entries.get("META-INF/container.xml");
+  if (container === undefined) return "";
+  const fullPath = /full-path\s*=\s*["']([^"']+)["']/i.exec(container.toString("utf8"));
+  const opfPath = fullPath === null ? "" : resolveEpubPath("", fullPath[1]);
+  const opf = opfPath === "" ? undefined : entries.get(opfPath);
+  if (opf === undefined) return "";
+
+  const opfDir = opfPath.includes("/") ? opfPath.slice(0, opfPath.lastIndexOf("/") + 1) : "";
+  const opfXml = opf.toString("utf8");
+  const manifest = parseEpubManifest(opfXml);
+  const spine = parseEpubSpine(opfXml);
+  const titles = epubChapterTitles(entries, manifest, opfDir);
+
+  const parts = [];
+  for (const idref of spine) {
+    const item = manifest.get(idref);
+    if (item === undefined) continue;
+    const entryPath = resolveEpubPath(opfDir, item.href);
+    const chapter = entries.get(entryPath) || entries.get(item.href);
+    if (chapter === undefined) continue;
+    const body = extractHtmlText(chapter).trim();
+    if (body === "") continue;
+    const title = titles.get(entryPath) || "";
+    parts.push(title === "" ? body : "## " + title + "\n\n" + body);
+  }
+  return parts.join("\n\n");
+}
+
+/**
+ * EPUBs declare their reading order in the OPF spine. Fall back to the older
+ * alphabetical chapter sweep only when there is no usable container/OPF so
+ * malformed books still import something.
+ * @param {Buffer} buffer
+ * @returns {string}
+ */
+function extractEpubText(buffer) {
+  const entries = readZipEntries(buffer);
+  const bySpine = extractEpubBySpine(entries).trim();
+  if (bySpine.length > 0) return bySpine;
+
+  const names = [...entries.keys()]
+    .filter((name) => /\.(xhtml|html|htm|xml)$/i.test(name) && /^(META-INF|mimetype)/i.test(name) === false)
+    .sort();
+  const text = names
+    .map((name) => extractHtmlText(entries.get(name)))
+    .filter(Boolean)
+    .join("\n\n");
+  if (text.trim().length === 0) throw new Error("Could not find readable text in EPUB.");
+  return text;
+}

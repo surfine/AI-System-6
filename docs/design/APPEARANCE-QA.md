@@ -39,7 +39,7 @@ Current floor standing (derived from the committed manifests, not estimated):
 
 | Board | Specimens | Meets the floor | Recorded gap | Unusable reference |
 | --- | --- | --- | --- | --- |
-| Platinum | 20 | 12 | 2 | 6 (three photo-thumbnail crops plus three crops of the wrong object) |
+| Platinum | 20 | 14 | 0 | 6 (three photo-thumbnail crops plus three crops of the wrong object) |
 | Aqua | 18 | 18 | 0 | 0 |
 | Snow Leopard | 19 | 19 | 0 | 0 |
 | Yosemite | 17 | 15 | 0 | 2 (checkbox/radio marks pinned only to clone assets) |
@@ -165,6 +165,20 @@ no broken focus, no wrong icon, and no malformed window chrome.
 
 <!-- claim-check: npm run verify:theme-lab:fidelity — run 2026-09-19, all five boards exit 0 (platinum 12/20 met, aqua 17/18, snow-leopard 18/18, yosemite 5/17 with 10 gaps and 2 unreliable references, yosemite-2x 3/4). The run before that failed every board at the content fingerprint, because the fingerprint hashed the build stamp; tooling/theme-lab-fidelity.mjs now strips that query before hashing, and platinum still passed after the stamp moved to 20260919.1. Re-run the command before quoting these numbers. -->
 <!-- claim-check: npm run verify:appearance, verify:appearance-apps -->
+
+### Fidelity boards and stability boards (2026-10-08)
+
+Every registry appearance has a Theme Lab board, but not every board measures
+history. A specimen whose reference is a native capture or a HIG crop is a
+fidelity check; a specimen whose reference is an authored Theme Lab freeze
+(`authored.*` source ids) is a stability check that proves the product has not
+changed. The harness now prints the kind of every specimen and board:
+fidelity (Aqua, Snow Leopard, Lion, Platinum, Yosemite), stability (System 6,
+System 7, Drawing Board, NeXTSTEP, Big Sur, Liquid Glass) and mixed (Tiger).
+An intentional visual change re-freezes stability references with
+`node tooling/theme-lab-fidelity.mjs --theme <id> --refreeze-authored`, which
+replaces each single-owner freeze with the harness's own capture; native
+references are never rewritten.
 
 ## Big Sur addition (2026-09-22)
 

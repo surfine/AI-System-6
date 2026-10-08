@@ -207,6 +207,30 @@ for (const legacyAppName of legacyAppNames) {
 mkdirSync(macOsDir, { recursive: true });
 mkdirSync(resourcesDir, { recursive: true });
 copyFileSync(builtBinary, appBinary);
+// The macOS 26 document reader for the server's OCR ladder; the shell tells
+// the server where it is (AI_SYSTEM6_VISION_HELPER). Absent, OCR uses the
+// other engines.
+const visionBinary = join(dirname(builtBinary), "AISystem6Vision");
+if (existsSync(visionBinary)) {
+  copyFileSync(visionBinary, join(macOsDir, "AISystem6Vision"));
+  console.log("Bundled AISystem6Vision.");
+} else {
+  console.warn(`No ${visionBinary}; the app's OCR will not use Apple's document recognition.`);
+}
+// uBlock Origin Lite's Safari build, loaded by Time Machine's native engine
+// (GPL-3.0, unmodified; see vendor/ubol/PROVENANCE.md).
+try {
+  const pin = JSON.parse(readFileSync(join(repoRoot, "vendor", "ubol", "PIN.json"), "utf8"));
+  const ubolSafari = join(repoRoot, ".cache", "ubol", pin.version, "safari");
+  if (existsSync(join(ubolSafari, "manifest.json"))) {
+    cpSync(ubolSafari, join(resourcesDir, "ubol-safari"), { recursive: true });
+    console.log(`Bundled uBlock Origin Lite ${pin.version} (Safari build).`);
+  } else {
+    console.warn("uBlock Origin Lite is not fetched (npm run browse:fetch-filters); Time Machine will not block ads.");
+  }
+} catch {
+  console.warn("No vendor/ubol/PIN.json; Time Machine will not block ads.");
+}
 const hasIcon = buildIcon(resourcesDir);
 if (existsSync(serverPayload)) {
   // The payload is a repo-shaped tree with its own Node runtime (see

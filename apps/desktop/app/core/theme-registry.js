@@ -32,6 +32,14 @@
   //     forward each open application in succession." MultiFinder's own file
   //     on the bundled System 6.0.8 image carries no MENU resource at all.
   //
+  //   "application-menu" (System 7 through Mac OS 9) -- the bar is still the
+  //     application's, but the right end is the Application menu: it drops a
+  //     list of the open applications with Hide / Hide Others / Show All above
+  //     them (Inside Macintosh: Macintosh Toolbox Essentials, 1992, ch. 2
+  //     "The Application Menu"; Mac OS 8 HIG p.56), and the Apple menu no
+  //     longer lists applications. Owner decision 2026-10-08 for System 7,
+  //     Platinum and Drawing Board.
+  //
   //   "system-owned" (Mac OS X) -- the Apple menu belongs to the system and
   //     cannot be modified, and a bold application-name menu sits next to it.
   //     Apple's Aqua HIG (June 2002) p.54 calls that menu "new in Mac OS X",
@@ -66,7 +74,7 @@
       // Classic outlines by tooling/build-system-7-icons.mjs).
       family: "classic",
       recipeBase: "classic",
-      menuBarModel: "application-owned",
+      menuBarModel: "application-menu",
       // Selectable now (owner 2026-10-04). Product fidelity for thumbnails and
       // the icon palette closed in harvest B (2026-10-04); site/README P5
       // placement on the main era axis closed in harvest D (2026-10-04).
@@ -86,7 +94,7 @@
       labelKey: "theme_platinum",
       family: "classic",
       recipeBase: "classic",
-      menuBarModel: "application-owned",
+      menuBarModel: "application-menu",
       releaseReady: true,
       systemFont: "Charcoal",
       systemFontSize: 12,
@@ -105,7 +113,7 @@
       // not redraw the Finder's icons).
       family: "classic",
       recipeBase: "platinum",
-      menuBarModel: "application-owned",
+      menuBarModel: "application-menu",
       // Selectable now (owner 2026-10-04). Thumbnail grid + pencil-line content
       // safety closed with sketch assets (era-thumb / paper-tile / pencil-safe
       // board under assets/themes/drawing-board/); harvest D (2026-10-04) placed
@@ -197,6 +205,9 @@
       // source list. A child of Snow Leopard; its icons are 10.6's.
       family: "aqua",
       recipeBase: "snow-leopard",
+      // 10.7's Finder keeps 10.6's two rows and source list (512 Pixels'
+      // 10-7-Lion-Finder-Home): title row, unified toolbar, FAVORITES first.
+      finderLayout: "two-row-sidebar",
       menuBarModel: "system-owned",
       // Selectable now (owner 2026-10-04). Overlay scrollbars, full-screen, and
       // thumbnail distinguishability accepted in harvest B; site/README P5
@@ -719,8 +730,10 @@
     return getTheme(value).menuBarModel;
   }
 
+  // Whether the foreground application builds the whole bar. Both pre-OS X
+  // models answer yes; they differ only in what the right end does.
   function isApplicationOwnedMenuBar(value = currentThemeId) {
-    return getMenuBarModel(value) === "application-owned";
+    return getMenuBarModel(value) !== "system-owned";
   }
 
   const api = Object.freeze({

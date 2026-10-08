@@ -1279,6 +1279,18 @@ function releaseOrphanedMiniwindows() {
 
 document.addEventListener("ai-system6-themechange", releaseOrphanedMiniwindows);
 
+// Menu conditions read the era ("window-menu" is a registry capability, and
+// "window-browse-special" is its complement), but nothing re-evaluated them
+// when the era changed: the Window menu stayed on the bar after switching to
+// System 6, and was missing after switching from it to Aqua until something
+// else happened to call updateMenuState (seen 2026-10-08). The era is one of
+// the inputs, so a change of era is one of the triggers.
+document.addEventListener("ai-system6-themechange", () => {
+  if (typeof updateMenuState === "function") updateMenuState();
+  // The Finder sidebar's headings and order belong to the era too.
+  if (typeof renderAllFinderNavigationBars === "function") renderAllFinderNavigationBars();
+});
+
 // WM1: focus rank is independent of z-index and pinning. Only a real focus
 // command advances it, so pin/unpin, hover, compaction and theme changes never
 // reorder the window walk; the walk keeps following true last-used order.
@@ -2013,6 +2025,9 @@ function renderFinderNavigationBar(winOrName) {
     back.title = t("up_one_level");
   }
 
+  if (back) back.dataset.toolbarLabel = t("back");
+  win.querySelector(":scope > .details-bar .view-controls")?.setAttribute("data-toolbar-label", t("menu_view"));
+  renderFinderToolbarPlaces(nav, win, windowName);
   const breadcrumbs = nav.querySelector(".finder-breadcrumbs");
   if (!breadcrumbs) return;
   breadcrumbs.replaceChildren();
@@ -2061,10 +2076,31 @@ function renderFinderNavigationBar(winOrName) {
 // Its places are the desktop's own objects and it navigates the way the
 // breadcrumb does. System 6, Platinum, NeXTSTEP and Aqua 10.0 stay spatial:
 // their tokens leave the rail undisplayed (--finder-sidebar-display).
+const finderSidebarPlaces = [["applications", "applications"], ["documents", "folder"]];
+const finderSidebarDisks = [["disk", "startupDisk"], ["projects", "projectDisk"], ["textDisk", "fileFloppy"], ["trash", "trash"]];
 const finderSidebarSections = [
-  ["finder_sidebar_favorites", [["applications", "applications"], ["documents", "folder"]]],
-  ["finder_sidebar_locations", [["disk", "startupDisk"], ["projects", "projectDisk"], ["textDisk", "fileFloppy"], ["trash", "trash"]]],
+  ["finder_sidebar_favorites", finderSidebarPlaces],
+  ["finder_sidebar_locations", finderSidebarDisks],
 ];
+
+// The headings are the era's own where there is native evidence. 10.6 put
+// the disks first under DEVICES and the folders under PLACES (512 Pixels'
+// 10-6-Snow-Leopard-Finder-Home); 10.10 put Favorites first and the disks
+// under Devices (10-10-Yosemite-Finder-Home). Big Sur and Liquid Glass have
+// no in-repo capture of the sidebar, so they keep Favorites / Locations.
+function finderSidebarSectionsForEra() {
+  const body = document.body;
+  const lineage = String(body?.dataset.lineage || "").split(/\s+/);
+  // 10.7 moved FAVORITES to the top and the disks under DEVICES
+  // (10-7-Lion-Finder-Home); 10.10 kept that order.
+  if (body?.dataset.theme === "lion" || body?.dataset.theme === "yosemite") {
+    return [["finder_sidebar_favorites", finderSidebarPlaces], ["finder_sidebar_devices", finderSidebarDisks]];
+  }
+  if (lineage.includes("snow-leopard")) {
+    return [["finder_sidebar_devices", finderSidebarDisks], ["finder_sidebar_places", finderSidebarPlaces]];
+  }
+  return finderSidebarSections;
+}
 
 function renderFinderSidebar(win, windowName) {
   let rail = win.querySelector(":scope > .finder-sidebar");
@@ -2076,7 +2112,7 @@ function renderFinderSidebar(win, windowName) {
   rail.setAttribute("aria-label", t("finder_sidebar"));
   const floppyMounted = typeof getMountedTextDiskChunks === "function" && getMountedTextDiskChunks().length > 0;
   rail.replaceChildren();
-  finderSidebarSections.forEach(([headingKey, places]) => {
+  finderSidebarSectionsForEra().forEach(([headingKey, places]) => {
     const heading = document.createElement("div");
     heading.className = "tdi-source-rail-label";
     heading.textContent = t(headingKey);
@@ -2096,6 +2132,38 @@ function renderFinderSidebar(win, windowName) {
       rail.append(row);
     });
   });
+}
+
+// Mac OS X 10.0-10.2 had no sidebar: its toolbar carried the places as
+// labelled icons beside Back and View (Apple's guidebook Finder capture:
+// Computer, Home, Favorites, Applications). The group is the sidebar's own
+// places, so it navigates the same way; every era but Aqua leaves it
+// undisplayed (--finder-toolbar-places-display).
+const finderToolbarPlaces = [["disk", "startupDisk"], ["projects", "projectDisk"], ["applications", "applications"]];
+
+function renderFinderToolbarPlaces(nav, win, windowName) {
+  let group = nav.querySelector(":scope > .finder-toolbar-places");
+  if (!group) {
+    group = document.createElement("div");
+    group.className = "finder-toolbar-places";
+    nav.append(group);
+  }
+  group.setAttribute("aria-label", t("finder_sidebar"));
+  group.replaceChildren(...finderToolbarPlaces.map(([target, iconId]) => {
+    const here = target === windowName;
+    const label = t(finderLocationLabelKeys.get(target));
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = here ? "finder-toolbar-place is-active" : "finder-toolbar-place";
+    if (here) button.setAttribute("aria-current", "page");
+    button.title = label;
+    button.innerHTML = `${renderSystemIcon(iconId, { className: "finder-toolbar-place-icon" })}<span class="finder-toolbar-place-label">${escapeHtml(label)}</span>`;
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (!here) navigateFinderLocation(windowName, target);
+    });
+    return button;
+  }));
 }
 
 function renderAllFinderNavigationBars() {
@@ -3266,7 +3334,12 @@ function getActionAvailability() {
     // capability), and in a narrow viewport where title-bar gestures stand
     // down. Pin follows the engine's canPinWindow, so a full-screen or
     // centered system sheet greys it.
-    "window-menu": windowMenuAvailable && windowMenuBrowseAvailable,
+    // An era with a Dock keeps the menu on an empty desk too: its last row is
+    // Show Dock / Hide Dock (owner decision F11, 2026-10-08), and with the
+    // Dock hidden and no window open that row was the only way back. The
+    // window rows grey themselves when there is nothing to act on.
+    "window-menu": windowMenuAvailable
+      && (windowMenuBrowseAvailable || window.AISystem6Theme?.hasCapability?.("dock") === true),
     "window-browse-special": isNarrowViewport() || (getCurrentTheme() !== "nextstep"
       && (!windowMenuAvailable || !document.querySelector('[data-menu-condition="window-menu"]'))),
     "window-shade": arrangementAvailable("shade"),
@@ -3278,7 +3351,9 @@ function getActionAvailability() {
     "window-layout-recover": arrangementAvailable("recover"),
     "window-pin": arrangementAvailable("pin"),
     "window-unpin": arrangementAvailable("unpin"),
-    "window-browse": windowMenuBrowseAvailable
+    "window-browse": windowMenuBrowseAvailable,
+    // The Dock switch lives in the Window menu of the eras that draw a Dock.
+    "window-toggle-dock": window.AISystem6Theme?.hasCapability?.("dock") === true
   };
   // A lazy command answers for itself once its admission row exists: the row is
   // the declaration that the window, its loader and its opener are real, so the
@@ -3473,6 +3548,9 @@ function updateMenuState() {
     if (action === "toggle-balloon-help") {
       btn.textContent = t(balloonHelpEnabled ? "hide_balloon_help" : "show_balloon_help");
       btn.classList.remove("is-checked");
+    }
+    if (action === "window-toggle-dock") {
+      btn.textContent = t(window.AISystem6WindowMinimize?.dockVisible?.() ? "hide_dock" : "show_dock");
     }
     if (action === "reset-system") {
       btn.classList.toggle("is-hidden", !state[action]);

@@ -89,6 +89,15 @@ export function preappGenerators(root, { publicOnly = false } = {}) {
       outputs: ["apps/desktop/app/vendor/fsrs.js"],
     },
     {
+      // Time Machine's ad and tracker lists, compiled from the pinned uBlock
+      // Origin Lite release (vendor/ubol). The release is fetched once into
+      // .cache; a build without network skips the lists, never fails on them.
+      name: "browse-filters",
+      script: "tooling/build-browse-filters.mjs",
+      inputs: [...common, "vendor/ubol"],
+      outputs: ["apps/browse/filters/network.json", "apps/browse/filters/cosmetic.json"],
+    },
+    {
       // The writing editor (CodeMirror 6 + live preview). Its recipe lives in
       // tooling/vendor/writing-editor/, which the common tooling input covers.
       name: "writing-editor-vendor",

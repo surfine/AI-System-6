@@ -74,6 +74,10 @@ body[data-theme="lion"] {
      #ececec, rising to #f2f2f2; the default button a two-half blue gloss. */
   --btn-bg: linear-gradient(#ffffff 0%, #f3f3f3 48%, #ececec 50%, #f2f2f2 100%);
   --btn-default-bg: linear-gradient(#d6edff 0%, #a4d3fa 48%, #88c7fb 50%, #d5faff 100%);
+  /* Same page: a 21 pt button with a 4 pt corner, not 10.6's pill. The
+     pill inherited from Snow Leopard turned every Lion button into a
+     capsule, and a tall one into a lozenge (2026-10-08 survey). */
+  --btn-radius: 4px;
   /* Overlay scroll bars, HIG p.136/p.148: nothing reserved beside the
      content, a 7 px capsule of 50% black in a 10 pt gutter, no track, no
      arrows. The same model Big Sur uses, which is where it began. */
@@ -149,7 +153,14 @@ body[data-theme="lion"] {
   --era-rail-thumb-shadow: inset 0 1px 0 #ffffff;
   /* P2 menu bar: 10.7 lets Andromeda show through (translucent menu bar).
      Opaque SL gradient is wrong here; frost is lighter than Yosemite's 20px. */
-  --menu-bar-bg: rgba(230, 230, 230, 0.78);
+  /* Sampled from 512 Pixels' 10-7-Lion-Desktop at 2x: a 1 px #eef0f4
+     highlight, then a ramp from about #dadee5 to #9a9ca2 over 22 pt, with
+     the galaxy lending only a few levels of blue. A flat 78% grey let the
+     desk through as a uniform #b8c1cd - bluer and darker at the top than
+     the real bar (2026-10-08). 90% keeps the native tint and its ramp. */
+  --menu-bar-bg: linear-gradient(to bottom,
+    rgba(242, 244, 248, 0.94) 0 1px, rgba(240, 244, 248, 0.9) 1px,
+    rgba(168, 171, 177, 0.9) 100%);
   --menu-bar-base: #e6e6e6;
   --menu-bar-backdrop-filter: blur(12px) saturate(140%);
   --menu-bar-border-color: rgba(0, 0, 0, 0.22);

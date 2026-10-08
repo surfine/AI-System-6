@@ -173,7 +173,10 @@ window.AISystem6Config = (() => {
     // the writer never typed. These are the only names projectDisplayName
     // re-reads through the current language -- a name the writer typed is
     // their own and is never rewritten.
-    appAuthoredDefaultProjectNames: Object.freeze(["New Project", "新项目"]),
+    // "default_project_name" is the raw translation key a slow boot stored
+    // before the language table arrived; listing it here repairs those
+    // records on display without a migration.
+    appAuthoredDefaultProjectNames: Object.freeze(["New Project", "新项目", "default_project_name"]),
     displayNameRewrites: Object.freeze([
       Object.freeze({
         pattern: new RegExp(`^${["示范", "项目"].join("")}\\s*-\\s*本地\\s*AI\\s*写作(\\s+\\d+)?$`, "u"),
@@ -322,7 +325,9 @@ const lazyRetryNonces = new Map();
 
 function lazyScriptTimeoutMs() {
   const configured = Number(window.AISystem6LazyScriptTimeoutMs);
-  return Number.isFinite(configured) && configured > 0 ? configured : 6000;
+  // Long enough for a slow device on a slow link to finish one module; a
+  // timeout no longer re-inserts the script, so waiting longer costs nothing.
+  return Number.isFinite(configured) && configured > 0 ? configured : 15000;
 }
 
 function lazyScriptUrl(src) {
@@ -361,27 +366,46 @@ function loadClassicScriptOnce(src) {
     }
     const script = existing || document.createElement("script");
     let timer = null;
-    const fail = (message) => {
-      clearTimeout(timer);
-      // Drop the half-loaded element and the cached promise so a later retry
-      // fetches a fresh copy; an aborted/cancelled script can fire neither
-      // onload nor onerror, which would otherwise hang the caller forever.
-      lazyRetryNonces.set(resolvedSrc, (lazyRetryNonces.get(resolvedSrc) || 0) + 1);
+    // A timeout is not a failure to run. Removing an inserted classic script
+    // does not stop it executing once its response arrives, so the old retry
+    // inserted a second copy and the module's top-level const was declared
+    // twice ("Identifier 'GRAIN_DIFF_CELL_BUDGET' has already been declared",
+    // seen 2026-10-08 on a slow Liquid Glass boot). The element now stays in
+    // the document and marks itself loaded whenever it arrives; a timed-out
+    // call gives up, and the next call waits on the same element. Callers
+    // wait through a list on the element, so the element's own onload/onerror
+    // stay the single trigger a browser (or the boot VM) fires.
+    const waiter = {
+      load: () => { clearTimeout(timer); resolve(true); },
+      error: () => {
+        clearTimeout(timer);
+        // onerror means it never ran: drop the element so the next call
+        // fetches a fresh copy with a retry nonce.
+        lazyRetryNonces.set(resolvedSrc, (lazyRetryNonces.get(resolvedSrc) || 0) + 1);
+        lazyScriptPromises.delete(resolvedSrc);
+        script.remove();
+        reject(new Error(`Could not load ${resolvedSrc}`));
+      },
+    };
+    if (!existing) {
+      script.src = lazyScriptUrlWithRetryNonce(resolvedSrc);
+      script.dataset.lazySrc = resolvedSrc;
+      script.lazyWaiters = [];
+      script.onload = () => {
+        script.dataset.loaded = "true";
+        script.lazyWaiters.splice(0).forEach((entry) => entry.load());
+      };
+      script.onerror = () => {
+        script.lazyWaiters.splice(0).forEach((entry) => entry.error());
+      };
+    }
+    (script.lazyWaiters ||= []).push(waiter);
+    timer = setTimeout(() => {
+      const index = script.lazyWaiters.indexOf(waiter);
+      if (index >= 0) script.lazyWaiters.splice(index, 1);
       lazyScriptPromises.delete(resolvedSrc);
-      script.remove();
-      reject(new Error(message));
-    };
-    script.src = lazyScriptUrlWithRetryNonce(resolvedSrc);
-    script.dataset.lazySrc = resolvedSrc;
-    script.onload = () => {
-      clearTimeout(timer);
-      script.dataset.loaded = "true";
-      resolve(true);
-    };
-    script.onerror = () => {
-      fail(`Could not load ${resolvedSrc}`);
-    };
-    timer = setTimeout(() => fail(`Timed out loading ${resolvedSrc}`), lazyScriptTimeoutMs());
+      reject(new Error(`Timed out loading ${resolvedSrc}`));
+    }, lazyScriptTimeoutMs());
     if (!existing) document.head.append(script);
   });
   lazyScriptPromises.set(resolvedSrc, promise);
@@ -583,7 +607,10 @@ const ensureVideoDocMapModule = createLazyModuleLoader("AISystem6VideoDocMapLoad
 // The Searcher sheet travels with the module (Find File's rules stay eager).
 const ensureFindPathModule = createLazyModuleLoader("AISystem6FindPathLoaded", ["app/features/findpath.js"], false, ["styles.searcher.css"]);
 const ensureEndfieldTerminalModule = createLazyModuleLoader("AISystem6EndfieldTerminalLoaded", ["app/features/endfield-terminal.js"], false, ["styles.endfield-terminal.css"]);
-const ensureTimeMachineModule = createLazyModuleLoader("AISystem6TimeMachineLoaded", ["app/features/time-machine.js"], false, ["styles.time-machine.css"]);
+// Time Machine's live engines on their own, for Reader's rendered rung; the
+// loader shares the script with Time Machine's own (loaded once either way).
+const ensureTimeMachineEngineModule = createLazyModuleLoader("AISystem6TimeMachineEngines", ["app/features/time-machine-engine.js"]);
+const ensureTimeMachineModule = createLazyModuleLoader("AISystem6TimeMachineLoaded", ["app/features/time-machine-engine.js", "app/features/time-machine.js"], false, ["styles.time-machine.css"]);
 const ensureHkrrReviewModule = createLazyModuleLoader("", ["app/features/hkrr-review.js"]);
 // The guest bridge: tool handlers, the approval dialog and the Chooser guest
 // list load together on the first guest call or when Chooser opens.

@@ -372,8 +372,9 @@
      English paragraph in the app was set in a Chinese font's Latin glyphs,
      which is why prose read as an odd serif beside the Chicago chrome. Geneva
      is the content face the classic system paired with Chicago, and Verdana is
-     its stand-in off the Mac; html:lang(zh-Hans) below still leads with Songti
-     SC, because there the CJK face is the one being read. */
+     its stand-in off the Mac. Chinese uses the same order: fallback is per
+     character, so Chinese lands on Songti SC and Latin inside a Chinese line
+     ("网站 AI") stays in Geneva instead of Songti's Latin glyphs. */
   --text-font: Geneva, Verdana, "Songti SC", "SimSun", "STSong", sans-serif;
   --mono-font: Monaco, "Courier New", monospace;
   /* Writing surfaces: serif for composing, sans-serif for the rendered preview. */
@@ -2089,11 +2090,20 @@
      a required stop on the fast path, and it does not exist on a phone. */
 }
 
-html:lang(zh-Hans) {
-  --ui-font: "Songti SC", "SimSun", "STSong", "serif";
-  --title-font: "Songti SC", "SimSun", "STSong", "serif";
-  --text-font: "Songti SC", "SimSun", "STSong", "serif";
+/* Body copy's Chinese follows the era. Latin stays Geneva everywhere this
+   applies (Big Sur, NeXTSTEP and the modern-font preference name their own
+   body face and win); only the CJK fallback is the era's: Songti for the
+   Classic family, the era's Heiti for Mac OS X. Declared on body, where the
+   era tokens live, so var() sees them. */
+body[data-theme] {
+  --text-font: Geneva, Verdana, var(--theme-cjk-font, "Songti SC", "SimSun", "STSong"), sans-serif;
 }
+
+/* No Chinese override of the face tokens (removed 2026-10-08). It put Songti
+   first in every era, so a Chinese paragraph in Aqua or Yosemite was Songti
+   beside Heiti buttons, Latin inside it ("AI。") took Songti's serif Latin, and
+   the generic family was quoted ("serif") and so never applied. Each era's
+   own stack already carries its CJK face behind the Latin one. */
 
 body.use-modern-fonts {
   --ui-font: var(--modern-sans-font);
@@ -2215,7 +2225,11 @@ input[type="number"] {
   padding: 6px 9px;
   border: var(--system-control-line) solid var(--ink);
   border-radius: var(--item-radius);
-  background: var(--paper);
+  /* --field-bg, not --paper: Platinum declared white fields (Mac OS 8 HIG,
+     platinum-hig-audit C3) but this recipe never read the token, so every
+     Platinum text area was window grey and looked disabled (2026-10-08).
+     --field-bg defaults to --paper, so other eras are unchanged. */
+  background: var(--field-bg, var(--paper));
   box-shadow: var(--system-inset);
   color: var(--ink);
   font-family: var(--text-font);
@@ -2395,6 +2409,28 @@ body.has-system-modal .menu-bar {
 
 .menu.is-open .menu-popover {
   display: block;
+}
+
+/* A menu taller than the screen shows "more below" as an arrow pinned to its
+   bottom edge (app.js syncMenuScrollCue); resting on it scrolls. It is the
+   last thing in the menu, so it paints over the commands without a layer of
+   its own. Scrolling back up uses the top edge the same way. */
+.menu-popover[data-scroll-down]::after {
+  content: "▼";
+  position: sticky;
+  bottom: 0;
+  display: block;
+  height: 18px;
+  background: var(--menu-panel-bg);
+  /* A translucent menu (Aqua, Liquid Glass) would show the next command
+     through the strip; the blur keeps it from reading as a half row. */
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: var(--menu-item-fg, var(--ink));
+  font-size: 9px;
+  line-height: 18px;
+  text-align: center;
+  pointer-events: none;
 }
 
 .menu-popover button,
@@ -3362,7 +3398,7 @@ body[data-menu-bar-model="system-owned"] {
   overflow-wrap: anywhere;
   min-height: 34px;
   margin: 0 0 16px 0;
-  padding-left: 46px;
+  padding-left: var(--alert-icon-gutter, 46px);
   position: relative;
   line-height: 1.4;
   white-space: pre-line;
@@ -3379,20 +3415,21 @@ body[data-menu-bar-model="system-owned"] {
   display: none;
 }
 
+/* The alert icon is the era's own art, read from tokens. It used to be a
+   drawn "!" in a bordered box: in System 6 it stood in for the real caution
+   icon, Platinum's declared alert art was never read, and Aqua and Snow
+   Leopard drew their 64px warning beside it, so those dialogs showed two
+   icons (2026-10-08). The default is System 6.0.8's own ICON 2 (caution),
+   exported from the native resources (era-icons/.../classic-native). */
 .system-modal p::before {
-  content: "!";
+  content: "";
   position: absolute;
   left: 0;
   top: 0;
-  width: 31px;
-  height: 31px;
-  border: var(--system-border);
-  background: var(--paper);
-  display: grid;
-  place-items: center;
-  font-family: var(--mono-font);
-  font-weight: 700;
-  box-shadow: 2px 2px 0 var(--ink);
+  width: var(--alert-icon-size, 32px);
+  height: var(--alert-icon-size, 32px);
+  display: var(--alert-icon-display, block);
+  background: var(--alert-icon-image, url("./assets/themes/classic/alert-caution-32.svg")) center / contain no-repeat;
 }
 
 .startup-settings-modal {
@@ -3535,6 +3572,9 @@ body[data-menu-bar-model="system-owned"] {
   font-size: 12px;
   line-height: 1.35;
   pointer-events: none;
+  /* The tail sits 8px outside the box. The popover's UA overflow: auto
+     clipped it, so every balloon pointed at nothing (2026-10-08 survey). */
+  overflow: visible;
 }
 
 .balloon-help::before {

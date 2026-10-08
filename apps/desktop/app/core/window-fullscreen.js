@@ -66,9 +66,15 @@
     frames.set(win, Object.fromEntries(framed.map((name) => [name, win.style.getPropertyValue(name)])));
     fullscreenOwner = win;
     win.classList.add("is-fullscreen");
+    // The window is positioned inside the desk, and the desk starts under the
+    // menu bar. A frame of top 0 / height 100dvh therefore hung 22px below the
+    // display and clipped the window's bottom row (seen 2026-10-08 on Quick
+    // Draft's Lightroom/Tools/Draft buttons). Full screen is measured against
+    // the display, so the top compensates whatever the desk is offset by.
+    const deskTop = Math.round(win.offsetParent?.getBoundingClientRect?.().top || 0);
     Object.assign(win.style, {
       left: "0px",
-      top: "0px",
+      top: `${deskTop ? -deskTop : 0}px`,
       right: "auto",
       bottom: "auto",
       width: "100vw",

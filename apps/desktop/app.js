@@ -61,7 +61,12 @@ const {
 // config value is the pre-translation fallback.
 function getDefaultProjectName() {
   const localized = typeof t === "function" ? String(t("default_project_name") || "").trim() : "";
-  return localized || defaultProjectName;
+  // Before the language table lands, t() answers with the key itself. That key
+  // used to be stored as the first project's name and then shown on the menu
+  // bar and the desk disk for good (seen 2026-10-08 on a slow Liquid Glass and
+  // NeXTSTEP boot). The frozen fallback is an app-authored name, so
+  // projectDisplayName still shows it in the writer's language.
+  return localized && localized !== "default_project_name" ? localized : defaultProjectName;
 }
 const {
   stepOrder: flowStepOrder,
@@ -1379,7 +1384,7 @@ const importCandidates = [];
 let selectedImportFiles = [];
 let previewedProjectBackup = null;
 let selectedProjectBackupFile = null;
-const importableFileAccept = ".txt,.text,.srt,.rtf,.md,.mdx,.markdown,.mdown,.mkd,.mkdn,.csv,.tsv,.json,.js,.ts,.htm,.html,.xhtml,.webarchive,.css,.xml,.log,.pdf,.docx,.pages,.numbers,.key,.epub,.pptx,.xlsx,.bmp,.jpg,.jpeg,.png,.webp,.heic,.heif,.aac,.aif,.aiff,.amr,.caf,.flac,.m4a,.mp3,.oga,.ogg,.opus,.wav,.webm,audio/*";
+const importableFileAccept = ".txt,.text,.srt,.rtf,.md,.mdx,.markdown,.mdown,.mkd,.mkdn,.csv,.tsv,.json,.js,.ts,.htm,.html,.xhtml,.webarchive,.mht,.mhtml,.css,.xml,.log,.pdf,.docx,.doc,.pages,.numbers,.key,.epub,.pptx,.xlsx,.odt,.ods,.odp,.ipynb,.zip,.gz,.eml,.mbox,.svg,.bmp,.jpg,.jpeg,.png,.webp,.heic,.heif,.gif,.tif,.tiff,.aac,.aif,.aiff,.amr,.caf,.flac,.m4a,.mp3,.oga,.ogg,.opus,.wav,.webm,audio/*";
 let lastAssistantText = "";
 let lastSourceAnswer = "";
 let selectedScrapId = null;
@@ -2577,9 +2582,42 @@ function positionOpenMenu(menu) {
   const maxLeft = Math.max(margin, window.innerWidth - popoverWidth - margin);
   const left = Math.min(Math.max(menuRect.left, margin), maxLeft);
   menu.style.setProperty("--menu-popover-left", `${Math.round(left)}px`);
+  wireMenuScrollCue(popover);
+  syncMenuScrollCue(popover);
   // A balloon that is already showing must step aside for the menu that just
   // appeared under it, and the open panel is the only chance to measure it.
   if (typeof refreshBalloonHelpPlacement === "function") refreshBalloonHelpPlacement();
+}
+
+// A menu taller than the screen shows an arrow at the end that still has
+// commands, and resting the pointer on the arrow scrolls, the way a Mac menu
+// does. The Apple menu ran past the bottom in System 7 and Liquid Glass with
+// nothing to say there was more (2026-10-08 survey).
+function syncMenuScrollCue(popover) {
+  const more = popover.scrollHeight - popover.clientHeight > 1;
+  popover.toggleAttribute("data-scroll-up", more && popover.scrollTop > 1);
+  popover.toggleAttribute("data-scroll-down", more && popover.scrollTop + popover.clientHeight < popover.scrollHeight - 1);
+}
+
+let menuScrollCueTimer = 0;
+function wireMenuScrollCue(popover) {
+  if (popover.dataset.scrollCueWired) return;
+  popover.dataset.scrollCueWired = "true";
+  const stop = () => { clearInterval(menuScrollCueTimer); menuScrollCueTimer = 0; };
+  popover.addEventListener("scroll", () => syncMenuScrollCue(popover), { passive: true });
+  popover.addEventListener("pointerleave", stop);
+  popover.addEventListener("pointermove", (event) => {
+    const rect = popover.getBoundingClientRect();
+    const step = popover.hasAttribute("data-scroll-down") && event.clientY > rect.bottom - 18 ? 6
+      : popover.hasAttribute("data-scroll-up") && event.clientY < rect.top + 18 ? -6 : 0;
+    stop();
+    if (!step) return;
+    menuScrollCueTimer = setInterval(() => {
+      popover.scrollTop += step;
+      syncMenuScrollCue(popover);
+      if (!popover.hasAttribute(step > 0 ? "data-scroll-down" : "data-scroll-up")) stop();
+    }, 16);
+  });
 }
 
 // What actually clips a pulled-down command menu is not always the screen. The

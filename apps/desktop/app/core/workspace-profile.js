@@ -120,7 +120,10 @@ function syncWorkspaceProfileDom(root = document) {
   const selector = document.getElementById("workspace-profile");
   if (selector) selector.value = workspaceProfile;
   const aboutKey = workspaceProfile === workspaceProfileDesktop ? "about_finder" : "about_menu";
-  document.querySelectorAll('[data-action="open-about"], #about-title').forEach((element) => {
+  // The bold application menu's About row names the front application
+  // (menus.js syncCurrentApplicationMenu); only the Apple menu's copy follows
+  // the workspace profile.
+  document.querySelectorAll('[data-action="open-about"]:not(.menu-bar-current-app *), #about-title').forEach((element) => {
     element.dataset.i18n = aboutKey;
     element.textContent = t(aboutKey);
   });

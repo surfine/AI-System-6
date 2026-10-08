@@ -53,6 +53,7 @@ const {
   canTranscribeAudioImport,
   extractAudioTranscript,
 } = require("../importers/audio.js");
+const { peelFile, sniffImportType } = require("../importers/peel.js");
 
 const importJsonMaxBytes = Math.max(
   1024 * 1024,
@@ -60,6 +61,15 @@ const importJsonMaxBytes = Math.max(
 );
 const lmStudioUrl = process.env.LM_STUDIO_URL || "http://127.0.0.1:1234/v1/chat/completions";
 const visionOcrModel = process.env.AI_SYSTEM6_VISION_MODEL || "ai-system-main";
+
+// Formats whose meaning lives in a container: an archive of files, a gzip
+// around one, the EPUB spine, a saved page with frames. MarkItDown flattens
+// them into one blob, so the shortcut is skipped and peel reads them instead.
+const PEEL_PREFERRED_TYPES = new Set([
+  "zip", "gzip", "html", "webarchive", "epub",
+  "odt", "ods", "odp", "ipynb", "svg",
+  "eml", "mbox", "mhtml",
+]);
 
 /**
  * @param {string} name
@@ -144,7 +154,7 @@ async function extractImportedTextNative(name, mimeType, buffer, options = {}) {
   if (ext === ".epub" || mimeType === "application/epub+zip") {
     return extractEpubText(buffer);
   }
-  if ([".bmp", ".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"].includes(ext)) {
+  if ([".bmp", ".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif", ".gif", ".tif", ".tiff"].includes(ext)) {
     return extractImageText(buffer, imageMimeTypeFromName(name, mimeType), options);
   }
   return extractSimpleImportedTextNative(name, mimeType, buffer);
@@ -204,6 +214,59 @@ async function repairTextWithLocalModel(text, signal) {
 }
 
 /**
+ * The browser repairs an import in 12,000 character pieces; the server must
+ * send the cloud the same spans so both readings cover the same text. Exported
+ * as a pure function so a contract can check the boundaries without a network
+ * round trip.
+ *
+ * @param {string} text
+ * @param {number} [size]
+ * @returns {string[]}
+ */
+/**
+ * A repaired piece replaces its original only when it is not much shorter: a
+ * model that stops early, or summarises, must not cost the writer the text.
+ *
+ * @param {string} original
+ * @param {string} repaired
+ */
+function keepRepairedChunk(original, repaired) {
+  const text = String(repaired || "").trim();
+  if (!text || text.length < String(original).trim().length * 0.6) return original;
+  return text;
+}
+
+function chunkTextForRepair(text, size = 12000) {
+  const source = String(text || "");
+  const chunkSize = Number.isFinite(size) && size > 0 ? Math.floor(size) : 12000;
+  // Pieces end at paragraph breaks, so no sentence is cut in two and the
+  // pieces join back with the breaks they came with. A single paragraph
+  // longer than a piece is the only thing cut mid-text.
+  const paragraphs = source.split(/(\n{2,})/);
+  const chunks = [];
+  let current = "";
+  for (const part of paragraphs) {
+    if (current && current.length + part.length > chunkSize && !/^\n+$/.test(part)) {
+      chunks.push(current);
+      current = "";
+    }
+    if (!current && /^\n+$/.test(part)) continue;
+    if (part.length > chunkSize) {
+      for (let offset = 0; offset < part.length; offset += chunkSize) chunks.push(part.slice(offset, offset + chunkSize));
+      continue;
+    }
+    current += part;
+  }
+  if (current) chunks.push(current);
+  return chunks;
+}
+
+/**
+ * Repair a long import one chunk at a time. Sending the whole document in one
+ * request let a (possibly truncated) answer replace the original, so a long
+ * file silently lost its tail; each chunk is repaired on its own and a failed
+ * or empty answer keeps that chunk's original text.
+ *
  * @param {string} text
  * @param {{
  *   cloudApiKey?: string,
@@ -220,31 +283,41 @@ async function repairTextWithCloudModel(text, options) {
   const baseUrl = (options.cloudBaseUrl || "").replace(/\/$/, "");
   const targetUrl = `${baseUrl}/v1/chat/completions`;
   const model = normalizeCloudModelId(options.cloudModel || "deepseek-flash");
-  const payload = {
-    model,
-    messages: buildImportRepairMessages(text),
-    temperature: 0.1,
-  };
   const headers = {
     "Authorization": `Bearer ${apiKey}`,
     "Content-Type": "application/json",
   };
-  const { response } = await postJsonWithFallback(targetUrl, payload, options.signal, headers, {
-    pinnedAddress: options.cloudPinnedAddress,
-    pinnedFamily: options.cloudPinnedFamily,
-  });
-  const responseText = await response.text();
-  let data = {};
-  try {
-    data = JSON.parse(responseText);
-  } catch {
-    data = { raw: responseText };
+
+  const repaired = [];
+  for (const chunk of chunkTextForRepair(text)) {
+    try {
+      const payload = {
+        model,
+        messages: buildImportRepairMessages(chunk),
+        temperature: 0.1,
+      };
+      const { response } = await postJsonWithFallback(targetUrl, payload, options.signal, headers, {
+        pinnedAddress: options.cloudPinnedAddress,
+        pinnedFamily: options.cloudPinnedFamily,
+      });
+      const responseText = await response.text();
+      let data = {};
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        data = { raw: responseText };
+      }
+      if (!response.ok) {
+        throw new Error(data.detail || data.error?.message || responseText || `Cloud API returned status ${response.status}`);
+      }
+      repaired.push(keepRepairedChunk(chunk, cleanModelOutput(data?.choices?.[0]?.message?.content || "")));
+    } catch (error) {
+      if (options.signal?.aborted) throw error;
+      // One failed piece keeps its original text; the rest are still repaired.
+      repaired.push(chunk);
+    }
   }
-  if (!response.ok) {
-    throw new Error(data.detail || data.error?.message || responseText || `Cloud API returned status ${response.status}`);
-  }
-  const repairedText = cleanModelOutput(data?.choices?.[0]?.message?.content || "");
-  return repairedText || text;
+  return repaired.join("\n\n").trim() || text;
 }
 
 /**
@@ -320,7 +393,10 @@ async function extractImportedText(name, mimeType, buffer, options = {}) {
   }
 
   let text = "";
-  const markitdownText = await tryExtractWithMarkitdown(name, mimeType, buffer);
+  const preferPeel = PEEL_PREFERRED_TYPES.has(sniffImportType(buffer, name, mimeType));
+  // A container's MarkItDown reading is one flat blob, exactly the structure
+  // the peel layer exists to keep, so MarkItDown is not asked for it.
+  const markitdownText = preferPeel ? null : await tryExtractWithMarkitdown(name, mimeType, buffer);
   if (markitdownText !== null) {
     text = importerMode === "auto"
       ? await maybePreferNativeText(name, mimeType, buffer, markitdownText, {
@@ -330,15 +406,32 @@ async function extractImportedText(name, mimeType, buffer, options = {}) {
         })
       : markitdownText;
   } else {
-    if (importerMode === "markitdown") {
+    if (importerMode === "markitdown" && preferPeel === false) {
       throw new Error("MarkItDown importer is unavailable or could not extract usable text.");
     }
-    text = await extractImportedTextNative(name, mimeType, buffer, {
+    // The same OCR ladder a lone image climbs, reused for figures embedded in
+    // a document, so peel reads a report's plates the route's own way.
+    const ocrImage = (imageBuffer, imageMimeType) => extractImageText(imageBuffer, imageMimeType, {
       ocrEngine: options.ocrEngine,
       allowOcrFallback: options.ocrEngine !== "paddle",
       allowVisionFallback: options.modelExecution !== "client",
       cloudVision: cloudVisionRouteFromOptions(options),
       onOcrEngine,
+    });
+    text = await peelFile({
+      name,
+      mimeType,
+      buffer,
+      options: {
+        ocrEngine: options.ocrEngine,
+        allowOcrFallback: options.ocrEngine !== "paddle",
+        allowVisionFallback: options.modelExecution !== "client",
+        cloudVision: cloudVisionRouteFromOptions(options),
+        onOcrEngine,
+        signal: options.signal,
+        ocrImage,
+      },
+      extractLeaf: extractImportedTextNative,
     });
   }
 
@@ -474,4 +567,6 @@ async function handleImportText(req, res) {
 module.exports = {
   handleImportText,
   extractImportedText,
+  chunkTextForRepair,
+  keepRepairedChunk,
 };

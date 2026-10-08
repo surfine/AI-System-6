@@ -28,7 +28,7 @@
     "playwrightVersion": "1.63.0",
     "browserRevision": "1243",
     "browserVersion": "153.0.8010.12",
-    "contentSha256": "080567251dce4a825827373405396f0619222edd52a097883917fc599b1dc431",
+    "contentSha256": "40259fc38f6b4b10ae7497c3f6764e981413a0251406b451346d5d0fb7049994",
     "historicalFontTarget": "Charcoal 12 pt",
     "legalFallback": "OFL-licensed Asap variable font",
     "fontProbeSelectors": [
@@ -713,11 +713,8 @@
         "materialError": 18
       },
       "floor": {
-        "status": "gap",
-        "failing": [
-          "materialError"
-        ],
-        "note": "AI System 6 deliberately uses the cross-era smiling compact Macintosh instead of the native Mac OS 9 Finder folder. Geometry and edge fidelity still meet the floor; material remains an explicit product-semantic gap, with the 2026-08-11 migration pinned by the regression ceiling."
+        "status": "met",
+        "note": "AI System 6 deliberately uses the cross-era smiling compact Macintosh instead of the native Mac OS 9 Finder folder. Since the 2026-10-08 icon completion its material error (11) also meets the floor (12), so the specimen is held to the full floor."
       }
     },
     {
@@ -838,11 +835,8 @@
         "materialError": 55
       },
       "floor": {
-        "status": "gap",
-        "failing": [
-          "materialError"
-        ],
-        "note": "Redrawn Platinum trash: the lid and body edges now meet the shared historical floor; the palette is not yet calibrated. Reference is a native 9.0 capture, so the remaining material gap is ours to fix."
+        "status": "met",
+        "note": "Redrawn Platinum trash: the lid and body edges now meet the shared historical floor; the palette is not yet calibrated. Reference is a native 9.0 capture, so the remaining material gap is ours to fix. Since the 2026-10-08 icon completion it meets the full floor."
       }
     },
     {

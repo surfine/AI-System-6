@@ -1,3 +1,13 @@
+/* Family decisions for Yosemite, Big Sur and Liquid Glass (2026-10-08): the
+   Mac OS X caution art in alerts instead of System 6's bitmap (Liquid Glass
+   draws it inside its own glass tile), and body copy's Chinese in Heiti. */
+body[data-theme-family="liquid-glass"] {
+  --alert-icon-image: url("./assets/themes/aqua/sheet-warning-64.svg");
+  --alert-icon-size: 48px;
+  --alert-icon-gutter: 64px;
+  --theme-cjk-font: "Heiti SC", "STHeiti";
+}
+
 body[data-theme="liquid-glass"] {
   /* Period tokens Platinum made shared (2026-09-25, second batch), answered
      with the values this era already drew. */
@@ -971,7 +981,9 @@ body[data-theme="liquid-glass"] {
   --desktop-label-fg: var(--ink);
   --desktop-label-radius: var(--r-sm);
   --desktop-label-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  --desktop-label-max-width: 92px;
+  /* 104: the chip's own padding left 88px for "Applications" at 88px, so
+     it broke as "Application / s" (2026-10-08 survey). */
+  --desktop-label-max-width: 104px;
   --liquid-desktop-icon-padding: 2px 2px;
   --liquid-desktop-icon-label-line-height: 1;
   --settings-scrollbar-lane-bg: transparent;
@@ -2190,15 +2202,15 @@ body[data-theme="liquid-glass"] .system-modal p::before {
   height: 54px;
   border: 1px solid rgba(16, 17, 20, 0.16);
   border-radius: var(--r-lg);
+  /* The glass tile holds the caution art; the shared rule no longer draws a
+     "!" glyph, which left this tile empty (2026-10-08). */
   background:
+    url("./assets/themes/aqua/sheet-warning-64.svg") center / 34px no-repeat,
     linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.28)),
     rgba(255, 255, 255, 0.3);
-  color: rgba(16, 17, 20, 0.86);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.82),
     0 10px 24px rgba(18, 28, 38, 0.12);
-  font-family: var(--title-font);
-  font-size: 28px;
 }
 body[data-theme="liquid-glass"] .system-modal .button-row {
   justify-content: flex-end;

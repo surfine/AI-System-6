@@ -1,5 +1,7 @@
 "use strict";
 
+const { extractImageTextWithVisionHelper } = require("./vision-helper.js");
+
 const fs = require("node:fs/promises");
 const os = require("node:os");
 const path = require("node:path");
@@ -97,6 +99,8 @@ function imageMimeTypeFromName(name, mimeType) {
   if (ext === ".webp") return "image/webp";
   if (ext === ".heic") return "image/heic";
   if (ext === ".heif") return "image/heif";
+  if (ext === ".gif") return "image/gif";
+  if (ext === ".tif" || ext === ".tiff") return "image/tiff";
   return "image/png";
 }
 
@@ -377,6 +381,17 @@ async function extractImageText(buffer, mimeType, options = {}) {
             throw new Error(`${paddleError.message} Tesseract OCR also failed: ${tesseractError.message}. AI Vision OCR also failed: ${visionError.message}`);
           }
         }
+      }
+    }
+    // On a Mac with macOS 26, the system's document recognition reads the
+    // page's structure (titles, lists, tables) as well as its text; the
+    // engines below are what every other machine has, and its fallback.
+    if (engine === "auto") {
+      try {
+        const structured = await extractImageTextWithVisionHelper(image.buffer, image.mimeType, { signal: options.signal });
+        if (structured && isLikelyUsefulOcrText(structured, 100)) return report(options, "apple-vision", structured);
+      } catch {
+        // The ladder continues with the next engine.
       }
     }
     try {

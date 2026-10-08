@@ -145,7 +145,13 @@ function isVisibleTextTarget(target) {
 
 function getVisibleEditableTextTarget(target) {
   const textTarget = getEditableTextTarget(target);
-  return isVisibleTextTarget(textTarget) ? textTarget : null;
+  if (!isVisibleTextTarget(textTarget)) return null;
+  // A filter box inside a transient menu (the All Windows overview, a Dock
+  // menu) takes a word or two and closes; the floating Dictation button beside
+  // it was one more control to read in a list meant for a glance (seen
+  // 2026-10-08). Dictation keeps to the fields that hold writing.
+  if (textTarget.closest?.(".window-browse-popover, .menu-popover")) return null;
+  return textTarget;
 }
 
 function rangeBelongsToTarget(range, target) {

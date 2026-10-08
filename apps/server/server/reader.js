@@ -103,7 +103,9 @@ function isPrivateAddress(address) {
       (a === 100 && b >= 64 && b <= 127) ||
       (a === 169 && b === 254) ||
       (a === 172 && b >= 16 && b <= 31) ||
-      (a === 192 && b === 0) ||
+      // 192.0.0.0/24 and TEST-NET-1; the rest of 192.0/16 is public
+      // (iana.org itself lives there).
+      (a === 192 && b === 0 && (c === 0 || c === 2)) ||
       (a === 192 && b === 168) ||
       (a === 198 && b === 51 && c === 100) ||
       (a === 203 && b === 0 && c === 113) ||
@@ -244,9 +246,12 @@ function metaContent(html, name) {
  * @returns {string}
  */
 function normalizeReaderComparable(value) {
+  // Letters and digits of every script. A plain \W would treat each Chinese
+  // character as punctuation, and a Chinese paragraph would compare as empty
+  // and be dropped as boilerplate.
   return cleanText(value)
     .toLowerCase()
-    .replace(/[\W_]+/g, "");
+    .replace(/[^\p{L}\p{N}]+/gu, "");
 }
 
 /**
@@ -290,6 +295,395 @@ function readerJsonLdArticleBody(html) {
     }
   }
   return "";
+}
+
+// =============================================================================
+// Embedded article data
+// =============================================================================
+//
+// A large share of modern pages ship the article as data rather than markup:
+// JSON-LD, Next.js / Nuxt hydration payloads, inline window-state assignments,
+// or a <noscript> copy meant for crawlers. The markup ladder reaches those
+// bodies only after the markup is gone, so they are read directly here. Every
+// candidate is a regex / string construction; nothing is eval'd, so a page can
+// never turn its payload into code.
+
+/** schema.org article-like types whose bodies count as a full article. */
+const READER_JSON_LD_ARTICLE_TYPES = new Set([
+  "Article",
+  "NewsArticle",
+  "BlogPosting",
+  "Report",
+  "TechArticle",
+  "SocialMediaPosting",
+]);
+
+/**
+ * Keys that may carry an article body inside a hydration payload. Narrow on
+ * purpose: "description" is included because many CMS payloads put the lede
+ * there, and the >= 400 text-character gate below still applies to it.
+ */
+const READER_EMBEDDED_BODY_KEY = /^(content|body|articleBody|article_body|text|html|richText|contentHtml|markdown|description)$/i;
+
+/** Hydration payloads are untrusted and can be huge; bound the walk. */
+const READER_EMBEDDED_MAX_NODES = 20000;
+const READER_EMBEDDED_MAX_DEPTH = 40;
+
+/**
+ * Split a plain-text body into Markdown paragraphs on blank lines or single
+ * newlines. A CMS often stores a hard-wrapped lede with "\n" between lines,
+ * which would otherwise collapse into one paragraph.
+ *
+ * @param {unknown} value
+ * @returns {string}
+ */
+function readerPlainBodyParagraphs(value) {
+  return String(value || "")
+    .split(/\n{2,}|\n/)
+    .map((line) => cleanText(line))
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+/**
+ * Convert one embedded body string into the reader's Markdown flavor. A body
+ * that still carries tags follows the markup converter; plain text is split
+ * back into paragraphs first so the boilerplate stripper can see them.
+ *
+ * @param {unknown} value
+ * @param {{ title?: string, description?: string, baseUrl?: string }} [context]
+ * @returns {string}
+ */
+function readerEmbeddedBodyToMarkdown(value, context = {}) {
+  const raw = cleanText(String(value || ""));
+  if (!raw) return "";
+  if (/<[a-z!/][^>]*>/i.test(raw)) return htmlToReaderMarkdown(raw, context);
+  return stripReaderBoilerplate(readerPlainBodyParagraphs(raw), context);
+}
+
+/**
+ * Pull a display name out of a schema.org style value that may be a string, an
+ * object with `name`, or a list of either.
+ *
+ * @param {unknown} value
+ * @returns {string}
+ */
+function readerSchemaName(value) {
+  if (typeof value === "string") return cleanText(value);
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const name = readerSchemaName(item);
+      if (name) return name;
+    }
+    return "";
+  }
+  if (value && typeof value === "object" && typeof /** @type {any} */ (value).name === "string") {
+    return cleanText(/** @type {any} */ (value).name);
+  }
+  return "";
+}
+
+/**
+ * Flatten every object reachable from a parsed JSON-LD blob, including @graph
+ * arrays and nested mainEntity chains.
+ *
+ * @param {any} value
+ * @param {any[]} out
+ * @param {number} [depth]
+ * @returns {void}
+ */
+function readerCollectJsonLdObjects(value, out, depth = 0) {
+  if (!value || typeof value !== "object" || depth > READER_EMBEDDED_MAX_DEPTH || out.length > 5000) return;
+  if (Array.isArray(value)) {
+    for (const item of value) readerCollectJsonLdObjects(item, out, depth + 1);
+    return;
+  }
+  out.push(value);
+  for (const key of ["@graph", "mainEntity", "mainEntityOfPage", "hasPart", "itemListElement"]) {
+    if (value[key] !== undefined) readerCollectJsonLdObjects(value[key], out, depth + 1);
+  }
+}
+
+/**
+ * Read every <script type="application/ld+json"> block and turn any
+ * article-typed object into a candidate body. A block without an article type
+ * is skipped so a WebSite or BreadcrumbList blob cannot claim the article.
+ *
+ * @param {string} html
+ * @param {string} pageUrl
+ * @returns {Array<{ title: string, byline: string, published: string, markdown: string, source: string }>}
+ */
+function readerJsonLdCandidates(html, pageUrl) {
+  const blocks = [...html.matchAll(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)]
+    .map((match) => match[1].trim())
+    .filter(Boolean);
+  const candidates = [];
+  for (const block of blocks) {
+    /** @type {any} */
+    let parsed;
+    try {
+      parsed = JSON.parse(decodeHtml(block));
+    } catch {
+      continue;
+    }
+    const objects = [];
+    readerCollectJsonLdObjects(parsed, objects);
+    for (const object of objects) {
+      const types = Array.isArray(object["@type"]) ? object["@type"] : [object["@type"]];
+      if (!types.some((type) => typeof type === "string" && READER_JSON_LD_ARTICLE_TYPES.has(type))) continue;
+      const body = typeof object.articleBody === "string" && object.articleBody.trim()
+        ? object.articleBody
+        : typeof object.text === "string" ? object.text : "";
+      if (!body.trim()) continue;
+      const title = readerSchemaName(object.headline) || readerSchemaName(object.name);
+      const markdown = readerEmbeddedBodyToMarkdown(body, { title, baseUrl: pageUrl });
+      if (!markdown) continue;
+      candidates.push({
+        title,
+        byline: readerSchemaName(object.author),
+        published: cleanText(object.datePublished || object.dateCreated || ""),
+        markdown,
+        source: "json-ld",
+      });
+    }
+  }
+  return candidates;
+}
+
+/**
+ * Parse a JSON payload carried by an element with a known id, e.g. Next.js's
+ * <script id="__NEXT_DATA__">. Returns null when the element or JSON is
+ * missing, so the ladder simply moves on.
+ *
+ * @param {string} html
+ * @param {string} id
+ * @returns {any}
+ */
+function readerParseJsonScript(html, id) {
+  const escaped = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp("<script\\b[^>]*id=[\"']" + escaped + "[\"'][^>]*>([\\s\\S]*?)<\\/script>", "i");
+  const match = html.match(pattern);
+  if (!match) return null;
+  try {
+    return JSON.parse(decodeHtml(match[1]).trim());
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Slice a JSON object literal out of source text, starting at its opening
+ * brace. This is a string-aware brace scanner: braces that live inside quoted
+ * strings do not change the depth, so a payload may contain "{" or "}" in a
+ * field without truncating the literal. Nothing is eval'd; the slice is
+ * returned only for JSON.parse.
+ *
+ * @param {string} source
+ * @param {number} startIndex index of the opening "{"
+ * @returns {string}
+ */
+function readerBraceLiteral(source, startIndex) {
+  let depth = 0;
+  let quote = "";
+  let escaped = false;
+  for (let index = startIndex; index < source.length; index += 1) {
+    const char = source[index];
+    if (quote) {
+      if (escaped) { escaped = false; continue; }
+      if (char === "\\") { escaped = true; continue; }
+      if (char === quote) quote = "";
+      continue;
+    }
+    if (char === "\"" || char === "'") { quote = char; continue; }
+    if (char === "{") depth += 1;
+    else if (char === "}") {
+      depth -= 1;
+      if (depth === 0) return source.slice(startIndex, index + 1);
+    }
+  }
+  return "";
+}
+
+/**
+ * Find `window.NAME = {...}` assignments and return their parsed object. Only a
+ * JSON object literal is accepted; a function call, `undefined`, or a bare
+ * identifier is ignored rather than guessed at.
+ *
+ * @param {string} html
+ * @param {string[]} names
+ * @param {string} source label for the winning candidate
+ * @returns {Array<{ value: any, source: string }>}
+ */
+function readerWindowAssignments(html, names, source) {
+  const values = [];
+  for (const name of names) {
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const match = new RegExp("window\\." + escaped + "\\s*=\\s*").exec(html);
+    if (!match) continue;
+    let index = match.index + match[0].length;
+    while (index < html.length && /\s/.test(html[index])) index += 1;
+    if (html[index] !== "{") continue;
+    const literal = readerBraceLiteral(html, index);
+    if (!literal) continue;
+    try {
+      values.push({ value: JSON.parse(literal), source });
+    } catch {
+      // Not a JSON payload; leave it for another rung.
+    }
+  }
+  return values;
+}
+
+/**
+ * Walk a hydration payload and collect long strings held under body-like keys,
+ * remembering the sibling title / author / date so the candidate carries real
+ * provenance. The walk is breadth-first with a hard node and depth cap: the
+ * payload is page-controlled and may be adversarially large.
+ *
+ * @param {any} root
+ * @param {string} source
+ * @returns {Array<{ title: string, byline: string, published: string, value: string, source: string }>}
+ */
+function readerCollectEmbeddedBodies(root, source) {
+  const found = [];
+  const stack = [{ value: root, depth: 0 }];
+  let nodes = 0;
+  while (stack.length && nodes < READER_EMBEDDED_MAX_NODES) {
+    const { value, depth } = stack.pop();
+    nodes += 1;
+    if (depth > READER_EMBEDDED_MAX_DEPTH || !value || typeof value !== "object") continue;
+    const title = cleanText(typeof value.title === "string" ? value.title
+      : typeof value.headline === "string" ? value.headline : "");
+    const byline = readerSchemaName(value.author) || cleanText(typeof value.byline === "string" ? value.byline : "");
+    const published = cleanText(value.datePublished || value.publishedAt || value.published || value.date || "");
+    const entries = Array.isArray(value) ? value.entries() : Object.entries(value);
+    for (const [key, child] of entries) {
+      if (typeof child === "string") {
+        if (!READER_EMBEDDED_BODY_KEY.test(String(key))) continue;
+        if (stripTags(child).length < 400) continue;
+        found.push({ title, byline, published, value: child, source });
+      } else if (child && typeof child === "object") {
+        stack.push({ value: child, depth: depth + 1 });
+      }
+    }
+  }
+  return found;
+}
+
+/**
+ * Read the framework hydration payloads the ladder knows: Next.js
+ * __NEXT_DATA__, Nuxt __NUXT__ / __NUXT_DATA__, and the common
+ * __INITIAL_STATE__ / __PRELOADED_STATE__ / __APOLLO_STATE__ assignments.
+ * Each long body string becomes a candidate; the longest valid one is chosen
+ * by readerEmbeddedArticle.
+ *
+ * @param {string} html
+ * @param {string} pageUrl
+ * @returns {Array<{ title: string, byline: string, published: string, markdown: string, source: string }>}
+ */
+function readerFrameworkCandidates(html, pageUrl) {
+  const payloads = [];
+  const nextData = readerParseJsonScript(html, "__NEXT_DATA__");
+  if (nextData !== null) payloads.push({ value: nextData, source: "next-data" });
+  const nuxtData = readerParseJsonScript(html, "__NUXT_DATA__");
+  if (nuxtData !== null) payloads.push({ value: nuxtData, source: "nuxt" });
+  payloads.push(...readerWindowAssignments(html, ["__NUXT__"], "nuxt"));
+  payloads.push(...readerWindowAssignments(html, ["__INITIAL_STATE__", "__PRELOADED_STATE__", "__APOLLO_STATE__"], "initial-state"));
+
+  const candidates = [];
+  for (const payload of payloads) {
+    const bodies = readerCollectEmbeddedBodies(payload.value, payload.source)
+      .sort((a, b) => substantialReaderTextLength(stripTags(b.value)) - substantialReaderTextLength(stripTags(a.value)))
+      .slice(0, 8);
+    for (const body of bodies) {
+      const markdown = readerEmbeddedBodyToMarkdown(body.value, { title: body.title, baseUrl: pageUrl });
+      if (!markdown) continue;
+      candidates.push({
+        title: body.title,
+        byline: body.byline,
+        published: body.published,
+        markdown,
+        source: body.source,
+      });
+    }
+  }
+  return candidates;
+}
+
+/**
+ * A <noscript> block is the markup a crawler without JavaScript sees; on a
+ * JavaScript shell it is often the only copy of the article. Combine the
+ * blocks, then run the same candidate scorer the markup path uses so class
+ * names and paragraph structure still count.
+ *
+ * @param {string} html
+ * @param {string} pageUrl
+ * @returns {Array<{ title: string, byline: string, published: string, markdown: string, source: string }>}
+ */
+function readerNoscriptCandidates(html, pageUrl) {
+  const blocks = [...html.matchAll(/<noscript\b[^>]*>([\s\S]*?)<\/noscript>/gi)].map((match) => match[1]);
+  if (!blocks.length) return [];
+  const combined = blocks.join("\n");
+  if (!validReaderText(cleanText(stripTags(combined)))) return [];
+  const candidate = bestReaderContentCandidate(combined) || combined;
+  const markdown = htmlToReaderMarkdown(candidate, { baseUrl: pageUrl });
+  if (!markdown || !validReaderText(markdown)) return [];
+  return [{ title: "", byline: "", published: "", markdown, source: "noscript" }];
+}
+
+/**
+ * The Reader's answer to an embedded-data page. Collects candidates from
+ * JSON-LD, framework hydration payloads, and <noscript>, then returns the
+ * LONGEST one whose plain text survives validation. Longest wins because a
+ * long string is almost always the article while a short one is a teaser or a
+ * meta description.
+ *
+ * @param {string} html
+ * @param {string} pageUrl
+ * @returns {{ title: string, byline: string, published: string, markdown: string, source: string } | null}
+ */
+function readerEmbeddedArticle(html, pageUrl) {
+  const candidates = [
+    ...readerJsonLdCandidates(html, pageUrl),
+    ...readerFrameworkCandidates(html, pageUrl),
+    ...readerNoscriptCandidates(html, pageUrl),
+  ];
+  let best = null;
+  let bestLength = -1;
+  for (const candidate of candidates) {
+    const text = cleanText(decodeHtml(candidate.markdown));
+    if (!validReaderText(text)) continue;
+    const length = substantialReaderTextLength(text);
+    if (length > bestLength) {
+      best = candidate;
+      bestLength = length;
+    }
+  }
+  return best;
+}
+
+/**
+ * Absolute HTTPS address of the page's AMP twin, or null. The route uses this
+ * later to try the lighter representation when the main page is a shell.
+ *
+ * @param {string} html
+ * @param {string} pageUrl
+ * @returns {string | null}
+ */
+function readerAmpUrl(html, pageUrl) {
+  for (const match of html.matchAll(/<link\b[^>]*>/gi)) {
+    const tag = match[0];
+    if (!/\brel=["']?amphtml["']?/i.test(tag)) continue;
+    const href = tag.match(/\bhref=["']([^"']+)["']/i)?.[1]?.trim();
+    if (!href) continue;
+    try {
+      const absolute = new URL(decodeHtml(href), pageUrl || undefined);
+      if (absolute.protocol === "https:") return absolute.href;
+    } catch {
+      // Keep looking: one malformed link should not hide a later good one.
+    }
+  }
+  return null;
 }
 
 // =============================================================================
@@ -701,7 +1095,12 @@ function substantialReaderTextLength(text) {
 function validReaderText(text) {
   const looksLikeScriptShell =
     /you need to enable javascript to run this app/i.test(text)
-    || /please enable javascript/i.test(text);
+    || /please enable javascript/i.test(text)
+    // A <noscript> notice is not the page: "This page requires JavaScript",
+    // "turn on JavaScript", "请启用 JavaScript". Read it as the shell it is, so
+    // the page goes to a rung that runs its scripts.
+    || (substantialReaderTextLength(text) < 600
+      && /(requires? javascript|turn on javascript|javascript (is )?(disabled|required|must be enabled)|enable javascript in your browser|(启用|开启|打开|需要)\s*javascript)/i.test(text));
   return !looksLikeScriptShell && substantialReaderTextLength(text) >= 80;
 }
 
@@ -778,7 +1177,7 @@ async function extractWithArticleExtractor(html, url, fallback = {}) {
  * @param {string} url
  * @returns {Promise<{
  *   title: string, url: string, site: string, author: string,
- *   date: string, text: string,
+ *   date: string, text: string, extractionPath: string,
  * }>}
  */
 async function cleanHtmlForReader(html, url) {
@@ -814,10 +1213,13 @@ async function cleanHtmlForReader(html, url) {
     metaContent(cleaned, "pubdate") ||
     "";
 
+  // Run all three ladders, then let the longest valid text win. A page can
+  // return a short teaser from the extractor and a full body from JSON-LD (or
+  // the reverse); picking the longest is what turns a part article into a
+  // whole one. Ties keep the earlier ladder.
   const extracted = await extractWithArticleExtractor(html, url, { title, description, author, date });
-  if (extracted) return extracted;
 
-  // Simple body extraction - look for semantic article/post containers before falling back to <body>.
+  // Heuristic markup path.
   let bodyContent = "";
   const articleMatch = cleaned.match(/<article\b[^>]*>([\s\S]*?)<\/article>/i);
   const candidate = bestReaderContentCandidate(cleaned);
@@ -829,22 +1231,65 @@ async function cleanHtmlForReader(html, url) {
     const bodyMatch = cleaned.match(/<body\b[^>]*>([\s\S]*?)<\/body>/i);
     bodyContent = bodyMatch ? bodyMatch[1] : cleaned;
   }
+  const heuristicText = cleanText(decodeHtml(htmlToReaderMarkdown(bodyContent, { title, description, baseUrl: url })));
 
-  const jsonLdText = stripReaderBoilerplate(readerJsonLdArticleBody(html), { title, description });
-  let text = jsonLdText || htmlToReaderMarkdown(bodyContent, { title, description, baseUrl: url });
-  text = cleanText(decodeHtml(text));
+  // Embedded-data path: JSON-LD, hydration payloads, and <noscript>.
+  const embedded = readerEmbeddedArticle(html, url);
+  const embeddedText = embedded ? cleanText(decodeHtml(embedded.markdown)) : "";
 
-  if (!validReaderText(text)) {
+  /** @type {Array<{ path: string, text: string }>} */
+  const winners = [];
+  if (extracted) winners.push({ path: "article-extractor", text: extracted.text });
+  if (embedded && validReaderText(embeddedText)) winners.push({ path: embedded.source, text: embeddedText });
+  if (validReaderText(heuristicText)) winners.push({ path: "heuristic", text: heuristicText });
+
+  if (!winners.length) {
     throw new Error("Reader could not extract readable article text. If this page is a JavaScript app, import a saved webarchive or document instead.");
   }
 
+  // The extractor's article is the cleanest when it has one. Data the page
+  // embeds replaces it only when it is clearly the fuller text (a JavaScript
+  // app whose markup holds a teaser); the heuristic scrape, which counts menus
+  // and footers in its length, is the last resort and never outbids either.
+  const extractorEntry = winners.find((entry) => entry.path === "article-extractor");
+  const embeddedEntry = winners.find((entry) => entry.path !== "article-extractor" && entry.path !== "heuristic");
+  let winner = extractorEntry || embeddedEntry || winners[0];
+  if (extractorEntry && embeddedEntry
+    && substantialReaderTextLength(embeddedEntry.text) > substantialReaderTextLength(extractorEntry.text) * 1.2) {
+    winner = embeddedEntry;
+  }
+  // A page that is not one article (a portal's front page) gives the
+  // extractor a caption or two; the scrape of the whole page is then the
+  // better reading, menus and all.
+  const heuristicEntry = winners.find((entry) => entry.path === "heuristic");
+  const winnerLength = substantialReaderTextLength(winner.text);
+  if (heuristicEntry && winner !== heuristicEntry && winnerLength < 400
+    && substantialReaderTextLength(heuristicEntry.text) > winnerLength * 3) {
+    winner = heuristicEntry;
+  }
+
+  if (winner.path === "article-extractor") {
+    return { ...extracted, extractionPath: "article-extractor" };
+  }
+  if (winner.path !== "heuristic") {
+    return {
+      title: embedded.title || title,
+      url,
+      site: siteFromUrl(url),
+      author: embedded.byline || author,
+      date: embedded.published || date,
+      text: winner.text,
+      extractionPath: embedded.source,
+    };
+  }
   return {
     title,
     url,
     site: siteFromUrl(url),
     author,
     date,
-    text,
+    text: winner.text,
+    extractionPath: "heuristic",
   };
 }
 
@@ -880,6 +1325,8 @@ module.exports = {
   metaContent,
   normalizeReaderComparable,
   readerJsonLdArticleBody,
+  readerEmbeddedArticle,
+  readerAmpUrl,
   bestReaderContentCandidate,
   stripReaderBoilerplate,
   htmlToReaderMarkdown,

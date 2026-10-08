@@ -85,6 +85,8 @@ const expectedItems = [
   ["window-pin-suspend", "window_pin_suspend"],
   ["window-pin-restore", "window_pin_restore"],
   ["window-pin-clear", "window_pin_clear"],
+  // The Dock switch (owner, 2026-10-08): the row reads Show or Hide to match.
+  ["window-toggle-dock", "show_dock"],
 ];
 const windowItems = menuDefinitionItems(windowDefinition(menuSets.finder).items);
 function menuDefinitionItems(definitions) {
@@ -137,6 +139,41 @@ for (const era of ["classic", "system-7", "platinum", "drawing-board", "aqua", "
     test.assert(state["window-menu"] || state["window-browse-special"], `${era} ${phone ? "narrow" : "wide"} exposes a menu path to All Windows`);
   }
 }
+// --- (b2) an empty desk in a Dock era ----------------------------------------
+// Show Dock / Hide Dock is the Window menu's last row (owner decision F11). The
+// menu used to leave the bar with the last window, so a hidden Dock on an empty
+// desk had no way back. A Dock era keeps the menu; System 6 still has none.
+{
+  const open = [...h.document.querySelectorAll(".window[data-window]:not(.is-hidden)")];
+  open.forEach((win) => win.classList.add("is-hidden"));
+  narrow = false;
+  await h.context.AISystem6Theme.applyTheme("snow-leopard", { persist: false, announce: false });
+  const empty = h.context.getActionAvailability();
+  test.assert(empty["window-menu"] && empty["window-toggle-dock"], "a Dock era keeps the Window menu and its Dock row on an empty desk");
+  test.assert(!empty["window-browse"], "with nothing open, All Windows greys rather than the whole menu leaving");
+  await h.context.AISystem6Theme.applyTheme("classic", { persist: false, announce: false });
+  test.assert(!h.context.getActionAvailability()["window-menu"], "System 6 still has no Window menu");
+  open.forEach((win) => win.classList.remove("is-hidden"));
+  // Leave a Window-menu era in place: the next case switches to System 6 and
+  // needs that to be a real change of era.
+  await h.context.AISystem6Theme.applyTheme("liquid-glass", { persist: false, announce: false });
+}
+// --- (c) the era change is itself a trigger ---------------------------------
+// The conditions were right whenever updateMenuState happened to run, but
+// nothing ran it on a change of era: the Window menu stayed on System 6's bar
+// after switching from Aqua, and was missing from Aqua's after switching from
+// System 6 until something else updated the menus (seen 2026-10-08). Rendered
+// menus carry data-menu-condition; the themechange event must re-evaluate them.
+const eraGate = h.document.createElement("div");
+eraGate.dataset.menuCondition = "window-menu";
+h.document.body.append(eraGate);
+narrow = false;
+await h.context.AISystem6Theme.applyTheme("classic", { persist: false });
+test.assert(eraGate.classList.contains("is-hidden"), "switching to System 6 hides a rendered Window menu without another trigger");
+await h.context.AISystem6Theme.applyTheme("liquid-glass", { persist: false });
+test.assert(!eraGate.classList.contains("is-hidden"), "switching to a Window-menu era shows it again the same way");
+eraGate.remove();
+
 await h.context.AISystem6Theme.applyTheme("nextstep", { persist: false, announce: false });
 narrow = false;
 if (!h.context.AISystem6NextstepMenus) h.run(read("app/core/nextstep-menus.js"));

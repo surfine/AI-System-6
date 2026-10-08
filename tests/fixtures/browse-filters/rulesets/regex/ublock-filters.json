@@ -1,0 +1,3 @@
+[
+  {"action":{"type":"block"},"condition":{"regexFilter":"^https?://regex\\.example\\.com/[a-z]+\\.js$","resourceTypes":["script"]},"priority":10}
+]

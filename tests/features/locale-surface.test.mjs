@@ -52,4 +52,21 @@ test.assert(
   "index.html has no visible Liquid Cover copy"
 );
 
+// The first project's name must never be the translation key itself
+// (2026-10-08). Before the language table arrives t() answers with the key;
+// that string was stored as the project name and shown on the menu bar for
+// good. Run the real namer with a key-echoing t(), and check that a record
+// already stored with the key reads back through the current language.
+{
+  const vm = await import("node:vm");
+  const app = read("app.js");
+  const configSource = read("app/core/config.js");
+  const from = app.indexOf("function getDefaultProjectName()");
+  const namer = app.slice(from, app.indexOf("\n}", from) + 2);
+  const context = { defaultProjectName: "New Project", t: (key) => key };
+  vm.runInNewContext(`${namer}\nglobalThis.name = getDefaultProjectName();`, context);
+  test.assert(context.name === "New Project", `a namer that runs before the language table falls back to the app-authored name (got ${context.name})`);
+  test.assertIncludes(configSource, '"default_project_name"]),', "a record already stored with the key is read back as an app-authored name");
+}
+
 test.finish();

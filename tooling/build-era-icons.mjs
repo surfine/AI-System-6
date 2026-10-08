@@ -1498,6 +1498,10 @@ if (selectedThemes.includes("liquid-glass")) await import("./build-liquid-glass-
 const { buildAddedAppIcons } = await import("./build-added-app-icons.mjs");
 await buildAddedAppIcons({ eras: [...selectedThemes] });
 
+// Supplemental application artwork is a separate cohort from the accepted core.
+const { buildCompletionIcons } = await import("./build-completion-icons.mjs");
+await buildCompletionIcons({ eras: [...selectedThemes] });
+
 // Golden Gate is a runtime correction over the complete Liquid Glass family.
 // It records the 59-object mask matrix and proof boards after supplemental
 // applications have merged, while leaving authored PNG bytes untouched.

@@ -66,7 +66,7 @@ const securityHeaders = Object.freeze([
   // http://127.0.0.1:4173: the loopback bridge Soundscape uses for the Music
   // app remote and for Apple Music downloads (connect-src for the API,
   // media-src for the signed audio URLs).
-  "Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com https://www.youtube.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://audio-ssl.itunes.apple.com https://itunes.apple.com http://127.0.0.1:4173; media-src 'self' data: https://audio-ssl.itunes.apple.com http://127.0.0.1:4173; worker-src 'self' blob:; frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+  "Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com https://www.youtube.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://audio-ssl.itunes.apple.com https://itunes.apple.com http://127.0.0.1:4173; media-src 'self' data: https://audio-ssl.itunes.apple.com http://127.0.0.1:4173; worker-src 'self' blob:; frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com https://aisystem6-browse.pages.dev; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
 ]);
 
 /** The full `_headers` file contents. */

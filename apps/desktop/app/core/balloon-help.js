@@ -528,6 +528,11 @@ function balloonHelpKeepClearRects(target, field) {
   balloonHelpOpenSurfaces(target).forEach((surface) => push(surface.getBoundingClientRect(), BALLOON_HELP_WEIGHT.panel));
   push(balloonHelpPredictedPanelRect(target, field), BALLOON_HELP_WEIGHT.panel);
   balloonHelpPeerElements(target).forEach((peer) => push(peer.getBoundingClientRect(), BALLOON_HELP_WEIGHT.peer));
+  // The menu bar is where the next command lives. A balloon for a window's
+  // close box chose "above" and sat on the bar (Liquid Glass, 2026-10-08
+  // survey); unless the subject is in the bar, the bar is kept clear.
+  const menuBar = document.querySelector(".menu-bar");
+  if (menuBar && !menuBar.contains(target)) push(menuBar.getBoundingClientRect(), BALLOON_HELP_WEIGHT.panel);
   return rects;
 }
 

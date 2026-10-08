@@ -138,7 +138,7 @@ for (const pattern of assetGlobs) {
 
 // 2. The server itself plus its identity files. pkg used to discover server
 //    sources through the require graph; a plain tree names them explicitly.
-for (const relative of ["apps/server", "package.json", "package-lock.json", "build-info.json"]) {
+for (const relative of ["apps/server", "apps/browse", "package.json", "package-lock.json", "build-info.json"]) {
   cpSync(join(repoRoot, relative), join(payloadDir, relative), { recursive: true });
 }
 

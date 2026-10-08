@@ -140,12 +140,10 @@
     ["nextstep", freezeAuthoringMetadata({
       tokenFile: "apps/desktop/styles/69-nextstep-appearance.css",
       tokenSelector: 'html[data-theme="nextstep"],\nbody[data-theme="nextstep"]',
-      // Most icons retain Classic art; Theme Lab resolves the three new apps
-      // to their authored NeXTSTEP supplement per object.
       art: {
-        dir: "classic", ext: "svg", tiers: [32, 16],
-        ordinary: 32, compact: 16, large: 32,
-        zoom: [[32, 32], [32, 64], [32, 128], [32, 256]],
+        dir: "nextstep", ext: "png", tiers: [128, 64, 32, 16],
+        ordinary: 32, compact: 16, large: 128,
+        zoom: [[128, 128], [64, 128], [32, 96], [16, 64]],
         appearances: ["default"],
       },
     })],

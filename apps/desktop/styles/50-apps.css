@@ -158,13 +158,18 @@
 .writing-mode-seg + .writing-mode-seg {
   border-left: 1px solid currentColor;
 }
+/* The selected segment wears the era's own view-switch thumb, the same
+   tokens the Finder's icon/list switch reads, so the two switches in one era
+   agree. The old ink background with --selected-fg was ink on ink in Liquid
+   Glass, whose --selected-fg is dark: "Write" became an unlabeled black block
+   (2026-10-08). The foundation defaults keep System 6's reversed pair. */
 .writing-mode-seg.is-on {
-  background: var(--ink);
-  /* The reversed pair is a FOREGROUND token, not the window material: under
-     Aqua Sierra and Liquid Glass --window-bg is a gradient, and a gradient in
-     `color` dies at computed-value time, falling back to --ink — ink on ink,
-     an invisible label. --selected-fg is solid in every appearance. */
-  color: var(--selected-fg);
+  background: var(--view-switch-thumb-bg, var(--ink));
+  color: var(--view-switch-active-fg, var(--paper));
+  /* Liquid Glass paints button text with -webkit-text-fill-color, which
+     wins over color: the white label still filled dark on the dark thumb. */
+  -webkit-text-fill-color: currentColor;
+  box-shadow: var(--view-switch-thumb-shadow, none);
 }
 
 .teachtext-desk-strip {
@@ -2669,20 +2674,19 @@ input[type="radio"]:focus-visible {
 
 /* A checked radio's art draws its own rim in every era that has a border, so
    the unchecked well's border steps aside unless the era names a checked rim. */
+/* --radio-checked-size lets an era with one-layer native art (Platinum's 12px
+   SVG) size it whole. The fixed two-layer default drew that art at the dot's
+   7px, so Platinum's selected radio was a speck (2026-10-08). */
 input[type="radio"]:checked {
   border-color: var(--radio-checked-border-color, transparent);
   background-image: var(--radio-checked-image);
-  background-size:
-    7px 7px,
-    var(--system-radio-size) var(--system-radio-size);
+  background-size: var(--radio-checked-size, 7px 7px, var(--system-radio-size) var(--system-radio-size));
 }
 
 input[type="radio"]:checked:hover,
 input[type="radio"]:checked:focus-visible {
   background-image: var(--radio-checked-focus-image);
-  background-size:
-    7px 7px,
-    var(--system-radio-size) var(--system-radio-size);
+  background-size: var(--radio-checked-size, 7px 7px, var(--system-radio-size) var(--system-radio-size));
 }
 
 input[type="checkbox"]:focus-visible,

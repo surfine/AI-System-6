@@ -91,6 +91,10 @@ const test = createFeatureTest("clip-claim-write-back");
 {
   const vmw = createAppBootVm();
   await vmw.run("ensureTimeMachineModule()");
+  // Status lines are compared through t(); until the lazy translation table
+  // arrives t() answers with the key, so a line set before and one read after
+  // would differ for a reason that has nothing to do with the claim.
+  await vmw.run("typeof whenLanguageReady === 'function' ? whenLanguageReady() : null");
   vmw.run(`
     timeMachineReaderSelection = () => ({ selection: null, text: "hello" });
     window.__cmReturn = null;
@@ -113,6 +117,10 @@ const test = createFeatureTest("clip-claim-write-back");
 {
   const vmw = createAppBootVm();
   await vmw.run("ensureTimeMachineModule()");
+  // Status lines are compared through t(); until the lazy translation table
+  // arrives t() answers with the key, so a line set before and one read after
+  // would differ for a reason that has nothing to do with the claim.
+  await vmw.run("typeof whenLanguageReady === 'function' ? whenLanguageReady() : null");
   vmw.run(`
     timeMachineReaderSelection = () => ({ selection: null, text: "hello" });
     getTranslationTargetForUi = () => "zh";

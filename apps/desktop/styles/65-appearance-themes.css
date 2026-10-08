@@ -1072,6 +1072,7 @@ body[data-theme="yosemite"] {
   /* 黑体-简: the Simplified system face from Lion through Yosemite. */
   --theme-ui-font: "Helvetica Neue", Helvetica, "Heiti SC", "STHeiti", "Microsoft YaHei", sans-serif;
   --theme-title-font: var(--theme-ui-font);
+
   --system-readable-min: 13px;
   --system-title-size: 13px;
   --system-control-size: 13px;
@@ -1509,7 +1510,10 @@ body[data-theme="yosemite"] {
   --menu-panel-border: 1px solid rgba(0, 0, 0, 0.11);
   --menu-panel-radius: 6px;
   --menu-panel-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
-  --menu-panel-backdrop-filter: blur(7px);
+  /* 20px like the bar: the 10.10 capture shows only blurred wallpaper colour
+     through a menu; at 7px Finder labels behind stayed readable and collided
+     with the items (2026-10-08). */
+  --menu-panel-backdrop-filter: blur(20px) saturate(165%);
   /* Real 10.10 Apple menu capture (512 Pixels, 1:1 at 2x): the open-menu
      selection is a deep saturated blue (#0f74f5 measured from the capture)
      with white labels; the menu keeps a subtle vertical ramp, not the pale
@@ -1617,6 +1621,16 @@ body[data-theme="yosemite"] {
   --control-strip-gauge-bg: rgba(255, 255, 255, 0.9);
   --control-strip-grip-inset: 6px 0;
   --control-strip-grip: repeating-linear-gradient(to bottom, #9a9a9a 0 1px, rgba(0, 0, 0, 0) 1px 4px) 50% 50% / 2px 100% no-repeat;
+}
+
+/* The 10.10 alert (512 Pixels' Empty Trash capture): a hairline grey edge, a
+   5 px corner and a soft drop shadow, no frame. Written as a rule, the way
+   Big Sur's is, so the frame does not become a token every era must answer;
+   the base double black frame is System 6's alert. */
+body[data-theme="yosemite"] :is(.system-modal, .startup-settings-modal) {
+  border: 1px solid rgba(0, 0, 0, 0.22);
+  border-radius: 5px;
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.32);
 }
 
 /* Semantic aliases keep application selectors independent of the era. */

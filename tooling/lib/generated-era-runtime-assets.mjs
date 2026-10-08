@@ -10,6 +10,7 @@ export const THEME_LAB_PACKAGED_ERAS = Object.freeze(["system-7", "aqua", "snow-
 const COMPLETE_ICON_IDS = Object.freeze([...ICON_IDS, ...ADDED_APP_ICON_IDS]);
 const EXTENDED_ICON_IDS = Object.freeze([
   "micropolis", "openttd", "doom", "bonsaiCity", "lightroom", "imagePromptStudio",
+  "rootline", "joyride", "mingwen",
 ]);
 // Standalone PNGs referenced outside the complete per-era icon-family globs.
 // Aqua/Snow sprites remain compatibility artifacts; contextual icon dispatch
@@ -68,7 +69,7 @@ export function generatedEraCompatibilityManifestReport(repositoryRoot = resolve
     const unexpectedNames = matchedNames.filter((name) => !manifestNames.includes(name) && !extensionNames.includes(name));
     const missingNames = manifestNames.filter((name) => !matchedNames.includes(name));
     if (unexpectedNames.length || missingNames.length) {
-      throw new Error(`${eraId}: ${pattern} does not match the 59 manifest assets plus the six reviewed extensions`);
+      throw new Error(`${eraId}: ${pattern} does not match the base manifest assets plus the application extensions`);
     }
 
     return {
@@ -109,13 +110,16 @@ export function themeLabPackagedAssetReport(repositoryRoot = resolve(moduleDirec
     const themeRoot = join(repositoryRoot, "apps/desktop/assets/themes", eraId);
     const familyPath = join(themeRoot, `${eraId}-icon-family.json`);
     const family = JSON.parse(readFileSync(familyPath, "utf8"));
+    const supplementPath = join(repositoryRoot, "apps/desktop/assets/themes/completion-icon-extension.json");
+    const supplement = JSON.parse(readFileSync(supplementPath, "utf8")).eras[eraId]?.icons || {};
+    family.icons = { ...family.icons, ...supplement };
     // Big Sur's family is complete. NeXTSTEP's is partial by design, and which
     // objects own artwork is stated once, in the continuity ledger's
     // runtimeCoverageByEra scope -- the same list the provenance matrix reads.
     // Keeping it here as a second hard-coded trio is how a batch of real
     // object art ends up reported as "the other 56 use Classic".
-    const independentIds = eraId === "big-sur" ? COMPLETE_ICON_IDS
-      : eraId === "nextstep" ? (nextstepCoverage(repositoryRoot).independentIconIds || [])
+    const independentIds = eraId === "big-sur" ? [...COMPLETE_ICON_IDS, ...Object.keys(supplement)]
+      : eraId === "nextstep" ? [...new Set([...(nextstepCoverage(repositoryRoot).independentIconIds || []), ...Object.keys(supplement)])]
         : null;
     if (independentIds) {
       const declaredIds = Object.keys(family.icons || {});

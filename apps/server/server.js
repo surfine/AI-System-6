@@ -19,6 +19,11 @@ const {
 const { appName, appVersion, appBuild } = require("./server/lib/build-info.js");
 const { handleStatic } = require("./server/static.js");
 const { deploymentProfile } = require("./server/runtime-profile.js");
+const {
+  handleBrowseHost,
+  handleBrowseUpgrade,
+  isBrowseHostRequest,
+} = require("./server/browse/relay-node.js");
 const { runWithPublicGuard } = require("./server/security/public-session.js");
 const {
   applySecurityHeaders,
@@ -34,6 +39,18 @@ const host = localRequestPolicy.host;
 const server = http.createServer(async (req, res) => {
   const requestId = crypto.randomUUID();
   res.setHeader("X-Request-ID", requestId);
+  // The browse origin is a different site served by this process. It shares
+  // no route, header or file with the desk, so it is split off first.
+  if (isBrowseHostRequest(req)) {
+    try {
+      await handleBrowseHost(req, res);
+    } catch (error) {
+      console.error(JSON.stringify({ level: "error", request_id: requestId, browse: true, error: String(error?.message || error) }));
+      if (!res.headersSent) res.writeHead(500).end();
+      else res.destroy();
+    }
+    return;
+  }
   applySecurityHeaders(res);
   if (
     deploymentProfile === "public"
@@ -92,6 +109,16 @@ const server = http.createServer(async (req, res) => {
       request_id: requestId,
     });
   }
+});
+
+// WebSockets exist only on the browse origin, for the pages Time Machine
+// shows; the desk itself opens none.
+server.on("upgrade", (req, socket, head) => {
+  if (isBrowseHostRequest(req)) {
+    handleBrowseUpgrade(req, socket, head);
+    return;
+  }
+  socket.end("HTTP/1.1 404 Not Found\r\nConnection: close\r\nContent-Length: 0\r\n\r\n");
 });
 
 server.headersTimeout = 10000;

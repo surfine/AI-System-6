@@ -140,7 +140,7 @@ const themeLab = read("app/features/theme-lab.js");
 const iconWindow = {};
 vm.runInNewContext(icons, { window: iconWindow });
 const iconSetIds = iconWindow.AISystem6SystemIcons.ids;
-test.assert(iconSetIds.length === 65, `the shared painter exposes the 56 canonical objects, three supplemental applications, four distinct games, 文字亮室, and Image Prompt Studio (found ${iconSetIds.length})`);
+test.assert(iconSetIds.length === 68, `the shared painter exposes the 56 canonical objects, three supplemental applications, four distinct games, 文字亮室, Image Prompt Studio, Rootline, Joyride, and Plaintext (found ${iconSetIds.length})`);
 test.assert(iconSetIds.includes("hardDisk"), "the shared Theme Lab vocabulary no longer aliases hard disk to startup disk");
 test.assert(iconSetIds.includes("control"), "the shared Theme Lab vocabulary includes the distinct control utility icon");
 test.assertIncludes(themeLab, "appearanceIconIds()", "Theme Lab renders the painter-owned icon vocabulary");
