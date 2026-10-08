@@ -1,0 +1,62 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude-Pop · AI System 6</title>
+<style>
+  /* Pixel faces from the system.css reference: drawn at 16px they land exactly on the pixel grid. */
+  @font-face { font-family: "Chicago12"; src: url(../../system.css-reference/fonts/ChiKareGo2.woff2) format("woff2"), url(../../system.css-reference/fonts/ChiKareGo2.woff) format("woff"); }
+  @font-face { font-family: "ChicagoFLF"; src: url(../../system.css-reference/fonts/ChicagoFLF.woff2) format("woff2"), url(../../system.css-reference/fonts/ChicagoFLF.woff) format("woff"); }
+  @font-face { font-family: "Geneva9"; src: url(../../system.css-reference/fonts/FindersKeepers.woff2) format("woff2"), url(../../system.css-reference/fonts/FindersKeepers.woff) format("woff"); }
+  @font-face { font-family: "Monaco9"; src: url(../../system.css-reference/fonts/monaco.woff2) format("woff2"), url(../../system.css-reference/fonts/monaco.woff) format("woff"); }
+  /* Later eras: outline faces, always rasterised and thresholded to hard pixels by core.js */
+  @font-face { font-family: "Charcoal8"; src: url(../../apps/desktop/assets/fonts/barlow-condensed/BarlowCondensed-SemiBold-latin.woff2) format("woff2"); }
+  @font-face { font-family: "Asap"; src: url(../../apps/desktop/assets/fonts/platinum/Asap-Variable.woff2) format("woff2"); }
+  html, body { margin: 0; background: #000; height: 100%; }
+  body { display: grid; place-items: center; overflow: hidden; }
+  #crt { position: relative; width: min(100vw, 177.78vh); aspect-ratio: 16 / 9; }
+  #screen { width: 100%; height: 100%; display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+  /* the same finish render.mjs adds with ffmpeg: a faint scanline every third output row, and a vignette */
+  #crt::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(to bottom, transparent 0 66.6%, rgba(0, 0, 0, .10) 66.6% 100%) 0 0 / 100% calc(100% / 360),
+                radial-gradient(ellipse at center, transparent 58%, rgba(0, 0, 0, .32) 100%); }
+  #hud { position: fixed; left: 8px; top: 6px; font: 12px/1.4 ui-monospace, monospace; color: #7f7; opacity: .75; white-space: pre; pointer-events: none; }
+  #hud.off { display: none; }
+</style>
+<div id="crt"><canvas id="screen" width="640" height="360"></canvas></div>
+<div id="hud"></div>
+<audio id="song" src="build/song.wav" preload="auto"></audio>
+
+<script>
+  // The scene registry. A chapter registers its shots with scene(name, t0, t1, fn, opts); main.js draws the one
+  // that covers the current song time. fn(t, local, dur) is called once per frame (twice during an era morph).
+  // opts: era ('system6' | [[t, 'system6'], [t2, 'system7'], ...]), morph (s), morphStyle, desk, raw, menu, dock.
+  const SCENES = [];
+  function scene(name, t0, t1, fn, opts = {}) { SCENES.push({ name, t0, t1, fn, opts, order: SCENES.length }); }
+  // Script files that are listed here but missing (a chapter not written yet) are tolerated: they are noted and skipped.
+  const MISSING = [];
+</script>
+<script src="data/data.js" onerror="MISSING.push('data/data.js')"></script>
+<script src="src/core.js"></script>
+<script src="src/eras.js"></script>
+<script src="src/ui.js"></script>
+<script src="src/clio.js"></script>
+<script src="src/apps.js"></script>
+
+<!-- ===================== CHAPTERS =====================
+     One file per chapter, in song order. A chapter that does not exist yet is skipped (onerror). -->
+<script src="src/ch01.js" onerror="MISSING.push(this.getAttribute('src'))"></script>
+<script src="src/ch02.js" onerror="MISSING.push(this.getAttribute('src'))"></script>
+<script src="src/ch03.js" onerror="MISSING.push(this.getAttribute('src'))"></script>
+<script src="src/ch04.js" onerror="MISSING.push(this.getAttribute('src'))"></script>
+<script src="src/ch05.js" onerror="MISSING.push(this.getAttribute('src'))"></script>
+<script src="src/ch06.js" onerror="MISSING.push(this.getAttribute('src'))"></script>
+<script src="src/ch07.js" onerror="MISSING.push(this.getAttribute('src'))"></script>
+<script src="src/ch08.js" onerror="MISSING.push(this.getAttribute('src'))"></script>
+<script src="src/ch09.js" onerror="MISSING.push(this.getAttribute('src'))"></script>
+<script src="src/ch10.js" onerror="MISSING.push(this.getAttribute('src'))"></script>
+<script src="src/ch11.js" onerror="MISSING.push(this.getAttribute('src'))"></script>
+<script src="src/ch12.js" onerror="MISSING.push(this.getAttribute('src'))"></script>
+<!-- =================== END CHAPTERS =================== -->
+
+<script src="src/specimen.js"></script>
+<script src="src/main.js"></script>
