@@ -1,5 +1,7 @@
-// specimen.js: the toolkit reel. With ?specimen, or when no chapter has registered a scene, it tiles 0..DUR (otherwise
-// it is parked once at 1000 s, past the end of the video) with:
+// specimen.js: the toolkit reel and the style reel.
+// The STYLE REEL (style.js: silhouette mode, the dancer, the pen, giant type, beat FX, the camera, the band) is always
+// parked at 1000 s, past the end of the video (?style plays it from 0). The toolkit reel: with ?specimen, or when no
+// chapter has registered a scene, it tiles 0..DUR (otherwise it is parked once at 1100 s, after the style reel) with:
 //   0-36 s   one 3-second scene per era: desktop, menu bar (pulled down), a document window, a dialog, icons,
 //            Clio singing at two scales, the pointer, a progress bar, typed text and a sung lyric
 //   then     the app windows (each shown in an early era on the left and a late era on the right), the widgets,
@@ -8,7 +10,7 @@
 'use strict';
 (function () {
   // With ?specimen, or when no chapter has registered a scene, the reel tiles the song from 0. Otherwise it is parked
-  // once at SPECIMEN_AT = 1000 s, past the end of the video, so `node render.mjs sheet 1000 1036 3` still shows it.
+  // once at KIT_AT = 1100 s, past the end of the video and the style reel: `node render.mjs sheet 1100 1136 3`.
   const forced = new URLSearchParams(location.search).has('specimen'), parked = !forced && SCENES.length > 0;
   if (forced) SCENES.length = 0;
 
@@ -165,9 +167,224 @@
     cursor(t, [[s0, 200, 200], [s0 + 6, 420, 120], [s0 + 12, 200, 200]]);
   }, { era: APPEARANCES.map((e, i) => [i, e.id]), eraLocal: true, morph: .45 });
 
+  // =====================================================================================================
+  // THE STYLE REEL (style.js), parked at STYLE_AT = 1000 s whatever else is registered (past the end of the video):
+  //   node render.mjs sheet 1000 1046.5 0.25 build/style-sheet.png
+  // Most shots borrow a stretch of song time (warp: T is the song time inside them), so the beat FX, the band, the
+  // dance and the lyric sync run on the real EVENTS and LYRICS (fake lines stand in when the song is missing).
+  // The silhouette rule, every frame: ONE hero (a word or a pose), the white pen, and nothing that does not serve them.
+  // No glyph of big type may be more than 10% covered: legibilityAudit(1000, 1049) checks it.
+  // =====================================================================================================
+  const STYLE = [], sadd = (name, dur, fn, opts = {}) => STYLE.push({ name: 'style ' + name, dur, fn, opts });
+  const warp = (s0, fn) => (t, l, d) => { const st = s0 + l; T = st; return fn(st, l, d); };
+  const lyr = (id, str, t0, t1) => { try { const l = lyric(id); if (!l.placeholder && !SONG_MISSING) return l; } catch (e) { /* not in this song */ } return fakeLine(str, t0, t1); };
+  const L1 = {
+    pre: lyr('pre1d', 'stay in your hand.', 34, 35), a: lyr('chorus1a', "I'm just your pen pal,", 35.25, 37.25), e: lyr('chorus1a_echo', '(pen pal)', 37.25, 37.75),
+    b: lyr('chorus1b', "I'll never hold the pen.", 37.75, 40), c: lyr('chorus1c', 'You say where I land,', 40, 42),
+    g: lyr('chorus1g', 'Who holds the pen?', 48, 49.75), h: lyr('chorus1h', 'You do! You do!', 50, 52), la: lyr('q3', 'La la la, la la la la.', 52, 54),
+    tmp: lyr('i2', 'Everything I say is temporary.', 8, 11), v2: lyr('v2a', 'Chat is an app. Not the whole computer.', 60, 63.75),
+  };
+  const DOWN = section('chorus1') ? section('chorus1').start : 36;   // the chorus downbeat ("pen")
+  // the writer's rig: the pointer holds the white pen on its long cord; the pen hangs and swings with the beat
+  const rig = (t, px, py, o = {}) => {
+    const s = o.scale ?? 4, th = (o.swing ?? .3) * Math.sin(beatPhase(t, 2) * Math.PI * 2) + (o.lean ?? 0), len = o.len ?? 60;
+    const ax = px + 5, ay = py + 15, ang = Math.atan2(Math.cos(th), Math.sin(th));
+    const bx = ax + Math.cos(ang) * len, by = ay + Math.sin(ang) * len;
+    return { ax, ay, bx, by, ang, s, tip: [R(bx + Math.cos(ang) * 36 * s), R(by + Math.sin(ang) * 36 * s)] };
+  };
+  const penRig = (t, px, py, o = {}) => {
+    const g = rig(t, px, py, o);
+    penCord([[g.ax, g.ay], [g.bx, g.by]], { sag: o.sag ?? 9, swing: o.cordSwing ?? 6, t });
+    pen(g.tip[0], g.tip[1], g.ang, g.s, { t });
+    CUR = { x: px, y: py, kind: 'arrow', down: o.down };
+    return g;
+  };
+  // the pen lying level across the top of a poster, its cord running up to the pointer (the type keeps the frame below it)
+  const penBar = (t, x, y, o = {}) => {
+    const s = o.scale ?? 4, bob = R(2 * pulse(t, 1, 6)), tip = [x, y + bob], back = [x - R(36.5 * s), y + bob];
+    penCord([[back[0], back[1]], [o.px ?? back[0] - 40, o.py ?? 4]], { sag: 14, swing: 4, t });
+    pen(tip[0], tip[1], 0, s, { t });
+    CUR = { x: o.px ?? back[0] - 45, y: (o.py ?? 4) - 14, kind: 'arrow' };
+  };
+  const MS = ['# Pen Pal', 'The engineers at La Rance never called it renewable energy. They called it the tide, and they billed it by the moon.', 'Twice a day the estuary fills.'];
+  const fld1 = FIELDS.magenta;
+
+  // ---- 1. flood in: the 1988 desk, the pen touches down at once, and the chorus floods out of its tip in 10 hard
+  // one-frame steps onto the downbeat, the tip dragging a white trail; the frame inverts for two frames on the cover ----
+  const ptrIn = t => track(t, [[35, 300, 44], [35.25, 236, 40], [DOWN, 520, 16]]);
+  const floodT0 = DOWN - 10 / FPS;
+  sadd('flood in', 1, warp(35, (t) => {
+    UI.menu = { app: 'TeachText' };
+    APP.teachText(14, 34, 296, 206, { title: 'Manuscript', lines: MS, typing: { text: 'The pen stays in your hand', t0: 35, t1: 35.8 } });
+    clio(470, 176, { scale: 4, mouth: 'sing', expr: 'sing', bob: 1, pose: 'point', point: 'left' });
+    kara(L1.a, 320, 300, { align: 'center', plate: true });
+    const [px, py] = ptrIn(t), g = penRig(t, px, py, { scale: 3, len: 40, swing: .12 });
+    const g0 = rig(floodT0, ...ptrIn(floodT0), { scale: 3, len: 40, swing: .12 });
+    overlay(() => {
+      inkFlood(floodT0, DOWN, g0.tip[0], g0.tip[1], tt => chorusFrame(Math.max(tt, DOWN), { noFX: true, noPen: true }), { steps: 10 });
+      if (t >= floodT0) { const pts = []; for (let tt = floodT0; tt <= t + 1e-6; tt += 1 / FPS) pts.push(rig(tt, ...ptrIn(tt), { scale: 3, len: 40, swing: .12 }).tip); penTrail(pts, { w: 3 }); pen(g.tip[0], g.tip[1], g.ang, 3, { t, flash: false }); }
+    });
+  }), { era: 'system6' });
+
+  // ---- 2. the chorus, six seconds: one flat magenta field, the hook as the poster, Clio as the hero dancer ----
+  const chorusFrame = (t, o = {}) => withEra('system7', () => {
+    rect(0, 0, W, H, fld1);
+    let d;
+    if (t < L1.b.start) {   // PEN / PAL: the type is the hero. Plain black letters, no menu bar; on the echo "(pen pal)"
+      const echo = t >= L1.e.start;  // the frame flips: full-bleed black slabs, field letters (slabs first, then letters)
+      const ty = { t, words: L1.a, scale: 19, color: echo ? fld1 : C.black, invert: echo, slab: C.black, slabMode: 'bleed', pad: 1, slam: echo ? L1.e.start : null };
+      bigTypes([['PEN', { ...ty, x: -8, align: 'left', valign: 'top', y: 4 }], ['PAL', { ...ty, x: W + 8, align: 'right', valign: 'bottom', y: H - 4 }]]);
+      d = clioDance(98, H - 8, 5, t, { field: fld1, ground: false });
+      if (!o.noPen) penRig(t, 560, 0, { scale: 4, len: 14, swing: .08 });
+    } else if (t < L1.c.start) {   // I'LL NEVER / HOLD / THE PEN.: a justified block, a window slab peeking in, Clio beside it
+      slabWindow(500, 8, 200, 130, { cut: fld1 });
+      bigType(["I'LL NEVER", 'HOLD', 'THE PEN.'], { t, words: L1.b, justify: 438, fitH: 336, lead: 2, color: C.black, x: 8, align: 'left', y: 184 });
+      d = clioDance(560, H - 8, 5, t, { field: fld1 });
+      penRig(t, 466, -16, { scale: 4, len: 12, swing: .04 });
+    } else {                       // YOU SAY / WHERE I / LAND,: Clio is the hero; she jumps and lands where the writer clicks
+      bigType(['YOU SAY', 'WHERE I', 'LAND,'], { t, words: L1.c, justify: 300, fitH: 300, lead: 2, color: C.black, x: 10, align: 'left', y: 190 });
+      const land = wordAt(L1.c, -1).start, air = t >= land - .5 && t < land;
+      d = clioDance(R(lerp(584, 504, easeOut(prog(t, land - .5, land)))), H - 10, 8, t, { field: fld1, pose: air ? 'jump' : t >= land && t < land + .5 ? 'cheer' : undefined, p: air ? prog(t, land - .5, land) : undefined });
+      const [px, py] = track(t, [[40, 366, 8], [40.9, 372, 22], [41.2, 384, 20]]);
+      penRig(t, px, py, { scale: 4, len: 20, swing: .08, lean: .1 });
+      if (t >= land && t < land + .25) clickBurst(504, H - 12, land, { pointer: false, color: C.white, scale: 2 });
+    }
+    if (!o.noFX) { beatFX(t, { clap: true }); invertFrame(DOWN, 2, t); }
+    return d;
+  });
+  sadd('chorus', 6, warp(36, (t) => { chorusFrame(t); }), { era: 'system7', raw: true });
+
+  // ---- 3. WHO / HOLDS / THE PEN?: a justified block, one letter per 16th, the pen level across the top; then YOU DO! on
+  // the two hits: the first black on the field with Clio in the split, the second a full-frame black flip ----
+  const whoFrame = t => withEra('system7', () => {
+    const youAt = L1.h.words[0].start, again = L1.h.words[2].start, second = t >= again && t < L1.h.words[3].start;   // the strobe: black on the second "you", back on "do!"
+    rect(0, 0, W, H, second ? C.black : fld1);
+    if (t < youAt - .1) {
+      bigType(['WHO', 'HOLDS', 'THE PEN?'], { t, stepIn: { t0: L1.g.start, div: 4 }, justify: W - 16, fitH: H - 64, lead: 2, color: C.black, x: W / 2, valign: 'top', y: 60 });
+      penBar(t, 466, 28, { scale: 4, px: 590, py: 6 });
+    } else {
+      const ln = t >= again ? { words: L1.h.words.slice(2) } : L1.h;
+      bigType(['YOU', 'DO!'], { t, words: ln, justify: 330, fitH: H - 24, lead: 1, color: second ? fld1 : C.black, x: 12, align: 'left', y: H / 2 });
+      punch(youAt, 170, 90, [2, 2]); punch(again, 170, 90, [2, 2]);
+      clioDance(500, H - 14, 7, t, { field: fld1, pose: 'cheer', p: beatPhase(t) });
+      penRig(t, 604, -12, { scale: 4, len: 10, swing: .05 });
+    }
+    beatFX(t, { clap: true });
+  });
+  sadd('who holds the pen', 4, warp(47.75, t => whoFrame(t)), { era: 'system7', raw: true });
+
+  // ---- 4. the post-chorus flips to the complementary field with a scanline wipe on 16ths: la la la, a new pose every beat ----
+  const POST_POSES = ['bounce', 'clap', 'robot', 'shimmy', 'disco', 'kick', 'vogue', 'jump'];
+  const postFrame = t => withEra('platinum', () => {
+    const fld = FIELDS.lime;
+    rect(0, 0, W, H, fld);
+    const la = L1.la.words, row = (ws, y) => bigType(ws.map(w => w.w.toUpperCase()).join(' '), { t, words: { words: ws }, justify: W - 24, max: 8, fitH: 64, color: C.black, valign: 'top', y });
+    row(la.slice(0, 3), 6); row(la.slice(3), 290);
+    clioDance(320, 282, 4, t, { field: fld, pose: POST_POSES[((Math.floor(beatAt(t)) % 8) + 8) % 8], voice: 'choir' });
+    penRig(t, 590, 96, { scale: 3, len: 14, swing: .1 });
+    beatFX(t);
+  });
+  sadd('post-chorus', 2, warp(51.5, t => { if (t < 52) whoFrame(t); scanWipe(51.75, 52, postFrame, { band: 4 }); }), { era: 'platinum', raw: true });
+
+  // ---- 5. the pixel dive: into the writer's vermilion full stop of 1988; out of it the 1991 desk grows until it is the frame ----
+  const PERIOD = [334, 197];   // the full stop that ends the manuscript, at the same place in every era (windows stay put)
+  const eraDesk = (o = {}) => t => {
+    UI.menu = { app: 'TeachText' };
+    const doc = APP.teachText(146, E.menuH + 14, 208, 206, { title: 'Manuscript', lines: MS.slice(0, 2) });
+    if (doc) { const f = 'ui', y = PERIOD[1] - capH(f) + 2; rect(doc.x + 8, y - 4, PERIOD[0] - doc.x - 6, capH(f) + 8, P.win); text('You may now write', PERIOD[0] - 2, y, { font: f, align: 'right', color: P.text }); rect(PERIOD[0], PERIOD[1], 2, 2, FIELDS.vermilion); }
+    clio(362, 150, { scale: 4, expr: o.expr || 'sing', mouth: 0, blink: false, look: [0, 0] });
+    deskIcons([['hardDisk', 'Hard Disk'], ['fileFloppy', 'File Floppy']], { y: E.menuH + 10 });
+  };
+  sadd('dive', 4, (t, l) => { const s0 = t - l; diveInto(s0 + 1 / FPS, s0 + 3.5, PERIOD[0], PERIOD[1], eraDesk({ expr: 'surprised' }), eraDesk(), { outer: { era: 'system6' }, inner: { era: 'system7' }, pw: 2 }); }, { raw: true, era: 'system6' });
+
+  // ---- 6. the outro's pull-back: 2026 -> 2014 -> 2002 -> 1988, each inside the full stop of the one before, a step per
+  // two beats, then one vermilion dot; half a second of it, no more ----
+  const LAYERS = ['liquidglass', 'yosemite', 'aqua', 'system6'].map(era => ({ draw: eraDesk(), era, px: PERIOD[0], py: PERIOD[1], pw: 2 }));
+  sadd('pull-back', 4, (t, l) => { const s0 = t - l; pullBack(s0, s0 + 3.5, LAYERS, { dotWeight: .5, dotAt: [PERIOD[0], PERIOD[1]] }); }, { raw: true, era: 'liquidglass' });
+
+  // ---- 7. the band as a drum machine (song 32-38: the riser, the drop, the claps, the bell, the floppies); on the
+  // downbeat a scanline wipe turns it into silhouette mode: solid black instruments with cyan cut-outs ----
+  sadd('band', 6, warp(32, t => {
+    bandGrid(0, 0, W, H, { t });
+    overlay(() => scanWipe(DOWN - .25, DOWN, tt => bandGrid(0, 0, W, H, { t: tt, field: FIELDS.cyan }), { band: 4 }));
+  }), { era: 'system7', raw: true });
+
+  // ---- 8. the screen grows with history: 512x342 1-bit, then 640x400 in 256 colours, 640x480 in thousands, each held a
+  // beat or more; on the key change the bars are punched off (2-frame invert, a 2x punch, 4 hard steps) and it is 16:9 ----
+  const scrMap = l => l < 1.25 ? 34.75 + l : l < 2.25 ? 36 + (l - 1.25) : l < 3.25 ? 52 + (l - 2.25) : 127.75 + (l - 3.25);
+  sadd('screen', 4.5, (t, l) => {
+    const st = scrMap(l), sz = screenSize(st); T = st;
+    UI.menu = { app: 'TeachText', prop: (x, y, w, h) => depthChips(x + 2, y + 3, w - 4, h - 6, sz.bits), propW: 60 };
+    APP.teachText(14, E.menuH + 12, 250, 170, { title: 'Manuscript', lines: MS });
+    const cap = sz.name.replace('x', ' x ') + '   ' + (sz.bits === 1 ? '1-BIT' : sz.bits === 8 ? '256 COLOURS' : sz.bits === 16 ? 'THOUSANDS' : 'MILLIONS');
+    const cw = tw(cap, 'chicago', 2) + 24, cx = R(W / 2 - cw / 2), cy = E.dock ? H - 128 : H - 70;
+    rect(cx, cy, cw, 52, C.black); text(cap, W / 2, cy + 8, { font: 'chicago', scale: 2, align: 'center', color: C.white }); depthChips(cx + 12, cy + 34, cw - 24, 12, sz.bits);
+    clio(W - 140, 70, { scale: 4, mouth: 'sing', bob: 1 });
+    CUR = { x: W / 2 + 40, y: H / 2 - 20, kind: 'arrow' };
+  }, { screen: (t) => screenSize(scrMap(t - STYLE_AT_OF('screen'))), era: t => songEra(scrMap(t - STYLE_AT_OF('screen'))) });
+
+  // ---- 9. type: a justified block that bleeds off the sides only, PEN over PAL, a slammed slab, ghost words ----
+  sadd('type', 4, (t, l) => {
+    const pg = Math.min(3, Math.floor(l)), u = l - pg;
+    if (pg === 0) { rect(0, 0, W, H, FIELDS.cyan); bigType(['WHO', 'HOLDS', 'THE PEN?'], { t, stepIn: { t0: t - u, div: 16 }, justify: W, bleed: 10, fitH: H - 40, lead: 1 }); }
+    else if (pg === 1) { rect(0, 0, W, H, FIELDS.lime); bigType(['PEN', 'PAL'], { t, justify: W - 40, fitH: H - 48, lead: 1, slam: t - u + (u >= .5 ? .5 : 0) }); }
+    else if (pg === 2) { rect(0, 0, W, H, C.black); bigType(['YOU', 'DO!'], { t, justify: W - 120, fitH: H - 56, lead: 1, color: C.white, slam: t - u + (u >= .5 ? .5 : 0), shadow: [FIELDS.magenta, 1, 1] }); }
+    else { rect(0, 0, W, H, C.white); const ln = L1.tmp, tt = lerp(ln.start, ln.end + .2, u); bigType(['EVERYTHING I SAY', 'IS TEMPORARY.'], { t: tt, words: ln, ghost: true, justify: W - 40, lead: 3, max: 10 }); }
+  }, { raw: true, era: 'system6' });
+
+  // ---- 10. the hard beat FX, one after another, on a frozen chorus frame ----
+  const deskAqua = t => {
+    UI.menu = { app: 'ClioTalk' };
+    APP.clioTalk(130, 46, 330, 220, { msgs: [{ who: 'you', text: 'Chat is an app.', at: L1.v2.start, typing: .6 }, { who: 'clio', text: 'Not the whole computer.', at: L1.v2.words[4] ? L1.v2.words[4].start : L1.v2.start + 2 }] });
+    clio(476, 150, { scale: 4, mouth: 'sing', expr: 'sing', bob: 2 });
+    cursor(t, [[59.5, 560, 40], [60.2, 300, 240, 'click'], [61, 330, 250]]);
+  };
+  const FXS = [['invert (phrase hit)', () => { FX.invert = (Math.floor(T * FPS) % 8) < 1; }], ['split, palette 2px', () => splitPal(2)], ['pixel sort, type kept', u => pixelSort(40, 300, null, 2)], ['punch 3x 2x', u => punch(0, 320, 150, [3, 3, 3, 2, 2, 2], u)],
+    ['scan wipe', u => scanFX(u / .75, { color: C.black, edge: C.white })], ['posterize 2', () => { ctx.drawImage(frameInto(styleBuf('reelB'), 60.5, deskAqua, { era: 'tiger' }), 0, 0); posterize(2); }]];
+  sadd('fx', 4.5, (t, l) => {
+    const i = Math.min(FXS.length - 1, Math.floor(l / .75)), u = l - i * .75;
+    if (i < FXS.length - 1) { T = 39.7; chorusFrame(39.7, { noFX: true }); T = t; }
+    FXS[i][1](u);
+    overlay(() => { const s = FXS[i][0], w = tw(s, 'monaco') + 10; rect(8, H - 22, w, 14, C.black); text(s, 13, H - 19, { font: 'monaco', color: C.white }); });
+  }, { raw: true, era: 'system7' });
+
+  // ---- 11. the dance: every pose (forced) on the beat; for the last two seconds the faces are blacked out (the shape test) ----
+  sadd('dance', 4, warp(52, (t, l) => {
+    rect(0, 0, W, H, FIELDS.lime);
+    const face = l < 2;
+    DANCE_POSES.forEach((p, i) => { const x = 80 + (i % 4) * 160, y = 112 + Math.floor(i / 4) * 120; clioDance(x, y, 3, t, { pose: p, field: FIELDS.lime, face, ground: true }); text(p, x - 74, y - 104, { font: 'monaco', color: C.black }); });
+    text(face ? 'faces on' : 'faces off: the shape test', W - 8, H - 12, { font: 'monaco', align: 'right', color: C.black });
+  }), { raw: true, era: 'platinum' });
+
+  // ---- 12. out of silhouette mode on the beat: the field drains back into the pen tip in 10 hard steps onto the downbeat
+  // (pixel-sorted as it goes), the 2002 desk is there and alive, and the landing punches in ----
+  sadd('flood out', 2.5, warp(58.5, t => {
+    const end = 60, t0 = end - 10 / FPS, g0 = rig(t0, 560, 40, { scale: 3, len: 14 });
+    if (t < end) postFrame(t);
+    inkFlood(t0, end, g0.tip[0], g0.tip[1], tt => ctx.drawImage(frameInto(styleBuf('reelB'), tt, deskAqua, { era: 'aqua' }), 0, 0), { drain: true, seed: 3, steps: 10 });
+    if (t >= t0 && t < end) pixelSort(20, 260, null, 1);
+    if (t >= end) { punch(end, 300, 180, [2, 2, 2, 2]); invertFrame(end, 1); }
+  }), { raw: true, era: 'platinum' });
+
+  // pre-warm the caches the reel's first frames would build (the floods' shapes, every dance pose): no first-frame hitch
+  warmUp(() => {
+    const g0 = rig(floodT0, ...ptrIn(floodT0), { scale: 3, len: 40, swing: .12 }); _floodMap(g0.tip[0], g0.tip[1], 4, 7);
+    const g1 = rig(60 - 10 / FPS, 560, 40, { scale: 3, len: 14 }); _floodMap(g1.tip[0], g1.tip[1], 4, 3);
+  });
+
+  const STYLE_AT = 1000, styleTotal = STYLE.reduce((a, s) => a + s.dur, 0), _styleAt = {};
+  { let t = STYLE_AT; for (const s of STYLE) { _styleAt[s.name] = t; t += s.dur; } }
+  function STYLE_AT_OF(name) { return _styleAt['style ' + name]; }
+  const styleForced = new URLSearchParams(location.search).has('style');
+  if (styleForced) SCENES.length = 0;
+  { let t = styleForced ? 0 : STYLE_AT; for (const s of STYLE) { scene(s.name, t, t + s.dur, s.fn, s.opts); if (styleForced) _styleAt[s.name] = t; t += s.dur; } }
+  window.STYLE_REEL = { at: styleForced ? 0 : STYLE_AT, length: styleTotal, shots: STYLE.map(s => [s.name, _styleAt[s.name], s.dur]) };
+  if (styleForced) return;
+
   // ---------------- tile the reel over the whole song ----------------
   const total = REEL.reduce((a, s) => a + s.dur, 0);
-  if (parked) { let t = 1000; for (const s of REEL) { scene(s.name, t, t + s.dur, s.fn, s.opts); t += s.dur; } window.SPECIMEN = { length: total, at: 1000 }; return; }
+  // parked: after the style reel, at KIT_AT = 1100 s (node render.mjs sheet 1100 1136 3 build/kit.png)
+  if (parked) { const KIT_AT = 1100; let t = KIT_AT; for (const s of REEL) { scene(s.name, t, t + s.dur, s.fn, s.opts); t += s.dur; } window.SPECIMEN = { length: total, at: KIT_AT }; return; }
   let t = 0, cycle = 0;
   while (t < DUR && total > 0) {
     for (const s of REEL) { if (t >= DUR) break; scene((cycle ? '~' : '') + s.name, t, Math.min(DUR, t + s.dur), s.fn, s.opts); t += s.dur; }

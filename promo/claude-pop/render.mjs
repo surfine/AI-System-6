@@ -19,7 +19,7 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const CHROME = process.env.CHROME || ['/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/usr/bin/chromium'].find(p => fs.existsSync(p));
 const SONG = path.join(ROOT, 'build/song.wav');
-const CRT = 'scale=1920:1080:flags=neighbor,drawgrid=x=-1:y=2:w=1922:h=3:t=1:c=black@0.10,vignette=PI/5';
+const CRT = 'scale=1920:1080:flags=neighbor,drawgrid=x=-1:y=2:w=1922:h=3:t=1:c=black@0.10,vignette=PI/9';
 
 const args = process.argv.slice(2), mode = args[0], pos = [], flags = {};
 for (let i = 1; i < args.length; i++) args[i].startsWith('--') ? flags[args[i].slice(2)] = args[++i] : pos.push(args[i]);

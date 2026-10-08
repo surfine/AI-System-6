@@ -6,7 +6,7 @@ frame, as a pure function of song time, and upscaled 3x nearest-neighbour. This 
 `src/ch01.js` ... `src/ch12.js`. Read `BRIEF.md` first; it is the contract.
 
 Load order (`index.html`): `data/data.js` (the song: never edit), `core.js`, `eras.js`, `ui.js`, `clio.js`, `apps.js`,
-the chapters, `specimen.js`, `main.js`. A chapter that does not exist yet is skipped. If `data/data.js` is missing, the
+`style.js` (the style kit, §12), the chapters, `specimen.js`, `main.js`. A chapter that does not exist yet is skipped. If `data/data.js` is missing, the
 kit runs on defaults (DUR 150, BPM 120, empty LYRICS, beats from BPM) and `lyric()` returns placeholder lines.
 
 ## 1. The rules
@@ -23,7 +23,7 @@ kit runs on defaults (DUR 150, BPM 120, empty LYRICS, beats from BPM) and `lyric
    as dots along every edge. Text is always `text()`. Sanctioned exceptions, all in core.js: `fillText` is used only
    inside `_raster`, which draws a glyph run offscreen and thresholds it to hard pixels; `FX.zoom` and `FX.tilt`
    resample the finished frame nearest-neighbour (still hard pixels, but a fractional zoom or a rotation gives uneven
-   pixel widths; `FX.zoomAt` is rounded). Nothing in the kit turns image smoothing on: icons are drawn at their native
+   pixel widths; `FX.zoomAt` is rounded; style.js's `diveInto` / `pullBack` zoom fractionally the same way below 8x, so a dive moves from its first frame). Nothing in the kit turns image smoothing on: icons are drawn at their native
    size and `eraThumb` shrinks with a hand-written 4x4 box average before it Bayer-quantises.
 3. **The lyric is on screen, verbatim, readable, in sync,** inside the scene's own UI (a field it is typed into, a
    dialog's message, a window title, a menu item). Take every time from `data/data.js` through `lyric()` / `wordAt()`:
@@ -48,6 +48,7 @@ Where scenes overlap, the one that starts later wins. `opts`:
 | `morph` / `morphStyle` | seconds a keyframe change takes (0.5; 0.35 on the schedule) and how: `'dissolve'` (HyperCard random), `'bayer'`, `'wipe'`, `'blinds'`, `'iris'`, `'checker'`. During a morph `fn` is called twice per frame, once per era, so it must be pure. |
 | `desk` | a `DESKTOPS` name (`'linen'`, `'system7'`, …) or a `'#rrggbb'` colour; `deskFn` paints your own |
 | `raw` | no desktop, menu bar or dock (boot screens, full-frame gags) |
+| `screen` | `true`: the whole scene (desktop, menu bar, dock, pointer) is drawn inside the historic screen of that moment, `screenSize(t)` (§12.6), with black bars round it; `W` x `H` are the screen's size while it draws. Or a rect `{x, y, w, h}`, or `t => rect` |
 | `menu` | default `UI.menu` for the scene; `menubar: false` hides it; `dock: false` hides the dock |
 
 Era ids, in song order: `system6` 1988 · `system7` 1991 · `nextstep` 1995 (branch) · `drawingboard` 1998 (branch) ·
@@ -84,8 +85,10 @@ scene('never hold', L.start - .5, L.end + .3, (t, l) => {
 
 ## 3. Time: beats, hits, sections, lyrics (core.js)
 
-Song globals from `data.js`: `LYRICS`, `SECTIONS`, `BEATS`, `BARS`, `HITS`, `ERAS` (the era schedule), `BPM`, `DUR`,
-`TITLE`. `T` is the time of the frame being drawn; helpers default their `t` to it. `SPB` = seconds per beat.
+Song globals from `data.js`: `LYRICS`, `SECTIONS`, `BEATS`, `BARS`, `HITS`, `ERAS` (the era schedule), `EVENTS` (what
+each instrument plays, §12.7), `BPM`, `DUR`, `TITLE`. `T` is the time of the frame being drawn; helpers default their `t`
+to it. `SPB` = seconds per beat. `W` x `H` is the screen being drawn (640x360, or a smaller historic screen inside a
+`screen` scene); `FW` x `FH` is always the whole frame.
 
 | function | returns |
 |---|---|
@@ -293,6 +296,14 @@ Set fields on `FX` while drawing; main applies them to the finished frame, point
 | `FX.invert = true` or 0..1 (dithered) · `FX.flash = [colour, 0..1]` (dithered) | |
 | `FX.crt = 0..1` | the power-off collapse to a line and a dot |
 | `FX.dissolve = {from: canvas, k: 0..1, style}` | pixel transition from a captured frame (styles as `morphStyle`) |
+| `FX.pixelSort = {rows, len, seed, dir, keep}` | brightness-sorted runs in hashed bands: the hard smear of a drop; `keep` rows ([[y0, y1]…], default `FX.typeRows`, which `bigType` fills) are left alone |
+| `FX.stepZoom = n`, `FX.stepZoomAt = [x, y]` | an integer punch-in: every pixel an exact n x n block |
+| `FX.rgbSplit = px` or `[dx, dy]` or `[dx, dy, [trail, lead]]` | red and blue channels pulled apart, the fringes snapped to pure colours; with two colours the fringes are those (the style kit's `splitPal`: white and black on a neon field) |
+| `FX.posterize = levels` or `['#rrggbb', …]` | per-channel levels, or nearest colour of a palette |
+| `FX.scan = {k, color \| from, band, interlace, dir, edge}` | scanline bands switch to a colour (or a captured frame), interlaced |
+
+The full order: dissolve · glitch · wobble · pixelSort · tilt/zoom/shake/dx/dy · stepZoom · rgbSplit · posterize · invert ·
+flash · scan · crt. The style kit (§12.5) sets these on the beat for you.
 
 `applyFX(t)` (main calls it) applies them; `crtOff(k)` is the power-off collapse it uses for `FX.crt`.
 `snap(i)` copies the frame so far into buffer i (0-2 are yours; main uses 3-5). `offscreen(w, h, fn)` draws into a new
@@ -305,7 +316,8 @@ canvas; `memo(key, w, h, fn)` caches one. `transition(from, k, style)` composite
 Constants you may read: `MANUSCRIPT` (the default manuscript paragraphs), `MENUS` (the default menu titles),
 `DOCK_DEFAULT` (the default dock items), `PATS` (the 8x8 patterns), `SPR` (sprites by name), `ICON_NAMES`, `BAYER4` /
 `BAYER8`, `ONEBIT()` (true in 1-bit eras), `SONG_MISSING`, `QS` (the page's query string). main.js also exposes
-`sceneAt(t)` and `eraFor(scene, t)`; `drawScene`, `resetCtx`, `W_` and the `*_FONTS` / `BASE_PAL` tables are internal.
+`sceneAt(t)` and `eraFor(scene, t)`; `drawScene`, `resetCtx`, `VIEW`, `withScreen`, `screenFor`, `W_` and the `*_FONTS` /
+`BASE_PAL` tables are internal.
 
 Images: `loadImage(src) -> Promise`, `preloadImage(key, src)` (into `IMAGES[key]`, awaited before `READY`; call it at
 the top level of a chapter), `preloadIcons()` (main), `iconCanvas(name, size, set)` (the processed icon canvas, with the
@@ -322,4 +334,270 @@ runs (the page attaches the song only in the preview, so a render never requests
 render.mjs prints one `Failed to load resource: net::ERR_FILE_NOT_FOUND` per absent `src/chNN.js`: expected, and gone
 once the chapters exist. Any other console error is real. The specimen reel (every era, app, widget, Clio pose, FX and
 morph) tiles the song when no chapter exists; once
-chapters exist it is parked at 1000 s, past the end of the video: `node render.mjs sheet 1000 1036 3 build/kit.png`.
+chapters exist it is parked at 1100 s, past the end of the video: `node render.mjs sheet 1100 1136 3 build/kit.png`. The
+**style reel** (§12.8) is always parked at 1000 s: `node render.mjs sheet 1000 1046.5 0.25 build/style-sheet.png`;
+`?style` plays it from 0 in the preview.
+
+## 12. Style kit (style.js): KINETIC PIXEL × SILHOUETTE
+
+VISION.md's look, as tools. Two modes inside one take: **desk mode** (the era desk, dense and witty) for verses,
+pre-choruses and the bridge, and **silhouette mode** for every chorus and post-chorus: the desk floods to one flat neon
+field, everything goes pure black, Clio dances, the only white thing is the writer's pen on its cord, and the hook words
+slam in as giant pixel type. Everything here keeps the rules: whole pixels, no smoothing, no alpha, a pure function of `t`.
+
+**The silhouette rule, every frame:** one hero (a word OR a pose), one white pen, and nothing that does not serve them.
+No menu bar over poster type; windows become slabs (`slabWindow`), not stencils full of 9 px text. No glyph of big type
+may be more than 10% covered by anything drawn after it, split across two backgrounds (half on a black bar, half on the
+field), or cropped at the top or bottom edge: `legibilityAudit(t0, t1)` (§12.4) checks it.
+
+### 12.1 Fields and silhouette mode
+
+`FIELDS` = `magenta #ff2e88` · `lime #b6ff00` · `cyan #00e5ff` (the three chorus fields) · `vermilion #ff5a36` (the
+writer's, never Clio's) · `white` (the pen's) · `ink` (black). `FIELD_OF` maps the song's sections to them (chorus1
+magenta, post1 lime, chorus2 lime, post2 magenta, chorus3 cyan, outro magenta: post-choruses flip to the complement).
+`fieldAt(t)` is the field of the section at t (null in desk mode) and `silOn(t)` whether we are in silhouette mode;
+`fieldCol(nameOrHex)`. The simplest silhouette frame is `rect(0, 0, W, H, fieldAt(t))` and black things on it.
+
+**`slabWindow(x, y, w, h, o)`**: a window as a silhouette: a solid black slab with only its title-bar stripes and its
+close and zoom boxes cut out in the field (`o.cut`, `o.ink`, `o.tb` title-bar px). Let one peek in from a corner at about
+70% of its desk size; returns the client rect.
+
+**`silhouette(field, fn, o)`** paints the field, runs `fn` into a buffer and lays everything it drew down as black (for
+shapes you cannot draw black directly, and for the flood's first frames):
+
+| opt | |
+|---|---|
+| `mode: 'stencil'` | light pixels become ink, dark pixels fall through to the field: a window keeps its frame lines, title stripes and text as neon cut-outs. Default `'solid'`: every pixel `fn` drew is ink (a shape). In choruses prefer `slabWindow`: a stencilled window's tiny text is clutter next to giant type |
+| `key: 'name'` | the drawing is **static**: the result is cached and later frames cost one `drawImage`. Always key a stencil of the desk (an uncached stencil is a per-pixel pass of ~10 ms). Keep animated things out of a keyed call |
+| `thr`, `invert` | the stencil's luma threshold (.5) / the other way round |
+| `bg: false` | no field fill: silhouette onto what is already there |
+| `ink` | the silhouette colour (black) |
+| `keep: fn` | drawn on top afterwards in true colours |
+
+Inside `fn`, `pen()`, `penCord()` and `penTrail()` defer themselves on top automatically (they stay white), `silKeep(fn)`
+defers anything, and `silCut(fn)` erases (`fn(colour)` draws with the colour it is handed) so the field shows through.
+Draw `clioDance` and `bigType` *after* the silhouette call, not inside it: Clio carries her own field-coloured halo and
+cut-outs.
+
+```js
+// a chorus frame (see specimen.js chorusFrame for the whole thing)
+scene('chorus 1', 36, 52, (t) => {
+  const fld = fieldAt(t);                                                    // magenta
+  rect(0, 0, W, H, fld);                                                     // one flat field: no menu bar over a poster
+  slabWindow(500, 8, 200, 130, { cut: fld });                                // the manuscript, a slab peeking in
+  bigType(["I'LL NEVER", 'HOLD', 'THE PEN.'], { words: lyric('chorus1b'), justify: 438, fitH: 336, x: 8, align: 'left' });
+  clioDance(560, H - 8, 5, t);                                               // supporting dancer, halo'd, beside the block
+  const [px, py] = [466, -16];                                               // the writer's pointer (off the top)...
+  penCord([[px + 5, py + 15], [px + 5, py + 27]]); pen(px + 5, py + 175, Math.PI / 2, 4);   // ...holds the white pen
+  CUR = { x: px, y: py };
+  beatFX(t);                                                                 // phrase inverts, palette split, drop sort
+}, { era: 'system7', raw: true });
+```
+
+### 12.2 Into and out of silhouette mode
+
+- **`inkFlood(t0, t1, cx, cy, drawB, o)`**: `drawB(t)` floods over the frame from the pen tip `(cx, cy)` as hard-edged pixel
+  ink: a body with fingers, splatter that lands ahead of the front, a white wet lip and a black rim on the edge. Nothing is
+  drawn before t0; from t1 `drawB` is drawn whole, so put **t1 on the downbeat**. `o.steps: n` moves it in n hard steps:
+  the reel floods in **10 one-frame steps** (`t0 = t1 - 10 / FPS`), drags a white `penTrail` from the tip, and inverts
+  the first two frames of the chorus (`invertFrame(t1, 2)`). Call it last, in `overlay()` to flood over the menu bar and
+  dock as well. `o`: `block` (px of an ink pixel, 4), `seed` (the splash's shape), `edge` ([lip, rim] colours), `edgeW`,
+  `ease`, `steps`, `drain: true` (the way out: `drawB` appears outside a blob that sucks back into the pen tip; the reel
+  drains in 10 steps onto the downbeat, pixel-sorted while it drains, and punches in on the landing). The flood's shape is
+  computed once per tip position (~15 ms) and cached; register the tip with `warmUp` (§12.8) so it is built at boot.
+- **`scanWipe(t0, t1, drawB, o)`**: `drawB` replaces the frame in 4 px scanline bands, interlaced (even bands sweep down,
+  then the odd ones), stepping on 16ths with a white write-head on the newest bands. `o`: `band`, `div` (4 = 16ths, 0 =
+  continuous), `dir` ('up'), `edge` (null: no write-head). The post-chorus field flip and leaving silhouette mode.
+- `scanFX(k, {color | from, edge})` does the same to the finished frame (FX.scan), e.g. a wipe to black.
+- While a flood or a wipe is mid-way it sets `FX.wiping` (the legibility audit skips those frames: the type is being
+  replaced on purpose).
+
+### 12.3 The cast: clioDance, the white pen, its cord
+
+**`clioDance(x, y, scale, t, o)`**: Clio as a big black dancer, drawn on her unit grid and pixel-scaled by the integer
+`scale`; `(x, y)` is the ground point between her feet. She keeps her identity from desk mode: the **speech-balloon body
+with its kinked tail** (down-left, as on the desk; side-on in the pirouette, sideways in the split), 3-4 unit limbs,
+mitten hands and boots. About 32 units tall standing: **scale 7 is the hero (~220 px, let the frame edge crop her)**, 4-5
+a supporting dancer. A **2 px halo** in the field colour (`rim`, `rimW`) keeps her readable where she crosses black type,
+slabs or a black frame (on a black flip she reads as a neon outline). Squash on the beat and stretch after it (`squash`),
+a 3 px ground line under her feet (`ground`). Poses are animated in 8 stop-motion steps per beat; 2-bar phrases from
+`DANCE_PHRASES` (never the same pose twice in a row) are picked by the bar index, and the music overrides them: a star
+jump on every crash and stab, `pointCam` on "you", `pointUp` on "pen", the split (`cheer`) on "do".
+
+`DANCE_POSES`, each a different shape with the face blacked out: `bounce` (frog crouch) · `clap` (pencil: tall, hands
+meeting overhead) · `pointUp` (Fever: diagonal arm to the sky, fist on hip) · `pointCam` (YOU: leaning in, a huge mitten
+out of the frame) · `spin` (pirouette: side-on with the face kept, foot tucked, arms in a ring; turns each half beat) ·
+`jump` (star jump) · `shimmy` (deep lean, arms in one line) · `disco` (hip throw, pointing down) · `kick` (high side
+kick, arms in a T) · `vogue` (hand over the head, legs crossed) · `robot` (right-angle box) · `cheer` (full split, V arms).
+`danceShapeTest()` returns the closest pair of face-off silhouettes and their pixel difference (currently clap/spin, .33;
+anything above .25 reads as a different shape).
+
+`o`: `pose` (force one) with `p` (hold its phase 0..1), `field`, `ink`, `rim` (false or a colour), `rimW` (2), `mouth`
+('sing' | 0..1 | `{open, shape}`), `voice`, `eyes`, `face: false` (no cut-outs), `flip`, `steps` (8; 0 = smooth),
+`squash` (true), `ground` (true | colour | false), `shadow` (a bar under a jump), `lyric: false` (no word-driven
+poses), `seed`. Returns `{x, y, w, h, hands, head, feet, pose}`. `dancePose(t, o)` tells you the pose without drawing it.
+
+**`pen(x, y, angle, scale, o)`**: the writer's fountain pen, nib tip at `(x, y)`, pointing along `angle` (0 = right,
+PI/2 = down), 36.5 units long: **scale 4 (146 px) or 5 (182 px) in choruses**, 3 on a desk. Pure `#ffffff` with a 1 px
+black outline and no hatching (only the nib slit), drawn at the frame's own pixel: the precise object against the chunky
+dancer and type. On each kick in silhouette mode it **flashes** for one frame (a white bloom outside its outline). `o`:
+`color`, `ink`, `outline` (colour or false), `flash` (default: in silhouette mode), `detail: true` (the old seams, cap
+band and clip lines), `t`. Returns `{tip, back, angle}`.
+
+**`penCord(points, o)`**: the long white cord from the pen's back end to the writer's pointer, **3 px white with a 1 px
+black edge** (the white earbud cord). It hangs between the anchors (`sag`, px per 100 px of span, 22), swings with the
+beat (`swing` px, 10) and is drawn as a staircase on a `w`-px grid (3). `o.outline` (false for none), `o.color`.
+**`penTrail(points, o)`**: the same white staircase through straight segments: the stroke the pen tip drags.
+The reel's rigs (specimen.js): `penRig` (the pointer holds the cord, the pen hangs nib-down and swings on the beat) and
+`penBar` (the pen lying level across the top of a poster, the type below it).
+
+**Finish.** render.mjs's ffmpeg finish (`vignette=PI/5` plus a 10% scanline grid) darkens a flat neon field's corners to
+plum and olive (about 45% brightness in the corners) and greys the white pen away from the centre. The kit cannot undo a
+multiply that happens after it, so it asks: `finishAt(t)` (`window.FINISH_AT`) returns `{vignette: false, scanlines: .05}`
+in silhouette mode and `{vignette: true, scanlines: .1}` elsewhere. **Request to the render.mjs owner:** read
+`FINISH_AT(t)` per frame and drop the vignette (and halve the grid) when it says so. Until then keep the pen and the hero
+word near the middle of the frame.
+
+### 12.4 bigType: giant pixel type
+
+**`bigType(text, o)`**: Chicago rasterised at its native pixel size (caps 9 px), every font pixel an exact sx x sy block,
+integers 4-24, so the type stays square and crisp at poster size. `text`: a string ('\n' stacks) or an array of lines.
+
+| opt | |
+|---|---|
+| `x`, `y`, `align` ('center' \| 'left' \| 'right'), `valign` ('middle' \| 'top' \| 'bottom') | placement (default the centre) |
+| `scale` (8) · `fit` (true = W, or px) · `justify` (true \| px) · `fitH` (true = H, or px) · `bleed` (px) · `min` / `max` (4 / 24) | `fit` gives each line the largest scale that fits the width; **`justify`** stretches every line sideways to exactly that width (a whole x factor, then whole letters one step wider, then whole-pixel spacing): the justified poster block; `fitH` steps the biggest lines down until the stack fits the height; `bleed` fits wider than the frame so the type crops off the **side** edges only (the stack is always fitted to the height: never crop the cap tops or bottoms; keep `bleed` under one font pixel's width, ~10 px, so no edge glyph loses a stroke) |
+| `lead` (native px between lines, 2) · `track` · `stretch: [sx, sy]` | integer x / y factors |
+| `color` (black) · `xor` (true \| a field) · `invert` + `slab` + `pad` + `slabMode` · `outline` + `outlineW` · `shadow: [colour, dx, dy]` | `xor`: the letters swap field and black wherever they fall (never run it across the menu bar: hide the bar instead); `invert`: slabs behind the lines (field letters on black, white on black). **Every slab is drawn before any letter**, and `pad` (native px, 2) is clamped to half the gap to the neighbouring line, so a slab can never eat another line. `slabMode`: `'line'` (a slab per line), `'block'` (one round the block), `'bleed'` (one full-width slab from x 0 to W over the block's rows: no stray field strips) |
+| `pass: 'slab' \| 'type'` · **`bigTypes([[text, o], ...])`** | draw only the slabs / only the letters; `bigTypes` draws several blocks with all their slabs first (PEN and PAL on the echo) |
+| `t` · `words` (a lyric line) · `ghost` | each word appears on its sung start, slamming in; the text's words are matched to the line's words by their letters ('PEN PAL' takes its times from "I'm just your pen pal,"); `ghost`: unsung words show as 50% dithered ghost type (device 3) |
+| `slam` (a time) · `stepIn: {t0, div: 4, enter}` | the whole block lands with an integer overshoot +3 +2 +1 0 / one letter per 16th, entering by `'slam'`, `'drop'` or `'flash'`. Leave ~20 px above and below a slammed block so the overshoot stays in frame |
+
+Returns `{x, y, w, h, lines: [{x, y, w, h, sx, sy}], letters: [{ch, x, y, w, h, on}], slabs}` (aim the pen or Clio at a
+letter). Each line it draws on the frame is listed in `FX.typeRows`, which the drop's pixel sort leaves alone.
+
+**`legibilityAudit(t0, t1, step = 1/FPS, o)`** draws each frame without its FX and checks every glyph of big type:
+`covered` (share of its pixels changed after it landed), `split` (share not in its dominant colour) and `vcrop` (pixels
+off the top or bottom edge). Fails at covered > .1, split > .1 (`o.maxCovered`, `o.maxSplit`) or any vcrop; frames mid
+flood or wipe are skipped (`o.wipes: true` includes them). Returns `{frames, glyphs, worst, failures, bad: [{t, scene, ch,
+at, covered, split, vcrop}]}`. Run it in the page (e.g. through puppeteer: `page.evaluate('legibilityAudit(1000, 1047)')`);
+the style reel passes with 0 failures.
+
+### 12.5 Hard beat FX
+
+Each sets `FX` fields (§10) for the frames after a hit time `at` (omit `at`: this frame). Palette only, on the grid.
+
+| function | |
+|---|---|
+| `invertFrame(at, frames = 1)` | the whole frame inverted |
+| `splitPal(px = 2, at, frames = 3, [trail, lead])` | the hard 2 px split in the frame's own palette: white fringes trail the dark shapes, black ones lead them. The silhouette-mode split: no red and blue on a neon field |
+| `rgbSplit(px = 2, at, frames = 3, dy = 0)` | red left, blue right; fringes snap to pure colours (desk mode) |
+| `pixelSort(rows = 14, length = 200, at, frames = 2)` | the smear of a drop (rows of big type are skipped) |
+| `punch(at, x, y, steps)` | an integer zoom punch-in at (x, y) stepping back out (default 3x 3x 2x 2x 2x 2x, one per frame; `[2, 2]` for a word you must still read) |
+| `stepZoom(n, x, y)` · `posterize(levels \| palette)` · `scanFX(k, o)` | the raw effects |
+| **`beatFX(t, o)`** | the presets, driven by EVENTS: **kick** -> a 1-frame invert on the **4 phrase downbeats of a chorus** (`isPhraseHit`: each section split into 4 phrases; `o.kickEvery: 'bar'` for every downbeat); **snare** -> a 2 px split for 3 frames (`splitPal` in silhouette mode, `rgbSplit` in desk mode or with `o.rgb`); **crash** -> a pixel-sort smear for 2 frames **on drops only** (`isDrop`: a crash on a section start or a `drop` hit; `o.anyCrash` for all), type rows exempt. `o`: `kick` / `snare` / `crash: false` to skip one, `anywhere` (kick inverts outside choruses too), `split` (px), `stab: true` (a punch-in on stabs at `o.punchAt`), `clap: true` (a 2 px shake). Returns the names that fired |
+
+`isDownbeat(t)`, `isPhraseHit(t)`, `isDrop(t)`, `inChorus(t)` are the tests it uses. `finishAt(t)`: §12.3.
+
+### 12.6 The one-take camera
+
+- **`frameInto(canvas, t, src, o)`**: renders a whole frame (desktop, scene, dock, menu bar, overlays, pointer) into a
+  canvas: `src` = a registered scene's name, a scene object, or `fn(t)` with scene opts in `o` (`era`, `desk`, `raw`,
+  `menu`, `dock`, `screen`). A `screen` scene is drawn inside its historic screen with its bars, exactly as main draws it
+  (so a dive out of a screen scene matches the frame before it). The frame's FX are dropped; UI, CUR, FX, the era, VIEW
+  and W x H are restored afterwards.
+- **`diveInto(t0, t1, px, py, drawOuter, drawInner, o)`**: the pixel dive. A nearest-neighbour zoom into pixel `(px, py)`
+  of the outer frame at a **constant log rate** (scale = exp(k * u): it moves from the first frame; fractional below 8x,
+  whole numbers above), the pixel sliding to the centre. The pixel is a square block in its own colour (the writer's
+  vermilion full stop); the inner frame fades into it from 3 px (`innerAt`) to 48 px (`revealAt`) as a square window cut
+  from the inner frame's centre, shrunk by a **box average and Bayer-quantised** (`levels`, 6 per channel, 2 in a 1-bit
+  era), never a nearest-neighbour shrink. A crosshair of dithered vermilion rays with marching ticks and a pulsing 2 px
+  marker (the inner frame's own full stop, `mark`) hold the eye on it. As the block reaches the frame's height the inner
+  frame is 1:1 inside it; **on t1 (put it on a beat)** the sides open with a 1-frame invert and a 3-frame palette split
+  (`hitFX: false` to skip) and the inner frame IS the frame. Before t0 it draws the outer frame, after t1 the inner one:
+  use it in a `raw` scene spanning the dive. `o`: `pw` (2: a 2x2 full stop), `ease` (k -> u; `power` still works),
+  `anchor: false`, `color`, `outer` / `inner` (frameInto opts). At most two frames are rendered per frame.
+- **`pullBack(t0, t1, layers, o)`**: the outro, the dive in reverse. `layers[0]` is the frame we start in, `layers[i] =
+  {draw, px, py, pw, era}` where `(px, py)` is the pixel of layer i that holds layer i - 1 (in the reel, the writer's
+  vermilion full stop at the same place in every era, since the windows stay put). Each layer step snaps in (the sides
+  close round a centre square, a 2-frame split) and zooms out at a constant log rate: give the steps whole beats. Last
+  comes a single vermilion dot on black (`dot: false` to stop at the outermost; `dotAt`, `dotColor`, `dotWeight`: the dot
+  step's share of a layer step, .6). Hold the dot half a second, no more. `ease` shapes the whole move.
+- **The screen grows with history.** `screenSize(t)` -> `{x, y, w, h, stage, name, bits, full, punch}`: the centred screen
+  of that moment, pixels never scaled: 1988 the compact Mac's **512x342** at 1:1 in black (1-bit); from the first System 7
+  era (chorus 1) **576x352** ('640x400', 8-bit); from Platinum **608x356** ('640x480', 16-bit); each growth steps out on
+  16ths over one beat. On the final key change (HITS `keyChange`, else `reboot`, else chorus3's start) the bars are
+  **punched off** on the downbeat: 2 frames inverted with a 2x punch-in, then the bars (black, a white bezel line on
+  their inner edge) slide off in **4 hard steps**, one every 2 frames, with speed lines and a shake; then the desk is
+  the full 16:9 frame (24-bit) for good. **`depthChips(x, y, w, h, bits)`** draws the palette of a colour depth as a chip
+  strip (2 chips, 32 of the 256, banded hues, a full spectrum): the palette visibly grows each step. Give a scene
+  `screen: true` and main draws all of it inside the screen with `W` x `H` set to the screen's size, so a chapter written
+  with `W`, `H` and the kit's defaults lays itself out in 512x342 unchanged. `SCREENS` and `screenKeys()` hold the
+  schedule. In a `screen` scene, `FX.zoomAt` / `stepZoomAt` are in screen coordinates (main shifts them); `snap()` still
+  copies the whole frame. For a full-frame scene, `overlay(() => letterbox(t))` crops it to the screen instead.
+
+### 12.7 The desk is the band
+
+Every percussive sound has a cause you can see, and every instrument reads `data.js` `EVENTS`, so a chapter can drop the
+whole band in. core.js normalises EVENTS (every entry becomes `[t, ...rest]`, sorted; non-array entries are ignored) and,
+when EVENTS or one of the core channels is missing, derives a stand-in groove from BEATS (`EV_FALLBACK` lists which):
+kick every beat, snare and clap (choruses) on 2 and 4, hats on 8ths, crash and stab on section starts, a riser over the
+bar before each chorus, two floppy bass lines.
+
+| core.js | |
+|---|---|
+| `evList(name)` · `evTimes(name)` | entries / their times |
+| `evLast(name, t)` · `evNext(name, t)` · `evIndex(name, t)` | the last entry at or before t, the next, its index |
+| `evSince(name, t)` · `evFrames(name, t)` · `evPulse(name, t, sharp)` | seconds / whole frames (0 on the hit's first frame) since the last hit; a decaying 1 |
+| `evIn(name, t0, t1)` · `evNote(name, t)` · `evSpan(name, t)` | entries in a range; the `[t, midi, dur]` note sounding at t; the `[t0, t1]` span (riser) covering t |
+
+**`bandGrid(x, y, w, h, o)`** is the band as a drum machine: a pad per instrument in bold 3 px black frames with Chicago
+tabs in their top-left corners (outside the art): **A:** and **B:** floppies (with the note) and **KICK** on the top
+row, **SNARE · CLAP · CRASH · BELL** below; each pad **slams** (a 3-frame overshoot) and **inverts** on its own hit. The
+hats type `o.typed` ('YOU KEEP THE PEN', one key per hat, retyped every 2 bars) in 4x Chicago across the middle, and the
+riser is one chunky 12 px bar along the bottom. Instruments run at scale 2 from 600 px wide (scale 1 below). `o.field`:
+silhouette mode (pads on the field, **solid black instruments with neon cut-outs**; an inverted pad is field on black).
+`deskBand(x, y, o)` = `bandGrid` in a 400x210 rack at scale 1. The reel shows it full-frame, then wipes it to cyan.
+
+The instruments on their own (1-bit by default; `o.ink` / `o.paper` recolour: `{ink: field, paper: black}` is the
+silhouette look; `o.scale` pixel-doubles, `o.t` overrides the time). The time argument of a hit instrument is the hit;
+omit it and the channel's last hit is used:
+
+| | sound | what you see |
+|---|---|---|
+| `floppyDrive(x, y, label, note, t, o)` | bass (`floppyA`, `floppyB`) | a 3.5" drive with the cover off (100x84; `o.compact`: 100x72, no label line): the disk in it, the read head sliding along its lead screw to the pitch (a tick per semitone, `o.lo`..`o.hi` = midi 28-64), buzzing while the note sounds, the light on, the note name. `note`: a channel or a midi number -> `{midi, on, headX}` |
+| `ejectDisk(x, y, t0, o)` | kick | a drive seen from above (76x58) spits the disk out, label end first, and swallows it over the beat; the drive dips a pixel |
+| `windowCloseZoom(x, y, w, h, t0, o)` | snare | a 1-bit window with a solid patterned body zooms shut into its icon (a thick `o.thick` px outline and two thin trailing ones, in `o.lineColor`) and zooms open again; `o.title`, `o.icon` ([x, y] or false), `o.body(client)`, `o.solid: false`, `o.win: {…}` (the era's own `win()` instead) |
+| `clickBurst(x, y, t0, o)` | clap | the hand pointer clicks and **three concentric square rings** (`o.ringW` 4 px thick, `o.rings`) burst from the hot spot; `o.kind` ('hand'), `o.scale`, `o.copies`, `o.pointer: false`, `o.color`. In the pad: a solid hand silhouette and a black flash (the pad's invert) |
+| `typeLine(text, t0, t1, keystrokes, o)` | hats | each keystroke (default: the hat hits in [t0, t1)) types one more character; the newest key pops inverted for two frames. With `o.x`, `o.y` it draws (`font`, `scale`, `color`, `paper`, `caret`) -> `{str, n, w}` |
+| `trashCrumple(x, y, t0, o)` | crash | Empty Trash (52x56, its label drawn below the box at any scale; `o.label: ''` for none): the lid flips open on its hinge, the can bulges, three paper wads (`o.wad` colour) leap out |
+| `progressRiser(t0, t1, o)` | riser | a bar filling on 16ths, shaking in its last beat (`o.x, y, w, h, label, font, hold`; `o.idle`: the empty bar between risers; default span: the riser covering t) |
+| `bellRing(x, y, t0, midi, o)` | Writing Bell | the product's bell icon swings (with `o.paper`, in two colours), rings ripple out (`o.ringColor`), a note leaps by pitch |
+
+`noteName(midi)` -> 'E2'.
+
+### 12.8 The style reel
+
+`specimen.js` parks it at **1000 s** (past the end of the video), 46.5 s, every shot on the song's own timing (each
+borrows a stretch of song time, so the band, the dance and the beat FX play the real EVENTS):
+`flood in` (1 s: the 1988 desk, the pen touching down within a quarter second, the flood in 10 hard frames onto the
+downbeat with a white trail) · `chorus` (6 s: PEN / PAL as the poster with no menu bar, flipping to full-bleed slabs on the
+echo; I'LL NEVER / HOLD / THE PEN. justified with a window slab peeking in; YOU SAY / WHERE I / LAND, with Clio as the
+scale-8 hero landing where the writer clicks) · `who holds the pen` (justified, one letter per 16th, the pen level across
+the top; YOU DO! black on the field with Clio in the split, the second "you" a full-frame black strobe) · `post-chorus`
+(the scanline flip to lime, a new pose every beat) · `dive` (into the vermilion full stop of 1988, out comes 1991 on the
+beat) · `pull-back` (2026 -> 2014 -> 2002 -> 1988 -> a dot, a step per two beats, half a second of dot) · `band` (the
+drum machine, wiped to cyan) · `screen` (512x342 1-bit -> 640x400 256 colours -> 640x480 thousands -> punched to 16:9) ·
+`type` (justify + side bleed, PEN over PAL, a slammed YOU DO!, ghost words) · `fx` · `dance` (every pose; faces off for
+the last two seconds: the shape test) · `flood out` (the field drains into the pen tip in 10 steps, pixel-sorted, onto a
+live 2002 desk). `window.STYLE_REEL.shots` lists each shot's start. `node render.mjs sheet 1000 1046.5 0.25
+build/style-sheet.png`; in the preview, `?style` plays it from 0. Check it with `legibilityAudit(1000, 1046.5)` (0
+failures) and look at it at 320x180 too (half-size the sheet): every frame's subject should read in a quarter second.
+
+**Warm-up.** `warmUp(fn)` registers a cache-building job; main calls `styleWarm()` once at boot, which runs them and
+builds every dance pose at every step, so the first frame of a flood or a pose does not hitch in the preview (register
+each `inkFlood` tip: `warmUp(() => _floodMap(x, y, 4, seed))`, as the reel does).
+
+Budget: the reel averages ~5 ms a frame (under the 6 ms rule); a chorus frame ~5 ms, a dive or pull-back frame ~7 ms (two
+frames rendered plus the box-averaged miniature), a flood frame ~10 ms. Occasional single-frame spikes in `renderCheck`
+(50-250 ms) are garbage collection, not drawing: the frame itself redraws in under 10 ms.

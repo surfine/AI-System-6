@@ -18,7 +18,7 @@
   /* the same finish render.mjs adds with ffmpeg: a faint scanline every third output row, and a vignette */
   #crt::after { content: ""; position: absolute; inset: 0; pointer-events: none;
     background: repeating-linear-gradient(to bottom, transparent 0 66.6%, rgba(0, 0, 0, .10) 66.6% 100%) 0 0 / 100% calc(100% / 360),
-                radial-gradient(ellipse at center, transparent 58%, rgba(0, 0, 0, .32) 100%); }
+                radial-gradient(ellipse at center, transparent 70%, rgba(0, 0, 0, .16) 100%); }
   #hud { position: fixed; left: 8px; top: 6px; font: 12px/1.4 ui-monospace, monospace; color: #7f7; opacity: .75; white-space: pre; pointer-events: none; }
   #hud.off { display: none; }
 </style>
@@ -42,6 +42,7 @@
 <script src="src/ui.js"></script>
 <script src="src/clio.js"></script>
 <script src="src/apps.js"></script>
+<script src="src/style.js"></script>
 
 <!-- ===================== CHAPTERS =====================
      One file per chapter, in song order. A chapter that does not exist yet is skipped (onerror). -->

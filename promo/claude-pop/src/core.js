@@ -6,7 +6,11 @@
 // gradients, shadowBlur or globalAlpha blends: dither instead.
 'use strict';
 
-const W = 640, H = 360, FPS = 60;
+// W x H is the screen being drawn: the 640x360 frame (FW x FH), or a smaller historic screen while main draws a scene
+// with opts.screen (style.js screenSize: 512x342 in 1988 ... the full 16:9 frame from the final chorus). Read W and H
+// for layout; never assign them (main does). Whole-frame buffers and FX always use FW x FH.
+const FW = 640, FH = 360, FPS = 60;
+let W = FW, H = FH;
 const cv = document.getElementById('screen');
 let ctx = cv.getContext('2d');           // every helper draws to this; offscreen() swaps it temporarily
 ctx.imageSmoothingEnabled = false;
@@ -137,6 +141,64 @@ const hit = (name, nth = 0) => { const l = hits(name); return l.length ? l[Math.
 const hitPulse = (t = T, name, sharp = 8) => { const d = since(hits(name), t); return isFinite(d) ? Math.exp(-sharp * d) : 0; };
 const sectionAt = (t = T) => SECTIONS.find(s => t >= s.start && t < s.end) || null;
 const section = (name, nth = 0) => SECTIONS.filter(s => s.name === name || (s.name || '').startsWith(name))[nth] || null;
+
+// =====================================================================================================
+// Band events: what each instrument plays, from data.js EVENTS ({kick: [t], bell: [[t, midi]], floppyA: [[t, midi, dur]],
+// riser: [[t0, t1]], chop: [[t, dur]], ...}). Every entry is normalised to an array [t, ...rest] sorted by t. When
+// EVENTS (or one of the core channels) is missing, a stand-in groove is derived from BEATS so the band still plays:
+// kick on every beat, snare and clap (choruses) on 2 and 4, hats on 8ths, crash and stab on section starts, a riser
+// over the bar before each chorus, two floppy bass lines on the beat and the off-beat. EV_FALLBACK lists those channels.
+//   evList(name) -> entries · evTimes(name) -> [t] · evLast(name, t) / evNext(name, t) -> entry | null
+//   evIndex(name, t) · evSince(name, t) (s, Infinity if none) · evFrames(name, t) (whole frames since; 0 on the hit's
+//   first frame) · evPulse(name, t, sharp) · evIn(name, t0, t1) · evNote(name, t) -> the [t, midi, dur] sounding at t
+//   evSpan(name, t) -> the [t0, t1] span covering t (risers)
+// =====================================================================================================
+const EV_FALLBACK = [];
+const EV = (() => {
+  const out = {}, src = typeof EVENTS !== 'undefined' && EVENTS && typeof EVENTS === 'object' ? EVENTS : {};
+  const norm = e => Array.isArray(e) ? e.map(Number) : typeof e === 'number' ? [e]
+    : e && typeof e === 'object' ? [_num(e) ?? +e.t0, e.midi ?? e.note ?? e.t1 ?? e.end, e.dur ?? e.d].filter(v => v != null).map(Number) : [NaN];
+  for (const k in src) if (Array.isArray(src[k])) out[k] = src[k].map(norm).filter(e => isFinite(e[0])).sort((a, b) => a[0] - b[0]);
+  const chorus = t => /chorus/.test((SECTIONS.find(s => t >= s.start && t < s.end) || {}).name || '');
+  const bars = _barT.length ? _barT : _beatT.filter((_, i) => i % 4 === 0), b8 = [];
+  _beatT.forEach((t, i) => { b8.push(t); const n = _beatT[i + 1]; if (n != null) b8.push((t + n) / 2); });
+  const starts = SECTIONS.length ? SECTIONS.map(s => s.start).filter(isFinite) : bars.filter((_, i) => i % 8 === 0);
+  const bass = [0, 0, 3, 5], beatInBar = i => i % 4;
+  const fb = {
+    kick: () => _beatT.map(t => [t]),
+    snare: () => _beatT.filter((_, i) => beatInBar(i) % 2 === 1).map(t => [t]),
+    clap: () => _beatT.filter((t, i) => beatInBar(i) % 2 === 1 && chorus(t)).map(t => [t]),
+    hat: () => b8.map(t => [t]),
+    crash: () => starts.map(t => [t]),
+    stab: () => starts.map(t => [t]),
+    riser: () => SECTIONS.filter(s => /chorus/.test(s.name || '')).map(s => [s.start - 4 * SPB, s.start]),
+    bell: () => [], keystroke: () => [], chop: () => [],
+    floppyA: () => _beatT.map((t, i) => [t, 40 + bass[Math.floor(i / 4) % 4], SPB * .9]),
+    floppyB: () => _beatT.map((t, i) => [t + SPB / 2, 52 + bass[Math.floor(i / 4) % 4], SPB * .45]),
+  };
+  for (const k in fb) if (!out[k]) { out[k] = fb[k]().filter(e => isFinite(e[0])).sort((a, b) => a[0] - b[0]); EV_FALLBACK.push(k); }
+  return out;
+})();
+const _evT = {};
+const evList = name => EV[name] || [];
+const evTimes = name => _evT[name] || (_evT[name] = evList(name).map(e => e[0]));
+const evIndex = (name, t = T) => bsearch(evTimes(name), t + 1e-9);
+const evLast = (name, t = T) => { const i = evIndex(name, t); return i < 0 ? null : evList(name)[i]; };
+const evNext = (name, t = T) => evList(name)[evIndex(name, t) + 1] || null;
+const evSince = (name, t = T) => { const e = evLast(name, t); return e ? t - e[0] : Infinity; };
+const evFrames = (name, t = T) => { const d = evSince(name, t); return isFinite(d) ? Math.floor(d * FPS + 1e-6) : Infinity; };
+const evPulse = (name, t = T, sharp = 10) => { const d = evSince(name, t); return isFinite(d) ? Math.exp(-sharp * d) : 0; };
+const evIn = (name, t0, t1) => evList(name).filter(e => e[0] >= t0 && e[0] < t1);
+function evNote(name, t = T) { // the note sounding at t on a [t, midi, dur] channel (null between notes)
+  const L = evList(name);
+  for (let i = evIndex(name, t); i >= 0 && i > evIndex(name, t) - 8; i--) { const e = L[i]; if (t < e[0] + (e[2] ?? SPB / 2)) return e; }
+  return null;
+}
+function evSpan(name, t = T) { // the [t0, t1] span covering t (riser)
+  const L = evList(name);
+  for (let i = evIndex(name, t); i >= 0 && i > evIndex(name, t) - 8; i--) { const e = L[i]; if (t < (e[1] ?? e[0] + SPB)) return e; }
+  return null;
+}
 
 // =====================================================================================================
 // Lyrics. lyric('v1a') or lyric('First words of the line') -> line; wordAt(line, 'word' | index) -> word.
@@ -733,7 +795,7 @@ function offscreen(w, h, fn, into) {
 const _memo = new Map();
 function memo(key, w, h, fn) { let c = _memo.get(key); if (!c) { c = offscreen(w, h, fn); _memo.set(key, c); } return c; }
 const _snaps = [];
-function buffer(i) { return _snaps[i] || (_snaps[i] = Object.assign(document.createElement('canvas'), { width: W, height: H })); }
+function buffer(i) { return _snaps[i] || (_snaps[i] = Object.assign(document.createElement('canvas'), { width: FW, height: FH })); }
 function snap(i = 0) {
   const c = buffer(i), g = c.getContext('2d');
   g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'copy'; g.drawImage(cv, 0, 0); g.globalCompositeOperation = 'source-over';
@@ -746,12 +808,18 @@ function snap(i = 0) {
 //   FX.shake = px · FX.dx, FX.dy = px slide · FX.zoom = factor (FX.zoomAt = [x, y]) · FX.tilt = radians
 //   FX.glitch = 0..1 row tearing · FX.wobble = px · FX.invert = true | 0..1 (dithered) · FX.flash = [colour, 0..1] (dithered)
 //   FX.crt = 0..1 power-off collapse · FX.dissolve = {from: canvas, k: 0..1, style: 'dissolve'|'bayer'|'wipe'|'blinds'|'iris'|'checker'}
+// The style kit's hard beat FX (style.js sets them on the beat; full order below):
+//   FX.pixelSort = {rows, len, seed, dir, keep} · FX.stepZoom = integer n (FX.stepZoomAt | FX.zoomAt) · FX.rgbSplit = px | [dx, dy]
+//   | [dx, dy, [trail, lead]] (fringes in two palette colours) · FX.typeRows (bigType lists its rows: the pixel sort skips them)
+//   FX.posterize = levels | ['#rrggbb', ...] · FX.scan = {k, color | from, band, interlace, dir, edge}
+// Order: dissolve · glitch · wobble · pixelSort · tilt/zoom/shake/dx/dy · stepZoom · rgbSplit · posterize · invert ·
+// flash · scan · crt.
 // =====================================================================================================
 let FX = {};
 const _thr = {};
 function _thresholds(style) { // per-pixel order 0..255 in which a transition reveals the new frame
   if (_thr[style]) return _thr[style];
-  const a = new Uint8Array(W * H);
+  const W = FW, H = FH, a = new Uint8Array(W * H);  // always the whole frame
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     let v;
     if (style === 'bayer') v = BAYER8[(y & 7) * 8 + (x & 7)] * 4 + 2;
@@ -764,9 +832,9 @@ function _thresholds(style) { // per-pixel order 0..255 in which a transition re
   }
   return _thr[style] = a;
 }
-const _maskC = document.createElement('canvas'); _maskC.width = W; _maskC.height = H;
+const _maskC = document.createElement('canvas'); _maskC.width = FW; _maskC.height = FH;
 const _maskG = _maskC.getContext('2d', { willReadFrequently: true });
-const _maskD = _maskG.createImageData(W, H), _maskU = new Uint32Array(_maskD.data.buffer);
+const _maskD = _maskG.createImageData(FW, FH), _maskU = new Uint32Array(_maskD.data.buffer);
 // transition(from, k, style): on top of the current frame, keep `from` where it has not been revealed yet
 function transition(from, k, style = 'dissolve') {
   if (k >= 1) return;
@@ -778,8 +846,97 @@ function transition(from, k, style = 'dissolve') {
   g.globalCompositeOperation = 'destination-in'; g.drawImage(_maskC, 0, 0); g.globalCompositeOperation = 'source-over';
   ctx.drawImage(tmp, 0, 0);
 }
+// ---- the hard beat FX (style kit): per-pixel passes over the finished frame. Palette only, no alpha, on the grid. ----
+const _px = { d: null, u: null, src: null };
+function _frameData() { // the finished frame as ImageData + a Uint32 view (A B G R, little-endian) + a copy to read from
+  const d = ctx.getImageData(0, 0, FW, FH), u = new Uint32Array(d.data.buffer);
+  if (!_px.src || _px.src.length !== u.length) _px.src = new Uint32Array(u.length);
+  _px.src.set(u); return { d, u, src: _px.src };
+}
+const _lum32 = v => (v & 255) * 299 + ((v >> 8) & 255) * 587 + ((v >> 16) & 255) * 114;   // luma * 1000
+// rgbSplit: red from dx px to the left, blue from dx px to the right (dy: also vertically); where the result differs from
+// the frame (the fringes) every channel snaps to 0 or 255, so the fringes are pure palette colours, never blends.
+// With cols = [trail, lead] (the style kit's splitPal) the fringes are those two colours instead: a pixel with something
+// darker dx px to its left becomes `trail`, one with something darker dx px to its right becomes `lead`.
+function _rgbSplit(dx, dy = 0, cols) {
+  dx = R(dx); dy = R(dy); if (!dx && !dy) return;
+  const { d, u, src } = _frameData(), W = FW, H = FH;
+  if (cols) {
+    const [ca, cb] = cols.map(c => { const v = rgb(c); return (0xff000000 | (v[2] << 16) | (v[1] << 8) | v[0]) >>> 0; });
+    for (let y = 0; y < H; y++) {
+      const yl = clamp(y - dy, 0, H - 1) * W, yr = clamp(y + dy, 0, H - 1) * W, row = y * W;
+      for (let x = 0; x < W; x++) {
+        const i = row + x, v = src[i], lv = _lum32(v), l = src[yl + clamp(x - dx, 0, W - 1)], r = src[yr + clamp(x + dx, 0, W - 1)];
+        const fromL = l !== v && _lum32(l) < lv, fromR = r !== v && _lum32(r) < lv;
+        if (fromL !== fromR) u[i] = fromL ? ca : cb;
+      }
+    }
+    ctx.putImageData(d, 0, 0); return;
+  }
+  for (let y = 0; y < H; y++) {
+    const yr = clamp(y - dy, 0, H - 1) * W, yb = clamp(y + dy, 0, H - 1) * W, row = y * W;
+    for (let x = 0; x < W; x++) {
+      const i = row + x, v = src[i], r = src[yr + clamp(x - dx, 0, W - 1)] & 255, b = (src[yb + clamp(x + dx, 0, W - 1)] >> 16) & 255, g = (v >> 8) & 255;
+      const nv = (0xff000000 | (b << 16) | (g << 8) | r) >>> 0;
+      u[i] = nv === v >>> 0 ? v : (0xff000000 | ((b & 128 ? 255 : 0) << 16) | ((g & 128 ? 255 : 0) << 8) | (r & 128 ? 255 : 0)) >>> 0;
+    }
+  }
+  ctx.putImageData(d, 0, 0);
+}
+// pixelSort {rows: bands, len: px, seed, dir: 1 | -1, thr}: in `rows` hashed horizontal bands, runs of `len` pixels are
+// sorted by brightness (bright first in the direction of travel): the hard-edged smear of a drop
+// o.keep: [[y0, y1], ...] rows left alone (the style kit passes the rows of big type: the words stay legible)
+function _pixelSort(o) {
+  const n = o.rows ?? 12, len = o.len ?? 160, seed = o.seed ?? 1, dir = o.dir ?? 1, { d, u } = _frameData(), W = FW, H = FH, keep = o.keep || [];
+  const run = new Uint32Array(W), key = new Float64Array(W), idx = [];
+  for (let b = 0; b < n; b++) {
+    const bh = 1 + Math.floor(hash(seed * 13.1 + b * 7.7) * 7), y0 = Math.floor(hash(seed * 3.3 + b * 1.9) * (H - bh)), x0 = Math.floor(hash(seed * 5.1 + b * 2.3) * W * .8);
+    for (let y = y0; y < y0 + bh; y++) {
+      if (keep.some(k => y >= k[0] && y < k[1])) continue;
+      const off = Math.floor(hash2(y, seed) * 24), xa = clamp(x0 + off - (dir < 0 ? len : 0), 0, W - 1), L = Math.min(len, W - xa), row = y * W;
+      idx.length = 0;
+      for (let k = 0; k < L; k++) { run[k] = u[row + xa + k]; key[k] = _lum32(run[k]); idx.push(k); }
+      idx.sort((p, q) => dir > 0 ? key[q] - key[p] || p - q : key[p] - key[q] || p - q);
+      for (let k = 0; k < L; k++) u[row + xa + k] = run[idx[k]];
+    }
+  }
+  ctx.putImageData(d, 0, 0);
+}
+// posterize: n levels per channel (2..8), or a palette ['#rrggbb', ...] (nearest colour, cached per colour)
+const _postC = new Map();
+function _posterize(p) {
+  const { d, u } = _frameData(), pal = Array.isArray(p) ? p.map(rgb) : null, n = Math.max(2, R(+p || 2)), st = 255 / (n - 1), key = Array.isArray(p) ? p.join() : 'n' + n;
+  let m = _postC.get(key); if (!m) { m = new Map(); _postC.set(key, m); }
+  let lastV = -1, lastO = 0;
+  for (let i = 0; i < u.length; i++) {
+    const v = u[i]; if (v === lastV) { u[i] = lastO; continue; }
+    let o = m.get(v);
+    if (o === undefined) {
+      const r = v & 255, g = (v >> 8) & 255, b = (v >> 16) & 255;
+      if (pal) { let best = 0, bd = 1e9; pal.forEach((c, j) => { const dd = (c[0] - r) ** 2 * 3 + (c[1] - g) ** 2 * 4 + (c[2] - b) ** 2 * 2; if (dd < bd) { bd = dd; best = j; } }); const c = pal[best]; o = (0xff000000 | (c[2] << 16) | (c[1] << 8) | c[0]) >>> 0; }
+      else o = (0xff000000 | (R(R(b / st) * st) << 16) | (R(R(g / st) * st) << 8) | R(R(r / st) * st)) >>> 0;
+      if (m.size > 65536) m.clear(); m.set(v, o);
+    }
+    u[i] = o; lastV = v; lastO = o;
+  }
+  ctx.putImageData(d, 0, 0);
+}
+// scan {k: 0..1, color | from: canvas, band: 4, interlace: true, dir: 'down' | 'up', edge: colour}: scanline bands switch
+// to a colour (or to a captured frame) top to bottom, even bands on the first pass and odd bands on the second
+function _scan(o) {
+  const band = o.band || 4, nb = Math.ceil(FH / band), k = clamp(o.k ?? 1), il = o.interlace !== false, up = o.dir === 'up';
+  const order = b => { const bb = up ? nb - 1 - b : b; return il ? (bb & 1) * Math.ceil(nb / 2) + (bb >> 1) : bb; };
+  const lim = k * nb, edge = o.edge;
+  for (let b = 0; b < nb; b++) {
+    const ob = order(b); if (ob >= lim) continue;
+    const y = b * band, h = Math.min(band, FH - y), fresh = edge && ob >= lim - Math.max(1, nb / 24);
+    if (fresh) rect(0, y, FW, h, edge);
+    else if (o.from) ctx.drawImage(o.from, 0, y, FW, h, 0, y, FW, h);
+    else rect(0, y, FW, h, o.color || C.black);
+  }
+}
 function applyFX(t) {
-  const f = FX, fr = Math.floor(t * FPS);
+  const f = FX, fr = Math.floor(t * FPS), W = FW, H = FH;   // always the whole frame, whatever screen the scene drew in
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   if (f.dissolve && f.dissolve.from) transition(f.dissolve.from, f.dissolve.k, f.dissolve.style);
   if (f.glitch || f.wobble) {
@@ -791,6 +948,7 @@ function applyFX(t) {
       if (R(dx)) ctx.drawImage(s, 0, y, W, 2, R(dx), y, W, 2);
     }
   }
+  if (f.pixelSort) _pixelSort({ keep: f.typeRows, ...(typeof f.pixelSort === 'object' ? f.pixelSort : { rows: f.pixelSort }) });
   if (f.tilt || (f.zoom && f.zoom !== 1) || f.shake || f.dx || f.dy) {
     // zoom and tilt resample the finished frame nearest-neighbour: still hard pixels, though a fractional zoom or a
     // rotation gives uneven pixel widths. That is the sanctioned exception to the integer-grid rule (TOOLKIT rule 2).
@@ -803,16 +961,24 @@ function applyFX(t) {
     ctx.drawImage(s, -zx, -zy);
     ctx.restore();
   }
+  if (f.stepZoom > 1) { // an integer punch-in: every pixel becomes an exact n x n block, the point zoomAt stays put
+    const n = R(f.stepZoom), s = snap(3), [zx, zy] = (f.stepZoomAt || f.zoomAt || [W / 2, H / 2]).map(R);
+    const sx = clamp(zx - Math.floor(zx / n), 0, W - Math.ceil(W / n)), sy = clamp(zy - Math.floor(zy / n), 0, H - Math.ceil(H / n));
+    ctx.drawImage(s, sx, sy, Math.ceil(W / n), Math.ceil(H / n), 0, 0, Math.ceil(W / n) * n, Math.ceil(H / n) * n);
+  }
+  if (f.rgbSplit) { const v = Array.isArray(f.rgbSplit) ? f.rgbSplit : [f.rgbSplit, 0]; _rgbSplit(v[0], v[1], v[2]); }
+  if (f.posterize) _posterize(f.posterize);
   if (f.invert) {
     ctx.save(); ctx.globalCompositeOperation = 'difference';
     if (f.invert === true || f.invert >= 1) rect(0, 0, W, H, C.white); else bayer(0, 0, W, H, f.invert, C.white, null);
     ctx.restore();
   }
   if (f.flash && f.flash[1] > 0) bayer(0, 0, W, H, clamp(f.flash[1]), f.flash[0], null);
+  if (f.scan) _scan(f.scan);
   if (f.crt > 0) crtOff(f.crt);
 }
 function crtOff(k) { // the picture collapses to a line, then to a dot, then black
-  const s = snap(3);
+  const s = snap(3), W = FW, H = FH;
   rect(0, 0, W, H, C.black);
   if (k < .55) {
     const e = easeIn(k / .55), h = Math.max(2, R(H * (1 - e))), y = R((H - h) / 2);

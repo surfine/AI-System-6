@@ -27,8 +27,28 @@ function eraFor(s, t) {
 }
 const eraNow = (t = T) => { const s = sceneAt(t); return s ? eraFor(s, t).to : 'system6'; };
 
-function resetCtx() {
-  ctx = cv.getContext('2d'); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.imageSmoothingEnabled = false;
+// VIEW: where the screen sits inside the frame while a scene with opts.screen draws (style.js screenSize); {0, 0} otherwise
+let VIEW = { x: 0, y: 0 };
+// resetCtx(): back to the main canvas with a clean state. resetCtx(true) keeps the current target (so a whole scene can be
+// rendered into an offscreen canvas: style.js frameInto) and only resets its transform (to the screen offset) and state.
+function resetCtx(keep) {
+  if (!keep) ctx = cv.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, VIEW.x, VIEW.y); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.imageSmoothingEnabled = false;
+}
+// screenFor(scene, t) -> the screen rect a scene draws in (opts.screen: true = screenSize(t), a rect, or fn(t) -> rect), or null
+function screenFor(s, t) {
+  const o = s.opts.screen;
+  if (!o || typeof screenSize !== 'function') return null;
+  return o === true ? screenSize(t) : typeof o === 'function' ? o(t) : o;
+}
+// withScreen(rect, fn, clear): draw fn inside the screen rect, with W x H = the screen's size and (0, 0) at its top-left
+// (clear: paint the whole frame black first, the bars)
+function withScreen(r, fn, clear) {
+  if (!r) return fn();
+  ctx.setTransform(1, 0, 0, 1, 0, 0); if (clear) rect(0, 0, FW, FH, C.black);
+  ctx.save(); ctx.beginPath(); ctx.rect(r.x, r.y, r.w, r.h); ctx.clip();
+  VIEW = { x: r.x, y: r.y }; W = r.w; H = r.h; ctx.setTransform(1, 0, 0, 1, r.x, r.y);
+  try { return fn(); } finally { ctx.restore(); VIEW = { x: 0, y: 0 }; W = FW; H = FH; ctx.setTransform(1, 0, 0, 1, 0, 0); }
 }
 function drawScene(s, t, era) {
   setEra(era);
@@ -37,7 +57,7 @@ function drawScene(s, t, era) {
   if (!s.opts.raw) desktop(s.opts);
   if (!s.opts.era && songEraEntry(t).inverted) FX.invert = true;  // the schedule's '(inverted)' entries; a scene may unset it
   s.fn(t, t - s.t0, s.t1 - s.t0);
-  ctx.restore(); resetCtx();
+  ctx.restore(); resetCtx(true);
   if (!s.opts.raw) {
     if (UI.dock !== false && (E.dock || E.chrome === 'next')) dock(typeof UI.dock === 'object' && UI.dock ? UI.dock : {});
     if (UI.menubar !== false && s.opts.menubar !== false) menuBar(UI.menu || {});
@@ -45,18 +65,22 @@ function drawScene(s, t, era) {
   for (const f of UI.overlays || []) { ctx.save(); f(); ctx.restore(); }
 }
 function draw(t) {
-  T = t; FX = {}; resetCtx();
+  T = t; FX = {}; VIEW = { x: 0, y: 0 }; W = FW; H = FH; resetCtx();
   const s = sceneAt(t);
   if (!s) { rect(0, 0, W, H, C.black); return null; }
-  const er = eraFor(s, t);
+  const er = eraFor(s, t), scr = screenFor(s, t), paint = era => withScreen(scr, () => drawScene(s, t, era), true);
   if (er.from && er.k < 1) {
-    drawScene(s, t, er.from);
+    paint(er.from);
     const before = snap(4);
     FX = {};
-    drawScene(s, t, er.to);
+    paint(er.to);
     transition(before, er.k, er.style);
-  } else drawScene(s, t, er.to);
-  if (CUR) pointer(CUR.x, CUR.y, CUR.kind || 'arrow', CUR);
+  } else paint(er.to);
+  if (CUR) withScreen(scr, () => pointer(CUR.x, CUR.y, CUR.kind || 'arrow', CUR));
+  if (scr) {   // the screen's black bars (and their punch-off), and FX points given in screen coordinates
+    screenBars(scr);
+    for (const k of ['zoomAt', 'stepZoomAt']) if (FX[k]) FX[k] = [FX[k][0] + scr.x, FX[k][1] + scr.y];
+  }
   applyFX(t);
   return s;
 }
@@ -77,6 +101,7 @@ async function boot() {
   metalTexture();
   for (const e of APPEARANCES) eraThumb(e.id);   // the Control Panel thumbnails, built up front (no first-use spike)
   for (const k of ['dissolve', 'bayer', 'wipe', 'blinds', 'iris', 'checker']) _thresholds(k);
+  if (typeof styleWarm === 'function') styleWarm();   // style.js: the floods' shapes and every dance pose, built up front
   SCENES.sort((a, b) => a.t0 - b.t0 || a.order - b.order);
   window.SONG_INFO = { missing: SONG_MISSING, scripts: MISSING.slice(), scenes: SCENES.length, dur: DUR, bpm: BPM };
   window.DUR = DUR; // the render.mjs contract reads DUR; make it a window property whether or not data.js declared it
