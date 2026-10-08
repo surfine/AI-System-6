@@ -63,35 +63,38 @@ const c06_fr = (t, a) => Math.floor((t - a) * FPS + 1e-6);
 const c06_inFlag = t => c06_FL.some(([L]) => c06_on(t, L.start, L.end));
 
 // ---- the lens: [t, cx, cy, n, plateX, plateY] (screen px); the plate is Chicago 2x at 1x, 1x when zoomed; plateX < 0:
-// the plate's right edge at -plateX. Clio's lines sit on ClioTalk's title bar, right of its title, clear of her bubble ----
+// the plate's right edge at -plateX. From "Review" on, Clio's lines are her bubbles in ClioTalk's well (c06_talk), so
+// every key from there frames that well (y 249-274) along with what the line is about ----
 const c06_KEYS = [
   [c06_V.start, 0, 0, 1, 26, 238],                 // the landing: the whole Aqua desk; Clio's line in the chat
   [c06_T.an, 342, 122, 2, 290, 190],               // MultiFinder: DOOM (title bar in) and Micropolis open; the line over Clio's head
   [c06_T.appEnd, 150, 236, 2, 22, 240],            // the chat, the writer typing on the hats
   [c06_T.whole, 0, 0, 1, 0, 0],                    // the chat balloons to the whole screen
   [c06_T.comp, 150, 236, 2, 22, 240],              // ...and slams back into its window
-  [c06_T.review, 214, 266, 2, -285, 199],          // low: the Manuscript goes Final, the Dock bounces, the Return, Clio
-  [c06_T.desk, 214, 266, 2, -285, 227],            // Review Desk zooms open from the Dock; ClioTalk shrinks under it
-  [c06_T.desk + 1 / 2, 182, 160, 2, -285, 227],    // the rows, the meter, the drift gauge, Clio's face
+  [c06_T.review, 200, 266, 2],                     // low: the Manuscript goes Final, the Dock bounces, the Return, her bubble
+  [c06_T.desk + 1 / 2, 150, 184, 2],               // Review Desk's rows 2-4, the meter, the drift gauge, her bubble
+  [c06_T.reg + 1 / 4, 150, 130, 2],                // "Too regular?" sung: row 1, the singer's waveform, "Not a score."
   [c06_F1.start, 0, 0, 1, 0, 0],                   // the gang's flag, the whole desk
-  [c06_T.stall, 0, 0, 1, 462, 266],                // the hang, whole: the beachball, the drop, Clio's head
-  [c06_T.groove, 176, 182, 2, -285, 227],          // the groove returns: her bubble and rows 2-3
+  [c06_T.stall, 0, 0, 1],                          // the hang, whole: the beachball, the drop, Clio's head
+  [c06_T.groove, 160, 184, 2],                     // the groove returns: her bubble and rows 2-3
   [c06_F2.start, 0, 0, 1, 0, 0],
-  [c06_F2.end, 280, 110, 2, 300, 176],             // the flags flying over the games, readable
-  [c06_T.press, 176, 182, 2, -285, 227],
+  [c06_F2.end, 280, 110, 2],                       // the flags flying over the games, readable
+  [c06_T.press, 160, 184, 2],
   [c06_F3.start, 0, 0, 1, 0, 0],
-  [c06_F3.end, 280, 110, 2, 300, 176],
-  [c06_T.rough, 124, 186, 3, 118, 220],            // the two sentences
-  [c06_K.end, 150, 130, 2, 160, 194],              // §6 B6
+  [c06_F3.end, 280, 110, 2],
+  [c06_T.rough, 124, 214, 3],                      // the two sentences and her bubble
+  [c06_K.end, 150, 130, 2],                        // §6 B6
 ];
 
 // ---- small helpers ----
 const c06_RED = '#d8261c';
 const c06_dif = (x, y, w, h) => { ctx.save(); ctx.globalCompositeOperation = 'difference'; rect(x, y, w, h, C.white); ctx.restore(); };
 // Clio's TEMPORARY plate: 50% paper dither, marching ants (phase on 8ths), the tag; kept = solid white, ants stopped
-function c06_ghost(x, y, w, h, t, kept, tag = true, ink = C.white) {
+// base: an opaque paper under the dither (her bubbles in ClioTalk: nothing shows through; light enough never to flash)
+function c06_ghost(x, y, w, h, t, kept, tag = true, ink = C.white, base) {
   x = R(x); y = R(y);
   if (kept) { rect(x, y, w, h, C.black); rect(x + 1, y + 1, w - 2, h - 2, C.white); return; }
+  if (base) rect(x, y, w, h, base);
   bayer(x, y, w, h, .5, ink); frame(x, y, w, h, C.white);
   const ph = Math.floor(t * 4) & 3; let i = 0; ctx.fillStyle = C.black;
   const d = (px, py) => { if (((i++ + ph) & 3) < 2) ctx.fillRect(px, py, 1, 1); };
@@ -117,15 +120,40 @@ function c06_plate(ws, x, y, s, t, gone, kept) {
   c06_words(ws, x + 6 * s, y + 7 * s, s, t, gone);
   return { x, y, w: pw, h: ph };
 }
-// the chant: the current phrase of the current line, placed inside the lens crop
-function c06_chant(t, key) {
-  if (c06_inFlag(t) || c06_on(t, c06_T.whole, c06_T.comp)) return;
+// the chant: the current phrase of the current line ({ws, gone, kept}), or null
+function c06_line(t) {
+  if (c06_inFlag(t) || c06_on(t, c06_T.whole, c06_T.comp)) return null;
   const L = c06_LINES.filter(l => l.start <= t + 1e-6).pop();
-  if (!L) return;
+  if (!L) return null;
   const sp = c06_SPLIT[L.id], second = sp && t >= L.words[sp].start - 1e-6, ws = sp ? (second ? L.words.slice(sp) : L.words.slice(0, sp)) : L.words;
   const ev0 = L === c06_K ? L.end : L.end + .25, gone = t >= ev0 ? Math.floor((t - ev0) * 16) + 1 : 0;
-  if (gone >= ws.length) return;
-  c06_plate(ws, key[4], key[5], key[3] === 1 ? 2 : 1, t, gone, L === c06_K && t >= c06_T.keepIt);
+  return gone >= ws.length ? null : { ws, gone, kept: L === c06_K && t >= c06_T.keepIt };
+}
+// before "Review" the line sits on its plate inside the lens crop; from "Review" on it is Clio's bubble (c06_talk)
+function c06_chant(t, key) {
+  const l = t < c06_T.review - 1e-6 && c06_line(t);
+  if (l) c06_plate(l.ws, key[4], key[5], key[3] === 1 ? 2 : 1, t, l.gone, l.kept);
+}
+const c06_PAPER = '#e8e8ec';
+// her sung line as a bubble in ClioTalk's well: Chicago on an opaque temporary plate, 17 px
+function c06_say(l, x, y, t) {
+  const pw = tw(l.ws.map(v => v.w).join(' '), 'chicago') + 12;
+  c06_ghost(x, y, pw, 17, t, l.kept, false, C.white, c06_PAPER);
+  c06_words(l.ws, x + 6, y + 4, 1, t, l.gone);
+}
+// ...or, over her message bubble, the line as the bubble's tag line: a black Chicago tab on the plate's top edge (kept: white)
+function c06_tag(l, x, y, t) {
+  const ws = l.ws.slice(0, l.ws.length - l.gone).filter(w => t >= w.start - 1e-6), sw = tw(' ', 'chicago');
+  if (!ws.length) return;
+  const w = tw(ws.map(v => v.w).join(' '), 'chicago') + 8;
+  rect(x, y, w, 13, C.black); if (l.kept) rect(x + 1, y + 1, w - 2, 11, C.white);
+  let px = x + 4;
+  for (const wd of ws) {
+    const ww = tw(wd.w, 'chicago'), pop = c06_fr(t, wd.start) < 3;
+    if (pop) rect(px - 1, y + 1, ww + 2, 11, l.kept ? C.black : C.white);
+    text(wd.w, px, y + 2, { font: 'chicago', color: pop === !!l.kept ? C.white : C.black });
+    px += ww + sw;
+  }
 }
 // the gang's call: twelve Clios along the bottom shout "Flag it." on one plate
 function c06_gang(t, L) {
@@ -170,14 +198,18 @@ const c06_ASK = () => [c06_T.too, c06_T.gen, c06_T.press, c06_T.rough];
 function c06_checks(t) {
   const ask = c06_ASK();
   return c06_CK.map(([label, note], i) => {
-    const asked = t >= ask[i] - 1e-6, done = i < 3 ? asked : t >= c06_T.keep - 1e-6;
+    const asked = t >= ask[i] - 1e-6, done = t >= (i < 3 ? c06_FL[i][1] : c06_T.keep) - 1e-6;   // a plain selected row until the gang stamps it
     return { label, state: done ? (i < 3 ? 'flag' : 'ok') : t >= c06_T.check - 1e-6 ? 'pending' : 'dot', note: done ? note : '' };
   });
 }
 function c06_review(t) {
   const k = prog(t, c06_T.desk, c06_T.desk + .25);
   const ck = c06_checks(t), rv = Math.ceil(prog(t, c06_T.desk + .25, c06_T.desk + .75) * 4) / 4;
-  const rdw = kk => APP.reviewDesk(8, 30, 268, 196, { k: kk, from: [352, 334], doc: 'The Tide Comes In Twice', header: ['812 words', '', 'Not a score.'], checks: ck, reveal: rv, you: 100 });
+  const rdw = kk => {
+    const r = APP.reviewDesk(8, 30, 268, 196, { k: kk, from: [352, 334], doc: 'The Tide Comes In Twice', header: ['812 words', '', 'Not a score.'], checks: ck, reveal: rv, you: 100 });
+    if (r && r.meter) { const y = r.meter.y - 18; rect(r.x + 8, y - 3, 170, 16, P.win); text(c06_HINT[0], r.x + 12, y, { font: uiHead(), color: P.text }); }   // the product's words, no number (§1)
+    return r;
+  };
   const rd = k < 1 ? rdw(k) : c06_blit('rd', JSON.stringify(ck) + rv, 2, 26, 288, 210, () => rdw(1));
   if (!rd) return null;
   const rows = rd.rows, ask = c06_ASK(), sel = [0, 1, 2, 3].filter(i => t >= ask[i] - 1e-6 && t < (i < 3 ? c06_FL[i][1] : c06_T.shut) - 1e-6).pop();
@@ -240,24 +272,27 @@ function c06_sheet(t, rd, stampOnly) {
     }
   });
 }
-// ClioTalk's message well (the kit's window, our bubbles): one line each, Clio's on temporary plates
+// ClioTalk's message well (the kit's window, our bubbles, at its foot as ch07 has them): her sung line, your Return, then
+// her messages on opaque temporary plates with the line as their tag; the flags she has collected at the bubble's corner
 const c06_MSG = [['In today’s fast-paced world, the estuary fills.', 27], ['We are excited to announce the tide.', 26]];
 function c06_talk(t, c) {
-  const top = c.y + 2, bot = c.y + c.h - 37;
+  const bot = c.y + c.h - 37, by0 = bot - 17, l = c06_line(t), pop = at => { const f = c06_fr(t, at); return f < 3 ? [6, 3, 1][f] : 0; };
   clipRect(c.x, c.y, c.w, bot - c.y + 1, () => {
     if (t >= c06_T.gen) {
-      const i = t >= c06_T.press ? 1 : 0, [s, n] = c06_MSG[i], at = i ? c06_T.press : c06_T.gen, f = c06_fr(t, at);
-      const bw = tw(s, 'small') + 12, bx = c.x + 4, by = top + 1 + (f < 3 ? [6, 3, 1][f] : 0);
-      c06_ghost(bx, by, bw, 17, t, false, false);
+      const i = t >= c06_T.press ? 1 : 0, [s, n] = c06_MSG[i], at = i ? c06_T.press : c06_T.gen;
+      const bw = tw(s, 'small') + 12, bx = c.x + (i ? 30 : 4), by = by0 + pop(at);
+      if (i) clio(c.x + 6, by - 8, { scale: 1, expr: 'happy', mouth: 'sing', pose: 'none' });
+      c06_ghost(bx, by, bw, 17, t, false, false, C.white, c06_PAPER);
       const nSel = i ? (t < c06_T.rel ? 0 : Math.min(n, R(Math.ceil(prog(t, c06_T.rel, c06_T.rel + .375) * 4) / 4 * n))) : n;
       if (nSel) rect(bx + 5, by + 3, tw(s.slice(0, nSel), 'small') + 2, 11, P.sel);
       text(s.slice(0, nSel), bx + 6, by + 5, { font: 'small', color: P.selText }); text(s.slice(nSel), bx + 6 + tw(s.slice(0, nSel), 'small'), by + 5, { font: 'small', color: C.black });
-    } else if (t >= c06_T.send) {
-      const s = 'Check for drift.', bw = tw(s, 'small') + 14, f = c06_fr(t, c06_T.send), bx = c.x + c.w - bw - 10, by = top + 1 + (f < 3 ? [6, 3, 1][f] : 0);
-      rrect(bx, by, bw, 17, 8, '#2b8cf6'); text(s, bx + 7, by + 5, { font: 'small', color: C.white });
+      const nf = c06_FL.filter(([, h]) => t >= h).length; for (let j = 0; j < nf; j++) c06_mini(bx + bw - 6 - j * 8, by - 8);
+      if (l) c06_tag(l, bx + 4, c.y, t);
+    } else {
+      if (t >= c06_T.send) { const s = 'Check for drift.', bw = tw(s, 'small') + 14, bx = c.x + c.w - bw - 10, by = by0 + pop(c06_T.send); rrect(bx, by, bw, 17, 8, '#2b8cf6'); text(s, bx + 7, by + 5, { font: 'small', color: C.white }); }
+      if (l) c06_say(l, c.x + 34, by0, t);
     }
   });
-  if (t >= c06_T.gen) { const nf = c06_FL.filter(([, h]) => t >= h).length; for (let j = 0; j < nf; j++) c06_mini(c.x + 4 + tw(c06_MSG[t >= c06_T.press ? 1 : 0][0], 'small') + 2 - j * 8, top + 18); }   // the flags she has collected, hanging off her bubble's corner
 }
 
 // Caches. A window that does not change between two keys is drawn once into a one-slot canvas and blitted (identical
@@ -273,13 +308,17 @@ function c06_doom(t, ox = 0, oy = 0) {   // (ox, oy): drawn shifted, untransform
   const dc = APP.doom(284 - ox, 30 - oy, 116, 100, { k: prog(t, c06_T.an, c06_T.an + .1), from: [120 - ox, 250 - oy], walk: t * 1.5, imp: c06_on(t, c06_T.desk + .5, c06_T.fr) ? clamp(t - c06_T.desk - .5) : false, fire: c06_on(t, c06_T.check, c06_T.check + .2) ? 1 - (t - c06_T.check) * 5 : 0 });
   if (!dc) return;
   const f = c06_fr(t, c06_T.an + .1), hy = dc.y + dc.h - 16;   // the product's IWAD prompt first, then the game; a HUD that fits 116 px
-  if (f < 6) { rect(dc.x, dc.y, dc.w, dc.h, C.black); (f < 3 ? ['Choose a', 'local IWAD'] : ['Local IWAD', 'ready']).forEach((s, i) => text(s, dc.x + 38, dc.y + 32 + i * 12, { font: 'small', color: C.white })); }   // clear of the pen
-  else { rect(dc.x, hy + 1, dc.w - 24, 15, '#5a5a5a'); text('AMMO 50', dc.x + 5, hy + 5, { font: 'small', color: '#ff4a3a' }); text('100%', dc.x + 62, hy + 5, { font: 'small', color: '#ff4a3a' }); }
+  // the IWAD prompt for 4 frames as a small box over the view, clear of the pen (a whole black client cut to the game flashed)
+  if (f < 4) { rect(dc.x + 34, dc.y + 26, 76, 30, C.black); (f < 2 ? ['Choose a', 'local IWAD'] : ['Local IWAD', 'ready']).forEach((s, i) => text(s, dc.x + 40, dc.y + 31 + i * 12, { font: 'small', color: C.white })); }
+  if (f >= 0) { rect(dc.x, hy + 1, dc.w - 24, 15, '#5a5a5a'); text('AMMO 50', dc.x + 5, hy + 5, { font: 'small', color: '#ff4a3a' }); text('100%', dc.x + 62, hy + 5, { font: 'small', color: '#ff4a3a' }); }
 }
 const c06_micro = (t, k) => APP.micropolis(284, 136, 116, 52, { k, from: [120, 250], title: 'Micropol…', built: prog(t, c06_T.app, c06_V.end), header: ['/go/micropolis', '', ''], win: { zoom: false, collapse: false } });
 function c06_games(t) {
   if (t < c06_T.an + .2) c06_doom(t); else { const q = Math.floor(t * 12 + 1e-6); c06_blit('d', q, 278, 26, 136, 110, () => { ctx.setTransform(1, 0, 0, 1, 0, 0); c06_doom(q / 12, 278, 26); }); }
-  if (t < c06_T.app + .1) { if (t >= c06_T.app) c06_micro(t, prog(t, c06_T.app, c06_T.app + .1)); } else { const m = Math.floor(t * 4 + 1e-6); c06_blit('m', m, 278, 132, 136, 70, () => c06_micro(m / 4, 1)); }
+  if (t < c06_T.app + .1) { if (t >= c06_T.app) c06_micro(t, prog(t, c06_T.app, c06_T.app + .1)); } else {   // MultiFinder redraws it top-down over 12 frames (a light window cut in whole over the desk would flash)
+    const m = Math.floor(t * 4 + 1e-6), rv = prog(t, c06_T.app + .1, c06_T.app + .1 + 12 / FPS), d = () => c06_blit('m', m, 278, 132, 136, 70, () => c06_micro(m / 4, 1));
+    if (rv < 1) clipRect(278, 132, 136, R(70 * rv), d); else d();
+  }
 }
 // the Manuscript, static until Review Desk covers it (the home desk's own window and full stop)
 function c06_manuscript(t) {
@@ -337,7 +376,7 @@ function c06_draw(t) {
         const ct = c06_blit('ct', 1, 2, 226, 288, 96, () => APP.clioTalk(8, 230, 268, 82, { hero: false, msgs: [], win: { header: null } }));
         if (ct) c06_talk(t, ct);
       } else if (chat) {
-        if (t >= c06_T.send) c06_talk(t, chat);
+        if (t >= c06_T.review) c06_talk(t, chat);
         if (t < c06_T.send) {   // the writer's keys: the newest pops inverted, a vermilion caret
           const fx = chat.input.x + 4, fy = chat.input.y + R((chat.input.h - capH('small')) / 2), w = tw(typed.str, 'small');
           if (typed.n && c06_fr(t, evTimes('hat').filter(k => k >= c06_V.start)[typed.n - 1]) < 2) { const cw = tw(typed.str.slice(-1), 'small'); rect(fx + w - cw - 1, fy - 2, cw + 2, capH('small') + 4, P.text); text(typed.str.slice(-1), fx + w - cw, fy, { font: 'small', color: C.white }); }

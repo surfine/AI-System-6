@@ -662,7 +662,7 @@ function bigTypes(blocks) {
 // 5. Hard beat FX. Each sets fields on FX (core.js applies them to the finished frame, palette only, on the grid). `at` is
 // the hit time: given, the effect fires only for its frames after it; omitted, it fires on this frame.
 // =====================================================================================================
-const _within = (at, frames, t = T) => at == null || (t - at >= -1e-6 && t - at < frames / FPS);
+const _within = (at, frames, t = T) => at == null || (t - at >= -1e-6 && t - at < frames / FPS - 1e-6);   // exactly `frames` frames on n/FPS times
 function invertFrame(at, frames = 1, t = T) { if (_within(at, frames, t)) { FX.invert = true; return true; } return false; }
 function rgbSplit(px = 2, at, frames = 3, dy = 0, t = T) { if (_within(at, frames, t)) { FX.rgbSplit = [px, dy]; return true; } return false; }
 // splitPal(px, at, frames, colours): the same hard 2 px split, but its fringes are the frame's own palette: colours[0]
@@ -721,12 +721,12 @@ window.FINISH_AT = finishAt;
 //   outer frame at a constant log rate (scale = exp(k * u): it moves from the first frame), the pixel sliding to the
 //   centre as it grows. The pixel is a square block in the writer's vermilion; the inner frame fades into it early (a
 //   square window cut from the centre of the inner frame, shrunk by a box average and Bayer-quantised, never a
-//   nearest-neighbour shrink), a crosshair of dithered vermilion rays and a pulsing 2 px marker hold the eye on it, and
+//   nearest-neighbour shrink), four short dithered vermilion stubs and a pulsing 2 px marker hold the eye on it, and
 //   as the block reaches the frame's height the inner frame is 1:1 in it; on t1 (put it on a beat) the sides punch open
 //   with a 1-frame invert and a 2 px split, and the inner frame IS the frame. Before t0 it draws the outer frame, after
 //   t1 the inner one: use it in a raw scene that spans the dive. o: pw (the host is a pw x pw group: 2 for a 2x2 full
 //   stop), innerAt (block px where the inner shows, 3), revealAt (block px where it is fully itself, 48), mark ([x, y]
-//   in the inner frame: the marker, default (px, py)), anchor (false: no rays or marker), hitFX (false: no landing FX),
+//   in the inner frame: the marker, default (px, py)), anchor (false: no stubs or marker), hitFX (false: no landing FX),
 //   outer / inner (frameInto opts), levels (Bayer levels per channel for the miniature, 6; 2 in 1-bit eras).
 // pullBack(t0, t1, layers, o): the outro, the dive in reverse. layers[0] is the frame we start in; layers[i] = {draw, px,
 //   py, pw, era, ...} where (px, py) is the pixel (pw x pw group) of layer i that holds layer i - 1. Each layer step snaps
@@ -790,17 +790,9 @@ function _diveDraw(z, px, py, outer, inner, col, o = {}) {
     const rev = prog(Math.log(B), Math.log(innerAt), Math.log(revealAt));
     if (rev < 1) bayer(bx, by, B, B, 1 - rev, col, null);
   }
-  if (o.anchor !== false) { // the eye's anchor: dithered vermilion rays through the block, and a pulsing 2 px marker
-    const ray = 1 - prog(Math.log(Math.max(1, B)), Math.log(6), Math.log(140)), mcx = R(bx + B / 2), mcy = R(by + B / 2), fr = Math.floor((o.t ?? T) * FPS);
-    if (ray > 0) {
-      const lvl = .25 + .5 * ray, v = FIELDS.vermilion;
-      for (const [x, y, w, h] of [[0, mcy - 1, bx - 2, 2], [bx + B + 2, mcy - 1, FW - bx - B - 2, 2], [mcx - 1, 0, 2, by - 2], [mcx - 1, by + B + 2, 2, FH - by - B - 2]]) if (w > 0 && h > 0) {
-        bayer(x, y, w, h, lvl, v, null);
-        const step = 12, off = fr % step;   // marching ticks, toward the block
-        if (h === 2) for (let xx = (x < bx ? x + off : x + step - off); xx < x + w; xx += step) rect(xx, y - 1, 2, 4, v);
-        else for (let yy = (y < by ? y + off : y + step - off); yy < y + h; yy += step) rect(x - 1, yy, 4, 2, v);
-      }
-    }
+  if (o.anchor !== false) { // the eye's anchor: short vermilion stubs (24 px, 25% dither) at the block while it is small, and a pulsing 2 px marker
+    const ray = 1 - prog(Math.log(Math.max(1, B)), Math.log(6), Math.log(140)), mcx = R(bx + B / 2), mcy = R(by + B / 2), L = 24;
+    if (ray > 0) for (const [x, y, w, h] of [[bx - 2 - L, mcy - 1, L, 2], [bx + B + 2, mcy - 1, L, 2], [mcx - 1, by - 2 - L, 2, L], [mcx - 1, by + B + 2, 2, L]]) bayer(x, y, w, h, .25, FIELDS.vermilion, null);
     const mk = o.mark || [px, py], ms = Math.max(2, R(pw * B / FH)) + (pulse(o.t ?? T, 1, 6) > .5 ? 2 : 0);
     const mx = R(bx + (mk[0] - (FW - FH) / 2) * B / FH + (pw * B / FH) / 2 - ms / 2), my = R(by + mk[1] * B / FH + (pw * B / FH) / 2 - ms / 2);
     if (B >= innerAt && B < FH) { frame(mx - 1, my - 1, ms + 2, ms + 2, C.black); rect(mx, my, ms, ms, FIELDS.vermilion); }

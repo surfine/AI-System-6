@@ -64,8 +64,8 @@ const KEYS = [
   [T0, 0, 0, 1, 300, 264],                  // the stab: the Tiger wipe seen whole (the plate on clear desk under Clio)
   [CHECK, 175, 160, 2, 184, 212],           // Review Desk: the ticks down the rows, the meter filling
   [FLAG, 290, 155, 2, 184, 205],            // the re-stamped flags whole, and the machine room: A:/B: step on 78.0
-  [COULD, 115, 214, 3, 26, 238],            // the sheet: your sentence, her smoothed offer melting
-  [WONT, 150, 240, 2, 26, 238],             // the offer drops behind the plate, the Writing Bell rings in the dock
+  [COULD, 115, 214, 3, 26, 236, 170],       // the sheet: your sentence, her smoothed offer melting (the plate hides ClioTalk's title)
+  [WONT, 150, 240, 2, 26, 236, 170],            // the offer drops behind the plate, the Writing Bell rings in the dock
   [BUT, 250, 112, 2, 152, 64],              // the sheet shuts; the writer takes the pen over to the free space
   [PEN, 250, 125, 3, 152, 70],              // the pen grows over the page
   [HAND, 276, 150, 4, 204, 112],            // HAND: the punch at the nib (6x, 5x), then
@@ -78,12 +78,12 @@ let c07_noPen = false;   // set only inside the flood's frameInto (the flood dra
 // ---- small helpers ----
 const dif = (x, y, w, h) => { ctx.save(); ctx.globalCompositeOperation = 'difference'; rect(x, y, w, h, C.white); ctx.restore(); };
 // Clio's TEMPORARY plate (as ch06): 50% paper dither on a flat grey (nothing shows through), marching ants on 8ths, the tag on its top edge
-function c07_ghost(x, y, w, h, t, tag = true) {
+function c07_ghost(x, y, w, h, t, tag = true, solid = false) {   // solid: the lyric's own opaque paper plate
   const ph = Math.floor(t * 4) & 3;
-  ctx.drawImage(memo('c07gh' + [w, h, ph, tag], w, h + 6, () => c07_ghostAt(0, 6, w, h, ph, tag)), R(x), R(y) - 6);
+  ctx.drawImage(memo('c07gh' + [w, h, ph, tag, solid], w, h + 6, () => c07_ghostAt(0, 6, w, h, ph, tag, solid)), R(x), R(y) - 6);
 }
-function c07_ghostAt(x, y, w, h, ph, tag) {
-  rect(x, y, w, h, '#c4c4c8'); bayer(x, y, w, h, .5, C.white); frame(x, y, w, h, C.white);
+function c07_ghostAt(x, y, w, h, ph, tag, solid) {
+  if (solid) rect(x, y, w, h, '#f4f4f6'); else { rect(x, y, w, h, '#c4c4c8'); bayer(x, y, w, h, .5, C.white); frame(x, y, w, h, C.white); }
   let i = 0; ctx.fillStyle = C.black;
   const d = (px, py) => { if (((i++ + ph) & 3) < 2) ctx.fillRect(px, py, 1, 1); };
   for (let k = 0; k < w; k++) d(x + k, y); for (let k = 1; k < h; k++) d(x + w - 1, y + k);
@@ -96,8 +96,8 @@ function c07_plate(t, key) {
   if (!L) return;
   const s = key[3] === 1 ? 2 : 1, ws = L.words.filter(w => w.start < DOWN - 1e-6), sp = SPLIT[L.id] || ws.length, rows = [ws.slice(0, sp), ws.slice(sp)].filter(r => r.length);
   const sung = r => r.filter((w, i) => !i || t >= w.start - 1e-6), shown = rows.filter((r, j) => !j || t >= r[0].start - 1e-6);   // the plate grows with the line
-  const rw = r => tw(sung(r).map(w => w.w).join(' '), 'chicago', s), pw = Math.max(tw('TEMPORARY', 'small') + 16, ...shown.map(rw)) + 12 * s, ph = (shown.length * 14 + 8) * s;
-  c07_ghost(key[4], key[5], pw, ph, t);
+  const rw = r => tw(sung(r).map(w => w.w).join(' '), 'chicago', s), pw = Math.max(tw('TEMPORARY', 'small') + 16, ...shown.map(rw), key[6] || 0) + 12 * s, ph = (shown.length * 14 + 8) * s;
+  c07_ghost(key[4], key[5], pw, ph, t, true, true);
   rows.forEach((r, j) => r.forEach((w, i) => {
     if (t < w.start - 1e-6) return;
     const px = key[4] + 6 * s + tw(r.slice(0, i).map(v => v.w).join(' ') + (i ? ' ' : ''), 'chicago', s), py = key[5] + (7 + j * 14) * s, ww = tw(w.w, 'chicago', s);
@@ -192,29 +192,30 @@ function c07_offer(t, sx, sy) {
     rrect(x, y, w, h, rr, '#8e8e93'); rrect(x + 1, y + 1, w - 2, h - 2, rr - 1, ['#f4f4f6', '#dcdce0', '#cfcfd4', '#c6c6cb', '#c2c2c6'][st]);
     const tg = tw('TEMPORARY', 'small'); if (df < 0) { rect(x + w - tg - 10, y - 5, tg + 6, 11, C.black); text('TEMPORARY', x + w - tg - 7, y - 3, { font: 'small', color: C.white }); }
   }
-  const ink = st ? ['#000000', '#26262a', '#3a3a40', '#505056', '#5c5c62'][st] : C.black;
+  const ink = st ? ['#000000', '#1c1c20', '#2a2a30', '#3a3a40', '#3a3a40'][st] : C.black;
   text('The estuary fills', x + 8, y + 6, { font: 'doc', scale: 2, color: ink });
   text('twice daily.', x + 8, y + 27, { font: 'doc', scale: 2, color: ink });
-  if (st) cells(x + 4, y + 4, w - 8, h - 8, [0, .5, .75, .875, .875][st], ['#f4f4f6', '#dcdce0', '#cfcfd4', '#c6c6cb', '#c2c2c6'][st]);   // the consonants smoothed off
+  if (st) cells(x + 4, y + 4, w - 8, h - 8, [0, .125, .1875, .25, .25][st], ['#f4f4f6', '#dcdce0', '#cfcfd4', '#c6c6cb', '#c2c2c6'][st]);   // the consonants smoothed off
 }
 
 // ---- ClioTalk, shrunk under Review Desk (B6): her last bubble, three flags at its corner ----
 const mini = (x, y) => { rect(x, y, 1, 9, C.black); rect(x + 1, y, 6, 5, C.black); rect(x + 1, y + 1, 5, 3, RED); };
 function c07_talk(t) {
   const sg = singing(t), mk = (Math.floor(t * 4) & 3) + '|' + R((sg ? sg.open : 0) * 4) + (sg && sg.shape);
-  cache('talk' + mk, 0, 224, 288, 96, () => c07_talkWin(t));
+  const st = t < COULD ? 0 : t < BUT ? 1 : 2;   // the old bubble; cleared while her new offer is up; then an empty "…" stub
+  cache('talk' + mk + st, 0, 224, 288, 96, () => c07_talkWin(t, st));
   return { tail: [42, 266] };
 }
-function c07_talkWin(t) {
+function c07_talkWin(t, st) {
   const c = APP.clioTalk(8, 230, 268, 82, { hero: false, msgs: [], win: { header: null } });
   if (!c) return null;
-  const bot = c.y + c.h - 37, s = 'We are excited to announce the tide.', bw = tw(s, 'small') + 12, bx = c.x + 30, by = bot - 18, n = 26;
-  clipRect(c.x, c.y, c.w, bot - c.y + 1, () => {
+  const s = st ? '...' : 'We are excited to announce the tide.', bot = c.y + c.h - 37, bw = tw(s, 'small') + 12, bx = c.x + 30, by = bot - 18, n = 26;
+  if (st !== 1) clipRect(c.x, c.y, c.w, bot - c.y + 1, () => {
     c07_ghost(bx, by, bw, 17, t, false);
-    rect(bx + 5, by + 3, tw(s.slice(0, n), 'small') + 2, 11, P.sel);
-    text(s.slice(0, n), bx + 6, by + 5, { font: 'small', color: P.selText }); text(s.slice(n), bx + 6 + tw(s.slice(0, n), 'small'), by + 5, { font: 'small', color: C.black });
+    if (!st) rect(bx + 5, by + 3, tw(s.slice(0, n), 'small') + 2, 11, P.sel);
+    text(s.slice(0, n), bx + 6, by + 5, { font: 'small', color: st ? C.black : P.selText }); text(s.slice(n), bx + 6 + tw(s.slice(0, n), 'small'), by + 5, { font: 'small', color: C.black });
     clio(c.x + 6, by - 8, { scale: 1, expr: 'happy', mouth: 'sing', pose: 'none' });
-    for (let j = 0; j < 3; j++) mini(bx + bw - 6 - j * 8, by - 8);
+    if (!st) for (let j = 0; j < 3; j++) mini(bx + bw - 6 - j * 8, by - 8);
   });
   return { tail: [bx + 4, by + 17] };
 }
@@ -335,11 +336,12 @@ scene('ch07 pen', BUT, FL0, c07_desk, { era: 'tiger', screen: true });
 // and flies up to the writer's chorus rig (ch08: pointer (W-56, 6), the nib at (W-51 + swing, 181), scale 4)
 scene('ch07 flood', FL0, DOWN, t => {
   ctx.drawImage(memo('c07-floodA', FW, FH, () => { c07_noPen = true; try { ctx.drawImage(frameInto(styleBuf('c07A'), FL0, 'ch07 pen'), 0, 0); } finally { c07_noPen = false; } }), 0, 0);
+  ctx.save(); ctx.translate(16, 2); c07_plate(t, [0, 0, 0, 1, 320, 40]); ctx.restore();   // "your" stays sung until the lime covers it (ch08 carries the words)
   inkFlood(FL0, DOWN, TIPF[0], TIPF[1], tt => { if (hasScene('ch08 pen pal')) ctx.drawImage(frameInto(styleBuf('c07B'), tt, 'ch08 pen pal'), 0, 0); else rect(0, 0, W, H, FIELDS.lime); }, { steps: 10, seed: 2 });
   // the pen lifts off the stamp, turns to hang nib-down and flies to the chorus rig, growing to scale 4 on the way
   const f = clamp(Math.round((t - FL0) * FPS), 0, 9);
   // the postmark stays on the paper as the ink wells out from under it; it breaks up in the last two frames
-  ctx.save(); ctx.translate(16, 2); if (f < 8) c07_postmark(TIP[0], TIP[1]); c07_plate(t, [0, 0, 0, 1, 320, 40]); ctx.restore();   // "your" stays sung, in the clear lime
+  ctx.save(); ctx.translate(16, 2); if (f < 8) c07_postmark(TIP[0], TIP[1]); ctx.restore();
   const sc = screenSize(t), sw = R(10 * Math.sin(beatPhase(t, 2) * Math.PI * 2));
   const p0 = [LIFT[0] + 16, LIFT[1] + 2 - [0, 8][Math.min(f, 1)]], p1 = [sc.x + sc.w - 51 + sw, sc.y + 181], k = f < 2 ? 0 : easeOut((f - 1) / 8);
   const tip = [R(lerp(p0[0], p1[0], k)), R(lerp(p0[1], p1[1], k))], a = f < 2 ? Math.PI : Math.PI - HALF * clamp((f - 1) / 5);

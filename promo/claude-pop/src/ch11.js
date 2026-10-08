@@ -44,7 +44,7 @@
   const c11_f = s => String(s).toLowerCase().replace(/[^a-z]/g, '');
   const c11_fr = (t, at) => Math.floor((t - at) * FPS + 1e-6);
   const c11_stab = after => STABS.find(s => s > after);
-  const OPT = { era: 'liquidglass', raw: true, screen: true };
+  const OPT = { era: 'liquidglass', raw: true, screen: t => c11_scr(t) };
   const c11_num = v => (v + '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   function c11_dif(c, fn) { ctx.save(); ctx.globalCompositeOperation = 'difference'; try { fn(); } finally { ctx.restore(); } }
   const c11_box = ls => { const x0 = Math.min(...ls.map(l => l.x)), y0 = Math.min(...ls.map(l => l.y)); return { x: x0, y: y0, w: Math.max(...ls.map(l => l.x + l.w)) - x0, h: Math.max(...ls.map(l => l.y + l.h)) - y0 }; };
@@ -91,38 +91,39 @@
     if (down != null && t >= down) { const f = c11_fr(t, down); return f < 4 ? [20, 48, 84, 120][f] : 140; }
     return 0;
   }
+  let c11_ldy = 140;   // this frame's line offset (140: no line), read by the writer's corner word
   function c11_line(t, o = {}) {
-    const dy = o.dy || 0; if (dy >= 140) return null;
+    const dy = c11_ldy = Math.min(140, o.dy || 0); if (dy >= 140) return null;
     const b = styleBuf('c11line', LBW, LBH); let d;
     paintInto(b, () => { d = c11_dancer(LBW / 2, LBH - 26, LS, t, { ground: false, voice: '*', seed: 0, ...(o.dance || {}) }); });
     const out = [];
     for (let i = 0; i < LN; i++) {
       const ox = LX0 + i * LPX - LBW / 2, oy = H - 8 + dy - (LBH - 26), head = [d.head[0] + ox, d.head[1] + oy];
-      c11_hat(i, head[0], head[1]);
       ctx.drawImage(b, ox, oy);
+      c11_hat(i, head[0], head[1]);
       out.push({ x: LX0 + i * LPX, head });
     }
     return out;
   }
-  // eraHat(i, x, y): a 16x6-unit cap in era i's title-bar chrome, field cut-outs; (x, y) = the top-centre of a head
-  const HW = 16 * LS, HH = 6 * LS, RZ = 5 * LS;   // RZ: headroom for the raised silhouettes (NeXT's crown, the Aqua gel, Tiger's ears, Lion's lamps)
-  function c11_hat(i, cx, y) { ctx.drawImage(memo('c11hat' + i, HW + 4, HH + RZ + 4, () => c11_hatArt(i, 2, 2 + RZ)), R(cx - HW / 2) - 2, R(y) - HH + LS - 2 - RZ); }
-  function c11_hatArt(i, x, y) {
-    const u = LS, w = HW, h = HH, K = BLK, F = FLD, id = APPEARANCES[i].id;
-    const box = (bx, by, s) => frame(bx, by, s, s, F, 1), dots = (n, r) => { for (let j = 0; j < n; j++) disc(x + 2 * u + r + j * (2 * r + 4), y + h / 2, r, F); };
+  // eraHat(i, x, y): one bold 16x8-unit silhouette per era, its one trait cut out in the field; (x, y) = the top-centre of a head
+  const HW = 16 * LS, HH = 8 * LS;
+  // drawn over the head with a 2 px field halo, so each silhouette reads against the black of the line
+  function c11_hat(i, cx, y) { ctx.drawImage(memo('c11hat' + i, HW + 16, HH + 8, () => { for (const [dx, dy] of [[-2, 0], [2, 0], [0, -2], [0, 2]]) c11_hatArt(i, 8 + dx, 4 + dy, FLD); c11_hatArt(i, 8, 4); }), R(cx - HW / 2) - 8, R(y) - HH + LS - 4); }
+  function c11_hatArt(i, x, y, K = BLK) {
+    const w = HW, F = FLD, id = APPEARANCES[i].id;
     switch (id) {
-      case 'system6': rect(x, y, w, h, K); for (let r = y + 4; r < y + h - 3; r += 3) rect(x + 2 * u, r, w - 4 * u, 1, F); box(x + u, y + u + 1, u + 2); break;                                  // the racing stripes
-      case 'system7': rect(x, y, w, h, K); bayer(x + 2 * u, y + 3, w - 4 * u, h - 6, .5, F, null); box(x + u, y + u + 1, u + 2); box(x + w - 2 * u - 2, y + u + 1, u + 2); break;              // the shaded band
-      case 'nextstep': rect(x + 3 * u, y - 4 * u, w - 6 * u, 4 * u, K); rect(x + 3 * u, y - u, w - 6 * u, 1, F); rect(x, y, w, h, K); rect(x + 1, y + h - 2, w - 2, 1, F); frame(x + w - 3 * u, y + u, 2 * u, 2 * u, F); line(x + w - 3 * u + 1, y + u + 1, x + w - u - 2, y + 3 * u - 2, F); line(x + w - u - 2, y + u + 1, x + w - 3 * u + 1, y + 3 * u - 2, F); break;   // the black bar, the X tile
-      case 'drawingboard': rect(x, y, w, h, K); dline(x + u, y + R(h / 2), x + w - u, y + R(h / 2), F, 3, 2); rect(x + w - 3 * u, y + u, u, 1, F); break;                                  // the pencil line
-      case 'platinum': rect(x, y, w, h, K); frame(x + 2, y + 2, w - 4, h - 4, F, 1); for (let r = y + 6; r < y + h - 5; r += 3) rect(x + 3 * u, r, w - 6 * u, 1, F); break;                 // the bevel
-      case 'aqua': rrect(x - 1, y - 4 * u, w + 2, h + 4 * u, 15, K); rrect(x + 3 * u, y - 3 * u, w - 6 * u, 2 * u, 3, F); dots(3, 2); break;                                                                                                                                 // the pill, the lamps
-      case 'tiger': for (const ex of [x + u, x + w - 5 * u]) poly([[ex, y + 1], [ex + 2 * u, y - 4 * u], [ex + 4 * u, y + 1]], K); rect(x, y, w, h, K); for (let r = y + 2; r < y + h - 1; r += 2) for (let c = x + 2; c < x + w - 2; c++) if (hash(c * 3.1 + r * 7.7) < .5) rect(c, r, 1, 1, F); break;     // brushed metal
-      case 'snowleopard': rrect(x, y, w, h, 3, K); bayer(x + 2, y + 2, w - 4, R(h / 2) - 2, .5, F, null); dots(3, 2); break;                                                                  // the gloss
-      case 'lion': for (let j = 0; j < 3; j++) { disc(x + 3 * u + j * 5 * u, y - u, 2 * u, K); disc(x + 3 * u + j * 5 * u, y - u, 1, F); } rrect(x, y, w, h, 3, K); dots(3, 3); break;                                                                                                                                  // the lamps
-      case 'yosemite': rect(x, y, w, h, K); rect(x, y + h - 1, w, 1, F); for (let j = 0; j < 3; j++) rect(x + 2 * u + j * 6, y + R(h / 2) - 1, 3, 3, F); break;                              // the flat bar
-      case 'bigsur': rrect(x, y, w, h, 7, K); rframe(x + 3, y + 3, w - 6, h - 6, 5, F, 1); break;                                                                                             // the rounded bar
-      default: rrect(x, y, w, h, 9, K); bayer(x + 3, y + R(h / 2), w - 6, R(h / 2) - 3, .25, F, null); line(x + 5, y + 5, x + 13, y + 3, F, 2); break;                                        // the glass lozenge, a glint
+      case 'system6': rect(x, y + 6, w, 18, K); for (const r of [9, 15]) rect(x + 3, y + r, w - 6, 3, F); break;                          // the racing stripes
+      case 'system7': rect(x, y + 6, w, 18, K); bayer(x + 3, y + 9, w - 6, 12, .5, F, null); break;                                          // the shaded band
+      case 'nextstep': rect(x + 9, y, w - 18, 20, K); rect(x, y + 18, w, 6, K); rect(x + 9, y + 13, w - 18, 2, F); break;                    // the black bar, a top hat
+      case 'drawingboard': rect(x, y + 10, w - 12, 12, K); poly([[x + w - 12, y + 10], [x + w, y + 16], [x + w - 12, y + 22]], K); rect(x + 7, y + 10, 2, 12, F); break;   // the pencil
+      case 'platinum': rect(x + 2, y + 4, w - 4, 20, K); rect(x + 5, y + 7, w - 10, 2, F); rect(x + 5, y + 7, 2, 14, F); break;              // the bevel
+      case 'aqua': rrect(x, y + 6, w, 18, 9, K); rrect(x + 8, y + 8, w - 16, 5, 3, F); break;                                               // the pill, its gel
+      case 'tiger': rect(x, y + 6, w, 18, K); for (let r = y + 9; r < y + 22; r += 3) for (let c = x + 3; c < x + w - 3; c += 2) if (hash(c * 3.1 + r * 7.7) < .55) rect(c, r, 2, 1, F); break;   // brushed metal
+      case 'snowleopard': rrect(x + 2, y + 2, w - 4, 22, 11, K); bayer(x + 8, y + 5, w - 16, 7, .5, F, null); break;                          // the gloss dome
+      case 'lion': rect(x, y + 17, w, 7, K); for (let j = 0; j < 3; j++) { disc(x + 8 + j * 16, y + 13, 7, K); disc(x + 8 + j * 16, y + 13, 2, F); } break;   // the three lamps
+      case 'yosemite': rect(x - 4, y + 18, w + 8, 6, K); rect(x + 6, y + 10, w - 12, 6, K); break;                                           // flat bars
+      case 'bigsur': rrect(x, y + 6, w, 18, 8, K); rframe(x + 3, y + 9, w - 6, 12, 5, F, 1); break;                                          // the rounded bar
+      default: poly([[x, y + 14], [x + 12, y + 3], [x + w - 12, y + 3], [x + w, y + 14], [x + w - 12, y + 24], [x + 12, y + 24]], K); bayer(x + 10, y + 17, w - 20, 5, .25, F, null); line(x + 12, y + 9, x + 20, y + 7, F, 2); break;   // the glass lozenge, a glint
     }
   }
 
@@ -144,16 +145,24 @@
   }
   // every clap: three square rings at the pointer (under the type; field on black, black on the field) and TWELVE stamped pointer copies (drawn last)
   function c11_rings(t, px, py) { const e = evLast('clap', t); if (e && e[0] >= T0 && c11_fr(t, e[0]) < 14) c11_dif(FLD, () => clickBurst(px, py, e[0], { pointer: false, color: FLD, t })); }
-  function c11_copies(t, px, py, dy = 5, n = 12) { const e = evLast('clap', t); if (e && e[0] >= T0 && c11_fr(t, e[0]) < 5) for (let i = n - 1; i >= 1; i--) pointer(px + 14 * i, py + dy * i, 'arrow', { down: true }); }
+  function c11_copies(t, px, py, n = 12) { const e = evLast('clap', t); if (e && e[0] >= T0 && c11_fr(t, e[0]) < 5) for (let i = n - 1; i >= 1; i--) { const k = Math.ceil(i / 2); pointer(px + (i & 1 ? 3 : 1) * k, py + 2 + 3 * k, 'arrow', { down: true }); } }   // a tight fan below the pointer, away from the type
 
   // the frame every chorus scene starts with: the field, the owed landing (and the white flash of the key change), the sub nudge, the beat FX
+  // flash safety: no white flash and no owed invert at the key change (the punch-off is the hit, its bars sliding off without
+  // the invert); the kick's phrase invert only at 136; no stab punch on 128 or the slam back
   function c11_base(t, hero, steps) {
-    rect(0, 0, W, H, FLD);
-    invertFrame(T0, 2, t);
-    if (c11_fr(t, T0) === 0) FX.flash = [WHT, 1];
-    if (evFrames('sub', t) === 0) FX.dy = 1;
-    if (t < BAND_OUT || t >= SLAM) beatFX(t, { anyCrash: true });   // the band is out between "the" and the slam back
-    const e = evLast('stab', t); if (e && e[0] >= T0 && hero) punch(e[0], ...hero, steps, t);
+    rect(0, 0, W, H, FLD); c11_ldy = 140;
+    splitPal(2, T0, 3, [WHT, BLK], t);
+    if (t < BAND_OUT || t >= SLAM) beatFX(t, { anyCrash: true, kick: t >= LE.start && t < LF.start });   // the band is out between "the" and the slam back
+    const e = evLast('stab', t); if (e && hero && e[0] > T0 && e[0] !== SLAM) punch(e[0], ...hero, steps, t);
+  }
+  // the key change's punch-off without the invert, the 2x and the shake: the stage-2 bars slide off the edges in 4 frames
+  const c11_scr = t => { const r = screenSize(t); return r && r.punch ? { ...r, punch: null } : r; };
+  function c11_bars(t) {
+    const f = c11_fr(t, T0); if (f < 0 || f >= 4) return;
+    const bw = R((FW - SCREENS[2].w) / 2 * (1 - (f + 1) / 4)), bh = R((FH - SCREENS[2].h) / 2 * (1 - (f + 1) / 4));
+    rect(0, 0, bw, H, BLK); rect(W - bw, 0, bw, H, BLK); rect(0, 0, W, bh, BLK); rect(0, H - bh, W, bh, BLK);
+    for (let y = 3; y < H; y += 7) { const len = 6 + Math.floor(hash(y * 1.7) * 18); rect(bw, y, len, 1, BLK); rect(W - bw - len, y, len, 1, BLK); }
   }
   let c11_sc = null;
   function c11_meas(str, o) { let r; c11_sc = c11_sc || Object.assign(document.createElement('canvas'), { width: 8, height: 8 }); const sw = W, sh = H; offscreen(8, 8, () => { W = sw; H = sh; r = bigType(str, o); }, c11_sc); W = sw; H = sh; return r; }
@@ -210,7 +219,7 @@
   // built at boot, not on the LAND bar or the fade (a first-use hitch in the preview): the glass stencil and the four dither steps at full-frame size
   warmUp(() => { const sw = W, sh = H; try { W = FW; H = FH; c11_glass(); paintInto(styleBuf('c11warm', 8, 8), () => { for (const k of [.2, .4, .6, .8]) c11_dith(k); }); } finally { W = sw; H = sh; } });
   // the writer's typed word, vermilion, in the bottom-left corner from the slam back to the end (it slides there from the slot in 4 steps)
-  const CORNER = () => [12, H - 52];
+  const CORNER = () => [12, Math.min(H - 52, H - 171 + c11_ldy)];   // above the line's hats; the bottom-left corner when the line is down
   function c11_corner(t) {
     if (t < SLAM) return;
     const f = c11_fr(t, SLAM), [cx, cy] = CORNER(), s = c11_slot(), k = Math.min(1, (f + 1) / 4);
@@ -246,6 +255,7 @@
     const tip = c11_pen(t, px, py);
     c11_ripple(t, tip[0], tip[1]);
     c11_copies(t, px, py);
+    if (first) c11_bars(t);
   }
   scene('ch11 reboot', T0, LB.start, t => c11_penpal(t, LA, LAE, true), OPT);
 
@@ -303,7 +313,7 @@
   // and lands in the split; the 2026 desk shows through the cyan on the LAND bar. 134.0: OR I FADE. — only the writer's word survives
   // ===================================================================================================
   const LX = 476, PXL = LX - 158, PXF = LX - 62;   // the landing spot: her split's left mitten clears the type block (x < 274); the pointer for the level pen; after the landing
-  const c11_lcO = t => ({ t, words: LC, ghost: true, fit: 280, fitH: 180, x: 8, y: 52, valign: 'top', align: 'left' });
+  const c11_lcO = t => ({ t, words: LC, ghost: true, fit: 280, fitH: 146, x: 8, y: 52, valign: 'top', align: 'left' });
   // a 2 px field outline keeps black type off black shapes; off for a line while one of its words slams in (overshooting letters would mark their neighbours)
   const c11_outl = (t, L, str, sy) => L.words.some(w => str.split(' ').some(x => c11_f(x) === c11_f(w.w)) && t >= w.start && t < w.start + 4 * F1) ? {} : { outline: FLD, outlineW: 2 / sy };
   let c11_tag = [0, 0];
@@ -312,7 +322,6 @@
     const lay = faded ? bigType(['OR I', 'FADE.'], { t, words: LD, pass: 'slab', fit: 230, x: 8, align: 'left', y: 112, valign: 'top' }) : bigType(['YOU SAY', 'WHERE I', 'LAND,'], { ...c11_lcO(t), pass: 'slab' });
     const sf = c11_fr(t, SLAM);
     c11_base(t, sf < 2 ? null : c11_mid(lay.lines[faded ? 1 : 0]));   // the slam back's own punch is the held 2x releasing: no stab punch on it
-    if (sf < 6) FX.shake = Math.max(FX.shake || 0, 6 - sf);   // the slam back: a jolt decaying over six frames
     if (t >= land && t < LC.end) ctx.drawImage(c11_glass(), 0, 0);   // Liquid Glass gets its desk beat: the 2026 desk, sparse, beside the type
     // the pointer: from the lowered pen to level in four frames, the nib over the landing spot; on "or" it swings down to hang
     let px = PX, py = 6, a = 0, back = null, sag = 6;
@@ -320,10 +329,10 @@
     if (sf < 4) { const k = (sf + 1) / 4, y0 = LOWPY(SLAM); px = R(lerp(W / 2 - 5, PX, k)); py = R(lerp(y0, 6, k)); a = lerp(PI / 2, 0, k); back = [R(lerp(W / 2, PX + 12, k)), R(lerp(y0 + 29, 28, k))]; }
     else if (faded) { const f = c11_fr(t, LD.start); sag = 22; if (f < 4) { a = [.45, .95, 1.4, 1.75][f]; const k = (f + 1) / 4; back = [R(lerp(px + 12, px + 5, k)), R(lerp(py + 22, py + 29, k))]; } else a = PI / 2; }
     if (!faded) c11_rings(t, px, py);
-    c11_line(t, { dy: faded ? c11_dy(t, LD.start, null) : 16 + c11_dy(t, null, SLAM) });   // 16 px low under LAND (their star jump clears it); the line sinks for "or I fade.": FADE gets clear field
+    c11_line(t, { dy: faded ? c11_dy(t, LD.start, null) : 16, dance: t < land ? { pose: 'cheer', p: 1 } : {} });   // the twelve land the star jump and hold it while the hero crosses (flash safety)   // 16 px low under LAND (their star jump clears it); the line sinks for "or I fade.": FADE gets clear field
     // the hero: at scale 8, THE POINT at the right, then the star jump along the line to its centre, the split on "land,"
     let x = W - 50, o = { ground: false };
-    if (t >= where && t < land) { const k = prog(t, where, land); x = R(lerp(W - 50, LX, easeOut(k))); o.pose = 'jump'; o.p = k; }
+    if (t >= where && t < land) { const k = prog(t, where, land); x = R(lerp(W - 50, LX, easeOut(k))); o.pose = 'jump'; o.p = k < .5 ? .3 : .7; }   // two held phases, not a pose a frame (flash safety)
     else if (t >= land) { x = LX; if (t < land + SPB) { o.pose = 'cheer'; o.p = prog(t, land, land + SPB); } if (c11_fr(t, land) < 2) FX.shake = Math.max(FX.shake || 0, 2); }
     if (t >= where && t < land + 4 * F1) for (const dx of [0, 1]) dline(LX + dx, 44, LX + dx, H - 12, BLK, 4, 4);   // "where": the spot under the nib
     c11_dancer(x, H - 8, 8, t, o);
@@ -403,7 +412,7 @@
   // 140.0: WHO HOLDS THE PEN? — justified across the frame, a letter per 16th; the pen level across the top; all twelve point up at it
   // ===================================================================================================
   scene('ch11 who', LG.start, LH.start, t => {
-    const opt = { t, words: LG, ghost: true, justify: W - 16, fitH: 178, x: 8, y: 48, valign: 'top', align: 'left' }, ws = LG.words;
+    const opt = { t, words: LG, ghost: true, justify: W - 16, fitH: 134, x: 8, y: 48, valign: 'top', align: 'left' }, ws = LG.words;
     const lay = bigType(['WHO', 'HOLDS', 'THE PEN?'], { ...opt, pass: 'slab', invert: false });
     c11_base(t, c11_mid(lay.lines[2]));
     const px = 60, py = 4, g = c11_sig(t);
@@ -413,7 +422,7 @@
     const bob = R(2 * pulse(t, 1, 6)), tip = c11_pen(t, px, py, { a: 0, back: [W - 186, 24 + bob], sag: 3, cs: 2 });
     c11_ripple(t, tip[0], tip[1]);
     c11_corner(t);
-    c11_copies(t, px, py, 1);   // flat along the top: the copies stay above WHO
+    c11_copies(t, px, py);
   }, OPT);
 
   // ===================================================================================================
@@ -424,14 +433,14 @@
   function c11_youDo(t) {
     const second = t >= YOU2, Lw = second ? { words: LH.words.slice(2) } : LH, s0 = second ? LH.words[2].start : LH.start, s1 = second ? DO2 : LH.words[1].start;
     const yo = { t, words: Lw, ghost: true, justify: second ? 288 : 264, x: 280, y: 22, valign: 'top', align: 'right', slam: s0 };
-    const dO = { t, words: Lw, ghost: true, justify: second ? 260 : 240, x: W - 16 - (second ? 260 : 240), y: 126, valign: 'top', align: 'left', slam: s1 };
+    const dO = { t, words: Lw, ghost: true, justify: second ? 260 : 240, x: W - 16 - (second ? 260 : 240), y: 116, valign: 'top', align: 'left', slam: s1 };
     const lay = bigType('YOU', { ...yo, pass: 'slab', invert: false }), l0 = lay.lines[0];
-    c11_base(t, c11_mid(l0));
+    c11_base(t, null);   // no stab punch: the slams are the hit (flash safety)
     const thrown = t >= DO2, tf = c11_fr(t, DO2), [nx, ny] = NIB();
     let px = W / 2 + 3, py = 6;
     if (thrown) { px = W / 2 - 5; py = 6 + (tf < 3 ? [10, 6, 2][tf] : 0); }   // the flick
     c11_rings(t, thrown ? nx : px, thrown ? ny : py);
-    c11_line(t, {});
+    if (!thrown) c11_line(t, { dy: 20 });   // 20 px low: DO! reads whole; gone on the throw, so the dive zooms a quiet frame (flash safety)
     c11_bar(t);
     if (c11_fr(t, YOU2) < 2) { rect(l0.x - 2 * l0.sx, l0.y - 2 * l0.sy, l0.w + 4 * l0.sx, l0.h + 4 * l0.sy, BLK); bigType('YOU', { ...yo, xor: FLD }); }   // the E5: the YOU letters invert, type only
     else bigType('YOU', yo);

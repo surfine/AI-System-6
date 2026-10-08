@@ -72,43 +72,59 @@ function c12_layers() {   // the live layers: the magenta world, then the desk i
   const P_ = c12_periods();
   return (c12_LAY = [{ draw: c12_mag, era: 'liquidglass', raw: true, px: FW / 2, py: FH / 2 }, ...ERAS12.map(era => ({ draw: c12_desk, era, px: P_[era][0], py: P_[era][1], pw: 2 }))]);
 }
-// the kit's uniform k, bent so the four layer steps land on the verbs: Save it. / Clip it. / Insert it. / Export it. → 1988
-const HOLD = T0 + 6 / FPS;   // the magenta world held whole at 1:1 for 6 frames: the crash, the star jump, then the whip
-const KN = [[HOLD, 0], [V[2].start, 1], [V[4].start, 2], [V[6].start, 3], [VOICE, 4]];
-const STEPS = KN.slice(1, 4).map(k => k[0]);
-// (inside each step the zoom-out whips first and settles at 1-2x: the mirror of the dives' power 2, so every era reads)
-const c12_seg = t => { for (let i = 1; i < KN.length; i++) if (t < KN[i][0]) return [i - 1, prog(t, KN[i - 1][0], KN[i][0])]; return [3, 1]; };
-function c12_ease(k) { const [s, u] = c12_seg(T0 + k * (VOICE - T0)); return (s + (1 - (1 - u) ** 2)) / 4; }
-// a layer frozen at a moment: the inner of a step is only ever a shrinking miniature, and the host at 8x and more shows
-// nothing but the paper round the full stop, so both come from one cached render (the host goes live below 8x)
-function c12_frozen(i, at) {
-  const L = c12_layers()[i];
-  return { ...L, raw: true, draw: () => ctx.drawImage(memo('c12fz' + i + '@' + at.toFixed(3), FW, FH, () => ctx.drawImage(frameInto(styleBuf('c12m'), at, L.draw, L), 0, 0)), 0, 0) };
+// THE STEPS, flash-safe: on each verb the world holds at 1:1 under the press (6 frames), then CLOSES into the full stop
+// of the next desk the way a 1988 window closes into its icon: the Finder's zoom rects (1 px, inverted) and the old world
+// as a shrinking miniature run down into the dot while the next desk comes up underneath in a 16-frame Bayer dissolve
+// (1/16 of the pixels per frame: no frame-wide swing). Then the new era holds whole at 1:1 until its verb.
+const DN = 16, DS = [V[1].start, V[2].start + 6 * F1, V[4].start + 6 * F1, V[6].start + 6 * F1];   // Save "it." / Clip / Insert / Export
+function c12_shrink(src, g, w, h) {   // box-average src (FWxFH) down to w x h by hand: no smoothing, one solid colour per pixel
+  const s = src.getContext('2d').getImageData(0, 0, FW, FH).data, o = g.createImageData(w, h), d = o.data;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const x0 = x * FW / w | 0, x1 = Math.max(x0 + 1, (x + 1) * FW / w | 0), y0 = y * FH / h | 0, y1 = Math.max(y0 + 1, (y + 1) * FH / h | 0);
+    let r = 0, gg = 0, b = 0, n = 0;
+    for (let yy = y0; yy < y1; yy += 2) for (let xx = x0; xx < x1; xx += 2) { const i = (yy * FW + xx) * 4; r += s[i]; gg += s[i + 1]; b += s[i + 2]; n++; }
+    const i = (y * w + x) * 4; d[i] = r / n; d[i + 1] = gg / n; d[i + 2] = b / n; d[i + 3] = 255;
+  }
+  g.putImageData(o, 0, 0);
 }
+const c12_zr = (k, px, py) => { const sc = Math.exp(k * Math.log(2 / FH)); return [px - px * sc, py - py * sc, FW * sc, FH * sc]; };
 function c12_pull(t) {
-  const [s, u] = c12_seg(t), L = c12_layers().slice(), far = 1 - (1 - u) ** 2 < .6;   // far: the host is zoomed 8x or more
-  L[s] = c12_frozen(s, KN[s][0]);
-  if (far) L[s + 1] = c12_frozen(s + 1, KN[s][0]);
-  pullBack(T0, VOICE, L, { dot: false, ease: c12_ease, hitFX: false, t });
+  const L = c12_layers();
+  let s = -1; while (s < 3 && t >= DS[s + 1] - 1e-6) s++;
+  const f = s < 0 ? DN : c12_fr(t, DS[s]), cur = L[s < 0 ? 0 : f >= DN ? s + 1 : s];
+  if (s < 0 || f >= DN) { ctx.drawImage(frameInto(styleBuf('c12A'), t, cur.draw, cur), 0, 0); return; }
+  const nx = L[s + 1], n = f + 1, B = frameInto(styleBuf('c12B', FW, FH, true), t, cur.draw, cur);
+  ctx.drawImage(frameInto(styleBuf('c12A'), t, nx.draw, nx), 0, 0);
+  const [mx, my, mw, mh] = c12_zr(n / DN, nx.px, nx.py), mini = mw <= 64 && mw >= 3 ? styleBuf('c12mini', 64, 36, true) : null;
+  if (mini) {   // the old world, box-shrunk (1-bit hosts: Bayer-quantised by luma, no colour on the 1988 desk)
+    const g = mini.getContext('2d'), w = R(mw), h = Math.max(2, R(mh));
+    g.clearRect(0, 0, 64, 36); c12_shrink(B, g, w, h);
+    if (nx.era === 'system6') { const d = g.getImageData(0, 0, w, h), q = d.data; for (let i = 0; i < w * h; i++) { const v = (q[i * 4] * .299 + q[i * 4 + 1] * .587 + q[i * 4 + 2] * .114) / 255 + (BAYER4[((i / w | 0) & 3) * 4 + (i % w & 3)] + .5) / 16 - .5 > .5 ? 255 : 0; q[i * 4] = q[i * 4 + 1] = q[i * 4 + 2] = v; } g.putImageData(d, 0, 0); }
+  }
+  const g = B.getContext('2d'); g.save(); g.globalCompositeOperation = 'destination-in'; g.fillStyle = bayerPat((DN - n) / DN, BLK, null); g.fillRect(0, 0, FW, FH); g.restore();
+  ctx.drawImage(B, 0, 0);
+  if (mini) { const w = R(mw), h = Math.max(2, R(mh)); ctx.drawImage(mini, 0, 0, w, h, R(mx), R(my), w, h); }
+  for (let j = 0; j < 4; j++) if (n - j >= 1) { const [x, y, w, h] = c12_zr((n - j) / DN, nx.px, nx.py); if (w > 4) c12_dif(() => frame(R(x), R(y), R(w), R(h), WHT)); }
 }
 
 // ---- the overlay: the verb column, the la-la band with the bouncing pen, the record ----
-const SLAB = { x: 8, y0: 8, h: 44, pitch: 50, pad: 10, s: 3 };
+const SLAB = { band: 32, y: 3, h: 26, pad: 8, gap: 10, s: 2 };   // the verbs in a row on a black band along the top: the desk keeps the middle
 let c12_SL = null;
-function c12_slabs() {   // one button per verb: [verb, 'IT.'] in Chicago 3x on a black slab, stacked down the left edge
+function c12_slabs() {   // one button per verb: [verb, 'IT.'] in Chicago 2x on a black slab (each under 25% of any 213x120 window)
   if (c12_SL) return c12_SL;
-  return (c12_SL = [0, 2, 4, 6].map((i, n) => {
-    const verb = V[i].w.toUpperCase(), it = V[i + 1].w.toUpperCase(), w = tw(verb + ' ' + it, 'chicago', SLAB.s) + 2 * SLAB.pad;
-    return { verb, it, tv: V[i].start, ti: V[i + 1].start, x: SLAB.x, y: SLAB.y0 + n * SLAB.pitch, w, h: SLAB.h, vw: tw(verb + ' ', 'chicago', SLAB.s) };
-  }));
+  const S = [0, 2, 4, 6].map(i => { const verb = V[i].w.toUpperCase(), it = V[i + 1].w.toUpperCase(); return { verb, it, tv: V[i].start, ti: V[i + 1].start, w: tw(verb + ' ' + it, 'chicago', SLAB.s) + 2 * SLAB.pad, h: SLAB.h, y: SLAB.y, vw: tw(verb + ' ', 'chicago', SLAB.s) }; });
+  let x = R((FW - S.reduce((a, s) => a + s.w, 0) - 3 * SLAB.gap) / 2);
+  for (const s of S) { s.x = x; x += s.w + SLAB.gap; }
+  return (c12_SL = S);
 }
-const c12_press = s => [s.x + s.w - 8, s.y + 10];   // where the pointer sits to press a slab
+const c12_press = s => [s.x + s.w - 10, s.y + 12];   // where the pointer sits to press a slab
 function c12_column(t) {
+  rect(0, 0, FW, SLAB.band, BLK);
   for (const s of c12_slabs()) {
     const f = c12_fr(t, s.tv); if (f < 0) continue;
-    const g = f < 3 ? [6, 3, 1][f] : 0, ins = f >= 3 && f < 7 ? 2 : 0;   // the slam's overshoot, then the press (a 2 px inset)
+    const g = f < 3 ? [4, 2, 1][f] : 0, ins = f >= 3 && f < 7 ? 1 : 0;   // the slam's overshoot, then the press (a 1 px inset)
     const bx = s.x - g + ins, by = s.y - g + ins, bw = s.w + 2 * g - 2 * ins, bh = s.h + 2 * g - 2 * ins;
-    rect(bx - 2, by - 2, bw + 4, bh + 4, MAG); rect(bx, by, bw, bh, BLK);   // a magenta keyline: the button stays apart from the zoomed desk's black
+    rect(bx - 1, by - 1, bw + 2, bh + 2, MAG); rect(bx, by, bw, bh, BLK);   // a magenta keyline: the button on the black band
     const ty = s.y + R((s.h - capH('chicago', SLAB.s)) / 2) + ins, tx = s.x + SLAB.pad + ins;
     text(s.verb, tx, ty, { font: 'chicago', scale: SLAB.s, color: f === 0 ? WHT : MAG });
     const fi = c12_fr(t, s.ti); if (fi >= 0) text(s.it, tx + s.vw, ty, { font: 'chicago', scale: SLAB.s, color: fi === 0 ? WHT : MAG });
@@ -193,7 +209,6 @@ function c12_record(t) {
   const a = Math.floor(beatAt(t) * 4) * PI / 8; rect(R(cx + Math.cos(a) * 38) - 2, R(cy + Math.sin(a) * 38) - 2, 4, 4, BLK);
   if (f >= 0) {   // "This one.": the label's lines stamped over by the answer, a black pill on the label, condensed Chicago 1x2
     const g = f < 3 ? [3, 2, 1][f] : 0, w = 96, x = cx - w / 2, y = cy - 4, im = memo('c12this', 64, 12, () => text('THIS ONE.', 1, 1, { font: 'chicago', color: MAG }));
-    if (f < 2) FX.shake = Math.max(FX.shake || 0, 2);
     rrect(x - g, y - g, w + 2 * g, 28 + 2 * g, 6, BLK); ctx.drawImage(im, cx - 32, y + 4, 64, 24);
   }
 }
@@ -207,16 +222,14 @@ function c12_over(t) {
   c12_pen(t);
 }
 scene('ch12 lala', T0, VOICE, t => {
-  if (t < HOLD) c12_mag(t);                                 // under ch11's dive and the first 6 frames: the magenta world whole
-  else {
-    c12_pull(t);
-    for (const st of [HOLD, ...STEPS]) splitPal(2, st, 2, [WHT, BLK], t);   // each step snaps in: the sides close, a 2-frame split
-  }
+  if (t < T0) c12_mag(t);   // under ch11's dive: the magenta world whole
+  else c12_pull(t);
   c12_over(t);
   if (t >= T0) {
-    invertFrame(T0, 1, t); splitPal(2, T0, 3, [WHT, BLK], t);   // owed: the landing of dive 3
-    beatFX(t, { kick: false });                                 // the drop's sort on the crash, the snares' splits
-    const cb = evLast('cowbell', t); if (cb && cb[0] >= T0) invertFrame(cb[0], 1, t);   // the cowbell: the system beep
+    splitPal(2, T0, 3, [WHT, BLK], t);   // owed: the landing of dive 3 (the split only: no full-frame invert, the flash budget)
+    beatFX(t, { kick: false, snare: false });   // the drop's sort on the crash
+    const cb = evLast('cowbell', t), S = c12_slabs()[3];   // the cowbell: the system beep flashes the button just pressed
+    if (cb && cb[0] >= T0 && c12_fr(t, cb[0]) === 0) c12_dif(() => rect(S.x - 1, S.y - 1, S.w + 2, S.h + 2, WHT));
   }
 }, { era: 'liquidglass', raw: true, screen: true });
 
@@ -224,10 +237,10 @@ scene('ch12 lala', T0, VOICE, t => {
 // 148-151: "It was always your voice." on a still, quiet 1988 desk; the writer's I-beam; Return
 // ===================================================================================================
 // Clio's TEMPORARY plate: a 50% paper dither, marching ants (phase on 8ths), the tag; kept = solid white, ants stopped
-function c12_ghost(x, y, w, h, t, kept, tag = true, rim = 0) {
+function c12_ghost(x, y, w, h, t, kept, tag = true, rim = 0, opaque = false) {
   x = R(x); y = R(y);
   if (kept) { rect(x, y, w, h, BLK); rect(x + 1, y + 1, w - 2, h - 2, WHT); return; }
-  bayer(x, y, w, h, .5, WHT); frame(x, y, w, h, WHT); if (rim) rect(x + rim, y + rim, w - 2 * rim, h - 2 * rim, WHT);   // rim: a dithered edge round a white field
+  if (opaque) { rect(x, y, w, h, WHT); bayer(x, y, w, h, .125, BLK); } else bayer(x, y, w, h, .5, WHT);   // opaque: paper with a light screen, nothing shows through frame(x, y, w, h, WHT); if (rim) rect(x + rim, y + rim, w - 2 * rim, h - 2 * rim, WHT);   // rim: a dithered edge round a white field
   const ph = Math.floor(beatAt(t) * 2) & 3, seg = (x0, y0, len, hz) => { for (let i = -ph; i < len; i += 4) { const a = Math.max(0, i), b = Math.min(len, i + 2); if (b > a) hz ? rect(x0 + a, y0, b - a, 1, BLK) : rect(x0, y0 + a, 1, b - a, BLK); } };
   seg(x, y, w, 1); seg(x, y + h - 1, w, 1); seg(x, y, h, 0); seg(x + w - 1, y, h, 0);
   if (tag) { const tg = tw('TEMPORARY', 'small') + 6; rect(x + w - tg - 2, y - 11, tg, 11, BLK); text('TEMPORARY', x + w - tg + 1, y - 9, { font: 'small', color: WHT }); }
@@ -244,7 +257,7 @@ function c12_words(ws, x, y, s, t, o = {}) {
 }
 function c12_plate(L, cx, y, s, t, kept, o = {}) {   // the line centred at cx on its ghost plate (s = Chicago scale; o: rim, w, h)
   const tw_ = tw(L.text, 'chicago', s), w = o.w || tw_ + 8 * s, h = o.h || capH('chicago', s) + 6 * s, x = R(cx - w / 2);
-  c12_ghost(x, y, w, h, t, kept, true, o.rim);
+  c12_ghost(x, y, w, h, t, kept, true, o.rim, o.opaque);
   c12_words(L.words, R(cx - tw_ / 2), y + R((h - capH('chicago', s)) / 2), s, t, { vib: true });
 }
 // the writer's vermilion caret (an I-beam, 2 px) after the full stop, then at the start of the new line after Return
@@ -290,8 +303,9 @@ function c12_voice(t, o = {}) {
 }
 scene('ch12 voice', VOICE, RET, t => {
   c12_voice(t);
-  c12_plate(L2, W / 2, H - 36, 2, t, false);
-  invertFrame(VOICE, 1, t);   // the stab: the overlay drops under the invert
+  c12_plate(L2, 456, 271, 2, t, false, { h: 26, opaque: true });   // in the clear strip between Clio and the icon row
+  const f = c12_fr(t, VOICE);   // the stab: the overlay's bands drop in a 16-frame Bayer dissolve (no frame-wide invert)
+  if (f < DN) { const k = (DN - 1 - f) / DN; bayer(0, BAND.y, FW, BAND.h, k, BLK); UI.overlays.push(() => bayer(0, 0, FW, SLAB.band, k, BLK)); }   // the top band over the menu bar
 }, { era: 'system6', screen: true });
 const RLENS = [12, 163];   // 3x crop x 8-222, y 109-229: the new line's caret, the Final strip and the plate below it
 scene('ch12 return', RET, SAVE, t => {
@@ -355,8 +369,8 @@ scene('ch12 end card', CRT0, END, t => {
   rect(dx, dy, 6, 6, VER);   // the dot, landed: the full stop
   if (t < CARD) return;
   if ((t - CARD) % 1 < .5) rect(dx + 14, last.y - 3, 3, last.h + 6, VER);   // the writer's caret after it, waiting: on half a second, off half
-  text('AI SYSTEM 6 · 1988 OBJECTS / 2026 INTELLIGENCE', FW / 2, 200, { font: 'geneva', color: WHT, align: 'center' });
-  text('system6.aaronlau.me', FW / 2, 216, { font: 'chicago', scale: 2, color: WHT, align: 'center' });
+  text('AI SYSTEM 6 · 1988 OBJECTS / 2026 INTELLIGENCE', FW / 2, 194, { font: 'geneva', scale: 2, color: WHT, align: 'center' });   // the tagline (BRIEF §2), phone-legible
+  text('system6.aaronlau.me', FW / 2, 224, { font: 'chicago', scale: 2, color: WHT, align: 'center' });
   if (c12_W) {   // the Two Floppies meter, one floppy: the source of this whole film
     const k = c12_W.bytes / c12_W.floppy, n = Math.min(8, c12_fr(t, CARD) + 1), kk = Math.floor(k * 8 * n / 8 * 100) / 100, x = R((FW - 280) / 2), y = 284;
     c12_floppy(x, y - 8, WHT);
@@ -364,5 +378,5 @@ scene('ch12 end card', CRT0, END, t => {
     text('The source of this whole film: ' + c12_num(c12_W.bytes) + ' of ' + c12_num(c12_W.floppy) + ' bytes · one floppy', FW / 2, y + 22, { font: 'chicago', color: WHT, align: 'center' });
   }
 }, { era: 'system6', raw: true });
-warmUp(() => { c12_layers(); c12_keys(); for (const s of [1, 2, 3, 4]) for (const f of [0, 1]) c12_spr(s, !!f); for (let s = 0; s < 4; s++) { c12_frozen(s, KN[s][0]).draw(); c12_frozen(s + 1, KN[s][0]).draw(); } });
+warmUp(() => { c12_layers(); c12_keys(); c12_slabs(); for (const s of [1, 2, 3, 4]) for (const f of [0, 1]) c12_spr(s, !!f); });
 }

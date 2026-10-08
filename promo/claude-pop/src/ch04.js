@@ -66,9 +66,8 @@
   // the frame every chorus scene starts with: the field, the owed landing, the sub nudge, the beat FX
   function c4_base(t, hero, steps) {
     rect(0, 0, W, H, FLD);
-    invertFrame(T0, 2, t);
     if (evFrames('sub', t) === 0) FX.dy = 1;
-    beatFX(t);
+    beatFX(t, { kick: t >= T0 + SPB });   // no invert on the landing: ch03's flood already flashes (flash budget)
     const e = evLast('stab', t); if (e && e[0] >= T0 && hero) punch(e[0], ...hero, steps, t);
   }
   // layout only (no drawing), with letter boxes: bigType into a scratch canvas
@@ -140,24 +139,23 @@
       }
     }), 0, 0);
   }
-  // the read-only notice as a black slab: the product's sentence in field cut-outs, an [OK]; n copies trail (8, 6)
-  function c4_notice(t, x, y, n, t0, t1) {
-    const fr = c4_fr(t, t0), rows = wrap(NOTICE, 152, 'chicago'), w = 172, h = 14 + rows.length * 14 + 26, ok = { x: x + w - 56, y: y + h - 24, w: 46, h: 18 };
-    if (fr < 0) return null;
-    const out = t >= t1, of = c4_fr(t, t1);
-    if (out) {   // it zooms shut into its [OK]
-      if (of < 4) { const k = (of + 1) / 4; frame(R(lerp(x, ok.x, k)), R(lerp(y, ok.y, k)), R(lerp(w, ok.w, k)), R(lerp(h, ok.h, k)), BLK, 2); }
-      return ok;
-    }
+  // the read-only notice as a black slab: the product's sentence in field cut-out Chicago 2x on two lines, the [OK]
+  // on a tab under one end (lf: the left); n copies trail (8, 6). Up from t0; zooms shut into its [OK] before t1
+  function c4_notice(t, x, y, n, t0, t1, lf) {
+    const fr = c4_fr(t, t0), w = W - 24, h = 72, tx = lf ? x : x + w - 80, ok = { x: tx + 12, y: y + 76, w: 56, h: 30 };
+    if (fr < 0 || t >= t1) return null;
+    const of = c4_fr(t, t1 - 4 * F1);
+    if (of >= 0) { const k = (of + 1) / 5; frame(R(lerp(x, ok.x, k)), R(lerp(y, ok.y, k)), R(lerp(w, ok.w, k)), R(lerp(h, ok.h, k)), BLK, 3); return null; }
     const dy = fr < 2 ? [-10, -4][fr] : 0;
     if (fr < 2) FX.shake = Math.max(FX.shake || 0, 2);
     for (let i = n - 1; i >= 0; i--) {
-      const X = x + 8 * i, Y = y + 6 * i + dy;
+      const X = x + 8 * i, Y = y + 6 * i + dy, TX = tx + 8 * i, TY = Y + h - 6;
       rect(X, Y, w, h, BLK); frame(X + 3, Y + 3, w - 6, h - 6, FLD, 1);
+      rect(TX, TY, 80, 48, BLK); vline(TX + 3, TY + 2, 43, FLD); vline(TX + 76, TY + 2, 43, FLD); hline(TX + 3, TY + 44, 74, FLD);
       if (i) continue;
-      rows.forEach((s, j) => text(s, X + 10, Y + 11 + j * 14, { font: 'chicago', color: FLD }));
+      wrap(NOTICE, 520, 'chicago', 2).forEach((s, j) => text(s, X + 13, Y + 13 + j * 30, { font: 'chicago', scale: 2, color: FLD }));
       frame(ok.x - 3, ok.y - 3 + dy, ok.w + 6, ok.h + 6, FLD, 2); frame(ok.x, ok.y + dy, ok.w, ok.h, FLD, 1);
-      text('OK', ok.x + ok.w / 2, ok.y + dy + 5, { font: 'chicago', color: FLD, align: 'center' });
+      text('OK', ok.x + ok.w / 2, ok.y + dy + 6, { font: 'chicago', scale: 2, color: FLD, align: 'center' });
     }
     return ok;
   }
@@ -215,8 +213,7 @@
   function c4_hold(t, L, mir, n) {
     const hold = wordAt(L, 'hold').start, pw = wordAt(L, -1).start, st = c4_stab(pw), J = mir ? W - 204 : W - 190;
     const opt = { t, words: L, ghost: true, justify: J, fitH: H - 24, x: mir ? W - 8 : 8, align: mir ? 'right' : 'left' };
-    const nx = mir ? 8 : W - 180, ny = H - 8 - 6 * (n - 1) - (14 + 5 * 14 + 26);
-    const inv = t >= pw && c4_fr(t, pw) < 2, need = (t >= pw && c4_fr(t, pw) < 4) || (t >= st && c4_fr(t, st) < 2), m = need ? c4_meas(["I'LL NEVER", 'HOLD', 'THE PEN.'], opt) : null;
+    const inv = t >= pw && c4_fr(t, pw) < 2, need = t >= pw && c4_fr(t, pw) < 4, m = need ? c4_meas(["I'LL NEVER", 'HOLD', 'THE PEN.'], opt) : null;
     const penBox = m ? c4_box(m.letters.slice(-4)) : null;
     c4_base(t, penBox && c4_mid(penBox), [2, 2]);
     punch(pw, ...(penBox ? c4_mid(penBox) : [W / 2, H / 2]), [3, 3, 2, 2], t);
@@ -229,12 +226,13 @@
     const d = c4_dancer(mir ? 90 : W - 90, H - 8, 5, t, mir ? { flip: true } : {});
     if (inv) { rect(penBox.x - 2 * m.lines[2].sx, penBox.y - 2 * m.lines[2].sy, penBox.w + 4 * m.lines[2].sx, penBox.h + 4 * m.lines[2].sy, BLK); bigType(["I'LL NEVER", 'HOLD', 'THE PEN.'], { ...opt, xor: FLD }); }
     else c4_type(ov => bigType(["I'LL NEVER", 'HOLD', 'THE PEN.'], { ...opt, ...ov }));
-    const ok = c4_notice(t, nx, ny, n, pw, st);
-    if (ok && t >= st && c4_fr(t, st) < 9) clickBurst(ok.x + 23, ok.y + 9, st, { pointer: false, color: c4_fr(t, st) < 4 ? FLD : BLK, t });
-    if (ok && t >= st && c4_fr(t, st) < 2) { rect(ok.x, ok.y, ok.w, ok.h, FLD); text('OK', ok.x + 23, ok.y + 5, { font: 'chicago', color: BLK, align: 'center' }); }
     const tip = c4_pen(t, px, py, { lift });
     c4_ripple(t, tip[0], tip[1]);
     c4_copies(t, px, py);
+    // top left, over the pen, up the whole half beat; the stab presses [OK] (held), the release on the bar shuts it
+    const ok = c4_notice(t, 8, 8, n, pw, pw + SPB, mir), ox = mir ? 48 : W - 56;
+    if (t >= st && c4_fr(t, st) < 9) clickBurst(ox, 99, st, { pointer: false, color: c4_fr(t, st) < 4 ? FLD : BLK, t });
+    if (ok && t >= st) { rect(ok.x, ok.y, ok.w, ok.h, FLD); text('OK', ok.x + 28, ok.y + 6, { font: 'chicago', scale: 2, color: BLK, align: 'center' }); }
     return d;
   }
   scene('ch04 never hold', LB.start, LC.start, t => c4_hold(t, LB, false, 1), { era: 'system7', raw: true, screen: true });
@@ -302,10 +300,10 @@
   // ===================================================================================================
   const c4_you2 = LH.words[2].start;
   const c4_yopt = t => t < c4_you2 ? { t, words: LH, ghost: true, justify: 280, fitH: H - 64, x: 16, align: 'left', y: R((H - 26) / 2), slam: LH.start }
-    : { t, words: { words: LH.words.slice(2) }, ghost: true, justify: 280, fitH: H - 92, x: 16, align: 'left', y: R((H - 26) / 2), slam: LH.words[3].start };
+    : { t, words: { words: LH.words.slice(2) }, ghost: true, justify: 280, fitH: H - 92, x: 16, align: 'left', y: R((H - 26) / 2), slam: null };   // "do!" lands solid with no block slam (flash budget)
   function c4_youDo(t) {
     const o = c4_yopt(t), lay = bigType(['YOU', 'DO!'], { ...o, pass: 'slab', invert: false });
-    c4_base(t, c4_mid(lay.lines[0]));
+    c4_base(t, t < c4_you2 ? c4_mid(lay.lines[0]) : null);   // the 2nd YOU: its 1-frame invert is the hit (flash budget)
     const px = W - 56, py = 6;
     c4_rings(t, px, py);
     c4_dancer(W - 102, H - 21, 7, t, { ground: false });
@@ -339,10 +337,12 @@
   const c4_lime = () => rect(0, 0, W, H, FIELDS.lime);
   scene('ch04 dive', DIVE0, T1, t => {
     const D = c4_dot(), pw = D.w, inner = SCENES.some(s => s.name === 'ch05 lala') ? 'ch05 lala' : c4_lime;
-    diveInto(DIVE0, T1, D.x, D.y, c4_youDo, inner, { pw, color: BLK, power: 2, anchor: false, innerAt: 2 * pw, revealAt: 4 * pw + 60, outer: { era: 'system7', raw: true, screen: true }, inner: { era: 'platinum', raw: true, screen: true } });
+    diveInto(DIVE0, T1, D.x, D.y, c4_youDo, inner, { pw, color: BLK, power: 4, anchor: false, innerAt: 2 * pw, revealAt: 4 * pw + 60, outer: { era: 'system7', raw: true, screen: true }, inner: { era: 'platinum', raw: true, screen: true } });
     // the block's rect (diveInto's own maths), for a white ring-flash on each dive bell
-    const k = prog(t, DIVE0, T1), ZH = FH / pw, zz = clamp(Math.exp(k * k * Math.log(ZH)), 1, ZH), zi = zz < 8 ? zz : Math.min(ZH, R(zz)), bs = zi * pw;
+    const k = prog(t, DIVE0, T1), ZH = FH / pw, zz = clamp(Math.exp(k ** 4 * Math.log(ZH)), 1, ZH), zi = zz < 8 ? zz : Math.min(ZH, R(zz)), bs = zi * pw;
     const f = Math.log(zz) / Math.log(ZH), pan = 1 - (1 - f) ** 3, bx = R(lerp(D.x + pw / 2, FW / 2, pan) - bs / 2), by = R(lerp(D.y + pw / 2, FH / 2, pan) - bs / 2), B = R(bs);
+    // the surround sinks to black in 2x2 cells as the dot takes the frame (one steady darkening: the flash budget)
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.rect(bx, by, B, B); ctx.clip('evenodd'); c4_dith(k); ctx.restore();
     for (const b of evTimes('bell').filter(b => b >= DIVE0 && b < T1)) { const fr = c4_fr(t, b); if (fr >= 0 && fr < 3) { const g = 3 + fr * 4; frame(bx - g, by - g, B + 2 * g, B + 2 * g, WHT, 2); } }
   }, { era: 'system7', raw: true });
 }

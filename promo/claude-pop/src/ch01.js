@@ -133,8 +133,7 @@
     if (t < T_PB0) {   // black; one white pixel where the full stop will be, blinking with the chord on the 8ths
       rect(0, 0, FW, FH, C.black);
       const e8 = Math.floor((t - T_BOOT) / (SPB / 4));
-      if (e8 % 2 === 0) rect(PF[0], PF[1], 1, 1, C.white);
-      if (e8 % 2 === 0 && t - (T_BOOT + e8 * SPB / 4) < 1 / FPS) { rect(PF[0] - 2, PF[1], 5, 1, C.white); rect(PF[0], PF[1] - 2, 1, 5, C.white); }   // a one-frame sparkle on each chord stab
+      if (e8 % 2 === 0) rect(PF[0], PF[1], 1, 1, C.white);   // 1x1, no rays: the cross waits for vermilion
       return;
     }
     if (t < T_REVEAL) {   // the pull-back, reversed in time: the dot stays, the negative Manuscript grows round it, white on black

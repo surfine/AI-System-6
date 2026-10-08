@@ -8,7 +8,7 @@
   const PX = SW - 56, PY = 6, HOME = [SW - 51, 181], NIBF = [573, 183];
   const ROW = 169;            // bandGrid's typing row (scale 2 at 608x356): the la-la plate covers it
   const BAR = [ROW - 12, 104];   // the stage's la-la band: one tall row (y, h) through the record's centre
-  const REC = [150, ROW + 40, 150], ARM = [330, 40], NA = -50 * PI / 180, CLX = 448;
+  const REC = [150, ROW + 40, 150], ARM = [330, 40], NA = -50 * PI / 180, CLX = 500, CLS = 3;
   const CW = 340, CX = SW - 8 - CW, CY = 280;   // the quiz card
   const LALA = 'LA LA LA, LA LA LA LA.';
   const c5_fr = (t, at) => Math.floor((t - at) * FPS + 1e-6);
@@ -85,6 +85,27 @@
     if (tap < 4) for (const s of [-1, 1]) { const ox = x + s * (7 + 4 * tap), oy = y - 3 - 2 * tap; rect(ox - 2, oy - 1, 5, 4, BLK); rect(ox - 1, oy, 3, 2, WHT); }   // the tap's spark
     CUR = { x: PX + dx, y: (home ? PY : pyb) + dy, kind: 'arrow', down: dn };
   }
+  // ---- the band's pads (bandGrid's own layout at 608x356, scale 2). Only the kick (and the crash) may fill its pad,
+  // at most one every .7 s from the landing on (the flash budget); every other hit gets its pad flipped back (a
+  // difference with the field undoes the black/lime swap) and is marked by a black outline that closes in instead ----
+  const c5_PADS = (() => {
+    const g = 7, rest = SH - 4 * g - 32 - 44 - 12, r1 = R(rest * .58), r2 = rest - r1, y1 = g + 16, y2 = y1 + r1 + g + 60;
+    const p1 = R((SW - 4 * g) / 3), p2 = R((SW - 5 * g) / 4), x2 = i => g + i * (p2 + g);
+    return [[g, y1, p1, r1, 'floppyA'], [2 * g + p1, y1, p1, r1, 'floppyB'], [3 * g + 2 * p1, y1, SW - 4 * g - 2 * p1, r1, 'kick'],
+      [x2(0), y2, p2, r2, 'snare'], [x2(1), y2, p2, r2, 'clap'], [x2(2), y2, p2, r2, 'crash'], [x2(3), y2, SW - 2 * g - 3 * (p2 + g), r2, 'bell']];
+  })();
+  const C5_INV = (() => { let l = T0; return evTimes('kick').filter(x => x > T0 + 1e-6 && x < ST - 1e-6 && x - l >= .7 && (l = x)); })();
+  function c5_band(t) {
+    bandGrid(0, 0, SW, SH, { t, field: FLD });
+    for (const [px, py, pw, ph, ch] of c5_PADS) {
+      const hf = evFrames(ch, t); if (hf >= 4) continue;
+      const e = evLast(ch, t), fill = (ch === 'kick' || ch === 'crash') && C5_INV.some(x => Math.abs(x - e[0]) < 1e-6);
+      if (fill) continue;
+      const sl = hf < 3 ? [4, 2, 1][hf] : 0;
+      if (hf < 2) c5_dif(() => rect(px - sl + 3, py - sl + 3, pw + 2 * sl - 6, ph + 2 * sl - 6, FLD));
+      const i = 4 + 3 * hf; frame(px + i, py + i, pw - 2 * i, ph - 2 * i, BLK, 3);
+    }
+  }
   function c5_claps(t) { const e = evLast('clap', t); if (e && e[0] >= T0 && c5_fr(t, e[0]) < 14) clickBurst(PX, PY, e[0], { pointer: false, color: BLK, t }); }
 
   // ---- the stage: One More Tune's record (black, only its eleventh groove lit), the tonearm, the quiz card, Clio ----
@@ -116,24 +137,25 @@
   // three whole-pixel zigzags written in the air beside the raised mitten, one per third of the chop, stacked down the
   // empty lime right of her arm like lines of handwriting (THE SCRIBBLE): x <= h + 4u + 8u, clear of the frame edge
   function c5_scrib(d, k, dur) {
-    const h = d.hands[0][1] < d.hands[1][1] ? d.hands[0] : d.hands[1], u = 4, n = Math.min(3, Math.floor(k / (dur / 3) + 1e-6) + 1);
+    const h = d.hands[0][1] < d.hands[1][1] ? d.hands[0] : d.hands[1], u = CLS, n = Math.min(3, Math.floor(k / (dur / 3) + 1e-6) + 1);
     for (const [c, w] of [[FLD, 8], [BLK, 4]]) for (let i = 0; i < n; i++) {
       const ox = h[0] + 3 * u + (i & 1) * u, oy = h[1] + (3 + i * 5) * u;
       for (let j = 0; j < 4; j++) line(ox + j * 2 * u, oy - (j & 1) * 3 * u, ox + (j + 1) * 2 * u, oy - ((j + 1) & 1) * 3 * u, c, w);
     }
   }
-  // Clio pops up from behind the la-la band on the first LA and sings it (choir); on each chop: E / A, the signature
+  // Clio pops up from behind the la-la band on the first LA and stands ON it, whole, in the free lime right of the
+  // tonearm (scale 3: head to feet between y 40 and the band); sings it (choir); on each chop: E / A, the signature
   // (pen = the scribble, pal = the wave) and her head inverts for a frame
   function c5_clio(t) {
-    const k = Math.floor(prog(t, ST, ST + SPB / 2) * 5) / 5, rise = 2 - clamp(Q.indexOf(c5_q(t)) - 1, 0, 2);
+    const k = Math.floor(prog(t, ST, ST + SPB / 2) * 5) / 5;
     const ch = c5_chop(t), live = ch && ch[0] >= T0 && t < ch[0] + ch[1], pn = live && ch[2] === 'pen';
-    const off = R(150 * (1 - k) ** 2) + 12 * rise + (pn ? 40 : 0);   // a notch higher each phrase; ducks to thrust the pen arm up into frame
-    if (off >= 150) return;
+    const off = R(130 * (1 - k) ** 2) - 3 + (pn ? 8 : 0);   // feet on the band's top edge; dips to thrust the pen arm up
+    if (off >= 130) return;
     const o = live ? { pose: pn ? 'pointUp' : 'pointCam', p: pn ? prog(t, ch[0], ch[0] + ch[1]) : .5, mouth: { open: .8, shape: pn ? 'E' : 'A' } } : { pose: 'bounce' };
     clipRect(0, 0, SW, BAR[0], () => {
-      const d = clioDance(CLX, BAR[0] + off, 4, t, { field: FLD, voice: 'choir', ground: false, lyric: false, ...o });
+      const d = clioDance(CLX, BAR[0] + off, CLS, t, { field: FLD, voice: 'choir', ground: false, lyric: false, ...o });
       if (pn) c5_scrib(d, t - ch[0], ch[1]);
-      if (live && c5_fr(t, ch[0]) === 0) c5_dif(() => rect(d.head[0] - 52, d.head[1] - 50, 104, 98, FLD));
+      if (live && c5_fr(t, ch[0]) === 0) c5_dif(() => rect(d.head[0] - 13 * CLS, d.head[1] - 13 * CLS, 26 * CLS, 25 * CLS, FLD));
     });
   }
   function c5_stage(t) {
@@ -152,7 +174,7 @@
   scene('ch05 lala', T0, ST, t => {
     const tt = Math.max(t, T0);
     c5_fix((dx, dy) => {
-      bandGrid(0, 0, SW, SH, { t, field: FLD });
+      c5_band(t);
       c5_row(t, Q[0], 0);
       c5_claps(t);
       if (t >= WIPE0) scanWipe(WIPE0, ST, c5_stage, { band: 4, edge: BLK });   // the grid wipes to the stage on the last two 16ths
@@ -168,7 +190,9 @@
   // ===================================================================================================
   // 54.0-59.833: THE STAGE. 54 "Name the ad." · 56 the organ returns (the groove), the chops · 58 the stutter, the hop home
   // ===================================================================================================
-  const c5_post = t => { c5_stage(t); c5_pen(t, 0, 0); beatFX(t, { anywhere: true }); };
+  const c5_post = t => {   // the cut at 54 is the scan wipe and a split, never a black frame: no phrase invert on 54
+    c5_stage(t); c5_pen(t, 0, 0); beatFX(t, { anywhere: true, kick: t >= Q[2].start - 1e-6 }); splitPal(2, ST, 3, [WHT, BLK], t);
+  };
   scene('ch05 name the ad', ST, Q[2].start, c5_post, { era: 'platinum', raw: true, screen: true });
   scene('ch05 chops', Q[2].start, Q[3].start, c5_post, { era: 'platinum', raw: true, screen: true });
   scene('ch05 stutter', Q[3].start, DR0, c5_post, { era: 'platinum', raw: true, screen: true });

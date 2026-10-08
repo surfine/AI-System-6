@@ -93,7 +93,7 @@ Measured with Praat on every rendered word: lead median 2.1 cents, la-la 1.4, ch
 | lead | amy, LEAD style above; breaths (band-passed noise with two soft resonances, -41 dB, before every lead phrase; the robot chant never breathes) | chain below; plate + 1/8-dotted delay sends, automated |
 | lead doubles (choruses) | two more amy takes, length scale x1.12 / x0.92, +8 / -7 cents, +8 / -6 ms, vibrato 12 cents, panned -/+0.55 | low-passed 8.5 kHz, 6:1, 8.5 dB under the lead |
 | chant | amy flattened to the written note (G3 her speaking pitch), no vibrato/scoop/drift, consonants at natural speed, all the stretch in the vowel, formant x0.96; 8-bit 11 kHz crush (60 % wet) in the 1988 sections; pre-chorus line 2 learns an 80 ms linear portamento | dry, 6:1, presence +2.5 dB at 2.8 kHz |
-| chant double | lessac an octave down, formant x0.88, -9 dB (calibrated 7.7 dB under the chant); the bridge years add jenny at pitch, panned +/-0.45 | darker |
+| chant double | lessac an octave down, formant x0.88, -9 dB (calibrated 7.7 dB under the chant); the bridge years: lessac -7 dB and jenny at pitch -8 dB, panned +/-0.45 | darker |
 | choir (harmony, la-la) | amy (-0.5 pan, +7 cents, +10 ms) + jenny (+0.5, -8 cents, -9 ms) + lessac an octave down (formant x0.86); the final chorus and the outro double every voice (6 takes) | 3:1, width 1.25, plate -9 dB |
 | gang (echo, gang) | 12 copies = 3 voices x 4 Piper speeds (0.95/1.08/1.2/0.88), each with its own detune (+/-15 cents), formant (0.84-1.08), timing (+/-8 ms, so a *d* stays one *d*), high-shelf tilt (+/-3 dB) and pan (spread -0.95..0.95); shouted: a 60-cent scoop into each word, durations x0.9, no vibrato | light saturation, 6:1, +1.5 dB presence, no air shelf, width 1.35; "(pen pal)" and "You do!" set 3 LU over the lead |
 | gang (call: "(Keep it.)", "Flag it.") | 6 copies, detune +/-6 cents, full length, 2 dB under the chorus gang per copy | as above |
@@ -199,10 +199,10 @@ Channel strips (each track normalised to -18 dB active RMS first):
   (body under the voices, the 160-300 Hz hole), -1.5 dB at 63 Hz (Q 1.2) in the choruses and -3 dB in the
   post-choruses.
 - **Post-choruses**: drums and bass -1.5 dB before the energy solve (the solver lifts the band back, so the
-  bounce gets brighter, not quieter), keystroke hats +4 dB, a +3.5 dB shelf at 5 kHz on the choir, chops and
+  bounce gets brighter, not quieter), keystroke hats +4 dB, the drums bus -2.5 dB at 63 Hz and +3 dB above 5 kHz, a +3.5 dB shelf at 5 kHz on the choir, chops and
   organ and +3 dB at 6 kHz on the claps.
 - **Breakdown**: bars 1-3 the bass bus is low-passed at 110 Hz (24 dB/oct) and 9 dB down (the G pedal and the
-  soft drives were the loudest thing in the section); bar 4 (the E2 sub) -4 dB; the spin-up riser -4 dB; snaps
+  soft drives were the loudest thing in the section); bar 4 (the E2 sub) -4 dB after the energy solve; the spin-up riser -4 dB; snaps
   and claps -2 dB in bars 2-3; felt piano 2 dB lower.
 - **Other automation**: the pre-chorus riser -3 dB over the last two beats before the HAND stop; the bridge
   organ comp and beeps -2.5 dB under "Oh-five. Oh-nine." and the organ under the last two bridge lines; the
@@ -224,7 +224,7 @@ Channel strips (each track normalised to -18 dB active RMS first):
 
 Sum of the eight stems -> HP 30 Hz (24 dB/oct) -> **tonal match** (octave-band balance of the mix measured against
 a modern pop curve, 31.5 Hz..16 kHz = -13.5 / -6 / -6.5 / -8.5 / -10.5 / -12.5 / -14 / -15.5 / -17.5 / -24.5 dB re
-total; 60 % of the difference as peaking bands, clamped +/-3 dB, then a 40 % second pass; the 500 Hz-2 kHz bands
+total; 60 % of the difference as peaking bands, clamped +/-3 dB, then a 40 % second pass; the 1 and 2 kHz bands
 are never cut by more than 0.75 dB in all, because that is where the words are) -> small tone EQ -> RMS bus
 compressor 1.5:1 (30 / 200 ms) -> 2x-oversampled soft clip (transparent below -2.1 dBFS) -> lookahead
 (4 ms) **true-peak limiter** at -1.2 dBTP (4x interpolated peak detection, min-filter + moving-average gain
@@ -236,69 +236,105 @@ away; at -14 the limiter only touches the house-kick transients) -> silence wind
 **Stems** are the pre-master buses at the master's input gain with one common trim so none clips; summed and
 passed through the master chain they give the song.
 
-## 7. Measurements (latest build, `build/song-qa.json`)
+## 7. Measurements (latest build, `build/song-qa.json`, plus the QA round-1 scripts re-run on it)
 
 | measure | value |
 |---|---|
 | length | 154.0000 s (DUR 154.0; error 0.000 ms) |
-| loudness | -9.01 LUFS integrated |
-| peaks | -1.20 dBTP true peak (4x), -1.20 dBFS sample peak |
-| limiter | max 2.8 dB, mean 0.67 dB in chorus 1 (the soft clip and the 1.5:1 glue do the rest) |
-| silence window | [131.25, 132.0] s: non-zero only [[131.25, 131.5739], [131.622, 131.765]] (the dry "the" and the keystroke); digital zero elsewhere: True |
+| loudness | -14.01 LUFS integrated (round 1: -9.01) |
+| peaks | -1.19 dBTP true peak (4x), -1.20 dBFS sample peak; PLR 12.8 dB (round 1: 7.9) |
+| limiter | max 1.65 dB, only on the house-kick transients; mean 0.08 dB in chorus 1 (round 1: 2.8 / 0.67) |
+| loudness range | 1 s LUFS P10-P95 6.3 LU, -17.3 to -11.1 (round 1: 2.3 LU) |
+| silence window | [131.25, 132.0] s: non-zero only [[131.25, 131.5739], [131.622, 131.765]] (the dry "the" and the keystroke); digital zero elsewhere: True. The keystroke peaks 4-8 dB under the "the"; the steepest sample step in the 8 ms cut is 0.11, under the music's own p99 step (0.12) |
 | events vs data.js | every EVENTS entry rendered at its time (0 missing); the 12 risers end on their beat (0.0 ms) |
 | measured onsets (max abs) | kick 0.08 ms, snare 2.52, clap 0.12, crash 2.21, hats 3.06, brass stabs 2.67, bell 3.29, keystroke 0.0 |
-| pitch (Praat, steady middle of each note) | lead 163 notes, median 2.1 cents (p95 5.1); la-la 56 notes, median 1.4 (p95 3.7), the riff note for note; chops 28, median 0.6; every note within 25 cents |
-| Whisper (small.en, lead stem) | 27 / 35 lead lines word for word; chorus lines 20 / 24 |
-
-Whisper method: each run of consecutive lead lines (a pre-chorus and its chorus, the breakdown pair, ...) is
-transcribed from the lead stem as one passage (16 kHz float32 array, beam 5, temperature 0), and the transcript is
-aligned word by word to the lyric to score each line; the silent "pen" is not expected.
+| pitch (Praat, steady middle of each note) | lead 163 notes, median 2.1 cents (p95 4.9); la-la 56 notes, median 1.4 (p95 3.7); chops 28, median 0.6; every note within 25 cents |
+| Whisper, passage method (`qa.py`, lead stem) | 28 / 35 lead lines word for word; chorus lines 21 / 24 |
+| Whisper, QA round-1 method (64 primary lines, see below) | mean WER stem 0.32, vox 0.30, full mix 0.38 (round 1: 0.33 / 0.33 / 0.55); median mix 0.29 (0.50); word for word in the mix 13 / 64 (9); mix WER > 0.34 on 30 lines (45) |
 
 Sections (after mastering):
 
 | section | start s | LUFS | RMS dBFS |
 |---|---|---|---|
-| boot | 0.0 | -10.2 | -12.8 |
-| intro | 4.0 | -9.2 | -11.3 |
-| verse1 | 12.0 | -10.1 | -12.1 |
-| pre1 | 28.0 | -9.2 | -11.4 |
-| chorus1 | 36.0 | -8.5 | -10.0 |
-| post1 | 52.0 | -8.8 | -9.8 |
-| verse2 | 60.0 | -9.9 | -12.3 |
-| pre2 | 76.0 | -9.1 | -11.4 |
-| chorus2 | 84.0 | -8.4 | -10.2 |
-| post2 | 100.0 | -8.7 | -9.8 |
-| bridge | 104.0 | -9.1 | -11.1 |
-| breakdown | 120.0 | -9.3 | -10.9 |
-| chorus3 | 128.0 | -8.2 | -10.0 |
-| outro | 144.0 | -9.0 | -11.5 |
-| tail | 152.0 | -12.0 | -14.6 |
+| boot | 0.0 | -15.9 | -18.6 |
+| intro | 4.0 | -14.6 | -16.5 |
+| verse1 | 12.0 | -16.1 | -18.1 |
+| pre1 | 28.0 | -14.9 | -17.4 |
+| chorus1 | 36.0 | -12.2 | -14.1 |
+| post1 | 52.0 | -14.6 | -16.1 |
+| verse2 | 60.0 | -16.2 | -18.7 |
+| pre2 | 76.0 | -14.9 | -17.5 |
+| chorus2 | 84.0 | -12.2 | -14.2 |
+| post2 | 100.0 | -13.9 | -15.5 |
+| bridge | 104.0 | -14.9 | -17.0 |
+| breakdown | 120.0 | -17.2 | -19.7 |
+| chorus3 | 128.0 | -11.8 | -13.8 |
+| outro | 144.0 | -14.8 | -17.2 |
+| tail | 152.0 | -19.3 | -21.8 |
+
+Contour: chorus minus verse 3.9-4.1 LU (round 1: 1.7); chorus minus post-chorus 2.4 / 1.7 LU (0.3); the drop
+into choruses 1 and 2 gains 2.7 / 2.9 LU over the 2 s before (0.9 / 1.0), into chorus 3 5.6 LU (1.9); the HAND
+second (34-35 s) is 1.0 / 1.3 LU under the chorus that follows (it was 1 LU over); the breakdown is 5.0 LU under
+chorus 1 and 1.1 LU under the verses (its 2 s blocks -18.9 / -17.2 / -16.6 / -16.4 LUFS), its bass stem
+-34 / -31 / -33 / -24 dBFS by bar (round 1: a flat -19.1, the loudest stem), its 125 Hz octave -7.5 dB re
+total (-3.4).
 
 Octave-band balance (dB re total):
 
 | band Hz | 31.5 | 63 | 125 | 250 | 500 | 1000 | 2000 | 4000 | 8000 | 16000 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| song | -13.5 | -4.6 | -7.3 | -8.5 | -9.3 | -11.6 | -14.1 | -15.0 | -17.5 | -26.0 |
-| chorus 1 | -9.1 | -4.1 | -8.9 | -10.5 | -8.9 | -12.5 | -13.7 | -15.5 | -19.2 | -27.9 |
+| song | -17.3 | -4.9 | -7.4 | -8.2 | -9.0 | -10.2 | -13.6 | -14.6 | -17.1 | -25.8 |
+| chorus 1 | -14.4 | -4.2 | -7.8 | -9.5 | -9.0 | -10.6 | -13.2 | -15.0 | -18.6 | -27.5 |
 | target | -13.5 | -6.0 | -6.5 | -8.5 | -10.5 | -12.5 | -14.0 | -15.5 | -17.5 | -24.5 |
 
-Stereo: L/R correlation 0.85 overall, 0.99 below 120 Hz (the low end is mono), side 10.8 dB under mid.
+Chorus 1 low end: 20-60 Hz -20.7, 60-120 Hz -20.5, 120-250 Hz -22.5 dBFS (round 1: -14.8 / -16.8 / -19.5 at
+-9 LUFS: the sub band is no longer the biggest; the 31.5 Hz octave is -13.2 dB re total, target -13.5, was
+-8.6). Spectral tilt 100 Hz-10 kHz -4.59 dB/oct (target -4.5). Post-chorus 1 is still the darkest section
+(2 / 4 / 8 kHz at -16.6 / -18.1 / -18.7 dB re total, 1.4 / 2.0 / 4.9 dB brighter than round 1): the la-la owns
+it. Stereo: low end mono (S/M below 120 Hz -23 to -28 dB), the mix folds to mono within 0.7 dB (the tail's
+ringing chord 1.3). The pad pump measures
+7.4 / 6.9 / 6.4 dB in choruses 1-3 (chorus 3 was 3.8). The chant's worst 2-6 kHz frame (-20.4 dBFS) is now
+below the choruses' (-18.9); it was 4 dB above. Gang over lead on "You do!": +4.1 / +3.2 / +3.3 dB.
 
-Whisper lines not word for word (passage transcription; heard <- wanted):
+Lead over the loudest bed stem (drums), 1-5 kHz, sung frames: +8.4 / +8.5 / +8.0 dB in choruses 1-3 (round 1:
++5.4 / +5.8 / +4.4). That is deliberately "proud", beyond the 0-4 dB window QA used: with the lead where round 1
+had it (and with the band carved, the presence boost trimmed and the vocals' consonants fixed) Whisper still lost
+the hook in the full mix; 3 dB more lead took a 19-line chorus test set from mean WER 0.58 to 0.35, more
+consonant boost made it worse (0.62).
 
-- `v2f_keep` "get it" <- "Keep it."
-- `chorus2c` "you say" <- "You say where I land,"
-- `chorus2d` "" <- "or I fade."
-- `b7` "eras one desk" <- "Twelve eras. One desk."
-- `b8` "and you're windows c" <- "And your windows stay."
-- `chorus3c` "you say where i am" <- "You say where I land,"
-- `chorus3d` "or i fail" <- "or I fade."
-- `o2` "it was always your boiiiiiiiiiiiiiiiiiii..." <- "It was always your voice."
+**Whisper, QA round-1 method** (faster_whisper small.en, beam 5, T 0, each data.js line +/-0.15 s, from the line's
+own stem, the vox sum and song.wav; WER normalised as QA did; la-la exempt; bridge years on digit strings). Per
+line, round 1 -> now, full mix:
+
+| line | round 1 | now | heard now (mix) |
+|---|---|---|---|
+| Who holds the pen? (c1 / c2 / c3) | 1.00 / 1.00 / 1.00 | 0.25 / 0.25 / 1.00 | "He holds the pen", "Here holds the pen", "I'm here holding pants" |
+| You do! You do! (c1 / c2 / c3) | 1.00 / 1.00 / 1.00 | 0.00 / 0.00 / 0.00 | "You do, you do" (the gang lines too) |
+| I'm just your pen pal, (c1a / c1e / c2a / c3a / c3e) | 0.40 / 0.60 / 0.40 / 0.60 / 0.80 | 0.20 / 0.20 / 0.20 / 0.20 / 0.00 | "I'm just a penpal" |
+| I'll never hold the pen. (c1f / c2f / c3f) | 0.40 / 0.20 / 0.60 | 0.40 / 0.20 / 0.40 | "hold the pad here", "hold the path" |
+| You say where I land, (c1 / c2 / c3) | 0.80 / 0.60 / 0.80 | 0.40 / 0.40 / 0.60 | "You say we're my land" |
+| But the pen and the page (pre1c / pre2c) | 1.00 / 0.50 | 0.17 / 0.17 | "But the pen and the page stay" (stem 0.50 -> 0.17) |
+| Too regular? / Keep it. | 0.50 / 1.00 | 0.00 / 0.50 | "too regular" / "Keet it!" |
+
+Still failing in the mix (> 0.34), with the reason as far as it can be told:
+
+- `chorusNd` "or I fade." (1.00): in a 1.3 s window Whisper spells the stem "M-R-I-V"; in context the same stem is
+  heard word for word ("You say where I land or I fade.", 40-43.2 s). A short-window artefact plus the gag.
+- `v2c/d/e_flag` "Flag it." and `v1c_echo` "(Keep it.)" (gang calls): "Fliers", "For it". `v2f` "Rough edge?"
+  (stem "Right", mix "raw edge"): even raw Piper speech of these two words is heard as "Roth Ed".
+- `pre1a`, `pre2a` "I can fetch / check / flag": "I can't share, I can't fly". Piper's "can" before a stop.
+- `b4` "Oh-five. Oh-nine." (heard "Oh"), `b5`, `b7` "Twelve eras. One desk." ("12 eras, 1, 2, and" in the stem),
+  `b8` ("back your windows"): the bridge's short windows; rendered alone the year words are heard ("Oh five oh
+  nine").
+- `v1c`, `v1d`, `pre2b`, `chorus3g`, `chorus3c`: legible in the stem, lost in the mix window.
+- `o2` "It was always your voice." (0.20, below the cut): the grain-loop freeze still makes Whisper write
+  "boiiii..." on the stem; the mix reads "It was always a voice".
 
 ## 8. Known limits
 
-- Whisper is a strict judge of PSOLA-sung speech at D5-E5: lines it does not transcribe word for word are listed
-  in the table above. The gags are meant to damage words (FADE, the frozen "voice"), and the shouted gang and
+- Whisper is a strict judge of PSOLA-sung speech at D5-E5, and in 2 s windows of a full mix it is unstable: a
+  0.5 dB change in one bus flips single lines between right and wrong, so judge a mix change by the whole line
+  set, not one line. Lines it does not transcribe are listed above. The gags are meant to damage words (FADE, the frozen "voice"), and the shouted gang and
   la-la are judged by contour, not text (SONG.md section 5).
 - Piper voices are sampled at 22.05 kHz; the air above 11 kHz on the voices is synthesised by the exciter.
 - Piper's own random sampler is off (zero noise) for determinism; the variety between doubled and stacked takes

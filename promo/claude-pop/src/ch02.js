@@ -50,27 +50,28 @@ const c02_dKeys = Array.from({ length: 10 }, (_, i) => c02_T.your - .125 + i / 1
 const c02_on = (t, a, b) => t >= a - 1e-6 && t < b - 1e-6;
 const c02_fr = (t, a) => Math.floor((t - a) * FPS + .5);   // nearest frame
 
-// ---- the lens: [t, anchorX, anchorY, n, plateCentreX, plateTop], built from the crop's top-left (screen px) ----
-function c02_key(t, L, Tp, n, pcx, py) {
-  if (n < 2) return [t, 0, 0, 1, pcx, py];
+// ---- the lens: [t, anchorX, anchorY, n, plateCentreX, plateTop, plateMaxW], built from the crop's top-left (screen px) ----
+// The chant plate never sits on a window's title bar: it rides above Clio (two rows, as §5 ch02 draws it) or on blank paper.
+function c02_key(t, L, Tp, n, pcx, py, mw = 1e9) {
+  if (n < 2) return [t, 0, 0, 1, pcx, py, mw];
   const solve = (want, off) => { for (let z = want; z < want * 2 + n; z++) if (z - Math.floor(z / n) === want) return z - off; return want - off; };
-  return [t, solve(L + 64, 64), solve(Tp + 9, 9), n, pcx, py];
+  return [t, solve(L + 64, 64), solve(Tp + 9, 9), n, pcx, py, mw];
 }
 const c02_KEYS = [
-  c02_key(c02_T.spin, 192, 0, 2, 330, 154),          // the Hard Disk icon spins; the menu-bar hint, drive A
-  c02_key(c02_T.hard, 0, 48, 2, 160, 200),           // the Route: eight stops (plates sit under the windows, in the crop)
-  c02_key(c02_T.feed, 48, 48, 2, 208, 200),          // the pointer takes the File Floppy...
-  c02_key(c02_T.the2, 160, 48, 2, 236, 200),         // ...to drive A's slot
-  c02_key(c02_T.floppy + .5, 0, 48, 2, 160, 200),   // the File Floppy is read (OCR)
-  c02_key(c02_T.ask, 0, 48, 2, 90, 200),             // the Question Sheet (the pen hangs right of the plate)
+  c02_key(c02_T.spin, 192, 0, 2, 340, 140, 116),     // the Hard Disk icon spins; the menu-bar hint, drive A; the plate above Clio
+  c02_key(c02_T.hard, 80, 48, 2, 340, 140, 116),     // the Route: its stops, the plate above Clio (x 282-398, off every window)
+  c02_key(c02_T.feed, 80, 48, 2, 340, 140, 116),     // the pointer takes the File Floppy...
+  c02_key(c02_T.the2, 160, 48, 2, 340, 140, 116),    // ...to drive A's slot
+  c02_key(c02_T.floppy + .5, 80, 48, 2, 340, 140, 116), // the File Floppy is read (OCR)
+  c02_key(c02_T.ask, 0, 48, 2, 90, 166),             // the Question Sheet: the plate on its blank paper, the pen right of it
   c02_key(c02_T.search, 0, 162, 2, 188, 171),        // Searcher, Reader: the plate above them, the hand below
   c02_key(c02_T.proofEnd, 96, 162, 2, 188, 171),     // the drag to the Scrapbook icon
   c02_key(c02_T.scrap, 0, 162, 2, 188, 171),         // the Scrapbook card
   c02_key(c02_T.echo, 0, 0, 1, 352, 30),             // the gang, the whole desk
-  c02_key(c02_T.outline, 0, 48, 2, 160, 200),        // the Outline
+  c02_key(c02_T.outline, 0, 48, 2, 160, 166),        // the Outline (the plate on its blank paper)
   c02_key(c02_T.draft, 0, 162, 2, 188, 171),         // Section Drafts: your words
   c02_key(c02_T.shutDrafts, 160, 162, 2, 320, 171),  // Drafts saves into its icon
-  c02_key(c02_T.not, 60, 96, 2, 150, 198),           // Clio's I-beam reaches for the manuscript
+  c02_key(c02_T.not, 60, 96, 2, 150, 154),           // Clio's I-beam reaches for the manuscript
   c02_key(c02_T.mine, 240, 0, 3, 347, 94),           // the hint, taught once, big
   c02_key(c02_T.shutRoute, 0, 96, 2, 150, 150),      // the Route closes; the notice, the bonked I-beam
   c02_key(c02_T.beep, 0, 0, 1, 180, 150),            // 1x for the beep and the hand-off
@@ -92,25 +93,33 @@ const c02_dif = (x, y, w, h) => { ctx.save(); ctx.globalCompositeOperation = 'di
 function c02_shut(f, to, k) {
   for (let j = 0; j < 3; j++) { const kk = clamp(easeIn(k) - j * .14); if (j && kk <= 0) continue; frame(R(lerp(f[0], to[0], kk)), R(lerp(f[1], to[1], kk)), R(lerp(f[2], 16, kk)), R(lerp(f[3], 12, kk)), C.black, j ? 1 : 3); }
 }
-// Clio's TEMPORARY plate: 50% paper dither, marching ants (phase on 8ths), the tag; kept = solid white, ants stopped
+// Clio's TEMPORARY plate: opaque paper (nothing under it reads through), marching ants (phase on 8ths), the tag;
+// kept = solid white in a solid black frame, ants stopped
 function c02_ghost(x, y, w, h, t, kept) {
   x = R(x); y = R(y);
   if (kept) { rect(x, y, w, h, C.black); rect(x + 1, y + 1, w - 2, h - 2, C.white); return; }
-  bayer(x, y, w, h, .5, C.white); frame(x, y, w, h, C.white);
+  rect(x, y, w, h, C.white);
   const ph = Math.floor(t * 4) & 3; let i = 0; ctx.fillStyle = C.black;
   const d = (px, py) => { if (((i++ + ph) & 3) < 2) ctx.fillRect(px, py, 1, 1); };
   for (let k = 0; k < w; k++) d(x + k, y); for (let k = 1; k < h; k++) d(x + w - 1, y + k);
   for (let k = w - 2; k >= 0; k--) d(x + k, y + h - 1); for (let k = h - 2; k > 0; k--) d(x, y + k);
   const tg = tw('TEMPORARY', 'small'); rect(x + w - tg - 10, y - 5, tg + 6, 11, C.black); text('TEMPORARY', x + w - tg - 7, y - 3, { font: 'small', color: C.white });
 }
+// a phrase's layout: words wrap into rows no wider than mw; {pos: [[x, row]], w, n}
+function c02_lay(ws, s, mw = 1e9) {
+  const pos = [], rows = [''];
+  ws.forEach(v => { const r = rows[rows.length - 1]; if (r && tw(r + ' ' + v.w, 'chicago', s) > mw) rows.push('');
+    const q = rows[rows.length - 1]; pos.push([q ? tw(q + ' ', 'chicago', s) : 0, rows.length - 1]); rows[rows.length - 1] = q ? q + ' ' + v.w : v.w; });
+  return { pos, w: Math.max(...rows.map(r => tw(r, 'chicago', s))), n: rows.length };
+}
 // words of a lyric line laid out on a plate, each popping inverted for 3 frames on its note; `gone` words un-type from the end
-function c02_words(ws, x, y, s, t, gone) {
+function c02_words(ws, lay, x, y, s, t, gone) {
   const n = ws.length - (gone || 0);
   ws.forEach((w, i) => {
     if (i >= n || t < w.start - 1e-6) return;
-    const px = x + tw(ws.slice(0, i).map(v => v.w).join(' ') + (i ? ' ' : ''), 'chicago', s), ww = tw(w.w, 'chicago', s);
-    if (c02_fr(t, w.start) < 3) { rect(px - s, y - 2 * s, ww + 2 * s, 13 * s, C.black); text(w.w, px, y, { font: 'chicago', scale: s, color: C.white }); }
-    else text(w.w, px, y, { font: 'chicago', scale: s, color: C.black, outline: C.white });
+    const px = x + lay.pos[i][0], ww = tw(w.w, 'chicago', s); const py = y + lay.pos[i][1] * 14 * s;
+    if (c02_fr(t, w.start) < 3) { rect(px - s, py - 2 * s, ww + 2 * s, 13 * s, C.black); text(w.w, px, py, { font: 'chicago', scale: s, color: C.white }); }
+    else text(w.w, px, py, { font: 'chicago', scale: s, color: C.black, outline: C.white });
   });
 }
 const c02_SPLIT = { v1a: 4, v1b: 3, v1c: 3, v1d: 4 };   // words in each line's first phrase
@@ -123,15 +132,15 @@ function c02_chant(t, key) {
   const sp = c02_SPLIT[L.id], second = t >= L.words[sp].start - 1e-6, ws = second ? L.words.slice(sp) : L.words.slice(0, sp);
   const ev0 = L === c02_D ? L.end : L.end + .25, gone = t >= ev0 ? Math.floor((t - ev0) * 16) + 1 : 0;
   if (gone >= ws.length) return;
-  const pw = tw(ws.map(v => v.w).join(' '), 'chicago') + 12, px = R(key[4] - pw / 2);
-  c02_ghost(px, key[5], pw, 20, t, false);
-  c02_words(ws, px + 6, key[5] + 5, 1, t, gone);
+  const lay = c02_lay(ws, 1, (key[6] || 1e9) - 12), pw = lay.w + 12, px = R(key[4] - pw / 2);
+  c02_ghost(px, key[5], pw, lay.n * 14 + 6, t, false);
+  c02_words(ws, lay, px + 6, key[5] + 5, 1, t, gone);
 }
 // the gang's echo: twelve copies crowding the bottom edge, one plate "(Keep it.)" at 2x above Clio, off the drives
 function c02_echoPlate(t, key) {
   const ws = c02_E.words, s = 2, pw = tw('(Keep it.)', 'chicago', s) + 16, px = R(key[4] - pw / 2);
   c02_ghost(px, key[5], pw, 40, t, false);
-  c02_words(ws, px + 8, key[5] + 11, s, t, 0);
+  c02_words(ws, c02_lay(ws, s), px + 8, key[5] + 11, s, t, 0);
 }
 function c02_gang(t) {
   const f = c02_fr(t, c02_T.echo);
@@ -156,9 +165,9 @@ const c02_stop = t => t < c02_T.hard ? -1 : t < c02_T.feed ? 0 : t < c02_T.ask ?
 const c02_GRID = [0, 1, 2, 3, 7, 6, 5, 4];
 function c02_grid(t, k) {
   const st = c02_stop(t), scan = prog(t, c02_T.floppy, c02_T.floppy + 1), ocr = c02_on(t, c02_T.floppy, c02_T.floppy + 1);
-  const items = [['hardDisk', 'Hard Disk'], ['fileFloppy', ocr ? 'OCR ' + R(Math.floor(scan * 8) / 8 * 100) + '%' : 'File Floppy'], ['questionSheet', 'Questions'], ['outline', 'Outline'],
-    ['projectDisc', 'Project CD'], ['reviewDesk', 'Review Desk'], ['manuscript', 'Manuscript'], ['sectionDrafts', 'Drafts']];
-  const g = APP.finder(8, 30, 268, 164, { title: 'Project Hard Disk', items, sel: st >= 0 ? c02_GRID.indexOf(st) : undefined, open: t >= c02_T.floppy ? 1 : undefined, header: ['', '', ''], scroll: '', gap: 66, cols: 4, k, from: [476, 38] });
+  const items = [['hardDisk', 'Hard Disk'], ['fileFloppy', ocr ? 'OCR ' + R(Math.floor(scan * 8) / 8 * 100) + '%' : 'File Floppy'], ['questionSheet', 'Question Sheet'], ['outline', 'Outline'],
+    ['projectDisc', 'Project CD'], ['reviewDesk', 'Review Desk'], ['manuscript', 'Manuscript'], ['sectionDrafts', 'Section Drafts']];
+  const g = APP.finder(8, 30, 268, 164, { title: 'Project Hard Disk', items, sel: st >= 0 ? c02_GRID.indexOf(st) : undefined, open: t >= c02_T.floppy ? 1 : undefined, header: ['', '', ''], scroll: '', gap: 64, cols: 4, k, from: [476, 38] });
   if (!g) return null;
   // the arrows of the route, solid once walked
   const I = g.icons, seg = (i, a, b, dir) => { const done = st > i; if (dir === 'down') { (done ? vline : (x, y, h, c) => { for (let q = 0; q < h; q += 2) rect(x, y + q, 1, 1, c); })(a[0], a[1], b[1] - a[1], C.black); arrowTri(a[0] - 2, b[1] - 2, 3, 'down', C.black); return; }
@@ -284,7 +293,6 @@ function c02_frame(t) {
         if (t >= c02_T.ms) { const r = c.rows[c.rows.length - 1]; pd = [r.x + r.w + 1, r.y + capH('doc') - 1]; rect(...pd, 2, 2, FIELDS.vermilion); }
         if (t < ts + .1) zoomRects(m, c, prog(t, ts, ts + .1));
       } else if (t < c02_T.shutRoute + .16) c02_shut([8, 30, 268, 164], [468, 32], prog(t, c02_T.shutRoute, c02_T.shutRoute + .16));
-      if (c02_on(t, c02_T.not, c02_T.beep)) c02_clioBeam(t, pd);
       // the read-only strip flashes while she is refused
       if (refused && (Math.floor((t - c02_T.mine) * 8) & 1) === 0) c02_dif(9, 177, 266, 16);
       // gag windows over ClioTalk
@@ -304,6 +312,7 @@ function c02_frame(t) {
       if (c02_on(t, c02_T.proof, c02_T.scrap)) trail(t, 2, 1 / 30, (tt, i) => { const q = mousePath(tt, c02_PTR), w = tw('They billed it by the moon.', 'ui') + 8; if (!i) rect(q.x - 30, q.y - 8, w, 15, C.white); dragOutline(q.x - 30, q.y - 8, w, 15); if (!i) text('They billed it by the moon.', q.x - 26, q.y - 5, { font: 'ui', color: C.black }); });
       if (c02_on(t, c02_T.echo, c02_T.outline)) c02_gang(t);
       c02_chant(t, key);
+      if (c02_on(t, c02_T.not, c02_T.beep)) c02_clioBeam(t, pd);   // over the plate: her reach is the gag
     },
   };
   if (refused) o.menu = { prop: (x, y, w, h) => c02_youProp(c02_HINT[1])(x + (sh < 6 ? (sh & 1 ? -1 : 1) : 0), y, w, h) };

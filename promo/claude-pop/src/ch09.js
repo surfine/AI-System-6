@@ -61,24 +61,34 @@ function c09_periodF(era) {
   return p;
 }
 
-// ---- Clio's words on a TEMPORARY plate: 75% paper over ink, marching ants on 8ths, the TEMPORARY tag at (tx, ty) ----
-function c09_ghostPlate(x, y, w, h, t, ink, paper, tx, ty) {
-  rect(x, y, w, h, ink); bayer(x + 1, y + 1, w - 2, h - 2, .75, paper, null); frame(x, y, w, h, paper);
+// ---- Clio's words on a TEMPORARY plate: 87.5% paper over ink (light enough for the solid letters to read at 1x), marching ants on 8ths, the TEMPORARY tag at (tx, ty) ----
+function c09_ghostPlate(x, y, w, h, t, ink, paper, tx, ty, tagInv) {
+  rect(x, y, w, h, ink); bayer(x + 1, y + 1, w - 2, h - 2, .875, paper, null); frame(x, y, w, h, paper);
   const ph = Math.floor(beatAt(t) * 2) & 3, seg = (x0, y0, len, hz) => { for (let i = -ph; i < len; i += 4) { const a = Math.max(0, i), b = Math.min(len, i + 2); if (b > a) hz ? rect(x0 + a, y0, b - a, 1, ink) : rect(x0, y0 + a, 1, b - a, ink); } };
   seg(x, y, w, 1); seg(x, y + h - 1, w, 1); seg(x, y, h, 0); seg(x + w - 1, y, h, 0);
   const tg = 'TEMPORARY', tgw = tw(tg, 'small') + 6;
+  if (tagInv) [ink, paper] = [paper, ink];
   rect(tx - 1, ty - 1, tgw + 2, 12, paper); rect(tx, ty, tgw, 10, ink); text(tg, tx + 3, ty + 2, { font: 'small', color: paper });
 }
 // the chant on its plate INSIDE ClioTalk's rect (frame x 24..292): above the Dock band (frame y > 314) and left of the
 // icon row (x >= 302), so every era's chrome stays whole. Solid small-font 2x letters (rule 4). The tunnel's plate sits on
 // the year slab's foot with the tag on a tab; the stay's plate covers ClioTalk's input row: the line, then the riser
-// bar and the tag. Pre-inverted colours in the negative.
-function c09_chant(t, L, neg, stay) {
+// bar and the tag. Pre-inverted colours in the negative. The letters are SOLID ink with a 1-px paper halo (ch02/ch03), so
+// they never melt into the plate's dither; only the plate is temporary. The beep inverts the tag for a frame.
+function c09_kara(L, cx, y, t, ink, paper) {   // kara 'pop' (small, 2x), centred, each word with a 1-px halo
+  const f = 'small', s = 2, sp = Math.max(s * 3, R(FONTS[fontKey(f)].space * s)), ws = L.words.map(w => tw(w.w, f, s));
+  let x = R(cx - (ws.reduce((a, b) => a + b, 0) + sp * (ws.length - 1)) / 2);
+  L.words.forEach((w, j) => {
+    if (t >= w.start) text(w.w, x, y + R(-3 * s * Math.exp(-14 * (t - w.start)) * Math.cos((t - w.start) * 30)), { font: f, scale: s, color: ink, outline: paper, outlineW: 1 });
+    x += ws[j] + sp;
+  });
+}
+function c09_chant(t, L, neg, stay, beep) {
   const ink = neg ? c09_WHT : c09_BLK, paper = neg ? c09_BLK : c09_WHT, x = 24, w = 268, y = stay ? 272 : 284, h = stay ? 40 : 26;
   withEra('system6', () => {
     const tgw = tw('TEMPORARY', 'small') + 6;
-    c09_ghostPlate(x, y, w, h, t, ink, paper, x + w - tgw - 6, stay ? y + h - 15 : y - 5);
-    kara(L, x + w / 2, y + 6, { font: 'small', scale: 2, align: 'center', mode: 'pop', color: ink, t });
+    c09_ghostPlate(x, y, w, h, t, ink, paper, x + w - tgw - 6, stay ? y + h - 15 : y - 5, beep);
+    c09_kara(L, x + w / 2, y + 6, t, ink, paper);
     const sp = evSpan('riser', t);   // the riser into the breakdown: a bar filling on 16ths, shaking in its last beat
     if (stay && sp && sp[0] >= c09_TA - 1e-6) {
       const N = R((sp[1] - sp[0]) / (SPB / 4)), n = Math.min(N, Math.floor((t - sp[0]) / (SPB / 4) + 1e-6)), bw = w - tgw - 22;
@@ -88,13 +98,14 @@ function c09_chant(t, L, neg, stay) {
   });
 }
 
-// ---- THE YEAR: poster type slammed over ClioTalk's rect (the chat is the year), white on a black slab; a cowbell inverts it ----
+// ---- THE YEAR: poster type slammed over ClioTalk's rect (the chat is the year), white on a black slab. The cowbell jolts the
+// figures 2 px right for 2 frames (an invert of the slab would be a flash: it fills a third of the screen's height) ----
 const c09_SLAB = [c09_SCR.x + 6, c09_SCR.y + 200, 276];   // its foot follows ClioTalk's (110 high in dock eras: clear of the Dock)
 function c09_year(t, i) {
-  const cb = evLast('cowbell', t), inv = !!cb && cb[0] >= c09_T0 && cb[0] < c09_TS && c09_fr(t, cb[0]) === 0;
-  const ink = inv ? c09_WHT : c09_BLK, paper = inv ? c09_BLK : c09_WHT, [sx, sy, sw] = c09_SLAB, sh = ERA[c09_ERAS[i]].dock ? 112 : 116;
-  rect(sx, sy, sw, sh, ink);
-  bigType(String(c09_YEARS[i]), { scale: 7, color: paper, invert: true, slab: ink, pad: 1, x: sx + sw / 2, y: sy + 38, slam: c09_Y[i], t });
+  const cb = evLast('cowbell', t), jolt = !!cb && cb[0] >= c09_T0 && cb[0] < c09_TS && c09_fr(t, cb[0]) < 2 ? 2 : 0;
+  const [sx, sy, sw] = c09_SLAB, sh = ERA[c09_ERAS[i]].dock ? 112 : 116;
+  rect(sx, sy, sw, sh, c09_BLK);
+  bigType(String(c09_YEARS[i]), { scale: 7, color: c09_WHT, invert: true, slab: c09_BLK, pad: 1, x: sx + sw / 2 + jolt, y: sy + 38, slam: c09_Y[i], t });
 }
 
 // ---- the contact sheet: twelve 160x90 miniatures of our desk at 116.0, a 4x4 box average Bayer-quantised ----
@@ -118,16 +129,15 @@ function c09_shrink4(src, mono) {   // draws the shrunk frame at (0, 0) of the c
   ctx.putImageData(od, 0, 0);
 }
 const c09_thumb = i => memo('c9thumb' + i, c09_CW, c09_CH, () => c09_shrink4(frameInto(styleBuf('c9T'), c09_TS, c09_desk, c09_opt(c09_ERAS[i])), ERA[c09_ERAS[i]].depth === 1));
-const c09_inv = (x, y, w, h) => { ctx.save(); ctx.globalCompositeOperation = 'difference'; rect(x, y, w, h, c09_WHT); ctx.restore(); };
-// the sheet at t (before 116.0 it is the 116.0 state: the last dive's inner frame). "Twelve": the roll call, a thumb inverting
-// per 1/24 s; "eras.": the year plates flash; "One": the twelve full stops blink in unison; "desk.": a white frame in 4 steps
+// the sheet at t (before 116.0 it is the 116.0 state: the last dive's inner frame). "Twelve": the roll call, a vermilion rim round
+// each thumb per 1/24 s; "eras.": the year plates flash; "One": the twelve full stops blink in unison; "desk.": a white frame in 4 steps
 function c09_sheet(t, noLyric) {
   rect(0, 0, FW, FH, c09_BLK);
   const [wTw, wEr, wOne, wDesk] = c09_B7.words;
   for (let i = 0; i < 12; i++) {
     const [x, y] = c09_cell(i);
     ctx.drawImage(c09_thumb(i), x, y);
-    const rf = c09_fr(t, wTw.start + i * SPB / 12); if (rf >= 0 && rf < 2) c09_inv(x, y, c09_CW, c09_CH);
+    const rf = c09_fr(t, wTw.start + i * SPB / 12); if (rf >= 0 && rf < 2) frame(x + 1, y + 1, c09_CW - 2, c09_CH - 2, c09_VER, 2);   // a rim: 12 inverts in .5 s strobe
     const yr = String(c09_YEARS[i]), pw = tw(yr, 'geneva') + 6, ef = c09_fr(t, wEr.start), fl = ef >= 0 && (ef < 3 || (ef >= 15 && ef < 18));
     rect(x + 3, y + c09_CH - 15, pw, 12, fl ? c09_WHT : c09_BLK); text(yr, x + 6, y + c09_CH - 13, { font: 'geneva', color: fl ? c09_BLK : c09_WHT });
     const pf = c09_periodF(c09_ERAS[i]), px = x + (pf[0] >> 2), py = y + (pf[1] >> 2), of = c09_fr(t, wOne.start);
@@ -143,22 +153,40 @@ const c09_sheetMark = () => { const [x, y] = c09_cell(5), pf = c09_periodF(c09_E
 
 // ===================================================================================================
 // 104-116: THE TUNNEL. Year i: HOLD at 1:1 (the era whole, THE YEAR slammed over the chat, the chant on its plate), then the
-// WHIP: a power-2 dive into the vermilion full stop; "fills" blows past in that era's face; the next era (the sheet after
-// 2026) grows inside the dot. Every landing is a beep: a 1-frame invert and a 3-frame split. The drain renders this at t < 104.
+// WHIP into the full stop, built flash-safe (WCAG 2.3.1): the desk HOLDS STILL while its vermilion full stop opens, a square
+// of the light inside the dot (PL, linear luminance .83: the white desk going into it is no flash, only its dark pixels
+// lift) growing from PERIOD_F to the whole frame on a power curve; then the next era (the sheet after 2026) opens at 1:1 out
+// of ITS full stop inside that light. No zoom of the desk's dithers (a nearest-neighbour zoom shimmers every pixel), no
+// black plunge, no full-frame invert on the landing: each pixel changes at most twice a dive (desk, light, desk), one flash
+// a second at most. The beep is the plate's TEMPORARY tag inverting a frame; the year's slam is the landing.
 // ===================================================================================================
+const c09_PL = '#ffe6e0';
+function c09_open(u, p, src) {   // a square from p (u 0..1, exponential, panning to the centre); src: a frame shown at 1:1, else PL
+  if (u <= 0) return;
+  const B = 2 * Math.pow((FW + 8) / 2, u), cx = lerp(p[0] + 1, FW / 2, u), cy = lerp(p[1] + 1, FH / 2, u);
+  const bx = R(cx - B / 2), by = R(cy - B / 2), bw = R(B), x0 = Math.max(0, bx), y0 = Math.max(0, by), x1 = Math.min(FW, bx + bw), y1 = Math.min(FH, by + bw);
+  if (x1 <= x0 || y1 <= y0) return;
+  if (src) ctx.drawImage(src, x0, y0, x1 - x0, y1 - y0, x0, y0, x1 - x0, y1 - y0); else rect(x0, y0, x1 - x0, y1 - y0, c09_PL);
+  if (u < 1) frame(bx - 2, by - 2, bw + 4, bw + 4, c09_VER, 2);   // the dot's rim
+}
 function c09_tunnel(t) {
   const i = clamp(bsearch(c09_Y, t + 1e-6), 0, 11), Yi = c09_Y[i], era = c09_ERAS[i], hold = c09_HOLD(i), outer = i ? c09_desk : c09_desk1988;
   if (t < Yi + hold - 1e-6) ctx.drawImage(frameInto(styleBuf('c9A'), t, outer, c09_opt(era)), 0, 0);
   else {
-    const last = i === 11, pf = c09_periodF(era), nxt = last ? null : c09_ERAS[i + 1];
-    diveInto(Yi + hold, last ? c09_TS : c09_Y[i + 1], pf[0], pf[1], outer, last ? c09_sheet : c09_desk,
-      { pw: 2, power: i >= 8 ? 2.5 : 2, color: c09_VER, outer: c09_opt(era), inner: last ? { raw: true, era: 'system6' } : c09_opt(nxt), mark: last ? c09_sheetMark() : c09_periodF(nxt) });
+    const last = i === 11, W1 = last ? c09_TS : c09_Y[i + 1], k = prog(t, Yi + hold, W1), k1 = Math.pow(clamp(k / .4), 1.5), k2 = Math.pow(clamp((k - .4) / .6), .6);   // the dot opens (40%); the next era opens out of it (60%, quick to show)
+    const pB = last ? c09_sheetMark() : c09_periodF(c09_ERAS[i + 1]);
+    if (k1 < 1) { ctx.drawImage(frameInto(styleBuf('c9A'), t, outer, c09_opt(era)), 0, 0); c09_open(k1, c09_periodF(era), null); }
+    else {
+      rect(0, 0, FW, FH, c09_PL);
+      if (k2 > 0) c09_open(k2, pB, frameInto(styleBuf('c9B'), t, last ? c09_sheet : c09_desk, last ? { raw: true, era: 'system6' } : c09_opt(c09_ERAS[i + 1])));
+      if (R(2 * Math.pow((FW + 8) / 2, k2)) < 8) rect(pB[0], pB[1], 2, 2, c09_VER);   // the next full stop, where it opens
+    }
   }
-  invertFrame(Yi, 1, t); splitPal(2, Yi, 3, [c09_WHT, c09_BLK], t);                                   // the landing beep
+  if (i) splitPal(2, Yi, 3, [c09_WHT, c09_BLK], t);   // the landing beep: the palette split (no invert; at 104 the drop's sort is the hit)
   if (!i) { punch(c09_T0, c09_NIB[0], c09_NIB[1], [2, 2], t); pixelSort(16, 220, c09_T0, 2, t); }      // owed: the drain's punch, the drop's sort
   const sub = evLast('sub', t); if (sub && sub[0] >= c09_T0 && c09_fr(t, sub[0]) < 2) { FX.dy = 1; FX.shake = 1; }   // the 808 drop at "Eleven."
   if (t >= Yi - 1e-6) c09_year(t, i);
-  const L = lineAt(t, 'chant'); if (L && L.section === c09_SEC.name) c09_chant(t, L, false, false);
+  const L = lineAt(t, 'chant'); if (L && L.section === c09_SEC.name) c09_chant(t, L, false, false, c09_fr(t, Yi) === 0);
 }
 scene('ch09 tunnel', c09_T0, c09_TS, c09_tunnel, { raw: true, era: 'system6' });
 
@@ -167,7 +195,7 @@ scene('ch09 tunnel', c09_T0, c09_TS, c09_tunnel, { raw: true, era: 'system6' });
 // ===================================================================================================
 scene('ch09 sheet', c09_TS, c09_TA, t => {
   c09_sheet(t);
-  invertFrame(c09_TS, 1, t); splitPal(2, c09_TS, 3, [c09_WHT, c09_BLK], t); punch(c09_TS, FW / 2, FH / 2, [2, 2], t);
+  splitPal(2, c09_TS, 3, [c09_WHT, c09_BLK], t); punch(c09_TS, FW / 2, FH / 2, [2, 2], t);   // no invert: the sheet lands out of the light
 }, { raw: true, era: 'system6' });
 
 // ===================================================================================================

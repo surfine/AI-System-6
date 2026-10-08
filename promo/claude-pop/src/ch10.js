@@ -63,8 +63,10 @@ const DLG = { x: 30, y: 34, w: 240, h: 132 };                // Control Panel, o
 const CH = { x: 9, y: 237, w: 266 };                         // ClioTalk's client (the home desk's)
 const BTN = [142, 250], ROW = [226, 107], OK = [247, 261], HDR = [206, 223];
 const HOME = [300, 24], REST = [300, 64], TIP = [240, 150];  // TIP: the nib on the Manuscript's blank paper, inside the 9:16 column
-const TIPF = [TIP[0] + 16, TIP[1] + 2], SLOT_Y = [172, 168];   // the lyric slot under the gate (2x lens, 1x): covers the Manuscript's strip
-const DRAG = PIV + 3 * S16, GRAB = [140, 34], DROP = [140, 34 + M2.y - M1.y];
+const TIPF = [TIP[0] + 16, TIP[1] + 2], SLOT_Y = [172, 250];   // the lyric slot: under the gate on the Manuscript's strip (2x lens), in ClioTalk's empty client (1x); clear of title bars
+const DRAG = PIV + 4 * S16, GRAB = [140, 34], DROP = [140, 34 + M2.y - M1.y];
+// the pivot's drag: the gate itself rides the pointer down in four hard 16th steps (126.125-126.5), no outline pop
+const gateDY = t => R((M2.y - M1.y) * clamp(Math.floor((t - PIV) / S16 + 1e-6), 0, 4) / 4);
 // the lens: the button click low, then the whole Control Panel as a window; the shut into the header and the walk;
 // the notice row, its [OK] and the plate at 2x until the pivot; 4x on the nib's descent and the a cappella card
 const OPEN = BRING + 4 * F;   // the panel zooms open once the button's press has been seen
@@ -75,10 +77,12 @@ const VERM = INV(FIELDS.vermilion);
 
 // ---- small helpers ----
 const c10_dif = (x, y, w, h) => { ctx.save(); ctx.globalCompositeOperation = 'difference'; rect(x, y, w, h, C.white); ctx.restore(); };
-// Clio's TEMPORARY plate: 50% paper dither, marching ants (phase on 8ths), the tag
-function c10_ghost(x, y, w, h, t, tag = true) {
+// Clio's TEMPORARY plate: 50% paper dither (or, solid, plain paper: black with white letters in the negative),
+// marching ants (phase on 8ths), the tag
+function c10_ghost(x, y, w, h, t, tag = true, solid = false) {
   x = R(x); y = R(y);
-  bayer(x, y, w, h, .5, C.white); frame(x, y, w, h, C.white);
+  if (solid) rect(x, y, w, h, C.white); else bayer(x, y, w, h, .5, C.white);
+  frame(x, y, w, h, C.white);
   const ph = Math.floor(t * 4) & 3; let i = 0; ctx.fillStyle = C.black;
   const d = (px, py) => { if (((i++ + ph) & 3) < 2) ctx.fillRect(px, py, 1, 1); };
   for (let k = 0; k < w; k++) d(x + k, y); for (let k = 1; k < h; k++) d(x + w - 1, y + k);
@@ -98,8 +102,9 @@ function c10_words(ws, x, y, s, t, ol) {
   });
 }
 const c10_lineW = (ws, s) => tw(ws.map(w => w.w).join(' '), 'chicago', s);
-// a lyric line on its temporary plate; s 2 at 1x, 1 under the lens
-function c10_plate(L, x, y, s, t) { const w = c10_lineW(L.words, s) + 12 * s, h = 12 * s + 8; rect(x, y, w, h, C.black); c10_ghost(x, y, w, h, t); c10_words(L.words, x + 6 * s, y + 4 + 2 * s, s, t, true); }
+// a lyric line on its temporary plate, pre-inverted solid (reads black with white letters, as the a cappella card);
+// s 2 at 1x (sized to the words sung so far: it stays inside ClioTalk), 1 under the lens
+function c10_plate(L, x, y, s, t) { const w = c10_lineW(s > 1 ? L.words.filter(q => q.start <= t + 1e-6) : L.words, s) + 12 * s, h = 12 * s + 8; c10_ghost(x, y, w, h, t, true, true); c10_words(L.words, x + 6 * s, y + 4 + 2 * s, s, t); }
 // a 3.5" disk, label side up (black shell, shutter, ruled label)
 function c10_disk(x, y, w, h) {
   x = R(x); y = R(y); w = R(w); h = R(h);
@@ -117,7 +122,7 @@ function c10_cells(x, y, w, h, k) {
 }
 
 // ---- the release gate (hand-drawn: its two Disk bars become the pivot's risers) ----
-const gateAt = t => t >= DRAG - 1e-6 ? M2 : M1;
+const gateAt = t => t < PIV - 1e-6 ? M1 : { ...M1, y: M1.y + gateDY(t) };
 const SLOT = (i, m = M1) => ({ x: m.x + 13 + i * 52, y: m.y + 40, w: 44, h: 44 });
 function c10_gate(t) {
   const piv = t >= PIV - 1e-6, m = gateAt(t);
@@ -203,7 +208,8 @@ function c10_panel(t) {
     if (t < rowT[i] - 1e-6) return;
     const ry = c.y + 30 + i * 18, ticked = (i === 0 && t >= SNAP[0]) || (i === 1 && t >= SNAP[1]);
     check(c.x + 14, ry, r, ticked);
-    if ((i === 1 && t >= MODEL) !== (fr(t, rowT[i]) < 2)) c10_dif(c.x + 8, ry - 3, c.w - 16, 17);
+    if (i === 1 && t >= MODEL) c10_dif(c.x + 8, ry - 3, c.w - 16, 17);
+    else if (fr(t, rowT[i]) < 2) frame(c.x + 8, ry - 3, c.w - 16, 17, C.black);   // arrival: the row's border pulses (a partial-area cue)
   });
 }
 
@@ -225,6 +231,7 @@ function c10_walker(t) {
 const PATH = [[-1e9, ...HOME], [FITS, ...HOME], [BRING, ...BTN, 'click'], [OWN, ...BTN], [MODEL, ...ROW], [SNAP[1], ...ROW, 'click'], [SNAP[1] + .25, ...ROW], [IT3 + .25, ...REST],
   [HOLD, ...REST], [HOLD + F, REST[0], REST[1] - 20], [THE, REST[0], REST[1] - 20], [PEN, ...OK, 'click'], [PEN + .2, ...OK], [PIV, ...GRAB, 'press'], [DRAG, ...DROP], [DRAG + .55, ...HOME]];
 function c10_hand(t) {
+  if (on(t, PIV, DRAG)) return { x: GRAB[0], y: GRAB[1] + gateDY(t), down: true };
   if (t < IM) return mousePath(t, PATH);
   // a cappella: the nib comes down onto the paper in hard 16th steps and touches on the flood's first frame
   const k = t >= FL0 - 1e-6 ? 1 : [0, .3, .55, .78, .93][Math.min(4, Math.floor((t - IM) / S16 + 1e-6))];
@@ -261,13 +268,12 @@ function c10_frame(t) {
       if (t >= SNAP[2]) glyph('ok', HDR[0] - 12, HDR[1] - 1, C.black);
       c10_well(t);
       c10_gate(t);
-      if (on(t, PIV, DRAG)) dragOutline(M1.x + p.x - GRAB[0], M1.y + p.y - GRAB[1], M1.w, M1.h);
       c10_panel(t);
       // the lyric slot under the gate (Clio's lines; "Two floppies. It fits." is the machine's)
       c10_walker(t);   // under the lyric plate: it never covers a sung word
       const L = t < BRING ? L1 : t < IT3 ? L2 : L3;
       if (t >= TWO && t < L3.end && s < 2) rect(9, 178, 266, 15, C.white);   // the Manuscript's strip, under the lens plate
-      if (t >= TWO && t < L3.end) c10_plate(L, 8 + (s < 2 ? clamp(R(key[1] - FW / 4), 0, W - FW / 2) : 0), SLOT_Y[s - 1], s, t);
+      if (t >= TWO && t < L3.end) c10_plate(L, (s < 2 ? 8 + clamp(R(key[1] - FW / 4), 0, W - FW / 2) : 16), SLOT_Y[s - 1], s, t);
       c10_fly(t, 0); c10_fly(t, 1);
       // the third disk: heavy tools wait half outside the frame, lazily
       if (on(t, FITS, BRING + 4 * F)) {

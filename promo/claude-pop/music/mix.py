@@ -277,6 +277,8 @@ class Mixer:
         drums = compressor(drums, thr=-12.0, ratio=2.5, attack=0.008, release=0.12, knee=6.0)
         drums = drums * 0.78 + 0.22 * tanh_sat(drums * 2.0, 1.5) / 2.0
         drums = self.calibrate(drums, -16.0, [(36.0, 52.0), (84.0, 100.0)], "drums")
+        # the bounce: less 63 Hz (the house kick's body), more top
+        drums = self.sec_eq(drums, ("post1", "post2"), ("peak", 63, 1.2, -2.5), ("highshelf", 5000, 0.7, 3.0))
         gd = undb(self.report["calibration"]["drums"]["gain_db"])
         sn_send = sec({"chorus*": -16.0, "pre*": -18.0, "post*": -18.0, "outro": -18.0}, -24.0, ramp=0.1)
         send("drums", (sn * undb(-3.0) + cl * undb(-5.0)) * gd, plate=undb(sn_send))
@@ -302,7 +304,6 @@ class Mixer:
         # the breakdown is space: the G pedal and the soft drives 9 dB down and under 110 Hz, the E2 sub -4 dB
         bd = self.windows([(120.0, 126.0)], 1.0, ramp=0.03)
         bass = bass + (lp(bass, 110, 4) * undb(-9.0) - bass) * bd[:, None]
-        bass = bass * undb(self.windows([(126.0, 128.0)], -4.0, ramp=0.03))[:, None]
         bass = self.calibrate(bass, -19.0, [(36.0, 52.0), (84.0, 100.0)], "bass")
         stems["bass"] = bass
 
@@ -395,6 +396,8 @@ class Mixer:
 
         # ---------------- section energy: verses sit back, the pre-chorus builds, the choruses lift
         en = self.energy_curve(stems)
+        # breakdown bar 4: the E2 sub under the spin-up -4 dB, after the solve (the solver must not lift it back)
+        stems["bass"] = stems["bass"] * undb(self.windows([(126.0, 128.0)], -4.0, ramp=0.03))[:, None]
         # the punchline "Keep it." (75.0 s): the band steps back for its beat
         en = en + self.windows([(74.95, 75.9)], -4.0, ramp=0.015)
         for k in ("drums", "bass", "keys", "other"):
@@ -508,7 +511,7 @@ class Mixer:
                 if c < 40:
                     continue
                 g = float(np.clip(0.6 * (d - mean), -3.0, 3.0)) if it == 0 else float(np.clip(0.4 * (d - mean), -1.5, 1.5))
-                if 400 <= c <= 2000:      # the voice's formant region is never cut by more than 0.75 dB in all
+                if 1000 <= c <= 2000:     # the words' formant region is never cut by more than 0.75 dB in all
                     g = max(g, -0.75 - sum(b[3] for b in bands if b[1] == c))
                 if abs(g) >= 0.2:
                     bands.append(("highshelf", 12000, 0.7, g) if c == 16000 else ("peak", c, 1.4, g))
