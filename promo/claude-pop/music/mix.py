@@ -201,8 +201,8 @@ class Mixer:
         # ---------------- lead
         lead = self.lead_chain(V["lead"])
         lead = pan(lead, 0.0)
-        # the choruses: the lead and choir fundamentals (D4-D5) are the 400 Hz lump; thin it a little there
-        lead = self.sec_eq(lead, CHORUSES, ("peak", 400, 1.2, -1.5))
+        # the choruses: the lead and choir fundamentals (D4-D5) are the 400 Hz lump; thin it there
+        lead = self.sec_eq(lead, CHORUSES, ("peak", 420, 1.0, -3.0))
         lead = self.calibrate(lead, -14.0, [(35.2, 52.0), (83.2, 100.0)], "lead")
         g_lead = self.report["calibration"]["lead"]["gain_db"]
         dbl = self.lead_chain(V["lead_dbl"], double=True)
@@ -241,7 +241,7 @@ class Mixer:
 
         # ---------------- choir (stacks) + gang (12 copies)
         cr = self.choir_chain(V["choir"])
-        cr = self.sec_eq(cr, CHORUSES, ("peak", 400, 1.2, -1.5))
+        cr = self.sec_eq(cr, CHORUSES, ("peak", 420, 1.0, -3.0))
         cr = self.sec_eq(cr, ("post1", "post2"), ("highshelf", 5000, 0.7, 3.5))      # air for the la-la
         cr = self.calibrate(cr, -18.5, [(52.0, 60.0), (100.0, 104.0)], "choir")
         cr = self.pump(cr, {"chorus*": 2.0, "post*": 2.5})
@@ -272,6 +272,7 @@ class Mixer:
         cr_ = eq(D["crash"], ("hp", 450), ("highshelf", 9000, 0.7, -3.5))
         pc = eq(D["perc"], ("hp", 80))
         hats = hats * undb(self.by_section({"post*": 4.0}, 0.0, ramp=0.05))[:, None]   # brighter bounce
+        cl = self.sec_eq(cl, ("post1", "post2"), ("highshelf", 6000, 0.7, 3.0))
         drums = kick * undb(-0.5) + sn * undb(-2.5) + hats * undb(-15.0) + cl * undb(-4.5) + cr_ * undb(-13.0) + pc * undb(-10.0)
         drums = compressor(drums, thr=-12.0, ratio=2.5, attack=0.008, release=0.12, knee=6.0)
         drums = drums * 0.78 + 0.22 * tanh_sat(drums * 2.0, 1.5) / 2.0
@@ -296,7 +297,8 @@ class Mixer:
                                 "outro": 3.0})
         bass = self._mono_lows(bass, 140)
         bass = eq(bass, ("peak", 220, 0.8, 2.5))                                     # body under the voices
-        bass = self.sec_eq(bass, ("post1", "post2") + CHORUSES, ("peak", 63, 1.2, -1.5))   # less boom in the bounce
+        bass = self.sec_eq(bass, CHORUSES, ("peak", 63, 1.2, -1.5))                  # less boom under the hook
+        bass = self.sec_eq(bass, ("post1", "post2"), ("peak", 63, 1.2, -3.0))      # ... and in the bounce
         # the breakdown is space: the G pedal and the soft drives 9 dB down and under 110 Hz, the E2 sub -4 dB
         bd = self.windows([(120.0, 126.0)], 1.0, ramp=0.03)
         bass = bass + (lp(bass, 110, 4) * undb(-9.0) - bass) * bd[:, None]

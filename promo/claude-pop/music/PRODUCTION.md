@@ -69,6 +69,20 @@ Per sung word:
    inter-syllable and obstruent-coda consonants, +6 dB on "the"), soft (non-glottal) vowel onsets in legato
    (a glottal stop after a vowel is heard as a *b*), 4 / 12 ms edge fades. Words overlap-add on the timeline,
    so the crossfades between words are the words' own consonant overlaps.
+7. **Diction** (`sing-v21`, after QA round 1 found *pen* heard as "hand" / "N", *page* as "H", *check* as
+   "share"):
+   - **Raw onsets.** An unvoiced onset (the burst and aspiration of p / t / k / ch, an f, s, sh, th or h) is
+     not taken from PSOLA, whose random unvoiced pseudo-periods smear a burst into breath; it is spliced from
+     the Piper source at natural speed, placed so that the voicing starts exactly where the warp put it (the
+     consonant sits before the note, like a singer's). A stop keeps its first 30 ms (the burst) and at most
+     70 ms in all (the middle of a long aspiration is dropped); a fricative keeps its last 120 ms. Stops and
+     *h* get +5 dB more on that span (`burst_boost`).
+   - **Closures.** A stop is heard only after a silence: when the next word starts with p / t / k / b / d / g /
+     ch / j, the word before it fades out (30 ms release) so it is silent 105 ms (voiceless) or 70 ms (voiced)
+     before the next note, i.e. 35 ms before the burst ("the | pen", "can | check", "You | do"); never before
+     45 % of its own last note.
+   - Function words sit 1.5 dB under content words (was 2.5), and "your", "who", "where", "I" are no longer
+     treated as function words: they carry the argument.
 
 Measured with Praat on every rendered word: lead median 2.1 cents, la-la 1.4, chops 0.6; every note within 25 cents.
 
@@ -81,15 +95,18 @@ Measured with Praat on every rendered word: lead median 2.1 cents, la-la 1.4, ch
 | chant | amy flattened to the written note (G3 her speaking pitch), no vibrato/scoop/drift, consonants at natural speed, all the stretch in the vowel, formant x0.96; 8-bit 11 kHz crush (60 % wet) in the 1988 sections; pre-chorus line 2 learns an 80 ms linear portamento | dry, 6:1, presence +2.5 dB at 2.8 kHz |
 | chant double | lessac an octave down, formant x0.88, -9 dB (calibrated 7.7 dB under the chant); the bridge years add jenny at pitch, panned +/-0.45 | darker |
 | choir (harmony, la-la) | amy (-0.5 pan, +7 cents, +10 ms) + jenny (+0.5, -8 cents, -9 ms) + lessac an octave down (formant x0.86); the final chorus and the outro double every voice (6 takes) | 3:1, width 1.25, plate -9 dB |
-| gang (echo, gang, call) | 12 copies = 3 voices x 4 Piper speeds (0.95/1.08/1.2/0.88), each with its own detune (+/-15 cents), formant (0.84-1.08), timing (+/-18 ms), high-shelf tilt (+/-3 dB) and pan (spread -0.95..0.95); shouted: a 130-cent scoop into each word, durations x0.8, no vibrato | saturation, 6:1, +3 dB presence, width 1.35; "(pen pal)" and "You do!" set 3 LU over the lead; "(Keep it.)" / "Flag it." 7 dB lower |
+| gang (echo, gang) | 12 copies = 3 voices x 4 Piper speeds (0.95/1.08/1.2/0.88), each with its own detune (+/-15 cents), formant (0.84-1.08), timing (+/-8 ms, so a *d* stays one *d*), high-shelf tilt (+/-3 dB) and pan (spread -0.95..0.95); shouted: a 60-cent scoop into each word, durations x0.9, no vibrato | light saturation, 6:1, +1.5 dB presence, no air shelf, width 1.35; "(pen pal)" and "You do!" set 3 LU over the lead |
+| gang (call: "(Keep it.)", "Flag it.") | 6 copies, detune +/-6 cents, full length, 2 dB under the chorus gang per copy | as above |
 | spoken | lessac raw Piper per sentence, speed fitted to the slot, first vowel on its word | k1: 4 kHz low-pass + 8-bit 11 kHz (a 1988 sample); o3 dry |
 | chops | the boot take's own Piper "pen" / "pal" (length scale 1.35), repitched by PSOLA to D5 / B4, starting exactly on the event, hard-gated to the written length (8 ms release) | 8-bit in the intro, clean in the post-choruses; -4 dB under the lead |
 
-Gags: **FADE** (chorus "fade.") holds the word for a third of the beat, then the pitch glides B4 -> G4 while the
-bit depth falls 16 -> 4 and the level sinks 12 dB, the band ducks 6 dB and dithers (7-bit TPDF) for 1.5 beats,
-then half a beat of nothing. **smooth** (pre-chorus 2): a low-pass sweeps 8 kHz -> 1.5 kHz across the word.
+Gags: **FADE** (chorus "fade.") holds the word for 30 % of the beat, then the pitch glides B4 -> G4; only the tail
+dissolves: from 55 % of the beat the bit depth falls 16 -> 5 and the level sinks 12 dB ("or I fay-" is heard
+first), the band ducks 6 dB and dithers (7-bit TPDF) for 1.5 beats, then half a beat of nothing. **smooth** (pre-chorus 2): a low-pass sweeps 8 kHz -> 1.5 kHz across the word.
 **Keep it.**: +/-10 cents, onsets 20 / 8 ms late. **The silent pen**: see the silence window below. **voice.**:
-the word is sung to 150.75 s, then its last two periods loop to 151.0 s, then the *s*.
+the word is sung to 150.75 s, then two periods of the vowel (taken 12 ms before the *s* is detected: the first
+moment the 4 kHz+ band comes within 12 dB of the whole) loop to 151.0 s, then the *s*. (A duplicated, older
+`_freeze` that looped from the note end and dropped the *s* was shadowing this one; it is gone.)
 
 ## 2. The desk kit (`kit.py`)
 
@@ -150,9 +167,12 @@ below 140 Hz is summed to mono on the bass bus.
 Channel strips (each track normalised to -18 dB active RMS first):
 
 - **Lead**: HP 95 Hz (24 dB/oct) -> split-band de-esser (6.5 kHz, 5:1, max 9 dB) -> EQ (+1 dB 170 Hz,
-  -3.5 dB 320 Hz mud, -1 dB 1 kHz, +3.5 dB 3.6 kHz presence, +2.5 dB shelf 9.5 kHz) -> compressor 4:1 (4 ms /
+  -3.5 dB 320 Hz mud, -1 dB 1 kHz, +2.5 dB 3.6 kHz presence, +2.5 dB shelf 9.5 kHz) -> compressor 4:1 (4 ms /
   80 ms) -> leveller 2:1 (20 ms / 250 ms) -> exciter (saturated 3.5 kHz+ band, new harmonics above 7.5 kHz: air
-  the 22 kHz TTS does not have) -> gentle tanh.
+  the 22 kHz TTS does not have) -> gentle tanh. In the choruses only, -3 dB at 420 Hz (Q 1) on the lead and the
+  choir: their D4-D5 fundamentals were the mix's 400 Hz lump.
+- **Chant**: as before, plus a split-band de-esser at 4.5 kHz whose threshold is the 97th percentile of the
+  chant's own 4.5 kHz+ level (so only the hottest consonants move), at most 3 dB.
 - **Sends**: a synthetic **plate** (2.4 s, 28 ms pre-delay, frequency-dependent decay, decorrelated L/R),
   **ducked 4:1 under the dry lead**; a **1/8-dotted ping-pong delay** (375 ms, feedback 0.33, each repeat
   darker), **ducked 6:1 under the dry lead** so echoes bloom only in the gaps, with +8 dB **throws** on every
@@ -165,27 +185,52 @@ Channel strips (each track normalised to -18 dB active RMS first):
   compressor, 22 % parallel saturation; snare and claps to the plate (dark, -16 dB in the choruses) and a
   0.5 s room.
 - **Calibration**: every bus is set to a loudness target (pyloudnorm) over the windows where it matters
-  (lead -17 LUFS over the choruses, chant -18.3 over the verses, choir -18.5 over the post-choruses, gang 3 LU
-  over the lead on the "You do!" bars, drums -16 and bass -19 over the choruses, organ -19.5 over the intro and
-  verse 2, ...); the measured values and gains are in `song-qa.json` -> `mix.calibration`.
+  (lead -14 LUFS over the choruses, lead doubles -22.5, chant -16.8 over the verses, choir -18.5 over the
+  post-choruses, gang 3 LU over the lead on the "You do!" bars, drums -16 and bass -19 over the choruses, organ
+  -19.5 over the intro and verse 2, felt piano -23, ...); the measured values and gains are in `song-qa.json`
+  -> `mix.calibration`. The lead and chant went up 3 / 1.5 dB after QA round 1: with the bed where it was,
+  Whisper lost the hook in the full mix (see section 7).
+- **The vocal pocket** (`dsp.pocket`, a dynamic EQ): drums (3 dB), keys and other (4.5 dB) lose up to that much
+  in 300 Hz-5 kHz while the dry lead, chant or spoken voice is within 6 dB of its loud level, fading out over
+  the 18 dB below it (4 ms attack, 120 ms release): the band makes room for each word and takes it back in the
+  gaps.
+- **Low end**: the 808 sits 7 dB lower than in round 1 (it played C1 / D1 at 33-37 Hz, under most speakers); the
+  kick is high-passed at 35 Hz (24 dB/oct); the bass bus has +2.5 dB at 220 Hz (Q 0.8) and so do the keys
+  (body under the voices, the 160-300 Hz hole), -1.5 dB at 63 Hz (Q 1.2) in the choruses and -3 dB in the
+  post-choruses.
+- **Post-choruses**: drums and bass -1.5 dB before the energy solve (the solver lifts the band back, so the
+  bounce gets brighter, not quieter), keystroke hats +4 dB, a +3.5 dB shelf at 5 kHz on the choir, chops and
+  organ and +3 dB at 6 kHz on the claps.
+- **Breakdown**: bars 1-3 the bass bus is low-passed at 110 Hz (24 dB/oct) and 9 dB down (the G pedal and the
+  soft drives were the loudest thing in the section); bar 4 (the E2 sub) -4 dB; the spin-up riser -4 dB; snaps
+  and claps -2 dB in bars 2-3; felt piano 2 dB lower.
+- **Other automation**: the pre-chorus riser -3 dB over the last two beats before the HAND stop; the bridge
+  organ comp and beeps -2.5 dB under "Oh-five. Oh-nine." and the organ under the last two bridge lines; the
+  "other" bus (stabs, riser, bell flourish) -4 dB under every "You do! You do!"; the whole band -4 dB for the
+  beat of the sung "Keep it." (75.0 s), whose clap and rimshot are also played softer (0.45 / 0.35); the
+  reboot chord pumps with the pad in chorus 3 (it was the unpumped layer that made chorus 3's pump shallow).
 - **Section energy**: the band (drums, bass, keys, other) is gained per section so that the *whole mix*
-  measures its target loudness relative to chorus 1 (intro -2, verses -3.2, pre-choruses -2 with a 3 dB
-  build inside, post-choruses -0.7, bridge -2, final chorus +0.6, outro -1.5 LU), the voices untouched. The
-  solved gains are in `song-qa.json` -> `mix.section_energy_db`.
+  measures its target loudness relative to chorus 1 as it measures before solving (intro -2, verses -3.2,
+  pre-choruses -2 with a 3 dB build inside, choruses 1 and 2 +1, post-choruses -0.7, bridge -2, breakdown -3,
+  final chorus +1.6, outro -1.5 LU; gains clamped to -9..+3 dB), the voices untouched. The solved gains are in
+  `song-qa.json` -> `mix.section_energy_db`.
 - **FADE**: drums/bass/keys/other drop 6 dB and are 60 % re-quantised to 7 bits with TPDF dither for 1.5 beats.
-- **The silence window** (`parts.silence`, 131.25-132.0 s): every stem is faded over 4 ms into exact zeros at
+- **The silence window** (`parts.silence`, 131.25-132.0 s): every stem is faded over 8 ms into exact zeros at
   131.25 s; the lead's "the" (rendered on its own track, its own chain, no sends) and the writer's keystroke
-  (131.625 s) are added back; after mastering the window is re-masked so that outside those two sounds it is
+  (131.625 s, 5 dB softer than in round 1, so it sits under the "the": a dry click) are added back; after mastering the window is re-masked so that outside those two sounds it is
   bit-exact digital silence (measured).
 
 ## 6. Master
 
-Sum of the eight stems -> HP 25 Hz -> **tonal match** (octave-band balance of the mix measured against a modern
-pop curve, 31.5 Hz..16 kHz = -13.5 / -6 / -6.5 / -8.5 / -10.5 / -12.5 / -14 / -15.5 / -17.5 / -24.5 dB re total;
-60 % of the difference as peaking bands, clamped +/-3 dB, then a 40 % second pass) -> small tone EQ -> RMS bus
+Sum of the eight stems -> HP 30 Hz (24 dB/oct) -> **tonal match** (octave-band balance of the mix measured against
+a modern pop curve, 31.5 Hz..16 kHz = -13.5 / -6 / -6.5 / -8.5 / -10.5 / -12.5 / -14 / -15.5 / -17.5 / -24.5 dB re
+total; 60 % of the difference as peaking bands, clamped +/-3 dB, then a 40 % second pass; the 500 Hz-2 kHz bands
+are never cut by more than 0.75 dB in all, because that is where the words are) -> small tone EQ -> RMS bus
 compressor 1.5:1 (30 / 200 ms) -> 2x-oversampled soft clip (transparent below -2.1 dBFS) -> lookahead
 (4 ms) **true-peak limiter** at -1.2 dBTP (4x interpolated peak detection, min-filter + moving-average gain
-that cannot overshoot) -> input gain iterated (secant) to **-9.0 LUFS integrated** -> silence window re-masked
+that cannot overshoot) -> input gain iterated (secant) to **-14.0 LUFS integrated** (SONG.md's reference; the
+round-1 master was -9.0, which only bought 5 dB of limiting and a 2.3 LU loudness range that platforms normalise
+away; at -14 the limiter only touches the house-kick transients) -> silence window re-masked
 -> the end chord fades to exact zero over the last 0.35 s -> 24-bit PCM.
 
 **Stems** are the pre-master buses at the master's input gain with one common trim so none clips; summed and

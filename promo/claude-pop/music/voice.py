@@ -30,7 +30,7 @@ ROOT = os.path.dirname(HERE)
 CACHE = os.path.join(ROOT, ".cache")
 VOICE_DIR = os.path.join(CACHE, "voices")
 VOICES = {"amy": "en_US-amy-medium", "jenny": "en_GB-jenny_dioco-medium", "lessac": "en_US-lessac-medium"}
-ENGINE_VERSION = "sing-v20"
+ENGINE_VERSION = "sing-v21"
 
 # phoneme overrides: sung vowels want stress; "the" is a schwa; la-la is "lah"
 PHON_OVERRIDE = {
@@ -747,7 +747,7 @@ def _sing(job, st):
     if ca is not None:
         ca = max(ca, notes[-1][1] + 0.45 * notes[-1][2])
         i1 = int(round((ca - t_start) * SR))
-        f = int(0.012 * SR)
+        f = int(0.03 * SR)          # a 30 ms release: a 12 ms cut on a nasal is heard as a 't' ('can' -> "can't")
         if 0 < i1 < n:
             i0 = max(0, i1 - f)
             y[i0:i1] *= np.linspace(1, 0, i1 - i0)
