@@ -67,7 +67,7 @@ Per sung word:
    (a glottal stop after a vowel is heard as a *b*), 4 / 12 ms edge fades. Words overlap-add on the timeline,
    so the crossfades between words are the words' own consonant overlaps.
 
-Measured: 219 lead and la-la notes, median pitch error 1.9 cents, 95th percentile 4.7 cents, 100 % within 25 cents.
+Measured with Praat on every rendered word: lead median 2.1 cents, la-la 1.4, chops 0.6; every note within 25 cents.
 
 ### Roles (`vocals.py`)
 
@@ -190,7 +190,58 @@ passed through the master chain they give the song.
 
 ## 7. Measurements (latest build, `build/song-qa.json`)
 
-MEASUREMENTS_PLACEHOLDER
+| measure | value |
+|---|---|
+| length | 154.0000 s (DUR 154.0; error 0.000 ms) |
+| loudness | -9.01 LUFS integrated |
+| peaks | -1.20 dBTP true peak (4x), -1.20 dBFS sample peak |
+| limiter | max 2.8 dB, mean 0.67 dB in chorus 1 (the soft clip and the 1.5:1 glue do the rest) |
+| silence window | [131.25, 132.0] s: non-zero only [[131.25, 131.5739], [131.622, 131.765]] (the dry "the" and the keystroke); digital zero elsewhere: True |
+| events vs data.js | every EVENTS entry rendered at its time (0 missing); the 12 risers end on their beat (0.0 ms) |
+| measured onsets (max abs) | kick 0.08 ms, snare 2.52, clap 0.12, crash 2.21, hats 3.06, brass stabs 2.67, bell 3.29, keystroke 0.0 |
+| pitch (Praat, steady middle of each note) | lead 163 notes, median 2.1 cents (p95 5.1); la-la 56 notes, median 1.4 (p95 3.7), the riff note for note; chops 28, median 0.6; every note within 25 cents |
+| Whisper (small.en, lead stem) | 27 / 35 lead lines word for word; chorus lines 20 / 24 |
+
+Sections (after mastering):
+
+| section | start s | LUFS | RMS dBFS |
+|---|---|---|---|
+| boot | 0.0 | -10.2 | -12.8 |
+| intro | 4.0 | -9.2 | -11.3 |
+| verse1 | 12.0 | -10.1 | -12.1 |
+| pre1 | 28.0 | -9.2 | -11.4 |
+| chorus1 | 36.0 | -8.5 | -10.0 |
+| post1 | 52.0 | -8.8 | -9.8 |
+| verse2 | 60.0 | -9.9 | -12.3 |
+| pre2 | 76.0 | -9.1 | -11.4 |
+| chorus2 | 84.0 | -8.4 | -10.2 |
+| post2 | 100.0 | -8.7 | -9.8 |
+| bridge | 104.0 | -9.1 | -11.1 |
+| breakdown | 120.0 | -9.3 | -10.9 |
+| chorus3 | 128.0 | -8.2 | -10.0 |
+| outro | 144.0 | -9.0 | -11.5 |
+| tail | 152.0 | -12.0 | -14.6 |
+
+Octave-band balance (dB re total):
+
+| band Hz | 31.5 | 63 | 125 | 250 | 500 | 1000 | 2000 | 4000 | 8000 | 16000 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| song | -13.5 | -4.6 | -7.3 | -8.5 | -9.3 | -11.6 | -14.1 | -15.0 | -17.5 | -26.0 |
+| chorus 1 | -9.1 | -4.1 | -8.9 | -10.5 | -8.9 | -12.5 | -13.7 | -15.5 | -19.2 | -27.9 |
+| target | -13.5 | -6.0 | -6.5 | -8.5 | -10.5 | -12.5 | -14.0 | -15.5 | -17.5 | -24.5 |
+
+Stereo: L/R correlation 0.85 overall, 0.99 below 120 Hz (the low end is mono), side 10.8 dB under mid.
+
+Whisper lines not word for word (passage transcription; heard <- wanted):
+
+- `v2f_keep` "get it" <- "Keep it."
+- `chorus2c` "you say" <- "You say where I land,"
+- `chorus2d` "" <- "or I fade."
+- `b7` "eras one desk" <- "Twelve eras. One desk."
+- `b8` "and you're windows c" <- "And your windows stay."
+- `chorus3c` "you say where i am" <- "You say where I land,"
+- `chorus3d` "or i fail" <- "or I fade."
+- `o2` "it was always your boiiiiiiiiiiiiiiiiiii..." <- "It was always your voice."
 
 ## 8. Known limits
 
