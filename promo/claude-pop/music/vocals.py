@@ -30,6 +30,8 @@ CHOIR = [  # (style, timing offset s, pan, gain dB)
 ]
 GANG = dict(shout=-130.0, dur_comp=0.8, vib_depth=0.0, scoop=0.0, drift=3.0, fall=0.0, glide=0.03, glide_in=0.0,
             max_pre=0.10, coda_hold=0.25)
+FADE_GAG = True
+KEEP_ROUGH = True
 CHOP = dict(voice="amy", flat=True, glide=0.0, glide_in=0.0, vib_depth=0.0, scoop=0.0, drift=0.0, fall=0.0,
             onset_on_beat=True, max_pre=0.03, kc=1.0, length_scale=1.35, coda_hold=0.35, edge=0.01)
 
@@ -88,7 +90,10 @@ class Vocals:
             if nxt is not None and not nxt_silent:
                 ns = self.sec(nxt["notes"][0][1])
                 ctx["next_start"] = round(ns, 6)
-                ctx["next_pre"] = round(V.onset_budget(V.phonemes_for("amy", V.clean(nxt["w"]))), 4)
+                nph = V.phonemes_for("amy", V.clean(nxt["w"]))
+                ctx["next_pre"] = round(V.onset_budget(nph), 4)
+                if V.obstruent_onset(nph):
+                    ctx["next_obstruent"] = True
                 ctx["phrase_end"] = bool(ns - (notes[-1][1] + notes[-1][2]) >= 0.25)
             else:
                 ctx["phrase_end"] = True
@@ -117,10 +122,10 @@ class Vocals:
             pov = None
             shift = 0.0
             lid = L["id"]
-            if lid == "v2f_keep":                    # the rough line: detuned and unquantised
+            if lid == "v2f_keep" and KEEP_ROUGH:     # the rough line: detuned and unquantised
                 st["detune"] = 10.0 if w["w"].startswith("Keep") else -10.0
-                shift = 0.02 if w["w"].startswith("Keep") else -0.012
-            if lid.startswith("chorus") and lid.endswith("d") and w["w"].startswith("fade"):
+                shift = 0.02 if w["w"].startswith("Keep") else 0.008
+            if FADE_GAG and lid.startswith("chorus") and lid.endswith("d") and w["w"].startswith("fade"):
                 s, d = notes[0][1], notes[0][2]
                 m = notes[0][0]
                 pov = [[s - 0.3, m], [s + 0.15, m], [s + d, m - 4], [s + d + 0.3, m - 4]]
@@ -128,13 +133,16 @@ class Vocals:
             if lid == "chorus3c" and w["w"] == "You":
                 st["onset_on_beat"] = True            # nothing may sound inside the silence before 132.0
             if lid == "o2" and w["w"].startswith("voice"):
-                fx["freeze"] = (self.sec(S["sections"][13]["startBeat"] + 13.5), notes[0][1] + notes[0][2])
+                f0 = self.sec(S["sections"][13]["startBeat"] + 13.5)
+                fx["freeze"] = (f0, notes[0][1] + notes[0][2])
+                notes = [(notes[0][0], notes[0][1], round(f0 - notes[0][1], 6))]   # sung to the freeze point
             if lid in ("k2", "k3"):
                 st.update(vib_depth=14.0, scoop=-25.0)    # close and soft
             track = "lead"
             if self.sil[0] - 1e-6 <= notes[0][1] < self.sil[1]:
                 track = "lead_the"                    # sung alone, dry, inside the silence window
-            self.placements.append((track, self._job(w, notes, ctx, st, shift, pov), 0.0, 0.0, fx))
+            lg = -2.0 if lid in ("k2", "k3") else 0.0          # the breakdown: close and soft
+            self.placements.append((track, self._job(w, notes, ctx, st, shift, pov), lg, 0.0, fx))
             self.words_qa.append((lid, w["w"], notes[0][1] + shift))
             # the chorus doubles
             if lid.startswith("chorus") and "_" not in lid and track == "lead":
@@ -293,13 +301,115 @@ class Vocals:
             a = bitcrush(a, 8, 11025, mix=0.6)
         if "fade" in fx:        # FADE: level fade + bit depth falling over the beat, then nothing
             s, e = fx["fade"]
-            # the word is heard first ("fay-"), then it dissolves: bits fall from 16 to 3 and the level
-            # fades over the back two thirds of the beat, into half a beat of nothing
+            # the word is heard first ("fay-"), then it dissolves: bits fall from 16 to 4 and the level
+            # sinks 12 dB over the back two thirds of the beat (the 'd' still lands), then half a beat of nothing
             x = np.clip((t - (s + 0.3 * (e - s))) / (0.7 * (e - s)), 0, 1)
-            bits = 16 - 13 * x ** 1.3
+            bits = 16 - 12 * x ** 1.3
             crushed = bitcrush_curve(a, bits)
-            a = np.where(x <= 0, a, crushed) * (1 - x) ** 1.4
-            a[t >= e] = 0.0
+            a = np.where(x <= 0, a, crushed) * (1 - 0.75 * x ** 1.2)
+            a[t >= e + 0.06] = 0.0
+        if "smooth" in fx:      # the low-pass closes over "smooth" (8 kHz -> 1.5 kHz across the beat)
+            s, e = fx["smooth"]
+            x = np.clip((t - s) / (e - s), 0, 1)
+            fc = 8000 * (1500 / 8000) ** x
+            a = sweep_filter(a, "lp", fc, 0.8)
+        if "gate" in fx:        # chops: hard gate to the written length
+            s, e = fx["gate"]
+            g = np.clip((e - t) / 0.008, 0, 1) * np.clip((t - s + 0.002) / 0.002, 0, 1)
+            a = a * g
+        if "tilt" in fx:        # gang copies: each with its own formant tilt (a high shelf)
+            from dsp import eq
+            a = eq(a, ("highshelf", 2500, 0.7, fx["tilt"]))
+        return a
+
+    def _freeze(self, lead):
+        """'voice.': the long A4 freezes into a two-cycle grain loop for its last half beat; the word is
+        sung (glide and all) up to the freeze point, the loop holds its last two periods, then the 's'."""
+        from dsp import hp
+        for track, job, g, p, fx in self.placements:
+            if "freeze" not in fx:
+                continue
+            s, e = fx["freeze"]
+            m = job["notes"][0][0]
+            per = SR / (440.0 * 2 ** ((m - 69) / 12))
+            L = int(round(2 * per))
+            # find where the 's' starts (high-band energy rising after the vowel)
+            a0, a1 = n_of(s - 0.25), n_of(s + 0.35)
+            hb = np.abs(hp(lead[a0:a1], 4000, 4))
+            w = n_of(0.005)
+            env = np.convolve(hb, np.ones(w) / w, mode="same")
+            lo = env[: n_of(0.15)].max()
+            idx = np.where(env > max(4 * lo, 0.3 * env.max()))[0]
+            ts = a0 + (int(idx[0]) if len(idx) else n_of(0.25))
+            ts -= n_of(0.004)
+            grain = lead[ts - L:ts].copy()
+            hold = n_of(e - s)
+            tail = lead[ts:ts + n_of(0.3)].copy()
+            reps = int(math.ceil(hold / L)) + 1
+            loop = np.tile(grain, reps)[:hold]
+            loop[-n_of(0.004):] *= np.linspace(1, 0.4, n_of(0.004))
+            lead[ts:ts + hold + len(tail)] = 0.0
+            lead[ts:ts + hold] = loop
+            lead[ts + hold:ts + hold + len(tail)] = tail
+            self.freeze_at = (ts / SR, (ts + hold) / SR)
+
+    def _breaths(self, lead):
+        """The singer breathes before each phrase (the robot chant never does): band-passed noise with
+        two soft resonances, swelling over ~0.3 s and ending just before the first consonant."""
+        from dsp import bp, eq, noise
+        ws = []
+        for track, job, g, p, fx in self.placements:
+            if track == "lead":
+                ws.append((job["notes"][0][1], job["notes"][-1][1] + job["notes"][-1][2], job))
+        ws.sort(key=lambda w: w[0])
+        prev_end = -9.0
+        k = 0
+        for s, e, job in ws:
+            gap = s - prev_end
+            prev_end = max(prev_end, e)
+            if gap < 0.45:
+                continue
+            ob = V.onset_budget(V.phonemes_for("amy", V.clean(job["text"])))
+            end = s - ob - 0.03
+            dur = min(0.34, gap - 0.12)
+            start = end - dur
+            if dur < 0.15 or (start < self.sil[1] and end > self.sil[0] - 0.05):
+                continue
+            n = n_of(dur)
+            x = bp(noise(n, ("breath", k)), 350, 7000, 2)
+            x = eq(x, ("peak", 1150, 2.0, 8.0), ("peak", 2600, 2.0, 5.0), ("highshelf", 6000, 0.7, -4.0))
+            u = np.linspace(0, 1, n)
+            env = np.sin(np.pi * np.minimum(u / 0.75, 1) * 0.5) ** 1.5 * np.minimum(1, (1 - u) / 0.12)
+            x = x * env
+            x = x / (np.sqrt(np.mean(x ** 2)) + 1e-12) * undb(-41.0)
+            add_at(lead, x, start)
+            k += 1
+        self.n_breaths = k
+
+    def _normalise(self, a, target_db, text):
+        """Level each word by the RMS of its loudest 60 ms; function words sit 2.5 dB lower."""
+        w = max(1, n_of(0.06))
+        e = np.sqrt(np.convolve(a * a, np.ones(w) / w, mode="same") + 1e-12)
+        ref = np.max(e)
+        g = undb(target_db) / max(ref, 1e-9)
+        if V.clean(text).lower() in V.FUNCTION_WORDS:
+            g *= undb(-2.5)
+        return a * g
+
+    def _word_fx(self, a, t0, fx, job):
+        n = len(a)
+        t = t0 + np.arange(n) / SR
+        if fx.get("crush"):     # 1988: 8-bit, 11 kHz sample-and-hold, 60 % wet keeps the words
+            a = bitcrush(a, 8, 11025, mix=0.6)
+        if "fade" in fx:        # FADE: level fade + bit depth falling over the beat, then nothing
+            s, e = fx["fade"]
+            # the word is heard first ("fay-"), then it dissolves: bits fall from 16 to 4 and the level
+            # sinks 12 dB over the back two thirds of the beat (the 'd' still lands), then half a beat of nothing
+            x = np.clip((t - (s + 0.3 * (e - s))) / (0.7 * (e - s)), 0, 1)
+            bits = 16 - 12 * x ** 1.3
+            crushed = bitcrush_curve(a, bits)
+            a = np.where(x <= 0, a, crushed) * (1 - 0.75 * x ** 1.2)
+            a[t >= e + 0.06] = 0.0
         if "smooth" in fx:      # the low-pass closes over "smooth" (8 kHz -> 1.5 kHz across the beat)
             s, e = fx["smooth"]
             x = np.clip((t - s) / (e - s), 0, 1)

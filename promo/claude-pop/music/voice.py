@@ -32,7 +32,7 @@ ROOT = os.path.dirname(HERE)
 CACHE = os.path.join(ROOT, ".cache")
 VOICE_DIR = os.path.join(CACHE, "voices")
 VOICES = {"amy": "en_US-amy-medium", "jenny": "en_GB-jenny_dioco-medium", "lessac": "en_US-lessac-medium"}
-ENGINE_VERSION = "sing-v14"
+ENGINE_VERSION = "sing-v19"
 
 # phoneme overrides: sung vowels want stress; "the" is a schwa; la-la is "lah"
 PHON_OVERRIDE = {
@@ -40,6 +40,7 @@ PHON_OVERRIDE = {
     "you": "jˈuː", "i'm": "ˈaɪm", "i'll": "ˈaɪl", "i": "ˈaɪ", "your": "jˈʊɹ", "do": "dˈuː",
     "or": "ˈɔːɹ", "and": "ˈænd", "in": "ˈɪn", "it": "ˈɪt", "is": "ˈɪz", "an": "ˈæn", "for": "fˈɔːɹ",
     "was": "wˈʌz", "but": "bˈʌt", "can": "kˈæn", "could": "kˈʊd", "own": "ˈoʊn",
+    "eras": "ˈɛɹəz", "one": "wˈʌn", "twelve": "twˈɛlv",
 }
 FUNCTION_WORDS = {"i'm", "i'll", "i", "the", "a", "your", "and", "or", "in", "it", "is", "an", "for", "was",
                   "but", "can", "could", "just", "where", "who"}
@@ -307,8 +308,23 @@ def onset_budget(ph):
 
 
 def sonorant_coda(ph):
-    tail = ph.rstrip("ːˑ")
-    return len(tail) > 0 and tail[-1] in "nmŋl" and any(c in VOWELS for c in tail)
+    """A nasal or /l/ closes the word (also before a final d/t/z/s: 'land', 'hold', 'holds'):
+    singers sustain it, so it gets a share of the note."""
+    tail = _strip_stress(ph).rstrip("ːˑ")
+    core = tail.rstrip("dtzs")
+    if len(tail) - len(core) > 2:
+        return False
+    return len(core) > 0 and core[-1] in "nmŋl" and any(c in VOWELS for c in core)
+
+
+def obstruent_coda(ph):
+    t = _strip_stress(ph).rstrip("ːˑ")
+    return len(t) > 0 and t[-1] in "ptkbdgɡfvszʃʒθðʤʧ"
+
+
+def obstruent_onset(ph):
+    t = _strip_stress(ph)
+    return len(t) > 0 and t[0] in "ptkbdgɡfvszʃʒθðʤʧh"
 
 
 DIPHTHONGS = ("aɪ", "eɪ", "oʊ", "aʊ", "ɔɪ", "əʊ")
@@ -331,7 +347,7 @@ def syllable_vowels(ph):
     return out
 
 
-HOLD = {"diph": 0.2, "nasal": 0.8, "rhotic": 0.5, "default": 0.4}
+HOLD = {"diph": 0.3, "nasal": 0.8, "rhotic": 0.5, "default": 0.4}
 
 
 def hold_positions(ph, nsyl):
@@ -344,7 +360,7 @@ def hold_positions(ph, nsyl):
     for v, nxt in vs:
         if v.startswith(DIPHTHONGS):
             pos.append(HOLD["diph"])
-        elif nxt in ("n", "m", "ŋ"):
+        elif nxt in ("n", "m", "ŋ") and v.startswith("ɛ"):
             pos.append(HOLD["nasal"])
         elif v.startswith(("ɚ", "ɜ")):
             pos.append(HOLD["rhotic"])
@@ -388,7 +404,8 @@ def plan_word(x, sr, notes, nsyl, ctx, st):
     P = min(pre_src * kc, cap)
     Q = min(post_src * kc, 0.16)
     if ctx.get("sonorant_coda") and st["coda_hold"] > 0:
-        Q = max(Q, st["coda_hold"] * (ends[-1] - starts[-1]))
+        cluster = ctx.get("coda_cluster", False)        # 'land', 'hold': the n / l shares less of the note
+        Q = max(Q, st["coda_hold"] * (0.6 if cluster else 1.0) * (ends[-1] - starts[-1]))
     segs = []
     # where does the first vowel go?
     v0 = starts[0] if not st["onset_on_beat"] else starts[0] + P
@@ -410,6 +427,8 @@ def plan_word(x, sr, notes, nsyl, ctx, st):
             hold = 0.85 if ctx.get("sonorant_coda") and st["coda_hold"] > 0 else 0.35
             if legato and ctx.get("next_pre", 0.05) < 0.005:
                 core_end = ends[-1] - 0.15 * Q          # vowel to vowel: keep voicing through the join
+            elif legato and ctx.get("coda_clear"):
+                core_end = ends[-1] - ctx.get("next_pre", 0.05) - Q    # 'page / stay': no smear
             elif legato:
                 core_end = ends[-1] - 0.5 * ctx.get("next_pre", 0.05) - hold * Q
             else:
@@ -449,7 +468,18 @@ def plan_word(x, sr, notes, nsyl, ctx, st):
             # no gap in source: stretch the join into the core boundary
             pass
     if post_src > 1e-4:
-        segs.append((cores[-1][1], L, segs[-1][3], segs[-1][3] + Q))
+        cb = cores[-1][1]
+        # a held sonorant coda ('n', 'l') stretches; the stop or fricative after it keeps its own time
+        vi = np.where(voiced & (times > cb))[0]
+        son_end = min(L, float(times[vi[-1]]) + HOP / 2) if len(vi) else cb
+        tail_src = L - son_end
+        if ctx.get("sonorant_coda") and st["coda_hold"] > 0 and son_end - cb > 0.015 and tail_src > 0.012:
+            tail = min(tail_src * kc, 0.12)
+            t0_ = segs[-1][3]
+            segs.append((cb, son_end, t0_, t0_ + max(Q - tail, 0.02)))
+            segs.append((son_end, L, segs[-1][3], segs[-1][3] + tail))
+        else:
+            segs.append((cb, L, segs[-1][3], segs[-1][3] + Q))
     # make contiguous (cores touching with no gap)
     fixed = [segs[0]]
     for s in segs[1:]:
@@ -575,7 +605,9 @@ def _sing(job, st):
     ctx = dict(ctx)
     ctx.setdefault("onset_budget", onset_budget(ph))
     ctx.setdefault("sonorant_coda", sonorant_coda(ph))
+    ctx.setdefault("coda_cluster", bool(sonorant_coda(ph) and obstruent_coda(ph)))
     ctx.setdefault("hold_pos", hold_positions(ph, job["nsyl"]))
+    ctx.setdefault("coda_clear", bool(obstruent_coda(ph) and ctx.get("next_obstruent")))
     segs, cores = plan_word(x, sr, notes, job["nsyl"], ctx, st)
     src_bp, tgt_bp = _warp_from(segs)
     L = len(x) / sr
@@ -604,6 +636,11 @@ def _sing(job, st):
             call(pt, "Add point", float(a_t), float(440.0 * 2 ** ((m - 69) / 12)))
             last = a_t
     call([pt, man], "Replace pitch tier")
+    # Praat's overlap-add places unvoiced pseudo-periods at random: seed it from the job so that a
+    # fresh render is bit-identical to a cached one
+    from parselmouth.praat import run as praat_run
+    seed = int(hashlib.sha1(json.dumps([job["text"], job["notes"], st.get("seed", 0)]).encode()).hexdigest()[:7], 16)
+    praat_run("random_initializeWithSeedUnsafelyButPredictably (%d)" % seed)
     out = call(man, "Get resynthesis (overlap-add)")
     y = np.asarray(out.values[0], dtype=float)
     y = resample(y, sr, SR)
@@ -618,6 +655,8 @@ def _sing(job, st):
         for a, b in core_spans:
             is_cons &= ~((tt >= a) & (tt < b))
         boost = st["cons_boost"] + (2.0 if text.lower() == "the" else 0.0)
+        if _strip_stress(ph)[:1] in ("v", "z", "ʒ", "w", "l"):
+            boost += 3.0          # weak voiced onsets ('voice' was heard as 'boy', 'land' as 'am')
         g[is_cons] = boost
         if ctx.get("sonorant_coda"):
             g[tt >= core_spans[-1][1]] = 0.0
@@ -661,6 +700,9 @@ def prepare(jobs):
     save_phoneme_cache()
 
 
+USED = set()     # cache files this build used (for --prune-cache)
+
+
 def sing_pool(jobs, workers=4):
     """Render many words; cached results return immediately, the rest in a process pool."""
     todo = []
@@ -674,6 +716,7 @@ def sing_pool(jobs, workers=4):
         st.update(j.get("style", {}))
         key = _key(ENGINE_VERSION, j["text"], j["notes"], j["nsyl"], j.get("ctx", {}), st, j.get("pitch_override"))
         path = os.path.join(CACHE, "sing", key + ".npz")
+        USED.add(path)
         if os.path.exists(path):
             z = np.load(path)
             out[i] = (z["a"], float(z["t0"]))

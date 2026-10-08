@@ -65,17 +65,18 @@ def snare(vel=1.0, seed=0, ghost=False):
     t = _t(dur)
     n = len(t)
     whoosh = noise(n, ("sn", seed))
-    fc = 1800 + 6200 * np.exp(-t / 0.018)
-    whoosh = sweep_filter(whoosh, "bp", fc, 1.1, block=32) * np.minimum(1, t / 0.001) * np.exp(-t / 0.055)
+    fc = 1300 + 5200 * np.exp(-t / 0.02)
+    whoosh = sweep_filter(whoosh, "bp", fc, 1.1, block=32) * np.minimum(1, t / 0.001) * np.exp(-t / 0.06)
     fw = 180 + 70 * np.exp(-t / 0.012)
-    whap = np.sin(2 * np.pi * np.cumsum(fw) / SR) * np.exp(-t / 0.07) + 0.45 * _res(332, 0.04, dur, 0.5)
+    whap = np.sin(2 * np.pi * np.cumsum(fw) / SR) * np.exp(-t / 0.08) + 0.5 * _res(332, 0.045, dur, 0.5)
     crack = np.zeros(n)
-    c = hp(noise(n_of(0.003), ("cr", seed)), 2000, 2) * np.linspace(1, 0, n_of(0.003))
+    c = bp(noise(n_of(0.003), ("cr", seed)), 1500, 7000, 2) * np.linspace(1, 0, n_of(0.003))
     crack[: len(c)] = c
-    tail = hp(noise(n, ("st", seed)), 1600, 2) * np.exp(-t / 0.11) * 0.35
-    y = 0.9 * whoosh + 0.75 * whap + 0.6 * crack + tail
+    tail = bp(noise(n, ("st", seed)), 1100, 8000, 2) * np.exp(-t / 0.12) * 0.4
+    y = 1.15 * whoosh + 0.95 * whap + 0.7 * crack + 1.3 * tail
     y = tanh_sat(y * 1.4, 1.5)
-    y = eq(y, ("hp", 110), ("peak", 200, 1.2, 2.0), ("peak", 900, 1.0, -2.0), ("highshelf", 6000, 0.7, 2.0))
+    y = eq(y, ("hp", 110), ("peak", 200, 1.2, 2.5), ("peak", 900, 1.0, -2.0), ("peak", 3500, 1.0, 1.5),
+           ("lp", 11000))
     y = y / np.max(np.abs(y))
     if ghost:  # window shade: the snare at -18 dB, darker and shorter
         y = lp(y, 3500, 2) * np.exp(-t / 0.06) * 10 ** (-18 / 20)
@@ -149,15 +150,15 @@ def keystroke_hat(vel=1.0, seed=0, open_=False):
     i0 = n_of(KEY_PRE)
     t = _t(dur)
     if open_:
-        thock = 0.35 * _res(880, 0.010, dur) + 0.25 * _res(1900, 0.006, dur, 0.5)
-        hiss = hp(noise(len(t), ("oh", seed)), 6000, 2) * np.exp(-t / 0.07)
-        body = thock + 0.9 * hiss
+        thock = 0.45 * _res(880, 0.010, dur) + 0.3 * _res(1900, 0.006, dur, 0.5)
+        hiss = bp(noise(len(t), ("oh", seed)), 4500, 16000, 2) * np.exp(-t / 0.07)
+        body = thock + 0.8 * hiss
     else:
-        hiss = hp(noise(len(t), ("ch", seed)), 7000, 2) * np.exp(-t / 0.016)
-        tick = 0.3 * _res(9800, 0.002, dur)
+        hiss = bp(noise(len(t), ("ch", seed)), 5000, 16000, 2) * np.exp(-t / 0.016)
+        tick = 0.35 * _res(6400, 0.002, dur) + 0.2 * _res(3100, 0.0015, dur, 0.4)
         body = hiss + tick
     y[i0:i0 + len(body)] += body
-    y = eq(y, ("hp", 400 if open_ else 2500), ("highshelf", 9000, 0.7, 2.0))
+    y = eq(y, ("hp", 400 if open_ else 2200), ("peak", 7000, 1.0, 1.5), ("highshelf", 12000, 0.7, -3.0))
     return y * vel / np.max(np.abs(y))
 
 
@@ -173,7 +174,7 @@ def crash(dur=2.2, vel=1.0, seed=0, choke=None):
     out = np.zeros((n, 2))
     for ch in range(2):
         w = noise(n, ("cw", seed, ch))
-        w = eq(w, ("hp", 2800), ("peak", 5200, 0.8, 3.0), ("highshelf", 9000, 0.7, 2.0))
+        w = eq(w, ("hp", 1600), ("peak", 4800, 0.8, 3.0), ("highshelf", 11000, 0.7, -2.0))
         out[:, ch] += w * np.minimum(1, t / 0.004) * (0.6 * np.exp(-t / 0.55) + 0.4 * np.exp(-t / 0.12))
     # paper grains
     tt = 0.0
@@ -186,7 +187,7 @@ def crash(dur=2.2, vel=1.0, seed=0, choke=None):
         i0 = n_of(tt)
         if i0 + L >= n or L < 4:
             continue
-        fc = r.uniform(1500, 9000)
+        fc = r.uniform(1200, 7500)
         gr = bp(r.standard_normal(L), fc * 0.7, min(fc * 1.4, 20000), 1) * np.hanning(L)
         a = r.uniform(0.2, 1.0) * math.exp(-tt / 0.5) * 1.6
         p = r.uniform(-0.8, 0.8)
@@ -289,11 +290,12 @@ def tambourine(vel=1.0, seed=0):
     for k, o in enumerate((0.0, r.uniform(0.004, 0.007), r.uniform(0.009, 0.013))):
         L = n_of(0.09)
         t = np.arange(L) / SR
-        j = (hp(noise(L, ("tj", seed, k)), 6000, 2) * 0.6 + 0.3 * np.sin(2 * np.pi * 7300 * t) * noise(L, ("tm", seed, k)) * 0.5
-             + 0.2 * np.sin(2 * np.pi * 9150 * t)) * np.exp(-t / 0.03) * (1.0 if k == 0 else 0.6)
+        j = (bp(noise(L, ("tj", seed, k)), 5000, 11000, 2) * 0.6 + 0.3 * np.sin(2 * np.pi * 6300 * t) * noise(L, ("tm", seed, k)) * 0.5
+             + 0.2 * np.sin(2 * np.pi * 8150 * t)) * np.exp(-t / 0.03) * (1.0 if k == 0 else 0.6)
         i0 = n_of(o)
         y[i0:i0 + L] += j[: n - i0]
-    return eq(y, ("hp", 5000)) * vel / np.max(np.abs(y))
+    y = eq(y, ("hp", 4000), ("highshelf", 12000, 0.7, -2.0))
+    return y * vel / np.max(np.abs(y))
 
 
 def snap(vel=1.0, seed=0):

@@ -137,7 +137,7 @@ class Mixer:
                ("peak", 3600, 0.9, 3.5), ("highshelf", 9500, 0.7, 2.5))
         x = compressor(x, thr=-22.0, ratio=4.0, attack=0.004, release=0.08, knee=6.0, makeup=4.0)
         x = compressor(x, thr=-17.0, ratio=2.0, attack=0.02, release=0.25, knee=6.0, makeup=1.5)
-        x = exciter(x, 3500, 3.0, 0.08, 7500)
+        x = exciter(x, 3500, 3.0, 0.11, 7500)
         x = tanh_sat(x * 1.2, 1.1) / 1.2
         if double:
             x = lp(x, 8500, 2)
@@ -198,10 +198,10 @@ class Mixer:
         g_norm = float(np.max(np.abs(self.norm_active(V["lead"], -18.0)))) / max(float(np.max(np.abs(V["lead"]))), 1e-12)
         the = pan(self.lead_chain(V["lead_the"] * g_norm, norm=False), 0.0) * undb(g_lead) if np.any(V["lead_the"]) else np.zeros((N, 2))
         # plate and delay automation: space for the bare voice, the melt, the choruses and the end
-        plate = sec({"boot": -7.0, "pre*": -12.0, "chorus*": -13.0, "bridge": -12.0, "breakdown": -9.0,
-                     "outro": -9.5, "verse2": -18.0, "tail": -9.0}, -40.0, ramp=0.2)
-        dly = sec({"boot": -15.0, "pre*": -20.0, "chorus*": -18.0, "bridge": -17.0, "breakdown": -14.0,
-                   "outro": -13.0, "tail": -13.0}, -60.0, ramp=0.2)
+        plate = sec({"boot": -8.0, "pre*": -13.0, "chorus*": -15.0, "bridge": -13.0, "breakdown": -10.0,
+                     "outro": -10.5, "verse2": -18.0, "tail": -9.0}, -40.0, ramp=0.2)
+        dly = sec({"boot": -16.0, "pre*": -22.0, "chorus*": -21.0, "bridge": -19.0, "breakdown": -15.0,
+                   "outro": -14.0, "tail": -13.0}, -60.0, ramp=0.2)
         throws = np.zeros(N)
         for L in self.S["lines"]:
             if L["voice"] == "lead" and L["section"].startswith(("chorus", "pre", "bridge", "outro", "breakdown")):
@@ -210,7 +210,7 @@ class Mixer:
                     continue
                 a = w["notes"][-1][1] * self.spb
                 b = a + w["notes"][-1][2] * self.spb + 0.05
-                throws[n_of(a):n_of(b)] = 7.0
+                throws[n_of(a):n_of(b)] = 8.0
         throws = onepole(throws, 0.03)
         send("lead", lead, plate=undb(plate), delay=undb(dly + throws))
         send("lead", dbl, plate=undb(plate - 3))
@@ -219,9 +219,9 @@ class Mixer:
 
         # ---------------- chant (dry; a touch of room in the melt and the bridge)
         ch = pan(self.chant_chain(V["chant"]), 0.0)
-        ch = self.calibrate(ch, -17.0, [(4.0, 28.0), (60.0, 76.0)], "chant")
+        ch = self.calibrate(ch, -18.3, [(4.0, 28.0), (60.0, 76.0)], "chant")
         chd = self.chant_chain(V["chant_dbl"], double=True)
-        chd = self.calibrate(chd, -25.0, [(4.0, 28.0), (60.0, 76.0)], "chant_dbl")
+        chd = self.calibrate(chd, -26.0, [(4.0, 28.0), (60.0, 76.0)], "chant_dbl")
         cpl = sec({"pre*": -20.0, "bridge": -16.0, "outro": -22.0}, -60.0, ramp=0.2)
         send("chant", ch + chd, plate=undb(cpl), delay=undb(sec({"bridge": -22.0}, -60.0, ramp=0.2)))
         stems["chant"] = ch + chd
@@ -335,19 +335,21 @@ class Mixer:
             ir = self._plate if stem in ("lead", "choir", "chant", "other") else self._plate_dark
             ret = convolve(x, ir)
             if stem == "lead":   # duck the plate under the dry lead so the words stay clear
-                ret = compressor(ret, thr=-30.0, ratio=3.0, attack=0.01, release=0.25,
+                ret = compressor(ret, thr=-34.0, ratio=4.0, attack=0.01, release=0.3, knee=8.0,
                                  sidechain=stems["lead"])
             stems[stem] = stems[stem] + hp(ret, 180, 2)
         for stem, x in delay_in.items():
             d = pingpong(x, DOTTED_8TH, feedback=0.33, repeats=8, lp_hz=4500, hp_hz=350)
+            if stem == "lead":   # the echoes bloom in the gaps, never on top of the next word
+                d = compressor(d, thr=-36.0, ratio=6.0, attack=0.005, release=0.2, knee=6.0, sidechain=stems["lead"])
             stems[stem] = stems[stem] + d
         for stem, x in room_in.items():
             stems[stem] = stems[stem] + convolve(x, self._room)
 
         # ---------------- section energy: verses sit back, the pre-chorus builds, the choruses lift
-        en = self.energy_curve()
-        for k in ("drums", "bass", "keys", "other", "choir"):
-            stems[k] = stems[k] * undb(en if k != "choir" else 0.5 * en)[:, None]
+        en = self.energy_curve(stems)
+        for k in ("drums", "bass", "keys", "other"):
+            stems[k] = stems[k] * undb(en)[:, None]
 
         # ---------------- FADE: the band ducks 6 dB and dithers for a beat and a half
         dk = self.windows(self.ducks, 1.0, ramp=0.008)
@@ -373,21 +375,36 @@ class Mixer:
         self.report["levels"] = {k: round(self.active_lufs(v), 2) for k, v in stems.items()}
         return stems
 
-    def energy_curve(self):
-        """Band gain (dB) per section: the arrangement's dynamics, so the chorus is the loudest thing."""
-        flat = {"boot": 0.0, "intro": -1.0, "verse1": -3.0, "chorus1": 0.0, "post1": -0.5, "verse2": -3.0,
-                "chorus2": 0.0, "post2": -0.5, "bridge": -1.5, "breakdown": -1.5, "chorus3": 0.5, "outro": -1.0,
-                "tail": 0.0}
+    # loudness of each section relative to chorus 1 (LU): the arrangement's dynamics
+    SECTION_TARGET = {"intro": -2.0, "verse1": -3.2, "pre1": -2.0, "chorus1": 0.0, "post1": -0.7, "verse2": -3.2,
+                      "pre2": -2.0, "chorus2": 0.0, "post2": -0.7, "bridge": -2.0, "chorus3": 0.6, "outro": -1.5}
+
+    def energy_curve(self, stems):
+        """Band gain (dB) per section, solved from measurement: for each section, the gain on the band
+        (drums, bass, keys, other) that brings the whole mix to its target loudness relative to the
+        first chorus, with the voices left where they are.  Pre-choruses also get a 3 dB build."""
+        band = stems["drums"] + stems["bass"] + stems["keys"] + stems["other"]
+        vox = stems["lead"] + stems["chant"] + stems["choir"] + stems["spoken"]
+        _, a1, b1 = next(x for x in self.secs if x[0] == "chorus1")
+        ref = self.active_lufs(band + vox, a1, b1)
         c = np.zeros(self.N)
+        solved = {}
         for name, a, b in self.secs:
             ia, ib = n_of(a), n_of(b)
+            if name not in self.SECTION_TARGET:
+                continue
+            pb = 10 ** (self.active_lufs(band, a, b) / 10)
+            pv = 10 ** (self.active_lufs(vox, a, b) / 10)
+            pt = 10 ** ((ref + self.SECTION_TARGET[name]) / 10)
+            g2 = (pt - pv) / max(pb, 1e-12) if pt > pv * 1.05 else 0.25
+            gdb = float(np.clip(10 * np.log10(max(g2, 1e-6)), -7.0, 3.0))
+            solved[name] = round(gdb, 2)
             if name.startswith("pre"):
-                c[ia:ib] = np.linspace(-3.0, -0.5, ib - ia)          # the build
+                c[ia:ib] = gdb + np.linspace(-1.5, 1.5, ib - ia)          # the build
             else:
-                c[ia:ib] = flat.get(name, 0.0)
-            if name == "verse1":
-                c[n_of(a + 8.0):ib] = -2.0                           # bars 5-8: the riff returns
-        return onepole(c, 0.02)
+                c[ia:ib] = gdb
+        self.report["section_energy_db"] = solved
+        return onepole(c, 0.015)
 
     def _mono_lows(self, x, f):
         m = (x[:, 0] + x[:, 1]) * 0.5
@@ -398,21 +415,71 @@ class Mixer:
     # --------------------------------------------------------------------------------------------
     # master
     # --------------------------------------------------------------------------------------------
+    # tonal target for the master (octave-band energy relative to the total, dB): a modern pop balance
+    TONAL_TARGET = {31.5: -13.5, 63: -6.0, 125: -6.5, 250: -8.5, 500: -10.5, 1000: -12.5, 2000: -14.0, 4000: -15.5,
+                    8000: -17.5, 16000: -24.5}
+
+    @staticmethod
+    def _bands(x):
+        m = stereo(x).mean(axis=1)[:: 2]
+        f, P = signal.welch(m, SR / 2, nperseg=8192)
+        out = {}
+        for c in Mixer.TONAL_TARGET:
+            lo, hi = c / 2 ** 0.5, c * 2 ** 0.5
+            sel = (f >= lo) & (f < hi)
+            out[c] = float(np.sum(P[sel]) + 1e-20)
+        if 16000 in out:   # above 12 kHz the half-rate estimate is blind: measure the top band at full rate
+            mf = stereo(x).mean(axis=1)
+            f2, P2 = signal.welch(mf, SR, nperseg=8192)
+            sel = (f2 >= 16000 / 2 ** 0.5) & (f2 < 16000 * 2 ** 0.5)
+            out[16000] = float(np.sum(P2[sel]) * 1.0 + 1e-20)
+            # rescale the half-rate bands to the full-rate PSD scale
+            sel1 = (f2 >= 1000 / 2 ** 0.5) & (f2 < 1000 * 2 ** 0.5)
+            k = float(np.sum(P2[sel1])) / out[1000]
+            for c in out:
+                if c != 16000:
+                    out[c] *= k
+        tot = sum(out.values())
+        return {c: 10 * np.log10(v / tot) for c, v in out.items()}
+
+    def match_eq(self, mix):
+        """Measure the mix's octave balance against TONAL_TARGET and return gentle peaking-EQ bands
+        (60 % of the difference, clamped to +/-3 dB): the tonal-balance pass of the master."""
+        tgt = self.TONAL_TARGET
+        tp = sum(10 ** (v / 10) for v in tgt.values())
+        tgt = {c: v - 10 * np.log10(tp) for c, v in tgt.items()}
+        bands = []
+        x = mix[:: 1]
+        for it in range(2):
+            meas = self._bands(eq(x, *bands) if bands else x)
+            diff = {c: tgt[c] - meas[c] for c in tgt}
+            mean = np.mean(list(diff.values()))
+            for c, d in diff.items():
+                if c < 40:
+                    continue
+                g = float(np.clip(0.6 * (d - mean), -3.0, 3.0)) if it == 0 else float(np.clip(0.4 * (d - mean), -1.5, 1.5))
+                if abs(g) >= 0.2:
+                    bands.append(("highshelf", 12000, 0.7, g) if c == 16000 else ("peak", c, 1.4, g))
+        self.report["match_eq"] = [(b[0], b[1], round(b[3], 2)) for b in bands]
+        return bands
+
     def master_chain(self, mix, gain_db):
         x = mix * undb(gain_db)
         x = hp(x, 25, 2)
-        x = eq(x, ("lowshelf", 70, 0.7, -1.0), ("peak", 280, 0.8, -1.0), ("peak", 520, 1.0, -1.0),
-               ("peak", 3000, 0.8, 1.5), ("highshelf", 9500, 0.7, 0.5))
-        x = compressor(x, thr=-10.0, ratio=2.0, attack=0.03, release=0.16, knee=8.0, mode="rms")
-        # 2x-oversampled soft clip shaves the transients a few dB before the limiter
+        if getattr(self, "_match", None):
+            x = eq(x, *self._match)
+        x = eq(x, ("peak", 3000, 0.8, 0.5), ("highshelf", 9500, 0.7, 0.3))
+        x = compressor(x, thr=-8.0, ratio=1.5, attack=0.03, release=0.2, knee=8.0, mode="rms")
+        # 2x-oversampled soft clip shaves only the top of the transients before the limiter
         up = oversample(x, 2)
-        up = soft_clip(up, ceiling=undb(-0.6), knee=0.55)
+        up = soft_clip(up, ceiling=undb(-0.2), knee=0.8)
         x = _decimate2(up)[: len(mix)]
         y, g = limiter(x, ceiling_db=-1.2, lookahead=0.004, release=0.07)
         return y, g
 
     def master(self, stems, keep_spans, target=-9.0):
         mix = sum(stems.values())
+        self._match = self.match_eq(hp(mix[n_of(4.0):n_of(150.0)], 25, 2))
         gain = target - self.active_lufs(mix) + 1.0
         hist = []
         for it in range(8):

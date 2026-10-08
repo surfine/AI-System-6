@@ -23,6 +23,7 @@ ROOT = os.path.dirname(HERE)
 CACHE = os.path.join(ROOT, ".cache", "fluid")
 SF2 = "/usr/share/sounds/sf2/FluidR3_GM.sf2"
 PPQ = 960
+USED = set()     # cache files this build used (for --prune-cache)
 BPM = 120
 
 
@@ -93,6 +94,7 @@ def fluid(notes, program, total_s, cc=None, gain=0.6, tag="", align=True):
     key = hashlib.sha1(json.dumps([notes, program, cc, gain, total_s, "f3"]).encode()).hexdigest()[:20]
     os.makedirs(CACHE, exist_ok=True)
     wav = os.path.join(CACHE, "%s_%s.wav" % (tag or "gm", key))
+    USED.add(wav)
     if not os.path.exists(wav):
         _render(notes, program, wav, cc, gain)
     y, sr = sf.read(wav, dtype="float64", always_2d=True)

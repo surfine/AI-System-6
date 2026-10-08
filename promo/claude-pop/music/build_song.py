@@ -43,6 +43,7 @@ def main():
     ap.add_argument("--no-qa", action="store_true")
     ap.add_argument("--no-whisper", action="store_true")
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--prune-cache", action="store_true", help="delete cached words/parts this build did not use")
     args = ap.parse_args()
 
     with open(os.path.join(HERE, "score.json")) as f:
@@ -88,6 +89,8 @@ def main():
     for k in STEMS:
         sf.write(os.path.join(BUILD, "stems", k + ".wav"), (stems[k] * g * trim).astype(np.float64), SR, subtype="PCM_24")
     log("wrote build/song.wav and %d stems (stem gain %.2f dB)" % (len(STEMS), 20 * np.log10(g * trim)))
+    if args.prune_cache:
+        _prune()
 
     if args.no_qa:
         return
@@ -126,6 +129,19 @@ def main():
     with open(os.path.join(BUILD, "song-qa.json"), "w") as f:
         json.dump(rep, f, indent=1, default=float)
     _print(rep)
+
+
+def _prune():
+    import synth
+    import voice
+    n = 0
+    for d, used in ((os.path.join(ROOT, ".cache", "sing"), voice.USED), (os.path.join(ROOT, ".cache", "fluid"), synth.USED)):
+        for f in os.listdir(d):
+            p = os.path.join(d, f)
+            if p not in used and not f.startswith("cal_"):
+                os.remove(p)
+                n += 1
+    log("pruned %d stale cache files" % n)
 
 
 def _gaps(keep, a, b):
@@ -176,12 +192,15 @@ def _print(rep):
     print("riser end errors (ms):", rep["timing"]["riser"]["end_errors_ms"])
     print("pitch:", rep["pitch"])
     print("mix calibration:", json.dumps(rep["mix"].get("calibration")))
+    print("section energy (band dB):", rep["mix"].get("section_energy_db"))
+    print("match EQ:", rep["mix"].get("match_eq"))
+    print("stem loudness (LUFS):", rep["mix"].get("levels"))
     print("master:", rep["mix"].get("master"))
     if "whisper" in rep:
         ok = sum(1 for w in rep["whisper"] if w["exact"])
         print("whisper: %d/%d lead lines word-for-word" % (ok, len(rep["whisper"])))
         for w in rep["whisper"]:
-            print("  %-9s %6.2f  %-32s | %s  (%.2f)" % (w["id"], w["t"], w["text"], w["heard"], w["match"]))
+            print("  %-9s %6.2f  %-32s | %-32s %s" % (w["id"], w["t"], w["text"], w["heard"][:60], "ok" if w["exact"] else "(%.2f)" % w["match"]))
 
 
 if __name__ == "__main__":

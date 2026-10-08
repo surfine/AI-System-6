@@ -131,37 +131,49 @@ def timing(band, data_events, tracks):
 
 
 def pitch_report(vocals, results):
-    """Median error (cents) of every lead and la-la word over its notes' steady middles."""
+    """Median error (cents) over each note's steady middle, measured with Praat on the rendered words:
+    every lead word, the la-la (amy's take, checked against the riff it must equal), the chops."""
     import parselmouth
-    errs = []
+    groups = {"lead": [], "lala": [], "chops": []}
     worst = []
     for (track, job, g, p, fx), (a, t0) in zip(vocals.placements, results):
-        role_ok = track == "lead" or (track == "choir" and job["text"].lower().startswith("la") and
-                                      job["style"].get("voice") == "amy" and job["style"].get("seed") == 11)
-        if not role_ok or job.get("pitch_override") is not None:
+        st = job["style"]
+        if track == "lead" and job.get("pitch_override") is None:
+            grp = "lead"
+        elif track == "choir" and job["text"].lower().startswith("la") and st.get("voice") == "amy" and st.get("seed") == 11:
+            grp = "lala"
+        elif track == "chops":
+            grp = "chops"
+        else:
             continue
         a = np.asarray(a, dtype=float)
-        snd = parselmouth.Sound(a, SR)
-        pt = snd.to_pitch_ac(time_step=0.005, pitch_floor=90, pitch_ceiling=900)
+        if grp == "chops" and "gate" in fx:          # measure the chop as it is heard (gated)
+            tt_ = t0 + np.arange(len(a)) / SR
+            a = a * ((tt_ >= fx["gate"][0]) & (tt_ < fx["gate"][1]))
+        snd = parselmouth.Sound(np.concatenate([a, np.zeros(2400)]), SR)
+        pt = snd.to_pitch_ac(time_step=0.005, pitch_floor=90, pitch_ceiling=1000)
         f = pt.selected_array["frequency"]
         tt = pt.xs() + t0
-        for m, s, d in job["notes"]:
-            m = m + job["style"].get("transpose", 0)
-            lo, hi = s + 0.25 * d, s + 0.75 * d
+        for m, s_, d in job["notes"]:
+            m = m + st.get("transpose", 0)
+            lo, hi = (s_ + 0.25 * d, s_ + 0.75 * d) if grp != "chops" else (s_ + 0.02, s_ + d - 0.01)
             sel = (tt >= lo) & (tt <= hi) & (f > 0)
             if sel.sum() < 2:
                 continue
-            c = 1200 * np.log2(f[sel] / (440 * 2 ** ((m - 69) / 12)))
-            c = c - job["style"].get("detune", 0.0)
+            c = 1200 * np.log2(f[sel] / (440 * 2 ** ((m - 69) / 12))) - st.get("detune", 0.0)
             e = float(np.median(c))
-            errs.append(e)
-            worst.append((abs(e), job["text"], round(s, 3), round(e, 1)))
-    errs = np.array(errs)
+            groups[grp].append(e)
+            worst.append((abs(e), grp, job["text"], round(s_, 3), round(e, 1)))
+    out = {}
+    for k, v in groups.items():
+        v = np.array(v)
+        if len(v):
+            out[k] = {"notes": int(len(v)), "median_abs_cents": round(float(np.median(np.abs(v))), 1),
+                      "p95_abs_cents": round(float(np.percentile(np.abs(v), 95)), 1),
+                      "within_25_cents_pct": round(float(np.mean(np.abs(v) < 25)) * 100, 1)}
     worst.sort(reverse=True)
-    return {"notes": int(len(errs)), "median_abs_cents": round(float(np.median(np.abs(errs))), 1),
-            "p95_abs_cents": round(float(np.percentile(np.abs(errs), 95)), 1),
-            "within_25_cents": round(float(np.mean(np.abs(errs) < 25)) * 100, 1),
-            "worst": [w[1:] for w in worst[:5]]}
+    out["worst"] = [w[1:] for w in worst[:5]]
+    return out
 
 
 def _norm(s):
@@ -172,34 +184,69 @@ def _norm(s):
 
 
 def whisper_report(lead_stem, score, ids=None):
+    """Whisper over the lead stem.  Consecutive lead lines are transcribed together as one passage
+    (a chorus, a pre-chorus...) with word timestamps, as a listener hears them; each line is then
+    checked word for word against the words Whisper placed inside that line's time span."""
     from faster_whisper import WhisperModel
     model = WhisperModel("small.en", device="cpu", compute_type="int8")
     spb = 60.0 / score["bpm"]
     x = stereo(lead_stem).mean(axis=1)
     x16 = signal.resample_poly(x, 1, 3).astype(np.float32)
-    x16 = x16 / (np.max(np.abs(x16)) + 1e-9) * 0.7
-    out = []
-    lines = [L for L in score["lines"] if L["voice"] == "lead" and (ids is None or L["id"] in ids)]
-    starts = sorted(L["words"][0]["notes"][0][1] * spb for L in score["lines"] if L["voice"] == "lead")
+    lines = sorted([L for L in score["lines"] if L["voice"] == "lead"], key=lambda L: L["words"][0]["notes"][0][1])
+
+    def span(L):
+        a = L["words"][0]["notes"][0][1] * spb
+        w = L["words"][-1]["notes"][-1]
+        return a, (w[1] + w[2]) * spb
+
+    blocks, cur = [], []
     for L in lines:
-        a = L["words"][0]["notes"][0][1] * spb - 0.25
-        b = (L["words"][-1]["notes"][-1][1] + L["words"][-1]["notes"][-1][2]) * spb + 0.3
-        nxt = [s0 for s0 in starts if s0 > a + 0.3]
-        if nxt:                       # stop before the next lead line's first word
-            b = min(b, nxt[0] - 0.03)
+        if cur and span(L)[0] - span(cur[-1])[1] > 2.0:
+            blocks.append(cur)
+            cur = []
+        cur.append(L)
+    blocks.append(cur)
+    out = []
+    for blk in blocks:
+        a = span(blk[0])[0] - 0.4
+        b = span(blk[-1])[1] + 0.5
         seg = x16[int(a * 16000):int(b * 16000)]
-        segs, _ = model.transcribe(seg, language="en", beam_size=5, temperature=0.0,
-                                   condition_on_previous_text=False, initial_prompt=None)
-        heard = " ".join(s.text.strip() for s in segs)
-        want = [w for w in _norm(L["text"])]
-        # the silent pen: the word "pen" is typed, not sung
-        if any(w.get("silent") for w in L["words"]):
-            want = _norm(" ".join(w["w"] for w in L["words"] if not w.get("silent")))
-        got = _norm(heard)
-        sm = difflib.SequenceMatcher(a=want, b=got)
-        acc = sm.ratio()
-        out.append({"id": L["id"], "t": round(a + 0.25, 2), "text": L["text"], "heard": heard, "match": round(acc, 2),
-                    "exact": want == got})
+        seg = seg / (np.max(np.abs(seg)) + 1e-9) * 0.7
+        segs, _ = model.transcribe(seg, language="en", beam_size=5, temperature=0.0, word_timestamps=True,
+                                   condition_on_previous_text=True, vad_filter=False)
+        got = _norm(" ".join(s_.text for s_ in segs))
+        # align the passage's transcript to its lyric, word by word, and give each line its words
+        want, owner = [], []
+        for i, L in enumerate(blk):
+            for w in L["words"]:
+                if w.get("silent"):
+                    continue
+                for t in _norm(w["w"]):
+                    want.append(t)
+                    owner.append(i)
+        heard = {i: [] for i in range(len(blk))}
+        ok = {i: True for i in range(len(blk))}
+        sm = difflib.SequenceMatcher(a=want, b=got, autojunk=False)
+        for tag, i1, i2, j1, j2 in sm.get_opcodes():
+            if tag == "equal":
+                for k in range(i2 - i1):
+                    heard[owner[i1 + k]].append(got[j1 + k])
+            elif tag in ("replace", "delete"):
+                for k in range(i1, i2):
+                    ok[owner[k]] = False
+                own = owner[i1] if i1 < len(owner) else owner[-1]
+                heard[own].extend(got[j1:j2])
+            else:   # insert: extra words land on the line before (or the first line)
+                own = owner[i1 - 1] if i1 > 0 else owner[0]
+                ok[own] = False
+                heard[own].extend(got[j1:j2])
+        for i, L in enumerate(blk):
+            if ids is not None and L["id"] not in ids:
+                continue
+            w_ = [t for t, o in zip(want, owner) if o == i]
+            r = difflib.SequenceMatcher(a=w_, b=heard[i]).ratio() if w_ else 1.0
+            out.append({"id": L["id"], "t": round(span(L)[0], 2), "text": L["text"], "heard": " ".join(heard[i]),
+                        "match": round(r, 2), "exact": bool(ok[i] and heard[i] == w_)})
     return out
 
 
