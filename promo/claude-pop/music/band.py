@@ -7,7 +7,7 @@ import numpy as np
 
 import kit
 import synth
-from dsp import (SR, add_at, bitcrush, eq, hp, lp, mtof, n_of, pan, rng, sine, sweep_filter, undb)
+from dsp import SR, add_at, bitcrush, lp, mtof, n_of, pan, rng, undb
 from export_timing import drum_hits
 
 # era -> (bits, sample-and-hold rate, wet) for the Floppy Organ: crushed in 1988, clean by Liquid Glass
@@ -120,9 +120,9 @@ class Band:
                         self.place(T["claps"], y, self.sec(b), 1.0, None, "clapYou")
         for f in self.P["drums"]["fills"]:
             b = f["startBeat"]
-            if f["name"] == "keepIt":      # big clap + rimshot on the sung "Keep it."
-                self.place(T["claps"], kit.clap(12, seed=77, spread=1.0), self.sec(b), 1.0, None, "clap")
-                self.place(T["snare"], kit.rimshot(), self.sec(b), 0.8, 0.0, "rim")
+            if f["name"] == "keepIt":      # clap + rimshot on the sung "Keep it." (under the word, not on it)
+                self.place(T["claps"], kit.clap(12, seed=77, spread=1.0), self.sec(b), 0.45, None, "clap")
+                self.place(T["snare"], kit.rimshot(), self.sec(b), 0.35, 0.0, "rim")
             elif f["name"] == "stumble":   # snare + floor tom 16ths, a 16th late, the first with a flam
                 for k in range(3):
                     t = self.sec(b + 0.25 * k)
@@ -141,7 +141,7 @@ class Band:
             self.place(T["perc"], kit.cowbell(), self.sec(b), 0.55, 0.3, "cowbell")
         for i, b in enumerate(rows.get("tambourine", [])):
             y = hit(("t", i % 4), lambda: kit.tambourine(1.0, seed=i % 4))
-            self.place(T["perc"], y, self.sec(b), 0.55 if (b % 0.5) else 0.8, 0.45, "tambourine")
+            self.place(T["perc"], y, self.sec(b), 0.38 if (b % 0.5) else 0.55, 0.45, "tambourine")
         for b in rows.get("snap", []):
             self.place(T["perc"], kit.snap(1.0, seed=int(b)), self.sec(b), 0.9, -0.3, "snap")
         # crashes: the Trash; choked on the HAND hits

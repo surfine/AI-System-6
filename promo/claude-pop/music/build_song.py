@@ -5,7 +5,7 @@
     python3 -I music/build_song.py --no-qa    # render only
     python3 -I music/build_song.py --workers 4
 
-Writes build/song.wav (48 kHz, 24-bit, stereo, -9 LUFS, <= -1 dBTP), build/stems/{lead, chant, choir,
+Writes build/song.wav (48 kHz, 24-bit, stereo, -14 LUFS, <= -1 dBTP), build/stems/{lead, chant, choir,
 spoken, drums, bass, keys, other}.wav (pre-master, one common gain, summing to the mix) and
 build/song-qa.json (the measurements).  Deterministic: Piper runs with zero noise; every random
 choice is seeded; slow work (TTS per word, PSOLA per word, FluidSynth per part) is cached in .cache/.
@@ -19,6 +19,7 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+sys.dont_write_bytecode = True       # keep music/ free of __pycache__
 
 import numpy as np            # noqa: E402
 import soundfile as sf        # noqa: E402
@@ -76,7 +77,7 @@ def main():
     log("mix")
     ks = [t for t in EVENTS["keystroke"] if M.sil[0] <= t < M.sil[1]]
     keep = [(vox.the_span[0], vox.the_span[1] + 0.02)] + [(t - 0.003, t + 0.14) for t in ks]
-    song, gain = M.master(stems, keep, target=-9.0)
+    song, gain = M.master(stems, keep, target=-14.0)
     log("master: gain %.2f dB" % gain)
     assert len(song) == N
 

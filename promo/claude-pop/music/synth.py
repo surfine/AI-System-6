@@ -7,7 +7,6 @@
 """
 import hashlib
 import json
-import math
 import os
 import struct
 import subprocess
@@ -15,8 +14,7 @@ import subprocess
 import numpy as np
 import soundfile as sf
 
-from dsp import (SR, adsr, bp, eq, exp_env, hp, lp, mtof, n_of, noise, phase_of, pulse, rng, saw,
-                 sine, sweep_filter, tanh_sat)
+from dsp import SR, bp, eq, hp, lp, mtof, n_of, noise, pulse, rng, saw, sweep_filter, tanh_sat
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)

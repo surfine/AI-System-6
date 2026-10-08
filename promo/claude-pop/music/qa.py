@@ -11,13 +11,12 @@
 """
 import difflib
 import json
-import os
 import re
 
 import numpy as np
 from scipy import signal
 
-from dsp import SR, db, hp, lp, lufs, n_of, stereo, true_peak
+from dsp import SR, db, hp, lufs, n_of, stereo
 
 BANDS = [31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
 

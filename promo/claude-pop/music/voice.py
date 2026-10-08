@@ -17,11 +17,9 @@ Per word:
      in .cache/sing/ keyed by every input, so a rebuild is deterministic and fast.
 """
 import hashlib
-import io
 import json
 import math
 import os
-import wave
 
 import numpy as np
 
@@ -32,7 +30,7 @@ ROOT = os.path.dirname(HERE)
 CACHE = os.path.join(ROOT, ".cache")
 VOICE_DIR = os.path.join(CACHE, "voices")
 VOICES = {"amy": "en_US-amy-medium", "jenny": "en_GB-jenny_dioco-medium", "lessac": "en_US-lessac-medium"}
-ENGINE_VERSION = "sing-v19"
+ENGINE_VERSION = "sing-v20"
 
 # phoneme overrides: sung vowels want stress; "the" is a schwa; la-la is "lah"
 PHON_OVERRIDE = {
@@ -42,8 +40,8 @@ PHON_OVERRIDE = {
     "was": "wˈʌz", "but": "bˈʌt", "can": "kˈæn", "could": "kˈʊd", "own": "ˈoʊn",
     "eras": "ˈɛɹəz", "one": "wˈʌn", "twelve": "twˈɛlv",
 }
-FUNCTION_WORDS = {"i'm", "i'll", "i", "the", "a", "your", "and", "or", "in", "it", "is", "an", "for", "was",
-                  "but", "can", "could", "just", "where", "who"}
+FUNCTION_WORDS = {"i'm", "i'll", "the", "a", "and", "or", "in", "it", "is", "an", "for", "was", "but", "can",
+                  "could", "just"}     # "your", "who", "where", "I" carry the argument: full level
 
 _piper = {}
 
@@ -106,6 +104,14 @@ def _phonemize(name, text):
 
 
 PLOSIVES = ("p", "t", "k", "b", "d", "ɡ", "g", "tʃ", "dʒ")
+STOPS = "ptkbdɡgʧʤ"               # a stop (or affricate) onset needs a closure: silence before its burst
+UNVOICED_ONSET = "ptkfsʃhθʧ"       # onsets spliced raw (PSOLA smears a burst or a fricative into noise)
+
+
+def stop_onset(ph):
+    """'p', 't', 'k', 'b', 'd', 'g', 'ch', 'j' start the word: (True, voiceless?)."""
+    t = _strip_stress(ph).replace("tʃ", "ʧ").replace("dʒ", "ʤ")
+    return (len(t) > 0 and t[0] in STOPS), (len(t) > 0 and t[0] in "ptkʧ")
 
 
 def _strip_stress(ph):
@@ -290,7 +296,19 @@ DEFAULT_STYLE = dict(
     scoop=-40.0, scoop_min=0.45, scoop_time=0.11, glide=0.06, glide_in=0.07, drift=5.0,
     fall=-35.0, flat=False, max_pre=0.16, kc=None, dur_comp=1.0, onset_on_beat=False,
     shout=0.0, edge=0.03, seed=0, coda_hold=0.4, cons_boost=4.0, vowel_fade=0.035, hold_mode="point",
+    raw_onset=True, burst_boost=5.0,
 )
+RAW_CAP = {"stop": 0.07, "fric": 0.12}     # longest raw onset kept (s): burst + aspiration / a fricative
+CLOSURE = 0.035                            # silence a singer leaves before a stop's burst (s)
+
+
+def closure_lead(ph):
+    """Seconds before the note at which the previous word must already be silent (its closure), or
+    None when the word does not start with a stop."""
+    stp, unv = stop_onset(ph)
+    if not stp:
+        return None
+    return (RAW_CAP["stop"] if unv else 0.035) + CLOSURE
 ONSET_BUDGET = {"p": .035, "t": .035, "k": .04, "b": .03, "d": .03, "ɡ": .035, "g": .035, "f": .07, "θ": .06,
                 "s": .085, "ʃ": .08, "h": .045, "v": .04, "ð": .03, "z": .06, "ʒ": .06, "m": .05, "n": .045,
                 "ŋ": .045, "l": .05, "ɹ": .05, "w": .05, "j": .04, "ʧ": .07, "ʤ": .07}
@@ -464,9 +482,6 @@ def plan_word(x, sr, notes, nsyl, ctx, st):
             segs.append((ca, cb, core_start, core_end))
         if i < nn - 1 and cores[i + 1][0] - cb > 1e-4:
             segs.append((cb, cores[i + 1][0], core_end, starts[i + 1]))
-        elif i < nn - 1:
-            # no gap in source: stretch the join into the core boundary
-            pass
     if post_src > 1e-4:
         cb = cores[-1][1]
         # a held sonorant coda ('n', 'l') stretches; the stop or fricative after it keeps its own time
@@ -644,6 +659,53 @@ def _sing(job, st):
     out = call(man, "Get resynthesis (overlap-add)")
     y = np.asarray(out.values[0], dtype=float)
     y = resample(y, sr, SR)
+    # the raw onset: an unvoiced onset (the burst and aspiration of p / t / k, an f, s, sh or h) is taken
+    # from the source at natural speed instead of from PSOLA, whose random unvoiced pseudo-periods smear a
+    # burst into a breathy 'h' (pen -> 'hand', page -> 'H', check -> 'share'); it is placed so that the
+    # voicing starts exactly where the warp put it, i.e. before the note like a singer's consonant
+    raw_span = None
+    ph0 = _strip_stress(ph).replace("tʃ", "ʧ")[:1]
+    if st["raw_onset"] and ph0 in UNVOICED_ONSET and not st["onset_on_beat"]:
+        tv, vo, _ = analyse(x, sr)
+        vi = np.where(vo & (tv > 0.008))[0]
+        v_src = min(float(tv[vi[0]]) - HOP / 2, cores[0][0] + 0.01) if len(vi) else cores[0][0]
+        if v_src > 0.012:
+            iv = int(round((float(np.interp(v_src, src_bp, tgt_bp)) - t_start) * SR))
+            xf = int(0.006 * SR)
+            raw = resample(x[: min(len(x), int(v_src * sr) + int(0.008 * sr))], sr, SR)
+            rv = int(round(v_src * SR))
+            stop = ph0 in "ptkʧ"
+            cap = int(RAW_CAP["stop" if stop else "fric"] * SR)
+            if rv > cap:                       # too long: keep the burst, drop the middle of the aspiration
+                if stop:
+                    k0 = int(0.03 * SR)
+                    f = int(0.005 * SR)
+                    a_ = raw[:k0 + f].copy()
+                    b_ = raw[rv - (cap - k0):].copy()
+                    a_[-f:] *= np.linspace(1, 0, f)
+                    b_[:f] *= np.linspace(0, 1, f)
+                    raw = np.concatenate([a_[:-f], a_[-f:] + b_[:f], b_[f:]])
+                else:                          # a fricative: start it later, with a soft 6 ms fade in
+                    raw = raw[rv - cap:].copy()
+                    raw[: int(0.006 * SR)] *= np.linspace(0, 1, int(0.006 * SR))
+                rv = cap
+            start = iv - rv
+            if start < 0:                      # the onset starts before the PSOLA word: extend it
+                y = np.concatenate([np.zeros(-start), y])
+                t_start += start / SR
+                iv -= start
+                start = 0
+            ynew = y.copy()
+            ynew[:iv] = 0.0
+            seg = raw[: rv]
+            ynew[start:start + len(seg)] = seg
+            tail = raw[rv: rv + xf]
+            m = min(len(tail), len(y) - iv)
+            if m > 0:
+                r = np.linspace(0, 1, m)
+                ynew[iv:iv + m] = tail[:m] * (1 - r) + y[iv:iv + m] * r
+            y = ynew
+            raw_span = (t_start + start / SR, t_start + iv / SR, stop or ph0 == "h")
     n = len(y)
     # consonant emphasis: the onset (and the consonants between syllables, and a non-sonorant coda)
     # come up a few dB against the sustained vowels -- the singer's diction
@@ -658,6 +720,8 @@ def _sing(job, st):
         if _strip_stress(ph)[:1] in ("v", "z", "ʒ", "w", "l"):
             boost += 3.0          # weak voiced onsets ('voice' was heard as 'boy', 'land' as 'am')
         g[is_cons] = boost
+        if raw_span is not None and raw_span[2] and st["burst_boost"]:
+            g[(tt >= raw_span[0]) & (tt < raw_span[1])] += st["burst_boost"]    # the burst / the h: diction
         if ctx.get("sonorant_coda"):
             g[tt >= core_spans[-1][1]] = 0.0
         w = max(1, int(0.008 * SR))
@@ -678,6 +742,16 @@ def _sing(job, st):
         y[:fi] *= np.linspace(0, 1, fi)
     if fo:
         y[n - fo:] *= np.linspace(1, 0, fo)
+    # the closure: a stop starts the next word, so this one is silent before its burst ('the | pen')
+    ca = ctx.get("closure_at")
+    if ca is not None:
+        ca = max(ca, notes[-1][1] + 0.45 * notes[-1][2])
+        i1 = int(round((ca - t_start) * SR))
+        f = int(0.012 * SR)
+        if 0 < i1 < n:
+            i0 = max(0, i1 - f)
+            y[i0:i1] *= np.linspace(1, 0, i1 - i0)
+            y[i1:] = 0.0
     return y, float(t_start)
 
 
@@ -731,12 +805,3 @@ def sing_pool(jobs, workers=4):
         for i, r in zip(todo, res):
             out[i] = r
     return out
-
-
-def pre_length(text, voice="amy", length_scale=1.0):
-    """Source onset length (s) before the first vowel core: used to give the previous word room."""
-    x, sr = tts(voice, clean(text), length_scale)
-    x = trim(np.asarray(x, dtype=float), sr)
-    times, voiced, inten = analyse(x, sr)
-    cores = find_cores(times, voiced, inten, 1)
-    return min(cores[0][0] / length_scale, 0.16)

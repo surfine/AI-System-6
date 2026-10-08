@@ -10,6 +10,7 @@ the floppy drives, FluidSynth (FluidR3 GM) for the piano, organ, brass, strings 
 python3 -I music/song.py && python3 -I music/validate_score.py && python3 -I music/export_timing.py   # the score (never hand-edit score.json)
 python3 -I music/build_song.py              # render + measure (about 10 min; 2 min of it is Whisper)
 python3 -I music/build_song.py --no-qa      # render only
+python3 -I music/build_song.py --prune-cache   # also delete cached words/parts this build no longer uses
 ```
 
 Outputs: `build/song.wav` (48 kHz, 24-bit, stereo), `build/stems/{lead,chant,choir,spoken,drums,bass,keys,other}.wav`
@@ -17,7 +18,9 @@ and `build/song-qa.json` (every measurement below).
 
 **Deterministic.** Piper runs with `noise_scale = noise_w_scale = 0` (its random sampler cannot be seeded, so
 it is switched off); every other random choice (humanising, grains, noise, gang spread) comes from a seeded
-generator (`dsp.rng`, an FNV hash of a name, never Python's salted `hash()`); FluidSynth renders offline.
+generator (`dsp.rng`, an FNV hash of a name, never Python's salted `hash()`); Praat's overlap-add (which
+places unvoiced pseudo-periods at random) is seeded per word; FluidSynth renders offline. Two consecutive
+builds produce bit-identical `song.wav` and stems (checked by md5).
 **Cached** in `.cache/` (git-ignored): `tts/` raw Piper per word, `sing/` the finished PSOLA word keyed by
 every input (text, notes, context, style, `voice.ENGINE_VERSION`), `fluid/` each GM part keyed by its notes,
 `phonemes.json`. Delete `.cache/sing` (or bump `ENGINE_VERSION`) after changing the singing engine; the
@@ -201,6 +204,10 @@ passed through the master chain they give the song.
 | measured onsets (max abs) | kick 0.08 ms, snare 2.52, clap 0.12, crash 2.21, hats 3.06, brass stabs 2.67, bell 3.29, keystroke 0.0 |
 | pitch (Praat, steady middle of each note) | lead 163 notes, median 2.1 cents (p95 5.1); la-la 56 notes, median 1.4 (p95 3.7), the riff note for note; chops 28, median 0.6; every note within 25 cents |
 | Whisper (small.en, lead stem) | 27 / 35 lead lines word for word; chorus lines 20 / 24 |
+
+Whisper method: each run of consecutive lead lines (a pre-chorus and its chorus, the breakdown pair, ...) is
+transcribed from the lead stem as one passage (16 kHz float32 array, beam 5, temperature 0), and the transcript is
+aligned word by word to the lyric to score each line; the silent "pen" is not expected.
 
 Sections (after mastering):
 

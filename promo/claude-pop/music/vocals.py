@@ -15,7 +15,7 @@ import math
 import numpy as np
 
 import voice as V
-from dsp import (SR, add_at, bitcrush, bitcrush_curve, db, lp, n_of, pan, resample, rng, sweep_filter,
+from dsp import (SR, add_at, bitcrush, bitcrush_curve, lp, n_of, pan, resample, rng, sweep_filter,
                  undb)
 
 LEAD = dict(voice="amy", vib_depth=24.0, vib_rate=5.4, drift=5.0, scoop=-40.0, glide=0.06, glide_in=0.07)
@@ -28,12 +28,14 @@ CHOIR = [  # (style, timing offset s, pan, gain dB)
     (dict(voice="lessac", transpose=-12, formant=0.86, vib_depth=10.0, vib_rate=4.8, detune=4.0, drift=3.0,
           scoop=-20.0, seed=13), 0.004, 0.0, -2.5),
 ]
-GANG = dict(shout=-130.0, dur_comp=0.8, vib_depth=0.0, scoop=0.0, drift=3.0, fall=0.0, glide=0.03, glide_in=0.0,
+GANG = dict(shout=-60.0, dur_comp=0.9, vib_depth=0.0, scoop=0.0, drift=3.0, fall=0.0, glide=0.03, glide_in=0.0,
             max_pre=0.10, coda_hold=0.25)
+GANG_SPREAD = 0.008          # +/- s between the twelve copies: tight enough that a 'd' stays one 'd'
+CALL = dict(dur_comp=1.0)    # the verse shouts ("Flag it.", "(Keep it.)") keep their full length
 FADE_GAG = True
 KEEP_ROUGH = True
 CHOP = dict(voice="amy", flat=True, glide=0.0, glide_in=0.0, vib_depth=0.0, scoop=0.0, drift=0.0, fall=0.0,
-            onset_on_beat=True, max_pre=0.03, kc=1.0, length_scale=1.35, coda_hold=0.35, edge=0.01)
+            onset_on_beat=True, max_pre=0.03, kc=1.0, length_scale=1.35, coda_hold=0.35, edge=0.01, raw_onset=False)
 
 
 class Vocals:
@@ -94,6 +96,9 @@ class Vocals:
                 ctx["next_pre"] = round(V.onset_budget(nph), 4)
                 if V.obstruent_onset(nph):
                     ctx["next_obstruent"] = True
+                cl = V.closure_lead(nph)
+                if cl is not None and ns - (notes[-1][1] + notes[-1][2]) < cl:
+                    ctx["closure_at"] = round(ns - cl, 4)     # silent before the next word's burst
                 ctx["phrase_end"] = bool(ns - (notes[-1][1] + notes[-1][2]) >= 0.25)
             else:
                 ctx["phrase_end"] = True
@@ -128,7 +133,7 @@ class Vocals:
             if FADE_GAG and lid.startswith("chorus") and lid.endswith("d") and w["w"].startswith("fade"):
                 s, d = notes[0][1], notes[0][2]
                 m = notes[0][0]
-                pov = [[s - 0.3, m], [s + 0.15, m], [s + d, m - 4], [s + d + 0.3, m - 4]]
+                pov = [[s - 0.3, m], [s + 0.3 * d, m], [s + d, m - 4], [s + d + 0.3, m - 4]]
                 fx["fade"] = (s, s + d)
             if lid == "chorus3c" and w["w"] == "You":
                 st["onset_on_beat"] = True            # nothing may sound inside the silence before 132.0
@@ -149,8 +154,6 @@ class Vocals:
                 for k, (ls_mul, det, sh, p) in enumerate(((1.12, 8.0, 0.008, -0.55), (0.92, -7.0, -0.006, 0.55))):
                     st2 = dict(st, detune=st.get("detune", 0.0) + det, vib_depth=12.0, seed=100 + k)
                     st2["length_scale"] = round(V.choose_ls(notes) * ls_mul, 3)
-                    if fx.get("fade"):
-                        pass
                     self.placements.append(("lead_dbl", self._job(w, notes, ctx, st2, shift + sh, pov), -1.0, p, dict(fx)))
 
         # ---- the chant (robot list) and its octave double
@@ -169,12 +172,11 @@ class Vocals:
             self.placements.append(("chant", self._job(w, notes, ctx, st), 0.0, 0.0, fx))
             self.words_qa.append((lid, w["w"], t0))
             if lid.startswith("b"):    # the bridge years: stacked in octaves, panned
-                self.placements.append(("chant_dbl", self._job(w, notes, ctx, dict(CHANT_DBL)), -4.0, -0.45, {}))
+                self.placements.append(("chant_dbl", self._job(w, notes, ctx, dict(CHANT_DBL)), -7.0, -0.45, {}))
                 self.placements.append(("chant_dbl", self._job(w, notes, ctx, dict(CHANT, voice="jenny", formant=1.0, seed=3)),
-                                        -6.0, 0.45, {}))
-            elif lid not in ("pre1b", "pre2b") or True:
-                if lid not in ("pre1c", "pre2c"):
-                    self.placements.append(("chant_dbl", self._job(w, notes, ctx, dict(CHANT_DBL)), -9.0, 0.0, dict(fx)))
+                                        -8.0, 0.45, {}))
+            else:                      # every chant line: lessac an octave down, -9 dB
+                self.placements.append(("chant_dbl", self._job(w, notes, ctx, dict(CHANT_DBL)), -9.0, 0.0, dict(fx)))
 
         # ---- the choir: harmony and la-la stacks; the gang: twelve shouted copies
         for L in choir:
@@ -195,18 +197,22 @@ class Vocals:
                 r = rng("gang", L["id"])
                 voices = ["amy", "jenny", "lessac"]
                 lss = [0.95, 1.08, 1.2, 0.88]
-                pans = np.linspace(-0.95, 0.95, 12)
-                order = r.permutation(12)
-                for k in range(12):
+                # the verse shouts ("Flag it.", "(Keep it.)") are six tighter copies: twelve detuned
+                # copies of a two-word call smear into "Flyers"; the chorus gang keeps all twelve
+                nc = 6 if role == "call" else 12
+                dt = 6.0 if role == "call" else 15.0
+                pans = np.linspace(-0.95, 0.95, nc)
+                order = r.permutation(nc)
+                for k in range(nc):
                     st = dict(GANG, voice=voices[k % 3], length_scale=None, seed=200 + k,
-                              detune=float(r.uniform(-15, 15)),
+                              detune=float(r.uniform(-dt, dt)),
                               formant=float(r.uniform(0.9, 1.08) if voices[k % 3] != "lessac" else r.uniform(0.84, 0.95)))
-                    off = float(r.uniform(-0.018, 0.018))
+                    off = float(r.uniform(-1, 1)) * GANG_SPREAD
                     tilt = float(r.uniform(-3, 3))
                     for _, w, notes, ctx in stream:
-                        s2 = dict(st)
-                        s2["length_scale"] = round(V.choose_ls(notes) * lss[k // 3], 3)
-                        g = 0.0 if role != "call" else -7.0     # the verse shouts sit under the chant
+                        s2 = dict(st, **(CALL if role == "call" else {}))
+                        s2["length_scale"] = round(V.choose_ls(notes) * lss[(k // 3) % 4], 3)
+                        g = 0.0 if role != "call" else -2.0     # the verse shouts sit under the chant
                         self.placements.append(("gang", self._job(w, notes, ctx, s2, off), g, float(pans[order[k]]),
                                                 {"tilt": tilt}))
 
@@ -285,13 +291,13 @@ class Vocals:
         self.n_breaths = k
 
     def _normalise(self, a, target_db, text):
-        """Level each word by the RMS of its loudest 60 ms; function words sit 2.5 dB lower."""
+        """Level each word by the RMS of its loudest 60 ms; function words sit 1.5 dB lower."""
         w = max(1, n_of(0.06))
         e = np.sqrt(np.convolve(a * a, np.ones(w) / w, mode="same") + 1e-12)
         ref = np.max(e)
         g = undb(target_db) / max(ref, 1e-9)
         if V.clean(text).lower() in V.FUNCTION_WORDS:
-            g *= undb(-2.5)
+            g *= undb(-1.5)
         return a * g
 
     def _word_fx(self, a, t0, fx, job):
@@ -301,10 +307,10 @@ class Vocals:
             a = bitcrush(a, 8, 11025, mix=0.6)
         if "fade" in fx:        # FADE: level fade + bit depth falling over the beat, then nothing
             s, e = fx["fade"]
-            # the word is heard first ("fay-"), then it dissolves: bits fall from 16 to 4 and the level
-            # sinks 12 dB over the back two thirds of the beat (the 'd' still lands), then half a beat of nothing
-            x = np.clip((t - (s + 0.3 * (e - s))) / (0.7 * (e - s)), 0, 1)
-            bits = 16 - 12 * x ** 1.3
+            # the word is heard first ("or I fay-"): only the tail dissolves -- from 55 % of the beat the bits
+            # fall from 16 to 5 and the level sinks 12 dB (the 'd' still lands), then half a beat of nothing
+            x = np.clip((t - (s + 0.55 * (e - s))) / (0.45 * (e - s)), 0, 1)
+            bits = 16 - 11 * x ** 1.3
             crushed = bitcrush_curve(a, bits)
             a = np.where(x <= 0, a, crushed) * (1 - 0.75 * x ** 1.2)
             a[t >= e + 0.06] = 0.0
@@ -333,15 +339,16 @@ class Vocals:
             m = job["notes"][0][0]
             per = SR / (440.0 * 2 ** ((m - 69) / 12))
             L = int(round(2 * per))
-            # find where the 's' starts (high-band energy rising after the vowel)
+            # find where the 's' starts: the first moment after the vowel where the 4 kHz+ band comes
+            # within 12 dB of the whole signal (the vowel is all low harmonics; the 's' is all hiss)
             a0, a1 = n_of(s - 0.25), n_of(s + 0.35)
-            hb = np.abs(hp(lead[a0:a1], 4000, 4))
             w = n_of(0.005)
-            env = np.convolve(hb, np.ones(w) / w, mode="same")
-            lo = env[: n_of(0.15)].max()
-            idx = np.where(env > max(4 * lo, 0.3 * env.max()))[0]
+            seg = lead[a0:a1]
+            env_hi = np.sqrt(np.convolve(hp(seg, 4000, 4) ** 2, np.ones(w) / w, mode="same"))
+            env_all = np.sqrt(np.convolve(seg ** 2, np.ones(w) / w, mode="same")) + 1e-9
+            idx = np.where((env_hi > 0.25 * env_all) & (np.arange(len(seg)) > n_of(0.05)))[0]
             ts = a0 + (int(idx[0]) if len(idx) else n_of(0.25))
-            ts -= n_of(0.004)
+            ts -= n_of(0.012)          # loop two periods of the vowel, never of the 's' 
             grain = lead[ts - L:ts].copy()
             hold = n_of(e - s)
             tail = lead[ts:ts + n_of(0.3)].copy()
@@ -352,98 +359,6 @@ class Vocals:
             lead[ts:ts + hold] = loop
             lead[ts + hold:ts + hold + len(tail)] = tail
             self.freeze_at = (ts / SR, (ts + hold) / SR)
-
-    def _breaths(self, lead):
-        """The singer breathes before each phrase (the robot chant never does): band-passed noise with
-        two soft resonances, swelling over ~0.3 s and ending just before the first consonant."""
-        from dsp import bp, eq, noise
-        ws = []
-        for track, job, g, p, fx in self.placements:
-            if track == "lead":
-                ws.append((job["notes"][0][1], job["notes"][-1][1] + job["notes"][-1][2], job))
-        ws.sort(key=lambda w: w[0])
-        prev_end = -9.0
-        k = 0
-        for s, e, job in ws:
-            gap = s - prev_end
-            prev_end = max(prev_end, e)
-            if gap < 0.45:
-                continue
-            ob = V.onset_budget(V.phonemes_for("amy", V.clean(job["text"])))
-            end = s - ob - 0.03
-            dur = min(0.34, gap - 0.12)
-            start = end - dur
-            if dur < 0.15 or (start < self.sil[1] and end > self.sil[0] - 0.05):
-                continue
-            n = n_of(dur)
-            x = bp(noise(n, ("breath", k)), 350, 7000, 2)
-            x = eq(x, ("peak", 1150, 2.0, 8.0), ("peak", 2600, 2.0, 5.0), ("highshelf", 6000, 0.7, -4.0))
-            u = np.linspace(0, 1, n)
-            env = np.sin(np.pi * np.minimum(u / 0.75, 1) * 0.5) ** 1.5 * np.minimum(1, (1 - u) / 0.12)
-            x = x * env
-            x = x / (np.sqrt(np.mean(x ** 2)) + 1e-12) * undb(-41.0)
-            add_at(lead, x, start)
-            k += 1
-        self.n_breaths = k
-
-    def _normalise(self, a, target_db, text):
-        """Level each word by the RMS of its loudest 60 ms; function words sit 2.5 dB lower."""
-        w = max(1, n_of(0.06))
-        e = np.sqrt(np.convolve(a * a, np.ones(w) / w, mode="same") + 1e-12)
-        ref = np.max(e)
-        g = undb(target_db) / max(ref, 1e-9)
-        if V.clean(text).lower() in V.FUNCTION_WORDS:
-            g *= undb(-2.5)
-        return a * g
-
-    def _word_fx(self, a, t0, fx, job):
-        n = len(a)
-        t = t0 + np.arange(n) / SR
-        if fx.get("crush"):     # 1988: 8-bit, 11 kHz sample-and-hold, 60 % wet keeps the words
-            a = bitcrush(a, 8, 11025, mix=0.6)
-        if "fade" in fx:        # FADE: level fade + bit depth falling over the beat, then nothing
-            s, e = fx["fade"]
-            # the word is heard first ("fay-"), then it dissolves: bits fall from 16 to 4 and the level
-            # sinks 12 dB over the back two thirds of the beat (the 'd' still lands), then half a beat of nothing
-            x = np.clip((t - (s + 0.3 * (e - s))) / (0.7 * (e - s)), 0, 1)
-            bits = 16 - 12 * x ** 1.3
-            crushed = bitcrush_curve(a, bits)
-            a = np.where(x <= 0, a, crushed) * (1 - 0.75 * x ** 1.2)
-            a[t >= e + 0.06] = 0.0
-        if "smooth" in fx:      # the low-pass closes over "smooth" (8 kHz -> 1.5 kHz across the beat)
-            s, e = fx["smooth"]
-            x = np.clip((t - s) / (e - s), 0, 1)
-            fc = 8000 * (1500 / 8000) ** x
-            a = sweep_filter(a, "lp", fc, 0.8)
-        if "gate" in fx:        # chops: hard gate to the written length
-            s, e = fx["gate"]
-            g = np.clip((e - t) / 0.008, 0, 1) * np.clip((t - s + 0.002) / 0.002, 0, 1)
-            a = a * g
-        if "tilt" in fx:        # gang copies: each with its own formant tilt (a high shelf)
-            from dsp import eq
-            a = eq(a, ("highshelf", 2500, 0.7, fx["tilt"]))
-        return a
-
-    def _freeze(self, lead):
-        """'voice.': the long A4 freezes into a two-cycle grain loop for its last half beat."""
-        for track, job, g, p, fx in self.placements:
-            if "freeze" not in fx:
-                continue
-            s, e = fx["freeze"]
-            m = job["notes"][0][0]
-            per = SR / (440.0 * 2 ** ((m - 69) / 12))
-            L = int(round(2 * per))
-            i0, i1 = n_of(s), n_of(e)
-            grain = lead[i0 - L:i0].copy()
-            reps = int(math.ceil((i1 - i0) / L)) + 1
-            loop = np.tile(grain, reps)[: i1 - i0]
-            # a 3 ms crossfade into the loop, the loop held flat, then a quick tail
-            xf = n_of(0.003)
-            seg = lead[i0:i1].copy()
-            mix = np.ones(i1 - i0)
-            mix[:xf] = np.linspace(0, 1, xf)
-            lead[i0:i1] = seg * (1 - mix) + loop * mix
-            lead[i1 - n_of(0.004):i1] *= np.linspace(1, 0.3, n_of(0.004))
 
     def _spoken(self):
         """lessac, raw Piper per sentence, aligned so each sentence's first vowel lands on its word.

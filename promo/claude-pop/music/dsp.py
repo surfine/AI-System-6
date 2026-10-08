@@ -8,7 +8,7 @@ import math
 
 import numpy as np
 from scipy import signal
-from scipy.ndimage import maximum_filter1d, minimum_filter1d, uniform_filter1d
+from scipy.ndimage import minimum_filter1d, uniform_filter1d
 
 SR = 48000
 
@@ -387,6 +387,22 @@ def deesser(x, f=6000.0, thr=-30.0, ratio=4.0, max_cut=10.0):
     gr = np.minimum(over * (1 - 1 / ratio), max_cut)
     g = _to_audio_rate(undb(-gr), len(x))
     return lo + hi * (g if x.ndim == 1 else g[:, None])
+
+
+def pocket(x, key, lo=300.0, hi=5000.0, depth=4.0, rng_db=18.0, attack=0.004, release=0.12):
+    """Dynamic EQ: cut the lo..hi band of x by up to `depth` dB while the key (a voice) is active in
+    that band.  The cut is full when the key is within 6 dB of its loud level and fades out over
+    `rng_db` below that, so the band makes room for each word and gives it back in the gaps."""
+    band = bp(x, lo, hi, 2)
+    kb = bp(mono(key) if key.ndim == 2 else key, lo, hi, 2)
+    lvl = _ctrl_level(kb, "rms")
+    env = _follow(lvl, attack, release, SR / CTRL)
+    L = db(env)
+    act = L[L > L.max() - 40]
+    ref = np.percentile(act, 90) if len(act) else L.max()
+    amt = np.clip((L - (ref - 6.0 - rng_db)) / rng_db, 0.0, 1.0)
+    g = _to_audio_rate(undb(-depth * amt), len(x))
+    return x - band * (1.0 - g if x.ndim == 1 else (1.0 - g)[:, None])
 
 
 def gate(x, thr=-50.0, attack=0.001, release=0.05, floor=-80.0):
