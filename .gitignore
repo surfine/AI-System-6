@@ -157,3 +157,7 @@ output/
 # downloaded third-party reference art for the aaronlau-me proposal; local
 # only, never committed or deployed (see that proposal's CONTINUE.md)
 internal/design-proposals/aaronlau-me/assets/_ref/
+
+# Claude-Pop promo video: generated audio, renders, downloaded voice models
+/promo/claude-pop/build/
+/promo/claude-pop/.cache/
