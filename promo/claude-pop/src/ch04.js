@@ -200,20 +200,20 @@
   const DW = 576, DH = 352, TN = Math.tan(PI / 12), FLOOR = 8 - DH / 2, PAL3 = [FLD, BLK, WHT];
   const wx = x => x - DW / 2, wy = y => DH / 2 - y, C4_CUT = T0 + 2 * F1 - 1e-6, YOU2 = LH.words[2].start;
   const PW = wordAt(LB, -1).start, PW2 = wordAt(LF, -1).start, LX = wx(DW - 96), SPOT = [LX, FLOOR, 170];
-  // the posters: [lines, bigType layout on the design plane, lyric, shown from, until, per-letter step-in, flags]
+  // the posters: [lines, bigType layout on the design plane, lyric, shown from, until, flags]. Every word is solid from
+  // its own sung start; flags: pump (the hooks pump on the kicks), inv (the time "PEN." inverts), hero (the word that
+  // slams at the lens: whole, inside the frame, never cropped), ripple (the word's letters land a frame apart)
   const BLK3 = [
     ["I'M JUST YOUR", { scale: 3, min: 3, x: 20, y: 18, valign: 'top', align: 'left' }, LA, T0, LB.start],
-    [['PEN', 'PAL'], { justify: 300, fitH: DH - 92, x: 20, y: 56, valign: 'top', align: 'left' }, LA, T0, LB.start, null, { pump: 1 }],
-    [["I'LL NEVER", 'HOLD', 'THE PEN.'], { justify: DW - 190, fitH: DH - 24, x: 8, align: 'left' }, LB, LB.start, LC.start, null, { inv: PW }],
-    [['YOU SAY', 'WHERE I', 'LAND,'], { fit: 300, x: 8, align: 'left' }, LC, LC.start, LD.start],
-    [['OR I', 'FADE.'], { fit: 210, x: 8, align: 'left', y: DH / 2 - 10 }, LD, LD.start, LE.start],
-    ["I'M JUST YOUR", { scale: 3, min: 3, x: 20, y: 18, valign: 'top', align: 'left' }, LE, LE.start, LF.start],
-    [['PEN', 'PAL'], { justify: 300, fitH: DH - 92, x: 20, y: 56, valign: 'top', align: 'left' }, LE, LE.start, LF.start,
-      (li, n) => beatTime(beatAt(wordAt(LE, li ? 'pal' : 'pen').start) + n / 4), { pump: 1, drop: 1 }],
-    [["I'LL NEVER", 'HOLD', 'THE PEN.'], { justify: DW - 204, fitH: DH - 24, x: DW - 8, align: 'right' }, LF, LF.start, LG.start, null, { inv: PW2 }],
-    [['WHO', 'HOLDS', 'THE PEN?'], { justify: DW - 184, fitH: DH - 60, x: 8, y: 46, valign: 'top', align: 'left' }, LG, LG.start, LH.start,
-      (li, n) => beatTime(beatAt(LG.words[li].start) + n / (li ? 8 : 4))],
-    [['YOU', 'DO!'], null, LH, LH.start, YOU2, null, { pump: 1 }]];
+    [['PEN', 'PAL'], { justify: 300, fitH: DH - 92, x: 20, y: 56, valign: 'top', align: 'left' }, LA, T0, LB.start, { pump: 1 }],
+    [["I'LL NEVER", 'HOLD', 'THE PEN.'], { justify: DW - 190, fitH: DH - 24, x: 8, align: 'left', lead: 5 }, LB, LB.start, LC.start, { inv: PW, hero: 'pen' }],
+    [['YOU SAY', 'WHERE I', 'LAND,'], { fit: 300, x: 8, align: 'left', lead: 5 }, LC, LC.start, LD.start, { hero: 'land', kmax: 1.3 }],
+    [['OR I', 'FADE.'], { fit: 210, x: 8, align: 'left', y: DH / 2 - 10, lead: 4 }, LD, LD.start, LE.start],
+    ["I'M JUST YOUR", { scale: 3, min: 3, x: 20, y: 8, valign: 'top', align: 'left' }, LE, LE.start, LF.start],
+    [['PEN', 'PAL'], { justify: 300, fitH: DH - 104, x: 20, y: 76, valign: 'top', align: 'left' }, LE, LE.start, LF.start, { pump: 1, hero: 'pen', ripple: 1 }],
+    [["I'LL NEVER", 'HOLD', 'THE PEN.'], { justify: DW - 204, fitH: DH - 24, x: DW - 8, align: 'right', lead: 5 }, LF, LF.start, LG.start, { inv: PW2, hero: 'pen' }],
+    [['WHO', 'HOLDS', 'THE PEN?'], { justify: DW - 184, fitH: DH - 60, x: 8, y: 30, valign: 'top', align: 'left', lead: 6 }, LG, LG.start, LH.start, { ripple: 1 }],
+    [['YOU', 'DO!'], null, LH, LH.start, YOU2, { pump: 1, hero: 'you' }]];
   function c4_design(fn) { const sW = W, sH = H; W = DW; H = DH; try { return fn(); } finally { W = sW; H = sH; } }
   function c4_build(st) {
     st.scene.fog = new THREE.Fog(0, 800, 2400);
@@ -221,18 +221,20 @@
     for (let i = -N; i <= N; i++) for (let j = -N; j < N; j++) pts.push(i * g, FLOOR, j * g, i * g, FLOOR, j * g + g, j * g, FLOOR, i * g, j * g + g, FLOOR, i * g);
     const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
     st.scene.add(st.o.grid = new THREE.LineSegments(lg, lineMat3d()));
-    st.o.B = BLK3.map(([text, opt, L, a, b, step, fl = {}]) => {
-      const CAP = FONTS[fontKey('chicago')].cap, lines = [].concat(text), chars = lines.map(s => [...s]), group = new THREE.Group(), lets = [];
+    st.o.B = BLK3.map(([text, opt, L, a, b, fl = {}]) => {
+      const CAP = FONTS[fontKey('chicago')].cap, lines = [].concat(text), chars = lines.map(s => [...s]), group = new THREE.Group(), words = [];
       const m = c4_design(() => c4_meas(lines, { ...(opt || c4_yopt(L.start)), t: 1e4, words: null, ghost: false, slam: null }));
-      const wt = _bigWordTimes(chars, L), nl = chars.map(() => 0); let k = 0;
-      chars.forEach((cs, li) => cs.forEach((ch, ci) => {
-        if (ch === ' ') return;
+      const wt = _bigWordTimes(chars, L); let k = 0;
+      chars.forEach((cs, li) => { let wd = null; cs.forEach((ch, ci) => {
+        if (ch === ' ') { wd = null; return; }
         const r = m.letters[k++], ln = m.lines[li], sx = r.w / tw(ch, 'chicago'), sy = ln.sy;
         const mk = lv => { const me = new THREE.Mesh(voxGlyph(ch, 'chicago', 3, lv), mat3d({ color: FLD, vc: true, auto: !lv, solid: !!lv, fog: false })); me.scale.set(sx, sy, sy); group.add(me); return me; };
         const mesh = mk(), base = new THREE.Vector3(wx(r.x), wy(r.y + CAP * sy), -1.5 * sy);
-        const rec = { mesh, base, li, tIn: step ? step(li, nl[li]++) : wt[li] && wt[li][ci], twin: fl.inv && li === 2 && ci >= 4 ? mk([1, 1, .5, .75]) : null };
-        lets.push(rec);
-      }));
+        if (!wd) words.push(wd = { lets: [], str: '', tIn: wt[li] && wt[li][ci], x0: 1e9, x1: -1e9, y0: 1e9, y1: -1e9 });
+        wd.str += ch; wd.x0 = Math.min(wd.x0, wx(r.x)); wd.x1 = Math.max(wd.x1, wx(r.x + r.w)); wd.y0 = Math.min(wd.y0, wy(r.y + r.h)); wd.y1 = Math.max(wd.y1, wy(r.y));
+        wd.lets.push({ mesh, base, li, twin: fl.inv && li === 2 && ci >= 4 ? mk([1, 1, .5, .75]) : null });
+      }); });
+      for (const wd of words) wd.hero = !!fl.hero && c4_f(wd.str) === fl.hero;
       let slab = null;
       if (fl.inv) {   // "PEN." alone inverts: field letters on a black slab
         const ls = m.letters.slice(-4), x0 = Math.min(...ls.map(l => l.x)), x1 = Math.max(...ls.map(l => l.x + l.w)), y0 = ls[0].y, sy = m.lines[2].sy, p = 2 * sy;
@@ -240,7 +242,7 @@
         group.add(slab);
       }
       st.scene.add(group);
-      return { group, lets, m, a, b, fl, slab };
+      return { group, words, m, a, b, fl, slab };
     });
     const sp = [];   // the spot the writer marks for "where I land": a black cross flat on the floor
     for (const [w, d] of [[64, 10], [10, 64]]) sp.push({ w, h: 2, d, pos: [SPOT[0], FLOOR + 1, SPOT[2]], cols: Array(6).fill(BLK) });
@@ -255,20 +257,26 @@
       c.geometry.translate(70, 0, 0); st.scene.add(c); return c;
     });
   }
-  const SL3 = [-60, 60, 40, 22, 8, 0], SLH3 = [-240, -60, 80, 40, 12, 0], DROP3 = [150, 60, 16, -6, -2, 0];
+  // the slams, along the ray from the lens through the word's centre (so a word grows or shrinks about itself and never
+  // slides into its neighbours): world units toward the lens per frame. A word punches out of the poster from behind;
+  // the hooks punch harder; the landing word keeps the 2D lift's plain z steps (the seam at 36.033)
+  const SL3 = [-60, 60, 40, 22, 8, 0], SLR = [-150, -60, 22, 8, 0], SLRH = [-260, -90, 30, 10, 0], PUMP = [48, 20, 6];
+  const HERO = [1, .38, .1, 0];   // the hero word's slam: its fit-to-frame scale on frame 0, then home in 3 frames
   const O = (c, r, a, h, roll = 0) => ({ ...orbit3d(c, r, a, h), roll });
   const SQ = () => { const cx = W / 2 - DW / 2, cy = DH / 2 - H / 2; return { pos: [cx, cy, H / 2 / TN], look: [cx, cy, 0], roll: 0, fov: 30 }; };
-  const C0 = [-20, -20, 0], CH = [0, -10, 0], CH2 = [0, -10, 0], CW = [-120, 10, 0];
-  // the camera: crane, orbit, whip; a cut only where a phrase invert or a word slam hides it
+  const C0 = [-20, -20, 0], CH = [0, -10, 0], CH2 = [0, -10, 0], CL = [-30, -50, 70], CF = [-60, -40, 60], CW = [-20, -30, 30];
+  // the camera: crane, orbit, whip; a cut only where a phrase invert hides it; every move at least 8 frames, and near
+  // square on to the type on the word hits. Two big moves: the orbit round the marked spot on "You say where I land,"
+  // (60 degrees, high to low, square on as "land," hits) and the crane up over "Who holds the pen?"
   const c4_keys = () => [[C4_CUT, SQ()],
     [37.25, O(C0, 840, -.36, 190), 'lin'], [37.75, O(C0, 800, .3, 130), 'hard'],
-    [37.75, O(CH, 760, .3, 260), 'cut'], [38.5, O(CH, 720, .25, 230), 'lin'], [38.6, O(CH, 700, .2, 200, -.03), 'snap'], [39.5, O(CH, 690, .15, 190), 'lin'],
-    [40, O([60, -60, -80], 1050, -.34, 420), 'cut'], [40.5, O([60, -60, -80], 1010, -.3, 380), 'lin'], [41, O([0, -60, 60], 900, -.22, 50, .04), 'hard'], [42, O([0, -60, 60], 860, -.04, 90), 'lin'],
-    [42, O([-60, -20, 0], 700, .12, 20), 'cut'], [42.5, O([-60, -20, 0], 710, .14, 40), 'lin'], [43, O([150, -10, 120], 740, .04, 90), 'hard'],
-    [43.25, O(C0, 720, .38, -80), 'cut'], [44, O(C0, 760, .33, -40), 'lin'], [45.25, O(C0, 840, .2, 180), 'hard'], [45.75, O(C0, 800, -.3, 140), 'hard'],
-    [45.75, O(CH2, 760, -.3, 260), 'cut'], [46.5, O(CH2, 720, -.25, 230), 'lin'], [46.6, O(CH2, 700, -.2, 200, .03), 'snap'], [47.5, O(CH2, 690, -.15, 190), 'lin'],
-    [48, O(CW, 740, .44, -120, -.09), 'cut'], [49.9, O([-20, 10, 0], 780, -.16, 150, .04), 'hard'],
-    [50, O(C0, 1080, .32, 320), 'cut'], [50.5, O(C0, 820, .2, 90), 'snap'], [YOU2, SQ(), 'hard']];
+    [37.75, O(CH, 760, .26, 200), 'cut'], [38.5, O(CH, 720, .22, 180), 'lin'], [38.65, O(CH, 700, .18, 160, -.03), 'snap'], [39.5, O(CH, 700, .08, 120), 'lin'],
+    [40, O(CL, 1060, -.62, 460), 'cut'], [41, O(CL, 900, -.04, 150), 'lin'], [42, O(CL, 880, .5, 60, .03), 'lin'],
+    [43.25, O(CF, 860, .3, 70), 'lin'],
+    [43.25, O(C0, 780, .2, 40), 'cut'], [44, O(C0, 760, .06, 30), 'lin'], [45.25, O(C0, 840, .2, 180), 'hard'], [45.75, O(C0, 800, -.3, 140), 'hard'],
+    [45.75, O(CH2, 760, -.26, 200), 'cut'], [46.5, O(CH2, 720, -.22, 180), 'lin'], [46.65, O(CH2, 700, -.18, 160, .03), 'snap'], [47.5, O(CH2, 700, -.08, 120), 'lin'],
+    [48, O(CW, 800, .3, 20, -.02), 'cut'], [49.75, O(CW, 900, -.1, 520), (k => k * k * (3 - 2 * k))],
+    [50, O(C0, 980, .1, 110), 'cut'], [50.75, O(C0, 860, -.06, 50), 'lin'], [YOU2, SQ(), 'hard']];
 
   // the writer's hand (the cord's top) per section, in world units, and how the pen hangs from it
   function c4_hand(t) {
@@ -329,28 +337,46 @@
     if (evFrames('sub', t) === 0) FX.dy = 1;
     beatFX(t, { kick: t >= T0 + SPB });
     const ks = c4_keys(), cs = cam3d(t, ks); aim3d(S.cam, cs); aim3d(P.cam, cs);
-    // the posters: each letter lands on its word (ghosted before), from behind toward the lens; the hooks pump on the kicks
-    const kf = evFrames('kick', t), pump = kf < 3 && t >= T0 + 2 * SPB ? [48, 20, 6][kf] : 0;   // not on the flood's own beat (flash budget)
+    // the posters: each word is solid from its sung start (a denser ghost before it on the invert frames) and slams
+    // along its own lens ray; the hero word of a phrase slams at the lens as big as the frame allows, whole
+    const kf = evFrames('kick', t), pump = kf < 3 && t >= T0 + 2 * SPB ? PUMP[kf] : 0, gk = FX.invert ? .25 : .5;   // no pump on the flood's own beat (flash budget)
+    const cp = S.cam.position, M4 = 6, U = new THREE.Vector3();
     let hero = null;
     for (const b of S.o.B) {
       const on = t >= b.a && t < b.b; b.group.visible = on; if (!on) continue; hero = b;
       const inv = b.fl.inv != null && t >= b.fl.inv && c4_fr(t, b.fl.inv) < 2;
-      if (b.slab) b.slab.visible = inv;
-      for (const L of b.lets) {
-        const m = L.mesh, fr = L.tIn == null ? 99 : Math.floor((t - L.tIn) * FPS + 1e-6);
-        m.position.copy(L.base); matOf(m).color.set(FLD);
-        if (fr < 0) { fade3d(m, .5); if (L.twin) L.twin.visible = false; continue; }
-        fade3d(m, 0);
-        if (fr < 6 && !L.twin) { if (b.fl.drop) m.position.y += DROP3[fr]; else m.position.z += (b.fl.pump && L.tIn >= T0 + 2 * SPB ? SLH3 : SL3)[fr]; }
-        else if (b.fl.pump) m.position.z += pump;
-        if (L.twin) { L.twin.visible = inv; L.twin.position.copy(m.position); if (inv) m.visible = false; }
+      if (b.slab) { b.slab.visible = inv; b.slab.position.set(0, 0, 0); }
+      for (const Wd of b.words) {
+        const fr = Wd.tIn == null ? 99 : c4_fr(t, Wd.tIn), C = V3((Wd.x0 + Wd.x1) / 2, (Wd.y0 + Wd.y1) / 2, 0), D = cp.distanceTo(C);
+        U.copy(cp).sub(C).normalize();
+        let dh = 0;   // the hero's push toward the lens: as big as fits inside the frame (M4 px margin), never past kmax
+        if (Wd.hero && fr >= 0 && fr < HERO.length && HERO[fr] > 0) {
+          const c = c4_proj(S, C); let fit = b.fl.kmax || 1.5;
+          for (const [x, y] of [[Wd.x0, Wd.y0], [Wd.x1, Wd.y0], [Wd.x0, Wd.y1], [Wd.x1, Wd.y1]]) {
+            const p = c4_proj(S, V3(x, y, 0)), dx = p[0] - c[0], dy = p[1] - c[1];
+            if (dx) fit = Math.min(fit, ((dx > 0 ? W - M4 : M4) - c[0]) / dx);
+            if (dy) fit = Math.min(fit, ((dy > 0 ? H - M4 : M4) - c[1]) / dy);
+          }
+          const k = 1 + Math.max(0, fit - 1) * HERO[fr]; dh = D * (1 - 1 / k);
+        }
+        Wd.lets.forEach((L, i) => {
+          const m = L.mesh; m.position.copy(L.base); matOf(m).color.set(FLD);
+          if (fr < 0) { fade3d(m, gk); if (L.twin) L.twin.visible = false; return; }
+          fade3d(m, 0);
+          if (Wd.tIn <= T0) { if (fr < 6) m.position.z += SL3[fr]; else if (b.fl.pump) m.position.z += pump; }
+          else {
+            const f = fr - (b.fl.ripple ? i : 0), tb = b.fl.pump ? SLRH : SLR;
+            const d = Wd.hero && fr < HERO.length ? dh : f < 0 ? tb[0] : f < tb.length ? tb[f] : b.fl.pump ? pump : 0;
+            m.position.addScaledVector(U, d);
+            if (L.twin && b.slab && i === 0) b.slab.position.copy(U).multiplyScalar(d);
+          }
+          if (L.twin) { L.twin.visible = inv; L.twin.position.copy(m.position); m.visible = !inv; }
+        });
       }
     }
     S.o.grid.position.z = (Math.floor(beatAt(t) * 4 + 1e-6) & 3) * 30;   // the floor runs at the lens a cell a beat, in 16ths
     S.o.spot.visible = t >= wordAt(LC, 'where').start && t < wordAt(LC, 'land').start + 4 * F1;
     render3d(S, { pal: PAL3, bg: FLD });
-    // where the hero line sits on screen (the stab punches aim at it)
-    const lc = (b, li) => { const l = b.m.lines[li]; return c4_proj(S, V3(wx(l.x + l.w / 2), wy(l.y + l.h / 2), 0)); };
     const h = c4_hand(t), pn = c4_pen3(P, t, h), Ap = c4_proj(S, pn.A), Bp = c4_proj(S, pn.B), Np = c4_proj(S, pn.nib), px = Ap[0] - 5, py = Ap[1] - 15;
     c4_rings(t, px, py);
     // Clio, per section
@@ -389,12 +415,9 @@
     }
     for (const [L, pw, n, mir] of [[LB, PW, 1, false], [LF, PW2, 2, true]]) if (t >= L.start && t < L.end + SPB) {
       const st = c4_stab(pw), ok = c4_notice(t, 8, 8, n, pw, pw + SPB, mir), ox = mir ? 48 : W - 56;
-      if (t >= pw && c4_fr(t, pw) < 4) punch(pw, ...lc(hero, 2), [2, 2, 2, 2], t);
       if (t >= st && c4_fr(t, st) < 9) clickBurst(ox, 99, st, { pointer: false, color: c4_fr(t, st) < 4 ? FLD : BLK, t });
       if (ok && t >= st) { rect(ok.x, ok.y, ok.w, ok.h, FLD); text('OK', ok.x + 28, ok.y + 6, { font: 'chicago', scale: 2, color: BLK, align: 'center' }); }
     }
-    const e = evLast('stab', t);
-    if (e && (e[0] === LE.words[3].start || e[0] === LH.start) && t >= e[0]) punch(e[0], ...lc(hero, 0), [2, 2], t);
     if (t >= LH.start) c4_bar(t);
     c4_copies(t, px, py);
   }

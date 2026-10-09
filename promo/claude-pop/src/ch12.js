@@ -1,7 +1,8 @@
-// ch12 · outro and tail (144-157): the pull-back ON THE VERBS (magenta → 2014 → 2009 → 2002 → 1988, one layer per chant
-// verb, the four verbs a column of buttons the pointer presses, the la-la on a black band with the bouncing pen, the
-// record with its eleventh track), "It was always your voice." on a still 1988 desk, Return, the Save dialog, the CRT
-// collapse, the dot landing as the full stop of "You may now write." and the end card weighing the film's own source.
+// ch12 · outro and tail (144-157): the pull-back ON THE VERBS in 3D, NESTED DESKS (magenta → 2014 → 2009 → 2002 → 1988, one
+// desk per chant verb, each the screen of the next one's monitor; the four verbs a row of buttons the pointer presses, the
+// la-la on a black band with the bouncing pen, the record with its eleventh track), "It was always your voice." on a still
+// 1988 desk, Return, the Save dialog, the CRT collapse, the dot landing as the full stop of "You may now write." and the end
+// card weighing the film's own code (three.js, which draws the 3D, is credited and not counted).
 'use strict';
 {
 // ---- THE HOME DESK (STORYBOARD §4, verbatim, prefixed) ----
@@ -69,7 +70,7 @@ const MCX = MON.x + MON.w / 2 - FW / 2, MCY = FH / 2 - MON.y - MON.h / 2;
 const LAYS = [['liquidglass', 2026], ['yosemite', 2014], ['snowleopard', 2009], ['aqua', 2002], ['system6', 1988]];
 const STEP = [V[1].start, V[2].start + 2 * F1, V[4].start + 2 * F1, V[6].start + 2 * F1];   // the kicks: Save "it.", Clip, Insert, Export
 const LAND = [LA1.words[3].start + 3 * F1, LA1.words[5].start, LA2.words[1].start, LA2.words[5].start];   // lights on, on a la (the first a second after ch11's dive flashes)
-const SHUT0 = V[7].start + 3 * F1, SHUT1 = evTimes('cowbell').find(c => c > SHUT0) ?? SHUT0 + .25, NITE = rgb('#a0006a');   // the flight's ink: 0.085 linear at most   // the monitor closes into the full stop by the beep
+const SHUT0 = V[7].start + 3 * F1, SHUT1 = evTimes('cowbell').find(c => c > SHUT0) ?? SHUT0 + .25, NITE = rgb('#a0006a');   // the monitor closes into the full stop by the beep; the flight's ink (0.085 linear at most)
 let c12_PF = null;   // the 1988 full stop, read back from a dry render
 const c12_period = () => c12_PF || (frameInto(styleBuf('c12m'), T0, c12_desk, { era: 'system6' }), c12_PF = c12_PERIOD.slice());
 const c12_CH = {}, c12_chrome = () => c12_CH[E.id] || offscreen(400, 300, () => { const r = win(0, 0, 300, 200, 'x'); c12_CH[E.id] = [r.x, r.y, 300 - r.w, 200 - r.h]; }) && c12_CH[E.id];   // the window chrome round a client rect
@@ -78,11 +79,11 @@ const c12_mdesk = yr => t => c12_homeDesk(t, { doc: { status: 'Final' }, after: 
 } });
 const c12_draw = i => i ? c12_mdesk(LAYS[i - 1][1]) : c12_mag, c12_o = i => ({ era: LAYS[i][0], raw: !i });
 const c12_static = i => deskTex('c12s' + i, STEP[i], c12_draw(i), c12_o(i));   // frozen at the press that leaves it (mip: it shrinks)
-const c12_live = (i, t, plain) => tex3d('c12live', FW, FH, c => frameInto(c, t, plain ? c12_desk : c12_draw(i), c12_o(i)), { live: t + '|' + i + plain });
+const c12_live = (i, t, plain) => tex3d('c12live', FW, FH, c => frameInto(c, t, plain ? c12_desk : c12_draw(i), c12_o(i)), { live: t + '|' + i + !!plain });
 const MCOL = { yosemite: ['#d4d4d8', '#9c9ca2', '#6a6a70'], snowleopard: ['#3a3a3e', '#202024', '#9a9aa0'], aqua: ['#e8e8ec', '#b0b0b8', '#7c7c86'], system6: [WHT, WHT, BLK] };   // front, top, sides
 function c12_stage() {
   return stage3d('c12 nest', st => {
-    st.o.P = LAYS.map((_, i) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(FW, FH), mat3d({ map: c12_static(Math.min(i, 3)), solid: true })); st.scene.add(m); return m; });
+    st.o.P = LAYS.map((_, i) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(FW, FH), mat3d({ map: i < 4 ? c12_static(i) : c12_live(4, LAND[3]), solid: true })); st.scene.add(m); return m; });
     st.o.B = LAYS.map(([era], i) => {   // the monitor box round layer i's screen: 4 bars, MZ deep, in hard bands
       if (!i) return null;
       const [f, tp, sd] = MCOL[era], w = MON.w, h = MON.h, b = MB, c = [sd, sd, tp, sd, f, null];
@@ -95,7 +96,10 @@ function c12_stage() {
 }
 // u: 0 = the magenta world at 1:1 .. 4 = 1988 at 1:1; a flight eases out (fast on the press, settling as it lands)
 const c12_k = t => { let k = -1; while (k < 3 && t >= STEP[k + 1]) k++; return k; }, c12_fly = t => { const k = c12_k(t); return k >= 0 && t < LAND[k]; };
-const c12_u = t => { const k = c12_k(t); return k < 0 ? 0 : t >= LAND[k] ? k + 1 : k + 1 - (1 - prog(t, STEP[k], LAND[k])) ** 3; };
+const c12_tau = t => { const k = c12_k(t); return k < 0 ? 0 : prog(t, STEP[k], LAND[k]); };
+const c12_u = t => { const k = c12_k(t); return k < 0 ? 0 : k + 1 - (1 - c12_tau(t)) ** 2; };
+let c12_NL = null;   // the night table: [Bayer cell][luma] -> packed pixel, 4 steps of NITE
+const c12_nite = () => c12_NL || (c12_NL = Uint32Array.from({ length: 4096 }, (_, i) => { const v = Math.min(3, Math.floor((i & 255) / 85 + (BAYER4[i >> 8] + .5) / 16)) / 3; return (255 << 24 | R(NITE[2] * v) << 16 | R(NITE[1] * v) << 8 | R(NITE[0] * v)) >>> 0; }));
 function c12_pull(t) {
   const u = c12_u(t), shut = t >= SHUT0 ? prog(t, SHUT0, SHUT1) : 0, [px, py] = c12_period();
   const zf = e => (2 / MON.w) ** e, zw = e => (1 - zf(e)) / (1 - 2 / MON.w);   // the close: the screen shrinks at a constant rate, its rect sliding in step
@@ -107,25 +111,28 @@ function c12_pull(t) {
   const st = c12_stage(); if (!st) return;
   const j = Math.min(3, Math.ceil(u) - 1), ph = u - j, O = j + 1;   // a hold is the end of its flight: the desk held is live
   st.o.P.forEach((m, i) => { m.visible = false; if (i < O) matOf(m).map = c12_static(i); if (st.o.B[i]) st.o.B[i].visible = false; });
-  matOf(st.o.P[O]).map = c12_live(O, t, shut > 0);
-  let s = RHO ** (1 - ph), p = [MCX, MCY, MZ].map(v => -(1 - ph ** 1.6) * s * v);   // the pan lags the pull: the world just left stays nearer the middle
+  matOf(st.o.P[O]).map = c12_live(O, c12_fly(t) ? Math.floor(t * 30 + 1e-6) / 30 : t, shut > 0);   // the desk ahead is live (redrawn at 30 fps in flight)
+  const dz = .5 + MZ * Math.sin(PI * c12_tau(t));   // the box stands out of the desk over the flight and sinks flush to land (a hold is exactly 1:1)
+  let s = RHO ** (1 - ph), p = [MCX, MCY, dz].map(v => -(1 - ph ** 1.6) * s * v);   // the pan lags the pull: the world just left stays nearer the middle
   for (let i = O; i >= 0 && s * FW >= 2; i--) {   // each desk, then its monitor's box and the world inside it, smaller
     const P_ = st.o.P[i]; P_.visible = true; P_.scale.setScalar(s); P_.position.set(...p);
     if (!i) break;
     const sh = i === 4 ? shut : 0, f = zf(sh), ax = lerp(MCX, px + 1 - FW / 2, zw(sh)), ay = lerp(MCY, FH / 2 - py - 1, zw(sh)), B = st.o.B[i];
-    B.visible = true; B.scale.setScalar(s * f); B.position.set(p[0] + s * ax, p[1] + s * ay, p[2]);
-    p = [p[0] + s * ax, p[1] + s * ay, p[2] + s * MZ * f]; s *= f / RHO;
+    B.visible = dz > 2; B.scale.set(s * f, s * f, s * f * dz / MZ); B.position.set(p[0] + s * ax, p[1] + s * ay, p[2]);
+    p = [p[0] + s * ax, p[1] + s * ay, p[2] + s * dz * f]; s *= f / RHO;
   }
-  const sw = .2 * Math.sin(PI * ph) * (j % 2 ? 1 : -1), el = sw * .5;   // the swing round the box, alternating per kick
-  aim3d(st.cam, { pos: [D3 * Math.sin(sw) * Math.cos(el), D3 * Math.sin(el), D3 * Math.cos(sw) * Math.cos(el)], look: [0, 0, 0], fov: 30, roll: sw * .25 });
+  const sw = .26 * Math.sin(PI * c12_tau(t)) * (j % 2 ? 1 : -1), el = sw * .5;   // the swing round the box over the flight, alternating per kick
+  aim3d(st.cam, { pos: [D3 * Math.sin(sw) * Math.cos(el), D3 * Math.sin(el), D3 * Math.cos(sw) * Math.cos(el)], look: [0, 0, 0], fov: 30, roll: sw * .3 });
   render3d(st, { bg: BLK });
   if (c12_fly(t)) {   // the flight: the night duotone (luma in 4 Bayer-dithered steps of a deep magenta), smeared on the kick's first 2 frames
-    const y0 = SLAB.band, h = BAND.y - y0, im = ctx.getImageData(0, y0, FW, h), d = im.data;
-    for (let i = 0, n = 0; i < d.length; i += 4, n++) {
-      const v = Math.min(3, Math.floor((d[i] * .299 + d[i + 1] * .587 + d[i + 2] * .114) / 85 + (BAYER4[((y0 + (n / FW | 0)) & 3) * 4 + (n % FW & 3)] + .5) / 16)) / 3;
-      d[i] = R(NITE[0] * v); d[i + 1] = R(NITE[1] * v); d[i + 2] = R(NITE[2] * v);
-    }
+    const y0 = SLAB.band, h = BAND.y - y0, im = ctx.getImageData(0, y0, FW, h), d = new Uint32Array(im.data.buffer), L = c12_nite();
+    for (let y = 0, n = 0; y < h; y++) { const r = ((y0 + y) & 3) << 10; for (let x = 0; x < FW; x++, n++) { const c = d[n]; d[n] = L[r | (x & 3) << 8 | ((c & 255) * 77 + (c >> 8 & 255) * 150 + (c >> 16 & 255) * 29) >> 8]; } }
     ctx.putImageData(im, 0, y0);
+    for (const B of st.o.B) if (B && B.visible && B.scale.x * MON.w > 6) {   // each monitor box as a neon wire frame (the pen stays the only white): 1 px lines, never a flash's area
+      const q = (x, y, z) => project3d(st, [B.position.x + B.scale.x * x, B.position.y + B.scale.x * y, B.position.z + B.scale.z * z]);
+      const box = (a, b, z) => [[-a, -b], [a, -b], [a, b], [-a, b]].map(([x, y]) => q(x, y, z)), F = box(MON.w / 2 + MB, MON.h / 2 + MB, MZ), K = box(MON.w / 2 + MB, MON.h / 2 + MB, 0), S = box(MON.w / 2, MON.h / 2, MZ);
+      for (let i = 0; i < 4; i++) { const n = (i + 1) % 4; for (const Q of [F, K, S]) line(...Q[i], ...Q[n], MAG); line(...F[i], ...K[i], MAG); }
+    }
     const k = c12_k(t), f = c12_fr(t, STEP[k]); if (k && f < 2) FX.pixelSort = { rows: 16, len: 220, seed: k * 7 + f, dir: k % 2 ? 1 : -1, keep: [[0, y0], [BAND.y, FH]] };
   }
   for (const k of LAND) splitPal(2, k, 2, [WHT, BLK], t);   // lights on, with the 2-frame split
@@ -356,10 +363,11 @@ function c12_dialog(t) {
   c12_ghost(x, y, pw, ph, t, kept);   // line 2: her spoken line, solid Chicago 2x on ants, typed as spoken, two rows
   kara(L3, x + 8, y + 6, { mode: 'type', font: 'chicago', scale: 2, lh: 28, maxW: pw - 16, color: BLK, t });
   text('system6.aaronlau.me', x, y + ph + 8, { font: 'small', color: BLK });   // line 3: the one call to action
-  if (c12_W) {   // line 4: the film weighing its own source (the number is real or it is not shown)
+  if (c12_W) {   // line 4: the film weighing its own code (three.js and the song model are not its code; the number is real or it is not shown)
     const k2 = c12_W.bytes / c12_W.floppy;
-    text('Source: ' + c12_num(c12_W.bytes) + ' of ' + c12_num(c12_W.floppy) + ' bytes (' + R(k2 * 100) + '%)', x, y + ph + 22, { font: 'small', color: BLK });
+    text("This film's own code: " + c12_num(c12_W.bytes) + ' of ' + c12_num(c12_W.floppy) + ' bytes', x, y + ph + 22, { font: 'small', color: BLK });
     const bx = x, by = y + ph + 36; frame(bx, by, 160, 8, BLK); rect(bx + 2, by + 2, R(156 * k2), 4, BLK);
+    text(R(k2 * 100) + '% of one floppy', bx + 168, by, { font: 'small', color: BLK });
   }
   const b = a.btn[2]; rframe(b.x - 4, b.y - 4, b.w + 8, b.h + 8, 11, VER, 3);   // the Save button under the pointer: the writer's ring
   return b;
@@ -400,13 +408,13 @@ scene('ch12 end card', CRT0, END, t => {
   if ((t - CARD) % 1 < .5) rect(dx + 14, last.y - 3, 3, last.h + 6, VER);   // the writer's caret after it, waiting: on half a second, off half
   text('AI SYSTEM 6 · 1988 OBJECTS / 2026 INTELLIGENCE', FW / 2, 194, { font: 'geneva', scale: 2, color: WHT, align: 'center' });   // the tagline (BRIEF §2), phone-legible
   text('system6.aaronlau.me', FW / 2, 224, { font: 'chicago', scale: 2, color: WHT, align: 'center' });
-  if (c12_W) {   // the Two Floppies meter, one floppy: the source of this whole film
+  if (c12_W) {   // the Two Floppies meter, one floppy: this film's own code (not three.js, which draws the 3D)
     const k = c12_W.bytes / c12_W.floppy, n = Math.min(8, c12_fr(t, CARD) + 1), kk = Math.floor(k * 8 * n / 8 * 100) / 100, x = R((FW - 280) / 2), y = 284;
     c12_floppy(x, y - 8, WHT);
     frame(x + 40, y, 240, 10, WHT); rect(x + 42, y + 2, R(236 * Math.min(k, kk)), 6, WHT);
-    text('The source of this whole film: ' + c12_num(c12_W.bytes) + ' of ' + c12_num(c12_W.floppy) + ' bytes · one floppy', FW / 2, y + 22, { font: 'chicago', color: WHT, align: 'center' });
+    text("This film's own code: " + c12_num(c12_W.bytes) + ' of ' + c12_num(c12_W.floppy) + ' bytes · one floppy', FW / 2, y + 22, { font: 'chicago', color: WHT, align: 'center' });
   }
+  text('The 3D is drawn by three.js (MIT), not counted.', FW / 2, 330, { font: 'geneva', color: WHT, align: 'center' });
 }, { era: 'system6', raw: true });
-window.__c12 = { c12_pull, c12_draw, c12_o, c12_desk, c12_u, STEP, LAND };
 warmUp(() => { if (c12_stage()) for (let i = 0; i < 4; i++) c12_static(i); c12_period(); c12_keys(); c12_slabs(); for (const s of [1, 2, 3, 4]) for (const f of [0, 1]) c12_spr(s, !!f); });
 }

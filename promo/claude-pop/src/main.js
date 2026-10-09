@@ -84,6 +84,16 @@ function draw(t) {
   applyFX(t);
   return s;
 }
+// The song may be a regenerated performance whose lines land a little earlier or later than the score that the
+// chapters were drawn to. data/warp.js (written by tools/warp.py from tools/retime.py's measurement) then maps song
+// time to picture time as a piecewise-linear WARP = [[songT, pictureT], ...]; without it the map is the identity.
+function warpT(t) {
+  const K = typeof WARP !== 'undefined' && WARP.length ? WARP : null;
+  if (!K) return t;
+  if (t <= K[0][0]) return t - K[0][0] + K[0][1];
+  for (let i = 1; i < K.length; i++) if (t <= K[i][0]) { const [a, b] = K[i - 1], [c, d] = K[i]; return b + (t - a) * (d - b) / (c - a); }
+  const [a, b] = K[K.length - 1]; return b + (t - a);
+}
 function stamp(label) { // a time/scene tag in the corner (contact sheets and the preview HUD)
   setEra('system6');
   const w = tw(label, 'monaco') + 8;
@@ -109,11 +119,11 @@ async function boot() {
   window.SONG_INFO = { missing: SONG_MISSING, scripts: MISSING.slice(), scenes: SCENES.length, dur: DUR, bpm: BPM };
   window.DUR = DUR; // the render.mjs contract reads DUR; make it a window property whether or not data.js declared it
 
-  window.renderFrame = t => { draw(t); return cv.toDataURL('image/png').slice(22); };
+  window.renderFrame = t => { draw(warpT(t)); return cv.toDataURL('image/png').slice(22); };
   window.renderSheet = (times, cols) => {
     const c = Object.assign(document.createElement('canvas'), { width: cols * W, height: Math.ceil(times.length / cols) * H }), g = c.getContext('2d');
     times.forEach((t, i) => {
-      const s = draw(t);
+      const s = draw(warpT(t));
       resetCtx(); stamp(t.toFixed(2) + '  ' + (s ? s.name : '-') + '  ' + (s ? eraFor(s, t).to : ''));
       g.drawImage(cv, (i % cols) * W, Math.floor(i / cols) * H);
     });
@@ -123,7 +133,7 @@ async function boot() {
     const errors = []; let n = 0, max = 0, maxT = 0, sum = 0;
     for (let t = t0; t < t1; t += 1 / FPS, n++) {
       const a = performance.now();
-      try { draw(t); } catch (e) { if (errors.length < 12) errors.push(t.toFixed(3) + ': ' + e.message); resetCtx(); }
+      try { draw(warpT(t)); } catch (e) { if (errors.length < 12) errors.push(t.toFixed(3) + ': ' + e.message); resetCtx(); }
       const d = performance.now() - a; sum += d; if (d > max) { max = d; maxT = t; }
     }
     return { frames: n, errors, avgMs: +(sum / Math.max(1, n)).toFixed(2), maxMs: +max.toFixed(1), maxAt: +maxT.toFixed(2) };
@@ -163,7 +173,7 @@ function preview() {
     const t = now();
     let s = null;
     try {
-      s = draw(t);
+      s = draw(warpT(t));
       const ln = lineAt(t), sec = sectionAt(t);
       hud.textContent = t.toFixed(2) + ' s   bar ' + (Math.floor(barAt(t)) + 1) + '.' + (Math.floor(beatAt(t)) % 4 + 1) + '   ' + (s ? s.name : '-') + '   ' + E.name + ' ' + E.year +
         (sec ? '   [' + sec.name + ']' : '') + (playing ? '' : '   (space to play)') + (audioOK ? '' : '   (no song.wav: silent clock)') + (ln ? '\n“' + ln.text + '”' : '') +

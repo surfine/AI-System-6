@@ -34,6 +34,14 @@ real-sounding song. Decisions:
 - **Delivery:** 4K60 master split into ≤30 MB parts sent to the owner with a join command; a 1080p60 share copy
   under 30 MB; both SRT files; then a pull request, driven to green.
 
+## Song, round 3 (owner: both covers sounded unnatural, choppy, affected)
+
+Covering a guide that contains a synthetic voice copies that voice's timbre and its word-by-word seams. So the
+song is now generated from scratch by ACE-Step's LM + DiT (text2music: our lyrics, 120 BPM, G major, 154 s), which
+plans its own natural phrasing. Its lines land where it wants them, so the PICTURE follows the song:
+`tools/retime.py NEW.wav --measure-only` then `tools/warp.py` writes `data/warp.js` (song time -> picture time, one
+anchor per lyric line, speed clamped to 0.8-1.25) and `src/main.js` draws `warpT(t)`. No chapter changes.
+
 ## Next steps
 
 1. `HF_TOKEN=… python3 -I music/ace_cover.py --src build/guide.wav --strength 0.7 --seed 42` (try a few seeds and

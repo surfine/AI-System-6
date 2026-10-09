@@ -709,7 +709,7 @@ function beatFX(t = T, o = {}) {
 // scanline grid) darkens the corners of a flat neon field to plum and olive; silhouette mode asks for no vignette and a
 // lighter grid. render.mjs does not read this yet (the request is in TOOLKIT §12.5); window.FINISH_AT(t) exposes it.
 function finishAt(t = T) { return fieldAt(t) ? { vignette: false, scanlines: .05 } : { vignette: true, scanlines: .1 }; }
-window.FINISH_AT = finishAt;
+window.FINISH_AT = t => finishAt(typeof warpT === "function" ? warpT(t) : t);
 
 // =====================================================================================================
 // 6. The one-take camera.
