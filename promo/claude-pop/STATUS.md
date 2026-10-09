@@ -42,6 +42,37 @@ plans its own natural phrasing. Its lines land where it wants them, so the PICTU
 `tools/retime.py NEW.wav --measure-only` then `tools/warp.py` writes `data/warp.js` (song time -> picture time, one
 anchor per lyric line, speed clamped to 0.8-1.25) and `src/main.js` draws `warpT(t)`. No chapter changes.
 
+### Whole-bar fit before the warp: `tools/barfit.py`
+
+A free generation also picks its own section lengths (seed 23: intro and verse lines packed a bar apart, post-chorus
+la-las 4 bars too long), so offsets reach whole bars (-8 s) that the warp cannot bend. `tools/barfit.py` fixes
+those in the AUDIO, on the song's own bar lines, then the warp takes the sub-bar rest:
+
+    python3 -I tools/barfit.py build/ace/NEW.wav                # -> build/song.fitted.wav + build/retime-report.json
+    python3 -I tools/warp.py                                    # -> data/warp.js for the residual
+    python3 -I tools/barfit.py build/ace/NEW.wav --silent-pen   # (or --pen-only) add the silent pen at warped times
+    cp build/song.fitted.wav build/song.wav
+
+It measures each lyric line, finds the beat grid and downbeat, and plans whole-bar inserts and deletes between
+lines. A demucs vocal stem makes sure no sung word is ever cut or repeated. Inserts open an instrumental bar in a
+vocal gap (the accompaniment, i.e. mix minus vocal stem, duplicated on its bar line). Deletes remove la-la or
+vocal-free bars cut on beats inside vocal gaps. Everything outside an edit is the input, bit for bit. It then
+re-measures and reports per-section offsets before / predicted / after (`build/barfit-report.json`). Edits it
+cannot place safely are skipped and listed. The phrasing differences the model adds inside a section are sub-bar
+and stay with the warp. `--silent-pen` ducks the mix to silence at HITS.bandOut, adds one synthesised keystroke at
+HITS.keystroke and slams back at HITS.slamBack, with picture times mapped to song times through data/warp.js.
+Full usage and the algorithm are in the file header.
+
+Tested on `build/ace/free-seed23.wav`. Retime section medians went from -7.6/-7.9/-7.9 s (verse1/pre1/chorus1),
+-3.7/-3.9/-3.9 s (verse2/pre2/chorus2) and -0.7/-0.05/-0.05/-0.8 s (bridge/breakdown/chorus3/outro) to
+-0.07/-0.10/-0.03, -0.02/-0.09/-0.11 and -0.83/-0.18/-0.20/-0.97 s. Those numbers come from 4 instrumental bars
+opened between packed lines, 6 la-la bars deleted and a 1.85 s head pad. Boot/intro sit at -0.49/-0.37 s.
+The bridge and outro are sung about a beat and a half early inside their bars: sub-bar, left to the warp. With
+warp.py on the result, the sync error per section (median) is within ±0.13 s, except the breakdown at +0.37 s
+(3 words). Over all words: median 0.14 s, p90 0.39 s. The silent pen gives digital silence from bandOut to
+slamBack apart from the keystroke (peak -9 dBFS). The seed-23 warp is kept as `build/warp.seed23-fitted.js`;
+`data/warp.js` was cleared because `build/song.wav` is still the old track.
+
 ## Next steps
 
 1. `HF_TOKEN=… python3 -I music/ace_cover.py --seed 42` (text2music from `music/hit_prompt.json`, the SONG2.md song; `--bpm 112` for candidate B; try a few seeds and
