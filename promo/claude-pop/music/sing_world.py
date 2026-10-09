@@ -57,7 +57,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 KDIR = os.path.join(ROOT, ".cache", "kokoro")
 CACHE = os.path.join(ROOT, ".cache", "sing_world")
-ENGINE = "sw-world-5"
+ENGINE = "sw-world-7"
 
 KSR = 24000           # Kokoro sample rate
 HOP = 600             # samples per Kokoro duration unit
@@ -90,6 +90,8 @@ PRON = {
 }
 
 SUNG = ("lead", "choir", "gang", "chop")
+SUNG_PRON = {}       # sung-only pronunciations
+SUNG_SUBST = []      # sung-only phoneme substitutions
 STYLES = {
     #          vibrato cents / onset s, portamento s, drift cents, speech intonation kept, vowel cap (x spoken), fall cents, scoop cents
     "lead":   dict(vib=24.0, vib_on=0.22, port=0.035, drift=4.0, inton=0.0, cap=None, fall=35.0, scoop=25.0, jit=3.0, cons=3.0),
@@ -215,6 +217,10 @@ def build_tokens(words, sung=False):
             chars.append(" ")
             info.append(dict(word=wi, cls=" "))
         ph = phonemes(core)
+        if sung:
+            ph = SUNG_PRON.get(core.lower(), ph)
+            for a_, b_ in SUNG_SUBST:
+                ph = ph.replace(a_, b_)
         if sung and not any(c in STRESS for c in ph):
             # every sung word carries a stress (an unstressed "you" on a high C came out "yee")
             k = next((i for i, c in enumerate(ph) if c in VOWELS), None)
@@ -432,15 +438,18 @@ def layout_spoken(words, nat):
     return dict(chars=chars, info=info, dur=full, origin=(starts[0] - pad0) * FS, spans=spans, nuc_notes={})
 
 
-def align(nat, a, f0, chars, info):
-    """Where the phonemes really are.  Kokoro's audio runs ahead of its own duration tensor (about three
-    units at the start of a phrase, as kokoro's own timestamp code assumes); the shift is LAY['lead']."""
-    nat = nat.copy()
-    sh = min(LAY["lead"], int(nat[0]) - 2)
-    nat[0] -= sh
-    nat[-1] += sh
-    nat[-1] += len(f0) - int(nat.sum())         # Harvest's frame count vs the token sum (+-1)
-    return nat
+def align(nat, f0):
+    """Where the phonemes really are.  Kokoro's audio runs ahead of its own duration tensor: about three
+    units (15 frames) at the start of a phrase, as kokoro's own timestamp code assumes.  Measured on
+    this song (voicing against vowel / voiceless-consonant labels, fricative onsets), the lead is 50-110
+    ms and varies; a constant LAY['lead'] = 15 frames sang best (mean Whisper error 0.065 on 44 test
+    phrases, against 0.088 at 19 frames and 0.28 with no shift; a segmental Viterbi re-alignment on
+    energy / voicing / high-frequency features scored 0.18 and was dropped)."""
+    prior = np.asarray(nat, dtype=np.int64).copy()
+    sh = min(LAY["lead"], int(prior[0]) - 2)
+    prior[0] -= sh
+    prior[-1] += len(f0) - int(prior.sum())
+    return prior
 
 
 def time_map(nat, new, info):
@@ -457,7 +466,11 @@ def time_map(nat, new, info):
             continue
         o = np.arange(ol, dtype=float)
         is_v = 0 < k <= len(info) and info[k - 1]["cls"] == "V"
-        if is_v and ol > nl and nl >= 6:
+        if k == 0:                     # leading silence: natural speed up to the first phoneme
+            s = np.maximum(a0, a1 - (ol - o))
+        elif k == len(nat) - 1:        # trailing silence: natural speed after the last phoneme
+            s = np.minimum(a1 - 1, a0 + o)
+        elif is_v and ol > nl and nl >= 6:
             e = min(LAY["edge"], nl // 3)
             mid_n = nl - 2 * e
             mid_o = ol - 2 * e
@@ -565,7 +578,7 @@ def _key(spec, rel):
     st = spec["style"]
     return _hash([ENGINE, spec["voice"], st, rel, spec.get("seed", ""), round(spec.get("detune", 0.0), 3),
                   spec.get("end_clamp_rel"), spec.get("speed", 1.0), spec.get("breath", 0.0),
-                  STYLES.get(st), LAY, PRON])
+                  STYLES.get(st), LAY, PRON, SUNG_PRON, SUNG_SUBST])
 
 
 def sing_phrase(spec):
@@ -591,7 +604,7 @@ def sing_phrase(spec):
     else:
         L = layout(rel, nat, style, spec.get("end_clamp_rel"))
     nf_nat = len(f0n)
-    nat = align(nat, a, f0n, chars, info)
+    nat = align(nat, f0n)
     src = time_map(nat, L["dur"], info)
     nfr = len(src)
     tax = np.arange(nf_nat) * FS

@@ -35,6 +35,9 @@
   function scene(name, t0, t1, fn, opts = {}) { SCENES.push({ name, t0, t1, fn, opts, order: SCENES.length }); }
   // Script files that are listed here but missing (a chapter not written yet) are tolerated: they are noted and skipped.
   const MISSING = [];
+  // three.js (for src/stage3d.js) comes from the ES module further down. Modules run after these classic scripts and
+  // before DOMContentLoaded, so by then it is loaded or has failed: main.js awaits this before READY.
+  const DOM_READY = new Promise(r => addEventListener('DOMContentLoaded', r, { once: true }));
 </script>
 <script src="data/data.js" onerror="MISSING.push('data/data.js')"></script>
 <script src="data/weight.js" onerror="MISSING.push('data/weight.js')"></script>
@@ -44,6 +47,14 @@
 <script src="src/clio.js"></script>
 <script src="src/apps.js"></script>
 <script src="src/style.js"></script>
+<script src="src/stage3d.js"></script>
+<!-- three.js is ESM-only: this module makes it window.THREE for stage3d.js (main.js: DOM_READY, then init3d(), then READY).
+     Over file:// Chromium allows the import only with --allow-file-access-from-files (render.mjs passes it): preview
+     through `node tools/serve.mjs`. -->
+<script type="module" onerror="window.THREE_ERR = 'three.js did not load (a browser blocks module scripts from file://: node tools/serve.mjs)'">
+  import * as THREE from './node_modules/three/build/three.module.js';
+  window.THREE = THREE;
+</script>
 
 <!-- ===================== CHAPTERS =====================
      One file per chapter, in song order. A chapter that does not exist yet is skipped (onerror). -->

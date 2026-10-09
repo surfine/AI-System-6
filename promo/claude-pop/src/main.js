@@ -95,6 +95,9 @@ async function boot() {
   preloadIcons();
   await Promise.all(fontLoads);
   await document.fonts.ready;
+  // three.js (an ES module) has run or failed by DOMContentLoaded; a render without it would be wrong, so it stops there
+  if (typeof DOM_READY !== 'undefined') await DOM_READY;
+  if (typeof init3d === 'function' && !init3d() && QS.has('render')) { window.READY_ERROR = '3D stage: ' + S3D.err; return; }
   initFonts();
   await Promise.all(_loading);
   for (const k in DESKTOPS) deskCanvas(k); // paint every wallpaper once, up front
@@ -164,7 +167,7 @@ function preview() {
       const ln = lineAt(t), sec = sectionAt(t);
       hud.textContent = t.toFixed(2) + ' s   bar ' + (Math.floor(barAt(t)) + 1) + '.' + (Math.floor(beatAt(t)) % 4 + 1) + '   ' + (s ? s.name : '-') + '   ' + E.name + ' ' + E.year +
         (sec ? '   [' + sec.name + ']' : '') + (playing ? '' : '   (space to play)') + (audioOK ? '' : '   (no song.wav: silent clock)') + (ln ? '\n“' + ln.text + '”' : '') +
-        (SONG_MISSING ? '\n(data/data.js not found: placeholder timings)' : '');
+        (SONG_MISSING ? '\n(data/data.js not found: placeholder timings)' : '') + (typeof S3D !== 'undefined' && S3D.err ? '\n(3D stage off: ' + S3D.err + ')' : '');
     } catch (e) { hud.textContent = t.toFixed(2) + '  ' + (s ? s.name : '') + '  ERROR: ' + e.message; console.error(e); }
     requestAnimationFrame(loop);
   })();

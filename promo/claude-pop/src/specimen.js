@@ -379,6 +379,65 @@
   if (styleForced) SCENES.length = 0;
   { let t = styleForced ? 0 : STYLE_AT; for (const s of STYLE) { scene(s.name, t, t + s.dur, s.fn, s.opts); if (styleForced) _styleAt[s.name] = t; t += s.dur; } }
   window.STYLE_REEL = { at: styleForced ? 0 : STYLE_AT, length: styleTotal, shots: STYLE.map(s => [s.name, _styleAt[s.name], s.dur]) };
+
+  // =====================================================================================================
+  // THE 3D REEL (stage3d.js), parked at 1300 s, after the toolkit reel (?s3d plays it from 0): each preset once.
+  //   node render.mjs sheet 1300 1321 .25 build/s3d-sheet.png
+  // =====================================================================================================
+  const S3 = [], s3add = (name, dur, fn, opts = {}) => S3.push({ name: '3d ' + name, dur, fn, opts });
+  const yearPlate = (y, at) => withEra('system6', () => bigType(String(y), { scale: 5, invert: true, slab: C.black, color: C.white, pad: 2, x: 24, align: 'left', valign: 'bottom', y: H - 18, slam: at }));
+  // ---- 1. the window corridor (the bridge, 104-110): the twelve desks float down a z-tunnel; a half beat each, held, then
+  // a whip to the next (the smear is the whip); far panels dissolve in by Bayer; the year slams on each ----
+  s3add('corridor', 6, warp(104, t => {
+    const r = corridor3d(t, { key: 'reel corridor', desk: eraDesk(), at: 104, t0: 104, step: .5 });
+    yearPlate(ERA[APPEARANCES[r.i].id].year, 104 + r.i * .5);
+  }), { raw: true, era: 'system6' });
+  // ---- 2. the silhouette stage (chorus 1, 36-42): the hook as voxel slabs slamming in z on their words, Clio extruded
+  // from her 1-bit sprite as the hero, two card dancers upstage, the white pen hanging from the writer's pointer ----
+  const C3 = { c: [0, 250, 0] }, oc = (r, a, h, o = {}) => ({ ...orbit3d(o.c || C3.c, r, a, h), ...o });
+  const DANCE3 = [{ pos: [560, 260], size: 9, mode: 'voxel' }, { pos: [-820, -520], size: 7, mode: 'card', seed: 3 }, { pos: [900, -760], size: 7, mode: 'card', seed: 5, flip: true }];
+  const PEN3 = (t, x, z) => ({ pos: [x, 980, z], angle: Math.PI / 2 + .25 * Math.sin(beatPhase(t, 2) * Math.PI * 2), size: 1.6 });
+  const penCord3 = (st, t, p) => { const a = project3d(st, p.pos), px = a[0] + 6, py = -6; penCord([[a[0], a[1]], [px + 5, py + 15]], { sag: 4, swing: 3, t }); CUR = { x: px, y: py, kind: 'arrow' }; };
+  const c1cam = [[35.5, oc(1700, -.6, -150)], [36, oc(1350, -.42, -70), 'snap'], [37.2, oc(1250, -.25, 0), 'lin'], [37.35, oc(1300, .55, 140), 'whip'],
+    [37.75, oc(1200, .3, 420), 'snap'], [39.45, oc(1300, .12, 330), 'lin'], [39.5, oc(760, 0, 60, { c: [0, 330, 0] }), 'snap'], [40, oc(1450, -.38, 10, { c: [-80, 250, 0] }), 'whip'], [42, oc(1300, -.08, 60, { c: [-80, 250, 0], roll: .06 }), 'hard']];
+  s3add('silhouette stage', 6, warp(36, t => {
+    const r = silStage3d(t, { key: 'reel sil c1', field: FIELDS.magenta, cam: c1cam, dancers: DANCE3, pen: PEN3(t, 420, 120), type: [
+      { text: ['PEN', 'PAL'], words: L1.a, show: [35, 37.75], size: 24, pos: [-160, 20, 0] },
+      { text: ["I'LL NEVER", 'HOLD', 'THE PEN.'], words: L1.b, show: [37.75, 40], size: 16, pos: [-60, 20, 0] },
+      { text: ['YOU SAY', 'WHERE I', 'LAND,'], words: L1.c, show: [40, 44], size: 16, pos: [-260, 20, 0], ghost: true }] });
+    if (r.stage) penCord3(r.stage, t, PEN3(t, 420, 120));
+    beatFX(t, { clap: true }); invertFrame(DOWN, 2, t);
+  }), { era: 'system7', raw: true });
+  // ---- 3. WHO HOLDS THE PEN? (47.75-51.75): one voxel letter per 16th while the camera rolls back along the block, then
+  // YOU DO! slams on its words and the camera cranes down to the floor; Clio in the split ----
+  const whoCam = [[47.75, oc(700, .5, 40, { c: [-200, 300, 0], roll: -.12 })], [49.9, oc(1500, -.2, 120, { roll: .04 }), 'hard'], [50, oc(1200, .25, -140, { c: [0, 230, 0] }), 'whip'], [51.75, oc(1350, .4, -60, { c: [0, 230, 0] }), 'lin']];
+  s3add('who holds the pen', 4, warp(47.75, t => {
+    const r = silStage3d(t, { key: 'reel sil who', field: FIELDS.magenta, cam: whoCam, pen: PEN3(t, 520, 60), dancers: [{ pos: [620, 240], size: 9, pose: t >= 50 ? 'cheer' : undefined, p: beatPhase(t) }], type: [
+      { text: ['WHO', 'HOLDS', 'THE PEN?'], stepIn: { t0: L1.g.start, div: 4 }, show: [47.75, 49.95], size: 16, pos: [-80, 20, 0] },
+      { text: ['YOU', 'DO!'], words: L1.h, show: [49.95, 52], size: 22, pos: [-180, 20, 0] }] });
+    if (r.stage) penCord3(r.stage, t, PEN3(t, 520, 60));
+    beatFX(t, { clap: true });
+  }), { era: 'system7', raw: true });
+  // ---- 4. nested desks: 2026 back through every era, each a screen inside the one before's monitor, to the dot ----
+  const NEST = ['liquidglass', 'bigsur', 'yosemite', 'lion', 'snowleopard', 'tiger', 'aqua', 'platinum', 'drawingboard', 'nextstep', 'system7', 'system6'];
+  const _chrome = new Map();   // per era: the window chrome round a client rect (so the monitor's screen lands exactly on NEST_WIN)
+  const chrome = () => { let c = _chrome.get(E.id); if (!c) { offscreen(400, 300, () => { const r = win(0, 0, 300, 200, 'x', {}); c = [r.x, r.y, 300 - r.w, 200 - r.h]; }); _chrome.set(E.id, c); } return c; };
+  const monDesk = inner => t => {
+    UI.menu = { app: 'TeachText' };
+    APP.teachText(20, E.menuH + 14, 300, 214, { title: 'Manuscript', lines: MS });
+    if (inner) { const [l, tp, dw, dh] = chrome(), m = NEST_WIN; win(m.x - l, m.y - tp, m.w + dw, m.h + dh, String(ERA[inner].year)); rect(m.x, m.y, m.w, m.h, C.black); }
+    deskIcons([['hardDisk', 'Hard Disk'], ['fileFloppy', 'File Floppy']], { y: E.menuH + 10 });
+  };
+  const LAY = NEST.map((era, i) => ({ era, draw: monDesk(i ? NEST[i - 1] : null), at: 1000, win: i ? NEST_WIN : null }));
+  s3add('nested desks', 5, (t, l) => {
+    const s0 = t - l, r = nestedDesks3d(t, s0 + .3, s0 + 4.5, { key: 'reel nested', layers: LAY, dot: true });
+    if (r.u < NEST.length - 1) yearPlate(ERA[NEST[r.layer]].year, null);
+  }, { raw: true, era: 'liquidglass' });
+  const R3D_AT = 1300, s3Forced = new URLSearchParams(location.search).has('s3d');
+  if (s3Forced) SCENES.length = 0;
+  { let t = s3Forced ? 0 : R3D_AT; for (const s of S3) { scene(s.name, t, t + s.dur, s.fn, s.opts); t += s.dur; } }
+  window.S3D_REEL = { at: s3Forced ? 0 : R3D_AT, length: S3.reduce((a, s) => a + s.dur, 0), shots: S3.map(s => s.name) };
+  if (s3Forced) return;
   if (styleForced) return;
 
   // ---------------- tile the reel over the whole song ----------------

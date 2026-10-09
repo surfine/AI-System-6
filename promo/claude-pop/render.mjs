@@ -43,12 +43,17 @@ const args = process.argv.slice(2), mode = args[0], pos = [], flags = {};
 for (let i = 1; i < args.length; i++) args[i].startsWith('--') ? flags[args[i].slice(2)] = args[++i] : pos.push(args[i]);
 if (!['video', 'still', 'sheet', 'check'].includes(mode)) { console.error('usage: node render.mjs video|still|sheet|check ... (see the top of render.mjs)'); process.exit(1); }
 
-const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--allow-file-access-from-files', '--no-sandbox'] });
+// file:// + --allow-file-access-from-files lets the page import three.js as an ES module. WebGL (stage3d.js) runs on
+// SwiftShader; the 2D canvases must stay on the CPU (accelerated on SwiftShader every getImageData costs ~15x more).
+const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--allow-file-access-from-files', '--no-sandbox',
+  '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-accelerated-2d-canvas', '--disable-gpu-rasterization'] });
 const page = await browser.newPage();
 page.on('pageerror', e => console.error('page error:', e.message));
 page.on('console', m => { if (m.type() === 'error' && !m.text().includes('ERR_FILE_NOT_FOUND')) console.error('console:', m.text()); });
 await page.goto(pathToFileURL(path.join(ROOT, 'index.html')) + '?render');
-await page.waitForFunction('window.READY === true', { timeout: 30000 });
+await page.waitForFunction('window.READY === true || !!window.READY_ERROR', { timeout: 90000 });
+const bootError = await page.evaluate('window.READY_ERROR || null');
+if (bootError) { await browser.close(); throw new Error(bootError); }
 const frame = async t => Buffer.from(await page.evaluate(t => renderFrame(t), t), 'base64');
 const ffmpeg = a => spawn('ffmpeg', ['-y', '-v', 'error', ...a.map(String)], { cwd: ROOT, stdio: ['pipe', 'inherit', 'inherit'] });
 const done = async ff => { ff.stdin.end(); const [code] = await once(ff, 'close'); if (code) throw new Error('ffmpeg exited with ' + code); };
