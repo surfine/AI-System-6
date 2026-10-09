@@ -89,3 +89,18 @@ cannot read the icons or load three.js).
 
 Setup on a fresh machine: `tools/setup.sh`, then `pip install kokoro-onnx pyworld gradio_client` and download the
 Kokoro files into `.cache/kokoro/` (see `music/PRODUCTION.md`).
+
+## Final song (owner's pick, 9 Oct)
+
+"Pen Pal", sexy dance-pop take, ACE-Step 1.5 text2music (4B LM + turbo DiT, local CPU via acestep.cpp), seed 59
+(`build/ace/pen-pal-sexy-59.wav`). Assembly, all reproducible:
+
+    python3 -I music/assemble_final.py                 # 1.537 s boot-chord pre-roll (downbeats on picture bars) + 2 la-la bars cut
+    python3 -I tools/retime.py build/song.assembled.wav --measure-only
+    python3 -I tools/warp.py --beat                     # data/warp.js: beat-snapped offsets, 1x between lines
+    python3 -I music/assemble_final.py --pen            # the silent pen at the warped times -> build/song.wav
+    node tools/weigh.mjs && node tools/srt.mjs          # end-card bytes; subtitles in song time
+    node render.mjs video --scale 6 --preset medium --crf 16 --out build/claude-pop-4k.mp4
+
+render.mjs and tools/flashcheck.mjs run in song time and stop at SONG_END (the picture's END taken back
+through the warp). Checks on this song: 9,390 frames, 0 errors; flash check pass (general 3/s peak, red 2/s).
