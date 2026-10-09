@@ -23,6 +23,13 @@ real-sounding song. Decisions:
 - **Song source:** an AI song model, **GPU-accelerated**: ACE-Step 1.5 (MIT) on its Hugging Face Space
   (`ACE-Step/Ace-Step-v1.5`, ZeroGPU A10G) in **cover** mode over our guide mix (`music/build_guide.py` →
   `build/guide.wav`), so structure and tempo survive. Anonymous quota is spent; it needs `HF_TOKEN`.
+- **Song source, revised:** no Hugging Face token is available, so ACE-Step 1.5 runs locally through acestep.cpp
+  (C++/GGML, Q8 GGUF models, MIT) on the CPU, `ACE_THREADS=4` (a local patch: the binary otherwise halves the
+  core count). One cover of the whole song takes roughly 15-25 minutes. Prefer `cover-nofsq` (keeps the
+  source's structure and timing) at `audio_cover_strength` 0.3-0.5.
+- **3D:** three.js (owner's choice) in every chorus, the bridge tunnel and the outro pull-back, quantised back to
+  hard pixels. three lives in node_modules and is not counted by `tools/weigh.mjs`; the end card says the byte
+  count is this film's own code and credits three.js.
 - **Cast:** Clio stays the lead; no Clawd.
 - **Delivery:** 4K60 master split into ≤30 MB parts sent to the owner with a join command; a 1080p60 share copy
   under 30 MB; both SRT files; then a pull request, driven to green.

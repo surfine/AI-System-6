@@ -699,6 +699,7 @@ def breath(y24, L, length, seed):
 # ------------------------------------------------------------------------------------------------
 # the score's vocal arrangement
 # ------------------------------------------------------------------------------------------------
+ROLE_DB = {"harmony": -7.0, "echo": -2.0, "gang": -1.0, "call": -2.0, "lala": -3.0}   # per choir voice (three stack)
 CHOIR = [  # voice, detune cents, delay s, pan, gain dB, Kokoro speed (a different take of the consonants)
     ("af_heart", 0.0, 0.000, 0.0, 0.0, 1.0),
     ("af_bella", 7.0, 0.012, -0.55, -1.0, 1.06),
@@ -769,11 +770,11 @@ def arrangement(score):
         for g in phrases(ls, spb):
             for v, det, dl, pn, gd, spd in CHOIR:
                 out.append(dict(track="choir", voice=v, style=style, words=g["words"], lines=g["lines"], role=role,
-                                gain_db=gd, pan=pn, delay=dl, detune=det, speed=spd,
+                                gain_db=gd + ROLE_DB.get(role, -3.0), pan=pn, delay=dl, detune=det, speed=spd,
                                 seed="%s:%s:%s" % (role, g["lines"][0], v), end_clamp=g.get("end_clamp")))
     for m, b, d, w in score["parts"]["chops"]["events"]:
         out.append(dict(track="chops", voice="af_heart", style="chop", words=[{"w": w, "notes": [[m, b * spb, d * spb]]}],
-                        lines=[], seed="chop"))
+                        lines=[], seed="chop", pan=-0.25 if w == "pen" else 0.25))
     return out
 
 
