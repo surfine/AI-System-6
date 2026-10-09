@@ -11,5 +11,8 @@
   },
   "devDependencies": {
     "puppeteer-core": "^25.12.0"
+  },
+  "dependencies": {
+    "three": "0.186.1"
   }
 }

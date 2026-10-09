@@ -57,7 +57,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 KDIR = os.path.join(ROOT, ".cache", "kokoro")
 CACHE = os.path.join(ROOT, ".cache", "sing_world")
-ENGINE = "sw-world-4"
+ENGINE = "sw-world-5"
 
 KSR = 24000           # Kokoro sample rate
 HOP = 600             # samples per Kokoro duration unit
@@ -85,15 +85,18 @@ PRON = {
     "insert": "ɪnsˈɜːt",
     "export": "ɛkspˈɔːɹt",
     "a": "ə",
+    "your": "jˈɔːɹ",
+    "floppies": "flˈɑːpiz",
 }
 
+SUNG = ("lead", "choir", "gang", "chop")
 STYLES = {
     #          vibrato cents / onset s, portamento s, drift cents, speech intonation kept, vowel cap (x spoken), fall cents, scoop cents
-    "lead":   dict(vib=24.0, vib_on=0.22, port=0.085, drift=4.0, inton=0.0, cap=None, fall=35.0, scoop=25.0, jit=3.0),
-    "choir":  dict(vib=16.0, vib_on=0.26, port=0.08, drift=5.0, inton=0.0, cap=None, fall=20.0, scoop=15.0, jit=3.0),
-    "gang":   dict(vib=0.0, vib_on=0.3, port=0.05, drift=6.0, inton=0.15, cap=None, fall=40.0, scoop=45.0, jit=4.0),
-    "chant":  dict(vib=0.0, vib_on=0.3, port=0.05, drift=3.0, inton=0.40, cap=2.4, fall=0.0, scoop=0.0, jit=2.0),
-    "chop":   dict(vib=0.0, vib_on=0.3, port=0.03, drift=0.0, inton=0.0, cap=None, fall=0.0, scoop=0.0, jit=0.0),
+    "lead":   dict(vib=24.0, vib_on=0.22, port=0.035, drift=4.0, inton=0.0, cap=None, fall=35.0, scoop=25.0, jit=3.0, cons=3.0),
+    "choir":  dict(vib=16.0, vib_on=0.26, port=0.035, drift=5.0, inton=0.0, cap=None, fall=20.0, scoop=15.0, jit=3.0, cons=3.0),
+    "gang":   dict(vib=0.0, vib_on=0.3, port=0.03, drift=4.0, inton=0.0, cap=None, fall=40.0, scoop=35.0, jit=4.0, cons=4.0),
+    "chant":  dict(vib=0.0, vib_on=0.3, port=0.03, drift=3.0, inton=0.22, cap=2.4, fall=0.0, scoop=0.0, jit=2.0, cons=3.0),
+    "chop":   dict(vib=0.0, vib_on=0.3, port=0.02, drift=0.0, inton=0.0, cap=None, fall=0.0, scoop=0.0, jit=0.0, cons=3.0),
     "spoken": dict(),
 }
 
@@ -197,7 +200,7 @@ def _cls(c):
     return "C"
 
 
-def build_tokens(words):
+def build_tokens(words, sung=False):
     """words: [{'w', 'notes'}] -> chars (' ' between words), per-char info, {word: [nucleus ids]}.
 
     info[k]: word, cls (V vowel, L length mark, S stress, C consonant, P punctuation, ' '), nuc (nucleus id
@@ -211,7 +214,13 @@ def build_tokens(words):
         if wi:
             chars.append(" ")
             info.append(dict(word=wi, cls=" "))
-        for c in phonemes(core):
+        ph = phonemes(core)
+        if sung and not any(c in STRESS for c in ph):
+            # every sung word carries a stress (an unstressed "you" on a high C came out "yee")
+            k = next((i for i, c in enumerate(ph) if c in VOWELS), None)
+            if k is not None:
+                ph = ph[:k] + "ˈ" + ph[k:]
+        for c in ph:
             if c in vocab and c != " ":
                 chars.append(c)
                 info.append(dict(word=wi, cls=_cls(c)))
@@ -269,7 +278,7 @@ def layout(words, nat, style, end_clamp=None):
     words: notes in seconds (relative to the phrase).  nat: natural durations in frames (incl. pads).
     Returns dict(dur (incl. pads), origin (s: time of frame 0), spans (per char, frames from origin),
     nuc_notes)."""
-    chars, info, word_nuclei = build_tokens(words)
+    chars, info, word_nuclei = build_tokens(words, sung=style in SUNG)
     n = len(chars)
     st = STYLES[style]
     natc = nat[1:-1].astype(float)
@@ -538,7 +547,7 @@ def melody(L, nfr, style, seed, detune, src_f0):
             sm = 12 * np.log2(np.maximum(src_f0, 1) / 440.0) + 69
             idx = np.arange(nfr)
             filled = gaussian_filter1d(np.interp(idx, idx[v], sm[v]), 6.0)
-            inton = st["inton"] * np.clip(filled - np.median(sm[v]), -4, 4)
+            inton = st["inton"] * np.clip(filled - np.median(sm[v]), -2.5, 2.5)
     target = base + orn + vib + drift + jit + inton + detune / 100.0
     trem = 10 ** (0.3 * (vib / max(st.get("vib", 1) / 100.0, 1e-6)) / 20.0) if st.get("vib") else np.ones(nfr)
     force_v = np.zeros(nfr, bool)
@@ -575,7 +584,7 @@ def sing_phrase(spec):
         z = np.load(path)
         meta = json.loads(str(z["meta"]))
         return z["y"].astype(np.float64), float(z["t0"]) + t_ref, _abs_meta(meta, t_ref)
-    chars, info, _ = build_tokens(rel)
+    chars, info, _ = build_tokens(rel, sung=style in SUNG)
     a, nat, f0n = speak(chars, spec["voice"], spec.get("speed", 1.0))
     if style == "spoken":
         L = layout_spoken(rel, nat)
@@ -632,6 +641,15 @@ def sing_phrase(spec):
             if notes and ks:
                 meta["nuclei"].append([L["origin"] + L["spans"][ks[0]][0] * FS, L["origin"] + L["spans"][ks[-1]][1] * FS,
                                        [list(x) for x in notes]])
+    # diction: onset consonants (and codas, a little less) a few dB up against the vowels
+    if STYLES.get(style, {}).get("cons"):
+        cg = np.zeros(nfr)
+        for k in range(len(info)):
+            if info[k]["cls"] == "C":
+                a_, b_ = L["spans"][k]
+                cg[max(0, a_ - 1):b_ + 1] = STYLES[style]["cons"] * (1.0 if info[k].get("role") == "onset" else 0.7)
+        cg = gaussian_filter1d(cg, 1.0)
+        gain = gain * 10 ** (cg / 20.0)
     osp *= (gain ** 2)[:, None]
     y24 = np.asarray(pw.synthesize(np.ascontiguousarray(out_f0), np.ascontiguousarray(osp), np.ascontiguousarray(oap), KSR, FP))
     # silence outside the phrase (the pads), soft edges
