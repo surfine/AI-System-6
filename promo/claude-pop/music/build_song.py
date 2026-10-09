@@ -76,7 +76,7 @@ def main():
     stems = M.process(V, B, D, K, O)
     log("mix")
     ks = [t for t in EVENTS["keystroke"] if M.sil[0] <= t < M.sil[1]]
-    keep = [(vox.the_span[0], vox.the_span[1] + 0.02)] + [(t - 0.003, t + 0.14) for t in ks]
+    keep = [(vox.the_span[0], min(vox.the_span[1], M.sil[0] + 0.25) + 0.02)] + [(t - 0.003, t + 0.14) for t in ks]   # "the" is released by 131.50
     song, gain = M.master(stems, keep, target=-14.0)
     log("master: gain %.2f dB" % gain)
     assert len(song) == N

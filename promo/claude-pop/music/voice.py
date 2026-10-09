@@ -30,7 +30,7 @@ ROOT = os.path.dirname(HERE)
 CACHE = os.path.join(ROOT, ".cache")
 VOICE_DIR = os.path.join(CACHE, "voices")
 VOICES = {"amy": "en_US-amy-medium", "jenny": "en_GB-jenny_dioco-medium", "lessac": "en_US-lessac-medium"}
-ENGINE_VERSION = "sing-v21"
+ENGINE_VERSION = "sing-v22"
 
 # phoneme overrides: sung vowels want stress; "the" is a schwa; la-la is "lah"
 PHON_OVERRIDE = {
@@ -296,13 +296,13 @@ DEFAULT_STYLE = dict(
     scoop=-40.0, scoop_min=0.45, scoop_time=0.11, glide=0.06, glide_in=0.07, drift=5.0,
     fall=-35.0, flat=False, max_pre=0.16, kc=None, dur_comp=1.0, onset_on_beat=False,
     shout=0.0, edge=0.03, seed=0, coda_hold=0.4, cons_boost=4.0, vowel_fade=0.035, hold_mode="point",
-    raw_onset=True, burst_boost=5.0, phonemes=None, clear_coda=False, fric_boost=0.0,
+    raw_onset=True, burst_boost=5.0, phonemes=None, clear_coda=True, fric_boost=0.0, fric_fade=0.015,
 )
 RAW_CAP = {"stop": 0.07, "fric": 0.12}     # longest raw onset kept (s): burst + aspiration / a fricative
 CLOSURE = 0.035                            # silence a singer leaves before a stop's burst (s)
 
 
-FRIC_CLOSURE = 0.10                        # a voiceless fricative onset starts about this long before its note
+FRIC_CLOSURE = 0.07                        # a voiceless fricative onset starts about this long before its note
 
 
 def closure_lead(ph, fric=False):
@@ -311,7 +311,7 @@ def closure_lead(ph, fric=False):
     the word before stops voicing where the fricative starts, or the f is heard as a v ('can | fetch')."""
     stp, unv = stop_onset(ph)
     if not stp:
-        if fric and _strip_stress(ph)[:1] in "fsʃθ":
+        if fric and FRIC_CLOSURE > 0 and _strip_stress(ph)[:1] in "fsʃθ":
             return FRIC_CLOSURE
         return None
     return (RAW_CAP["stop"] if unv else 0.035) + CLOSURE
@@ -700,6 +700,10 @@ def _sing(job, st):
                     raw = raw[rv - cap:].copy()
                     raw[: int(0.006 * SR)] *= np.linspace(0, 1, int(0.006 * SR))
                 rv = cap
+            if not stop and ph0 != "h" and st["fric_fade"] > 0:   # a fricative swells in; a hard edge is heard as a 'p'
+                k = min(rv // 2, int(st["fric_fade"] * SR))
+                raw = raw.copy()
+                raw[:k] *= np.linspace(0, 1, k) ** 1.5
             start = iv - rv
             if start < 0:                      # the onset starts before the PSOLA word: extend it
                 y = np.concatenate([np.zeros(-start), y])

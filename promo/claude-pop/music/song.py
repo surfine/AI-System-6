@@ -238,8 +238,10 @@ def prechorus(sec, l1, l2):
          "stay=F#4=.5 in=G4=.5 your=A4=.5 hand.=A4=.5")      # HAND is a hit at 13.5, then half a beat of air
 
 
+# The verbs are half a beat and a rest (QA round 2): held for a whole beat the flat G3 vowel swallowed the
+# coda and Whisper heard "I can't buy, I can't buy"; short, they are heard as verbs ("I can check, I can flag").
 prechorus("pre1",
-          ("I can fetch. I can file.", "I=G3=.5 can=G3=.5 fetch.=G3=1 I=G3=.5 can=G3=.5 file.=G3=1"),
+          ("I can fetch. I can file.", "I=G3=.5 can=G3=.5 fetch.=G3=.5 _=.5 I=G3=.5 can=G3=.5 file.=G3=.5 _=.5"),
           ("I can hum for a while.", "I=G3=.5 can=A3=.5 hum=B3=1 for=B3=.5 a=C4=.5 while.=D4=1"))
 
 # CHORUS.  t = transposition (0 in G, +2 in A).  "harmony" adds the choir a third below on the second
@@ -294,7 +296,7 @@ line("v2f_keep", "verse2", "lead", "Keep it.", 30, "Keep=C5=.5 it.=G4=.5")      
 # Pre-chorus 2: the machine confesses what it could do, in the glide line, and the low-pass sweep
 # closes over "smooth" (the smooth gag moved here from the old chorus).
 prechorus("pre2",
-          ("I can check. I can flag.", "I=G3=.5 can=G3=.5 check.=G3=1 I=G3=.5 can=G3=.5 flag.=G3=1"),
+          ("I can check. I can flag.", "I=G3=.5 can=G3=.5 check.=G3=.5 _=.5 I=G3=.5 can=G3=.5 flag.=G3=.5 _=.5"),
           ("I could smooth it. I won't.", "I=G3=.5 could=A3=.5 smooth=B3=1 it.=B3=.5 I=C4=.5 won't.=D4=1"))
 
 chorus("chorus2", harmony=True)

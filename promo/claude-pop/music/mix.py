@@ -35,15 +35,20 @@ def _decimate2(x):
 
 DOTTED_8TH = 0.375   # at 120 bpm
 CHORUSES = ("chorus1", "chorus2", "chorus3")
-# QA round 2 (mix lens): the lead sat +8 dB over the loudest bed stem in 1-5 kHz in the choruses; the pocket
-# and the chorus presence bell were eased so the bed comes back into the band
-POCKET_DEPTH = {"drums": 1.5, "keys": 2.5, "other": 2.5}     # was 3 / 4.5 / 4.5 dB
-CHORUS_PRESENCE_TRIM = -1.5                                  # the lead's +2.5 dB / 3.6 kHz bell is +1.0 in the choruses
+# The vocal pocket depth per band stem (dB in 300 Hz-5 kHz while a voice sings).  QA round 2 asked for the lead
+# to sit 0-4 dB (not +8) over the loudest bed stem in 1-5 kHz: tried at 1.5 / 2.5 / 2.5 dB with the chorus
+# presence bell at +1 dB, the bed came up 1.6-2.2 dB in the band and Whisper lost the hook again in the full mix
+# (64 primary lines, mix mean WER 0.39 -> 0.46; "Who holds the pen?" in choruses 1 and 2 heard "Here, hold deep
+# hand"), so the pocket stays where it was: intelligibility first.
+POCKET_DEPTH = {"drums": 3.0, "keys": 4.5, "other": 4.5}
+CHORUS_PRESENCE_TRIM = 0.0
 # the bed steps back under the lines Whisper lost only in the full mix (the stems read them): (start, end, dB)
 INTELLIGIBILITY_DUCKS = [
     (20.0, 27.8, -2.5),                   # v1c / v1d: the riff returns under "Clip the proof." / "Outline it."
+    (27.9, 29.8, -4.0), (75.9, 77.8, -4.0),   # pre1a / pre2a "I can fetch. I can file." / "I can check. I can flag."
     (60.0, 63.8, -2.5),                   # v2a "Chat is an app."
     (82.0, 83.0, -2.0),                   # pre2d "stay in your hand."
+    (115.9, 120.0, -3.0),                 # b7 / b8 "Twelve eras. One desk. And your windows stay." (the bridge's claim)
     (40.0, 42.0, -2.0), (88.0, 90.0, -2.0), (132.4, 134.0, -2.5),   # "You say where I land," (not the slam-back)
     (47.9, 49.8, -1.5), (95.9, 97.8, -1.5), (139.9, 141.8, -3.5),   # "Who holds the pen?" (chorus 3 was lost)
 ]
@@ -311,7 +316,7 @@ class Mixer:
         ped = pan(B["pedal"], 0.0)
         bass = steppers + subs * undb(-3.0) + s808 * undb(-11.0) + ped * undb(-6.0)
         bass = compressor(bass, thr=-16.0, ratio=3.0, attack=0.01, release=0.1, knee=6.0, makeup=2.0)
-        bass = self.pump(bass, {"chorus1": 6.0, "chorus2": 6.0, "chorus3": 7.0, "post*": 5.0, "intro": 3.0, "verse*": 3.0, "pre*": 3.0, "bridge": 3.0,
+        bass = self.pump(bass, {"chorus1": 5.0, "chorus2": 5.0, "chorus3": 7.0, "post*": 5.0, "intro": 3.0, "verse*": 3.0, "pre*": 3.0, "bridge": 3.0,
                                 "outro": 3.0})
         bass = self._mono_lows(bass, 140)
         bass = eq(bass, ("peak", 220, 0.8, 2.5))                                     # body under the voices
@@ -340,10 +345,10 @@ class Mixer:
         strings = self.calibrate(strings, -22.5, [(28.0, 34.5), (76.0, 82.5)], "strings")
         pad = width(eq(K["pad"], ("hp", 160)), 1.4)
         # the three choruses pump alike (chorus 3's louder pad and reboot chord measured 3 dB shallower)
-        pad = self.pump(pad, {"chorus1": 8.0, "chorus2": 8.0, "chorus3": 10.5, "bridge": 4.0})
+        pad = self.pump(pad, {"chorus1": 7.0, "chorus2": 7.0, "chorus3": 11.0, "bridge": 4.0})
         pad = self.calibrate(pad, -26.0, [(36.0, 52.0)], "pad")
         boot = eq(K["boot"], ("hp", 38))
-        boot = self.pump(boot, {"chorus3": 10.5})       # the reboot chord rings into chorus 3: it pumps with the pad
+        boot = self.pump(boot, {"chorus3": 11.0})       # the reboot chord rings into chorus 3: it pumps with the pad
         boot = self.calibrate(boot, -17.5, [(0.0, 4.0)], "boot")
         keys = organ + piano + felt + strings + pad + boot
         keys = eq(keys, ("peak", 220, 0.8, 2.5))                                     # body under the voices
@@ -472,7 +477,8 @@ class Mixer:
     # (relative to chorus 1 as it measures before solving: the choruses are lifted 1 LU over that)
     SECTION_TARGET = {"intro": -2.0, "verse1": -3.2, "pre1": -2.0, "chorus1": 1.0, "post1": -0.7, "verse2": -3.2,
                       "pre2": -2.0, "chorus2": 1.0, "post2": -0.7, "bridge": -2.0, "breakdown": -3.0,
-                      "chorus3": 1.6, "outro": -1.5}
+                      "chorus3": 1.6, "outro": -1.5}   # QA round 2 asked for +2.6: at +2.3 the band masked "I'm just
+                                                        # your pen pal," and "You do!" in chorus 3, so it stays
 
     def energy_curve(self, stems):
         """Band gain (dB) per section, solved from measurement: for each section, the gain on the band
@@ -502,7 +508,7 @@ class Mixer:
         return onepole(c, 0.015)
 
     # 2 s blocks whose loudness (relative to chorus 1, LU) the band is solved to after the section solve
-    BLOCK_TARGET = {(122.0, 124.0): -6.3, (124.0, 126.0): -6.3}
+    BLOCK_TARGET = {(122.0, 124.0): -6.2, (124.0, 126.0): -6.2}
 
     def block_gains(self, stems, en):
         """Band gain (dB) per block so the mix (with the section gains `en` applied) reads BLOCK_TARGET."""
@@ -518,7 +524,7 @@ class Mixer:
             pv = 10 ** (self.active_lufs(vox, a, b) / 10)
             pt = 10 ** ((ref + tgt) / 10)
             g2 = (pt - pv) / max(pb, 1e-12) if pt > pv * 1.05 else 0.25
-            gdb = float(np.clip(10 * np.log10(max(g2, 1e-6)), -6.0, 0.0))
+            gdb = float(np.clip(10 * np.log10(max(g2, 1e-6)), -4.0, 0.0))
             c[n_of(a):n_of(b)] = gdb
             out["%g-%g" % (a, b)] = round(gdb, 2)
         self.report["block_gain_db"] = out

@@ -32,20 +32,21 @@ GANG = dict(shout=-60.0, dur_comp=0.9, vib_depth=0.0, scoop=0.0, drift=3.0, fall
             max_pre=0.10, coda_hold=0.25)
 GANG_SPREAD = 0.008          # +/- s between the twelve copies: tight enough that a 'd' stays one 'd'
 CALL = dict(dur_comp=1.0)    # the verse shouts ("Flag it.", "(Keep it.)") keep their full length
-CALL_COPIES = 6              # copies in a verse shout (the chorus gang has 12)
+CALL_COPIES = 3              # copies in a verse shout (the chorus gang has 12; six still smeared "Flag it." into "Flyers")
 CALL_DETUNE = 6.0            # +/- cents per copy in a verse shout
 CALL_FORMANT = (0.9, 1.08)   # formant range of the amy / jenny copies in a verse shout
 FADE_GAG = True
 KEEP_ROUGH = True
-LOW_PEN = 64                 # "pen" written at E4 or lower is sung with a closed vowel, /pɪn/ (see low_pen)
+LOW_PEN = 64                 # "pen" written at E4 or lower is sung with a closer vowel, /pen/ (see low_pen)
 
 
 def low_pen(word, notes, st):
-    """Below E4 PSOLA's /ɛ/ before /n/ opens into /æ/: "hold the pen" was heard as "hold the pan" on the
-    lead stem alone.  Sung there with /ɪ/ (the pin-pen vowel a singer closes to on a low note), Whisper
-    hears "pen".  The hook's D5 "pen" and the call's F#4 "pen" keep /ɛ/."""
+    """At E4 and below PSOLA's /ɛ/ before /n/ opens into /æ/: "hold the pen" was heard as "hold the pan" on
+    the lead stem alone.  Sung with the close-mid /e/ (a singer closes the vowel on a low note), Whisper hears
+    "pen" on every chorus A line (/ɪ/ also worked alone but read "pin" / "deep in" under the band).  The hook's
+    D5 "pen" and the call's F#4 / G#4 "pen" keep /ɛ/."""
     if V.clean(word).lower() == "pen" and notes[0][0] <= LOW_PEN:
-        st["phonemes"] = "pˈɪn"
+        st["phonemes"] = "pˈen"
     return st
 CHOP = dict(voice="amy", flat=True, glide=0.0, glide_in=0.0, vib_depth=0.0, scoop=0.0, drift=0.0, fall=0.0,
             onset_on_beat=True, max_pre=0.03, kc=1.0, length_scale=1.35, coda_hold=0.35, edge=0.01, raw_onset=False)
@@ -175,7 +176,7 @@ class Vocals:
             track = "lead"
             if self.sil[0] - 1e-6 <= notes[0][1] < self.sil[1]:
                 track = "lead_the"                    # sung alone, dry, inside the silence window
-            lg = -2.0 if lid in ("k2", "k3") else 0.0          # the breakdown: close and soft
+            lg = -3.5 if lid in ("k2", "k3") else 0.0          # the breakdown: close and soft (QA round 2: was -2)
             self.placements.append((track, self._job(w, notes, ctx, st, shift, pov), lg, 0.0, fx))
             self.words_qa.append((lid, w["w"], notes[0][1] + shift))
             # the chorus doubles
@@ -189,6 +190,12 @@ class Vocals:
         for L, w, notes, ctx in self._stream(chant, fric_closure=True):   # the robot never voices an f
             st = dict(CHANT)
             lid = L["id"]
+            if lid == "v2f" and w["w"] == "Rough":   # 'Rough edge?' ran together as "Roth-head": a longer vowel, a gap
+                st.update(phonemes="ɹˈʌːf")
+                if "next_start" in ctx:
+                    ctx = dict(ctx, closure_at=round(ctx["next_start"] - 0.06, 4))
+            the = {"phonemes": "ðə"} if V.clean(w["w"]).lower() == "the" else {}   # spoken 'the', never sung 'thee'
+            st.update(the)                           # ("Clip the proof" was heard "Clippy proof")
             if lid in ("pre1b", "pre2b"):            # the melt: the robot learns portamento
                 st.update(glide=0.08, glide_in=0.08)
             t0 = notes[0][1]
@@ -201,11 +208,11 @@ class Vocals:
             self.placements.append(("chant", self._job(w, notes, ctx, st), 0.0, 0.0, fx))
             self.words_qa.append((lid, w["w"], t0))
             if lid.startswith("b"):    # the bridge years: stacked in octaves, panned
-                self.placements.append(("chant_dbl", self._job(w, notes, ctx, dict(CHANT_DBL)), -7.0, -0.45, {}))
-                self.placements.append(("chant_dbl", self._job(w, notes, ctx, dict(CHANT, voice="jenny", formant=1.0, seed=3)),
+                self.placements.append(("chant_dbl", self._job(w, notes, ctx, dict(CHANT_DBL, **the)), -7.0, -0.45, {}))
+                self.placements.append(("chant_dbl", self._job(w, notes, ctx, dict(CHANT, voice="jenny", formant=1.0, seed=3, **the)),
                                         -8.0, 0.45, {}))
             else:                      # every chant line: lessac an octave down, -9 dB
-                self.placements.append(("chant_dbl", self._job(w, notes, ctx, dict(CHANT_DBL)), -9.0, 0.0, dict(fx)))
+                self.placements.append(("chant_dbl", self._job(w, notes, ctx, dict(CHANT_DBL, **the)), -9.0, 0.0, dict(fx)))
 
         # ---- the choir: harmony and la-la stacks; the gang: twelve shouted copies
         for L in choir:

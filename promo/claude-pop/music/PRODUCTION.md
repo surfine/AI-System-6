@@ -83,6 +83,23 @@ Per sung word:
      45 % of its own last note.
    - Function words sit 1.5 dB under content words (was 2.5), and "your", "who", "where", "I" are no longer
      treated as function words: they carry the argument.
+8. **Diction** (`sing-v22`, after QA round 2 found the hook's low *pen* heard as "pan" on the lead stem alone and
+   the pre-chorus verbs as "I can't buy, I can't buy"):
+   - **Clear codas.** A stop or fricative coda (*fetch*, *desk*, *it*, *rough*) finishes inside its own note even
+     when the next word starts on a vowel; before, the vowel-to-vowel legato rule let it run on under the next
+     word ("fetch I" -> "vie", "One desk. And" -> "One, two, and").
+   - **The low pen.** "pen" written at E4 or below (the chorus *A* line "I'll never hold the pen.", D4 / E4, and the
+     breakdown's C4) is sung with the close-mid /e/: PSOLA's /ɛ/ before /n/ opens into /æ/ down there. (/ɪ/ also
+     fixed the stem but read "pin" / "deep in" under the band.) The D5 hook and the F#4 / G#4 call keep /ɛ/
+     (`vocals.low_pen`).
+   - **Unstressed *can*.** "can" is /kən/: a stressed /kæn/ cut by the next word's closure is heard as "can't".
+   - **The chant's *the*** is spoken /ðə/, never the sung *thee* ("Clip the proof" was "Clippy proof", "Ask the
+     question" "Assy question").
+   - **Fricative onsets** swell in over 15 ms (from silence a hard-edged f is heard as a p), and in the chant the word
+     before a content word starting with f / s / sh / th stops voicing 70 ms before its note (otherwise the f is
+     voiced: "can | file" -> "can vile").
+   - The bridge's "Oh-five." / "Oh-nine." are sung as two words each ("Oh" + "five."): as one two-note word Whisper
+     heard only "Oh". "Rough" (verse 2) is sung with a long vowel and ends 60 ms before "edge?".
 
 Measured with Praat on every rendered word: lead median 2.1 cents, la-la 1.4, chops 0.6; every note within 25 cents.
 
@@ -96,13 +113,15 @@ Measured with Praat on every rendered word: lead median 2.1 cents, la-la 1.4, ch
 | chant double | lessac an octave down, formant x0.88, -9 dB (calibrated 7.7 dB under the chant); the bridge years: lessac -7 dB and jenny at pitch -8 dB, panned +/-0.45 | darker |
 | choir (harmony, la-la) | amy (-0.5 pan, +7 cents, +10 ms) + jenny (+0.5, -8 cents, -9 ms) + lessac an octave down (formant x0.86); the final chorus and the outro double every voice (6 takes) | 3:1, width 1.25, plate -9 dB |
 | gang (echo, gang) | 12 copies = 3 voices x 4 Piper speeds (0.95/1.08/1.2/0.88), each with its own detune (+/-15 cents), formant (0.84-1.08), timing (+/-8 ms, so a *d* stays one *d*), high-shelf tilt (+/-3 dB) and pan (spread -0.95..0.95); shouted: a 60-cent scoop into each word, durations x0.9, no vibrato | light saturation, 6:1, +1.5 dB presence, no air shelf, width 1.35; "(pen pal)" and "You do!" set 3 LU over the lead |
-| gang (call: "(Keep it.)", "Flag it.") | 6 copies, detune +/-6 cents, full length, 2 dB under the chorus gang per copy | as above |
+| gang (call: "(Keep it.)", "Flag it.") | 3 copies (6 smeared "Flag it." into "Flyers"; 3 read "Keep it." / "Flag it!" on the stem), detune +/-6 cents, full length, 2 dB under the chorus gang per copy | as above |
 | spoken | lessac raw Piper per sentence, speed fitted to the slot, first vowel on its word | k1: 4 kHz low-pass + 8-bit 11 kHz (a 1988 sample); o3 dry |
 | chops | the boot take's own Piper "pen" / "pal" (length scale 1.35), repitched by PSOLA to D5 / B4, starting exactly on the event, hard-gated to the written length (8 ms release) | 8-bit in the intro, clean in the post-choruses; -4 dB under the lead |
 
 Gags: **FADE** (chorus "fade.") holds the word for 30 % of the beat, then the pitch glides B4 -> G4; only the tail
 dissolves: from 55 % of the beat the bit depth falls 16 -> 5 and the level sinks 12 dB ("or I fay-" is heard
-first), the band ducks 6 dB and dithers (7-bit TPDF) for 1.5 beats, then half a beat of nothing. **smooth** (pre-chorus 2): a low-pass sweeps 8 kHz -> 1.5 kHz across the word.
+first), the band ducks 6 dB and dithers (7-bit TPDF) for the beat, then half a beat of real silence (43.0-43.25,
+91.0-91.25, 135.0-135.25 s: the band is gone 10 ms before the half beat, the lead's tail 40 ms into it, both
+from about -45 dBFS; digital zero from +40 ms to 6 ms before "I'm" on the "and"). **smooth** (pre-chorus 2): a low-pass sweeps 8 kHz -> 1.5 kHz across the word.
 **Keep it.**: +/-10 cents, onsets 20 / 8 ms late. **The silent pen**: see the silence window below. **voice.**:
 the word is sung to 150.75 s, then two periods of the vowel (taken 12 ms before the *s* is detected: the first
 moment the 4 kHz+ band comes within 12 dB of the whole) loop to 151.0 s, then the *s*. (A duplicated, older
