@@ -58,53 +58,82 @@ function c12_mag(t) {
   clioDance(W / 2, H - 8, 7, t, { field: MAG, voice: 'choir', lyric: false, ...o });
 }
 const c12_desk = t => c12_homeDesk(t, { doc: { status: 'Final' } });   // the desk layers: no pointer (the overlay's pointer is the writer's hand)
-const ERAS12 = ['yosemite', 'snowleopard', 'aqua', 'system6'];
-let c12_PF = null;   // PERIOD_F per era: a dry render of the desk in each era, the full stop read back
-function c12_periods() {
-  if (c12_PF) return c12_PF;
-  c12_PF = {};
-  for (const era of ERAS12) { frameInto(styleBuf('c12m'), T0, c12_desk, { era }); c12_PF[era] = c12_PERIOD.slice(); }
-  return c12_PF;
+// NESTED DESKS (three.js, stage3d.js): each desk holds the world before it on a MONITOR, a window whose screen stands out
+// of the desk as a box. Every verb press kicks the camera back one desk: a flight out through the monitor, swinging round
+// its box, onto the next desk at 1:1 on a la; it holds there, lit and live (the drives play), until the next press. 1988
+// holds with 2002 still on its monitor, then the monitor zoom-closes into the writer's full stop on the beep. The shrinking
+// desks are frozen at the press that left them. FLASH-SAFE BY MATERIAL (WCAG 2.3.1, as ch09): a flight is NIGHT, a deep
+// magenta duotone (no moving pixel can swing 0.1 in luminance); only the holds are lit: one flash a verb (off, then on).
+const DN = 16, MON = { x: 286, y: 70, w: 112, h: 63 }, RHO = FW / MON.w, MZ = 30, MB = 4;   // the screen: the same rect on every desk (the windows never move)
+const MCX = MON.x + MON.w / 2 - FW / 2, MCY = FH / 2 - MON.y - MON.h / 2;
+const LAYS = [['liquidglass', 2026], ['yosemite', 2014], ['snowleopard', 2009], ['aqua', 2002], ['system6', 1988]];
+const STEP = [V[1].start, V[2].start + 2 * F1, V[4].start + 2 * F1, V[6].start + 2 * F1];   // the kicks: Save "it.", Clip, Insert, Export
+const LAND = [LA1.words[3].start + 3 * F1, LA1.words[5].start, LA2.words[1].start, LA2.words[5].start];   // lights on, on a la (the first a second after ch11's dive flashes)
+const SHUT0 = V[7].start + 3 * F1, SHUT1 = evTimes('cowbell').find(c => c > SHUT0) ?? SHUT0 + .25, NITE = rgb('#a0006a');   // the flight's ink: 0.085 linear at most   // the monitor closes into the full stop by the beep
+let c12_PF = null;   // the 1988 full stop, read back from a dry render
+const c12_period = () => c12_PF || (frameInto(styleBuf('c12m'), T0, c12_desk, { era: 'system6' }), c12_PF = c12_PERIOD.slice());
+const c12_CH = {}, c12_chrome = () => c12_CH[E.id] || offscreen(400, 300, () => { const r = win(0, 0, 300, 200, 'x'); c12_CH[E.id] = [r.x, r.y, 300 - r.w, 200 - r.h]; }) && c12_CH[E.id];   // the window chrome round a client rect
+const c12_mdesk = yr => t => c12_homeDesk(t, { doc: { status: 'Final' }, after: () => {   // the desk with its monitor: the year it holds in the title
+  const [l, tp, dw, dh] = c12_chrome(); win(MON.x - l, MON.y - tp, MON.w + dw, MON.h + dh, String(yr), { active: true }); rect(MON.x, MON.y, MON.w, MON.h, BLK);
+} });
+const c12_draw = i => i ? c12_mdesk(LAYS[i - 1][1]) : c12_mag, c12_o = i => ({ era: LAYS[i][0], raw: !i });
+const c12_static = i => deskTex('c12s' + i, STEP[i], c12_draw(i), c12_o(i));   // frozen at the press that leaves it (mip: it shrinks)
+const c12_live = (i, t, plain) => tex3d('c12live', FW, FH, c => frameInto(c, t, plain ? c12_desk : c12_draw(i), c12_o(i)), { live: t + '|' + i + plain });
+const MCOL = { yosemite: ['#d4d4d8', '#9c9ca2', '#6a6a70'], snowleopard: ['#3a3a3e', '#202024', '#9a9aa0'], aqua: ['#e8e8ec', '#b0b0b8', '#7c7c86'], system6: [WHT, WHT, BLK] };   // front, top, sides
+function c12_stage() {
+  return stage3d('c12 nest', st => {
+    st.o.P = LAYS.map((_, i) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(FW, FH), mat3d({ map: c12_static(Math.min(i, 3)), solid: true })); st.scene.add(m); return m; });
+    st.o.B = LAYS.map(([era], i) => {   // the monitor box round layer i's screen: 4 bars, MZ deep, in hard bands
+      if (!i) return null;
+      const [f, tp, sd] = MCOL[era], w = MON.w, h = MON.h, b = MB, c = [sd, sd, tp, sd, f, null];
+      const m = new THREE.Mesh(bandGeo([[0, (h + b) / 2, w + 2 * b, b], [0, -(h + b) / 2, w + 2 * b, b], [-(w + b) / 2, 0, b, h], [(w + b) / 2, 0, b, h]].map(([x, y, bw, bh]) => ({ w: bw, h: bh, d: MZ, pos: [x, y, MZ / 2], cols: c }))), mat3d({ vc: true, solid: true }));
+      st.scene.add(m); return m;
+    });
+    st.extra = [VER, BLK, WHT];
+    offscreen(FW, FH, () => render3d(st));   // harvest the palette now, from the build state: the same whichever frame comes first
+  });
 }
-let c12_LAY = null;
-function c12_layers() {   // the live layers: the magenta world, then the desk in 2014, 2009, 2002, 1988, each holding the last in its full stop
-  if (c12_LAY) return c12_LAY;
-  const P_ = c12_periods();
-  return (c12_LAY = [{ draw: c12_mag, era: 'liquidglass', raw: true, px: FW / 2, py: FH / 2 }, ...ERAS12.map(era => ({ draw: c12_desk, era, px: P_[era][0], py: P_[era][1], pw: 2 }))]);
-}
-// THE STEPS, flash-safe: on each verb the world holds at 1:1 under the press (6 frames), then CLOSES into the full stop
-// of the next desk the way a 1988 window closes into its icon: the Finder's zoom rects (1 px, inverted) and the old world
-// as a shrinking miniature run down into the dot while the next desk comes up underneath in a 16-frame Bayer dissolve
-// (1/16 of the pixels per frame: no frame-wide swing). Then the new era holds whole at 1:1 until its verb.
-const DN = 16, DS = [V[1].start, V[2].start + 6 * F1, V[4].start + 6 * F1, V[6].start + 6 * F1];   // Save "it." / Clip / Insert / Export
-function c12_shrink(src, g, w, h) {   // box-average src (FWxFH) down to w x h by hand: no smoothing, one solid colour per pixel
-  const s = src.getContext('2d').getImageData(0, 0, FW, FH).data, o = g.createImageData(w, h), d = o.data;
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    const x0 = x * FW / w | 0, x1 = Math.max(x0 + 1, (x + 1) * FW / w | 0), y0 = y * FH / h | 0, y1 = Math.max(y0 + 1, (y + 1) * FH / h | 0);
-    let r = 0, gg = 0, b = 0, n = 0;
-    for (let yy = y0; yy < y1; yy += 2) for (let xx = x0; xx < x1; xx += 2) { const i = (yy * FW + xx) * 4; r += s[i]; gg += s[i + 1]; b += s[i + 2]; n++; }
-    const i = (y * w + x) * 4; d[i] = r / n; d[i + 1] = gg / n; d[i + 2] = b / n; d[i + 3] = 255;
-  }
-  g.putImageData(o, 0, 0);
-}
-const c12_zr = (k, px, py) => { const sc = Math.exp(k * Math.log(2 / FH)); return [px - px * sc, py - py * sc, FW * sc, FH * sc]; };
+// u: 0 = the magenta world at 1:1 .. 4 = 1988 at 1:1; a flight eases out (fast on the press, settling as it lands)
+const c12_k = t => { let k = -1; while (k < 3 && t >= STEP[k + 1]) k++; return k; }, c12_fly = t => { const k = c12_k(t); return k >= 0 && t < LAND[k]; };
+const c12_u = t => { const k = c12_k(t); return k < 0 ? 0 : t >= LAND[k] ? k + 1 : k + 1 - (1 - prog(t, STEP[k], LAND[k])) ** 3; };
 function c12_pull(t) {
-  const L = c12_layers();
-  let s = -1; while (s < 3 && t >= DS[s + 1] - 1e-6) s++;
-  const f = s < 0 ? DN : c12_fr(t, DS[s]), cur = L[s < 0 ? 0 : f >= DN ? s + 1 : s];
-  if (s < 0 || f >= DN) { ctx.drawImage(frameInto(styleBuf('c12A'), t, cur.draw, cur), 0, 0); return; }
-  const nx = L[s + 1], n = f + 1, B = frameInto(styleBuf('c12B', FW, FH, true), t, cur.draw, cur);
-  ctx.drawImage(frameInto(styleBuf('c12A'), t, nx.draw, nx), 0, 0);
-  const [mx, my, mw, mh] = c12_zr(n / DN, nx.px, nx.py), mini = mw <= 64 && mw >= 3 ? styleBuf('c12mini', 64, 36, true) : null;
-  if (mini) {   // the old world, box-shrunk (1-bit hosts: Bayer-quantised by luma, no colour on the 1988 desk)
-    const g = mini.getContext('2d'), w = R(mw), h = Math.max(2, R(mh));
-    g.clearRect(0, 0, 64, 36); c12_shrink(B, g, w, h);
-    if (nx.era === 'system6') { const d = g.getImageData(0, 0, w, h), q = d.data; for (let i = 0; i < w * h; i++) { const v = (q[i * 4] * .299 + q[i * 4 + 1] * .587 + q[i * 4 + 2] * .114) / 255 + (BAYER4[((i / w | 0) & 3) * 4 + (i % w & 3)] + .5) / 16 - .5 > .5 ? 255 : 0; q[i * 4] = q[i * 4 + 1] = q[i * 4 + 2] = v; } g.putImageData(d, 0, 0); }
+  const u = c12_u(t), shut = t >= SHUT0 ? prog(t, SHUT0, SHUT1) : 0, [px, py] = c12_period();
+  const zf = e => (2 / MON.w) ** e, zw = e => (1 - zf(e)) / (1 - 2 / MON.w);   // the close: the screen shrinks at a constant rate, its rect sliding in step
+  if (u <= 0 || shut >= 1) {   // 1:1: the 2D frame (and the full stop taking the closed monitor: a ring for 4 frames)
+    ctx.drawImage(frameInto(styleBuf('c12A'), t, u ? c12_desk : c12_mag, c12_o(u ? 4 : 0)), 0, 0);
+    const f = c12_fr(t, SHUT1); if (u && f < 4) ring(px + 1, py + 1, 5 + 3 * f, VER, 1);
+    return;
   }
-  const g = B.getContext('2d'); g.save(); g.globalCompositeOperation = 'destination-in'; g.fillStyle = bayerPat((DN - n) / DN, BLK, null); g.fillRect(0, 0, FW, FH); g.restore();
-  ctx.drawImage(B, 0, 0);
-  if (mini) { const w = R(mw), h = Math.max(2, R(mh)); ctx.drawImage(mini, 0, 0, w, h, R(mx), R(my), w, h); }
-  for (let j = 0; j < 4; j++) if (n - j >= 1) { const [x, y, w, h] = c12_zr((n - j) / DN, nx.px, nx.py); if (w > 4) c12_dif(() => frame(R(x), R(y), R(w), R(h), WHT)); }
+  const st = c12_stage(); if (!st) return;
+  const j = Math.min(3, Math.ceil(u) - 1), ph = u - j, O = j + 1;   // a hold is the end of its flight: the desk held is live
+  st.o.P.forEach((m, i) => { m.visible = false; if (i < O) matOf(m).map = c12_static(i); if (st.o.B[i]) st.o.B[i].visible = false; });
+  matOf(st.o.P[O]).map = c12_live(O, t, shut > 0);
+  let s = RHO ** (1 - ph), p = [MCX, MCY, MZ].map(v => -(1 - ph ** 1.6) * s * v);   // the pan lags the pull: the world just left stays nearer the middle
+  for (let i = O; i >= 0 && s * FW >= 2; i--) {   // each desk, then its monitor's box and the world inside it, smaller
+    const P_ = st.o.P[i]; P_.visible = true; P_.scale.setScalar(s); P_.position.set(...p);
+    if (!i) break;
+    const sh = i === 4 ? shut : 0, f = zf(sh), ax = lerp(MCX, px + 1 - FW / 2, zw(sh)), ay = lerp(MCY, FH / 2 - py - 1, zw(sh)), B = st.o.B[i];
+    B.visible = true; B.scale.setScalar(s * f); B.position.set(p[0] + s * ax, p[1] + s * ay, p[2]);
+    p = [p[0] + s * ax, p[1] + s * ay, p[2] + s * MZ * f]; s *= f / RHO;
+  }
+  const sw = .2 * Math.sin(PI * ph) * (j % 2 ? 1 : -1), el = sw * .5;   // the swing round the box, alternating per kick
+  aim3d(st.cam, { pos: [D3 * Math.sin(sw) * Math.cos(el), D3 * Math.sin(el), D3 * Math.cos(sw) * Math.cos(el)], look: [0, 0, 0], fov: 30, roll: sw * .25 });
+  render3d(st, { bg: BLK });
+  if (c12_fly(t)) {   // the flight: the night duotone (luma in 4 Bayer-dithered steps of a deep magenta), smeared on the kick's first 2 frames
+    const y0 = SLAB.band, h = BAND.y - y0, im = ctx.getImageData(0, y0, FW, h), d = im.data;
+    for (let i = 0, n = 0; i < d.length; i += 4, n++) {
+      const v = Math.min(3, Math.floor((d[i] * .299 + d[i + 1] * .587 + d[i + 2] * .114) / 85 + (BAYER4[((y0 + (n / FW | 0)) & 3) * 4 + (n % FW & 3)] + .5) / 16)) / 3;
+      d[i] = R(NITE[0] * v); d[i + 1] = R(NITE[1] * v); d[i + 2] = R(NITE[2] * v);
+    }
+    ctx.putImageData(im, 0, y0);
+    const k = c12_k(t), f = c12_fr(t, STEP[k]); if (k && f < 2) FX.pixelSort = { rows: 16, len: 220, seed: k * 7 + f, dir: k % 2 ? 1 : -1, keep: [[0, y0], [BAND.y, FH]] };
+  }
+  for (const k of LAND) splitPal(2, k, 2, [WHT, BLK], t);   // lights on, with the 2-frame split
+  if (shut) for (let k = 0; k < 4; k++) {   // the Finder's zoom rects, inverted, trailing the screen into the full stop
+    const e = shut - k * .15; if (e <= 0) continue;
+    const w_ = zw(e), x = lerp(MON.x - 1, px, w_), y = lerp(MON.y - 19, py, w_), w = lerp(MON.w + 2, 2, w_), h = lerp(MON.h + 20, 2, w_);
+    if (w > 4) c12_dif(() => frame(R(x), R(y), R(w), R(h), WHT));
+  }
 }
 
 // ---- the overlay: the verb column, the la-la band with the bouncing pen, the record ----
@@ -378,5 +407,6 @@ scene('ch12 end card', CRT0, END, t => {
     text('The source of this whole film: ' + c12_num(c12_W.bytes) + ' of ' + c12_num(c12_W.floppy) + ' bytes · one floppy', FW / 2, y + 22, { font: 'chicago', color: WHT, align: 'center' });
   }
 }, { era: 'system6', raw: true });
-warmUp(() => { c12_layers(); c12_keys(); c12_slabs(); for (const s of [1, 2, 3, 4]) for (const f of [0, 1]) c12_spr(s, !!f); });
+window.__c12 = { c12_pull, c12_draw, c12_o, c12_desk, c12_u, STEP, LAND };
+warmUp(() => { if (c12_stage()) for (let i = 0; i < 4; i++) c12_static(i); c12_period(); c12_keys(); c12_slabs(); for (const s of [1, 2, 3, 4]) for (const f of [0, 1]) c12_spr(s, !!f); });
 }

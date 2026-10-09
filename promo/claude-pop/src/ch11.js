@@ -127,14 +127,14 @@
   // with its hat extruded. Close shots keep the camera at hat height, the horizon at y 232: every hat sits on it at any
   // depth, under the poster type, so the stage turns and recedes while the lyric stays square. Sinking = squashed into the top ----
   const CUT3 = T0 + 4 * F1, RT = 350, PX3 = 60, DRUM = 40, NB = 48, P3 = [FLD, BLK, WHT], c11_geos = new Map();
-  // a painted canvas as voxels: black = ink, field = a rim plate behind (flat: in line with the ink)
+  // a painted canvas as voxels: black = ink, field = a thin rim plate behind (flat: one slab, the field a plate on its face)
   function c11_vox(c, ox, oy, dz, flat) {
     const w = c.width, h = c.height, u = new Uint32Array(c.getContext('2d').getImageData(0, 0, w, h).data.buffer);
     let k = 2166136261; for (let i = 0; i < u.length; i++) k = Math.imul(k ^ u[i], 16777619);
     let g = c11_geos.get(k); if (g) return g;
     const ink = new Uint8Array(u.length), rim = new Uint8Array(u.length);
-    for (let i = 0; i < u.length; i++) if (u[i] >>> 24 >= 128) ((u[i] & 255) + (u[i] >> 8 & 255) + (u[i] >> 16 & 255) < 120 ? ink : rim)[i] = 1;
-    const a = voxGeo(ink, w, h, dz, ox, oy), b = voxGeo(rim, w, h, flat ? dz : 1, ox, oy, [1, 1, 1, 1]).translate(0, 0, flat ? 0 : -dz / 2 - .5);
+    for (let i = 0; i < u.length; i++) if (u[i] >>> 24 >= 128) { ((u[i] & 255) + (u[i] >> 8 & 255) + (u[i] >> 16 & 255) < 120 ? ink : rim)[i] = 1; if (flat) ink[i] = 1; }
+    const a = voxGeo(ink, w, h, dz, ox, oy), b = voxGeo(rim, w, h, 1, ox, oy, [1, 1, 1, 1]).translate(0, 0, (flat ? 1 : -1) * (dz / 2 + .5));
     g = new THREE.BufferGeometry();
     for (const n of ['position', 'color']) { const x = a.attributes[n].array, y = b.attributes[n].array, m = new Float32Array(x.length + y.length); m.set(x); m.set(y, x.length); g.setAttribute(n, new THREE.BufferAttribute(m, 3)); }
     a.dispose(); b.dispose();
@@ -151,7 +151,8 @@
     T.add(new THREE.Mesh(new THREE.CircleGeometry(RT, 64).rotateX(-PI / 2), mat3d({ map: tex3d('c11top', 256, 256, c11_top, { mip: true }), solid: true })));
     T.add(new THREE.Mesh(new THREE.CylinderGeometry(RT, RT, DRUM, 64, 1, true).translate(0, -DRUM / 2, 0), mat3d({ color: BLK, solid: true })));
     st.o.bulbs = [0, 1, 2].map(k => { const b = []; for (let i = k; i < NB; i += 3) { const a = i / NB * 2 * PI; b.push({ w: 12, h: 12, d: 4, pos: [Math.sin(a) * (RT + 1), -DRUM / 2, Math.cos(a) * (RT + 1)], ry: a, cols: Array(6).fill(WHT) }); } const q = new THREE.Mesh(bandGeo(b), mat3d({ vc: true, solid: true })); T.add(q); return q; });
-    st.o.D = Array.from({ length: LN }, (_, i) => { const d = new THREE.Group(), body = new THREE.Mesh(undefined, m); d.add(body, new THREE.Mesh(c11_vox(c11_hatC(i), 32, 25, 12, true), m)); T.add(d); return { d, body, hat: d.children[1] }; });
+    T.add(st.o.body = new THREE.InstancedMesh(new THREE.BufferGeometry(), m, LN)); st.o.body.frustumCulled = false;   // the twelve bodies: one draw
+    st.o.D = Array.from({ length: LN }, (_, i) => { const d = new THREE.Group(); d.add(new THREE.Mesh(c11_vox(c11_hatC(i), 32, 25, 12, true), m)); T.add(d); return { d, hat: d.children[0] }; });
   }
   // the camera orbits the stage: at hat height by default (o.hz moves the horizon); wide shots (o.h, o.ly) look down on it
   const K3 = (r, a, o = {}) => { const h = o.h ?? 126; return { ...orbit3d([o.x || 0, 0, 0], r, a, h), look: [o.x || 0, o.ly ?? h + r * (o.hz ?? .0774), 0], roll: o.roll || 0 }; };
@@ -180,12 +181,15 @@
     S.bulbs.forEach((q, j) => matOf(q).color.set(j === Math.floor(beatAt(t) * 4 + 1e-6) % 3 ? FLD : BLK));   // chasing on the 16ths
     const pp = k > 0 ? c11_pup(t, o) : null, g = pp && c11_vox(pp.b, LBW / 2, LBH - 26, 12);
     const px = lerp(LPX, PX3, EASE3.hard(prog(t, CUT3, LA.words[4].start)));   // from the 2D spacing they step apart
+    S.body.visible = k > 0; if (pp) S.body.geometry = g;
     S.D.forEach((D, i) => {
       D.d.visible = k > 0; if (!pp) return;
-      D.body.geometry = g; D.hat.position.set(pp.d.head[0] - LBW / 2, LBH - 26 - pp.d.head[1], 1.5); D.d.scale.y = k;
+      D.hat.position.set(pp.d.head[0] - LBW / 2, LBH - 26 - pp.d.head[1], 1.5); D.d.scale.y = k;
       const x = D.d.position.x = (i - 5.5) * px, wx = x * Math.cos(th), wz = -x * Math.sin(th);
       D.d.rotation.y = Math.atan2(cs.pos[0] - wx, cs.pos[2] - wz) - th;   // they play to the house
+      D.d.updateMatrix(); S.body.setMatrixAt(i, D.d.matrix);
     });
+    S.body.instanceMatrix.needsUpdate = true;
     render3d(st, { pal: P3, bg: null });
     return true;
   }
