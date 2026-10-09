@@ -442,7 +442,7 @@ scene('ch12 end card', CRT0, END, t => {
     frame(x + 40, y, 240, 10, WHT); rect(x + 42, y + 2, Math.floor(236 * k * Math.min(8, c12_fr(t, CARD) + 1) / 8), 6, WHT);   // fills in 8 frames
     text("This film's own code: " + of + ' · ' + fl, FW / 2, y + 22, { font: 'chicago', color: WHT, align: 'center' });
   }
-  text('The 3D is drawn by three.js (MIT), not counted.', FW / 2, 330, { font: 'geneva', color: WHT, align: 'center' });
+  text('Song sung by ACE-Step 1.5 (MIT). 3D drawn by three.js (MIT). Neither counted.', FW / 2, 330, { font: 'geneva', color: WHT, align: 'center' });
 }, { era: 'system6', raw: true });
 warmUp(() => { if (c12_stage()) for (let i = 0; i < 5; i++) { c12_static(i); if (i < 4) c12_scr(i); } c12_period(); c12_keys(); c12_slabs(); for (const s of [1, 2, 3, 4]) for (const f of [0, 1]) c12_spr(s, !!f); });
 }

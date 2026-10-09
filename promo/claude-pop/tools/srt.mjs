@@ -12,6 +12,17 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const ctx = {};
 vm.runInNewContext(fs.readFileSync(path.join(ROOT, 'data/data.js'), 'utf8') + '\nthis.LYRICS = LYRICS;', ctx);
+// The song may be a regenerated performance: data/warp.js maps song time to picture time, and the subtitles follow
+// the SONG, so every picture time is taken back through the inverse map.
+const warpFile = path.join(ROOT, 'data/warp.js');
+if (fs.existsSync(warpFile)) vm.runInNewContext(fs.readFileSync(warpFile, 'utf8') + '\nthis.WARP = WARP;', ctx);
+const toSong = p => {
+  const K = ctx.WARP; if (!K || !K.length) return p;
+  if (p <= K[0][1]) return p - K[0][1] + K[0][0];
+  for (let i = 1; i < K.length; i++) if (p <= K[i][1]) { const [a, b] = K[i - 1], [c, d] = K[i]; return a + (p - b) * (c - a) / (d - b); }
+  const [a, b] = K[K.length - 1]; return a + (p - b);
+};
+for (const l of ctx.LYRICS) { l.start = toSong(l.start); l.end = toSong(l.end); }
 const zh = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/lyrics-zh.json'), 'utf8'));
 
 const cues = [];
