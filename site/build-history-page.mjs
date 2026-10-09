@@ -20,12 +20,12 @@ const VERSION = "20260923a";
 
 const ERAS = [
   ["classic", "1988", "System 6", "svg"],
-  ["platinum", "1999", "Platinum", "png"],
-  ["aqua", "2002", "Aqua", "png"],
-  ["snow-leopard", "2009", "Snow Leopard", "png"],
-  ["yosemite", "2014", "Yosemite", "png"],
-  ["big-sur", "2020", "Big Sur", "png"],
-  ["liquid-glass", "2026", "Liquid Glass", "png"],
+  ["platinum", "1999", "Platinum", "webp"],
+  ["aqua", "2002", "Aqua", "webp"],
+  ["snow-leopard", "2009", "Snow Leopard", "webp"],
+  ["yosemite", "2014", "Yosemite", "webp"],
+  ["big-sur", "2020", "Big Sur", "webp"],
+  ["liquid-glass", "2026", "Liquid Glass", "webp"],
 ];
 
 function page(en) {
@@ -131,8 +131,8 @@ function page(en) {
           "AI System 6 brought both back as they were. Work that lasts lives on the Project Hard Disk; the PDFs, pages, and recordings you bring in for this piece ride on the File Floppy, as reference that never quietly joins the project. It also set itself a rule just as old-fashioned: everything needed to boot must fit on two 1.44 MB floppies, or the build fails. The heavy tools live on a “third disk” and load only when used."),
       ],
       figure: `<figure class="fn-figure fn-objects">
-          <div><img data-icon="hardDisk" src="../img/themes/liquid-glass/hardDisk.png" width="64" height="64" alt=""><b>${t("项目硬盘", "Project Hard Disk")}</b><span>${t("要长久留下的", "What lasts")}</span></div>
-          <div><img data-icon="fileFloppy" src="../img/themes/liquid-glass/fileFloppy.png" width="64" height="64" alt=""><b>${t("文件软盘", "File Floppy")}</b><span>${t("这一次带进来的", "What you brought in this time")}</span></div>
+          <div><img data-icon="hardDisk" src="../img/themes/liquid-glass/hardDisk.webp" width="64" height="64" alt=""><b>${t("项目硬盘", "Project Hard Disk")}</b><span>${t("要长久留下的", "What lasts")}</span></div>
+          <div><img data-icon="fileFloppy" src="../img/themes/liquid-glass/fileFloppy.webp" width="64" height="64" alt=""><b>${t("文件软盘", "File Floppy")}</b><span>${t("这一次带进来的", "What you brought in this time")}</span></div>
           <figcaption>${t("今天桌面上的两个图标，取自 AI System 6 的 Liquid Glass 外观。", "The two icons as they sit on today's desk, in AI System 6's Liquid Glass appearance.")}</figcaption>
         </figure>`,
       lab: true,

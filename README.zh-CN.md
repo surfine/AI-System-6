@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: f17a7e0a5dabc9267af9121bd10a32c5f70b84d4bba681a49f7e84ffd70cd05e -->
+<!-- source-sha256: c5a2f8dd94ae1c781fb5d53f9b1cdd1bfeb10e3d06815fa262134fb9fa3d853c -->
 
 > 英文版为准 / 仅供人类参考
 
@@ -28,7 +28,7 @@
 </picture></a>
 
 <sub>你的 GITHUB 主题刚刚替你选好了时代：浅色是 1988，深色是 2026。<br>
-里面还有四套。只是随便看看的话，不需要任何模型。</sub>
+一共十二套外观。只是随便看看的话，不需要任何模型。</sub>
 
 </div>
 
@@ -44,6 +44,7 @@
 
 ## 目录
 
+- [近期进展](#近期进展)
 - [1.0.57 有什么新东西](#1057-有什么新东西)
 - [1.0.56 有什么新东西](#1056-有什么新东西)
 - [它保护的是什么](#它保护的是什么)
@@ -61,6 +62,19 @@
 - [仓库是怎么摆的](#仓库是怎么摆的)
 - [参与贡献](#参与贡献)
 
+## 近期进展
+
+- **把原文整理成图表或幻灯片。** ClioChart 保留图中内容对应的原句。ClioStage 可以直接编辑幻灯片页面，并在打印前预览。AI 起草需要连接模型，分享前仍需检查结果。
+- **图像换了应用，仍能继续编辑。** 图表、绘图和封面可以作为可编辑副本插入其他编辑器。原件变化后，由你决定是否同步副本。每个编辑器分别保存撤销历史。
+- **找到要继续工作的窗口。** Dock 先显示应用的窗口预览，选中后再打开。Mac OS X 外观的 Dock 默认关闭，可在控制面板中启用。十二套外观都可以选择。
+- **读取更多网页正文。** Time Machine 通过独立的浏览服务运行网页脚本。服务不可用时，它会标明页面是快照。阅读器第一次提取失败后，会尝试其他读取方法。部分网站仍需交给外部浏览器。
+- **建一座城，规划交通，再开车逛逛。** 盆景城市、根线和兜风使用同一套城市数据。根线可以规划地铁、BRT 和公交。兜风读取城市快照，驾驶不会改动原存档。《明文》则是一段独立的中文故事，支持本地存档。
+
+项目保存在浏览器里。请导出备份，另存一份。逛桌面、玩游戏和打开 **36 张示例项目硬盘**，都不需要连接 AI 模型。
+
+<details>
+<summary>版本详情：1.0.57 与 1.0.56</summary>
+
 ## 1.0.57 有什么新东西
 
 - **Dock 可以同时开多个应用。** Dock 显示时，Mac OS X 外观一律按 MultiFinder
@@ -75,11 +89,11 @@
   设置面板改。
 - **每套外观的控件都说清自己的状态。** 停用、聚焦、按下、勾选，读起来和各时代自
   己的屏幕一样。
-- **ClioChart 和 ClioStage 接收任意文本，并始终以原文为据。** ClioChart 一次给出
-  三张候选图，在可编辑画布上打开，每个框都留着它依据的那句原文；ClioStage 逐页生
-  成幻灯片，把编出来的数字和改写的引文退回重做。幻灯片就在要打印的那一页上编辑，
-  打印预览显示的就是 PDF 那一页。
-- **桌面上的编辑器共用一条撤销历史**，画布有参考线、对齐、等距分布和图层面板。图
+- **ClioChart 和 ClioStage 从你提供的文字开始。** ClioChart 提供
+  候选图，在可编辑画布上打开，每个框都留着它依据的那句原文；ClioStage 逐页生
+  成幻灯片，把编出来的数字和改写的引文退回重做。幻灯片可以直接在页面上编辑，
+  打印预览与打印使用相同的页面布局。
+- **各编辑器使用一致的撤销操作，分别保存历史**，画布有参考线、对齐、等距分布和图层面板。图
   在编辑器之间以可编辑副本流转，原件变了会提示同步。
 - **Review Desk 在书稿上保留批注讨论**，按文字锚定，不去猜位置。
 - **ClioPaint 有了 1 位图层；Cover Glass 把封面存成带真实图层的文档**，并用随版本
@@ -196,6 +210,8 @@
   台湾用语只在明确要求时启用，仅要求繁体字不会自动选择地域语域。取消、切换项目或
   原稿已改动后返回的结果不能覆盖原稿。真实模型前后对照仍待完成，这些是编辑契约，
   并非已测得的质量提升。
+
+</details>
 
 ## 它保护的是什么
 
@@ -381,7 +397,7 @@ flowchart LR
 | **明文** | 代笔人与海图师的中文原创视觉小说；打开窗口时加载，存档留在本机 |
 | **盆景城市** | 我们自己做的城市建造游戏：64²、96²、128² 地图，参与城市发展的交通与公共服务，本地存档，以及昼夜变化的 3D 城市 |
 | **根线** | 确定性的公共交通一局：画线、在高峰里运送乘客、挑每周奖励，在挤爆倒计时前撑住，或切到无尽模式慢慢修 |
-| **兜风** | 1996 年风格的街面驾驶，在盆景起步小镇里开车，支持彩色或黑白画面，以及键盘、触控和游戏手柄 |
+| **兜风** | 1996 年风格的街面驾驶，读取你的盆景城市快照，不改动原存档；支持彩色或黑白画面，以及键盘、触控和游戏手柄 |
 
 <table>
   <tr>
@@ -444,9 +460,8 @@ flowchart LR
 重型工具                按需懒加载，从第三张盘上来
 ```
 
-当启动载荷超过两张软盘时，一道发布门禁会让构建失败。它装得下，第二张盘还空着一角。
-每个功能都得在一条没人强迫我们设的限制面前挣够自己的字节；而上面那个数字是门禁自己
-写下的，所以这句话不会悄悄变成假话。
+发布检查会测量启动桌面所需的文件。按需加载的工具和 AI 模型不计入这个数字。
+实测启动载荷比两张软盘的容量少 8,177 字节，上面的刻度使用构建实测值。
 
 ## 自带模型
 
@@ -489,6 +504,7 @@ AI-System-6/
 │   ├── desktop/       浏览器计算机：系统服务、应用、样式、资源
 │   └── server/        无状态的 Node.js 桥与模型适配器
 ├── site/              可独立部署的产品官网
+├── promo/claude-pop/   影片源码、场景时间表与音乐工具
 ├── platform/          macOS 外壳与 web 发布契约
 ├── tooling/           构建、校验、采集、打包、发布
 ├── tests/             可执行的产品与架构契约
@@ -504,6 +520,9 @@ AI-System-6/
 登记表、Finder 里那一行和官网场景不一致时，守门的是
 `tests/features/launch-intent.test.mjs`
 和演示盘面板的契约测试。
+
+[Claude-Pop 影片工程](promo/claude-pop/STATUS.md)包含影片源码、场景时间表与音乐工具。
+生成的音频和渲染后的视频是单独的文件，源码仓库不包含这些输出。
 
 请阅读[架构](docs/ARCHITECTURE.md)、[开发](docs/DEVELOPMENT.md)
 和[设计契约](docs/design/DESIGN.md)。
@@ -523,9 +542,9 @@ Lite 的规则表（GPL-3.0），许可证与来源记录在 vendor/ubol/。
 
 <div align="center">
 
-<img src="site/img/themes/classic/hardDisk.svg" width="40" height="40" alt=""> <img src="site/img/themes/platinum/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/aqua/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/snow-leopard/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/yosemite/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/liquid-glass/hardDisk.png" width="40" height="40" alt="">
+<img src="site/img/themes/classic/hardDisk.svg" width="40" height="40" alt=""> <img src="site/img/themes/platinum/hardDisk.webp" width="40" height="40" alt=""> <img src="site/img/themes/aqua/hardDisk.webp" width="40" height="40" alt=""> <img src="site/img/themes/snow-leopard/hardDisk.webp" width="40" height="40" alt=""> <img src="site/img/themes/yosemite/hardDisk.webp" width="40" height="40" alt=""> <img src="site/img/themes/liquid-glass/hardDisk.webp" width="40" height="40" alt="">
 
-<sub>一块硬盘。八个时代。同一份工作。</sub>
+<sub>一块硬盘。十二套外观。同一份工作。</sub>
 
 如果 AI 写作工具应该放过你的嗓音，就 **[★ 给 AI System 6 加星](https://github.com/surfine/AI-System-6)**。
 

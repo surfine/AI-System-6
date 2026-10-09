@@ -1377,7 +1377,8 @@ html[data-theme="liquid-glass"] .scene-kicker { color: rgba(28, 39, 51, 0.62); -
   text-wrap: pretty;
 }
 .scene-fine {
-  max-width: 44em;
+  max-width: min(44em, 100%);
+  overflow-wrap: anywhere;
   margin: 10px auto 0;
   font-size: 15px;
   line-height: 1.55;
@@ -1426,11 +1427,13 @@ html.js[data-theme] .scene.scene-in { animation: scene-rise 720ms cubic-bezier(0
   max-width: 22em;
 }
 :root:not([data-theme]) .story-quote.story-quote { border-top: 2px solid var(--ink); }
-/* Chinese display lines break at their commas, not between two characters
-   of one word: balance alone split 正是 across the quote's two lines. */
+/* CJK must wrap inside narrow columns. Strict line breaking keeps opening
+   punctuation off line ends and closing punctuation off line starts. */
 :lang(zh) .story-quote,
 :lang(zh) .scene-head,
-:lang(zh) .hero-head { word-break: keep-all; }
+:lang(zh) .hero-head { word-break: normal; line-break: strict; }
+/* Keep a short title together when it fits; allow wrapping on narrow screens. */
+.title-phrase { display: inline-block; max-width: 100%; vertical-align: bottom; }
 
 /* ---------- Grids that fit their content ---------- */
 
@@ -1484,6 +1487,7 @@ html[data-theme="big-sur"] .btn-default::after { content: none; }
 html[data-theme="big-sur"] .btn-default { background: #0a64d8; color: #fff; border-color: #0a64d8; }
 
 @media (prefers-reduced-motion: reduce) {
+  html.js .scene.scene-in,
   html.js[data-theme] .scene.scene-in { animation: none; }
   .btn, .boot-choice { transition: none; }
   html[data-theme] .btn:active, html[data-theme] .boot-choice:active { transform: none; }
@@ -1803,7 +1807,7 @@ html[data-theme="liquid-glass"] .notes-meta { color: #1c2733; text-shadow: none;
   line-height: 1.15;
   letter-spacing: -0.01em;
 }
-.notes-cover-icons { display: flex; gap: 10px; flex-wrap: wrap; padding: 6px 0 2px; }
+.notes-cover-icons { display: grid; grid-template-columns: repeat(5, 32px); gap: 10px; padding: 6px 0 2px; }
 .notes-cover-icons img { width: 32px; height: 32px; }
 .notes-cover-icons img.is-pixel { image-rendering: pixelated; }
 .notes-chapters { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; border-top: 1px solid rgba(0, 0, 0, 0.12); }
@@ -1931,4 +1935,27 @@ html[data-theme="liquid-glass"] .more-head { color: #1c2733; text-shadow: none; 
     --bar-blur: none;
     --menu-blur: none;
   }
+}
+
+/* Original games: one city, followed by its two closer views. Keep complete
+   product windows in frame, including their tools and status bars. */
+.original-games {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  max-width: 1040px;
+  margin: 36px auto 24px;
+  padding: 0 20px;
+}
+.original-city { grid-column: 1 / -1; }
+.original-games .proof-shot, .novel-proof .proof-shot { aspect-ratio: auto; height: auto; }
+.original-games .proof-cap, .novel-proof .proof-cap { padding: 16px 18px 18px; gap: 8px; }
+.original-games .proof-line, .novel-proof .proof-line { line-height: 1.6; opacity: .82; }
+.original-games .proof-label { font-size: 17px; }
+.original-note { max-width: 680px; margin: 24px auto 0; padding: 0 20px; }
+.novel-proof { max-width: 1000px; margin: 36px auto 0; }
+@media (max-width: 640px) {
+  .original-games { grid-template-columns: 1fr; gap: 24px; padding: 0; }
+  .original-city { grid-column: auto; }
+  .novel-proof { margin-top: 28px; }
 }

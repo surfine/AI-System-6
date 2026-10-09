@@ -308,7 +308,7 @@ if (designGovernance.status === 0) {
   fail(`design governance verification failed\n${designGovernance.stderr || designGovernance.stdout}`);
 }
 
-const officialSite = runReceiptCheck("site", process.execPath, ["tooling/verify-site.mjs"], {
+const officialSite = runReceiptCheck("site", "npm", ["run", "site:check"], {
   cwd: root,
   encoding: "utf8",
 });

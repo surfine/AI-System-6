@@ -1,0 +1,54 @@
+{
+  "capturedAt": "2026-10-09T17:33:33.543Z",
+  "version": {
+    "name": "ai-system-6",
+    "version": "1.0.57",
+    "build": "20261009.3",
+    "sourceCommit": "",
+    "snapshotCommit": "b3abe1edf",
+    "generatedAt": "2026-10-09T17:07:37.036Z"
+  },
+  "shots": [
+    {
+      "id": "bonsai-city",
+      "file": "bonsai-city.webp",
+      "caption": "Hezhou, 1952. The built-in town, paused after opening.",
+      "appearance": "platinum",
+      "source": "running application",
+      "width": 1120,
+      "height": 734,
+      "capturedAt": "2026-10-09T17:14:14.895Z"
+    },
+    {
+      "id": "rootline",
+      "file": "rootline.webp",
+      "caption": "The same Hezhou save, opened as a transport rehearsal.",
+      "appearance": "platinum",
+      "source": "running application",
+      "width": 1100,
+      "height": 720,
+      "capturedAt": "2026-10-09T17:14:27.541Z"
+    },
+    {
+      "id": "joyride",
+      "file": "joyride.webp",
+      "caption": "Hezhou, 1952, at street level. The built-in demonstration town.",
+      "appearance": "platinum",
+      "source": "running application",
+      "width": 1100,
+      "height": 700,
+      "capturedAt": "2026-10-09T17:30:37.402Z"
+    },
+    {
+      "id": "mingwen",
+      "file": "mingwen.webp",
+      "caption": "Plaintext — the ghostwriter and the cartographer. The live title screen.",
+      "appearance": "platinum",
+      "source": "running application",
+      "width": 1120,
+      "height": 850,
+      "capturedAt": "2026-10-09T17:33:33.036Z"
+    }
+  ],
+  "errors": []
+}

@@ -1,9 +1,9 @@
 // Snapshot: compose a share card from the CURRENT ERA's real captured frame.
 // No mockups. The desktop on the card is the desktop from the machine.
 
-import { currentEra, onEraChange } from "./eras.js?v=20260925a";
-import { frameSrc, machineManifest } from "./machine.js?v=20260925a";
-import { L } from "./copy.js?v=20260820a";
+import { currentEra, onEraChange } from "./eras.js?v=20261010a";
+import { frameSrc, machineManifest } from "./machine.js?v=20261010a";
+import { L } from "./copy.js?v=20261010a";
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {

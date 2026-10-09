@@ -11,8 +11,8 @@
 // that interviews you before you write, the map of your own research, and the
 // desk that tells you your finished draft sounds like a machine.
 
-import { iconImg } from "./eras.js?v=20260925a";
-import { L } from "./copy.js?v=20260820a";
+import { iconImg } from "./eras.js?v=20261010a";
+import { L } from "./copy.js?v=20261010a";
 
 const doc = document;
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -53,7 +53,7 @@ let proofs = null;
 async function loadProofs() {
   if (proofs) return proofs;
   try {
-    const res = await fetch("img/proofs/proofs.json?v=20260814i");
+    const res = await fetch("img/proofs/proofs.json?v=20261010a");
     const data = await res.json();
     proofs = Object.fromEntries(data.proofs.map((p) => [p.label, p]));
   } catch (e) {
@@ -69,7 +69,7 @@ function renderWall(wall, items, proofsByLabel) {
     card.className = "proof-card";
     const shot = doc.createElement("img");
     shot.className = "proof-shot";
-    shot.src = "img/proofs/" + proof.file;
+    shot.src = "img/proofs/" + proof.file + "?v=20261010a";
     shot.alt = L(item.label + ", captured from the running app: " + proof.caption, `${item.label} 的运行截图：${item.line}`);
     shot.loading = "lazy";
     shot.decoding = "async";
@@ -124,7 +124,7 @@ export async function initImpossible(wall, body, statusBar) {
       if (!proof || openWin !== win) return;
       const box = win.querySelector(".imp-proof");
       const img = doc.createElement("img");
-      img.src = "img/proofs/" + proof.file;
+      img.src = "img/proofs/" + proof.file + "?v=20261010a";
       img.alt = L(item.label + ", captured from the running app: " + proof.caption, `${item.label} 的运行截图：${item.line}`);
       img.loading = "lazy";
       img.decoding = "async";

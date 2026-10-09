@@ -1,19 +1,19 @@
 // AI System 6 official site - entry module. Progressive enhancement only:
 // with JS off the page is a readable document with a desktop screenshot.
 
-import { ERAS, setEra, onEraChange, prefetchEras, refreshIcons, iconSrc } from "./eras.js?v=20260925a";
-import { initBalloons, setBalloons, balloonsEnabled, flashBalloon } from "./balloon.js?v=20260820a";
-import { loadMachine, createMachine, warmAllFrames, machineManifest } from "./machine.js?v=20260925a";
-import { createDissolve } from "./dissolve.js?v=20260820a";
-import { initRouteScene } from "./route.js?v=20260820a";
-import { initImpossible } from "./impossible.js?v=20260820a";
-import { initFloppies } from "./floppies.js?v=20260820a";
-import { initQuickTime } from "./quicktime.js?v=20260820a";
-import { initArgument } from "./argument.js?v=20261003a";
-import { initShareCard } from "./sharecard.js?v=20260820a";
-import { initTour } from "./tour.js?v=20260923a";
-import { initMore } from "./more.js?v=20260923a";
-import { L } from "./copy.js?v=20260820a";
+import { ERAS, setEra, onEraChange, prefetchEras, refreshIcons, iconSrc } from "./eras.js?v=20261010a";
+import { initBalloons, setBalloons, balloonsEnabled, flashBalloon } from "./balloon.js?v=20261010a";
+import { loadMachine, createMachine, warmAllFrames, machineManifest } from "./machine.js?v=20261010a";
+import { createDissolve } from "./dissolve.js?v=20261010a";
+import { initRouteScene } from "./route.js?v=20261010a";
+import { initImpossible } from "./impossible.js?v=20261010a";
+import { initFloppies } from "./floppies.js?v=20261010a";
+import { initQuickTime } from "./quicktime.js?v=20261010a";
+import { initArgument } from "./argument.js?v=20261010a";
+import { initShareCard } from "./sharecard.js?v=20261010a";
+import { initTour } from "./tour.js?v=20261010a";
+import { initMore } from "./more.js?v=20261010a";
+import { L } from "./copy.js?v=20261010a";
 
 const doc = document;
 doc.documentElement.classList.add("js");

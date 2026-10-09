@@ -2,7 +2,7 @@
 // Nothing third-party loads until the visitor presses play: the poster is a
 // local image, and the click swaps in the Bilibili embed.
 
-import { L } from "./copy.js?v=20260820a";
+import { L } from "./copy.js?v=20261010a";
 
 const EMBED =
   "https://player.bilibili.com/player.html?bvid=BV1ht3m6UEDb&autoplay=1&high_quality=1&danmaku=0";

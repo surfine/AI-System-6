@@ -605,7 +605,7 @@ html[data-theme] .btn { padding: 0 20px; }
 
 /* ---------- Small screens ---------- */
 
-@media (max-width: 700px) {
+@media (max-width: 860px) {
   .menu-extra { display: none; }
   /* A real System 6 menu bar has no app-name label; the hero names the
      product, so the narrow bar keeps Apple, Special, and the two links. */
@@ -614,7 +614,10 @@ html[data-theme] .btn { padding: 0 20px; }
      copy of that link is the one item 375px cannot afford. */
   .menu-link-live { display: none; }
   .menu-link-notes { display: none; }
-  .menu-bar { gap: 12px; }
+  .menu-bar { gap: 8px; }
+}
+
+@media (max-width: 700px) {
   .wbody { padding: 16px 14px 18px; }
   body { font-size: 17px; }
 }

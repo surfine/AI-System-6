@@ -11,8 +11,8 @@
 // swaps those to the era the page is wearing, which is right everywhere else
 // and exactly wrong here: six rows of one era's icon would prove nothing.
 
-import { ERAS, BRANCHES, iconSrc, setEra, onEraChange, currentEra, fontLabel } from "./eras.js?v=20260925a";
-import { L } from "./copy.js?v=20260820a";
+import { ERAS, BRANCHES, iconSrc, setEra, onEraChange, currentEra, fontLabel } from "./eras.js?v=20261010a";
+import { L } from "./copy.js?v=20261010a";
 
 const doc = document;
 

@@ -5,7 +5,7 @@
 // other four are objects the route hands work to, described in plain words.
 // Nothing here is a mockup, and nothing here is model output.
 
-import { L } from "./copy.js?v=20260820a";
+import { L } from "./copy.js?v=20261010a";
 
 const doc = document;
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -122,7 +122,7 @@ export function initRouteScene(stage) {
       const figure = doc.createElement("figure");
       figure.className = "route-shot";
       const image = doc.createElement("img");
-      image.src = `img/route/${stop.shot}.webp?v=20260815a`;
+      image.src = `img/route/${stop.shot}.webp?v=20261010a`;
       image.alt = stop.alt;
       image.loading = "lazy";
       image.decoding = "async";

@@ -10,14 +10,6 @@
 
 export const publicProductContracts = [
   {
-    feature: "Draft Desk",
-    tests: [
-      "draft-desk.test.mjs",
-      "draft-desk-persistence.test.mjs",
-      "draft-desk-boundaries.test.mjs",
-    ],
-  },
-  {
     feature: "Writing Studio",
     tests: ["writing-studio-entry.test.mjs"],
   },
@@ -96,10 +88,6 @@ export const publicProductContracts = [
   {
     feature: "Scrapbook",
     tests: ["scrapbook.test.mjs"],
-  },
-  {
-    feature: "DocMap",
-    tests: ["docmap.test.mjs"],
   },
   {
     feature: "Project CD",

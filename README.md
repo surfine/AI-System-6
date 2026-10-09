@@ -25,7 +25,7 @@ One route from your raw questions to a finished piece. Projects in your browser.
 </picture></a>
 
 <sub>YOUR GITHUB THEME JUST PICKED AN ERA: LIGHT IS 1988, DARK IS 2026.<br>
-THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
+TWELVE APPEARANCES IN ALL. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 
 </div>
 
@@ -41,6 +41,7 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 
 ## Contents
 
+- [Recent progress](#recent-progress)
 - [What's new in 1.0.57](#whats-new-in-1057)
 - [What's new in 1.0.56](#whats-new-in-1056)
 - [What this protects](#what-this-protects)
@@ -57,6 +58,19 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 - [How this repository keeps itself honest](#how-this-repository-keeps-itself-honest)
 - [How the repository is laid out](#how-the-repository-is-laid-out)
 - [Contributing](#contributing)
+
+## Recent progress
+
+- **Turn source text into a diagram or slide deck.** ClioChart keeps the source sentence behind each diagram element. ClioStage lets you edit the slide itself and preview the page before printing. AI drafting needs a connected model. Check the result before sharing it.
+- **Keep editing after an image moves between apps.** Insert a diagram, drawing or cover as an editable copy. When the original changes, choose whether to sync the copy. Each editor keeps its own undo history.
+- **Return to the window you need.** Dock previews show an app’s windows before you choose one. In Mac OS X appearances, the Dock starts off; enable it in the Control Panel. All twelve appearances remain available.
+- **Read more of the web.** Time Machine uses a separate browsing service to run page scripts. Without that service, it labels the page as a snapshot. Reader tries other ways to extract an article when the first attempt fails. Some sites still need your external browser.
+- **Build a town, plan its transport, then drive through it.** Bonsai City, Rootline and Joyride share city data. Rootline plans Metro, BRT and Bus routes. Joyride drives a city snapshot without changing the original save. Plaintext offers a separate Chinese story with local saves.
+
+Projects stay in your browser. Export a backup to keep another copy. You can explore the desktop, play games and open the **36 demonstration project disks** without connecting an AI model.
+
+<details>
+<summary>Release details: 1.0.57 and 1.0.56</summary>
 
 ## What's new in 1.0.57
 
@@ -76,12 +90,12 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
   window, and Get Info and the Control Panel follow the preference panes.
 - **Controls say what state they are in, in every appearance.** Disabled,
   focused, pressed and checked read the way they did on each era's own screen.
-- **ClioChart and ClioStage take any text and stay grounded in it.** ClioChart
-  offers three candidate drawings on an editable canvas, every box keeping the
+- **ClioChart and ClioStage build from supplied text.** ClioChart
+  offers candidate drawings on an editable canvas, every box keeping the
   sentence it stands on; ClioStage drafts decks page by page and sends invented
-  numbers and paraphrased quotes back for repair. Slides are edited on the very
-  page that prints, and Print Preview shows the PDF's own sheet.
-- **One undo history across the desk's editors**, with guides, align,
+  numbers and paraphrased quotes back for repair. Slides are edited directly on the page. Print Preview and printing use
+  the same page layout.
+- **Consistent undo controls, with a separate history in each editor**, plus guides, align,
   distribute and a layers panel on the canvases. Pictures travel between
   editors as editable copies and offer Sync when their original changes.
 - **Review Desk keeps comment threads on the manuscript**, anchored by their
@@ -254,6 +268,8 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
   Results arriving after cancellation, a project switch or an intervening edit
   cannot overwrite the captured document. Model-output comparisons are still
   pending; these are editing contracts, not a claim of measured quality gains.
+
+</details>
 
 ## What this protects
 
@@ -466,7 +482,7 @@ games that share its city data boundaries, and Plaintext, a Chinese-language vis
 | **Plaintext** | an original Chinese-language visual novel about a ghostwriter and a mapmaker, loaded when its window opens, with local saves |
 | **Bonsai City** | our own city builder: 64², 96² and 128² maps, working transport and public services, local saves, and a 3D city that changes from day to night |
 | **Rootline** | a deterministic transit round: draw lines, carry passengers through the peaks, choose weekly rewards, and survive a crowding clock or keep building in Endless mode |
-| **Joyride** | a 1996-style street drive through a Bonsai starter town, with colour or black-and-white rendering and keyboard, touch or gamepad controls |
+| **Joyride** | a 1996-style drive through a snapshot of your Bonsai City, without changing its save; colour or black-and-white rendering, with keyboard, touch or gamepad controls |
 
 <table>
   <tr>
@@ -534,11 +550,10 @@ two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓�
 heavy tools             load lazily, from a third disk
 ```
 
-A release gate fails the build when the boot payload outgrows two floppy
-disks. It fits, with a corner of the second disk still empty. Every feature
-has to earn its bytes against a limit nobody is forcing on us, and the number
-above is written by the gate itself, so the claim cannot quietly stop being
-true.
+The release gate measures the files needed to start the desktop. Tools that
+load on demand and AI models are not included in that number. The measured boot payload
+is 8,177 bytes below the capacity of two floppy disks. The gauge above uses the
+measured build size.
 
 ## Bring your own model
 
@@ -585,6 +600,7 @@ AI-System-6/
 │   ├── desktop/       browser computer: OS services, apps, styles, assets
 │   └── server/        stateless Node.js bridge and model adapters
 ├── site/              independently deployable product website
+├── promo/claude-pop/   film source, scene timing and music tools
 ├── platform/          macOS shell and web-release contracts
 ├── tooling/           build, verify, capture, package, release
 ├── tests/             executable product and architecture contracts
@@ -600,6 +616,10 @@ The thirty-six demonstration project disks are one registry, not one file each:
 is the list a third disk has to join, and
 [`tests/features/demo-disks-panel.test.mjs`](tests/features/demo-disks-panel.test.mjs)
 is what fails if the list, the Finder row and the site scene disagree.
+
+The [Claude-Pop film project](promo/claude-pop/STATUS.md) contains the film’s
+source, scene timing and music tools. Generated audio and rendered video are
+separate files; the source checkout does not include those outputs.
 
 Read [Architecture](docs/ARCHITECTURE.md), [Development](docs/DEVELOPMENT.md),
 and the [Design Contract](docs/design/DESIGN.md).
@@ -621,9 +641,9 @@ provenance are in vendor/ubol/.
 
 <div align="center">
 
-<img src="site/img/themes/classic/hardDisk.svg" width="40" height="40" alt=""> <img src="site/img/themes/platinum/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/aqua/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/snow-leopard/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/yosemite/hardDisk.png" width="40" height="40" alt=""> <img src="site/img/themes/liquid-glass/hardDisk.png" width="40" height="40" alt="">
+<img src="site/img/themes/classic/hardDisk.svg" width="40" height="40" alt=""> <img src="site/img/themes/platinum/hardDisk.webp" width="40" height="40" alt=""> <img src="site/img/themes/aqua/hardDisk.webp" width="40" height="40" alt=""> <img src="site/img/themes/snow-leopard/hardDisk.webp" width="40" height="40" alt=""> <img src="site/img/themes/yosemite/hardDisk.webp" width="40" height="40" alt=""> <img src="site/img/themes/liquid-glass/hardDisk.webp" width="40" height="40" alt="">
 
-<sub>ONE DISK. EIGHT ERAS. SAME WORK.</sub>
+<sub>ONE DISK. TWELVE APPEARANCES. SAME WORK.</sub>
 
 If AI writing tools should leave your voice alone, **[★ star AI System 6](https://github.com/surfine/AI-System-6)**.
 
@@ -631,4 +651,4 @@ If AI writing tools should leave your voice alone, **[★ star AI System 6](http
 
 </div>
 
-<!-- claim-check: npm run site:check | site/data/floppy-budget.json (bytes 2776060, budget 2954624, written by verify:floppy) | npm run verify:floppy, verify:docs, verify:public | site/img/frames (twelve appearances) -->
+<!-- claim-check: npm run site:check | site/data/floppy-budget.json (bytes 2940943, budget 2954624, written by verify:floppy) | npm run verify:floppy, verify:docs, verify:public | site/img/frames (twelve appearances) -->

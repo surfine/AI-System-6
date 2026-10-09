@@ -3,8 +3,8 @@
 // every release appearance, pixel-aligned. Each viewer instance is a viewport
 // onto the same frame: full desk, one window, or one icon.
 
-import { currentEra, onEraChange } from "./eras.js?v=20260925a";
-import { L } from "./copy.js?v=20260820a";
+import { currentEra, onEraChange } from "./eras.js?v=20261010a";
+import { L } from "./copy.js?v=20261010a";
 
 const doc = document;
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -15,7 +15,7 @@ const warmed = new Set();
 const viewers = [];
 
 export async function loadMachine() {
-  const res = await fetch(BASE + "manifest.json?v=20260925a");
+  const res = await fetch(BASE + "manifest.json?v=20261010a");
   if (!res.ok) throw new Error(`machine manifest returned ${res.status}`);
   manifest = await res.json();
   if (!manifest?.viewport?.width || !manifest?.viewport?.height || !manifest?.files) {
@@ -29,7 +29,7 @@ export function machineManifest() {
 }
 
 export function frameSrc(eraId) {
-  return BASE + manifest.files[eraId];
+  return BASE + manifest.files[eraId] + "?v=20261010a";
 }
 
 function warmFrame(eraId) {

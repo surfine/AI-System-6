@@ -53,6 +53,7 @@ export const publicScriptNames = new Set([
   "build:image-prompt-studio-era-icons",
   "site:sync",
   "site:check",
+  "site:check:typography",
   "site:capture-frames",
   "site:capture-route",
   "site:render-og",

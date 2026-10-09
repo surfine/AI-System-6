@@ -195,6 +195,13 @@ export const GATE_INPUT_RULES = Object.freeze([
     // Internal documents, plans, evidence, and the output directories the gates
     // write after they run. internal/ is never served and never shipped.
   },
+  {
+    id: "claude-pop-film",
+    pattern: /^promo\/claude-pop\//,
+    gates: NONE,
+    // Standalone promotional film sources; neither the app nor a browser ship
+    // gate imports them. Public snapshot and document checks cover publication.
+  },
   { id: "docs", pattern: /^docs\//, gates: NONE },
   { id: "public-site", pattern: /^(?:site|functions|workers|deploy)\//, gates: NONE },
   {

@@ -11,7 +11,7 @@
 // Output: site/img/proofs/<id>.webp + proofs.json
 
 import { execFileSync } from "node:child_process";
-import { mkdirSync, writeFileSync, statSync, rmSync, readFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, statSync, rmSync, readFileSync, renameSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
@@ -418,7 +418,7 @@ for (const proof of PROOFS) {
     continue;
   }
 
-  const box = await page.evaluate(({ name, natural }) => {
+  let box = await page.evaluate(({ name, natural }) => {
     const win = document.querySelector(`.window[data-window="${name}"]`);
     if (!win) return null;
     win.classList.remove("is-hidden");
@@ -438,6 +438,8 @@ for (const proof of PROOFS) {
     continue;
   }
   await page.waitForTimeout(1200);
+  box = await page.locator(`.window[data-window="${proof.window}"]`).boundingBox();
+  await page.mouse.move(20, 40);
 
   const png = path.join(outDir, `${proof.id}.png`);
   await page.screenshot({ path: png, clip: box });
@@ -447,6 +449,12 @@ for (const proof of PROOFS) {
     const encodeArgs = ["-quiet", "-q", proof.maxWidth ? "82" : "86"];
     if (proof.maxWidth) encodeArgs.push("-resize", String(proof.maxWidth), "0");
     execFileSync("cwebp", [...encodeArgs, png, "-o", webp]);
+    const lossless = path.join(outDir, `${proof.id}.lossless.webp`);
+    const losslessArgs = ["-quiet", "-lossless", "-z", "6"];
+    if (proof.maxWidth) losslessArgs.push("-resize", String(proof.maxWidth), "0");
+    execFileSync("cwebp", [...losslessArgs, png, "-o", lossless]);
+    if (statSync(lossless).size < statSync(webp).size) renameSync(lossless, webp);
+    else rmSync(lossless);
     rmSync(png);
     file = `${proof.id}.webp`;
   } catch (e) {

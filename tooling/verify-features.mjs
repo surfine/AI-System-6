@@ -203,7 +203,12 @@ selectedTests.forEach((fileName, index) => {
     console.error(`NO  ${label} (exit ${result.status}, signal ${result.signal || "none"}) — ${result.logPath}`);
     if (!verbose && remainingFailurePreview > 0) {
       const limit = Math.min(6000, remainingFailurePreview);
-      process.stderr.write(logTail(result.logPath, limit));
+      // The release removes its frozen tree after refusal. Keep the actual
+      // failed assertions in the durable parent log, even when the tail is OK.
+      const assertions = readFileSync(result.logPath, "utf8").split("\n")
+        .filter((line) => /^NO\s/.test(line)).join("\n").slice(0, Math.floor(limit / 2));
+      if (assertions) process.stderr.write(`${assertions}\n`);
+      process.stderr.write(logTail(result.logPath, limit - assertions.length));
       remainingFailurePreview -= limit;
     }
   }

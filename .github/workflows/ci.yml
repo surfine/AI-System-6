@@ -1,9 +1,8 @@
 name: CI
 
+# Cloud CI is manual-only. Releases are validated locally.
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   verify:

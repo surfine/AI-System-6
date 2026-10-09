@@ -1,7 +1,7 @@
 // Era engine: one source of truth for the release appearances.
 // The page theme, every synced icon, and both timeline strips follow it.
 
-import { L } from "./copy.js?v=20260820a";
+import { L } from "./copy.js?v=20261010a";
 
 // `font` is the typeface the era actually wore, and the one this page swaps to
 // when you travel there. It is named out loud in the dissolve readout: an era
@@ -27,57 +27,57 @@ export const ERAS = [
     claim: L("Files, windows, disks, and Trash make responsibility visible.", "文件、窗口、磁盘与废纸篓，让每项责任都看得见。"),
   },
   {
-    id: "system-7", year: 1991, label: "System 7", ext: "png", page: "classic",
+    id: "system-7", year: 1991, label: "System 7", ext: "webp", page: "classic",
     font: "Chicago", substitutes: [],
     role: L("Color at the edges", "边框有了颜色"),
     claim: L("Color reaches the window frame; the files, folders and disks keep their places.", "颜色来到窗框上，文件、文件夹与磁盘仍在原处。"),
   },
   {
-    id: "platinum", year: 1999, label: "Platinum", ext: "png",
+    id: "platinum", year: 1999, label: "Platinum", ext: "webp",
     font: "Charcoal", alias: ["Charcoal CY"],
     substitutes: ["Platinum Asap", "Geneva", "Tahoma", "Verdana"],
     role: L("More material, same meaning", "材质变多，意义不变"),
     claim: L("Color and depth arrive without changing what a file or a save means.", "颜色与层次来到桌面，却没有改变文件与保存的意义。"),
   },
   {
-    id: "aqua", year: 2002, label: "Aqua", ext: "png",
+    id: "aqua", year: 2002, label: "Aqua", ext: "webp",
     font: "Lucida Grande", substitutes: ["Lucida Sans Unicode", "Lucida Sans", "DejaVu Sans"],
     role: L("A new surface language", "新的表面语言"),
     claim: L("Aqua changes the controls and light, while the manuscript stays the manuscript.", "Aqua 改变控件与光线，正文仍然是同一份正文。"),
   },
   {
-    id: "tiger", year: 2005, label: "Tiger", ext: "png", art: "snow-leopard", page: "aqua",
+    id: "tiger", year: 2005, label: "Tiger", ext: "webp", art: "snow-leopard", page: "aqua",
     font: "Lucida Grande", substitutes: ["Lucida Sans Unicode", "Lucida Sans", "DejaVu Sans"],
     role: L("Metal for the Finder", "金属只给 Finder"),
     claim: L("Brushed metal wraps the Finder while a document keeps plain paper.", "拉丝金属只裹住 Finder，文稿仍是一张白纸。"),
   },
   {
-    id: "snow-leopard", year: 2009, label: "Snow Leopard", ext: "png",
+    id: "snow-leopard", year: 2009, label: "Snow Leopard", ext: "webp",
     font: "Lucida Grande", substitutes: ["Lucida Sans Unicode", "Lucida Sans", "DejaVu Sans"],
     role: L("The working year", "安静工作的一年"),
     claim: L("A mature source list and toolbar step back so the day's work can come forward.", "成熟的来源列表与工具栏退到后面，让一天的工作走到前面。"),
   },
   {
-    id: "lion", year: 2011, label: "Lion", ext: "png", art: "snow-leopard", page: "snow-leopard",
+    id: "lion", year: 2011, label: "Lion", ext: "webp", art: "snow-leopard", page: "snow-leopard",
     font: "Lucida Grande", substitutes: ["Lucida Sans Unicode", "Lucida Sans", "DejaVu Sans"],
     role: L("Content to the edge", "内容铺到边缘"),
     claim: L("Scroll bars step back and a window can take the whole screen; the manuscript still saves the same way.", "滚动条退到后面，窗口可以占满整块屏幕；正文的保存方式没有变。"),
   },
   {
-    id: "yosemite", year: 2014, label: "Yosemite", ext: "png",
+    id: "yosemite", year: 2014, label: "Yosemite", ext: "webp",
     font: "Helvetica Neue", substitutes: ["Helvetica", "Arial", "Liberation Sans"],
     role: L("The object survives flatness", "扁平之后，对象还在"),
     claim: L("Flat design changes the paint, not the promise made by the object.", "扁平设计改变外观，没有改变对象作出的承诺。"),
   },
   {
-    id: "big-sur", year: 2020, label: "Big Sur", ext: "png",
+    id: "big-sur", year: 2020, label: "Big Sur", ext: "webp",
     font: "SF Pro", alias: ["SF Pro Text", "SF Pro Display"],
     substitutes: ["Segoe UI", "Roboto", "Noto Sans"],
     role: L("A quieter frame", "安静的窗口"),
     claim: L("Rounded windows and light or dark surfaces keep the same objects within reach.", "圆润窗口与浅深色表面，让同一组对象依旧触手可及。"),
   },
   {
-    id: "liquid-glass", year: 2026, label: "Liquid Glass", ext: "png",
+    id: "liquid-glass", year: 2026, label: "Liquid Glass", ext: "webp",
     font: "SF Pro", alias: ["SF Pro Text", "SF Pro Display"],
     substitutes: ["Segoe UI Variable Text", "Segoe UI", "Roboto", "Noto Sans"],
     role: L("The control", "最后的对照"),
@@ -92,13 +92,13 @@ export const ERAS = [
 // below still finds it.
 export const BRANCHES = [
   {
-    id: "nextstep", year: 1995, label: "NeXTSTEP", ext: "png",
+    id: "nextstep", year: 1995, label: "NeXTSTEP", ext: "webp",
     font: "Helvetica", substitutes: ["Arial", "Liberation Sans"],
     role: L("The branch", "岔路"),
     claim: L("The desk Mac OS X grew from. The objects keep their jobs here too.", "Mac OS X 从这张桌子长出来；对象在这里也守着同样的职责。"),
   },
   {
-    id: "drawing-board", year: 1998, label: "Drawing Board", ext: "png", art: "platinum", page: "platinum",
+    id: "drawing-board", year: 1998, label: "Drawing Board", ext: "webp", art: "platinum", page: "platinum",
     font: "Charcoal", alias: ["Charcoal CY"],
     substitutes: ["Platinum Asap", "Geneva", "Tahoma", "Verdana"],
     role: L("The road not taken", "没走的那条路"),

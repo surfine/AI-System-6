@@ -1,18 +1,12 @@
 {
-  "capturedAt": "2026-09-23T07:39:32.447Z",
-  "build": "20260923.1",
+  "capturedAt": "2026-10-09T17:37:05.151Z",
+  "build": "20261009.3",
   "proofs": [
     {
       "id": "one-more-tune-2026",
       "label": "One More Tune · 2026",
       "caption": "The same round under Liquid Glass: the stage, the record, and the era the card belongs to — the reveal visits it, so the desk wears it.",
       "file": "one-more-tune-2026.webp"
-    },
-    {
-      "id": "bonsai-city",
-      "label": "Bonsai City",
-      "caption": "The example mid-size city in 3D under Platinum: streets, rail, traffic and the RCI gauge, build 20260927.1.",
-      "file": "bonsai-city.webp"
     },
     {
       "id": "slides",

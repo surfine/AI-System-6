@@ -34,12 +34,14 @@ function filesMatch(left, right) {
 }
 
 async function siteAssetBytes(sourcePath, extension) {
-  if (extension !== "png") return readFileSync(sourcePath);
+  if (extension !== "webp") return readFileSync(sourcePath);
   // The app keeps full-colour masters. The official site displays these at at
   // most 64 CSS px, so a deterministic 256-colour PNG preserves the 128 px
   // Retina canvas and alpha edge while keeping the direct-upload site inside
-  // its 4 MiB payload budget.
-  return sharp(sourcePath).png({ palette: true, quality: 100, compressionLevel: 9, effort: 10 }).toBuffer();
+  // its 4 MiB payload budget. Lossless WebP then stores exactly those
+  // same palette pixels and alpha values in fewer bytes.
+  const palette = await sharp(sourcePath).png({ palette: true, quality: 100, compressionLevel: 9, effort: 10 }).toBuffer();
+  return sharp(palette).webp({ lossless: true, effort: 6 }).toBuffer();
 }
 
 for (const [era, source] of Object.entries(SITE_ICON_ERAS)) {
