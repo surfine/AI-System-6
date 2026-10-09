@@ -1,5 +1,6 @@
-// ch09 · the bridge (104.00-120.00): THE TUNNEL (twelve eras, each a HOLD at 1:1 and a WHIP into the writer's vermilion
-// full stop, the holds shrinking from 2009 so the bridge winds up), the 12-up CONTACT SHEET of our own desk, THE
+// ch09 · the bridge (104.00-120.00): THE WINDOW CORRIDOR (three.js: twelve eras, each a lit HOLD at 1:1 on its chanted year,
+// then a dim 3D flight down a corridor of desks to the next, the holds shrinking and the corridor twisting from 2009 so the
+// bridge winds up, then the twelve fly into the sheet), the 12-up CONTACT SHEET of our own desk, THE
 // FLIP-BOOK (the chrome strobes through history round windows that do not move) and the lock on the negative 1988 that
 // ch10 inherits. Scenes: 'ch09 tunnel' (104-116) · 'ch09 sheet' (116-118) · 'ch09 stay' (118-120), all raw full frame.
 'use strict';
@@ -149,44 +150,134 @@ function c09_sheet(t, noLyric) {
   }
   if (!noLyric) withEra('system6', () => kara(c09_B7, FW / 2, 14, { align: 'center', mode: 'pop', color: c09_WHT, t }));
 }
-const c09_sheetMark = () => { const [x, y] = c09_cell(5), pf = c09_periodF(c09_ERAS[5]); return [x + (pf[0] >> 2), y + (pf[1] >> 2)]; };   // the 2002 thumb's dot, inside the dive's centre square
-
 // ===================================================================================================
-// 104-116: THE TUNNEL. Year i: HOLD at 1:1 (the era whole, THE YEAR slammed over the chat, the chant on its plate), then the
-// WHIP into the full stop, built flash-safe (WCAG 2.3.1): the desk HOLDS STILL while its vermilion full stop opens, a square
-// of the light inside the dot (PL, linear luminance .83: the white desk going into it is no flash, only its dark pixels
-// lift) growing from PERIOD_F to the whole frame on a power curve; then the next era (the sheet after 2026) opens at 1:1 out
-// of ITS full stop inside that light. No zoom of the desk's dithers (a nearest-neighbour zoom shimmers every pixel), no
-// black plunge, no full-frame invert on the landing: each pixel changes at most twice a dive (desk, light, desk), one flash
-// a second at most. The beep is the plate's TEMPORARY tag inverting a frame; the year's slam is the landing.
+// 104-116: THE WINDOW CORRIDOR (three.js through stage3d.js, quantised back to hard pixels). The twelve desks hang down a
+// black corridor, alternating left and right walls, turned toward the flight; white rectangular rings every half gap.
+// Year i: HOLD at 1:1 on its word (the lit 2D desk, live: Clio sings, the drives step, the eject drive kicks) with THE YEAR
+// as a black voxel slab of white voxel figures standing out of the chat toward the lens, slammed on the word (1988 stays
+// the flat 2D poster: 1988 IS flat; the type takes depth when we leave it); then the FLIGHT: lights off (on the snare to
+// 2005), the camera pulls back and swings down the corridor, passes the panel and swings square onto the next one, which
+// lights up on its chanted year. From 2009 the holds shrink and the corridor TWISTS a quarter turn a year: the bridge
+// winds up a full barrel roll into 2026; then all twelve fly back out of the corridor into the 12-up sheet, landing at
+// 116.0 exactly on the 2D sheet's cells. FLASH-SAFE BY MATERIAL (WCAG 2.3.1): everything that moves is DIM (the desks and
+// the years at 34%: < 0.1 linear luminance, so no moving pixel can make a flash), only thin rings, the vermilion full stops
+// and the static lit holds are bright; the lit-unlit pair is one flash per chanted year. No full-frame invert anywhere.
 // ===================================================================================================
-const c09_PL = '#ffe6e0';
-function c09_open(u, p, src) {   // a square from p (u 0..1, exponential, panning to the centre); src: a frame shown at 1:1, else PL
-  if (u <= 0) return;
-  const B = 2 * Math.pow((FW + 8) / 2, u), cx = lerp(p[0] + 1, FW / 2, u), cy = lerp(p[1] + 1, FH / 2, u);
-  const bx = R(cx - B / 2), by = R(cy - B / 2), bw = R(B), x0 = Math.max(0, bx), y0 = Math.max(0, by), x1 = Math.min(FW, bx + bw), y1 = Math.min(FH, by + bw);
-  if (x1 <= x0 || y1 <= y0) return;
-  if (src) ctx.drawImage(src, x0, y0, x1 - x0, y1 - y0, x0, y0, x1 - x0, y1 - y0); else rect(x0, y0, x1 - x0, y1 - y0, c09_PL);
-  if (u < 1) frame(bx - 2, by - 2, bw + 4, bw + 4, c09_VER, 2);   // the dot's rim
+const c09_GAP = 900, c09_SIDE = 430, c09_TURN = .5, c09_DIM = .34, c09_ZF = 120, c09_V = n => new THREE.Vector3(...n);
+const c09_TWI = i => i <= 7 ? 0 : (i - 7) * Math.PI / 2;     // the twist: a quarter turn per year from 2009, a full one into 2026
+const c09_dep = i => c09_Y[i] + c09_HOLD(i);                 // lights off: on the snare to 2005, then a quarter beat, then a 16th
+const c09_grey = v => { const c = R(255 * v); return hex(c, c, c); };
+const c09_DIG = [1, 1, .55, .8], c09_SL = ['#2a2a2a', '#2a2a2a', '#404040', '#404040', C.black, C.black];   // figure levels, slab faces
+const c09_DH = c09_grey(c09_DIM), c09_RD = '#555555';
+// a dim panel texture: the era's home desk at its departure, every pixel at 34% except the writer's vermilion full stop
+function c09_dimDesk(c, i) {
+  frameInto(c, c09_dep(i), i ? c09_desk : c09_desk1988, c09_opt(c09_ERAS[i]));
+  const g = c.getContext('2d'), im = g.getImageData(0, 0, FW, FH), d = im.data;
+  for (let k = 0; k < d.length; k += 4) if (!(d[k] === 255 && d[k + 1] === 90 && d[k + 2] === 54)) { d[k] = R(d[k] * c09_DIM); d[k + 1] = R(d[k + 1] * c09_DIM); d[k + 2] = R(d[k + 2] * c09_DIM); }
+  g.putImageData(im, 0, 0);
+}
+// non-indexed geometries with colours, each through a matrix, as one (one draw call)
+function c09_merge(parts) {
+  const P = [], K = [];
+  for (const [g, m] of parts) { const h = g.clone().applyMatrix4(m), p = h.attributes.position.array, k = h.attributes.color.array; for (let j = 0; j < p.length; j++) { P.push(p[j]); K.push(k[j]); } h.dispose(); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(K, 3)); return g;
+}
+// THE YEAR in panel space: a black slab whose front face sits on ClioTalk's rect seen from the hold (the 2D year's slab), white
+// figures standing out of it, Chicago at 7 px a font pixel from the hold; origin at the slab's front centre. Two meshes: on its
+// word the figures punch OUT of the slab (only brightening pixels, so the slam adds no flash to the light-on)
+function c09_yearGeo(i) {
+  const fp = (D3 - c09_ZF) / D3, [sx, sy, sw] = c09_SLAB, sh = ERA[c09_ERAS[i]].dock ? 112 : 116, M = () => new THREE.Matrix4();
+  const w = sw * fp, h = (sh - 34) * fp, s = 7 * (D3 - c09_ZF) / (D3 + 21), str = String(c09_YEARS[i]), fk = fontKey('chicago');
+  const parts = [];
+  let x = -tw(str, fk) / 2;
+  for (const ch of str) { parts.push([voxGlyph(ch, fk, 3, c09_DIG), M().makeTranslation(x * s, -FONTS[fk].cap * s / 2, 1.5 * s).multiply(M().makeScale(s, s, s))]); x += tw(ch, fk); }
+  return { slab: bandGeo([{ w, h, d: 60, pos: [0, 0, -30], cols: c09_SL }]), dig: c09_merge(parts), out: 3 * s, pos: c09_V([(sx + sw / 2 - FW / 2) * fp, (FH / 2 - sy - (sh - 34) / 2) * fp, c09_ZF]) };
+}
+function c09_stage() {
+  return stage3d('c09 corridor', st => {
+    const Z = c09_V([0, 0, 1]), ext = new Set([C.black, C.white, FIELDS.vermilion, c09_RD]);
+    for (const k of [1, c09_DIM]) { for (const v of c09_DIG) ext.add(c09_grey(v * k)); for (const c of c09_SL) ext.add(c09_grey(rgb(c)[0] / 255 * k)); }
+    st.extra = [...ext];
+    st.o.P = c09_ERAS.map((era, i) => {
+      const sg = i % 2 ? 1 : -1, tw = c09_TWI(i), g = new THREE.Group();
+      g.quaternion.setFromEuler(new THREE.Euler(0, -sg * c09_TURN, tw, 'ZYX')); g.position.set(sg * c09_SIDE, 0, -i * c09_GAP).applyAxisAngle(Z, tw);
+      const tex = tex3d('c09 dim ' + era, FW, FH, c => c09_dimDesk(c, i), { mip: true });
+      g.add(new THREE.Mesh(new THREE.PlaneGeometry(FW, FH), mat3d({ map: tex, solid: true })));
+      const fc = rgb(ERA[era].pal.frame).map(v => v * c09_DIM), sd = hex(...fc.map(v => R(v * .6))), tp = hex(...fc.map(v => R(v * .8)));
+      g.add(new THREE.Mesh(bandGeo([{ w: FW, h: FH, d: 24, pos: [0, 0, -12.5], cols: [sd, sd, tp, tp, null, C.black] }]), mat3d({ vc: true, solid: true })));
+      const Y = c09_yearGeo(i), yr = new THREE.Group(), mk = gg => yr.add(new THREE.Mesh(gg, mat3d({ vc: true, solid: true })));
+      mk(Y.slab); mk(Y.dig); yr.userData.out = Y.out; yr.position.copy(Y.pos); g.add(yr);
+      st.scene.add(g);
+      const n = Z.clone().applyQuaternion(g.quaternion), c = g.position.clone();
+      return { g, yr, ybase: Y.pos, c, q: g.quaternion.clone(), n, hold: { pos: c.clone().addScaledVector(n, D3), look: c, tw, fov: 30 } };
+    });
+    // rings round the axis every quarter gap, turned with the twist at their depth: a white one between every two panels, the
+    // rest dim (#555: under 0.1 linear luminance, so the tunnel's density costs no flash)
+    const twz = z => Math.max(0, -z / c09_GAP - 7) * Math.PI / 2;   // = c09_TWI at every panel, and winding on past 2026
+    const rs = 780, ring = c => bandGeo([[0, rs, 2 * rs + 3, 3], [0, -rs, 2 * rs + 3, 3], [-rs, 0, 3, 2 * rs], [rs, 0, 3, 2 * rs]].map(([x, y, w, h]) => ({ w, h, d: 3, pos: [x, y, 0], cols: Array(6).fill(c) })));
+    const rw = ring(C.white), rd = ring(c09_RD), parts = [];
+    for (let k = -8; k < 72; k++) { const z = -(k + 2) * c09_GAP / 4; parts.push([k & 3 ? rd : rw, new THREE.Matrix4().makeTranslation(0, 0, z).multiply(new THREE.Matrix4().makeRotationZ(twz(z)))]); }
+    st.o.rings = new THREE.Mesh(c09_merge(parts), mat3d({ vc: true })); st.scene.add(st.o.rings);
+    st.scene.fog = new THREE.Fog(0, 2400, 5200);   // only the rings take it (the rest is solid): far rings dissolve by Bayer, no shimmering knot at the vanishing point
+    // the sheet: cell j in panel 2026's plane (col j & 3, row j >> 2), seen from 4 x D3 every desk is a 160 x 90 cell
+    const L = st.o.P[11], cell = j => L.c.clone().add(c09_V([((j & 3) - 3) * FW, (2 - (j >> 2)) * FH, 0]).applyQuaternion(L.q));
+    st.o.cell = st.o.P.map((_, j) => cell(j));
+    const G = L.c.clone().add(c09_V([-1.5 * FW, FH, 0]).applyQuaternion(L.q));
+    st.o.sheet = { pos: G.clone().addScaledVector(L.n, 4 * D3), look: G, tw: L.hold.tw, fov: 30 };
+    offscreen(FW, FH, () => render3d(st));   // harvest the palette now, from the build state: the same whichever frame comes first
+  });
+}
+const c09_mix = (a, b, k) => ({ pos: a.pos.clone().lerp(b.pos, k), look: a.look.clone().lerp(b.look, k), tw: lerp(a.tw, b.tw, k), fov: lerp(a.fov, b.fov, k) });
+function c09_aim(cam, s) { cam.position.copy(s.pos); cam.up.set(-Math.sin(s.tw), Math.cos(s.tw), 0); cam.lookAt(s.look); cam.fov = s.fov; cam.updateProjectionMatrix(); }
+// the camera of flight i at t: ease in to a pose on the axis looking down the corridor (wider lens), ease out square onto i + 1
+function c09_flightCam(st, i, t) {
+  const P = st.o.P, A = P[i].hold, d = c09_dep(i), u = prog(t, d, (i < 11 ? c09_Y[i + 1] : c09_TS) - 2 / FPS);   // settled 2 frames before the word
+  if (i === 11) return c09_mix(A, st.o.sheet, 1 - Math.pow(1 - u, 3));
+  const B = P[i + 1].hold, zm = (A.pos.z + B.pos.z) / 2, M = { pos: c09_V([0, 0, zm]), look: c09_V([0, 0, zm - 1500]), tw: (A.tw + B.tw) / 2, fov: 40 }, um = .44;
+  return u < um ? c09_mix(A, M, (u / um) ** 2) : c09_mix(M, B, 1 - Math.pow(1 - (u - um) / (1 - um), 2.5));
 }
 function c09_tunnel(t) {
-  const i = clamp(bsearch(c09_Y, t + 1e-6), 0, 11), Yi = c09_Y[i], era = c09_ERAS[i], hold = c09_HOLD(i), outer = i ? c09_desk : c09_desk1988;
-  if (t < Yi + hold - 1e-6) ctx.drawImage(frameInto(styleBuf('c9A'), t, outer, c09_opt(era)), 0, 0);
-  else {
-    const last = i === 11, W1 = last ? c09_TS : c09_Y[i + 1], k = prog(t, Yi + hold, W1), k1 = Math.pow(clamp(k / .4), 1.5), k2 = Math.pow(clamp((k - .4) / .6), .6);   // the dot opens (40%); the next era opens out of it (60%, quick to show)
-    const pB = last ? c09_sheetMark() : c09_periodF(c09_ERAS[i + 1]);
-    if (k1 < 1) { ctx.drawImage(frameInto(styleBuf('c9A'), t, outer, c09_opt(era)), 0, 0); c09_open(k1, c09_periodF(era), null); }
-    else {
-      rect(0, 0, FW, FH, c09_PL);
-      if (k2 > 0) c09_open(k2, pB, frameInto(styleBuf('c9B'), t, last ? c09_sheet : c09_desk, last ? { raw: true, era: 'system6' } : c09_opt(c09_ERAS[i + 1])));
-      if (R(2 * Math.pow((FW + 8) / 2, k2)) < 8) rect(pB[0], pB[1], 2, 2, c09_VER);   // the next full stop, where it opens
-    }
-  }
-  if (i) splitPal(2, Yi, 3, [c09_WHT, c09_BLK], t);   // the landing beep: the palette split (no invert; at 104 the drop's sort is the hit)
+  const i = clamp(bsearch(c09_Y, t + 1e-6), 0, 11), Yi = c09_Y[i], era = c09_ERAS[i], d = c09_dep(i), st = i || t >= d - 1e-6 ? c09_stage() : null;
+  if (!st || t < d - 1e-6) {   // THE HOLD: the lit desk at 1:1, alive (1988: the crumpling Trash and the flat 2D year, as before)
+    ctx.drawImage(frameInto(styleBuf('c9A'), t, i ? c09_desk : c09_desk1988, c09_opt(era)), 0, 0);
+    if (!i || !st) { if (t >= Yi - 1e-6) c09_year(t, i); }
+    else c09_draw3d(st, t, i, true);
+  } else c09_draw3d(st, t, i, false);
   if (!i) { punch(c09_T0, c09_NIB[0], c09_NIB[1], [2, 2], t); pixelSort(16, 220, c09_T0, 2, t); }      // owed: the drain's punch, the drop's sort
   const sub = evLast('sub', t); if (sub && sub[0] >= c09_T0 && c09_fr(t, sub[0]) < 2) { FX.dy = 1; FX.shake = 1; }   // the 808 drop at "Eleven."
-  if (t >= Yi - 1e-6) c09_year(t, i);
   const L = lineAt(t, 'chant'); if (L && L.section === c09_SEC.name) c09_chant(t, L, false, false, c09_fr(t, Yi) === 0);
+}
+// the corridor at t: hold (only year i, lit, slammed, over the 2D desk) or flight (everything, dim; the destination's year
+// blinks lit on the cowbell; the vermilion full stops down the corridor are the beacons, the destination's pulsing)
+function c09_draw3d(st, t, i, hold) {
+  const P = st.o.P, asm = i === 11 && !hold, cb = evLast('cowbell', t), blink = !hold && cb && cb[0] > c09_dep(i) && c09_fr(t, cb[0]) < 2;
+  const cs = hold ? P[i].hold : c09_flightCam(st, i, t), kk = evLast('kick', t);
+  if (!hold && kk && kk[0] > c09_dep(i) && c09_fr(t, kk[0]) < 2) { const u = c09_V([Math.sin(cs.tw) * 10, -Math.cos(cs.tw) * 10, 0]); cs.pos = cs.pos.clone().add(u); cs.look = cs.look.clone().add(u); }   // the kick in flight: the camera dips (the plate does not move)
+  c09_aim(st.cam, cs);
+  st.o.rings.visible = !hold && !asm;
+  P.forEach((p, j) => {
+    p.g.position.copy(p.c); p.g.quaternion.copy(p.q); p.g.children[0].visible = p.g.children[1].visible = !hold; p.yr.visible = !hold || j === i;
+    p.yr.position.copy(p.ybase);
+    const lit = hold || (blink && (asm || j === i + 1));
+    for (const m of p.yr.children) matOf(m).color.set(lit ? C.white : c09_DH);
+    const fr = c09_fr(t, c09_Y[j]), dg = p.yr.children[1];   // the punch-out on the word: sunk 90% into the slab, out in 5 frames, 1 over
+    dg.position.z = hold && j === i && fr >= 0 && fr < 5 ? -p.yr.userData.out * [.9, .55, .25, .08, -.04][fr] : 0;
+    if (asm && j < 11) {   // into the sheet: from the corridor in a staggered swoop, slerped flat into its cell
+      const a = c09_dep(11) + .03 * j, k = 1 - Math.pow(1 - prog(t, a, a + .5), 3);
+      p.g.position.lerpVectors(p.c, st.o.cell[j], k).addScaledVector(P[11].n, -900 * Math.sin(Math.PI * k)); p.g.quaternion.slerpQuaternions(p.q, P[11].q, k);
+    }
+  });
+  render3d(st, { bg: hold ? null : C.black });
+  if (hold) return;
+  P.forEach((p, j) => {   // the beacons: the writer's full stop on every panel that faces the lens
+    const pf = c09_periodF(c09_ERAS[j]), w = c09_V([pf[0] + 1 - FW / 2, FH / 2 - pf[1] - 1, .5]);
+    p.g.localToWorld(w); const v = w.clone().sub(st.cam.position);
+    if (v.dot(c09_V([0, 0, 1]).applyQuaternion(p.g.quaternion)) >= 0 || v.dot(st.cam.getWorldDirection(c09_V([0, 0, 0]))) < 50) return;
+    const [x, y] = project3d(st, [w.x, w.y, w.z]), big = j === i + 1 && pulse(t, 1, 6) > .5 ? 2 : 0;
+    if (x < -4 || y < -4 || x > FW + 4 || y > FH + 4) return;
+    if (big) frame(x - 2, y - 2, 6, 6, C.black);
+    rect(x - big / 2, y - big / 2, 2 + big, 2 + big, c09_VER);
+  });
 }
 scene('ch09 tunnel', c09_T0, c09_TS, c09_tunnel, { raw: true, era: 'system6' });
 

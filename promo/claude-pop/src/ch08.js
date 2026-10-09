@@ -182,6 +182,8 @@
     top.rotation.x = -PI / 2; top.position.y = 22; cd.add(top);
     cd.add(new THREE.Mesh(new THREE.CylinderGeometry(300, 300, 22, 48, 1, true).translate(0, 11, 0), mat3d({ color: BLK, solid: true, side: 'double' })));
     cd.visible = false; st.scene.add(cd); st.o.cd = cd;
+    // the choir riser (YOU DO!): one black tier the gang of twelve stands on, behind and above the type
+    const rs = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mat3d({ color: BLK, solid: true })); rs.visible = false; st.scene.add(rs); st.o.riser = rs;
     // the notice cards ride in camera space (children of the camera): at depth c8_d() they sit 1:1 on the glass
     st.scene.add(st.cam);
     const nt = tex3d('c8note', NW, NH, () => c8_noteDraw(0, 0));
@@ -254,6 +256,8 @@
       const m = st.o.cards[i], k = c.k; if (k == null || k < 0 || k > 1) return;
       m.visible = true; m.position.set(...c.p0.map((v, j) => lerp(v, c.p1[j], k))); m.rotation.set(...c.a0.map((v, j) => lerp(v, c.a1[j] || 0, k)));
     });
+    st.o.riser.visible = !!sh.riser;
+    if (sh.riser) { const [x0, x1, y, z] = sh.riser; st.o.riser.scale.set(x1 - x0, 26, 140); st.o.riser.position.set((x0 + x1) / 2, y - 13, z); }
     st.scene.children[0].visible = !sh.bare;   // the floor grid
     render3d(st, { pal: PAL3, bg: FLD });
     st.scene.updateMatrixWorld(true);
@@ -311,8 +315,8 @@
       if (t >= st0) { const f = c8_fr(t, st0); ds.push({ key: 'twin', pos: [-560, 40], size: 8, flip: true, sy: f < 4 ? [.1, .4, .75, 1][f] : 1, ...c8_pose(t) }); }   // THE HARMONY TWIN pops up on the stab
     }
     if (mid) ds.push(...c8_gang3(t, pm, !first));
-    const sts = c8_3d(tt, { dancers: ds, blocks: [[pp, [bx, 0, 0]], [js, s => [bx, s.o.B[pp].h + 50, 0]]], pm: mid ? [first ? 0 : 1, pm, first ? [-260, 0, -1300] : [260, 0, -1300], first ? .25 : -.25] : null });
-    if (sts) { const e = evLast('stab', t), b = c8_pbox(sts, pp, 0); if (e && e[0] >= T0) punch(e[0], R(b.x + b.w / 2), R(b.y + b.h / 2), [2, 2], t); }
+    const sts = c8_3d(tt, { dancers: ds, blocks: mid ? [] : [[pp, [bx, 0, 0]], [js, s => [bx, s.o.B[pp].h + 50, 0]]], pm: mid ? [first ? 0 : 1, pm, first ? [-260, 0, -1300] : [260, 0, -1300], first ? .25 : -.25] : null });
+    if (sts && !mid) { const e = evLast('stab', t), b = c8_pbox(sts, pp, 0); if (e && e[0] >= T0) punch(e[0], R(b.x + b.w / 2), R(b.y + b.h / 2), [2, 2], t); }
     if (!first && t < LE.start + 3 * F1) { const g = c8_land0(); bigType('LAND,', { ...g, ghost: BLK, words: { words: [{ w: 'land', start: 1e9 }] } }); }   // LAND, kept for one beat, dissolving
     if (mid && t >= pm2) c8_air();
     if (t < T0) return;   // under ch07's flood its own pen and pointer are the writer's
@@ -362,7 +366,7 @@
   const CD3 = [400, 200];
   function c8_land(t) {
     const where = LC.words[2].start, land = LC.words[4].start, fade = LD.words[2].start, faded = t >= LD.start, g = c8_land0(), step = LD.start - SPB / 2;
-    c8_base(t, null);
+    c8_base(t, null, undefined, t >= LC.start + .1); splitPal(3, LC.start, 3, [WHT, BLK], t);   // the 88 kick splits, no invert (flash budget: the cascade just shut)
     let hx = 560, hz = 60, hy = 0, o = {};
     if (t >= where && t < land) { const k = Math.floor(prog(t, where, land) * 16) / 16; hx = lerp(560, CD3[0], k); hz = lerp(60, CD3[1], k); hy = 180 * 4 * k * (1 - k) + 22 * k; o = { pose: 'jump', p: k }; }
     else if (t >= land) { hx = CD3[0]; hz = CD3[1]; hy = 22; if (t < land + SPB) o = { pose: 'cheer', p: prog(t, land, land + SPB) }; if (c8_fr(t, land) < 2) FX.shake = Math.max(FX.shake || 0, 2); }
@@ -380,7 +384,7 @@
     const Lw = () => bigType('LAND,', { ...g, outline: kept ? FLD : null, outlineW: .25 });
     if (faded) {
       const l = sts ? c8_pbox(sts, 'fade', 1) : { x: 8, y: 200, w: 200, h: 60 };
-      c8_tag = [clamp(l.x + l.w - tw('TEMPORARY', 'chicago') - 8, 4, W - 90), clamp(l.y + l.h + 4, 4, H - 40)];
+      c8_tag = [clamp(l.x + l.w + 8, 4, W - 90), clamp(l.y, 4, H - 40)];   // beside FADE., clear of the pen's road to LAND,
       if (!kept) Lw();
     } else if (t >= step && sts) {   // 89.75: LAND, leaves the 3D block and steps down to its small corner in four 32nds
       const bl = c8_pbox(sts, 'land', 2), k = Math.min(1, (Math.floor((t - step) / (SPB / 8) + 1e-6) + 1) / 4), sc = Math.max(1, R(lerp(bl.sx, 4, k)));
@@ -424,14 +428,21 @@
   // ===================================================================================================
   const c8_you2 = LH.words[2].start;
   let c8_hero = null;
+  const c8_RG = () => [-1250, 850, 400, -1300, 6.5];   // the riser: x0, x1, top y, z; the singers' size
   function c8_youDo(t) {
     c8_base(t, null);
     splitPal(3, c8_you2, 3, [WHT, BLK], t);   // the second YOU: a split, not an invert (flash budget)
-    const px = W - 56, py = 6, gang = Array.from({ length: 12 }, (_, i) => ({ key: 'g' + i, pos: [-160 + i * 50, -620 - i * 380], size: 8, flip: !!(i & 1), voice: 'choir', ...c8_pose(Math.min(t, DIVE0)) }));
-    const t3 = Math.min(t, DIVE0), dv = t >= DIVE0, sts = c8_3d(t3, { blocks: [['you', [-520, 0, 0]]], bare: dv, dancers: [{ key: 'twin', pos: [430, -760], size: 8, flip: true, ...c8_pose(t3) }, ...(dv ? [] : gang)] });
+    // the gang of twelve and the twin sing it from the choir riser, high behind the type, popping up in a ripple from the left
+    const t3 = Math.min(t, DIVE0), dv = t >= DIVE0, px = W - 56, py = 6, G = c8_RG(), gang = [];
+    for (let i = 0; i < 13; i++) {
+      const ti = t3 - i * F1, f = c8_fr(ti, LH.start), tw8 = i === 6;
+      if (f >= 0) gang.push({ key: tw8 ? 'twin' : 'g' + (i - (i > 6)), pos: [lerp(G[0], G[1], i / 12), G[3]], y: G[2], size: tw8 ? G[4] + 1 : G[4], sy: [.15, .5, .85, 1][Math.min(f, 3)], flip: !!(i & 1), voice: 'choir', ...c8_pose(ti) });
+    }
+    const sts = c8_3d(t3, { blocks: [['you', [-520, 0, 0]]], bare: dv, riser: dv ? null : G, dancers: dv ? [] : gang });
     if (sts) { const e = evLast('stab', t); if (e && e[0] >= T0 && t < c8_you2) { const b = c8_pbox(sts, 'you', 0); punch(e[0], R(b.x + b.w / 2), R(b.y + b.h / 2), [2, 2], t); } }
     c8_rings(t, px, py);
-    c8_hero = c8_dancer(W - 160, H - 21, 7, t, { ground: false, ...(t >= c8_you2 ? { eyes: 'dot' } : {}) });
+    const hero = () => (c8_hero = c8_dancer(W - 160, H - 21, 7, t, { ground: false, ...(t >= c8_you2 ? { eyes: 'dot' } : {}) }));
+    if (sts) { const bx = Math.max(...[0, 1].map(i => { const b = c8_pbox(sts, 'you', i); return b.x + b.w; })) + 8; ctx.save(); try { ctx.beginPath(); ctx.rect(bx, -H, 3 * W, 3 * H); ctx.clip(); hero(); } finally { ctx.restore(); } } else hero();   // she never touches the type
     c8_bar(t);
     if (t >= c8_you2 && sts) { const w = LH.words[3].start, l = c8_pbox(sts, 'you', t < w ? 0 : 1), f = c8_fr(t, t < w ? c8_you2 : w), p = f < 3 ? [14, 10, 7][f] : 5; frame(l.x - p, l.y - p, l.w + 2 * p, l.h + 2 * p, VER, 3); }
     c8_pen(t, px, py);
@@ -458,8 +469,8 @@
   }
   // deep in the silhouette the black lifts to a mid lime in 4 steps, so the whip never passes through a black frame (flash budget)
   const DIM = '#78a800', c8_lift = t => Math.floor(prog(t, DIVE0, T1 - 3 * F1) * 8 + 1e-6) / 8;
-  function c8_youDoL(t) {
-    c8_youDo(t);
+  function c8_youDoL(t) {   // the dive zooms into a still: the outer frame is held at DIVE0 (a pose change magnified is a flash)
+    c8_youDo(Math.min(t, DIVE0));
     const a = c8_lift(t); if (a <= 0) return;
     ctx.save(); ctx.globalCompositeOperation = 'lighten'; rect(0, 0, W, H, mix(BLK, DIM, a)); ctx.restore();
   }
@@ -515,7 +526,7 @@
     if (tap) ring(b[0], b[1], 6 + 4 * c8_fr(t, tap.start), WHT, 2);
     bigType(q.text.toUpperCase(), c8_rowO(q, t));
     // the gang sings along: bounce, mouths on every la; a chop throws E / A and inverts their heads in a ripple
-    const ch = evLast('chop', t), cw = evLast('chopWord', t), cf = ch && ch[0] >= P2.start && t < ch[0] + ch[1] ? c8_fr(t, ch[0]) : -1, calm = t >= P2.end - .75;   // calm: the last 0.75 s sing without inverting heads (flash budget into the drain)
+    const ch = evLast('chop', t), cw = evLast('chopWord', t), cf = ch && ch[0] >= P2.start && t < ch[0] + ch[1] ? c8_fr(t, ch[0]) : -1, calm = t >= P2.end - .75 || t < P2.start + 1;   // calm: the first second (out of the dive) and the last 0.75 s sing without inverting heads (flash budget)
     // the hero above the row, singing too: every chop inverts her head for two frames
     const hd = c8_dancer(420, ROWY - 8, 4, t, { field: MAG, pose: 'bounce', voice: 'choir', ground: false, ...(cf >= 0 ? { mouth: { open: .8, shape: cw && cw[2] === 'pen' ? 'E' : 'A' } } : {}) });
     if (cf >= 0 && cf < 2 && !calm) c8_dif(MAG, () => rect(hd.head[0] - 52, hd.head[1] - 8, 104, 88, MAG));

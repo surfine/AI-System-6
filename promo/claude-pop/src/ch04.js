@@ -228,7 +228,7 @@
       chars.forEach((cs, li) => cs.forEach((ch, ci) => {
         if (ch === ' ') return;
         const r = m.letters[k++], ln = m.lines[li], sx = r.w / tw(ch, 'chicago'), sy = ln.sy;
-        const mk = lv => { const me = new THREE.Mesh(voxGlyph(ch, 'chicago', 3, lv), mat3d({ color: FLD, vc: true, auto: !lv, solid: !!lv })); me.scale.set(sx, sy, sy); group.add(me); return me; };
+        const mk = lv => { const me = new THREE.Mesh(voxGlyph(ch, 'chicago', 3, lv), mat3d({ color: FLD, vc: true, auto: !lv, solid: !!lv, fog: false })); me.scale.set(sx, sy, sy); group.add(me); return me; };
         const mesh = mk(), base = new THREE.Vector3(wx(r.x), wy(r.y + CAP * sy), -1.5 * sy);
         const rec = { mesh, base, li, tIn: step ? step(li, nl[li]++) : wt[li] && wt[li][ci], twin: fl.inv && li === 2 && ci >= 4 ? mk([1, 1, .5, .75]) : null };
         lets.push(rec);
@@ -255,7 +255,7 @@
       c.geometry.translate(70, 0, 0); st.scene.add(c); return c;
     });
   }
-  const SL3 = [-60, 60, 40, 22, 8, 0], DROP3 = [150, 60, 16, -6, -2, 0];
+  const SL3 = [-60, 60, 40, 22, 8, 0], SLH3 = [-240, -60, 80, 40, 12, 0], DROP3 = [150, 60, 16, -6, -2, 0];
   const O = (c, r, a, h, roll = 0) => ({ ...orbit3d(c, r, a, h), roll });
   const SQ = () => { const cx = W / 2 - DW / 2, cy = DH / 2 - H / 2; return { pos: [cx, cy, H / 2 / TN], look: [cx, cy, 0], roll: 0, fov: 30 }; };
   const C0 = [-20, -20, 0], CH = [0, -10, 0], CH2 = [0, -10, 0], CW = [-120, 10, 0];
@@ -263,11 +263,11 @@
   const c4_keys = () => [[C4_CUT, SQ()],
     [37.25, O(C0, 840, -.36, 190), 'lin'], [37.75, O(C0, 800, .3, 130), 'hard'],
     [37.75, O(CH, 760, .3, 260), 'cut'], [38.5, O(CH, 720, .25, 230), 'lin'], [38.6, O(CH, 700, .2, 200, -.03), 'snap'], [39.5, O(CH, 690, .15, 190), 'lin'],
-    [40, O([60, -60, -80], 1050, -.34, 420), 'cut'], [40.5, O([60, -60, -80], 1010, -.3, 380), 'lin'], [41, O([60, -60, 60], 780, -.2, 50, .04), 'hard'], [42, O([60, -60, 60], 760, -.14, 70), 'lin'],
+    [40, O([60, -60, -80], 1050, -.34, 420), 'cut'], [40.5, O([60, -60, -80], 1010, -.3, 380), 'lin'], [41, O([0, -60, 60], 900, -.22, 50, .04), 'hard'], [42, O([0, -60, 60], 860, -.04, 90), 'lin'],
     [42, O([-60, -20, 0], 700, .12, 20), 'cut'], [42.5, O([-60, -20, 0], 710, .14, 40), 'lin'], [43, O([150, -10, 120], 740, .04, 90), 'hard'],
     [43.25, O(C0, 720, .38, -80), 'cut'], [44, O(C0, 760, .33, -40), 'lin'], [45.25, O(C0, 840, .2, 180), 'hard'], [45.75, O(C0, 800, -.3, 140), 'hard'],
     [45.75, O(CH2, 760, -.3, 260), 'cut'], [46.5, O(CH2, 720, -.25, 230), 'lin'], [46.6, O(CH2, 700, -.2, 200, .03), 'snap'], [47.5, O(CH2, 690, -.15, 190), 'lin'],
-    [48, O(CW, 660, .44, -150, -.09), 'cut'], [49.9, O([-20, 10, 0], 780, -.16, 150, .04), 'hard'],
+    [48, O(CW, 740, .44, -120, -.09), 'cut'], [49.9, O([-20, 10, 0], 780, -.16, 150, .04), 'hard'],
     [50, O(C0, 1080, .32, 320), 'cut'], [50.5, O(C0, 820, .2, 90), 'snap'], [YOU2, SQ(), 'hard']];
 
   // the writer's hand (the cord's top) per section, in world units, and how the pen hangs from it
@@ -330,7 +330,7 @@
     beatFX(t, { kick: t >= T0 + SPB });
     const ks = c4_keys(), cs = cam3d(t, ks); aim3d(S.cam, cs); aim3d(P.cam, cs);
     // the posters: each letter lands on its word (ghosted before), from behind toward the lens; the hooks pump on the kicks
-    const kf = evFrames('kick', t), pump = kf < 2 ? [26, 10][kf] : 0;
+    const kf = evFrames('kick', t), pump = kf < 3 && t >= T0 + 2 * SPB ? [48, 20, 6][kf] : 0;   // not on the flood's own beat (flash budget)
     let hero = null;
     for (const b of S.o.B) {
       const on = t >= b.a && t < b.b; b.group.visible = on; if (!on) continue; hero = b;
@@ -341,7 +341,7 @@
         m.position.copy(L.base); matOf(m).color.set(FLD);
         if (fr < 0) { fade3d(m, .5); if (L.twin) L.twin.visible = false; continue; }
         fade3d(m, 0);
-        if (fr < 6 && !L.twin) { if (b.fl.drop) m.position.y += DROP3[fr]; else m.position.z += SL3[fr]; }
+        if (fr < 6 && !L.twin) { if (b.fl.drop) m.position.y += DROP3[fr]; else m.position.z += (b.fl.pump && L.tIn >= T0 + 2 * SPB ? SLH3 : SL3)[fr]; }
         else if (b.fl.pump) m.position.z += pump;
         if (L.twin) { L.twin.visible = inv; L.twin.position.copy(m.position); if (inv) m.visible = false; }
       }
