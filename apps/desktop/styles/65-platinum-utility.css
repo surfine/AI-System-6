@@ -725,12 +725,12 @@ body[data-lineage~="platinum"] .title-bar .resize-box::after {
   /* GUIdebook Mac OS 9, 1x pixels: inside the 11px frame the Zoom mark is
      a six-pixel lower-left corner — x=1..6 on y=6, and y=1..6 on x=6. */
   left: calc(var(--system-titlebar-control-art-offset-x) + 1px);
-  top: calc(var(--system-titlebar-control-art-offset-y) + 1px);
-  width: 6px;
-  height: 6px;
-  background:
-    linear-gradient(#222222, #222222) right top / 1px 6px no-repeat,
-    linear-gradient(#222222, #222222) left bottom / 6px 1px no-repeat;
+  top: calc(var(--system-titlebar-control-art-offset-y) + var(--titlebar-zoom-mark-inset-y, 1px));
+  width: var(--titlebar-zoom-mark-width, 6px);
+  height: var(--titlebar-zoom-mark-height, 6px);
+  background: var(--titlebar-zoom-mark,
+    linear-gradient(var(--titlebar-control-art-ink, #222222), var(--titlebar-control-art-ink, #222222)) right top / 1px 6px no-repeat,
+    linear-gradient(var(--titlebar-control-art-ink, #222222), var(--titlebar-control-art-ink, #222222)) left bottom / 6px 1px no-repeat);
   opacity: 1;
 }
 
@@ -746,8 +746,8 @@ body[data-lineage~="platinum"] .title-bar .shade-box::after {
   width: 9px;
   height: 3px;
   background:
-    linear-gradient(#222222, #222222) left top / 9px 1px no-repeat,
-    linear-gradient(#222222, #222222) left bottom / 9px 1px no-repeat;
+    linear-gradient(var(--titlebar-control-art-ink, #222222), var(--titlebar-control-art-ink, #222222)) left top / 9px 1px no-repeat,
+    linear-gradient(var(--titlebar-control-art-ink, #222222), var(--titlebar-control-art-ink, #222222)) left bottom / 9px 1px no-repeat;
   opacity: 1;
 }
 
@@ -758,8 +758,7 @@ body[data-lineage~="platinum"] .title-bar .shade-box::after {
    read here but never set, so the corner drew blank until 2026-09-25; the
    15x15 art sits inside the lane's 1px track borders. */
 body[data-lineage~="platinum"] .grow-box {
-  --window-frame-grow-art: url("./assets/themes/platinum/chrome/grow-box-15.svg") left top / 15px 15px no-repeat, #cccccc;
-  background: var(--window-frame-grow-art);
+  background: var(--window-frame-grow-art, url("./assets/themes/platinum/chrome/grow-box-15.svg") left top / 15px 15px no-repeat, #cccccc);
   cursor: se-resize;
 }
 
@@ -767,7 +766,7 @@ body[data-lineage~="platinum"] .window:not(.is-active) .grow-box {
   /* The corner cell stays (the scrollbar lanes end there); only the icon
      goes away on a background window, exactly like Mac OS 9. */
   background-image: none;
-  background-color: #cccccc;
+  background-color: var(--window-frame-grow-inactive-bg, #cccccc);
   pointer-events: none;
 }
 

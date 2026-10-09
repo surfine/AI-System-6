@@ -1,0 +1,4 @@
+<!-- Drawing Board check mark: a red pencil tick (#cc3333, from the PICT 2002/2003 preview) that runs out of the box's top-right corner. Measured reconstruction, not extracted artwork. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12">
+  <path d="M2 6.5L5 9.5L11.5 0.5" fill="none" stroke="#cc3333" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

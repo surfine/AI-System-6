@@ -1,0 +1,5 @@
+<!-- Drawing Board radio, selected: the pencilled circle filled red (#cc3333, the PICT 2002/2003 preview's own red) under the registration cross. Measured reconstruction, not extracted artwork. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12">
+  <circle cx="5.5" cy="5.5" r="4" fill="#cc3333" stroke="#555452" stroke-width="1"/>
+  <path d="M0 5.5h12M5.5 0v12" stroke="#555452" stroke-width="1" shape-rendering="crispEdges"/>
+</svg>

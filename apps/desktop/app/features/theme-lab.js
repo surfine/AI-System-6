@@ -759,6 +759,39 @@
       tick.classList.toggle("is-active", current);
       tick.setAttribute("aria-current", String(current));
     }
+    spaceEraTickLabels(host);
+    if (!host.dataset.labelsObserved && typeof ResizeObserver === "function") {
+      host.dataset.labelsObserved = "true";
+      const ticks = host.querySelector(".theme-lab-era-ticks");
+      if (ticks) new ResizeObserver(() => spaceEraTickLabels(host)).observe(ticks);
+    }
+  }
+
+  // Years are placed by date, so close ones collide at any width: 1998 and
+  // 1999 sit one year apart, and on a phone 2009 runs into 2011 (2026-10-09).
+  // A fixed container breakpoint could not know which. Lay the labels out as
+  // they actually render: the selected year first, then the two ends, then
+  // the rest left to right, and hide any label that would touch one already
+  // kept. Every tick mark and jump target stays; only unreadable text goes.
+  function spaceEraTickLabels(host) {
+    const ticks = [...host.querySelectorAll(".theme-lab-era-tick")];
+    if (!ticks.length) return;
+    ticks.forEach((tick) => tick.classList.remove("is-crowded"));
+    const order = [
+      ...ticks.filter((tick) => tick.classList.contains("is-active")),
+      ticks[0],
+      ticks[ticks.length - 1],
+      ...ticks,
+    ].filter((tick, index, all) => all.indexOf(tick) === index);
+    const kept = [];
+    for (const tick of order) {
+      const label = tick.querySelector(":scope > span");
+      const rect = label?.getBoundingClientRect();
+      if (!rect || !rect.width) continue;
+      const clashes = kept.some((other) => rect.left < other.right + 4 && rect.right + 4 > other.left);
+      if (clashes) tick.classList.add("is-crowded");
+      else kept.push(rect);
+    }
   }
 
   // The readout is composed here rather than inside a translation string, so

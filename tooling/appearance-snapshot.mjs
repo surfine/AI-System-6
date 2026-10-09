@@ -33,6 +33,7 @@ import { retryShootability } from "./lib/appearance-retry.mjs";
 import { windowInterfaceRegistry } from "./interface-guidelines-contract.mjs";
 import { snapshotCells } from "../tests/appearance-snapshot-manifest.mjs";
 
+import { stubLocalModels } from "./lib/stub-local-models.mjs";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
@@ -137,13 +138,7 @@ async function newPage(browser, cell) {
   // be running made the same commit alternate between two 17k-30k pixel
   // layouts. A visual baseline must own its service state, so every cell sees
   // the same explicit offline provider instead of probing developer software.
-  await context.route(/https?:\/\/(?:127\.0\.0\.1|localhost):(?:1234|11434)\//, (route) => {
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ models: [] }),
-    });
-  });
+  await stubLocalModels(context);
   await context.addInitScript(DETERMINISM);
   await context.addInitScript((themeId) => {
     localStorage.setItem("ai-system-6-theme", themeId);

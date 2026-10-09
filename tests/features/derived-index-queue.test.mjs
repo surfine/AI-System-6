@@ -105,6 +105,19 @@ test.assertIncludes(queueSource, "content: picture.visionNotes",
 test.assertIncludes(queueSource, 'String(picture?.visionNotes || "").trim()',
   "a picture with no reading stays out of the index, because there is nothing to match on");
 
+// --- A run speaks only once it has produced something ----------------------
+//
+// A committed source with no indexable text announced "Derived index ready: 0
+// chunks", and only on a machine slow enough for the first project's commit to
+// land after the boot restore: a phone's first open got a badge for nothing,
+// and two release runs of one tree disagreed on Notification Center (2026-10-09).
+test.assertMatches(queueSource, /if \(completedChunks && !derivedIndexRunAnnounced\) \{\s*derivedIndexRunAnnounced = true;\s*updateDerivedIndexNotification\("derived_index_running"/,
+  "the running notice waits for the first chunk the run actually produced");
+test.assertIncludes(queueSource, "if (notificationSources && (derivedIndexRunAnnounced || notificationEmbeddingFailures)) {",
+  "a run that produced nothing and failed nothing says nothing when it ends");
+test.assertNotMatches(queueSource, /notificationSources \+= synchronized\.changedSourceKeys\.length;\s*updateDerivedIndexNotification/,
+  "a changed source alone no longer announces a run");
+
 // --- Notification language survives a push before the language settles ----
 //
 // The queue runs on a background timer and can push a notification before the

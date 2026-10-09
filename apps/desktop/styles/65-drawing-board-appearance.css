@@ -56,7 +56,6 @@ body[data-theme="drawing-board"] {
   --tdi-tab-pressed-fg: #f4efe7;
   --tdi-tab-pressed-shadow: inset 1px 1px 0 #3a3129, inset -1px -1px 0 #958671;
   --find-path-results-bg: #f4efe7;
-  --desktop-label-selected-fg: #f4efe7;
   --sidebar-selection-bg: #fffcdf;
   --separator: #857765;
   --control-shadow: inset 1px 1px 0 #f4efe7, inset -1px -1px 0 #857765;
@@ -72,22 +71,15 @@ body[data-theme="drawing-board"] {
   --btn-hover-shadow: inset 1px 1px 0 #cec7bd, inset 2px 2px 0 #f4efe7, inset -1px -1px 0 #75685a, inset -2px -2px 0 #a59888;
   --btn-active-bg: #665a4d;
   --btn-active-fg: #f4efe7;
-  --btn-active-shadow: inset 1px 1px 0 #3a3129, inset -1px -1px 0 #958671;
   --field-bg: #f4efe7;
   --field-focus-bg: #f4efe7;
-  --field-shadow: -1px -1px 0 #857765;
   --field-focus-ring: 0 0 0 2px #958671;
   --choice-bg: #cec7bd;
   --choice-shadow: inset -1px -1px 0 #857765, inset 1px 1px 0 #f4efe7;
   --choice-checked-bg: #cec7bd;
-  --radio-bg: #cec7bd;
-  --radio-shadow: inset 1px 1px 0 #cec7bd, inset -1px -1px 0 #857765;
-  --radio-image: linear-gradient(to bottom right, #f4efe7, #857765);
-  --radio-checked-image: radial-gradient(circle, #000000 0 3px, transparent 3.5px), linear-gradient(to bottom right, #574c41, #f4efe7);
   --menu-bar-bg: #cec7bd;
   --menu-bar-shadow: inset 0 1px 0 #f4efe7, inset 0 -1px 0 #958671;
   --menu-panel-bg: #cec7bd;
-  --menu-panel-shadow: inset 1px 1px 0 #f4efe7, inset -1px -1px 0 #857765, 1px 1px 0 #000000;
   --menu-item-bg: #cec7bd;
   --menu-button-active-bg: #574c41;
   --menu-button-active-fg: #f4efe7;
@@ -96,11 +88,7 @@ body[data-theme="drawing-board"] {
   --balloon-help-bg: #f7d784;
   --balloon-help-shadow: 2px 2px 0 #75685a;
   --window-frame-track-bg: #a59888;
-  --window-frame-track-shadow: inset 1px 1px #75685a, inset -1px -1px #c0b6aa;
-  --window-frame-thumb-bg: #f7d784;
-  --window-frame-thumb-shadow: inset 1px 1px #fffcdf, inset -1px -1px #958671;
   --window-frame-arrow-bg: #cec7bd;
-  --window-frame-arrow-shadow: inset 1px 1px #f4efe7, inset -1px -1px #958671;
   --scrollbar-track: #a59888;
   --scrollbar-button: #cec7bd;
   --window-frame-thumb-bg: url("./assets/themes/platinum/chrome/thumb-grip-vertical.svg") center 5px / 8px 8px no-repeat, linear-gradient(#e7e3de, #e7e3de) left top / 1px 1px no-repeat, #f7d784;
@@ -111,13 +99,8 @@ body[data-theme="drawing-board"] {
   --window-frame-arrow-shadow: inset 1px 1px #f4efe7, inset -1px -1px #b2a697;
   --window-frame-empty-track-bg: #e7e3de;
   --window-frame-empty-arrow-ink: #857765;
-  --tab-bg: #c0b6aa;
-  --tab-hover-bg: #cec7bd;
-  --tab-active-bg: #e7e3de;
-  --tab-shadow: inset 0 1px #000000, inset 0 2px #c0b6aa, inset 0 3px #cec7bd;
   --tab-pressed-fg: #f4efe7;
   --tab-focus-text-shadow: 0 0 2px #958671;
-  --tab-panel-bg: #e7e3de;
   --tab-panel-shadow: inset 1px 1px #c0b6aa, inset 2px 2px #f4efe7, inset -1px -1px #958671, inset -2px -2px #b2a697;
   --menu-item-disabled-bg: #cec7bd;
   --menu-item-disabled-fg: #75685a;
@@ -125,7 +108,6 @@ body[data-theme="drawing-board"] {
   --menu-separator-border-bottom: 1px solid #f4efe7;
   --progress-bg: #b2a697;
   --progress-shadow: 1px 1px #f4efe7, -1px -1px #a59888, inset 1px 1px #857765, inset -1px -1px #cec7bd;
-  --progress-fill-bg: linear-gradient(to bottom, #574c41, #958671, #f7d784, #fffcdf, #e7e3de, #fffcdf, #f7d784, #958671, #574c41, #000088);
   --progress-fill-shadow: inset 1px 0 #958671, inset 2px 0 rgba(255, 255, 255, 0.2), inset -1px 0 #000055, inset -2px 0 #574c41, 1px 0 #574c41, 2px 0 #857765;
   --alarm-clock-surface-bg: #cec7bd;
   --alarm-clock-readout-bg: #f4efe7;
@@ -149,6 +131,10 @@ body[data-theme="drawing-board"] {
   --control-strip-gauge: #3a3129;
   --control-strip-gauge-bg: #f4efe7;
   --control-strip-grip: repeating-linear-gradient(to bottom, #efe9e1 0 1px, #8e8e8e 1px 2px, rgba(0, 0, 0, 0) 2px 4px) 50% 50% / 10px 100% no-repeat;
+  --tab-edge-left-bg: url("./assets/themes/drawing-board/chrome/tab-inactive-left.svg") left top / 16px 22px no-repeat;
+  --tab-edge-right-bg: url("./assets/themes/drawing-board/chrome/tab-inactive-right.svg") right top / 16px 22px no-repeat;
+  --tab-active-edge-left-bg: url("./assets/themes/drawing-board/chrome/tab-active-left.svg") left top / 16px 22px no-repeat;
+  --tab-active-edge-right-bg: url("./assets/themes/drawing-board/chrome/tab-active-right.svg") right top / 16px 22px no-repeat;
   --tab-bg: linear-gradient(#000000, #000000) 16px 0 / calc(100% - 32px) 1px no-repeat, linear-gradient(#cec7bd, #cec7bd) 16px 2px / calc(100% - 32px) 1px no-repeat, linear-gradient(#000000, #000000) 16px 100% / calc(100% - 32px) 1px no-repeat, linear-gradient(#c0b6aa, #c0b6aa) 16px 0 / calc(100% - 32px) 100% no-repeat;
   --tab-active-bg: linear-gradient(#000000, #000000) 16px 0 / calc(100% - 32px) 1px no-repeat, linear-gradient(#c0b6aa, #c0b6aa) 16px 1px / calc(100% - 32px) 1px no-repeat, linear-gradient(#f4efe7, #f4efe7) 16px 2px / calc(100% - 32px) 1px no-repeat, linear-gradient(#e7e3de, #e7e3de) 16px 0 / calc(100% - 32px) 100% no-repeat;
   --tab-panel-bg: #e7e3de;
@@ -183,30 +169,91 @@ body[data-theme="drawing-board"] {
   --progress-fill-bg: linear-gradient(to bottom, #574c41 0 1px, #958671 1px 2px, #f7d784 2px 3px, #fffcdf 3px 4px, #e7e3de 4px 5px, #fffcdf 5px 6px, #f7d784 6px 7px, #958671 7px 8px, #574c41 8px 9px, #000055 9px 10px);
   --details-bar-shadow: inset 0 1px 0 #f4efe7, inset 0 -1px 0 #a59888;
   /* END derived from Platinum */
-  /* Title bar: a 22 px band of drafting paper between two pencil lines
-     (#625c58 in the reference), no Platinum grooves. */
-  --system-titlebar-active-bg: #d0c8c0;
-  --system-titlebar-inactive-bg: #ddd6ce;
+  /* The rest answers the theme as Mac OS 8.5 drew it. Evidence: the theme
+     file's own pixel patterns (ppat 7115, 7120, 7122, extracted from the
+     Drawing Board resource fork into assets/themes/drawing-board/), and two
+     screenshots of the running theme (calm-desktop evidence,
+     drawing-board-8.5-verify-v227/from-journal). Those screenshots are lighter
+     than the WindowBlinds port the derived block was sampled from: title bar
+     and frame 223,216,206, content 246,239,228, menu bar 229,219,205, pencil
+     lines 90-126 grey, title text 90,90,88. */
+  --system-titlebar-active-bg: url("./assets/themes/drawing-board/paper-ppat-7120.png") left top / 128px 128px repeat, #e0d9cf;
+  --system-titlebar-inactive-bg: #e6dfd6;
   --system-titlebar-background-origin: border-box;
   --system-titlebar-background-clip: border-box;
-  --titlebar-border: 1px solid #625c58;
+  --titlebar-border: 1px solid #6c6b69;
   --titlebar-title-bg: transparent;
-  /* Drafting-board desktop: sketch paper tile under a readable grid so the
-     desk reads as Drawing Board at a glance (not Platinum Azul). */
-  --desktop: #c6b59c;
-  --desktop-surface:
-    linear-gradient(rgba(90, 78, 58, 0.22) 1px, transparent 1px) 0 0 / 11.64px 11.64px,
-    linear-gradient(90deg, rgba(90, 78, 58, 0.22) 1px, transparent 1px) 0 0 / 11.64px 11.64px,
-    linear-gradient(rgba(255, 248, 236, 0.22), transparent 42%),
-    url("./assets/themes/drawing-board/paper-tile-96.png") left top / 96px 96px repeat,
-    #c6b59c;
-  --drawing-board-pencil: #3f3a35;
-  /* The reference separates window content (237,227,218) from control face
-     (206,199,189); Platinum uses one grey for both. Paper takes the lighter
-     content colour so writing stays easy to read. */
-  --paper: #ede3da;
-  --pane-bg: #ede3da;
-  /* Pencil crosses stay paint-contained on title-bar controls
+  --titlebar-title-fg: #5a5a58;
+  /* Desktop: ppat 7115, the theme's 256x128 sheet of construction drawings. */
+  --desktop: #e2dbd1;
+  --desktop-surface: url("./assets/themes/drawing-board/desktop-ppat-7115.png") left top / 256px 128px repeat, #e2dbd1;
+  --drawing-board-pencil: #555452;
+  --window-bg: #e2dacf;
+  --paper: #f5eee3;
+  --pane-bg: #f5eee3;
+  --menu-bar-bg: url("./assets/themes/drawing-board/paper-ppat-7120.png") left top / 128px 128px repeat, #e5dbcd;
+  --menu-bar-shadow: none;
+  /* The Control Panel's note card: Platinum's #eeeeee on the theme's map. */
+  --control-footer-bg: #e7e3de;
+  --menu-bar-border-color: #6c6b69;
+  /* Radios and checks, from the theme's own preview (PICT 2002/2003): a
+     pencilled circle on a registration cross, filled red when chosen; a
+     pencilled box whose red tick runs out of its corner. The box keeps its
+     square 12px footprint; the preview is too small to measure its shape. */
+  --radio-border: 0;
+  --radio-bg: transparent;
+  --radio-shadow: none;
+  --radio-image: url("./assets/themes/drawing-board/radio-unchecked.svg");
+  --radio-checked-image: url("./assets/themes/drawing-board/radio-checked.svg");
+  --radio-checked-size: 12px 12px;
+  --choice-bg: #f5eee3;
+  --choice-checked-bg: #f5eee3;
+  --choice-border: 1px solid #555452;
+  --choice-shadow: none;
+  --choice-checked-shadow: none;
+  --choice-checkmark-image: url("./assets/themes/drawing-board/checkbox-check.svg");
+  --choice-checkmark-size: 12px 12px;
+  /* The window edge: pencil lines that run past every corner and a hatched
+     shadow 7px down and right (journal captures: 2-16px overshoot, 6px fill
+     and a 1px edge), drawn as the window's border image, so there is no
+     Platinum bevel and no 1px black drop. A background window's lines and
+     shadow go pale, as the window behind the About box does. */
+  --window-shadow: none;
+  --inactive-window-shadow: none;
+  --window-border-image: url("./assets/themes/drawing-board/window-frame-active.svg") 24 / 24px / 16px repeat;
+  --inactive-window-border-image: url("./assets/themes/drawing-board/window-frame-inactive.svg") 24 / 24px / 16px repeat;
+  --modal-border-image: var(--window-border-image);
+  --modal-shadow: inset 1px 1px 0 #f4efe7, inset -1px -1px 0 #b2a697;
+  /* A background window keeps the drafting paper, paler; its words go light
+     grey (8.5 capture: frame 191,189,186, words about 133). */
+  --inactive-window-bg: #e6dfd6;
+  --inactive-window-fg: #6f6d69;
+  --inactive-window-border-color: #bfbdba;
+  --inactive-pane-bg: #f2ece3;
+  --inactive-titlebar-title-bg: transparent;
+  --inactive-titlebar-title-fg: #85837f;
+  /* Title-bar boxes: three pencilled 11px squares on the paper. Zoom is one
+     rule across the square at y=4 (Platinum's lower-left corner mark is not
+     in the pencil theme); WindowShade keeps Platinum's two rules at y=4 and
+     y=6, which the 8.5 capture shows unchanged. Pressed fills with graphite. */
+  --titlebar-control-art-ink: var(--drawing-board-pencil);
+  --titlebar-control-art-bg: none;
+  --titlebar-control-art-shadow: none;
+  --titlebar-control-art-pressed-bg: rgba(63, 58, 53, 0.35);
+  --titlebar-control-art-pressed-shadow: none;
+  --titlebar-zoom-mark: var(--drawing-board-pencil);
+  --titlebar-zoom-mark-inset-y: 4px;
+  --titlebar-zoom-mark-width: 9px;
+  --titlebar-zoom-mark-height: 1px;
+  /* The grow box, pencilled: light hatching under a registration cross, the
+     way the 8.5 capture marks the corner. */
+  --window-frame-grow-art:
+    linear-gradient(var(--drawing-board-pencil), var(--drawing-board-pencil)) 7px 2px / 1px 11px no-repeat,
+    linear-gradient(var(--drawing-board-pencil), var(--drawing-board-pencil)) 2px 7px / 11px 1px no-repeat,
+    repeating-linear-gradient(to top right, transparent 0 2px, #b8b4ae 2px 3px),
+    #ebe5dc;
+  --window-frame-grow-inactive-bg: #e6dfd6;
+  /* Pencil crosses stay inside the title bar
      (polishTodo pencil-line-content-safe). Era-rail thumb is a 2×2 paper grid
      asset so the knob reads as Drawing Board without the year label
      (polishTodo thumbnail-grid). */
@@ -216,79 +263,29 @@ body[data-theme="drawing-board"] {
   --era-rail-thumb-radius: 2px;
   --era-rail-thumb-shadow: inset 1px 1px 0 #f4efe7;
   /* Surfaces specimens: textured sketch board + pencil-safe specimen. */
-  --textured-board-brushed: url("./assets/themes/drawing-board/paper-tile-96.png") center / 48px 48px repeat, #d0c8c0;
-  --textured-board-unified: url("./assets/themes/drawing-board/era-thumb-32.png") center / cover no-repeat, #ede3da;
+  --textured-board-brushed: url("./assets/themes/drawing-board/paper-ppat-7122.png") center / 128px 128px repeat, #d0c6bd;
+  --textured-board-unified: url("./assets/themes/drawing-board/era-thumb-32.png") center / cover no-repeat, #f5eee3;
   --pencil-safe-bg:
-    linear-gradient(#ede3da, #ede3da) center / calc(100% - 22px) calc(100% - 18px) no-repeat,
+    linear-gradient(#f5eee3, #f5eee3) center / calc(100% - 22px) calc(100% - 18px) no-repeat,
     url("./assets/themes/drawing-board/pencil-safe-board.png") center / cover no-repeat;
   --pencil-safe-border: 0;
 }
 
-body[data-theme="drawing-board"] .desktop {
-  background: var(--desktop-surface);
-}
-
-/* Title-bar boxes: a pencilled square with a registration cross running
-   through and past it - the construction line the reference draws running
-   off every corner, kept inside the bar so the window never clips it. */
-body[data-theme="drawing-board"] .title-bar > :is(.close-box, .resize-box, .shade-box) {
-  --x: var(--system-titlebar-control-art-offset-x);
-  --y: var(--system-titlebar-control-art-offset-y);
-  /* Registration crosses may extend past the 11px square; keep them inside
-     the control so pencil art never paints over window content. */
-  contain: paint;
+/* Only the close box has the registration cross, running through and past
+   its square (3-5px sideways, up to the frame line). It rides the close
+   box's ::after, re-aimed by the art tokens to a 17px square around the
+   11px box; the 4px rise ends at the title bar's top edge, so the pencil
+   never reaches window content. */
+body[data-theme="drawing-board"] .title-bar > .close-box::after {
+  --system-titlebar-control-art-offset-x: -3px;
+  --system-titlebar-control-art-offset-y: -6px;
+  --system-titlebar-control-art-size: 17px;
   background:
-    linear-gradient(var(--drawing-board-pencil), var(--drawing-board-pencil)) calc(var(--x) - 2px) calc(var(--y) + 5px) / 15px 1px no-repeat,
-    linear-gradient(var(--drawing-board-pencil), var(--drawing-board-pencil)) calc(var(--x) + 5px) calc(var(--y) - 2px) / 1px 15px no-repeat,
-    linear-gradient(var(--drawing-board-pencil), var(--drawing-board-pencil)) var(--x) var(--y) / 11px 1px no-repeat,
-    linear-gradient(var(--drawing-board-pencil), var(--drawing-board-pencil)) var(--x) calc(var(--y) + 10px) / 11px 1px no-repeat,
-    linear-gradient(var(--drawing-board-pencil), var(--drawing-board-pencil)) var(--x) var(--y) / 1px 11px no-repeat,
-    linear-gradient(var(--drawing-board-pencil), var(--drawing-board-pencil)) calc(var(--x) + 10px) var(--y) / 1px 11px no-repeat,
-    linear-gradient(#e2dbd2, #e2dbd2) var(--x) var(--y) / 11px 11px no-repeat;
+    linear-gradient(var(--drawing-board-pencil), var(--drawing-board-pencil)) 0 9px / 17px 1px no-repeat,
+    linear-gradient(var(--drawing-board-pencil), var(--drawing-board-pencil)) 8px 0 / 1px 17px no-repeat;
+  transform: none;
+  opacity: 1;
 }
-
-/* Platinum draws its bevelled box on ::before; here the pencil square above
-   is the box, so the bevel steps aside and Platinum's zoom and WindowShade
-   marks (::after) sit inside the pencilled square. */
-body[data-theme="drawing-board"] .title-bar :is(.close-box, .resize-box, .shade-box)::before {
-  border: 0;
-  background: none;
-  box-shadow: none;
-}
-
-/* A background window keeps the drafting paper. Platinum writes these greys
-   as literals in its own rule rather than tokens, so the derived palette
-   cannot reach them; the values are the same map (#dddddd -> #cec7bd,
-   #eeeeee -> #e7e3de, #555555 -> #574c41). */
-body[data-theme="drawing-board"] .window:not(.is-active) {
-  --pane-bg: #e7e3de;
-  --titlebar-title-bg: transparent;
-  border-color: #574c41;
-  background: #cec7bd;
-  color: #574c41;
-}
-
-body[data-theme="drawing-board"] .window:not(.is-active) .title-bar {
-  border-bottom-color: #574c41;
-}
-
-/* The grow box, pencilled: Platinum's diagonal grooves on the warm face. */
-body[data-theme-family="classic"][data-theme="drawing-board"] .grow-box {
-  background:
-    repeating-linear-gradient(to bottom right, #f4efe7 0 1px, #c0b6aa 1px 2px, #75685a 2px 3px, #c0b6aa 3px 4px),
-    #c0b6aa;
-}
-
-body[data-theme-family="classic"][data-theme="drawing-board"] .window:not(.is-active) .grow-box {
-  background-image: none;
-  background-color: #c0b6aa;
-}
-
-/* Pressed: the pencilled square fills with graphite, the lines still showing. */
-body[data-theme="drawing-board"] .title-bar :is(.close-box, .resize-box, .shade-box):active::before {
-  background: rgba(63, 58, 53, 0.35);
-}
-
 
 /* The system's higher-contrast request. The global answer lives in a boot
    sheet this lazy sheet follows, so Drawing Board restates it in its own ink. */

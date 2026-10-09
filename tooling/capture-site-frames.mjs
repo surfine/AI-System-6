@@ -9,22 +9,32 @@
 //
 //   npm start            (app on :4173)
 //   node tooling/capture-site-frames.mjs
+//   node tooling/capture-site-frames.mjs --only drawing-board   (one era;
+//     the other frames and the shared window geometry are left as they are)
 //
 // Output: site/img/frames/<era>.png (+ .webp for the color eras) and
 // site/img/frames/manifest.json with window geometry and provenance.
 
-import { mkdirSync, writeFileSync, statSync, rmSync, renameSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync, statSync, rmSync, renameSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import { stubLocalModels } from "./lib/stub-local-models.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = path.join(root, "site", "img", "frames");
 const appUrl = process.env.APP_URL || "http://localhost:4173/";
 
 const VIEW = { width: 1440, height: 900 };
-const ERAS = ["classic", "system-7", "nextstep", "drawing-board", "platinum", "aqua", "tiger", "snow-leopard", "lion", "yosemite", "big-sur", "liquid-glass"];
+const ALL_ERAS = ["classic", "system-7", "nextstep", "drawing-board", "platinum", "aqua", "tiger", "snow-leopard", "lion", "yosemite", "big-sur", "liquid-glass"];
+const onlyIndex = process.argv.indexOf("--only");
+const ONLY = onlyIndex >= 0 ? String(process.argv[onlyIndex + 1] || "").split(",").filter(Boolean) : null;
+if (ONLY && (!ONLY.length || ONLY.some((era) => !ALL_ERAS.includes(era)))) {
+  console.error(`--only takes a comma list of: ${ALL_ERAS.join(", ")}`);
+  process.exit(2);
+}
+const ERAS = ONLY || ALL_ERAS;
 
 const MANUSCRIPT_TITLE = "The Tide Comes In Twice";
 const MANUSCRIPT_BODY = `# The Tide Comes In Twice
@@ -48,6 +58,9 @@ const context = await browser.newContext({
   reducedMotion: "reduce",
 });
 await context.clock.setFixedTime(new Date("2026-08-13T10:07:00"));
+// The desk is "Model not connected" in every frame, whatever the capturing
+// machine has loaded.
+await stubLocalModels(context);
 const page = await context.newPage();
 page.on("pageerror", (e) => console.error("pageerror:", e.message));
 
@@ -198,6 +211,9 @@ const rects = await page.evaluate((names) => {
 
 // Provenance.
 const build = await page.evaluate(async () => {
+  // The build the page actually loaded; the server's own answer can be older
+  // when it has been left running across builds.
+  if (window.AISystem6BuildInfo?.build) return window.AISystem6BuildInfo.build;
   try {
     const res = await fetch("/api/version");
     const data = await res.json();
@@ -226,7 +242,8 @@ for (const era of ERAS) {
     try {
       // q76: twelve eras had to fit the 4 MiB site budget (2026-09-25); in a
       // 2x text crop q78 was indistinguishable from the old q88.
-      execFileSync("cwebp", ["-quiet", "-q", "76", "-sharp_yuv", png, "-o", webp]);
+      // -m 6 -pass 6: the slowest search, about 2-4% smaller at the same q.
+      execFileSync("cwebp", ["-quiet", "-q", "76", "-sharp_yuv", "-m", "6", "-pass", "6", png, "-o", webp]);
       execFileSync("cwebp", ["-quiet", "-lossless", "-z", "9", png, "-o", lossless]);
       if (statSync(lossless).size < statSync(webp).size) renameSync(lossless, webp);
       else rmSync(lossless);
@@ -239,7 +256,18 @@ for (const era of ERAS) {
   console.log("captured", era, Math.round(statSync(path.join(outDir, files[era])).size / 1024) + "KB");
 }
 
-writeFileSync(path.join(outDir, "manifest.json"), JSON.stringify({
+const manifestPath = path.join(outDir, "manifest.json");
+// A partial recapture keeps the whole-set capture stamp and geometry, and
+// records which frames were replaced later and from which build.
+const previous = ONLY ? JSON.parse(readFileSync(manifestPath, "utf8")) : null;
+writeFileSync(manifestPath, JSON.stringify(previous ? {
+  ...previous,
+  files: { ...previous.files, ...files },
+  recaptured: {
+    ...(previous.recaptured || {}),
+    ...Object.fromEntries(ERAS.map((era) => [era, { capturedAt: new Date().toISOString(), build }])),
+  },
+} : {
   capturedAt: new Date().toISOString(),
   build,
   viewport: VIEW,

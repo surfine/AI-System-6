@@ -118,14 +118,12 @@
   container-type: inline-size;
 }
 
-/* Six years do not fit a short rail: 1999 and 2002 collide first, then 2009
-   and 2014. Keep the axis endpoints and whichever era is selected, and drop
-   the labels in between. Every tick mark stays, so each era is still a jump
-   target -- only the text that could not be read is withheld. */
-@container (max-width: 340px) {
-  .theme-lab-era-tick:not(.is-active):not(:first-child):not(:last-child) > span {
-    display: none;
-  }
+/* Close years collide at any width (1998/1999; 2009/2011 on a phone). The
+   rail lays its labels out as rendered (theme-lab.js spaceEraTickLabels):
+   the selected year and the two ends first, and any label that would touch
+   one already kept is withheld. Every tick mark stays a jump target. */
+.theme-lab-era-tick.is-crowded > span {
+  visibility: hidden;
 }
 
 /* Each tick is its own jump target, so the axis stays keyboard- and
@@ -225,6 +223,11 @@
   --tab-min-width: var(--theme-lab-rail-tab-min-width, 0);
   --tab-min-height: var(--theme-lab-rail-tab-min-height, 28px);
   --tab-height: var(--theme-lab-rail-tab-height, auto);
+  /* The selected tab is one of the rail's tabs, so it takes the rail's height
+     too. Each era's --tab-active-min-height (22-25px) used to escape the
+     rail's 28px, leaving one short tab among three tall ones. */
+  --tab-active-min-height: var(--tab-min-height);
+  --tab-active-height: var(--tab-height);
   --tab-padding: var(--theme-lab-rail-tab-padding, 4px 10px);
   --tab-margin: var(--theme-lab-rail-tab-margin, 0);
   --tab-strip-padding: var(--theme-lab-rail-strip-padding, 0);
@@ -2543,11 +2546,11 @@ so the base is where the state
     align-content: start;
   }
 
-  /* The rail's own metrics are already a token API, so the finger size is one
-     value rather than a rule that fights the shipping tab. */
-  .theme-lab-panel-tabs {
-    --tab-min-height: 44px;
-  }
+  /* The section tabs keep their era's own height on touch, as every other
+     tab and title-bar control does. Raising only --tab-min-height grew the
+     unselected tabs to 44px while each era's --tab-active-min-height kept the
+     selected one at 22-25px: labels dropped out of Platinum's trapezoids over
+     grey blocks, and Aqua's selected fill covered half its tab (2026-10-09). */
 
   .theme-lab-object-inspect {
     min-height: 44px;

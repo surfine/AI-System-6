@@ -110,7 +110,7 @@
     "tiger": 8,
     "lion": 7,
     "system-7": 10,
-    "drawing-board": 9,
+    "drawing-board": 4,
     "nextstep": 48
   },
   "_bootThemeSurfaceNote": "2026-08-10 bump: per-era boot/shutdown surfaces added for Platinum (+5 appearance selectors) and Aqua/Snow Leopard (+16 theme selectors in 67). These re-skin the shared Happy Mac boot/shutdown harness per theme (same DOM/JS as Classic and Liquid Glass), not per-app churn; both files remain under the raised limits.",
@@ -141,7 +141,7 @@
     "styles/67-tiger-appearance.css": 8,
     "styles/67-lion-appearance.css": 7,
     "styles/65-system-7-appearance.css": 10,
-    "styles/65-drawing-board-appearance.css": 11,
+    "styles/65-drawing-board-appearance.css": 4,
     "styles/69-nextstep-appearance.css": 48
   },
   "_eraTokenCoverageNote": "What a seventh appearance owes. A token two eras set is a period decision; a token one era sets is that era's quirk. Coverage counts the first kind an era answers, following its recipeBase chain, and Theme Lab's Tokens tab shows the same list on screen so the number is a worklist rather than a score. The rule is asymmetric on purpose: an era with no entry here -- a NEW appearance -- must answer all of them, because arriving complete is the point of the gate; the six that predate it carry real debt and are ratcheted instead, each count may only fall. baselineEra is exempt because its values ARE the defaults the others override. Measured 2026-09-01 (sidebar tier 2: tdi-rail heading/hover/pressed/unfocused tokens, answered by all five eras) against period tokens. Lower a number when you answer tokens; never raise one.",

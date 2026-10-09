@@ -58,6 +58,7 @@ import { desktopRoot, repositoryRoot } from "./lib/paths.mjs";
 import { lazyStyleBundles, styleLayerByPath, styleLayerOrder, styleRuntimePaths } from "./style-manifest.mjs";
 import { enableMultiFinder } from "../tests/e2e/helpers.mjs";
 
+import { stubLocalModels } from "./lib/stub-local-models.mjs";
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 
@@ -659,7 +660,7 @@ try {
     const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1, colorScheme: "light", reducedMotion: "reduce", hasTouch: PHONE, isMobile: PHONE });
     // The saved-appearance boot appearance-snapshot.mjs uses; local model
     // probes answered offline so no window waits on developer software.
-    await context.route(/https?:\/\/(?:127\.0\.0\.1|localhost):(?:1234|11434)\//, (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ models: [] }) }));
+    await stubLocalModels(context);
     await context.addInitScript((id) => {
       localStorage.setItem("ai-system-6-theme", id);
       localStorage.removeItem("ai-system-6-liquid-glass");

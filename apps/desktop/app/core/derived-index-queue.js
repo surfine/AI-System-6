@@ -9,6 +9,11 @@ let derivedIndexRunning = false;
 let derivedIndexNeedsSync = false;
 let derivedIndexNotificationId = "";
 let derivedIndexSilent = false;
+// A run speaks only once it has produced something: a committed source with
+// no indexable text used to announce "ready: 0 chunks", and only on a machine
+// slow enough for the first project's commit to land after the boot restore.
+let derivedIndexRunSources = 0;
+let derivedIndexRunAnnounced = false;
 
 function derivedIndexAddSource(target, source) {
   const content = String(source?.content || "").trim();
@@ -320,6 +325,10 @@ async function processDerivedIndexQueue() {
         if (productRecord) productRecord.routeKey = embeddingRouteKey();
       }
       if (job.kind === "chunks") completedChunks += Array.isArray(product) ? product.length : 0;
+      if (completedChunks && !derivedIndexRunAnnounced) {
+        derivedIndexRunAnnounced = true;
+        updateDerivedIndexNotification("derived_index_running", [derivedIndexRunSources], "running");
+      }
       if (job.kind === "chunks" || job.kind === "embeddings") publishDerivedSourceChunks(job.sourceKey);
     } catch (error) {
       if (job.kind === "embeddings") failedEmbeddings += 1;
@@ -349,6 +358,8 @@ async function synchronizeAndProcessDerivedIndex() {
     let notificationSources = 0;
     let notificationChunks = 0;
     let notificationEmbeddingFailures = 0;
+    derivedIndexRunSources = 0;
+    derivedIndexRunAnnounced = false;
     do {
       derivedIndexNeedsSync = false;
       derivedIndexSourceSnapshots = collectDerivedIndexSources();
@@ -363,17 +374,13 @@ async function synchronizeAndProcessDerivedIndex() {
       }
       if (synchronized.changedSourceKeys.length) {
         notificationSources += synchronized.changedSourceKeys.length;
-        updateDerivedIndexNotification(
-          "derived_index_running",
-          [synchronized.changedSourceKeys.length],
-          "running"
-        );
+        derivedIndexRunSources = notificationSources;
       }
       const outcome = await processDerivedIndexQueue();
       notificationChunks += outcome.completedChunks;
       notificationEmbeddingFailures += outcome.failedEmbeddings;
     } while (derivedIndexNeedsSync);
-    if (notificationSources) {
+    if (notificationSources && (derivedIndexRunAnnounced || notificationEmbeddingFailures)) {
       const messageKey = notificationEmbeddingFailures ? "derived_index_keyword_ready" : "derived_index_ready";
       // The keyword index really is ready, and the message says the
       // embeddings will retry. Calling that "Failed" borrows the vocabulary

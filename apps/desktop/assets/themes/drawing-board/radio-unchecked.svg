@@ -1,0 +1,5 @@
+<!-- Drawing Board radio: a pencilled circle with a registration cross running past it, as the theme's own preview (PICT 2002/2003) draws the control. Measured reconstruction, not extracted artwork. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12">
+  <circle cx="5.5" cy="5.5" r="4" fill="#f5eee3" stroke="#555452" stroke-width="1"/>
+  <path d="M0 5.5h12M5.5 0v12" stroke="#555452" stroke-width="1" shape-rendering="crispEdges"/>
+</svg>

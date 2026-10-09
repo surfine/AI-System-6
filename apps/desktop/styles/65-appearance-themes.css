@@ -424,7 +424,7 @@ body[data-lineage~="platinum"] {
   --theme-lab-checkbox-mark-margin: 0;
   --theme-lab-checkbox-mark-border-bottom: 0;
   --theme-lab-checkbox-mark-border-left: 0;
-  --theme-lab-checkbox-mark-bg: url("./assets/themes/platinum/checkbox-checked-overlay.svg") center / 12px 12px no-repeat;
+  --theme-lab-checkbox-mark-bg: var(--choice-checkmark-image) center / 12px 12px no-repeat;
   --theme-lab-checkbox-mark-transform: none;
   --theme-lab-checkbox-frame-overlay-content: "";
   --theme-lab-checkbox-frame-overlay-inset: -1px auto auto -1px;
@@ -438,9 +438,9 @@ body[data-lineage~="platinum"] {
   --theme-lab-checkbox-disabled-mark-filter: grayscale(1) opacity(0.55);
   --theme-lab-checkbox-active-bg: #777777;
   --theme-lab-checkbox-active-shadow: inset 1px 1px 0 #555555, inset -1px -1px 0 #999999;
-  --theme-lab-radio-checked-bg: linear-gradient(to bottom right, #555555, #ffffff);
-  --theme-lab-radio-checked-shadow: inset 1px 1px 0 #555555;
-  --theme-lab-radio-dot-content: "";
+  --theme-lab-radio-checked-bg: var(--radio-checked-image);
+  --theme-lab-radio-checked-shadow: none;
+  --theme-lab-radio-dot-content: none;
   --theme-lab-radio-dot-bg: #000000;
   --theme-lab-radio-disabled-dot-bg: #888888;
   --theme-lab-radio-active-bg: linear-gradient(to bottom right, #444444, #bbbbbb);
@@ -1555,7 +1555,9 @@ body[data-theme="yosemite"] {
   --scrollbar-width: 10px;
   --tab-radius: 5px 5px 0 0;
   --tab-overlap: 0;
-  --tab-bg: #f6f6f6;
+  /* Usability, not evidence (no 10.10 tab capture in the repo): #f6f6f6 left
+     the white selected tab indistinguishable from the others (2026-10-09). */
+  --tab-bg: #ebebeb;
   --tab-hover-bg: #ffffff;
   --tab-active-bg: #ffffff;
   --system-check-size: 15px;
@@ -1739,23 +1741,24 @@ body[data-lineage~="platinum"] .window:not(.is-active) {
   --view-btn-active-shadow: none;
   --field-shadow: none;
   --choice-shadow: none;
-  --pane-bg: #eeeeee;
-  --titlebar-title-bg: #dddddd;
-  border-color: #555555;
-  background: #dddddd;
-  color: #555555;
+  --pane-bg: var(--inactive-pane-bg, #eeeeee);
+  --titlebar-title-bg: var(--inactive-titlebar-title-bg, #dddddd);
+  --window-border-image: var(--inactive-window-border-image, none);
+  border-color: var(--inactive-window-border-color, #555555);
+  background: var(--inactive-window-bg, #dddddd);
+  color: var(--inactive-window-fg, #555555);
   /* P26: the native background window keeps its 1px #555 drop and the two
      inset rules; :1811's `box-shadow:none` erased all three. */
   box-shadow: var(--inactive-window-shadow);
 }
 
 body[data-lineage~="platinum"] .window:not(.is-active) .title-bar {
-  border-bottom-color: #555555;
+  border-bottom-color: var(--inactive-window-border-color, #555555);
 }
 
 body[data-lineage~="platinum"] .window:not(.is-active) .title-bar :is(h1, h2) {
-  background: #dddddd;
-  color: #777777;
+  background: var(--inactive-titlebar-title-bg, #dddddd);
+  color: var(--inactive-titlebar-title-fg, #777777);
 }
 
 body[data-lineage~="platinum"] .title-bar {
@@ -1796,10 +1799,10 @@ body[data-lineage~="platinum"] .title-bar :is(.close-box, .resize-box, .shade-bo
   box-sizing: border-box;
   width: var(--system-titlebar-control-art-size);
   height: var(--system-titlebar-control-art-size);
-  border: 1px solid #222222;
+  border: 1px solid var(--titlebar-control-art-ink, #222222);
   border-radius: 0;
-  background: linear-gradient(to bottom right, #999999, #ffffff);
-  box-shadow:
+  background: var(--titlebar-control-art-bg, linear-gradient(to bottom right, #999999, #ffffff));
+  box-shadow: var(--titlebar-control-art-shadow,
     -1px -1px 0 #888888,
     -1px 0 0 #888888,
     0 -1px 0 #888888,
@@ -1807,13 +1810,13 @@ body[data-lineage~="platinum"] .title-bar :is(.close-box, .resize-box, .shade-bo
     1px 0 0 #ffffff,
     0 1px 0 #ffffff,
     inset 1px 1px 0 #cccccc,
-    inset -1px -1px 0 #888888;
+    inset -1px -1px 0 #888888);
   opacity: 1;
 }
 
 body[data-lineage~="platinum"] :is(.close-box, .resize-box, .shade-box):active::before {
-  background: linear-gradient(to bottom right, #444444, #bbbbbb);
-  box-shadow: -1px -1px 0 #888888, 1px 1px 0 #ffffff, inset -1px -1px 0 #999999;
+  background: var(--titlebar-control-art-pressed-bg, linear-gradient(to bottom right, #444444, #bbbbbb));
+  box-shadow: var(--titlebar-control-art-pressed-shadow, -1px -1px 0 #888888, 1px 1px 0 #ffffff, inset -1px -1px 0 #999999);
   opacity: 1;
 }
 

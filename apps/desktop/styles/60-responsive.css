@@ -870,6 +870,7 @@ select:focus {
 
 .system-modal {
   border: var(--modal-border, 3px solid var(--ink));
+  border-image: var(--modal-border-image, none);
   box-shadow: var(--modal-shadow, 0 0 0 3px var(--paper), 0 0 0 5px var(--ink));
 }
 
@@ -1839,6 +1840,7 @@ body.is-writer-mode .system-help-window .system-help-pane {
   /* Writer mode included: writing profile boots into is-writer-mode, and the
      phone still presents one writing/ClioTalk surface through this shell. */
   body.mobile-app-foreground .window.is-mobile-fullscreen:not(.is-collapsed) {
+    --window-border-image: none;
     position: fixed;
     /* The window material fills to the true bottom edge. Bottom still lifts by
        --keyboard-inset when the keyboard is up; an inner safe-area rule below
@@ -2481,6 +2483,11 @@ body.use-modern-fonts .mde-surface * {
 
 .window {
   border: var(--window-border);
+  /* After the shorthand, which resets it: an appearance may draw the window
+     edge as an image that runs outside the box (Drawing Board's pencil lines
+     and hatched shadow). A border image paints outside the window's own
+     overflow clip and moves nothing. */
+  border-image: var(--window-border-image, none);
   box-shadow: var(--active-window-shadow);
 }
 
@@ -4263,6 +4270,7 @@ input[type="radio"] {
   }
 
   body.mobile-landscape-shell .window.is-mobile-fullscreen:not(.is-collapsed) {
+    --window-border-image: none;
     position: fixed;
     inset:
       calc(var(--menu-bar-height) + var(--safe-area-top))

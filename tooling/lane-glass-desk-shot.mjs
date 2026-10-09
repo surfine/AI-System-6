@@ -10,12 +10,13 @@ import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { startAppServer, stopProcess } from "./lib/app-preview-server.mjs";
 
+import { stubLocalModels } from "./lib/stub-local-models.mjs";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const out = process.argv[2];
 const server = await startAppServer(root);
 const browser = await chromium.launch();
 const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 2, colorScheme: "light" });
-await context.route(/https?:\/\/(?:127\.0\.0\.1|localhost):(?:1234|11434)\//, (r) => r.fulfill({ status: 200, contentType: "application/json", body: "{\"models\":[]}" }));
+await stubLocalModels(context);
 await context.addInitScript(() => { localStorage.setItem("ai-system-6-theme", "liquid-glass"); });
 const page = await context.newPage();
 await page.goto(server.url, { waitUntil: "domcontentloaded" });

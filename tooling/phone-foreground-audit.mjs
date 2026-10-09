@@ -31,6 +31,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import { startAppServer, stopProcess } from "./lib/app-preview-server.mjs";
 
+import { stubLocalModels } from "./lib/stub-local-models.mjs";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 // Three shapes, because the shell answers each one with a different model:
@@ -197,9 +198,7 @@ async function bootPage(browser, viewport) {
   });
   // A local model server that happens to be running would change the timing of
   // the very races this tool measures. Every run sees the same offline answer.
-  await context.route(/https?:\/\/(?:127\.0\.0\.1|localhost):(?:1234|11434)\//, (route) => {
-    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ models: [] }) });
-  });
+  await stubLocalModels(context);
   const page = await context.newPage();
   return { context, page };
 }

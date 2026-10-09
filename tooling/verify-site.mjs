@@ -420,6 +420,24 @@ if (siteBytes <= sitePayloadBudget) {
   fail(`official site payload ${(siteBytes / 1024 / 1024).toFixed(2)} MiB exceeds 4 MiB`);
 }
 
+// The site's Asap is a subset (tooling/subset-site-font.py). A character the
+// full face draws but the subset dropped would fall back to another font
+// without anyone noticing, so new site text that needs one fails here.
+{
+  const record = JSON.parse(readFileSync(path.join(root, "tooling/site-font-subset.json"), "utf8"));
+  const drawable = new Set(record.sourceCodePoints);
+  const kept = new Set(record.keptCodePoints);
+  const dropped = new Set();
+  for (const text of siteText.values()) {
+    for (const character of text) {
+      const codePoint = character.codePointAt(0);
+      if (drawable.has(codePoint) && !kept.has(codePoint)) dropped.add(character);
+    }
+  }
+  if (dropped.size) fail(`site text uses ${[...dropped].join(" ")}, which the Asap subset dropped; rerun tooling/subset-site-font.py`);
+  else ok(`the Asap subset draws every Latin character in the site text (${kept.size} kept)`);
+}
+
 // The excluded metadata must genuinely be excluded, not merely ignored here:
 // the Pages upload filters it, and a stray copy in the VPS staging directory
 // would ship it. Name anything the packager would drop.

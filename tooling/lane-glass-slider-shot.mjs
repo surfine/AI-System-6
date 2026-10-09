@@ -12,6 +12,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { startAppServer, stopProcess } from "./lib/app-preview-server.mjs";
 
+import { stubLocalModels } from "./lib/stub-local-models.mjs";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const label = process.argv.includes("--label")
   ? process.argv[process.argv.indexOf("--label") + 1]
@@ -36,9 +37,7 @@ for (const cell of CELLS) {
     hasTouch: cell.width < 768,
     isMobile: cell.width < 768,
   });
-  await context.route(/https?:\/\/(?:127\.0\.0\.1|localhost):(?:1234|11434)\//, (route) =>
-    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ models: [] }) })
-  );
+  await stubLocalModels(context);
   await context.addInitScript(() => {
     localStorage.setItem("ai-system-6-theme", "liquid-glass");
     localStorage.removeItem("ai-system-6-liquid-glass");

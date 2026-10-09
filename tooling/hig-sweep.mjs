@@ -14,6 +14,7 @@ import { createRequire } from "node:module";
 import { startAppServer, stopProcess } from "./lib/app-preview-server.mjs";
 import { browserSideChecks } from "./hig-checks.mjs";
 
+import { stubLocalModels } from "./lib/stub-local-models.mjs";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
@@ -134,9 +135,7 @@ async function sweepTheme(browser, serverUrl, theme, outRoot) {
     colorScheme: "light",
     reducedMotion: "reduce",
   });
-  await context.route(/https?:\/\/(?:127\.0\.0\.1|localhost):(?:1234|11434)\//, (route) => {
-    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ models: [] }) });
-  });
+  await stubLocalModels(context);
   await context.addInitScript((themeId) => {
     localStorage.setItem("ai-system-6-theme", themeId);
     localStorage.removeItem("ai-system-6-liquid-glass");

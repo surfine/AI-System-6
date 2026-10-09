@@ -51,6 +51,7 @@ import { windowInterfaceRegistry } from "./interface-guidelines-contract.mjs";
 import { lazyStyleBundles } from "./style-manifest.mjs";
 import { TOKEN_COMPARED_THEMES } from "../tests/appearance-snapshot-manifest.mjs";
 
+import { stubLocalModels } from "./lib/stub-local-models.mjs";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 
 // A theme's rules may be scoped by its exact id, by any recipe it descends
@@ -248,9 +249,7 @@ async function preparePage(browser, serverUrl) {
   });
   // Same stub as the pixel net: the menu bar's model status must not depend on
   // whether LM Studio happens to be running on the build machine.
-  await context.route(/https?:\/\/(?:127\.0\.0\.1|localhost):(?:1234|11434)\//, (route) => {
-    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ models: [] }) });
-  });
+  await stubLocalModels(context);
   await context.addInitScript(() => {
     localStorage.setItem("ai-system-6-theme", "classic");
     localStorage.removeItem("ai-system-6-liquid-glass");
