@@ -30,10 +30,8 @@ function _patch3(sh) {
     .replace('#include <alphatest_fragment>', '#ifndef S3D_SOLID\n{float a=diffuseColor.a;\n#ifdef USE_FOG\na*=1.-smoothstep(fogNear,fogFar,vFogDepth);\n#endif\nif(a<s3dTh())discard;}\n#endif\ndiffuseColor.a=1.;')
     .replace('#include <fog_fragment>', '');
 }
-// mat3d(o): a flat unlit material. o.map, o.color (multiplies map and vertex colours), o.vc (vertex colours), o.fade
-// (0..1), o.fog (false: ignores the stage's fog), o.side ('double' | 'back'), o.solid (no screen door: no cut-outs,
-// fades or fog, and twice as quick: SwiftShader skips hidden pixels only when no pixel can be discarded), o.auto (a
-// screen-door material with a solid twin: render3d draws the twin whenever the mesh is opaque and nearer than the fog)
+// mat3d(o): flat, unlit. o.map, color, vc, fade, fog, side, solid (no screen door: twice as quick), auto (a door with a
+// solid twin, used whenever the mesh is opaque and nearer than the fog)
 function mat3d(o = {}) {
   const m = new THREE.MeshBasicMaterial({ map: o.map || null, color: o.color ?? '#ffffff', vertexColors: !!o.vc, fog: !o.solid && o.fog !== false, side: o.side === 'double' ? THREE.DoubleSide : o.side === 'back' ? THREE.BackSide : THREE.FrontSide });
   if (o.solid) m.defines = { S3D_SOLID: '' };
@@ -59,9 +57,7 @@ const lineMat3d = (o = {}) => { const m = new THREE.LineBasicMaterial({ color: o
 function fade3d(ob, k) { ob.visible = k < 1; ob.traverse(o => { for (const m of [].concat(matOf(o) || [])) m.opacity = 1 - k; }); }
 
 // ---- textures from the 2D kit ----
-// tex3d(key, w, h, draw, o) -> CanvasTexture: draw(canvas) runs with ctx on a cleared w x h canvas, once per key (o.live:
-//   a signature; the canvas is redrawn when it changes). Nearest magnification always; o.mip: box-averaged mip levels
-//   for things that shrink far below 1:1 (the quantiser turns the averages into dither, like the dive's miniature)
+// tex3d(key, w, h, draw, o): a 2D kit drawing as a texture, Nearest; o.mip (box-averaged levels), o.live (a signature)
 function tex3d(key, w, h, draw, o = {}) {
   let rec = S3D.tex.get(key);
   if (!rec) {
@@ -148,10 +144,7 @@ function voxGlyph(ch, font = 'chicago', d = 3, lv = LV3) {
   const f = FONTS[fk], c = _raster(ch, fk, '#000000');
   g = voxGeo(maskOf(c), c.width, c.height, d, 1, f.top + f.cap, lv); S3D.geo.set(key, g); return g;
 }
-// voxText(lines, o) -> {group, letters: [{mesh, ch, li, ci, n, base, x, y, w, h}], chars, w, h}: giant 3D type, each letter
-//   a voxel slab from its glyph, one draw each. o.font (chicago), o.size (world units per font px, 10), o.depth (font px,
-//   3), o.lead (2), o.align ('center' | 'left' | 'right'), o.levels (LV3), o.color (the base the levels scale: the field).
-//   The block is centred on its group's origin; set every letter's colour with voxColor.
+// voxText(lines, o) -> {group, letters, chars, w, h}: voxel type, one mesh per letter; o.size, depth, lead, align, levels
 function voxText(lines, o = {}) {
   const fk = fontKey(o.font || 'chicago'), f = FONTS[fk], s = o.size ?? 10, d = o.depth ?? 3, lead = o.lead ?? 2, group = new THREE.Group(), letters = [];
   lines = (Array.isArray(lines) ? lines : String(lines).split('\n')).map(l => [...(f.ascii ? _asciiFold(l) : l)]);
@@ -173,9 +166,7 @@ function voxText(lines, o = {}) {
   return { group, letters, chars: lines, w: mw * s, h: H0 * s };
 }
 const voxColor = (v, c) => v.letters.forEach(L => matOf(L.mesh).color.set(c));
-// slam3d(L, t, tIn, o): a letter (any {mesh, base}) slams in along z at tIn: from o.from world units toward the camera
-//   (600) in hard frame steps with a one-frame overshoot. Before tIn it is hidden, or with o.ghost a 50% screen-door
-//   ghost (dither is temporary: device 3). tIn null: landed. Returns whether it has landed.
+// slam3d(L, t, tIn, o): slam in along z on tIn in hard frame steps; before it hidden, or o.ghost: the 50% ghost
 const SLAM3 = [1, .55, .25, .08, -.04, 0];
 function slam3d(L, t, tIn, o = {}) {
   const m = L.mesh, fr = tIn == null ? 99 : Math.floor((t - tIn) * FPS + 1e-6);
@@ -191,10 +182,7 @@ function face3d(ob, cam, yaw = true) {
   if (yaw) ob.rotation.set(0, Math.atan2(cam.position.x - p.x, cam.position.z - p.z), 0); else ob.quaternion.copy(cam.quaternion);
 }
 const _fnv = u => { let h = 2166136261; for (let i = 0; i < u.length; i++) h = Math.imul(h ^ u[i], 16777619); return h >>> 0; };
-// dancer3d(st, key, t, o): Clio (clioDance) on a stage. o.mode 'voxel' (default): extruded from her 1-bit unit-grid
-//   sprite, a voxel per unit, o.depth 4, with a 1-unit rim in the field behind (her halo; the face cut-outs read as field),
-//   one draw; 'card': a billboard of the drawing at o.px px per unit (3). o.pos [x, z] on the floor, o.size (world units
-//   per unit, 8), o.yaw (default: faces the camera), o.field, and any clioDance option (pose, p, mouth, flip, seed ...)
+// dancer3d(st, key, t, o): clioDance as an extruded 1-bit voxel sprite (one draw) or a card; o.pos [x, z], o.size
 function dancer3d(st, key, t, o = {}) {
   const fld = fieldCol(o.field || fieldAt(t) || 'magenta'), card = o.mode === 'card', px = card ? o.px ?? 3 : 1, M = 3, s = o.size ?? 8;
   const c = styleBuf('dnc' + px, DU.W * px + 2 * M, DU.H * px + 2 * M, true), tk = st.key + '|dc|' + key;
@@ -227,11 +215,8 @@ function dancer3d(st, key, t, o = {}) {
 }
 
 // ---- the camera rig: keyframes of t ----
-// cam3d(t, keys, o) -> {pos, look, fov, roll}. keys [[t, state, ease], ...], state {pos: [x, y, z], look: [x, y, z],
-//   fov, roll} or {orbit: [cx, cy, cz, r, angle, height]} (two orbit keys swing round the centre, not through it); missing
-//   fields carry over. ease = how the move INTO the key runs: 'hard' (default, quartic in-out), 'snap' (lands fast),
-//   'whip' (all the motion in the middle frames), 'cut', 'lin', 'step' (holds on 16ths), or fn(k).
-//   o.fps: sample the move at a lower rate (12, 15, 20, 30): stop-motion.
+// cam3d(t, keys, o) -> {pos, look, fov, roll}: keys [[t, {pos, look, fov, roll} | orbit3d(c, r, a, h), ease]]; eases
+// hard (default), snap, whip, cut, lin, step (16ths) or fn; o.fps: stop-motion sampling
 const EASE3 = { hard: k => k < .5 ? 8 * k ** 4 : 1 - 8 * (1 - k) ** 4, snap: k => 1 - (1 - k) ** 5, whip: k => .5 + .5 * Math.tanh(9 * (k - .5)) / Math.tanh(4.5), lin: k => k, cut: k => k >= 1 ? 1 : 0 };
 const orbit3d = (c, r, a, h = 0) => ({ orbit: [c[0], c[1], c[2], r, a, h] });
 const _l3 = (a, b, k) => [lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k)];
@@ -320,10 +305,7 @@ function stage3d(key, build) {
   if (!st && has3d()) { st = { key, scene: new THREE.Scene(), cam: new THREE.PerspectiveCamera(30, FW / FH, 4, 40000), o: {} }; build(st); S3D.stages.set(key, st); }
   return st || null;
 }
-// render3d(st, o): render the stage through its camera, read it back, quantise it and draw it into the frame.
-//   o.div (1; 2, 4, 5, 8: render at that fraction and draw it back pixel-multiplied), o.w x o.h (the screen, W x H),
-//   o.x, o.y (0, 0), o.pal (a colour list; default st.pal, else the stage's own colours), o.bayer (true), o.bg (the
-//   clear colour, st.bg or black; null: transparent, only the 3D pixels land on the frame)
+// render3d(st, o): render, read back, quantise, draw. o.div, o.w, o.h, o.x, o.y, o.pal, o.bayer, o.bg (null: transparent)
 function render3d(st, o = {}) {
   if (!st || !has3d()) return _no3d();
   const { r, gl } = S3D, div = o.div || st.div || 1, w = R((o.w || W) / div), h = R((o.h || H) / div), bg = o.bg === undefined ? st.bg ?? C.black : o.bg;
@@ -346,11 +328,7 @@ function project3d(st, p, o = {}) { const v = new THREE.Vector3(...p).project(st
 // Presets. Each builds its stage once (o.key names the build: give a new key when the content changes) and sets every
 // transform from t. They render and composite; draw 2D (lyrics, the pen cord, FX) after them.
 // =====================================================================================================
-// corridor3d(t, o): THE WINDOW CORRIDOR. Panels float along a z-tunnel the camera flies through. o.eras (the twelve) with
-//   o.desk (fn(t), drawn per era by frameInto at o.at) or o.tex(era, i) (any texture); o.gap (z between panels, 900),
-//   o.side (x offset, alternating, 300), o.turn (yaw toward the axis, .5), o.ring (the tunnel's rings, white; false for
-//   none), o.fog ([near, far]: panels dissolve in by Bayer), o.t0, o.step (a panel per step s: hold o.hold of it, whip
-//   to the next), o.cam (keys instead), o.fps, o.div, o.whip (false: no smear). -> {stage, i (the panel in view), cam}
+// corridor3d(t, o): THE WINDOW CORRIDOR: era panels down a z-tunnel, a panel per o.step held then whipped (TOOLKIT §13.1)
 function corridor3d(t, o = {}) {
   const eras = o.eras || APPEARANCES.map(e => e.id), gap = o.gap ?? 900, side = o.side ?? 300, turn = o.turn ?? .5;
   const st = stage3d(o.key || 'corridor', st => {
@@ -379,20 +357,13 @@ function corridor3d(t, o = {}) {
   return { stage: st, i: clamp(Math.floor((t - t0) / step + 1e-6), 0, P.length - 1), cam: cs };
 }
 
-// silStage3d(t, o): THE SILHOUETTE STAGE. The field is the backdrop and the floor, ruled by a black 1 px grid that
-//   dissolves toward the horizon; black voxel type slams in z; black dancers (voxel or card); the white pen as a card.
-//   Palette: the field, black, white. o.field (fieldAt(t)), o.grid (world units, 120), o.type [{text, words (a lyric
-//   line: each word slams on its sung start), stepIn {t0, div}, at (the whole block), show [t0, t1], size, depth, pos
-//   [x, y, z] (y: the block's bottom), rot [x, y, z], align, ghost, from}], o.dancers [{pos [x, z], size, mode, show,
-//   ...clioDance opts}], o.pen {pos [x, y, z] (its back end, where the cord ties on), angle (PI/2: nib down), scale (the
-//   2D pen's scale, 4), size (world units per pen pixel, 2), yaw}, o.cam (keys), o.fps, o.div, o.whip.
-//   -> {stage, type: [voxText blocks], cam}
+// silStage3d(t, o): THE SILHOUETTE STAGE: field floor and grid, voxel type slamming on its words, dancers, the white pen
 function silStage3d(t, o = {}) {
   const fld = fieldCol(o.field || fieldAt(t) || 'magenta');
   const st = stage3d(o.key || 'sil', st => {
-    st.scene.fog = new THREE.Fog(0, ...(o.fog || [2200, 6400]));
-    const g = o.grid ?? 120, N = 60, pts = [];
-    for (let i = -N; i <= N; i++) pts.push(i * g, 0, -N * g, i * g, 0, N * g, -N * g, 0, i * g, N * g, 0, i * g);
+    st.scene.fog = new THREE.Fog(0, ...(o.fog || [1800, 4600]));
+    const g = o.grid ?? 120, N = 40, pts = [];   // one segment per cell: a line with an end behind the eye is not drawn
+    for (let i = -N; i <= N; i++) for (let j = -N; j < N; j++) pts.push(i * g, 0, j * g, i * g, 0, j * g + g, j * g, 0, i * g, j * g + g, 0, i * g);
     const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
     st.scene.add(new THREE.LineSegments(lg, lineMat3d()));
     st.o.type = (o.type || []).map(T3 => { const v = voxText(T3.text, { size: T3.size ?? 22, depth: T3.depth ?? 3, align: T3.align }); st.scene.add(v.group); return v; });
@@ -416,13 +387,7 @@ function silStage3d(t, o = {}) {
   return { stage: st, type: st.o.type, cam: cs };
 }
 
-// nestedDesks3d(t, t0, t1, o): NESTED DESKS, the continuous 3D pull-back. o.layers, inner first (the frame we start in):
-//   [{era, draw (fn(t): a desk), at (its snapshot time, t0), live (redraw it every frame), win {x, y, w, h}}]: layer
-//   i + 1's desk shows layer i on a monitor whose screen is its `win` (16:9, in that desk's 640x360; the desk draws a
-//   window round it). The monitor stands out of its desk as a box (o.depth 36, o.bezel 5, the era's frame colour in hard
-//   bands); the camera pulls back through the chain at a constant log rate (o.ease shapes it), swinging a little in
-//   between (o.swing .12 rad) and square on at each whole layer, which is then exactly 1:1. o.dot: after the last layer
-//   the outermost desk shrinks to the writer's vermilion dot (o.dotWeight .6 of a step). -> {stage, u, layer}
+// nestedDesks3d(t, t0, t1, o): NESTED DESKS: each layer a screen in the next one's monitor, a continuous pull-back
 const NEST_WIN = { x: 360, y: 176, w: 192, h: 108 };
 function nestedDesks3d(t, t0, t1, o = {}) {
   const Ls = o.layers, n = Ls.length, dw = o.dot ? o.dotWeight ?? .6 : 0, total = n - 1 + dw, dz = o.depth ?? 36, bz = o.bezel ?? 5;

@@ -6,7 +6,8 @@ frame, as a pure function of song time, and upscaled 3x nearest-neighbour. This 
 `src/ch01.js` ... `src/ch12.js`. Read `BRIEF.md` first; it is the contract.
 
 Load order (`index.html`): `data/data.js` (the song: never edit), `core.js`, `eras.js`, `ui.js`, `clio.js`, `apps.js`,
-`style.js` (the style kit, §12), the chapters, `specimen.js`, `main.js`. A chapter that does not exist yet is skipped. If `data/data.js` is missing, the
+`style.js` (the style kit, §12), `stage3d.js` (the 3D stage, §13), the chapters, `specimen.js`, `main.js`, and last an ES module that
+imports three.js (`node_modules/three`) as `window.THREE` (main waits for it before `READY`). A chapter that does not exist yet is skipped. If `data/data.js` is missing, the
 kit runs on defaults (DUR 150, BPM 120, empty LYRICS, beats from BPM) and `lyric()` returns placeholder lines.
 
 ## 1. The rules
@@ -328,7 +329,9 @@ node render.mjs check 0 154                # every frame: exceptions, avgMs (kee
 node render.mjs sheet 36 60 1 build/ch03.png   # contact sheet, each tile stamped with time, scene and era: LOOK at it
 node render.mjs still 39.5 build/still.png     # one frame at 1920x1080 with the CRT finish
 ```
-Preview in a browser: open `index.html` (space play/pause, arrows ±1 s, shift ±5 s, `,` `.` one frame, `h` HUD,
+Preview in a browser: run `node tools/serve.mjs` and open `http://127.0.0.1:8640/promo/claude-pop/index.html` (a browser
+will not import ES modules, so three.js, from `file://`; opened as a file the 2D film still plays and the HUD says the 3D stage is
+off). Keys: space play/pause, arrows ±1 s, shift ±5 s, `,` `.` one frame, `h` HUD,
 `?t=39.5` start there, `?era=aqua` force an era, `?specimen` the toolkit reel). Without `build/song.wav` a silent clock
 runs (the page attaches the song only in the preview, so a render never requests it). While chapters are missing,
 render.mjs prints one `Failed to load resource: net::ERR_FILE_NOT_FOUND` per absent `src/chNN.js`: expected, and gone
@@ -601,3 +604,92 @@ each `inkFlood` tip: `warmUp(() => _floodMap(x, y, 4, seed))`, as the reel does)
 Budget: the reel averages ~5 ms a frame (under the 6 ms rule); a chorus frame ~5 ms, a dive or pull-back frame ~7 ms (two
 frames rendered plus the box-averaged miniature), a flood frame ~10 ms. Occasional single-frame spikes in `renderCheck`
 (50-250 ms) are garbage collection, not drawing: the frame itself redraws in under 10 ms.
+
+## 13. The 3D stage (stage3d.js): three.js, brought back to hard pixels
+
+Pseudo-3D for the choruses, the bridge tunnel and the outro pull-back. One shared `THREE.WebGLRenderer` on an offscreen
+640x360 canvas (antialias off, `preserveDrawingBuffer`, pixel ratio 1) draws a three.js scene; `render3d` reads every pixel
+back, **quantises** it to the active palette and draws it into the frame nearest-neighbour. The result is the film's own
+material: exact colours pass untouched, anything in between (a mip average, a light band) becomes a 4x4 Bayer mix of the
+**two nearest palette colours** (never a third: a darkened magenta dithers magenta/black, it never sprinkles white).
+
+**Rules.** A stage is built once (`stage3d(key, build)`, cached by key: a new key for new content) and every transform,
+colour and visibility is set from `t` each frame. No clocks, no animation loops, no `Math.random`: a frame is the same in
+any order (checked). Materials are flat and unlit (`mat3d`); light is 2-3 hard **bands** baked as per-face colours. Cut-outs,
+fades, ghosts and fog are **screen-door** Bayer discards (`s3dTh` in the shader, aligned with the 2D kit's `BAYER4`), never
+alpha blends. `THREE.ColorManagement` is off and the output is linear: a texel comes out as exactly the colour the 2D kit drew.
+
+**Loading.** three is ESM-only (0.186.1, `package.json`). `index.html` imports `node_modules/three/build/three.module.js` in
+a module script; modules run before DOMContentLoaded, so main.js awaits `DOM_READY`, then `init3d()`, then sets `READY`. If
+three did not load, a render stops with `READY_ERROR` (render.mjs and flashcheck.mjs report it); the preview plays the 2D
+film and the HUD says `3D stage off`. Over `file://` Chromium imports modules only with `--allow-file-access-from-files`
+(render.mjs passes it; for the preview use `node tools/serve.mjs`). render.mjs runs WebGL on SwiftShader
+(`--use-angle=swiftshader --enable-unsafe-swiftshader`) and keeps the 2D canvases on the CPU
+(`--disable-accelerated-2d-canvas --disable-gpu-rasterization`: accelerated on SwiftShader, every `getImageData` in the kit
+costs ~15x, 4.7 ms a frame became 72 ms). With these flags the 2D frames are byte-identical to before.
+
+| function | |
+|---|---|
+| `stage3d(key, build)` | the stage `{key, scene, cam, o, pal, extra, bg}`, built once by `build(st)`; `st.o` holds your objects. Camera: fov 30, near 4, far 40000 |
+| `render3d(st, o)` | render through `st.cam`, read back, quantise, draw. `o.div` (1; 2, 4, 5, 8: render at that fraction, drawn back pixel-multiplied: chunkier, ~4x quicker per step), `o.w` x `o.h` (the screen, `W` x `H`), `o.x`, `o.y`, `o.pal` (a colour list; default `st.pal`, else the stage's own colours), `o.bayer` (true), `o.bg` (clear colour: `st.bg`, black; `null` = transparent, only the 3D pixels land) |
+| `project3d(st, [x, y, z], o)` | the frame pixel of a 3D point (after the camera is set): pin 2D work (a lyric plate, the pen cord, a click) to the 3D world |
+| `mat3d(o)` | `map`, `color` (multiplies map and vertex colours), `vc` (vertex colours), `fade` (0..1), `fog` (false), `side` ('double' / 'back'), `solid` (no screen door), `auto` (a screen-door material with a solid twin: render3d draws the twin whenever the mesh is opaque and nearer than the fog) |
+| `fade3d(obj, k)` · `matOf(mesh)` | screen-door fade (0 solid, .5 the ghost, 1 gone) · the material to colour or fade (not its solid twin) |
+| `tex3d(key, w, h, draw, o)` | a 2D kit drawing as a `CanvasTexture` (cached by key; `draw(canvas)` runs with `ctx` on it). Magnification always Nearest. `o.mip`: box-averaged mip levels (NearestMipmapNearest) for things that shrink far below 1:1, which the quantiser turns into dither like the dive's miniature (levels pop at 1/2, 1/4 ...). `o.live`: a signature; redrawn and re-uploaded only when it changes |
+| `deskTex(key, t, src, o)` | a whole frame through `frameInto` (a scene name or `fn(t)` with `o.era` ...), at `t`, once (`o.live`: every frame, ~5 ms + upload) |
+| `card3d(tex, w, h, o)` | a double-sided card, cut out where the drawing is clear (`o.base`: stands on its bottom edge; `o.solid` for opaque drawings) |
+| `bandGeo(boxes)` · `band3(c, front, back)` | many boxes as ONE vertex-coloured geometry (one draw call): `{w, h, d, pos, ry, cols: [+x, -x, +y, -y, +z, -z]}`, a null colour leaves a face out; `band3` = sides darkened .35, caps .2 |
+| `voxGeo(mask, w, h, d, ox, oy, lv)` · `voxGlyph(ch, font, d)` | a 1-bit mask as voxel columns (exposed faces, merged runs), vertex colours = light levels `LV3` = [front 0, back 0, sides .5, caps .75] of the material colour: black slabs with half- and quarter-dark sides on a field |
+| `voxText(lines, o)` · `voxColor(v, c)` | giant 3D type from the same Chicago bitmap bigType scales: one mesh (one draw) per letter, `o.size` (world units per font px, 10), `o.depth` (font px, 3), `o.lead`, `o.align`; returns `{group, letters: [{mesh, ch, li, ci, n, base}], chars, w, h}` |
+| `slam3d(L, t, tIn, o)` | a letter slams in along z on `tIn` in hard frame steps (`SLAM3`, from `o.from` = 600 units toward the camera, one frame of overshoot); before it hidden, or `o.ghost`: the 50% screen-door ghost (device 3) |
+| `dancer3d(st, key, t, o)` | Clio: `mode: 'voxel'` (her 1-bit unit-grid sprite extruded, `o.depth` 4, a 1-unit field rim behind so her halo and face cut-outs read; geometry cached by the bitmap's hash) or `'card'` (a billboard at `o.px` = 3 px per unit, uploaded only when the pose changes); `o.pos` [x, z], `o.size` (8), `o.yaw` (default: faces the camera), any `clioDance` option |
+| `face3d(obj, cam, yaw)` | turn an object to the camera (upright) |
+| `cam3d(t, keys, o)` · `aim3d(cam, s)` · `orbit3d(c, r, a, h)` | the camera rig: keys `[[t, {pos, look, fov, roll} or orbit3d(...), ease], ...]`, missing fields carry over; two orbit keys swing round the centre. Eases (the move INTO a key): `'hard'` (default, quartic), `'snap'`, `'whip'` (all the motion in the middle frames), `'cut'`, `'lin'`, `'step'` (holds on 16ths) or fn. Dolly = change `r`, orbit = `a`, crane = `h`, roll = `roll`. `o.fps` (12-30): stop-motion sampling |
+| `whip3d(t, keys, o)` | while the camera turns fast (> .035 rad a frame) the frame smears: a hard `FX.pixelSort`, type rows kept |
+
+### 13.1 Presets
+
+Each builds its stage on first use (`o.key`), sets everything from `t`, renders and composites. Draw the 2D on top after it:
+lyrics (`kara` with a plate), the pen cord (`project3d`), `beatFX`.
+
+- **`corridor3d(t, o)`: the WINDOW CORRIDOR.** The eras' desks (`o.desk` drawn per era at `o.at`, or `o.tex(era, i)`) as
+  24-unit slabs alternating left and right of a z-tunnel (`o.gap` 900, `o.side` 300, `o.turn` .5), white rectangular rings
+  every half gap (`o.ring`), far panels dissolving in by Bayer fog (`o.fog`). Default flight from `o.t0`: a panel per `o.step`
+  (.5 s), held `o.hold` (.5) with a slow creep and a ±.05 roll, then a whip to the next (smeared); or your own `o.cam` keys.
+  Returns `{stage, i, cam}` (`i`: the panel in view).
+- **`silStage3d(t, o)`: the SILHOUETTE STAGE.** The field is the backdrop (the clear colour) and the floor, ruled by a black
+  1 px grid (`o.grid` 120) that dissolves toward the horizon; `o.type` blocks of black voxel type (`text`, `words` = a lyric
+  line: each word slams on its sung start; or `stepIn {t0, div}`, `at`; `show` [t0, t1], `size`, `depth`, `pos` (y = the block's
+  bottom), `rot`, `align`, `ghost`), `o.dancers` (`dancer3d` entries with `pos`, `size`, `mode`, `show`), `o.pen` (the white
+  pen as a card: `pos` = its back end, `angle`, `scale`, `size`), `o.cam`. Palette: the field, black, white.
+- **`nestedDesks3d(t, t0, t1, o)`: NESTED DESKS.** `o.layers` inner first (the frame we start in, e.g. 2026): `{era, draw, at,
+  live, win}`; layer i + 1's desk holds layer i on a monitor whose screen is its `win` (16:9 in that desk's 640x360, default
+  `NEST_WIN` = (360, 176, 192, 108); the desk draws a window round it and black inside). The monitor stands out of its desk as
+  a box (`o.depth` 36, `o.bezel` 5, the era's frame colour in bands). The camera pulls back at a constant log rate (`o.ease`
+  shapes it), swinging up to `o.swing` (.12 rad) between layers and square on at each whole layer, where that desk is exactly
+  1:1 (so a cut to the 2D desk there is seamless); a 2-frame palette split on each landing. `o.dot`: the outermost desk shrinks
+  to the writer's vermilion 2x2 dot (`o.dotWeight` .6 of a step). Returns `{stage, u, layer}`.
+
+### 13.2 The 3D reel and the budget
+
+specimen.js parks the **3D reel at 1300 s** (after the toolkit reel, which runs 1100-1245.5): `corridor` (6 s, the bridge's
+104-110: the twelve desks, a half beat each, the year slammed on a plate), `silhouette stage` (6 s, chorus 1's 36-42: PEN PAL,
+I'LL NEVER HOLD THE PEN., YOU SAY WHERE I LAND, as voxel slabs on their words, one voxel and two card dancers, the white pen
+on its cord, beatFX), `who holds the pen` (4 s, 47.75-51.75: a letter per 16th, ghosted until it lands, then YOU DO!),
+`nested desks` (5 s: 2026 back through all twelve to the dot). `node render.mjs sheet 1300 1321 .25 build/s3d-sheet.png`;
+`?s3d` plays it from 0 in the preview.
+
+**Budget: average < 25 ms for a 3D frame** (SwiftShader is software; the 2D rule of 6 ms stays for 2D frames). Measured on the
+reel with the machine's 4 CPUs shared (load 6-9): corridor ~13 ms, silhouette stage ~21 ms, who ~14 ms, nested ~16 ms; the
+first frame of a stage spikes (shader compile, texture builds: up to ~2 s once; prebuild with `warmUp(() => ...)` if a
+preview hitch matters). Almost all of it is SwiftShader's raster (`readPixels` waits for it); the quantiser is ~2 ms.
+
+**Gotchas (measured).** (1) A draw call costs ~.13 ms: merge everything that does not move into one `bandGeo` and draw a
+voxel letter or dancer as one mesh (light levels in vertex colours, not 4 materials). (2) The screen door doubles the raster
+cost (a shader that can discard defeats early depth rejection): use `solid` or `auto` materials wherever nothing can be
+discarded. (3) A line with one end behind the camera is not drawn at all: split long lines into short segments (the floor
+grid is one segment per cell). (4) A full-screen layer of textured pixels costs ~5 ms; a backdrop should be the clear colour.
+(5) The Bayer threshold is aligned to the frame only when the stage renders full-frame at (0, 0) and `div` 1. (6) A stage's
+palette is harvested once, on its first render, from its textures and colours (all pass exactly; the 2047 most used are the
+dither candidates): a live texture's later colours are dithered, so give stages with live drawings an explicit `pal`.
+(7) Keys build stages: the `o` of later calls only moves what the preset sets per frame (cameras, slams, visibility, colours).

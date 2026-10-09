@@ -31,7 +31,9 @@ const args = process.argv.slice(2), pos = [], flags = {};
 for (let i = 0; i < args.length; i++) args[i].startsWith('--') ? (flags[args[i].slice(2)] = (args[i + 1] && !args[i + 1].startsWith('--')) ? args[++i] : '1') : pos.push(args[i]);
 const FPS = +flags.fps || 60, SPAN = Math.max(1, +flags.span || 2), AREA = +flags.area || 0.25, LIMIT = +flags.limit || 3, CHUNK = 60;
 
-const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--allow-file-access-from-files', '--no-sandbox'] });
+// the same browser as render.mjs: three.js over file://, WebGL on SwiftShader, 2D canvases on the CPU
+const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--allow-file-access-from-files', '--no-sandbox',
+  '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-accelerated-2d-canvas', '--disable-gpu-rasterization'] });
 const page = await browser.newPage();
 page.on('pageerror', e => console.error('page error:', e.message));
 page.on('console', m => { if (m.type() === 'error' && !m.text().includes('ERR_FILE_NOT_FOUND')) console.error('console:', m.text()); });
@@ -121,7 +123,8 @@ const analyse = (t0, n, fps) => {
 };
 
 await page.goto(pathToFileURL(path.join(ROOT, 'index.html')) + '?render');
-await page.waitForFunction('window.READY === true', { timeout: 60000 });
+await page.waitForFunction('window.READY === true || !!window.READY_ERROR', { timeout: 90000 });
+if (await page.evaluate('window.READY_ERROR || null')) { console.error(await page.evaluate('window.READY_ERROR')); await browser.close(); process.exit(1); }
 const END = await page.evaluate('typeof END !== "undefined" ? END : DUR + 3');
 const from = pos[0] !== undefined ? +pos[0] : 0, to = pos[1] !== undefined ? +pos[1] : END;
 const scenes = await page.evaluate(() => SCENES.map(s => ({ name: s.name, t0: s.t0, t1: s.t1 })));
