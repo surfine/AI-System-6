@@ -206,13 +206,13 @@
   const BLK3 = [
     ["I'M JUST YOUR", { scale: 3, min: 3, x: 20, y: 18, valign: 'top', align: 'left' }, LA, T0, LB.start],
     [['PEN', 'PAL'], { justify: 300, fitH: DH - 92, x: 20, y: 56, valign: 'top', align: 'left' }, LA, T0, LB.start, { pump: 1 }],
-    [["I'LL NEVER", 'HOLD', 'THE PEN.'], { justify: DW - 190, fitH: DH - 24, x: 8, align: 'left', lead: 5 }, LB, LB.start, LC.start, { inv: PW, hero: 'pen' }],
+    [["I'LL NEVER", 'HOLD', 'THE PEN.'], { justify: DW - 190, fitH: DH - 24, x: 8, align: 'left', lead: 5 }, LB, LB.start, LC.start, { inv: PW, hero: 'pen', kmax: 1.3 }],
     [['YOU SAY', 'WHERE I', 'LAND,'], { fit: 300, x: 8, align: 'left', lead: 5 }, LC, LC.start, LD.start, { hero: 'land', kmax: 1.3 }],
     [['OR I', 'FADE.'], { fit: 210, x: 8, align: 'left', y: DH / 2 - 10, lead: 4 }, LD, LD.start, LE.start],
     ["I'M JUST YOUR", { scale: 3, min: 3, x: 20, y: 8, valign: 'top', align: 'left' }, LE, LE.start, LF.start],
     [['PEN', 'PAL'], { justify: 300, fitH: DH - 104, x: 20, y: 76, valign: 'top', align: 'left' }, LE, LE.start, LF.start, { pump: 1, hero: 'pen', ripple: 1 }],
-    [["I'LL NEVER", 'HOLD', 'THE PEN.'], { justify: DW - 204, fitH: DH - 24, x: DW - 8, align: 'right', lead: 5 }, LF, LF.start, LG.start, { inv: PW2, hero: 'pen' }],
-    [['WHO', 'HOLDS', 'THE PEN?'], { justify: DW - 184, fitH: DH - 60, x: 8, y: 30, valign: 'top', align: 'left', lead: 6 }, LG, LG.start, LH.start, { ripple: 1 }],
+    [["I'LL NEVER", 'HOLD', 'THE PEN.'], { justify: DW - 204, fitH: DH - 24, x: DW - 8, align: 'right', lead: 5 }, LF, LF.start, LG.start, { inv: PW2, hero: 'pen', kmax: 1.3 }],
+    [['WHO', 'HOLDS', 'THE PEN?'], { justify: DW - 184, fitH: DH - 60, x: 8, y: 44, valign: 'top', align: 'left', lead: 6 }, LG, LG.start, LH.start, { ripple: 1 }],
     [['YOU', 'DO!'], null, LH, LH.start, YOU2, { pump: 1, hero: 'you' }]];
   function c4_design(fn) { const sW = W, sH = H; W = DW; H = DH; try { return fn(); } finally { W = sW; H = sH; } }
   function c4_build(st) {
@@ -270,11 +270,11 @@
   // (60 degrees, high to low, square on as "land," hits) and the crane up over "Who holds the pen?"
   const c4_keys = () => [[C4_CUT, SQ()],
     [37.25, O(C0, 840, -.36, 190), 'lin'], [37.75, O(C0, 800, .3, 130), 'hard'],
-    [37.75, O(CH, 760, .26, 200), 'cut'], [38.5, O(CH, 720, .22, 180), 'lin'], [38.65, O(CH, 700, .18, 160, -.03), 'snap'], [39.5, O(CH, 700, .08, 120), 'lin'],
-    [40, O(CL, 1060, -.62, 460), 'cut'], [41, O(CL, 900, -.04, 150), 'lin'], [42, O(CL, 880, .5, 60, .03), 'lin'],
-    [43.25, O(CF, 860, .3, 70), 'lin'],
+    [37.75, O(CH, 760, .26, 200), 'cut'], [38.5, O(CH, 720, .22, 180), 'lin'], [38.65, O(CH, 700, .18, 160, -.03), 'snap'], [39.5, O(CH, 740, 0, 110), 'lin'],
+    [40, O(CL, 1060, -.62, 460), 'cut'], [41, O(CL, 900, -.04, 150), 'lin'], [42, O(CL, 1000, .4, 90, .02), 'lin'],
+    [43.25, O(CF, 1150, .2, 100), 'lin'],
     [43.25, O(C0, 780, .2, 40), 'cut'], [44, O(C0, 760, .06, 30), 'lin'], [45.25, O(C0, 840, .2, 180), 'hard'], [45.75, O(C0, 800, -.3, 140), 'hard'],
-    [45.75, O(CH2, 760, -.26, 200), 'cut'], [46.5, O(CH2, 720, -.22, 180), 'lin'], [46.65, O(CH2, 700, -.18, 160, .03), 'snap'], [47.5, O(CH2, 700, -.08, 120), 'lin'],
+    [45.75, O(CH2, 760, -.26, 200), 'cut'], [46.5, O(CH2, 720, -.22, 180), 'lin'], [46.65, O(CH2, 700, -.18, 160, .03), 'snap'], [47.5, O(CH2, 740, 0, 110), 'lin'],
     [48, O(CW, 800, .3, 20, -.02), 'cut'], [49.75, O(CW, 900, -.1, 520), (k => k * k * (3 - 2 * k))],
     [50, O(C0, 980, .1, 110), 'cut'], [50.75, O(C0, 860, -.06, 50), 'lin'], [YOU2, SQ(), 'hard']];
 
@@ -393,7 +393,7 @@
     } else if (t < LF.start) c4_clio3(S, t, wx(W - 90), FLOOR, -40, 5);
     else if (t < LG.start) c4_clio3(S, t, wx(90), FLOOR, 60, 5, { flip: true });
     else if (t < LH.start) { const g = c4_sig(t); c4_clio3(S, t, wx(W - 84), FLOOR, 40, 5, g ? {} : { pose: 'pointUp', p: beatPhase(t) }); }
-    else c4_clio3(S, t, wx(W - 102), wy(H - 21), 0, 7, { ground: false });
+    else c4_clio3(S, t, wx(W - 102) + 120 * (1 - prog(t, LH.start, YOU2)) ** 2, wy(H - 21), 0, 7, { ground: false });   // she steps in to her 2D mark as the camera squares up
     // the fade: 2x2 cells of black on the 16ths from "fade.", the TEMPORARY tag the last thing to go; then only the pen
     if (t >= fade && t < LE.start) {
       c4_dith(Math.min(1, (Math.floor((t - fade) / (SPB / 4) + 1e-6) + 1) * .2));
