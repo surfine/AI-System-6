@@ -163,3 +163,6 @@ internal/design-proposals/aaronlau-me/assets/_ref/
 # Time Machine ad blocking: compiled from the pinned uBlock Origin Lite
 # release by `npm run browse:build-filters` (GPL-3.0 data, see vendor/ubol).
 /apps/browse/filters/
+# Claude-Pop promo video: generated audio, renders, downloaded voice models
+/promo/claude-pop/build/
+/promo/claude-pop/.cache/
