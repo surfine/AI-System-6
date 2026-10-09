@@ -116,7 +116,7 @@ function pageSetup(span, area) {
 const analyse = (t0, n, fps) => {
   const S = window.__fc, out = [];
   for (let i = 0; i < n; i++) {
-    try { draw(t0 + i / fps); } catch (e) { resetCtx(); }
+    try { draw(typeof warpT === 'function' ? warpT(t0 + i / fps) : t0 + i / fps); } catch (e) { resetCtx(); }
     out.push(S.frame());
   }
   return out;
@@ -125,7 +125,7 @@ const analyse = (t0, n, fps) => {
 await page.goto(pathToFileURL(path.join(ROOT, 'index.html')) + '?render');
 await page.waitForFunction('window.READY === true || !!window.READY_ERROR', { timeout: 90000 });
 if (await page.evaluate('window.READY_ERROR || null')) { console.error(await page.evaluate('window.READY_ERROR')); await browser.close(); process.exit(1); }
-const END = await page.evaluate('typeof END !== "undefined" ? END : DUR + 3');
+const END = await page.evaluate('typeof SONG_END === "function" ? SONG_END() : typeof END !== "undefined" ? END : DUR + 3');
 const from = pos[0] !== undefined ? +pos[0] : 0, to = pos[1] !== undefined ? +pos[1] : END;
 const scenes = await page.evaluate(() => SCENES.map(s => ({ name: s.name, t0: s.t0, t1: s.t1 })));
 await page.evaluate(pageSetup, SPAN, AREA);

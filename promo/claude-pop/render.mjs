@@ -57,7 +57,7 @@ if (bootError) { await browser.close(); throw new Error(bootError); }
 const frame = async t => Buffer.from(await page.evaluate(t => renderFrame(t), t), 'base64');
 const ffmpeg = a => spawn('ffmpeg', ['-y', '-v', 'error', ...a.map(String)], { cwd: ROOT, stdio: ['pipe', 'inherit', 'inherit'] });
 const done = async ff => { ff.stdin.end(); const [code] = await once(ff, 'close'); if (code) throw new Error('ffmpeg exited with ' + code); };
-const END = async () => page.evaluate('typeof END !== "undefined" ? END : DUR + 3');
+const END = async () => page.evaluate('typeof SONG_END === "function" ? SONG_END() : typeof END !== "undefined" ? END : DUR + 3');
 const outPath = (p, def) => { p = path.resolve(ROOT, p || def); fs.mkdirSync(path.dirname(p), { recursive: true }); return p; };
 
 try {

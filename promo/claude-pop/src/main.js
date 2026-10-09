@@ -94,6 +94,13 @@ function warpT(t) {
   for (let i = 1; i < K.length; i++) if (t <= K[i][0]) { const [a, b] = K[i - 1], [c, d] = K[i]; return b + (t - a) * (d - b) / (c - a); }
   const [a, b] = K[K.length - 1]; return b + (t - a);
 }
+// The video's last song-time second: the picture's END (DUR + the held end card) taken back through the warp.
+function songEnd() {
+  const P = typeof END !== 'undefined' ? END : DUR + 3, K = typeof WARP !== 'undefined' && WARP.length ? WARP : null;
+  if (!K) return P;
+  const [a, b] = K[K.length - 1]; return P >= b ? a + (P - b) : P;
+}
+window.SONG_END = songEnd;
 function stamp(label) { // a time/scene tag in the corner (contact sheets and the preview HUD)
   setEra('system6');
   const w = tw(label, 'monaco') + 8;

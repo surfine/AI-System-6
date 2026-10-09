@@ -21,7 +21,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / 'data/warp.js'
-MIN_RATE, MAX_RATE = 0.8, 1.25        # picture seconds per song second between anchors
+MIN_RATE, MAX_RATE = 0.6, 1.6        # picture seconds per song second between anchors
 MIN_WORDS, MAX_ABS_OFFSET = 2, 6.0     # anchor quality gates
 
 
@@ -36,6 +36,9 @@ def main():
     ap.add_argument('report', nargs='?', default=str(ROOT / 'build/retime-report.json'))
     ap.add_argument('--song-duration', type=float, default=None)
     ap.add_argument('--clear', action='store_true')
+    ap.add_argument('--beat', type=float, nargs='?', const=0.5, default=None,
+                    help='snap every anchor offset to whole beats (default 0.5 s) so the picture keeps its beats on the '
+                         "song's: run at 1x between lines with equal offsets, ramp only where the offset changes")
     a = ap.parse_args()
     if a.clear:
         OUT.unlink(missing_ok=True); print('identity: data/warp.js removed'); return
@@ -43,13 +46,15 @@ def main():
     data = lines_from_data()
     start = {l['id']: l['start'] for l in data['L']}
     song_dur = a.song_duration or rep.get('input_duration_s') or data['D']
-    pts = [(0.0, 0.0)]
+    pts = [] if a.beat else [(0.0, 0.0)]
     for ln in rep['lines']:
         if ln.get('matched', 0) < MIN_WORDS or ln['line'] not in start or ln.get('median_offset_ms') is None:
             continue
         off = ln['median_offset_ms'] / 1000
         if abs(off) > MAX_ABS_OFFSET:
             continue
+        if a.beat:
+            off = round(off / a.beat) * a.beat
         pts.append((start[ln['line']] + off, start[ln['line']]))   # (song time, picture time) of the line's start
     pts.append((song_dur, data['D']))
     pts.sort()
