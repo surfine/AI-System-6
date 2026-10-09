@@ -136,7 +136,7 @@
   // THE 3D CHORUS LINE (stage3d.js). One stage for the whole chorus: the lime field is the clear colour and the floor, a
   // black 1 px grid dissolving to the horizon; every lyric a block of black voxel type (each line justified to the block's
   // width, the poster grammar of chorus 1) slamming in z on its sung words, ghosted until then; Clio, the twin and the gang
-  // of twelve extruded from their 1-bit sprites; the postmark a giant stamp, the Project CD a disc on the floor; the notice
+  // of twelve extruded from their 1-bit sprites; the Project CD a disc on the floor; the notice
   // cascade as cards flying out of the depth onto the glass. The writer is NOT in the stage: the pointer, the white pen and
   // its cord stay 2D, on the glass in front of it. Every transform is set from t (one camera key list, below).
   // ===================================================================================================
@@ -175,11 +175,6 @@
     }
     const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3)); st.scene.add(new THREE.LineSegments(lg, lineMat3d()));
     st.o.B = {}; for (const [id, d] of Object.entries(B3)) { const b = c8_vblock(...d); b.g.visible = false; st.scene.add(b.g); st.o.B[id] = b; }
-    // the postmarks: a black rubber-stamp disc with (PEN PAL) round the rim and the year, the cancel bars running out one side
-    st.o.pm = [2009, 2011].map((yr, k) => {
-      const m = card3d(tex3d('c8pm' + yr, 400, 200, () => c8_pmDraw(k ? 300 : 100, 100, yr, k ? -1 : 1)), 400, 200);
-      m.geometry.translate(k ? -100 : 100, 0, 0); m.visible = false; st.scene.add(m); return m;
-    });
     // the Project CD: a black disc on the floor, the lime ring, hole and glint drawn on its top (it turns as a whole)
     const cd = new THREE.Group(), top = new THREE.Mesh(new THREE.CircleGeometry(300, 48), mat3d({ map: tex3d('c8cd', 200, 200, c8_cdDraw), solid: true }));
     top.rotation.x = -PI / 2; top.position.y = 22; cd.add(top);
@@ -194,10 +189,11 @@
   }
   const c8_d = () => H / 2 / Math.tan(PI / 12);   // the camera-space depth where the stage is 1:1 with the screen
   function c8_pmDraw(cx, cy, yr, side) {
-    const r = 84, s = '(PEN PAL)', rr = r - 29, st = Math.min(.35, 17 / rr);
-    for (const dy of [-16, 4]) for (let x = side > 0 ? cx + r - 6 : cx - r + 6 - 4; side > 0 ? x < 400 : x >= 0; x += side * 4) rect(x, cy + dy + R(4 * Math.sin((x - cx) / 11)), 4, 8, BLK);
+    const r = 96, s = [...'(PEN PAL)'], rr = r - 27, ws = s.map(c => 2 * tw(c, 'chicago') + 3);
+    let acc = -ws.reduce((a, b) => a + b) / 2;
+    for (const dy of [-16, 4]) for (let x = side > 0 ? cx + r - 6 : cx - r + 2; side > 0 ? x < cx + 300 : x >= cx - 300; x += side * 4) rect(x, cy + dy + R(4 * Math.sin((x - cx) / 11)), 4, 8, BLK);
     disc(cx, cy, r, BLK); ring(cx, cy, r - 7, FLD, 2); ring(cx, cy, r - 12, FLD, 1);
-    [...s].forEach((c, i) => { const a = -PI / 2 + (i - (s.length - 1) / 2) * st; text(c, cx + R(Math.cos(a) * rr), cy + R(Math.sin(a) * rr) - 9, { font: 'chicago', scale: 2, color: FLD, align: 'center' }); });
+    s.forEach((c, i) => { const a = -PI / 2 + (acc + ws[i] / 2) / rr; acc += ws[i]; text(c, cx + R(Math.cos(a) * rr), cy + R(Math.sin(a) * rr) - 9, { font: 'chicago', scale: 2, color: FLD, align: 'center' }); });
     text(String(yr), cx, cy - 4, { font: 'chicago', scale: 3, color: FLD, align: 'center' });
     rect(cx - 44, cy + 36, 88, 2, FLD); rect(cx - 30, cy + 42, 60, 2, FLD);
   }
@@ -227,7 +223,7 @@
     [96.0, oc(1750, .4, 160, { c: [-120, 340, 0], roll: -.08 }), 'cut'], [97.9, oc(1800, -.12, 300, { c: [-40, 330, 0], roll: .03 }), 'lin'],
     [98.0, oc(1700, -.12, 200, { c: [-60, 170, -100] }), 'cut'], [100, oc(1650, .02, 240, { c: [20, 170, -500] }), 'lin']
   ];
-  // per frame: what is on the stage. sh = {blocks: [[id, [x, y, z], ry]], dancers: [{key, pos, y, size, ...clioDance o}], pm: [k, t0, [x, y, z], ry],
+  // per frame: what is on the stage. sh = {blocks: [[id, [x, y, z], ry]], dancers: [{key, pos, y, size, ...clioDance o}],
   // cd: [x, z, t0 of the turn], cards: [{p0, p1, a0, a1}]}
   function c8_3d(t, sh) {
     const st = stage3d(K3, c8_build); if (!st) { _no3d(); return null; }
@@ -244,15 +240,6 @@
       if (bd && bd.geometry && bd.geometry.attributes.color) bd.geometry = c8_lit(bd.geometry);
       if (d.y) g.position.y = d.y;
       if (d.sy != null) g.scale.y *= d.sy;
-    }
-    st.o.pm.forEach(m => { m.visible = false; });
-    if (sh.pm) {
-      const [k, t0, p, ry] = sh.pm, m = st.o.pm[k], f = c8_fr(t, t0);
-      if (f >= 0) {
-        const rt = evFrames('tambourine', t) < 2 ? (evIndex('tambourine', t) & 1 ? 6 : -6) : 0;
-        m.visible = true; m.scale.setScalar(3.2); m.position.set(p[0], p[1] + 320 + (f < 4 ? [1100, 520, 160, 0][f] : rt), p[2]); m.rotation.set(0, (ry || 0) + (f < 4 ? [2.2, 1.1, .4, 0][f] : 0), 0);
-        if (f < 2) FX.shake = Math.max(FX.shake || 0, 3 - f);
-      }
     }
     st.o.cd.visible = !!sh.cd;
     if (sh.cd) { const [x, z, t0] = sh.cd; st.o.cd.position.set(x, 0, z); st.o.cd.rotation.y = -Math.floor(prog(t, t0, t0 + 2 * SPB) * 16) / 16 * 2 * PI; }
@@ -334,10 +321,15 @@
       if (t >= st0) { const f = c8_fr(t, st0); ds.push({ key: 'twin', pos: [-560, 40], size: 8, flip: true, sy: f < 4 ? [.1, .4, .75, 1][f] : 1, ...c8_pose(t) }); }   // THE HARMONY TWIN pops up on the stab
     }
     if (mid) ds.push(...c8_gang3(t, pm, !first));
-    const sts = c8_3d(tt, { dancers: ds, blocks: mid ? [] : [[pp, [bx, 0, 0]], [js, s => [bx, s.o.B[pp].h + 50, 0]]], pm: mid ? [first ? 0 : 1, pm, first ? [-260, 0, -1300] : [260, 0, -1300], first ? .25 : -.25] : null });
+    const sts = c8_3d(tt, { dancers: ds, blocks: mid ? [] : [[pp, [bx, 0, 0]], [js, s => [bx, s.o.B[pp].h + 50, 0]]] });
     if (sts && !mid) { const e = evLast('stab', t), b = c8_pbox(sts, pp, 0); if (e && e[0] >= T0) punch(e[0], R(b.x + b.w / 2), R(b.y + b.h / 2), [2, 2], t); }
     if (!first && t < LE.start + 3 * F1) { const g = c8_land0(); bigType('LAND,', { ...g, ghost: BLK, words: { words: [{ w: 'land', start: 1e9 }] } }); }   // LAND, kept for one beat, dissolving
-    if (mid && t >= pm2) c8_air();
+    if (mid) {   // the postmark (2009, then 2011) stamped on the glass, the echo's own words round its rim
+      const f = c8_fr(t, pm), rt = evFrames('tambourine', t) < 2 ? (evIndex('tambourine', t) & 1 ? 6 : -6) : 0;
+      if (f < 2) FX.shake = Math.max(FX.shake || 0, 3 - f);
+      c8_pmDraw(first ? 160 : W - 200, 110 + rt, first ? 2009 : 2011, first ? 1 : -1);
+      if (t >= pm2) c8_air();
+    }
     if (t < T0) return;   // under ch07's flood its own pen and pointer are the writer's
     c8_rings(t, px, py);
     const tip = c8_pen(t, px, py, { lift, back, a });

@@ -495,17 +495,18 @@
   scene('ch11 give back', LF.start, LG.start, c11_give, OPT);
 
   // ===================================================================================================
-  // 140.0: WHO HOLDS THE PEN?, a letter per 16th; the pen level across the top; all twelve point up at it
+  // 140.0: WHO HOLDS / THE PEN? (two rows: three letters across 624 px read as slabs), WHO and HOLDS on their words, THE PEN? a
+  // letter per 32nd; the pen level across the top; all twelve point up at it
   // ===================================================================================================
   scene('ch11 who', LG.start, LH.start, t => {
     const opt = { t, words: LG, ghost: true, justify: W - 16, fitH: 134, x: 8, y: 48, valign: 'top', align: 'left' }, ws = LG.words;
-    const lay = bigType(['WHO', 'HOLDS', 'THE PEN?'], { ...opt, pass: 'slab', invert: false });
-    c11_base(t, c11_mid(lay.lines[2]));
+    const Q = ['WHO HOLDS', 'THE PEN?'], lay = bigType(Q, { ...opt, pass: 'slab', invert: false });
+    c11_base(t, c11_mid(lay.lines[1]));
     const px = 60, py = 4, g = c11_sig(t);
     c11_rings(t, px, py);
     const uf = c11_fr(t, LG.start);   // in 3D they rise through the traps over 8 frames (4 was a flash with the push-in)
     c11_line(t, { dy: c11_dy(t, null, LG.start), sink: uf >= 0 && uf < 8 ? [120, 100, 80, 62, 44, 28, 14, 4][uf] : 0, dance: g ? {} : { pose: 'pointUp', p: beatPhase(t) } });
-    c11_lines(['WHO', 'HOLDS', 'THE PEN?'], opt, [{ stepIn: { t0: ws[0].start, div: 4, enter: 'slam' } }, { stepIn: { t0: ws[1].start, div: 8, enter: 'slam' } }, { stepIn: { t0: ws[2].start, div: 8, enter: 'slam' } }]);
+    c11_lines(Q, opt, [{}, { stepIn: { t0: ws[2].start, div: 8, enter: 'slam' } }]);
     const bob = R(2 * pulse(t, 1, 6)), tip = c11_pen(t, px, py, { a: 0, back: [W - 186, 24 + bob], sag: 3, cs: 2 });
     c11_ripple(t, tip[0], tip[1]);
     c11_corner(t);

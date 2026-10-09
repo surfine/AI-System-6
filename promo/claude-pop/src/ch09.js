@@ -72,10 +72,10 @@ function c09_ghostPlate(x, y, w, h, t, ink, paper, tx, ty, tagInv) {
   rect(tx - 1, ty - 1, tgw + 2, 12, paper); rect(tx, ty, tgw, 10, ink); text(tg, tx + 3, ty + 2, { font: 'small', color: paper });
 }
 // the chant on its plate INSIDE ClioTalk's rect (frame x 24..292): above the Dock band (frame y > 314) and left of the
-// icon row (x >= 302), so every era's chrome stays whole. Solid small-font 2x letters (rule 4). The tunnel's plate sits on
+// icon row (x >= 302), so every era's chrome stays whole. The tunnel's plate sits on
 // the year slab's foot with the tag on a tab; the stay's plate covers ClioTalk's input row: the line, then the riser
-// bar and the tag. Pre-inverted colours in the negative. The letters are SOLID ink with a 1-px paper halo (ch02/ch03), so
-// they never melt into the plate's dither; only the plate is temporary. The beep inverts the tag for a frame.
+// bar and the tag. Pre-inverted colours in the negative.
+// The letters are SOLID ink with a 1-px paper halo (ch02/ch03). The beep inverts the tag for a frame.
 function c09_kara(L, cx, y, t, ink, paper) {   // kara 'pop' (small, 2x), centred, each word with a 1-px halo
   const f = 'small', s = 2, sp = Math.max(s * 3, R(FONTS[fontKey(f)].space * s)), ws = L.words.map(w => tw(w.w, f, s));
   let x = R(cx - (ws.reduce((a, b) => a + b, 0) + sp * (ws.length - 1)) / 2);
@@ -153,7 +153,7 @@ function c09_sheet(t, noLyric) {
 // ===================================================================================================
 // 104-116: THE NEON CORRIDOR (three.js through stage3d.js, quantised back to hard pixels). The twelve desks hang down a
 // tunnel of era-coloured wall bands, alternating left and right, turned toward the flight; a neon ring line every band.
-// Year i: HOLD at 1:1 on its word (the lit 2D desk, live: Clio sings, the drives step, the eject drive kicks) with THE YEAR
+// Year i: HOLD at 1:1 on its word (the lit 2D desk, live; from 2011 the flight's duotone landing: no colour pop) with THE YEAR
 // as a black voxel slab of white voxel figures standing out of the chat toward the lens, slammed on the word (1988 stays
 // the flat 2D poster: 1988 IS flat; the type takes depth when we leave it); then the FLIGHT: the desk drops to its era's
 // NEON DUOTONE (black ink, four steps of the era's hue), the camera pulls back and swings down the corridor, banking into
@@ -296,11 +296,11 @@ function c09_flightCam(st, i, t) {
 }
 function c09_tunnel(t) {
   const i = clamp(bsearch(c09_Y, t + 1e-6), 0, 11), Yi = c09_Y[i], era = c09_ERAS[i], d = c09_dep(i), st = i || t >= d - 1e-6 ? c09_stage() : null;
-  if (!st || t < d - 1e-6) {   // THE HOLD: the lit desk at 1:1, alive (1988: the crumpling Trash and the flat 2D year, as before)
+  if (!st || t < d - 1e-6 && i < 8) {   // THE HOLD: the lit desk at 1:1, alive (1988: the crumpling Trash and the flat 2D year)
     ctx.drawImage(frameInto(styleBuf('c9A'), t, i ? c09_desk : c09_desk1988, c09_opt(era)), 0, 0);
     if (!i || !st) { if (t >= Yi - 1e-6) c09_year(t, i); }
     else c09_draw3d(st, t, i, true);
-  } else c09_draw3d(st, t, i, false);
+  } else c09_draw3d(st, t, i - (t < d - 1e-6), false);
   if (!i) { punch(c09_T0, c09_NIB[0], c09_NIB[1], [2, 2], t); pixelSort(16, 220, c09_T0, 2, t); }      // owed: the drain's punch, the drop's sort
   const sub = evLast('sub', t); if (sub && sub[0] >= c09_T0 && c09_fr(t, sub[0]) < 2) { FX.dy = 1; FX.shake = 1; }   // the 808 drop at "Eleven."
   const L = lineAt(t, 'chant'); if (L && L.section === c09_SEC.name) c09_chant(t, L, false, false, c09_fr(t, Yi) === 0);
@@ -311,7 +311,7 @@ function c09_tunnel(t) {
 function c09_draw3d(st, t, i, hold) {
   const P = st.o.P, asm = i === 11 && !hold, cb = evLast('cowbell', t), blink = !hold && cb && cb[0] > c09_dep(i) && c09_fr(t, cb[0]) < 2;
   const cs = hold ? P[i].hold : c09_flightCam(st, i, t), kk = evLast('kick', t);
-  if (!hold && kk && kk[0] > c09_dep(i) && c09_fr(t, kk[0]) < 2) { const u = c09_V([Math.sin(cs.tw) * 10, -Math.cos(cs.tw) * 10, 0]); cs.pos = cs.pos.clone().add(u); cs.look = cs.look.clone().add(u); }   // the kick in flight: the camera dips (the plate does not move)
+  if (!hold && kk && kk[0] > c09_dep(i) && !(kk[0] >= c09_Y[i + 1]) && c09_fr(t, kk[0]) < 2) { const u = c09_V([Math.sin(cs.tw) * 10, -Math.cos(cs.tw) * 10, 0]); cs.pos = cs.pos.clone().add(u); cs.look = cs.look.clone().add(u); }   // the kick in flight: the camera dips (the plate does not move)
   c09_aim(st.cam, cs);
   st.o.rings.visible = st.o.walls[0].visible = st.o.walls[1].visible = !hold && !asm;
   c09_wallRange(st, st.cam.position.z);
@@ -325,7 +325,7 @@ function c09_draw3d(st, t, i, hold) {
     // where the landing's last swing would sweep them across a quarter of the view, they drop to the duotone's top step
     matOf(p.dig).color.set(lit ? C.white : dest && st.cam.position.distanceTo(p.c) > 3.4 * D3 ? c09_NEON[j] : c09_TINT[j][4]);
     const fr = c09_fr(t, c09_Y[j]);   // the punch-out on the word: sunk 90% into the slab, out in 5 frames, 1 over
-    p.dig.position.z = hold && j === i && fr >= 0 && fr < 5 ? -p.out * [.9, .55, .25, .08, -.04][fr] : 0;
+    p.dig.position.z = j === i + !hold && fr >= 0 && fr < 5 ? -p.out * [.9, .55, .25, .08, -.04][fr] : 0;
     if (asm && j < 11) {   // into the sheet: from the corridor in a staggered swoop, slerped flat into its cell
       const a = c09_dep(11) + .03 * j, k = 1 - Math.pow(1 - prog(t, a, a + .5), 3);
       p.g.position.lerpVectors(p.c, st.o.cell[j], k).addScaledVector(P[11].n, -900 * Math.sin(Math.PI * k)); p.g.quaternion.slerpQuaternions(p.q, P[11].q, k);
