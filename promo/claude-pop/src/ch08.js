@@ -96,7 +96,6 @@
       if (of < 4) { const k = (of + 1) / 4; frame(R(lerp(fx, ok.x, k)), R(lerp(fy, ok.y, k)), R(lerp(NW, ok.w, k)), R(lerp(NH, ok.h, k)), BLK, 2); }
       return ok;
     }
-    if (c8_fr(t, at(m - 1)) < 2) FX.shake = Math.max(FX.shake || 0, 2);
     for (let i = 0; i < m; i++) {
       const [X, y0] = pos(i), f = c8_fr(t, at(i)), Y = y0 + (f < 2 ? [-8, -3][f] : 0);
       rect(X, Y, NW, NH, BLK); frame(X + 3, Y + 3, NW - 6, NH - 6, FLD, 1);
@@ -151,20 +150,24 @@
     you: [['YOU', 'DO!'], 360, 18, LH]
   };
   // a block: each line its own voxText, sized to the width (capped), stacked; origin = the block's bottom-left on the floor
+  // the ghost: a solid twin, Bayer front, black sides (hides the grid, keeps an edge). No level at .5 (the dither's phase flips).
+  // V and ! a third as deep (the side face shut the V: NEWER; the cap filled the gap under the !)
+  const GLV = [.46, .46, 0, .25], LVT = [0, 0, .44, .75];
   function c8_vblock(lines, wd, mx, wt) {
-    const g = new THREE.Group(), cap = FONTS.chicago.cap, ls = lines.map(s => { const sz = Math.min(mx, wd / tw(s, 'chicago')); return { v: voxText(s, { size: sz, depth: 3, align: 'left' }), s: sz }; });
+    const g = new THREE.Group(), cap = FONTS.chicago.cap, ls = lines.map(s => { const sz = Math.min(mx, wd / tw(s, 'chicago')); return { v: voxText(s, { size: sz, depth: 3, align: 'left', color: FLD, levels: LVT }), s: sz }; });
+    for (const l of ls) for (const L of l.v.letters) { L.gS = L.mesh.geometry; L.gG = voxGlyph(L.ch, 'chicago', 3, GLV); if (L.ch === 'V' || L.ch === '!') L.mesh.scale.z = l.s / 3; }
     let y = 0;
     for (let i = ls.length - 1; i >= 0; i--) { const l = ls[i]; l.y0 = y; l.y1 = y + cap * l.s; l.v.group.position.set(l.v.w / 2, y + cap * l.s / 2, 0); g.add(l.v.group); y = l.y1 + 2.5 * l.s; }
     const tm = Array.isArray(wt) ? null : _bigWordTimes(ls.map(l => l.v.chars[0]), wt), letters = [];
     ls.forEach((l, li) => { let n = 0; for (const L of l.v.letters) letters.push({ L, li, at: tm ? tm[li][L.ci] : beatTime(beatAt(wt[li][0]) + n++ / wt[li][1]) }); });
-    return { g, ls, letters, h: ls[0].y1 };
+    return { g, ls, letters, h: ls[0].y1, small: mx < 10 };
   }
   const NOTE_N = 14;
   function c8_build(st) {
     st.scene.fog = new THREE.Fog(0, 2600, 6800);
     // the floor grid: 120-unit cells round the stage, every fourth line beyond it, so the horizon stays sparse (a dense band
     // of 1 px lines shimmers under any camera move: flash budget); one segment per cell (an end behind the eye is not drawn)
-    const gs = 120, N = 44, M = window.C8M || 15, pts = [];
+    const gs = 120, N = 44, M = 15, pts = [];
     for (let i = -N; i <= N; i++) for (let j = -N; j < N; j++) {
       const near = Math.abs(i) <= M && j >= -M && j < M;
       if (near || i % 4 === 0) pts.push(i * gs, 0, j * gs, i * gs, 0, j * gs + gs);
@@ -214,12 +217,13 @@
     [83.8, oc(1680, -.34, 240, { c: [-40, 330, 0] })], [84.0, oc(1680, -.34, 240, { c: [-40, 330, 0] }), 'cut'], [85.2, oc(1460, -.1, 340, { c: [-40, 330, 0] }), 'lin'],
     // the echo: a cut to the near end of the chorus line, then tracking down it
     [85.25, { pos: [1700, 900, 1100], look: [300, 120, -1500], roll: -.06 }, 'cut'], [85.7, { pos: [1620, 870, 880], look: [240, 120, -1700], roll: -.06 }, 'lin'],
-    [85.75, oc(1640, .36, 300, { c: [-60, 300, 0] }), 'cut'], [87.95, oc(1180, .16, 260, { c: [80, 230, 0] }), 'lin'],
+    // framed so the block clears the cascade's column on "pen."
+    [85.75, oc(1640, .36, 300, { c: [-60, 300, 0] }), 'cut'], [87.95, oc(1600, .16, 300, { c: [160, 380, 0] }), 'lin'],
     [88.0, oc(1560, -.3, 360, { c: [-20, 260, 0] }), 'cut'], [89.95, oc(1460, -.16, 520, { c: [0, 230, 0] }), 'lin'],
     [90.0, oc(1500, -.24, 380, { c: [-40, 240, 0] }), 'cut'], [91.2, oc(1560, -.34, 300, { c: [-40, 240, 0] }), 'lin'],
     [91.25, oc(1760, .3, 280, { c: [80, 330, 0] }), 'cut'], [93.2, oc(1660, -.2, 380, { c: [40, 330, 0] }), 'lin'],
     [93.25, { pos: [-1700, 900, 1100], look: [-300, 120, -1500], roll: .06 }, 'cut'], [93.7, { pos: [-1620, 870, 880], look: [-240, 120, -1700], roll: .06 }, 'lin'],
-    [93.75, oc(1800, -.36, 300, { c: [-160, 300, 0] }), 'cut'], [95.95, oc(1300, -.16, 260, { c: [80, 230, 0] }), 'lin'],
+    [93.75, oc(1800, -.36, 300, { c: [-160, 300, 0] }), 'cut'], [95.95, oc(1500, -.16, 300, { c: [-60, 380, 0] }), 'lin'],
     [96.0, oc(1750, .4, 160, { c: [-120, 340, 0], roll: -.08 }), 'cut'], [97.9, oc(1800, -.12, 300, { c: [-40, 330, 0], roll: .03 }), 'lin'],
     [98.0, oc(1700, -.12, 200, { c: [-60, 170, -100] }), 'cut'], [100, oc(1650, .02, 240, { c: [20, 170, -500] }), 'lin']
   ];
@@ -232,11 +236,12 @@
     for (const [id, b] of Object.entries(st.o.B)) b.g.visible = false;
     for (const [id, p, ry, o] of sh.blocks || []) {
       const b = st.o.B[id]; b.g.visible = true; b.g.position.set(...(typeof p === 'function' ? p(st) : p)); b.g.rotation.set(0, ry || 0, 0);
-      for (const { L, li, at } of b.letters) { slam3d(L, t, at, { ghost: true, from: 80 }); if (o && o.hide && o.hide.includes(li)) L.mesh.visible = false; }
+      for (const { L, li, at } of b.letters) { c8_slam(L, t, at, b.small); if (o && o.hide && o.hide.includes(li)) L.mesh.visible = false; }
     }
     for (const k in st.o) if (k.startsWith('d|')) st.o[k].g.visible = false;
     for (const d of sh.dancers || []) {
-      const g = dancer3d(st, d.key, t, { field: FLD, depth: 5, ...d }); g.visible = true;
+      const g = dancer3d(st, d.key, t, { field: FLD, depth: 5, ...d }), bd = g.children[0]; g.visible = true;
+      if (bd && bd.geometry && bd.geometry.attributes.color) bd.geometry = c8_lit(bd.geometry);
       if (d.y) g.position.y = d.y;
       if (d.sy != null) g.scale.y *= d.sy;
     }
@@ -258,10 +263,24 @@
     });
     st.o.riser.visible = !!sh.riser;
     if (sh.riser) { const [x0, x1, y, z] = sh.riser; st.o.riser.scale.set(x1 - x0, 26, 140); st.o.riser.position.set((x0 + x1) / 2, y - 13, z); }
-    st.scene.children[0].visible = !sh.bare;   // the floor grid
     render3d(st, { pal: PAL3, bg: FLD });
     st.scene.updateMatrixWorld(true);
     return st;
+  }
+  // ghost until its word, then solid and slammed in z; small type drops in y (a z slam closed the word space: I'MJUST)
+  function c8_slam(L, t, at, small) {
+    const fr = c8_fr(t, at), gh = fr < 0;
+    L.mesh.geometry = gh ? L.gG : L.gS;
+    slam3d(L, t, gh ? null : at, { from: small ? 0 : 80 });
+    if (small && fr >= 0 && fr < SLAM3.length) L.mesh.position.y += SLAM3[fr] * 36;
+  }
+  // the dancers' caps lit in the field colour (the cap dither tore her top edge); sides off .5
+  const c8_litG = new Map();
+  function c8_lit(G) {
+    let n = c8_litG.get(G); if (n) return n;
+    if (c8_litG.size > 400) { for (const g of c8_litG.values()) g.dispose(); c8_litG.clear(); }
+    n = G.clone(); const c = n.attributes.color.array; for (let i = 0; i < c.length; i++) c[i] = Math.abs(c[i] - .75) < 1e-3 ? 1 : Math.abs(c[i] - .5) < 1e-3 ? .44 : c[i];
+    c8_litG.set(G, n); return n;
   }
   // the screen box of line li of a block (after c8_3d): for punches, selections, hand-offs to 2D type
   function c8_pbox(st, id, li) {
@@ -335,7 +354,6 @@
     const hold = L.words[2].start, pw = L.words[4].start, st = c8_stab(pw), id = mir ? 'hold2' : 'hold1';
     const P0 = mir ? [2, 4] : [W - 200, 4], P1 = mir ? [20, H - NH - 4] : [W - 180, H - NH - 4];
     c8_base(t, null);
-    if (t >= st && c8_fr(t, st) < 3) FX.shake = 2;   // the click on [OK]: a jolt, not a punch (flash budget)
     let px = mir ? 56 : W - 56, py = 6, lift = 0;
     if (t >= hold && t < st) {   // the yank (twice when both reach: one pen, two hands)
       const f = c8_fr(t, hold), two = mir && t >= hold + SPB / 2, f2 = c8_fr(t, hold + SPB / 2);
@@ -344,7 +362,8 @@
     if (mir && t < L.start + 4 * F1) lift = [140, 70, 24, 0][c8_fr(t, L.start)] || 0;
     const ds = mir ? [{ key: 'twin', pos: [-560, 120], size: 8, flip: true, ...c8_pose(t) }, { key: 'hero', pos: [-820, -200], size: 9, ...c8_pose(t) }] : [{ key: 'hero', pos: [480, -40], size: 9, ...c8_pose(t) }];
     const sts = c8_3d(t, { dancers: ds, blocks: [[id, [mir ? -300 : -480, 0, 0]]], cards: t >= pw - .4 && t < st ? c8_cards(t, P0, P1, n, pw, n > 4 ? 2 : 0) : null });
-    const ok = c8_casc(t, P0, P1, n, pw, st + 9 * F1);   // the clicked notice stays up 9 frames
+    // no shakes (a jolt flips every grid line: flash budget); the notices go with the cut on the downbeat
+    const ok = c8_casc(t, P0, P1, n, pw, st + SPB / 2);
     c8_okClick(t, ok, st);
     c8_rings(t, px, py);
     const tip = c8_pen(t, px, py, { lift });
@@ -370,7 +389,7 @@
     let hx = 560, hz = 60, hy = 0, o = {};
     if (t >= where && t < land) { const k = Math.floor(prog(t, where, land) * 16) / 16; hx = lerp(560, CD3[0], k); hz = lerp(60, CD3[1], k); hy = 180 * 4 * k * (1 - k) + 22 * k; o = { pose: 'jump', p: k }; }
     else if (t >= land) { hx = CD3[0]; hz = CD3[1]; hy = 22; if (t < land + SPB) o = { pose: 'cheer', p: prog(t, land, land + SPB) }; if (c8_fr(t, land) < 2) FX.shake = Math.max(FX.shake || 0, 2); }
-    const sts = c8_3d(t, { dancers: [{ key: 'hero', pos: [hx, hz], y: hy, size: 8, ...(o.pose ? o : c8_pose(t)) }], cd: [CD3[0], CD3[1], land], blocks: [faded ? ['fade', [-560, 0, 0]] : ['land', [-600, 0, 0], 0, t >= step ? { hide: [2] } : null]] });
+    const sts = c8_3d(t, { dancers: [{ key: 'hero', pos: [hx, hz], y: hy, size: 8, depth: 3, ...(o.pose ? o : c8_pose(t)) }], cd: [CD3[0], CD3[1], land], blocks: [faded ? ['fade', [-560, 0, 0]] : ['land', [-600, 0, 0], 0, t >= step ? { hide: [2] } : null]] });
     // the pointer: the pen level over the spot; on "or" it swings to hang, then carries the pen to LAND, and the nib taps it
     const P0 = [W - 270, 6], clk = LD.words[2].start + SPB / 2;
     let px = P0[0], py = P0[1], a = 0, back = null, kept = t >= clk;
@@ -433,12 +452,12 @@
     c8_base(t, null);
     splitPal(3, c8_you2, 3, [WHT, BLK], t);   // the second YOU: a split, not an invert (flash budget)
     // the gang of twelve and the twin sing it from the choir riser, high behind the type, popping up in a ripple from the left
-    const t3 = Math.min(t, DIVE0), dv = t >= DIVE0, px = W - 56, py = 6, G = c8_RG(), gang = [];
+    const t3 = Math.min(t, DIVE0), px = W - 56, py = 6, G = c8_RG(), gang = [];
     for (let i = 0; i < 13; i++) {
       const ti = t3 - i * F1, f = c8_fr(ti, LH.start), tw8 = i === 6;
       if (f >= 0) gang.push({ key: tw8 ? 'twin' : 'g' + (i - (i > 6)), pos: [lerp(G[0], G[1], i / 12), G[3]], y: G[2], size: tw8 ? G[4] + 1 : G[4], sy: [.15, .5, .85, 1][Math.min(f, 3)], flip: !!(i & 1), voice: 'choir', ...c8_pose(ti) });
     }
-    const sts = c8_3d(t3, { blocks: [['you', [-520, 0, 0]]], bare: dv, riser: dv ? null : G, dancers: dv ? [] : gang });
+    const sts = c8_3d(t3, { blocks: [['you', [-520, 0, 0]]], riser: G, dancers: gang });
     if (sts) { const e = evLast('stab', t); if (e && e[0] >= T0 && t < c8_you2) { const b = c8_pbox(sts, 'you', 0); punch(e[0], R(b.x + b.w / 2), R(b.y + b.h / 2), [2, 2], t); } }
     c8_rings(t, px, py);
     const hero = () => (c8_hero = c8_dancer(W - 160, H - 21, 7, t, { ground: false, ...(t >= c8_you2 ? { eyes: 'dot' } : {}) }));
@@ -467,8 +486,8 @@
     }
     return (c8_eyeF = best ? { x: best.x, y: best.y, w: 2 * s } : { x: hx + sz.x, y: hy + 10, w: 14 });
   }
-  // deep in the silhouette the black lifts to a mid lime in 4 steps, so the whip never passes through a black frame (flash budget)
-  const DIM = '#78a800', c8_lift = t => Math.floor(prog(t, DIVE0, T1 - 3 * F1) * 8 + 1e-6) / 8;
+  // the black lifts to a mid lime in the whip's first 6 frames, while it is small: after it the eye and the magenta only darken (flash budget)
+  const DIM = '#78a800', c8_lift = t => Math.floor(prog(t, DIVE0, DIVE0 + 6 * F1) * 8 + 1e-6) / 8;
   function c8_youDoL(t) {   // the dive zooms into a still: the outer frame is held at DIVE0 (a pose change magnified is a flash)
     c8_youDo(Math.min(t, DIVE0));
     const a = c8_lift(t); if (a <= 0) return;
@@ -518,8 +537,8 @@
   function c8_post(t) {
     const q = t < Q8.start ? Q7 : Q8, px = W - 56, py = 6, pin = t >= Q8.words[6].start + SPB / 2, tq = pin ? Q8.words[6].start : t;
     rect(0, 0, W, H, MAG);
-    // the dive lands on a split, no invert (flash budget)
-    if (t >= P2.start) { splitPal(2, P2.start, 3, [WHT, BLK], t); beatFX(t, { snare: false, kick: t >= P2.start + SPB }); punch(P2.start, ...c8_targets()[0], [2, 2], t); }
+    // the dive lands on a split; no invert, no punch (flash budget)
+    if (t >= P2.start) { splitPal(2, P2.start, 3, [WHT, BLK], t); beatFX(t, { snare: false, kick: t >= P2.start + SPB }); }
     c8_record(t);
     const e = evLast('clap', t); if (e && e[0] >= P2.start && c8_fr(t, e[0]) < 14) clickBurst(px, py, e[0], { pointer: false, color: BLK, t });
     const b = c8_bounce(t), tap = b && b !== 'home' && q.words.find(w => c8_fr(t, w.start) >= 0 && c8_fr(t, w.start) < 3);

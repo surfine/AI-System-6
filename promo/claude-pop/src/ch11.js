@@ -95,7 +95,7 @@
   // silent pen: the world goes with the sound and slams back with it
   function c11_line(t, o = {}) {
     const dy = c11_ldy = Math.min(140, o.dy || 0);
-    if (t >= CUT3 && (t < BAND_OUT || t >= SLAM) && c11_stage(t, o, dy)) return;
+    if (t >= CUT3 && (t < BAND_OUT || t >= SLAM) && c11_stage(t, o, o.sink ?? dy)) return;
     if (dy >= 140) return;
     const { b, d } = c11_pup(t, o);
     for (let i = 0; i < LN; i++) { const ox = LX0 + i * LPX - LBW / 2, oy = H - 8 + dy - (LBH - 26); ctx.drawImage(b, ox, oy); c11_hat(i, d.head[0] + ox, d.head[1] + oy); }
@@ -122,74 +122,103 @@
     }
   }
 
-  // ---- THE REVOLVING STAGE (three.js): a turntable (cyan top ruled with rings and spokes, a black drum, chasing bulbs) on a
-  // floor grid. A world unit is a pixel of the 2D line: the puppet is extruded once per pose and worn by all twelve, each
-  // with its hat extruded. Close shots keep the camera at hat height, the horizon at y 232: every hat sits on it at any
-  // depth, under the poster type, so the stage turns and recedes while the lyric stays square. Sinking = squashed into the top ----
-  const CUT3 = T0 + 4 * F1, RT = 350, PX3 = 60, DRUM = 40, NB = 48, P3 = [FLD, BLK, WHT], c11_geos = new Map();
-  // a painted canvas as voxels: black = ink, field = a thin rim plate behind (flat: one slab, the field a plate on its face)
-  function c11_vox(c, ox, oy, dz, flat) {
-    const w = c.width, h = c.height, u = new Uint32Array(c.getContext('2d').getImageData(0, 0, w, h).data.buffer);
-    let k = 2166136261; for (let i = 0; i < u.length; i++) k = Math.imul(k ^ u[i], 16777619);
-    let g = c11_geos.get(k); if (g) return g;
-    const ink = new Uint8Array(u.length), rim = new Uint8Array(u.length);
-    for (let i = 0; i < u.length; i++) if (u[i] >>> 24 >= 128) { ((u[i] & 255) + (u[i] >> 8 & 255) + (u[i] >> 16 & 255) < 120 ? ink : rim)[i] = 1; if (flat) ink[i] = 1; }
-    const a = voxGeo(ink, w, h, dz, ox, oy), b = voxGeo(rim, w, h, 1, ox, oy, [1, 1, 1, 1]).translate(0, 0, (flat ? 1 : -1) * (dz / 2 + .5));
-    g = new THREE.BufferGeometry();
-    for (const n of ['position', 'color']) { const x = a.attributes[n].array, y = b.attributes[n].array, m = new Float32Array(x.length + y.length); m.set(x); m.set(y, x.length); g.setAttribute(n, new THREE.BufferAttribute(m, 3)); }
-    a.dispose(); b.dispose();
-    if (!flat) { if (c11_geos.size > 240) { for (const v of c11_geos.values()) v.dispose(); c11_geos.clear(); } c11_geos.set(k, g); }
-    return g;
+  // ---- THE REVOLVING STAGE (three.js): a turntable (cyan top ruled with rings, twelve spokes and hour marks, a black drum
+  // ringed with marquee bulbs) on a floor grid. The twelve are CARDS: the 2D puppet, its 2 px field halo included, and each
+  // one's era hat, painted by the 2D kit once a frame and stood up in the world parallel to the lens. Nearest, no mips: a
+  // dancer stays the crisp puppet of the 2D line at any distance (shrunk at most 2x, every 3 px unit keeps a pixel), solid
+  // black, and its cyan halo cuts it off the one behind; only the floor, the table's rings and the fog dither. A world unit
+  // is a pixel of the 2D line: at CUT3 the camera sits where the 3D line lands exactly on the 2D one. Two formations: the
+  // LINE across the diameter and the RING (the twelve round the rim like the hours of a music box). The camera keys are in
+  // the table's frame (c11_cam), so an orbit is an orbit of the line, whatever the table does ----
+  const CUT3 = T0 + 4 * F1, PX3 = 60, RT = 420, DRUM = 56, NB = 60, RING = 260, P3 = [FLD, BLK, WHT];
+  function c11_top() {
+    const c = 192; disc(c, c, c - 1, FLD);
+    for (const [r, w] of [[c - 4, 4], [R(RING * c / RT) + 22, 2], [R(RING * c / RT) - 22, 2], [70, 3]]) ring(c, c, r, BLK, w);
+    for (let i = 0; i < 12; i++) { const a = i * PI / 6; line(R(c + 70 * Math.cos(a)), R(c + 70 * Math.sin(a)), R(c + (c - 6) * Math.cos(a)), R(c + (c - 6) * Math.sin(a)), BLK, 2); }
+    for (let i = 0; i < 12; i++) { const a = (i + .5) * PI / 6, r = RING * c / RT; rect(R(c + r * Math.cos(a)) - 3, R(c + r * Math.sin(a)) - 3, 6, 6, BLK); }   // the hour marks
+    disc(c, c, 26, BLK); disc(c, c, 10, FLD);
   }
-  function c11_top() { disc(128, 128, 127, FLD); for (const [r, w] of [[125, 3], [86, 2], [46, 2]]) ring(128, 128, r, BLK, w); for (let i = 0; i < 12; i++) { const a = i * PI / 6; line(R(128 + 46 * Math.cos(a)), R(128 + 46 * Math.sin(a)), R(128 + 124 * Math.cos(a)), R(128 + 124 * Math.sin(a)), BLK, 2); } disc(128, 128, 9, BLK); }
   function c11_build(st) {
-    st.scene.fog = new THREE.Fog(0, 800, 2000);
-    const g = 200, N = 12, pts = [];   // a segment per cell (an end behind the eye drops a line)
-    for (let i = -N; i <= N; i++) for (let j = -N; j < N; j++) pts.push(i * g, -DRUM, j * g, i * g, -DRUM, j * g + g, j * g, -DRUM, i * g, j * g + g, -DRUM, i * g);
+    st.scene.fog = new THREE.Fog(0, 1500, 3600);   // set from the camera each frame: the grid dissolves just past the table
+    // the dance floor: a round patch of grid round the table (a segment per cell: an end behind the eye drops a line)
+    const g = 150, N = 5, pts = [], inF = (x, z) => Math.hypot(x, z) < N * g;
+    for (let i = -N; i <= N; i++) for (let j = -N; j < N; j++) { if (inF(i * g, j * g + g / 2)) pts.push(i * g, -DRUM, j * g, i * g, -DRUM, j * g + g); if (inF(j * g + g / 2, i * g)) pts.push(j * g, -DRUM, i * g, j * g + g, -DRUM, i * g); }
     const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3)); st.scene.add(new THREE.LineSegments(lg, lineMat3d()));
-    const T = st.o.turn = new THREE.Group(), m = mat3d({ vc: true, solid: true, color: FLD }); st.scene.add(T);
-    T.add(new THREE.Mesh(new THREE.CircleGeometry(RT, 64).rotateX(-PI / 2), mat3d({ map: tex3d('c11top', 256, 256, c11_top, { mip: true }), solid: true })));
-    T.add(new THREE.Mesh(new THREE.CylinderGeometry(RT, RT, DRUM, 64, 1, true).translate(0, -DRUM / 2, 0), mat3d({ color: BLK, solid: true })));
+    st.o.floor = new THREE.Mesh(new THREE.PlaneGeometry(9000, 9000).rotateX(-PI / 2).translate(0, -DRUM - 1, 0), mat3d({ color: FLD, solid: true })); st.scene.add(st.o.floor);   // only while the table rises through it
+    const T = st.o.turn = new THREE.Group(); st.scene.add(T);
+    T.add(new THREE.Mesh(new THREE.CircleGeometry(RT, 72).rotateX(-PI / 2), mat3d({ map: tex3d('c11top', 384, 384, c11_top, { mip: true }), solid: true })));
+    T.add(new THREE.Mesh(new THREE.CylinderGeometry(RT, RT, DRUM, 72, 1, true).translate(0, -DRUM / 2, 0), mat3d({ color: BLK, solid: true })));
     st.o.bulbs = [0, 1, 2].map(k => { const b = []; for (let i = k; i < NB; i += 3) { const a = i / NB * 2 * PI; b.push({ w: 12, h: 12, d: 4, pos: [Math.sin(a) * (RT + 1), -DRUM / 2, Math.cos(a) * (RT + 1)], ry: a, cols: Array(6).fill(WHT) }); } const q = new THREE.Mesh(bandGeo(b), mat3d({ vc: true, solid: true })); T.add(q); return q; });
-    T.add(st.o.body = new THREE.InstancedMesh(new THREE.BufferGeometry(), m, LN)); st.o.body.frustumCulled = false;   // the twelve bodies: one draw
-    st.o.D = Array.from({ length: LN }, (_, i) => { const d = new THREE.Group(); d.add(new THREE.Mesh(c11_vox(c11_hatC(i), 32, 25, 12, true), m)); T.add(d); return { d, hat: d.children[0] }; });
+    // the twelve: one card geometry (origin at the puppet's ground point), one instanced draw for the bodies, a card per hat
+    const pg = new THREE.PlaneGeometry(LBW, LBH).translate(0, LBH / 2 - 26, 0);
+    st.o.body = new THREE.InstancedMesh(pg, mat3d({ map: tex3d('c11pup', LBW, LBH, () => {}), fog: false, side: 'double' }), LN); st.o.body.frustumCulled = false; st.scene.add(st.o.body);
+    st.o.D = Array.from({ length: LN }, (_, i) => {
+      const d = new THREE.Group(), hat = new THREE.Mesh(new THREE.PlaneGeometry(HW + 16, HH + 8), mat3d({ map: tex3d('c11hat' + i, HW + 16, HH + 8, () => ctx.drawImage(c11_hatC(i), 0, 0)), fog: false, side: 'double' }));
+      d.add(hat); st.scene.add(d); return { d, hat };
+    });
   }
-  // the camera orbits the stage: at hat height by default (o.hz moves the horizon); wide shots (o.h, o.ly) look down on it
-  const K3 = (r, a, o = {}) => { const h = o.h ?? 126; return { ...orbit3d([o.x || 0, 0, 0], r, a, h), look: [o.x || 0, o.ly ?? h + r * (o.hz ?? .0774), 0], roll: o.roll || 0 }; };
-  const WIDE = (a, r = 1450, h = 600) => K3(r, a, { h, ly: 265 });
+  // keys: [[t, value, ease]], eased INTO a key (EASE3 names)
   const c11_kf = (t, ks) => { let i = 0; while (i < ks.length - 1 && t >= ks[i + 1][0]) i++; const a = ks[i], b = ks[i + 1]; return !b || t <= a[0] ? a[1] : lerp(a[1], b[1], EASE3[b[2] || 'lin'](prog(t, a[0], b[0]))); };
-  let CAM3 = null, TURN3 = null;
+  // an orbit of the table (r, azimuth a from the line's front, height h), looking at (0, ly, 0) in the table's frame
+  // (side: the look point that far to the camera's right, so the table sits left of centre)
+  const OB = (r, a, h, ly, side = 0, roll = 0) => ({ ...orbit3d([0, 0, 0], r, a, h), look: [side * Math.cos(a), ly, -side * Math.sin(a)], roll });
+  const CUTK = { pos: [0, 172, D3], look: [0, 172, 0], roll: 0 };   // the 2D line exactly: ground at y 352, 52 px apart, 1:1
+  let CAM3 = null, TURN3 = null, FORM3 = null, SP3 = null;
   function c11_keys() {
     if (CAM3) return;
-    const CR = LE.words[3].start, PAL1 = LA.words[4].start, LOW = { h: 600, ly: 380, x: -300 };   // LOW: low right, behind the hero, out of the "pen." punch
-    // close on the hooks; craned up wide for the echoes and the empty stage
-    CAM3 = [[CUT3, K3(672, 0, { x: 8 })], [PAL1, WIDE(-.25, 1350, 520), 'hard'], [LAE.start, WIDE(-.3, 1420), 'lin'], [LB.start, WIDE(-.2), 'lin'], [BAND_OUT, WIDE(.15, 1560, 660), 'lin'],
-      [SLAM, K3(700, .42, { roll: -.03 }), 'cut'], [LC.words[2].start, K3(760, .38), 'lin'], [LD.start, K3(860, .3), 'lin'], [LE.start, K3(880, -.25), 'lin'], [CR, K3(760, -.1), 'hard'],
-      [LEE.start, WIDE(.05, 1400, 560), 'hard'], [LF.start, WIDE(.1), 'lin'], [LF.start + SPB, K3(1450, .14, LOW), 'hard'], [LG.start, K3(1450, -.04, LOW), 'lin'], [LG.words[1].start, K3(700, -.12), 'lin'], [LH.start, K3(760, .05, { hz: .1 }), 'lin'],
-      [LH.words[2].start, K3(800, 0, { hz: .1 }), 'lin'], [DO2, K3(620, 0, { hz: .1 }), 'lin']];   // the line goes on the throw, as in 2D: its going offsets DO!'s slam (flash budget)
-    // the turntable sways about square to the camera; on each echo a quarter turn (left end away, clear of PAL) puts the line
-    // in single file at the lens (a half turn swept too much area: flash budget)
-    TURN3 = [[CUT3, 0], [PAL1, .1, 'hard'], [LAE.start, -.3, 'lin'], [LAE.end, -.3 - PI / 2, 'lin'], [BAND_OUT, .3 - PI / 2, 'lin'], [SLAM, .1], [LD.start, .35, 'lin'],
-      [LE.start, -.6, 'lin'], [CR, -.45, 'lin'], [LEE.start, .05, 'lin'], [LEE.end, .05 - PI / 2, 'lin'], [LG.start, -.4, 'lin'], [LG.words[1].start, .15, 'hard'], [LH.start, -.2, 'lin'], [T1, -.1, 'lin']];
+    const PAL1 = LA.words[4].start, PW = LF.words[4].start;
+    CAM3 = [[CUT3, CUTK],
+      // the crane: up and back off the hat line to the music box (lower left, under PEN and left of PAL), the line opening
+      // into the ring; the ring revolves past the lens, then settles low under THE for the silent pen
+      [CUT3 + 11 * F1, OB(900, -.5, 400, 230, 200), 'snap'], [PAL1, OB(1100, -.9, 500, 168, 350), 'hard'], [LB.start, OB(1100, .9, 500, 168, 350), 'lin'], [LB.start + .5, OB(1100, 1.2, 480, 175, 240), 'lin'], [BAND_OUT, OB(1100, 1.5, 480, 175, 240), 'lin'],
+      // the slam back: low, three-quarter, the line slanting away behind the hero
+      [SLAM, OB(860, -.55, 250, 190), 'cut'], [LD.start, OB(780, -.4, 230, 190), 'lin'], [LE.start - F1, OB(760, -.35, 230, 190), 'lin'],
+      // THE HERO ORBIT: a half turn and more round the line, broadside, end-on (a column at the lens) on "pen", broadside from behind
+      [LE.start, OB(1250, -.25, 360, 250), 'cut'], [LEE.start, OB(1250, PI - .1, 360, 250), 'lin'], [LF.start - F1, OB(1250, PI + .1, 360, 250), 'lin'],
+      // the give-back: down low, the empty stage a marquee drum along the bottom behind the hero; on WHO the twelve pop up
+      // through its traps as the camera pushes in to the hat line
+      [LF.start, OB(1300, PI + .4, 70, 220, -250), 'cut'], [PW + .25, OB(1300, PI + .2, 70, 220, -250), 'lin'], [LG.start + .25, OB(880, PI, 200, 216), 'hard'],
+      [LH.start, OB(880, PI, 200, 216), 'lin'], [LH.start + 4 * F1, OB(1050, PI, 200, 235, -20), 'hard'], [DO2, OB(1030, PI - .05, 200, 235, -20), 'lin']];
+    // the table spins under the camera keys (the floor drifts); its own revolve is in the keys' azimuths
+    TURN3 = [[CUT3, 0], [T1, .9, 'lin']];
+    // the line's spacing: the 2D line's 52 at the cut, opening to 60, wider in the close shots so every silhouette reads
+    SP3 = [[PAL1, 60], [LE.start, 60], [LE.start + F1, 66, 'cut'], [LF.start, 66], [LG.start, 76, 'cut']];
+    FORM3 = [[CUT3, 0], [CUT3 + .15, 0], [PAL1, 1, 'hard'], [LB.start + 8 * F1, 1], [LB.start + 9 * F1, 0, 'cut']];
   }
-  function c11_stage(t, o, dy) {
+  // the dancer's place on the table: the line (spacing px) or the ring, the even ones to the front half, the odd to the back
+  function c11_place(i, px, ox, k) {
+    const j = i >> 1, a = (-75 + 30 * j) * PI / 180, s = i & 1 ? -1 : 1, lx = (i - 5.5) * px + ox;
+    return [lerp(lx, RING * Math.sin(a), k), lerp(0, s * RING * Math.cos(a), k)];
+  }
+  function c11_stage(t, o, sink) {
     const st = stage3d('ch11 stage', c11_build); if (!st) return false;
     c11_keys();
-    const cs = cam3d(t, CAM3), th = c11_kf(t, TURN3), S = st.o, k = o.k ?? (dy < 20 ? 1 : 1 - dy / 140), sl = c11_fr(t, SLAM);
+    const S = st.o, th = c11_kf(t, TURN3), c = Math.cos(th), s = Math.sin(th), rot = p => [p[0] * c + p[2] * s, p[1], -p[0] * s + p[2] * c];
+    const ks = cam3d(t, CAM3), cs = { ...ks, pos: rot(ks.pos), look: rot(ks.look) };
     aim3d(st.cam, cs);
-    S.turn.rotation.y = th; S.turn.position.y = sl >= 0 && sl < 5 ? [-320, -120, 28, 8, 0][sl] : 0;
-    S.bulbs.forEach((q, j) => matOf(q).color.set(j === Math.floor(beatAt(t) * 4 + 1e-6) % 3 ? FLD : BLK));   // chasing on the 16ths
-    const pp = k > 0 ? c11_pup(t, o) : null, g = pp && c11_vox(pp.b, LBW / 2, LBH - 26, 12);
-    const px = lerp(LPX, PX3, EASE3.hard(prog(t, CUT3, LA.words[4].start)));   // from the 2D spacing they step apart
-    S.body.visible = k > 0; if (pp) S.body.geometry = g;
-    S.D.forEach((D, i) => {
-      D.d.visible = k > 0; if (!pp) return;
-      D.hat.position.set(pp.d.head[0] - LBW / 2, LBH - 26 - pp.d.head[1], 1.5); D.d.scale.y = k;
-      const x = D.d.position.x = (i - 5.5) * px, wx = x * Math.cos(th), wz = -x * Math.sin(th);
-      D.d.rotation.y = Math.atan2(cs.pos[0] - wx, cs.pos[2] - wz) - th;   // they play to the house
-      D.d.updateMatrix(); S.body.setMatrixAt(i, D.d.matrix);
-    });
-    S.body.instanceMatrix.needsUpdate = true;
+    const d0 = Math.hypot(...cs.pos); st.scene.fog.near = d0; st.scene.fog.far = d0 + 560;
+    const sl = c11_fr(t, SLAM), ty = sl >= 0 && sl < 5 ? [-320, -120, 28, 8, 0][sl] : 0;
+    S.turn.rotation.y = th; S.turn.position.y = ty; S.floor.visible = ty < 0;
+    S.bulbs.forEach((q, j) => matOf(q).color.set(j === Math.floor(beatAt(t) * 4 + 1e-6) % 3 ? WHT : FLD));   // chasing on the 16ths
+    const on = sink < 140;
+    S.body.visible = on; S.D.forEach(D => { D.d.visible = on; });
+    if (on) {
+      const pp = c11_pup(t, o), u = new Uint32Array(pp.b.getContext('2d').getImageData(0, 0, LBW, LBH).data.buffer);
+      let h = 2166136261; for (let i = 0; i < u.length; i++) h = Math.imul(h ^ u[i], 16777619);
+      tex3d('c11pup', LBW, LBH, () => ctx.drawImage(pp.b, 0, 0), { live: h >>> 0 });
+      const yaw = Math.atan2(cs.pos[0] - cs.look[0], cs.pos[2] - cs.look[2]), cp = new THREE.Vector3(...cs.pos), v = new THREE.Vector3();
+      const sp = EASE3.hard(prog(t, CUT3, LA.words[4].start)), px = t < LA.words[4].start ? lerp(LPX, PX3, sp) : c11_kf(t, SP3), ox = lerp(LX0 + 5.5 * LPX - W / 2, 0, sp), fk = c11_kf(t, FORM3);
+      const [hx, hy] = [pp.d.head[0] - LBW / 2, LBH - 26 - pp.d.head[1] + 9];
+      S.D.forEach((D, i) => {
+        const [lx, lz] = c11_place(i, px, ox, fk), p = rot([lx, ty - sink, lz]);
+        // drawn in the 2D line's order: each a hair nearer the lens along its own ray, scaled to keep its size exactly
+        v.set(...p).sub(cp); const k = 1 - .2 * i / v.length();
+        D.d.position.copy(cp).addScaledVector(v, k); D.d.rotation.set(0, yaw, 0); D.d.scale.setScalar(k);
+        D.hat.position.set(hx, hy, .1);
+        D.d.updateMatrix(); S.body.setMatrixAt(i, D.d.matrix);
+      });
+      S.body.instanceMatrix.needsUpdate = true;
+    }
     render3d(st, { pal: P3, bg: null });
     return true;
   }
@@ -390,7 +419,7 @@
     if (sf < 4) { const k = (sf + 1) / 4, y0 = LOWPY(SLAM); px = R(lerp(W / 2 - 5, PX, k)); py = R(lerp(y0, 6, k)); a = lerp(PI / 2, 0, k); back = [R(lerp(W / 2, PX + 12, k)), R(lerp(y0 + 29, 28, k))]; }
     else if (faded) { const f = c11_fr(t, LD.start); sag = 22; if (f < 4) { a = [.45, .95, 1.4, 1.75][f]; const k = (f + 1) / 4; back = [R(lerp(px + 12, px + 5, k)), R(lerp(py + 22, py + 29, k))]; } else a = PI / 2; }
     if (!faded) c11_rings(t, px, py);
-    c11_line(t, { dy: faded ? c11_dy(t, LD.start, null) : 16, dance: t < land ? { pose: 'cheer', p: 1 } : {} });   // the twelve hold the star jump while she crosses (flash safety)
+    c11_line(t, { dy: faded ? c11_dy(t, LD.start, null) : 16, sink: faded ? c11_dy(t, LD.start, null) : 0, dance: t < land ? { pose: 'cheer', p: 1 } : {} });   // the twelve hold the star jump while she crosses (flash safety)
     let x = W - 50, o = { ground: false };
     if (t >= where && t < land) { const k = prog(t, where, land); x = R(lerp(W - 50, LX, easeOut(k))); o.pose = 'jump'; o.p = k < .5 ? .3 : .7; }
     else if (t >= land) { x = LX; if (t < land + SPB) { o.pose = 'cheer'; o.p = prog(t, land, land + SPB); } if (c11_fr(t, land) < 2) FX.shake = Math.max(FX.shake || 0, 2); }
@@ -434,7 +463,7 @@
     if (t >= the && t < pw) py = 6 + [8, 18, 30, 40][Math.min(3, Math.floor((t - the) / (S16 / 2) + 1e-6))];
     else if (t >= pw) py = 6 + (c11_fr(t, pw) < 3 ? [30, 14, 4][c11_fr(t, pw)] : 0);
     if (t < pw) c11_rings(t, px, py);
-    c11_line(t, { dy: c11_dy(t, LF.start, null) });
+    c11_line(t, { dy: c11_dy(t, LF.start, null), sink: 140 });   // in 3D the twelve drop through the traps on the cut
     const hx = PX + 5 - 83, hold_ = t >= hold && t < st, f0 = c11_fr(t, LF.start), rise = f0 < 4 ? [96, 64, 32, 8][f0] : 0;
     const d = c11_dancer(hx, H - 8 + rise, 5, t, hold_ ? { pose: 'pointUp', p: .5, flip: c11_leftUp(t) } : {});
     if (inv) rect(penBox.x - 8, penBox.y - 8, penBox.w + 16, penBox.h + 16, BLK);   // type-only invert
@@ -488,14 +517,16 @@
   function c11_youDo(t) {
     const second = t >= YOU2, Lw = second ? { words: LH.words.slice(2) } : LH, s0 = second ? LH.words[2].start : LH.start, s1 = second ? DO2 : LH.words[1].start;
     const yo = { t, words: Lw, ghost: true, justify: second ? 288 : 264, x: 280, y: 22, valign: 'top', align: 'right', slam: s0 };
-    const dO = { t, words: Lw, ghost: true, justify: second ? 260 : 240, x: W - 16 - (second ? 260 : 240), y: 116, valign: 'top', align: 'left', slam: s1 };
+    const dO = { t, words: Lw, ghost: true, justify: second ? 260 : 240, x: W - 16 - (second ? 260 : 240), y: 116, valign: 'top', align: 'left', ...(second ? { stepIn: { t0: DO2, div: 8, enter: 'slam' } } : { slam: s1 }) };   // the second DO! a letter a 32nd: the throw is its hit (flash budget)
     const lay = bigType('YOU', { ...yo, pass: 'slab', invert: false }), l0 = lay.lines[0];
     c11_base(t, null);   // no stab punch: the slams are the hit (flash safety)
     const thrown = t >= DO2, tf = c11_fr(t, DO2), [nx, ny] = NIB();
     let px = W / 2 + 3, py = 6;
     if (thrown) { px = W / 2 - 5; py = 6 + (tf < 3 ? [10, 6, 2][tf] : 0); }   // the flick
     c11_rings(t, thrown ? nx : px, thrown ? ny : py);
-    if (!thrown) c11_line(t, { dy: 20, k: 1 });
+    const df = c11_fr(t, LH.words[1].start);   // DO! slams the line down into the stage (its overshoot never meets a hat)
+    // and the line goes down its traps before the throw, a few pixels a frame (gone at once, it was a flash with DO!'s slam)
+    if (!thrown) c11_line(t, { dy: 20, sink: Math.max(df >= 0 && df < 8 ? [30, 26, 20, 14, 9, 5, 2, 1][df] : 0, R(150 * easeIn(prog(t, YOU2 + SPB / 2, DO2)))) });
     c11_bar(t);
     if (c11_fr(t, YOU2) < 2) { rect(l0.x - 2 * l0.sx, l0.y - 2 * l0.sy, l0.w + 4 * l0.sx, l0.h + 4 * l0.sy, BLK); bigType('YOU', { ...yo, xor: FLD }); }   // the E5
     else bigType('YOU', yo);
