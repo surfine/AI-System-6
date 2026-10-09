@@ -395,7 +395,7 @@
   // ---- 2. the silhouette stage (chorus 1, 36-42): the hook as voxel slabs slamming in z on their words, Clio extruded
   // from her 1-bit sprite as the hero, two card dancers upstage, the white pen hanging from the writer's pointer ----
   const C3 = { c: [0, 250, 0] }, oc = (r, a, h, o = {}) => ({ ...orbit3d(o.c || C3.c, r, a, h), ...o });
-  const DANCE3 = [{ pos: [560, 260], size: 9, mode: 'voxel' }, { pos: [-820, -520], size: 7, mode: 'card', seed: 3 }, { pos: [900, -760], size: 7, mode: 'card', seed: 5, flip: true }];
+  const DANCE3 = [{ pos: [560, -60], size: 9, mode: 'voxel' }, { pos: [-820, -520], size: 7, mode: 'card', seed: 3 }, { pos: [900, -760], size: 7, mode: 'card', seed: 5, flip: true }];
   const PEN3 = (t, x, z) => ({ pos: [x, 980, z], angle: Math.PI / 2 + .25 * Math.sin(beatPhase(t, 2) * Math.PI * 2), size: 1.6 });
   const penCord3 = (st, t, p) => { const a = project3d(st, p.pos), px = a[0] + 6, py = -6; penCord([[a[0], a[1]], [px + 5, py + 15]], { sag: 4, swing: 3, t }); CUR = { x: px, y: py, kind: 'arrow' }; };
   const c1cam = [[35.5, oc(1700, -.6, -150)], [36, oc(1350, -.42, -70), 'snap'], [37.2, oc(1250, -.25, 0), 'lin'], [37.35, oc(1300, .55, 140), 'whip'],
@@ -403,8 +403,8 @@
   s3add('silhouette stage', 6, warp(36, t => {
     const r = silStage3d(t, { key: 'reel sil c1', field: FIELDS.magenta, cam: c1cam, dancers: DANCE3, pen: PEN3(t, 420, 120), type: [
       { text: ['PEN', 'PAL'], words: L1.a, show: [35, 37.75], size: 24, pos: [-160, 20, 0] },
-      { text: ["I'LL NEVER", 'HOLD', 'THE PEN.'], words: L1.b, show: [37.75, 40], size: 16, pos: [-60, 20, 0] },
-      { text: ['YOU SAY', 'WHERE I', 'LAND,'], words: L1.c, show: [40, 44], size: 16, pos: [-260, 20, 0], ghost: true }] });
+      { text: ["I'LL NEVER", 'HOLD', 'THE PEN.'], words: L1.b, show: [37.75, 40], size: 12, pos: [-120, 20, 0] },
+      { text: ['YOU SAY', 'WHERE I', 'LAND,'], words: L1.c, show: [40, 44], size: 13, pos: [-260, 20, 0], ghost: true }] });
     if (r.stage) penCord3(r.stage, t, PEN3(t, 420, 120));
     beatFX(t, { clap: true }); invertFrame(DOWN, 2, t);
   }), { era: 'system7', raw: true });
@@ -412,8 +412,8 @@
   // YOU DO! slams on its words and the camera cranes down to the floor; Clio in the split ----
   const whoCam = [[47.75, oc(700, .5, 40, { c: [-200, 300, 0], roll: -.12 })], [49.9, oc(1500, -.2, 120, { roll: .04 }), 'hard'], [50, oc(1200, .25, -140, { c: [0, 230, 0] }), 'whip'], [51.75, oc(1350, .4, -60, { c: [0, 230, 0] }), 'lin']];
   s3add('who holds the pen', 4, warp(47.75, t => {
-    const r = silStage3d(t, { key: 'reel sil who', field: FIELDS.magenta, cam: whoCam, pen: PEN3(t, 520, 60), dancers: [{ pos: [620, 240], size: 9, pose: t >= 50 ? 'cheer' : undefined, p: beatPhase(t) }], type: [
-      { text: ['WHO', 'HOLDS', 'THE PEN?'], stepIn: { t0: L1.g.start, div: 4 }, show: [47.75, 49.95], size: 16, pos: [-80, 20, 0] },
+    const r = silStage3d(t, { key: 'reel sil who', field: FIELDS.magenta, cam: whoCam, pen: PEN3(t, 520, 60), dancers: [{ pos: [620, -40], size: 9, pose: t >= 50 ? 'cheer' : undefined, p: beatPhase(t) }], type: [
+      { text: ['WHO', 'HOLDS', 'THE PEN?'], stepIn: { t0: L1.g.start, div: 4 }, show: [47.75, 49.95], size: 14, pos: [-80, 20, 0], ghost: true },
       { text: ['YOU', 'DO!'], words: L1.h, show: [49.95, 52], size: 22, pos: [-180, 20, 0] }] });
     if (r.stage) penCord3(r.stage, t, PEN3(t, 520, 60));
     beatFX(t, { clap: true });

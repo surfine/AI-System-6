@@ -4,7 +4,7 @@
 // Rules: a stage is built once (stage3d(key, build)); every transform is set from t each frame (no clocks, no animation
 // loops, no Math.random); flat unlit materials, 2-3 hard light bands as per-face colours; cut-outs, fades and fog are
 // screen-door Bayer discards, never alpha blends. index.html imports three.js as an ES module (window.THREE); main.js
-// calls init3d() before READY. TOOLKIT §13.
+// calls init3d() before READY. SwiftShader pays ~.13 ms a draw call: merge what does not move (bandGeo). TOOLKIT §13.
 'use strict';
 
 const S3D = { ok: false, err: null, stages: new Map(), tex: new Map(), geo: new Map(), dgeo: new Map(), pals: new Map(), img: {} };
@@ -27,28 +27,46 @@ const has3d = () => S3D.ok || init3d();
 const _TH3 = 'float s3dTh(){int x=int(gl_FragCoord.x)&3,y=3-(int(gl_FragCoord.y)&3);int m[16]=int[16](0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5);return(float(m[y*4+x])+.5)/16.;}\n';
 function _patch3(sh) {
   sh.fragmentShader = sh.fragmentShader.replace('void main() {', _TH3 + 'void main() {')
-    .replace('#include <alphatest_fragment>', '{float a=diffuseColor.a;\n#ifdef USE_FOG\na*=1.-smoothstep(fogNear,fogFar,vFogDepth);\n#endif\nif(a<s3dTh())discard;diffuseColor.a=1.;}')
+    .replace('#include <alphatest_fragment>', '#ifndef S3D_SOLID\n{float a=diffuseColor.a;\n#ifdef USE_FOG\na*=1.-smoothstep(fogNear,fogFar,vFogDepth);\n#endif\nif(a<s3dTh())discard;}\n#endif\ndiffuseColor.a=1.;')
     .replace('#include <fog_fragment>', '');
 }
-// mat3d(o): o.map (texture), o.color (multiplies the map), o.fade (0..1), o.fog (false: ignores the stage's fog),
-// o.side ('double' | 'back')
+// mat3d(o): a flat unlit material. o.map, o.color (multiplies map and vertex colours), o.vc (vertex colours), o.fade
+// (0..1), o.fog (false: ignores the stage's fog), o.side ('double' | 'back'), o.solid (no screen door: no cut-outs,
+// fades or fog, and twice as quick: SwiftShader skips hidden pixels only when no pixel can be discarded), o.auto (a
+// screen-door material with a solid twin: render3d draws the twin whenever the mesh is opaque and nearer than the fog)
 function mat3d(o = {}) {
-  const m = new THREE.MeshBasicMaterial({ map: o.map || null, color: o.color ?? '#ffffff', fog: o.fog !== false, side: o.side === 'double' ? THREE.DoubleSide : o.side === 'back' ? THREE.BackSide : THREE.FrontSide });
-  m.opacity = 1 - (o.fade || 0); m.onBeforeCompile = _patch3; m.customProgramCacheKey = () => 's3d'; return m;
+  const m = new THREE.MeshBasicMaterial({ map: o.map || null, color: o.color ?? '#ffffff', vertexColors: !!o.vc, fog: !o.solid && o.fog !== false, side: o.side === 'double' ? THREE.DoubleSide : o.side === 'back' ? THREE.BackSide : THREE.FrontSide });
+  if (o.solid) m.defines = { S3D_SOLID: '' };
+  m.opacity = 1 - (o.fade || 0); m.onBeforeCompile = _patch3; m.customProgramCacheKey = () => o.solid ? 's3ds' : 's3d';
+  if (o.auto) m.userData.solid = mat3d({ ...o, auto: false, solid: true });
+  return m;
 }
+const matOf = ob => ob.userData.door || ob.material;   // the material to colour or fade (not its solid twin)
+function _twins(st) {
+  const fog = st.scene.fog, cp = st.cam.position, c = new THREE.Vector3();
+  st.scene.updateMatrixWorld();
+  st.scene.traverse(ob => {
+    const d = ob.userData.door || (ob.material && ob.material.userData && ob.material.userData.solid && (ob.userData.door = ob.material));
+    if (!d) return;
+    const s = d.userData.solid, g = ob.geometry; s.color.copy(d.color); s.map = d.map;
+    let near = true;
+    if (fog) { if (!g.boundingSphere) g.computeBoundingSphere(); c.copy(g.boundingSphere.center).applyMatrix4(ob.matrixWorld); near = c.distanceTo(cp) + g.boundingSphere.radius * ob.matrixWorld.getMaxScaleOnAxis() < fog.near; }
+    ob.material = d.opacity >= 1 && near ? s : d;
+  });
+}
+const lineMat3d = (o = {}) => { const m = new THREE.LineBasicMaterial({ color: o.color ?? '#000000', fog: o.fog !== false }); m.onBeforeCompile = _patch3; m.customProgramCacheKey = () => 's3dl'; return m; };
 // fade3d(obj, k): screen-door fade of an object and its children (0 solid, .5 the 50% ghost, 1 gone)
-function fade3d(ob, k) { ob.visible = k < 1; ob.traverse(o => { for (const m of [].concat(o.material || [])) m.opacity = 1 - k; }); }
+function fade3d(ob, k) { ob.visible = k < 1; ob.traverse(o => { for (const m of [].concat(matOf(o) || [])) m.opacity = 1 - k; }); }
 
 // ---- textures from the 2D kit ----
 // tex3d(key, w, h, draw, o) -> CanvasTexture: draw(canvas) runs with ctx on a cleared w x h canvas, once per key (o.live:
-//   a signature; the canvas is redrawn when it changes). Nearest magnification always; o.mip: trilinear minification for
-//   things that shrink far below 1:1 (the quantiser turns the blend into dither, like the dive's miniature); o.repeat
+//   a signature; the canvas is redrawn when it changes). Nearest magnification always; o.mip: box-averaged mip levels
+//   for things that shrink far below 1:1 (the quantiser turns the averages into dither, like the dive's miniature)
 function tex3d(key, w, h, draw, o = {}) {
   let rec = S3D.tex.get(key);
   if (!rec) {
-    const c = document.createElement('canvas'); c.width = w; c.height = h;
-    const tx = new THREE.CanvasTexture(c); tx.magFilter = THREE.NearestFilter; tx.generateMipmaps = !!o.mip; tx.minFilter = o.mip ? THREE.LinearMipmapLinearFilter : THREE.NearestFilter;
-    if (o.repeat) tx.wrapS = tx.wrapT = THREE.RepeatWrapping;
+    const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d', { willReadFrequently: true });
+    const tx = new THREE.CanvasTexture(c); tx.magFilter = THREE.NearestFilter; tx.generateMipmaps = !!o.mip; tx.minFilter = o.mip ? THREE.NearestMipmapNearestFilter : THREE.NearestFilter;
     rec = { c, tx, sig: {}, cols: null }; tx.userData.rec = rec; S3D.tex.set(key, rec);
   }
   const sig = o.live ?? 0;
@@ -56,10 +74,10 @@ function tex3d(key, w, h, draw, o = {}) {
   return rec.tx;
 }
 // deskTex(key, t, src, o): a whole frame through frameInto (src: a scene name or fn(t) with o.era ...), the frame at t
-//   drawn once (o.live: redrawn at every t, ~5 ms); mip on unless o.mip is false
+//   drawn once (o.live: redrawn at every t, ~5 ms + its upload); mip on unless o.mip is false
 const deskTex = (key, t, src, o = {}) => tex3d(key, FW, FH, c => frameInto(c, t, src, o), { mip: o.mip ?? true, live: o.live ? t : 0 });
 const _pkHex = h => { const [r, g, b] = rgb(h); return r | g << 8 | b << 16; };
-const _pk3 = c => R(c.r * 255) | R(c.g * 255) << 8 | R(c.b * 255) << 16;
+const _pkF = (r, g, b) => R(r * 255) | R(g * 255) << 8 | R(b * 255) << 16;
 function _cols(rec) { // the colours of a texture's opaque texels, counted
   if (rec.cols) return rec.cols;
   const u = new Uint32Array(rec.c.getContext('2d').getImageData(0, 0, rec.c.width, rec.c.height).data.buffer), m = new Map();
@@ -72,28 +90,30 @@ function _cols(rec) { // the colours of a texture's opaque texels, counted
   }
   return rec.cols = m;
 }
-// maskOf(canvas, test) -> Uint8Array of test(r, g, b, a) per pixel (default: opaque)
-function maskOf(c, test = (r, g, b, a) => a >= 128) {
-  const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, m = new Uint8Array(c.width * c.height);
-  for (let i = 0; i < m.length; i++) m[i] = test(d[i * 4], d[i * 4 + 1], d[i * 4 + 2], d[i * 4 + 3]) ? 1 : 0;
-  return m;
-}
 
 // ---- geometry ----
 // card3d(tex, w, h, o): a flat double-sided card facing +z, cut out where the drawing is clear (o.base: origin at its
-//   bottom edge, so it stands on the floor)
-function card3d(tex, w, h, o = {}) { const g = new THREE.PlaneGeometry(w, h); if (o.base) g.translate(0, h / 2, 0); return new THREE.Mesh(g, mat3d({ map: tex, side: 'double', color: o.color, fog: o.fog })); }
-// slab3d(w, h, d, o): a box in hard light bands: front o.map or o.color, sides o.side (colour darkened .35), top and
-//   bottom o.top (.2), back o.back (black)
-function slab3d(w, h, d, o = {}) {
-  const c = o.color || '#ffffff', sd = mat3d({ color: o.side || darken(c, .35), fog: o.fog }), tp = mat3d({ color: o.top || darken(c, .2), fog: o.fog });
-  return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [sd, sd, tp, tp, mat3d({ map: o.map, color: o.map ? '#ffffff' : c, fog: o.fog }), mat3d({ color: o.back || C.black, fog: o.fog })]);
+//   bottom edge, so it stands on the floor; o.solid for an opaque drawing)
+function card3d(tex, w, h, o = {}) { const g = new THREE.PlaneGeometry(w, h); if (o.base) g.translate(0, h / 2, 0); return new THREE.Mesh(g, mat3d({ map: tex, side: 'double', color: o.color, fog: o.fog, solid: o.solid })); }
+// bandGeo(boxes) -> one vertex-coloured geometry (one draw call) of boxes {w, h, d, pos, ry, cols: [+x, -x, +y, -y, +z, -z]}
+//   (a null colour leaves that face out). Hard light bands: band3(colour) gives [side, side, top, top, front, back].
+const band3 = (c, front = c, back = C.black) => [darken(c, .35), darken(c, .35), darken(c, .2), darken(c, .2), front, back];
+function bandGeo(boxes) {
+  const P = [], K = [];
+  for (const b of boxes) {
+    const g = new THREE.BoxGeometry(b.w, b.h, b.d).toNonIndexed(); g.rotateY(b.ry || 0); g.translate(...b.pos);
+    const pa = g.attributes.position.array;
+    g.groups.forEach((gr, i) => { if (!b.cols[i]) return; const c = rgb(b.cols[i]); for (let k = gr.start; k < gr.start + gr.count; k++) { P.push(pa[k * 3], pa[k * 3 + 1], pa[k * 3 + 2]); K.push(c[0] / 255, c[1] / 255, c[2] / 255); } });
+    g.dispose();
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(K, 3));
+  return g;
 }
-// voxGeo(mask, w, h, d, ox, oy): every set cell of a w x h mask (row 0 on top) as a 1 x 1 x d voxel column, exposed faces
-//   only, merged into runs; origin at mask (ox, oy), y up, z centred. Groups: 0 front, 1 back, 2 sides, 3 top/bottom
-function voxGeo(mask, w, h, d = 1, ox = w / 2, oy = h / 2) {
-  const P = [[], [], [], []], a = d / 2, on = (x, y) => x >= 0 && y >= 0 && x < w && y < h && mask[y * w + x] > 0;
-  const q = (g, p) => P[g].push(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[0], p[1], p[2], p[6], p[7], p[8], p[9], p[10], p[11]);
+// voxel columns: every set cell of a w x h mask (row 0 on top) as a 1 x 1 x d column, exposed faces only, merged into runs;
+// origin at mask (ox, oy), y up, centred on z0; each face's vertex colour is its light level (front, back, sides, caps)
+function _vox(P, K, mask, w, h, d, ox, oy, z0, lv) {
+  const a = d / 2, on = (x, y) => x >= 0 && y >= 0 && x < w && y < h && mask[y * w + x] > 0;
+  const q = (g, p) => { for (const i of [0, 1, 2, 0, 2, 3]) { P.push(p[i * 3], p[i * 3 + 1], p[i * 3 + 2] + z0); K.push(lv[g], lv[g], lv[g]); } };
   for (let y = 0; y < h; y++) for (let x = 0; x < w;) {
     if (!on(x, y)) { x++; continue; }
     let e = x; while (on(e, y)) e++;
@@ -114,43 +134,45 @@ function voxGeo(mask, w, h, d = 1, ox = w / 2, oy = h / 2) {
       q(3, s < 0 ? [X0, Y, a, X1, Y, a, X1, Y, -a, X0, Y, -a] : [X0, Y, -a, X1, Y, -a, X1, Y, a, X0, Y, a]); x = e;
     }
   }
-  const g = new THREE.BufferGeometry(), all = new Float32Array(P.reduce((n, p) => n + p.length, 0)); let n = 0;
-  P.forEach((p, i) => { all.set(p, n * 3); g.addGroup(n, p.length / 3, i); n += p.length / 3; });
-  g.setAttribute('position', new THREE.BufferAttribute(all, 3));
-  return g;
 }
-// voxGlyph(ch, font, d): a glyph's 1-bit bitmap (the one bigType scales) as voxels, cached; origin at the pen position on
-//   the cap baseline, so letters stand side by side at their advances
-function voxGlyph(ch, font = 'chicago', d = 3) {
-  const fk = fontKey(font), key = fk + '|' + ch + '|' + d; let g = S3D.geo.get(key); if (g) return g;
+const _geo = (P, K) => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(K, 3)); return g; };
+// voxGeo(mask, w, h, d, ox, oy, levels) -> the voxel geometry, vertex colours = light levels (default LV3: a black front
+//   and back, sides at half the material colour, caps at three quarters: draw it with mat3d({color: field, vc: true}))
+const LV3 = [0, 0, .5, .75];
+function voxGeo(mask, w, h, d = 1, ox = w / 2, oy = h / 2, lv = LV3) { const P = [], K = []; _vox(P, K, mask, w, h, d, ox, oy, 0, lv); return _geo(P, K); }
+const maskOf = (c, test = (r, g, b, a) => a >= 128) => { const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, m = new Uint8Array(c.width * c.height); for (let i = 0; i < m.length; i++) m[i] = test(d[i * 4], d[i * 4 + 1], d[i * 4 + 2], d[i * 4 + 3]) ? 1 : 0; return m; };
+// voxGlyph(ch, font, d, lv): a glyph's 1-bit bitmap (the one bigType scales) as voxels, cached; origin at the pen position
+//   on the cap baseline, so letters stand side by side at their advances
+function voxGlyph(ch, font = 'chicago', d = 3, lv = LV3) {
+  const fk = fontKey(font), key = fk + '|' + ch + '|' + d + '|' + lv; let g = S3D.geo.get(key); if (g) return g;
   const f = FONTS[fk], c = _raster(ch, fk, '#000000');
-  g = voxGeo(maskOf(c), c.width, c.height, d, 1, f.top + f.cap); S3D.geo.set(key, g); return g;
+  g = voxGeo(maskOf(c), c.width, c.height, d, 1, f.top + f.cap, lv); S3D.geo.set(key, g); return g;
 }
-// bands3(front, field): the three hard light bands of a black slab on a field: [front, back, sides, top/bottom]
-const bands3 = (ink, fld) => [ink, ink, mix(fld, ink, .5), mix(fld, ink, .25)];
-// voxText(lines, o) -> {group, letters: [{mesh, ch, li, ci, n, base, x, y, w, h}], chars, w, h}: giant 3D type, each letter a voxel slab
-//   from its glyph. o.font (chicago), o.size (world units per font px, 10), o.depth (font px, 3), o.lead (2), o.align
-//   ('center' | 'left' | 'right'), o.colors ([front, back, sides, caps]). The block is centred on its group's origin.
+// voxText(lines, o) -> {group, letters: [{mesh, ch, li, ci, n, base, x, y, w, h}], chars, w, h}: giant 3D type, each letter
+//   a voxel slab from its glyph, one draw each. o.font (chicago), o.size (world units per font px, 10), o.depth (font px,
+//   3), o.lead (2), o.align ('center' | 'left' | 'right'), o.levels (LV3), o.color (the base the levels scale: the field).
+//   The block is centred on its group's origin; set every letter's colour with voxColor.
 function voxText(lines, o = {}) {
   const fk = fontKey(o.font || 'chicago'), f = FONTS[fk], s = o.size ?? 10, d = o.depth ?? 3, lead = o.lead ?? 2, group = new THREE.Group(), letters = [];
   lines = (Array.isArray(lines) ? lines : String(lines).split('\n')).map(l => [...(f.ascii ? _asciiFold(l) : l)]);
-  const cols = o.colors || bands3(C.black, FIELDS.magenta), H0 = lines.length * (f.cap + lead) - lead, widths = lines.map(cs => cs.reduce((a, ch) => a + tw(ch, fk), 0));
+  const H0 = lines.length * (f.cap + lead) - lead, widths = lines.map(cs => cs.reduce((a, ch) => a + tw(ch, fk), 0)), mw = Math.max(...widths);
   let n = 0;
   lines.forEach((cs, li) => {
-    let x = o.align === 'left' ? -Math.max(...widths) / 2 : o.align === 'right' ? Math.max(...widths) / 2 - widths[li] : -widths[li] / 2;
+    let x = o.align === 'left' ? -mw / 2 : o.align === 'right' ? mw / 2 - widths[li] : -widths[li] / 2;
     const y = H0 / 2 - f.cap - li * (f.cap + lead);
     cs.forEach((ch, ci) => {
       const adv = tw(ch, fk);
       if (ch !== ' ') {
-        const m = new THREE.Mesh(voxGlyph(ch, fk, d), cols.map(c => mat3d({ color: c })));
+        const m = new THREE.Mesh(voxGlyph(ch, fk, d, o.levels), mat3d({ color: o.color || FIELDS.magenta, vc: true, auto: true }));
         m.scale.setScalar(s); m.position.set(x * s, y * s, 0); group.add(m);
         letters.push({ mesh: m, ch, li, ci, n: n++, base: m.position.clone(), x: x * s, y: y * s, w: adv * s, h: f.cap * s });
       }
       x += adv;
     });
   });
-  return { group, letters, chars: lines, w: Math.max(...widths) * s, h: H0 * s };
+  return { group, letters, chars: lines, w: mw * s, h: H0 * s };
 }
+const voxColor = (v, c) => v.letters.forEach(L => matOf(L.mesh).color.set(c));
 // slam3d(L, t, tIn, o): a letter (any {mesh, base}) slams in along z at tIn: from o.from world units toward the camera
 //   (600) in hard frame steps with a one-frame overshoot. Before tIn it is hidden, or with o.ghost a 50% screen-door
 //   ghost (dither is temporary: device 3). tIn null: landed. Returns whether it has landed.
@@ -169,36 +191,35 @@ function face3d(ob, cam, yaw = true) {
   if (yaw) ob.rotation.set(0, Math.atan2(cam.position.x - p.x, cam.position.z - p.z), 0); else ob.quaternion.copy(cam.quaternion);
 }
 const _fnv = u => { let h = 2166136261; for (let i = 0; i < u.length; i++) h = Math.imul(h ^ u[i], 16777619); return h >>> 0; };
-// dancer3d(st, key, o): Clio (clioDance) on a stage. o.mode 'voxel' (default): extruded from her 1-bit unit-grid sprite,
-//   one voxel per unit, o.depth 4, with a 1-unit field-coloured rim slab behind (her halo, and the face cut-outs read as
-//   field); 'card': a billboard of the drawing at o.px px per unit (3). o.pos [x, z] (on the floor), o.size (world units
-//   per unit, 8), o.yaw (default: faces the camera), o.field, and any clioDance option (pose, p, mouth, flip, lyric ...)
+// dancer3d(st, key, t, o): Clio (clioDance) on a stage. o.mode 'voxel' (default): extruded from her 1-bit unit-grid
+//   sprite, a voxel per unit, o.depth 4, with a 1-unit rim in the field behind (her halo; the face cut-outs read as field),
+//   one draw; 'card': a billboard of the drawing at o.px px per unit (3). o.pos [x, z] on the floor, o.size (world units
+//   per unit, 8), o.yaw (default: faces the camera), o.field, and any clioDance option (pose, p, mouth, flip, seed ...)
 function dancer3d(st, key, t, o = {}) {
   const fld = fieldCol(o.field || fieldAt(t) || 'magenta'), card = o.mode === 'card', px = card ? o.px ?? 3 : 1, M = 3, s = o.size ?? 8;
-  const c = styleBuf('dnc' + px, DU.W * px + 2 * M, DU.H * px + 2 * M, true);
+  const c = styleBuf('dnc' + px, DU.W * px + 2 * M, DU.H * px + 2 * M, true), tk = st.key + '|dc|' + key;
   paintInto(c, () => clioDance(DU.CX * px + M, DU.GY * px + M, px, t, { ...o, field: fld, rim: fld, rimW: card ? 2 : 1, ground: false, shadow: false }));
   let D = st.o['d|' + key];
   if (!D) {
     D = st.o['d|' + key] = { g: new THREE.Group() }; st.scene.add(D.g);
-    if (card) D.body = card3d(tex3d(st.key + '|dc|' + key, c.width, c.height, () => {}), c.width, c.height, { base: true });
-    else { D.body = new THREE.Mesh(undefined, bands3(C.black, fld).map(cc => mat3d({ color: cc }))); D.rim = new THREE.Mesh(undefined, mat3d({ color: fld })); D.g.add(D.rim); }
+    D.body = card ? card3d(tex3d(tk, c.width, c.height, () => {}), c.width, c.height, { base: true }) : new THREE.Mesh(undefined, mat3d({ vc: true, solid: true }));
     D.g.add(D.body);
   }
-  if (card) {   // the card's bottom edge is the canvas's: drop it so the ground point stands on the floor
-    tex3d(st.key + '|dc|' + key, c.width, c.height, () => ctx.drawImage(c, 0, 0), { live: t });
+  const u = new Uint32Array(c.getContext('2d').getImageData(0, 0, c.width, c.height).data.buffer), hs = _fnv(u);
+  if (card) {   // re-uploaded only when the drawing changes; its bottom edge is the canvas's: drop it onto the floor
+    tex3d(tk, c.width, c.height, () => ctx.drawImage(c, 0, 0), { live: hs });
     D.g.scale.setScalar(s / px); D.body.position.y = -((DU.H - DU.GY) * px + M);
   } else {
-    const u = new Uint32Array(c.getContext('2d').getImageData(0, 0, c.width, c.height).data.buffer), dz = o.depth ?? 4, h = _fnv(u) + '|' + dz;
+    const dz = o.depth ?? 4, h = hs + '|' + dz;
     let G = S3D.dgeo.get(h);
     if (!G) {
-      const ink = new Uint8Array(u.length), rim = new Uint8Array(u.length);
+      const ink = new Uint8Array(u.length), rim = new Uint8Array(u.length), P = [], K = [];
       for (let i = 0; i < u.length; i++) if (u[i] >>> 24 >= 128) ((u[i] & 255) + (u[i] >> 8 & 255) + (u[i] >> 16 & 255) < 120 ? ink : rim)[i] = 1;
-      if (S3D.dgeo.size > 600) { for (const g of S3D.dgeo.values()) g.forEach(x => x.dispose()); S3D.dgeo.clear(); }
-      G = [voxGeo(ink, c.width, c.height, dz, c.width / 2, DU.GY + M), voxGeo(rim, c.width, c.height, 1, c.width / 2, DU.GY + M)]; S3D.dgeo.set(h, G);
+      _vox(P, K, ink, c.width, c.height, dz, c.width / 2, DU.GY + M, 0, LV3); _vox(P, K, rim, c.width, c.height, 1, c.width / 2, DU.GY + M, -dz / 2 - .5, [1, 1, 1, 1]);
+      if (S3D.dgeo.size > 600) { for (const g of S3D.dgeo.values()) g.dispose(); S3D.dgeo.clear(); }
+      S3D.dgeo.set(h, G = _geo(P, K));
     }
-    D.body.geometry = G[0]; D.rim.geometry = G[1]; D.rim.position.z = -dz / 2 - .5;
-    const b = bands3(C.black, fld); D.body.material.forEach((m, i) => m.color.set(b[i])); D.rim.material.color.set(fld);
-    D.g.scale.setScalar(s);
+    D.body.geometry = G; D.body.material.color.set(fld); D.g.scale.setScalar(s);
   }
   const [x, z] = o.pos || [0, 0]; D.g.position.set(x, 0, z);
   if (o.yaw != null) D.g.rotation.set(0, o.yaw, 0); else face3d(D.g, st.cam);
@@ -229,7 +250,7 @@ function cam3d(t, ks, o = {}) {
 }
 // aim3d(cam, state): put a THREE camera where cam3d says
 function aim3d(cam, s) { cam.position.set(...s.pos); cam.up.set(0, 1, 0); cam.lookAt(...s.look); if (s.roll) cam.rotateZ(s.roll); cam.fov = s.fov ?? 30; cam.updateProjectionMatrix(); }
-// whip3d(t, keys, o): on a fast turn the frame smears (a hard pixel sort, palette only) for as long as it whips;
+// whip3d(t, keys, o): on a fast turn the frame smears (a hard pixel sort, palette only, type rows kept) while it whips;
 //   returns the turn in radians per frame
 function whip3d(t, ks, o = {}) {
   const v = s => { const d = s.look.map((x, j) => x - s.pos[j]), l = Math.hypot(...d); return d.map(x => x / l); };
@@ -277,11 +298,18 @@ function _quant(q, src, out, w, h, bayer, alpha) {
     }
   }
 }
-// the stage's own palette: every colour its textures use (all pass exactly) and its plain materials' colours; the most
-// used 2047 are the dither candidates
+// the stage's own palette: every colour its textures use (all pass exactly), its plain and vertex colours; the 2047 most
+// used are the dither candidates
 function _stagePal(st) {
   const m = new Map(), add = (c, n) => m.set(c, (m.get(c) || 0) + n);
-  st.scene.traverse(ob => { for (const mt of [].concat(ob.material || [])) { const rec = mt.map && mt.map.userData.rec; if (rec) for (const [c, n] of _cols(rec)) add(c, n); else if (mt.color) add(_pk3(mt.color), 1e9); } });
+  st.scene.traverse(ob => {
+    for (const mt of [].concat(ob.material || [])) {
+      const rec = mt.map && mt.map.userData.rec, k = mt.color, va = mt.vertexColors && ob.geometry && ob.geometry.attributes.color;
+      if (rec) for (const [c, n] of _cols(rec)) add(c, n);
+      else if (va) for (let i = 0; i < va.count; i += 6) add(_pkF(va.getX(i) * k.r, va.getY(i) * k.g, va.getZ(i) * k.b), 1e9);
+      else if (k) add(_pkF(k.r, k.g, k.b), 1e9);
+    }
+  });
   for (const c of st.extra || []) add(_pkHex(c), 1e9);
   const all = [...m].sort((a, b) => b[1] - a[1]).map(e => e[0]);
   return _palRec(all.slice(0, 2047), all, 'st|' + st.key);
@@ -299,7 +327,7 @@ function stage3d(key, build) {
 function render3d(st, o = {}) {
   if (!st || !has3d()) return _no3d();
   const { r, gl } = S3D, div = o.div || st.div || 1, w = R((o.w || W) / div), h = R((o.h || H) / div), bg = o.bg === undefined ? st.bg ?? C.black : o.bg;
-  st.cam.aspect = w / h; st.cam.updateProjectionMatrix();
+  st.cam.aspect = w / h; st.cam.updateProjectionMatrix(); _twins(st);
   r.setViewport(0, FH - h, w, h); r.setScissor(0, FH - h, w, h); r.setClearColor(bg == null ? 0 : bg, bg == null ? 0 : 1);
   r.render(st.scene, st.cam);
   gl.readPixels(0, FH - h, w, h, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(S3D.buf.buffer, 0, w * h * 4));
@@ -327,17 +355,20 @@ function corridor3d(t, o = {}) {
   const eras = o.eras || APPEARANCES.map(e => e.id), gap = o.gap ?? 900, side = o.side ?? 300, turn = o.turn ?? .5;
   const st = stage3d(o.key || 'corridor', st => {
     st.scene.fog = new THREE.Fog(0, ...(o.fog || [gap * 1.3, gap * 3.4]));
+    const boxes = [];
     st.o.poses = eras.map((era, i) => {
-      const tex = o.tex ? o.tex(era, i) : deskTex('cor|' + st.key + '|' + era, o.at ?? 0, o.desk, { era }), fc = ERA[era].pal.frame;
-      const m = slab3d(FW, FH, 24, { map: tex, color: fc, side: darken(fc, .35), top: darken(fc, .2) }), sg = i % 2 ? 1 : -1;
-      m.position.set(sg * side, 0, -i * gap); m.rotation.y = -sg * turn; st.scene.add(m);
-      const n = [-sg * Math.sin(turn), 0, Math.cos(turn)], dd = D3 * (o.fill ?? 1.12);
-      return { pos: [sg * side + n[0] * dd, 0, -i * gap + n[2] * dd], look: [sg * side, 0, -i * gap], roll: sg * (o.roll ?? .05), fov: 30 };
+      const tex = o.tex ? o.tex(era, i) : deskTex('cor|' + st.key + '|' + era, o.at ?? 0, o.desk, { era }), fc = ERA[era].pal.frame, sg = i % 2 ? 1 : -1, ry = -sg * turn;
+      const n = [Math.sin(ry), 0, Math.cos(ry)], c = [sg * side, 0, -i * gap], m = new THREE.Mesh(new THREE.PlaneGeometry(FW, FH), mat3d({ map: tex, auto: true }));
+      m.position.set(c[0] + n[0] * 12.5, 0, c[2] + n[2] * 12.5); m.rotation.y = ry; st.scene.add(m);
+      boxes.push({ w: FW, h: FH, d: 24, pos: c, ry, cols: band3(fc, null) });
+      const dd = D3 * (o.fill ?? 1.12);
+      return { pos: [c[0] + n[0] * dd, 0, c[2] + n[2] * dd], look: c, roll: sg * (o.roll ?? .05), fov: 30 };
     });
     if (o.ring !== false) for (let i = 0; i < eras.length * 2; i++) { // rectangular rings round the axis, every half gap
-      const rw = 2 * side + FW + 260, rh = FH + 280, b = 4, z = -i * gap / 2 + gap / 4, col = o.ring || C.white;
-      for (const [x, y, w, h] of [[0, rh / 2, rw, b], [0, -rh / 2, rw, b], [-rw / 2, 0, b, rh], [rw / 2, 0, b, rh]]) { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat3d({ color: col, side: 'double' })); m.position.set(x, y, z); st.scene.add(m); }
+      const rw = 2 * side + FW + 260, rh = FH + 280, z = -i * gap / 2 + gap / 4, cols = Array(6).fill(o.ring || C.white);
+      for (const [x, y, w, h] of [[0, rh / 2, rw, 4], [0, -rh / 2, rw, 4], [-rw / 2, 0, 4, rh], [rw / 2, 0, 4, rh]]) boxes.push({ w, h, d: 4, pos: [x, y, z], cols });
     }
+    st.scene.add(new THREE.Mesh(bandGeo(boxes), mat3d({ vc: true })));
   });
   if (!st) return _no3d();
   const P = st.o.poses, t0 = o.t0 ?? 0, step = o.step ?? .5, hold = o.hold ?? .5;
@@ -348,36 +379,35 @@ function corridor3d(t, o = {}) {
   return { stage: st, i: clamp(Math.floor((t - t0) / step + 1e-6), 0, P.length - 1), cam: cs };
 }
 
-// silStage3d(t, o): THE SILHOUETTE STAGE. A floor in the field with a black grid (it dithers away to the horizon), the
-//   field as the backdrop, black voxel type that slams in z, black dancers (voxel or card), the white pen as a card.
-//   Palette: the field, black, white. o.field (fieldAt(t)), o.grid (world units, 80), o.type [{text, words (a lyric
+// silStage3d(t, o): THE SILHOUETTE STAGE. The field is the backdrop and the floor, ruled by a black 1 px grid that
+//   dissolves toward the horizon; black voxel type slams in z; black dancers (voxel or card); the white pen as a card.
+//   Palette: the field, black, white. o.field (fieldAt(t)), o.grid (world units, 120), o.type [{text, words (a lyric
 //   line: each word slams on its sung start), stepIn {t0, div}, at (the whole block), show [t0, t1], size, depth, pos
-//   [x, y, z] (y: the block's bottom), rot [x, y, z], align, ghost}], o.dancers [{pos [x, z], size, mode, ...clioDance
-//   opts, show}], o.pen {pos [x, y, z] (its back end, where the cord ties on), angle (PI/2: nib down), scale (the 2D pen's
-//   scale, 4), size (world units per pen pixel, 2), yaw},
-//   o.cam (keys), o.fps, o.div, o.whip. -> {stage, type: [voxText blocks], cam}
+//   [x, y, z] (y: the block's bottom), rot [x, y, z], align, ghost, from}], o.dancers [{pos [x, z], size, mode, show,
+//   ...clioDance opts}], o.pen {pos [x, y, z] (its back end, where the cord ties on), angle (PI/2: nib down), scale (the
+//   2D pen's scale, 4), size (world units per pen pixel, 2), yaw}, o.cam (keys), o.fps, o.div, o.whip.
+//   -> {stage, type: [voxText blocks], cam}
 function silStage3d(t, o = {}) {
-  const fld = fieldCol(o.field || fieldAt(t) || 'magenta'), b = bands3(C.black, fld);
+  const fld = fieldCol(o.field || fieldAt(t) || 'magenta');
   const st = stage3d(o.key || 'sil', st => {
-    st.scene.fog = new THREE.Fog(0, ...(o.fog || [2600, 7000]));
-    const g = o.grid ?? 80, gt = tex3d('silgrid', 32, 32, () => { rect(0, 0, 32, 32, C.white); rect(0, 0, 32, 2, C.black); rect(0, 0, 2, 32, C.black); }, { mip: true, repeat: true });
-    gt.repeat.set(16000 / g, 16000 / g);
-    st.o.floor = new THREE.Mesh(new THREE.PlaneGeometry(16000, 16000), mat3d({ map: gt })); st.o.floor.rotation.x = -Math.PI / 2; st.scene.add(st.o.floor);
-    st.o.type = (o.type || []).map(T3 => { const v = voxText(T3.text, { size: T3.size ?? 22, depth: T3.depth ?? 3, align: T3.align, colors: b }); st.scene.add(v.group); return v; });
+    st.scene.fog = new THREE.Fog(0, ...(o.fog || [2200, 6400]));
+    const g = o.grid ?? 120, N = 60, pts = [];
+    for (let i = -N; i <= N; i++) pts.push(i * g, 0, -N * g, i * g, 0, N * g, -N * g, 0, i * g, N * g, 0, i * g);
+    const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+    st.scene.add(new THREE.LineSegments(lg, lineMat3d()));
+    st.o.type = (o.type || []).map(T3 => { const v = voxText(T3.text, { size: T3.size ?? 22, depth: T3.depth ?? 3, align: T3.align }); st.scene.add(v.group); return v; });
     if (o.pen) { const s = o.pen.scale ?? 4; st.o.pen = card3d(tex3d('pen3d|' + s, 40 * s, 12 * s, () => pen(39 * s, 6 * s, 0, s, { flash: false })), 40 * s, 12 * s); st.o.pen.geometry.translate(17.5 * s, 0, 0); st.scene.add(st.o.pen); }
   });
   if (!st) return _no3d();
-  st.bg = fld; st.o.floor.material.color.set(fld);
+  st.bg = fld;
   const ks = o.cam || [[0, orbit3d([0, 220, 0], 1500, .3 * Math.sin(beatAt(t) * Math.PI / 16), 60)]], cs = cam3d(t, ks, o); aim3d(st.cam, cs);
   (o.type || []).forEach((T3, bi) => {
     const v = st.o.type[bi], on = !T3.show || (t >= T3.show[0] && t < T3.show[1]);
     v.group.visible = on; if (!on) return;
     v.group.position.set(...(T3.pos || [0, 0, 0])); v.group.position.y += v.h / 2; v.group.rotation.set(...(T3.rot || [0, 0, 0]));
+    voxColor(v, fld);
     const ws = T3.words ? _bigWordTimes(v.chars, T3.words) : null;
-    v.letters.forEach(L => {
-      L.mesh.material.forEach((m, i) => m.color.set(b[i]));
-      slam3d(L, t, T3.stepIn ? beatTime(beatAt(T3.stepIn.t0) + L.n / (T3.stepIn.div || 4)) : ws ? ws[L.li][L.ci] : T3.at, { ghost: T3.ghost, from: T3.from });
-    });
+    v.letters.forEach(L => slam3d(L, t, T3.stepIn ? beatTime(beatAt(T3.stepIn.t0) + L.n / (T3.stepIn.div || 4)) : ws ? ws[L.li][L.ci] : T3.at, { ghost: T3.ghost, from: T3.from }));
   });
   (o.dancers || []).forEach((d, i) => { const g = dancer3d(st, i, t, { field: fld, ...d }); g.visible = !d.show || (t >= d.show[0] && t < d.show[1]); });
   if (st.o.pen) { const p = o.pen; st.o.pen.position.set(...p.pos); st.o.pen.scale.setScalar(p.size ?? 2); st.o.pen.rotation.set(0, p.yaw ?? 0, -(p.angle ?? Math.PI / 2)); }
@@ -401,12 +431,11 @@ function nestedDesks3d(t, t0, t1, o = {}) {
     st.extra = [FIELDS.vermilion, C.black];
     st.o.L = Ls.map((L, i) => {
       const g = new THREE.Group(), win = L.win || NEST_WIN, fc = ERA[L.era].pal.frame;
-      g.add(new THREE.Mesh(new THREE.PlaneGeometry(FW, FH), mat3d({ map: deskTex('nest|' + st.key + '|' + i, L.at ?? t0, L.draw, { era: L.era }), fog: false })));
+      g.add(new THREE.Mesh(new THREE.PlaneGeometry(FW, FH), mat3d({ map: deskTex('nest|' + st.key + '|' + i, L.at ?? t0, L.draw, { era: L.era }), solid: true })));
       const c = [win.x + win.w / 2 - FW / 2, FH / 2 - win.y - win.h / 2];
-      if (i > 0) for (const [x, y, w, h] of [[0, (win.h + bz) / 2, win.w + 2 * bz, bz], [0, -(win.h + bz) / 2, win.w + 2 * bz, bz], [-(win.w + bz) / 2, 0, bz, win.h], [(win.w + bz) / 2, 0, bz, win.h]]) {
-        const m = slab3d(w, h, dz, { color: fc, side: darken(fc, .45), top: darken(fc, .25) }); m.position.set(c[0] + x, c[1] + y, dz / 2); g.add(m);
-      }
-      st.scene.add(g); return { g, c, rho: FW / win.w, live: L.live, L, i };
+      if (i > 0) g.add(new THREE.Mesh(bandGeo([[0, (win.h + bz) / 2, win.w + 2 * bz, bz], [0, -(win.h + bz) / 2, win.w + 2 * bz, bz], [-(win.w + bz) / 2, 0, bz, win.h], [(win.w + bz) / 2, 0, bz, win.h]]
+        .map(([x, y, w, h]) => ({ w, h, d: dz, pos: [c[0] + x, c[1] + y, dz / 2], cols: [darken(fc, .45), darken(fc, .45), darken(fc, .25), darken(fc, .25), fc, null] }))), mat3d({ vc: true, solid: true })));
+      st.scene.add(g); return { g, c, rho: FW / win.w, L, i };
     });
   });
   if (!st) return _no3d();
@@ -416,8 +445,8 @@ function nestedDesks3d(t, t0, t1, o = {}) {
   let s, p;
   if (dot) { s = Math.exp(ph * Math.log(3 / FW)); p = [0, 0, 0]; place(A[j], s, p); }
   else { const O = A[j + 1]; s = Math.pow(O.rho, 1 - ph); p = [O.c[0], O.c[1], dz].map(v => -(1 - ph) * s * v); place(O, s, p); }
-  for (let i = (dot ? j : j + 1); i > Math.max(0, j - 2); i--) { const l = A[i]; p = [p[0] + s * l.c[0], p[1] + s * l.c[1], p[2] + s * dz]; s /= l.rho; place(A[i - 1], s, p); }
-  for (const l of A) if (l.live && l.g.visible) deskTex('nest|' + st.key + '|' + l.i, t, l.L.draw, { era: l.L.era, live: true });
+  for (let i = dot ? j : j + 1; i > Math.max(0, j - 2); i--) { const l = A[i]; p = [p[0] + s * l.c[0], p[1] + s * l.c[1], p[2] + s * dz]; s /= l.rho; place(A[i - 1], s, p); }
+  for (const l of A) if (l.L.live && l.g.visible) deskTex('nest|' + st.key + '|' + l.i, t, l.L.draw, { era: l.L.era, live: true });
   const sw = dot ? 0 : (o.swing ?? .12) * Math.sin(Math.PI * ph), a = sw * (j % 2 ? 1 : -1), e = sw * .4;
   aim3d(st.cam, { pos: [D3 * Math.sin(a) * Math.cos(e), D3 * Math.sin(e), D3 * Math.cos(a) * Math.cos(e)], look: [0, 0, 0], fov: 30 });
   render3d(st, { div: o.div, bg: C.black });

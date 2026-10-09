@@ -164,7 +164,7 @@ class Band:
             elif sec in ("chorus1", "chorus2", "chorus3"):
                 ep += [(m, b0, L - 0.05, 46) for m in v]
                 for k in range(int(L)):
-                    piano += [(m + 12, b0 + k + 0.5, 0.32, 74 if k % 2 == 0 else 66) for m in v]
+                    piano += [(m + 12, b0 + k + 0.5, 0.32, 64 if k % 2 == 0 else 56) for m in v]
                 strings += [(m, b0, L - 0.02, 72) for m in v]
                 pad += [(m, b0, L - 0.02, 50) for m in v[:4]]
             elif sec == "bridge":
@@ -337,6 +337,18 @@ def band_ratio(vox, bed, lo=1000.0, hi=5000.0, win=0.05, rel=15.0):
     return float(10 * np.log10(pv[m].mean() / (pb[m].mean() + 1e-20))), int(m.sum())
 
 
+def tame(x, crest_db):
+    """Hold a bus's peaks to crest_db over its active RMS (a transparent brick-wall on the GM kit's and
+    the stab chords' transients, so the master limiter does not have to)."""
+    m = stereo(x).mean(axis=1)
+    fr = m[: len(m) // 2400 * 2400].reshape(-1, 2400)
+    e = np.sqrt(np.mean(fr ** 2, axis=1) + 1e-20)
+    a = e[e > e.max() * 10 ** (-30 / 20)]
+    ref = float(db(np.sqrt(np.mean(a ** 2))))
+    y, _ = limiter(x, ceiling_db=ref + crest_db, lookahead=0.003, release=0.05, k=2)
+    return y
+
+
 def vocal_chain(x, kind):
     x = stereo(x)
     if kind == "lead":
@@ -398,6 +410,7 @@ def main():
     drums += convolve(dr["snare"] * undb(dgain["snare"]) + dr["clap"] * undb(dgain["clap"]), room) * undb(-17)
     drums = eq(drums, ("hp", 30, 0.7), ("peak", 400, 1.0, -1.5), ("highshelf", 9000, 0.7, -1.0))
     drums = compressor(drums, thr=-16, ratio=2.0, attack=0.01, release=0.12)
+    drums = tame(drums, 12.0)
     # bass
     bass = eq(B, ("hp", 35, 0.7), ("lowshelf", 110, 0.7, 1.5), ("peak", 250, 1.0, -1.0), ("highshelf", 2500, 0.7, -3.0))
     bass = compressor(bass, thr=-20, ratio=3.0, attack=0.01, release=0.15)
@@ -407,9 +420,10 @@ def main():
     plate = plate_ir(2.2, predelay=0.025, seed=3)
     keys = K["ep"] * undb(-1.0) + K["piano"] * undb(-3.0)
     keys = eq(keys, ("hp", 120, 0.7), ("peak", 300, 1.0, -2.0), ("highshelf", 8000, 0.7, -1.0))
+    keys = tame(keys, 12.0)
     strings = K["strings"] * undb(-4.0) + K["pad"] * undb(-7.0)
     strings = eq(strings, ("hp", 150, 0.7), ("peak", 2500, 1.0, -2.0), ("highshelf", 7000, 0.7, -3.0))
-    mallets = M["glock"] * undb(-4.0) + M["celesta"] * undb(-5.0) + M["organ"] * undb(-6.0)
+    mallets = M["glock"] * undb(-9.0) + M["celesta"] * undb(-6.0) + M["organ"] * undb(-5.0)
     mallets = eq(mallets, ("hp", 200, 0.7), ("highshelf", 9000, 0.7, -2.0))
     # stage the band (relative active RMS), then the arrangement's section dynamics
     drums, _ = norm_to(drums, -20.0)
@@ -419,7 +433,7 @@ def main():
     mallets, _ = norm_to(mallets, -28.0)
     wet = convolve(keys * undb(-14) + strings * undb(-10) + mallets * undb(-12), plate)
     sec_db = {"boot": 0.0, "intro": 0.0, "verse1": -2.0, "pre1": -1.0, "chorus1": 1.0, "post1": 0.0, "verse2": -2.0,
-              "pre2": -1.0, "chorus2": 1.0, "post2": 0.0, "bridge": -0.5, "breakdown": -2.5, "chorus3": 1.5,
+              "pre2": -1.0, "chorus2": 1.0, "post2": 0.0, "bridge": -0.5, "breakdown": 0.5, "chorus3": 1.5,
               "outro": -1.0, "tail": 0.0}
     sg = section_gain(S, DUR, sec_db)[:, None]
     groups = {"drums": drums * sg, "bass": bass * sg, "keys": keys * sg, "strings": strings * sg,
@@ -442,6 +456,9 @@ def main():
     for k in ("keys", "strings", "mallets"):
         groups[k] = pocket(groups[k], vdry, lo=800, hi=5000, depth=3.0)
     groups["drums"] = pocket(groups["drums"], vdry, lo=1500, hi=6000, depth=1.5)
+    # a gentle presence dip in the band where the consonants live
+    for k in ("drums", "keys", "strings", "mallets"):
+        groups[k] = eq(groups[k], ("peak", 3300, 1.1, -2.5))
     bed = sum(groups.values())
     vox = vdry + vwet
 
@@ -457,7 +474,7 @@ def main():
         rr, nfr = band_ratio(vox_g[a:b], bed[a:b])
         if rr is None or nfr < 10:
             continue
-        gdb[s["name"]] = float(np.clip(VOX_OVER_BED - rr, -4.0, 4.0))
+        gdb[s["name"]] = float(np.clip(VOX_OVER_BED - rr, -6.0, 4.0))
     vg = section_gain(S, DUR, gdb, ramp=0.08)[:, None]
     vox = vox * undb(g_glob) * vg
     vdry = vdry * undb(g_glob) * vg
@@ -483,7 +500,7 @@ def main():
     for k in groups:
         groups[k] = groups[k] * m[:, None]
     ks = dr["keystroke"]
-    ks, _ = norm_to(ks, -34.0)
+    ks, _ = norm_to(ks, -44.0)
     bed = bed + ks
     groups["drums"] = groups["drums"] + ks
 
@@ -497,12 +514,12 @@ def main():
         y, gl = limiter(y, ceiling_db=CEILING)
         return y, gl
     gin = TARGET_LUFS - lufs(mix * gc[:, None])
-    for _ in range(6):
+    for _ in range(5):
         y, gl = master(gin)
         L = lufs(y)
-        if abs(L - TARGET_LUFS) < 0.02:
+        if abs(L - TARGET_LUFS) < 0.03:
             break
-        gin += TARGET_LUFS - L
+        gin += (TARGET_LUFS - L) * 1.1
     # end: the last 0.35 s fade to exact zero
     tail = np.ones(N)
     f = n_of(0.35)

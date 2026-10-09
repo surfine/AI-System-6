@@ -57,7 +57,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 KDIR = os.path.join(ROOT, ".cache", "kokoro")
 CACHE = os.path.join(ROOT, ".cache", "sing_world")
-ENGINE = "sw-world-7"
+ENGINE = "sw-world-10"
 
 KSR = 24000           # Kokoro sample rate
 HOP = 600             # samples per Kokoro duration unit
@@ -68,7 +68,7 @@ SR = 48000            # output rate
 STYLE_ROW = 64        # one style row per voice for the whole song (the timbre does not drift with phrase length)
 
 # layout knobs, in 5 ms frames
-LAY = dict(pad0=20, pad1=24, space=(5, 10), stop_max=20, cons_max=30, stress=(5, 15), first_onset_max=45,
+LAY = dict(pad0=20, pad1=24, space=(0, 5), stop_max=20, cons_max=30, stress=(5, 15), first_onset_max=45,
            coda_son=0.18, coda_son_max=30, edge=6, min_vowel=0.4, lead=15)
 
 VOWELS = set("aeiouɑɐɒæəɚɛɜɝɪʊʌɔᵻɨʉøœɤɯy")
@@ -91,7 +91,7 @@ PRON = {
 
 SUNG = ("lead", "choir", "gang", "chop")
 SUNG_PRON = {}       # sung-only pronunciations
-SUNG_SUBST = []      # sung-only phoneme substitutions
+SUNG_SUBST = [("eɪ", "ɛɪ")]   # sung-only substitutions: hold the open "eh" of a diphthong ("fade", not "feed")
 STYLES = {
     #          vibrato cents / onset s, portamento s, drift cents, speech intonation kept, vowel cap (x spoken), fall cents, scoop cents
     "lead":   dict(vib=24.0, vib_on=0.22, port=0.035, drift=4.0, inton=0.0, cap=None, fall=35.0, scoop=25.0, jit=3.0, cons=3.0),
@@ -316,8 +316,8 @@ def layout(words, nat, style, end_clamp=None):
             return float(np.clip(natc[k], *LAY["space"]))
         if c == "L":
             return float(min(natc[k], 5))
-        if c == "V":     # a diphthong's glide or a second vowel: short, at the end of the note
-            return float(np.clip(natc[k] * 1.2, 8, 25))
+        if c == "V":     # a diphthong's glide or a second vowel: late in the note, long enough to hear
+            return float(np.clip(max(natc[k] * 1.2, 0.2 * total), 8, 30))
         top = LAY["stop_max"] if chars[k] in STOPS else LAY["cons_max"]
         w = float(np.clip(natc[k], 5, top))
         if info[k].get("role") == "coda" and chars[k] in "nmŋl" and total >= 50:
@@ -339,18 +339,24 @@ def layout(words, nat, style, end_clamp=None):
         cons = [k for k in fixed if k not in tails]
         min_v = max(5.0, LAY["min_vowel"] * total) if total >= 15 else max(2.0, 0.5 * total)
         room = total - min_v
-        s_c, s_t = sum(want[k] for k in cons), sum(want[k] for k in tails)
-        if s_c + s_t > room:
-            # squeeze the glides first, then the consonants (each keeps at least 3 frames)
-            for k in tails:
-                want[k] = max(3.0, want[k] * 0.5)
-            s_t = sum(want[k] for k in tails)
-            room_c = max(3.0 * len(cons), room - s_t)
-            if s_c > room_c:
-                sc = room_c / s_c
-                for k in cons:
-                    if want[k] > 0:
-                        want[k] = max(3.0 if info[k]["cls"] == "C" else 0.0, want[k] * sc)
+        over = sum(want[k] for k in fixed) - room
+        # squeeze in this order, each step only as far as needed: glides (to 3 frames), word gaps (to 0),
+        # stress marks (to 3), codas (to 3), and only then the onset consonants (to 4) that make the words
+        steps = [([k for k in tails], 3.0),
+                 ([k for k in cons if info[k]["cls"] == " "], 0.0),
+                 ([k for k in cons if info[k]["cls"] == "S"], 3.0),
+                 ([k for k in cons if info[k]["cls"] == "C" and info[k].get("role") == "coda"], 3.0),
+                 ([k for k in cons if info[k]["cls"] == "C" and info[k].get("role") != "coda"], 4.0)]
+        for ks_, floor in steps:
+            if over <= 0:
+                break
+            avail = sum(max(0.0, want[k] - floor) for k in ks_)
+            if avail <= 0:
+                continue
+            cut = min(over, avail)
+            for k in ks_:
+                want[k] -= cut * max(0.0, want[k] - floor) / avail
+            over -= cut
         for k in fixed:
             dur[k] = want[k]
         v = total - sum(want[k] for k in fixed)
@@ -733,9 +739,10 @@ def breath(y24, L, length, seed):
 ROLE_DB = {"harmony": -7.0, "echo": -2.0, "gang": -1.0, "call": -2.0, "lala": -3.0}   # per choir voice (three stack)
 CHOIR = [  # voice, detune cents, delay s, pan, gain dB, Kokoro speed (a different take of the consonants)
     ("af_heart", 0.0, 0.000, 0.0, 0.0, 1.0),
-    ("af_bella", 7.0, 0.012, -0.55, -1.0, 1.06),
-    ("af_sky", -6.0, -0.009, 0.55, -1.5, 0.95),
+    ("af_bella", 7.0, 0.006, -0.55, -1.5, 1.04),
+    ("af_sky", -6.0, -0.004, 0.55, -2.0, 0.97),
 ]
+LINE_DB = {"o_la1": -7.0, "o_la2": -7.0}   # the outro la-la sits under the last chant, not on it
 
 
 def _sec_words(L, spb):
@@ -801,7 +808,8 @@ def arrangement(score):
         for g in phrases(ls, spb):
             for v, det, dl, pn, gd, spd in CHOIR:
                 out.append(dict(track="choir", voice=v, style=style, words=g["words"], lines=g["lines"], role=role,
-                                gain_db=gd + ROLE_DB.get(role, -3.0), pan=pn, delay=dl, detune=det, speed=spd,
+                                gain_db=gd + ROLE_DB.get(role, -3.0) + LINE_DB.get(g["lines"][0], 0.0), pan=pn, delay=dl,
+                                detune=det, speed=spd,
                                 seed="%s:%s:%s" % (role, g["lines"][0], v), end_clamp=g.get("end_clamp")))
     for m, b, d, w in score["parts"]["chops"]["events"]:
         out.append(dict(track="chops", voice="af_heart", style="chop", words=[{"w": w, "notes": [[m, b * spb, d * spb]]}],

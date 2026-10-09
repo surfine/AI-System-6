@@ -96,7 +96,7 @@ def transcribe(x):
         x = x.mean(axis=1)
     a = np.ascontiguousarray(resample_poly(x, 1, 3)).astype(np.float32)
     segs, _ = whisper_model().transcribe(a, language="en", beam_size=5, temperature=0.0,
-                                         condition_on_previous_text=False, vad_filter=False)
+                                         condition_on_previous_text=False, vad_filter=False, max_new_tokens=48)
     return " ".join(s.text.strip() for s in segs)
 
 
