@@ -44,7 +44,7 @@ anchor per lyric line, speed clamped to 0.8-1.25) and `src/main.js` draws `warpT
 
 ## Next steps
 
-1. `HF_TOKEN=… python3 -I music/ace_cover.py --src build/guide.wav --strength 0.7 --seed 42` (try a few seeds and
+1. `HF_TOKEN=… python3 -I music/ace_cover.py --seed 42` (text2music from `music/hit_prompt.json`, the SONG2.md song; `--bpm 112` for candidate B; try a few seeds and
    strengths; each run saves audio + LRC + settings under `build/ace/`).
 2. `python3 -I tools/retime.py build/ace/<pick>.flac` → measures drift against `data/data.js` and writes
    `build/song.retimed.wav`; copy the chosen, aligned file to `build/song.wav`.

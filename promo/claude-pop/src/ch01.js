@@ -7,7 +7,7 @@
   // ===================== THE HOME DESK (STORYBOARD §4, verbatim; names prefixed) =====================
   const c01_MS = ['# The Tide Comes In Twice', 'They never called it renewable energy. They called it the tide, and they billed it by the moon.', 'Twice a day the estuary fills'];
   const c01_INV = c => { const [r, g, b] = rgb(c); return hex(255 - r, 255 - g, 255 - b); };   // pre-invert a colour for FX.invert frames
-  const c01_HINT = ['Sounds like you.', 'Sounds like a mouthpiece.'];   // Review Desk's lens hint, the product's words; never a number
+  const c01_HINT = ['Sounds like you.', 'Sounds like a mouthpiece.'];   // Review Desk's lens hint as the film captions it (not product UI: the product's hint is 'Sounds like a mouthpiece / missing personal detail. Not a score.'); never a number
   const c01_youProp = s => (x, y, w, h) => { const f = 'menu'; text(s, x + w, y + R((h - capH(f)) / 2), { font: f, align: 'right', color: P.menuText }); };
   let c01_PERIOD = [0, 0];   // the writer's full stop, screen coordinates, set by every homeDesk call
   // o: hint (HINT[0]), neg (true in FX.invert frames: the dot and the pen are pre-inverted), lines, doc (teachText opts or false;

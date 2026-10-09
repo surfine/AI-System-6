@@ -207,7 +207,7 @@ function c06_review(t) {
   const ck = c06_checks(t), rv = Math.ceil(prog(t, c06_T.desk + .25, c06_T.desk + .75) * 4) / 4;
   const rdw = kk => {
     const r = APP.reviewDesk(8, 30, 268, 196, { k: kk, from: [352, 334], doc: 'The Tide Comes In Twice', header: ['812 words', '', 'Not a score.'], checks: ck, reveal: rv, you: 100 });
-    if (r && r.meter) { const y = r.meter.y - 18; rect(r.x + 8, y - 3, 170, 16, P.win); text(c06_HINT[0], r.x + 12, y, { font: uiHead(), color: P.text }); }   // the product's words, no number (§1)
+    if (r && r.meter) { const y = r.meter.y - 18; rect(r.x + 8, y - 3, 170, 16, P.win); text(c06_HINT[0], r.x + 12, y, { font: uiHead(), color: P.text }); }   // the film's caption, not the product's words; no number (§1)
     return r;
   };
   const rd = k < 1 ? rdw(k) : c06_blit('rd', JSON.stringify(ck) + rv, 2, 26, 288, 210, () => rdw(1));
