@@ -6,6 +6,9 @@ declare const endpointInput: HTMLInputElement | null;
 declare const mountedTextDisk: any;
 
 declare function getWindow(name: string): any;
+// core/chat-messages.js: a model is connected and ready (Quick Draft's
+// storyboard row greys out until one is; the call site guards with typeof).
+declare function modelReadyForRequests(): boolean;
 // Declared by feature modules that load after core/. The concatenated bundle
 // has them at runtime; every call site here still guards with `typeof`,
 // because a lazy module may not have loaded yet.
@@ -113,7 +116,25 @@ declare function estimateBilibiliVoiceoverSeconds(text: string): number;
 // branch. Declared, not repaired.
 declare function markGrayAffordance(control: any, unavailable: boolean, reasonKey?: string): void;
 
+// Declared by modules outside this config's include list: the writing route's
+// phase (writing-flow.js, lazy), the edit kernel's registration (window-manager.js),
+// the menu context window, TeachText's save and the tabs bookkeeping. Every
+// call site guards with typeof for the lazy-loading reason above.
+declare function ensureWritingFlowModule(): Promise<void>;
+declare function manuscriptPhase(): string;
+declare function shouldSyncProjectOutlineAsManuscript(project?: any): boolean;
+declare function registerEditHistory(windowName: string, history: any): void;
+declare function resolveMenuContextWindow(): HTMLElement | null;
+declare function saveTextDocument(options?: any): Promise<boolean>;
+declare function markProjectTabsDirty(project: any): void;
+declare function resolveWritingRoutePrompt(id: string, language?: string, options?: any): string;
+declare function readChatCompletionStream(response: Response, onToken?: ((snapshot: string) => void) | null, signal?: AbortSignal): Promise<{ content: string }>;
+
 interface Window {
+  AISystem6DarkroomDevelop?: any;
+  AISystem6LightroomDevelop?: any;
+  AISystem6EditHistory?: any;
+  AISystem6WordDiff?: any;
   AISystem6ApplicationShell?: any;
   AISystem6DarkroomRecord?: any;
   AISystem6DarkroomStore?: any;

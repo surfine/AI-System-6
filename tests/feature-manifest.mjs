@@ -91,7 +91,7 @@ export const publicProductContracts = [
   },
   {
     feature: "Review Desk",
-    tests: ["mingming-review.test.mjs", "mingming-handoff-review.test.mjs"],
+    tests: ["mingming-review.test.mjs", "mingming-handoff-review.test.mjs", "review-comments.test.mjs", "review-comments-backup.test.mjs", "review-decorations.test.mjs"],
   },
   {
     feature: "Scrapbook",
@@ -108,6 +108,10 @@ export const publicProductContracts = [
   {
     feature: "ClioChart",
     tests: ["clio-chart.test.mjs"],
+  },
+  {
+    feature: "Edit kernel",
+    tests: ["edit-kernel.test.mjs"],
   },
   {
     feature: "One More Tune",

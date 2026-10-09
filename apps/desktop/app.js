@@ -31,6 +31,8 @@ const {
 const {
   docMapMinSelectionChars,
   docMapMinDocumentChars,
+  clioChartMinSourceChars,
+  clioStageMinSourceChars,
   dictionaryMaxSelectionChars,
   rebuildMinSourceChars,
   defaultOutlineSection,

@@ -1,0 +1,4 @@
+<!-- Big Sur pop-up chevrons in a background window, Dark Mode: an up-and-down chevron pair in #e6e6e6 at the button's right end, no coloured well; the key window's pop-up carries the blue well instead (popup-well.svg). Drawn in the well's 16x16 box so the two swap without moving. Measured reconstruction at 1x. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <path d="M5.25 6.5 8 3.75 10.75 6.5M5.25 9.5 8 12.25 10.75 9.5" fill="none" stroke="#e6e6e6" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

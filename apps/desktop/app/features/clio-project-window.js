@@ -84,6 +84,9 @@ const CLIO_PROJECT_MENUS = typeof menu === "function" && typeof menuItem === "fu
     menuItem("clio-project-mark-done", "clio_project_mark_done_command"),
     menuItem("clio-project-open-node", "clio_project_open_node"),
     menuSeparator,
+    menuItem("clio-project-report-slides", "clio_project_report_slides"),
+    menuItem("clio-project-timeline-chart", "clio_project_timeline_chart"),
+    menuSeparator,
     menuItem("clio-project-reset-layout", "clio_project_reset_layout"),
   ]),
 ] : null;
@@ -184,10 +187,29 @@ function writeClioProjectRecord(project, next) {
   if (typeof renderProjectDiskDesktopIcons === "function") renderProjectDiskDesktopIcons();
 }
 
-function commitClioProject(change) {
+// Every decision is one step of a per-disk history (app/core/edit-history.js):
+// a tick, a date, a note, a task added or removed. A step is the record as it
+// was, written back through the same pruning write path, so Edit > Undo
+// reaches all of them and not only a removed task.
+const clioProjectHistories = new Map();
+function clioProjectHistory(project = clioProjectActive()) {
+  if (!project?.id) return null;
+  if (!clioProjectHistories.has(project.id)) {
+    clioProjectHistories.set(project.id, window.AISystem6EditHistory.createEditHistory({
+      read: () => JSON.stringify(project.clioProject || {}),
+      write: (snapshot) => {
+        clioProjectLastRemoved = null;
+        writeClioProjectRecord(project, JSON.parse(snapshot));
+      },
+      limit: 100,
+    }));
+  }
+  return clioProjectHistories.get(project.id);
+}
+function commitClioProject(change, label = "edit_step_change") {
   const project = clioProjectActive();
   if (!project) return;
-  writeClioProjectRecord(project, change(clioProjectRecordFor(project), new Date().toISOString()));
+  clioProjectHistory(project).change(label, () => writeClioProjectRecord(project, change(clioProjectRecordFor(project), new Date().toISOString())));
 }
 
 function clioProjectNodeTitle(node) {
@@ -880,7 +902,7 @@ function selectClioProjectNode(id, { focus = false } = {}) {
 }
 
 function toggleClioProjectDone(nodeId, done) {
-  commitClioProject((record, now) => clioProjectModel().setClioProjectTaskDone(record, nodeId, done, now));
+  commitClioProject((record, now) => clioProjectModel().setClioProjectTaskDone(record, nodeId, done, now), done ? "edit_step_done" : "edit_step_not_done");
 }
 
 function commitClioProjectField(field, value) {
@@ -894,7 +916,7 @@ function commitClioProjectField(field, value) {
     if (field === "date") return model.setClioProjectTaskDate(record, node.id, value, now);
     if (field === "note") return model.setClioProjectTaskNote(record, node.id, value, now);
     return model.updateClioProjectOwnTask(record, node.id, { title: value }, now);
-  });
+  }, field === "date" ? "edit_step_date" : field === "note" ? "edit_step_note" : "edit_step_rename");
 }
 
 // A task hangs from the selected stop or section, or — when a task is
@@ -914,7 +936,7 @@ function addClioProjectTask() {
     title: t("clio_project_new_task"),
     parent: parent.id,
     parentTitle: clioProjectNodeTitle(parent),
-  }, now));
+  }, now), "edit_step_add_task");
   selectClioProjectNode(id);
   const field = clioProjectFields()?.info.querySelector("#clio-project-task-title");
   if (field) {
@@ -932,7 +954,7 @@ function removeClioProjectTask() {
   if (index < 0) return;
   clioProjectLastRemoved = { task: record.ownTasks[index], index };
   clioProjectSelected = node.parent;
-  commitClioProject((current, now) => clioProjectModel().removeClioProjectOwnTask(current, node.id, now));
+  commitClioProject((current, now) => clioProjectModel().removeClioProjectOwnTask(current, node.id, now), "edit_step_remove_task");
 }
 
 function undoClioProjectRemove() {
@@ -944,7 +966,7 @@ function undoClioProjectRemove() {
     next.ownTasks.splice(Math.min(removed.index, next.ownTasks.length), 0, removed.task);
     next.updatedAt = now;
     return next;
-  });
+  }, "edit_step_restore");
   clioProjectSelected = removed.task.id;
   renderClioProject();
 }
@@ -1156,6 +1178,91 @@ function clioProjectIsFront() {
   return document.querySelector(".window.is-active")?.dataset.window === "clioProject";
 }
 
+registerEditHistory("clioProject", () => clioProjectHistory());
+
+// ---- Reporting the plan ------------------------------------------------------
+// Two hand-offs, both computed from the plan with no model call: a progress
+// deck for the person the work goes to, and the dated work as a ClioChart
+// timeline. The plan itself stays derived from the route and is not stored;
+// these are copies, and a slide that carries the timeline can later say when
+// the plan moved on (app/core/edit-embeds.js).
+function clioProjectTimelineDiagram(project) {
+  if (!project) return null;
+  const plan = clioProjectPlanFor(project);
+  const dated = plan.nodes
+    .filter((node) => node.addressable && node.date)
+    .sort((left, right) => String(left.date).localeCompare(String(right.date)))
+    .slice(0, 12);
+  if (!dated.length) return null;
+  return {
+    kind: "timeline",
+    title: project.name || t("clio_project_label"),
+    // The date is each box's source: it is the writer's own entry in the plan.
+    nodes: dated.map((node, index) => ({ id: `t${index + 1}`, label: clioProjectNodeTitle(node).slice(0, 40), quote: String(node.date), head: node.id === clioProjectModel().CLIO_PROJECT_HANDOFF_ID })),
+    edges: [],
+    groups: [],
+  };
+}
+
+function clioProjectReportMarkdown(project) {
+  const model = clioProjectModel();
+  const plan = clioProjectPlanFor(project);
+  const clean = (text) => String(text || "").replace(/\s+/g, " ").replace(/-->/g, "—>").trim();
+  const line = (node) => `- ${clean(clioProjectNodeTitle(node))}${node.date ? ` · ${node.date}` : ""}`;
+  const done = plan.nodes.filter((node) => node.addressable && node.done);
+  const chain = model.clioProjectBlockingChain(plan).map((id) => model.clioProjectNode(plan, id)).filter(Boolean);
+  const handoff = model.clioProjectNode(plan, model.CLIO_PROJECT_HANDOFF_ID);
+  const pages = [[
+    "<!-- _class: cover -->", "", `# ${clean(project.name)}`, "",
+    t("clio_project_report_subtitle"), "", new Date().toISOString().slice(0, 10),
+  ].join("\n")];
+  pages.push([`## ${t("clio_project_report_done")}`, "", ...(done.length ? done.slice(0, 8).map(line) : [t("clio_project_report_none")])].join("\n"));
+  pages.push([`## ${t("clio_project_report_next")}`, "", ...(chain.length ? chain.slice(0, 8).map(line) : [t("clio_project_chain_clear")])].join("\n"));
+  const timeline = clioProjectTimelineDiagram(project);
+  const embeds = window.AISystem6EditEmbeds;
+  if (timeline && embeds && window.AISystem6ClioDiagram?.svg) {
+    const svg = window.AISystem6ClioDiagram.svg(window.AISystem6ClioDiagram.layout(timeline), { paper: "transparent" }, { fit: true });
+    pages.push([
+      "<!-- _class: evidence light -->", "", `## ${t("clio_project_report_timeline")}`, "",
+      embeds.embedMarkdown({ kind: "diagram", alt: t("clio_project_report_timeline"), svg, data: timeline, source: { app: "clioProject", fileId: project.id, rev: embeds.contentRev(timeline) } }),
+    ].join("\n"));
+  }
+  pages.push(["<!-- _class: closing -->", "", `## ${clean(clioProjectHandoffText(handoff?.date || ""))}`].join("\n"));
+  return ["---", "marp: true", "theme: default", "paginate: true", "size: 16:9", "---", "", pages.join("\n\n---\n\n")].join("\n");
+}
+
+async function sendClioProjectReport() {
+  const project = clioProjectActive();
+  if (!project) return false;
+  // The timeline page draws with ClioChart's canvas, so it is loaded first.
+  await ensureClioChartModule();
+  await ensureClioStageModule();
+  // An unsaved deck already in ClioStage is the writer's work: ask first.
+  if (window.AISystem6ClioStage?.confirmDiscard && !(await window.AISystem6ClioStage.confirmDiscard())) return false;
+  return !!(await window.AISystem6ClioStage?.open?.({
+    title: t("clio_project_report_title", project.name || ""),
+    sourceKind: "generated",
+    temporary: true,
+    markdown: clioProjectReportMarkdown(project),
+  }));
+}
+
+async function sendClioProjectTimeline() {
+  const project = clioProjectActive();
+  const diagram = clioProjectTimelineDiagram(project);
+  if (!diagram) {
+    setStatus(t("clio_project_timeline_no_dates"));
+    return false;
+  }
+  diagram.origin = { app: "clioProject", fileId: project.id, rev: window.AISystem6EditEmbeds?.contentRev(diagram) || "" };
+  await ensureClioChartModule();
+  openWindow("clioChart");
+  const chart = window.AISystem6ClioChart;
+  chart?.showDiagramMode?.();
+  window.AISystem6ClioDiagram?.load(diagram, { temporary: true, source: { label: project.name || "", text: "" } });
+  return true;
+}
+
 window.AISystem6Runtime?.registerApplication({
   id: "clioProject",
   windowName: "clioProject",
@@ -1181,6 +1288,14 @@ window.AISystem6Runtime?.registerApplication({
         return !!node && node.addressable && !node.done;
       },
     },
+    "clio-project-report-slides": {
+      handler: () => sendClioProjectReport(),
+      isAvailable: () => clioProjectIsFront() && !!clioProjectActive(),
+    },
+    "clio-project-timeline-chart": {
+      handler: () => sendClioProjectTimeline(),
+      isAvailable: () => clioProjectIsFront() && !!clioProjectTimelineDiagram(clioProjectActive()),
+    },
     "clio-project-open-node": {
       handler: () => openClioProjectNode(),
       isAvailable: () => clioProjectIsFront() && clioProjectView === "plan" && !!clioProjectSelectedNode(),
@@ -1189,6 +1304,7 @@ window.AISystem6Runtime?.registerApplication({
 });
 
 window.AISystem6ClioProjectWindow = Object.freeze({
+  timelineDiagram: clioProjectTimelineDiagram,
   attach: attachClioProject,
   render: renderClioProject,
   resetLayout: resetClioProjectLayout,

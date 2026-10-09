@@ -3505,7 +3505,14 @@ window.AISystem6BonsaiCityLoaded = true;
   // until the mayor confirms (spec §4).
   async function openFlipPot() {
     if (!state.current) return false;
-    const list = typeof listStoredTransitPlans === "function" ? await listStoredTransitPlans(state.record?.id || null) : [];
+    // A store that cannot be read (no IndexedDB, a blocked database) means no
+    // saved plans to price, said as such, not a rejection nobody catches.
+    let list = [];
+    try {
+      list = typeof listStoredTransitPlans === "function" ? await listStoredTransitPlans(state.record?.id || null) : [];
+    } catch {
+      list = [];
+    }
     const drafts = (list || [])
       .filter((record) => record?.plan && record.status !== "laid")
       .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));

@@ -4,6 +4,11 @@
   const pictures = new WeakMap();
   const pending = new WeakMap();
   const generations = new WeakMap();
+  // A picture taken in the last three seconds is reused instead of retaken, so
+  // moving along the Dock does not re-photograph the same window per icon
+  // (WindowShade keeps a thumbnail fresh for 3.0 s).
+  const takenAt = new WeakMap();
+  const FRESH_MS = 3000;
   const alive = (win) => !!win?.isConnected && !win.classList.contains("is-hidden");
   const visible = (win) => alive(win) && !["is-app-hidden", "is-minimized", "is-collapsed", "is-slide-hidden"].some((name) => win.classList.contains(name));
   const result = (win, stale = true) => ({ url: pictures.get(win) || null, stale, unavailable: !pictures.has(win) });
@@ -13,11 +18,14 @@
     pending.delete(win);
   }
   function release(win) {
-    cancel(win); pictures.delete(win);
+    cancel(win); pictures.delete(win); takenAt.delete(win);
     window.AISystem6WindowMinimize?.releaseCapture?.(win);
   }
   function rememberBitmap(win, capture) {
-    if (alive(win) && capture?.source === "dom" && capture.dataUrl) pictures.set(win, capture.dataUrl);
+    if (alive(win) && capture?.source === "dom" && capture.dataUrl) {
+      pictures.set(win, capture.dataUrl);
+      takenAt.set(win, Date.now());
+    }
   }
   function get(win) {
     if (!alive(win)) { if (win) release(win); return Promise.resolve({ url: null, stale: false, unavailable: true }); }
@@ -27,6 +35,7 @@
       return Promise.resolve(result(win));
     }
     if (pending.has(win)) return pending.get(win);
+    if (pictures.has(win) && Date.now() - (takenAt.get(win) || 0) < FRESH_MS) return Promise.resolve(result(win, false));
     const generation = generations.get(win) || 0;
     const request = (async () => {
       try {

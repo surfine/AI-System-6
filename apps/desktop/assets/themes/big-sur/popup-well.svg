@@ -1,0 +1,6 @@
+<!-- Big Sur pop-up arrow well in the key window, measured from the macOS 11 Mail Preferences capture (512 Pixels, 11-Big-Sur-Mail-Preferences.png, 2x): a 16x16pt rounded square inset 2pt from the button's right end, filled top #3e7ff6 to bottom #226af6, with white up-and-down chevrons. Background windows and disabled pop-ups drop the well (popup-chevrons-*.svg). Measured reconstruction at 1x. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <defs><linearGradient id="w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3e7ff6"/><stop offset="1" stop-color="#226af6"/></linearGradient></defs>
+  <rect width="16" height="16" rx="4" fill="url(#w)"/>
+  <path d="M5.25 6.5 8 3.75 10.75 6.5M5.25 9.5 8 12.25 10.75 9.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

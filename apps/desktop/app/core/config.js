@@ -200,6 +200,11 @@ window.AISystem6Config = (() => {
   const docToolConfig = Object.freeze({
     docMapMinSelectionChars: 200,
     docMapMinDocumentChars: 800,
+    // ClioChart and ClioStage read text through DocMap's readiness rules; a
+    // chart needs far less text than a map ("A 299, B 399" is a chart).
+    clioChartMinSourceChars: 40,
+    // A deck can be three pages: a short article is enough, unlike a map.
+    clioStageMinSourceChars: 200,
     dictionaryMaxSelectionChars: 160,
     // The Split button greys below this and runRebuildFlow() refuses below
     // it, so both read the same number.
@@ -523,7 +528,10 @@ const ensureOutlineClaimModule = createLazyModuleLoader("AISystem6OutlineClaimLo
 // name — which is why the app booted for a day with neither file ever loaded
 // and nothing said so. ensureDarkroomReady() awaits this before it decides.
 const ensureDarkroomModule = createLazyModuleLoader("AISystem6DarkroomStore", [
+  "app/core/word-diff.js",
+  "app/core/edit-history.js",
   "app/core/darkroom-record.js",
+  "app/core/darkroom-develop.js",
   "app/core/darkroom-store.js",
 ]);
 // Mac OS X Dock Genie / Scale / Suck: named here (eager) so the lazy
@@ -551,6 +559,13 @@ const ensureUserRecoveryMessagesModule = createLazyModuleLoader("AISystem6UserRe
 // version of it shipping in the meantime.
 const ensureTeachtextWritingModule = createLazyModuleLoader("AISystem6TeachtextWriting", ["app/features/teachtext-writing.js"]);
 const ensureDocumentRolePolicyModule = createLazyModuleLoader("AISystem6DocumentRolePolicy", ["app/core/document-role-policy.js"]);
+// 字符分镜图 (internal/plans/STORYBOARD-SPEC.zh-CN.md): the storyboard parser,
+// its per-paragraph model calls and the sheet. Nothing of it is in the boot
+// payload; document-role-policy.js asks for it when TeachText's Commands menu
+// opens, and Quick Draft's Deliver row asks for it when clicked. listen-beats.js
+// (already named by the Quick Draft loader) is fetched by the module itself
+// when a storyboard is built, so this line names only the two new files.
+const ensureStoryboardAsciiModule = createLazyModuleLoader("AISystem6StoryboardAscii", ["app/data/storyboard-shots.js", "app/core/storyboard-ascii.js"]);
 const ensureMarkdownParser = createLazyModuleLoader("marked", ["app/vendor/marked.umd.js"]);
 const ensurePromptFilesData = createLazyModuleLoader("AISystem6PromptFiles", [
   "app/core/writing-tools-prompts.js",
@@ -621,17 +636,32 @@ const ensureRebuildPackModule = createLazyModuleLoader("AISystem6RebuildPack", [
 // provider is one of those servers.
 const ensureMcpServersModule = createLazyModuleLoader("AISystem6McpServers", ["app/features/mcp-servers.js"]);
 const ensureMingmingHandoffReviewModule = createLazyModuleLoader("", ["app/features/mingming-handoff-review.js"]);
-const ensureSlidesExportModule = createLazyModuleLoader("AISystem6SlidesExportLoaded", ["app/features/slide-themes.js", "app/features/slides-export.js"]);
-const ensureClioStageModule = createLazyModuleLoader("AISystem6ClioStageLoaded", ["app/features/slide-themes.js", "app/features/clio-stage.js"], false, ["styles.clio-chart.css"]);
-const ensureClioChartModule = createLazyModuleLoader("AISystem6ClioChartLoaded", ["app/features/clio-chart.js"], false, ["styles.clio-chart.css"]);
+// Review Desk's comment threads and version compare. The pure model and the
+// anchor search load first; the panel installs the flag.
+const ensureReviewCommentsModule = createLazyModuleLoader("AISystem6ReviewDeskPanelLoaded", [
+  "app/core/edit-history.js",
+  "app/core/word-diff.js",
+  "app/core/text-quote.js",
+  "app/core/review-comments.js",
+  "app/features/review-comments.js",
+], false, ["styles.edit-kernel.css"]);
+const ensureSlidesExportModule = createLazyModuleLoader("AISystem6SlidesExportLoaded", ["app/core/edit-embeds.js", "app/features/slide-themes.js", "app/features/slides-export.js"]);
+const ensureClioStageModule = createLazyModuleLoader("AISystem6ClioStageLoaded", ["app/core/edit-history.js", "app/core/edit-snap.js", "app/core/edit-layers.js", "app/core/edit-embeds.js", "app/features/slide-themes.js", "app/features/clio-stage.js"], false, ["styles.clio-chart.css", "styles.edit-kernel.css"]);
+const ensureCommandSheetModule = createLazyModuleLoader("AISystem6CommandSheet", ["app/features/command-sheet.js"], false, ["styles.edit-kernel.css"]);
+const ensureClioChartModule = createLazyModuleLoader("AISystem6ClioChartLoaded", ["app/core/edit-history.js", "app/core/edit-snap.js", "app/core/edit-layers.js", "app/core/edit-embeds.js", "app/features/clio-chart.js", "app/features/clio-diagram.js"], false, ["styles.clio-chart.css", "styles.edit-kernel.css"]);
 // The plan window carries its pure model with it: the model is also what the
 // contract executes, so it stays a separate file rather than folding in.
-const ensureClioProjectModule = createLazyModuleLoader("AISystem6ClioProjectWindowLoaded", ["app/core/application-shell.js", "app/core/clio-project.js", "app/features/clio-project-window.js"], false, ["styles.clio-project.css"]);
-const ensureClioPaintModule = createLazyModuleLoader("AISystem6ClioPaintLoaded", ["app/core/application-shell.js", "app/features/clio-paint.js"], false, ["styles.clio-paint.css"]);
+const ensureClioProjectModule = createLazyModuleLoader("AISystem6ClioProjectWindowLoaded", ["app/core/application-shell.js", "app/core/edit-history.js", "app/core/clio-project.js", "app/features/clio-project-window.js"], false, ["styles.clio-project.css"]);
+const ensureClioPaintModule = createLazyModuleLoader("AISystem6ClioPaintLoaded", ["app/core/application-shell.js", "app/core/edit-history.js", "app/core/edit-snap.js", "app/core/edit-layers.js", "app/core/edit-assets.js", "app/core/edit-embeds.js", "app/features/clio-paint.js"], false, ["styles.clio-paint.css", "styles.edit-kernel.css"]);
 const ensureOneMoreTuneModule = createLazyModuleLoader("AISystem6OneMoreTuneLoaded", ["app/core/application-shell.js", "app/features/one-more-tune.js"], false, ["styles.one-more-tune.css"]);
 const ensureTodoDaModule = createLazyModuleLoader("AISystem6TodoDaLoaded", ["app/core/application-shell.js", "app/features/todo-da.js"]);
 const ensureSideAskPadModule = createLazyModuleLoader("AISystem6SideAskPadLoaded", ["app/core/application-shell.js", "app/features/sideask-pad.js"]);
-const ensureLiquidCoverModule = createLazyModuleLoader("AISystem6LiquidCoverLoaded", ["app/core/application-shell.js", "app/features/image-prompt-runtime.js", "app/features/liquid-cover.js"], false, ["styles.liquid-cover.css"]);
+const ensureLiquidCoverModule = createLazyModuleLoader("AISystem6LiquidCoverLoaded", ["app/core/application-shell.js", "app/core/edit-history.js", "app/core/edit-snap.js", "app/core/edit-layers.js", "app/core/edit-assets.js", "app/core/edit-embeds.js", "app/features/image-prompt-runtime.js", "app/features/liquid-cover-model.js", "app/features/liquid-cover.js"], false, ["styles.liquid-cover.css", "styles.edit-kernel.css"]);
+// Cover Glass by the name the object registry and Finder use for a saved cover.
+const ensureCoverGlassModule = ensureLiquidCoverModule;
+// The cut-out: a background-removal model run in the browser. It loads on the
+// first Remove Background, never with the window, and needs the model files.
+const ensureLiquidCoverCutoutModule = createLazyModuleLoader("AISystem6CoverCutoutLoaded", ["app/features/liquid-cover-cutout.js"]);
 const ensureImagePromptStudioModule = createLazyModuleLoader("AISystem6ImagePromptStudioLoaded", ["app/core/application-shell.js", "app/features/image-prompt-runtime.js", "app/features/image-prompt-studio.js"], false, ["styles.image-prompt-studio.css"]);
 const ensureQuickDraftModule = createLazyModuleLoader("AISystem6QuickDraftLoaded", [
   "app/core/application-shell.js",
@@ -643,6 +673,15 @@ const ensureQuickDraftModule = createLazyModuleLoader("AISystem6QuickDraftLoaded
   "app/core/chat-vent-guidance.js",
   "app/data/draft-desk-presets.js",
   "app/core/listen-beats.js",
+  /* The darkroom's pure halves. Quick Draft renders the darkroom's layer rows
+     and footer keys from its first paint (a language switch repaints them), and
+     those reads need the record and develop models even if nothing has yet
+     opened the darkroom's store, so they load with the chain that reads them
+     rather than waiting for ensureDarkroomModule. Lazy either way. */
+  "app/core/word-diff.js",
+  "app/core/edit-history.js",
+  "app/core/darkroom-record.js",
+  "app/core/darkroom-develop.js",
   /* The workspace normalizers ride with the UI that calls them. This module
      was never added to the list when the rest of the family went lazy, so it
      sat in the boot bundle as 20.9KB that nothing eager referenced - measured
@@ -655,6 +694,7 @@ const ensureQuickDraftModule = createLazyModuleLoader("AISystem6QuickDraftLoaded
   "app/features/quick-draft-editor.js",
   "app/core/grain-diff.js",
   "app/features/quick-draft-composition.js",
+  "app/features/lightroom-develop.js",
   "app/features/quick-draft-ai.js",
   "app/features/quick-draft-tracks.js",
   "app/features/quick-draft-listen.js",

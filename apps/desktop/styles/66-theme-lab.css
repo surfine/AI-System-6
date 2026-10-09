@@ -1010,18 +1010,12 @@ body[data-lineage~="platinum"] {
   pointer-events: none;
 }
 
-.theme-lab-choice-matrix input[type="checkbox"]:checked {
+/* Live boxes only; a disabled checked box is the real control's
+   :checked:disabled art (same weight, so this later rule used to cover it). */
+.theme-lab-choice-matrix input[type="checkbox"]:checked:where(:not(:disabled)) {
   background-image:
     var(--theme-lab-checkbox-checkmark-image, var(--choice-checkmark-image)),
     var(--choice-checked-bg-image, none);
-}
-
-.theme-lab-choice-matrix input[type="checkbox"]:checked:disabled {
-  border-color: var(--choice-disabled-border-color, inherit);
-  background-color: var(--choice-disabled-checked-bg);
-  background-image:
-    var(--choice-disabled-checkmark-image),
-    var(--choice-disabled-checked-bg-image, none);
 }
 
 .theme-lab-choice-matrix input[type="checkbox"]:checked::after {
@@ -1040,9 +1034,11 @@ body[data-lineage~="platinum"] {
   pointer-events: none;
 }
 
-.theme-lab-choice-matrix input[type="checkbox"]:is(:active, .is-active):not(:disabled) {
-  background: var(--theme-lab-checkbox-active-bg, var(--choice-checked-bg));
-  box-shadow: var(--theme-lab-checkbox-active-shadow, var(--control-active-shadow));
+/* Pressed is the era's own art, a step darker. Replacing the art with a
+   token default drew a checked box for an unchecked one, and in eras that
+   never set the token it fell back to System 6's bitmap (2026-10-09 audit). */
+.theme-lab-choice-matrix input:is([type="checkbox"], [type="radio"]).is-active:not(:disabled) {
+  filter: var(--theme-lab-choice-active-filter, brightness(0.82));
 }
 
 .theme-lab-choice-matrix input[type="checkbox"]:checked:disabled::after {
@@ -1051,7 +1047,11 @@ body[data-lineage~="platinum"] {
   filter: var(--theme-lab-checkbox-disabled-mark-filter, none);
 }
 
-.theme-lab-choice-matrix input[type="radio"]:checked {
+/* Not disabled: a disabled checked radio is the real control's own
+   :checked:disabled art, which this rule (later in the cascade) used to cover.
+   :where() keeps the weight at (0,3,1), so an era's own :checked recipe still
+   wins (Liquid Glass paints its radio itself and sets no art token). */
+.theme-lab-choice-matrix input[type="radio"]:checked:where(:not(:disabled)) {
   background-image: var(--theme-lab-radio-checked-bg, var(--radio-checked-image));
   box-shadow: var(--theme-lab-radio-checked-shadow, none);
 }
@@ -1064,24 +1064,6 @@ body[data-lineage~="platinum"] {
   margin: 2px;
   border-radius: 50%;
   background: var(--theme-lab-radio-dot-bg, currentColor);
-}
-
-.theme-lab-choice-matrix input[type="radio"]:is(:active, .is-active):not(:disabled) {
-  background: var(--theme-lab-radio-active-bg, var(--radio-focus-image));
-  box-shadow: var(--theme-lab-radio-active-shadow, var(--control-active-shadow));
-}
-
-.theme-lab-choice-matrix input[type="radio"]:checked:disabled {
-  background-color: var(--theme-lab-radio-disabled-bg, var(--radio-bg));
-  background-image: var(--theme-lab-radio-disabled-image, var(--radio-disabled-checked-image, var(--radio-checked-image)));
-  background-size:
-    7px 7px,
-    var(--radio-disabled-checked-size, var(--system-radio-size))
-      var(--radio-disabled-checked-size, var(--system-radio-size));
-}
-
-.theme-lab-choice-matrix input[type="radio"]:checked:disabled::after {
-  background: var(--theme-lab-radio-disabled-dot-bg, var(--shade-dark));
 }
 
 .theme-lab-form-grid {
@@ -1121,20 +1103,19 @@ body[data-lineage~="platinum"] {
   outline: 0;
 }
 
-.theme-lab-form-grid .theme-lab-focus-demo {
+/* The focused specimen wears the era's own focus tokens, the same ones its
+   real :focus recipe reads. The class is doubled on purpose: every era's resting
+   field rule sits between (0,2,1) and (0,2,2), so at (0,2,0) this lost to them
+   and Big Sur and Liquid Glass showed a focused field with no ring at all
+   (2026-10-09 audit); Snow Leopard's and Aqua's search fields lost the same way.
+   The search field keeps its own fill, so its radius and material stay. */
+.theme-lab-form-grid :is(input:not([type="search"]), select).theme-lab-focus-demo.theme-lab-focus-demo {
   border: var(--field-focus-border);
   background: var(--field-focus-bg);
   box-shadow: var(--field-focus-ring);
 }
 
-/* The painted focus state on a search field, which the rule above could not
-   reach: the resting search rule sits at (0,2,1), so it outranked the shared
-   focus rule (0,2,0) for Snow Leopard and tied the Aqua focus recipe (0,2,1) and
-   won on order. Both eras therefore painted a resting field where the board
-   asks for a focus ring. This supplies only the ring, so the era keeps its own
-   search-field radius, padding, and background — and real `:focus` was never
-   affected, because the era `:focus` recipes sit at (0,2,2). */
-.theme-lab-form-grid input[type="search"].theme-lab-focus-demo {
+.theme-lab-form-grid input[type="search"].theme-lab-focus-demo.theme-lab-focus-demo {
   border: var(--field-focus-border);
   box-shadow: var(--field-focus-ring);
 }
@@ -1151,6 +1132,12 @@ body[data-lineage~="platinum"] {
   --theme-lab-disabled-control-bg: var(--control-disabled-bg);
   --theme-lab-disabled-control-fg: var(--theme-lab-disabled-popup-fg);
   --theme-lab-disabled-control-shadow: var(--theme-lab-disabled-popup-shadow);
+}
+
+/* The view switcher specimen sat flush against the last field's bottom edge,
+   so the two frames read as one broken control. */
+.theme-lab-view-specimen {
+  margin-block: 10px;
 }
 
 .theme-lab-view-icon {
@@ -2077,7 +2064,10 @@ so the base is where the state
 
 .theme-lab-scroll-specimen > .window {
   position: relative;
-  height: 76px;
+  /* Tall enough for a track between the arrows in every era. At 76px the
+     corner NeXTSTEP keeps for its horizontal scroller left the track 9px, and
+     its arrows looked parked at the top of the bar. */
+  height: 112px;
 }
 
 .theme-lab-scroll-specimen > .window > .window-pane {

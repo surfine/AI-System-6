@@ -53,11 +53,17 @@
   let signature = "";
   let queued = false;
   let menu = null;
+  let submenu = null;
   let menuOwner = null;
   let clampDone = false;
   let magBound = false;
   let magRaf = 0;
   let magPointerX = null;
+  // Each icon's centre at rest, read once when magnification starts. Reading
+  // it every frame measured the icons mid-transform (scale and translateZ move
+  // a cell's box), so the curve chased its own output and the row shimmered,
+  // and each frame forced a layout read for every cell.
+  let magCentres = null;
 
   // OS X Dock magnification: a cosine falloff along the icon row, expressed
   // as CSS custom properties the sheet turns into perspective / translateZ /
@@ -72,6 +78,7 @@
 
   function clearMagnification() {
     magPointerX = null;
+    magCentres = null;
     if (!root) return;
     root.classList.remove("is-magnifying");
     root.querySelectorAll(".desk-dock-item").forEach((cell) => {
@@ -98,11 +105,16 @@
     }
     const items = root.querySelectorAll(".desk-dock-item");
     if (!items.length) return;
+    if (!magCentres || magCentres.length !== items.length) {
+      magCentres = Array.from(items, (cell) => {
+        const rect = cell.getBoundingClientRect();
+        return rect.left + rect.width / 2;
+      });
+    }
     root.classList.add("is-magnifying");
     const { peak, range, z: zPeak } = magnificationCurve();
-    items.forEach((cell) => {
-      const rect = cell.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
+    items.forEach((cell, index) => {
+      const cx = magCentres[index];
       const dist = Math.abs(magPointerX - cx);
       const t = Math.max(0, 1 - dist / range);
       const ease = 0.5 - 0.5 * Math.cos(Math.PI * t);
@@ -159,8 +171,13 @@
     // The projection rule: the DOM's shown-or-not, never computed display. The
     // Dock's stylesheet hides exactly these cells while it is shown; a computed
     // test would read the Dock's own hiding as "unlisted".
+    // One exception: MultiFinder hides the desk's Writing Studio switch (the
+    // studio is reached from Applications there), but the Dock is where a
+    // running desk keeps its applications, and a Dock shown always runs as
+    // MultiFinder; so the studio keeps its place in the Dock.
     return Array.from(document.querySelectorAll(".icon-column .desktop-app-icon"))
-      .filter((cell) => !cell.classList.contains("is-hidden") && cell.hidden !== true);
+      .filter((cell) => (!cell.classList.contains("is-hidden") && cell.hidden !== true)
+        || (cell.id === "finder-writing-studio-toggle" && cell.hidden !== true && isMultiFinderMode()));
   }
 
   function appIdForCell(cell) {
@@ -276,8 +293,10 @@
       if (!key.startsWith("window:")) window.AISystem6WindowShadePreferences?.bindDockHover?.(node, appId);
     }
     node.setAttribute("aria-label", label);
+    // An era with a drawn name plate shows only that plate: a browser tooltip
+    // on top of it would be a second label the Dock never had.
     if (LABEL_ERAS.has(currentThemeId())) node.dataset.dockLabel = label;
-    node.title = label;
+    else node.title = label;
     // Later eras have no approved native label plate. Use the existing hint
     // surface for keyboard names instead of inventing another era treatment.
     node.addEventListener("focus", () => {
@@ -466,6 +485,8 @@
     const separator = document.createElement("span");
     separator.className = "desk-dock-separator";
     separator.setAttribute("role", "separator");
+    const divider = perspectiveDivider(currentThemeId());
+    if (divider) separator.style.setProperty("--desk-dock-divider", divider);
     nodes.push(separator);
 
     // The Applications stack is a 10.5+ default: the 10.0-10.4 default right
@@ -643,29 +664,49 @@
 
   // ---- Context menu ------------------------------------------------------
 
+  function closeSubmenu() {
+    submenu?.remove();
+    submenu = null;
+  }
+
   function closeMenu(returnFocus = false) {
     const owner = menuOwner;
+    closeSubmenu();
     menu?.remove();
     menu = null;
     menuOwner = null;
+    owner?.classList?.remove("is-dock-menu-owner");
     document.removeEventListener("pointerdown", onOutsidePointer, true);
     document.removeEventListener("keydown", onMenuKeydown, true);
     if (returnFocus && owner?.isConnected) owner.focus({ preventScroll: true });
   }
 
   function onOutsidePointer(event) {
-    if (menu && !menu.contains(event.target)) closeMenu();
+    if (menu && !menu.contains(event.target) && !submenu?.contains(event.target)) closeMenu();
   }
 
   function onMenuKeydown(event) {
     if (!menu || event.isComposing) return;
+    const inSubmenu = !!submenu?.contains(document.activeElement);
     if (event.key === "Escape" || event.key === "Tab") {
       if (event.key === "Escape") event.preventDefault();
       event.stopPropagation();
+      if (inSubmenu && event.key === "Escape") { closeSubmenu(); menu.querySelector(".has-submenu")?.focus(); return; }
       closeMenu(true);
       return;
     }
-    const items = Array.from(menu.querySelectorAll("button"));
+    if (event.key === "ArrowLeft" && inSubmenu) {
+      event.preventDefault(); event.stopPropagation();
+      closeSubmenu(); menu.querySelector(".has-submenu")?.focus();
+      return;
+    }
+    if (event.key === "ArrowRight" && document.activeElement?.classList?.contains("has-submenu")) {
+      event.preventDefault(); event.stopPropagation();
+      document.activeElement.click();
+      return;
+    }
+    const surface = inSubmenu ? submenu : menu;
+    const items = Array.from(surface.querySelectorAll(":scope > button"));
     const index = items.indexOf(document.activeElement);
     if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
       event.preventDefault(); event.stopPropagation();
@@ -675,6 +716,72 @@
     }
   }
 
+  // Which Dock menu an era draws, from its own captures
+  // (internal/evidence/drafts/dock-reference/dock-menus): 10.2's lists the
+  // windows, then Keep In Dock and Quit (Aqua HIG 2002, fig. 3-2; Tiger has no
+  // capture and follows its parent); 10.6 marks the current window ✓ and a
+  // minimized one ◆ and gathers Keep in Dock under Options, then Hide and
+  // Quit; from 10.7 to 26 the menu adds Show All Windows above Hide. Open at
+  // Login and Show in Finder have nothing behind them on this desk, so they
+  // are left out rather than drawn as switches that do nothing.
+  function dockMenuModel() {
+    const theme = currentThemeId();
+    if (theme === "aqua" || theme === "tiger") return "flat";
+    if (theme === "snow-leopard") return "options";
+    return "show-all";
+  }
+
+  function menuItem(surface, label, run, { mark = "", submenu: opensSubmenu = false } = {}) {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.setAttribute("role", "menuitem");
+    item.textContent = label;
+    item.style.whiteSpace = "normal";
+    item.style.overflowWrap = "anywhere";
+    if (mark) {
+      item.classList.add("is-checked");
+      if (mark !== "✓") item.style.setProperty("--menu-check-content", JSON.stringify(mark));
+    }
+    if (opensSubmenu) {
+      item.classList.add("has-submenu");
+      item.setAttribute("aria-haspopup", "menu");
+      item.setAttribute("aria-expanded", "false");
+      item.addEventListener("click", () => run(item));
+      item.addEventListener("pointerenter", () => run(item));
+    } else {
+      item.addEventListener("click", () => { closeMenu(true); run(); });
+      item.addEventListener("pointerenter", () => { if (surface === menu) closeSubmenu(); });
+    }
+    surface.append(item);
+    return item;
+  }
+
+  function menuSeparator(surface) {
+    if (!surface.lastElementChild || surface.lastElementChild.tagName === "HR") return;
+    const rule = document.createElement("hr");
+    rule.setAttribute("role", "separator");
+    surface.append(rule);
+  }
+
+  function openOptions(appId, trigger) {
+    if (submenu) return;
+    submenu = document.createElement("div");
+    submenu.className = "menu-popover desk-dock-menu desk-dock-submenu";
+    submenu.setAttribute("role", "menu");
+    submenu.setAttribute("aria-label", t("dock_options"));
+    const keep = kept(appId);
+    menuItem(submenu, t("dock_keep"), () => setKept(appId, !keep), { mark: keep ? "✓" : "" });
+    Object.assign(submenu.style, { display: "block", position: "fixed", zIndex: "var(--z-system-menu)" });
+    document.body.append(submenu);
+    trigger.setAttribute("aria-expanded", "true");
+    const at = trigger.getBoundingClientRect();
+    const rect = submenu.getBoundingClientRect();
+    const left = at.right + rect.width + 4 <= window.innerWidth ? at.right - 2 : at.left - rect.width + 2;
+    submenu.style.setProperty("--desk-dock-submenu-left", `${Math.max(8, left)}px`);
+    submenu.style.setProperty("--desk-dock-submenu-top", `${Math.max(30, Math.min(at.top - 4, window.innerHeight - rect.height - 8))}px`);
+    if (trigger === document.activeElement) submenu.querySelector("button")?.focus();
+  }
+
   function openMenu(clientX, clientY, owner = null) {
     closeMenu();
     menuOwner = owner || document.activeElement;
@@ -682,41 +789,82 @@
     menu.className = "menu-popover desk-dock-menu";
     menu.setAttribute("role", "menu");
     menu.setAttribute("aria-label", owner?.getAttribute("aria-label") || t("dock"));
-    const add = (label, run) => {
-      const item = document.createElement("button");
-      item.type = "button";
-      item.setAttribute("role", "menuitem");
-      item.textContent = label;
-      item.style.whiteSpace = "normal";
-      item.style.overflowWrap = "anywhere";
-      item.addEventListener("click", () => { closeMenu(true); run(); });
-      menu.append(item);
-    };
+    const add = (label, run, options) => menuItem(menu, label, run, options);
     const appId = owner?.dataset.appId;
+    const model = dockMenuModel();
     if (appId && !owner.dataset.miniwindow) {
+      // The application's windows first: the current one ticked, a minimized
+      // one marked with the diamond, any other put-away state named.
       applicationWindowOrder(appId).forEach((win) => {
-        add(applicationWindowTitle(win, { markState: true }), () => restoreApplicationWindow(win));
+        const state = applicationWindowPresentation(win);
+        const mark = state === "minimized" && model !== "flat" ? "◆"
+          : win.classList.contains("is-active") && model !== "flat" ? "✓" : "";
+        const title = state === "minimized" && model !== "flat"
+          ? applicationWindowTitle(win)
+          : applicationWindowTitle(win, { markState: true });
+        add(title, () => restoreApplicationWindow(win), { mark });
       });
+      const running = runningIds().has(appId);
+      const quittable = running && !nonQuittableAppIds.has(appId);
       if (appId !== "finder") {
-        const keep = kept(appId);
-        add(t(keep ? "dock_remove" : "dock_keep"), () => setKept(appId, !keep));
-        if (runningIds().has(appId)) {
+        menuSeparator(menu);
+        if (model === "flat") {
+          const keep = kept(appId);
+          add(t(keep ? "dock_remove" : "dock_keep"), () => setKept(appId, !keep));
+        } else {
+          add(t("dock_options"), (trigger) => openOptions(appId, trigger), { submenu: true });
+        }
+      }
+      if (model !== "flat" && running) {
+        menuSeparator(menu);
+        if (model === "show-all") {
+          add(t("dock_show_all_windows"), () => showAllWindows(appId, owner));
+        }
+        if (appId !== "finder") {
           const hidden = hiddenAppIds.has(appId);
           add(t(hidden ? "dock_show_app" : "dock_hide_app"), () => hidden ? unhideApp(appId) : hideApp(appId));
         }
       }
+      if (quittable) {
+        if (model === "flat") menuSeparator(menu);
+        add(t("dock_quit"), () => { if (typeof quitApp === "function") quitApp(appId); });
+      }
     } else {
       add(t("hide_dock"), () => window.AISystem6WindowMinimize?.setDockVisible?.(false));
     }
+    if (menu.lastElementChild?.tagName === "HR") menu.lastElementChild.remove();
     if (!menu.children.length) { closeMenu(); return; }
-    Object.assign(menu.style, { display: "block", position: "fixed", zIndex: "var(--z-system-menu)", maxWidth: "calc(100vw - 16px)", maxHeight: "calc(100dvh - 48px)", overflowY: "auto" });
+    Object.assign(menu.style, { display: "block", position: "fixed", zIndex: "var(--z-system-menu)", maxWidth: "calc(100vw - 16px)", maxHeight: "calc(100dvh - 48px)" });
     document.body.append(menu);
+    // Scroll only a menu taller than the screen; otherwise the pointer wedge
+    // below it would be clipped away.
+    menu.classList.toggle("is-scrolling", menu.scrollHeight > menu.clientHeight + 1);
     const rect = menu.getBoundingClientRect();
-    menu.style.left = `${Math.max(8, Math.min(clientX, window.innerWidth - rect.width - 8))}px`;
-    menu.style.top = `${Math.max(30, Math.min(clientY - rect.height, window.innerHeight - rect.height - 8))}px`;
+    // Above the icon, centred on it, with the pointer at the icon (every
+    // capture from 10.2 to 26); the name plate steps aside while it is open.
+    const at = owner?.getBoundingClientRect?.();
+    const centre = at && at.width ? at.left + at.width / 2 : clientX;
+    const left = Math.max(8, Math.min(centre - rect.width / 2, window.innerWidth - rect.width - 8));
+    const top = at && at.height ? at.top - rect.height - 12 : clientY - rect.height;
+    menu.style.left = `${left}px`;
+    menu.style.top = `${Math.max(30, Math.min(top, window.innerHeight - rect.height - 8))}px`;
+    if (at && at.width) {
+      menu.classList.add("has-dock-pointer");
+      menu.style.setProperty("--desk-dock-menu-pointer-x", `${Math.round(centre - left)}px`);
+    }
+    owner?.classList?.add("is-dock-menu-owner");
     menu.querySelector("button")?.focus();
     document.addEventListener("pointerdown", onOutsidePointer, true);
     document.addEventListener("keydown", onMenuKeydown, true);
+  }
+
+  // Show All Windows: the application's windows as cards that stay until one
+  // is chosen or the panel is dismissed (the explicit form of the Dock hover).
+  async function showAllWindows(appId, owner) {
+    try {
+      await ensureLazySystemModule("app/features/window-browse.js", "AISystem6WindowBrowseLoaded");
+      window.AISystem6WindowBrowse?.open?.({ appId, cards: true, anchor: owner, returnFocus: owner });
+    } catch (error) { /* The Window menu's All Windows list remains. */ }
   }
 
   function onContextmenu(event) {
@@ -751,6 +899,66 @@
     if (!root) return;
     const height = Math.round((root.getBoundingClientRect().height || 0) + 4);
     document.body.style.setProperty("--desk-dock-reserve", `${height}px`);
+  }
+
+  // Snow Leopard's and Lion's separator is a crossing of eight pale dashes
+  // painted on the glass shelf, which is a plane seen in perspective; so the
+  // dashes are drawn by projecting that plane rather than by hand. A strip of
+  // fixed width with dashes at an even pitch, seen from above the shelf, puts
+  // each point at screen depth k/z and gives it width w/z: the dashes widen,
+  // thicken and spread apart toward the front, and each is a trapezoid, its
+  // front edge wider than its back. The column does not lean (the captures
+  // centre every dash on one line). Measured from the captures in
+  // internal/evidence/drafts/theme-lab-fidelity-cache/dock/crops:
+  //   Lion (HIG 2011 p.160, 48px icons, our size): dashes start 3, 5, 7, 10,
+  //     14, 18, 23, 30 rows below the back edge, 1-1-2-2-2-2-3-4 tall, 8 to 16
+  //     wide; front-to-back height ratio 4 = the width ratio 2 squared, which
+  //     is what the projection predicts.
+  //   Snow Leopard (sl-fin-1440, 64px icons): 2 to 5 tall, 10 to 22 wide,
+  //     ratio 2.2; scaled to our 48px icon it is 16.5 wide at the front.
+  // Rows are whole pixels, as in the captures; the ends keep their slant.
+  const PERSPECTIVE_DIVIDERS = {
+    lion: { depthRatio: 2, frontWidth: 16 },
+    "snow-leopard": { depthRatio: 2.2, frontWidth: 16.5 },
+  };
+
+  function perspectiveDivider(theme) {
+    const era = PERSPECTIVE_DIVIDERS[theme];
+    if (!era || !root) return "";
+    const depth = parseFloat(getComputedStyle(root).getPropertyValue("--desk-dock-shelf-depth")) || 40;
+    const width = 18;
+    const back = 3; // first dash below the shelf's back edge
+    const front = 7; // last dash above the box's foot: 4 above the front line, and its 3px band
+    const span = depth - back - front;
+    const dashes = 8;
+    // The share of each pitch a dash covers on the shelf, and the pitch that
+    // lands the last dash on the front of the span: fitted to the Lion capture,
+    // the model's 16 rows (8 starts, 8 heights) are off by 3 pixels in all.
+    const duty = 0.53;
+    const { depthRatio: far, frontWidth } = era;
+    const k = span / (1 - 1 / far); // screen rows per unit of 1/z
+    const rowAt = (z) => back + k * (1 / z - 1 / far);
+    const widthAt = (z) => frontWidth / z;
+    const pitch = (far - 1) / (dashes - (1 - duty));
+    const centre = width / 2;
+    const shapes = [];
+    for (let index = 0; index < dashes; index += 1) {
+      const zBack = far - index * pitch;
+      const zFront = zBack - duty * pitch;
+      const top = Math.round(rowAt(zBack));
+      const bottom = Math.max(top + 1, Math.round(rowAt(zFront)));
+      const topHalf = widthAt(zBack) / 2;
+      const bottomHalf = widthAt(zFront) / 2;
+      const points = [
+        [centre - topHalf, top], [centre + topHalf, top],
+        [centre + bottomHalf, bottom], [centre - bottomHalf, bottom],
+      ].map(([x, y]) => `${x.toFixed(2)},${y}`).join(" ");
+      shapes.push(`<polygon points='${points}'/>`);
+    }
+    // About 30 levels above the glass (Lion: dashes 150-175 over a shelf of
+    // 115-130); the separator element's own 0.8 opacity is part of that.
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${depth}' viewBox='0 0 ${width} ${depth}'><g fill='rgb(250,250,255)' fill-opacity='0.45'>${shapes.join("")}</g></svg>`;
+    return `url("data:image/svg+xml,${encodeURIComponent(svg)}") center / 100% 100% no-repeat`;
   }
 
   // Jaguar / Tiger: punch a 1px slot through the plate at the separator so the
@@ -855,6 +1063,7 @@
 
     const items = root.querySelector(".desk-dock-items");
     items.replaceChildren(...buildItems());
+    magCentres = null;
     clearMagnification();
 
     // Roving tabindex: the toolbar is a single Tab stop, so exactly one cell
@@ -887,7 +1096,7 @@
   });
   document.addEventListener("ai-system6-themechange", () => { closeMenu(); schedule(); });
   document.addEventListener("ai-system6-dockchange", schedule);
-  window.addEventListener("resize", schedule);
+  window.addEventListener("resize", () => { magCentres = null; schedule(); });
   window.visualViewport?.addEventListener?.("resize", schedule);
 
   window.AISystem6DeskDock = Object.freeze({ sync: schedule, moveBefore });

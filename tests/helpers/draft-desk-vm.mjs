@@ -7,7 +7,10 @@ const sourcePaths = [
   "app/core/adjustment-layers.js",
   "app/core/protected-ranges.js",
   "app/core/text-compose.js",
+  "app/core/word-diff.js",
+  "app/core/edit-history.js",
   "app/core/darkroom-record.js",
+  "app/core/darkroom-develop.js",
   "app/core/darkroom-store.js",
   "app/core/grain-diff.js",
   "app/core/explanation-lens.js",
@@ -19,6 +22,7 @@ const sourcePaths = [
   "app/features/quick-draft-intake.js",
   "app/features/quick-draft-editor.js",
   "app/features/quick-draft-composition.js",
+  "app/features/lightroom-develop.js",
   "app/features/quick-draft-ai.js",
   "app/features/quick-draft-handoff.js",
 ];
@@ -83,6 +87,7 @@ function control(id = "") {
 
 export function createDraftDeskVm() {
   const sources = sourcePaths.map((path) => read(path));
+  const promptRecords = JSON.parse(read("app/generated/ai-prompt-files.json"));
   const coordinator = sources[sourcePaths.indexOf("app/features/draft-desk.js")];
   const ids = [...coordinator.matchAll(/refs\.\w+ = \$\("([^"]+)"\)/g)].map((match) => match[1]);
   const controls = new Map(ids.map((id) => [id, control(id)]));
@@ -230,6 +235,19 @@ export function createDraftDeskVm() {
     reviewDeskDirty: false,
     syncReviewDeskPreview: () => {},
     updateReviewDeskStats: () => {},
+    // The shared prompt resolver (question-sheet.js) reads the generated prompt
+    // files; a layer's instructions are prompt files now, so the VM needs the
+    // same lookup rather than a copy of their text.
+    resolveWritingRoutePrompt: (id, language = "zh") => {
+      const record = promptRecords.find((item) => item.id === id);
+      const body = String(language).toLowerCase().startsWith("zh") ? record?.bodies?.zh : record?.bodies?.en;
+      if (!body) throw new Error(`prompt unavailable in the test world: ${id}`);
+      return body;
+    },
+    // The edit kernel's registration (window-manager.js): the darkroom hands its
+    // history over by window name, and Edit > Undo asks for it by the same name.
+    registerEditHistory: (name, history) => { context.editHistories[name] = history; },
+    editHistories: {},
     pushSystemNotification: (message) => { context.notifications.push(message); return "notification-1"; },
     notifications: [],
   });
@@ -270,6 +288,28 @@ export function createDraftDeskVm() {
       requestMingmingQuickDraft,
       applyAdjustmentLayers,
       developAdjustmentLayers,
+      developDocument,
+      lightroomWriteDecision,
+      lightroomActionState,
+      lightroomNegativeReport,
+      lightroomReshoot,
+      lightroomApplyPreset,
+      lightroomCopySettingsTo,
+      lightroomLeaveDocument,
+      lightroomRunPlan,
+      lightroomCurrentSteps,
+      lightroomEditHistory,
+      lightroomPresets,
+      lightroomSavePreset,
+      lightroomSetBypass,
+      lightroomSetCompare,
+      lightroomSetSolo,
+      lightroomPreview,
+      lightroomDevelop,
+      restoreQuickDraftVersion,
+      saveLightroomVersion,
+      darkroomOf,
+      clearLightroomSubject,
       createQuickDraftAsyncTask,
       quickDraftContextSnapshot,
       inferStrategySignals,

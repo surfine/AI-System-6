@@ -2712,12 +2712,14 @@ input[type="checkbox"]:checked:disabled {
     var(--choice-disabled-checked-bg-image, none);
 }
 
+/* An era with one-layer native art sizes it whole here too, or the disabled
+   radio shrank to the 7px dot slot and lost its ring (Platinum, 2026-10-09). */
 input[type="radio"]:checked:disabled {
   background-image: var(--radio-disabled-checked-image);
-  background-size:
+  background-size: var(--radio-checked-size,
     7px 7px,
     var(--radio-disabled-checked-size, var(--system-radio-size))
-      var(--radio-disabled-checked-size, var(--system-radio-size));
+      var(--radio-disabled-checked-size, var(--system-radio-size)));
 }
 
 .icon-column {

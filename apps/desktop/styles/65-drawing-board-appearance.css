@@ -99,6 +99,8 @@ body[data-theme="drawing-board"] {
   --window-frame-arrow-shadow: inset 1px 1px #f4efe7, inset -1px -1px #b2a697;
   --window-frame-empty-track-bg: #e7e3de;
   --window-frame-empty-arrow-ink: #857765;
+  --choice-pressed-bg: #75685a;
+  --choice-pressed-shadow: inset 1px 1px 0 #574c41, inset -1px -1px 0 #958671;
   --tab-pressed-fg: #f4efe7;
   --tab-focus-text-shadow: 0 0 2px #958671;
   --tab-panel-shadow: inset 1px 1px #c0b6aa, inset 2px 2px #f4efe7, inset -1px -1px #958671, inset -2px -2px #b2a697;

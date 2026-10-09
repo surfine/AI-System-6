@@ -913,6 +913,10 @@ function sideAskSourceDisplayLabel(appId = sideAskAnchorAppId) {
   if (appId === "clioStage") return typeof clioStageState !== "undefined" && clioStageState?.source?.title
     ? `${t("clio_stage_label")} / ${clioStageState.source.title}`
     : t("clio_stage_label");
+  if (appId === "clioChart") {
+    const drawing = window.AISystem6ClioDiagram?.current?.();
+    return drawing?.title ? `${t("clio_chart_label")} / ${drawing.title}` : t("clio_chart_label");
+  }
   if (appId === "timeMachine") {
     const page = typeof currentTimeMachinePage !== "undefined" ? currentTimeMachinePage : null;
     const title = page?.reader?.title || page?.title || "";
@@ -928,6 +932,41 @@ function sideAskSourceDisplayLabel(appId = sideAskAnchorAppId) {
   return t("sideask");
 }
 
+// Paired with ClioStage or a ClioChart drawing, SideAsk can also change what
+// it reads: this button sends the message as an edit request instead of a
+// question. The window shows the result side by side and nothing lands until
+// the writer accepts it there.
+function sideAskEditTarget() {
+  if (sideAskAnchorAppId === "clioStage") return window.AISystem6ClioStage?.proposeEdit ? window.AISystem6ClioStage : null;
+  if (sideAskAnchorAppId === "clioChart" && window.AISystem6ClioChart?.mode?.() === "diagram") return window.AISystem6ClioDiagram || null;
+  return null;
+}
+
+function syncSideAskApplyEdit(sideAskActive) {
+  const target = sideAskActive ? sideAskEditTarget() : null;
+  let button = document.getElementById("sideask-apply-edit");
+  if (!button && target) {
+    button = document.createElement("button");
+    button.type = "button";
+    button.id = "sideask-apply-edit";
+    button.className = "btn sideask-apply-edit";
+    button.addEventListener("click", () => {
+      const text = promptInput?.value?.trim() || "";
+      const editor = sideAskEditTarget();
+      if (!text || !editor) { promptInput?.focus(); return; }
+      promptInput.value = "";
+      promptInput.dispatchEvent(new Event("input", { bubbles: true }));
+      focusSideAskSource();
+      editor.proposeEdit(text);
+    });
+    const row = document.querySelector("#chat-form .composer-action-row");
+    row?.insertBefore(button, row.querySelector('button[type="submit"]'));
+  }
+  if (!button) return;
+  button.hidden = !target;
+  button.textContent = t(sideAskAnchorAppId === "clioChart" ? "sideask_apply_edit_drawing" : "sideask_apply_edit_page");
+}
+
 function focusSideAskSource() {
   if (!sideAskEnabled || isMultiFinderMode()) return;
   const windowName = {
@@ -937,6 +976,7 @@ function focusSideAskSource() {
     scrapbook: "scrapbook",
     docMap: "docMap",
     clioStage: "clioStage",
+    clioChart: "clioChart",
     timeMachine: "timeMachine",
     imagePromptStudio: "imagePromptStudio",
     endfieldTerminal: "endfieldTerminal",
@@ -976,6 +1016,7 @@ function updateSideAskSourceChrome() {
   if (sourceName && sideAskActive) {
     sourceName.textContent = t("sideask_paired_with", sideAskSourceDisplayLabel());
   }
+  syncSideAskApplyEdit(sideAskActive);
   document.getElementById("compose-tools-quick-draft")?.classList.add("is-hidden");
   document.querySelectorAll(".compose-tools-quick-draft-import").forEach((item) => {
     item.classList.add("is-hidden");
@@ -1230,10 +1271,6 @@ function restoreWindowFocus(win) {
 
 function syncWindowMinimizeLamp(win) {
   window.AISystem6WindowMinimize?.syncLamp(win);
-}
-
-function syncWindowMinimizeLamps(root) {
-  window.AISystem6WindowMinimize?.syncLamps(root);
 }
 
 // A miniaturized window needs a way back, and the lists of put-away windows
@@ -2767,6 +2804,33 @@ function resolveMenuContextWindow() {
   return activeWin;
 }
 
+// Editors that keep their own history (app/core/edit-history.js) register it
+// by window. Edit > Undo / Redo, their availability and the step named in the
+// menu all follow the registered history when no text field is the target. An
+// entry may be a function, for an editor whose history depends on its mode.
+const editHistories = new Map();
+function registerEditHistory(windowName, history) {
+  editHistories.set(windowName, history);
+}
+function editHistoryFor(windowName = resolveMenuContextWindow()?.dataset.window) {
+  const entry = windowName && editHistories.get(windowName);
+  return (typeof entry === "function" ? entry() : entry) || null;
+}
+
+// The Edit menu names the step it would take back, the way a Mac editor says
+// "Undo Move". A focused text field keeps the plain words.
+function syncEditStepLabels() {
+  const history = typeof getActiveEditableElement === "function" && getActiveEditableElement() ? null : editHistoryFor();
+  ["undo", "redo"].forEach((command) => {
+    const step = history?.[`${command}Label`]?.() || "";
+    // An app whose Edit menu keeps its own Undo row marks it data-edit-step.
+    document.querySelectorAll(`[data-action="${command}"][data-i18n], [data-edit-step="${command}"][data-i18n]`).forEach((row) => {
+      const text = step ? t(`${command}_step`, t(step)) : t(row.dataset.i18n);
+      if (!writeShortcutRowLabel(row, text)) row.textContent = text;
+    });
+  });
+}
+
 function isWindowArrangementActionAvailable(win, action) {
   if (["slideLeft", "slideRight", "splitChoose", "peek", "pinList", "pinSuspend", "pinClear", "pinRestore", "slideShow", "slideHide", "slideExit"].includes(action)) {
     if (window.AISystem6WindowShade) return window.AISystem6WindowShade.available(win, action);
@@ -2882,6 +2946,13 @@ function getActionAvailability() {
     ? !!currentFinderSelection.canMakeDocMap
     : docMapReadiness?.ready;
   const canMakeDocMapSelection = docMapReadiness?.selectionReady;
+  // A chart needs less text than a map, read off the same two candidates
+  // rather than a second walk over every source.
+  const sourceReadyAt = (source, min) => (source?.text?.length || 0) >= Math.min(source?.threshold ?? Infinity, min);
+  const canMakeChartSelection = sourceReadyAt(docMapReadiness?.selectionSource, clioChartMinSourceChars);
+  const canMakeChart = canMakeChartSelection || sourceReadyAt(docMapReadiness?.wholeSource, clioChartMinSourceChars);
+  const canMakeSlidesSelection = sourceReadyAt(docMapReadiness?.selectionSource, clioStageMinSourceChars);
+  const canMakeSlides = canMakeSlidesSelection || sourceReadyAt(docMapReadiness?.wholeSource, clioStageMinSourceChars);
   const canMakeDocMapSource = isFinderWindow && currentFinderSelection
     ? !!currentFinderSelection.canMakeDocMap
     : docMapReadiness?.wholeReady;
@@ -3168,7 +3239,10 @@ function getActionAvailability() {
     "print-current": isTeachText && hasTeachTextBody,
     "print-directory": canPrintDirectory,
     "close-active-window": !!activeWin && !activeWin.classList.contains("is-hidden"),
-    "undo": hasEditableFocus || isTeachText || isAssistant,
+    // An editor with a registered history answers Undo and Redo while that
+    // history has a step; a focused text field keeps its own.
+    "undo": hasEditableFocus || isTeachText || isAssistant || !!editHistoryFor(winName)?.canUndo(),
+    "redo": hasEditableFocus || (editHistoryFor(winName) ? editHistoryFor(winName).canRedo() : true),
     "cut": hasEditableSelectionRange,
     "copy": !!window.getSelection().toString() || hasEditableSelectionRange,
     "paste": hasEditableFocus || isTeachText || isAssistant,
@@ -3188,6 +3262,10 @@ function getActionAvailability() {
     "make-docmap": canMakeDocMap,
     "make-docmap-selection": canMakeDocMapSelection,
     "make-docmap-source": canMakeDocMapSource,
+    "make-chart": canMakeChart,
+    "make-chart-selection": canMakeChartSelection,
+    "make-slides": canMakeSlides,
+    "make-slides-selection": canMakeSlidesSelection,
     // "Map This" belongs to the picture-reading panel, which only shows once a
     // reading has come back -- the button used to stay enabled with nothing to
     // map, and silently did nothing when clicked before then.
@@ -3254,6 +3332,8 @@ function getActionAvailability() {
     "review-mingming-handoff": reviewDeskReady && teachTextCanReview && hasStyleSections,
     "review-mingming-handoff-backstage": reviewDeskReady && teachTextCanReview && hasStyleSections,
     "review-export": reviewDeskReady && teachTextCanReview && !!(reviewDeskBodyInput?.value || teachTextBodyInput.value || "").trim(),
+    "open-review-comments": reviewDeskReady && teachTextCanReview,
+    "open-review-compare": reviewDeskReady && teachTextCanReview,
     "open-style-sheet": true,
     "style-check-manuscript": teachTextCanReview && !!teachTextBodyInput.value.trim(),
     "style-check-section": teachTextCanReview && hasStyleSections,
@@ -3408,6 +3488,7 @@ function updateMenuState() {
   // which fire no focusin. It is a parent check and at most one append.
   if (typeof syncStatusHost === "function") syncStatusHost();
   const state = getActionAvailability();
+  syncEditStepLabels();
   if (typeof syncProjectCdBurnActionVisibility === "function") syncProjectCdBurnActionVisibility();
   const activeWin = document.querySelector(".window.is-active:not(.is-hidden)");
   // 文字亮室 is a second front window onto the same drafting API. Asking only

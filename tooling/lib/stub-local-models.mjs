@@ -6,7 +6,7 @@
 // depended on whether the build machine's shared LM Studio had a model loaded
 // at that moment — the menu bar named the model, ClioTalk's send button
 // changed state, and the token tables' `.btn` multisets moved between two
-// runs of the same tree. tests/features/stub-local-models.test.mjs keeps
+// runs of the same tree. tests/features/appearance-token-check.test.mjs keeps
 // tools from writing their own port-only stub again.
 //
 // Each answer is the one a machine with no local model gives.

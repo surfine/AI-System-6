@@ -13,7 +13,6 @@ const desktopRuntime = read("app/core/desktop-runtime.js");
 const markdownEditor = read("app/core/markdown-editor.js");
 const alarmClock = read("app/features/alarm-clock.js");
 const clioChart = read("app/features/clio-chart.js");
-const liquidCover = read("app/features/liquid-cover.js");
 const actions = read("app/core/actions.js");
 const askBar = read("app/core/ask-bar.js");
 const reader = read("app/features/reader.js");
@@ -64,7 +63,7 @@ test.assertIncludes(desktopRuntime, '!eventIsTextComposition(event)', "the new-p
 test.assertIncludes(markdownEditor, '!eventIsTextComposition(event)', "the Markdown editor does not transform during composition");
 test.assertIncludes(alarmClock, '!eventIsTextComposition(event)', "Alarm Clock does not commit during composition");
 test.assertIncludes(clioChart, '!eventIsTextComposition(event)', "ClioChart does not edit cells during composition");
-test.assertIncludes(liquidCover, '!eventIsTextComposition(event)', "Cover Glass does not finish during composition");
+test.assertIncludes(read("app/core/edit-layers.js"), "eventIsTextComposition(keyEvent)", "the shared layers panel (Cover Glass, ClioPaint, the canvas) does not finish a rename during composition");
 
 // Draft Desk has no Enter-to-generate path: the body is a multiline textarea
 // and generation is button-driven, so composition can never fire a draft.

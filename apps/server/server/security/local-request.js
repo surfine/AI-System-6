@@ -250,7 +250,11 @@ function applySecurityHeaders(res) {
       // `data:` is the silent quarter-second the unlock plays inside the tap.
       // http://127.0.0.1:4173 is the writer's own Mac: a desk opened from
       // another loopback port plays Soundscape's downloads through the bridge.
-      "media-src 'self' data: https://audio-ssl.itunes.apple.com http://127.0.0.1:4173",
+      // `blob:` is a video file the writer chose on this machine: the
+      // storyboard's keyframe import and Quick Draft's chat-recording frames
+      // read it through a <video> element (a blob URL can only be minted by
+      // this page from a local file).
+      "media-src 'self' data: https://audio-ssl.itunes.apple.com http://127.0.0.1:4173 blob:",
       "worker-src 'self' blob:",
       // 'self' is for #time-machine-frame, which embeds our own
       // /api/time-machine/render endpoint (see routes/time-machine.js).

@@ -41,6 +41,7 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 
 ## Contents
 
+- [What's new in 1.0.57](#whats-new-in-1057)
 - [What's new in 1.0.56](#whats-new-in-1056)
 - [What this protects](#what-this-protects)
 - [Run it in 60 seconds](#run-it-in-60-seconds)
@@ -56,6 +57,42 @@ THERE ARE FOUR MORE INSIDE. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 - [How this repository keeps itself honest](#how-this-repository-keeps-itself-honest)
 - [How the repository is laid out](#how-the-repository-is-laid-out)
 - [Contributing](#contributing)
+
+## What's new in 1.0.57
+
+- **The Dock runs several applications at once.** With the Dock shown, a Mac
+  OS X appearance always runs as MultiFinder (Mac OS X had no single-application
+  mode), and Writing Studio keeps its place in the Dock. Resting on an icon
+  shows that application's windows as cards with real pictures, a window put
+  away keeping the picture it had, labelled; nothing moves until you choose a
+  card. Each era's Dock menu follows its own captures (the window list with the
+  current window ticked and minimized ones marked, Options, Show All Windows
+  from Lion on, Hide and Quit), and Snow Leopard's and Lion's separator is drawn
+  by projecting the glass shelf. The Dock still starts off; switch it on from
+  the Control Panel's General page.
+- **Big Sur is drawn from macOS 11 itself.** The Finder sidebar runs the full
+  height of the window, windows take the wallpaper's tint, alerts are narrow,
+  translucent and centred, pop-ups carry the blue arrow well in the front
+  window, and Get Info and the Control Panel follow the preference panes.
+- **Controls say what state they are in, in every appearance.** Disabled,
+  focused, pressed and checked read the way they did on each era's own screen.
+- **ClioChart and ClioStage take any text and stay grounded in it.** ClioChart
+  offers three candidate drawings on an editable canvas, every box keeping the
+  sentence it stands on; ClioStage drafts decks page by page and sends invented
+  numbers and paraphrased quotes back for repair. Slides are edited on the very
+  page that prints, and Print Preview shows the PDF's own sheet.
+- **One undo history across the desk's editors**, with guides, align,
+  distribute and a layers panel on the canvases. Pictures travel between
+  editors as editable copies and offer Sync when their original changes.
+- **Review Desk keeps comment threads on the manuscript**, anchored by their
+  words and never guessed back into place.
+- **ClioPaint has 1-bit layers; Cover Glass saves covers with real layers** and
+  removes a background with a small model shipped in the build; **Text
+  Lightroom develops layer by layer.**
+- **ASCII storyboards** from a script in TeachText or Quick Draft, with a PNG
+  sheet, hand edits kept on update, and shots refined in Image Prompt Studio. A
+  model is required; the real-model steps of its acceptance walk have not yet
+  been run.
 
 ## What's new in 1.0.56
 
@@ -492,7 +529,7 @@ The writing runtime keeps author, recipient, voice and medium independent, share
 ## Built under a 1988 constraint
 
 ```text
-boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,915,422 bytes
+boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,940,943 bytes
 two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 bytes
 heavy tools             load lazily, from a third disk
 ```

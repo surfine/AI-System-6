@@ -936,6 +936,7 @@ function setControlTab(name) {
     panel.hidden = !active;
   });
   if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
+  if (typeof window.syncAiSourceChoice === "function") window.syncAiSourceChoice();
 
   // Control Panel has one stable desktop size. Clear any old session height
   // left by the former content-sized behavior while preserving its user-chosen

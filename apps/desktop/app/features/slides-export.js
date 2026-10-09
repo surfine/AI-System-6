@@ -763,21 +763,26 @@ function buildMarpSkillPrompt(source) {
     "",
     slideDeckPromptBrief(source.deckSpec),
     "",
-    "Required frontmatter. Include this exact style block unless you have a strong reason to add only more CSS:",
-    "---",
-    "marp: true",
-    "theme: default",
-    "paginate: true",
-    "size: 16:9",
-    clioMarpStyleBlock(),
-    "---",
+    // With a deck spec the era's stylesheet is applied after generation
+    // (ensureClioMarpVisualStyle -> restyle), so sending ten kilobytes of CSS
+    // for the model to copy only crowded the source out of a small context.
+    ...(source.deckSpec
+      ? ["Required frontmatter (the app adds the visual style itself; write no CSS):", "---", "marp: true", "theme: default", "paginate: true", "size: 16:9", "---"]
+      : ["Required frontmatter. Include this exact style block unless you have a strong reason to add only more CSS:", "---", "marp: true", "theme: default", "paginate: true", "size: 16:9", clioMarpStyleBlock(), "---"]),
     "",
     "DECK PLAN:",
     plan,
     "",
+    "Grounding:",
+    "- Every number on a slide must be a number the source writes. Do not compute differences, ratios or totals.",
+    "- When a page compares numbers, use the evidence, metric or table layout and put the source's numbers in a GFM table; the app draws the chart from it.",
+    "- About a third of the pages should be drawn: a sequence in time as a timeline page (a list of `**when** what`), two sides as a columns page (two `###` headings, each with a short list), numbers as a table. The app turns these into drawings.",
+    "- A quote page quotes the source word for word, with who said it.",
+    "- Give every content slide a speaker note naming the source passage it rests on: `<!-- notes: 来源：「…」 -->`.",
+    "",
     `SOURCE TITLE:\n${title}`,
     "",
-    `SOURCE MARKDOWN:\n${source.markdown}`,
+    `SOURCE MARKDOWN:\n${marpSourceForPrompt(source.markdown)}`,
   ].join("\n");
 }
 
@@ -789,12 +794,13 @@ function buildMarpRepairPrompt(source, draft, validation, { aiSlides = false } =
       ? "如果某一页为空，请根据来源材料补成有内容的一页，或合并到相邻页；不要只删除到少于合理页数。"
       : "如果某一页为空，请根据来源材料补成有内容的一页，或合并到相邻页；演示简版保持 3-5 页。",
     "不要编造来源之外的信息。",
+    "invented_number：把该页里原文没有的数字改回原文数字或删掉，不要自己计算差值、比例或合计。quote_not_verbatim：引文改成原文原话，或改用别的版式。",
     "",
     `VALIDATION ERRORS:\n${details}`,
     "",
     `SOURCE TITLE:\n${source.name || t("untitled")}`,
     "",
-    `SOURCE MARKDOWN:\n${clipContextContent(source.markdown || "", 3200)}`,
+    `SOURCE MARKDOWN:\n${marpSourceForPrompt(source.markdown || "")}`,
     "",
     "DRAFT TO REPAIR:",
     normalizeMarkdownText(draft || "").trim(),
@@ -852,6 +858,14 @@ function marpSkillValidationErrorLabel(error) {
   if (error === "empty_deck") return zh ? "没有 slide 内容" : "No slide content";
   if (error === "missing_slide_separator") return zh ? "缺少 slide 分隔线 ---" : "Missing slide separators";
   if (error === "unclosed_code_block") return zh ? "代码块没有闭合" : "Code block is not closed";
+  if (error.startsWith("invented_number:")) {
+    const pages = error.split(":")[1] || "";
+    return zh ? `第 ${pages} 页有原文里没有的数字` : `Slide ${pages} states numbers the source does not`;
+  }
+  if (error.startsWith("quote_not_verbatim:")) {
+    const pages = error.split(":")[1] || "";
+    return zh ? `第 ${pages} 页的引文不是原话` : `The quote on slide ${pages} is not the source's own words`;
+  }
   if (error.startsWith("empty_slide:")) {
     const pages = error.split(":")[1] || "";
     return zh ? `存在空白 slide：${pages}` : `Empty slide found: ${pages}`;
@@ -891,6 +905,8 @@ function createMarpSkillTeachTextDocument(markdown, source) {
     folderId: folder.id,
     body: normalizeMarkdownText(markdown).trimEnd() + "\n",
     source: "Marp",
+    // A deck is its own kind of object: it opens in ClioStage, not TeachText.
+    artifactKind: "slides",
     durable: true,
     label: "ai",
     createdAt: now,
@@ -904,6 +920,124 @@ function createMarpSkillTeachTextDocument(markdown, source) {
   return file;
 }
 
+// --- grounding the deck ----------------------------------------------------
+// A deck is the writer's material rearranged, so it may not say more than the
+// material did. Two gates join the structural ones and feed the same repair
+// loop: every number on a page must be a number the source wrote, and a quote
+// page must quote the source word for word. Numbers that only count or order
+// things (a "3" in "three reasons", a divider's "02") are left alone.
+
+const MARP_SMALL_ORDINAL_MAX = 12;
+
+function marpDeckVisibleText(page) {
+  return String(page || "")
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+    .replace(/^\s*(?:\d+[.)]|[-*+])\s+/gm, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ");
+}
+
+function marpDeckGroundingErrors(markdown, sourceMarkdown) {
+  const runtime = slideDeckRuntime();
+  const chart = window.AISystem6ClioChart;
+  if (!runtime || !chart?.numbersIn || !String(sourceMarkdown || "").trim()) return [];
+  const sourceValues = new Set(chart.numbersIn(sourceMarkdown));
+  const foldedSource = chart.fold(sourceMarkdown).replace(/[「」“”"『』]/g, "");
+  const invented = [];
+  const misquoted = [];
+  runtime.pages(markdown).forEach((page) => {
+    if (page.empty) return;
+    const visible = marpDeckVisibleText(page.page);
+    const stray = chart.numbersIn(visible).filter((value) => (
+      !sourceValues.has(value) && !(Number.isInteger(value) && value <= MARP_SMALL_ORDINAL_MAX)
+    ));
+    if (stray.length) invented.push(page.index);
+    if (page.layout === "quote") {
+      const quoted = page.page.split(/\r?\n/)
+        .filter((line) => /^\s*>/.test(line))
+        .map((line) => line.replace(/^\s*>\s?/, "").replace(/[*_`]/g, ""))
+        .join(" ");
+      const folded = chart.fold(quoted).replace(/[「」“”"『』]/g, "");
+      if (folded && !foldedSource.includes(folded)) misquoted.push(page.index);
+    }
+  });
+  return [
+    invented.length ? `invented_number:${invented.join(",")}` : "",
+    misquoted.length ? `quote_not_verbatim:${misquoted.join(",")}` : "",
+  ].filter(Boolean);
+}
+
+// An evidence, metric or table page that carries a Markdown table gets the
+// drawing ClioChart would make of it, in the deck's own ink, and becomes an
+// evidence page — the layout built for a picture and its one-line reading, and
+// the only one that sizes a picture to the page. The table stays in the page
+// as a provenance comment, the same shape "Send to ClioStage" writes.
+function marpDeckChartPages(markdown, spec, sourceText = "") {
+  const runtime = slideDeckRuntime();
+  const chart = window.AISystem6ClioChart;
+  if (!runtime || !chart?.findTables || !chart?.projectionSvg) return markdown;
+  const era = runtime.byId(spec?.era || runtime.defaultSpec().era);
+  const tokens = era?.tokens || {};
+  const palette = {
+    ink: tokens.ink || "#111111",
+    tint: tokens.tint || "#e8e8e8",
+    muted: tokens.muted || tokens.ink || "#333333",
+    paper: "transparent",
+    body: tokens.body || "",
+  };
+  let next = String(markdown || "");
+  const diagramApi = window.AISystem6ClioDiagram;
+  runtime.pages(markdown).forEach((page) => {
+    // A timeline page and a two-sided page are drawn as concept drawings: the
+    // page's own items become boxes, and the drawing rides along as data so a
+    // double-click opens it on the canvas.
+    if (diagramApi && ["timeline", "columns", "duo-compare", "contrast"].includes(page.layout) && !/!\[[^\]]*\]\(/.test(page.page)) {
+      const diagram = diagramApi.fromSlidePage(page.page, page.layout, sourceText);
+      if (!diagram) return;
+      const lines = page.page.split("\n");
+      const keep = lines.filter((line) => /^\s*<!--/.test(line) || /^#{1,2}\s/.test(line));
+      const heading = (lines.find((line) => /^#{1,2}\s/.test(line)) || "").replace(/^#{1,2}\s+/, "").replace(/[*_`[\]]/g, "");
+      const svg = diagramApi.svg(diagram, palette, { fit: true });
+      const redrawn = [
+        ...keep.map((line) => line.replace(/(<!--\s*_class:\s*)(?:timeline|columns|duo-compare|contrast)\b/, "$1evidence")),
+        "",
+        window.AISystem6EditEmbeds.embedMarkdown({ kind: "diagram", alt: heading || t("clio_chart_label"), svg, data: diagram }),
+      ].join("\n");
+      const at = next.indexOf(page.page);
+      if (at >= 0) next = `${next.slice(0, at)}${redrawn}${next.slice(at + page.page.length)}`;
+      return;
+    }
+    if (!["evidence", "metric", "table"].includes(page.layout)) return;
+    const found = chart.findTables(page.page)[0];
+    if (!found) return;
+    const heading = (page.page.match(/^#{1,3}\s+(.+)$/m) || [])[1] || "";
+    const table = chart.orientForChart(found.table);
+    const svg = chart.projectionSvg(table, chart.deckProjection(table), palette, { omitHeading: !!heading, fit: true });
+    // The page's table becomes an editable copy beside its picture.
+    const drawing = window.AISystem6EditEmbeds.embedMarkdown({ kind: "chart", alt: heading.replace(/[*_`[\]]/g, "") || t("clio_chart_label"), svg, data: { markdown: found.text } });
+    const redrawn = page.page
+      .replace(found.text, () => drawing)
+      .replace(/(<!--\s*_class:\s*)(?:metric|table)\b/, "$1evidence");
+    const at = next.indexOf(page.page);
+    if (at >= 0) next = `${next.slice(0, at)}${redrawn}${next.slice(at + page.page.length)}`;
+  });
+  return next;
+}
+
+// The model reads at most this much source. A long text is cut at a paragraph
+// boundary and says so, rather than being flattened into one excerpt line.
+const MARP_SOURCE_BUDGET = 16000;
+
+function marpSourceForPrompt(markdown) {
+  const text = String(markdown || "");
+  if (text.length <= MARP_SOURCE_BUDGET) return text;
+  const cut = text.lastIndexOf("\n\n", MARP_SOURCE_BUDGET);
+  return `${text.slice(0, cut > MARP_SOURCE_BUDGET / 2 ? cut : MARP_SOURCE_BUDGET).trimEnd()}\n\n[…]`;
+}
+
+// Any text to a deck, in one step. The deck opens in ClioStage as a temporary
+// draft — nothing is written to the project until the writer saves it — and a
+// failed run leaves a Retry in the window instead of a dead end.
 async function generateMarpMarkdownAndOpenClioStage(sourceOverride = null) {
   const source = sourceOverride?.markdown
     ? {
@@ -919,66 +1053,115 @@ async function generateMarpMarkdownAndOpenClioStage(sourceOverride = null) {
     return null;
   }
   const runtime = slideDeckRuntime();
-  // The demo is a canned brief, so it reuses the remembered deck instead of
-  // stopping the walkthrough with a question.
-  const spec = runtime
-    ? (source.demoBrief ? runtime.storedSetup() : await runtime.chooseSetup())
-    : null;
-  if (runtime && !spec) return null;
+  // One click means no setup sheet: the remembered deck (or the default).
+  // The era can be changed afterwards from ClioStage's Restyle menu.
+  const spec = runtime ? runtime.storedSetup() : null;
   const planned = { ...source, deckSpec: spec };
-  if (!beginLongTask("marp-slides", currentLanguage === "zh" ? "正在生成 Marp Markdown..." : "Generating Marp Markdown...")) return null;
+  const retrySource = { markdown: source.markdown, title: source.name, folder: source.folder, demoBrief: source.demoBrief, maxTokens: source.maxTokens };
+  await ensureClioStageModule();
+  await ensureClioChartModule();
+  const stage = window.AISystem6ClioStage;
+  if (stage?.confirmDiscard && !(await stage.confirmDiscard())) return null;
+  if (!beginLongTask("marp-slides", t("clio_stage_generating", source.name))) return null;
+  stage?.showPending?.({ label: source.name, retry: () => generateMarpMarkdownAndOpenClioStage(retrySource) });
+  const fail = (message) => {
+    markActiveLongTaskFailed(message);
+    setStatus(message);
+    pushSystemNotification(message, { state: "failed", windowName: "clioStage" });
+    stage?.showFailed?.(message);
+    return null;
+  };
   try {
     let markdown = "";
     let validation = null;
     let prompt = buildMarpSkillPrompt(planned);
-    const maxAttempts = planned.demoBrief ? 3 : 2;
+    let streamShownAt = 0;
+    const maxAttempts = 3;
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       const result = await sendToLmStudio(prompt, getLongTaskSignal(), {
-        maxTokens: Number.isFinite(planned.maxTokens) ? planned.maxTokens : 3200,
+        maxTokens: Number.isFinite(planned.maxTokens) ? planned.maxTokens : 3600,
         temperature: attempt === 0 ? 0.18 : 0.08,
         skipContext: true,
         taskKind: "marp",
-        streamPreference: "none",
+        // Streamed: a long deck from a slow local model would otherwise be cut
+        // off by the first-response deadline before its first token arrived.
+        streamPreference: "stream",
+        // Pages appear in ClioStage as the model closes them.
+        onToken: (partial) => {
+          const now = Date.now();
+          if (now - streamShownAt < 400) return;
+          streamShownAt = now;
+          stage?.showStreaming?.(String(partial || "").replace(/^\s*```(?:markdown|md|marp)?\s*\n/i, ""), { label: source.name });
+        },
       });
       markdown = ensureClioMarpVisualStyle(cleanMarpSkillModelOutput(result), spec);
       validation = validateMarpSkillMarkdown(markdown, planned.markdown);
-      if (validation.ok) break;
-      prompt = buildMarpRepairPrompt(planned, markdown, validation);
+      const grounding = marpDeckGroundingErrors(markdown, planned.markdown);
+      if (grounding.length) validation = { ...validation, ok: false, errors: [...(validation.errors || []), ...grounding] };
+      if (validation.ok || attempt === maxAttempts - 1) break;
+      prompt = buildMarpRepairPrompt(planned, markdown, validation, { aiSlides: !planned.demoBrief });
     }
-    if (!validation.ok) {
-      const message = formatMarpSkillValidationError(validation);
-      markActiveLongTaskFailed(message);
-      setStatus(message);
-      pushSystemNotification(message, { state: "failed" });
+    if (!validation.ok) return fail(formatMarpSkillValidationError(validation));
+
+    markdown = marpDeckChartPages(markdown, spec, planned.markdown);
+    const opened = await stage?.open({
+      title: `${slidesFileBaseName(source.name)}.slides.md`,
+      markdown,
+      sourceKind: "generated",
+      temporary: true,
+      sourceLabel: source.name,
+      // Kept for the gates a later one-line edit runs.
+      sourceText: planned.markdown,
+      saveTarget: { name: source.name, folder: source.folder },
+    });
+    if (opened === false) return fail(t("clio_stage_open_failed"));
+    setStatus(t("clio_stage_generated_temporary", source.name));
+    return { temporary: true, name: source.name, markdown };
+  } catch (error) {
+    if (isAbortError(error)) {
+      stage?.showFailed?.(t("stopped"));
       return null;
     }
-
-    const file = createMarpSkillTeachTextDocument(markdown, source);
-    if (!file) return null;
-    await ensureClioStageModule();
-    await window.AISystem6ClioStage?.open({
-      title: file.name,
-      markdown: file.body,
-      sourceKind: "teachText",
-      sourceItemId: file.id,
-    });
-    setStatus(currentLanguage === "zh"
-      ? `已生成 Marp Markdown 并在 ClioStage 打开：${file.name}`
-      : `Marp Markdown generated and opened in ClioStage: ${file.name}`);
-    return file;
-  } catch (error) {
-    if (!isAbortError(error)) {
-      const message = currentLanguage === "zh"
-        ? `Marp Markdown 生成失败：${error.message}。原稿未被覆盖。`
-        : `Marp Markdown generation failed: ${error.message}. Original document was not changed.`;
-      markActiveLongTaskFailed(message);
-      setStatus(message);
-      pushSystemNotification(message, { state: "failed" });
-    }
-    return null;
+    return fail(currentLanguage === "zh"
+      ? `幻灯片生成失败：${error.message}。原稿未被改动。`
+      : `Slide generation failed: ${error.message}. The source was not changed.`);
   } finally {
     endLongTask("marp-slides");
   }
+}
+
+// The one-click entry every source shares: DocMap's readiness rules pick the
+// selection or the whole text, then the deck is drafted from it.
+function makeClioStageDeckFromSource(preferredContext = null, options = {}) {
+  const readiness = options.readiness || resolveDocMapReadiness(preferredContext, {
+    rangeMode: options.rangeMode || "auto",
+    minSelectionChars: clioStageMinSourceChars,
+    minDocumentChars: clioStageMinSourceChars,
+  });
+  const source = readiness?.source;
+  if (!source?.text) {
+    openWindow("clioStage");
+    setStatus(t("clio_stage_no_text"));
+    return null;
+  }
+  if (!readiness.ready) {
+    setStatus(t("clio_stage_too_short"));
+    return null;
+  }
+  return generateMarpMarkdownAndOpenClioStage({
+    markdown: source.text,
+    title: source.label || t("untitled"),
+    folder: preferredFolderName(),
+  });
+}
+
+// Saving a temporary deck is the writer's step: the same *.slides.md document
+// the old path wrote at once, written now only when asked for.
+function saveTemporaryClioStageDeck(markdown, target = {}) {
+  return createMarpSkillTeachTextDocument(markdown, {
+    name: target.name || t("untitled"),
+    folder: target.folder || preferredFolderName(),
+  });
 }
 
 async function printActiveMarkdownToSlidesAi() {

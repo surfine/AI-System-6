@@ -522,4 +522,6 @@ async function runSelectionServiceCommand(command, snapshot) {
   if (command === "note") return runSelectionNewNote(context);
   if (command === "ask") return runSelectionAskAssistant(context);
   if (command === "docmap") return withDocMap(() => makeDocMapFromCurrentSource(context));
+  if (command === "chart") return makeClioChartForRange("selection", context);
+  if (command === "slides") return makeClioStageDeckForRange("selection", context);
 }

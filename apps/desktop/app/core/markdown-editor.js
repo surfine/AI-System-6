@@ -734,6 +734,14 @@ function mdeMountWritingEditor(textarea, surface) {
       paragraphRange: mdeParagraphRange,
       sentenceRange: mdeSentenceRange,
     }))
+    .then(() => {
+      // A manuscript that already carries Review Desk comments shows them on
+      // its page; the module that draws them loads only then.
+      if (textarea.id === "teachtext-body" && getActiveProject?.()?.reviewComments?.length
+        && typeof ensureReviewCommentsModule === "function") {
+        ensureReviewCommentsModule().catch(() => {});
+      }
+    })
     .catch((error) => console.warn("Writing editor unavailable; the surface stays a textarea.", error));
 }
 

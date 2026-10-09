@@ -400,18 +400,24 @@ window.AISystem6QuickDraft = Object.freeze({
   togglePanel: toggleQuickDraftPanel,
   // What 文字亮室 needs to answer for its own menu bar.
   isReadOnlySubject: lightroomIsReadOnly,
+  isForeignSubject: lightroomForeignSubject,
+  writeDecision: lightroomWriteDecision,
   noteLightroomClosed,
   hasDraftSelection: hasQuickDraftSelection,
   hasVersions: () => lightroomMenuRows("versions").length > 0,
   hasComposite: () => Boolean(darkroomOf(activeProjectQuickDraft({ create: false })?.record).composite),
+  hasNegative: () => Boolean(darkroomOf(activeProjectQuickDraft({ create: false })?.record).negativeUpdatedAt),
+  hasEnabledLayers: () => enabledAdjustmentLayers(activeProjectQuickDraft({ create: false })?.record).length > 0,
   lightroomMenuRows,
   syncMenuState: syncLightroomMenuState,
   hasInput: () => quickDraftInteractionState().hasInput,
   hasOrganizableMaterial: () => quickDraftInteractionState().hasOrganizableMaterial,
   paperSurface: () => quickDraftPhase(),
   protectSelection: protectSelectionFromTextarea,
-  applyAdjustments: applyAdjustmentLayers,
-  develop: developAdjustmentLayers,
+  // The menu rows and the footer keys fire these two and ask the same state, so
+  // the content track cannot make ⌘Y and ⌘D mean something the keys do not.
+  applyAdjustments: lightroomPreview,
+  develop: lightroomDevelop,
   hasBody: () => Boolean(String(refs.draft?.value || activeProjectQuickDraft({ create: false })?.record?.workspace?.body || "").trim()),
   // The subject-aware body: the developed document's text when one is open,
   // the draft's otherwise. Menu conditions for 文字亮室 read this one.
@@ -420,12 +426,8 @@ window.AISystem6QuickDraft = Object.freeze({
   // 试看 answers for the darkroom's subject: a developed document previews
   // from its own text and its own layer stack, and needs no write access —
   // the composite lands in the darkroom record, which is this application's.
-  canPreviewAdjustments: () => Boolean(
-    quickDraftModelAvailable()
-    && String(lightroomBodyText() || "").trim()
-    && enabledAdjustmentLayers(activeProjectQuickDraft({ create: false })?.record).length
-  ),
-  canDevelop: () => currentCompositeState(activeProjectQuickDraft({ create: false })?.record).ready,
+  canPreviewAdjustments: () => lightroomActionState(activeProjectQuickDraft({ create: false })?.record).preview.available,
+  canDevelop: () => lightroomActionState(activeProjectQuickDraft({ create: false })?.record).develop.available,
   copyMarkdown: copyQuickDraftMarkdown,
   shareMarkdown: shareQuickDraftMarkdown,
   save: saveQuickDraftNow,
@@ -496,12 +498,7 @@ function quickDraftCommandAvailable(action) {
     // Develop writes the proof back. With no proof it would write the body onto
     // itself and leave a version saying nothing happened, so the row waits for
     // 试看 rather than offering a move with no effect.
-    if (action === "quick-draft-develop") {
-      return !quickDraft.isReadOnlySubject?.()
-        && !!quickDraft.hasBody?.()
-        && !!quickDraft.hasComposite?.()
-        && !!quickDraft.canDevelop?.();
-    }
+    if (action === "quick-draft-develop") return !!quickDraft.canDevelop?.();
     return false;
   }
   if (action === "quick-draft-walk-return") return true;
@@ -591,6 +588,16 @@ const LIGHTROOM_COMMAND_NAMES = [
   "lightroom-page-setup",
   "lightroom-print",
   "lightroom-undo-develop",
+  "lightroom-reshoot",
+  "lightroom-name-version",
+  "lightroom-preset-apply",
+  "lightroom-preset-save",
+  "lightroom-copy-settings",
+  "lightroom-toggle-bypass",
+  "lightroom-layer-solo",
+  "lightroom-compare-toggle",
+  "lightroom-compare-mode",
+  "lightroom-compare-source",
   "lightroom-listen-toggle",
   "lightroom-listen-stop",
   "lightroom-listen-back",
@@ -611,16 +618,23 @@ function lightroomCommandAvailable(action) {
   // The window's commands read the darkroom's subject — the draft usually,
   // the developed document when one is open.
   const hasBody = Boolean(String(lightroomBodyText() || "").trim());
-  const readOnly = !!quickDraft.isReadOnlySubject?.();
+  // Two different questions. Whether the DOCUMENT may be written back is the
+  // write decision's (develop, restore, undo develop). Whether the subject is
+  // another document altogether decides the rows that write the Quick Draft's
+  // own draft (the listening rewrites, the explanation lens). Everything that
+  // only touches the darkroom's own record -- the stack, the locks, a kept
+  // version, a preset -- needs nothing but a text to read.
+  const locked = !!quickDraft.isReadOnlySubject?.();
+  const foreign = !!quickDraft.isForeignSubject?.();
   const view = String(quickDraft.displayMode?.() || "");
-  const writable = hasBody && !readOnly;
+  const own = hasBody && !foreign;
   if (action.startsWith("lightroom-zoom-")) return hasBody && view === "grain";
   // Shares the toggle's own predicate (draft-desk.js) rather than hasBody, so
   // the row cannot say "available" while the toggle it fires says otherwise.
   if (action === "lightroom-toggle-inspector") return quickDraftPanelActionable("inspector");
-  if (action === "lightroom-restore-version") return !readOnly && !!quickDraft.hasVersions?.();
-  if (action === "lightroom-save-version") return writable;
-  if (action === "lightroom-discard-composite") return writable && !!quickDraft.hasComposite?.();
+  if (action === "lightroom-restore-version") return !locked && !!quickDraft.hasVersions?.();
+  if (action === "lightroom-save-version") return hasBody;
+  if (action === "lightroom-discard-composite") return hasBody && !!quickDraft.hasComposite?.();
   // Page Setup and Print belong to the reading view: the composite is the one
   // paper this application can put on a page. Reading needs no write access,
   // so a read-only subject prints too.
@@ -628,19 +642,24 @@ function lightroomCommandAvailable(action) {
     return hasBody && view === "read";
   }
   if (action === "lightroom-undo-develop") {
-    return writable && Boolean(lastLightroomDevelopVersion());
+    return !locked && hasBody && Boolean(lastLightroomDevelopVersion());
   }
+  if (action === "lightroom-reshoot") return hasBody && !!quickDraft.hasNegative?.();
+  if (action === "lightroom-name-version") return !!quickDraft.hasVersions?.();
+  if (action === "lightroom-preset-save") return hasBody && !!quickDraft.hasEnabledLayers?.();
+  if (["lightroom-preset-apply", "lightroom-copy-settings", "lightroom-toggle-bypass"].includes(action)) return hasBody;
+  if (action.startsWith("lightroom-compare-")) return hasBody;
   if (["lightroom-layer-scope", "lightroom-protect-selection"].includes(action)) {
-    return writable && !!quickDraft.hasDraftSelection?.();
+    return hasBody && !!quickDraft.hasDraftSelection?.();
   }
-  if (action.startsWith("lightroom-layer-")) return writable;
+  if (action.startsWith("lightroom-layer-")) return hasBody;
   if (["lightroom-eli5-review", "lightroom-eli5-rewrite"].includes(action)) {
-    return writable && !!quickDraft.modelAvailable?.();
+    return own && !!quickDraft.modelAvailable?.();
   }
-  if (action.startsWith("lightroom-eli5-")) return writable;
+  if (action.startsWith("lightroom-eli5-")) return own;
   if (action.startsWith("lightroom-listen-")) {
     if (view !== "listen") return false;
-    if (action === "lightroom-listen-rehearse") return !readOnly;
+    if (action === "lightroom-listen-rehearse") return !foreign;
     return true;
   }
   return hasBody;
@@ -676,6 +695,16 @@ function runLightroomRuntimeCommand(action, context = {}) {
   if (action === "lightroom-page-setup") return window.openPageSetup?.();
   if (action === "lightroom-print") return printLightroomComposite();
   if (action === "lightroom-undo-develop") return undoLightroomDevelop();
+  if (action === "lightroom-reshoot") return lightroomReshoot();
+  if (action === "lightroom-name-version") return lightroomNameVersion(args.join(":") || darkroomOf().versions?.at(-1)?.id || "");
+  if (action === "lightroom-preset-apply") return lightroomApplyPreset(args.join(":"));
+  if (action === "lightroom-preset-save") return lightroomSavePreset();
+  if (action === "lightroom-copy-settings") return lightroomCopySettingsTo(args.join(":"));
+  if (action === "lightroom-toggle-bypass") return lightroomSetBypass(darkroomOf().settings?.disabled === true);
+  if (action === "lightroom-layer-solo") return lightroomSetSolo(args[0] || "");
+  if (action === "lightroom-compare-toggle") return lightroomSetCompare({ on: !lightroomCompare.on });
+  if (action === "lightroom-compare-mode") return lightroomSetCompare({ on: true, mode: args[0] === "split" ? "split" : "side" });
+  if (action === "lightroom-compare-source") return lightroomSetCompare({ on: true, sourceId: args.join(":") });
   if (action === "lightroom-listen-toggle") return window.AISystem6QuickDraftListen?.toggle?.();
   if (action === "lightroom-listen-stop") return window.AISystem6QuickDraftListen?.stopPlayback?.();
   if (action === "lightroom-listen-back") return window.AISystem6QuickDraftListen?.stepBack?.();

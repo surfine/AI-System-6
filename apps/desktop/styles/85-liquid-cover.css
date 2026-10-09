@@ -61,7 +61,7 @@
 .lc-toolbar {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: auto auto auto minmax(290px, 1fr) auto;
+  grid-template-columns: auto auto auto minmax(340px, 1fr) auto;
   align-items: center;
   gap: 10px;
   min-height: 42px;
@@ -132,7 +132,7 @@
 }
 
 .lc-toolbar-aspect .lc-aspect {
-  width: min(240px, 24vw);
+  width: min(270px, 24vw);
 }
 
 .lc-toolbar-aspect > span {
@@ -572,6 +572,7 @@ body .liquid-cover-window .lc-stage-expand {
 }
 
 .lc-shape-library,
+.lc-picture-library,
 .lc-object-advanced,
 .lc-media-ai,
 .lc-media-extras,
@@ -580,6 +581,7 @@ body .liquid-cover-window .lc-stage-expand {
 }
 
 .lc-shape-library > summary,
+.lc-picture-library > summary,
 .lc-object-advanced > summary,
 .lc-media-ai > summary,
 .lc-media-extras > summary,
@@ -594,6 +596,7 @@ body .liquid-cover-window .lc-stage-expand {
 }
 
 .lc-shape-library > summary::-webkit-details-marker,
+.lc-picture-library > summary::-webkit-details-marker,
 .lc-object-advanced > summary::-webkit-details-marker,
 .lc-media-ai > summary::-webkit-details-marker,
 .lc-media-extras > summary::-webkit-details-marker,
@@ -602,6 +605,7 @@ body .liquid-cover-window .lc-stage-expand {
 }
 
 .lc-shape-library > summary::before,
+.lc-picture-library > summary::before,
 .lc-object-advanced > summary::before,
 .lc-media-ai > summary::before,
 .lc-media-extras > summary::before,
@@ -610,6 +614,7 @@ body .liquid-cover-window .lc-stage-expand {
 }
 
 .lc-shape-library[open] > summary::before,
+.lc-picture-library[open] > summary::before,
 .lc-object-advanced[open] > summary::before,
 .lc-media-ai[open] > summary::before,
 .lc-media-extras[open] > summary::before,
@@ -620,6 +625,11 @@ body .liquid-cover-window .lc-stage-expand {
 .lc-shape-tray {
   display: grid;
   gap: 5px;
+}
+
+.lc-picture-library .lc-shape-tray,
+.lc-picture-library .lc-album {
+  margin-bottom: 6px;
 }
 
 .lc-shape-tray .btn {
@@ -1179,7 +1189,7 @@ body .liquid-cover-window .lc-stage-expand {
 
 .lc-aspect {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--lc-segment-gap, 0);
   /* P08: the well is a hook, so Platinum can drop the System 6 #aaa tray and
      let separate native bevel buttons sit on the toolbar. */
@@ -2305,4 +2315,160 @@ body[data-lineage~="platinum"] :is(
   /* C4: no fixed 78px cell; the label sizes itself with a floor. */
   --lc-inspector-tab-width: auto;
   --lc-inspector-tab-min-width: 78px;
+}
+
+/* ---- Cover Glass: picture stack, layer panel placement, cut-out ------------
+   The layers panel and inspector are the edit kernel's (app/core/edit-layers.js);
+   their own look lives in styles/99-edit-kernel.css. These are only the places
+   Cover Glass puts them and the parts that are Cover Glass's own. */
+.liquid-cover-window .lc-cover-name input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.liquid-cover-window .lc-layer-list .edit-kernel-layers {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.liquid-cover-window .lc-layer-list .edit-kernel-layer {
+  display: grid;
+  grid-template-columns: 22px 22px 6px minmax(0, 1fr);
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 2px 4px;
+  padding-left: calc(4px + var(--edit-kernel-depth, 0) * 12px);
+  cursor: pointer;
+}
+
+.liquid-cover-window .lc-layer-list .edit-kernel-layer-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.liquid-cover-window .lc-stack-inspector .edit-kernel-inspector {
+  display: grid;
+  gap: 6px;
+}
+
+.liquid-cover-window .lc-stack-inspector .edit-kernel-field {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.liquid-cover-window .lc-stack-inspector .edit-kernel-field input[type="range"],
+.liquid-cover-window .lc-stack-inspector .edit-kernel-field input[type="text"],
+.liquid-cover-window .lc-stack-inspector .edit-kernel-field input[type="number"] {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.lc-album-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  max-height: 180px;
+  margin: 6px 0;
+  overflow-y: auto;
+}
+
+.lc-album-item {
+  aspect-ratio: 1;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--ink);
+  border-radius: var(--item-radius);
+  background: var(--paper);
+  cursor: pointer;
+}
+
+.lc-album-item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lc-album-item:hover,
+.lc-album-item:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: var(--control-focus-offset);
+}
+
+.lc-canvas-shell.is-drop-target,
+.lc-bg-group.is-drop-target {
+  outline: 2px dashed var(--ink);
+  outline-offset: -3px;
+}
+
+.lc-canvas.is-mask-brush {
+  cursor: crosshair;
+}
+
+.lc-aspect button.has-variant:not(.is-active)::after {
+  content: "\00B7";
+  margin-left: 1px;
+  font-weight: 700;
+}
+
+.lc-alignment-guides .lc-spacing-badge {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%);
+  padding: 1px 6px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 10px;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.lc-alignment-guides .lc-spacing-badge.is-visible {
+  opacity: 1;
+}
+
+.lc-cutout-model {
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 8px;
+  border: 1px dashed var(--ink);
+}
+
+.lc-cutout-group .lc-button-row {
+  flex-wrap: wrap;
+}
+
+/* display rules above would otherwise win over the hidden attribute */
+.lc-cutout-model[hidden],
+.lc-cutout-group [hidden],
+.lc-album[hidden] {
+  display: none;
+}
+
+.liquid-cover-window .lc-layer-list .edit-kernel-layer.is-selected {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.liquid-cover-window .lc-layer-list .edit-kernel-layer.is-hidden-layer .edit-kernel-layer-name {
+  opacity: 0.45;
+  font-style: italic;
+}
+
+/* Five sizes (16:9 3:2 4:3 3:4 1:1) take the room the word "Aspect" used; the
+   group keeps its accessible name. */
+.lc-toolbar-aspect > span {
+  display: none;
 }

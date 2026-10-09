@@ -37,13 +37,15 @@
       cancel();
       hoverOwner = node;
       const current = ticket;
+      // 250 ms of rest before the cards come up, WindowShade's Dock hover delay:
+      // long enough that a pointer crossing the Dock opens nothing.
       timer = setTimeout(async () => {
         try {
           await ensureLazySystemModule("app/features/window-browse.js", "AISystem6WindowBrowseLoaded");
           if (current !== ticket || !inside || suppressed || !get("dockHoverPreview") || !node.isConnected || hoverOwner !== node) return;
           window.AISystem6WindowBrowse?.open?.({ appId, hover: true, anchor: node, returnFocus: false });
         } catch (error) { /* A failed optional preview must not prevent activation. */ }
-      }, 350);
+      }, 250);
     });
     node.addEventListener("pointerleave", () => {
       inside = false; suppressed = false; cancel();
@@ -62,13 +64,13 @@
     for (const [key, label] of [["dockHoverPreview", "window_dock_preview_setting"], ["edgeSlideOver", "window_edge_slide_setting"]]) {
       let input = document.getElementById(`windowshade-${key}`);
       if (!input) {
-        const field = document.createElement("label");
-        field.className = "control-field windowshade-preference-field";
+        const field = document.createElement("div");
+        field.className = "field-row windowshade-preference-field";
         input = document.createElement("input");
         input.type = "checkbox"; input.id = `windowshade-${key}`;
-        const span = document.createElement("span");
-        span.dataset.i18n = label;
-        field.append(input, span); anchor.after(field);
+        const text = document.createElement("label");
+        text.htmlFor = input.id; text.dataset.i18n = label;
+        field.append(input, text); anchor.after(field);
         input.addEventListener("change", () => set(key, input.checked));
       }
       input.checked = get(key);

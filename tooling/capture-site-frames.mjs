@@ -243,7 +243,10 @@ for (const era of ERAS) {
       // q76: twelve eras had to fit the 4 MiB site budget (2026-09-25); in a
       // 2x text crop q78 was indistinguishable from the old q88.
       // -m 6 -pass 6: the slowest search, about 2-4% smaller at the same q.
-      execFileSync("cwebp", ["-quiet", "-q", "76", "-sharp_yuv", "-m", "6", "-pass", "6", png, "-o", webp]);
+      // SITE_FRAME_QUALITY lowers one recapture a notch when the site's 4 MiB
+      // payload budget is a few KB short, rather than recompressing an
+      // existing lossy frame a second time.
+      execFileSync("cwebp", ["-quiet", "-q", process.env.SITE_FRAME_QUALITY || "76", "-sharp_yuv", "-m", "6", "-pass", "6", png, "-o", webp]);
       execFileSync("cwebp", ["-quiet", "-lossless", "-z", "9", png, "-o", lossless]);
       if (statSync(lossless).size < statSync(webp).size) renameSync(lossless, webp);
       else rmSync(lossless);

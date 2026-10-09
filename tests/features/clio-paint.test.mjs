@@ -33,7 +33,7 @@ const zh = read("app/data/translations-zh.js");
 test.assert(lazyRuntimePaths.includes("app/features/clio-paint.js"), "the module is a lazy runtime file, not a boot cost");
 test.assertIncludes(
   config,
-  'createLazyModuleLoader("AISystem6ClioPaintLoaded", ["app/core/application-shell.js", "app/features/clio-paint.js"], false, ["styles.clio-paint.css"])',
+  'createLazyModuleLoader("AISystem6ClioPaintLoaded", ["app/core/application-shell.js", "app/core/edit-history.js", "app/core/edit-snap.js", "app/core/edit-layers.js", "app/core/edit-assets.js", "app/core/edit-embeds.js", "app/features/clio-paint.js"], false, ["styles.clio-paint.css", "styles.edit-kernel.css"])',
   "one loader names the shell, the module, and its stylesheet together"
 );
 test.assertIncludes(read("app/core/app-admissions.js"), '"open-clio-paint"', "the opener is admitted with its loader, so the first click loads the module");
@@ -68,7 +68,8 @@ test.assertMatches(zh, /clio_paint_label: "ClioPaint/, "the Chinese label keeps 
 // ---- Storage: the EXISTING imageAttachments store, no new boundary ---------
 test.assertIncludes(source, 'surface: "clioPaint"', "pictures are tagged with their own surface on the shared store");
 test.assertIncludes(source, "buildImageAttachments(", "saving reuses the existing attachment builder");
-test.assertIncludes(source, "saveImageAttachments(", "saving reuses the existing attachment writer");
+test.assertIncludes(source, "assets.saveStaged(", "saving reuses the existing attachment writer, through the edit kernel's staged-picture helper");
+test.assertIncludes(source, "assets.keepAssetGroup(pictureId, pictureId)", "and keeps the layers only once the composite is in");
 test.assertIncludes(source, "imageAttachmentsForProject(", "loading reuses the existing per-project reader");
 test.assertNotMatches(source, /indexedDB\.open|createObjectStore/i, "no new IndexedDB store is introduced");
 test.assertIncludes(
@@ -162,24 +163,31 @@ test.assert(
   "clio_paint_status_already_new exists in both languages"
 );
 
-// ---- History: the packing rule and the stack rule, executed ----------------
+// ---- Bits, tiles, layers and masks, executed -------------------------------
 //
-// The undo stack's whole claim is that a step costs one bit per pixel instead
-// of four bytes, and that the stacks behave like stacks (newest last, redo
-// cleared by a new edit, oldest dropped at the limit). Both are pure, so both
-// run here against real buffers rather than being read as strings. The slice
-// is the part of the module that needs no canvas: the limit constant, the
-// packing pair, the comparison, and the bookkeeping.
-const historySlice = source.slice(
-  source.indexOf("const CLIO_PAINT_HISTORY_LIMIT"),
-  source.indexOf("function clioPaintToolLabelKey")
+// The picture is a stack of 1-bit layers, and history keeps 64x64 tiles
+// instead of whole pictures. All of that arithmetic is pure, so it runs here
+// against real buffers: everything between the "Pure" and "end of pure"
+// markers needs no canvas, no window and no state.
+const tilesSlice = source.slice(
+  source.indexOf("// ---- Pure: bits, tiles"),
+  source.indexOf("// ---- end of pure")
 );
-const historyContext = vm.createContext({});
-vm.runInContext(historySlice, historyContext);
-const packImageData = vm.runInContext("clioPaintPackImageData", historyContext);
-const applyPackedBits = vm.runInContext("clioPaintApplyPackedBits", historyContext);
-const bitsEqual = vm.runInContext("clioPaintBitsEqual", historyContext);
-const pushHistoryEntry = vm.runInContext("clioPaintPushHistoryEntry", historyContext);
+const pureContext = vm.createContext({ console });
+vm.runInContext(read("app/core/edit-history.js"), pureContext, { filename: "app/core/edit-history.js" });
+vm.runInContext(tilesSlice, pureContext);
+vm.runInContext(
+  source.slice(source.indexOf("function clioPaintPointInPolygon"), source.indexOf("function clioPaintShapeGlyph")),
+  pureContext
+);
+vm.runInContext(
+  source.slice(source.indexOf("/** The polygon's coverage as a selection"), source.indexOf("/** Whether the pointer may change the active layer")),
+  pureContext
+);
+const pure = (name) => vm.runInContext(name, pureContext);
+const packImageData = pure("clioPaintPackImageData");
+const applyPackedBits = pure("clioPaintApplyPackedBits");
+const bitsEqual = pure("clioPaintBitsEqual");
 
 function fakeImageData(width, height) {
   const image = { width, height, data: new Uint8ClampedArray(width * height * 4).fill(255) };
@@ -195,10 +203,10 @@ function setPixel(image, x, y, channels) {
 }
 
 // The number the module's own rationale is built on: 480x300 is eight pixels
-// to the byte, so a step is 18 KB and not 576 KB.
+// to the byte, so a layer is 18 KB and not 576 KB.
 test.assert(
   packImageData(fakeImageData(480, 300)).length === 18_000,
-  "a step of the real 480x300 document packs to 18 KB"
+  "a layer of the real 480x300 document packs to 18 KB"
 );
 
 // A round trip has to make the same decisions packing made: black stays
@@ -220,28 +228,232 @@ test.assert(pixel(restored, 2, 1).join() === "255,255,255,255", "a transparent p
 test.assert(pixel(restored, 3, 0).join() === "255,255,255,255", "everything untouched stays white");
 test.assert(
   packImageData(restored).join() === pictureBits.join(),
-  "packing a restored step gives the same step back, so undo cannot drift"
+  "packing a restored layer gives the same layer back, so undo cannot drift"
 );
-test.assert(bitsEqual(pictureBits, pictureBits.slice()) && !bitsEqual(pictureBits, new Uint8Array(pictureBits.length)), "step comparison answers both ways");
+test.assert(bitsEqual(pictureBits, pictureBits.slice()) && !bitsEqual(pictureBits, new Uint8Array(pictureBits.length)), "layer comparison answers both ways");
 
-// The stack: newest last, a new edit closes the redo branch, the oldest step
-// falls off at the limit.
-const history = { past: [], future: [] };
-pushHistoryEntry(history, { labelKey: "clio_paint_tool_pencil", bits: pictureBits.slice() });
-pushHistoryEntry(history, { labelKey: "clio_paint_tool_fill", bits: pictureBits.slice() });
-test.assert(history.past.length === 2, "committing a step puts it on the undo stack");
-history.future.push(history.past.pop());
-test.assert(history.past.length === 1 && history.future.length === 1, "undo moves a step to the redo stack");
-pushHistoryEntry(history, { labelKey: "clio_paint_tool_line", bits: pictureBits.slice() });
-test.assert(history.future.length === 0, "drawing something new closes the redo branch");
+// Tiles. A page 200x130 is a 4x3 grid of 64-pixel tiles with ragged edges.
+vm.runInContext(`
+  var W = 200, H = 130;
+  var blank = () => ({ width: W, height: H, bits: new Uint8Array(Math.ceil(W * H / 8)) });
+  var put = (doc, x, y, v = 1) => { const p = y * W + x; if (v) doc.bits[p >> 3] |= 128 >> (p & 7); else doc.bits[p >> 3] &= ~(128 >> (p & 7)); };
+  var get = (doc, x, y) => { const p = y * W + x; return (doc.bits[p >> 3] >> (7 - (p & 7))) & 1; };
+`, pureContext);
+const run = (code) => vm.runInContext(code, pureContext);
 
-const longHistory = { past: [], future: [] };
-for (let step = 1; step <= 70; step += 1) {
-  pushHistoryEntry(longHistory, { labelKey: `step-${step}`, bits: pictureBits.slice() });
-}
-test.assert(longHistory.past.length === 60, "the undo stack stops at sixty steps instead of growing without bound");
-test.assert(longHistory.past[0].labelKey === "step-11", "and it is the oldest step that falls off");
-test.assert(longHistory.past[59].labelKey === "step-70", "with the newest still last");
+test.assert(
+  run(`(() => { const d = blank(); return clioPaintExtractTile(d, 1, 1) === null && clioPaintTilesOfDoc(d).size === 0; })()`),
+  "an empty page has no tiles at all, so a blank layer costs nothing to keep"
+);
+test.assert(
+  run(`(() => {
+    const d = blank(); put(d, 70, 66); put(d, 199, 129); put(d, 0, 0);
+    const keys = [...clioPaintTilesOfDoc(d).keys()].sort().join("|");
+    return keys === "0,0|1,1|3,2";
+  })()`),
+  "ink lands in the tile that holds it, including the ragged last column and row"
+);
+test.assert(
+  run(`(() => {
+    const d = blank();
+    for (let i = 0; i < 300; i += 1) put(d, (i * 37) % W, (i * 53) % H);
+    const copy = blank();
+    clioPaintTilesOfDoc(d).forEach((tile, key) => { const { tx, ty } = clioPaintTileCoords(key); clioPaintWriteTile(copy, tx, ty, tile); });
+    return clioPaintBitsEqual(d.bits, copy.bits);
+  })()`),
+  "writing every tile back reproduces the bitmap bit for bit"
+);
+test.assert(
+  run(`(() => {
+    const d = blank(); put(d, 10, 10); put(d, 150, 100);
+    const tile = clioPaintExtractTile(d, 0, 0);
+    clioPaintWriteTile(d, 0, 0, null);
+    return get(d, 10, 10) === 0 && get(d, 150, 100) === 1 && tile.length === 512;
+  })()`),
+  "writing an empty tile clears only that tile, and a tile is 512 bytes (64 rows of 8)"
+);
+
+// Changed-tile detection.
+const changed = run(`(() => {
+  const before = blank();
+  const after = blank(); after.bits.set(before.bits); put(after, 130, 2);
+  const one = [...clioPaintChangedTileKeys(before.bits, after.bits, W, H)];
+  const two = blank(); put(two, 5, 5); put(two, 190, 125);
+  const many = [...clioPaintChangedTileKeys(before.bits, two.bits, W, H)].sort();
+  return { one, many, none: clioPaintChangedTileKeys(before.bits, before.bits, W, H).size };
+})()`);
+test.assert(changed.one.length === 1 && changed.one[0] === "2,0", "a one-pixel change names exactly one tile");
+test.assert(changed.many.join("|") === "0,0|2,1", "two distant changes name their two tiles, and only those");
+test.assert(changed.none === 0, "identical bitmaps differ in no tile");
+
+// Snapshots share what they did not change, and cost what they did.
+const costs = run(`(() => {
+  const d = blank();
+  for (let y = 0; y < 128; y += 7) for (let x = 0; x < 128; x += 5) put(d, x, y);
+  const layer = { id: "a", name: "A", kind: "ink", visible: true, locked: false, doc: d };
+  const s0 = clioPaintSnapshotOfLayers([layer], W, H);
+  // a one-pixel stroke inside a tile that already has ink
+  const pending = d.bits.slice();
+  put(d, 3, 3);
+  const keys = clioPaintChangedTileKeys(pending, d.bits, W, H);
+  const s1 = clioPaintSnapshotReplaceLayer(s0, "a", { tiles: clioPaintDeriveTiles(s0.layers[0].tiles, d, keys) });
+  clioPaintLinkSnapshots(s0, s1);
+  const untouched = [...s0.layers[0].tiles.keys()].filter((key) => s0.layers[0].tiles.get(key) === s1.layers[0].tiles.get(key)).length;
+  return {
+    tilesBefore: s0.layers[0].tiles.size,
+    keys: keys.size,
+    shared: untouched,
+    older: clioPaintSnapshotWeight(s0, "older"),
+    newer: clioPaintSnapshotWeight(s1, "newer"),
+    whole: clioPaintSnapshotCost(s0, null),
+    equal: clioPaintSnapshotsEqual(s0, s1),
+    self: clioPaintSnapshotsEqual(s1, s1),
+  };
+})()`);
+test.assert(costs.keys === 1 && costs.tilesBefore === 4, "the stroke touches one tile of the four that hold ink");
+test.assert(costs.shared === costs.tilesBefore - 1, "the next snapshot shares the other tiles by identity instead of copying them");
+test.assert(
+  costs.older === 96 + (512 + 32) + 32 && costs.newer === costs.older,
+  "a one-pixel stroke on a large page costs one tile (plus the note of its replacement), either way you look at it"
+);
+test.assert(costs.whole > costs.older * 3, "against a full-picture copy, which costs every tile");
+test.assert(!costs.equal && costs.self, "snapshots compare by their tiles");
+
+// The history around it: restoring exact bits, and eviction by bytes.
+const historyRun = run(`(() => {
+  const d = blank();
+  const layer = { id: "a", name: "A", kind: "ink", visible: true, locked: false, doc: d };
+  let state = { snapshot: clioPaintSnapshotOfLayers([layer], W, H), layers: [layer] };
+  let mode = "older";
+  const history = AISystem6EditHistory.createEditHistory({
+    read: () => state.snapshot,
+    write: (snapshot) => { state.layers = clioPaintLayersFromSnapshot(state.layers, state.snapshot, snapshot); state.snapshot = snapshot; },
+    equals: (a, b) => a === b,
+    limit: 100,
+    weigh: (snapshot) => clioPaintSnapshotWeight(snapshot, mode),
+    budget: 3000,
+  });
+  const stroke = (x, y) => {
+    const live = state.layers[0].doc;
+    const pending = live.bits.slice();
+    put(live, x, y);
+    const keys = clioPaintChangedTileKeys(pending, live.bits, W, H);
+    history.change("stroke", () => {
+      const prev = state.snapshot;
+      const next = clioPaintSnapshotReplaceLayer(prev, "a", { tiles: clioPaintDeriveTiles(prev.layers[0].tiles, live, keys) });
+      clioPaintLinkSnapshots(prev, next);
+      state.snapshot = next;
+    });
+  };
+  const travel = (dir) => { mode = dir === "undo" ? "newer" : "older"; try { return history[dir](); } finally { mode = "older"; } };
+  const bitsNow = () => [...state.layers[0].doc.bits].join();
+  const out = {};
+  const empty = bitsNow();
+  stroke(3, 3); const one = bitsNow();
+  stroke(70, 3); stroke(3, 70); const three = bitsNow();
+  out.depth = history.size().undo;
+  travel("undo"); travel("undo"); travel("undo");
+  out.backToEmpty = bitsNow() === empty && !history.canUndo();
+  travel("redo"); out.afterRedo = bitsNow() === one;
+  travel("redo"); travel("redo"); out.redoneAll = bitsNow() === three;
+  // keep going until the budget bites
+  for (let i = 0; i < 40; i += 1) stroke((i * 11) % 190, (i * 17) % 125);
+  const size = history.size();
+  out.bytes = size.weight;
+  out.steps = size.undo;
+  out.canUndoAfterEviction = history.canUndo();
+  let undone = 0;
+  while (history.canUndo()) { travel("undo"); undone += 1; }
+  out.undone = undone;
+  out.sameDoc = state.layers[0].doc === d;
+  return out;
+})()`);
+test.assert(historyRun.depth === 3, "three strokes are three steps");
+test.assert(historyRun.backToEmpty, "undoing every stroke restores the exact empty bitmap");
+test.assert(historyRun.afterRedo && historyRun.redoneAll, "redo restores the exact bits again");
+test.assert(historyRun.bytes <= 3000 + 700, "past the budget the history holds about a budget of tiles, not forty-three steps' worth");
+test.assert(historyRun.steps < 43 && historyRun.steps >= 1, "so the oldest steps were dropped to stay in it");
+test.assert(historyRun.undone === historyRun.steps && historyRun.canUndoAfterEviction, "and every step that is left can still be undone");
+test.assert(historyRun.sameDoc, "undo rewrites tiles in the layer's own bitmap rather than swapping it out");
+
+// Layer operations are pure functions of a snapshot.
+const layerOps = run(`(() => {
+  const mk = (id, x, y) => { const d = blank(); put(d, x, y); return { id, name: id, kind: "ink", visible: true, locked: false, doc: d }; };
+  const a = mk("a", 3, 3), b = mk("b", 70, 70), c = mk("c", 4, 3);
+  const s = clioPaintSnapshotOfLayers([a, b, c], W, H);
+  const dup = clioPaintSnapshotDuplicateLayer(s, "b", "b2", "b copy");
+  const merged = clioPaintSnapshotMergeDown(s, "c");
+  const moved = clioPaintSnapshotMoveLayer(s, "a", 2);
+  const removed = clioPaintSnapshotRemoveLayer(s, "b");
+  const lastOnly = clioPaintSnapshotRemoveLayer(clioPaintSnapshotOfLayers([a], W, H), "a");
+  const tracing = clioPaintSnapshotReplaceLayer(s, "b", { kind: "tracing" });
+  const mergeIntoTracing = clioPaintSnapshotMergeDown(tracing, "c");
+  const mergeBottom = clioPaintSnapshotMergeDown(s, "a");
+  const composite = clioPaintComposite([
+    { kind: "ink", visible: true, bits: a.doc.bits },
+    { kind: "tracing", visible: true, bits: b.doc.bits },
+    { kind: "ink", visible: false, bits: c.doc.bits },
+  ]);
+  const bitAt = (bits, x, y) => (bits[(y * W + x) >> 3] >> (7 - ((y * W + x) & 7))) & 1;
+  const mergedDoc = clioPaintLayersFromSnapshot([a, b, c], s, merged)[1].doc;
+  return {
+    dupOrder: dup.layers.map((l) => l.id).join(),
+    dupShares: dup.layers[2].tiles === dup.layers[1].tiles,
+    mergedOrder: merged.layers.map((l) => l.id).join(),
+    mergedBoth: bitAt(mergedDoc.bits, 70, 70) === 1 && bitAt(mergedDoc.bits, 4, 3) === 1,
+    movedOrder: moved.layers.map((l) => l.id).join(),
+    removedOrder: removed.layers.map((l) => l.id).join(),
+    lastOnly, mergeIntoTracing, mergeBottom,
+    inkHasA: bitAt(composite.ink, 3, 3), inkHasHidden: bitAt(composite.ink, 4, 3), inkHasTracing: bitAt(composite.ink, 70, 70),
+    traceHas: bitAt(composite.trace, 70, 70),
+    boundsA: JSON.stringify(clioPaintInkBounds(a.doc)),
+    boundsEmpty: clioPaintInkBounds(blank()),
+    tracingKind: tracing.layers[1].kind,
+  };
+})()`);
+test.assert(layerOps.dupOrder === "a,b,b2,c" && layerOps.dupShares, "a duplicate lands one above its original and shares the original's tiles");
+test.assert(layerOps.mergedOrder === "a,b" && layerOps.mergedBoth, "merge down folds the upper layer's ink into the one below");
+test.assert(layerOps.movedOrder === "b,c,a" && layerOps.removedOrder === "a,c", "layers restack and delete by id");
+test.assert(layerOps.lastOnly === null, "the last layer cannot be deleted");
+test.assert(layerOps.mergeIntoTracing === null && layerOps.mergeBottom === null, "nothing merges into a tracing layer or below the bottom");
+test.assert(layerOps.inkHasA === 1 && layerOps.inkHasHidden === 0, "the picture is the shown ink layers: a hidden layer is not in it");
+test.assert(layerOps.inkHasTracing === 0 && layerOps.traceHas === 1, "a tracing layer is never part of the picture, only of the guides");
+test.assert(layerOps.boundsA === '{"x":3,"y":3,"w":1,"h":1}' && layerOps.boundsEmpty === null, "a layer's content box is the box around its ink, null when empty");
+test.assert(layerOps.tracingKind === "tracing", "a layer can be turned into a tracing guide");
+
+// Selection masks combine.
+const masks = run(`(() => {
+  const rect = clioPaintRectSelection;
+  const count = (s) => (s ? s.cover.reduce((a, b) => a + b, 0) : 0);
+  const a = rect(0, 0, 10, 10), b = rect(5, 5, 10, 10);
+  const add = clioPaintCombineSelection(a, b, "add");
+  const sub = clioPaintCombineSelection(a, b, "subtract");
+  const both = clioPaintCombineSelection(a, b, "intersect");
+  const none = clioPaintCombineSelection(rect(0, 0, 3, 3), rect(10, 10, 3, 3), "intersect");
+  const swallowed = clioPaintCombineSelection(rect(2, 2, 3, 3), rect(0, 0, 10, 10), "subtract");
+  const lasso = clioPaintLassoSelection([{ x: 0, y: 0 }, { x: 20, y: 0 }, { x: 20, y: 20 }, { x: 0, y: 20 }], 100, 100);
+  const lassoOnRect = clioPaintCombineSelection(rect(0, 0, 40, 40), lasso, "subtract");
+  const corner = (s, x, y) => s.cover[(y - s.y) * s.w + (x - s.x)];
+  return {
+    add: [count(add), add.x, add.y, add.w, add.h],
+    sub: [count(sub), sub.x, sub.y, sub.w, sub.h, corner(sub, 7, 7), corner(sub, 2, 2)],
+    both: [count(both), both.x, both.y, both.w, both.h],
+    none, swallowed,
+    mode: [clioPaintSelectionMode(false, false), clioPaintSelectionMode(true, false), clioPaintSelectionMode(false, true), clioPaintSelectionMode(true, true)],
+    lasso: [count(lasso), lasso.opaque.every((v) => v === 0)],
+    lassoHole: count(lassoOnRect),
+    replace: clioPaintCombineSelection(a, b, "replace") === b,
+    values: add.cover.every((v) => v === 0 || v === 1),
+  };
+})()`);
+test.assert(masks.add.join() === [175, 0, 0, 15, 15].join(), "add is the union of two rectangles, cropped to what is covered");
+test.assert(masks.sub.join() === [75, 0, 0, 10, 10, 0, 1].join(), "subtract takes the new region out of the old (the overlap is gone, the rest stays)");
+test.assert(masks.both.join() === [25, 5, 5, 5, 5].join(), "intersect keeps only where both cover");
+test.assert(masks.none === null && masks.swallowed === null, "a combination that leaves nothing leaves no selection");
+test.assert(masks.mode.join() === "replace,add,subtract,intersect", "Shift adds, Option subtracts, both intersect");
+test.assert(masks.lasso[0] > 300 && masks.lasso[1], "a lasso covers its polygon and carries only ink (no opaque white)");
+test.assert(masks.lassoHole === 1600 - masks.lasso[0], "a lasso subtracted from a rectangle leaves the rectangle minus the polygon");
+test.assert(masks.replace && masks.values, "replace swaps the region, and the mask holds only 0 and 1");
 
 // ---- Shift: constrain proportions, executed --------------------------------
 //
@@ -274,27 +486,34 @@ test.assert(
   en.includes("clio_paint_nothing_to_redo:") && zh.includes("clio_paint_nothing_to_redo:"),
   "a Redo with an empty stack has an answer in both languages"
 );
+// Undo and Redo arrive through the desk's Edit menu route, not through a key
+// the window claims for itself: the capture-phase handler is gone, and the
+// window's history is registered where runEditCommand looks for it.
+test.assertNotIncludes(source, "handleClioPaintHistoryKeydown", "the window no longer claims Command-Z in the capture phase");
 test.assertMatches(
   source,
-  /clioPaintInstanceResources\(\)\.listen\(document, "keydown", handleClioPaintHistoryKeydown, \{ capture: true \}\)/,
-  "undo/redo is claimed in the capture phase, which is what reaches the key before the desk's bubble-phase dispatcher"
+  /registerEditHistory\("clioPaint", \{\s*undo: undoClioPaint,\s*redo: redoClioPaint,/,
+  "Edit > Undo and Redo reach the picture through its registered history"
+);
+test.assertIncludes(read("app/features/documents-chat.js"), "editHistoryFor()", "and runEditCommand asks that registry when no text field has the focus");
+test.assertMatches(
+  source,
+  /listen\(document, "keydown", handleClioPaintCommandKeydown, \{ capture: true \}\)/,
+  "Save and Select All are still claimed by the window, ahead of the desk's dispatcher"
 );
 test.assertMatches(
   source,
-  /function handleClioPaintHistoryKeydown\(event\)\s*\{[\s\S]*?event\.preventDefault\(\)/,
-  "and it claims the key by preventing the default, so the desk does not also answer it"
-);
-test.assertMatches(
-  source,
-  /function handleClioPaintHistoryKeydown\(event\)\s*\{[\s\S]*?has-system-modal[\s\S]*?event\.preventDefault\(\)/,
-  "a dialog the writer has to answer keeps the key, rather than the picture behind it"
+  /function handleClioPaintCommandKeydown\(event\)\s*\{[\s\S]*?key !== "s" && key !== "a"/,
+  "and they are the only two keys it claims"
 );
 test.assert(
   (source.match(/shortcutId: "redo"/g) || []).length === 1,
   "the Paint menu prints the key it actually answers to on its Redo row"
 );
-test.assertIncludes(source, "clioPaintState.history = { past: [], future: [], pending: null };", "a new or loaded picture starts with an empty history");
-test.assertIncludes(source, "clioPaintState.savedBits = clioPaintPackCanvas();", "saving records the picture undo is allowed to call saved");
+test.assertIncludes(source, "clioPaintState.historyApi = null;", "a new or loaded picture starts with an empty history");
+test.assertIncludes(source, "clioPaintState.savedSnapshot = snapshot;", "saving records the picture undo is allowed to call saved");
+test.assertIncludes(source, "createEditHistory({", "history is the kernel's, not a stack of its own");
+test.assertIncludes(source, "budget: CLIO_PAINT_HISTORY_BUDGET", "capped by bytes, oldest steps first");
 
 // Escape cancels the operation under the pointer without writing a step.
 const cancelBody = source.slice(
@@ -313,12 +532,13 @@ test.assertMatches(
 test.assertIncludes(source, "function clioPaintBeginSelectionDrag(point)", "a press inside the marquee starts a move");
 test.assertMatches(
   source,
-  /tool === "marquee" && !clioPaintBeginSelectionDrag\(point\)\) clioPaintBeginMarquee\(point, event\.shiftKey\)/,
-  "and a press anywhere else starts a new marquee instead"
+  /const moves = !event\.shiftKey && clioPaintBeginSelectionDrag\(point\);\s*if \(moves\) return;\s*if \(tool === "marquee"\) clioPaintBeginMarquee\(point, mode\)/,
+  "and a press anywhere else starts a new marquee instead, combining by the modifier held"
 );
-test.assertIncludes(source, "clioPaintCommitHistory(clioPaintToolLabelKey(\"move\"), { coalesce: true });", "a move is one history row, however many frames it took");
+test.assertIncludes(source, "snapper: clioPaintMoveSnapper()", "a dragged float snaps to the page and to the other layers");
+test.assertIncludes(source, "clioPaintDragSelection(point, event.altKey)", "and Option during the drag turns the snapping off");
 test.assertIncludes(source, "function clioPaintNudgeSelection(dx, dy)", "the arrow keys move the selection a pixel at a time");
-test.assertIncludes(source, "clioPaintState.savedBits = clioPaintPackCanvas();", "the picture on disk stays the reference for 'unsaved'");
+test.assertIncludes(source, "!clioPaintSnapshotsEqual(clioPaintState.snapshot, clioPaintState.savedSnapshot)", "the picture on disk stays the reference for 'unsaved'");
 test.assertIncludes(
   source,
   'button.dataset.clioPaintUnavailable = canRun ? "" : control.emptyKey;',

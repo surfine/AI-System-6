@@ -212,7 +212,7 @@ function quickDraftMarkdownHtml(text = "", record = activeProjectQuickDraft({ cr
   if (!/^#\s+/m.test(value)) {
     // A developed subject reads under its own name, never the draft's title.
     const title = String(
-      (lightroomIsReadOnly() && lightroomSubject?.name)
+      (lightroomSubject && lightroomSubject.name)
       || source.workspace.title
       || titleFromBody(value)
     ).trim().replace(/\s+/g, " ").slice(0, 64) || t("quick_draft_title");
@@ -231,6 +231,10 @@ function renderQuickDraftPreviewPane() {
   // While a film frame is held the paper shows that version; a save landing
   // mid-hold must not paint the current proof over it. Letting go repaints.
   if (typeof lightroomPeekFrame !== "undefined" && lightroomPeekFrame) return;
+  // A held \ is the same promise: the paper shows the other side until it lets go.
+  if (typeof lightroomPeeking !== "undefined" && lightroomPeeking) return;
+  // One layer's changes, or a comparison, take the paper while they are on.
+  if (typeof renderLightroomOverlayPane === "function" && renderLightroomOverlayPane()) return;
   if (quickDraftDisplayMode === "grain") renderQuickDraftGrain();
   else if (quickDraftDisplayMode === "listen") window.AISystem6QuickDraftListen?.renderQuickDraftListenView?.();
   else if (typeof quickDraftTrackOwnsPaper === "function" && quickDraftTrackOwnsPaper()) renderQuickDraftTrackPaper();
@@ -351,6 +355,10 @@ function toggleQuickDraftComposite() {
 // darkroom from the menu left the product believing it was still showing the
 // grain -- with nothing on screen showing it. Every door reports here.
 function noteLightroomClosed() {
+  // Leaving a document keeps one automatic version of it -- before the subject
+  // is cleared, because the version is the subject's text.
+  if (typeof lightroomLeaveDocument === "function") lightroomLeaveDocument();
+  if (typeof lightroomPeekEnd === "function") lightroomPeekEnd();
   // Closing the darkroom by any door hands back the writer's own draft: the
   // read-only subject must not survive the window it was opened in, or the
   // next open shows a foreign document nothing on screen accounts for.
@@ -450,9 +458,9 @@ function restoreDumpToBody() {
 // Versions are a list of objects, newest first, with the negative pinned at the
 // bottom: it is the one version the writer never wrote over. Every row says
 // when it was kept and why, and every row can be gone back to.
-function quickDraftVersionRow({ label, meta, id, kind }) {
+function quickDraftVersionRow({ label, meta, id, kind, named = false }) {
   const row = document.createElement("div");
-  row.className = "draft-desk-version-row";
+  row.className = `draft-desk-version-row${named ? " is-named" : ""}`;
   // The frame itself is the peek target: hold it and the paper shows that
   // version; let go and the paper comes back. Restore stays a separate button,
   // because looking and going back are two different acts.
@@ -472,13 +480,36 @@ function quickDraftVersionRow({ label, meta, id, kind }) {
     text.append(small);
   }
   row.append(text);
+  const actions = document.createElement("span");
+  actions.className = "draft-desk-version-actions";
   const button = document.createElement("button");
   button.type = "button";
   button.className = "btn mini-btn";
+  // Going back writes the document, so it follows the darkroom's write rule.
+  button.dataset.requiresWrite = "";
+  button.dataset.writesDocument = "";
   button.dataset.quickDraftVersion = String(id || "");
   if (kind) button.dataset.quickDraftVersionKind = kind;
   button.textContent = t("quick_draft_version_restore");
-  row.append(button);
+  actions.append(button);
+  const compare = document.createElement("button");
+  compare.type = "button";
+  compare.className = "btn mini-btn";
+  compare.dataset.lightroomVersionCompare = String(id || "");
+  compare.dataset.lightroomVersionKind = kind || "version";
+  compare.textContent = t("lightroom_version_compare");
+  compare.title = t("lightroom_version_compare_aria", label);
+  actions.append(compare);
+  if (kind !== "negative") {
+    // Naming is the writer's own label on a frame; an unnamed frame can take one.
+    const rename = document.createElement("button");
+    rename.type = "button";
+    rename.className = "btn mini-btn";
+    rename.dataset.lightroomVersionName = String(id || "");
+    rename.textContent = t(named ? "lightroom_version_rename" : "lightroom_version_name");
+    actions.append(rename);
+  }
+  row.append(actions);
   return row;
 }
 
@@ -496,18 +527,24 @@ function renderQuickDraftVersions(record = activeProjectQuickDraft({ create: fal
     return;
   }
   refs.versionsList.classList.remove("is-empty");
+  refs.versionsList.classList.add("is-film");
   const stampOf = (value) => (value
     ? new Date(value).toLocaleTimeString(currentLanguage === "zh" ? "zh-CN" : "en-US", {
       hour: "2-digit",
       minute: "2-digit",
     })
     : "");
-  [...versions].reverse().slice(0, 12).forEach((entry) => {
+  // The film strip: newest frame first, then the negative. The strip shows the
+  // version list and nothing else -- the history behind Undo is a different
+  // thing, and is not in it.
+  [...versions].reverse().slice(0, 40).forEach((entry) => {
+    const named = String(entry.name || "").trim();
     refs.versionsList.append(quickDraftVersionRow({
-      label: textExcerpt(entry.body, 24) || t("quick_draft_versions"),
+      label: named || textExcerpt(entry.body, 24) || t("quick_draft_versions"),
       meta: [stampOf(entry.createdAt), entry.reason].filter(Boolean).join(" · "),
       id: entry.id,
       kind: "version",
+      named: Boolean(named),
     }));
   });
   if (negativeAt) {
@@ -526,11 +563,8 @@ function renderQuickDraftVersions(record = activeProjectQuickDraft({ create: fal
 // list could only ever hold states the writer had already accepted. This keeps
 // the body as it stands right now, under the writer's own reason.
 async function saveLightroomVersion() {
-  // The draft's body must never be filed into a read-only subject's chain.
-  if (lightroomIsReadOnly()) {
-    setQuickDraftStatus(t("lightroom_read_only"));
-    return false;
-  }
+  // A version is a copy the darkroom keeps in its own record, so it needs no pen
+  // on the document: a document held by another window can still be kept.
   const slot = activeProjectQuickDraft();
   if (!slot) {
     setQuickDraftStatus(t("quick_draft_no_project"));
@@ -541,7 +575,9 @@ async function saveLightroomVersion() {
     setQuickDraftStatus(t("quick_draft_no_project"));
     return false;
   }
-  const body = String(refs.draft?.value || slot.record.workspace.body || "");
+  const body = lightroomSubject
+    ? lightroomBodyText()
+    : String(refs.draft?.value || slot.record.workspace.body || "");
   if (!body.trim()) {
     setQuickDraftStatus(t("quick_draft_empty_body"));
     return false;
@@ -549,13 +585,13 @@ async function saveLightroomVersion() {
   const version = normalizeQuickDraftVersion({
     id: stableId("version"),
     body,
-    title: slot.record.workspace.title,
+    title: lightroomSubject ? String(lightroomSubject.name || "") : slot.record.workspace.title,
     createdAt: new Date().toISOString(),
     reason: "kept",
     source: "lightroom",
   });
   const committed = await task.commit({ workspace: {
-    versions: [...darkroomOf(task.currentRecord()).versions, version].slice(-100),
+    versions: window.AISystem6DarkroomRecord.pruneDarkroomVersions([...darkroomOf(task.currentRecord()).versions, version]),
   } }, { captureForm: false });
   if (!committed.ok) {
     setQuickDraftStatus(t("quick_draft_save_failed"));
@@ -563,7 +599,9 @@ async function saveLightroomVersion() {
   }
   renderQuickDraft(committed.record);
   setQuickDraftStatus(t("lightroom_version_saved"));
+  setLightroomStatus(t("lightroom_version_saved"));
   noteLightroomReceipt("lightroom_save_version");
+  if (typeof lightroomTouch === "function") lightroomTouch();
   return true;
 }
 
@@ -581,7 +619,9 @@ function lastLightroomDevelopVersion(record = activeProjectQuickDraft({ create: 
 
 async function undoLightroomDevelop() {
   if (lightroomIsReadOnly()) {
-    setQuickDraftStatus(t("lightroom_read_only"));
+    const message = lightroomWriteNotice();
+    setQuickDraftStatus(message);
+    setLightroomStatus(message);
     return false;
   }
   const version = lastLightroomDevelopVersion();
@@ -614,8 +654,8 @@ async function printLightroomComposite() {
     return false;
   }
   const slot = activeProjectQuickDraft({ create: false });
-  const title = lightroomIsReadOnly()
-    ? String(lightroomSubject?.name || titleFromBody(text) || "").trim()
+  const title = lightroomSubject
+    ? String(lightroomSubject.name || titleFromBody(text) || "").trim()
     : String(refs.titleInput?.value || slot?.record.workspace.title || titleFromBody(text) || "").trim();
   const printWindow = window.open("", "_blank", "width=960,height=720");
   if (!printWindow) {
@@ -640,10 +680,13 @@ async function printLightroomComposite() {
 // Going back to a version is not a delete: the body being replaced is kept as
 // a version first, so the move is reversible in the same list.
 async function restoreQuickDraftVersion(id = "", kind = "version") {
-  // A read-only subject's chain is on display, but restoring from it would
-  // write that document's old text into the writer's draft. Refuse.
-  if (lightroomIsReadOnly()) {
-    setQuickDraftStatus(t("lightroom_read_only"));
+  // Going back writes the document, so it goes through whoever holds the pen on
+  // it -- and is refused, with that window named, when the darkroom does not.
+  const decision = lightroomWriteDecision();
+  if (!decision.canWrite) {
+    const message = lightroomWriteNotice(decision);
+    setQuickDraftStatus(message);
+    setLightroomStatus(message);
     return false;
   }
   const slot = activeProjectQuickDraft();
@@ -660,27 +703,61 @@ async function restoreQuickDraftVersion(id = "", kind = "version") {
     setQuickDraftStatus(t("quick_draft_version_empty"));
     return false;
   }
-  const current = String(refs.draft?.value || workspace.body || "");
+  const current = lightroomSubject ? lightroomBodyText() : String(refs.draft?.value || workspace.body || "");
+  const stepBefore = lightroomStepBefore();
   const kept = current.trim()
-    ? [...(darkroom.versions || []), {
+    ? window.AISystem6DarkroomRecord.pruneDarkroomVersions([...(darkroom.versions || []), {
       id: `version-${Date.now()}`,
       body: current,
-      title: String(workspace.title || ""),
+      title: lightroomSubject ? String(lightroomSubject.name || "") : String(workspace.title || ""),
       createdAt: new Date().toISOString(),
       reason: "before-restore",
       source: "quick-draft",
-    }]
+    }])
     : darkroom.versions;
-  if (refs.draft) refs.draft.value = target.body;
-  const committed = await commitQuickDraft({ workspace: { body: target.body, versions: kept } });
-  if (!committed.ok) {
-    if (refs.draft) refs.draft.value = current;
-    renderQuickDraft(slot.record);
-    setQuickDraftStatus(t("quick_draft_save_failed"));
-    return false;
+  const documentId = lightroomSubjectDocumentId();
+  if (documentId && current.trim() && typeof createDocumentRevision === "function") {
+    try {
+      await createDocumentRevision({
+        projectId: activeProjectId,
+        documentId,
+        body: current,
+        origin: "system",
+        operation: "darkroom-restore-version",
+      });
+    } catch {
+      setQuickDraftStatus(t("quick_draft_develop_revision_failed"));
+      return false;
+    }
   }
-  renderQuickDraft(committed.record);
+  if (decision.path === "draft") {
+    if (refs.draft) refs.draft.value = target.body;
+    const committed = await commitQuickDraft({ workspace: { body: target.body, versions: kept } });
+    if (!committed.ok) {
+      if (refs.draft) refs.draft.value = current;
+      renderQuickDraft(slot.record);
+      setQuickDraftStatus(t("quick_draft_save_failed"));
+      return false;
+    }
+    renderQuickDraft(committed.record);
+  } else {
+    const written = await lightroomApplyBody(target.body, { operation: "darkroom-restore-version", previousBody: current, decision });
+    if (!written.ok) {
+      setQuickDraftStatus(t("lightroom_write_failed"));
+      setLightroomStatus(t("lightroom_write_failed"));
+      return false;
+    }
+    const committed = await commitQuickDraft({ workspace: { versions: kept } }, { captureForm: false });
+    if (!committed.ok) {
+      await lightroomApplyBody(current, { operation: "darkroom-restore-rollback", previousBody: target.body, decision });
+      setQuickDraftStatus(t("quick_draft_save_failed"));
+      return false;
+    }
+    renderQuickDraft(committed.record);
+  }
+  lightroomNoteStep("edit_step_restore_version", stepBefore);
   setQuickDraftStatus(t("quick_draft_version_restored"));
+  setLightroomStatus(t("quick_draft_version_restored"));
   return true;
 }
 

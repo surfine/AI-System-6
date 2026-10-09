@@ -745,6 +745,9 @@
   padding: 15px;
   min-height: 0;
   overflow: auto;
+  /* An era whose inspector sits on the window's own material rather than a
+     white pane (macOS 11's Get Info) names it here. */
+  background-color: var(--info-pane-bg, var(--pane-bg));
 }
 
 .info-pane hr {
@@ -805,7 +808,7 @@
 }
 
 .info-stats dt {
-  font-weight: bold;
+  font-weight: var(--info-label-weight, bold);
   text-align: right;
 }
 
@@ -1493,6 +1496,7 @@
 .system-tabs {
   display: flex;
   align-items: var(--tab-strip-align-items, stretch);
+  justify-content: var(--tab-strip-justify, flex-start);
   gap: var(--tab-strip-gap, 3px);
   width: 100%;
   margin-bottom: 0;

@@ -20,14 +20,31 @@ test.assertIncludes(footer, 'class="view-switch quick-draft-track-toggle"', "the
 test.assertIncludes(footer, 'class="view-switch draft-desk-display-switch"', "痕迹｜阅读｜听稿 is the same control, as tabs");
 test.assertIncludes(footer, 'role="group"', "the track switch is its own control");
 test.assert(!tablist.includes("data-quick-draft-track"), "the track switch is not a fourth 痕迹｜阅读｜听稿 tab");
-test.assertIncludes(desk, 'getWindow("lightroom")?.addEventListener("click"', "a click on the lightroom footer reaches the track switch");
+test.assertIncludes(desk, '[refs.form, getWindow("lightroom")].forEach((root) => root?.addEventListener("click", onQuickDraftClick));', "a click on the lightroom footer reaches the track switch, and every other control of that window");
+test.assertIncludes(desk, '[refs.form, getWindow("lightroom")].forEach((root) => root?.addEventListener("change", onQuickDraftChange));', "so does a change to a layer's switch or strength: those controls are not inside the form");
 test.assertIncludes(editor, "quickDraftTrackOwnsPaper", "a content or split view survives the paper repaint");
 test.assertIncludes(manifest, '"app/features/quick-draft-tracks.js"', "the track module stays on the lazy list");
 test.assertIncludes(config, '"app/features/quick-draft-tracks.js"', "the Quick Draft loader includes the track module");
 test.assert(tracks.indexOf("lightroom_track_need_interest") < tracks.indexOf("fetchModelPayload"), "an empty draft does not ask the model");
 test.assert(tracks.indexOf("showSystemModal") < tracks.lastIndexOf("refs.draft.value = traffic.body"), "冲洗 asks before it writes the body");
 test.assertIncludes(tracks, "syncQuickDraftMobileAdjustmentActions", "generating or switching a track refreshes the one footer default");
-test.assertIncludes(read("app/features/quick-draft-composition.js"), "trackOwns", "Preview and Develop enable for the content track without adjustment layers");
+test.assertIncludes(read("app/features/lightroom-develop.js"), "trackOwns", "Preview and Develop enable for the content track without adjustment layers");
+// The footer keys and the menu rows are one command each. Under the content
+// track they used to run different things: the keys the track's rewrite, the
+// rows the layers.
+{
+  const develop = read("app/features/lightroom-develop.js");
+  const handoff = read("app/features/quick-draft-handoff.js");
+  test.assertMatches(develop, /function lightroomPreview\(\) \{\s*if \(typeof quickDraftTrackOwnsPaper === "function" && quickDraftTrackOwnsPaper\(\)\) \{\s*return generateQuickDraftTraffic\(\{ force: true \}\);/, "Preview under the content track is the track's rewrite");
+  test.assertMatches(develop, /function lightroomDevelop\(\) \{\s*if \(typeof quickDraftTrackShouldDevelop === "function" && quickDraftTrackShouldDevelop\(\)\) \{\s*return developQuickDraftTraffic\(\);/, "Develop under the content track is the track's develop");
+  test.assertIncludes(handoff, "applyAdjustments: lightroomPreview,", "the menu's Preview fires the same function as the footer key");
+  test.assertIncludes(handoff, "develop: lightroomDevelop,", "the menu's Develop fires the same function as the footer key");
+  test.assertIncludes(handoff, "canPreviewAdjustments: () => lightroomActionState(", "and asks the same availability");
+  test.assertNotIncludes(desk, "await applyAdjustmentLayers();", "no click handler still bypasses the one Preview");
+  test.assertNotIncludes(desk, "await developQuickDraftTraffic();", "no click handler still bypasses the one Develop");
+  test.assertIncludes(desk, "await lightroomPreview();", "the footer key fires the one Preview");
+  test.assertIncludes(desk, "await lightroomDevelop();", "the footer key fires the one Develop");
+}
 test.assertNotIncludes(tracks, "落落", "generation does not carry a person from the cases");
 test.assertNotIncludes(tracks, "跳出率", "the UI does not paint predicted bounce rates");
 test.assertNotIncludes(tracks, "完播率", "the UI does not paint predicted completion rates");

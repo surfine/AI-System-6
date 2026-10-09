@@ -64,6 +64,10 @@ function installLiquidCoverWindow() {
               <span class="mobile-control-long" data-i18n="liquid_cover_text">Type</span>
               <span class="mobile-control-short" data-i18n="liquid_cover_text_short">Type</span>
             </button>
+            <button class="lc-inspector-tab" type="button" id="lc-tab-stack" data-lc-inspector-tab="stack" role="tab" aria-selected="false" aria-controls="lc-panel-stack" data-i18n-aria-label="liquid_cover_tab_stack">
+              <span class="mobile-control-long" data-i18n="liquid_cover_tab_stack">Picture</span>
+              <span class="mobile-control-short" data-i18n="liquid_cover_tab_stack_short">Pic</span>
+            </button>
             <button class="lc-inspector-tab" type="button" id="lc-tab-glass" data-lc-inspector-tab="glass" role="tab" aria-selected="false" aria-controls="lc-panel-glass" data-i18n-aria-label="liquid_cover_tab_glass">
               <span class="mobile-control-long" data-i18n="liquid_cover_tab_glass">Glass</span>
               <span class="mobile-control-short" data-i18n="liquid_cover_glass_short">Glass</span>
@@ -76,6 +80,7 @@ function installLiquidCoverWindow() {
               <button type="button" data-k="3:2" aria-pressed="false">3:2</button>
               <button type="button" data-k="4:3" aria-pressed="false">4:3</button>
               <button type="button" data-k="3:4" aria-pressed="false">3:4</button>
+              <button type="button" data-k="1:1" aria-pressed="false">1:1</button>
             </div>
           </div>
           <button class="btn lc-toolbar-export" type="button" id="lc-tab-export" data-lc-inspector-tab="export" aria-pressed="false" aria-controls="lc-panel-export" data-i18n-aria-label="liquid_cover_tab_export">
@@ -90,6 +95,9 @@ function installLiquidCoverWindow() {
               <span class="lc-panel-kicker" data-i18n="liquid_cover_scene">Scene</span>
               <strong data-i18n="liquid_cover_layers">Layers</strong>
             </div>
+            <label class="lc-cover-name"><span class="visually-hidden" data-i18n="liquid_cover_name">Cover name</span>
+              <input type="text" id="lc-cover-title" maxlength="80" autocomplete="off" data-i18n-placeholder="liquid_cover_name_hint" placeholder="Cover name">
+            </label>
             <div class="lc-layer-list" id="lc-layer-list" aria-label="Cover layers" data-i18n-aria-label="liquid_cover_layers"></div>
             <p class="lc-selection-help" id="lc-selection-help" role="status" aria-live="polite" data-i18n="liquid_cover_selection_help">Shift-click or drag a box to select multiple layers. Drag layers to reorder.</p>
             <details class="lc-arrange-panel">
@@ -108,12 +116,44 @@ function installLiquidCoverWindow() {
                 <button class="btn" type="button" id="lc-align-middle" data-i18n="liquid_cover_align_middle">Middle</button>
                 <button class="btn" type="button" id="lc-align-bottom" data-i18n="liquid_cover_align_bottom">Bottom</button>
               </div>
+              <div class="lc-align-grid lc-align-selection" role="group" aria-label="Align selection" data-i18n-aria-label="liquid_cover_align_selection">
+                <button class="btn" type="button" data-align="left" data-i18n="liquid_cover_sel_left">Sel ⇤</button>
+                <button class="btn" type="button" data-align="hcenter" data-i18n="liquid_cover_sel_hcenter">Sel ⇔</button>
+                <button class="btn" type="button" data-align="right" data-i18n="liquid_cover_sel_right">Sel ⇥</button>
+                <button class="btn" type="button" data-align="top" data-i18n="liquid_cover_sel_top">Sel ⤒</button>
+                <button class="btn" type="button" data-align="vcenter" data-i18n="liquid_cover_sel_vcenter">Sel ⇕</button>
+                <button class="btn" type="button" data-align="bottom" data-i18n="liquid_cover_sel_bottom">Sel ⤓</button>
+              </div>
+              <div class="lc-order-row lc-distribute-selection" role="group" aria-label="Distribute selection" data-i18n-aria-label="liquid_cover_distribute">
+                <button class="btn" type="button" data-distribute="x" data-i18n="liquid_cover_distribute_h">Distribute across</button>
+                <button class="btn" type="button" data-distribute="y" data-i18n="liquid_cover_distribute_v">Distribute down</button>
+              </div>
             </details>
             <div class="lc-sidebar-actions">
               <button class="btn" type="button" id="lc-add-inside-text" data-i18n="liquid_cover_add_inside_text">Text in shape</button>
               <button class="btn" type="button" id="lc-duplicate-layer" data-i18n="liquid_cover_duplicate">Duplicate</button>
               <button class="btn" type="button" id="lc-del-layer" data-i18n="liquid_cover_del">Delete</button>
             </div>
+            <details class="lc-picture-library">
+              <summary data-i18n="liquid_cover_picture_library">Pictures &amp; adjustments</summary>
+              <div class="lc-shape-tray">
+                <button class="btn" type="button" id="lc-add-picture" data-i18n="liquid_cover_add_picture">Add Picture…</button>
+                <button class="btn" type="button" id="lc-add-album" data-i18n="liquid_cover_add_from_album">From Picture Album…</button>
+                <button class="btn" type="button" id="lc-add-adjust-bc" data-i18n="liquid_cover_adjust_brightnessContrast">Brightness / Contrast</button>
+                <button class="btn" type="button" id="lc-add-adjust-hs" data-i18n="liquid_cover_adjust_hueSaturation">Hue / Saturation</button>
+                <button class="btn" type="button" id="lc-add-adjust-blur" data-i18n="liquid_cover_adjust_blur">Blur</button>
+              </div>
+              <input type="file" id="lc-picture-file" accept="image/*" hidden>
+              <div class="lc-album" id="lc-album" hidden>
+                <div class="lc-order-row" id="lc-album-as" role="group" aria-label="Use as" data-i18n-aria-label="liquid_cover_album_as">
+                  <button class="btn" type="button" data-as="subject" aria-pressed="true" data-i18n="liquid_cover_as_subject">As subject</button>
+                  <button class="btn" type="button" data-as="background" aria-pressed="false" data-i18n="liquid_cover_as_background">As background</button>
+                </div>
+                <div class="lc-album-grid" id="lc-album-grid"></div>
+                <p class="lc-note" id="lc-album-empty" hidden></p>
+                <p class="lc-note" data-i18n="liquid_cover_album_hint">You can also drag a picture from the Picture Album onto the cover. Hold ⌥ to make it the background.</p>
+              </div>
+            </details>
             <details class="lc-shape-library">
               <summary data-i18n="liquid_cover_shape_library">Quick shapes</summary>
               <div class="lc-shape-tray">
@@ -249,6 +289,36 @@ Glass</textarea>
               <p class="lc-note" data-i18n="liquid_cover_subject_register_note">A cut-out saved from this background photo (same size) lands exactly on it. Turn off for a subject cropped to its own edges.</p>
             </div>
             </details>
+            </div>
+
+            <div class="lc-inspector-panel" id="lc-panel-stack" data-lc-inspector-panel="stack" role="tabpanel" aria-labelledby="lc-tab-stack" hidden>
+            <div class="lc-group lc-stack-group">
+              <div class="lc-group-title" data-i18n="liquid_cover_layer_info">Layer</div>
+              <div id="lc-stack-inspector" class="lc-stack-inspector"></div>
+              <p class="lc-note" data-i18n="liquid_cover_stack_note">An adjustment changes every layer beneath it. Clip a layer to confine it to the layer below.</p>
+            </div>
+            <div class="lc-group lc-cutout-group">
+              <div class="lc-group-title" data-i18n="liquid_cover_cutout">Cut-out</div>
+              <div class="lc-button-row">
+                <button class="btn" type="button" id="lc-cutout-go" data-i18n="liquid_cover_remove_background">Remove Background</button>
+                <button class="btn" type="button" id="lc-cutout-clear" data-i18n="liquid_cover_remove_cutout" hidden>Restore Background</button>
+                <button class="btn" type="button" id="lc-cutout-refine" aria-pressed="false" data-i18n="liquid_cover_refine_mask" hidden>Refine Cut-out</button>
+              </div>
+              <div class="lc-button-row" id="lc-cutout-brush" hidden>
+                <button class="btn is-active" type="button" id="lc-brush-add" aria-pressed="true" data-i18n="liquid_cover_brush_add">Add</button>
+                <button class="btn" type="button" id="lc-brush-subtract" aria-pressed="false" data-i18n="liquid_cover_brush_subtract">Subtract</button>
+                <label class="lc-row"><span data-i18n="liquid_cover_brush_size">Brush</span><input type="range" id="lc-brush-size" min="6" max="200" step="1" value="40"><span class="lc-val" id="lc-brush-size-v"></span></label>
+              </div>
+              <p class="lc-note" id="lc-cutout-note"></p>
+              <div class="lc-cutout-model" id="lc-cutout-model" hidden>
+                <p class="lc-note" id="lc-cutout-model-note"></p>
+                <div class="file-picker">
+                  <button class="btn file-picker-button" type="button" id="lc-cutout-model-choose" data-i18n="liquid_cover_cutout_choose_model">Choose Model Files…</button>
+                  <a class="lc-font-source-link" href="https://huggingface.co/Xenova/modnet/tree/main" target="_blank" rel="noopener" data-i18n="liquid_cover_cutout_model_page">Model page</a>
+                </div>
+                <input id="lc-cutout-model-file" class="visually-hidden" type="file" multiple accept=".json,.onnx" />
+              </div>
+            </div>
             </div>
 
             <div class="lc-inspector-panel" id="lc-panel-glass" data-lc-inspector-panel="glass" role="tabpanel" aria-labelledby="lc-tab-glass" hidden>
@@ -580,23 +650,6 @@ installLiquidCoverWindow();
     + "  for (int i=0;i<" + MAX_LAYERS + ";i++){ if (i >= u_layerCount) break; int g = u_mergeGroup[i]; if (g >= 0 && g != i) continue; d = min(d, g < 0 ? layerSD(uv, i) : groupSD(uv, g)); }\n"
     + "  return d; }";
 
-  // The foreground subject (cut-out photo in front of the glass), shared by the
-  // main pass and the post-blur composite so the subject is never blurred.
-  // Registered mode: a cut-out made from the background photo itself (same
-  // aspect) is mapped through the backdrop's own cover crop, zoom and pan, so
-  // it lands on its source pixels exactly — at every canvas aspect and during
-  // the motion push. Position/scale then act as an offset from that match.
-  // Free mode keeps the old placement for a subject cropped to its own bounds.
-  // The texture is premultiplied, so cut-out edges carry no dark/white halo.
-  const FG_GLSL = "uniform sampler2D u_fg;\nuniform float u_fgAspect;\nuniform int u_hasFg;\nuniform vec2 u_fgPos;\nuniform float u_fgScale;\nuniform int u_fgRegistered;\nuniform float u_fgBgAspect;\nuniform float u_fgBgZoom;\nuniform vec2 u_fgBgPan;\n"
-    + "vec3 overFgAt(vec3 c, vec2 uv){ if (u_hasFg == 1) { float A = u_resolution.x/u_resolution.y; vec2 fuv;\n"
-    + "  if (u_fgRegistered == 1) { vec2 q = (uv - u_fgPos)/max(u_fgScale, 0.001) + 0.5;\n"
-    + "    if (A > u_fgBgAspect) { float k = u_fgBgAspect/A; q.y = q.y*k + 0.5 - 0.5*k; } else { float k = A/u_fgBgAspect; q.x = q.x*k + 0.5 - 0.5*k; }\n"
-    + "    fuv = (q - 0.5)/max(u_fgBgZoom, 0.001) + 0.5 + u_fgBgPan; }\n"
-    + "  else { float sh = u_fgScale; float sw = u_fgScale*u_fgAspect/A; fuv = (uv - u_fgPos)/vec2(sw,sh) + 0.5; }\n"
-    + "  if (all(greaterThanEqual(fuv,vec2(0.0))) && all(lessThanEqual(fuv,vec2(1.0)))) { vec4 fg = texture(u_fg, fuv); c = c*(1.0 - fg.a) + fg.rgb; } } return c; }\n"
-    + "vec3 overFg(vec3 c){ return overFgAt(c, v_uv); }\n";
-
   // The backdrop pass is the photo only (cover crop, motion zoom/pan). The
   // drop shadow is composited in the main pass, outside the glass, so what
   // the glass refracts is never darkened.
@@ -673,7 +726,7 @@ installLiquidCoverWindow();
   //  • Surface: frost (pre-blur), tint, Sketch's Brightness and Saturation.
   //  • The drop shadow falls outside the glass only; the backdrop the glass
   //    refracts is never darkened, so no dirty ring gathers inside the rim.
-  const MAIN_FRAG = "#version 300 es\nprecision highp float;\n#define PI 3.14159265359\n#define SPEC_N 12\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_bg;\nuniform sampler2D u_blurredBg;\nuniform vec2 u_resolution;\nuniform float u_dpr;\nuniform float u_refThickness[" + MAX_LAYERS + "];\nuniform float u_refraction;\nuniform float u_refDispersion;\nuniform vec2 u_lightDir;\nuniform float u_lightIntensity;\nuniform float u_splay;\nuniform float u_brightness;\nuniform float u_saturationFactor;\nuniform float u_bodyFactor;\nuniform vec4 u_tint[" + MAX_LAYERS + "];\nuniform vec2 u_layerCenter[" + MAX_LAYERS + "];\nuniform float u_magnify;\nuniform float u_shadowExpand;\nuniform float u_shadowFactor;\nuniform vec2 u_shadowOffset;\n" + LIQUID_GLSL + UNION_SD + FG_GLSL + "\n"
+  const MAIN_FRAG = "#version 300 es\nprecision highp float;\n#define PI 3.14159265359\n#define SPEC_N 12\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_bg;\nuniform sampler2D u_blurredBg;\nuniform vec2 u_resolution;\nuniform float u_dpr;\nuniform float u_refThickness[" + MAX_LAYERS + "];\nuniform float u_refraction;\nuniform float u_refDispersion;\nuniform vec2 u_lightDir;\nuniform float u_lightIntensity;\nuniform float u_splay;\nuniform float u_brightness;\nuniform float u_saturationFactor;\nuniform float u_bodyFactor;\nuniform vec4 u_tint[" + MAX_LAYERS + "];\nuniform vec2 u_layerCenter[" + MAX_LAYERS + "];\nuniform float u_magnify;\nuniform float u_shadowExpand;\nuniform float u_shadowFactor;\nuniform vec2 u_shadowOffset;\n" + LIQUID_GLSL + UNION_SD + "\n"
     // Continuous spectral split: the edge bend is integrated over SPEC_N
     // wavelengths (400-700nm, stratified with a per-pixel interleaved-gradient
     // jitter so large splits read as a smooth spectrum rather than stepped
@@ -783,7 +836,7 @@ installLiquidCoverWindow();
     // Under whole-cover water the subject is bent with the photo it was cut
     // from (no ghost of the photo's own copy beside it), and the glints sit
     // on the surface above everything.
-    + "  vec3 fin = overFgAt(result, v_uv + wOff);\n"
+    + "  vec3 fin = result;\n"
     + "  if (u_liquidMode == 2) fin = mix(fin, vec3(1.0), clamp(ripGlint(rip.xy) * u_lightIntensity * 0.8, 0.0, 1.0));\n"
     + "  fragColor = vec4(fin, 1.0);\n"
     + "}";
@@ -793,12 +846,86 @@ installLiquidCoverWindow();
   // glare — the pre-blur (Background Blur) frosts what the glass sees, this
   // frosts the glass itself. Solid layers and the foreground subject stay
   // sharp: the subject is laid over here instead of in the main pass.
-  const COMP_FRAG = "#version 300 es\nprecision highp float;\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_sharp;\nuniform sampler2D u_soft;\nuniform vec2 u_resolution;\nuniform float u_dpr;\nuniform vec2 u_lightDir;\n" + LIQUID_GLSL + UNION_SD + FG_GLSL
+  const COMP_FRAG = "#version 300 es\nprecision highp float;\nin vec2 v_uv;\nout vec4 fragColor;\nuniform sampler2D u_sharp;\nuniform sampler2D u_soft;\nuniform vec2 u_resolution;\nuniform float u_dpr;\nuniform vec2 u_lightDir;\n" + LIQUID_GLSL + UNION_SD
     + "void main(){ int layer; float sd = stackSDIdx(v_uv, layer); vec3 c = texture(u_sharp, v_uv).rgb;\n"
     + "  float m = u_layerMode[layer] == 1 ? 0.0 : 1.0 - smoothstep(-1.0, 1.0, sd);\n"
     + "  c = mix(c, texture(u_soft, v_uv).rgb, m);\n"
-    // the subject goes under whole-cover water here too (Post Blur lays it over after the main pass)
-    + "  fragColor = vec4(overFgAt(c, v_uv + waterOffset(v_uv)), 1.0); }";
+    + "  fragColor = vec4(c, 1.0); }";
+
+  // The layer stack (see liquid-cover-model.js compositingPlan). The plan is
+  // drawn by two programs: one lays a picture over what has been drawn so far
+  // (a blend mode, an opacity, an optional mask, an optional clip to the layer
+  // below), the other changes what has been drawn so far (brightness/contrast,
+  // hue/saturation, or the blurred copy of it). The same two programs run for
+  // the preview and for the PNG export.
+  //
+  // Placement: "cover" fills the frame the way the backdrop always has;
+  // "registered" lands a cut-out made from the background photo on its own
+  // pixels through the backdrop's crop, zoom and pan; "free" is a picture of
+  // its own size, positioned, scaled and rotated.
+  const PLACE_GLSL = "uniform vec2 u_resolution;\nuniform float u_dpr;\nuniform vec2 u_lightDir;\nuniform float u_bgAspect;\nuniform float u_bgZoom;\nuniform vec2 u_bgPan;\n"
+    + "float placeUV(vec2 uv, int mode, float aspect, vec2 pos, float scale, float rot, out vec2 fuv){\n"
+    + "  float A = u_resolution.x/u_resolution.y;\n"
+    + "  if (mode == 0) { vec2 q = uv; if (A > aspect) { float s = aspect/A; q.y = q.y*s + 0.5 - 0.5*s; } else { float s = A/aspect; q.x = q.x*s + 0.5 - 0.5*s; }\n"
+    + "    fuv = (q - 0.5)/max(u_bgZoom, 0.001) + 0.5 + u_bgPan; return 1.0; }\n"
+    + "  if (mode == 1) { vec2 q = (uv - pos)/max(scale, 0.001) + 0.5;\n"
+    + "    if (A > u_bgAspect) { float k = u_bgAspect/A; q.y = q.y*k + 0.5 - 0.5*k; } else { float k = A/u_bgAspect; q.x = q.x*k + 0.5 - 0.5*k; }\n"
+    + "    fuv = (q - 0.5)/max(u_bgZoom, 0.001) + 0.5 + u_bgPan; }\n"
+    + "  else { vec2 px = (uv - pos) * vec2(A, 1.0); float c = cos(rot), s = sin(rot); px = vec2(c*px.x - s*px.y, s*px.x + c*px.y);\n"
+    + "    fuv = px / vec2(max(scale*aspect, 0.0001), max(scale, 0.0001)) + 0.5; }\n"
+    + "  return (fuv.x >= 0.0 && fuv.x <= 1.0 && fuv.y >= 0.0 && fuv.y <= 1.0) ? 1.0 : 0.0; }\n";
+  const LAYER_FRAG = "#version 300 es\nprecision highp float;\nin vec2 v_uv;\nout vec4 fragColor;\n"
+    + "uniform sampler2D u_dst;\nuniform sampler2D u_src;\nuniform sampler2D u_mask;\nuniform sampler2D u_clipSrc;\nuniform sampler2D u_clipMask;\n"
+    + "uniform int u_hasMask;\nuniform int u_hasClip;\nuniform int u_clipHasMask;\nuniform int u_blend;\nuniform float u_opacity;\nuniform int u_water;\n"
+    + "uniform int u_mode;\nuniform float u_aspect;\nuniform vec2 u_pos;\nuniform float u_scale;\nuniform float u_rot;\n"
+    + "uniform int u_cMode;\nuniform float u_cAspect;\nuniform vec2 u_cPos;\nuniform float u_cScale;\nuniform float u_cRot;\n"
+    + PLACE_GLSL + LIQUID_GLSL
+    + "vec3 blendFn(int mode, vec3 cb, vec3 cs){\n"
+    + "  if (mode == 1) return cb*cs;\n"
+    + "  if (mode == 2) return cb + cs - cb*cs;\n"
+    + "  if (mode == 3) return mix(2.0*cb*cs, 1.0 - 2.0*(1.0-cb)*(1.0-cs), step(vec3(0.5), cb));\n"
+    + "  if (mode == 4) return min(cb, cs);\n"
+    + "  if (mode == 5) return max(cb, cs);\n"
+    + "  return cs; }\n"
+    + "void main(){\n"
+    // Under whole-cover water a picture is bent with the photo it lies on.
+    + "  vec2 uv = v_uv; if (u_water == 1) uv += waterOffset(v_uv);\n"
+    + "  vec4 d = texture(u_dst, v_uv);\n"
+    + "  vec2 fuv; float inside = placeUV(uv, u_mode, u_aspect, u_pos, u_scale, u_rot, fuv);\n"
+    + "  vec4 s = texture(u_src, clamp(fuv, 0.0, 1.0)) * inside;\n"
+    + "  float m = u_hasMask == 1 ? texture(u_mask, clamp(fuv, 0.0, 1.0)).r : 1.0;\n"
+    + "  float cov = 1.0;\n"
+    + "  if (u_hasClip == 1) { vec2 cf; float cin = placeUV(uv, u_cMode, u_cAspect, u_cPos, u_cScale, u_cRot, cf);\n"
+    + "    float ca = texture(u_clipSrc, clamp(cf, 0.0, 1.0)).a; float cm = u_clipHasMask == 1 ? texture(u_clipMask, clamp(cf, 0.0, 1.0)).r : 1.0; cov = ca * cm * cin; }\n"
+    + "  float sa = s.a * u_opacity * m * cov;\n"
+    + "  vec3 cs = s.a > 1e-5 ? s.rgb / s.a : vec3(0.0);\n"
+    + "  float ab = d.a; vec3 cb = ab > 1e-5 ? d.rgb / ab : vec3(0.0);\n"
+    + "  vec3 co = (1.0 - sa)*d.rgb + sa*(1.0 - ab)*cs + sa*ab*blendFn(u_blend, cb, cs);\n"
+    + "  fragColor = vec4(co, sa + ab*(1.0 - sa)); }";
+  const ADJUST_FRAG = "#version 300 es\nprecision highp float;\n#define PI 3.14159265359\nin vec2 v_uv;\nout vec4 fragColor;\n"
+    + "uniform sampler2D u_dst;\nuniform sampler2D u_blur;\nuniform sampler2D u_clipSrc;\nuniform sampler2D u_clipMask;\n"
+    + "uniform int u_type;\nuniform vec4 u_params;\nuniform float u_opacity;\nuniform int u_hasClip;\nuniform int u_clipHasMask;\n"
+    + "uniform int u_cMode;\nuniform float u_cAspect;\nuniform vec2 u_cPos;\nuniform float u_cScale;\nuniform float u_cRot;\n"
+    + PLACE_GLSL
+    + "void main(){\n"
+    + "  vec4 d = texture(u_dst, v_uv);\n"
+    + "  vec3 c = d.a > 1e-5 ? d.rgb / d.a : d.rgb;\n"
+    + "  vec4 out4 = d;\n"
+    // brightness / contrast: params.x brightness, params.y contrast, both -1..1
+    + "  if (u_type == 0) { float k = u_params.y >= 0.0 ? 1.0/(1.0 - u_params.y*0.99) : 1.0 + u_params.y;\n"
+    + "    c = clamp((c - 0.5)*k + 0.5 + u_params.x*0.5, 0.0, 1.0); out4 = vec4(c*d.a, d.a); }\n"
+    // hue / saturation / lightness: params.x degrees, params.y -1..1, params.z -1..1
+    + "  else if (u_type == 1) { float h = u_params.x*PI/180.0; float cs = cos(h), sn = sin(h);\n"
+    + "    mat3 toYiq = mat3(0.299, 0.596, 0.211, 0.587, -0.274, -0.523, 0.114, -0.322, 0.312);\n"
+    + "    mat3 toRgb = mat3(1.0, 1.0, 1.0, 0.956, -0.272, -1.106, 0.621, -0.647, 1.703);\n"
+    + "    vec3 y = toYiq * c; y.yz = vec2(y.y*cs - y.z*sn, y.y*sn + y.z*cs); c = toRgb * y;\n"
+    + "    float luma = dot(c, vec3(0.2126, 0.7152, 0.0722)); c = max(mix(vec3(luma), c, 1.0 + u_params.y), 0.0);\n"
+    + "    c = u_params.z >= 0.0 ? mix(c, vec3(1.0), u_params.z) : c*(1.0 + u_params.z); c = clamp(c, 0.0, 1.0); out4 = vec4(c*d.a, d.a); }\n"
+    + "  else { out4 = texture(u_blur, v_uv); }\n"
+    + "  float cov = 1.0;\n"
+    + "  if (u_hasClip == 1) { vec2 cf; float cin = placeUV(v_uv, u_cMode, u_cAspect, u_cPos, u_cScale, u_cRot, cf);\n"
+    + "    float ca = texture(u_clipSrc, clamp(cf, 0.0, 1.0)).a; float cm = u_clipHasMask == 1 ? texture(u_clipMask, clamp(cf, 0.0, 1.0)).r : 1.0; cov = ca * cm * cin; }\n"
+    + "  fragColor = mix(d, out4, clamp(u_opacity * cov, 0.0, 1.0)); }";
 
   function compile(gl, type, src) {
     const sh = gl.createShader(type);
@@ -863,7 +990,8 @@ installLiquidCoverWindow();
     this.fboA = null; this.fboB = null; this.fboC = null; this.fboD = null;
     this.bgTex = null; this.bgAspect = 1;
     this.bgVideo = null; this.bgVideoFrameReady = false; this.bgVideoUploadError = false;
-    this.fgTex = null; this.fgAspect = 1;
+    this.pics = new Map(); this.masks = new Map(); // layer pictures and cut-out masks, by layer id
+    this.progLayer = null; this.progAdjust = null;
     this.sdfTexs = new Array(MAX_LAYERS).fill(null);
     this.w = 0; this.h = 0;
     // The wave field needs float render targets; without them ripples stay off.
@@ -1008,15 +1136,17 @@ installLiquidCoverWindow();
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     }
   };
-  Renderer.prototype.setForeground = function (image) {
+  // A picture on the stack. The texture is premultiplied, so filtering and
+  // mipmaps never mix the colour of fully transparent pixels into a cut-out edge
+  // (the halo). The mask is a separate greyscale texture in the picture's own
+  // space: white keeps, black removes. Neither touches the other's pixels.
+  Renderer.prototype.setPicture = function (id, image) {
     const gl = this.gl;
-    if (this.fgTex) { gl.deleteTexture(this.fgTex); this.fgTex = null; }
+    this.removePicture(id);
     if (!image) return;
     const tex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-    // premultiplied: filtering and mipmaps then never mix the colour of fully
-    // transparent pixels into the cut-out edge (the halo)
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
@@ -1026,9 +1156,34 @@ installLiquidCoverWindow();
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    this.fgTex = tex;
-    this.fgAspect = (image.naturalWidth || image.width) / (image.naturalHeight || image.height);
+    this.pics.set(id, { tex, aspect: (image.naturalWidth || image.width) / (image.naturalHeight || image.height) });
   };
+  Renderer.prototype.removePicture = function (id) {
+    const old = this.pics.get(id);
+    if (old) { this.gl.deleteTexture(old.tex); this.pics.delete(id); }
+    this.removeMask(id);
+  };
+  Renderer.prototype.setMask = function (id, image) {
+    const gl = this.gl;
+    this.removeMask(id);
+    if (!image) return;
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    this.masks.set(id, tex);
+  };
+  Renderer.prototype.removeMask = function (id) {
+    const old = this.masks.get(id);
+    if (old) { this.gl.deleteTexture(old); this.masks.delete(id); }
+  };
+  Renderer.prototype.hasPicture = function (id) { return this.pics.has(id); };
   Renderer.prototype.setLayerSDF = function (i, sdf, w, h) {
     const gl = this.gl;
     if (this.sdfTexs[i]) gl.deleteTexture(this.sdfTexs[i]);
@@ -1062,19 +1217,6 @@ installLiquidCoverWindow();
     gl.uniform1iv(this._u(p, "u_mergeGroup"), meta.mergeGroups);
     gl.uniform1f(this._u(p, "u_mergeK"), meta.mergeK);
   };
-  Renderer.prototype._bindFg = function (p, unit, on, params) {
-    const gl = this.gl;
-    gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, this.fgTex || this.bgTex);
-    gl.uniform1i(this._u(p, "u_fg"), unit);
-    gl.uniform1f(this._u(p, "u_fgAspect"), this.fgAspect);
-    gl.uniform1i(this._u(p, "u_hasFg"), on && this.fgTex ? 1 : 0);
-    gl.uniform2f(this._u(p, "u_fgPos"), params.fgPos[0], params.fgPos[1]);
-    gl.uniform1f(this._u(p, "u_fgScale"), params.fgScale);
-    gl.uniform1i(this._u(p, "u_fgRegistered"), params.fgRegistered ? 1 : 0);
-    gl.uniform1f(this._u(p, "u_fgBgAspect"), this.bgAspect);
-    gl.uniform1f(this._u(p, "u_fgBgZoom"), params.bgZoom || 1);
-    gl.uniform2f(this._u(p, "u_fgBgPan"), (params.bgPan && params.bgPan[0]) || 0, (params.bgPan && params.bgPan[1]) || 0);
-  };
   Renderer.prototype._bindLiquid = function (p, unit, params) {
     const gl = this.gl;
     const mode = this.ripA ? (params.liquidMode | 0) : 0;
@@ -1085,6 +1227,147 @@ installLiquidCoverWindow();
     gl.uniform2f(this._u(p, "u_ripTexel"), 1 / Math.max(this.ripW, 1), 1 / Math.max(this.ripH, 1));
     gl.uniform1f(this._u(p, "u_waterDepth"), params.waterDepth || 0);
   };
+  // ---- drawing the plan's steps ----------------------------------------
+  const BLEND_INDEX = { normal: 0, multiply: 1, screen: 2, overlay: 3, darken: 4, lighten: 5 };
+  const ADJUST_INDEX = { brightnessContrast: 0, hueSaturation: 1, blur: 2 };
+  const PLACE_INDEX = { cover: 0, registered: 1, free: 2 };
+  const NEUTRAL_BASE = [0.91, 0.93, 0.953];
+  Renderer.prototype._layerPrograms = function () {
+    if (!this.progLayer) {
+      this.progLayer = program(this.gl, VERT, LAYER_FRAG);
+      this.progAdjust = program(this.gl, VERT, ADJUST_FRAG);
+    }
+  };
+  // The texture, aspect and placement uniforms for a layer's picture. The
+  // background layer is the renderer's own bgTex (it can be a video).
+  Renderer.prototype._pictureFor = function (id, params) {
+    if (id === params.bgLayerId) return this.bgTex ? { tex: this.bgTex, aspect: this.bgAspect } : null;
+    return this.pics.get(id) || null;
+  };
+  Renderer.prototype._bindPlacement = function (p, prefix, placement, aspect, params) {
+    const gl = this.gl;
+    const names = prefix ? { mode: "u_cMode", aspect: "u_cAspect", pos: "u_cPos", scale: "u_cScale", rot: "u_cRot" }
+      : { mode: "u_mode", aspect: "u_aspect", pos: "u_pos", scale: "u_scale", rot: "u_rot" };
+    gl.uniform1i(this._u(p, names.mode), PLACE_INDEX[placement.mode] || 0);
+    gl.uniform1f(this._u(p, names.aspect), aspect || 1);
+    gl.uniform2f(this._u(p, names.pos), placement.x, placement.y);
+    gl.uniform1f(this._u(p, names.scale), placement.scale);
+    gl.uniform1f(this._u(p, names.rot), (placement.rotation || 0) * Math.PI / 180);
+  };
+  Renderer.prototype._bindBackdropRef = function (p, params) {
+    const gl = this.gl;
+    gl.uniform2f(this._u(p, "u_resolution"), this.w, this.h);
+    gl.uniform1f(this._u(p, "u_dpr"), params.dpr || 1);
+    gl.uniform2f(this._u(p, "u_lightDir"), Math.cos(params.lightAngle || 0), Math.sin(params.lightAngle || 0));
+    gl.uniform1f(this._u(p, "u_bgAspect"), this.bgAspect);
+    gl.uniform1f(this._u(p, "u_bgZoom"), params.bgZoom || 1);
+    gl.uniform2f(this._u(p, "u_bgPan"), (params.bgPan && params.bgPan[0]) || 0, (params.bgPan && params.bgPan[1]) || 0);
+  };
+  Renderer.prototype._bindClip = function (p, step, params) {
+    const gl = this.gl;
+    const clip = step.clipTo;
+    const base = clip ? this._pictureFor(clip.id, params) : null;
+    gl.uniform1i(this._u(p, "u_hasClip"), base ? 1 : 0);
+    gl.activeTexture(gl.TEXTURE0 + 3); gl.bindTexture(gl.TEXTURE_2D, base ? base.tex : this.bgTex);
+    gl.uniform1i(this._u(p, "u_clipSrc"), 3);
+    const clipMask = clip && clip.hasMask ? this.masks.get(clip.id) : null;
+    gl.uniform1i(this._u(p, "u_clipHasMask"), clipMask ? 1 : 0);
+    gl.activeTexture(gl.TEXTURE0 + 4); gl.bindTexture(gl.TEXTURE_2D, clipMask || this.bgTex);
+    gl.uniform1i(this._u(p, "u_clipMask"), 4);
+    if (base) this._bindPlacement(p, "c", clip.placement, base.aspect, params);
+    else this._bindPlacement(p, "c", { mode: "cover", x: 0.5, y: 0.5, scale: 1, rotation: 0 }, 1, params);
+  };
+  Renderer.prototype._blurPass = function (srcTex, dstFbo, dir, weights) {
+    const gl = this.gl;
+    const radius = weights.length - 1;
+    gl.useProgram(this.progBlur);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, dstFbo);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, srcTex);
+    gl.uniform1i(this._u(this.progBlur, "u_tex"), 0);
+    gl.uniform2f(this._u(this.progBlur, "u_resolution"), this.w, this.h);
+    gl.uniform2f(this._u(this.progBlur, "u_dir"), dir[0], dir[1]);
+    gl.uniform1i(this._u(this.progBlur, "u_radius"), radius);
+    gl.uniform1fv(this._u(this.progBlur, "u_weights"), weights);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  };
+  Renderer.prototype._liveSteps = function (steps, params) {
+    return (steps || []).filter((step) => step.op === "adjust" || this._pictureFor(step.id, params));
+  };
+  // Draws `steps` over the image in `acc`. Each step reads the accumulated
+  // image and writes the next one into a free buffer; the last may go straight
+  // to the canvas. Returns the buffer holding the result (null when it went to
+  // the canvas).
+  Renderer.prototype._runSteps = function (steps, acc, free, toScreen, params) {
+    const gl = this.gl;
+    this._layerPrograms();
+    const live = this._liveSteps(steps, params);
+    live.forEach((step, index) => {
+      const last = index === live.length - 1;
+      const toCanvas = last && toScreen;
+      gl.viewport(0, 0, this.w, this.h);
+      if (step.op === "picture") {
+        const pic = this._pictureFor(step.id, params);
+        const p = this.progLayer;
+        const dst = toCanvas ? null : free.pop();
+        gl.useProgram(p);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, dst ? dst.fbo : null);
+        gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, acc.tex);
+        gl.uniform1i(this._u(p, "u_dst"), 0);
+        gl.activeTexture(gl.TEXTURE0 + 1); gl.bindTexture(gl.TEXTURE_2D, pic.tex);
+        gl.uniform1i(this._u(p, "u_src"), 1);
+        const mask = step.hasMask ? this.masks.get(step.id) : null;
+        gl.uniform1i(this._u(p, "u_hasMask"), mask ? 1 : 0);
+        gl.activeTexture(gl.TEXTURE0 + 2); gl.bindTexture(gl.TEXTURE_2D, mask || this.bgTex);
+        gl.uniform1i(this._u(p, "u_mask"), 2);
+        gl.uniform1i(this._u(p, "u_blend"), BLEND_INDEX[step.blend] || 0);
+        gl.uniform1f(this._u(p, "u_opacity"), step.opacity);
+        gl.uniform1i(this._u(p, "u_water"), step.water ? 1 : 0);
+        this._bindPlacement(p, "", step.placement, pic.aspect, params);
+        this._bindClip(p, step, params);
+        this._bindBackdropRef(p, params);
+        this._bindLiquid(p, 5, params);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        if (dst) { free.push(acc); acc = dst; }
+        return;
+      }
+      // adjustment
+      const p = this.progAdjust;
+      const adjust = step.adjust;
+      let blurred = acc;
+      let spare = null;
+      if (adjust.type === "blur") {
+        const radius = Math.max(1, Math.min(96, Math.round(adjust.radius * (params.blurScale || 1))));
+        const weights = gaussianWeights(radius);
+        const s1 = free.pop(), s2 = free.pop();
+        this._blurPass(acc.tex, s1.fbo, [0, 1], weights);
+        this._blurPass(s1.tex, s2.fbo, [1, 0], weights);
+        blurred = s2; spare = s1;
+      }
+      const dst = toCanvas ? null : (spare || free.pop());
+      gl.useProgram(p);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, dst ? dst.fbo : null);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, acc.tex);
+      gl.uniform1i(this._u(p, "u_dst"), 0);
+      gl.activeTexture(gl.TEXTURE0 + 1); gl.bindTexture(gl.TEXTURE_2D, blurred.tex);
+      gl.uniform1i(this._u(p, "u_blur"), 1);
+      gl.uniform1i(this._u(p, "u_type"), ADJUST_INDEX[adjust.type] || 0);
+      gl.uniform4f(this._u(p, "u_params"),
+        adjust.type === "hueSaturation" ? adjust.hue : (adjust.brightness || 0) / 100,
+        adjust.type === "hueSaturation" ? (adjust.saturation || 0) / 100 : (adjust.contrast || 0) / 100,
+        (adjust.lightness || 0) / 100, 0);
+      gl.uniform1f(this._u(p, "u_opacity"), step.opacity);
+      this._bindClip(p, step, params);
+      this._bindBackdropRef(p, params);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      if (adjust.type === "blur") {
+        // s2 (the blurred copy) and the old accumulator are free again.
+        free.push(blurred);
+        if (dst) { free.push(acc); acc = dst; } else { free.push(acc); }
+      } else if (dst) { free.push(acc); acc = dst; }
+    });
+    return toScreen && live.length ? null : acc;
+  };
+
   Renderer.prototype.render = function (params) {
     const gl = this.gl;
     const w = this.canvas.width, h = this.canvas.height, dpr = params.dpr || 1;
@@ -1115,15 +1398,35 @@ installLiquidCoverWindow();
     gl.bindVertexArray(this.vao);
     gl.viewport(0, 0, w, h);
 
-    gl.useProgram(this.progBg);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.fboA.fbo);
-    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.bgTex);
-    gl.uniform1i(this._u(this.progBg, "u_image"), 0);
-    gl.uniform2f(this._u(this.progBg, "u_resolution"), w, h);
-    gl.uniform1f(this._u(this.progBg, "u_imageAspect"), this.bgAspect);
-    gl.uniform1f(this._u(this.progBg, "u_bgZoom"), params.bgZoom || 1);
-    gl.uniform2f(this._u(this.progBg, "u_bgPan"), (params.bgPan && params.bgPan[0]) || 0, (params.bgPan && params.bgPan[1]) || 0);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    // The backdrop: every stack layer under the glass, drawn by the plan. The
+    // common cover (one plain background photo) keeps its original single pass.
+    const plan = params.plan || { backdrop: [], foreground: [] };
+    const backdropSteps = this._liveSteps(plan.backdrop, params);
+    const plainBackdrop = !params.plan || (backdropSteps.length === 1 && backdropSteps[0].op === "picture"
+      && backdropSteps[0].id === params.bgLayerId && backdropSteps[0].blend === "normal"
+      && backdropSteps[0].opacity >= 1 && !backdropSteps[0].hasMask && !backdropSteps[0].clipTo);
+    if (plainBackdrop) {
+      gl.useProgram(this.progBg);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.fboA.fbo);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.bgTex);
+      gl.uniform1i(this._u(this.progBg, "u_image"), 0);
+      gl.uniform2f(this._u(this.progBg, "u_resolution"), w, h);
+      gl.uniform1f(this._u(this.progBg, "u_imageAspect"), this.bgAspect);
+      gl.uniform1f(this._u(this.progBg, "u_bgZoom"), params.bgZoom || 1);
+      gl.uniform2f(this._u(this.progBg, "u_bgPan"), (params.bgPan && params.bgPan[0]) || 0, (params.bgPan && params.bgPan[1]) || 0);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    } else {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.fboA.fbo);
+      gl.clearColor(NEUTRAL_BASE[0], NEUTRAL_BASE[1], NEUTRAL_BASE[2], 1);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      const acc = backdropSteps.length ? this._runSteps(backdropSteps, this.fboA, [this.fboB, this.fboC], false, params) : this.fboA;
+      if (acc !== this.fboA) {
+        const rest = [this.fboA, this.fboB, this.fboC].filter((f) => f !== acc);
+        this.fboA = acc; this.fboB = rest[0]; this.fboC = rest[1];
+      }
+    }
+    const foregroundSteps = this._liveSteps(plan.foreground, params);
+    const hasForeground = foregroundSteps.length > 0;
 
     const self = this;
     const drawBlur = function (srcTex, dstFbo, dir, weights) {
@@ -1142,16 +1445,16 @@ installLiquidCoverWindow();
     drawBlur(this.fboB.tex, this.fboC.fbo, [1, 0], params.blurWeights);
 
     gl.useProgram(this.progMain);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, postWeights ? this.fboD.fbo : null);
+    // Over-the-glass layers need the finished glass in a buffer of its own;
+    // B is free once the frost blur has been taken from it.
+    gl.bindFramebuffer(gl.FRAMEBUFFER, postWeights ? this.fboD.fbo : (hasForeground ? this.fboB.fbo : null));
     this._bindLayers(this.progMain, count, 0, meta);
     const bgUnit = MAX_LAYERS;
     const blurUnit = MAX_LAYERS + 1;
-    const fgUnit = MAX_LAYERS + 2;
     gl.activeTexture(gl.TEXTURE0 + bgUnit); gl.bindTexture(gl.TEXTURE_2D, this.fboA.tex);
     gl.uniform1i(this._u(this.progMain, "u_bg"), bgUnit);
     gl.activeTexture(gl.TEXTURE0 + blurUnit); gl.bindTexture(gl.TEXTURE_2D, this.fboC.tex);
     gl.uniform1i(this._u(this.progMain, "u_blurredBg"), blurUnit);
-    this._bindFg(this.progMain, fgUnit, !postWeights, params);
     gl.uniform2fv(this._u(this.progMain, "u_layerCenter"), centers);
     gl.uniform1f(this._u(this.progMain, "u_magnify"), params.magnify == null ? 1 : params.magnify);
     gl.uniform2f(this._u(this.progMain, "u_resolution"), w, h);
@@ -1177,7 +1480,7 @@ installLiquidCoverWindow();
       drawBlur(this.fboD.tex, this.fboB.fbo, [0, 1], postWeights);
       drawBlur(this.fboB.tex, this.fboA.fbo, [1, 0], postWeights);
       gl.useProgram(this.progComp);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, hasForeground ? this.fboC.fbo : null);
       this._bindLayers(this.progComp, count, 0, meta);
       gl.activeTexture(gl.TEXTURE0 + bgUnit); gl.bindTexture(gl.TEXTURE_2D, this.fboD.tex);
       gl.uniform1i(this._u(this.progComp, "u_sharp"), bgUnit);
@@ -1187,8 +1490,15 @@ installLiquidCoverWindow();
       gl.uniform1f(this._u(this.progComp, "u_dpr"), dpr);
       gl.uniform2f(this._u(this.progComp, "u_lightDir"), Math.cos(params.lightAngle), Math.sin(params.lightAngle));
       this._bindLiquid(this.progComp, MAX_LAYERS + 3, params);
-      this._bindFg(this.progComp, fgUnit, true, params);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+    if (hasForeground) {
+      // Over the finished glass: pictures and adjustments above it. The last
+      // step goes straight to the canvas.
+      const glassBuffer = postWeights ? this.fboC : this.fboB;
+      const free = [this.fboA, postWeights ? this.fboB : this.fboC];
+      if (postWeights) free.push(this.fboD);
+      this._runSteps(foregroundSteps.map((step) => ({ ...step, water: step.op === "picture" })), glassBuffer, free, true, params);
     }
     gl.bindVertexArray(null);
   };
@@ -1200,7 +1510,7 @@ installLiquidCoverWindow();
   // position, thickness). The exported PNG is rendered at a SCALE of these, up to
   // the source photo's native resolution — so a 6000×4000 import exports sharp.
   // 3:2 is sized 1500×1000 so an exact 4× lands on 6000×4000.
-  const ASPECTS = { "16:9": [1280, 720], "3:2": [1500, 1000], "4:3": [1280, 960], "3:4": [1080, 1440] };
+  const ASPECTS = { "16:9": [1280, 720], "3:2": [1500, 1000], "4:3": [1280, 960], "3:4": [1080, 1440], "1:1": [1080, 1080] };
   const DPR = 2;
   // Multiplier applied to the whole render for high-resolution export. 1 during
   // preview; raised on export so font/SDF/blur/thickness all scale together and
@@ -1215,9 +1525,28 @@ installLiquidCoverWindow();
   const layers = [];
   let sel = 0;
   const selectedLayerIds = new Set();
-  const fg = { x: 0.5, y: 0.5, scale: 1.0, registered: true };
   const glassFx = { bodyFactor: 0 };
-  let dragFgMode = false;
+  let dragFgMode = false; // "Drag Subject": a canvas drag moves the picture layer, not glass
+
+  // The picture stack (see liquid-cover-model.js): every picture and
+  // adjustment layer, bottom first, with the glass band sitting after the first
+  // `picSlot` of them. Pixels live in `picMedia`, never in the layer records:
+  // a layer is plain data, so a snapshot, a saved document and a variant can
+  // all copy it freely. picMedia outlives a deleted layer, so undo can bring
+  // the picture back.
+  const COVER_MODEL = window.AISystem6CoverModel;
+  const BG_LAYER_ID = "lc-bg";
+  const picStack = [];
+  let picSlot = 1;
+  const picMedia = new Map();     // layer id -> { image, file, mask, maskRev, maskDirty }
+  const selectedStackIds = new Set();
+  let selStack = "";              // the primary selected stack layer
+  let nextPicId = 1;
+  const bgState = { kind: "builtin", url: "", assetId: "" };
+  const localBackgrounds = new Map(); // a chosen photo not yet in the picture store
+  const variants = {};            // canvas arrangements of this one cover, by size key
+  let variantKey = "16:9";
+  const cover = { id: "", fileId: "", title: "", dirty: false };
   let activeBg = 0;
   let rafPending = false;
   let canvas = null;
@@ -1233,11 +1562,6 @@ installLiquidCoverWindow();
   let motionExporting = false;
   let motionExportProgress = 0;
   let nextLayerId = 1;
-  let layerDragState = null;
-  let suppressLayerClick = false;
-  const undoStack = [];
-  const redoStack = [];
-  let pendingHistory = null;
   let historyRestoring = false;
   const HISTORY_LIMIT = 50;
   const MOTION_PREVIEW_FPS = 30;
@@ -1437,6 +1761,7 @@ installLiquidCoverWindow();
   function setBgFromUrl(url) {
     clearMotionVideo(false);
     currentBgUrl = url;
+    bgState.kind = "builtin"; bgState.url = url; bgState.assetId = "";
     const img = new Image();
     img.onload = () => { if (currentBgUrl === url) { setBg(img); } };
     img.onerror = () => { if (currentBgUrl === url && (!renderer || !renderer.bgTex)) { setBg(neutralBg()); } };
@@ -1913,7 +2238,9 @@ installLiquidCoverWindow();
       if (!layers.some((L) => L.id === id)) selectedLayerIds.delete(id);
     });
     if (!layers[sel]) sel = Math.max(0, layers.length - 1);
-    if (layers[sel] && !selectedLayerIds.size) selectedLayerIds.add(layers[sel].id);
+    selectedStackIds.forEach((id) => { if (!picStack.some((S) => S.id === id)) selectedStackIds.delete(id); });
+    if (selStack && !selectedStackIds.has(selStack)) selStack = [...selectedStackIds].pop() || "";
+    if (layers[sel] && !selectedLayerIds.size && !selectedStackIds.size) selectedLayerIds.add(layers[sel].id);
     if (layers[sel] && !selectedLayerIds.has(layers[sel].id)) {
       const selected = selectedLayersInStack();
       sel = selected.length ? layers.indexOf(selected[selected.length - 1]) : sel;
@@ -1925,6 +2252,8 @@ installLiquidCoverWindow();
     sel = index;
     selectedLayerIds.clear();
     selectedLayerIds.add(layers[index].id);
+    selectedStackIds.clear();
+    selStack = "";
   }
 
   function toggleLayerSelection(index) {
@@ -1953,7 +2282,7 @@ installLiquidCoverWindow();
     "lc-blur-radius", "lc-shadow-factor", "lc-shadow-expand",
     "lc-magnify", "lc-merge", "lc-post-blur",
     "lc-material-mix", "lc-motion-preset", "lc-motion-duration",
-    "lc-motion-audio", "lc-fg-scale",
+    "lc-motion-audio",
     "lc-liquid-mode", "lc-liquid-strength", "lc-liquid-drop", "lc-liquid-pointer",
   ];
 
@@ -1962,6 +2291,12 @@ installLiquidCoverWindow();
     if (L._localBounds) copy._localBounds = { ...L._localBounds };
     return copy;
   }
+  function cloneStackLayer(S) {
+    const copy = { ...S };
+    if (S.adjust) copy.adjust = { ...S.adjust };
+    return copy;
+  }
+  function cloneVariants(source) { return JSON.parse(JSON.stringify(source || {})); }
 
   function historyControlValues() {
     const values = {};
@@ -1973,12 +2308,23 @@ installLiquidCoverWindow();
     return values;
   }
 
+  // One snapshot of everything a cover is: the glass layers, the picture stack,
+  // the background, the sizes, the global glass settings. The edit kernel's
+  // history keeps these and writes them back; nothing here knows how to invert
+  // an edit. Pictures and masks are not copied — they stay in `picMedia`, which
+  // outlives a deleted layer so undo can bring it back.
   function captureHistoryState() {
     return {
       layers: layers.map(cloneLayerForHistory),
       selectedIds: [...selectedLayerIds],
       selectedId: layers[sel]?.id || null,
-      fg: { ...fg },
+      stack: picStack.map(cloneStackLayer),
+      glassSlot: picSlot,
+      selectedStackIds: [...selectedStackIds],
+      selStack,
+      bgState: { ...bgState },
+      variants: cloneVariants(variants),
+      variantKey,
       glassFx: { ...glassFx },
       controls: historyControlValues(),
       aspect: activeAspectKey(),
@@ -1988,9 +2334,9 @@ installLiquidCoverWindow();
     };
   }
 
-  function historySignature() {
+  function snapshotSignature(state) {
     return JSON.stringify({
-      layers: layers.map((L) => ({
+      layers: state.layers.map((L) => ({
         id: L.id, parentId: L.parentId, name: L.name, text: L.text,
         font: L.font, fontSize: L.fontSize, fontWeight: L.fontWeight,
         letterSpacing: L.letterSpacing, rotation: L.rotation,
@@ -2000,40 +2346,38 @@ installLiquidCoverWindow();
         shapeKind: L.shapeKind, hasShape: !!L.shape,
         hidden: !!L.hidden, locked: !!L.locked,
       })),
-      fg, glassFx, controls: historyControlValues(),
-      aspect: activeAspectKey(), activePresetKey, activeBg, currentBgUrl,
+      stack: state.stack, glassSlot: state.glassSlot, bg: state.bgState,
+      variantKey: state.variantKey, variants: state.variants,
+      glassFx: state.glassFx, controls: state.controls,
+      aspect: state.aspect, activePresetKey: state.activePresetKey,
+      activeBg: state.activeBg, currentBgUrl: state.currentBgUrl,
     });
   }
+  function historySignature() { return snapshotSignature(captureHistoryState()); }
 
   function updateHistoryButtons() {
     const undo = $("lc-undo");
     const redo = $("lc-redo");
-    if (undo) undo.disabled = !undoStack.length;
-    if (redo) redo.disabled = !redoStack.length;
+    if (undo) undo.disabled = !coverHistory.canUndo();
+    if (redo) redo.disabled = !coverHistory.canRedo();
+    if (typeof updateMenuState === "function") updateMenuState();
   }
 
+  // A gesture — one drag, one slider scrub, one text edit — is one step. A
+  // second begin while one is open is the same gesture arriving by another
+  // event (pointerdown then focusin), not a new step.
   function beginHistory(labelKey, fallback) {
-    if (historyRestoring || pendingHistory) return;
-    pendingHistory = {
-      labelKey,
-      fallback,
-      state: captureHistoryState(),
-      signature: historySignature(),
-    };
+    if (historyRestoring || coverHistory.inGesture()) return;
+    coverHistory.begin(tr(labelKey, fallback));
   }
 
   function cancelHistory() {
-    pendingHistory = null;
+    if (coverHistory.inGesture()) coverHistory.cancel();
   }
 
   function commitHistory() {
-    if (!pendingHistory || historyRestoring) return;
-    const entry = pendingHistory;
-    pendingHistory = null;
-    if (entry.signature === historySignature()) return;
-    undoStack.push(entry);
-    if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
-    redoStack.length = 0;
+    if (historyRestoring) return;
+    coverHistory.commit();
     updateHistoryButtons();
   }
 
@@ -2045,84 +2389,92 @@ installLiquidCoverWindow();
 
   function restoreHistoryState(state) {
     historyRestoring = true;
-    pendingHistory = null;
-    layers.length = 0;
-    state.layers.forEach((L) => layers.push(cloneLayerForHistory(L)));
-    selectedLayerIds.clear();
-    state.selectedIds.forEach((id) => {
-      if (layers.some((L) => L.id === id)) selectedLayerIds.add(id);
-    });
-    sel = Math.max(0, layers.findIndex((L) => L.id === state.selectedId));
-    if (!selectedLayerIds.size && layers[sel]) selectedLayerIds.add(layers[sel].id);
-    Object.assign(fg, state.fg);
-    { const reg = $("lc-fg-register"); if (reg) reg.checked = !!fg.registered; }
-    Object.assign(glassFx, state.glassFx);
-    Object.entries(state.controls || {}).forEach(([id, value]) => {
-      const el = $(id);
-      if (!el) return;
-      if (el.type === "checkbox") el.checked = !!value;
-      else el.value = value;
-    });
-    const aspect = ASPECTS[state.aspect] || ASPECTS["16:9"];
-    applyAspect(aspect[0], aspect[1]);
-    document.querySelectorAll(".liquid-cover-window .lc-aspect button").forEach((button) => {
-      const active = button.dataset.k === state.aspect;
-      button.classList.toggle("is-active", active);
-      button.setAttribute("aria-pressed", active ? "true" : "false");
-    });
-    activePresetKey = state.activePresetKey || "";
-    activeBg = Number.isInteger(state.activeBg) ? state.activeBg : activeBg;
-    if (state.currentBgUrl && state.currentBgUrl !== currentBgUrl) setBgFromUrl(state.currentBgUrl);
-    nextLayerId = layers.reduce((max, L) => {
-      const value = Number(String(L.id || "").replace(/^lc-layer-/, ""));
-      return Number.isFinite(value) ? Math.max(max, value + 1) : max;
-    }, nextLayerId);
-    rebuildAllSDF();
-    renderLayerList();
-    loadLayerIntoPanel();
-    setInspectorPanel(isShapeLayer(layers[sel]) ? "glass" : "layers");
-    syncValueLabels();
-    syncLiquidControls();
-    setActivePreset(activePresetKey);
-    scheduleRender();
-    historyRestoring = false;
+    try {
+      layers.length = 0;
+      state.layers.forEach((L) => layers.push(cloneLayerForHistory(L)));
+      selectedLayerIds.clear();
+      state.selectedIds.forEach((id) => {
+        if (layers.some((L) => L.id === id)) selectedLayerIds.add(id);
+      });
+      sel = Math.max(0, layers.findIndex((L) => L.id === state.selectedId));
+      if (!selectedLayerIds.size && layers[sel] && !(state.selectedStackIds || []).length) selectedLayerIds.add(layers[sel].id);
+      picStack.length = 0;
+      (state.stack || []).forEach((S) => picStack.push(cloneStackLayer(S)));
+      picSlot = Number.isInteger(state.glassSlot) ? state.glassSlot : picSlot;
+      selectedStackIds.clear();
+      (state.selectedStackIds || []).forEach((id) => { if (picStack.some((S) => S.id === id)) selectedStackIds.add(id); });
+      selStack = picStack.some((S) => S.id === state.selStack) ? state.selStack : "";
+      Object.assign(glassFx, state.glassFx);
+      Object.entries(state.controls || {}).forEach(([id, value]) => {
+        const el = $(id);
+        if (!el) return;
+        if (el.type === "checkbox") el.checked = !!value;
+        else el.value = value;
+      });
+      Object.keys(variants).forEach((key) => { delete variants[key]; });
+      Object.assign(variants, cloneVariants(state.variants));
+      variantKey = state.variantKey || state.aspect || variantKey;
+      const aspect = ASPECTS[state.aspect] || ASPECTS["16:9"];
+      applyAspect(aspect[0], aspect[1]);
+      document.querySelectorAll(".liquid-cover-window .lc-aspect button").forEach((button) => {
+        const active = button.dataset.k === state.aspect;
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+      activePresetKey = state.activePresetKey || "";
+      activeBg = Number.isInteger(state.activeBg) ? state.activeBg : activeBg;
+      restoreBackgroundState(state);
+      nextLayerId = layers.reduce((max, L) => {
+        const value = Number(String(L.id || "").replace(/^lc-layer-/, ""));
+        return Number.isFinite(value) ? Math.max(max, value + 1) : max;
+      }, nextLayerId);
+      syncRendererPictures();
+      rebuildAllSDF();
+      renderLayerList();
+      loadLayerIntoPanel();
+      renderStackInspector();
+      const focusStack = selStack && selectedStackIds.has(selStack) && !selectedLayerIds.size;
+      setInspectorPanel(focusStack ? "stack" : (isShapeLayer(layers[sel]) ? "glass" : "layers"));
+      syncValueLabels();
+      syncLiquidControls();
+      syncSubjectControls();
+      setActivePreset(activePresetKey);
+      scheduleRender();
+    } finally {
+      historyRestoring = false;
+    }
   }
 
-  function undoEditor() {
-    const entry = undoStack.pop();
-    if (!entry) return;
-    redoStack.push({
-      labelKey: entry.labelKey,
-      fallback: entry.fallback,
-      state: captureHistoryState(),
-      signature: historySignature(),
-    });
-    restoreHistoryState(entry.state);
-    aiStatusText(tr("liquid_cover_undo_status", "Change undone.", tr(entry.labelKey, entry.fallback)));
-    updateHistoryButtons();
-  }
+  const coverHistory = window.AISystem6EditHistory.createEditHistory({
+    read: captureHistoryState,
+    write: (snapshot) => restoreHistoryState(snapshot),
+    limit: HISTORY_LIMIT,
+    equals: (a, b) => snapshotSignature(a) === snapshotSignature(b),
+    onChange: ({ kind, label }) => {
+      if (kind !== "clear" && typeof notifyCoverEmbed === "function") notifyCoverEmbed();
+      if (kind === "record" || kind === "group") markCoverDirty();
+      if (kind === "undo" || kind === "redo") {
+        markCoverDirty();
+        aiStatusText(tr(kind === "undo" ? "liquid_cover_undo_status" : "liquid_cover_redo_status", kind === "undo" ? "Change undone." : "Change redone.", label));
+      }
+      updateHistoryButtons();
+    },
+  });
+  function undoEditor() { return coverHistory.undo(); }
+  function redoEditor() { return coverHistory.redo(); }
 
-  function redoEditor() {
-    const entry = redoStack.pop();
-    if (!entry) return;
-    undoStack.push({
-      labelKey: entry.labelKey,
-      fallback: entry.fallback,
-      state: captureHistoryState(),
-      signature: historySignature(),
-    });
-    restoreHistoryState(entry.state);
-    aiStatusText(tr("liquid_cover_redo_status", "Change redone.", tr(entry.labelKey, entry.fallback)));
-    updateHistoryButtons();
-  }
+  // Edit > Undo / Redo and their menu names come from this history when no
+  // field in the window is the target (window-manager.js editHistoryFor).
+  registerEditHistory("liquidCover", coverHistory);
 
   function syncWorkbenchReadout() {
     const aspect = activeAspectKey();
     const layer = layers[sel];
     const selectionCount = selectedLayersInStack().length;
-    const layerName = selectionCount > 1
-      ? tr("liquid_cover_layers_selected", "{0} layers selected", selectionCount)
-      : (layer ? (layer.name || (layer.text || "Layer").split("\n")[0] || "Layer").slice(0, 32) : "Layer");
+    const stackSelected = selectedStackLayers();
+    const layerName = selectionCount + stackSelected.length > 1
+      ? tr("liquid_cover_layers_selected", "{0} layers selected", selectionCount + stackSelected.length)
+      : (stackFocus() ? stackLayerName(stackSelected[0]).slice(0, 32) : (layer ? (layer.name || (layer.text || "Layer").split("\n")[0] || "Layer").slice(0, 32) : "Layer"));
     const format = $("lc-stage-format");
     if (format) format.textContent = aspect + " · " + DESIGN_W + " × " + DESIGN_H;
     const selection = $("lc-stage-selection");
@@ -2134,8 +2486,7 @@ installLiquidCoverWindow();
         ? tr("liquid_cover_selection_count_help", "{0} layers selected · drag together · align to selection", selectionCount)
         : tr("liquid_cover_selection_help", "Shift-click or drag a box to select multiple layers. Drag layers to reorder.");
     }
-    const meta = $("lc-status-meta");
-    if (meta) meta.textContent = aspect + " · " + layers.length + "/" + MAX_LAYERS;
+    syncCoverStatus();
   }
   function sourceWidth(src) { return src ? (src.videoWidth || src.naturalWidth || src.width || 0) : 0; }
   function sourceHeight(src) { return src ? (src.videoHeight || src.naturalHeight || src.height || 0) : 0; }
@@ -2674,6 +3025,7 @@ installLiquidCoverWindow();
     return Math.max(1, Math.min(96, Math.round(raw * (EXPORT_H / 1080))));
   }
   function readParams() {
+    syncRendererPictures();
     const postRadius = scaledPostBlurRadius();
     const mergeK = +($("lc-merge") && $("lc-merge").value) || 0;
     const mergeGroups = mergeK > 0 ? mergeGroupsFor(layers) : layers.map(() => -1);
@@ -2689,7 +3041,9 @@ installLiquidCoverWindow();
       postBlurWeights: postRadius > 0 ? gaussianWeights(postRadius) : null,
       tints: layers.map((L) => { const c = hexToRgb(layerColor(L)); return [c[0], c[1], c[2], L.tintAlpha / 100]; }),
       thicknesses: layers.map((L) => effectiveThickness(L)),
-      fgPos: [fg.x, fg.y], fgScale: fg.scale, fgRegistered: !!fg.registered,
+      plan: COVER_MODEL.compositingPlan({ stack: picStack, glassSlot: picSlot, isReady: pictureReady }),
+      bgLayerId: BG_LAYER_ID,
+      blurScale: EXPORT_H / 1080,
       refraction: (+$("lc-refraction").value || 0) / 50, // 50 = physical n 1.5 dome
       refDispersion: +$("lc-dispersion").value,
       lightAngle: (+$("lc-light-angle").value * Math.PI) / 180, // direction the light comes from
@@ -3012,9 +3366,10 @@ installLiquidCoverWindow();
   function updateSelectionOverlay() {
     const box = $("lc-selection-box");
     if (!box || !canvas) return;
-    const selected = selectedPositionMembers();
-    const bounds = boundsUnion(selected);
-    if (!bounds || !selected.length) {
+    const glassMembers = selectedPositionMembers();
+    const pictureBounds = selectedStackLayers().filter(pictureMovable).map(pictureBoundsUV);
+    const bounds = boundsUnion([...glassMembers, ...pictureBounds]);
+    if (!bounds || !(glassMembers.length + pictureBounds.length)) {
       box.classList.remove("is-visible", "has-single-transform");
       return;
     }
@@ -3027,7 +3382,7 @@ installLiquidCoverWindow();
     box.style.setProperty("--lc-selection-width", Math.max(1, (bounds.right - bounds.left) * rect.width) + "px");
     box.style.setProperty("--lc-selection-height", Math.max(1, (bounds.top - bounds.bottom) * rect.height) + "px");
     box.classList.add("is-visible");
-    box.classList.toggle("has-single-transform", selectedPositionRoots().length === 1);
+    box.classList.toggle("has-single-transform", movableItems().length === 1);
   }
 
   function setLayerPosition(L, x, y, moveChildren) {
@@ -3058,6 +3413,7 @@ installLiquidCoverWindow();
   }
 
   function moveSelectedLayer(where) {
+    if (stackFocus()) { moveSelectedStack(where); return; }
     const selected = layers[sel];
     if (!selected || selected.locked || layers.length < 2) return;
     const unit = selectedMoveUnit();
@@ -3080,29 +3436,6 @@ installLiquidCoverWindow();
     rebuildAllSDF();
     renderLayerList();
     loadLayerIntoPanel();
-    scheduleRender();
-    commitHistory();
-  }
-
-  function alignSelectedToArtboard(where) {
-    const roots = selectedPositionRoots();
-    if (!roots.length) return;
-    beginHistory("liquid_cover_align_action", "Align layers");
-    const multi = roots.length > 1;
-    const selectionBounds = boundsUnion(roots.map(unitBoundsForLayer));
-    roots.forEach((L) => {
-      const b = unitBoundsForLayer(L);
-      let dx = 0, dy = 0;
-      if (where === "left") dx = (multi ? selectionBounds.left : 0) - b.left;
-      if (where === "center") dx = (multi ? (selectionBounds.left + selectionBounds.right) / 2 : 0.5) - (b.left + b.right) / 2;
-      if (where === "right") dx = (multi ? selectionBounds.right : 1) - b.right;
-      if (where === "top") dy = (multi ? selectionBounds.top : 1) - b.top;
-      if (where === "middle") dy = (multi ? (selectionBounds.bottom + selectionBounds.top) / 2 : 0.5) - (b.bottom + b.top) / 2;
-      if (where === "bottom") dy = (multi ? selectionBounds.bottom : 0) - b.bottom;
-      setLayerPosition(L, L.cx + dx, L.cy + dy, true);
-    });
-    syncWorkbenchReadout();
-    updateSelectionOverlay();
     scheduleRender();
     commitHistory();
   }
@@ -3132,6 +3465,7 @@ installLiquidCoverWindow();
   }
 
   function removeSelectedLayer() {
+    if (stackFocus()) { removeSelectedStack(); return; }
     const removed = selectedLayersInStack().filter((L) => !L.locked);
     if (!removed.length || layers.length - removed.length < 1) return;
     beginHistory("liquid_cover_delete_action", "Delete layer");
@@ -3153,35 +3487,6 @@ installLiquidCoverWindow();
     commitHistory();
   }
 
-  function clearLayerDropIndicators(clearDragging) {
-    document.querySelectorAll("#lc-layer-list .lc-layer-item").forEach((item) => {
-      item.classList.remove("is-drop-before", "is-drop-after");
-      if (clearDragging) {
-        item.classList.remove("is-dragging");
-        item.setAttribute("aria-grabbed", "false");
-      }
-    });
-  }
-
-  function reorderLayerUnit(unitIds, targetId, edge) {
-    const moving = layers.filter((L) => unitIds.has(L.id));
-    if (!moving.length || unitIds.has(targetId)) return;
-    const rest = layers.filter((L) => !unitIds.has(L.id));
-    const targetIndex = rest.findIndex((L) => L.id === targetId);
-    if (targetIndex < 0) return;
-    const insertAt = targetIndex + (edge === "above" ? 1 : 0);
-    layers.length = 0;
-    rest.slice(0, insertAt).forEach((L) => layers.push(L));
-    moving.forEach((L) => layers.push(L));
-    rest.slice(insertAt).forEach((L) => layers.push(L));
-    sel = layers.findIndex((L) => selectedLayerIds.has(L.id));
-    if (sel < 0) sel = layers.indexOf(moving[moving.length - 1]);
-    rebuildAllSDF();
-    renderLayerList();
-    loadLayerIntoPanel();
-    scheduleRender();
-  }
-
   function layerDisplayName(L) {
     const fallback = isShapeLayer(L)
       ? tr("liquid_cover_layer_shape", "Shape")
@@ -3190,6 +3495,7 @@ installLiquidCoverWindow();
   }
 
   function duplicateSelectedLayers() {
+    if (stackFocus()) { duplicateSelectedStack(); return; }
     if (layers.length >= MAX_LAYERS) return;
     const source = selectedReorderUnit(layers[sel]);
     const capacity = MAX_LAYERS - layers.length;
@@ -3227,213 +3533,30 @@ installLiquidCoverWindow();
     commitHistory();
   }
 
-  function toggleLayerHidden(L) {
-    if (!L) return;
-    runHistoryAction("liquid_cover_edit_action", "Edit layer", () => {
-      L.hidden = !L.hidden;
-      renderLayerList();
-      scheduleRender();
-    });
+  // The stack is in focus when a picture or adjustment is selected and no glass layer is.
+  function stackFocus() {
+    return !!selStack && selectedStackIds.has(selStack) && !selectedLayerIds.size;
   }
-
-  function toggleLayerLocked(L) {
-    if (!L) return;
-    runHistoryAction("liquid_cover_edit_action", "Edit layer", () => {
-      L.locked = !L.locked;
-      renderLayerList();
-      loadLayerIntoPanel();
-      scheduleRender();
-    });
+  function canMoveStack(direction) {
+    const S = primaryStackLayer();
+    if (!S || S.locked || S.id === BG_LAYER_ID) return false;
+    const i = picStack.indexOf(S);
+    return direction === "up" ? (i < picStack.length - 1 || i === picSlot - 1) : (i > 1 || i === picSlot);
   }
-
-  function beginLayerRename(L, row, item) {
-    if (!L || L.locked || row.querySelector(".lc-layer-name-input")) return;
-    const name = item.querySelector(".lc-layer-name");
-    if (!name) return;
-    beginHistory("liquid_cover_rename_action", "Rename layer");
-    const input = document.createElement("input");
-    input.className = "lc-layer-name-input";
-    input.type = "text";
-    input.maxLength = 40;
-    input.value = L.name || layerDisplayName(L);
-    input.setAttribute("aria-label", tr("liquid_cover_layer_name", "Layer name"));
-    name.replaceWith(input);
-    input.focus();
-    input.select();
-    let finished = false;
-    const finish = (save) => {
-      if (finished) return;
-      finished = true;
-      if (save) {
-        L.name = input.value.trim().slice(0, 40);
-        commitHistory();
-      } else {
-        cancelHistory();
-      }
-      renderLayerList();
-      loadLayerIntoPanel();
-    };
-    input.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" && !eventIsTextComposition(event)) { event.preventDefault(); finish(true); }
-      if (event.key === "Escape") { event.preventDefault(); finish(false); }
-    });
-    input.addEventListener("blur", () => finish(true));
-  }
-
-  function layerStateGlyph(kind, active) {
-    const icon = document.createElement("span");
-    icon.className = "lc-control-icon";
-    icon.setAttribute("aria-hidden", "true");
-    if (kind === "visibility") {
-      icon.innerHTML = '<svg viewBox="0 0 20 20" focusable="false"><path d="M2.4 10s2.8-5 7.6-5 7.6 5 7.6 5-2.8 5-7.6 5-7.6-5-7.6-5Z"></path>'
-        + (active ? '<path d="m3.8 3.8 12.4 12.4"></path>' : '<circle cx="10" cy="10" r="2.25"></circle>')
-        + "</svg>";
-    } else {
-      const shackle = active
-        ? '<path d="M6.4 9V6.9a3.6 3.6 0 0 1 7.2 0V9"></path>'
-        : '<path d="M7.3 9V7.1a3.5 3.5 0 0 1 6.8-1.2"></path>';
-      icon.innerHTML = '<svg viewBox="0 0 20 20" focusable="false">' + shackle
-        + '<rect x="4.4" y="8.7" width="11.2" height="8" rx="1.8"></rect><path d="M10 12v1.8"></path></svg>';
-    }
-    return icon;
-  }
-
   function renderLayerList() {
-    const list = $("lc-layer-list");
-    list.innerHTML = "";
     ensureSelection();
-    for (let i = layers.length - 1; i >= 0; i--) {
-      const L = layers[i];
-      const row = document.createElement("div");
-      row.className = "lc-layer-row" + (L.hidden ? " has-hidden-layer" : "") + (L.locked ? " has-locked-layer" : "");
-      const item = document.createElement("button");
-      item.type = "button";
-      const active = selectedLayerIds.has(L.id);
-      item.className = "lc-layer-item" + (active ? " is-active" : "") + (i === sel ? " is-primary" : "");
-      item.dataset.layerId = L.id;
-      item.dataset.reorderable = "true";
-      item.title = tr("liquid_cover_layer_drag_hint", "Drag to reorder · Shift-click to multi-select");
-      const type = document.createElement("span");
-      type.className = "lc-layer-type";
-      type.textContent = isShapeLayer(L) ? tr("liquid_cover_layer_shape", "Shape") : tr("liquid_cover_layer_text", "Text");
-      const name = document.createElement("span");
-      name.className = "lc-layer-name";
-      name.textContent = layerDisplayName(L);
-      item.appendChild(type);
-      item.appendChild(name);
-      if (L.parentId) item.dataset.embedded = "true";
-      item.setAttribute("aria-pressed", active ? "true" : "false");
-      item.setAttribute("aria-grabbed", "false");
-      item.addEventListener("click", (event) => {
-        if (suppressLayerClick) return;
-        if (!event.shiftKey && event.detail >= 2) {
-          beginLayerRename(L, row, item);
-          return;
-        }
-        const alreadyOnlySelected = selectedLayerIds.size === 1 && selectedLayerIds.has(L.id);
-        if (!event.shiftKey && alreadyOnlySelected) {
-          loadLayerIntoPanel();
-          setInspectorPanel(isShapeLayer(L) ? "glass" : "layers");
-          return;
-        }
-        if (event.shiftKey) toggleLayerSelection(layers.indexOf(L));
-        else selectOnly(layers.indexOf(L));
-        loadLayerIntoPanel();
-        renderLayerList();
-        setInspectorPanel(isShapeLayer(L) ? "glass" : "layers");
-      });
-      item.addEventListener("dblclick", () => beginLayerRename(L, row, item));
-      item.addEventListener("keydown", (event) => {
-        if (event.key === "F2") {
-          event.preventDefault();
-          beginLayerRename(L, row, item);
-        }
-      });
-      item.addEventListener("pointerdown", (event) => {
-        if (event.button !== 0 || L.locked) return;
-        if (!event.shiftKey && !selectedLayerIds.has(L.id)) selectOnly(layers.indexOf(L));
-        layerDragState = {
-          seed: L,
-          startX: event.clientX,
-          startY: event.clientY,
-          dragging: false,
-          unitIds: null,
-          targetId: null,
-          edge: null,
-        };
-      });
-      const visibility = document.createElement("button");
-      visibility.type = "button";
-      visibility.className = "btn lc-layer-state" + (L.hidden ? " is-active" : "");
-      visibility.appendChild(layerStateGlyph("visibility", L.hidden));
-      visibility.setAttribute("aria-label", tr(L.hidden ? "liquid_cover_show_layer" : "liquid_cover_hide_layer", L.hidden ? "Show layer" : "Hide layer"));
-      visibility.setAttribute("aria-pressed", L.hidden ? "true" : "false");
-      visibility.title = visibility.getAttribute("aria-label");
-      visibility.addEventListener("click", () => toggleLayerHidden(L));
-      const lock = document.createElement("button");
-      lock.type = "button";
-      lock.className = "btn lc-layer-state" + (L.locked ? " is-active" : "");
-      lock.appendChild(layerStateGlyph("lock", L.locked));
-      lock.setAttribute("aria-label", tr(L.locked ? "liquid_cover_unlock_layer" : "liquid_cover_lock_layer", L.locked ? "Unlock layer" : "Lock layer"));
-      lock.setAttribute("aria-pressed", L.locked ? "true" : "false");
-      lock.title = lock.getAttribute("aria-label");
-      lock.addEventListener("click", () => toggleLayerLocked(L));
-      row.appendChild(item);
-      row.appendChild(visibility);
-      row.appendChild(lock);
-      list.appendChild(row);
-    }
-    list.onpointermove = (event) => {
-      if (!layerDragState) return;
-      const distance = Math.hypot(event.clientX - layerDragState.startX, event.clientY - layerDragState.startY);
-      if (!layerDragState.dragging && distance < 5) return;
-      event.preventDefault();
-      if (!layerDragState.dragging) {
-        layerDragState.dragging = true;
-        beginHistory("liquid_cover_reorder_action", "Reorder layers");
-        layerDragState.unitIds = new Set(selectedReorderUnit(layerDragState.seed).map((entry) => entry.id));
-        const source = list.querySelector('[data-layer-id="' + layerDragState.seed.id + '"]');
-        source?.classList.add("is-dragging");
-        source?.setAttribute("aria-grabbed", "true");
-      }
-      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest(".lc-layer-item");
-      clearLayerDropIndicators();
-      if (!target || !list.contains(target) || layerDragState.unitIds.has(target.dataset.layerId)) {
-        layerDragState.targetId = null;
-        return;
-      }
-      const rect = target.getBoundingClientRect();
-      const edge = event.clientY < rect.top + rect.height / 2 ? "above" : "below";
-      target.classList.add(edge === "above" ? "is-drop-before" : "is-drop-after");
-      layerDragState.targetId = target.dataset.layerId;
-      layerDragState.edge = edge;
-    };
-    list.onpointerup = () => {
-      if (!layerDragState) return;
-      const state = layerDragState;
-      layerDragState = null;
-      if (state.dragging && state.targetId) {
-        suppressLayerClick = true;
-        reorderLayerUnit(state.unitIds, state.targetId, state.edge);
-        commitHistory();
-        setTimeout(() => { suppressLayerClick = false; }, 0);
-      } else if (state.dragging) cancelHistory();
-      clearLayerDropIndicators(true);
-    };
-    list.onpointercancel = () => {
-      layerDragState = null;
-      cancelHistory();
-      clearLayerDropIndicators(true);
-    };
-    const removable = selectedLayersInStack().filter((L) => !L.locked).length;
+    if (layersPanel) layersPanel.render();
+    const stackMode = stackFocus();
+    const removableGlass = selectedLayersInStack().filter((L) => !L.locked).length;
+    const removableStack = selectedStackLayers().filter((S) => S.id !== BG_LAYER_ID && !S.locked).length;
     const layersFull = layers.length >= MAX_LAYERS;
-    $("lc-del-layer").disabled = !removable || layers.length - removable < 1;
-    $("lc-duplicate-layer").disabled = layersFull;
+    $("lc-del-layer").disabled = stackMode ? !removableStack : (!removableGlass || layers.length - removableGlass < 1);
+    $("lc-duplicate-layer").disabled = stackMode ? !removableStack : layersFull;
     $("lc-add-layer").disabled = layersFull;
     ["lc-add-layer", "lc-duplicate-layer", "lc-add-shape", "lc-shape-circle", "lc-shape-squircle", "lc-shape-capsule", "lc-add-inside-text"].forEach((id) => {
       const b = $(id);
       if (!b) return;
-      if (layersFull) b.dataset.balloonHelpDisabled = "balloon_cover_layers_full";
+      if (layersFull && !(stackMode && id === "lc-duplicate-layer")) b.dataset.balloonHelpDisabled = "balloon_cover_layers_full";
       else if (b.dataset.balloonHelpDisabled === "balloon_cover_layers_full") {
         delete b.dataset.balloonHelpDisabled;
       }
@@ -3441,12 +3564,15 @@ installLiquidCoverWindow();
     ["lc-add-shape", "lc-shape-circle", "lc-shape-squircle", "lc-shape-capsule"].forEach((id) => {
       const b = $(id); if (b) b.disabled = layersFull;
     });
-    $("lc-add-inside-text").disabled = !isShapeLayer(layers[sel]) || layersFull;
+    $("lc-add-inside-text").disabled = stackMode || !isShapeLayer(layers[sel]) || layersFull;
     const primaryLocked = !!layers[sel]?.locked;
-    $("lc-layer-bottom").disabled = primaryLocked || !canMoveSelected("down");
-    $("lc-layer-down").disabled = primaryLocked || !canMoveSelected("down");
-    $("lc-layer-up").disabled = primaryLocked || !canMoveSelected("up");
-    $("lc-layer-top").disabled = primaryLocked || !canMoveSelected("up");
+    $("lc-layer-bottom").disabled = stackMode ? !canMoveStack("down") : (primaryLocked || !canMoveSelected("down"));
+    $("lc-layer-down").disabled = stackMode ? !canMoveStack("down") : (primaryLocked || !canMoveSelected("down"));
+    $("lc-layer-up").disabled = stackMode ? !canMoveStack("up") : (primaryLocked || !canMoveSelected("up"));
+    $("lc-layer-top").disabled = stackMode ? !canMoveStack("up") : (primaryLocked || !canMoveSelected("up"));
+    const movable = movableItems().length;
+    document.querySelectorAll(".lc-align-selection .btn").forEach((b) => { b.disabled = movable < 2; });
+    document.querySelectorAll(".lc-distribute-selection .btn").forEach((b) => { b.disabled = movable < 3; });
     const exportBtn = $("lc-export");
     if (exportBtn) {
       const hasScene = !!lastBgSource || layers.some((layer) => String(layer?.text || "").trim());
@@ -3519,12 +3645,6 @@ installLiquidCoverWindow();
     if (!bw || !bh || !fw || !fh) return false;
     return Math.abs((fw / fh) / (bw / bh) - 1) < 0.015;
   }
-  function syncSubjectControls() {
-    const reg = $("lc-fg-register"); if (reg) reg.checked = !!fg.registered;
-    const sc = $("lc-fg-scale"); if (sc) sc.value = Math.round(fg.scale * 100);
-    syncValueLabels();
-  }
-
   function pointerToUV(e) {
     const r = canvas.getBoundingClientRect();
     return { x: (e.clientX - r.left) / r.width, y: 1 - (e.clientY - r.top) / r.height };
@@ -3537,62 +3657,6 @@ installLiquidCoverWindow();
       if (point.x >= b.left && point.x <= b.right && point.y >= b.bottom && point.y <= b.top) return i;
     }
     return -1;
-  }
-
-  function alignmentCandidates(excluded) {
-    const excludedSet = excluded instanceof Set ? excluded : new Set(excluded ? [excluded] : []);
-    const x = [0, 0.5, 1];
-    const y = [0, 0.5, 1];
-    layers.forEach((L) => {
-      if (L.hidden || excludedSet.has(L) || excludedSet.has(layers.find((item) => item.id === L.parentId))) return;
-      const b = worldBounds(L);
-      x.push(b.left, (b.left + b.right) / 2, b.right);
-      y.push(b.bottom, (b.bottom + b.top) / 2, b.top);
-    });
-    return { x, y };
-  }
-
-  function nearestSnap(anchors, candidates, threshold) {
-    let best = null;
-    anchors.forEach((anchor) => {
-      candidates.forEach((target) => {
-        const delta = target - anchor;
-        const distance = Math.abs(delta);
-        if (distance <= threshold && (!best || distance < best.distance)) {
-          best = { delta, target, distance };
-        }
-      });
-    });
-    return best;
-  }
-
-  function snapBoundsDelta(bounds, rawDx, rawDy, rect, excluded, disableSnap) {
-    if (disableSnap) return { dx: rawDx, dy: rawDy, guideX: null, guideY: null };
-    const moved = {
-      left: bounds.left + rawDx,
-      right: bounds.right + rawDx,
-      bottom: bounds.bottom + rawDy,
-      top: bounds.top + rawDy,
-    };
-    const candidates = alignmentCandidates(excluded);
-    const snapX = nearestSnap([moved.left, (moved.left + moved.right) / 2, moved.right], candidates.x, 6 / Math.max(1, rect.width));
-    const snapY = nearestSnap([moved.bottom, (moved.bottom + moved.top) / 2, moved.top], candidates.y, 6 / Math.max(1, rect.height));
-    return {
-      dx: rawDx + (snapX ? snapX.delta : 0),
-      dy: rawDy + (snapY ? snapY.delta : 0),
-      guideX: snapX ? snapX.target : null,
-      guideY: snapY ? snapY.target : null,
-    };
-  }
-
-  function snapLayerPosition(L, rawX, rawY, rect, disableSnap) {
-    const snapped = snapBoundsDelta(worldBounds(L), rawX - L.cx, rawY - L.cy, rect, new Set([L]), disableSnap);
-    return {
-      x: L.cx + snapped.dx,
-      y: L.cy + snapped.dy,
-      guideX: snapped.guideX,
-      guideY: snapped.guideY,
-    };
   }
 
   function marqueeBounds(start, end) {
@@ -3641,12 +3705,1350 @@ installLiquidCoverWindow();
     guides.classList.remove("has-x", "has-y");
   }
 
+  // ------------------------------------------------------------------
+  // 4) The cover as a document: a stack of pictures, saved to the desk
+  // ------------------------------------------------------------------
+  // The glass layers above keep their own list and their own renderer path.
+  // This section is everything else a cover holds: pictures (a background, a
+  // subject, anything the writer brings), adjustment layers, cut-out masks, the
+  // canvas variants, and the document that carries them to the desk and back.
+  // The compositing plan (liquid-cover-model.js) says in what order they are
+  // drawn; the renderer draws exactly that, for the preview and the export alike.
+  const maskVersions = new Map();   // layer id -> Map(revision -> mask plane), for undo of brush strokes
+  const MASK_VERSION_LIMIT = 16;
+  const ADJUST_FALLBACK = { brightnessContrast: "Brightness / Contrast", hueSaturation: "Hue / Saturation", blur: "Blur" };
+  const BLEND_FALLBACK = { normal: "Normal", multiply: "Multiply", screen: "Screen", overlay: "Overlay", darken: "Darken", lighten: "Lighten" };
+  let coverSaving = false;
+
+  function pictureReady(layer) {
+    if (layer.id === BG_LAYER_ID) return true;
+    if (!renderer || !renderer.hasPicture(layer.id)) return false;
+    return !layer.maskId || renderer.masks.has(layer.id);
+  }
+  function stackLayerById(id) { return picStack.find((S) => S.id === id) || null; }
+  function selectedStackLayers() { return picStack.filter((S) => selectedStackIds.has(S.id)); }
+  function primaryStackLayer() { return stackLayerById(selStack); }
+  function selectOnlyStack(id) {
+    selectedLayerIds.clear();
+    selectedStackIds.clear();
+    selectedStackIds.add(id);
+    selStack = id;
+  }
+  function newPicId() { return "lc-pic-" + nextPicId++; }
+  function makeBackgroundLayer() {
+    return COVER_MODEL.normalizeStackLayer({ id: BG_LAYER_ID, kind: "picture", role: "background", placement: "cover" });
+  }
+  function stackLayerName(S) {
+    if (S.name) return S.name;
+    if (S.id === BG_LAYER_ID) return tr("liquid_cover_background", "Background");
+    if (S.kind === "adjust") return tr("liquid_cover_adjust_" + S.adjust.type, ADJUST_FALLBACK[S.adjust.type]);
+    return S.role === "subject" ? tr("liquid_cover_subject_layer", "Subject") : tr("liquid_cover_picture_layer", "Picture");
+  }
+  function coverAspectOf(image) { return sourceWidth(image) / Math.max(1, sourceHeight(image)); }
+
+  // ---- masks: a cut-out is the picture, a mask and a transform, kept apart ----
+  function maskPlane(canvas) {
+    const data = canvas.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height).data;
+    const plane = new Uint8Array(canvas.width * canvas.height);
+    for (let i = 0; i < plane.length; i++) plane[i] = data[i * 4];
+    return plane;
+  }
+  function writeMaskPlane(canvas, plane) {
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    const pixels = context.createImageData(canvas.width, canvas.height);
+    for (let i = 0; i < plane.length; i++) {
+      pixels.data[i * 4] = pixels.data[i * 4 + 1] = pixels.data[i * 4 + 2] = plane[i];
+      pixels.data[i * 4 + 3] = 255;
+    }
+    context.putImageData(pixels, 0, 0);
+  }
+  function rememberMaskVersion(id, rev, canvas) {
+    if (!maskVersions.has(id)) maskVersions.set(id, new Map());
+    const versions = maskVersions.get(id);
+    versions.set(rev, maskPlane(canvas));
+    while (versions.size > MASK_VERSION_LIMIT) versions.delete(versions.keys().next().value);
+  }
+  function applyMaskVersion(id, rev) {
+    const media = picMedia.get(id);
+    const plane = maskVersions.get(id)?.get(rev);
+    if (!media || !media.mask || !plane || plane.length !== media.mask.width * media.mask.height) return;
+    writeMaskPlane(media.mask, plane);
+    media.maskRev = rev;
+    media.maskDirty = true;
+  }
+  function maskCanvasFromImage(image) {
+    const c = document.createElement("canvas");
+    c.width = sourceWidth(image); c.height = sourceHeight(image);
+    c.getContext("2d", { willReadFrequently: true }).drawImage(image, 0, 0);
+    return c;
+  }
+
+  // Put every picture the stack names into the renderer, and bring each mask to
+  // the revision the layer says it is at. Cheap and idempotent: it runs before
+  // every render, after every restore and after the renderer is rebuilt.
+  function syncRendererPictures() {
+    if (!renderer) return;
+    picStack.forEach((S) => {
+      if (S.kind !== "picture" || S.id === BG_LAYER_ID) return;
+      const media = picMedia.get(S.id);
+      if (!media) return;
+      if (media.image && !renderer.hasPicture(S.id)) renderer.setPicture(S.id, media.image);
+      if (media.mask) {
+        const wanted = S.maskRev || 0;
+        if ((media.maskRev || 0) !== wanted) applyMaskVersion(S.id, wanted);
+        if (media.maskDirty || !renderer.masks.has(S.id)) { renderer.setMask(S.id, media.mask); media.maskDirty = false; }
+      }
+    });
+  }
+
+  // ---- assets: the pictures live in the one picture store ----
+  const editAssets = () => window.AISystem6EditAssets;
+  function ensureCoverId() {
+    if (!cover.id) cover.id = crypto.randomUUID();
+    return cover.id;
+  }
+  function coverProject() {
+    return typeof getActiveProject === "function" ? getActiveProject() : null;
+  }
+  function fileFromImage(image, name) {
+    return new Promise((resolve, reject) => {
+      const c = document.createElement("canvas");
+      c.width = sourceWidth(image); c.height = sourceHeight(image);
+      c.getContext("2d").drawImage(image, 0, 0);
+      c.toBlob((blob) => (blob ? resolve(new File([blob], (name || "picture") + ".png", { type: "image/png" })) : reject(new Error("encode"))), "image/png");
+    });
+  }
+  // A picture used by an unsaved cover is the editor's working material: staged
+  // under this cover, out of the Picture Album and out of a backup until the
+  // writer saves. A picture that already lives in the album is only referenced.
+  async function stageCoverPicture(source, role, order, name, id) {
+    const project = coverProject();
+    if (!project || !editAssets() || typeof buildImageAttachments !== "function") return null;
+    const file = source.file || await fileFromImage(source.image, name);
+    const built = await buildImageAttachments([file], { projectId: project.id, surface: "liquidCover", limit: 1 });
+    if (!built[0]) return null;
+    // The layer named this id before the picture was stored, so the layer
+    // never has to change when the picture is.
+    if (id) built[0].id = id;
+    const staged = editAssets().stageAsset(built[0], { app: "liquidCover", fileId: cover.fileId, group: ensureCoverId(), role, order });
+    editAssets().saveStaged([staged]);
+    return staged;
+  }
+  async function ensureStaged(assetId, source, role, order, name) {
+    if (!assetId || !source || (typeof imageAttachmentById === "function" && imageAttachmentById(assetId))) return;
+    await stageCoverPicture(source, role, order, name, assetId);
+  }
+  async function stageMaskPicture(layer, canvas) {
+    const project = coverProject();
+    if (!project || !editAssets()) return layer.maskId || "";
+    const dataUrl = canvas.toDataURL("image/png");
+    const existing = typeof imageAttachmentById === "function" ? imageAttachmentById(layer.maskId) : null;
+    if (existing) {
+      saveImageAttachments([{ ...existing, originalDataUrl: dataUrl, previewDataUrl: dataUrl, width: canvas.width, height: canvas.height, size: Math.ceil(dataUrl.length * 0.75) }]);
+      return existing.id;
+    }
+    const record = {
+      id: layer.maskId || crypto.randomUUID(), projectId: project.id, surface: "liquidCover", name: (layer.name || "cut-out") + " mask",
+      alt: "", type: "image/png", size: Math.ceil(dataUrl.length * 0.75), originalDataUrl: dataUrl, previewDataUrl: dataUrl,
+      width: canvas.width, height: canvas.height, previewWidth: canvas.width, previewHeight: canvas.height,
+      previewSize: Math.ceil(dataUrl.length * 0.75), createdAt: new Date().toISOString(),
+    };
+    const staged = editAssets().stageAsset(record, { app: "liquidCover", fileId: cover.fileId, group: ensureCoverId(), role: "cutout-mask", order: picStack.indexOf(layer) });
+    editAssets().saveStaged([staged]);
+    return staged.id;
+  }
+  async function imageFromAsset(assetId) {
+    const record = typeof imageAttachmentById === "function" ? imageAttachmentById(assetId) : null;
+    const src = record && (record.originalDataUrl || record.previewDataUrl || record.dataUrl);
+    if (!src) throw new Error("missing-asset");
+    return loadImageFromDataUrl(src);
+  }
+
+  // ---- pictures and adjustments on the stack ----
+  function addPictureLayer(image, options = {}) {
+    if (!renderer) return null;
+    const role = options.role === "layer" ? "layer" : "subject";
+    const registered = role === "subject" && subjectMatchesBackdrop(image);
+    const layer = COVER_MODEL.normalizeStackLayer({
+      id: newPicId(), kind: "picture", role, name: options.name || "", assetId: options.assetId || crypto.randomUUID(),
+      placement: registered ? "registered" : "free", x: 0.5, y: 0.5,
+      scale: registered ? 1 : Math.min(1, (DESIGN_W / DESIGN_H) / coverAspectOf(image)),
+    });
+    picMedia.set(layer.id, { image, file: options.file || null, mask: null, maskRev: 0, maskDirty: false });
+    renderer.setPicture(layer.id, image);
+    picStack.push(layer);
+    selectOnlyStack(layer.id);
+    if (!options.assetId && coverProject()) {
+      ensureStaged(layer.assetId, picMedia.get(layer.id), role === "subject" ? "cover-subject" : "cover-layer", picStack.length, layer.name)
+        .catch(() => aiStatusText(tr("liquid_cover_stage_failed", "This picture could not be kept with the cover.")));
+    }
+    return layer;
+  }
+
+  function finishStackEdit(inspectorPanel = "stack") {
+    renderLayerList();
+    renderStackInspector();
+    syncSubjectControls();
+    setInspectorPanel(inspectorPanel);
+    scheduleRender();
+  }
+
+  function addPictureFromFile(file, role = "subject") {
+    loadImageFile(file, (image) => {
+      runHistoryAction("liquid_cover_subject_action", "Place picture", () => {
+        addPictureLayer(image, { role, name: (file.name || "").replace(/\.[^.]+$/, "").slice(0, 40), file });
+        finishStackEdit();
+      });
+    });
+  }
+
+  async function addAlbumPicture(attachmentId, as = "subject") {
+    const record = typeof imageAttachmentById === "function" ? imageAttachmentById(attachmentId) : null;
+    if (!record) { aiStatusText(tr("liquid_cover_album_missing", "That picture is no longer in the album.")); return false; }
+    let image;
+    try { image = await imageFromAsset(attachmentId); } catch {
+      aiStatusText(tr("liquid_cover_album_unreadable", "That picture could not be read.")); return false;
+    }
+    if (!renderer) return false;
+    const name = String(record.name || "").replace(/\.[^.]+$/, "").slice(0, 40);
+    if (as === "background") {
+      runHistoryAction("liquid_cover_subject_action", "Place picture", () => {
+        clearMotionVideo(false);
+        activeBg = -1;
+        setBackgroundPicture(image, { kind: "asset", assetId: attachmentId, name: record.name });
+      });
+    } else {
+      runHistoryAction("liquid_cover_subject_action", "Place picture", () => {
+        addPictureLayer(image, { role: "subject", name, assetId: attachmentId });
+        finishStackEdit();
+      });
+    }
+    aiStatusText(tr("liquid_cover_album_added", "Added from the Picture Album: {0}", name || record.name));
+    return true;
+  }
+
+  // The base background. A built-in photo is a URL; a chosen one is a picture
+  // in the store (or, with no project mounted, held here until there is one).
+  function setBackgroundPicture(image, state) {
+    bgState.kind = state.kind; bgState.url = state.url || ""; bgState.assetId = state.assetId || "";
+    currentBgUrl = null;
+    document.querySelectorAll("#lc-bg-row .lc-bg-item").forEach((item) => {
+      item.classList.remove("is-active"); item.setAttribute("aria-pressed", "false");
+    });
+    setBg(image);
+    const name = $("lc-bg-name");
+    if (name && state.name) { name.removeAttribute("data-i18n"); name.textContent = state.name; }
+  }
+  function restoreBackgroundState(state) {
+    const next = state.bgState || { kind: "builtin", url: state.currentBgUrl || "", assetId: "" };
+    const same = next.kind === bgState.kind && next.url === bgState.url && next.assetId === bgState.assetId;
+    if (same) { if (state.currentBgUrl && state.currentBgUrl !== currentBgUrl && next.kind === "builtin") setBgFromUrl(state.currentBgUrl); return; }
+    if (next.kind === "builtin") {
+      setBgFromUrl(next.url || state.currentBgUrl);
+    } else if (next.kind === "asset") {
+      const held = localBackgrounds.get(next.assetId);
+      if (held) { setBackgroundPicture(held.image, next); return; }
+      bgState.kind = "asset"; bgState.url = ""; bgState.assetId = next.assetId; currentBgUrl = null;
+      imageFromAsset(next.assetId).then((image) => { if (bgState.assetId === next.assetId) setBg(image); }).catch(() => {
+        aiStatusText(tr("liquid_cover_album_unreadable", "That picture could not be read."));
+      });
+    }
+  }
+
+  function addAdjustmentLayer(type) {
+    if (!COVER_MODEL.ADJUST_TYPES.includes(type)) return;
+    runHistoryAction("liquid_cover_add_action", "Add layer", () => {
+      const base = primaryStackLayer();
+      const defaults = COVER_MODEL.ADJUST_DEFAULTS[type];
+      const layer = COVER_MODEL.normalizeStackLayer({
+        id: newPicId(), kind: "adjust", adjust: { type, ...defaults, ...(type === "blur" ? { radius: 8 } : {}) },
+      });
+      // Above the selected layer, so it changes that layer and everything under
+      // it; with nothing selected it goes on top and changes the whole cover.
+      if (base) {
+        const at = picStack.indexOf(base) + 1;
+        picStack.splice(at, 0, layer);
+        if (at <= picSlot) picSlot++;
+      } else {
+        picStack.push(layer);
+      }
+      selectOnlyStack(layer.id);
+      finishStackEdit();
+    });
+    aiStatusText(tr("liquid_cover_adjust_added", "Adjustment added. It changes every layer beneath it."));
+  }
+
+  function removeSelectedStack() {
+    const doomed = selectedStackLayers().filter((S) => S.id !== BG_LAYER_ID && !S.locked);
+    if (!doomed.length) return false;
+    runHistoryAction("liquid_cover_delete_action", "Delete layer", () => {
+      doomed.forEach((S) => {
+        const at = picStack.indexOf(S);
+        if (at < picSlot) picSlot--;
+        picStack.splice(at, 1);
+        if (renderer) renderer.removePicture(S.id);
+      });
+      selectedStackIds.clear();
+      selStack = "";
+      selectOnly(Math.min(sel, layers.length - 1));
+      renderLayerList();
+      loadLayerIntoPanel();
+      renderStackInspector();
+      syncSubjectControls();
+      setInspectorPanel(isShapeLayer(layers[sel]) ? "glass" : "layers");
+      scheduleRender();
+    });
+    return true;
+  }
+
+  function duplicateSelectedStack() {
+    const sources = selectedStackLayers().filter((S) => S.id !== BG_LAYER_ID);
+    if (!sources.length) return false;
+    runHistoryAction("liquid_cover_duplicate_action", "Duplicate layer", () => {
+      selectedStackIds.clear();
+      sources.forEach((S) => {
+        const copy = cloneStackLayer(S);
+        copy.id = newPicId();
+        copy.name = S.name ? S.name + " 2" : "";
+        copy.locked = false;
+        if (copy.kind === "picture" && copy.placement === "free") { copy.x = clampNum(copy.x + 16 / DESIGN_W, -1, 2, copy.x); copy.y = clampNum(copy.y - 16 / DESIGN_H, -1, 2, copy.y); }
+        const media = picMedia.get(S.id);
+        if (media) {
+          const mask = media.mask ? maskCanvasFromImage(media.mask) : null;
+          picMedia.set(copy.id, { image: media.image, file: media.file, mask, maskRev: 0, maskDirty: !!mask });
+          copy.maskRev = 0;
+          if (mask) rememberMaskVersion(copy.id, 0, mask);
+          if (renderer && media.image) renderer.setPicture(copy.id, media.image);
+        }
+        const at = picStack.indexOf(S) + 1;
+        picStack.splice(at, 0, copy);
+        if (at <= picSlot) picSlot++;
+        selectedStackIds.add(copy.id);
+        selStack = copy.id;
+      });
+      selectedLayerIds.clear();
+      finishStackEdit();
+    });
+    return true;
+  }
+
+  // Up / down / top / bottom for stack layers. The glass band is one step: a
+  // picture passes over all the glass at once.
+  function moveSelectedStack(where) {
+    const S = primaryStackLayer();
+    if (!S || S.locked || S.id === BG_LAYER_ID) return false;
+    const i = picStack.indexOf(S);
+    const top = picStack.length - 1;
+    const slotBefore = picSlot;
+    let moved = false;
+    runHistoryAction("liquid_cover_reorder_action", "Reorder layers", () => {
+      if (where === "up") {
+        if (i === picSlot - 1) { picSlot--; moved = true; }
+        else if (i < top) { picStack.splice(i, 1); picStack.splice(i + 1, 0, S); moved = true; }
+      } else if (where === "down") {
+        if (i === picSlot) { picSlot++; moved = true; }
+        else if (i > 1) { picStack.splice(i, 1); picStack.splice(i - 1, 0, S); moved = true; }
+      } else if (where === "top") {
+        picStack.splice(i, 1); picStack.push(S);
+        if (i < picSlot) picSlot--;
+        moved = i !== top;
+      } else if (where === "bottom") {
+        picStack.splice(i, 1); picStack.splice(1, 0, S);
+        if (i >= picSlot) picSlot++;
+        moved = i !== 1;
+      }
+      renderLayerList();
+      scheduleRender();
+    });
+    return moved || slotBefore !== picSlot;
+  }
+
+  // The layer panel lists the whole stack, top first: pictures over the glass,
+  // then the glass layers, then pictures under it.
+  function unifiedTopFirst() {
+    const out = [];
+    for (let i = picStack.length - 1; i >= picSlot; i--) out.push({ kind: "stack", id: picStack[i].id });
+    for (let i = layers.length - 1; i >= 0; i--) out.push({ kind: "glass", id: layers[i].id });
+    for (let i = picSlot - 1; i >= 0; i--) out.push({ kind: "stack", id: picStack[i].id });
+    return out;
+  }
+  // Write an order given top first. The glass layers stay one band: a picture
+  // that lands inside it is moved to the nearer side, and the background stays
+  // at the bottom.
+  function applyUnifiedOrder(list) {
+    const bottomUp = list.slice().reverse();
+    const glassIds = bottomUp.filter((e) => e.kind === "glass").map((e) => e.id);
+    if (glassIds.length) {
+      const first = bottomUp.findIndex((e) => e.kind === "glass");
+      const last = bottomUp.length - 1 - bottomUp.slice().reverse().findIndex((e) => e.kind === "glass");
+      const middle = (first + last) / 2;
+      const under = [], over = [];
+      bottomUp.forEach((e, index) => {
+        if (e.kind !== "stack") return;
+        if (index < first) under.push(e.id);
+        else if (index > last) over.push(e.id);
+        else (index <= middle ? under : over).push(e.id);
+      });
+      const order = [...under, ...over];
+      const bgAt = order.indexOf(BG_LAYER_ID);
+      let slot = under.length;
+      if (bgAt > 0) {
+        order.splice(bgAt, 1); order.unshift(BG_LAYER_ID);
+        if (!under.includes(BG_LAYER_ID)) slot++;
+      }
+      const byId = new Map(picStack.map((S) => [S.id, S]));
+      const glassById = new Map(layers.map((L) => [L.id, L]));
+      picStack.splice(0, picStack.length, ...order.map((id) => byId.get(id)).filter(Boolean));
+      layers.splice(0, layers.length, ...glassIds.map((id) => glassById.get(id)).filter(Boolean));
+      picSlot = Math.max(1, Math.min(picStack.length, slot));
+    }
+  }
+  function reorderFromPanel(id, toIndex) {
+    const list = unifiedTopFirst();
+    const glass = layers.find((L) => L.id === id);
+    let movingIds;
+    if (glass) movingIds = new Set(selectedReorderUnit(glass).map((L) => L.id));
+    else movingIds = new Set(selectedStackIds.has(id) ? [...selectedStackIds] : [id]);
+    if (movingIds.has(BG_LAYER_ID)) return;
+    const moving = list.filter((e) => movingIds.has(e.id));
+    const rest = list.filter((e) => !movingIds.has(e.id));
+    const at = Math.max(0, Math.min(rest.length, toIndex));
+    runHistoryAction("liquid_cover_reorder_action", "Reorder layers", () => {
+      applyUnifiedOrder([...rest.slice(0, at), ...moving, ...rest.slice(at)]);
+      sel = Math.max(0, layers.findIndex((L) => selectedLayerIds.has(L.id)));
+      rebuildAllSDF();
+      renderLayerList();
+      loadLayerIntoPanel();
+      scheduleRender();
+    });
+  }
+
+  // ---- the layers panel and the layer inspector (the edit kernel's) ----
+  let layersPanel = null;
+  let stackInspector = null;
+  function panelItems() {
+    return unifiedTopFirst().map((entry) => {
+      if (entry.kind === "glass") {
+        const L = layers.find((item) => item.id === entry.id);
+        return { id: L.id, name: layerDisplayName(L), hidden: !!L.hidden, locked: !!L.locked, tag: isShapeLayer(L) ? "shape" : "text", depth: L.parentId ? 1 : 0 };
+      }
+      const S = stackLayerById(entry.id);
+      return { id: S.id, name: stackLayerName(S), hidden: !!S.hidden, locked: !!S.locked, tag: S.kind === "adjust" ? "adjust" : S.id === BG_LAYER_ID ? "background" : S.role, depth: 0 };
+    });
+  }
+  function panelSelection() { return [...selectedLayerIds, ...selectedStackIds]; }
+  function selectFromPanel(ids) {
+    const glassIds = ids.filter((id) => layers.some((L) => L.id === id));
+    const stackIds = ids.filter((id) => picStack.some((S) => S.id === id));
+    selectedLayerIds.clear(); glassIds.forEach((id) => selectedLayerIds.add(id));
+    selectedStackIds.clear(); stackIds.forEach((id) => selectedStackIds.add(id));
+    const lastId = ids[ids.length - 1];
+    if (glassIds.length) sel = layers.findIndex((L) => L.id === glassIds[glassIds.length - 1]);
+    selStack = stackIds[stackIds.length - 1] || "";
+    renderLayerList();
+    renderStackInspector();
+    syncSubjectControls();
+    if (stackIds.includes(lastId)) {
+      setInspectorPanel("stack");
+    } else {
+      loadLayerIntoPanel();
+      setInspectorPanel(isShapeLayer(layers[sel]) ? "glass" : "layers");
+    }
+  }
+  function buildLayersPanel() {
+    const host = $("lc-layer-list");
+    if (!host || layersPanel || !window.AISystem6EditLayers) return;
+    host.textContent = "";
+    layersPanel = window.AISystem6EditLayers.createLayersPanel({
+      host,
+      label: tr("liquid_cover_layers", "Layers"),
+      items: panelItems,
+      selection: panelSelection,
+      onSelect: selectFromPanel,
+      onToggle: (id, flag) => {
+        const item = layers.find((L) => L.id === id) || stackLayerById(id);
+        if (!item) return;
+        runHistoryAction("liquid_cover_edit_action", "Edit layer", () => {
+          item[flag] = !item[flag];
+          renderLayerList();
+          if (layers[sel] === item) loadLayerIntoPanel();
+          scheduleRender();
+        });
+      },
+      onRename: (id, name) => {
+        const item = layers.find((L) => L.id === id) || stackLayerById(id);
+        if (!item || item.locked) { renderLayerList(); return; }
+        runHistoryAction("liquid_cover_rename_action", "Rename layer", () => {
+          item.name = String(name).trim().slice(0, 40);
+          renderLayerList();
+          renderStackInspector();
+          loadLayerIntoPanel();
+        });
+      },
+      onReorder: reorderFromPanel,
+    });
+  }
+
+  function stackFieldOptions(values, labelFor) {
+    return values.map((value) => ({ value, label: labelFor(value) }));
+  }
+  function stackInspectorFields() {
+    const S = primaryStackLayer();
+    if (!S) return [];
+    const locked = !!S.locked;
+    const f = (field) => ({ disabled: locked, ...field });
+    const fields = [f({ id: "name", label: tr("liquid_cover_layer_name", "Layer name"), type: "text", value: S.name || stackLayerName(S) })];
+    if (S.kind === "adjust") {
+      fields.push(f({ id: "adjust-type", label: tr("liquid_cover_adjust_type", "Adjustment"), type: "select", value: S.adjust.type, options: stackFieldOptions(COVER_MODEL.ADJUST_TYPES, (type) => tr("liquid_cover_adjust_" + type, ADJUST_FALLBACK[type])) }));
+      const range = (key, label, fallback) => f({ id: "adjust-" + key, label: tr(label, fallback), type: "range", value: S.adjust[key], min: COVER_MODEL.ADJUST_RANGES[key][0], max: COVER_MODEL.ADJUST_RANGES[key][1], step: 1 });
+      if (S.adjust.type === "brightnessContrast") fields.push(range("brightness", "liquid_cover_brightness", "Brightness"), range("contrast", "liquid_cover_contrast", "Contrast"));
+      else if (S.adjust.type === "hueSaturation") fields.push(range("hue", "liquid_cover_hue", "Hue"), range("saturation", "liquid_cover_saturation", "Saturation"), range("lightness", "liquid_cover_lightness", "Lightness"));
+      else fields.push(range("radius", "liquid_cover_blur_radius", "Radius"));
+    } else {
+      if (S.id !== BG_LAYER_ID) {
+        fields.push(f({ id: "placement", label: tr("liquid_cover_placement", "Placement"), type: "select", value: S.placement === "registered" ? "registered" : "free", options: [
+          { value: "free", label: tr("liquid_cover_placement_free", "Free") },
+          { value: "registered", label: tr("liquid_cover_placement_registered", "On the background photo") },
+        ] }));
+        fields.push(f({ id: "x", label: tr("liquid_cover_position_x", "Position X %"), type: "number", value: Math.round(S.x * 100), min: -100, max: 200, step: 1 }));
+        fields.push(f({ id: "y", label: tr("liquid_cover_position_y", "Position Y %"), type: "number", value: Math.round((1 - S.y) * 100), min: -100, max: 200, step: 1 }));
+        fields.push(f({ id: "scale", label: tr("liquid_cover_scale", "Scale"), type: "range", value: Math.round(S.scale * 100), min: 5, max: 300, step: 1 }));
+        if (S.placement !== "registered") fields.push(f({ id: "rotation", label: tr("liquid_cover_rotation", "Rotation"), type: "range", value: Math.round(S.rotation), min: -180, max: 180, step: 1 }));
+      }
+      fields.push(f({ id: "blend", label: tr("liquid_cover_blend", "Blend"), type: "select", value: S.blend, options: stackFieldOptions(COVER_MODEL.BLEND_MODES, (mode) => tr("liquid_cover_blend_" + mode, BLEND_FALLBACK[mode])) }));
+    }
+    fields.push(f({ id: "opacity", label: tr("liquid_cover_opacity", "Opacity"), type: "range", value: Math.round(S.opacity * 100), min: 0, max: 100, step: 1 }));
+    if (S.id !== BG_LAYER_ID) fields.push(f({ id: "clip", label: tr("liquid_cover_clip", "Clip to layer below"), type: "check", value: S.clip }));
+    return fields;
+  }
+  function applyStackField(S, id, value) {
+    const num = (v, min, max, fallback) => clampNum(v, min, max, fallback);
+    if (id === "name") S.name = String(value || "").slice(0, 40);
+    else if (id === "blend") S.blend = COVER_MODEL.BLEND_MODES.includes(value) ? value : "normal";
+    else if (id === "opacity") S.opacity = num(value / 100, 0, 1, S.opacity);
+    else if (id === "clip") S.clip = !!value;
+    else if (id === "placement") {
+      const registered = value === "registered";
+      if (registered === (S.placement === "registered")) return;
+      S.placement = registered ? "registered" : "free";
+      S.x = 0.5; S.y = 0.5; S.rotation = 0;
+      const media = picMedia.get(S.id);
+      S.scale = registered || !media ? 1 : Math.min(1, (DESIGN_W / DESIGN_H) / coverAspectOf(media.image));
+    }
+    else if (id === "x") S.x = num(value / 100, -1, 2, S.x);
+    else if (id === "y") S.y = num(1 - value / 100, -1, 2, S.y);
+    else if (id === "scale") S.scale = num(value / 100, 0.05, 3, S.scale);
+    else if (id === "rotation") S.rotation = num(value, -180, 180, S.rotation);
+    else if (id === "adjust-type") S.adjust = COVER_MODEL.normalizeAdjust({ type: value, ...(value === "blur" ? { radius: 8 } : {}) });
+    else if (id.startsWith("adjust-")) S.adjust = COVER_MODEL.normalizeAdjust({ ...S.adjust, [id.slice(7)]: value });
+  }
+  function onStackField(id, value, meta) {
+    const S = primaryStackLayer();
+    if (!S || S.locked) return;
+    beginHistory("liquid_cover_edit_action", "Edit layer");
+    applyStackField(S, id, value);
+    if (id === "name") renderLayerList();
+    scheduleRender();
+    updateSelectionOverlay();
+    syncSubjectControls();
+    if (meta.final) {
+      commitHistory();
+      if (id === "adjust-type" || id === "placement") renderStackInspector();
+      renderLayerList();
+    }
+  }
+  function buildStackInspector() {
+    const host = $("lc-stack-inspector");
+    if (!host || stackInspector || !window.AISystem6EditLayers) return;
+    host.textContent = "";
+    stackInspector = window.AISystem6EditLayers.createInspector({
+      host, label: tr("liquid_cover_layer_info", "Layer"), fields: stackInspectorFields, onChange: onStackField,
+    });
+  }
+  function renderStackInspector() {
+    if (!stackInspector) return;
+    stackInspector.render();
+    syncCutoutControls();
+    if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
+  }
+
+  // ---- the subject panel works on the picture layer it names ----
+  function subjectLayer() {
+    const selected = primaryStackLayer();
+    if (selected && selected.kind === "picture" && selected.id !== BG_LAYER_ID) return selected;
+    for (let i = picStack.length - 1; i >= 0; i--) {
+      if (picStack[i].kind === "picture" && picStack[i].role === "subject") return picStack[i];
+    }
+    return null;
+  }
+  function syncSubjectControls() {
+    const S = subjectLayer();
+    const reg = $("lc-fg-register");
+    if (reg) { reg.checked = S ? S.placement === "registered" : true; reg.disabled = !S; }
+    const sc = $("lc-fg-scale");
+    if (sc) { sc.value = Math.round((S ? S.scale : 1) * 100); sc.disabled = !S; }
+    const clear = $("lc-fg-clear");
+    if (clear) clear.hidden = !S;
+    const name = $("lc-fg-name");
+    if (name) {
+      if (S) { name.removeAttribute("data-i18n"); name.textContent = stackLayerName(S); }
+      else { name.setAttribute("data-i18n", "no_files_selected"); name.textContent = tr("no_files_selected", "No files selected"); }
+    }
+    syncValueLabels();
+  }
+
+  // ---- canvas variants: one cover, several arrangements ----
+  function switchCoverVariant(key) {
+    const dims = ASPECTS[key];
+    if (!dims || key === variantKey) return;
+    runHistoryAction("liquid_cover_variant_action", "Change size", () => {
+      COVER_MODEL.switchVariant(variants, variantKey, key, [...layers, ...picStack], dims);
+      variantKey = key;
+      applyAspect(dims[0], dims[1]);
+      syncAspectButtons();
+      syncWorkbenchReadout();
+      rebuildAllSDF();
+      renderLayerList();
+      loadLayerIntoPanel();
+      renderStackInspector();
+      scheduleRender();
+    });
+  }
+  function syncAspectButtons() {
+    document.querySelectorAll(".liquid-cover-window .lc-aspect button").forEach((button) => {
+      const active = button.dataset.k === variantKey;
+      button.classList.toggle("is-active", active);
+      button.classList.toggle("has-variant", !!variants[button.dataset.k] && !active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+  }
+
+  // ---- the document: save, save as, new, open ----
+  function coverTitle() {
+    const typed = ($("lc-cover-title")?.value || "").trim();
+    const firstText = (layers.find((L) => !isShapeLayer(L) && (L.text || "").trim())?.text || "").split("\n")[0].trim();
+    return (typed || cover.title || firstText || tr("liquid_cover_untitled", "Cover")).slice(0, 80);
+  }
+  function markCoverDirty() {
+    if (historyRestoring) return;
+    cover.dirty = true;
+    syncCoverStatus();
+  }
+  function syncCoverStatus() {
+    const meta = $("lc-status-meta");
+    if (!meta) return;
+    const base = activeAspectKey() + " · " + layers.length + "/" + MAX_LAYERS;
+    meta.textContent = cover.fileId || cover.dirty ? base + " · " + tr(cover.dirty ? "liquid_cover_unsaved" : "liquid_cover_saved", cover.dirty ? "Unsaved" : "Saved") : base;
+  }
+  function coverState() {
+    const bg = picStack.find((S) => S.id === BG_LAYER_ID);
+    if (bg) bg.assetId = bgState.kind === "asset" ? bgState.assetId : "";
+    return {
+      id: ensureCoverId(), title: coverTitle(), variant: variantKey, w: DESIGN_W, h: DESIGN_H, variants,
+      glassSlot: picSlot,
+      background: bgState.kind === "builtin" ? { kind: "builtin", url: bgState.url } : bgState.kind === "asset" ? { kind: "asset", assetId: bgState.assetId } : { kind: "none" },
+      stack: picStack, layers,
+      controls: historyControlValues(), body: glassFx.bodyFactor, preset: activePresetKey,
+    };
+  }
+  function markdownLabels() {
+    const keys = { cover: "Cover", size: "Size", variants: "Sizes", layers: "Layers", top_first: "top first", shape: "Shape", text: "Text", hidden: "hidden", adjustment: "Adjustment", background: "Background", subject: "Subject", picture: "Picture", clipped: "clipped", cutout: "cut out" };
+    const out = {};
+    Object.entries(keys).forEach(([key, fallback]) => { out[key] = tr("liquid_cover_md_" + key, fallback); });
+    return out;
+  }
+  // Pictures the store does not have yet are staged now, so the document can
+  // name them by id.
+  async function stageUnsavedMedia() {
+    if (bgState.kind === "asset") {
+      await ensureStaged(bgState.assetId, localBackgrounds.get(bgState.assetId), "cover-background", 0, "background");
+    }
+    for (const S of picStack) {
+      if (S.kind !== "picture" || S.id === BG_LAYER_ID) continue;
+      const media = picMedia.get(S.id);
+      if (!media) continue;
+      await ensureStaged(S.assetId, media, S.role === "subject" ? "cover-subject" : "cover-layer", picStack.indexOf(S), S.name);
+      if (media.mask && S.maskId && !imageAttachmentById(S.maskId)) await stageMaskPicture(S, media.mask);
+    }
+    for (const L of layers) {
+      if (L.shape) {
+        if (!L.shapeAssetId) L.shapeAssetId = crypto.randomUUID();
+        await ensureStaged(L.shapeAssetId, { image: L.shape, file: null }, "cover-layer", 0, L.name || "shape");
+      }
+    }
+  }
+  async function saveCover({ asNew = false } = {}) {
+    const project = coverProject();
+    if (!project) {
+      if (typeof openWindow === "function") openWindow("projects");
+      aiStatusText(tr("no_project_mounted", "No project is mounted."));
+      return false;
+    }
+    if (coverSaving || !renderer) return false;
+    coverSaving = true;
+    try {
+      if (asNew) { cover.id = crypto.randomUUID(); cover.fileId = ""; }
+      ensureCoverId();
+      await stageUnsavedMedia();
+      const doc = COVER_MODEL.serializeCover(coverState());
+      doc.title = coverTitle();
+      cover.title = doc.title;
+      const body = COVER_MODEL.coverMarkdown(doc, markdownLabels());
+      const now = new Date().toISOString();
+      let file = cover.fileId ? chatFiles.find((item) => item.id === cover.fileId && item.artifactKind === "cover") : null;
+      if (file) {
+        file.cover = doc; file.body = body; file.updatedAt = now;
+        if (typeof markDeskDirty === "function") markDeskDirty("chatFiles", file.id);
+      } else {
+        const folder = ensureFolder(tr("liquid_cover_folder", "Covers"));
+        file = {
+          id: crypto.randomUUID(), projectId: activeProjectId, type: "text", artifactKind: "cover",
+          name: nextAvailableFileName(`${doc.title.replace(/[\\/:*?"<>|]+/g, " ").trim().slice(0, 48) || "Cover"}.cover.md`, folder.id),
+          folderId: folder.id, body, cover: doc, source: "Cover Glass", durable: true, createdAt: now, updatedAt: now,
+        };
+        chatFiles.unshift(file);
+      }
+      cover.fileId = file.id;
+      // The pictures this cover uses leave the working area and join the library;
+      // staged ones it no longer uses are dropped.
+      const wanted = new Set(COVER_MODEL.coverAssetIds(doc));
+      const groups = new Set();
+      wanted.forEach((id) => {
+        const record = imageAttachmentById(id);
+        if (record && record.status === "staged") groups.add(record.group);
+      });
+      groups.forEach((group) => {
+        editAssets().groupOf(group).forEach((record) => {
+          if (record.status === "staged" && !wanted.has(record.id)) removeImageAttachment(record.id);
+        });
+        editAssets().keepAssetGroup(group, file.id);
+      });
+      saveDeskState();
+      if (typeof renderDocuments === "function") renderDocuments();
+      if (typeof renderProjectDisks === "function") renderProjectDisks();
+      cover.dirty = false;
+      syncCoverStatus();
+      aiStatusText(tr("liquid_cover_saved_as", "Saved as {0}.", file.name));
+      return true;
+    } catch (error) {
+      aiStatusText(tr("liquid_cover_save_failed", "The cover could not be saved."));
+      return false;
+    } finally {
+      coverSaving = false;
+    }
+  }
+
+  function resetStackToBlank() {
+    picMedia.clear(); maskVersions.clear(); localBackgrounds.clear();
+    if (renderer) [...renderer.pics.keys()].forEach((id) => renderer.removePicture(id));
+    picStack.length = 0;
+    picStack.push(makeBackgroundLayer());
+    picSlot = 1;
+    selectedStackIds.clear(); selStack = "";
+  }
+  function newCover() {
+    if (!renderer) return;
+    coverEmbedOwner = null;
+    if (editAssets() && cover.id) editAssets().clearStagedAssets({ app: "liquidCover", group: cover.id });
+    coverHistory.clear();
+    historyRestoring = true;
+    try {
+      cover.id = ""; cover.fileId = ""; cover.title = ""; cover.dirty = false;
+      const title = $("lc-cover-title"); if (title) title.value = "";
+      resetStackToBlank();
+      layers.length = 0; layers.push(makeLayer());
+      selectOnly(0);
+      Object.keys(variants).forEach((key) => { delete variants[key]; });
+      variantKey = "16:9";
+      variants[variantKey] = { w: ASPECTS[variantKey][0], h: ASPECTS[variantKey][1], layout: {} };
+      applyAspect(ASPECTS[variantKey][0], ASPECTS[variantKey][1]);
+      syncAspectButtons();
+      activeBg = 0;
+      buildBgRow();
+      setBgFromUrl(BG_URLS[0]);
+      applyMaterialMix(0);
+      rebuildAllSDF();
+      renderLayerList();
+      loadLayerIntoPanel();
+      renderStackInspector();
+      syncSubjectControls();
+      setInspectorPanel("layers");
+      scheduleRender();
+    } finally {
+      historyRestoring = false;
+    }
+    updateHistoryButtons();
+    syncCoverStatus();
+  }
+
+  async function applyCoverDoc(doc, file) {
+    // Every picture is read before anything on screen changes, so a cover that
+    // cannot be fully read never leaves a half-replaced window behind.
+    const missing = [];
+    const read = async (assetId, label) => {
+      try { return await imageFromAsset(assetId); } catch { missing.push(label); return null; }
+    };
+    const media = new Map();
+    for (const S of doc.stack) {
+      if (S.kind !== "picture" || S.id === BG_LAYER_ID) continue;
+      const label = S.name || S.id;
+      const entry = { image: S.assetId ? await read(S.assetId, label) : null, file: null, mask: null, maskRev: 0, maskDirty: false };
+      if (!S.assetId) missing.push(label);
+      if (S.maskId) {
+        const maskImage = await read(S.maskId, label + " (mask)");
+        if (maskImage) entry.mask = maskCanvasFromImage(maskImage);
+      }
+      media.set(S.id, entry);
+    }
+    const shapes = new Map();
+    for (const g of doc.layers) if (g.shapeAssetId) shapes.set(g.id, await read(g.shapeAssetId, g.name || g.id));
+    let backgroundImage = null;
+    if (doc.background && doc.background.kind === "asset") backgroundImage = await read(doc.background.assetId, tr("liquid_cover_background", "Background"));
+
+    if (editAssets() && cover.id && cover.id !== doc.id) editAssets().clearStagedAssets({ app: "liquidCover", group: cover.id });
+    coverHistory.clear();
+    historyRestoring = true;
+    try {
+      picMedia.clear(); maskVersions.clear(); localBackgrounds.clear();
+      if (renderer) [...renderer.pics.keys()].forEach((id) => renderer.removePicture(id));
+      media.forEach((entry, id) => {
+        picMedia.set(id, entry);
+        if (entry.mask) rememberMaskVersion(id, 0, entry.mask);
+      });
+      layers.length = 0;
+      doc.layers.forEach((g) => layers.push(makeLayer({ ...g, shape: shapes.get(g.id) || null })));
+      picStack.length = 0;
+      doc.stack.forEach((S) => picStack.push({ ...S, maskRev: 0 }));
+      picSlot = doc.glassSlot;
+      if (!picStack.some((S) => S.id === BG_LAYER_ID)) { picStack.unshift(makeBackgroundLayer()); picSlot++; }
+      selectedStackIds.clear(); selStack = "";
+      Object.keys(variants).forEach((key) => { delete variants[key]; });
+      Object.assign(variants, JSON.parse(JSON.stringify(doc.variants)));
+      variantKey = doc.variant;
+      const dims = ASPECTS[variantKey] || [variants[variantKey].w, variants[variantKey].h];
+      COVER_MODEL.applyLayout([...layers, ...picStack], variants[variantKey].layout);
+      applyAspect(dims[0], dims[1]);
+      syncAspectButtons();
+      Object.entries(doc.glass.controls).forEach(([id, value]) => {
+        const el = $(id);
+        if (!el) return;
+        if (el.type === "checkbox") el.checked = !!value; else el.value = value;
+      });
+      glassFx.bodyFactor = doc.glass.body;
+      activePresetKey = doc.glass.preset || "";
+      nextLayerId = layers.reduce((max, L) => Math.max(max, Number(String(L.id).replace(/^lc-layer-/, "")) + 1 || 0), nextLayerId);
+      nextPicId = picStack.reduce((max, S) => Math.max(max, Number(String(S.id).replace(/^lc-pic-/, "")) + 1 || 0), nextPicId);
+      cover.id = doc.id || crypto.randomUUID(); cover.fileId = file.id; cover.title = doc.title; cover.dirty = false;
+      const title = $("lc-cover-title"); if (title) title.value = doc.title;
+      const bg = doc.background || { kind: "builtin", url: BG_URLS[0] };
+      clearMotionVideo(false);
+      if (bg.kind === "asset" && backgroundImage) {
+        activeBg = -1;
+        setBackgroundPicture(backgroundImage, { kind: "asset", assetId: bg.assetId });
+      } else {
+        const url = bg.kind === "builtin" && bg.url ? bg.url : BG_URLS[0];
+        activeBg = Math.max(0, BG_URLS.indexOf(url));
+        buildBgRow();
+        setBgFromUrl(url);
+      }
+      syncRendererPictures();
+      rebuildAllSDF();
+      selectOnly(0);
+      renderLayerList();
+      loadLayerIntoPanel();
+      renderStackInspector();
+      syncSubjectControls();
+      syncValueLabels();
+      syncLiquidControls();
+      setActivePreset(activePresetKey);
+      setInspectorPanel("layers");
+      syncWorkbenchReadout();
+      scheduleRender();
+    } finally {
+      historyRestoring = false;
+    }
+    updateHistoryButtons();
+    syncCoverStatus();
+    if (missing.length) {
+      aiStatusText(tr("liquid_cover_open_missing", "Opened, but {0} picture(s) could not be found: {1}", missing.length, missing.slice(0, 3).join(", ")));
+    } else {
+      aiStatusText(tr("liquid_cover_opened", "Opened {0}.", file.name));
+    }
+    return true;
+  }
+
+  // ---- Round trips (app/core/edit-embeds.js) ----
+  // A cover goes to ClioStage as a picture that is also an editable copy of the
+  // cover document; a slide's cover opens here as that copy, and every step
+  // (and its undo) redraws the slide.
+  async function renderCoverDataUrl(maxLong = 1600) {
+    if (!renderer || pngExportInFlight) return "";
+    pngExportInFlight = true;
+    const a = ASPECTS[activeAspectKey()] || [DESIGN_W, DESIGN_H];
+    const scale = Math.min(2, maxLong / Math.max(a[0], a[1]));
+    try {
+      renderScale = scale;
+      EXPORT_W = Math.round(a[0] * scale); EXPORT_H = Math.round(a[1] * scale);
+      canvas.width = EXPORT_W; canvas.height = EXPORT_H;
+      rebuildAllSDF();
+      renderer.render(readParams());
+      return canvas.toDataURL("image/png");
+    } catch {
+      return "";
+    } finally {
+      applyAspect(DESIGN_W, DESIGN_H);
+      rebuildAllSDF(); renderNow();
+      pngExportInFlight = false;
+    }
+  }
+
+  let coverEmbedOwner = null;
+  let coverEmbedTimer = 0;
+  function notifyCoverEmbed() {
+    if (!coverEmbedOwner) return;
+    clearTimeout(coverEmbedTimer);
+    coverEmbedTimer = setTimeout(async () => {
+      const owner = coverEmbedOwner;
+      if (!owner) return;
+      const png = await renderCoverDataUrl();
+      if (png) owner({ doc: COVER_MODEL.serializeCover(coverState()) }, png);
+    }, 400);
+  }
+
+  async function editCoverEmbed(data, { onChange } = {}) {
+    const parsed = COVER_MODEL.parseCover(data?.doc);
+    if (!parsed.ok) {
+      aiStatusText(tr("liquid_cover_open_failed", "This cover could not be opened ({0}).", parsed.reason));
+      return false;
+    }
+    await open();
+    if (!renderer || !(await applyCoverDoc(parsed.doc, null))) return false;
+    // A copy: saving it from here makes a new cover document.
+    cover.fileId = "";
+    coverEmbedOwner = typeof onChange === "function" ? onChange : null;
+    aiStatusText(tr("liquid_cover_embed_opened", "This is a copy of a cover on a slide. Edits here redraw that slide."));
+    return true;
+  }
+
+  async function sendCoverToStage() {
+    const embeds = window.AISystem6EditEmbeds;
+    if (!embeds || typeof ensureClioStageModule !== "function") return false;
+    // The pictures a slide's copy points at must outlive the working area, so
+    // the cover is saved first.
+    if (!(await saveCover())) return false;
+    const file = chatFiles.find((item) => item.id === cover.fileId);
+    const png = await renderCoverDataUrl();
+    if (!file || !png) return false;
+    await ensureClioStageModule();
+    if (window.AISystem6ClioStage?.confirmDiscard && !(await window.AISystem6ClioStage.confirmDiscard())) return false;
+    const title = file.cover.title || coverTitle();
+    return !!(await window.AISystem6ClioStage?.open?.({
+      title,
+      sourceKind: "generated",
+      temporary: true,
+      markdown: ["---", "marp: true", "theme: default", "paginate: true", "size: 16:9", "---", "", "<!-- _class: cover -->", "",
+        embeds.embedMarkdown({ kind: "cover", alt: title, png, data: { doc: structuredClone(file.cover) }, source: { app: "liquidCover", fileId: file.id, rev: embeds.contentRev(file.cover) } })].join("\n"),
+    }));
+  }
+
+  async function openSavedCover(file) {
+    if (!file || !file.cover) return false;
+    const parsed = COVER_MODEL.parseCover(file.cover);
+    if (!parsed.ok) {
+      aiStatusText(tr("liquid_cover_open_failed", "This cover could not be opened ({0}).", parsed.reason));
+      return false;
+    }
+    await open();
+    if (!renderer) return false;
+    coverEmbedOwner = null;
+    return applyCoverDoc(parsed.doc, file);
+  }
+
+  // ---- Picture Album → Cover Glass ----
+  function albumPictures() {
+    const project = coverProject();
+    if (!project || typeof imageAttachmentsForProject !== "function") return [];
+    return imageAttachmentsForProject(project.id, { limit: 48 }).filter((record) => record.surface !== "liquidCover");
+  }
+  let albumAs = "subject";
+  function renderAlbumPanel() {
+    const grid = $("lc-album-grid");
+    if (!grid) return;
+    grid.textContent = "";
+    const pictures = albumPictures();
+    const empty = $("lc-album-empty");
+    if (empty) {
+      empty.hidden = pictures.length > 0;
+      empty.textContent = coverProject() ? tr("liquid_cover_album_empty", "The Picture Album has no pictures yet.") : tr("no_project_mounted", "No project is mounted.");
+    }
+    pictures.forEach((record) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "lc-album-item";
+      button.title = record.name || "";
+      button.setAttribute("aria-label", tr("liquid_cover_album_use", "Use {0}", record.name || ""));
+      const img = document.createElement("img");
+      img.src = record.previewDataUrl || record.dataUrl || record.originalDataUrl || "";
+      img.alt = "";
+      img.loading = "lazy";
+      button.append(img);
+      button.addEventListener("click", () => addAlbumPicture(record.id, albumAs));
+      grid.append(button);
+    });
+    document.querySelectorAll("#lc-album-as button").forEach((button) => {
+      const active = button.dataset.as === albumAs;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+  }
+  function showAlbumPanel(as) {
+    if (as) albumAs = as;
+    const details = document.querySelector("#liquid-cover-app .lc-picture-library");
+    if (details) details.open = true;
+    const panel = $("lc-album");
+    if (panel) panel.hidden = false;
+    renderAlbumPanel();
+    setInspectorPanel("media");
+    $("lc-album")?.scrollIntoView?.({ block: "nearest" });
+  }
+  const ALBUM_DRAG_TYPE = "application/x-ais6-picture";
+  function wirePictureDrops() {
+    const shell = document.querySelector(".liquid-cover-window .lc-canvas-shell");
+    if (!shell) return;
+    const accepts = (event) => {
+      const types = Array.from(event.dataTransfer?.types || []);
+      return types.includes(ALBUM_DRAG_TYPE) || types.includes("Files");
+    };
+    shell.addEventListener("dragover", (event) => {
+      if (!accepts(event)) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+      shell.classList.add("is-drop-target");
+    });
+    shell.addEventListener("dragleave", () => shell.classList.remove("is-drop-target"));
+    shell.addEventListener("drop", (event) => {
+      shell.classList.remove("is-drop-target");
+      if (!accepts(event)) return;
+      event.preventDefault();
+      const id = event.dataTransfer.getData(ALBUM_DRAG_TYPE);
+      // Dropping on the canvas places a subject; hold ⌥ to make it the background.
+      if (id) { addAlbumPicture(id, event.altKey ? "background" : "subject"); return; }
+      const file = Array.from(event.dataTransfer.files || []).find((item) => /^image\//.test(item.type));
+      if (file) addPictureFromFile(file, "subject");
+    });
+    const bgGroup = document.querySelector("#liquid-cover-app .lc-bg-group");
+    if (bgGroup) {
+      bgGroup.addEventListener("dragover", (event) => {
+        if (!Array.from(event.dataTransfer?.types || []).includes(ALBUM_DRAG_TYPE)) return;
+        event.preventDefault();
+        bgGroup.classList.add("is-drop-target");
+      });
+      bgGroup.addEventListener("dragleave", () => bgGroup.classList.remove("is-drop-target"));
+      bgGroup.addEventListener("drop", (event) => {
+        bgGroup.classList.remove("is-drop-target");
+        const id = event.dataTransfer.getData(ALBUM_DRAG_TYPE);
+        if (!id) return;
+        event.preventDefault();
+        addAlbumPicture(id, "background");
+      });
+    }
+  }
+
+  // ---- cut-out ----
+  const maskBrush = { on: false, mode: "add", size: 40 };
+  function cutoutTarget() {
+    const S = primaryStackLayer();
+    return S && S.kind === "picture" && S.id !== BG_LAYER_ID ? S : null;
+  }
+  function syncCutoutControls() {
+    const S = cutoutTarget();
+    const has = !!(S && S.maskId && picMedia.get(S.id)?.mask);
+    const set = (id, fn) => { const el = $(id); if (el) fn(el); };
+    set("lc-cutout-go", (el) => { el.disabled = !S || S.locked; });
+    set("lc-cutout-clear", (el) => { el.hidden = !has; });
+    set("lc-cutout-refine", (el) => { el.hidden = !has; el.setAttribute("aria-pressed", maskBrush.on ? "true" : "false"); el.classList.toggle("is-active", maskBrush.on); });
+    set("lc-cutout-brush", (el) => { el.hidden = !has || !maskBrush.on; });
+    if (!has && maskBrush.on) { maskBrush.on = false; canvas?.classList.remove("is-mask-brush"); }
+    set("lc-cutout-note", (el) => { el.textContent = S ? (has ? tr("liquid_cover_cutout_has", "Cut out. The original picture is kept; the mask can be refined.") : tr("liquid_cover_cutout_note", "Removes the background on this computer. Nothing is uploaded.")) : tr("liquid_cover_cutout_select", "Select a picture layer to cut out."); });
+  }
+  function showCutoutModelNeed(status) {
+    const box = $("lc-cutout-model");
+    if (box) box.hidden = false;
+    const note = $("lc-cutout-model-note");
+    if (note) note.textContent = tr("liquid_cover_cutout_need_model", "Cut-out needs a background-removal model, which is not on this computer yet. Download these files from the model page and choose them here: config.json, preprocessor_config.json and onnx/model_quantized.onnx (about 7 MB). Missing: {0}.", (status.missing || []).join(", "));
+    aiStatusText(tr("liquid_cover_cutout_need_model_short", "Cut-out needs the model files. Choose them in the Picture tab."));
+  }
+  async function removeBackground() {
+    const S = cutoutTarget();
+    const media = S && picMedia.get(S.id);
+    if (!S || !media || !media.image) return;
+    const button = $("lc-cutout-go");
+    try { await ensureLiquidCoverCutoutModule(); } catch {
+      aiStatusText(tr("liquid_cover_cutout_unavailable", "The cut-out module could not be loaded."));
+      return;
+    }
+    const api = window.AISystem6CoverCutout;
+    const status = await api.status();
+    if (!status.ready) { showCutoutModelNeed(status); return; }
+    const hint = $("lc-cutout-model"); if (hint) hint.hidden = true;
+    setBusy(button, true, tr("liquid_cover_cutout_working", "Cutting out…"));
+    aiStatusText(tr("liquid_cover_cutout_working", "Cutting out…"));
+    try {
+      const mask = await api.cutout(media.image, {
+        onStage: (stage) => aiStatusText(tr(stage === "model" ? "liquid_cover_cutout_loading" : "liquid_cover_cutout_working", stage === "model" ? "Loading the model…" : "Cutting out…")),
+      });
+      applyCutoutMask(S, mask);
+      aiStatusText(tr("liquid_cover_cutout_done", "Background removed. The original picture is kept."));
+    } catch (error) {
+      aiStatusText(tr("liquid_cover_cutout_failed", "The cut-out failed: {0}", String(error && error.message || error).slice(0, 120)));
+    } finally {
+      setBusy(button, false);
+    }
+  }
+  // The mask becomes the layer's own: picture, mask and transform stay apart.
+  function applyCutoutMask(S, mask) {
+    const media = picMedia.get(S.id);
+    if (!media) return;
+    runHistoryAction("liquid_cover_cutout_action", "Remove background", () => {
+      media.mask = mask;
+      media.maskRev = 0; S.maskRev = 0;
+      maskVersions.delete(S.id);
+      rememberMaskVersion(S.id, 0, mask);
+      S.maskId = crypto.randomUUID();
+      media.maskDirty = true;
+      const record = S.assetId && typeof imageAttachmentById === "function" ? imageAttachmentById(S.assetId) : null;
+      if (record && record.status === "staged") { record.role = "cutout-source"; saveImageAttachments([record]); }
+      stageMaskPicture(S, mask).catch(() => {});
+      renderer.setMask(S.id, mask);
+      media.maskDirty = false;
+      renderLayerList();
+      renderStackInspector();
+      scheduleRender();
+    });
+  }
+  function clearCutout() {
+    const S = cutoutTarget();
+    if (!S || !S.maskId) return;
+    runHistoryAction("liquid_cover_cutout_action", "Remove background", () => {
+      S.maskId = "";
+      maskBrush.on = false;
+      renderStackInspector();
+      scheduleRender();
+    });
+  }
+  // Where a canvas point falls on the picture, 0..1 in the picture's own space.
+  function layerLocalPoint(S, u, v) {
+    const media = picMedia.get(S.id);
+    const A = DESIGN_W / DESIGN_H;
+    if (S.placement === "registered") {
+      let qx = (u - S.x) / S.scale + 0.5, qy = (v - S.y) / S.scale + 0.5;
+      const bgAspect = renderer ? renderer.bgAspect : A;
+      if (A > bgAspect) { const k = bgAspect / A; qy = qy * k + 0.5 - 0.5 * k; } else { const k = A / bgAspect; qx = qx * k + 0.5 - 0.5 * k; }
+      return { x: qx, y: qy };
+    }
+    const aspect = media ? coverAspectOf(media.image) : 1;
+    const px = (u - S.x) * A, py = v - S.y;
+    const th = (S.rotation || 0) * Math.PI / 180;
+    const rx = Math.cos(th) * px - Math.sin(th) * py, ry = Math.sin(th) * px + Math.cos(th) * py;
+    return { x: rx / (S.scale * aspect) + 0.5, y: ry / S.scale + 0.5 };
+  }
+  function paintMask(S, from, to) {
+    const media = picMedia.get(S.id);
+    if (!media || !media.mask) return;
+    const a = layerLocalPoint(S, from.x, from.y), b = layerLocalPoint(S, to.x, to.y);
+    const w = media.mask.width, h = media.mask.height;
+    // brush size is in cover design pixels: convert through the picture's scale
+    const unit = layerLocalPoint(S, to.x + 1 / DESIGN_W, to.y);
+    const perPx = Math.hypot((unit.x - b.x) * w, (unit.y - b.y) * h);
+    const radius = Math.max(1, maskBrush.size * perPx / 2);
+    const context = media.mask.getContext("2d");
+    context.save();
+    context.strokeStyle = maskBrush.mode === "add" ? "#fff" : "#000";
+    context.fillStyle = context.strokeStyle;
+    context.lineCap = "round"; context.lineJoin = "round";
+    context.lineWidth = radius * 2;
+    context.beginPath();
+    context.moveTo(a.x * w, (1 - a.y) * h);
+    context.lineTo(b.x * w, (1 - b.y) * h);
+    context.stroke();
+    context.beginPath();
+    context.arc(b.x * w, (1 - b.y) * h, radius, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+    media.maskDirty = true;
+  }
+  function endMaskStroke(S) {
+    const media = picMedia.get(S.id);
+    if (!media || !media.mask) { cancelHistory(); return; }
+    const rev = (S.maskRev || 0) + 1;
+    S.maskRev = rev;
+    media.maskRev = rev;
+    rememberMaskVersion(S.id, rev, media.mask);
+    commitHistory();
+    stageMaskPicture(S, media.mask).catch(() => {});
+  }
+
+  // ---- things the pointer can move: glass layers and free pictures ----
+  // One shape for both, so dragging, snapping, aligning and distributing do
+  // not care which kind of layer they are moving. Bounds are in canvas uv (y up).
+  function pictureAspect(S) {
+    const media = picMedia.get(S.id);
+    return media && media.image ? coverAspectOf(media.image) : 1;
+  }
+  function pictureBoundsUV(S) {
+    if (S.placement === "cover") return { left: 0, right: 1, bottom: 0, top: 1 };
+    if (S.placement === "registered") {
+      const half = S.scale / 2;
+      return { left: S.x - half, right: S.x + half, bottom: S.y - half, top: S.y + half };
+    }
+    const W = DESIGN_W, H = DESIGN_H;
+    const w = S.scale * pictureAspect(S) * H, h = S.scale * H;
+    const th = (S.rotation || 0) * Math.PI / 180;
+    const boxW = Math.abs(w * Math.cos(th)) + Math.abs(h * Math.sin(th));
+    const boxH = Math.abs(w * Math.sin(th)) + Math.abs(h * Math.cos(th));
+    return { left: S.x - boxW / 2 / W, right: S.x + boxW / 2 / W, bottom: S.y - boxH / 2 / H, top: S.y + boxH / 2 / H };
+  }
+  function pictureMovable(S) {
+    return !!S && S.kind === "picture" && S.id !== BG_LAYER_ID && !S.hidden && !S.locked && S.placement !== "cover";
+  }
+  function glassItem(L) {
+    return { id: L.id, ref: L, glass: true, bounds: () => unitBoundsForLayer(L), x: () => L.cx, y: () => L.cy, setPos: (x, y) => setLayerPosition(L, x, y, true) };
+  }
+  function pictureItem(S) {
+    return {
+      id: S.id, ref: S, glass: false, bounds: () => pictureBoundsUV(S), x: () => S.x, y: () => S.y,
+      setPos: (x, y) => { S.x = clampNum(x, -1, 2, S.x); S.y = clampNum(y, -1, 2, S.y); },
+    };
+  }
+  function movableItems() {
+    const items = selectedPositionRoots().map(glassItem);
+    selectedStackLayers().forEach((S) => { if (pictureMovable(S)) items.push(pictureItem(S)); });
+    return items;
+  }
+  function uvToRect(b, id) {
+    return { id, x: b.left * DESIGN_W, y: (1 - b.top) * DESIGN_H, w: (b.right - b.left) * DESIGN_W, h: (b.top - b.bottom) * DESIGN_H };
+  }
+  function pickAt(point) {
+    const inside = (b) => point.x >= b.left && point.x <= b.right && point.y >= b.bottom && point.y <= b.top;
+    const pictureAt = (from, to) => {
+      for (let i = from; i >= to; i--) {
+        const S = picStack[i];
+        if (pictureMovable(S) && S.placement === "free" && inside(pictureBoundsUV(S))) return { kind: "stack", id: S.id };
+      }
+      return null;
+    };
+    const over = pictureAt(picStack.length - 1, picSlot);
+    if (over) return over;
+    const glass = layerAtPoint(point);
+    if (glass >= 0) return { kind: "glass", index: glass };
+    return pictureAt(picSlot - 1, 1);
+  }
+
+  // Snapping is the edit kernel's: other layers' edges and centres, the frame,
+  // and equal gaps between neighbours. The targets are gathered once when the
+  // drag begins.
+  function makeDragSnapper(excludedIds, canvasRect) {
+    const others = [];
+    layers.forEach((L) => {
+      if (L.hidden || excludedIds.has(L.id) || excludedIds.has(L.parentId)) return;
+      others.push(uvToRect(worldBounds(L), L.id));
+    });
+    picStack.forEach((S) => {
+      if (!pictureMovable(S) || excludedIds.has(S.id) || S.placement === "registered") return;
+      others.push(uvToRect(pictureBoundsUV(S), S.id));
+    });
+    return window.AISystem6EditSnap.createSnapper({
+      rects: others,
+      frame: { x: 0, y: 0, w: DESIGN_W, h: DESIGN_H },
+      threshold: 6 * DESIGN_W / Math.max(1, canvasRect.width),
+    });
+  }
+  function snapDragDelta(snapper, bounds, rawDx, rawDy, disable) {
+    const moved = uvToRect({ left: bounds.left + rawDx, right: bounds.right + rawDx, bottom: bounds.bottom + rawDy, top: bounds.top + rawDy });
+    const out = snapper.snap(moved, { disabled: disable });
+    const gx = out.guides.find((g) => g.axis === "x");
+    const gy = out.guides.find((g) => g.axis === "y");
+    return {
+      dx: rawDx + (out.x - moved.x) / DESIGN_W,
+      dy: rawDy - (out.y - moved.y) / DESIGN_H,
+      guideX: gx ? gx.at / DESIGN_W : null,
+      guideY: gy ? 1 - gy.at / DESIGN_H : null,
+      spacing: out.spacing,
+    };
+  }
+  function showSpacingBadge(spacing, bounds) {
+    const guides = $("lc-alignment-guides");
+    if (!guides) return;
+    let badge = guides.querySelector(".lc-spacing-badge");
+    if (!spacing || !spacing.length) { badge?.classList.remove("is-visible"); return; }
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "lc-spacing-badge";
+      guides.append(badge);
+    }
+    badge.textContent = tr("liquid_cover_equal_spacing", "Equal spacing {0}", Math.round(spacing[0].gap));
+    badge.classList.add("is-visible");
+  }
+
+  function applyRectMoves(items, rects, moved) {
+    items.forEach((item, index) => {
+      const dx = (moved[index].x - rects[index].x) / DESIGN_W;
+      const dy = -(moved[index].y - rects[index].y) / DESIGN_H;
+      if (dx || dy) item.setPos(item.x() + dx, item.y() + dy);
+    });
+    syncWorkbenchReadout();
+    updateSelectionOverlay();
+    scheduleRender();
+  }
+  // Align several things to the one clicked last (it stays put), or to their
+  // common bounds when none is named.
+  function alignSelection(mode) {
+    const items = movableItems();
+    if (items.length < 2) return;
+    const keyId = items.some((item) => item.id === layers[sel]?.id) && selectedLayerIds.has(layers[sel]?.id) ? layers[sel].id : (items.some((item) => item.id === selStack) ? selStack : "");
+    runHistoryAction("liquid_cover_align_action", "Align layers", () => {
+      const rects = items.map((item) => uvToRect(item.bounds(), item.id));
+      applyRectMoves(items, rects, window.AISystem6EditSnap.alignRects(rects, mode, keyId));
+    });
+  }
+  function distributeSelection(axis) {
+    const items = movableItems();
+    if (items.length < 3) return;
+    runHistoryAction("liquid_cover_align_action", "Align layers", () => {
+      const rects = items.map((item) => uvToRect(item.bounds(), item.id));
+      applyRectMoves(items, rects, window.AISystem6EditSnap.distributeRects(rects, axis, "spacing"));
+    });
+  }
+  function alignSelectedToArtboard(where) {
+    const items = movableItems();
+    if (!items.length) return;
+    if (items.length > 1) {
+      alignSelection({ left: "left", center: "hcenter", right: "right", top: "top", middle: "vcenter", bottom: "bottom" }[where]);
+      return;
+    }
+    runHistoryAction("liquid_cover_align_action", "Align layers", () => {
+      const item = items[0];
+      const b = item.bounds();
+      let dx = 0, dy = 0;
+      if (where === "left") dx = 0 - b.left;
+      if (where === "center") dx = 0.5 - (b.left + b.right) / 2;
+      if (where === "right") dx = 1 - b.right;
+      if (where === "top") dy = 1 - b.top;
+      if (where === "middle") dy = 0.5 - (b.bottom + b.top) / 2;
+      if (where === "bottom") dy = 0 - b.bottom;
+      item.setPos(item.x() + dx, item.y() + dy);
+      syncWorkbenchReadout();
+      updateSelectionOverlay();
+      scheduleRender();
+    });
+  }
+
   // ---- AI auto-style (reuses the app's local/cloud model plumbing) ----
   // t() echoes the key back when a string is missing, so a truthy result is not
   // proof of a real translation — compare against the key to fall back correctly.
   function tr(key, fallback, ...args) {
     const v = typeof t === "function" ? t(key, ...args) : null;
-    return v && v !== key ? v : (fallback || "");
+    return v && v !== key ? v : String(fallback || "").replace(/\{(\d+)\}/g, (match, index) => (args[index] === undefined ? match : args[index]));
   }
   function aiStatus(key, fallback) {
     const el = $("lc-ai-status");
@@ -3907,6 +5309,7 @@ installLiquidCoverWindow();
     const inspectorCopy = {
       layers: ["liquid_cover_type_properties", "Type properties", "liquid_cover_type_hint", "Select a layer, then change only what matters to it."],
       media: ["liquid_cover_background_properties", "Background", "liquid_cover_background_hint", "Use a built-in scene or bring in your own image."],
+      stack: ["liquid_cover_stack_properties", "Picture layer", "liquid_cover_stack_hint", "Blend, opacity, clipping and cut-out for the selected picture or adjustment."],
       glass: ["liquid_cover_glass_properties", "Glass material", "liquid_cover_glass_hint", "Start with a proven look; open fine-tune only when you need it."],
       export: ["liquid_cover_export_properties", "Export", "liquid_cover_export_hint", "Choose the output once the composition is ready."],
     };
@@ -3936,6 +5339,7 @@ installLiquidCoverWindow();
       hint.textContent = tr(copy[2], copy[3]);
     }
     if (target === "export") { renderNow(); }
+    if (target === "media") renderAlbumPanel();
     if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
     if (typeof syncRovingTabStops === "function") {
       const tablist = document.querySelector(".liquid-cover-window .lc-toolbar-modes");
@@ -3967,6 +5371,53 @@ installLiquidCoverWindow();
     return result;
   }
 
+  // Scale and rotate a picture from the selection box's handles.
+  function startPictureTransform(event, kind, S) {
+    event.preventDefault();
+    event.stopPropagation();
+    const rect = canvas.getBoundingClientRect();
+    const center = { x: rect.left + S.x * rect.width, y: rect.top + (1 - S.y) * rect.height };
+    const startDx = event.clientX - center.x;
+    const startDy = event.clientY - center.y;
+    const startDistance = Math.max(8, Math.hypot(startDx, startDy));
+    const startAngle = Math.atan2(startDy, startDx);
+    const origin = { scale: S.scale, rotation: S.rotation };
+    beginHistory("liquid_cover_transform_action", "Transform layer");
+    const handle = event.currentTarget;
+    handle.setPointerCapture(event.pointerId);
+    let moved = false;
+    const detach = (pointerId) => {
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", end);
+      handle.removeEventListener("pointercancel", cancel);
+      try { handle.releasePointerCapture(pointerId); } catch (error) { /* noop */ }
+    };
+    function move(moveEvent) {
+      moved = true;
+      const dx = moveEvent.clientX - center.x;
+      const dy = moveEvent.clientY - center.y;
+      if (kind === "scale") S.scale = clampNum(origin.scale * clampNum(Math.hypot(dx, dy) / startDistance, 0.2, 5, 1), 0.05, 3, origin.scale);
+      else if (S.placement !== "registered") S.rotation = wrapDegrees(origin.rotation + (Math.atan2(dy, dx) - startAngle) * 180 / Math.PI);
+      renderStackInspector();
+      updateSelectionOverlay();
+      scheduleRender();
+    }
+    function end(endEvent) {
+      detach(endEvent.pointerId);
+      if (moved) commitHistory(); else cancelHistory();
+    }
+    function cancel(cancelEvent) {
+      detach(cancelEvent.pointerId);
+      S.scale = origin.scale; S.rotation = origin.rotation;
+      cancelHistory();
+      renderStackInspector();
+      scheduleRender();
+    }
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", end);
+    handle.addEventListener("pointercancel", cancel);
+  }
+
   function wireTransformHandles() {
     const scaleHandle = $("lc-transform-scale");
     const rotateHandle = $("lc-transform-rotate");
@@ -3974,8 +5425,10 @@ installLiquidCoverWindow();
 
     const startTransform = (event, kind) => {
       if (event.button !== 0) return;
-      const root = selectedPositionRoots()[0];
-      if (!root || selectedPositionRoots().length !== 1) return;
+      const movable = movableItems();
+      if (movable.length !== 1) return;
+      if (!movable[0].glass) { startPictureTransform(event, kind, movable[0].ref); return; }
+      const root = movable[0].ref;
       event.preventDefault();
       event.stopPropagation();
       const members = uniqueLayers([root, ...linkedChildren(root).filter((child) => !child.hidden && !child.locked)]);
@@ -4091,6 +5544,7 @@ installLiquidCoverWindow();
       if (control.matches('input[type="range"]')) {
         control.addEventListener("pointerup", commitHistory);
         control.addEventListener("pointercancel", cancelHistory);
+        control.addEventListener("keydown", (event) => { if (/^(Arrow|Page|Home|End)/.test(event.key)) begin(); });
       }
     });
   }
@@ -4099,12 +5553,8 @@ installLiquidCoverWindow();
     if (!canvas) return;
     canvas.addEventListener("keydown", (event) => {
       const command = event.metaKey || event.ctrlKey;
-      if (command && event.key.toLowerCase() === "z") {
-        event.preventDefault();
-        if (event.shiftKey) redoEditor();
-        else undoEditor();
-        return;
-      }
+      // ⌘Z / ⇧⌘Z arrive through the desk's Edit menu route, which asks the
+      // history registered below; answering them here as well undid twice.
       if (command && event.key.toLowerCase() === "y") {
         event.preventDefault();
         redoEditor();
@@ -4145,11 +5595,11 @@ installLiquidCoverWindow();
       const dx = (event.key === "ArrowLeft" ? -stepPx : event.key === "ArrowRight" ? stepPx : 0) / DESIGN_W;
       const dy = (event.key === "ArrowDown" ? -stepPx : event.key === "ArrowUp" ? stepPx : 0) / DESIGN_H;
       beginHistory("liquid_cover_move_action", "Move layer");
-      if (dragFgMode) {
-        fg.x = clampNum(fg.x + dx, -0.5, 1.5, 0.5);
-        fg.y = clampNum(fg.y + dy, -0.5, 1.5, 0.5);
+      const S = subjectLayer();
+      if (dragFgMode && S && pictureMovable(S)) {
+        pictureItem(S).setPos(S.x + dx, S.y + dy);
       } else {
-        selectedPositionRoots().forEach((L) => setLayerPosition(L, L.cx + dx, L.cy + dy, true));
+        movableItems().forEach((item) => item.setPos(item.x() + dx, item.y() + dy));
       }
       syncWorkbenchReadout();
       updateSelectionOverlay();
@@ -4164,11 +5614,7 @@ installLiquidCoverWindow();
       const command = event.metaKey || event.ctrlKey;
       if (!command) return;
       const key = event.key.toLowerCase();
-      if (key === "z") {
-        event.preventDefault();
-        if (event.shiftKey) redoEditor();
-        else undoEditor();
-      } else if (key === "y") {
+      if (key === "y") {
         event.preventDefault();
         redoEditor();
       } else if (key === "d" && !event.target.matches("input, textarea, select")) {
@@ -4189,6 +5635,67 @@ installLiquidCoverWindow();
     });
   }
 
+  function wireCoverDocument() {
+    const title = $("lc-cover-title");
+    if (title) title.addEventListener("input", () => { cover.title = title.value; markCoverDirty(); });
+    $("lc-add-picture").addEventListener("click", () => $("lc-picture-file").click());
+    $("lc-picture-file").addEventListener("change", (e) => {
+      const f = e.target.files && e.target.files[0];
+      e.target.value = "";
+      if (f) addPictureFromFile(f, "layer");
+    });
+    $("lc-add-album").addEventListener("click", () => showAlbumPanel());
+    document.querySelectorAll("#lc-album-as button").forEach((button) => {
+      button.addEventListener("click", () => { albumAs = button.dataset.as; renderAlbumPanel(); });
+    });
+    $("lc-add-adjust-bc").addEventListener("click", () => addAdjustmentLayer("brightnessContrast"));
+    $("lc-add-adjust-hs").addEventListener("click", () => addAdjustmentLayer("hueSaturation"));
+    $("lc-add-adjust-blur").addEventListener("click", () => addAdjustmentLayer("blur"));
+    document.querySelectorAll(".lc-align-selection [data-align]").forEach((button) => {
+      button.addEventListener("click", () => alignSelection(button.dataset.align));
+    });
+    document.querySelectorAll(".lc-distribute-selection [data-distribute]").forEach((button) => {
+      button.addEventListener("click", () => distributeSelection(button.dataset.distribute));
+    });
+    $("lc-cutout-go").addEventListener("click", removeBackground);
+    $("lc-cutout-clear").addEventListener("click", clearCutout);
+    $("lc-cutout-refine").addEventListener("click", () => {
+      maskBrush.on = !maskBrush.on;
+      canvas.classList.toggle("is-mask-brush", maskBrush.on);
+      syncCutoutControls();
+    });
+    [["lc-brush-add", "add"], ["lc-brush-subtract", "subtract"]].forEach(([id, mode]) => {
+      $(id).addEventListener("click", () => {
+        maskBrush.mode = mode;
+        ["lc-brush-add", "lc-brush-subtract"].forEach((other) => {
+          const active = other === id;
+          $(other).classList.toggle("is-active", active);
+          $(other).setAttribute("aria-pressed", active ? "true" : "false");
+        });
+      });
+    });
+    $("lc-brush-size").addEventListener("input", () => { maskBrush.size = +$("lc-brush-size").value; syncValueLabels(); });
+    $("lc-cutout-model-choose").addEventListener("click", () => $("lc-cutout-model-file").click());
+    $("lc-cutout-model-file").addEventListener("change", async (e) => {
+      const files = Array.from(e.target.files || []);
+      e.target.value = "";
+      if (!files.length) return;
+      try {
+        await ensureLiquidCoverCutoutModule();
+        const result = await window.AISystem6CoverCutout.importFiles(files);
+        if (result.ok) {
+          $("lc-cutout-model").hidden = true;
+          aiStatusText(tr("liquid_cover_cutout_model_kept", "Model files kept on this computer. Press Remove Background again."));
+        } else {
+          showCutoutModelNeed({ missing: result.missing });
+        }
+      } catch {
+        aiStatusText(tr("liquid_cover_cutout_unavailable", "The cut-out module could not be loaded."));
+      }
+    });
+    wirePictureDrops();
+  }
+
   function wire() {
     wireInspectorTabs();
     wireStageExpand();
@@ -4198,6 +5705,7 @@ installLiquidCoverWindow();
     wireFineTuneGroups();
     wireFontControls();
     wireHistoryControls();
+    wireCoverDocument();
     $("lc-undo").addEventListener("click", undoEditor);
     $("lc-redo").addEventListener("click", redoEditor);
 
@@ -4208,22 +5716,9 @@ installLiquidCoverWindow();
       if (t && t.matches && t.matches('input[type="range"]')) updateSliderFill(t);
     });
 
-    // aspect buttons
+    // aspect buttons: each size is a variant of this one cover
     document.querySelectorAll(".liquid-cover-window .lc-aspect button").forEach((b) => {
-      b.addEventListener("click", () => {
-        const a = ASPECTS[b.dataset.k]; if (!a) return;
-        runHistoryAction("liquid_cover_edit_action", "Edit layer", () => {
-          applyAspect(a[0], a[1]);
-          document.querySelectorAll(".liquid-cover-window .lc-aspect button").forEach((x) => {
-            const active = x === b;
-            x.classList.toggle("is-active", active);
-            x.setAttribute("aria-pressed", active ? "true" : "false");
-          });
-          syncWorkbenchReadout();
-          rebuildAllSDF();
-          scheduleRender(); // background is cover-fit in the shader, no reload needed on aspect change
-        });
-      });
+      b.addEventListener("click", () => switchCoverVariant(b.dataset.k));
     });
 
     // per-layer text geometry → rebuild that layer's SDF
@@ -4323,6 +5818,7 @@ installLiquidCoverWindow();
         beginHistory("liquid_cover_add_action", "Add layer");
         layers.push(makeLayer({
           shape: img,
+          shapeAssetId: crypto.randomUUID(),
           renderMode: "glass",
           text: (f.name || "Shape").replace(/\.[^.]+$/, ""),
           cx: 0.5, cy: Math.max(0.15, 0.5 - (layers.length - 1) * 0.18),
@@ -4333,19 +5829,19 @@ installLiquidCoverWindow();
       });
     });
 
-    // background upload
+    // background upload: the chosen photo becomes a picture the cover can keep
     $("lc-bg-choose").addEventListener("click", () => $("lc-bg-input").click());
     $("lc-bg-input").addEventListener("change", (e) => {
       const f = e.target.files && e.target.files[0]; if (!f) return;
-      const bgName = $("lc-bg-name"); bgName.removeAttribute("data-i18n"); bgName.textContent = f.name;
       clearMotionVideo(false);
       loadImageFile(f, (img) => {
-        activeBg = -1;
-        Array.prototype.forEach.call($("lc-bg-row").children, (x) => {
-          x.classList.remove("is-active");
-          x.setAttribute("aria-pressed", "false");
+        runHistoryAction("liquid_cover_subject_action", "Place picture", () => {
+          const assetId = crypto.randomUUID();
+          localBackgrounds.set(assetId, { image: img, file: f });
+          activeBg = -1;
+          setBackgroundPicture(img, { kind: "asset", assetId, name: f.name });
+          if (coverProject()) ensureStaged(assetId, localBackgrounds.get(assetId), "cover-background", 0, "background").catch(() => {});
         });
-        setBg(img);
       });
     });
 
@@ -4370,36 +5866,35 @@ installLiquidCoverWindow();
     $("lc-motion-preview").addEventListener("click", previewMotionOnce);
     $("lc-motion-export").addEventListener("click", exportVideo);
 
-    // foreground upload / scale / drag mode / clear
+    // subject (the picture over the glass): every control works on a picture layer
     $("lc-fg-choose").addEventListener("click", () => $("lc-fg-input").click());
     $("lc-fg-input").addEventListener("change", (e) => {
       const f = e.target.files && e.target.files[0]; if (!f) return;
-      const fgName = $("lc-fg-name"); fgName.removeAttribute("data-i18n"); fgName.textContent = f.name;
-      loadImageFile(f, (img) => {
-        if (!renderer) return;
-        beginHistory("liquid_cover_subject_action", "Place subject");
-        renderer.setForeground(img);
-        // a new subject starts exactly on its source pixels (or centred)
-        fg.x = 0.5; fg.y = 0.5; fg.scale = 1; fg.registered = subjectMatchesBackdrop(img);
-        syncSubjectControls();
-        $("lc-fg-clear").hidden = false;
-        scheduleRender();
-        commitHistory();
-      });
+      e.target.value = "";
+      addPictureFromFile(f, "subject");
     });
     $("lc-fg-clear").addEventListener("click", () => {
-      if (renderer) renderer.setForeground(null); $("lc-fg-clear").hidden = true;
-      const fgName = $("lc-fg-name"); fgName.setAttribute("data-i18n", "no_files_selected"); fgName.textContent = tr("no_files_selected", "No files selected"); scheduleRender();
+      const S = subjectLayer();
+      if (!S) return;
+      selectOnlyStack(S.id);
+      removeSelectedStack();
     });
-    $("lc-fg-scale").addEventListener("input", () => { fg.scale = +$("lc-fg-scale").value / 100; syncValueLabels(); scheduleRender(); });
+    $("lc-fg-scale").addEventListener("input", () => {
+      const S = subjectLayer();
+      if (!S) return;
+      beginHistory("liquid_cover_subject_action", "Place picture");
+      S.scale = clampNum(+$("lc-fg-scale").value / 100, 0.05, 3, S.scale);
+      syncValueLabels(); renderStackInspector(); updateSelectionOverlay(); scheduleRender();
+    });
+    $("lc-fg-scale").addEventListener("change", commitHistory);
     $("lc-fg-drag").addEventListener("change", () => { dragFgMode = $("lc-fg-drag").checked; });
     $("lc-fg-register").addEventListener("change", () => {
-      beginHistory("liquid_cover_subject_action", "Place subject");
-      fg.registered = $("lc-fg-register").checked;
-      fg.x = 0.5; fg.y = 0.5; fg.scale = 1;
-      syncSubjectControls();
-      scheduleRender();
-      commitHistory();
+      const S = subjectLayer();
+      if (!S) return;
+      runHistoryAction("liquid_cover_subject_action", "Place picture", () => {
+        applyStackField(S, "placement", $("lc-fg-register").checked ? "registered" : "free");
+        syncSubjectControls(); renderStackInspector(); scheduleRender();
+      });
     });
 
     // Bottom ask bar: describe a mood → AI configures every parameter
@@ -4409,18 +5904,44 @@ installLiquidCoverWindow();
     $("lc-t2i-go").addEventListener("click", writeBgPrompt);
     $("lc-t2i-copy").addEventListener("click", copyBgPrompt);
 
-    // drag positioning
+    // drag positioning: glass layers and pictures move the same way
     let drag = null;
+    const beginItemDrag = (e, p, items) => {
+      const ids = new Set();
+      items.forEach((item) => {
+        ids.add(item.id);
+        if (item.glass) linkedChildren(item.ref).forEach((child) => ids.add(child.id));
+      });
+      beginHistory("liquid_cover_move_action", "Move layer");
+      const rect = canvas.getBoundingClientRect();
+      drag = {
+        kind: "items",
+        start: p,
+        originals: items.map((item) => ({ item, x: item.x(), y: item.y() })),
+        bounds: boundsUnion(items.map((item) => item.bounds())),
+        snapper: makeDragSnapper(ids, rect),
+      };
+    };
     canvas.addEventListener("pointerdown", (e) => {
       const p = pointerToUV(e);
       canvas.focus({ preventScroll: true });
       liquidDropAt(p, true);
-      if (dragFgMode) {
-        beginHistory("liquid_cover_move_action", "Move layer");
-        drag = { kind: "foreground", start: p, x0: fg.x, y0: fg.y };
+      const brushTarget = maskBrush.on ? cutoutTarget() : null;
+      if (brushTarget && brushTarget.maskId && picMedia.get(brushTarget.id)?.mask) {
+        // Refining the cut-out: the pointer paints the mask, it moves nothing.
+        beginHistory("liquid_cover_mask_action", "Refine cut-out");
+        const media = picMedia.get(brushTarget.id);
+        if (!maskVersions.get(brushTarget.id)?.has(brushTarget.maskRev || 0)) rememberMaskVersion(brushTarget.id, brushTarget.maskRev || 0, media.mask);
+        drag = { kind: "mask", S: brushTarget, last: p };
+        paintMask(brushTarget, p, p);
+        scheduleRender();
+      } else if (dragFgMode && subjectLayer() && pictureMovable(subjectLayer())) {
+        const S = subjectLayer();
+        if (!selectedStackIds.has(S.id)) { selectOnlyStack(S.id); renderLayerList(); renderStackInspector(); }
+        beginItemDrag(e, p, [pictureItem(S)]);
       } else {
-        const hit = layerAtPoint(p);
-        if (hit < 0) {
+        const hit = pickAt(p);
+        if (!hit) {
           drag = {
             kind: "marquee",
             start: p,
@@ -4429,24 +5950,31 @@ installLiquidCoverWindow();
             moved: false,
           };
           showSelectionMarquee(marqueeBounds(p, p));
-        } else {
-          if (e.shiftKey) toggleLayerSelection(hit);
-          else if (!selectedLayerIds.has(layers[hit].id)) selectOnly(hit);
+        } else if (hit.kind === "glass") {
+          if (e.shiftKey) toggleLayerSelection(hit.index);
+          else if (!selectedLayerIds.has(layers[hit.index].id)) selectOnly(hit.index);
           renderLayerList();
           loadLayerIntoPanel();
+          renderStackInspector();
           setInspectorPanel(isShapeLayer(layers[sel]) ? "glass" : "layers");
-          if (!selectedLayerIds.has(layers[hit].id)) return;
-          const roots = selectedPositionRoots();
-          const members = selectedPositionMembers();
-          beginHistory("liquid_cover_move_action", "Move layer");
-          drag = {
-            kind: "layers",
-            start: p,
-            roots,
-            originals: roots.map((L) => ({ L, x: L.cx, y: L.cy })),
-            bounds: boundsUnion(members),
-            excluded: new Set(members),
-          };
+          if (!selectedLayerIds.has(layers[hit.index].id)) return;
+          beginItemDrag(e, p, movableItems());
+        } else {
+          if (e.shiftKey) {
+            if (selectedStackIds.has(hit.id) && selectedStackIds.size + selectedLayerIds.size > 1) selectedStackIds.delete(hit.id);
+            else { selectedStackIds.add(hit.id); selStack = hit.id; }
+          } else if (!selectedStackIds.has(hit.id)) {
+            selectOnlyStack(hit.id);
+          } else {
+            selStack = hit.id;
+          }
+          renderLayerList();
+          renderStackInspector();
+          syncSubjectControls();
+          setInspectorPanel("stack");
+          const items = movableItems();
+          if (!items.some((item) => item.id === hit.id)) return;
+          beginItemDrag(e, p, items);
         }
       }
       canvas.setPointerCapture(e.pointerId);
@@ -4462,6 +5990,12 @@ installLiquidCoverWindow();
       if (!drag) return;
       const rawDx = p.x - drag.start.x;
       const rawDy = p.y - drag.start.y;
+      if (drag.kind === "mask") {
+        paintMask(drag.S, drag.last, p);
+        drag.last = p;
+        scheduleRender();
+        return;
+      }
       if (drag.kind === "marquee") {
         const bounds = marqueeBounds(drag.start, p);
         drag.moved ||= Math.abs(rawDx * DESIGN_W) > 3 || Math.abs(rawDy * DESIGN_H) > 3;
@@ -4472,6 +6006,8 @@ installLiquidCoverWindow();
           hitIds.forEach((id) => next.add(id));
           if (next.size) {
             selectedLayerIds.clear();
+            selectedStackIds.clear();
+            selStack = "";
             next.forEach((id) => selectedLayerIds.add(id));
             for (let i = layers.length - 1; i >= 0; i--) {
               if (selectedLayerIds.has(layers[i].id)) {
@@ -4485,30 +6021,47 @@ installLiquidCoverWindow();
         }
         return;
       }
-      if (drag.kind === "foreground") {
-        fg.x = clampNum(drag.x0 + rawDx, -0.5, 1.5, fg.x);
-        fg.y = clampNum(drag.y0 + rawDy, -0.5, 1.5, fg.y);
-        clearAlignmentGuides();
-      } else {
-        const snapped = snapBoundsDelta(drag.bounds, rawDx, rawDy, canvas.getBoundingClientRect(), drag.excluded, e.altKey);
-        drag.originals.forEach((origin) => {
-          setLayerPosition(origin.L, origin.x + snapped.dx, origin.y + snapped.dy, true);
-        });
-        showAlignmentGuides(snapped.guideX, snapped.guideY);
-      }
+      moveDraggedItems(e, rawDx, rawDy);
+    });
+    const moveDraggedItems = (e, rawDx, rawDy) => {
+      const snapped = snapDragDelta(drag.snapper, drag.bounds, rawDx, rawDy, e.altKey);
+      drag.originals.forEach((origin) => {
+        origin.item.setPos(origin.x + snapped.dx, origin.y + snapped.dy);
+      });
+      showAlignmentGuides(snapped.guideX, snapped.guideY);
+      showSpacingBadge(snapped.spacing, drag.bounds);
       syncWorkbenchReadout();
       updateSelectionOverlay();
       scheduleRender();
-    });
+    };
     const endDrag = (e) => {
-      const movedObject = drag && drag.kind !== "marquee";
-      if (drag?.kind === "marquee") clearSelectionMarquee();
+      // the release is the last position of the drag
+      if (drag && drag.kind === "items" && e.type === "pointerup") {
+        const p = pointerToUV(e);
+        moveDraggedItems(e, p.x - drag.start.x, p.y - drag.start.y);
+      }
+      const finished = drag;
+      if (finished?.kind === "marquee") clearSelectionMarquee();
       drag = null;
       clearAlignmentGuides();
+      showSpacingBadge(null);
       canvas.classList.remove("is-grabbing");
       delete canvas.dataset.dragging;
       try { canvas.releasePointerCapture(e.pointerId); } catch (err) { /* noop */ }
-      if (movedObject) commitHistory();
+      if (finished?.kind === "mask") {
+        paintMask(finished.S, finished.last, pointerToUV(e));
+        endMaskStroke(finished.S);
+        scheduleRender();
+      }
+      else if (finished && finished.kind !== "marquee") {
+        if (e.type === "pointercancel") {
+          finished.originals.forEach((origin) => origin.item.setPos(origin.x, origin.y));
+          cancelHistory();
+        } else {
+          commitHistory();
+        }
+        renderStackInspector();
+      }
     };
     canvas.addEventListener("pointerup", endDrag);
     canvas.addEventListener("pointercancel", endDrag);
@@ -4551,6 +6104,7 @@ installLiquidCoverWindow();
     aiStatusText("");            // clear a stale WebGL warning from a failed earlier attempt
     setBg(neutralBg());          // neutral until the first photo decodes (avoids a blank first frame)
     setBgFromUrl(BG_URLS[0]);    // then the real built-in photo
+    syncRendererPictures();
     rebuildAllSDF();
     renderNow();        // paint the first frame immediately (don't wait for rAF)
     scheduleRender();
@@ -4559,6 +6113,12 @@ installLiquidCoverWindow();
     canvas = $("lc-canvas");
     layers.length = 0; layers.push(makeLayer());
     selectOnly(0);
+    // A new window is a new cover; working pictures left by an earlier session
+    // that was never saved are cleared.
+    if (window.AISystem6EditAssets) window.AISystem6EditAssets.clearStagedAssets({ app: "liquidCover" });
+    picStack.length = 0; picStack.push(makeBackgroundLayer()); picSlot = 1;
+    variantKey = "16:9";
+    variants[variantKey] = { w: ASPECTS[variantKey][0], h: ASPECTS[variantKey][1], layout: {} };
     applyAspect(DESIGN_W, DESIGN_H);
     // mark the default aspect button active
     document.querySelectorAll(".liquid-cover-window .lc-aspect button").forEach((b) => {
@@ -4567,11 +6127,16 @@ installLiquidCoverWindow();
       b.setAttribute("aria-pressed", active ? "true" : "false");
     });
     // UI first — these must exist even if WebGL is unavailable right now
+    buildLayersPanel();
+    buildStackInspector();
     wire();
     buildBgRow();
     buildPresetRow();
     renderLayerList();
     loadLayerIntoPanel();
+    renderStackInspector();
+    syncSubjectControls();
+    syncAspectButtons();
     applyMaterialMix(0); // open water-clear (the Apple Liquid Glass reference), not frosted
     updateHistoryButtons();
     startRendering();
@@ -4595,6 +6160,18 @@ installLiquidCoverWindow();
       "export-video": exportVideo,
       "undo": undoEditor,
       "redo": redoEditor,
+      "save": () => saveCover(),
+      "save-as": () => saveCover({ asNew: true }),
+      "send-stage": () => sendCoverToStage(),
+      "new": newCover,
+      "add-picture": () => $("lc-picture-file")?.click(),
+      "from-album": () => showAlbumPanel(),
+      "remove-background": removeBackground,
+      "add-adjust-brightness": () => addAdjustmentLayer("brightnessContrast"),
+      "add-adjust-hue": () => addAdjustmentLayer("hueSaturation"),
+      "add-adjust-blur": () => addAdjustmentLayer("blur"),
+      "distribute-h": () => distributeSelection("x"),
+      "distribute-v": () => distributeSelection("y"),
       "add-layer": () => {
         if (layers.length >= MAX_LAYERS) return;
         beginHistory("liquid_cover_add_action", "Add layer");
@@ -4665,11 +6242,24 @@ installLiquidCoverWindow();
     },
   });
 
-  window.AISystem6LiquidCover = { open, runMenuCommand };
+  window.AISystem6LiquidCover = { open, runMenuCommand, openSavedCover, editEmbed: editCoverEmbed, sendToStage: sendCoverToStage, renderDataUrl: renderCoverDataUrl };
+  window.AISystem6CoverGlass = window.AISystem6LiquidCover;
   const LIQUID_COVER_COMMAND_NAMES = [
     "cover-choose-background",
     "cover-choose-video",
     "cover-choose-subject",
+    "cover-save",
+    "cover-save-as",
+    "cover-send-stage",
+    "cover-new",
+    "cover-add-picture",
+    "cover-from-album",
+    "cover-remove-background",
+    "cover-add-adjust-brightness",
+    "cover-add-adjust-hue",
+    "cover-add-adjust-blur",
+    "cover-distribute-h",
+    "cover-distribute-v",
     "cover-export-png",
     "cover-export-video",
     "cover-add-layer",
@@ -4693,6 +6283,8 @@ installLiquidCoverWindow();
     if (action === "cover-export-video") return controlEnabled("#lc-motion-export");
     if (action === "cover-delete-layer") return controlEnabled("#lc-del-layer");
     if (action === "cover-preview-motion") return controlEnabled("#lc-motion-preview");
+    if (action === "cover-remove-background") return controlEnabled("#lc-cutout-go");
+    if (action === "cover-distribute-h" || action === "cover-distribute-v") return movableItems().length >= 3;
     return true;
   }
 

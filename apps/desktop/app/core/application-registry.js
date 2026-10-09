@@ -13,7 +13,7 @@
 // review belongs to the Review Desk. A document is developed, not edited, when
 // the negative is left alone and the change is a stack of adjustments the
 // writer can switch off again.
-const applicationIntents = Object.freeze(["open", "read", "edit", "review", "develop", "map", "present", "attach", "export"]);
+const applicationIntents = Object.freeze(["open", "read", "edit", "review", "develop", "map", "chart", "present", "attach", "export"]);
 const applicationsById = new Map();
 
 function normalizeApplicationIntent(intent) {
@@ -28,6 +28,14 @@ function applicationItemKind(item) {
   if (item.type === "chat") return "chat";
   if (item.type === "alias") return "alias";
   if (item.type === "text") {
+    if (item.clioDiagram) return "clio-diagram";
+    // A saved Cover Glass cover: the layer JSON rides on the document.
+    if (item.artifactKind === "cover" && item.cover) return "cover";
+    // A saved deck and a saved chart open in the applications that made them.
+    // Older files without the mark are recognised by what they are: a Marp
+    // front matter, or ClioChart's table document.
+    if (item.artifactKind === "slides" || /^---\s*\n[\s\S]{0,400}?^marp:\s*true\b/m.test(String(item.body || "").slice(0, 600))) return "slides";
+    if (item.artifactKind === "chart-table" || (item.source === "ClioChart" && /^\|.+\|\s*$/m.test(String(item.body || "")))) return "chart-table";
     if (item.docMap || (typeof isExportedDocMapMarkdown === "function" && isExportedDocMapMarkdown(String(item.body || "")))) {
       return "docmap";
     }
@@ -430,6 +438,21 @@ registerApplication({
 });
 
 registerApplication({
+  id: "coverGlass",
+  // The window and its title belong to the module this opens; the registry
+  // only decides that a saved cover goes there.
+  acceptedItemKinds: ["cover"],
+  acceptedIntents: ["open"],
+  defaultOpener: true,
+  handler: async (items) => {
+    const file = items[0];
+    if (!file || !file.cover) return { ok: false, reason: "missing" };
+    if (typeof ensureCoverGlassModule === "function") await ensureCoverGlassModule();
+    return { ok: !!(await window.AISystem6CoverGlass?.openSavedCover?.(file)) };
+  },
+});
+
+registerApplication({
   id: "reviewDesk",
   labelKey: "review_desk",
   windowName: "reviewDesk",
@@ -465,32 +488,62 @@ registerApplication({
 });
 
 registerApplication({
+  id: "clioChart",
+  labelKey: "clio_chart_label",
+  windowName: "clioChart",
+  acceptedItemKinds: ["text", "clio-diagram", "chart-table"],
+  acceptedIntents: ["chart", "open"],
+  recordsRuns: ["chart"],
+  handler: async (items, context) => {
+    const file = items[0];
+    if (!file || !String(file.body || "").trim()) return { ok: false, reason: "empty" };
+    if (typeof ensureClioChartModule === "function") await ensureClioChartModule();
+    if (applicationItemKind(file) === "chart-table") return { ok: !!window.AISystem6ClioChart?.openSavedTable?.(file) };
+    if (context?.intent === "open" || file.clioDiagram) {
+      return { ok: !!window.AISystem6ClioChart?.openSavedDiagram?.(file) };
+    }
+    const charted = await window.AISystem6ClioChart?.makeFromSource?.({
+      text: file.body.trim(),
+      label: file.name,
+      scope: "documents",
+      meta: { fileId: file.id, fileType: file.type },
+      threshold: typeof clioChartMinSourceChars === "number" ? clioChartMinSourceChars : 1,
+    });
+    if (!charted) return { ok: false, reason: "not-charted" };
+    // The chart stays temporary until the writer saves it, so this run made
+    // nothing durable; the document was read.
+    return { ok: true, affectedObjectIds: [file.id] };
+  },
+});
+
+registerApplication({
   id: "clioStage",
   labelKey: "clio_stage_label",
   windowName: "clioStage",
-  acceptedItemKinds: ["text", "docmap"],
-  acceptedIntents: ["present"],
+  acceptedItemKinds: ["text", "docmap", "slides"],
+  acceptedIntents: ["present", "open"],
   recordsRuns: ["present"],
   handler: async (items) => {
     const file = items[0];
     if (!file || !String(file.body || "").trim()) return { ok: false, reason: "empty" };
+    // A saved deck opens as itself; only other text is drafted into a deck.
+    if (applicationItemKind(file) === "slides") {
+      if (typeof ensureClioStageModule === "function") await ensureClioStageModule();
+      return { ok: !!(await window.AISystem6ClioStage?.openFile?.(file)) };
+    }
     if (typeof ensureSlidesExportModule === "function") await ensureSlidesExportModule();
-    let createdFile = null;
+    let deck = null;
     if (typeof generateMarpMarkdownAndOpenClioStage === "function") {
-      createdFile = await generateMarpMarkdownAndOpenClioStage({
+      deck = await generateMarpMarkdownAndOpenClioStage({
         markdown: file.body,
         title: file.name,
         folder: typeof preferredFolderName === "function" ? preferredFolderName() : "",
       });
     }
-    if (!createdFile) return { ok: false, reason: "present-failed" };
-    // ClioStage writes a durable *.slides.md document; only that new object
-    // is the run's output. The source document was used as input/affected.
-    return {
-      ok: true,
-      outputObjectIds: [createdFile.id],
-      affectedObjectIds: [file.id],
-    };
+    if (!deck) return { ok: false, reason: "present-failed" };
+    // The deck opens as a temporary draft in ClioStage; saving it is the
+    // writer's own step and writes its own document. This run read the source.
+    return { ok: true, affectedObjectIds: [file.id] };
   },
 });
 

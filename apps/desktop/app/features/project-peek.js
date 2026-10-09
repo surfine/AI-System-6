@@ -381,7 +381,7 @@ async function collectPeekDarkroomMarks(projectId) {
       const record = await window.AISystem6DarkroomStore?.loadDarkroomRecord?.(projectId, file.id);
       if (!record) continue;
       const developed = Boolean(String(record.negative || "").trim())
-        || (record.adjustmentLayers?.length || 0) > 0
+        || (record.settings?.layers || []).some((layer) => layer?.on === true)
         || (record.versions?.length || 0) > 0;
       if (developed) peekDarkroomVersions.set(file.id, record.versions?.length || 0);
     }

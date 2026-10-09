@@ -90,7 +90,7 @@ function quickDraftTrackOwnsPaper() {
 }
 
 function quickDraftTrackShouldDevelop() {
-  if (typeof lightroomIsReadOnly === "function" && lightroomIsReadOnly()) return false;
+  if (typeof lightroomForeignSubject === "function" && lightroomForeignSubject()) return false;
   return quickDraftTrackOwnsPaper() && Boolean(String(readQuickDraftTraffic()?.body || "").trim());
 }
 
@@ -184,7 +184,7 @@ function setTrackStatus(message) {
     status.textContent = message;
     return;
   }
-  status.textContent = typeof lightroomIsReadOnly === "function" && lightroomIsReadOnly()
+  status.textContent = typeof lightroomForeignSubject === "function" && lightroomForeignSubject()
     ? t("lightroom_read_only")
     : "";
 }
@@ -382,7 +382,7 @@ async function setQuickDraftTrack(mode = "interest") {
 async function developQuickDraftTraffic() {
   const slot = activeProjectQuickDraft({ create: false });
   const traffic = readQuickDraftTraffic();
-  if (typeof lightroomIsReadOnly === "function" && lightroomIsReadOnly()) return false;
+  if (typeof lightroomForeignSubject === "function" && lightroomForeignSubject()) return false;
   if (!slot || !traffic?.body) {
     setTrackStatus(t("lightroom_track_empty"));
     return false;

@@ -103,8 +103,10 @@ function renderFindPathResults() {
     } else if (!findPathHasSearched) {
       // Goal #2/#6: idle Searcher still needs a tappable next step in the
       // empty pane — the query row is easy to miss once the eye lands here.
+      // Not "Search": the query row already has that button, and two buttons
+      // with one name read as two different searches (2026-10-09 audit).
       renderFindPathEmptyNext(t("searcher_idle_empty"), {
-        label: t("search"),
+        label: t("type_a_query"),
         onClick: focusFindPathQuery,
       });
     } else {
@@ -886,7 +888,9 @@ function renderFindFileResults() {
     // The field already has the window's default Search button; a second
     // default here gave Find File two (2026-10-08).
     focusQuery.className = "btn";
-    focusQuery.textContent = t("search");
+    // It puts the caret in the field; it does not search, so it is not named
+    // like the button that does.
+    focusQuery.textContent = t("type_a_query");
     focusQuery.addEventListener("click", () => {
       findFileQueryInput?.focus?.();
       findFileQueryInput?.select?.();

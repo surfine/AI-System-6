@@ -35,6 +35,8 @@ const selectionTools = [
   menuItem("selection-clip-file", "selection_clip_file"),
   menuItem("selection-translate", "translate_selection"),
   menuItem("make-docmap-selection", "docmap_from_selection"),
+  menuItem("make-chart-selection", "chart_from_selection"),
+  menuItem("make-slides-selection", "slides_from_selection"),
 ];
 
 const writingTools = [
@@ -381,6 +383,11 @@ const lightroomLayerSubmenu = (kind) => submenu(lightroomLayerLabelKey(kind), [
   menuItem(`lightroom-layer-scope-all:${kind}`, "quick_draft_scope_whole", "", {
     dataset: { lightroomLayer: kind, lightroomLayerRow: "scope-all" },
   }),
+  menuSeparator,
+  // What this one layer changed, shown on the paper.
+  menuItem(`lightroom-layer-solo:${kind}`, "lightroom_layer_solo_row", "", {
+    dataset: { lightroomLayer: kind, lightroomLayerRow: "solo" },
+  }),
 ]);
 
 // 文字亮室 is its own application, so it carries its own menu bar. The views
@@ -397,7 +404,11 @@ const lightroomMenus = [
     menuItem("close-active-window", "close", "close-window"),
     menuSeparator,
     menuItem("lightroom-save-version", "lightroom_save_version", "lightroom-save-version"),
+    submenu("lightroom_name_version", [{ type: "lightroom-rows", rowKind: "nameVersions" }], { dataset: { lightroomRows: "nameVersions" } }),
     submenu("lightroom_restore_version", [{ type: "lightroom-rows", rowKind: "versions" }], { dataset: { lightroomRows: "versions" } }),
+    // The negative is the writer's baseline; when the body has moved past it,
+    // the current body can become the new one.
+    menuItem("lightroom-reshoot", "lightroom_reshoot_menu"),
     menuSeparator,
     // Printing belongs to the reading view: the composite is the one paper
     // this application puts on a page, so both rows grey outside it.
@@ -421,13 +432,27 @@ const lightroomMenus = [
     menuItem("lightroom-zoom-fatbits", "quick_draft_fatbits", "", { dataset: { lightroomZoom: "fatbits" } }),
     menuSeparator,
     menuItem("lightroom-toggle-inspector", "quick_draft_hide_adjustments"),
+    menuSeparator,
+    // Before and after: against the negative, a version or a step of history.
+    // Holding \ shows the other side for as long as the key is down.
+    menuItem("lightroom-compare-toggle", "lightroom_compare", "", { dataset: { lightroomCompareRow: "toggle" } }),
+    menuItem("lightroom-compare-mode:side", "lightroom_compare_side", "", { dataset: { lightroomCompareModeRow: "side" } }),
+    menuItem("lightroom-compare-mode:split", "lightroom_compare_split", "", { dataset: { lightroomCompareModeRow: "split" } }),
+    submenu("lightroom_compare_against", [{ type: "lightroom-rows", rowKind: "compareSources" }], { dataset: { lightroomRows: "compareSources" } }),
   ]),
   // The application's own verbs, and the darkroom vocabulary lives in the
   // darkroom: these three words name the LAYERS here, never a one-shot
   // rewrite. The one-shot rewrites are a writing move and went back to the
   // desk that writes -- the split says write there, look here.
   menu("adjust", "menu_adjust", [
+    menuItem("lightroom-toggle-bypass", "lightroom_adjustments_on", "", { dataset: { lightroomBypassRow: "true" } }),
+    menuSeparator,
     ...lightroomLayerKinds.map(lightroomLayerSubmenu),
+    menuSeparator,
+    // A set of layers kept by name, and settings carried to another document.
+    submenu("lightroom_presets", [{ type: "lightroom-rows", rowKind: "presets" }], { dataset: { lightroomRows: "presets" } }),
+    menuItem("lightroom-preset-save", "lightroom_preset_save_menu"),
+    submenu("lightroom_copy_settings_to", [{ type: "lightroom-rows", rowKind: "copyTo" }], { dataset: { lightroomRows: "copyTo" } }),
     menuSeparator,
     menuItem("lightroom-protect-selection", "quick_draft_protect_selection"),
     menuSeparator,
@@ -576,6 +601,8 @@ const readerMenus = [
     menuItem("reader-send-manuscript", "send_to_manuscript"),
     menuItem("reader-make-docmap", "make_docmap"),
     menuItem("reader-docmap-source", "docmap_from_source"),
+    menuItem("make-chart", "make_chart"),
+    menuItem("make-slides", "make_slides"),
     menuItem("reader-open-clio-stage", "open_in_clio_stage"),
     menuItem("focus-reader-question", "ask"),
   ]),
@@ -633,8 +660,13 @@ const docMapMenus = [
     menuItem("docmap-save", "save"),
     menuItem("docmap-print-pdf", "print_pdf"),
   ]),
-  menu("edit", "menu_edit", [menuItem("copy", "copy", "copy")]),
+  menu("edit", "menu_edit", [menuItem("undo", "undo", "undo"), menuItem("redo", "redo", "redo"), menuSeparator, menuItem("copy", "copy", "copy"), menuSeparator,
+    menuItem("docmap-rename-node", "docmap_rename_node"), menuItem("docmap-delete-branch", "docmap_delete_branch"),
+    menuItem("docmap-move-up", "docmap_move_up"), menuItem("docmap-move-down", "docmap_move_down")]),
   menu("map", "menu_map", [
+    menuItem("docmap-branch-to-chart", "docmap_branch_to_chart"),
+    menuItem("docmap-map-to-slides", "docmap_map_to_slides"),
+    menuSeparator,
     menuItem("docmap-send-question", "to_question_sheet"),
     menuItem("docmap-insert-outline", "insert_outline"),
     menuItem("docmap-hkrr", "review_hkrr_section"),
@@ -676,6 +708,8 @@ const scrapbookMenus = [
     menuItem("scrapbook-outline", "make_outline"),
     menuItem("make-docmap", "make_docmap"),
     menuItem("make-docmap-source", "docmap_from_source"),
+    menuItem("make-chart", "make_chart"),
+    menuItem("make-slides", "make_slides"),
     menuItem("focus-scrapbook-question", "ask"),
     menuSeparator,
     menuItem("scrapbook-delete", "delete"),
@@ -703,8 +737,11 @@ const searcherMenus = [
 
 const clioStageMenus = [
   menu("file", "menu_file", [
+    menuItem("make-slides", "make_slides"),
     menuItem("clio-stage-import", "import"),
+    menuItem("clio-stage-save-draft", "clio_stage_save_draft"),
     menuItem("clio-stage-export-pdf", "print_pdf"),
+    menuItem("clio-stage-print-preview", "clio_stage_print_preview"),
     submenu("clio_stage_restyle", [
       menuItem("clio-stage-restyle-classic", "theme_classic"),
       menuItem("clio-stage-restyle-platinum", "theme_platinum"),
@@ -717,7 +754,9 @@ const clioStageMenus = [
     ]),
     menuItem("close-active-window", "close", "close-window"),
   ]),
-  menu("edit", "menu_edit", editWithSelection),
+  // Slide View is edited on the page, so Edit carries Redo beside Undo; both
+  // reach the deck's own history when no text field is the target.
+  menu("edit", "menu_edit", [editBasics[0], menuItem("redo", "redo", "redo"), ...editBasics.slice(1), menuSeparator, ...flatSelectionTools]),
   menu("presentation", "menu_presentation", [
     menuItem("clio-stage-previous", "previous_slide"),
     menuItem("clio-stage-next", "next_slide"),
@@ -727,6 +766,12 @@ const clioStageMenus = [
       menuItem("clio-stage-slide", "slide_view"),
       menuItem("clio-stage-cue", "cue_view"),
     ]),
+    menuSeparator,
+    menuItem("clio-stage-add-slide", "clio_stage_slide_add"),
+    menuItem("clio-stage-duplicate-slide", "clio_stage_slide_duplicate"),
+    menuItem("clio-stage-delete-slide", "clio_stage_slide_delete"),
+    menuItem("clio-stage-reset-layout", "clio_stage_reset_layout"),
+    menuSeparator,
     menuItem("focus-clio-stage-question", "ask"),
   ]),
   windowMenu(),
@@ -736,6 +781,11 @@ const clioStageMenus = [
 
 const liquidCoverMenus = [
   menu("file", "menu_file", [
+    menuItem("cover-new", "liquid_cover_new"),
+    menuItem("cover-save", "save"),
+    menuItem("cover-save-as", "liquid_cover_save_as"),
+    menuItem("cover-send-stage", "liquid_cover_send_stage"),
+    menuSeparator,
     menuItem("cover-choose-background", "liquid_cover_choose_background"),
     menuItem("cover-choose-video", "liquid_cover_choose_motion"),
     menuItem("cover-choose-subject", "liquid_cover_choose_foreground"),
@@ -753,6 +803,16 @@ const liquidCoverMenus = [
       menuItem("cover-shape-squircle", "liquid_cover_shape_squircle"),
       menuItem("cover-shape-capsule", "liquid_cover_shape_capsule"),
     ]),
+    menuItem("cover-add-picture", "liquid_cover_add_picture"),
+    menuItem("cover-from-album", "liquid_cover_add_from_album"),
+    menuItem("cover-remove-background", "liquid_cover_remove_background"),
+    submenu("liquid_cover_menu_adjustment", [
+      menuItem("cover-add-adjust-brightness", "liquid_cover_adjust_brightnessContrast"),
+      menuItem("cover-add-adjust-hue", "liquid_cover_adjust_hueSaturation"),
+      menuItem("cover-add-adjust-blur", "liquid_cover_adjust_blur"),
+    ]),
+    menuItem("cover-distribute-h", "liquid_cover_distribute_h"),
+    menuItem("cover-distribute-v", "liquid_cover_distribute_v"),
     menuItem("cover-toggle-focus", "focus"),
     menuItem("cover-preview-motion", "preview"),
     menuItem("cover-ai-compose", "liquid_cover_ai_compose"),

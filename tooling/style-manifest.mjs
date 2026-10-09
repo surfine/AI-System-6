@@ -244,6 +244,17 @@ export const lazyStyleBundles = [
     loader: "app/core/config.js",
     sources: ["styles/99-clio-project.css"],
   },
+  // The edit kernel's shared parts: Key Caps' command sheet, the layers panel,
+  // the inspector and the alignment guides. Every editor's loader brings it,
+  // and every selector is scoped to .edit-kernel-* / .command-sheet-*. Review
+  // Desk's comments and compare (styles/99-review-comments.css, scoped to
+  // .review-comments-panel / .review-thread* / .review-compare*) ride in it.
+  {
+    id: "edit-kernel",
+    output: "styles.edit-kernel.css",
+    loader: "app/core/config.js",
+    sources: ["styles/99-edit-kernel.css", "styles/99-review-comments.css"],
+  },
 ];
 
 // Every stylesheet the product ships, eager or lazy. Checks that reason about
@@ -306,6 +317,8 @@ export const styleLayerByPath = Object.freeze({
   "styles/97-one-more-tune.css": "one-more-tune",
   "styles/98-project-disks.css": "project-disks",
   "styles/99-clio-project.css": "clio-project",
+  "styles/99-edit-kernel.css": "edit-kernel",
+  "styles/99-review-comments.css": "edit-kernel",
   "styles/99-rootline.css": "rootline",
   "styles/99-joyride.css": "joyride",
 });

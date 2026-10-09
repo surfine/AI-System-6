@@ -101,6 +101,19 @@ export const EDITOR_CSS = `
 .mde-surface.is-cm .cm-md-image-missing { display: block; width: 8em; height: 4.5em; border: 1px dashed var(--md-marker-ink); }
 .mde-surface.is-cm .cm-md-image-caption { font-size: 0.8em; line-height: 1.5; color: var(--md-marker-ink); }
 
+/* Marks other windows draw (setDecorations): Review Desk's commented
+   passages. A dotted underline plus a light wash, never a colour of their own;
+   the thread being read is solid. */
+.mde-surface.is-cm .cm-review-comment {
+  text-decoration: underline dotted; text-underline-offset: 0.22em; cursor: pointer;
+  background: color-mix(in srgb, var(--editor-selection-tint, var(--selection-bg, #b4d5fe)) 22%, transparent);
+}
+.mde-surface.is-cm .cm-review-comment.is-current {
+  text-decoration-style: solid;
+  background: color-mix(in srgb, var(--editor-selection-tint, var(--selection-bg, #b4d5fe)) 55%, transparent);
+}
+.mde-surface.is-cm .cm-review-comment.is-done { text-decoration-style: dashed; opacity: 0.8; }
+
 /* Focus mode: the sentence carries the ink. */
 .mde-surface.is-cm.is-focus-mode .cm-focus-muted { opacity: 0.24; }
 .mde-surface.is-cm.is-focus-mode .cm-focus-near { opacity: 0.55; }

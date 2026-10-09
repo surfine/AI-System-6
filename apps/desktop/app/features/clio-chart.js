@@ -24,7 +24,9 @@ const CLIO_CHART_MENUS = typeof menu === "function" && typeof editWithSelection 
       menuItem("clio-chart-new-rating", "clio_chart_template_rating"),
       menuItem("clio-chart-new-blank", "clio_chart_template_blank"),
     ]),
+    menuItem("clio-chart-from-text", "clio_chart_from_text"),
     menuItem("clio-chart-import", "import"),
+    menuItem("clio-chart-save-document", "clio_chart_save_document"),
     menuItem("clio-chart-save-template", "clio_chart_save_template"),
     menuItem("clio-chart-hand-back", "clio_chart_hand_back"),
     menuItem("close-active-window", "close", "close-window"),
@@ -39,6 +41,7 @@ const CLIO_CHART_MENUS = typeof menu === "function" && typeof editWithSelection 
     menuItem("clio-chart-trace", "clio_chart_trace", "clio-chart-view-3", { dataset: { clioChartProjection: "trace" } }),
     menuItem("clio-chart-grid", "clio_chart_grid", "clio-chart-view-4", { dataset: { clioChartProjection: "grid" } }),
     menuItem("clio-chart-score", "clio_chart_score", "clio-chart-view-5", { dataset: { clioChartProjection: "score" } }),
+    menuItem("clio-chart-compare", "clio_chart_compare", "clio-chart-view-6", { dataset: { clioChartProjection: "compare" } }),
     menuItem("clio-chart-source", "source_view", "", { dataset: { clioChartProjection: "source" } }),
     menuSeparator,
     menuItem("clio-chart-presentation", "clio_chart_presentation"),
@@ -51,6 +54,18 @@ const CLIO_CHART_MENUS = typeof menu === "function" && typeof editWithSelection 
       menuItem("clio-chart-column-add", "clio_chart_column_add"),
       menuItem("clio-chart-column-delete", "clio_chart_column_delete"),
     ]),
+    submenu("clio_chart_fill", [
+      menuItem("clio-chart-fill-down", "clio_chart_fill_down"),
+      menuItem("clio-chart-fill-labels", "clio_chart_fill_labels"),
+    ]),
+    submenu("clio_chart_validation", [
+      menuItem("clio-chart-valid-stop", "clio_chart_valid_stop"),
+      menuItem("clio-chart-valid-warn", "clio_chart_valid_warn"),
+      menuItem("clio-chart-valid-info", "clio_chart_valid_info"),
+      menuItem("clio-chart-valid-clear", "clio_chart_valid_clear"),
+      menuSeparator,
+      menuItem("clio-chart-circle-invalid", "clio_chart_circle_invalid"),
+    ]),
     submenu("clio_chart_ask", [
       menuItem("clio-chart-read", "clio_chart_read"),
       menuItem("clio-chart-outliers", "clio_chart_outliers"),
@@ -58,7 +73,26 @@ const CLIO_CHART_MENUS = typeof menu === "function" && typeof editWithSelection 
       menuItem("clio-chart-write-up", "clio_chart_write_up"),
     ]),
   ]),
-  specialMenu(),
+  // The concept canvas's arrangement commands (app/core/edit-snap.js); the
+  // menu is there only while the canvas is on screen.
+  menu("arrange", "menu_arrange", [
+    menuItem("clio-chart-align-left", "arrange_align_left"),
+    menuItem("clio-chart-align-hcenter", "arrange_align_hcenter"),
+    menuItem("clio-chart-align-right", "arrange_align_right"),
+    menuItem("clio-chart-align-top", "arrange_align_top"),
+    menuItem("clio-chart-align-vcenter", "arrange_align_vcenter"),
+    menuItem("clio-chart-align-bottom", "arrange_align_bottom"),
+    menuSeparator,
+    menuItem("clio-chart-distribute-h", "arrange_distribute_h"),
+    menuItem("clio-chart-distribute-v", "arrange_distribute_v"),
+    menuSeparator,
+    menuItem("clio-chart-bring-front", "arrange_bring_front"),
+    menuItem("clio-chart-send-back", "arrange_send_back"),
+    menuSeparator,
+    menuItem("clio-chart-layers", "arrange_show_layers"),
+  ], { menuCondition: "clio-chart-layers" }),
+  // Special is appended by AISystem6RegisterApplicationMenuSet itself; listing
+  // it here as well put two Special menus in the bar.
 ] : null;
 if (CLIO_CHART_MENUS) window.AISystem6RegisterApplicationMenuSet?.("clioChart", CLIO_CHART_MENUS);
 
@@ -71,7 +105,7 @@ if (CLIO_CHART_MENUS) window.AISystem6RegisterApplicationMenuSet?.("clioChart", 
 // row label prefix "~"       -> aggregate reference row, not a real object
 // cell "88 / 98 -> 90%"      -> raw / max -> normalized (score projection)
 
-const CLIO_CHART_PROJECTIONS = ["bars", "matrix", "trace", "grid", "score"];
+const CLIO_CHART_PROJECTIONS = ["bars", "matrix", "trace", "grid", "score", "compare"];
 const CLIO_CHART_PERCENT_BASES = ["reference", "max", "none"];
 const CLIO_CHART_SORTS = ["desc", "asc", "source"];
 const CLIO_CHART_CONFIG_PATTERN = /^\s*<!--\s*cliochart\s*:\s*(.*?)\s*-->\s*$/i;
@@ -199,6 +233,7 @@ function clioChartDefaultConfig() {
     percent: "reference",
     sort: "desc",
     unit: "",
+    valid: "",
   };
 }
 
@@ -222,6 +257,7 @@ function clioChartParseConfigComment(line) {
     else if (key === "percent" && CLIO_CHART_PERCENT_BASES.includes(value)) config.percent = value;
     else if (key === "sort" && CLIO_CHART_SORTS.includes(value)) config.sort = value;
     else if (key === "unit") config.unit = value;
+    else if (key === "valid") config.valid = value;
   });
   return config;
 }
@@ -233,7 +269,109 @@ function clioChartFormatConfigComment(config) {
   if (config.percent && config.percent !== base.percent) parts.push(`percent=${config.percent}`);
   if (config.sort && config.sort !== base.sort) parts.push(`sort=${config.sort}`);
   if (config.unit) parts.push(`unit="${config.unit}"`);
+  if (config.valid) parts.push(`valid="${config.valid}"`);
   return `<!-- cliochart: ${parts.join(", ")} -->`;
+}
+
+// --- fill series and validation (gridcraft) ----------------------------------
+// Both are the writer's own commands; nothing here runs by itself.
+
+const CLIO_CHART_SERIES_LISTS = [
+  ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"],
+  ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"],
+  ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+  ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+  ["Q1", "Q2", "Q3", "Q4"],
+  ["第一季度", "第二季度", "第三季度", "第四季度"],
+  ["周一", "周二", "周三", "周四", "周五", "周六", "周日"],
+  ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"],
+  ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+  ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+  ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"],
+];
+
+/**
+ * The next `count` entries after the seeds, or null when the seeds do not
+ * make a series. A named list (months, quarters, weekdays) continues and
+ * wraps; text around one number counts on ("第1轮" → "第2轮"); two or more
+ * plain numbers continue their least-squares line, and when `estimate` is set
+ * (data columns) each one is written with a "?" — a projection is not a
+ * measurement, and the chart already draws "?" cells as uncertain.
+ */
+function clioChartSeries(seeds, count, { estimate = false } = {}) {
+  const values = (seeds || []).map((seed) => String(seed || "").trim()).filter(Boolean);
+  if (!values.length || count < 1) return null;
+  for (const list of CLIO_CHART_SERIES_LISTS) {
+    const at = values.map((value) => list.indexOf(value));
+    if (at.every((index) => index >= 0)) {
+      const step = at.length > 1 ? (at[at.length - 1] - at[at.length - 2] + list.length) % list.length || 1 : 1;
+      return Array.from({ length: count }, (_, index) => list[(at[at.length - 1] + step * (index + 1)) % list.length]);
+    }
+  }
+  const parts = values.map((value) => value.match(/^(.*?)(-?\d+(?:\.\d+)?)(\D*)$/));
+  if (parts.some((part) => !part) || parts.some((part) => part[1] !== parts[0][1] || part[3] !== parts[0][3])) return null;
+  const [, prefix, , suffix] = parts[0];
+  const numbers = parts.map((part) => Number(part[2]));
+  const decimals = Math.max(...parts.map((part) => (part[2].split(".")[1] || "").length));
+  const plain = !prefix && !suffix.trim();
+  if (numbers.length === 1) {
+    // One labelled number counts on; one bare data value is not a series.
+    if (estimate && plain) return null;
+    return Array.from({ length: count }, (_, index) => `${prefix}${(numbers[0] + index + 1).toFixed(decimals)}${suffix}${estimate ? "?" : ""}`);
+  }
+  const n = numbers.length;
+  const meanX = (n - 1) / 2;
+  const meanY = numbers.reduce((sum, value) => sum + value, 0) / n;
+  const slope = numbers.reduce((sum, value, index) => sum + (index - meanX) * (value - meanY), 0)
+    / numbers.reduce((sum, _value, index) => sum + (index - meanX) ** 2, 0);
+  const intercept = meanY - slope * meanX;
+  return Array.from({ length: count }, (_, index) => `${prefix}${(intercept + slope * (n + index)).toFixed(decimals)}${suffix}${estimate ? "?" : ""}`);
+}
+
+// valid="name:min..max:level;…" — one rule per column, by column name.
+const CLIO_CHART_VALID_LEVELS = ["stop", "warn", "info"];
+const clioChartValidName = (name) => String(name || "").replace(/[%;:"]/g, (char) => encodeURIComponent(char));
+
+function clioChartParseValid(text) {
+  return String(text || "").split(";").map((part) => {
+    const match = part.match(/^(.+):(-?[\d.]*)\.\.(-?[\d.]*):(stop|warn|info)$/);
+    if (!match) return null;
+    return {
+      column: decodeURIComponent(match[1]),
+      min: match[2] === "" ? null : Number(match[2]),
+      max: match[3] === "" ? null : Number(match[3]),
+      level: match[4],
+    };
+  }).filter(Boolean);
+}
+
+function clioChartFormatValid(rules) {
+  return rules.map((rule) => `${clioChartValidName(rule.column)}:${rule.min ?? ""}..${rule.max ?? ""}:${rule.level}`).join(";");
+}
+
+/** The level a cell breaks its column's rule at, or "" when it keeps it. A blank cell is unknown, never invalid. */
+function clioChartCellViolation(rule, cell) {
+  if (!rule || !cell?.text) return "";
+  if (cell.value === null) return rule.level;
+  if (rule.min !== null && cell.value < rule.min) return rule.level;
+  if (rule.max !== null && cell.value > rule.max) return rule.level;
+  return "";
+}
+
+function clioChartRuleFor(table, columnIndex) {
+  const name = table?.columns?.[columnIndex]?.name;
+  return name ? clioChartParseValid(table.config.valid).find((rule) => rule.column === name) || null : null;
+}
+
+/** Every cell that breaks a rule, and in a non-comparison table every cell that is not a number. */
+function clioChartInvalidCells(table) {
+  const out = [];
+  (table?.rows || []).forEach((row, rowIndex) => row.cells.forEach((cell, columnIndex) => {
+    const level = clioChartCellViolation(clioChartRuleFor(table, columnIndex), cell)
+      || (cell.unparsed && table.config.projection !== "compare" ? "info" : "");
+    if (level) out.push({ row: rowIndex, column: columnIndex, level });
+  }));
+  return out;
 }
 
 // Column widths are read from the table as written — the divider row is the
@@ -523,14 +661,10 @@ function clioChartShapeApply(table, op, options = {}) {
 function clioChartShapeEdit(op, options = {}) {
   const table = clioChartState.table;
   if (!table) return false;
-  pushClioChartUndo();
   const text = clioChartShapeApply(table, op, options);
   const next = text ? parseClioChartTable(text, table.offset || 0) : null;
-  if (!next) {
-    clioChartState.undo.pop();
-    return false;
-  }
-  clioChartState.table = next;
+  if (!next) return false;
+  clioChartTableChange(op.startsWith("delete") ? "edit_step_delete" : "edit_step_insert", () => { clioChartState.table = next; });
   clioChartState.column = Math.min(clioChartState.column, next.columns.length - 1);
   clioChartState.selection = {
     row: Math.max(0, Math.min(clioChartState.selection.row, next.rows.length - 1)),
@@ -539,6 +673,79 @@ function clioChartShapeEdit(op, options = {}) {
   renderClioChart();
   writeClioChartBackToOwner();
   return true;
+}
+
+function clioChartRangeText(rule) {
+  return `${rule?.min ?? "−∞"} – ${rule?.max ?? "∞"}`;
+}
+
+// Fill the blank cells below the selected one, from the run of filled cells
+// that ends at it — in the selected column, or in the row labels.
+function fillClioChartSeries(target = "column") {
+  const table = clioChartState.table;
+  if (!table) return false;
+  const { row, column } = clioChartState.selection;
+  // A new row's placeholder name ("Object 4") counts as blank for the labels.
+  const placeholder = new RegExp(`^${t("clio_chart_template_object").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} \\d+$`);
+  const read = (index) => {
+    const value = (target === "labels" ? table.rows[index]?.label : table.rows[index]?.cells[column]?.text) || "";
+    return target === "labels" && placeholder.test(value) ? "" : value;
+  };
+  const seeds = [];
+  for (let index = row; index >= 0 && read(index).trim(); index -= 1) seeds.unshift(read(index));
+  const blanks = [];
+  for (let index = row + 1; index < table.rows.length && !read(index).trim(); index += 1) blanks.push(index);
+  if (!seeds.length || !blanks.length) {
+    setClioChartStatus(t(seeds.length ? "clio_chart_fill_no_blanks" : "clio_chart_fill_no_seed"));
+    return false;
+  }
+  const values = clioChartSeries(seeds, blanks.length, { estimate: target !== "labels" });
+  if (!values) {
+    setClioChartStatus(t("clio_chart_fill_no_series"));
+    return false;
+  }
+  clioChartTableChange("edit_step_fill", () => blanks.forEach((index, at) => (target === "labels"
+    ? setClioChartRowLabel(table, index, values[at])
+    : setClioChartCell(table, index, column, values[at]))));
+  renderClioChart();
+  writeClioChartBackToOwner();
+  setClioChartStatus(t(target === "labels" ? "clio_chart_filled_labels" : "clio_chart_filled_column", blanks.length));
+  return true;
+}
+
+async function setClioChartColumnRule(level) {
+  const table = clioChartState.table;
+  const column = table?.columns?.[clioChartState.selection.column];
+  if (!column) return false;
+  const current = clioChartRuleFor(table, clioChartState.selection.column);
+  let rules = clioChartParseValid(table.config.valid).filter((rule) => rule.column !== column.name);
+  if (level !== "clear") {
+    const answer = await showInputDialog({
+      title: t(`clio_chart_valid_${level}`),
+      message: t("clio_chart_valid_prompt", column.name),
+      defaultValue: current ? `${current.min ?? ""}..${current.max ?? ""}` : "",
+      placeholder: "0..100",
+    });
+    if (answer === null || answer === undefined) return false;
+    const match = String(answer).replace(/\s+/g, "").replace(/[–—~～]/g, "..").match(/^(-?[\d.]*)\.\.(-?[\d.]*)$/);
+    if (!match || (match[1] === "" && match[2] === "")) {
+      setClioChartStatus(t("clio_chart_valid_bad_range"));
+      return false;
+    }
+    rules = [...rules, { column: column.name, min: match[1] === "" ? null : Number(match[1]), max: match[2] === "" ? null : Number(match[2]), level }];
+  }
+  const changed = clioChartTableChange("edit_step_change", () => setClioChartConfig(table, { valid: clioChartFormatValid(rules) }));
+  if (changed) writeClioChartBackToOwner();
+  renderClioChart();
+  return changed;
+}
+
+function circleClioChartInvalid() {
+  const found = clioChartInvalidCells(clioChartState.table);
+  clioChartState.circled = found.length > 0;
+  renderClioChartGrid();
+  setClioChartStatus(found.length ? t("clio_chart_circled", found.length) : t("clio_chart_circled_none"));
+  return found.length;
 }
 
 function insertClioChartRow(afterIndex = clioChartState.table?.rows.length - 1) {
@@ -575,6 +782,9 @@ function moveClioChartRow(from, to) {
 // is required, so the file stays a normal Markdown table everywhere else.
 function isChartableClioChartTable(table) {
   if (!table || table.columns.length < 1 || table.rows.length < 2) return false;
+  // A table that declares the comparison projection is words and marks by
+  // design; the numeric test below would refuse every one of them.
+  if (table.config?.projection === "compare") return true;
   const labelled = table.rows.filter((row) => row.label && clioChartParseNumber(row.label) === null);
   const numericAxis = table.rows.every((row) => clioChartParseNumber(row.label) !== null);
   if (labelled.length < table.rows.length - 1 && !numericAxis) return false;
@@ -637,9 +847,13 @@ const clioChartState = {
   owner: null,
   presentation: false,
   revealIndex: 0,
-  undo: [],
-  redo: [],
+  history: null,
   wired: false,
+  // A chart drawn from prose: the candidates the model offered (already
+  // grounded), which one is showing, the source sentence behind every kept
+  // cell, and the source itself so the run can be retried. `temporary` stays
+  // true until the writer saves — nothing here is on disk before that.
+  extraction: null,
 };
 
 function clioChartElements() {
@@ -660,6 +874,7 @@ function clioChartElements() {
     trace: document.querySelector("#clio-chart-trace-view"),
     spatialGrid: document.querySelector("#clio-chart-grid-view"),
     score: document.querySelector("#clio-chart-score-view"),
+    compare: document.querySelector("#clio-chart-compare-view"),
     source: document.querySelector("#clio-chart-source-view"),
   };
 }
@@ -730,15 +945,9 @@ function clioChartTextToTable(text) {
 }
 
 // --- undo ------------------------------------------------------------------
-// One stack for cell edits, header flags, row order and settings. Undo replays
-// the serialized text, so a hand-back to TeachText rolls back with it.
-function pushClioChartUndo() {
-  if (!clioChartState.table) return;
-  clioChartState.undo.push(serializeClioChartTable(clioChartState.table));
-  if (clioChartState.undo.length > 100) clioChartState.undo.shift();
-  clioChartState.redo.length = 0;
-}
-
+// One history (app/core/edit-history.js) for cell edits, header flags, row
+// order and settings. A step is the serialized table, so a hand-back to
+// TeachText rolls back with it.
 function restoreClioChartText(text) {
   const table = parseClioChartTable(text, clioChartState.table?.offset || 0);
   if (!table) return false;
@@ -748,17 +957,38 @@ function restoreClioChartText(text) {
   return true;
 }
 
+clioChartState.history = window.AISystem6EditHistory.createEditHistory({
+  read: () => (clioChartState.table ? serializeClioChartTable(clioChartState.table) : ""),
+  write: (text) => restoreClioChartText(text),
+  limit: 100,
+});
+
+// Runs mutate as one step; a mutate that changed nothing records nothing.
+// Returns what mutate returned, so callers keep their own "did it change".
+function clioChartTableChange(label, mutate) {
+  let result = false;
+  clioChartState.history.change(label, () => { result = mutate(); });
+  return result;
+}
+
 function undoClioChart() {
-  if (!clioChartState.undo.length || !clioChartState.table) return;
-  clioChartState.redo.push(serializeClioChartTable(clioChartState.table));
-  restoreClioChartText(clioChartState.undo.pop());
+  return !!clioChartState.table && clioChartState.history.undo();
 }
 
 function redoClioChart() {
-  if (!clioChartState.redo.length || !clioChartState.table) return;
-  clioChartState.undo.push(serializeClioChartTable(clioChartState.table));
-  restoreClioChartText(clioChartState.redo.pop());
+  return !!clioChartState.table && clioChartState.history.redo();
 }
+
+// The table and the canvas are two editors in one window: Edit > Undo follows
+// the one on screen.
+registerEditHistory("clioChart", () => (clioChartState.mode === "diagram" ? window.AISystem6ClioDiagram : clioChartState.table ? {
+  undo: undoClioChart,
+  redo: redoClioChart,
+  canUndo: () => clioChartState.history.canUndo(),
+  canRedo: () => clioChartState.history.canRedo(),
+  undoLabel: () => clioChartState.history.undoLabel(),
+  redoLabel: () => clioChartState.history.redoLabel(),
+} : null));
 
 // --- grid ------------------------------------------------------------------
 
@@ -782,8 +1012,12 @@ function renderClioChartGrid() {
       .filter(Boolean).join(" ");
     const cells = row.cells.map((cell, columnIndex) => {
       const selected = clioChartState.selection.row === rowIndex && clioChartState.selection.column === columnIndex;
-      const cellClasses = [selected ? "is-selected" : "", cell.unparsed ? "is-unreadable" : ""].filter(Boolean).join(" ");
-      const title = cell.unparsed ? ` title="${escapeHtml(t("clio_chart_unreadable", cell.text))}"` : "";
+      // Words are the content of a comparison table, not a misread number.
+      const unreadable = cell.unparsed && table.config.projection !== "compare";
+      const broken = clioChartCellViolation(clioChartRuleFor(table, columnIndex), cell);
+      const circled = clioChartState.circled && (broken || unreadable);
+      const cellClasses = [selected ? "is-selected" : "", unreadable ? "is-unreadable" : "", broken ? `is-invalid-${broken}` : "", circled ? "is-circled" : ""].filter(Boolean).join(" ");
+      const title = unreadable ? ` title="${escapeHtml(t("clio_chart_unreadable", cell.text))}"` : "";
       return `<td class="${cellClasses}" data-row="${rowIndex}" data-cell="${columnIndex}" data-label="${escapeHtml(table.columns[columnIndex].text)}"${title}>${escapeHtml(cell.text)}</td>`;
     }).join("");
     // The full label in a title, because the column is narrow enough to
@@ -803,6 +1037,7 @@ function selectClioChartCell(rowIndex, columnIndex) {
     column: Math.max(0, Math.min(columnIndex, table.columns.length - 1)),
   };
   renderClioChartGrid();
+  if (clioChartState.extraction) renderClioChartReading();
   const cell = clioChartElements().grid?.querySelector("td.is-selected");
   cell?.scrollIntoView({ block: "nearest", inline: "nearest" });
 }
@@ -817,13 +1052,26 @@ function commitClioChartCellEdit(save) {
     renderClioChartGrid();
     return;
   }
-  pushClioChartUndo();
-  let changed = false;
+  // A column rule set to Stop refuses a value outside it; Warn takes it and
+  // says so; Info only marks the cell.
+  if (editing.kind === "cell") {
+    const rule = clioChartRuleFor(clioChartState.table, editing.column);
+    const level = clioChartCellViolation(rule, clioChartParseCell(next));
+    if (level === "stop") {
+      setClioChartStatus(t("clio_chart_valid_refused", next, clioChartRangeText(rule)));
+      renderClioChartGrid();
+      return;
+    }
+    if (level === "warn") setClioChartStatus(t("clio_chart_valid_warned", next, clioChartRangeText(rule)));
+  }
+  clioChartState.circled = false;
   // Deleting the contents leaves the cell unknown. It never becomes a zero.
-  if (editing.kind === "cell") changed = setClioChartCell(clioChartState.table, editing.row, editing.column, next);
-  else if (editing.kind === "header") changed = setClioChartColumnText(clioChartState.table, editing.column, next);
-  else if (editing.kind === "label") changed = setClioChartRowLabel(clioChartState.table, editing.row, next);
-  if (!changed) clioChartState.undo.pop();
+  const changed = clioChartTableChange("edit_step_typing", () => {
+    if (editing.kind === "cell") return setClioChartCell(clioChartState.table, editing.row, editing.column, next);
+    if (editing.kind === "header") return setClioChartColumnText(clioChartState.table, editing.column, next);
+    if (editing.kind === "label") return setClioChartRowLabel(clioChartState.table, editing.row, next);
+    return false;
+  });
   renderClioChart();
   if (changed) writeClioChartBackToOwner();
 }
@@ -881,13 +1129,10 @@ function toggleClioChartColumnLower() {
   const table = clioChartState.table;
   const index = clioChartState.column;
   if (!table?.columns[index]) return;
-  pushClioChartUndo();
-  if (setClioChartColumnLower(table, index, !table.columns[index].lower)) {
+  if (clioChartTableChange("edit_step_change", () => setClioChartColumnLower(table, index, !table.columns[index].lower))) {
     clioChartState.descending = !table.columns[index].lower;
     renderClioChart();
     writeClioChartBackToOwner();
-  } else {
-    clioChartState.undo.pop();
   }
 }
 
@@ -931,12 +1176,6 @@ function handleClioChartGridKeydown(event) {
     return;
   }
 
-  if ((event.metaKey || event.ctrlKey) && key.toLowerCase() === "z") {
-    event.preventDefault();
-    if (event.shiftKey) redoClioChart();
-    else undoClioChart();
-    return;
-  }
   if (event.metaKey || event.ctrlKey || event.altKey) return;
 
   const { row, column } = clioChartState.selection;
@@ -959,12 +1198,9 @@ function handleClioChartGridKeydown(event) {
   else if (key === "Enter" && !eventIsTextComposition(event)) { event.preventDefault(); beginClioChartCellEdit(row, column); }
   else if (key === "Backspace" || key === "Delete") {
     event.preventDefault();
-    pushClioChartUndo();
-    if (setClioChartCell(table, row, column, "")) {
+    if (clioChartTableChange("edit_step_clear", () => setClioChartCell(table, row, column, ""))) {
       renderClioChart();
       writeClioChartBackToOwner();
-    } else {
-      clioChartState.undo.pop();
     }
   } else if (key.length === 1 && !event.repeat) {
     event.preventDefault();
@@ -1132,8 +1368,7 @@ function applyClioChartSourceDraft() {
     setClioChartStatus(t("clio_chart_source_invalid"));
     return false;
   }
-  pushClioChartUndo();
-  clioChartState.table = table;
+  clioChartTableChange("edit_step_typing", () => { clioChartState.table = table; });
   clioChartState.sourceDraft = null;
   clioChartState.column = Math.min(clioChartState.column, table.columns.length - 1);
   clioChartState.selection = { row: 0, column: 0 };
@@ -1155,10 +1390,11 @@ function renderClioChartView() {
     if (els.unit) els.unit.textContent = "";
     return;
   }
-  const column = table.columns[clioChartState.column];
+  // The comparison grid shows every column at once; naming one would mislead.
+  const column = clioChartState.projection === "compare" ? null : table.columns[clioChartState.column];
   if (els.metric) els.metric.textContent = column?.name || "";
   if (els.unit) {
-    const unit = column?.unit || table.config.unit || "";
+    const unit = column ? (column.unit || table.config.unit || "") : "";
     els.unit.textContent = [unit, column?.lower ? t("clio_chart_smaller_is_better") : ""].filter(Boolean).join("　");
   }
   els.bars?.classList.toggle("default", clioChartState.projection === "bars");
@@ -1166,12 +1402,14 @@ function renderClioChartView() {
   els.trace?.classList.toggle("default", clioChartState.projection === "trace");
   els.spatialGrid?.classList.toggle("default", clioChartState.projection === "grid");
   els.score?.classList.toggle("default", clioChartState.projection === "score");
+  els.compare?.classList.toggle("default", clioChartState.projection === "compare");
   els.source?.classList.toggle("default", clioChartState.projection === "source");
 
   if (clioChartState.projection === "matrix") renderClioChartMatrix();
   else if (clioChartState.projection === "trace") renderClioChartTrace();
   else if (clioChartState.projection === "grid") renderClioChartSpatialGrid();
   else if (clioChartState.projection === "score") renderClioChartScores();
+  else if (clioChartState.projection === "compare") renderClioChartCompare();
   else if (clioChartState.projection === "source") renderClioChartSource();
   else renderClioChartBars();
 }
@@ -1179,17 +1417,21 @@ function renderClioChartView() {
 function renderClioChart() {
   renderClioChartGrid();
   renderClioChartView();
+  renderClioChartReading();
   const table = clioChartState.table;
   if (!table) return;
+  // In the comparison grid a phrase is an answer, so only an empty cell is
+  // missing; everywhere else a cell without a number is.
+  const compare = clioChartState.projection === "compare";
   const missing = table.rows.reduce((count, row) => (
-    count + row.cells.filter((cell) => cell.value === null).length
+    count + row.cells.filter((cell) => (compare ? !cell.text : cell.value === null)).length
   ), 0);
   setClioChartStatus(t(
     "clio_chart_summary",
     table.rows.length,
     table.columns.length,
     missing,
-    table.columns[clioChartState.column]?.name || ""
+    compare ? t("clio_chart_compare") : (table.columns[clioChartState.column]?.name || "")
   ));
 }
 
@@ -1435,6 +1677,51 @@ function renderClioChartScores() {
   els.missing.textContent = "";
 }
 
+// --- P6 qualitative comparison ---------------------------------------------
+// Text with no comparable numbers still compares things: objects down the side,
+// the dimensions the source itself names across the top, and in each cell only
+// the source's own short phrase or one of three marks. Nothing is scored and
+// nothing is ranked — a mark is a reading of the text, not a measurement.
+
+const CLIO_CHART_COMPARE_MARKS = Object.freeze({ "●": "full", "○": "partial", "—": "none" });
+
+function clioChartCompareMark(text) {
+  return CLIO_CHART_COMPARE_MARKS[String(text || "").trim()] || "";
+}
+
+function clioChartCompareMarkup(table, state = {}) {
+  const reveal = (index) => clioChartRevealClassAt(index, {
+    presentation: state.presentation ?? clioChartState.presentation,
+    revealIndex: state.revealIndex ?? clioChartState.revealIndex,
+  });
+  const header = `<tr><th scope="col" class="is-label-column">${escapeHtml(table.labelColumn.text || "")}</th>${
+    table.columns.map((column) => `<th scope="col">${escapeHtml(column.text)}</th>`).join("")
+  }</tr>`;
+  const body = table.rows.map((row, rowIndex) => {
+    const cells = row.cells.map((cell) => {
+      const mark = clioChartCompareMark(cell?.text);
+      if (mark) {
+        return `<td class="is-mark" data-mark="${mark}"><span aria-hidden="true">${escapeHtml(cell.text)}</span><span class="visually-hidden">${escapeHtml(t(`clio_chart_mark_${mark}`))}</span></td>`;
+      }
+      return `<td>${escapeHtml(cell?.text || "")}</td>`;
+    }).join("");
+    return `<tr class="${reveal(rowIndex)}"><th scope="row">${escapeHtml(row.label)}</th>${cells}</tr>`;
+  }).join("");
+  const usesMarks = table.rows.some((row) => row.cells.some((cell) => clioChartCompareMark(cell?.text)));
+  const legend = usesMarks
+    ? `<p class="clio-chart-compare-note">● ${escapeHtml(t("clio_chart_mark_full"))}　○ ${escapeHtml(t("clio_chart_mark_partial"))}　— ${escapeHtml(t("clio_chart_mark_none"))}</p>`
+    : "";
+  return `<div class="clio-chart-matrix-scroller"><table class="clio-chart-compare">
+    <thead>${header}</thead><tbody>${body}</tbody>
+  </table></div>${legend}`;
+}
+
+function renderClioChartCompare() {
+  const els = clioChartElements();
+  els.view.innerHTML = clioChartCompareMarkup(clioChartState.table);
+  els.missing.textContent = "";
+}
+
 // --- presentation reveal --------------------------------------------------
 
 function clioChartRevealClass(index) {
@@ -1524,25 +1811,59 @@ function clioChartSvgDefs(palette, id) {
 
 // Bars, scores, the spatial grid, a comparison matrix and a trace: five
 // projections of one matrix, drawn with the same primitives.
-function clioChartProjectionSvg(table, projection, paletteInput) {
+// `options.heading` replaces the charted column's name when the chart has a
+// sentence of its own (a chart drawn from prose is titled by what it shows);
+// `options.caption` is the one-line reading set under the drawing.
+function clioChartProjectionSvg(table, projection, paletteInput, options = {}) {
   if (!table) return "";
   const palette = { ...clioChartSvgPalette(), ...(paletteInput || {}) };
   const id = "cc";
   const column = table.columns[clioChartState.column] || table.columns[0];
-  const heading = column ? column.name : t("clio_chart_label");
-  const unit = (column && column.unit) || table.config.unit || "";
+  // `options.omitHeading`: the page the drawing lands on already has a title.
+  const heading = options.omitHeading ? "" : (options.heading || (projection === "compare" ? "" : column?.name) || t("clio_chart_label"));
+  const unit = projection === "compare" || options.omitHeading ? "" : ((column && column.unit) || table.config.unit || "");
+  const caption = String(options.caption || "").trim();
   const head = `${clioChartSvgDefs(palette, id)}
     ${palette.paper === "transparent" ? "" : `<rect x="0" y="0" width="1280" height="720" fill="${palette.paper}" />`}
-    <text x="60" y="64" font-size="30" font-weight="600">${clioChartSvgEscape(heading)}</text>
-    ${unit ? `<text class="svg-muted" x="1220" y="64" text-anchor="end">${clioChartSvgEscape(unit)}</text>` : ""}`;
+    ${heading ? `<text x="60" y="64" font-size="30" font-weight="600">${clioChartSvgEscape(heading)}</text>` : ""}
+    ${unit ? `<text class="svg-muted" x="1220" y="64" text-anchor="end">${clioChartSvgEscape(unit)}</text>` : ""}
+    ${caption ? `<text class="svg-muted" x="60" y="706">${clioChartSvgEscape(caption.length > 90 ? `${caption.slice(0, 89)}…` : caption)}</text>` : ""}`;
   const open = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" role="img" aria-label="${clioChartSvgEscape(`${t("clio_chart_label")} — ${heading}`)}">`;
   const close = "</svg>";
 
-  if (projection === "matrix") return open + head + clioChartSvgMatrix(table, palette, id) + close;
-  if (projection === "grid") return open + head + clioChartSvgGrid(table, palette, id) + close;
-  if (projection === "trace") return open + head + clioChartSvgTrace(table, palette, id) + close;
-  if (projection === "score") return open + head + clioChartSvgScores(table, palette, id) + close;
-  return open + head + clioChartSvgBars(table, palette, id) + close;
+  const body = projection === "matrix" ? clioChartSvgMatrix(table, palette, id)
+    : projection === "grid" ? clioChartSvgGrid(table, palette, id)
+      : projection === "trace" ? clioChartSvgTrace(table, palette, id)
+        : projection === "score" ? clioChartSvgScores(table, palette, id)
+          : projection === "compare" ? clioChartSvgCompare(table, palette, id)
+            : clioChartSvgBars(table, palette, id);
+  const svg = open + head + body + close;
+  return options.fit ? clioChartFitSvg(svg, clioChartSvgContentBottom(table, projection)) : svg;
+}
+
+// Where the drawing's last row ends, for the list-like projections. A deck
+// page sizes a picture by its height, so two rows drawn on a 720-tall canvas
+// came out as small print with an empty page beneath.
+function clioChartSvgContentBottom(table, projection) {
+  if (projection === "matrix") return 140 + table.columns.length * Math.min(48, Math.floor(500 / Math.max(1, table.columns.length)));
+  if (projection === "compare") return 140 + table.rows.length * Math.min(56, Math.floor(500 / Math.max(1, table.rows.length)));
+  if (projection === "bars") {
+    const count = Math.max(1, clioChartSvgMeasured(table).length);
+    return 120 + count * Math.min(64, Math.floor(560 / count));
+  }
+  return 720;
+}
+
+// Crops the canvas to its content and moves the bottom notes up with it.
+function clioChartFitSvg(svg, contentBottom) {
+  const noteY = Math.min(684, contentBottom + 34);
+  const height = Math.min(720, Math.max(220, noteY + 36));
+  if (height >= 720) return svg;
+  return svg
+    .replace('viewBox="0 0 1280 720" width="1280" height="720"', `viewBox="0 0 1280 ${height}" width="1280" height="${height}"`)
+    .replace(/<rect x="0" y="0" width="1280" height="720"/, `<rect x="0" y="0" width="1280" height="${height}"`)
+    .replace(/(<text class="svg-muted" x="60" y=")684(")/g, `$1${noteY}$2`)
+    .replace(/(<text class="svg-muted" x="60" y=")706(")/, `$1${noteY + 24}$2`);
 }
 
 function clioChartSvgMeasured(table) {
@@ -1563,8 +1884,10 @@ function clioChartSvgBars(table, palette, id) {
   const base = reference ? reference.cells[clioChartState.column]?.value ?? null : null;
   const max = Math.max(...entries.map((entry) => entry.value), 0);
   const scale = max > 0 ? max : 1;
+  // The value sits beside the track, never on it: on a full-length solid bar
+  // a label drawn over the end was ink on ink.
   const trackX = 380;
-  const trackW = 740;
+  const trackW = 600;
   const pitch = Math.min(64, Math.floor(560 / entries.length));
   const barH = Math.min(34, Math.max(16, pitch - 18));
   const parts = entries.map((entry, position) => {
@@ -1588,7 +1911,7 @@ function clioChartSvgBars(table, palette, id) {
       <rect class="svg-tint" x="${trackX}" y="${y - 4}" width="${trackW}" height="${barH + 8}" />
       ${range}
       <rect x="${trackX}" y="${y}" width="${Math.max(entry.value > 0 ? 2 : 0, width)}" height="${barH}" fill="${fill}"${stroke}${dash} />
-      <text class="svg-value" x="${trackX + trackW + 14}" y="${y + barH - 2}" text-anchor="end">${clioChartSvgEscape(cell ? cell.text : entry.value)}${clioChartSvgEscape(delta)}</text>`;
+      <text class="svg-value" x="${trackX + trackW + 16}" y="${y + barH - 2}">${clioChartSvgEscape(cell ? cell.text : entry.value)}${clioChartSvgEscape(delta)}</text>`;
   }).join("\n");
   const missing = table.rows
     .filter((row) => {
@@ -1648,6 +1971,35 @@ function clioChartSvgGrid(table, palette, id) {
     <text class="svg-muted" x="60" y="684">${clioChartSvgEscape(`${t("clio_chart_minimum")} ${clioChartFormatNumber(min)}  ·  ${t("clio_chart_average")} ${clioChartFormatNumber(average)}  ·  ${t("clio_chart_maximum")} ${clioChartFormatNumber(max)}`)}</text>`;
 }
 
+// The qualitative comparison as a drawing: the same grid, marks drawn as
+// shapes so a deck in any era typeface still shows a filled, a half and an
+// empty circle rather than whatever glyph the era font happens to carry.
+function clioChartSvgCompare(table, palette, id) {
+  const labelW = 300;
+  const colW = Math.floor((1160 - labelW) / Math.max(1, table.columns.length));
+  const rowH = Math.min(56, Math.floor(500 / Math.max(1, table.rows.length)));
+  const head = table.columns.map((column, index) => (
+    `<text class="svg-label" x="${60 + labelW + index * colW}" y="118">${clioChartSvgEscape(column.text)}</text>`
+  )).join("");
+  const body = table.rows.map((row, rowIndex) => {
+    const y = 140 + rowIndex * rowH;
+    const cells = row.cells.map((cell, columnIndex) => {
+      const x = 60 + labelW + columnIndex * colW;
+      const mark = clioChartCompareMark(cell?.text);
+      if (mark === "full") return `<circle class="svg-ink" cx="${x + 12}" cy="${y + 17}" r="11" />`;
+      if (mark === "partial") return `<circle class="svg-ink-line" cx="${x + 12}" cy="${y + 17}" r="10" stroke-width="2.5" /><path class="svg-ink" d="M${x + 12} ${y + 6} a11 11 0 0 1 0 22 z" />`;
+      if (mark === "none") return `<line class="svg-ink-line" x1="${x + 2}" y1="${y + 17}" x2="${x + 22}" y2="${y + 17}" stroke-width="2.5" />`;
+      const text = String(cell?.text || "");
+      const clipped = text.length > 14 ? `${text.slice(0, 13)}…` : text;
+      return `<text class="svg-value" x="${x}" y="${y + 24}">${clioChartSvgEscape(clipped)}</text>`;
+    }).join("");
+    return `<text class="svg-label" x="60" y="${y + 24}" font-weight="600">${clioChartSvgEscape(row.label)}</text>
+      <line class="svg-tint-line" x1="60" y1="${y + rowH - 8}" x2="1220" y2="${y + rowH - 8}" stroke-width="1" />
+      ${cells}`;
+  }).join("\n");
+  return `${head}${body}`;
+}
+
 function clioChartSvgMatrix(table, palette, id) {
   const reference = table.rows.find((row) => row.label === table.reference) || table.rows[0];
   const ordered = [reference, ...table.rows.filter((row) => row !== reference)];
@@ -1671,7 +2023,7 @@ function clioChartSvgMatrix(table, palette, id) {
       ${cells}`;
   }).join("\n");
   return `${head}${body}
-    <text class="svg-muted" x="60" y="684">${clioChartSvgEscape(t("clio_chart_rollup_note"))}</text>`;
+    <text class="svg-muted" x="60" y="684">${clioChartSvgEscape(t("clio_chart_svg_delta_note"))}</text>`;
 }
 
 function clioChartSvgTrace(table, palette, id) {
@@ -1725,7 +2077,10 @@ function clioChartBase64(text) {
 function clioChartStageMarkdown(table, projection) {
   const svg = clioChartProjectionSvg(table, projection);
   const heading = table.columns[clioChartState.column]?.name || t("clio_chart_label");
-  const provenance = serializeClioChartTable(table).replace(/--/g, "—");
+  const embeds = window.AISystem6EditEmbeds;
+  // The page carries the table as an editable copy: double-click opens it here
+  // again, and every edit redraws the page's picture.
+  const data = { markdown: serializeClioChartTable(setClioChartConfigCopy(table, { projection })) };
   return [
     "---",
     "marp: true",
@@ -1739,10 +2094,47 @@ function clioChartStageMarkdown(table, projection) {
     "",
     `## ${heading}`,
     "",
-    `![${t("clio_chart_label")}: ${heading}](data:image/svg+xml;base64,${clioChartBase64(svg)})`,
-    "",
-    `<!-- clio-chart: ${provenance.replace(/\n/g, " / ")} -->`,
+    embeds.embedMarkdown({ kind: "chart", alt: `${t("clio_chart_label")}: ${heading}`, svg, data }),
   ].join("\n");
+}
+
+// A copy of the table with its config changed, leaving the open table alone.
+function setClioChartConfigCopy(table, config) {
+  const copy = parseClioChartTable(serializeClioChartTable(table), table.offset || 0) || table;
+  setClioChartConfig(copy, config);
+  return copy;
+}
+
+// A saved chart document opens as its table, owned by the file.
+function openSavedClioChartTable(file) {
+  const found = findClioChartTables(String(file?.body || ""))[0];
+  if (!found) return false;
+  openWindow("clioChart");
+  bindClioChartControls();
+  loadClioChartTable(found.table, { title: file.name, owner: { kind: "file", fileId: file.id, text: found.text } });
+  return true;
+}
+
+// A chart that sits on a ClioStage page opens here as a copy owned by that
+// page: every edit is handed back (writeClioChartBackToOwner) and the page
+// redraws, as one undoable deck edit there.
+function editClioChartEmbed(data, { title = "", onChange } = {}) {
+  const table = clioChartTextToTable(String(data?.markdown || ""));
+  if (!table) {
+    setClioChartStatus(t("clio_chart_no_table"));
+    return false;
+  }
+  openWindow("clioChart");
+  bindClioChartControls();
+  loadClioChartTable(table, {
+    title: title || t("clio_chart_label"),
+    owner: {
+      kind: "embed",
+      onChange: (next) => onChange?.({ markdown: serializeClioChartTable(next) }, next),
+    },
+  });
+  setClioChartStatus(t("clio_chart_embed_opened"));
+  return true;
 }
 
 async function sendClioChartToStage() {
@@ -1761,9 +2153,13 @@ async function sendClioChartToStage() {
   // One page that carries its own drawing and its own source table. Nothing
   // here depends on this window still being open, which is what makes the
   // page savable, printable and exportable.
+  // An unsaved deck already in ClioStage is the writer's work: ask first.
+  if (window.AISystem6ClioStage?.confirmDiscard && !(await window.AISystem6ClioStage.confirmDiscard())) return false;
+  // An ordinary unsaved deck: every page editable, the chart a copy on it.
   window.AISystem6ClioStage.open({
     title,
-    sourceKind: "clioChart",
+    sourceKind: "generated",
+    temporary: true,
     markdown: clioChartStageMarkdown(table, clioChartState.projection),
   });
   return true;
@@ -1777,7 +2173,8 @@ async function sendClioChartToStage() {
 function clioChartOwnerNotice() {
   const chip = document.querySelector("#teachtext-chart-owner");
   const own = clioChartElements().owner;
-  const owned = !!clioChartState.owner;
+  // A slide's copy (an embed owner) is not a TeachText block: no chip there.
+  const owned = !!clioChartState.owner && clioChartState.owner.kind !== "embed";
   if (chip) chip.hidden = !owned;
   if (own) {
     own.hidden = !owned;
@@ -1789,6 +2186,31 @@ function clioChartOwnerNotice() {
 function writeClioChartBackToOwner() {
   const owner = clioChartState.owner;
   const table = clioChartState.table;
+  // A table that is a copy on a ClioStage page (app/core/edit-embeds.js)
+  // goes back to that page; the page redraws its picture from it.
+  if (owner?.kind === "embed" && table) {
+    owner.onChange(table);
+    return true;
+  }
+  // A saved chart document: the table is rewritten inside the file, found by
+  // the exact text last written, refused if the file changed underneath.
+  if (owner?.kind === "file" && table) {
+    const file = typeof chatFiles !== "undefined" ? chatFiles.find((item) => item.id === owner.fileId) : null;
+    const at = file ? String(file.body || "").indexOf(owner.text) : -1;
+    if (at < 0) {
+      setClioChartStatus(t("clio_chart_write_back_failed"));
+      return false;
+    }
+    const next = serializeClioChartTable(table);
+    if (next === owner.text) return true;
+    file.body = file.body.slice(0, at) + next + file.body.slice(at + owner.text.length);
+    file.updatedAt = new Date().toISOString();
+    owner.text = next;
+    if (typeof markDeskDirty === "function") markDeskDirty("chatFiles", file.id);
+    if (typeof saveDeskState === "function") saveDeskState();
+    if (typeof renderDocuments === "function") renderDocuments();
+    return true;
+  }
   if (!owner || !table || !teachTextBodyInput) return false;
   const document_ = teachTextBodyInput.value;
   const index = document_.indexOf(owner.text);
@@ -1841,9 +2263,9 @@ function clioChartTableAtCursor() {
 function openClioChartFromTeachText() {
   const block = clioChartTableAtCursor();
   if (!block) {
-    setClioChartStatus(t("clio_chart_no_table"));
-    openWindow("clioChart");
-    return false;
+    // No table under the caret: the selection, or else the document, is prose
+    // to chart. The manuscript itself is never written to on this path.
+    return makeClioChartFromSource();
   }
   openClioChart({
     title: typeof getTeachTextDocumentName === "function" ? getTeachTextDocumentName({ fallback: t("clio_chart_label") }) : t("clio_chart_label"),
@@ -2111,9 +2533,848 @@ function openClioChartTemplate(source) {
   return true;
 }
 
+// --- prose to chart --------------------------------------------------------
+// Any text in, one chart out — the way DocMap takes any text and gives a map.
+// The model proposes the matrix; it never owns a number. A value cell is kept
+// only when its digits stand in the source, inside a sentence the writer can
+// be shown; otherwise it is left blank, exactly like an unmeasured cell. A
+// qualitative matrix may hold only the source's own short phrases or the three
+// marks ● ○ —. The checks below are pure so the contract can execute them.
+
+const CLIO_CHART_PROSE_MAX_ROWS = 12;
+const CLIO_CHART_PROSE_MAX_COLUMNS = 6;
+const CLIO_CHART_PROSE_SOURCE_BUDGET = 9000;
+const CLIO_CHART_PROSE_PHRASE_MAX = 24;
+
+function clioChartFold(text) {
+  return String(text || "").normalize("NFKC").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+// Every number written in a piece of text, as values: "1,234" and "1234" are
+// the same number, "3,4" is two.
+function clioChartNumbersIn(text) {
+  return (String(text || "").normalize("NFKC").match(/\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?/g) || [])
+    .map((token) => Number(token.replace(/,/g, "")))
+    .filter(Number.isFinite);
+}
+
+function clioChartSourceSentences(sourceText) {
+  return String(sourceText || "").normalize("NFKC")
+    .split(/(?<=[。！？!?；;])|(?<=\.)\s+|\n+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
+}
+
+function clioChartGroundingSource(sourceText) {
+  return {
+    folded: clioChartFold(sourceText),
+    sentences: clioChartSourceSentences(sourceText),
+    values: new Set(clioChartNumbersIn(sourceText)),
+  };
+}
+
+// True when every number in `text` is a number the source wrote.
+function clioChartNumbersStandInSource(text, source) {
+  return clioChartNumbersIn(text).every((value) => source.values.has(value));
+}
+
+// The sentence a value stands on. The model's own quote wins when it is the
+// source's words and carries the value; otherwise a source sentence that holds
+// both the value and the row's name. A number with no such sentence is not
+// grounded, even if the same digits appear somewhere else in the text.
+function clioChartAnchorFor(cellText, quote, label, source) {
+  const numbers = clioChartNumbersIn(cellText);
+  if (!numbers.length) return "";
+  const holds = (sentence) => {
+    const values = clioChartNumbersIn(sentence);
+    return numbers.every((value) => values.includes(value));
+  };
+  const foldedQuote = clioChartFold(quote);
+  if (foldedQuote && source.folded.includes(foldedQuote) && holds(quote)) return String(quote).trim();
+  const foldedLabel = clioChartFold(label);
+  if (!foldedLabel) return "";
+  return source.sentences.find((sentence) => holds(sentence) && clioChartFold(sentence).includes(foldedLabel)) || "";
+}
+
+// A qualitative cell stands on a sentence that names its row: "没有内置 AI"
+// said of one tool is not evidence about the next one.
+function clioChartPhraseAnchor(text, quote, label, source) {
+  const foldedLabel = clioChartFold(label);
+  const namesRow = (sentence) => !foldedLabel || clioChartFold(sentence).includes(foldedLabel);
+  const foldedQuote = clioChartFold(quote);
+  if (foldedQuote && source.sentences.some((sentence) => clioChartFold(sentence).includes(foldedQuote) && namesRow(sentence))) {
+    return String(quote).trim();
+  }
+  const folded = clioChartFold(text);
+  if (!folded) return "";
+  return source.sentences.find((sentence) => clioChartFold(sentence).includes(folded) && namesRow(sentence)) || "";
+}
+
+function clioChartSmallerIsBetterName(name) {
+  const text = String(name || "");
+  if (/续航|电池|寿命|battery|endurance|life/i.test(text)) return false;
+  return /耗时|用时|时间|时长|延迟|噪音|噪声|温度|功耗|能耗|重量|价格|售价|成本|费用|体积|厚度|错误|故障|time|latency|delay|noise|temp|power|weight|price|cost|size|thickness|error/i.test(text);
+}
+
+// Yes/no words become the three marks, so "无" and "—" read the same way.
+function clioChartAsMark(text) {
+  const value = String(text || "").trim();
+  if (clioChartCompareMark(value)) return value;
+  if (/^(?:无|没有|不支持|不可|否|不|no|none|n\/a|×|✗|✕)$/i.test(value)) return "—";
+  if (/^(?:有|支持|可以|可|是|yes|✓|✔|√)$/i.test(value)) return "●";
+  if (/^(?:部分|部分支持|有限|partial|partly|limited)$/i.test(value)) return "○";
+  return "";
+}
+
+function clioChartCleanText(value, max = 80) {
+  return String(value ?? "").replace(/[|\r\n]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+}
+
+// Splits "约 299 元" into the value the grid parses ("299"), the unit the
+// source wrote after it ("元") and whether the source hedged it.
+function clioChartValueParts(text) {
+  const normalized = String(text || "").normalize("NFKC").trim();
+  const match = normalized.match(/[+-]?\d{1,3}(?:,\d{3})+(?:\.\d+)?%?|[+-]?\d+(?:\.\d+)?%?/);
+  if (!match) return null;
+  return {
+    value: match[0],
+    unit: normalized.slice(match.index + match[0].length).replace(/[?？]/g, "").trim(),
+    approximate: /约|大约|左右|上下|近|超过|逾|about|approx|around|roughly|~|≈|\?|？/i.test(normalized),
+  };
+}
+
+/**
+ * Grounds one model candidate against the source.
+ *
+ * @param {any} candidate  one entry of the model's `candidates`
+ * @param {string} sourceText
+ * @param {{language?: string}} [options]
+ * @returns {{markdown: string, kind: string, title: string, reading: string,
+ *   anchors: Array<{row:number, column:number, quote:string}>,
+ *   kept: number, blanked: number, reference: string}|null}
+ */
+function groundClioChartCandidate(candidate, sourceText, options = {}) {
+  if (!candidate || typeof candidate !== "object") return null;
+  const source = clioChartGroundingSource(sourceText);
+  const qualitative = candidate.kind === "qualitative";
+  const zh = options.language ? options.language === "zh" : /[㐀-鿿]/.test(sourceText);
+  const columns = (Array.isArray(candidate.columns) ? candidate.columns : [])
+    .slice(0, CLIO_CHART_PROSE_MAX_COLUMNS)
+    .map((column) => ({
+      name: clioChartCleanText(typeof column === "string" ? column : (column?.text || column?.name), 40),
+      unit: qualitative ? "" : clioChartCleanText(column?.unit, 16),
+      lower: !qualitative && column?.lower === true,
+    }))
+    // "Smaller is better" reorders the chart, and a model sets it carelessly
+    // (a battery-life column marked smaller-is-better ranks the worst first).
+    // It is believed only for the quantities where smaller is better.
+    .map((column) => ({ ...column, lower: column.lower && clioChartSmallerIsBetterName(column.name) }));
+  const rows = (Array.isArray(candidate.rows) ? candidate.rows : [])
+    .map((row) => ({
+      label: clioChartCleanText(row?.label, 48).replace(/^~\s*/, ""),
+      aggregate: row?.aggregate === true,
+      cells: Array.isArray(row?.cells) ? row.cells : [],
+    }))
+    .filter((row) => row.label)
+    .slice(0, CLIO_CHART_PROSE_MAX_ROWS);
+  if (!columns.length || columns.some((column) => !column.name) || rows.length < 2) return null;
+
+  const anchors = [];
+  let kept = 0;
+  let blanked = 0;
+  const units = columns.map(() => new Map());
+  const grid = rows.map((row, rowIndex) => columns.map((column, columnIndex) => {
+    const raw = row.cells[columnIndex];
+    const text = clioChartCleanText(typeof raw === "string" || typeof raw === "number" ? raw : raw?.text, 40);
+    const quote = typeof raw === "object" && raw ? String(raw.quote || "") : "";
+    if (!text) return "";
+    if (qualitative) {
+      // A mark is the model's reading, so it must point at the words it read.
+      const mark = clioChartAsMark(text);
+      if (mark) {
+        const anchor = clioChartPhraseAnchor("", quote, row.label, source);
+        if (!anchor) { blanked += 1; return ""; }
+        anchors.push({ row: rowIndex, column: columnIndex, quote: anchor });
+        kept += 1;
+        return mark;
+      }
+      // One character ("有") is found in almost any text; a phrase has to be
+      // long enough to mean the source said it.
+      const anchor = text.length >= 2 && text.length <= CLIO_CHART_PROSE_PHRASE_MAX && source.folded.includes(clioChartFold(text))
+        ? clioChartPhraseAnchor(text, quote, row.label, source)
+        : "";
+      if (!anchor) { blanked += 1; return ""; }
+      anchors.push({ row: rowIndex, column: columnIndex, quote: anchor });
+      kept += 1;
+      return text;
+    }
+    const parts = clioChartValueParts(text);
+    const anchor = parts ? clioChartAnchorFor(parts.value, quote, row.label, source) : "";
+    if (!anchor) { blanked += 1; return ""; }
+    anchors.push({ row: rowIndex, column: columnIndex, quote: anchor });
+    kept += 1;
+    if (parts.unit) units[columnIndex].set(parts.unit, (units[columnIndex].get(parts.unit) || 0) + 1);
+    return parts;
+  }));
+
+  // One unit per column. When the model gave none and every value carries the
+  // same one, it moves into the header. A value written in another unit keeps
+  // its unit and is marked uncertain — converting it would be our arithmetic.
+  columns.forEach((column, columnIndex) => {
+    if (qualitative) return;
+    const seen = [...units[columnIndex].keys()];
+    if (!column.unit && seen.length === 1) column.unit = seen[0];
+  });
+  const cellText = (value, columnIndex) => {
+    if (!value || typeof value === "string") return value || "";
+    const unit = columns[columnIndex].unit;
+    const foreign = !!value.unit && value.unit !== unit && value.unit !== "%";
+    const body = foreign ? `${value.value}${value.unit}` : value.value;
+    return foreign || value.approximate ? `${body} ?` : body;
+  };
+
+  const header = (column) => {
+    const unit = column.unit ? (zh ? `（${column.unit}）` : ` (${column.unit})`) : "";
+    return `${column.name}${unit}${column.lower ? " *" : ""}`;
+  };
+  const subject = clioChartCleanText(candidate.subject, 24);
+  const labelHeader = subject && !columns.some((column) => column.name === subject) ? subject : (zh ? "对象" : "Item");
+  const lines = [
+    `| ${[labelHeader, ...columns.map(header)].join(" | ")} |`,
+    `| ${[labelHeader, ...columns].map(() => "---").join(" | ")} |`,
+    ...rows.map((row, rowIndex) => `| ${[
+      row.aggregate ? `~ ${row.label}` : row.label,
+      ...grid[rowIndex].map(cellText),
+    ].join(" | ")} |`),
+  ];
+
+  const referenceLabel = clioChartCleanText(candidate.reference, 48);
+  // A title or reading that states a number the source did not write is our
+  // arithmetic speaking; it is dropped rather than shown.
+  const title = clioChartCleanText(candidate.title, 60);
+  const reading = clioChartCleanText(candidate.reading, 140);
+  return {
+    markdown: lines.join("\n"),
+    kind: qualitative ? "qualitative" : "quantitative",
+    title: clioChartNumbersStandInSource(title, source) ? title : "",
+    reading: clioChartNumbersStandInSource(reading, source) ? reading : "",
+    anchors,
+    kept,
+    blanked,
+    reference: referenceLabel && rows.some((row) => row.label === referenceLabel) ? referenceLabel : "",
+  };
+}
+
+// A table written "metrics down, objects across" (每人写作时间（小时） | 2 | 1)
+// is the transpose of the matrix ClioChart draws. When every row label carries
+// a unit and no column header does, the rows are the metrics: turn it round so
+// one axis never mixes hours with counts.
+function clioChartOrientForChart(table) {
+  if (!table || table.rows.length < 2 || table.columns.length < 1) return table;
+  const hasUnit = (text) => /[（(][^)）]+[)）]\s*\*?\s*$/.test(String(text || ""));
+  if (!table.rows.every((row) => hasUnit(row.label)) || table.columns.some((column) => hasUnit(column.text))) return table;
+  const line = (cells) => `| ${cells.map((cell) => String(cell || "").replace(/\|/g, "/")).join(" | ")} |`;
+  const markdown = [
+    line(["", ...table.rows.map((row) => row.label)]),
+    line(["", ...table.rows].map(() => "---")),
+    ...table.columns.map((column, columnIndex) => line([column.name || column.text, ...table.rows.map((row) => row.cells[columnIndex]?.text || "")])),
+  ].join("\n");
+  return parseClioChartTable(markdown) || table;
+}
+
+// The projection a deck page draws: several metrics across a few objects are
+// the matrix (each object as a percentage of the first), otherwise the
+// matrix's own suggestion.
+function clioChartDeckProjection(table) {
+  const suggested = clioChartSuggestProjection(table);
+  const measured = table.columns.filter((_, columnIndex) => (
+    table.rows.filter((row) => row.cells[columnIndex] && row.cells[columnIndex].value !== null).length >= 2
+  )).length;
+  return suggested === "bars" && measured >= 2 && table.rows.length <= 6 ? "matrix" : suggested;
+}
+
+// The projection that answers the matrix's own question. Qualitative is the
+// comparison grid; a time axis is a trace; scores are scores; several measured
+// metrics across several objects are the matrix; one metric is ranked bars.
+function clioChartSuggestProjection(table, kind = "") {
+  if (!table) return "bars";
+  if (kind === "qualitative" || table.config?.projection === "compare") return "compare";
+  const scored = table.rows.some((row) => row.cells.some((cell) => cell.score));
+  if (scored && table.rows.every((row) => row.cells.every((cell) => !cell.text || cell.score))) return "score";
+  const measuredColumns = table.columns.filter((_, columnIndex) => (
+    table.rows.filter((row) => row.cells[columnIndex] && row.cells[columnIndex].value !== null).length >= 2
+  )).length;
+  const timeLabel = /^(?:\d{4}(?:[-/.年]\d{1,2}(?:月)?)?年?|\d{1,2}月|Q[1-4](?:\s*\d{2,4})?|\d{4}\s*Q[1-4]|v?\d+(?:\.\d+)+|第?\d+(?:天|周|月|季|年|期|版))$/i;
+  if (table.rows.length >= 3 && measuredColumns >= 1 && table.rows.every((row) => timeLabel.test(row.label.trim()))) return "trace";
+  if (measuredColumns >= 3 && table.rows.length >= 3) return "matrix";
+  return "bars";
+}
+
+// A ready table from a grounded candidate: the suggested projection and, for a
+// prose chart, no percentage column unless the source named a baseline.
+function clioChartTableFromGrounded(grounded) {
+  const draft = parseClioChartTable(grounded.markdown);
+  if (!draft) return null;
+  // The matrix states every object as a percentage of the first column. With
+  // no baseline named in the source that column is an accident of order, so a
+  // prose chart without one ranks the first metric instead.
+  const suggested = clioChartSuggestProjection(draft, grounded.kind);
+  const projection = suggested === "matrix" && !grounded.reference ? "bars" : suggested;
+  const config = [projection];
+  if (grounded.reference) config.push(`reference="${grounded.reference}"`);
+  else config.push("percent=none");
+  if (projection === "trace" || projection === "compare") config.push("sort=source");
+  return parseClioChartTable(`<!-- cliochart: ${config.join(", ")} -->\n\n${grounded.markdown}`);
+}
+
+// What the model reads. A long text keeps every paragraph with a number in it
+// before anything else, so an article does not lose its data to a character
+// limit; the remaining budget is filled in reading order.
+function clioChartPackSource(text, budget = CLIO_CHART_PROSE_SOURCE_BUDGET) {
+  const source = String(text || "").trim();
+  if (source.length <= budget) return source;
+  const paragraphs = source.split(/\n{2,}/).map((paragraph) => paragraph.trim()).filter(Boolean);
+  const keep = new Set();
+  let used = 0;
+  const take = (index) => {
+    if (keep.has(index) || used + paragraphs[index].length > budget) return;
+    keep.add(index);
+    used += paragraphs[index].length + 2;
+  };
+  paragraphs.forEach((paragraph, index) => { if (/\d/.test(paragraph)) take(index); });
+  paragraphs.forEach((_, index) => take(index));
+  return [...keep].sort((a, b) => a - b).map((index) => paragraphs[index]).join("\n\n");
+}
+
+function clioChartExtractionPrompt(source, packed, repair = null) {
+  const zh = currentLanguage === "zh";
+  return [
+    zh ? `来源：${source.label || t("untitled")}` : `Source: ${source.label || t("untitled")}`,
+    "",
+    zh
+      ? "返回一行紧凑 JSON（不换行、不缩进），quote 不超过 30 字：{\"candidates\":[{\"title\":\"一句读图结论\",\"kind\":\"quantitative 或 qualitative\",\"subject\":\"行代表什么\",\"reference\":\"作为基准的行名，可空\",\"columns\":[{\"text\":\"指标名\",\"unit\":\"单位\",\"lower\":false}],\"rows\":[{\"label\":\"对象名\",\"cells\":[{\"text\":\"值或短语\",\"quote\":\"含这个值的原文片段\"}]}],\"reading\":\"一句话说明怎么读这张图\"}]}"
+      : "Return one line of compact JSON (no line breaks or indentation); keep each quote under 30 words: {\"candidates\":[{\"title\":\"one-sentence finding\",\"kind\":\"quantitative or qualitative\",\"subject\":\"what the rows are\",\"reference\":\"baseline row label, may be empty\",\"columns\":[{\"text\":\"metric\",\"unit\":\"unit\",\"lower\":false}],\"rows\":[{\"label\":\"item\",\"cells\":[{\"text\":\"value or phrase\",\"quote\":\"source words containing it\"}]}],\"reading\":\"one sentence on how to read the chart\"}]}",
+    repair
+      ? (zh
+        ? `上一稿有 ${repair.blanked} 个格子在原文里找不到依据，已被清空。只用原文出现过的数字和短语重做，quote 必须逐字照抄原文。`
+        : `${repair.blanked} cells in the last draft had no support in the source and were cleared. Redo it using only numbers and phrases the source writes; each quote must be copied verbatim.`)
+      : "",
+    "",
+    zh ? "来源文字：" : "SOURCE TEXT:",
+    packed,
+  ].filter((line) => line !== "").join("\n");
+}
+
+function clioChartParseModelJson(text) {
+  const body = String(text || "").replace(/^\s*```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+  const start = body.indexOf("{");
+  const end = body.lastIndexOf("}");
+  if (start < 0 || end <= start) return null;
+  try {
+    return JSON.parse(body.slice(start, end + 1));
+  } catch (error) {
+    return null;
+  }
+}
+
+// The magic pass. One streamed request asks for three different ways to draw
+// the text — a flow, a timeline, a hierarchy, a two-sided comparison, a cycle,
+// or a data chart when the text has comparable numbers — and each candidate is
+// grounded and shown the moment its object closes, so the gallery lights one
+// card at a time. A slow local model is judged by whether it keeps answering,
+// not by whether everything arrived inside the first-response deadline.
+// The rules live in the shared prompt file; this message carries only the
+// shape to fill and the text, so a small local context still fits the source.
+const CLIO_CHART_MAGIC_SHAPE = '{"candidates":[{"kind":"flow|timeline|tree|compare|cycle","title":"","why":"","cols":["",""],"nodes":[{"id":"a","label":"","quote":"","col":0,"head":false}],"edges":[{"from":"a","to":"b","label":""}],"groups":[{"label":"","nodes":["a","b"]}]},{"kind":"data","title":"","subject":"","columns":[{"text":"","unit":"","lower":false}],"rows":[{"label":"","cells":[{"text":"","quote":""}]}],"reading":""}]}';
+
+function clioChartMagicPrompt(source, packed, retry = false) {
+  const zh = currentLanguage === "zh";
+  return [
+    `${zh ? "来源" : "Source"}: ${source.label || t("untitled")}`,
+    `${zh ? "一行 JSON，三个不同画法" : "One line of JSON, three different kinds"}: ${CLIO_CHART_MAGIC_SHAPE}`,
+    retry ? (zh ? "上次的回答不可用：quote 必须逐字照抄原文。" : "The last answer was unusable: copy each quote verbatim.") : "",
+    "",
+    packed,
+  ].filter((line) => line !== "").join("\n");
+}
+
+// A draft is usable when at least two thirds of what the model wrote stood up
+// in the source.
+function clioChartGroundedEnough(grounded) {
+  return !!grounded && grounded.blanked * 3 <= grounded.kept + grounded.blanked;
+}
+
+function clioChartGroundMagicCandidate(raw, sourceText) {
+  if (!raw || typeof raw !== "object") return null;
+  if (raw.kind === "data" || raw.kind === "quantitative" || raw.kind === "qualitative") {
+    const grounded = groundClioChartCandidate({ ...raw, kind: raw.kind === "qualitative" ? "qualitative" : "quantitative" }, sourceText, { language: currentLanguage });
+    if (!grounded || grounded.kept < 2 || !clioChartGroundedEnough(grounded)) return null;
+    const table = clioChartTableFromGrounded(grounded);
+    return table ? { ...grounded, type: "data", table } : null;
+  }
+  const diagramApi = window.AISystem6ClioDiagram;
+  const grounded = diagramApi?.ground(raw, sourceText);
+  if (!grounded || grounded.kept < 2) return null;
+  return { type: "diagram", diagram: diagramApi.layout(grounded.diagram), kept: grounded.kept, dropped: grounded.dropped, title: grounded.diagram.title, why: grounded.diagram.why };
+}
+
+async function requestClioChartMagic(source, packed, onCandidate, retry = false) {
+  const signal = getLongTaskSignal();
+  const seen = new Set();
+  let readable = false;
+  const take = (text) => {
+    const objects = window.AISystem6ClioDiagram?.streamCandidates(text) || [];
+    if (objects.length) readable = true;
+    objects.forEach((raw, index) => {
+      if (seen.has(index)) return;
+      seen.add(index);
+      const candidate = clioChartGroundMagicCandidate(raw, source.text);
+      if (candidate) onCandidate(candidate);
+    });
+  };
+  const response = await fetchModelPayload({
+    model: getLocalModelRequestName(),
+    messages: withMarkdownModelMessages([
+      { role: "system", content: resolveWritingRoutePrompt("source-apps.cliochart-magic") },
+      { role: "user", content: clioChartMagicPrompt(source, packed, retry) },
+    ], { markdown: false, humanizer: false }),
+    temperature: 0.2,
+    max_tokens: CLIO_CHART_MAGIC_OUTPUT_TOKENS,
+    ai_system6_task_kind: "clio-chart",
+    stream: true,
+  }, signal);
+  const contentType = response.headers?.get?.("content-type") || "";
+  if (response.ok && response.body && /event-stream|text\/plain|octet-stream/i.test(contentType)) {
+    const final = await readChatCompletionStream(response, take, signal);
+    take(final?.content || "");
+  } else {
+    take((await readChatJson(response))?.choices?.[0]?.message?.content || "");
+  }
+  return readable;
+}
+
+// Three compact candidates fit well inside this; a larger reserve only takes
+// room from the source in a small local context.
+const CLIO_CHART_MAGIC_OUTPUT_TOKENS = 1800;
+
+// How much source the model can read. A cloud model takes the full budget; a
+// local one gets what its loaded context leaves after the reply and the
+// shared instructions, counted the conservative way the local client counts.
+function clioChartMagicSourceBudget() {
+  const cloud = typeof cloudConfig !== "undefined" && cloudConfig?.active;
+  const context = Number(typeof contextLengthInput !== "undefined" ? contextLengthInput?.value : 0) || 0;
+  if (cloud || !context) return 9000;
+  return Math.max(800, Math.min(9000, Math.floor((context - CLIO_CHART_MAGIC_OUTPUT_TOKENS - 3600) / 3)));
+}
+
+async function buildClioChartMagic(source, onCandidate) {
+  const budget = clioChartMagicSourceBudget();
+  const packed = window.AISystem6ClioDiagram?.packSource(source.text, budget) || clioChartPackSource(source.text, budget);
+  let count = 0;
+  const counted = (candidate) => { count += 1; onCandidate(candidate); };
+  let readable = await requestClioChartMagic(source, packed, counted);
+  if (!count) {
+    try {
+      readable = (await requestClioChartMagic(source, packed, counted, true)) || readable;
+    } catch (error) {
+      // A second try that cannot run must not hide what the first one found.
+      if (isAbortError(error)) throw error;
+      console.warn("ClioChart second pass failed", error);
+    }
+  }
+  if (!count) throw new Error(readable ? "clio_chart_nothing_grounded" : "clio_chart_unreadable_answer");
+  return count;
+}
+
+// One small JSON request for the one-line edits SideAsk proposes (a slide
+// page, a drawing). Streamed for the same reason as the magic pass. Returns
+// the parsed object, or null when the answer was not readable JSON.
+async function requestClioEditJson(userText, maxTokens = 1600) {
+  const signal = getLongTaskSignal();
+  const response = await fetchModelPayload({
+    model: getLocalModelRequestName(),
+    messages: withMarkdownModelMessages([
+      { role: "system", content: resolveWritingRoutePrompt("other-apps.clio-edit") },
+      { role: "user", content: userText },
+    ], { markdown: false, humanizer: false }),
+    temperature: 0.2,
+    max_tokens: maxTokens,
+    ai_system6_task_kind: "clio-edit",
+    stream: true,
+  }, signal);
+  const contentType = response.headers?.get?.("content-type") || "";
+  const content = response.ok && response.body && /event-stream|text\/plain|octet-stream/i.test(contentType)
+    ? (await readChatCompletionStream(response, null, signal)).content
+    : (await readChatJson(response))?.choices?.[0]?.message?.content;
+  return clioChartParseModelJson(content || "");
+}
+
+// The window has two benches: the data grid with its projections, and the
+// drawing canvas. A candidate decides which one is in front.
+function clioChartSetMode(mode) {
+  const pane = document.querySelector(".clio-chart-pane");
+  const split = document.querySelector("#clio-chart-split");
+  if (!pane || !split) return;
+  const diagramApi = window.AISystem6ClioDiagram;
+  const host = mode === "diagram" && diagramApi ? diagramApi.mount(pane) : pane.querySelector(".clio-diagram");
+  split.hidden = mode === "diagram";
+  if (host) host.hidden = mode !== "diagram";
+  clioChartState.mode = mode === "diagram" ? "diagram" : "data";
+  if (typeof updateMenuState === "function") updateMenuState();
+}
+
+function clioChartShowPending(source, message) {
+  clioChartState.extraction = { source, candidates: [], index: -1, temporary: true, pending: true, failed: "" };
+  renderClioChartGallery();
+  setClioChartStatus(message);
+}
+
+function showClioChartCandidate(index) {
+  const extraction = clioChartState.extraction;
+  const candidate = extraction?.candidates?.[index];
+  if (!candidate) return false;
+  extraction.index = index;
+  if (candidate.type === "diagram") {
+    clioChartSetMode("diagram");
+    const diagramApi = window.AISystem6ClioDiagram;
+    diagramApi.onStatus = setClioChartStatus;
+    diagramApi.onSelect = () => { if (typeof updateSideAskSourceChrome === "function") updateSideAskSourceChrome(); };
+    diagramApi.load(candidate.diagram, {
+      temporary: true,
+      source: extraction.source,
+      onChange: (diagram) => { candidate.diagram = structuredClone(diagram); },
+    });
+    const note = candidate.dropped ? t("clio_diagram_dropped", candidate.dropped) : "";
+    setClioChartStatus([t("clio_chart_prose_ready", extraction.source.label || t("untitled")), note].filter(Boolean).join(" "));
+  } else {
+    clioChartSetMode("data");
+    loadClioChartTable(candidate.table, {
+      title: candidate.title || extraction.source.label || t("clio_chart_label"),
+      keepExtraction: true,
+    });
+    const note = candidate.blanked ? t("clio_chart_prose_blanked", candidate.blanked) : "";
+    setClioChartStatus([t("clio_chart_prose_ready", extraction.source.label || t("untitled")), note].filter(Boolean).join(" "));
+  }
+  renderClioChartGallery();
+  return true;
+}
+
+// The gallery: a card per candidate, a dashed skeleton for each still on its
+// way, and — for a text with sections — the choice between the main line and
+// one section.
+function clioChartSourceSections(text) {
+  const sections = [];
+  let current = null;
+  String(text || "").split("\n").forEach((line) => {
+    const heading = line.match(/^#{2,3}\s+(.+?)\s*$/);
+    if (heading) {
+      current = { title: heading[1].trim(), lines: [] };
+      sections.push(current);
+    } else if (current) {
+      current.lines.push(line);
+    }
+  });
+  return sections
+    .map((section) => ({ title: section.title, text: `## ${section.title}\n\n${section.lines.join("\n").trim()}` }))
+    .filter((section) => section.text.length > clioChartMinSourceChars);
+}
+
+function clioChartGalleryThumb(candidate) {
+  const palette = clioChartSvgPalette();
+  if (candidate.type === "diagram") return window.AISystem6ClioDiagram.svg(candidate.diagram, { ...palette, paper: "transparent" }, { fit: true });
+  return clioChartProjectionSvg(candidate.table, candidate.table.config.projection, { ...palette, paper: "transparent" }, { omitHeading: true, fit: true });
+}
+
+function renderClioChartGallery() {
+  const pane = document.querySelector(".clio-chart-pane");
+  const extraction = clioChartState.extraction;
+  let gallery = pane?.querySelector(".clio-chart-gallery");
+  if (!pane) return;
+  if (!extraction) { gallery?.remove(); return; }
+  if (!gallery) {
+    gallery = document.createElement("div");
+    gallery.className = "clio-chart-gallery";
+    gallery.setAttribute("role", "group");
+    gallery.setAttribute("aria-label", t("clio_chart_gallery"));
+    pane.prepend(gallery);
+  }
+  gallery.replaceChildren();
+  const head = document.createElement("div");
+  head.className = "clio-chart-gallery-head";
+  const sections = clioChartSourceSections(extraction.root?.text || extraction.source.text);
+  if (sections.length > 1) {
+    const label = document.createElement("label");
+    label.className = "visually-hidden";
+    label.htmlFor = "clio-chart-scope";
+    label.textContent = t("clio_chart_scope");
+    const wrap = document.createElement("div");
+    wrap.className = "select-wrap";
+    const select = document.createElement("select");
+    select.id = "clio-chart-scope";
+    select.disabled = !!extraction.pending;
+    [{ value: "", text: t("clio_chart_scope_main") }, ...sections.map((section, index) => ({ value: String(index), text: section.title }))].forEach((option) => {
+      const node = document.createElement("option");
+      node.value = option.value;
+      node.textContent = option.text;
+      select.append(node);
+    });
+    select.value = extraction.scope ?? "";
+    select.addEventListener("change", () => {
+      const root = extraction.root || extraction.source;
+      const section = sections[Number(select.value)];
+      const source = section
+        ? { ...root, text: section.text, label: `${root.label || t("untitled")} · ${section.title}` }
+        : root;
+      makeClioChartFromSource(null, { readiness: { ready: true, state: "ready", source }, root, scope: select.value });
+    });
+    wrap.append(select);
+    head.append(label, wrap);
+  }
+  if (head.childElementCount) gallery.append(head);
+  const cards = document.createElement("div");
+  cards.className = "clio-chart-gallery-cards";
+  extraction.candidates.forEach((candidate, index) => {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = `clio-chart-gallery-card${candidate.fresh ? " is-arriving" : ""}`;
+    card.setAttribute("aria-pressed", String(index === extraction.index));
+    card.innerHTML = clioChartGalleryThumb(candidate);
+    const caption = document.createElement("span");
+    caption.className = "clio-chart-gallery-caption";
+    const kind = document.createElement("b");
+    kind.textContent = candidate.type === "diagram" ? t(`clio_diagram_kind_${candidate.diagram.kind}`) : t("clio_chart_kind_data");
+    caption.append(kind);
+    const why = candidate.why || candidate.title || "";
+    if (why) caption.append(document.createTextNode(` · ${why}`));
+    card.append(caption);
+    card.addEventListener("click", () => showClioChartCandidate(index));
+    candidate.fresh = false;
+    cards.append(card);
+  });
+  if (extraction.pending) {
+    for (let index = extraction.candidates.length; index < 3; index += 1) {
+      const skeleton = document.createElement("div");
+      skeleton.className = "clio-chart-gallery-card is-skeleton";
+      skeleton.setAttribute("aria-hidden", "true");
+      skeleton.innerHTML = `<span class="clio-chart-gallery-caption">${escapeHtml(t("clio_chart_gallery_reading"))}</span>`;
+      cards.append(skeleton);
+    }
+  }
+  if (extraction.failed && !extraction.candidates.length) {
+    const failed = document.createElement("div");
+    failed.className = "clio-chart-gallery-failed";
+    const text = document.createElement("p");
+    text.textContent = extraction.failed;
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.className = "btn";
+    retry.textContent = t("retry");
+    retry.addEventListener("click", () => retryClioChartExtraction());
+    failed.append(text, retry);
+    cards.append(failed);
+  }
+  gallery.append(cards);
+}
+
+async function makeClioChartFromSource(preferredContext = null, options = {}) {
+  const readiness = options.readiness || resolveDocMapReadiness(preferredContext, {
+    rangeMode: options.rangeMode || "auto",
+    minSelectionChars: clioChartMinSourceChars,
+    minDocumentChars: clioChartMinSourceChars,
+  });
+  const source = readiness?.source;
+  openWindow("clioChart");
+  bindClioChartControls();
+  if (!source?.text) {
+    setClioChartStatus(t("clio_chart_prose_no_text"));
+    return false;
+  }
+  // A table or a CSV already is a chart: no model, no rewriting.
+  const direct = clioChartTextToTable(source.text);
+  if (direct) {
+    clioChartSetMode("data");
+    loadClioChartTable(direct, { title: source.label || t("clio_chart_label") });
+    return true;
+  }
+  if (!readiness.ready) {
+    setClioChartStatus(t("clio_chart_prose_too_short"));
+    return false;
+  }
+  const handoff = t("clio_chart_prose_working", source.label || t("untitled"));
+  if (!beginLongTask("clio-chart", handoff)) return false;
+  if (typeof setDocMapSourceStatus === "function") setDocMapSourceStatus(source, handoff);
+  clioChartShowPending(source, handoff);
+  const extraction = clioChartState.extraction;
+  extraction.root = options.root || source;
+  extraction.scope = options.scope || "";
+  try {
+    await buildClioChartMagic(source, (candidate) => {
+      if (clioChartState.extraction !== extraction) return;
+      candidate.fresh = true;
+      extraction.candidates.push(candidate);
+      if (extraction.candidates.length === 1) showClioChartCandidate(0);
+      else renderClioChartGallery();
+    });
+    extraction.pending = false;
+    renderClioChartGallery();
+    endLongTask("clio-chart");
+    return true;
+  } catch (error) {
+    const stopped = isAbortError(error);
+    const message = stopped
+      ? t("stopped")
+      : error?.message === "clio_chart_nothing_grounded"
+        ? t("clio_chart_prose_nothing_grounded")
+        : error?.message === "clio_chart_unreadable_answer"
+          ? t("clio_chart_prose_unreadable")
+          : t("clio_chart_prose_failed", error?.message || "");
+    if (!stopped) {
+      console.warn("ClioChart model pass failed", error);
+      markActiveLongTaskFailed(message);
+    }
+    extraction.pending = false;
+    // What already arrived stays: Stop keeps the cards that lit.
+    if (!extraction.candidates.length) extraction.failed = message;
+    endLongTask("clio-chart");
+    renderClioChartGallery();
+    setClioChartStatus(message);
+    if (typeof setDocMapSourceStatus === "function") setDocMapSourceStatus(source, message);
+    return false;
+  }
+}
+
+function retryClioChartExtraction() {
+  const source = clioChartState.extraction?.source;
+  if (!source) return false;
+  return makeClioChartFromSource(null, {
+    readiness: { ready: true, state: "ready", source },
+  });
+}
+
+// Saving is the one step that puts a prose chart on disk: a Markdown document
+// holding the title, the table with its config line, the reading, and where it
+// came from. ClioChart opens it again like any other table.
+function saveClioChartAsDocument() {
+  const table = clioChartState.table;
+  const extraction = clioChartState.extraction;
+  if (!table || !extraction?.temporary) return null;
+  if (!getActiveProject()) {
+    openWindow("projects");
+    setStatus(t("no_project_mounted"));
+    return null;
+  }
+  const candidate = extraction.candidates[extraction.index] || {};
+  const title = candidate.title || extraction.source.label || t("clio_chart_label");
+  const folder = ensureFolder(t("clio_chart_folder"));
+  const now = new Date().toISOString();
+  const body = [
+    `# ${title}`,
+    serializeClioChartTable(table),
+    candidate.reading || "",
+    `${t("clio_chart_saved_source")}: ${extraction.source.label || t("untitled")}`,
+  ].filter(Boolean).join("\n\n") + "\n";
+  const file = {
+    id: crypto.randomUUID(),
+    projectId: activeProjectId,
+    type: "text",
+    name: nextAvailableFileName(`${title.replace(/[\\/:*?"<>|]+/g, " ").trim().slice(0, 48) || t("clio_chart_label")}.md`, folder.id),
+    folderId: folder.id,
+    body,
+    source: "ClioChart",
+    // Its own kind of object: double-click opens the table in ClioChart.
+    artifactKind: "chart-table",
+    durable: true,
+    label: "ai",
+    createdAt: now,
+    updatedAt: now,
+  };
+  chatFiles.unshift(file);
+  saveDeskState();
+  renderDocuments();
+  renderProjectDisks();
+  extraction.temporary = false;
+  renderClioChartReading();
+  setClioChartStatus(t("clio_chart_saved_as", file.name));
+  if (typeof updateMenuState === "function") updateMenuState();
+  return file;
+}
+
+// The band under the chart: what it says, and — for the cell under the caret —
+// the source sentence it stands on. While a run is pending or has failed the
+// same band carries the outcome and a Retry button.
+function renderClioChartReading() {
+  const pane = clioChartElements().viewPane;
+  if (!pane) return;
+  let host = pane.querySelector(".clio-chart-reading");
+  const extraction = clioChartState.extraction;
+  const candidate = extraction?.candidates?.[extraction.index];
+  // Waiting, failure and the choice between candidates live in the gallery;
+  // this band speaks only for a data chart that is on the bench.
+  if (!candidate || candidate.type !== "data") {
+    host?.remove();
+    return;
+  }
+  if (!host) {
+    host = document.createElement("div");
+    host.className = "clio-chart-reading";
+    host.setAttribute("aria-live", "polite");
+    pane.append(host);
+  }
+  host.replaceChildren();
+  const head = document.createElement("p");
+  head.className = "clio-chart-reading-title";
+  const title = document.createElement("b");
+  title.textContent = candidate.title || extraction.source.label || "";
+  head.append(title);
+  if (candidate.reading) head.append(document.createTextNode(`　${candidate.reading}`));
+  host.append(head);
+
+  const anchor = candidate.anchors?.find((entry) => (
+    entry.row === clioChartState.selection.row && entry.column === clioChartState.selection.column
+  ));
+  const source = document.createElement("p");
+  source.className = "clio-chart-reading-source";
+  source.textContent = anchor
+    ? t("clio_chart_cell_source", anchor.quote)
+    : `${t("clio_chart_saved_source")}: ${extraction.source.label || t("untitled")}`;
+  host.append(source);
+
+  if (extraction.temporary) {
+    const actions = document.createElement("div");
+    actions.className = "clio-chart-reading-actions";
+    const save = document.createElement("button");
+    save.type = "button";
+    save.className = "btn default";
+    save.textContent = t("clio_chart_save_document");
+    save.addEventListener("click", () => saveClioChartAsDocument());
+    actions.append(save);
+    host.append(actions);
+  }
+}
+
+// A saved drawing opens on the canvas, where it was made. Its document body
+// is the readable outline; the drawing rides along on the document.
+function openSavedClioDiagram(file) {
+  if (!file?.clioDiagram || !window.AISystem6ClioDiagram) return false;
+  openWindow("clioChart");
+  bindClioChartControls();
+  clioChartState.extraction = null;
+  renderClioChartGallery();
+  clioChartSetMode("diagram");
+  window.AISystem6ClioDiagram.onStatus = setClioChartStatus;
+  window.AISystem6ClioDiagram.load(file.clioDiagram, { temporary: false, fileId: file.id, source: { label: file.name, text: file.clioDiagramSourceText || "" } });
+  setClioChartStatus(t("clio_diagram_opened", file.name));
+  return true;
+}
+
 // --- entry points ----------------------------------------------------------
 
 function loadClioChartTable(table, meta = {}) {
+  if (!meta.keepExtraction) {
+    clioChartState.extraction = null;
+    renderClioChartGallery();
+    clioChartSetMode("data");
+  }
   clioChartState.table = table;
   clioChartState.sourceDraft = null;
   clioChartState.templateFileId = meta.templateFileId || "";
@@ -2130,8 +3391,7 @@ function loadClioChartTable(table, meta = {}) {
   clioChartState.selection = { row: 0, column: 0 };
   clioChartState.presentation = false;
   clioChartState.revealIndex = 0;
-  clioChartState.undo.length = 0;
-  clioChartState.redo.length = 0;
+  clioChartState.history.clear();
   clioChartState.owner = meta.owner || null;
   clioChartOwnerNotice();
   renderClioChart();
@@ -2141,7 +3401,7 @@ function loadClioChartTable(table, meta = {}) {
 // window is live before the user touches anything.
 function attachClioChart() {
   bindClioChartControls();
-  if (!clioChartState.table) openClioChartTemplate({ id: "blank", builtIn: true });
+  if (!clioChartState.table && !clioChartState.extraction) openClioChartTemplate({ id: "blank", builtIn: true });
   else renderClioChart();
 }
 
@@ -2152,8 +3412,11 @@ function openClioChart(source = null) {
     if (!clioChartState.table) openClioChartTemplate({ id: "blank", builtIn: true });
     return true;
   }
-  const table = source.table || clioChartTextToTable(source.markdown || source.text || "");
+  const text = source.markdown || source.text || "";
+  const table = source.table || clioChartTextToTable(text);
   if (!table) {
+    // Not a table: prose goes to the model the way DocMap takes any text.
+    if (text.trim()) return makeClioChartFromSource(clioChartTextContext(text, source.title || source.label));
     setClioChartStatus(t("clio_chart_no_table"));
     return false;
   }
@@ -2161,12 +3424,31 @@ function openClioChart(source = null) {
   return true;
 }
 
+// Text that arrived at ClioChart itself — a paste, a dropped file, a drag — as
+// a source the shared readiness rules understand.
+function clioChartTextContext(text, label = "") {
+  return {
+    text: String(text || "").trim(),
+    label: label || t("clio_chart_label"),
+    scope: "clioChart",
+    threshold: clioChartMinSourceChars,
+  };
+}
+
 function importClioChartFiles(files) {
   const file = Array.from(files || [])[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = () => {
-    openClioChart({ title: file.name, markdown: String(reader.result || "") });
+    const text = String(reader.result || "");
+    // An SVG ClioChart drew carries its drawing; it opens on the canvas again.
+    const drawing = /^\s*<svg\b/i.test(text) ? window.AISystem6ClioDiagram?.fromSvg?.(text) : null;
+    if (drawing) {
+      clioChartSetMode("diagram");
+      window.AISystem6ClioDiagram.load(drawing, { temporary: true, source: { label: file.name, text: "" } });
+      return;
+    }
+    openClioChart({ title: file.name, markdown: text });
   };
   reader.readAsText(file);
 }
@@ -2178,9 +3460,7 @@ function setClioChartProjection(projection) {
   if (clioChartState.projection === "source" && projection !== "source" && !applyClioChartSourceDraft()) return;
   clioChartState.projection = projection;
   if (clioChartState.table && projection !== "source") {
-    pushClioChartUndo();
-    if (!setClioChartConfig(clioChartState.table, { projection })) clioChartState.undo.pop();
-    else writeClioChartBackToOwner();
+    if (clioChartTableChange("edit_step_view", () => setClioChartConfig(clioChartState.table, { projection }))) writeClioChartBackToOwner();
   }
   renderClioChartView();
   if (typeof updateMenuState === "function") updateMenuState();
@@ -2198,9 +3478,7 @@ function chartClioChartColumn(index) {
   const sort = clioChartState.descending ? "desc" : "asc";
   clioChartState.sortMode = sort;
   if (table.config.sort !== sort) {
-    pushClioChartUndo();
-    if (setClioChartConfig(table, { sort })) writeClioChartBackToOwner();
-    else clioChartState.undo.pop();
+    if (clioChartTableChange("edit_step_sort", () => setClioChartConfig(table, { sort }))) writeClioChartBackToOwner();
   }
   renderClioChart();
 }
@@ -2209,12 +3487,9 @@ function setClioChartReferenceRow(rowIndex) {
   const table = clioChartState.table;
   const row = table?.rows?.[rowIndex];
   if (!row || row.aggregate || row.label === table.reference) return;
-  pushClioChartUndo();
-  if (setClioChartConfig(table, { reference: row.label })) {
+  if (clioChartTableChange("edit_step_change", () => setClioChartConfig(table, { reference: row.label }))) {
     renderClioChart();
     writeClioChartBackToOwner();
-  } else {
-    clioChartState.undo.pop();
   }
 }
 
@@ -2222,9 +3497,15 @@ function handleClioChartPaste(event) {
   const text = event.clipboardData?.getData("text/plain") || "";
   if (!text.trim()) return;
   const table = clioChartTextToTable(text);
-  if (!table) return;
+  if (table) {
+    event.preventDefault();
+    loadClioChartTable(table, { title: t("clio_chart_label") });
+    return;
+  }
+  // A paste into a cell or the source view is that field's own text.
+  if (clioChartState.editing || getActiveEditableElement()) return;
   event.preventDefault();
-  loadClioChartTable(table, { title: t("clio_chart_label") });
+  makeClioChartFromSource(clioChartTextContext(text, t("clipboard")));
 }
 
 function handleClioChartWindowKeydown(event) {
@@ -2237,6 +3518,7 @@ function handleClioChartWindowKeydown(event) {
 
 function bindClioChartControls() {
   if (clioChartState.wired) return;
+  clioChartEnsureCompareButton();
   const els = clioChartElements();
   if (!els.grid) return;
   clioChartState.wired = true;
@@ -2301,10 +3583,11 @@ function bindClioChartControls() {
   els.trace?.addEventListener("click", () => setClioChartProjection("trace"));
   els.spatialGrid?.addEventListener("click", () => setClioChartProjection("grid"));
   els.score?.addEventListener("click", () => setClioChartProjection("score"));
+  clioChartElements().compare?.addEventListener("click", () => setClioChartProjection("compare"));
   els.source?.addEventListener("click", () => setClioChartProjection("source"));
 
   document.querySelector("#clio-chart-import-file")?.addEventListener("click", () => openTransientFilePicker({
-    accept: ".csv,.tsv,.md,.markdown,.txt",
+    accept: ".csv,.tsv,.md,.markdown,.txt,.svg",
     onSelect: (files) => importClioChartFiles(files),
   }));
 
@@ -2314,8 +3597,26 @@ function bindClioChartControls() {
   win?.addEventListener("dragover", (event) => event.preventDefault());
   win?.addEventListener("drop", (event) => {
     event.preventDefault();
-    importClioChartFiles(event.dataTransfer?.files);
+    if (event.dataTransfer?.files?.length) return importClioChartFiles(event.dataTransfer.files);
+    const text = event.dataTransfer?.getData("text/plain") || "";
+    if (text.trim()) openClioChart({ text, title: t("clio_chart_label") });
   });
+}
+
+// The sixth projection's button arrives with the module, beside the other
+// five, so the boot HTML carries nothing for it.
+function clioChartEnsureCompareButton() {
+  if (document.querySelector("#clio-chart-compare-view")) return;
+  const source = document.querySelector("#clio-chart-source-view");
+  if (!source) return;
+  const button = document.createElement("button");
+  button.className = "btn";
+  button.type = "button";
+  button.id = "clio-chart-compare-view";
+  button.setAttribute("data-i18n-aria-label", "clio_chart_compare");
+  button.setAttribute("aria-label", t("clio_chart_compare"));
+  button.innerHTML = `<span class="mobile-control-long" data-i18n="clio_chart_compare">${escapeHtml(t("clio_chart_compare"))}</span><span class="mobile-control-short" data-i18n="clio_chart_compare_short">${escapeHtml(t("clio_chart_compare_short"))}</span>`;
+  source.before(button);
 }
 
 window.AISystem6ClioChart = {
@@ -2323,7 +3624,14 @@ window.AISystem6ClioChart = {
   attach: attachClioChart,
   openFromTeachText: openClioChartFromTeachText,
   handBack: handBackClioChart,
-  hasOwnedBlock: () => !!clioChartState.owner,
+  hasOwnedBlock: () => !!clioChartState.owner && clioChartState.owner.kind !== "embed",
+  editEmbed: editClioChartEmbed,
+  openSavedTable: openSavedClioChartTable,
+  series: clioChartSeries,
+  parseValid: clioChartParseValid,
+  formatValid: clioChartFormatValid,
+  cellViolation: clioChartCellViolation,
+  invalidCells: clioChartInvalidCells,
   hasChartableTable: () => clioChartTeachTextTables().length > 0,
   currentProjection: () => clioChartState.projection || "",
   setProjection: setClioChartProjection,
@@ -2384,6 +3692,35 @@ window.AISystem6ClioChart = {
   traceMarkup: clioChartTraceMarkup,
   gridMarkup: clioChartSpatialGridMarkup,
   scoresMarkup: clioChartScoresMarkup,
+  compareMarkup: clioChartCompareMarkup,
+  makeFromSource: makeClioChartFromSource,
+  retry: retryClioChartExtraction,
+  saveDocument: saveClioChartAsDocument,
+  canSaveDocument: () => (clioChartState.mode === "diagram"
+    ? !!window.AISystem6ClioDiagram?.current?.() && !!window.AISystem6ClioDiagram?.isTemporary?.()
+    : !!clioChartState.table && !!clioChartState.extraction?.temporary),
+  mode: () => clioChartState.mode || "data",
+  requestEditJson: requestClioEditJson,
+  setStatus: setClioChartStatus,
+  // A drawing arriving from elsewhere (a deck page) takes the canvas.
+  showDiagramMode: () => {
+    clioChartState.extraction = null;
+    renderClioChartGallery();
+    clioChartSetMode("diagram");
+  },
+  sideAskContext: () => (clioChartState.mode === "diagram"
+    ? window.AISystem6ClioDiagram?.selectionContext?.()
+    : (clioChartState.table ? { kind: "data", table: serializeClioChartTable(clioChartState.table) } : null)),
+  openSavedDiagram: openSavedClioDiagram,
+  ground: groundClioChartCandidate,
+  suggestProjection: clioChartSuggestProjection,
+  tableFromGrounded: clioChartTableFromGrounded,
+  orientForChart: clioChartOrientForChart,
+  deckProjection: clioChartDeckProjection,
+  numbersIn: clioChartNumbersIn,
+  fold: clioChartFold,
+  packSource: clioChartPackSource,
+  parseModelJson: clioChartParseModelJson,
 };
 
 // Runtime command surface for ClioChart. The window manager still owns the
@@ -2405,7 +3742,10 @@ const CLIO_CHART_COMMAND_NAMES = [
   "clio-chart-trace",
   "clio-chart-grid",
   "clio-chart-score",
+  "clio-chart-compare",
   "clio-chart-source",
+  "clio-chart-from-text",
+  "clio-chart-save-document",
   "clio-chart-presentation",
   "clio-chart-send-stage",
   "clio-chart-reverse-sort",
@@ -2420,15 +3760,34 @@ const CLIO_CHART_COMMAND_NAMES = [
   "clio-chart-outliers",
   "clio-chart-gaps",
   "clio-chart-write-up",
+  "clio-chart-align-left",
+  "clio-chart-align-hcenter",
+  "clio-chart-align-right",
+  "clio-chart-align-top",
+  "clio-chart-align-vcenter",
+  "clio-chart-align-bottom",
+  "clio-chart-distribute-h",
+  "clio-chart-distribute-v",
+  "clio-chart-bring-front",
+  "clio-chart-send-back",
+  "clio-chart-layers",
+  "clio-chart-fill-down",
+  "clio-chart-fill-labels",
+  "clio-chart-valid-stop",
+  "clio-chart-valid-warn",
+  "clio-chart-valid-info",
+  "clio-chart-valid-clear",
+  "clio-chart-circle-invalid",
 ];
+
+const CLIO_CHART_ARRANGE_COMMANDS = new Set(["align-left", "align-hcenter", "align-right", "align-top", "align-vcenter", "align-bottom", "distribute-h", "distribute-v", "bring-front", "send-back", "layers"]);
 
 function clioChartCommandAvailable(action) {
   if (action === "open-clio-chart") return true;
   if (action === "see-as-chart") {
     const activeWindow = document.querySelector(".window.is-active");
     return activeWindow?.dataset.window === "teachText"
-      && typeof teachTextHasChartableMarkdownTable === "function"
-      && teachTextHasChartableMarkdownTable(teachTextBodyInput?.value || "");
+      && String(teachTextBodyInput?.value || "").trim().length >= clioChartMinSourceChars;
   }
   const activeWindow = document.querySelector(".window.is-active");
   if (activeWindow?.dataset.window !== "clioChart") return false;
@@ -2440,6 +3799,17 @@ function clioChartCommandAvailable(action) {
   }
   if (action === "clio-chart-reverse-sort") {
     return !!window.AISystem6ClioChart?.canReverseSort?.();
+  }
+  if (action === "clio-chart-save-document") {
+    return !!window.AISystem6ClioChart?.canSaveDocument?.();
+  }
+  const arrange = action.slice("clio-chart-".length);
+  if (["fill-down", "fill-labels", "valid-stop", "valid-warn", "valid-info", "valid-clear", "circle-invalid"].includes(arrange)) {
+    return clioChartState.mode !== "diagram" && !!clioChartState.table && clioChartState.projection !== "source"
+      && (arrange !== "valid-clear" || !!clioChartRuleFor(clioChartState.table, clioChartState.selection.column));
+  }
+  if (CLIO_CHART_ARRANGE_COMMANDS.has(arrange)) {
+    return clioChartState.mode === "diagram" && !!window.AISystem6ClioDiagram?.canArrange?.(arrange);
   }
   return true;
 }
@@ -2454,13 +3824,22 @@ function runClioChartRuntimeCommand(action) {
     : action;
   if (command === "import") {
     openTransientFilePicker({
-      accept: ".csv,.tsv,.md,.markdown,.txt,text/csv,text/markdown,text/plain",
+      accept: ".csv,.tsv,.md,.markdown,.txt,.svg,text/csv,text/markdown,text/plain,image/svg+xml",
       multiple: false,
       onSelect: (files) => chart.importFiles?.(files),
     });
     return;
   }
+  if (CLIO_CHART_ARRANGE_COMMANDS.has(command)) return window.AISystem6ClioDiagram?.arrange?.(command);
+  if (command === "fill-down") return fillClioChartSeries("column");
+  if (command === "fill-labels") return fillClioChartSeries("labels");
+  if (command.startsWith("valid-")) return setClioChartColumnRule(command.slice("valid-".length));
+  if (command === "circle-invalid") return circleClioChartInvalid();
   if (command === "hand-back") return chart.handBack?.();
+  if (command === "from-text") return chart.makeFromSource?.();
+  if (command === "save-document") {
+    return clioChartState.mode === "diagram" ? window.AISystem6ClioDiagram?.save?.() : chart.saveDocument?.();
+  }
   // Registered action ids are hyphenated ("clio-chart-new-cpu-gpu"), so after
   // the "clio-chart-" prefix strip above, command is "new-cpu-gpu" — never
   // "new:cpu-gpu". A "new:" check here never matched any of the seven
@@ -2480,7 +3859,7 @@ function runClioChartRuntimeCommand(action) {
   if (command === "row-down") return chart.moveRow?.(clioChartState.selection.row, clioChartState.selection.row + 1);
   if (command === "column-add") return chart.insertColumn?.(clioChartState.column);
   if (command === "column-delete") return chart.deleteColumn?.(clioChartState.column);
-  if (["bars", "matrix", "trace", "grid", "score", "source"].includes(command)) {
+  if (["bars", "matrix", "trace", "grid", "score", "compare", "source"].includes(command)) {
     return chart.setProjection?.(command);
   }
   return chart.ask?.(command);

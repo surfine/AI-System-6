@@ -184,6 +184,7 @@
     "tools.sketch-outline": registerTask("tools.sketch-outline", "writer", "markdown", "outline", "selected-only"),
     "tools.image-prompt": registerTask("tools.image-prompt", "utility"),
     "tools.clio-chart": registerTask("tools.clio-chart", "utility"),
+    "tools.clio-edit": registerTask("tools.clio-edit", "utility"),
     "tools.bureaucracy-captions": registerTask("tools.bureaucracy-captions", "utility", "json"),
     "tools.bureaucracy-captions-markdown": registerTask("tools.bureaucracy-captions-markdown", "utility"),
   });
@@ -262,6 +263,7 @@
     "humanizer-repair": "writing.tool-rewrite",
     "image-prompt": "tools.image-prompt",
     "clio-chart": "tools.clio-chart",
+    "clio-edit": "tools.clio-edit",
     "bureaucracy_meme_caption": "tools.bureaucracy-captions",
     "bureaucracy_meme_caption_markdown": "tools.bureaucracy-captions-markdown",
     "praise": "writing.tool-review",

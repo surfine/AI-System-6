@@ -19,8 +19,17 @@ const context = {
   escapeHtml: (value) => String(value === null || value === undefined ? "" : value)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"),
 };
-vm.runInNewContext(source, context);
+context.structuredClone = structuredClone;
+Object.assign(context, { TextEncoder, TextDecoder, atob });
+context.registerEditHistory = (name, entry) => { context.editHistories = { ...(context.editHistories || {}), [name]: entry }; };
+vm.createContext(context);
+vm.runInContext(read("app/core/edit-history.js"), context);
+vm.runInContext(read("app/core/edit-snap.js"), context);
+vm.runInContext(read("app/core/edit-embeds.js"), context);
+vm.runInContext(source, context);
+vm.runInContext(read("app/features/clio-diagram.js"), context);
 const chart = context.window.AISystem6ClioChart;
+const diagramApi = context.window.AISystem6ClioDiagram;
 
 test.assert(!!chart, "the module exposes window.AISystem6ClioChart");
 
@@ -186,7 +195,9 @@ test.assert(barsSvg.includes("role=\"img\"") && barsSvg.includes("aria-label"), 
 const stagePage = chart.stageMarkdown(parsed, "bars");
 test.assert(stagePage.includes("data:image/svg+xml;base64,"), "the stage page embeds the drawing as an image");
 test.assert(stagePage.includes("<!-- _class: evidence"), "and declares the evidence layout");
-test.assert(stagePage.includes("<!-- clio-chart:"), "and keeps the source table for the reader of the file");
+const stageEmbed = context.window.AISystem6EditEmbeds.parseEmbeds(stagePage)[0];
+test.assert(stageEmbed?.kind === "chart" && /MacBook Air 15 M5/.test(stageEmbed.data.markdown), "and carries the source table as an editable chart copy");
+test.assert(stageEmbed.data.markdown.includes("bars"), "the copy remembers the projection it was drawn with");
 test.assert(chart.svgBase64("A&B") === Buffer.from("A&B", "utf8").toString("base64"), "the encoder survives non-ASCII and markup");
 
 // The bars projection is markup without a DOM in it, so the contract can read
@@ -321,8 +332,10 @@ test.assertIncludes(html, 'data-i18n="clio_chart_bars_short"', "ClioChart suppli
 
 test.assertIncludes(manifest, '"app/features/clio-chart.js"', "the module is registered as a lazy runtime path");
 test.assertNotIncludes(html, "app/features/clio-chart.js", "a lazy module is never added to the startup script tags");
+test.assertIncludes(manifest, '"app/features/clio-diagram.js"', "the drawing canvas is a lazy runtime path too");
+test.assertNotIncludes(html, "app/features/clio-diagram.js", "and never a startup script tag");
 test.assertIncludes(styleManifest, '"styles/87-clio-chart.css"', "the stylesheet is in the style manifest");
-test.assertIncludes(config, 'createLazyModuleLoader("AISystem6ClioChartLoaded", ["app/features/clio-chart.js"], false, ["styles.clio-chart.css"])', "the lazy loader brings the stylesheet with the module");
+test.assertMatches(config, /createLazyModuleLoader\("AISystem6ClioChartLoaded", \[[^\]]*"app\/features\/clio-chart\.js", "app\/features\/clio-diagram\.js"\], false, \["styles\.clio-chart\.css"[^\]]*\]\)/, "the lazy loader brings the stylesheet with the module");
 // The sheet also dresses one ClioStage element: .clio-stage-chart-slide is added
 // when a slide carries a chart snapshot, and a restored session can bring that
 // snapshot back without ClioChart having been opened this boot. ClioStage must
@@ -331,7 +344,7 @@ test.assertIncludes(config, 'createLazyModuleLoader("AISystem6ClioChartLoaded", 
 // deck's theme module now rides along with the same loader.
 test.assertMatches(
   config,
-  /createLazyModuleLoader\("AISystem6ClioStageLoaded", \[[^\]]*app\/features\/clio-stage\.js[^\]]*\], false, \["styles\.clio-chart\.css"\]\)/,
+  /createLazyModuleLoader\("AISystem6ClioStageLoaded", \[[^\]]*app\/features\/clio-stage\.js[^\]]*\], false, \["styles\.clio-chart\.css"[^\]]*\]\)/,
   "ClioStage pulls the chart stylesheet for a restored chart slide"
 );
 test.assertIncludes(styleManifest, '"styles.clio-chart.css"', "the stylesheet ships as its own lazy bundle, off the boot payload");
@@ -387,10 +400,9 @@ test.assertIncludes(chatMessages, "await ensureClioChartModule()", "the reverse 
 test.assertIncludes(chatMessages, "window.AISystem6ClioChart?.open?.({ markdown: content", "the reverse handoff passes the original Markdown");
 
 test.assertIncludes(source, "async function sendClioChartToStage()", "the current projection can become one ClioStage page");
-test.assertIncludes(source, "data:image/svg+xml;base64,", "the stage handoff carries the projection as a drawing the page owns");
-test.assertIncludes(source, 'sourceKind: "clioChart"', "the ClioStage source is explicitly identified");
-test.assertIncludes(clioStage, 'sourceKind === "clioChart"', "ClioStage recognizes a chart snapshot");
-test.assertIncludes(clioStage, "chartSnapshot.cloneNode(true)", "ClioStage renders a fresh clone of the frozen chart page");
+test.assertIncludes(source, 'embeds.embedMarkdown({ kind: "chart"', "the stage handoff carries the projection as a drawing the page owns, with the table as an editable copy");
+test.assertIncludes(source.slice(source.indexOf("async function sendClioChartToStage()")), 'sourceKind: "generated",\n    temporary: true,', "the deck it opens is an ordinary unsaved deck, editable like any other");
+test.assertNotIncludes(clioStage, "chartSnapshot", "a chart page is an ordinary page now: no frozen-snapshot path in ClioStage");
 test.assertIncludes(source, 'menuItem("clio-chart-send-stage"', "Send to ClioStage is a visible chart menu command");
 test.assertIncludes(source, '"clio-chart-send-stage"', "Send to ClioStage is wired through the runtime command layer");
 
@@ -651,5 +663,269 @@ test.assertIncludes(
   'status: document.querySelector("#clio-chart-status")',
   "the refusal renders through the window's own on-screen status element, not only the console"
 );
+
+// --- prose to chart: the model proposes, the source decides ---------------
+// A chart drawn from prose keeps a value only when the source wrote it, in a
+// sentence that also names the row. These run the real grounding function.
+const PROSE = [
+  "我们测了三台机器。MacBook Air 的续航是 17.2 小时，售价 8,999 元。",
+  "ThinkPad X1 续航 14 小时，售价 12999 元。",
+  "Surface Laptop 续航约 15 小时。",
+].join("\n");
+const groundedProse = chart.ground({
+  title: "MacBook Air 续航最长",
+  kind: "quantitative",
+  subject: "机型",
+  columns: [{ text: "续航", unit: "小时" }, { text: "售价", unit: "元" }],
+  rows: [
+    { label: "MacBook Air", cells: [{ text: "17.2", quote: "MacBook Air 的续航是 17.2 小时" }, { text: "8999", quote: "售价 8,999 元" }] },
+    { label: "ThinkPad X1", cells: [{ text: "14 小时", quote: "" }, { text: "12999", quote: "ThinkPad X1 续航 14 小时，售价 12999 元" }] },
+    { label: "Surface Laptop", cells: [{ text: "约 15", quote: "Surface Laptop 续航约 15 小时" }, { text: "9999", quote: "售价 9999 元" }] },
+  ],
+  reading: "续航差了 3.2 小时",
+}, PROSE, { language: "zh" });
+const proseTable = chart.parseTable(groundedProse.markdown);
+const proseCell = (row, column) => proseTable.rows[row].cells[column].text;
+test.assert(proseCell(0, 1) === "8999", "1,234 and 1234 are the same number: a thousands separator does not unground a value");
+test.assert(proseCell(1, 0) === "14", "without a quote, a value is grounded by a source sentence holding both the value and the row's name");
+test.assert(proseCell(2, 0) === "15 ?", "a hedged source value (约) is kept and marked uncertain, not rounded into certainty");
+test.assert(proseCell(2, 1) === "", "a number the source never wrote is left blank, exactly like an unmeasured cell");
+test.assert(groundedProse.blanked === 1 && groundedProse.kept === 5, "the grounding counts what it kept and what it cleared");
+test.assert(groundedProse.reading === "", "a reading that states a computed number (3.2) is dropped, not shown");
+test.assert(groundedProse.title === "MacBook Air 续航最长", "a title without invented numbers is kept");
+test.assert(proseTable.columns[0].unit === "小时", "the unit lives in the column header");
+test.assert(groundedProse.anchors.some((anchor) => anchor.row === 1 && anchor.column === 0 && anchor.quote.includes("ThinkPad X1")),
+  "every kept cell carries the source sentence it stands on");
+
+const elsewhere = chart.ground({
+  kind: "quantitative",
+  columns: [{ text: "分数" }],
+  rows: [
+    { label: "甲", cells: [{ text: "3" }] },
+    { label: "乙", cells: [{ text: "17.2" }] },
+  ],
+}, PROSE, { language: "zh" });
+test.assert(chart.parseTable(elsewhere.markdown).rows[1].cells[0].text === "",
+  "digits that occur elsewhere in the text do not ground a value for a row the sentence never names");
+
+const mixedUnits = chart.ground({
+  kind: "quantitative",
+  columns: [{ text: "收入", unit: "元" }],
+  rows: [
+    { label: "A 店", cells: [{ text: "1.2万", quote: "A 店收入 1.2万" }] },
+    { label: "B 店", cells: [{ text: "8000元", quote: "B 店收入 8000元" }] },
+  ],
+}, "A 店收入 1.2万。B 店收入 8000元。", { language: "zh" });
+test.assert(chart.parseTable(mixedUnits.markdown).rows[0].cells[0].text === "1.2万 ?",
+  "a value written in another unit keeps its own unit and is marked uncertain instead of being converted");
+
+const qualitative = chart.ground({
+  kind: "qualitative",
+  subject: "工具",
+  columns: [{ text: "离线可用" }, { text: "导出" }],
+  rows: [
+    { label: "DocMap", cells: [{ text: "有", quote: "DocMap 离线可用" }, { text: "PDF 和 Markdown" }] },
+    { label: "ClioStage", cells: [{ text: "—", quote: "ClioStage 需要模型" }, { text: "一键分享到云端" }] },
+    { label: "Reader", cells: [{ text: "●" }, { text: "有" }] },
+  ],
+}, "DocMap 离线可用，导出 PDF 和 Markdown。ClioStage 需要模型。Reader 有时也行。", { language: "zh" });
+const qualitativeTable = chart.tableFromGrounded(qualitative);
+test.assert(qualitativeTable.rows[0].cells[1].text === "PDF 和 Markdown", "a qualitative cell keeps the source's own phrase");
+test.assert(qualitativeTable.rows[1].cells[1].text === "", "a phrase the source never wrote is cleared from a qualitative cell");
+test.assert(qualitativeTable.rows[1].cells[0].text === "—", "the three marks are the only non-source text a qualitative cell may hold");
+test.assert(qualitativeTable.rows[0].cells[0].text === "●", "a yes word becomes the full mark, so every cell of one kind reads the same way");
+test.assert(qualitativeTable.rows[2].cells[0].text === "", "a mark that points at no source words is cleared");
+test.assert(qualitativeTable.rows[2].cells[1].text === "", "a one-character phrase does not count as the source saying it");
+const borrowed = chart.ground({
+  kind: "qualitative",
+  columns: [{ text: "AI" }],
+  rows: [
+    { label: "Ulysses", cells: [{ text: "无", quote: "没有内置 AI" }] },
+    { label: "Obsidian", cells: [{ text: "无", quote: "没有内置 AI" }] },
+  ],
+}, "Ulysses 没有内置 AI。Obsidian 靠插件。", { language: "zh" });
+const borrowedTable = chart.parseTable(borrowed.markdown);
+test.assert(borrowedTable.rows[0].cells[0].text === "—" && borrowedTable.rows[1].cells[0].text === "",
+  "a reading borrowed from a sentence about another row is cleared");
+test.assert(qualitativeTable.config.projection === "compare", "a qualitative matrix opens in the comparison projection");
+test.assert(chart.isChartable(qualitativeTable), "a declared comparison table is chartable even with no numeric column");
+test.assert(chart.serializeTable(chart.parseTable(chart.serializeTable(qualitativeTable))) === chart.serializeTable(qualitativeTable),
+  "the comparison table survives the round trip");
+const compareSvg = chart.projectionSvg(qualitativeTable, "compare", { ink: "#000", tint: "#eee", paper: "#fff" }, { heading: "两件工具" });
+test.assert(compareSvg.startsWith("<svg") && compareSvg.includes("<circle") && !/https?:\/\/(?!www\.w3\.org)/.test(compareSvg),
+  "the comparison drawing is a self-contained SVG with drawn marks");
+test.assertIncludes(chart.compareMarkup(qualitativeTable), "clio_chart_mark_full", "marks carry a spoken name for screen readers");
+
+const transposed = chart.orientForChart(chart.parseTable("| 指标 | 周报 | 月报 |\n|---|---|---|\n| 写作时间（小时） | 2 | 1 |\n| 协作请求（次/月） | 3 | 11 |"));
+test.assert(transposed.rows.map((row) => row.label).join(",") === "周报,月报" && transposed.columns[0].unit === "小时",
+  "metrics written down the side are turned round so one axis never mixes units");
+test.assert(chart.deckProjection(transposed) === "matrix", "a deck page comparing two metrics across a few objects draws the matrix");
+test.assert(chart.orientForChart(parsed) === parsed, "a table already written objects-down is left as it is");
+const fitted = chart.projectionSvg(transposed, "matrix", { ink: "#000", tint: "#eee", paper: "transparent" }, { omitHeading: true, fit: true });
+const fittedHeight = Number((fitted.match(/viewBox="0 0 1280 (\d+)"/) || [])[1]);
+test.assert(fittedHeight > 0 && fittedHeight < 400, "a two-row drawing for a deck page is cropped to its content instead of a 720-tall canvas");
+test.assert(!/font-size="30"/.test(fitted), "a drawing on a titled page carries no second title");
+
+const suggest = (markdown) => chart.suggestProjection(chart.parseTable(markdown));
+test.assert(suggest("| 年份 | 销量 |\n|---|---|\n| 2022 | 10 |\n| 2023 | 12 |\n| 2024 | 15 |") === "trace", "a time axis is drawn as a trace");
+test.assert(suggest("| 机型 | 续航 |\n|---|---|\n| A | 10 |\n| B | 12 |") === "bars", "one metric across objects is ranked bars");
+test.assert(suggest("| 机型 | a | b | c |\n|---|---|---|---|\n| A | 1 | 2 | 3 |\n| B | 4 | 5 | 6 |\n| C | 7 | 8 | 9 |") === "matrix", "several metrics across several objects is the matrix");
+test.assert(suggest("| 项 | 评分 |\n|---|---|\n| 屏幕 | 88 / 98 -> 90% |\n| 续航 | 70 / 100 -> 70% |") === "score", "scores are drawn as scores");
+
+const longSource = [`${"无数字的铺垫。".repeat(800)}`, "关键数据：A 为 42。", `${"更多铺垫。".repeat(800)}`].join("\n\n");
+test.assert(chart.packSource(longSource, 3000).includes("A 为 42"), "a long text keeps its numeric paragraphs before anything else");
+test.assert(chart.parseModelJson("```json\n{\"candidates\":[]}\n```").candidates.length === 0, "a fenced JSON answer still parses");
+test.assert(chart.parseModelJson("not json") === null, "a non-JSON answer parses to nothing rather than throwing");
+
+test.assertIncludes(source, "makeClioChartFromSource(clioChartTextContext(text, t(\"clipboard\")))", "pasted prose goes to the model path instead of being refused");
+test.assertIncludes(source, "if (clioChartState.editing || getActiveEditableElement()) return;", "a paste into a cell or the source view stays that field's text");
+test.assertIncludes(source, "return makeClioChartFromSource();", "See as Chart with no table under the caret charts the selection or document");
+test.assertIncludes(source, 'ai_system6_task_kind: "clio-chart"', "the extraction run is a ClioChart task kind");
+test.assertIncludes(source, 'resolveWritingRoutePrompt("source-apps.cliochart-magic")', "the drawing contract is a shared prompt file");
+test.assertIncludes(source, "if (!table || !extraction?.temporary) return null;", "only a temporary prose chart is saved as a new document");
+
+// --- concept drawings: boxes stand on sentences ------------------------------
+const ESSAY = [
+  "去年三月起，编辑部把周报改成了月报。",
+  "过去每周五下午，每个人要花大约 2 小时写周报。全组 9 个人，一周就是 18 个小时。",
+  "主编老陈在复盘会上说：我们写周报，是在给自己一种在推进的错觉。",
+  "改制后的六个月里，跨组协作请求从每月 3 次增加到 11 次。",
+].join("\n");
+const drawn = diagramApi.ground({
+  kind: "flow",
+  title: "周报改成月报之后协作变多",
+  why: "改版的因果",
+  nodes: [
+    { id: "a", label: "周报每人每周约 2 小时", quote: "每个人要花大约 2 小时写周报" },
+    { id: "b", label: "全组每周 18 小时", quote: "全组 9 个人一周就是 18 个小时" },
+    { id: "c", label: "协作 3 → 11 次/月", quote: "跨组协作请求从每月 3 次增加到 11 次" },
+    { id: "d", label: "效率提升 266%", quote: "跨组协作请求从每月 3 次增加到 11 次" },
+    { id: "e", label: "大家都很开心", quote: "团队氛围变得更好了" },
+  ],
+  edges: [{ from: "a", to: "b", label: "导致" }, { from: "b", to: "c" }, { from: "c", to: "d" }, { from: "d", to: "e" }],
+  groups: [{ label: "成本", nodes: ["a", "b"] }, { label: "孤组", nodes: ["c"] }],
+}, ESSAY);
+const drawnIds = drawn.diagram.nodes.map((node) => node.id);
+test.assert(drawnIds.join(",") === "a,b,c", "boxes are kept only when they stand on a source sentence and invent no number");
+test.assert(drawn.dropped === 2, "the drawing counts the boxes it could not ground");
+test.assert(drawn.diagram.nodes[1].quote.includes("18 个小时"), "a quote missing a comma still finds its sentence");
+test.assert(drawn.diagram.edges.length === 2 && drawn.diagram.edges.every((edge) => drawnIds.includes(edge.from) && drawnIds.includes(edge.to)),
+  "a wire to a box that was not drawn is not drawn either");
+test.assert(drawn.diagram.edges[0].label === "导致", "a wire keeps its short label");
+test.assert(drawn.diagram.groups.length === 1, "a group needs two boxes that were drawn");
+
+const placed = diagramApi.layout(drawn.diagram, "flow");
+diagramApi.kinds.forEach((kind) => {
+  const redrawn = diagramApi.layout(placed, kind);
+  test.assert(JSON.stringify(redrawn.nodes.map((node) => [node.id, node.label, node.quote])) === JSON.stringify(placed.nodes.map((node) => [node.id, node.label, node.quote]))
+    && redrawn.nodes.every((node) => Number.isFinite(node.x) && Number.isFinite(node.y) && node.x >= 0),
+  `changing the drawing to ${kind} moves boxes and keeps every label and source`);
+});
+const timelineDrawing = diagramApi.layout(placed, "timeline");
+test.assert(timelineDrawing.nodes[0].x < timelineDrawing.nodes[1].x && timelineDrawing.nodes[1].x < timelineDrawing.nodes[2].x, "a timeline reads left to right in the order of the wires");
+
+const partial = '{"candidates":[{"kind":"flow","nodes":[{"id":"a","label":"x","quote":"y"}],"edges":[]},{"kind":"tree","nodes":[],"title":"含 } 括号的字符串"},{"kind":"cycle","nodes":[{"id":"a","lab';
+const streamed = diagramApi.streamCandidates(partial);
+test.assert(streamed.length === 2 && streamed[1].kind === "tree", "each candidate is read the moment its object closes, while the next is still arriving");
+
+const drawingSvg = diagramApi.svg(placed, { ink: "#000", tint: "#eee", paper: "#fff" }, { heading: "周报改月报" });
+test.assert(drawingSvg.startsWith("<svg") && drawingSvg.includes("marker") && !/https?:\/\/(?!www\.w3\.org)/.test(drawingSvg), "a drawing exports as a self-contained SVG with arrowheads");
+const outline = diagramApi.markdown(placed, "便签本");
+test.assert(outline.includes("<!-- cliodiagram: flow -->") && outline.includes("出处：「每个人要花大约 2 小时写周报」"), "a saved drawing reads in TeachText as boxes with their sources");
+test.assert(diagramApi.packSource(`## 一\n\n${"甲。".repeat(3000)}\n\n## 二\n\n数据是 42。`, 2000).includes("## 二"), "a long text keeps its headings for the main-line drawing");
+
+const diagramSource = read("app/features/clio-diagram.js");
+test.assertIncludes(diagramSource, "if (!quote || clioChartNumbersIn(label).some((value) => !quoted.includes(value)))", "a label may compress its sentence but never add a number to it");
+test.assertIncludes(source, "objects.forEach((raw, index) => {", "candidates are grounded as they stream in, so the gallery lights card by card");
+test.assertIncludes(source, "for (let index = extraction.candidates.length; index < 3; index += 1)", "cards still on their way show as skeletons");
+test.assertIncludes(source, "if (!extraction.candidates.length) extraction.failed = message;", "Stop keeps the cards that already lit");
+test.assertIncludes(read("app/core/config.js"), '"app/features/clio-chart.js", "app/features/clio-diagram.js"]', "the drawing canvas loads with ClioChart");
+
+// --- one-line edits: what changes, what is refused ---------------------------
+const proposal = diagramApi.mergeProposal(placed, {
+  kind: "timeline",
+  nodes: [
+    { id: "a", label: "周报：每人每周 2 小时" },
+    { id: "b", label: "全组每周 99 小时" },
+    { id: "z", label: "协作请求变多", quote: "跨组协作请求从每月 3 次增加到 11 次" },
+    { id: "y", label: "大家很满意", quote: "团队士气高涨" },
+  ],
+  edges: [{ from: "a", to: "z" }, { from: "z", to: "y" }],
+}, ESSAY);
+test.assert(proposal.diagram.kind === "timeline" && proposal.diagram.nodes.every((node) => Number.isFinite(node.x)), "a proposal may change the way of drawing, and is placed again");
+test.assert(proposal.diagram.nodes.find((node) => node.id === "a").quote === placed.nodes.find((node) => node.id === "a").quote, "a box the drawing already had keeps its source");
+test.assert(proposal.diagram.nodes.find((node) => node.id === "b").label === placed.nodes.find((node) => node.id === "b").label, "a relabel that adds a number its source lacks is refused and the old label kept");
+test.assert(proposal.added === 1 && proposal.refused.includes("大家很满意"), "a new box needs a source sentence; one without is refused and named");
+test.assert(proposal.removed === 1 && !proposal.diagram.nodes.some((node) => node.id === "c"), "a box the proposal leaves out is counted as removed");
+test.assert(proposal.diagram.edges.length === 1, "a wire to a refused box is not drawn");
+
+const timelinePage = diagramApi.fromSlidePage("<!-- _class: timeline light -->\n\n## 改制经过\n\n- **去年三月** 周报改成月报\n- **六个月后** 协作请求每月 11 次\n- **下一步** 三问做成模板", "timeline", ESSAY);
+test.assert(timelinePage?.kind === "timeline" && timelinePage.nodes.length === 3 && timelinePage.edges.length === 2, "a timeline page is drawn as a timeline of its own items");
+test.assert(timelinePage.nodes[1].quote.includes("11 次"), "a drawn page's boxes look for the source sentence they came from");
+const sidesPage = diagramApi.fromSlidePage("<!-- _class: columns light -->\n\n## 两种写法\n\n### 周报\n- 每周 2 小时\n\n### 月报\n- 每月约 1 小时", "columns", "");
+test.assert(sidesPage?.kind === "compare" && sidesPage.cols.join("|") === "周报|月报", "a two-sided page is drawn as a comparison with its two headings");
+test.assert(diagramApi.fromSlidePage("## 只有一句", "columns", "") === null, "a page that does not have two sides is left as it is");
+
+// ---- The canvas's arrangement (edit kernel), run through the real module ----
+{
+  const run = (code) => vm.runInContext(code, context);
+  const same = (actual, expected, message) => test.assert(actual === expected, `${message} (got ${JSON.stringify(actual)})`);
+  diagramApi.load({
+    kind: "flow", title: "t", groups: [], edges: [{ id: "e1", from: "a", to: "b", label: "" }],
+    nodes: [
+      { id: "a", label: "甲", quote: "甲", x: 100, y: 40, w: 110 },
+      { id: "b", label: "乙", quote: "乙", x: 400, y: 90, w: 110 },
+      { id: "c", label: "丙", quote: "丙", x: 700, y: 140, w: 110, locked: true },
+    ],
+  }, { temporary: true });
+  run('clioDiagramState.selection = ["a", "b", "c"]; clioDiagramState.keyId = "b";');
+  test.assert(diagramApi.arrange("align-top"), "Align runs on a selection of two or more unlocked boxes");
+  const ys = run("JSON.stringify(clioDiagramState.diagram.nodes.map((node) => node.y))");
+  same(ys, "[90,90,140]", "Align Top lines the selection up to the box clicked last, and a locked box stays put");
+  same(diagramApi.undoLabel(), "edit_step_align", "the whole alignment is one named step");
+  diagramApi.undo();
+  same(run("clioDiagramState.diagram.nodes[0].y"), 40, "one undo puts every box back");
+  run('clioDiagramState.selection = ["a"];');
+  test.assert(!diagramApi.canArrange("align-left"), "Align needs two movable boxes");
+  diagramApi.arrange("bring-front");
+  same(run("clioDiagramState.diagram.nodes.at(-1).id"), "a", "Bring to Front draws the box last");
+  run('clioDiagramState.diagram.nodes.find((node) => node.id === "b").hidden = true;');
+  const svg = diagramApi.svg(diagramApi.current());
+  test.assert(!svg.includes("乙") && svg.includes("甲"), "a hidden box is left out of the drawing a slide carries");
+  test.assertNotIncludes(diagramApi.markdown(diagramApi.current()), "乙", "and out of the Markdown outline");
+  test.assert(run("clioDiagramState.diagram.nodes.some((node) => node.id === 'b')"), "while it stays in the document");
+}
+
+// ---- A drawing's SVG carries the drawing (preserve editing) ------------------
+{
+  const drawing = { kind: "flow", title: "t", groups: [], edges: [{ id: "e1", from: "a", to: "b", label: "" }],
+    nodes: [{ id: "a", label: "甲", quote: "甲", x: 100, y: 40, w: 110 }, { id: "b", label: "乙", quote: "", x: 400, y: 40, w: 110, hidden: true }] };
+  const svg = diagramApi.svg(drawing);
+  const back = diagramApi.fromSvg(svg);
+  test.assert(back && back.nodes.length === 2 && back.nodes[1].hidden === true, "an SVG of a drawing opens back as the whole editable drawing, hidden boxes included");
+  test.assert(diagramApi.fromSvg("<svg><metadata>x</metadata></svg>") === null, "any other SVG is not mistaken for one");
+  test.assertNotIncludes(diagramApi.svg(drawing, {}, { preserve: false }), "clio-embed", "the data can be left out when asked");
+}
+
+// ---- Fill series and validation (gridcraft), executed --------------------
+{
+  const same = (actual, expected, message) => test.assert(JSON.stringify(actual) === JSON.stringify(expected), `${message} (got ${JSON.stringify(actual)})`);
+  same(chart.series(["Q1", "Q2"], 4), ["Q3", "Q4", "Q1", "Q2"], "quarters continue and wrap");
+  same(chart.series(["一月", "三月"], 2), ["五月", "七月"], "a named list keeps its step");
+  same(chart.series(["第1轮"], 2), ["第2轮", "第3轮"], "text around one number counts on");
+  same(chart.series(["2023", "2024"], 2), ["2025", "2026"], "years in the labels continue exactly");
+  same(chart.series(["10", "12", "15"], 1, { estimate: true }), ["17?"], "data values continue their least-squares line, marked as an estimate");
+  same(chart.series(["1.5", "2.0"], 1, { estimate: true }), ["2.5?"], "and keep the seeds' decimals");
+  test.assert(chart.series(["42"], 3, { estimate: true }) === null, "one bare data value is not a series: nothing is invented");
+  test.assert(chart.series(["A", "B"], 2) === null, "words that are not a known list do not fill");
+  const rules = chart.parseValid(chart.formatValid([{ column: "续航 (h): 实测", min: 0, max: 24, level: "warn" }, { column: "分数", min: 0, max: null, level: "stop" }]));
+  same(rules.map((rule) => [rule.column, rule.min, rule.max, rule.level]), [["续航 (h): 实测", 0, 24, "warn"], ["分数", 0, null, "stop"]], "column rules round-trip through the table's comment, even with a colon in the name");
+  same(chart.cellViolation(rules[0], { text: "30", value: 30 }), "warn", "a value outside the range breaks the rule at the rule's level");
+  same(chart.cellViolation(rules[0], { text: "", value: null }), "", "a blank cell is unknown, never invalid");
+  same(chart.cellViolation(rules[1], { text: "未测", value: null }), "stop", "words in a ruled column break the rule");
+  const ruled = chart.parseTable("<!-- cliochart: bars, valid=\"分数:0..100:stop\" -->\n\n| 机型 | 分数 | 备注 |\n| --- | --- | --- |\n| A | 120 | 1 |\n| B | 80 | x |\n");
+  same(chart.invalidCells(ruled).map((cell) => [cell.row, cell.column, cell.level]), [[0, 0, "stop"], [1, 1, "info"]], "Circle Invalid finds rule breaks and non-numbers");
+  test.assertIncludes(chart.serializeTable(ruled), 'valid="分数:0..100:stop"', "the rule is kept in the table's own comment");
+}
 
 test.finish();

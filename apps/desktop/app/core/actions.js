@@ -63,6 +63,7 @@ const keyboardShortcutRegistry = [
   { id: "move-to-trash", key: "backspace", action: "move-file-trash", display: "⌘⌫", labelKey: "move_to_trash", suppressInEditable: true, scope: ["finder"] },
   { id: "move-to-trash-delete", key: "delete", action: "move-file-trash", display: "⌘⌫", labelKey: "move_to_trash", suppressInEditable: true, scope: ["finder"] },
   { id: "eject", key: "e", action: "eject-menu-selection", display: "⌘E", labelKey: "eject", suppressInEditable: true, scope: ["finder"] },
+  { id: "key-caps", key: "/", action: "open-key-caps", display: "⌘/", labelKey: "command_sheet", keyCaps: true, scope: "global" },
   { id: "system-help", key: "?", shift: true, action: "open-system-help", display: "⌘?", labelKey: "system_help", keyCaps: true, scope: "global" },
   { id: "control-panel", key: ",", action: "open-control", display: "⌘,", labelKey: "control_panel", keyCaps: true, scope: "global" },
   // The writing route is the product's core and had no Command keys at all,
@@ -96,6 +97,7 @@ const keyboardShortcutRegistry = [
   { id: "clio-chart-view-3", key: "3", action: "clio-chart-trace", display: "⌘3", labelKey: "clio_chart_trace", suppressInEditable: true, scope: ["clioChart"] },
   { id: "clio-chart-view-4", key: "4", action: "clio-chart-grid", display: "⌘4", labelKey: "clio_chart_grid", suppressInEditable: true, scope: ["clioChart"] },
   { id: "clio-chart-view-5", key: "5", action: "clio-chart-score", display: "⌘5", labelKey: "clio_chart_score", suppressInEditable: true, scope: ["clioChart"] },
+  { id: "clio-chart-view-6", key: "6", action: "clio-chart-compare", display: "⌘6", labelKey: "clio_chart_compare", suppressInEditable: true, scope: ["clioChart"] },
   { id: "clio-chart-reverse", key: "r", action: "clio-chart-reverse-sort", display: "⌘R", labelKey: "clio_chart_reverse_sort", suppressInEditable: true, scope: ["clioChart"] },
 ];
 
@@ -332,6 +334,30 @@ function makeDocMapFromFinderOrCurrent() {
   return withDocMap(() => makeDocMapFromCurrentSource());
 }
 
+// ClioChart and ClioStage take text the way DocMap does: the same readiness
+// rules choose the selection or the whole source, then the lazy tool runs.
+function oneClickSourceContext(rangeMode, preferredContext) {
+  return preferredContext
+    || (rangeMode === "selection" ? (getSelectionServiceContext() || lastSelectionServiceContext) : null);
+}
+
+// The source is read at the click, before the tool loads: loading a module
+// can bring another window forward, and the text the writer was looking at is
+// the text they asked for.
+async function makeClioChartForRange(rangeMode = "auto", preferredContext = null) {
+  const context = oneClickSourceContext(rangeMode, preferredContext);
+  const readiness = resolveDocMapReadiness(context, { rangeMode, minSelectionChars: clioChartMinSourceChars, minDocumentChars: clioChartMinSourceChars });
+  await ensureLazyModuleForUserAction(t("clio_chart_label"), ensureClioChartModule);
+  return window.AISystem6ClioChart?.makeFromSource?.(context, { rangeMode, readiness });
+}
+
+async function makeClioStageDeckForRange(rangeMode = "auto", preferredContext = null) {
+  const context = oneClickSourceContext(rangeMode, preferredContext);
+  const readiness = resolveDocMapReadiness(context, { rangeMode, minSelectionChars: clioStageMinSourceChars, minDocumentChars: clioStageMinSourceChars });
+  await ensureLazyModuleForUserAction(t("clio_stage_label"), ensureSlidesExportModule);
+  return makeClioStageDeckFromSource(context, { rangeMode, readiness });
+}
+
 function makeDocMapForRange(rangeMode = "auto", preferredContext = null) {
   const context = preferredContext
     || (rangeMode === "selection"
@@ -395,7 +421,7 @@ function runClaimCheckFromMenu() {
 }
 
 function normalizeReviewDeskLens(mode = "style") {
-  return ["facts", "hkrr", "guests", "mingming", "luoluo"].includes(mode) ? mode : "style";
+  return ["facts", "hkrr", "guests", "comments", "mingming", "luoluo"].includes(mode) ? mode : "style";
 }
 
 function getReviewDeskLens() {
@@ -446,6 +472,13 @@ function reviewDeskLensCopyKeys(lens = getReviewDeskLens()) {
       balloon: "balloon_review_desk",
       panelEmpty: "guest_reviews_empty",
     },
+    comments: {
+      title: "review_comments",
+      hint: "review_lens_hint_comments",
+      empty: "review_comments_empty",
+      balloon: "balloon_review_desk",
+      panelEmpty: "review_comments_empty",
+    },
   };
   return table[normalizeReviewDeskLens(lens)] || table.style;
 }
@@ -454,6 +487,7 @@ function reviewDeskResultPanelForLens(lens = getReviewDeskLens()) {
   const normalized = normalizeReviewDeskLens(lens);
   if (normalized === "style") return "style";
   if (normalized === "guests") return "guests";
+  if (normalized === "comments") return "comments";
   return "facts";
 }
 
@@ -473,9 +507,9 @@ function syncReviewDeskLensCopy(lens = getReviewDeskLens()) {
 
   const select = document.querySelector("#review-lens");
   if (select) {
-    // Guest Reviews stays a Commands destination; the closed-set select only
-    // carries the writer-facing lenses, so leave its value alone for guests.
-    if (normalized !== "guests" && select.value !== normalized) select.value = normalized;
+    // Guest Reviews and Comments stay Commands destinations; the closed-set
+    // select only carries the writer-facing lenses, so leave its value alone.
+    if (normalized !== "guests" && normalized !== "comments" && select.value !== normalized) select.value = normalized;
     select.dataset.balloonHelp = keys.balloon;
   }
 
@@ -501,6 +535,8 @@ function syncReviewDeskLensCopy(lens = getReviewDeskLens()) {
     syncReviewDeskLensEmptyPanel(styleSheetResultsEl, keys.panelEmpty);
   } else if (normalized === "guests") {
     syncReviewDeskLensEmptyPanel(document.querySelector("#guest-review-results"), keys.panelEmpty);
+  } else if (normalized === "comments") {
+    // The comments panel draws its own empty state (features/review-comments.js).
   } else {
     syncReviewDeskLensEmptyPanel(claimResultsEl, keys.panelEmpty);
   }
@@ -845,6 +881,26 @@ async function openReviewDesk(mode = "style") {
   setReviewDeskMode(mode);
   syncReviewDeskAvailability();
 }
+
+// The comments lens and the version compare share one panel. The module loads
+// the first time either is asked for; until then the Review Desk carries none
+// of it.
+async function openReviewComments(tab = "comments") {
+  await openReviewDesk("comments");
+  try {
+    await ensureLazyModuleForUserAction(t("review_comments"), ensureReviewCommentsModule);
+  } catch {
+    return;
+  }
+  // The threads need more of the window than the section text above them, the
+  // first time the writer comes here; a split they drag themselves is kept.
+  if (!reviewCommentsSplitSet) {
+    reviewCommentsSplitSet = true;
+    setReviewDeskSourceRatio(0.3);
+  }
+  return window.AISystem6ReviewDeskPanel?.show(tab);
+}
+let reviewCommentsSplitSet = false;
 
 async function openReviewDeskDocument({ documentId, mode = "facts" } = {}) {
   const file = chatFiles.find((item) => item.id === documentId && item.type === "text" && isInActiveProject(item));
@@ -1502,6 +1558,8 @@ function getApplicationActionHandlers() {
     "review-view-manuscript": viewReviewDeskManuscript,
     "review-edit-manuscript": () => viewReviewDeskManuscript({ edit: true }),
     "review-export": exportReviewDeskReport,
+    "open-review-comments": () => openReviewComments("comments"),
+    "open-review-compare": () => openReviewComments("compare"),
     "previous-claim-section": () => showAdjacentClaimCheckSection(-1),
     "next-claim-section": () => showAdjacentClaimCheckSection(1),
     "ai-praise": () => getWindow("reviewDesk")?.classList.contains("is-active") ? praiseReviewDeskText() : printTeachTextToAi("praise"),
@@ -1548,6 +1606,10 @@ function getApplicationActionHandlers() {
     "docmap-discard-picture-reading": () => withDocMap(() => discardDocMapPictureReading()),
     "make-docmap-selection": (context) => makeDocMapForRange("selection", context?.selection || null),
     "make-docmap-source": () => makeDocMapForRange("source"),
+    "make-chart": () => makeClioChartForRange("auto"),
+    "make-chart-selection": (context) => makeClioChartForRange("selection", context?.selection || null),
+    "make-slides": () => makeClioStageDeckForRange("auto"),
+    "make-slides-selection": (context) => makeClioStageDeckForRange("selection", context?.selection || null),
     "style-check-section": () => runTeachTextStyleCheck({ sectionOnly: true }),
     "style-check-manuscript": () => runTeachTextStyleCheck({ fullDocument: true }),
     "previous-style-section": () => showAdjacentStyleCheckSection(-1),
@@ -1867,7 +1929,9 @@ function runShortcut(event) {
   handleAction(command.id);
 }
 
-window.AISystem6Runtime?.registerApplication({id:"keyCaps",windowName:"keyCaps",commands:{"open-key-caps":{handler:()=>openWindow("keyCaps"),isAvailable:()=>!0}}});
+// Key Caps opens on the command sheet for the application behind it
+// (app/features/command-sheet.js).
+window.AISystem6Runtime?.registerApplication({id:"keyCaps",windowName:"keyCaps",commands:{"open-key-caps":{handler:()=>{openWindow("keyCaps");ensureCommandSheetModule().then(()=>window.AISystem6CommandSheet.render({focus:!0}),()=>{})},isAvailable:()=>!0}}});
 window.AISystem6DirectCmfEntry = () => handleAction("open-cmf-studio");
 window.AISystem6Runtime?.registerLazyCommand?.("see-as-chart",{ensure:ensureClioChartModule});
 window.AISystem6Runtime?.registerLazyCommand?.("clio-project-reset-layout",{ensure:ensureClioProjectModule});

@@ -436,8 +436,9 @@ section.metric li:first-child { flex: 1.35; border-top: 3px solid var(--slide-in
 section.metric li:first-child strong { font-size: 80px; white-space: nowrap; }
 
 /* evidence · the figure, then the sentence that reads it */
-section.evidence img { max-height: 46%; max-width: 100%; margin: 22px 0 0; }
+section.evidence img { max-height: 330px; max-width: 100%; margin: 22px 0 0; }
 section.evidence > p { margin-top: 18px; border-left: 2px solid var(--slide-rule-strong); padding-left: 22px; font-size: 21px; max-width: 62ch; }
+section.evidence > p:has(> img) { max-width: none; border-left: 0; padding-left: 0; margin-top: 0; }
 section.evidence p:last-child { border-left: 0; border-top: 2px solid var(--slide-rule-strong); padding-left: 0; font-size: 16px; }
 
 /* table */
@@ -500,16 +501,31 @@ function slideThemeCss(eraId) {
 const SLIDE_SCOPE_PASSTHROUGH = /^@(media|supports|page|font-face|keyframes|-webkit-keyframes)\b/i;
 
 // `dropContainers` is for ClioStage, whose frame already owns the box and the
-// scroll: there the deck's page geometry and its page-level flex/grid would
-// fight the shell, so those declarations are removed and the composition is
-// approximated. The printed sheet and an external Marp render use the untouched
-// CSS, so what leaves the desk is exact.
-const SLIDE_SCOPE_DROP = /(?:^|;)\s*(?:width|height|padding|padding-top|padding-bottom|padding-left|padding-right|display|flex|flex-direction|justify-content|align-items|grid-template-columns|grid-auto-rows|column-gap|align-content|box-sizing)\s*:[^;}]*/gi;
+// scroll, and is a grid of header, stage and footer. The printed sheet and an
+// external Marp render use the untouched CSS, so what leaves the desk is exact;
+// in the frame the composition is approximated:
+// - the bare `section` rule keeps its tokens and type but loses its box and its
+//   paint: the frame's size and padding are the shell's, and its ground and ink
+//   belong to ClioStage's kind and theme rules (the dark lead, the ink stage);
+// - every other rule on the page itself (`section.cover`, `section.era-x`) loses
+//   its flex/grid placement, which on the frame's grid squeezed the body into a
+//   sliver, and keeps the rest: an era's padding makes room for the window it
+//   draws, and `section.dark` is a surface the deck chose;
+// - `body` names the element that holds the page's content in the shell:
+//   `section.evidence > p` means a paragraph of the page, so it is re-aimed at
+//   that element's children.
+const SLIDE_SCOPE_PAGE = /^section(?:\.[\w-]+|:not\([^)]*\))*$/;
+const SLIDE_SCOPE_PAGE_CHILD = /^section((?:\.[\w-]+|:not\([^)]*\))*)\s*>\s*/;
+const SLIDE_SCOPE_DROP_PLACEMENT = /(?:^|;)\s*(?:display|flex|flex-direction|justify-content|align-items|grid-template-columns|grid-auto-rows|column-gap|align-content)\s*:[^;}]*/gi;
+const SLIDE_SCOPE_DROP_BASE = /(?:^|;)\s*(?:width|height|padding|padding-top|padding-bottom|padding-left|padding-right|box-sizing|background|color)\s*:[^;}]*/gi;
 
 function scopeSlideCss(css, scopeSelector, options = {}) {
-  const text = String(css || "");
+  // Comments go first: one before a rule would otherwise become part of its
+  // selector, and the rule would be dropped for not starting with `section`.
+  const text = String(css || "").replace(/\/\*[\s\S]*?\*\//g, "");
   const scope = String(scopeSelector || ".clio-stage-slide-frame");
   const dropContainers = options && options.dropContainers === true;
+  const contentBody = options && typeof options.body === "string" ? options.body.trim() : "";
   const out = [];
   let index = 0;
   while (index < text.length) {
@@ -524,20 +540,23 @@ function scopeSlideCss(css, scopeSelector, options = {}) {
       else if (char === "}") depth -= 1;
       cursor += 1;
     }
-    const isBase = !selector || selector === "section";
+    const parts = selector.split(",").map((part) => part.trim());
+    const isPage = !selector || parts.every((part) => SLIDE_SCOPE_PAGE.test(part));
     const rawBody = text.slice(open + 1, depth === 0 ? cursor - 1 : cursor);
-    const body = dropContainers && isBase ? rawBody.replace(SLIDE_SCOPE_DROP, "") : rawBody;
+    let body = dropContainers && isPage ? rawBody.replace(SLIDE_SCOPE_DROP_PLACEMENT, "") : rawBody;
+    if (dropContainers && (!selector || selector === "section")) body = body.replace(SLIDE_SCOPE_DROP_BASE, "");
     if (!selector) {
       out.push(body);
     } else if (SLIDE_SCOPE_PASSTHROUGH.test(selector)) {
       out.push(`${selector}{${body}}`);
     } else {
-      const scoped = selector
-        .split(",")
-        .map((part) => part.trim())
+      const scoped = parts
         .filter((part) => part.startsWith("section"))
-        .map((part) => `${scope}${part.slice("section".length)}`);
-      if (scoped.length) out.push(`${scoped.join(", ")}{${body}}`);
+        .map((part) => (contentBody && SLIDE_SCOPE_PAGE_CHILD.test(part)
+          ? part.replace(SLIDE_SCOPE_PAGE_CHILD, (match, compound) => `${scope}${compound} ${contentBody} > `)
+          : `${scope}${part.slice("section".length)}`));
+      // A page rule left with nothing but separators says nothing; skip it.
+      if (scoped.length && body.replace(/[\s;]/g, "")) out.push(`${scoped.join(", ")}{${body}}`);
     }
     index = cursor;
   }
@@ -674,6 +693,528 @@ function slideDeckPages(markdown) {
         empty: !page.trim(),
       };
     });
+}
+
+// --- editing a page as blocks ------------------------------------------------
+// ClioStage edits a deck on the page, so a page has to be readable as blocks and
+// writable back without disturbing anything the writer did not touch. A block
+// keeps its exact source (`raw`) and the whitespace that stood before it (`gap`);
+// the whitespace after the last block is `blocks.tail`. Serialising an untouched
+// page is therefore the identity, byte for byte. Directives and comments are
+// blocks too (type "directive") and are never rewritten except by the named
+// helpers below; images, tables and code keep their source verbatim.
+
+const CLIO_BLOCK_ITEM = /^(\s*)([-*+]|\d{1,9}[.)])(\s+)/;
+const CLIO_BLOCK_FENCE = /^\s*(`{3,}|~{3,})/;
+const CLIO_BLOCK_HEADING = /^( {0,3})(#{1,6})(\s+|$)([\s\S]*)$/;
+const CLIO_BLOCK_RULE_LINE = /^ {0,3}([-*_])(\s*\1){2,}\s*$/;
+const CLIO_BLOCK_TABLE_RULE = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
+const CLIO_BLOCK_INLINE_HTML = /<\/?[A-Za-z][^>]*>/;
+
+function clioStageBlockKindAt(lines, index, interrupting) {
+  const line = lines[index];
+  if (/^\s*<!--/.test(line)) return "directive";
+  if (CLIO_BLOCK_FENCE.test(line)) return "fence";
+  if (CLIO_BLOCK_HEADING.test(line)) return "heading";
+  if (CLIO_BLOCK_RULE_LINE.test(line)) return "rule";
+  const next = lines[index + 1];
+  if (line.includes("|") && next !== undefined && next.includes("|") && next.includes("-") && CLIO_BLOCK_TABLE_RULE.test(next)) return "table";
+  if (/^\s{0,3}>/.test(line)) return "quote";
+  const item = line.match(CLIO_BLOCK_ITEM);
+  // A list may interrupt a paragraph only the way CommonMark lets it: a bullet,
+  // or an ordered list that starts at 1.
+  if (item) return !interrupting || /^(?:[-*+]|1[.)])$/.test(item[2]) ? "list" : "";
+  if (!interrupting && /^\s{0,3}<[A-Za-z\/!?]/.test(line)) return "html";
+  return "";
+}
+
+function clioStageBlockEnd(lines, index, kind) {
+  const last = lines.length - 1;
+  if (kind === "directive") {
+    let end = index;
+    while (end < last && !lines[end].includes("-->")) end += 1;
+    return end;
+  }
+  if (kind === "fence") {
+    const marker = lines[index].match(CLIO_BLOCK_FENCE)[1];
+    for (let end = index + 1; end <= last; end += 1) {
+      const close = lines[end].match(CLIO_BLOCK_FENCE);
+      if (close && close[1][0] === marker[0] && close[1].length >= marker.length) return end;
+    }
+    return last;
+  }
+  if (kind === "heading" || kind === "rule") return index;
+  if (kind === "table") {
+    let end = index;
+    while (end < last && lines[end + 1].trim() && lines[end + 1].includes("|")) end += 1;
+    return end;
+  }
+  if (kind === "quote") {
+    let end = index;
+    while (end < last && /^\s{0,3}>/.test(lines[end + 1])) end += 1;
+    return end;
+  }
+  if (kind === "html") {
+    let end = index;
+    while (end < last && lines[end + 1].trim()) end += 1;
+    return end;
+  }
+  if (kind === "list") {
+    let end = index;
+    while (end < last) {
+      const next = lines[end + 1];
+      if (!next.trim()) {
+        let after = end + 1;
+        while (after <= last && !lines[after].trim()) after += 1;
+        const continues = after <= last && !/^\s*<!--/.test(lines[after])
+          && (CLIO_BLOCK_ITEM.test(lines[after]) || /^\s{2,}\S/.test(lines[after]));
+        if (!continues) break;
+        end = after;
+        continue;
+      }
+      if (/^\s*<!--/.test(next) || !(CLIO_BLOCK_ITEM.test(next) || /^\s+\S/.test(next))) break;
+      end += 1;
+    }
+    return end;
+  }
+  let end = index;
+  while (end < last && lines[end + 1].trim() && !clioStageBlockKindAt(lines, end + 1, true)) end += 1;
+  return end;
+}
+
+function clioStageListItems(raw) {
+  const lines = raw.split("\n");
+  const offsets = [];
+  let at = 0;
+  lines.forEach((line) => { offsets.push(at); at += line.length + 1; });
+  const base = lines[0].match(CLIO_BLOCK_ITEM)[1].length;
+  const starts = [];
+  lines.forEach((line, index) => {
+    const match = line.match(CLIO_BLOCK_ITEM);
+    if (match && match[1].length <= base) starts.push(index);
+  });
+  let previousEnd = 0;
+  const items = starts.map((start, k) => {
+    let end = (k + 1 < starts.length ? starts[k + 1] : lines.length) - 1;
+    while (end > start && !lines[end].trim()) end -= 1;
+    const from = offsets[start];
+    const to = offsets[end] + lines[end].length;
+    const itemRaw = raw.slice(from, to);
+    const prefix = lines[start].match(CLIO_BLOCK_ITEM)[0];
+    const rest = itemRaw.slice(prefix.length);
+    const item = {
+      prefix,
+      text: rest.split("\n")[0],
+      raw: itemRaw,
+      gap: raw.slice(previousEnd, from),
+      // A nested list, a task box or inline HTML cannot survive a plain-text
+      // rewrite, so those items are read but never edited in place.
+      editable: !rest.includes("\n") && !/^\[[ xX]\]\s/.test(rest) && !CLIO_BLOCK_INLINE_HTML.test(rest) && !!rest.trim(),
+    };
+    previousEnd = to;
+    return item;
+  });
+  return items.length && items.map((item) => item.gap + item.raw).join("") === raw ? items : null;
+}
+
+function clioStageMakeBlock(kind, raw, gap) {
+  const block = { type: "other", raw, text: "", gap, editable: false };
+  if (kind === "directive") { block.type = "directive"; return block; }
+  if (kind === "heading") {
+    const match = raw.match(CLIO_BLOCK_HEADING);
+    const rest = match[4];
+    const tail = rest.match(/(?:\s+#+)?(?:\s*\{#[A-Za-z0-9][A-Za-z0-9_-]*\})?\s*$/)[0];
+    block.type = "heading";
+    block.level = match[2].length;
+    block.prefix = `${match[1]}${match[2]}${match[3] || " "}`;
+    block.suffix = tail;
+    block.text = rest.slice(0, rest.length - tail.length);
+    block.editable = !!block.text.trim();
+    return block;
+  }
+  if (kind === "quote") {
+    const lines = raw.split("\n");
+    block.type = "quote";
+    block.text = lines.map((line) => line.replace(/^\s{0,3}>\s?/, "")).join("\n");
+    block.prefix = (lines[0].match(/^\s{0,3}>\s?/) || ["> "])[0];
+    // One quoted paragraph can be rewritten as text; a quote that carries its
+    // own headings, lists, code or paragraph breaks is read-only.
+    block.editable = !!block.text.trim() && !/^\s*(#{1,6}\s|>|[*+-]\s|\d+[.)]\s|`{3}|~{3})/m.test(block.text) && !/\n\s*\n/.test(block.text) && !CLIO_BLOCK_INLINE_HTML.test(block.text);
+    return block;
+  }
+  if (kind === "list") {
+    const items = clioStageListItems(raw);
+    if (!items) return block;
+    block.type = "list";
+    block.items = items;
+    block.text = items.map((item) => item.text).join("\n");
+    block.editable = items.some((item) => item.editable);
+    return block;
+  }
+  if (kind === "table") { block.type = "table"; return block; }
+  if (kind === "") {
+    block.text = raw.split("\n").map((line) => line.trim()).join(" ");
+    if (/!\[[^\]]*\]\([^)]*\)/.test(raw)) { block.type = "image"; return block; }
+    block.type = "paragraph";
+    block.prefix = raw.match(/^\s*/)[0];
+    block.editable = !!block.text.trim() && !CLIO_BLOCK_INLINE_HTML.test(raw) && !/(?: {2,}|\\)\n/.test(raw);
+  }
+  return block;
+}
+
+// `pageMarkdown` is one page as it stands in the deck (blank lines and all).
+function parseClioStagePageBlocks(pageMarkdown) {
+  const text = String(pageMarkdown == null ? "" : pageMarkdown);
+  const lines = text.split("\n");
+  const offsets = [];
+  let at = 0;
+  lines.forEach((line) => { offsets.push(at); at += line.length + 1; });
+  const blocks = [];
+  let previousEnd = 0;
+  let index = 0;
+  while (index < lines.length) {
+    if (!lines[index].trim()) { index += 1; continue; }
+    const kind = clioStageBlockKindAt(lines, index, false);
+    const end = clioStageBlockEnd(lines, index, kind);
+    const start = offsets[index];
+    const stop = offsets[end] + lines[end].length;
+    blocks.push(clioStageMakeBlock(kind, text.slice(start, stop), text.slice(previousEnd, start)));
+    previousEnd = stop;
+    index = end + 1;
+  }
+  blocks.tail = text.slice(previousEnd);
+  return blocks;
+}
+
+function serializeClioStagePageBlocks(blocks) {
+  const list = Array.isArray(blocks) ? blocks : [];
+  return list.map((block) => `${block.gap || ""}${block.raw}`).join("") + (list.tail || "");
+}
+
+function clioStageBlocksCopy(blocks) {
+  const copy = blocks.map((block) => ({ ...block }));
+  copy.tail = blocks.tail || "";
+  return copy;
+}
+
+// The blocks a reader sees: directives are not drawn, so a block's position in
+// this list (not in the page) is its identity for editing and placement. That
+// keeps a placement valid when a directive is added above it.
+function clioStageContentBlocks(blocks) {
+  return (blocks || []).map((block, at) => ({ block, at })).filter((entry) => entry.block.type !== "directive");
+}
+
+// Typed text goes back as text. Anything Markdown could read as structure or as
+// HTML is escaped, so a line the writer types can neither start a list, split a
+// slide with `---`, nor carry markup.
+function clioStageEscapeMarkdownText(text) {
+  let out = String(text == null ? "" : text).replace(/\s*[\r\n]+\s*/g, " ");
+  out = out.replace(/[\\`*_<&\[\]~]/g, "\\$&");
+  out = out.replace(/^(\s*)(#{1,6}(?=\s|$)|>|[-+](?=\s|$)|[-=]{3,}\s*$)/, "$1\\$2");
+  out = out.replace(/^(\s*\d{1,9})([.)])(?=\s)/, "$1\\$2");
+  return out;
+}
+
+// One block's text replaced; returns the new blocks, or null when the block
+// cannot take text or the text is empty. `itemIndex` addresses a list item.
+function clioStageEditBlockText(blocks, contentIndex, plainText, itemIndex) {
+  const entry = clioStageContentBlocks(blocks)[contentIndex];
+  const text = clioStageEscapeMarkdownText(plainText).trim();
+  if (!entry || !entry.block.editable || !text) return null;
+  const block = { ...entry.block };
+  if (block.type === "heading") {
+    block.raw = `${block.prefix}${text}${block.suffix}`;
+    block.text = String(plainText).trim();
+  } else if (block.type === "paragraph") {
+    block.raw = `${block.prefix}${text}`;
+    block.text = String(plainText).trim();
+  } else if (block.type === "quote") {
+    block.raw = `${block.prefix}${text}`;
+    block.text = String(plainText).trim();
+  } else if (block.type === "list") {
+    const items = block.items.map((item) => ({ ...item }));
+    const item = items[itemIndex];
+    if (!item || !item.editable) return null;
+    item.raw = `${item.prefix}${text}`;
+    item.text = String(plainText).trim();
+    block.items = items;
+    block.raw = items.map((entryItem) => entryItem.gap + entryItem.raw).join("");
+    block.text = items.map((entryItem) => entryItem.text).join("\n");
+  } else {
+    return null;
+  }
+  const next = clioStageBlocksCopy(blocks);
+  next[entry.at] = block;
+  return next;
+}
+
+function clioStageDirectiveName(raw) {
+  const match = String(raw || "").match(/^\s*<!--\s*(_?[A-Za-z][\w-]*)\s*:/);
+  return match ? match[1].toLowerCase() : "";
+}
+
+function clioStageInsertDirective(blocks, raw) {
+  const next = clioStageBlocksCopy(blocks);
+  let at = 0;
+  while (at < next.length && next[at].type === "directive") at += 1;
+  const block = { type: "directive", raw, text: "", gap: "\n\n", editable: false };
+  if (at === 0) {
+    block.gap = next.length ? next[0].gap : "";
+    if (next.length) next[0] = { ...next[0], gap: "\n\n" };
+  }
+  next.splice(at, 0, block);
+  return next;
+}
+
+function clioStageRemoveDirectives(blocks, name) {
+  const next = clioStageBlocksCopy(blocks);
+  for (let at = next.length - 1; at >= 0; at -= 1) {
+    if (next[at].type !== "directive" || clioStageDirectiveName(next[at].raw) !== name) continue;
+    const [removed] = next.splice(at, 1);
+    if (at === 0 && next.length) next[0] = { ...next[0], gap: removed.gap };
+  }
+  return next;
+}
+
+// The page's layout: only the `_class` directive changes. The layout token and
+// its surface come first, as the deck writes them; any other class the page
+// already carried stays after them.
+function clioStageWithLayout(pageMarkdown, layoutId) {
+  const layout = slideLayoutById(layoutId);
+  const page = String(pageMarkdown || "");
+  if (!layout) return page;
+  const single = /(<!--\s*_class\s*:[ \t]*)([^\n]*?)([ \t]*-->)/i;
+  const found = page.match(single);
+  // A `_class` written across lines is the writer's own arrangement; it is left
+  // as it is rather than rewritten by guess.
+  if (!found && /<!--\s*_class\s*:/i.test(page)) return page;
+  const extra = found
+    ? found[2].split(/\s+/).filter((name) => name && !slideLayoutById(name) && !["hero", "light", "dark"].includes(name))
+    : [];
+  const value = [layout.id, layout.surface, ...extra].join(" ");
+  if (found) return page.replace(single, (match, open, old, close) => `${open}${value}${close}`);
+  return serializeClioStagePageBlocks(clioStageInsertDirective(parseClioStagePageBlocks(page), `<!-- _class: ${value} -->`));
+}
+
+// --- free placement ----------------------------------------------------------
+// A placed block leaves the page's flow and sits at x/y/width on the slide's own
+// canvas: 1280 x 720 for 16:9, 960 x 720 for 4:3. The page carries it as
+// `<!-- clio-place: {"<contentIndex>":{"x":120,"y":40,"w":600}} -->`. The JSON is
+// data from a file we did not necessarily write, so it is parsed defensively and
+// clamped to the canvas.
+
+const CLIO_PLACE_MIN_WIDTH = 80;
+const CLIO_PLACE_MIN_HEIGHT = 24;
+
+function clioStagePlacementCanvas(canvas) {
+  return canvas === "4:3" ? { width: 960, height: 720 } : { width: 1280, height: 720 };
+}
+
+function clioStageCleanPlacement(data, canvas) {
+  const box = clioStagePlacementCanvas(canvas);
+  const out = {};
+  if (!data || typeof data !== "object" || Array.isArray(data)) return out;
+  Object.keys(data).slice(0, 200).forEach((key) => {
+    const entry = data[key];
+    if (!/^\d{1,3}$/.test(key) || !entry || typeof entry !== "object") return;
+    if (typeof entry.x !== "number" || typeof entry.y !== "number" || !Number.isFinite(entry.x) || !Number.isFinite(entry.y)) return;
+    const clamp = (value, low, high) => Math.min(Math.max(value, low), Math.max(low, high));
+    const x = Math.round(clamp(entry.x, 0, box.width - CLIO_PLACE_MIN_WIDTH));
+    const y = Math.round(clamp(entry.y, 0, box.height - CLIO_PLACE_MIN_HEIGHT));
+    const placed = { x, y };
+    if (typeof entry.w === "number" && Number.isFinite(entry.w)) placed.w = Math.round(clamp(entry.w, CLIO_PLACE_MIN_WIDTH, box.width - x));
+    out[key] = placed;
+  });
+  return out;
+}
+
+function parseClioStagePlacement(pageMarkdown, canvas) {
+  const raw = slideDeckDirective(pageMarkdown, "clio-place");
+  if (!raw) return {};
+  try {
+    return clioStageCleanPlacement(JSON.parse(raw), canvas);
+  } catch (error) {
+    return {};
+  }
+}
+
+// An empty placement removes the directive; a page nobody placed anything on
+// carries no trace of the feature.
+function clioStageWithPlacement(pageMarkdown, placement, canvas) {
+  const page = String(pageMarkdown || "");
+  const clean = clioStageCleanPlacement(placement, canvas);
+  const blocks = parseClioStagePageBlocks(page);
+  const existing = blocks.findIndex((block) => block.type === "directive" && clioStageDirectiveName(block.raw) === "clio-place");
+  if (!Object.keys(clean).length) {
+    return existing < 0 ? page : serializeClioStagePageBlocks(clioStageRemoveDirectives(blocks, "clio-place"));
+  }
+  const raw = `<!-- clio-place: ${JSON.stringify(clean)} -->`;
+  if (existing < 0) return serializeClioStagePageBlocks(clioStageInsertDirective(blocks, raw));
+  const next = clioStageBlocksCopy(blocks);
+  next[existing] = { ...next[existing], raw };
+  return serializeClioStagePageBlocks(next);
+}
+
+// A placed block as inline style for the print sheet (px on the 1280 x 720
+// section). Margin and max-width are cleared: the section's own rules give a
+// paragraph a footnote margin and a text measure that would move or squeeze it.
+function clioStagePlacedStyle(entry) {
+  const width = typeof entry.w === "number" ? `width:${entry.w}px;` : "";
+  return `position:absolute;box-sizing:border-box;left:${entry.x}px;top:${entry.y}px;${width}margin:0;max-width:none;`;
+}
+
+function clioStageInjectStyle(html, css) {
+  return String(html).replace(/^(\s*<[A-Za-z][\w-]*)([^>]*)>/, (match, open, attributes) => {
+    if (/\sstyle="/.test(attributes)) return `${open}${attributes.replace(/\sstyle="/, ` style="${css}`)}>`;
+    return `${open} style="${css}"${attributes}>`;
+  });
+}
+
+// --- the deck as pages -------------------------------------------------------
+// Edits that touch one page splice its lines in place, so every other byte of
+// the deck is untouched. Edits that change the page list (move, add, delete,
+// duplicate) write the deck in its plain shape: frontmatter, the spec line, then
+// the pages between `---` lines. Page numbers are those of ClioStage's own
+// parser: empty pages are not pages.
+
+function clioStageDeckSegments(markdown) {
+  const lines = String(markdown == null ? "" : markdown).split("\n");
+  let bodyStart = 0;
+  if (lines[0] !== undefined && lines[0].trim() === "---") {
+    for (let index = 1; index < lines.length; index += 1) {
+      if (lines[index].trim() === "---") { bodyStart = index + 1; break; }
+    }
+  }
+  if (!bodyStart) return null;
+  const segs = [{ sep: null, lines: [] }];
+  let inFence = false;
+  let fenceChar = "";
+  let fenceLength = 0;
+  lines.slice(bodyStart).forEach((line) => {
+    const fence = line.match(CLIO_BLOCK_FENCE);
+    if (fence) {
+      if (!inFence) { inFence = true; fenceChar = fence[1][0]; fenceLength = fence[1].length; }
+      else if (fence[1][0] === fenceChar && fence[1].length >= fenceLength) { inFence = false; fenceChar = ""; fenceLength = 0; }
+      segs[segs.length - 1].lines.push(line);
+      return;
+    }
+    if (!inFence && line.trim() === "---") { segs.push({ sep: line, lines: [] }); return; }
+    segs[segs.length - 1].lines.push(line);
+  });
+  return { head: lines.slice(0, bodyStart), segs };
+}
+
+function clioStageDeckJoin(deck) {
+  return deck.head.concat(...deck.segs.map((seg) => (seg.sep === null ? seg.lines : [seg.sep, ...seg.lines]))).join("\n");
+}
+
+function clioStageDeckPageSegs(deck) {
+  const indices = [];
+  deck.segs.forEach((seg, at) => { if (seg.lines.some((line) => line.trim())) indices.push(at); });
+  return indices;
+}
+
+function clioStageDeckPageCount(markdown) {
+  const deck = clioStageDeckSegments(markdown);
+  return deck ? clioStageDeckPageSegs(deck).length : 0;
+}
+
+function clioStageDeckPage(markdown, index) {
+  const deck = clioStageDeckSegments(markdown);
+  if (!deck) return null;
+  const at = clioStageDeckPageSegs(deck)[index];
+  return at === undefined ? null : deck.segs[at].lines.join("\n");
+}
+
+function clioStageDeckWithPage(markdown, index, pageText) {
+  const deck = clioStageDeckSegments(markdown);
+  if (!deck) return null;
+  const at = clioStageDeckPageSegs(deck)[index];
+  if (at === undefined) return null;
+  deck.segs[at].lines = String(pageText).split("\n");
+  return clioStageDeckJoin(deck);
+}
+
+function clioStageTrimBlankLines(text) {
+  const lines = String(text).split("\n");
+  while (lines.length && !lines[0].trim()) lines.shift();
+  while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+  return lines.join("\n");
+}
+
+function clioStageDeckPieces(markdown) {
+  const deck = clioStageDeckSegments(markdown);
+  if (!deck) return null;
+  const pages = clioStageDeckPageSegs(deck).map((at) => deck.segs[at].lines.join("\n"));
+  let lead = "";
+  if (pages.length) {
+    const lines = pages[0].split("\n");
+    let last = -1;
+    lines.forEach((line, at) => { if (CLIO_DECK_PATTERN.test(line)) last = at; });
+    if (last >= 0) {
+      lead = lines.slice(0, last + 1).join("\n");
+      pages[0] = lines.slice(last + 1).join("\n");
+    }
+  }
+  return { head: deck.head, lead, pages: pages.map(clioStageTrimBlankLines) };
+}
+
+function clioStageDeckFromPieces(pieces) {
+  return `${pieces.head.join("\n")}\n${pieces.lead ? `${pieces.lead}\n` : ""}\n${pieces.pages.join("\n\n---\n\n")}\n`;
+}
+
+function clioStageDeckRewrite(markdown, change) {
+  const pieces = clioStageDeckPieces(markdown);
+  if (!pieces || !pieces.pages.length) return null;
+  const pages = change(pieces.pages.slice());
+  return pages && pages.length ? clioStageDeckFromPieces({ ...pieces, pages }) : null;
+}
+
+// `to` is the page's index once it has moved.
+function clioStageDeckMovePage(markdown, from, to) {
+  return clioStageDeckRewrite(markdown, (pages) => {
+    if (!pages[from] || to < 0 || to >= pages.length || from === to) return null;
+    const [page] = pages.splice(from, 1);
+    pages.splice(to, 0, page);
+    return pages;
+  });
+}
+
+function clioStageNewPageMarkdown(title) {
+  return `<!-- _class: statement light -->\n\n## ${clioStageEscapeMarkdownText(title)}`;
+}
+
+function clioStageDeckAddPage(markdown, afterIndex, title) {
+  return clioStageDeckRewrite(markdown, (pages) => {
+    const at = Math.min(Math.max(Number(afterIndex) + 1, 0), pages.length);
+    pages.splice(at, 0, clioStageNewPageMarkdown(title));
+    return pages;
+  });
+}
+
+function clioStageDeckDuplicatePage(markdown, index) {
+  return clioStageDeckRewrite(markdown, (pages) => {
+    if (!pages[index]) return null;
+    pages.splice(index + 1, 0, pages[index]);
+    return pages;
+  });
+}
+
+function clioStageDeckDeletePage(markdown, index) {
+  return clioStageDeckRewrite(markdown, (pages) => {
+    if (!pages[index] || pages.length < 2) return null;
+    pages.splice(index, 1);
+    return pages;
+  });
+}
+
+// What a half-written deck has finished: the frontmatter and every page that a
+// following `---` has closed. The page still being written is left out.
+function clioStageDeckCompletePages(markdown) {
+  const deck = clioStageDeckSegments(markdown);
+  if (!deck || deck.segs.length < 2) return "";
+  const closed = { head: deck.head, segs: deck.segs.slice(0, -1) };
+  return clioStageDeckPageSegs(closed).length ? clioStageDeckJoin(closed) : "";
 }
 
 // --- gates -----------------------------------------------------------------
@@ -820,28 +1361,126 @@ const SLIDE_PRINT_SIZES = {
   "4:3": { css: "254mm 190.5mm", width: 254, height: 190.5 },
 };
 
+// --- one page, for the screen and for the sheet --------------------------------
+// ClioStage's stage and the printed sheet draw a page from the same markup and
+// the same CSS: what the writer edits on screen is what the PDF is. The page is
+// a <section> at its real size (1280 x 720, or 960 x 720 for 4:3); the stage
+// shows it inside a shadow root and scales it as one piece, and the sheet
+// prints it on a page of exactly that size.
+
+// Marp's header / footer / paginate: the front matter sets them for the deck,
+// and a page's own `_header` / `_footer` / `_paginate` comment overrides them
+// for that page.
+function slideDeckReadDirectives(text) {
+  const directives = {};
+  String(text || "").replace(/<!--([\s\S]*?)-->/g, (match, body) => {
+    String(body || "").split(/\r\n|\r|\n/).forEach((line) => {
+      const directive = line.trim().match(/^_?([A-Za-z][A-Za-z0-9_-]*)\s*:\s*(.*?)\s*$/);
+      if (directive) directives[directive[1].toLowerCase()] = directive[2].replace(/^["']|["']$/g, "").trim();
+    });
+    return "";
+  });
+  return directives;
+}
+
+function slideDeckPageDirectives(markdown) {
+  const lines = String(markdown || "").split(/\r\n|\r|\n/);
+  const meta = {};
+  if (lines[0] && lines[0].trim() === "---") {
+    for (let index = 1; index < lines.length && lines[index].trim() !== "---"; index += 1) {
+      const match = lines[index].match(/^([A-Za-z0-9_-]+)\s*:\s*(.*?)\s*$/);
+      if (match) meta[match[1].toLowerCase()] = match[2].replace(/^["']|["']$/g, "").trim();
+    }
+  }
+  const deck = { header: meta.header || "", footer: meta.footer || "", paginate: /^true$/i.test(meta.paginate || "") };
+  const pages = slideDeckSplitPages(slideDeckBody(markdown)).filter((page) => page.trim()).map((page) => {
+    const own = slideDeckReadDirectives(page);
+    return {
+      header: own.header !== undefined ? own.header : deck.header,
+      footer: own.footer !== undefined ? own.footer : deck.footer,
+      paginate: own.paginate !== undefined ? /^true$/i.test(own.paginate) : deck.paginate,
+    };
+  });
+  return { deck, pages, canvas: meta.size === "4:3" ? "4:3" : "16:9", canvasDeclared: !!meta.size };
+}
+
+// The page size: the front matter's `size:` is what Marp reads, so it wins;
+// a deck without one takes its spec's canvas.
+function slideDeckPageCanvas(markdown, spec) {
+  const directives = slideDeckPageDirectives(markdown);
+  if (directives.canvasDeclared) return directives.canvas;
+  return slideDeckCleanSpec(spec || slideDeckParseSpec(markdown) || {}).canvas === "4:3" ? "4:3" : "16:9";
+}
+
+/**
+ * One page as markup: the <section> both the stage and the sheet draw.
+ * @param {{ page: string, index: number, count: number, era: string, canvas?: string,
+ *   header?: string, footer?: string, paginate?: boolean }} options
+ */
+function slideDeckPageHtml({ page, index, count, era, canvas = "16:9", header = "", footer = "", paginate = false }) {
+  const classes = slideDeckPageClasses(page);
+  const surface = classes.surface || (classes.layout ? (slideLayoutById(classes.layout) || {}).surface : "");
+  const body = String(page || "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  const placement = parseClioStagePlacement(page, canvas);
+  // A page nobody placed anything on is drawn as one piece of Markdown. A placed
+  // block is drawn on its own and carries its position as inline style, so it
+  // leaves the flow without gaining a wrapper that the section's sibling rules
+  // (the footnote paragraph, the first-child title) would read differently.
+  const content = Object.keys(placement).length
+    ? clioStageContentBlocks(parseClioStagePageBlocks(page)).map(({ block }, at) => {
+      const html = markdownToSystemHtml(block.raw.replace(/<!--[\s\S]*?-->/g, "").trim());
+      return placement[at] ? clioStageInjectStyle(html, clioStagePlacedStyle(placement[at])) : html;
+    }).join("\n")
+    : markdownToSystemHtml(body);
+  // Header and footer go first and out of the flow: appended last with
+  // margin-top:auto they took the page's free space, so every layout's own
+  // alignment (cover low, lead and statement centred) collapsed to the top.
+  const head = header ? `<header class="slide-print-head">${escapeHtml(header)}</header>` : "";
+  const foot = footer || paginate
+    ? `<footer class="slide-print-foot"><span>${escapeHtml(footer)}</span><span>${paginate ? `${index + 1} / ${count}` : ""}</span></footer>`
+    : "";
+  const names = ["clio-print-page", `era-${era}`, `canvas-${canvas === "4:3" ? "4-3" : "16-9"}`, classes.layout, surface, ...classes.extra]
+    .filter(Boolean).map((name) => escapeHtml(name)).join(" ");
+  return `<section class="${names}">${head}${foot}${content}</section>`;
+}
+
+/** The CSS a page is drawn with, on the stage and on the sheet. */
+function slideDeckPageCss(eraId) {
+  const era = slideEraById(eraId) || slideEraById("big-sur");
+  return `${slideThemeCss(era.id)}
+section.clio-print-page { font-family: ${era.tokens ? era.tokens.body : "sans-serif"}; position: relative; overflow: hidden; }
+section.clio-print-page.canvas-4-3 { width: 960px; }
+section.clio-print-page .slide-print-head,
+section.clio-print-page .slide-print-foot {
+  position: absolute; left: 72px; right: 72px;
+  display: flex; justify-content: space-between; font-family: var(--slide-mono);
+  font-size: 13px; color: var(--slide-muted);
+}
+section.clio-print-page .slide-print-head { top: 18px; }
+section.clio-print-page .slide-print-foot { bottom: 18px; }
+section.clio-print-page.dark .slide-print-head,
+section.clio-print-page.dark .slide-print-foot { color: var(--slide-bg); opacity: .7; }
+`;
+}
+
 function slideDeckPrintHtml({ title, markdown, spec }) {
   const resolved = slideDeckCleanSpec(spec || slideDeckParseSpec(markdown) || {});
-  const size = SLIDE_PRINT_SIZES[resolved.canvas] || SLIDE_PRINT_SIZES["16:9"];
+  const canvas = slideDeckPageCanvas(markdown, resolved);
+  const size = SLIDE_PRINT_SIZES[canvas] || SLIDE_PRINT_SIZES["16:9"];
   const pages = slideDeckSplitPages(slideDeckBody(markdown)).filter((page) => page.trim());
-  const css = slideThemeCss(resolved.era);
-  const frames = pages.map((page, index) => {
-    const classes = slideDeckPageClasses(page);
-    const surface = classes.surface || (classes.layout ? (slideLayoutById(classes.layout) || {}).surface : "");
-    const body = page
-      .replace(/<!--[\s\S]*?-->/g, "")
-      .replace(/\n{3,}/g, "\n\n")
-      .trim();
-    const footer = `<footer class="slide-print-foot"><span>${escapeHtml(title || "")}</span><span>${index + 1} / ${pages.length}</span></footer>`;
-    // The footer goes first and out of the flow: appended last with
-    // margin-top:auto it took the page's free space, so every layout's own
-    // alignment (cover low, lead and statement centred) collapsed to the top,
-    // and the page's real last paragraph lost its footnote rule.
-    return `<section class="clio-print-page era-${escapeHtml(resolved.era)} ${escapeHtml(classes.layout)} ${escapeHtml(surface)}">${footer}${markdownToSystemHtml(body)}</section>`;
-  }).join("\n");
+  const directives = slideDeckPageDirectives(markdown).pages;
+  const frames = pages.map((page, index) => slideDeckPageHtml({
+    page,
+    index,
+    count: pages.length,
+    era: resolved.era,
+    canvas,
+    ...(directives[index] || {}),
+  })).join("\n");
   const lang = currentLanguage === "zh" ? "zh-Hans" : "en";
-  const bodyClass = `era-${escapeHtml(resolved.era)}`;
-  const fontStack = (slideEraById(resolved.era) || {}).tokens;
   return `<!doctype html>
 <html lang="${lang}">
 <head>
@@ -850,15 +1489,8 @@ function slideDeckPrintHtml({ title, markdown, spec }) {
   <style>
     @page { size: ${size.css}; margin: 0; }
     html, body { margin: 0; background: #6f6f74; }
-    body { font-family: ${fontStack ? fontStack.body : "sans-serif"}; }
-    ${css}
-    section.clio-print-page { margin: 0 auto; box-shadow: 0 10px 26px rgba(0,0,0,.35); position: relative; }
-    section.clio-print-page .slide-print-foot {
-      position: absolute; left: 72px; right: 72px; bottom: 18px;
-      display: flex; justify-content: space-between; font-family: var(--slide-mono);
-      font-size: 13px; color: var(--slide-muted);
-    }
-    section.clio-print-page.dark .slide-print-foot { color: var(--slide-bg); opacity: .7; }
+    ${slideDeckPageCss(resolved.era)}
+    section.clio-print-page { margin: 0 auto; box-shadow: 0 10px 26px rgba(0,0,0,.35); }
     @media screen {
       body { padding: 26px 0; }
       section.clio-print-page { margin-bottom: 26px; }
@@ -871,7 +1503,7 @@ function slideDeckPrintHtml({ title, markdown, spec }) {
     }
   </style>
 </head>
-<body class="${bodyClass}">
+<body class="era-${escapeHtml(resolved.era)}">
 ${frames}
 </body>
 </html>`;
@@ -1213,6 +1845,27 @@ window.AISystem6SlideThemes = {
   stripSpec: slideDeckBody,
   restyle: slideDeckRestyle,
   splitPages: slideDeckSplitPages,
+  // The page-block model ClioStage edits through (pure; no DOM).
+  model: {
+    parseBlocks: parseClioStagePageBlocks,
+    serializeBlocks: serializeClioStagePageBlocks,
+    contentBlocks: clioStageContentBlocks,
+    editBlockText: clioStageEditBlockText,
+    escapeText: clioStageEscapeMarkdownText,
+    withLayout: clioStageWithLayout,
+    parsePlacement: parseClioStagePlacement,
+    cleanPlacement: clioStageCleanPlacement,
+    withPlacement: clioStageWithPlacement,
+    placementCanvas: clioStagePlacementCanvas,
+    pageCount: clioStageDeckPageCount,
+    page: clioStageDeckPage,
+    withPage: clioStageDeckWithPage,
+    movePage: clioStageDeckMovePage,
+    addPage: clioStageDeckAddPage,
+    duplicatePage: clioStageDeckDuplicatePage,
+    deletePage: clioStageDeckDeletePage,
+    completePages: clioStageDeckCompletePages,
+  },
   pages: slideDeckPages,
   pageClasses: slideDeckPageClasses,
   validate: validateSlideDeck,
@@ -1220,6 +1873,10 @@ window.AISystem6SlideThemes = {
   fontFloor: slideDeckFontFloor,
   measureFailures: slideDeckMeasureFailures,
   printHtml: slideDeckPrintHtml,
+  pageHtml: slideDeckPageHtml,
+  pageCss: slideDeckPageCss,
+  pageDirectives: slideDeckPageDirectives,
+  pageCanvas: slideDeckPageCanvas,
   printSizes: SLIDE_PRINT_SIZES,
   chooseSetup: slideDeckChooseSetup,
   storedSetup: slideDeckStoredSetup,

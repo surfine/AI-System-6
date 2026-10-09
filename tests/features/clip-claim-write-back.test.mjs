@@ -295,19 +295,15 @@ const test = createFeatureTest("clip-claim-write-back");
   );
 }
 
-// --- quick-draft-listen.js / quick-draft-editor.js: SRT, shot-list, and
-// Markdown export. ---
+// --- quick-draft-listen.js / quick-draft-editor.js: SRT and Markdown export.
+// (The storyboard row now opens an unsaved TeachText tab instead of
+// downloading; tests/features/storyboard-ascii.test.mjs owns it.) ---
 {
   const quickDraftListen = read("app/features/quick-draft-listen.js");
   test.assertIncludes(
     quickDraftListen,
     'setQuickDraftStatus(saved ? t("quick_draft_export_srt_done") : t("markdown_download_failed"));',
     "exportQuickDraftListenSrt never claims the SRT downloaded unless saveArtifact's own dispatch result says so"
-  );
-  test.assertIncludes(
-    quickDraftListen,
-    'setQuickDraftStatus(saved ? t("quick_draft_export_shot_list_done") : t("markdown_download_failed"));',
-    "exportQuickDraftShotList never claims the shot list downloaded unless saveArtifact's own dispatch result says so"
   );
 
   const quickDraftEditor = read("app/features/quick-draft-editor.js");

@@ -24,6 +24,11 @@ body[data-theme-family="aqua"] {
   --alert-icon-display: none;
   --alert-icon-gutter: 0;
   --theme-cjk-font: "STHeiti", "Heiti SC";
+  /* Mac OS X tabs are a short connected row centred on the top edge of the
+     box they open (Jaguar's Universal Access pane, guidebook capture), not a
+     strip stretched across the window. */
+  --tab-strip-justify: center;
+  --tab-flex: 0 0 auto;
 }
 
 html[data-theme="aqua"],
@@ -693,10 +698,8 @@ body[data-theme="aqua"] {
   --theme-lab-choice-gap: 5px 12px;
   --theme-lab-choice-row-min-height: 19px;
   --theme-lab-checkbox-checkmark-image: var(--choice-checkmark-image);
-  --theme-lab-checkbox-active-bg: var(--aqua-checkbox-pressed-image) center / 18px 18px no-repeat;
-  --theme-lab-checkbox-active-shadow: none;
-  --theme-lab-radio-active-bg: var(--aqua-radio-pressed-image) center / 18px 18px no-repeat;
-  --theme-lab-radio-active-shadow: none;
+  /* Aqua's pressed art is its own (the .is-active rules below); no extra darkening. */
+  --theme-lab-choice-active-filter: none;
   --theme-lab-form-gap: 7px 12px;
   --theme-lab-form-label-columns: minmax(88px, max-content) minmax(0, 1fr);
   --theme-lab-form-label-align: right;
@@ -1023,6 +1026,11 @@ body[data-theme="aqua"] {
 
 html[data-lineage~="snow-leopard"],
 body[data-lineage~="snow-leopard"] {
+  /* 10.6's own Appearance pane shows "Place scroll arrows: Together" (both
+     boxes under the track), as Jaguar's does; the lineage drew one at each end. */
+  --window-frame-arrow-up-order: 1;
+  --window-frame-arrow-down-order: 2;
+  --window-frame-arrow-down-border-top: 0;
 
   /* Evidence boundary: Quaqua 9.1's Quaqua16SnowLeopardLookAndFeel.java (the
      Snow LAF introduced in Quaqua 6.0) owns native geometry, state variants,
@@ -1674,6 +1682,10 @@ body[data-lineage~="snow-leopard"] {
   --tab-bg: linear-gradient(#f9f9f9 0%, #ededed 42%, #e3e3e3 50%, #fff 100%);
   --tab-hover-bg: linear-gradient(#fff, #f0f0f0);
   --tab-active-bg: linear-gradient(#eaf2fb 0%, #acd1f0 42%, #7ab7e8 48%, #9cd1fb 75%, #cfffff 100%);
+  /* The box under the tabs is the window's grey, as Aqua's is; without its own
+     value it fell back to the selected tab's blue gloss and read as a pressed
+     bar (2026-10-09 audit). */
+  --tab-panel-bg: var(--window-bg);
   --tab-active-fg: #111;
   --tab-strip-gap: 0;
   --tab-strip-border-bottom: 0;

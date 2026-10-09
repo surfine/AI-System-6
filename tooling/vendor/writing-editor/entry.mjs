@@ -16,6 +16,7 @@ import { Language, defineLanguageFacet, syntaxTree } from "@codemirror/language"
 import { parser as markdownParser, GFM } from "@lezer/markdown";
 import { bindTextarea, editorRoot, externalWrite, focusedWritingView, unbindTextarea, viewForTextarea } from "./facade.mjs";
 import { livePreview } from "./live-preview.mjs";
+import { decorationField, setDecorationsEffect } from "./decorations.mjs";
 import { applyFormat, formatMarkdown, FORMAT_COMMANDS } from "./format.mjs";
 import { EDITOR_CSS } from "./style.mjs";
 import { formatBar, openHeadings } from "./ui.mjs";
@@ -238,6 +239,7 @@ function mount(textarea, surface, options = {}) {
     markdownLanguage.extension || [],
     livePreview({ resolveImage: options.resolveImage || resolveImage }),
     focusDimming(options),
+    decorationField,
     typewriter(),
     editable.of(EditorView.editable.of(!isLocked())),
     readOnly.of(EditorState.readOnly.of(isLocked())),
@@ -258,6 +260,15 @@ function mount(textarea, surface, options = {}) {
         if (typeof options.onPaste === "function") options.onPaste(event, textarea);
         return event.defaultPrevented;
       },
+      // Marks other windows asked for while a pinyin buffer was open wait for
+      // it: redrawing around the composing text would end the composition.
+      compositionend(event, editorView) {
+        const wanted = record?.pendingDecorations;
+        if (!wanted) return false;
+        record.pendingDecorations = null;
+        setTimeout(() => editorView.dispatch({ effects: setDecorationsEffect.of(wanted) }), 0);
+        return false;
+      },
     }),
     EditorView.updateListener.of((update) => record?.bridge.syncFromView(update)),
     formatBar(runFormat, undo),
@@ -275,6 +286,9 @@ function mount(textarea, surface, options = {}) {
       // A different document: fresh history, caret where the textarea puts it.
       const at = Math.min(textarea.selectionStart ?? next.length, next.length);
       view.setState(makeState(next, EditorSelection.single(at)));
+      // The new state starts without the marks other windows had put on the
+      // old text; they are told, and set them again for this document.
+      textarea.dispatchEvent(new CustomEvent("writing-editor-reset"));
     },
   });
   record = { view, bridge, surface };
@@ -342,6 +356,8 @@ function mount(textarea, surface, options = {}) {
   };
   mounted.set(textarea, record);
   drawToggle(surface.closest(".window")?.querySelector(".writing-mode-toggle"));
+  // Windows that decorate this page wait for the editor to exist.
+  textarea.dispatchEvent(new CustomEvent("writing-editor-mounted"));
   return view;
 }
 
@@ -438,6 +454,23 @@ window.AISystem6WritingEditor = Object.freeze({
     else if (next === "read") window.showTeachTextPreview?.();
     else if (!split) window.showTeachTextEditor?.();
     else textarea.focus();
+  },
+  // Marks other windows put on the page: ranges = [{ from, to, className,
+  // title, id? }]. They follow edits by themselves (decorations.mjs); a later
+  // call replaces the whole set, and an empty list clears it. Returns false
+  // where no editor is mounted (the textarea fallback draws nothing).
+  setDecorations(textarea, ranges) {
+    const view = viewForTextarea(textarea);
+    if (!view) return false;
+    const wanted = Array.isArray(ranges) ? ranges : [];
+    const record = mounted.get(textarea);
+    if (view.composing && record) {
+      record.pendingDecorations = wanted;
+      return true;
+    }
+    if (record) record.pendingDecorations = null;
+    view.dispatch({ effects: setDecorationsEffect.of(wanted) });
+    return true;
   },
   centerCaret(textarea) {
     const view = viewForTextarea(textarea);

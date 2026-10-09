@@ -133,10 +133,12 @@ test.assertNotIncludes(quickWindowHtml, "draft-desk-mobile-inspector-actions", "
   test.assert(lightroomFooter.includes("data-quick-draft-adjustment-develop"), "冲洗 lives in 文字亮室's footer on every screen");
   test.assert(!/class="btn default" id="quick-draft-display-body"/.test(lightroomFooter), "Back to the Draft is a door, not the default key");
 }
-test.assertMatches(read("app/features/quick-draft-composition.js"), /const compositeReady = enabled\s*&& Boolean\(darkroomOf\(record\)\.composite\)/, "冲洗 waits for a proof, like the menu row it shortcuts");
-test.assertMatches(read("app/features/quick-draft-composition.js"), /const proofReady = trackOwns \? trackReady : compositeReady/, "内容轨 and adjustment proofs share one footer default key");
-test.assertMatches(read("app/features/quick-draft-composition.js"), /developButton\?\.classList\.toggle\("default", Boolean\(hasBody && proofReady && !listenMode\)\)/, "the default key follows the pending proof, and never shares the footer with Listen Play");
-test.assertMatches(read("app/features/quick-draft-composition.js"), /backButton\?\.classList\.toggle\("default", !hasBody\)/, "an empty darkroom makes Back to the Draft the one default");
+// One state answers for the footer keys and the menu rows alike
+// (lightroomActionState), so the proof a key waits for is the proof the row waits for.
+test.assertMatches(read("app/features/lightroom-develop.js"), /const proof = trackOwns \? trackReady : \(enabled && composite\.ready && composite\.proof\)/, "冲洗 waits for a proof, like the menu row it shortcuts");
+test.assertMatches(read("app/features/quick-draft-composition.js"), /const state = lightroomActionState\(record\)/, "the footer keys ask the same state the menu rows ask");
+test.assertMatches(read("app/features/quick-draft-composition.js"), /developButton\?\.classList\.toggle\("default", Boolean\(state\.hasBody && state\.proof && !listenMode\)\)/, "the default key follows the pending proof, and never shares the footer with Listen Play");
+test.assertMatches(read("app/features/quick-draft-composition.js"), /backButton\?\.classList\.toggle\("default", !state\.hasBody\)/, "an empty darkroom makes Back to the Draft the one default");
 test.assertNotIncludes(quickWindowHtml, 'id="quick-draft-restore-dump"', "Versions do not add a second restore control below their rows");
 test.assertIncludes(quickWindowHtml, 'id="quick-draft-deliver"', "delivery is one action away from the paper");
 test.assertIncludes(quickWindowHtml, 'data-quick-draft-delivery="teachtext"', "TeachText handoff remains available");
@@ -222,7 +224,7 @@ test.assertIncludes(intake, "function quickDraftCitationRange", "material select
 test.assertMatches(intake, /function setVentMode[\s\S]*?setup: \{[\s\S]*?scenario: normalizeScenario\(refs\.format/, "Vent Mode writes its forced launch-day scenario into the same durable intake state");
 test.assertIncludes(intake, "refs.draft.setSelectionRange", "clicking cited material selects its paragraph in the body");
 test.assertIncludes(intake, 'row.setAttribute("aria-pressed"', "material selection is exposed accessibly");
-test.assertIncludes(editor, 'row.className = "draft-desk-version-row"', "Versions render as new-shell objects");
+test.assertIncludes(editor, 'row.className = `draft-desk-version-row${named ? " is-named" : ""}`', "Versions render as new-shell objects");
 test.assertIncludes(editor, 'button.setAttribute("aria-selected", on ? "true" : "false")', "display state is announced with tab semantics");
 test.assertIncludes(editor, 'syncRovingTabStops(group)', "display tabs reuse the system keyboard navigation behavior");
 test.assertNotIncludes(editor, 'button.setAttribute("aria-pressed", on ? "true" : "false")', "display tabs do not announce a second conflicting state");
@@ -259,7 +261,7 @@ test.assertMatches(
 );
 // The bold application name read the raw window id: Liquid Glass showed
 // "lightroom" whenever 文字亮室 was in front.
-test.assertIncludes(read("app/core/multi-finder.js"), 'lightroom: "Lightroom"', "文字亮室 names itself in the menu bar");
+test.assertIncludes(read("app/core/multi-finder.js"), 'lightroom: "Text Lightroom"', "文字亮室 names itself in the menu bar");
 // 一个钟点: the dial replaces the length menu and the details bar's seconds;
 // the select stays as the model. 按住说 inserts the words exactly as heard.
 {
@@ -291,7 +293,7 @@ test.assertIncludes(read("app/core/multi-finder.js"), 'lightroom: "Lightroom"', 
   test.assertIncludes(desk, 'data-i18n="lightroom_listener_label"', "the listen strip is named 听众");
   test.assertIncludes(css, ".lightroom-layout.is-stack-open > .draft-desk-inspector {\n    display: grid;", "on a phone 文字亮室's stack opens as its own drawer");
   test.assertIncludes(desk, 'data-action="lightroom-toggle-inspector" data-i18n="quick_draft_adjustments_label"', "文字亮室's footer carries the phone's way to the stack");
-  test.assertIncludes(desk, 'if (target === "inspector" && lightroomUsesStackDrawer()) return toggleLightroomStack();', "the View menu row opens the same drawer");
+  test.assertIncludes(desk, 'if (lightroomUsesStackDrawer()) return toggleLightroomStack();', "the View menu row opens the same drawer");
   test.assertIncludes(css, ".draft-desk-eli5-bar[hidden] {\n  display: none;", "the listen strip's own display cannot beat the hidden attribute");
   test.assertMatches(css, /\.lightroom-layout\.is-stack-open > \.draft-desk-inspector \{[\s\S]*?grid-area: 1 \/ 1 \/ -1 \/ -1;/, "the phone drawer spans the layout instead of an empty last row");
   test.assert(css.lastIndexOf("\n.lightroom-actions {") < css.indexOf("  .lightroom-actions {\n    display: grid;"), "the two-row phone footer comes after the base footer rule it overrides");
@@ -305,8 +307,12 @@ test.assertIncludes(read("app/core/multi-finder.js"), 'lightroom: "Lightroom"', 
 // 清稿 (W2): a fifth layer over the spoken negative; it cleans, never rewrites.
 {
   const composition = read("app/features/quick-draft-composition.js");
-  test.assertIncludes(composition, "不换说法，不改语气，不增删观点和事实，不润色", "清稿 is told to clean and never to reword");
-  test.assertIncludes(composition, 'kind === "density" || kind === "clean" ? "" : adjustmentStrengthPromptLine', "清稿 carries no strength line");
+  // The instructions live in a prompt file now, not in the module.
+  const cleanPrompt = read("app/content/ai-prompts/other-apps/darkroom-clean.md");
+  test.assertIncludes(cleanPrompt, "不换说法，不改语气，不增删观点和事实，不润色", "清稿 is told to clean and never to reword");
+  test.assertIncludes(composition, 'clean: "other-apps.darkroom-clean"', "清稿's instructions are the darkroom-clean prompt file");
+  test.assert(!/^\[[123]\]/m.test(cleanPrompt), "清稿 carries no strength line: its prompt file has no stops");
+  test.assertNotIncludes(composition, "不换说法，不改语气", "no layer instruction is written in the module any more");
   test.assertIncludes(composition, "function quickDraftDictionaryTerms()", "the personal dictionary is read from the project at prompt time, never stored");
   test.assertIncludes(composition, 'if (workspace.titleMode === "manual")', "a derived title (the body's first sentence) never enters the dictionary");
   test.assertIncludes(composition, "!/[。！？!?]/.test(term)", "a sentence is not a term");
@@ -356,7 +362,8 @@ test.assertIncludes(css, "grid-template-rows: minmax(0, 1fr) auto;", "the paper 
 // The inspector moved to 文字亮室, so Quick Draft holds two tracks. A third
 // track would stand empty on the right, which is what it did once.
 test.assertIncludes(css, "grid-template-columns:\n    var(--quick-draft-shelf-width)\n    minmax(0, 1fr);", "desktop keeps materials beside the paper");
-test.assertNotIncludes(css, "is-inspector-hidden", "no rule still collapses an inspector this window does not hold");
+test.assertNotIncludes(css, ".draft-desk-layout.is-inspector-hidden", "no rule still collapses an inspector this window does not hold");
+test.assertIncludes(css, ".lightroom-layout.is-inspector-hidden > .draft-desk-inspector", "Hide Adjustments folds the stack in the darkroom's own layout");
 test.assertIncludes(css, ".draft-desk-layout.is-empty-draft .draft-desk-shelf", "the blank sheet removes secondary side regions");
 test.assertIncludes(css, "@container (max-width: 800px)", "collapse follows window width, not the viewport");
 test.assertIncludes(css, ".draft-desk-layout.is-shelf-open .draft-desk-shelf", "the material drawer is an explicit narrow-window state");
@@ -481,18 +488,18 @@ test.assertMatches(
 );
 test.assertMatches(
   lightroomMarkup,
-  /data-requires-write data-quick-draft-adjustment-develop/,
+  /data-requires-write data-writes-document data-quick-draft-adjustment-develop/,
   "冲洗 keeps the write gate: it writes the document"
 );
 test.assertMatches(
   coordinator,
-  /registerReadOnlyRule\?\.\(\(element\) => \(\s*lightroomIsReadOnly\(\)/,
+  /registerReadOnlyRule\?\.\(\(element\) => \([\s\S]{0,500}?data-writes-document[\s\S]{0,200}?lightroomIsReadOnly\(\)/,
   "the read-only subject greys the window through the one owner of that property"
 );
 test.assertIncludes(
   composition,
-  "if (lightroomIsReadOnly()) {",
-  "Develop refuses a read-only subject even when a caller bypasses the greyed controls"
+  "const decision = lightroomWriteDecision();\n  if (!decision.canWrite) {",
+  "Develop refuses a document it may not write even when a caller bypasses the greyed controls"
 );
 // The darkroom's reads and writes follow its subject: a developed document's
 // record, not the draft's. Without this, 试看 on a subject filed its composite
@@ -500,11 +507,11 @@ test.assertIncludes(
 // another.
 test.assertIncludes(coordinator, "function darkroomTargetDocumentId(", "darkroom reads and writes resolve their target through the subject");
 test.assertMatches(coordinator, /const documentId = darkroomTargetDocumentId\(record, projectId\);/, "darkroomOf and the darkroom patch route both use the subject-aware target");
-test.assertIncludes(composition, "lightroomIsReadOnly()\n    ? lightroomBodyText()", "the composite and the reading view read the subject's own text");
+test.assertIncludes(composition, "lightroomSubject\n    ? lightroomBodyText()", "the composite and the reading view read the subject's own text");
 // The subject expires with the window that opened it: every close door reports
 // through noteLightroomClosed, and a subject that survived the close showed a
 // foreign document nothing on screen accounted for.
-test.assertMatches(editor, /function noteLightroomClosed\(\) \{[\s\S]{0,400}?clearLightroomSubject/, "closing the darkroom by any door releases the read-only subject");
+test.assertMatches(editor, /function noteLightroomClosed\(\) \{[\s\S]{0,900}?clearLightroomSubject/, "closing the darkroom by any door releases the read-only subject");
 test.assertMatches(coordinator, /function clearLightroomSubject\(\) \{[\s\S]{0,500}?syncReadOnlySurface/, "releasing the subject unlocks the window's own controls again");
 
 // --- receipts (不写没有发生的事) ---------------------------------------------
@@ -522,7 +529,7 @@ test.assertMatches(composition, /setQuickDraftStatus\(t\("quick_draft_develop_do
 test.assertMatches(menus, /menuItem\("lightroom-page-setup", "page_setup"\),\s*menuItem\("lightroom-print", "print"\)/, "the File menu carries Page Setup and Print");
 test.assertIncludes(menus, 'menuItem("lightroom-undo-develop", "lightroom_undo_develop", "lightroom-undo-develop")', "the Adjust menu carries Undo Develop with its key equivalent");
 test.assertMatches(handoff, /\["lightroom-page-setup", "lightroom-print"\]\.includes\(action\)[\s\S]{0,80}?view === "read"/, "Page Setup and Print exist only in the reading view");
-test.assertMatches(handoff, /action === "lightroom-undo-develop"[\s\S]{0,100}?writable && Boolean\(lastLightroomDevelopVersion\(\)\)/, "Undo Develop needs the pen and a develop still on top of the chain");
+test.assertMatches(handoff, /action === "lightroom-undo-develop"[\s\S]{0,100}?!locked && hasBody && Boolean\(lastLightroomDevelopVersion\(\)\)/, "Undo Develop needs the pen and a develop still on top of the chain");
 test.assertMatches(editor, /function lastLightroomDevelopVersion\([\s\S]{0,300}?latest\.reason === "before-develop"/, "undo is available only while the develop is the newest link");
 test.assertMatches(editor, /async function undoLightroomDevelop\(\)[\s\S]{0,700}?restoreQuickDraftVersion\(version\.id, "version"\)/, "undo goes back through the same restore path every version row uses");
 test.assertMatches(editor, /async function printLightroomComposite\(\)[\s\S]{0,400}?lightroom_print_none/, "a page that cannot be built refuses instead of opening a blank window");
@@ -537,7 +544,7 @@ test.assertIncludes(actions, '{ id: "lightroom-undo-develop", key: "z", code: "K
 // answer to "can this panel show anything" instead of two that can disagree.
 test.assertIncludes(handoff, 'if (action === "lightroom-toggle-inspector") return quickDraftPanelActionable("inspector");', "the availability check reads the toggle's own predicate, not a separately derived hasBody");
 test.assertMatches(coordinator, /function toggleQuickDraftPanel\(panel = "shelf"\) \{\s*const target = panel === "inspector" \? "inspector" : "shelf";\s*if \(!quickDraftPanelActionable\(target\)\) return false;/, "the toggle's own guard is the same predicate the menu row asks");
-test.assertMatches(coordinator, /function quickDraftPanelActionable\(panel = "shelf"\) \{[\s\S]{0,200}?lightroomSubject[\s\S]{0,150}?is-empty-draft/, "the shared predicate is subject-aware for the inspector and live-draft-aware otherwise");
+test.assertMatches(coordinator, /function quickDraftPanelActionable\(panel = "shelf"\) \{[\s\S]{0,400}?\.lightroom-layout[\s\S]{0,200}?is-empty-draft/, "the shared predicate answers for the darkroom's own layout for the inspector and live-draft-aware otherwise");
 
 // A panel that opens past the screen edge is a panel nobody can read. The
 // deliver menu sits at the left of its row, so anchoring its panel's right edge

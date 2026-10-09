@@ -2616,7 +2616,8 @@ body[data-theme="liquid-glass"] input[type="radio"]::before {
 body[data-theme="liquid-glass"] input[type="checkbox"]::before {
   width: 10px;
   height: 10px;
-  clip-path: polygon(14% 0, 50% 36%, 86% 0, 100% 14%, 64% 50%, 100% 86%, 86% 100%, 50% 64%, 14% 100%, 0 86%, 36% 50%, 0 14%);
+  /* A tick, as every macOS draws a checked box; the cross read as "off". */
+  clip-path: polygon(0 55%, 14% 41%, 38% 64%, 86% 12%, 100% 26%, 38% 92%);
   background: rgba(16, 17, 20, 0.86);
 }
 
@@ -4294,6 +4295,13 @@ body[data-theme="liquid-glass"] .view-btn[data-view="list"]::before {
 body[data-theme="liquid-glass"] .view-btn[data-view="list"].is-active::before {
   background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 -5px 0 rgba(255, 255, 255, 0.9), 0 5px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* A disabled field in the glass ink of every other disabled control; the
+   field recipe's var(--ink) sat at the same weight earlier in the file. */
+body[data-theme="liquid-glass"] :is(input, textarea):disabled {
+  color: var(--liquid-disabled-control-fg);
+  -webkit-text-fill-color: currentColor;
 }
 
 body[data-theme="liquid-glass"] button:disabled:not(.memory-card),

@@ -313,7 +313,9 @@ body[data-theme="nextstep"] {
   --control-chooser-active-fg: var(--ink);
   --control-chooser-active-label-bg: #ffffff;
   --control-chooser-active-label-fg: #000000;
-  --control-chooser-active-shadow: var(--system-shadow);
+  /* The section list sits on white, so a white well alone left the current
+     section unmarked; a pressed NeXT bezel (dark top-left inner edge) marks it. */
+  --control-chooser-active-shadow: inset 1px 1px 0 #000000, inset 2px 2px 0 #555555, inset -1px -1px 0 #aaaaaa;
   --control-chooser-active-weight: inherit;
   --control-chooser-area: 1 / 1 / span 2 / auto;
   --control-chooser-bg: transparent;

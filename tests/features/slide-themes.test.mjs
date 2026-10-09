@@ -90,6 +90,32 @@ test.assert(!/^\s*section\s*\{/m.test(scoped), "no bare section rule survives sc
 test.assert(!/\.clio-stage-slide-frame\s*\{[^}]*width:\s*1280px/.test(scoped), "the frame keeps its own geometry");
 test.assert(!scoped.includes("body {"), "app-wide rules are never injected");
 
+// A comment before a rule used to become part of its selector, and the rule was
+// dropped for not starting with `section`: every layout group's first rule and
+// the whole base rule vanished from ClioStage while print kept them.
+const afterComment = themes.scopeCss("/* metric · a list */\nsection.metric ul { gap: 1px; }", ".f");
+test.assertIncludes(afterComment, ".f.metric ul{ gap: 1px; }", "a rule that follows a comment is scoped");
+const frame = ".clio-stage-slide-frame";
+const stageCss = themes.scopeCss(themes.cssFor("big-sur"), frame, { dropContainers: true, body: ".clio-stage-slide-body" });
+test.assertIncludes(stageCss, `${frame}.metric ul{`, "the metric row reaches the frame");
+test.assertIncludes(stageCss, `${frame}.evidence img{`, "the evidence figure reaches the frame");
+const baseRule = stageCss.split("\n}").find((rule) => rule.trimStart().startsWith(`${frame}{`)) || "";
+test.assertIncludes(baseRule, "position: relative", "the base page rule reaches the frame");
+test.assert(!/(^|;)\s*(width|padding|display|background|color)\s*:/.test(baseRule.slice(baseRule.indexOf("{") + 1)), "the base page rule leaves the frame's box and paint to ClioStage");
+test.assertIncludes(stageCss, `${frame}.dark{ background: var(--slide-ink); color: var(--slide-bg); }`, "a dark page keeps its own surface");
+// Page-level rules lose their flex/grid placement, not just the bare `section`
+// one: the frame is ClioStage's grid, and justify-content from a layout or an
+// era squeezed the body into a sliver (Big Sur's lead, Classic's cover).
+const pageRules = stageCss.split("\n").filter((rule) => /^\.clio-stage-slide-frame(?:\.[\w-]+|:not\([^)]*\))*(?:, \.clio-stage-slide-frame(?:\.[\w-]+|:not\([^)]*\))*)*\{/.test(rule));
+test.assert(pageRules.length >= 4 && pageRules.every((rule) => !/(justify-content|align-items|display)\s*:/.test(rule)), "no page-level rule carries flex or grid placement into the frame");
+const classicCss = themes.scopeCss(themes.cssFor("classic"), frame, { dropContainers: true });
+test.assertIncludes(classicCss, `${frame}.era-classic{ padding: 96px 100px 78px; }`, "the classic era keeps the padding that clears the window it draws");
+test.assertIncludes(stageCss, `${frame}.statement{; text-align: center; }`, "a page rule keeps what is not geometry");
+test.assertIncludes(stageCss, `${frame}.evidence .clio-stage-slide-body > p{`, "a child of the page is re-aimed at the slide body");
+test.assert(!stageCss.includes(`${frame}.evidence > p`), "no child rule is left aimed at the frame");
+const previewCss = themes.scopeCss(themes.cssFor("big-sur"), ".clio-deck-preview");
+test.assertIncludes(previewCss, ".clio-deck-preview.cover{ justify-content: flex-end; }", "without dropContainers the page keeps its exact geometry");
+
 // The spec block and the per-page directives.
 const spec = themes.defaultSpec();
 const line = themes.specLine({ mode: "pyramid", era: "aqua", canvas: "4:3", reading: "presentation" });
@@ -208,8 +234,21 @@ test.assertIncludes(contrastCss, "section.contrast.dark td:nth-child(2), section
   "on the ink ground the emphasised contrast column turns to paper instead of vanishing into the page");
 test.assert(!/section\.(metric|contrast|duo-compare)[^{]*td[^{]*\{[^}]*font-family: var\(--slide-mono\)/.test(contrastCss) && !/section\.metric li strong \{[^}]*--slide-mono/.test(contrastCss),
   "big numbers are set in the display face with tabular figures, not the era's typewriter face");
-const print43 = themes.printHtml({ title: "x", markdown: goodDeck, spec: { canvas: "4:3" } });
+const print43 = themes.printHtml({ title: "x", markdown: goodDeck.replace("size: 16:9", "size: 4:3"), spec: { canvas: "4:3" } });
 test.assertIncludes(print43, "@page { size: 254mm 190.5mm; margin: 0; }", "4:3 prints at its own page size");
+test.assertIncludes(print43, "canvas-4-3", "and its pages are drawn 960 wide, not cut off at the right");
+// One page, for the stage and the sheet: header / footer / paginate directives.
+const directiveDeck = ["---", "marp: true", "paginate: true", "footer: 专栏", "---", "", "# 一", "", "---", "", "<!-- _paginate: false -->", "<!-- _header: 第二页 -->", "## 二"].join("\n");
+const directives = themes.pageDirectives(directiveDeck);
+test.assert(directives.pages.length === 2 && directives.pages[0].paginate && !directives.pages[1].paginate, "a page's own _paginate overrides the deck's");
+test.assert(directives.pages[1].header === "第二页" && directives.pages[0].footer === "专栏", "front matter sets the deck, a page comment sets its page");
+const pageOne = themes.pageHtml({ page: "# 一", index: 0, count: 2, era: "big-sur", ...directives.pages[0] });
+test.assertIncludes(pageOne, '<footer class="slide-print-foot"><span>专栏</span><span>1 / 2</span></footer>', "the footer and the page number are drawn on the page");
+const printed = themes.printHtml({ title: "x", markdown: directiveDeck });
+test.assertIncludes(printed, "<span>专栏</span><span>1 / 2</span>", "the sheet prints the same footer");
+test.assertIncludes(printed, '<header class="slide-print-head">第二页</header>', "and the page's own header");
+test.assertNotIncludes(printed, "<span>x</span>", "the title is no longer forced into every footer");
+test.assert(themes.pageCanvas(goodDeck.replace("size: 16:9", "size: 4:3"), { canvas: "16:9" }) === "4:3", "the front matter's size wins over the spec, as Marp reads it");
 
 // The frontmatter a deck leaves with.
 const frontmatter = themes.frontmatter({ era: "aqua", canvas: "4:3", mode: "narrative", reading: "presentation" });
@@ -221,8 +260,8 @@ test.assertIncludes(frontmatter, '<!-- clio-deck: {"canvas":"4:3","era":"aqua","
 
 // Wiring: one lazy module, loaded by both the authoring and the rendering path.
 test.assertIncludes(manifest, '"app/features/slide-themes.js"', "the theme module is registered as a lazy runtime path");
-test.assertIncludes(config, '["app/features/slide-themes.js", "app/features/slides-export.js"]', "the slides export loader brings the theme module with it");
-test.assertIncludes(config, '["app/features/slide-themes.js", "app/features/clio-stage.js"]', "the ClioStage loader brings the theme module with it");
+test.assertIncludes(config, '"app/features/slide-themes.js", "app/features/slides-export.js"]', "the slides export loader brings the theme module with it");
+test.assertIncludes(config, '"app/features/slide-themes.js", "app/features/clio-stage.js"]', "the ClioStage loader brings the theme module with it");
 test.assertIncludes(source, 'dialog.id = "clio-deck-setup-modal"', "the deck setup dialog is built on demand, off the boot payload");
 test.assert(!indexHtml.includes("clio-deck-setup-modal"), "and it is not parked in the shell");
 test.assertIncludes(read("app/features/clio-stage.js"), 'button.setAttribute("data-action", "clio-stage-export-pdf")', "the Print PDF button arrives with the ClioStage module");

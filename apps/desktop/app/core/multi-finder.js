@@ -14,7 +14,7 @@ const multiFinderAppLabels = {
   finder: "Finder",
   writingStudio: "Writing Studio",
   quickDraft: "Quick Draft",
-  lightroom: "Lightroom",
+  lightroom: "Text Lightroom",
   teachText: "TeachText",
   clioTalk: "ClioTalk",
   searcher: "Searcher",
@@ -70,9 +70,38 @@ function syncWorkspaceAppOwnership() {
   });
 }
 
-function isMultiFinderMode() {
-  return runtimeEnvironment !== "finder";
+// Mac OS X has no single-application mode, and its Dock exists to switch
+// between applications that are all running. So while an appearance shows its
+// Dock (on a desk wide enough to draw it), the desk runs as MultiFinder
+// whatever the startup setting says; the setting still governs the Classic
+// appearances and a hidden Dock (owner decision, 2026-10-09).
+function dockKeepsMultiFinder() {
+  try {
+    if (window.AISystem6Theme?.hasCapability?.("dock") !== true) return false;
+    if (window.AISystem6WindowMinimize?.dockVisible?.() !== true) return false;
+    return !window.matchMedia?.(phoneViewportQuery)?.matches;
+  } catch {
+    return false;
+  }
 }
+
+function isMultiFinderMode() {
+  return runtimeEnvironment !== "finder" || dockKeepsMultiFinder();
+}
+
+// The menus that read the mode are drawn once; redraw them when showing or
+// hiding the Dock, or changing appearance, turns the multitasking on or off.
+let dockMultiFinderShown = null;
+function syncDockMultiFinder() {
+  const next = isMultiFinderMode();
+  if (next === dockMultiFinderShown) return;
+  dockMultiFinderShown = next;
+  if (typeof renderMultiFinderMenu === "function") renderMultiFinderMenu();
+  if (typeof updateMenuState === "function") updateMenuState();
+  if (typeof syncWorkspaceDesktopIcon === "function") syncWorkspaceDesktopIcon();
+}
+document.addEventListener("ai-system6-themechange", syncDockMultiFinder);
+document.addEventListener("ai-system6-dockchange", syncDockMultiFinder);
 
 async function setFinderEnvironment(mode, { persistStartup = true, announce = true } = {}) {
   const nextEnvironment = mode === "multifinder" ? "multifinder" : "finder";

@@ -3057,6 +3057,12 @@ async function askDocMapHkrrTheoryReview() {
 }
 
 const DOCMAP_COMMAND_NAMES = [
+  "docmap-rename-node",
+  "docmap-delete-branch",
+  "docmap-move-up",
+  "docmap-move-down",
+  "docmap-branch-to-chart",
+  "docmap-map-to-slides",
   "docmap-save",
   "docmap-print-pdf",
   "docmap-send-question",
@@ -3076,12 +3082,226 @@ function docMapControlEnabled(selector) {
   return !!control && !control.disabled && !control.hidden && !control.classList.contains("is-disabled");
 }
 
+// ---- Editing a map, and sending it on (the edit kernel) --------------------
+// A map stays derived from its source. What the writer can change is the map
+// document itself — a branch renamed, removed, or moved among its siblings —
+// and every change is one step of the map's own history
+// (app/core/edit-history.js). A saved map writes the change back into its
+// file; a new map stays temporary until saved, edits and all.
+const docMapHistories = new Map();
+
+function docMapHistory() {
+  const key = activeDocMapTab()?.id || currentDocMap?.id || "";
+  if (!key || !currentDocMap || !window.AISystem6EditHistory) return null;
+  if (!docMapHistories.has(key)) {
+    docMapHistories.set(key, window.AISystem6EditHistory.createEditHistory({
+      read: () => JSON.stringify({ central: currentDocMap.central, nodes: currentDocMap.nodes, edges: currentDocMap.edges }),
+      write: (snapshot) => {
+        Object.assign(currentDocMap, JSON.parse(snapshot));
+        docMapEdited();
+      },
+      limit: 100,
+    }));
+  }
+  return docMapHistories.get(key);
+}
+registerEditHistory("docMap", () => docMapHistory());
+
+function docMapEdited() {
+  // The model's original Markdown no longer describes the map: draw from the
+  // nodes from now on.
+  delete currentDocMap.markdown;
+  captureActiveDocMapTabState();
+  const backing = activeDocMapTab()?.backing;
+  const file = backing?.type === "projectText" ? chatFiles.find((item) => item.id === backing.id) : null;
+  if (file?.docMap) {
+    file.docMap = { ...structuredClone(currentDocMap), status: "saved" };
+    file.body = docMapMarkdownForMarkmap(currentDocMap);
+    file.updatedAt = new Date().toISOString();
+    markDeskDirty("chatFiles", file.id);
+    saveDeskState();
+  }
+  renderDocMap();
+  if (typeof updateMenuState === "function") updateMenuState();
+}
+
+function docMapEdit(label, mutate) {
+  const history = docMapHistory();
+  if (!history) return false;
+  history.change(label, mutate);
+  docMapEdited();
+  return true;
+}
+
+function docMapIncomingEdge(nodeId) {
+  return (currentDocMap?.edges || []).find((edge) => edge.to === nodeId) || null;
+}
+
+function docMapCanMove(action) {
+  const node = selectedDocMapNode();
+  if (!node || node.id === "central") return false;
+  if (action === "docmap-delete-branch") return true;
+  const incoming = docMapIncomingEdge(node.id);
+  const siblings = incoming ? currentDocMap.edges.filter((edge) => edge.from === incoming.from && edge.to !== "central") : [];
+  const at = siblings.indexOf(incoming);
+  return action === "docmap-move-up" ? at > 0 : at >= 0 && at < siblings.length - 1;
+}
+
+async function renameDocMapNode() {
+  const node = selectedDocMapNode();
+  if (!node) return false;
+  const value = await showInputDialog({ title: t("docmap_rename_node"), defaultValue: node.title || "" });
+  const title = String(value || "").replace(/\s+/g, " ").trim().slice(0, 90);
+  if (!title || title === node.title) return false;
+  return docMapEdit("edit_step_rename", () => {
+    if (node.id === "central") {
+      currentDocMap.central.title = title;
+      currentDocMap.title = title;
+    } else {
+      const target = currentDocMap.nodes.find((item) => item.id === node.id);
+      if (target) target.title = title;
+    }
+  });
+}
+
+function deleteDocMapBranch() {
+  const node = selectedDocMapNode();
+  if (!node || node.id === "central") return false;
+  const doomed = new Set([node.id]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    currentDocMap.edges.forEach((edge) => {
+      if (doomed.has(edge.from) && !doomed.has(edge.to)) { doomed.add(edge.to); grew = true; }
+    });
+  }
+  const parent = docMapIncomingEdge(node.id)?.from || "central";
+  const done = docMapEdit("edit_step_delete", () => {
+    currentDocMap.nodes = currentDocMap.nodes.filter((item) => !doomed.has(item.id));
+    currentDocMap.edges = currentDocMap.edges.filter((edge) => !doomed.has(edge.to) && !doomed.has(edge.from));
+  });
+  selectedDocMapNodeId = parent;
+  renderDocMap();
+  return done;
+}
+
+// Siblings are drawn in the order of their incoming edges.
+function moveDocMapBranch(step) {
+  const node = selectedDocMapNode();
+  if (!node || !docMapCanMove(step < 0 ? "docmap-move-up" : "docmap-move-down")) return false;
+  return docMapEdit("edit_step_move", () => {
+    const edges = currentDocMap.edges;
+    const incoming = docMapIncomingEdge(node.id);
+    const siblings = edges.filter((edge) => edge.from === incoming.from && edge.to !== "central");
+    const other = siblings[siblings.indexOf(incoming) + step];
+    const a = edges.indexOf(incoming);
+    const b = edges.indexOf(other);
+    [edges[a], edges[b]] = [edges[b], edges[a]];
+  });
+}
+
+// A branch as a ClioChart tree: each node a box carrying its source quote.
+// Pure over the map, so ClioStage can ask again later whether the branch has
+// changed since a slide copied it (the rev is computed over this output).
+function docMapBranchDiagram(map, rootId = "central", limit = 24) {
+  if (!map) return null;
+  const byId = new Map((map.nodes || []).map((node) => [node.id, node]));
+  const root = rootId === "central" ? map.central : byId.get(rootId);
+  if (!root) return null;
+  const nodes = [];
+  const edges = [];
+  const visit = (node, parentBox, depth) => {
+    if (nodes.length >= limit || depth > 3) return;
+    const id = `d${nodes.length + 1}`;
+    nodes.push({ id, label: String(node.title || "").slice(0, 40), quote: String(node.quote || "").slice(0, 240), head: depth === 0 });
+    if (parentBox) edges.push({ id: `e${edges.length + 1}`, from: parentBox, to: id, label: "" });
+    (map.edges || []).filter((edge) => edge.from === node.id && edge.to !== "central").forEach((edge) => {
+      const child = byId.get(edge.to);
+      if (child) visit(child, id, depth + 1);
+    });
+  };
+  visit(root, "", 0);
+  return { kind: "tree", title: String(root.title || map.title || ""), nodes, edges, groups: [] };
+}
+
+function docMapSavedFileId() {
+  const backing = activeDocMapTab()?.backing;
+  return backing?.type === "projectText" && chatFiles.some((file) => file.id === backing.id && file.docMap) ? backing.id : "";
+}
+
+async function sendDocMapBranchToChart() {
+  const node = selectedDocMapNode() || currentDocMap?.central;
+  const diagram = docMapBranchDiagram(currentDocMap, node?.id || "central");
+  if (!diagram?.nodes.length) return false;
+  const fileId = docMapSavedFileId();
+  // The drawing is a copy; it remembers the branch it came from so a slide
+  // that carries it can later say when the map changed.
+  if (fileId && window.AISystem6EditEmbeds) diagram.origin = { app: "docMap", fileId, ref: node?.id || "central", rev: window.AISystem6EditEmbeds.contentRev(diagram) };
+  await ensureClioChartModule();
+  openWindow("clioChart");
+  const chart = window.AISystem6ClioChart;
+  const api = window.AISystem6ClioDiagram;
+  if (!chart || !api) return false;
+  chart.showDiagramMode?.();
+  api.onStatus = (message) => chart.setStatus?.(message);
+  api.load(diagram, { temporary: true, source: { label: currentDocMap.title || t("docmap"), text: currentDocMap.sourceText || "" } });
+  setStatus(t("docmap_branch_sent_chart", diagram.title));
+  return true;
+}
+
+// The map's structure as a deck, with no model call: a cover from the centre,
+// then for each top-level branch a divider and a page of its children. The
+// quotes ride along as speaker notes, so every line can be traced.
+function docMapDeckMarkdown(map) {
+  const zh = currentLanguage === "zh";
+  const byId = new Map((map.nodes || []).map((node) => [node.id, node]));
+  const children = (id) => (map.edges || []).filter((edge) => edge.from === id && edge.to !== "central").map((edge) => byId.get(edge.to)).filter(Boolean);
+  const clean = (text) => String(text || "").replace(/\s+/g, " ").replace(/-->/g, "—>").trim();
+  const pages = [[
+    "<!-- _class: cover -->", "", `# ${clean(map.central?.title || map.title)}`, "", clean(map.central?.summary), "", clean(map.sourceLabel),
+  ].join("\n")];
+  children("central").forEach((branch, index) => {
+    pages.push(["<!-- _class: divider -->", "", String(index + 1).padStart(2, "0"), "", `## ${clean(branch.title)}`].join("\n"));
+    const items = children(branch.id);
+    if (!items.length && !branch.summary) return;
+    const notes = [branch, ...items].filter((node) => node.quote).map((node) => (zh ? `出处：「${clean(node.quote)}」` : `Source: "${clean(node.quote)}"`));
+    pages.push([
+      `## ${clean(branch.title)}`, "",
+      ...(items.length ? items.map((item) => `- ${clean(item.title)}`) : [clean(branch.summary)]),
+      ...(notes.length ? ["", `<!-- ${notes.join(" / ")} -->`] : []),
+    ].join("\n"));
+  });
+  return ["---", "marp: true", "theme: default", "paginate: true", "size: 16:9", "---", "", pages.join("\n\n---\n\n")].join("\n");
+}
+
+async function sendDocMapToSlides() {
+  if (!currentDocMap) return false;
+  await ensureClioStageModule();
+  // An unsaved deck already in ClioStage is the writer's work: ask first.
+  if (window.AISystem6ClioStage?.confirmDiscard && !(await window.AISystem6ClioStage.confirmDiscard())) return false;
+  const opened = await window.AISystem6ClioStage?.open?.({
+    title: currentDocMap.title || t("docmap"),
+    sourceKind: "generated",
+    sourceText: currentDocMap.sourceText || "",
+    temporary: true,
+    markdown: docMapDeckMarkdown(currentDocMap),
+  });
+  if (opened) setStatus(t("docmap_sent_slides", currentDocMap.title || t("docmap")));
+  return !!opened;
+}
+
+window.AISystem6DocMapEmbeds = Object.freeze({ branchDiagram: docMapBranchDiagram, deckMarkdown: docMapDeckMarkdown });
+
 function docMapCommandAvailable(action) {
   if (action === "open-docmap") return true;
   const activeWindow = document.querySelector(".window.is-active");
   if (activeWindow?.dataset.window !== "docMap") return false;
   if (action === "docmap-retry-pending") {
     return !currentDocMap && !!activeDocMapTab()?.state?.pending?.retryable;
+  }
+  if (action === "docmap-rename-node") return !!currentDocMap && !!selectedDocMapNode() && currentDocMap.kind !== "videoDocMap";
+  if (["docmap-delete-branch", "docmap-move-up", "docmap-move-down"].includes(action)) {
+    return !!currentDocMap && currentDocMap.kind !== "videoDocMap" && docMapCanMove(action);
   }
   if (action === "docmap-send-question") return docMapControlEnabled("#docmap-send-question");
   if (action === "docmap-insert-outline") return docMapControlEnabled("#docmap-insert-outline");
@@ -3097,6 +3317,12 @@ function runDocMapRuntimeCommand(action) {
     openWindow("docMap");
     return;
   }
+  if (action === "docmap-rename-node") return renameDocMapNode();
+  if (action === "docmap-delete-branch") return deleteDocMapBranch();
+  if (action === "docmap-move-up") return moveDocMapBranch(-1);
+  if (action === "docmap-move-down") return moveDocMapBranch(1);
+  if (action === "docmap-branch-to-chart") return sendDocMapBranchToChart();
+  if (action === "docmap-map-to-slides") return sendDocMapToSlides();
   if (action === "docmap-save") return saveCurrentDocMap();
   if (action === "docmap-print-pdf") return printCurrentDocMapPdf();
   if (action === "docmap-send-question") return sendDocMapNodeToQuestionSheet();

@@ -125,9 +125,43 @@
 .clio-paint-body {
   display: grid;
   flex: 1;
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-areas: "palette viewport";
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "palette viewport layers";
   min-height: 0;
+}
+
+/* ---- Layers: the stack beside the page ------------------------------------
+   The list is the edit kernel's layers panel (styles/99-edit-kernel.css owns
+   its rows); this only places it and gives it a column and a button row. */
+
+.clio-paint-layers {
+  grid-area: layers;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 148px;
+  min-height: 0;
+  border-left: var(--system-border);
+  background: var(--paper);
+}
+
+.clio-paint-layers-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.clio-paint-layers-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  padding: 4px;
+  border-top: var(--system-border);
+}
+
+.clio-paint-layers-actions .btn {
+  min-width: 0;
+  padding-inline: 4px;
 }
 
 .clio-paint-palette {
@@ -564,8 +598,24 @@
 
   .clio-paint-body {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) auto;
-    grid-template-areas: "viewport" "palette";
+    grid-template-rows: minmax(0, 1fr) auto auto;
+    grid-template-areas: "viewport" "layers" "palette";
+  }
+
+  /* Under the page on a narrow window: a short strip, the list beside its buttons. */
+  .clio-paint-layers {
+    width: auto;
+    max-height: 96px;
+    flex-direction: row;
+    border-left: 0;
+    border-top: var(--system-border);
+  }
+
+  .clio-paint-layers-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 128px;
+    border-top: 0;
+    border-left: var(--system-border);
   }
 
   .clio-paint-palette {

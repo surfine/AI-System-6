@@ -568,14 +568,6 @@ const windowRegistry = Object.freeze({
   ...window.AISystem6Admissions.windowRecords(),
 });
 
-// Two names route into another window rather than opening one of their own:
-// the Review Desk's two tabs. They are declared here because the app-id map
-// they came from had no way to say "this is not a window", which is how a dead
-// third name (`guide`) survived in it unnoticed.
-function windowOpensAs(name) {
-  return getWindowRecord(name)?.opensAs || "";
-}
-
 function getWindowRecord(name) {
   return windowRegistry[String(name || "")] || null;
 }

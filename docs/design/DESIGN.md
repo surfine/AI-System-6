@@ -453,6 +453,36 @@ For the shared state contract, behavior kernel, appearance ownership, and native
 boundary, follow [Architecture](../ARCHITECTURE.md). Phased migrations remain
 maintainer plans rather than a second public design authority.
 
+### Editing kernel and round trips
+
+Every editor that keeps a document of its own (ClioChart's table and canvas,
+ClioStage, Cover Glass, ClioPaint, ClioProject, DocMap's maps, Review Desk's
+comments, the darkroom's settings) shares one editing kernel instead of a
+private copy of each habit:
+
+- **One history per editor**, registered by window (`registerEditHistory`,
+  `app/core/edit-history.js`). Edit ▸ Undo / Redo and the step named in the menu
+  ("Undo Move") come from it whenever no text field is focused; a focused field
+  keeps its own undo. A drag or a scrub is one step; a run of typing in one
+  field is one step. Editors do not answer ⌘Z themselves.
+- **Commands are read from the menus.** Key Caps opens on a command sheet (⌘/)
+  listing the front application's menu commands with their keys, searchable
+  and runnable. A shortcut belongs to one row of the shortcut table; two rows
+  may share a key only when no application reaches both.
+- **Snapping and arranging** follow `app/core/edit-snap.js`: edges and centres
+  of the other objects and the frame, then an existing gap; ⌥ held moves
+  freely. Align uses the object clicked last as the reference.
+- **Layers and Get Info** use the shared panel and inspector
+  (`app/core/edit-layers.js`): eye, lock, name, drag to restack; selecting is
+  not an edit.
+- **An embed is a copy with a link back** (`app/core/edit-embeds.js`): the
+  picture plus one `clio-embed` comment carrying the editable copy. Double-click
+  edits the copy in the application that made it and redraws the page as one
+  step. When the original changes, the page offers Sync or Keep; it never
+  updates itself.
+- **Working pictures are staged** in the picture store until the document they
+  belong to is saved, and stay out of the Picture Album and backups until then.
+
 ### WindowShade multitasking
 
 WindowShade extends the existing window model on the wide desktop. All twelve

@@ -49,12 +49,14 @@ test.assertIncludes(quickDraftHandoff, 'dispatch("reviewDesk", {', "Quick Draft 
 // The intent vocabulary stays the closed set from the product plan.
 // "develop" joined the set when 文字亮室 became an application. It is its own
 // intent rather than a reuse: edit belongs to TeachText, which is the default
-// opener for a text object, and review belongs to the Review Desk. Adding one
+// opener for a text object, and review belongs to the Review Desk. "chart"
+// joined when ClioChart began taking any text the way DocMap does: map draws a
+// structure, chart draws a comparison, and neither is the other. Adding one
 // is a deliberate act — the set stays closed, and this line is where it is
 // widened on purpose.
 test.assertIncludes(
   registrySource,
-  '"open", "read", "edit", "review", "develop", "map", "present", "attach", "export"',
+  '"open", "read", "edit", "review", "develop", "map", "chart", "present", "attach", "export"',
   "the registry declares the closed intent set"
 );
 test.assertIncludes(registrySource, "function registerApplication", "apps register through one descriptor contract");
@@ -133,8 +135,17 @@ test.assert(registry.resolveApplicationForItem(chatFile, "open").appId === "clio
 test.assert(registry.resolveApplicationForItem(textFile, "review").appId === "reviewDesk", "a text document resolves to Review Desk for review");
 test.assert(registry.resolveApplicationForItem(textFile, "map").appId === "docMap", "a text document resolves to DocMap for map");
 test.assert(registry.resolveApplicationForItem(textFile, "present").appId === "clioStage", "a text document resolves to ClioStage for present");
+test.assert(registry.resolveApplicationForItem(textFile, "chart").appId === "clioChart", "a text document resolves to ClioChart for chart");
 test.assert(registry.resolveApplicationForItem(textFile, "attach").appId === "projectCd", "a text document resolves to Project CD for attach");
 test.assert(registry.resolveApplicationForItem(textFile, "export").appId === "teachText", "a text document resolves to TeachText for export");
+// Saved decks and saved charts are objects of their own (the edit kernel's round trips).
+const deckFile = { id: "file-4", projectId: "project-1", type: "text", name: "deck.slides.md", body: "---\nmarp: true\ntheme: default\n---\n\n# One" };
+const markedDeck = { id: "file-5", projectId: "project-1", type: "text", name: "x.md", body: "# One", artifactKind: "slides" };
+const chartFile = { id: "file-6", projectId: "project-1", type: "text", name: "c.md", source: "ClioChart", body: "# C\n\n| a | b |\n| --- | --- |\n| x | 1 |\n" };
+test.assert(registry.resolveApplicationForItem(deckFile, "open").appId === "clioStage", "a Marp deck opens in ClioStage, even without the mark");
+test.assert(registry.resolveApplicationForItem(markedDeck, "open").appId === "clioStage", "a document marked as slides opens in ClioStage");
+test.assert(registry.resolveApplicationForItem(chartFile, "open").appId === "clioChart", "a saved ClioChart table opens in ClioChart");
+test.assert(registry.resolveApplicationForItem({ ...textFile, body: "---\ntitle: x\n---\n" }, "open").appId === "teachText", "other front matter is still a plain document");
 test.assert(registry.resolveApplicationForItem({ id: "x", type: "unknown" }, "open").reason === "no-handler", "unknown kinds fail visibly without a fallback app");
 test.assert(registry.resolveApplicationForItem(textFile, "bogus").reason === "unknown-intent", "unknown intents are rejected");
 

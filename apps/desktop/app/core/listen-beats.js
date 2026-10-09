@@ -163,8 +163,10 @@
   // headings are not shots and never become rows. Each row carries a q: anchor
   // (its opening words) that findListenQuoteRange resolves back to the row's
   // own start, and an estimate that sums the SRT's per-beat estimates, so the
-  // two exports share one clock (the SRT alone also reads a heading aloud). Visual cues are placed by quote; a cue
-  // whose sentence has left the body is dropped, never guessed onto a row.
+  // two exports share one clock (the SRT alone also reads a heading aloud).
+  // Visual cues are placed by quote; a cue whose sentence has left the body is
+  // dropped, never guessed onto a row. The storyboard itself is written by
+  // storyboard-ascii.js, one block of shots per row.
   const TRANSITION_MAX_CHARS = 60;
   const ANCHOR_MAX_CHARS = 40;
 
@@ -245,36 +247,12 @@
     return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
   }
 
-  // The file is a plain GFM table plus a list; the machine's anchors ride in
-  // HTML comments. Footage and cuttable cells stay empty: only the writer
-  // knows what has been shot and what can go.
-  function buildStoryboardMarkdown(rows = [], { title = "", intro = "", columns = [], notesHeading = "", visual = () => "" } = {}) {
-    const cell = (value) => String(value || "").replace(/\|/g, "\\|").replace(/\s*\n\s*/g, " ").trim();
-    const lines = rows.map((row, position) => {
-      const anchor = row.anchor ? ` <!-- q:${row.anchor} -->` : "";
-      return `| ${position + 1}${anchor} | ${cell(visual(row))} |  | ${formatStoryboardDuration(row.seconds)} |  |`;
-    });
-    return [
-      `# ${title}`,
-      "",
-      intro,
-      "",
-      `| ${columns.map(cell).join(" | ")} |`,
-      `|${" --- |".repeat(columns.length)}`,
-      ...lines,
-      "",
-      notesHeading,
-      "",
-    ].join("\n");
-  }
-
   window.AISystem6ListenBeats = Object.freeze({
     segmentListenBeats,
     segmentListenParagraphs,
     listenParagraphAnchor,
     buildStoryboardRows,
     formatStoryboardDuration,
-    buildStoryboardMarkdown,
     listenBeatForOffset,
     findListenQuoteRange,
     estimateListenBeatSeconds,

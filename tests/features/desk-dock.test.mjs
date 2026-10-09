@@ -128,13 +128,15 @@ const dockFolderWindowCells = () => vmw.run(
 );
 
 test.assert(desktopAppCellCount() > 0, "the desk's icon column really has application cells");
+// A Dock shown runs as MultiFinder, which hides the desk's Writing Studio
+// switch; the Dock keeps the studio anyway, so it counts as shown here.
 test.assert(
   vmw.run(
-    '[...document.querySelectorAll(".icon-column .desktop-app-icon")].filter((c) => !c.classList.contains("is-hidden") && c.hidden !== true).length',
+    '[...document.querySelectorAll(".icon-column .desktop-app-icon")].filter((c) => (!c.classList.contains("is-hidden") && c.hidden !== true) || (c.id === "finder-writing-studio-toggle" && c.hidden !== true && isMultiFinderMode())).length',
   ) === vmw.run(
     '[...document.querySelectorAll(".desk-dock-items .desk-dock-item")].filter((c) => c.dataset.dockKey.startsWith("cell:") || c.dataset.dockKey.startsWith("app:")).length',
   ),
-  "the Dock's application cells equal the icon column's shown application cells",
+  "the Dock's application cells equal the icon column's shown application cells (Writing Studio stays under MultiFinder)",
 );
 
 // Withholding a cell from the desk withholds it from the Dock too, on the next
@@ -404,7 +406,15 @@ vmw.run(`(() => {
 test.assert(vmw.run('!!document.querySelector(".desk-dock-menu[role=menu]")'), "right click opens the application menu");
 test.assert(vmw.run('document.querySelector(".desk-dock-menu").style.display === "block"'), "standalone menu explicitly overrides the shared hidden popover default (style contract, not browser visibility)");
 test.assert(vmw.run('!localStorage.getItem("ai-system-6-dock-favorites")'), "opening the menu does not change shortcuts");
-vmw.run(`document.querySelector('.desk-dock-menu button').dispatchEvent(new Event('click'))`);
+// From 10.6 on, Keep in Dock lives under Options (the 10.6 to 26 captures);
+// Jaguar and Tiger list Remove from Dock in the menu itself.
+vmw.run(`(() => {
+  const options = document.querySelector('.desk-dock-menu .has-submenu');
+  if (options) {
+    options.dispatchEvent(new Event('click'));
+    document.querySelector('.desk-dock-submenu button').dispatchEvent(new Event('click'));
+  } else document.querySelector('.desk-dock-menu button').dispatchEvent(new Event('click'));
+})()`);
 await vmw.waitFor(() => vmw.run(`!document.querySelector('.desk-dock-item[data-app-id="quickDraft"]')`));
 test.assert(vmw.run('JSON.parse(localStorage.getItem("ai-system-6-dock-favorites")).remove.includes("quickDraft")'), "Remove from Dock persists a shortcut preference");
 vmw.run('window.AISystem6WindowMinimize.setDockVisible(false); window.AISystem6WindowMinimize.setDockVisible(true)');

@@ -409,6 +409,11 @@ function resolveDocMapReadiness(preferredContext = null, options = {}) {
       sourceChars: wholeSource.text.length,
     });
   }
+  // ClioChart and ClioStage use these same rules with their own minimums. A
+  // source that already asks for less (a picture, a transcript) keeps its own.
+  const lower = (source, min) => (source && Number.isFinite(min) ? { ...source, threshold: Math.min(source.threshold, min) } : source);
+  selectionSource = lower(selectionSource, options.minSelectionChars);
+  wholeSource = lower(wholeSource, options.minDocumentChars);
   return typeof chooseDocMapSourceCandidate === "function" ? chooseDocMapSourceCandidate(selectionSource, wholeSource, rangeMode) : null;
 }
 

@@ -249,6 +249,10 @@
       // projected like the menu-bar model, so the stylesheet reads it rather
       // than the desk hard-coding one appearance's id into a shared rule.
       selectionModel: "key-window",
+      // macOS 11 alerts are narrow and centred: the icon on top, the message
+      // centred under it, and large buttons side by side, or stacked when
+      // there are three (512 Pixels' Empty Trash and Mail draft captures).
+      alertLayout: "centered",
       releaseReady: true,
       // Ships as a saved Appearance. Harvest B (2026-10-04) closed key-window
       // selection sweep, vibrancy sidebar fidelity, Dock/lamp pref polish, and
@@ -448,6 +452,9 @@
     // selection leaves this unset and keeps the base behaviour.
     if (theme.selectionModel) element.dataset.selectionModel = theme.selectionModel;
     else delete element.dataset.selectionModel;
+    // The system alert's arrangement (styles/00-foundation.css recipes).
+    if (theme.alertLayout) element.dataset.alertLayout = theme.alertLayout;
+    else delete element.dataset.alertLayout;
     if (theme.recipeBase) element.dataset.themeBase = theme.recipeBase;
     else delete element.dataset.themeBase;
     // The whole recipe chain, root first ("aqua snow-leopard tiger"). A parent

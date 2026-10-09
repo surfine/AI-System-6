@@ -11,18 +11,18 @@
     <!-- Let the system choose status glyph contrast. -->
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20261009.2" />
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20261009.2" />
-    <link rel="manifest" href="assets/app-icon/manifest.json?v=20261009.2" />
-    <script src="app/core/theme-registry.js?v=20261009.2"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20261009.2" />
+    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20261009.3" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20261009.3" />
+    <link rel="manifest" href="assets/app-icon/manifest.json?v=20261009.3" />
+    <script src="app/core/theme-registry.js?v=20261009.3"></script>
+    <link rel="stylesheet" href="styles.bundle.css?v=20261009.3" />
     <!-- Preload the application while parsing the desktop. -->
-    <link rel="preload" as="script" href="app.bundle.js?v=20261009.2" />
+    <link rel="preload" as="script" href="app.bundle.js?v=20261009.3" />
   </head>
   <body class="is-booting">
-    <script src="app/core/theme-body-init.js?v=20261009.2"></script>
+    <script src="app/core/theme-body-init.js?v=20261009.3"></script>
     <!-- Register crash recovery before the application bundle. -->
-    <script src="app/core/boot-safety-net.js?v=20261009.2"></script>
+    <script src="app/core/boot-safety-net.js?v=20261009.3"></script>
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
         <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
@@ -726,14 +726,17 @@
 
 
           <section class="control-section control-cloud-section" id="control-panel-cloud" role="tabpanel" aria-labelledby="control-tab-cloud" data-control-panel="cloud">
-            <h3 data-i18n="ai_connection">AI Connection</h3>
-            <button class="btn default control-wide-button" type="button" id="use-website-ai" data-i18n="use_website_ai">Use Website AI</button>
-            <button class="btn control-wide-button" type="button" id="use-local-ai" data-i18n="use_local_ai">Use Local AI</button>
-            <button class="btn control-wide-button" type="button" id="show-ai-advanced" data-i18n="advanced_settings">Advanced Settings…</button>
+            <h3 id="ai-connection-heading" data-i18n="ai_connection">AI Connection</h3>
+            <div class="control-radio-group" role="radiogroup" aria-labelledby="ai-connection-heading">
+              <div class="field-row"><input type="radio" name="ai-source" id="ai-source-auto" value="auto" /><label for="ai-source-auto" data-i18n="ai_source_auto">Automatic</label></div>
+              <div class="field-row"><input type="radio" name="ai-source" id="use-website-ai" value="website" /><label for="use-website-ai" data-i18n="use_website_ai">Website AI</label></div>
+              <div class="field-row"><input type="radio" name="ai-source" id="use-local-ai" value="local" /><label for="use-local-ai" data-i18n="use_local_ai">Local AI</label></div>
+              <div class="field-row"><input type="radio" name="ai-source" id="show-ai-advanced" value="byok" /><label for="show-ai-advanced" data-i18n="ai_source_byok">Your Own API Key</label></div>
+            </div>
             <p class="hint control-status" id="simple-ai-status" data-i18n="website_ai_ready">Uses the site's shared AI when it is available.</p>
 
             <details class="control-diagnostics" id="cloud-own-key-details">
-              <summary data-i18n="use_own_api_key">Use Your Own API Key</summary>
+              <summary data-i18n="use_own_api_key">API Key Settings</summary>
 
             <label class="control-field" for="cloud-provider">
               <span data-i18n="cloud_provider">Provider</span>
@@ -1333,7 +1336,7 @@
                 <button class="btn mini-btn" type="button" data-quick-draft-drawer="shelf" aria-controls="quick-draft-materials-drawer" aria-expanded="false" data-i18n="quick_draft_materials_label">Materials</button>
               </span>
               <span class="draft-desk-action-gap"></span>
-              <button class="btn" type="button" data-action="open-lightroom" data-i18n="quick_draft_open_lightroom" data-balloon-help="balloon_qd_lightroom">Lightroom</button>
+              <button class="btn" type="button" data-action="open-lightroom" data-i18n="quick_draft_open_lightroom" data-balloon-help="balloon_qd_lightroom">Text Lightroom</button>
               <details id="quick-draft-tools" class="teachtext-command-menu draft-desk-command-menu">
                 <summary class="btn" role="button" aria-haspopup="menu" aria-expanded="false" aria-controls="quick-draft-tools-menu"><span class="mobile-control-long" data-i18n="quick_draft_tools">Tools…</span><span class="mobile-control-short" data-i18n="quick_draft_more">More…</span></summary>
                 <div id="quick-draft-tools-menu" class="teachtext-command-popover draft-desk-command-popover" role="menu">
@@ -1995,8 +1998,8 @@
             </span>
             <span id="review-lens-hint" class="review-lens-hint" data-i18n="review_lens_hint_style">Sounds like a mouthpiece / missing personal detail. Not a score.</span>
             <p class="review-density-note" id="review-density-note">
-              <span data-i18n="review_density_lives_in_lightroom">Density and adjustment layers live in 文字亮室 / Lightroom — not in this lens.</span>
-              <button class="text-btn" type="button" data-action="open-lightroom" data-i18n="review_go_to_lightroom">Open Lightroom</button>
+              <span data-i18n="review_density_lives_in_lightroom">Density and adjustment layers live in Text Lightroom (文字亮室) — not in this lens.</span>
+              <button class="text-btn" type="button" data-action="open-lightroom" data-i18n="review_go_to_lightroom">Open Text Lightroom</button>
             </p>
           </div>
           <div class="style-section-nav review-section-nav">
@@ -2020,6 +2023,7 @@
               <div id="guest-review-results" class="claim-results guest-review-results is-hidden" data-review-result="guests">
                 <p class="empty-folder-note" data-i18n="guest_reviews_empty">No guest review for this project yet.</p>
               </div>
+              <div id="review-comments-panel" class="review-comments-panel is-hidden" data-review-result="comments"></div>
             </section>
           </div>
           <div id="review-desk-empty-note" class="empty-folder-note review-desk-empty-note is-hidden"><p data-i18n="review_desk_requires_final">No review yet. Nothing writes into the manuscript from here.</p><p class="review-lens-empty-follow" id="review-lens-empty-follow" data-i18n="review_lens_empty_style">No mouthpiece pass yet.</p><button class="btn default" type="button" data-action="advance-manuscript-to-review" data-i18n="to_review">To Review</button></div>
@@ -2041,6 +2045,8 @@
                   <button class="btn" type="button" data-action="review-mingming-handoff-backstage" data-i18n="review_mingming_handoff_backstage">Backstage Handoff Review</button>
                   <button class="btn" type="button" data-action="ai-praise" data-i18n="praise">Praise Me</button>
                   <button class="btn" type="button" data-action="open-guest-reviews" data-i18n="guest_reviews">Guest Reviews</button>
+                  <button class="btn" type="button" data-action="open-review-comments" data-i18n="review_comments">Comments</button>
+                  <button class="btn" type="button" data-action="open-review-compare" data-i18n="review_compare">Compare Versions</button>
                 <hr />
                     <button class="btn" type="button" data-action="toggle-sideask" aria-pressed="false" data-i18n="sideask">SideAsk</button>
                   </div>
@@ -3451,7 +3457,7 @@
         </button>
         <button class="desktop-icon desktop-app-icon" type="button" data-action="open-lightroom" data-balloon-help="balloon_lightroom">
           <span class="sys-icon sys-icon-desktop" data-system-icon="lightroom" aria-hidden="true"></span>
-          <span data-i18n="lightroom_title">Lightroom</span>
+          <span data-i18n="lightroom_title">Text Lightroom</span>
         </button>
         <button class="desktop-icon desktop-app-icon" type="button" data-open="assistant" data-balloon-help="balloon_assistant">
           <span class="sys-icon sys-icon-desktop" data-system-icon="assistant" aria-hidden="true"></span>
@@ -3478,9 +3484,9 @@
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20261009.2"></script>
+    <script src="app/generated/build-info.js?v=20261009.3"></script>
     <template id="standard-window-controls"><button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button><button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button><button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button></template>
-    <script src="app.bundle.js?v=20261009.2"></script>
+    <script src="app.bundle.js?v=20261009.3"></script>
 
   </body>
 </html>

@@ -23,6 +23,7 @@ const sources = [
   "app/features/quick-draft-intake.js",
   "app/features/quick-draft-editor.js",
   "app/features/quick-draft-composition.js",
+  "app/features/lightroom-develop.js",
   "app/features/quick-draft-ai.js",
   "app/features/quick-draft-handoff.js",
 ].map((path) => read(path));
@@ -192,9 +193,9 @@ const STACK = [
   { kind: "mingming", enabled: true, strength: 50, mask: [] },
   { kind: "density", enabled: true, strength: 75, mask: [] },
 ];
-const runModelPass = async ({ protectedText, sentinels }) => {
+const runModelPass = async ({ input }) => {
   // The model keeps every token verbatim and edits the rest.
-  return `${protectedText}\n\n[model refined this pass]`;
+  return `${input}\n\n[model refined this pass]`;
 };
 const composed = await context.composeDocument({
   source: SOURCE,
@@ -241,7 +242,7 @@ const retried = await context.composeDocument({
   cache: retryCache,
   runModel: failingRunModel,
 });
-test.assert(attempts === 2 && retried.text.includes("[model recovered]"), "Retry after a failure re-calls the exact stack once and succeeds");
+test.assert(attempts === 3 && retried.text.includes("[model recovered]"), "Retry after a failure starts again at the layer that failed (one failed call, then one per layer) and succeeds");
 
 // ---- Scenario 4: protect — byte-identical, sentinel break fails ----------
 const exact = await context.composeDocument({
@@ -249,7 +250,7 @@ const exact = await context.composeDocument({
   layers: [{ kind: "hkrr", enabled: true, strength: 50, mask: [] }],
   protectedRanges: PROTECTED,
   cache: new Map(),
-  runModel: async ({ protectedText, sentinels }) => protectedText,
+  runModel: async ({ input }) => input,
 });
 test.assert(exact.text === SOURCE, "a protected pass with intact sentinels is byte-identical");
 const broken = await context.composeDocument({

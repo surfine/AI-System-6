@@ -612,6 +612,12 @@ function renderTeachTextImageAttachments() {
     image.alt = imageAttachmentAltText(attachment);
     image.loading = "lazy";
     image.decoding = "async";
+    // Drag a picture onto ClioPaint (a tracing layer) or Cover Glass.
+    image.draggable = true;
+    image.addEventListener("dragstart", (event) => {
+      event.dataTransfer?.setData("application/x-ais6-picture", attachment.id);
+      event.dataTransfer?.setData("text/plain", attachment.name || "");
+    });
 
     const meta = document.createElement("div");
     meta.className = "image-manager-meta";

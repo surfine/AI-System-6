@@ -30,6 +30,21 @@ function activeTeachTextAllows(action) {
   return documentRoleAllows("teachText", role, action);
 }
 
+// TeachText's storyboard rows (「生成分镜图」, and 「精修这一镜…」 inside a
+// storyboard) are an affordance of the document in hand, so they are asked for
+// here - this module is already loaded at boot - the first time a TeachText
+// Commands menu opens. The rows themselves live in the lazy storyboard module,
+// which inserts them and settles whether they can run.
+if (typeof document !== "undefined" && typeof ensureStoryboardAsciiModule === "function") {
+  document.addEventListener("toggle", (event) => {
+    const details = event.target;
+    if (!details?.open || !details.matches?.('[data-window="teachText"] .teachtext-command-menu')) return;
+    ensureStoryboardAsciiModule()
+      .then(() => window.AISystem6StoryboardAscii?.syncTeachTextCommandRows?.(details))
+      .catch((error) => console.warn("AI System 6: the storyboard commands failed to load.", error));
+  }, true);
+}
+
 globalThis.AISystem6DocumentRolePolicy = Object.freeze({
   getDocumentRolePolicy,
   documentRoleAllows,

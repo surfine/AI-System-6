@@ -18,6 +18,7 @@
   let watcher = null;
   let options = {};
   let previewEl = null;
+  let titleEl = null;
   let previewTicket = 0;
   let leaveTimer = null;
   const project = () => (typeof windowBrowseEntries === "function" ? windowBrowseEntries() : [])
@@ -25,7 +26,9 @@
   function hoverLeave(anchor) {
     if (!options.hover || (anchor && anchor !== options.anchor)) return;
     clearTimeout(leaveTimer);
-    leaveTimer = setTimeout(() => close({ returnFocus: false }), 160);
+    // WindowShade's Dock panel lingers 180 ms after the pointer leaves, so a
+    // path from the icon to a card never closes it on the way.
+    leaveTimer = setTimeout(() => close({ returnFocus: false }), 180);
   }
   function closeHover(anchor) {
     if (options.hover && (!anchor || options.anchor === anchor)) close({ returnFocus: false });
@@ -35,8 +38,16 @@
     const anchor = options.anchor.getBoundingClientRect();
     const panel = panelEl.getBoundingClientRect();
     const outer = host.getBoundingClientRect();
-    const left = Math.max(8, Math.min(anchor.left, window.innerWidth - panel.width - 8));
-    const top = Math.max(8, Math.min(anchor.top - panel.height - 8, window.innerHeight - panel.height - 8));
+    // The Dock's window cards stand centred over the icon they belong to; a
+    // Dock down the right edge (NeXTSTEP's) has them beside the icon instead,
+    // so the panel never covers the tile it came from.
+    const cards = options.hover || options.cards;
+    const sideDock = cards && anchor.left > window.innerWidth - 160 && anchor.top - panel.height - 8 < 8;
+    const preferredLeft = sideDock ? anchor.left - panel.width - 8
+      : cards ? anchor.left + anchor.width / 2 - panel.width / 2 : anchor.left;
+    const preferredTop = sideDock ? anchor.top : anchor.top - panel.height - 8;
+    const left = Math.max(8, Math.min(preferredLeft, window.innerWidth - panel.width - 8));
+    const top = Math.max(8, Math.min(preferredTop, window.innerHeight - panel.height - 8));
     // Use the painted panel, not the spanning menu host. Account for any
     // theme-specific inset between the host origin and the popover.
     host.style.left = `${left - (panel.left - outer.left)}px`;
@@ -88,8 +99,11 @@
       window.removeEventListener("resize", onViewportChange);
     }
     ++previewTicket;
+    ++pictureTicket;
     clearTimeout(leaveTimer);
+    options.anchor?.classList?.remove("is-window-cards-anchor");
     previewEl = null;
+    titleEl = null;
     host?.remove();
     watcher?.disconnect();
     watcher = null;
@@ -143,14 +157,14 @@
           item.setAttribute("aria-selected", String(selected));
           if (selected) item.setAttribute("aria-current", "true"); else item.removeAttribute("aria-current");
         });
-        searchEl.setAttribute("aria-activedescendant", row.id);
+        searchEl?.setAttribute("aria-activedescendant", row.id);
         showPreview(entry);
       });
       return row;
     }));
     const active = listEl.querySelector('[aria-current="true"]');
-    if (active) searchEl.setAttribute("aria-activedescendant", active.id);
-    else searchEl.removeAttribute("aria-activedescendant");
+    if (active) searchEl?.setAttribute("aria-activedescendant", active.id);
+    else searchEl?.removeAttribute("aria-activedescendant");
     active?.scrollIntoView?.({ block: "nearest" });
     showPreview(rows[cursor]);
   }
@@ -158,9 +172,132 @@
   function refresh() {
     const selected = visibleEntries()[cursor]?.name;
     entries = project();
+    if (options.hover || options.cards) { renderCards(); return; }
     cursor = Math.max(0, visibleEntries().findIndex((entry) => entry.name === selected));
     render();
+    // Only a list the writer asked for reports that it is empty; a Dock hover
+    // over an app with no windows simply shows nothing.
     if (!entries.length && typeof setStatus === "function") setStatus(label("window_browse_none"));
+  }
+
+  // ---- Dock window cards -------------------------------------------------
+  // Hovering a Dock icon shows that app's windows as cards: a picture, the
+  // title, and a state line only when there is a state to say (WindowShade's
+  // window browsing: the panel is for looking, nothing moves until a card is
+  // clicked, and a window put away keeps the picture it had, labelled, rather
+  // than being woken to be photographed). No search field: that belongs to
+  // the list the Window menu opens.
+  let pictureTicket = 0;
+
+  function cardState(entry, picture) {
+    const parts = [];
+    if (entry.state !== "open") {
+      const mark = label(`window_state_${entry.state.replace(/-/g, "_")}`);
+      if (mark) parts.push(mark);
+    }
+    if (entry.pinned) parts.push(label("window_browse_pinned"));
+    if (picture?.unavailable) parts.push(label("window_preview_unavailable"));
+    else if (picture?.stale && entry.state !== "open") parts.push(label("window_preview_previous"));
+    return parts.join(" · ");
+  }
+
+  function buildCard(entry) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "window-card";
+    card.dataset.windowBrowseName = entry.name;
+    card.setAttribute("role", "listitem");
+    const picture = document.createElement("span");
+    picture.className = "window-card-picture";
+    picture.setAttribute("aria-hidden", "true");
+    const title = document.createElement("span");
+    title.className = "window-card-title";
+    const state = document.createElement("span");
+    state.className = "window-card-state";
+    card.append(picture, title, state);
+    card.addEventListener("click", () => commit(entry.name));
+    return updateCard(card, entry);
+  }
+
+  function updateCard(card, entry, picture = null) {
+    card.querySelector(".window-card-title").textContent = entry.title;
+    const state = cardState(entry, picture);
+    const stateEl = card.querySelector(".window-card-state");
+    stateEl.textContent = state;
+    stateEl.hidden = !state;
+    card.setAttribute("aria-label", state ? `${entry.title}, ${state}` : entry.title);
+    return card;
+  }
+
+  function renderCards() {
+    if (!listEl) return;
+    if (titleEl) titleEl.textContent = entries[0]?.appLabel || "";
+    panelEl.dataset.cardCount = String(Math.min(entries.length, 5));
+    const existing = new Map([...listEl.children].map((node) => [node.dataset.windowBrowseName, node]));
+    listEl.replaceChildren(...entries.map((entry) => {
+      const card = existing.get(entry.name);
+      return card ? updateCard(card, entry) : buildCard(entry);
+    }));
+    fillCardPictures();
+    positionAtAnchor();
+  }
+
+  // Arrow keys walk the cards by the grid's real columns; Return or Space
+  // chooses (the card is a button); Escape puts the panel away.
+  function onCardsKeydown(event) {
+    event.stopPropagation?.();
+    if (event.key === "Escape") { event.preventDefault(); close(); return; }
+    const cards = [...(listEl?.querySelectorAll(".window-card") || [])];
+    const at = cards.indexOf(document.activeElement);
+    if (at < 0) return;
+    const columns = Math.max(1, Number(getComputedStyle(listEl).gridTemplateColumns.split(" ").filter(Boolean).length) || 1);
+    const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: columns, ArrowUp: -columns }[event.key];
+    if (event.key === "Home" || event.key === "End") {
+      event.preventDefault();
+      cards[event.key === "Home" ? 0 : cards.length - 1].focus();
+    } else if (step) {
+      event.preventDefault();
+      cards[Math.max(0, Math.min(cards.length - 1, at + step))].focus();
+    }
+  }
+
+  // At most two pictures are taken at once, the rest wait their turn; a
+  // closed or re-opened panel abandons the queue (WindowShade's thumbnail
+  // service: two real captures in flight, one request per window).
+  async function fillCardPictures() {
+    const ticket = ++pictureTicket;
+    try {
+      if (!window.AISystem6WindowPreview) {
+        if (typeof ensureWindowPreviewModule === "function") await ensureWindowPreviewModule();
+        else await ensureLazySystemModule("app/core/window-preview.js", "AISystem6WindowPreviewLoaded");
+      }
+    } catch (_) { return; }
+    const queue = entries.slice();
+    const worker = async () => {
+      while (queue.length && ticket === pictureTicket && listEl) {
+        const entry = queue.shift();
+        const card = [...listEl.children].find((node) => node.dataset.windowBrowseName === entry.name);
+        if (!card || card.dataset.pictured === "true") continue;
+        const win = typeof getWindow === "function" ? getWindow(entry.name) : null;
+        let picture = { url: null, stale: false, unavailable: true };
+        try { picture = await window.AISystem6WindowPreview.get(win); } catch (_) { /* labelled unavailable below */ }
+        if (ticket !== pictureTicket || !card.isConnected) return;
+        const frame = card.querySelector(".window-card-picture");
+        if (picture.url) {
+          const image = document.createElement("img");
+          image.alt = "";
+          const reposition = () => { if (ticket === pictureTicket) positionAtAnchor(); };
+          image.addEventListener("load", reposition);
+          image.addEventListener("error", reposition);
+          image.src = picture.url;
+          frame.replaceChildren(image);
+        }
+        card.dataset.pictured = "true";
+        updateCard(card, entry, picture);
+      }
+    };
+    await Promise.all([worker(), worker()]);
+    if (ticket === pictureTicket) positionAtAnchor();
   }
 
   function commit(name) {
@@ -234,6 +371,32 @@
     panelEl.className = "menu-popover window-browse-popover";
     panelEl.setAttribute("role", "region");
     panelEl.setAttribute("aria-label", label("window_browse"));
+    if (options.hover || options.cards) {
+      panelEl.classList.add("window-cards");
+      titleEl = document.createElement("div");
+      titleEl.className = "window-cards-title";
+      listEl = document.createElement("div");
+      listEl.className = "window-cards-grid";
+      listEl.setAttribute("role", "list");
+      panelEl.append(titleEl, listEl);
+      panelEl.addEventListener("pointerenter", () => clearTimeout(leaveTimer));
+      panelEl.addEventListener("pointerleave", () => hoverLeave());
+      panelEl.addEventListener("keydown", onCardsKeydown);
+      host.append(panelEl);
+      document.body.append(host);
+      document.addEventListener("pointerdown", onDocumentPointerDown, true);
+      window.addEventListener("blur", onViewportChange);
+      window.addEventListener("resize", onViewportChange);
+      refresh();
+      if (!entries.length) { close({ returnFocus: false }); return false; }
+      options.anchor?.classList?.add("is-window-cards-anchor");
+      watchEntries();
+      positionAtAnchor();
+      // Show All Windows is asked for, so it takes the keyboard; the hover
+      // form never does.
+      if (options.cards) listEl.querySelector(".window-card")?.focus();
+      return true;
+    }
     searchEl = document.createElement("input");
     searchEl.type = "search";
     searchEl.className = "window-browse-search";
@@ -263,7 +426,13 @@
     window.addEventListener("blur", onViewportChange);
     window.addEventListener("resize", onViewportChange);
     refresh();
-    if (options.hover && !entries.length) { close({ returnFocus: false }); return false; }
+    watchEntries();
+    positionAtAnchor();
+    searchEl.focus();
+    return true;
+  }
+
+  function watchEntries() {
     watcher = new MutationObserver(() => {
       if (!host) return;
       if (options.hover && options.anchor && !options.anchor.isConnected) { close({ returnFocus: false }); return; }
@@ -273,9 +442,6 @@
     watcher.observe(document.querySelector(".desktop") || document.body, {
       subtree: true, childList: true, attributes: true, attributeFilter: ["class", "data-window-pinned"],
     });
-    positionAtAnchor();
-    if (!options.hover) searchEl.focus();
-    return true;
   }
 
   globalThis.AISystem6WindowBrowse = Object.freeze({

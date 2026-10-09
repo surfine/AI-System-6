@@ -1572,7 +1572,10 @@
       const documentId = String(args?.documentId || defaultDocumentId(project) || "");
       if (!documentId) throw new Error("No document to read a darkroom record from; pass documentId.");
       const record = await store.loadDarkroomRecord(project.id, documentId);
-      const layers = Array.isArray(record?.layers) ? record.layers : [];
+      // The record keeps its layer stack in settings (schema 2); older records
+      // in adjustmentLayers until they are next loaded and migrated.
+      const layers = Array.isArray(record?.settings?.layers) ? record.settings.layers
+        : Array.isArray(record?.adjustmentLayers) ? record.adjustmentLayers : [];
       return {
         ...deskStamp(project),
         documentId,
@@ -1580,6 +1583,8 @@
         layerCount: layers.length,
         layers: layers.slice(-40).map((layer) => ({
           kind: String(layer.kind || ""),
+          on: layer.on !== false,
+          step: layer.step ?? null,
           strength: layer.strength ?? null,
           maskCount: Array.isArray(layer.masks) ? layer.masks.length : 0,
           createdAt: String(layer.createdAt || ""),

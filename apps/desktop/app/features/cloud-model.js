@@ -936,24 +936,52 @@
     return true;
   }
 
-  websiteAiButton?.addEventListener("click", async function () {
+  // Where ClioTalk's answers come from is one choice of four, so it is one
+  // radio group, as each era's own preferences draw such a choice. Three push
+  // buttons with the first one wearing the default ring said "press Return
+  // for Website AI" and never said which source was in use.
+  const aiSourceRadios = [...document.querySelectorAll('input[name="ai-source"]')];
+  const autoAiRadio = document.querySelector("#ai-source-auto");
+
+  window.syncAiSourceChoice = function () {
+    const current = typeof clioProviderPreference === "string" ? clioProviderPreference : "auto";
+    aiSourceRadios.forEach(function (radio) {
+      radio.checked = radio.value === current;
+    });
+  };
+
+  async function chooseAiSource(value) {
     await ensureClioProviderResolver().catch(() => {});
-    window.AISystem6ClioProvider?.setPreference?.("website");
+    window.AISystem6ClioProvider?.setPreference?.(value);
+    window.syncAiSourceChoice();
+  }
+
+  autoAiRadio?.addEventListener("change", function () {
+    chooseAiSource("auto");
+  });
+
+  websiteAiButton?.addEventListener("change", async function () {
+    await chooseAiSource("website");
     connectWebsiteAi();
   });
 
-  localAiButton?.addEventListener("click", async function () {
-    await ensureClioProviderResolver().catch(() => {});
+  localAiButton?.addEventListener("change", async function () {
     window.AISystem6ClioImages?.invalidateCredentials?.();
-    window.AISystem6ClioProvider?.setPreference?.("local");
+    await chooseAiSource("local");
     if (typeof setControlTab === "function") setControlTab("local");
     document.getElementById("detect-local-models")?.focus();
   });
 
-  advancedAiButton?.addEventListener("click", function () {
+  advancedAiButton?.addEventListener("change", async function () {
+    await chooseAiSource("byok");
     if (ownKeyDetails) ownKeyDetails.open = true;
     ownKeyDetails?.querySelector("summary")?.focus();
   });
+
+  window.addEventListener?.("ai-system6:clio-provider", function () {
+    window.syncAiSourceChoice();
+  });
+  window.syncAiSourceChoice();
 
   // isPublicCloudCredentialMode() reads a dataset attribute that /api/capabilities
   // sets asynchronously — on first paint it always reads "not public" before

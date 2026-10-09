@@ -48,7 +48,9 @@ async function loadDarkroomRecord(projectId, documentId) {
       (tx) => idbRequest(tx.objectStore(keyvalStoreName).get(key))
     );
     if (stored && typeof stored === "object") {
-      darkroomCache.set(key, { ...window.AISystem6DarkroomRecord.blankDarkroomRecord(), ...stored });
+      // A record written before schema 2 is read as the current shape; it is
+      // written back in that shape the next time anything is written.
+      darkroomCache.set(key, window.AISystem6DarkroomRecord.migrateDarkroomRecord(stored));
     }
     darkroomLoaded.add(key);
   } catch (error) {
@@ -67,7 +69,7 @@ async function loadDarkroomRecord(projectId, documentId) {
 function setDarkroomRecord(projectId, documentId, record) {
   if (!documentId) return null;
   const key = darkroomKey(projectId, documentId);
-  const next = { ...window.AISystem6DarkroomRecord.blankDarkroomRecord(), ...record, updatedAt: new Date().toISOString() };
+  const next = window.AISystem6DarkroomRecord.migrateDarkroomRecord({ ...record, updatedAt: new Date().toISOString() });
   darkroomCache.set(key, next);
   darkroomLoaded.add(key);
   return next;

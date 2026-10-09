@@ -2,13 +2,17 @@
 //
 // Adjustment layers, protected ranges, compression grain, composite preview,
 // and Develop. The writer's own text is the negative and is never rewritten;
-// every layer reads the negative (never another layer's output), and only
-// Develop promotes the composite to the new working body — after a revision
-// is saved and the writer confirms. Protection is immutable-sentinel based:
-// a model pass that breaks a sentinel fails the whole composition.
+// the first layer reads the negative, every later layer reads the output of the
+// one before it (one model call each, each output cached), and only Develop
+// promotes the composite to the new working body — after a revision is saved
+// and the writer confirms. Protection is immutable-sentinel based: a layer
+// that breaks a sentinel fails the whole composition.
 
+// The working copy of the stack: the settings' layers (kind, on, step, scope)
+// read as the { kind, enabled, strength, mask } the desk's normalizer owns.
+// The settings stay the only stored truth; nothing here writes back.
 function adjustmentLayersSnapshot(record = activeProjectQuickDraft({ create: false })?.record) {
-  return normalizeAdjustmentLayers(darkroomOf(record).adjustmentLayers);
+  return normalizeAdjustmentLayers(darkroomLayersOf(record));
 }
 
 function adjustmentLayerState(kind = "", record = activeProjectQuickDraft({ create: false })?.record) {
@@ -257,69 +261,40 @@ function markDarkroomAction(control, unavailable, reasonKey = "") {
 }
 
 function syncQuickDraftMobileAdjustmentActions(record = activeProjectQuickDraft({ create: false })?.record) {
-  const normalized = normalizeQuickDraftRecord(record);
   // The buttons follow the darkroom's subject, like the menu rows they
-  // shortcut. 试看 needs no write access — it writes only the darkroom
-  // record — but Develop writes the document, so this writer must respect
-  // the read-only sweep instead of silently re-enabling what it disabled.
-  const hasBody = Boolean(String(lightroomBodyText() || normalized.workspace.body || "").trim());
-  const enabled = darkroomOf(record).adjustmentLayers.some((layer) => layer.enabled);
+  // shortcut, and they ask the same question the rows do (lightroomActionState)
+  // so the two can never answer differently. 试看 needs no write access -- it
+  // writes only the darkroom record -- but Develop writes the document, and
+  // whether it may is the write decision's, not a guess from the window.
+  const state = lightroomActionState(record);
   const previewButton = quickDraftQuery("[data-quick-draft-adjustment-apply]");
   const developButton = quickDraftQuery("[data-quick-draft-adjustment-develop]");
-  // 兴趣｜内容｜并排 reuses the same Preview / Develop keys. Content and
-  // Side by Side do not wait on adjustment layers; Interest still does.
-  const trackOwns = typeof quickDraftTrackOwnsPaper === "function" && quickDraftTrackOwnsPaper();
-  const trackReady = typeof quickDraftTrackShouldDevelop === "function" && quickDraftTrackShouldDevelop();
-  const trackBusy = Boolean(typeof quickDraftTrackBusy !== "undefined" && quickDraftTrackBusy);
-  if (previewButton) {
-    const previewUnavailable = trackOwns
-      ? !hasBody || !quickDraftModelAvailable() || trackBusy
-      : !hasBody || !enabled || !quickDraftModelAvailable();
-    const previewReason = !hasBody
-      ? "balloon_qd_darkroom_needs_body"
-      : !quickDraftModelAvailable()
-        ? "balloon_disabled_menu_model"
-        : !trackOwns && !enabled
-          ? "balloon_qd_preview_needs_layer"
-          : "";
-    markDarkroomAction(previewButton, previewUnavailable, previewReason);
-  }
-  // A proof is waiting only when 试看 has produced one for an enabled stack.
-  // With no layer on, "ready" is trivially true and 冲洗 would write the body
-  // onto itself and leave a version saying nothing happened -- the menu row
-  // already waits for a proof, and the key it shortcuts must say the same.
-  // The content track's proof is the traffic rewrite, not a composite.
-  const compositeReady = enabled
-    && Boolean(darkroomOf(record).composite)
-    && currentCompositeState(normalized).ready;
-  const proofReady = trackOwns ? trackReady : compositeReady;
-  if (developButton) {
-    const developUnavailable = trackOwns
-      ? lightroomIsReadOnly() || !trackReady || trackBusy
-      : lightroomIsReadOnly() || !hasBody || !compositeReady;
-    const developReason = lightroomIsReadOnly()
-      ? "balloon_qd_darkroom_readonly"
-      : !hasBody
-        ? "balloon_qd_darkroom_needs_body"
-        : !trackOwns && !enabled
-          ? "balloon_qd_preview_needs_layer"
-          : !proofReady
-            ? "balloon_qd_develop_needs_preview"
-            : "";
-    markDarkroomAction(developButton, developUnavailable, developReason);
-  }
+  if (previewButton) markDarkroomAction(previewButton, !state.preview.available, state.preview.reason);
+  if (developButton) markDarkroomAction(developButton, !state.develop.available, state.develop.reason);
   // One default key in the footer. Listen owns its own Play default inside the
   // paper, so the footer must not compete with it. Empty paper: the door back
   // is the only live next step. A waiting proof: 冲洗. Otherwise 试看.
   const listenMode = document.querySelector('[data-quick-draft-display="listen"]')?.classList.contains("is-active");
   const backButton = document.getElementById("quick-draft-display-body");
-  previewButton?.classList.toggle("default", Boolean(hasBody && !proofReady && !listenMode));
-  developButton?.classList.toggle("default", Boolean(hasBody && proofReady && !listenMode));
-  backButton?.classList.toggle("default", !hasBody);
+  previewButton?.classList.toggle("default", Boolean(state.hasBody && !state.proof && !listenMode));
+  developButton?.classList.toggle("default", Boolean(state.hasBody && state.proof && !listenMode));
+  backButton?.classList.toggle("default", !state.hasBody);
+}
+
+// A change to the stack is a step in the darkroom's history (⌘Z takes it back).
+// The snapshot is taken before the change and recorded after it landed, so a
+// write that failed leaves no step behind.
+function lightroomStepBefore() {
+  return typeof lightroomHistoryRead === "function" ? lightroomHistoryRead() : null;
+}
+
+function lightroomNoteStep(label, before) {
+  if (typeof lightroomRecordStep === "function") lightroomRecordStep(label, before);
 }
 
 async function updateAdjustmentLayer(kind = "", patch = {}) {
   const previousRecord = activeProjectQuickDraft({ create: false })?.record;
+  const stepBefore = lightroomStepBefore();
   const next = normalizeAdjustmentLayers(adjustmentLayersSnapshot()).map((layer) => (
     layer.kind === kind ? { ...layer, ...patch } : layer
   ));
@@ -329,6 +304,7 @@ async function updateAdjustmentLayer(kind = "", patch = {}) {
     setQuickDraftStatus(t("quick_draft_save_failed"));
     return false;
   }
+  lightroomNoteStep("enabled" in patch ? "edit_step_layer_switch" : "strength" in patch ? "edit_step_layer_step" : "edit_step_layer_scope", stepBefore);
   const record = committed.record;
   renderAdjustmentLayers(record);
   updateQuickDraftShellState(record);
@@ -347,12 +323,14 @@ async function moveAdjustmentLayer(kind = "", direction = -1) {
   const [layer] = next.splice(index, 1);
   next.splice(target, 0, layer);
   const previousRecord = activeProjectQuickDraft({ create: false })?.record;
+  const stepBefore = lightroomStepBefore();
   const committed = await commitQuickDraft({ workspace: { adjustmentLayers: next } });
   if (!committed.ok) {
     renderQuickDraft(previousRecord);
     setQuickDraftStatus(t("quick_draft_save_failed"));
     return false;
   }
+  lightroomNoteStep("edit_step_layer_move", stepBefore);
   const record = committed.record;
   renderAdjustmentLayers(record);
   updateQuickDraftShellState(record);
@@ -380,7 +358,7 @@ function refreshQuickDraftPreviewIfOpen() {
 // sees the protected bytes, and any violation fails the composition.
 
 function protectedRangesSnapshot(record = activeProjectQuickDraft({ create: false })?.record) {
-  return normalizeAdjustmentLayerMask(darkroomOf(record).protectedRanges);
+  return normalizeAdjustmentLayerMask(darkroomOf(record).settings?.protected);
 }
 
 function renderProtectedRangeControls(record = activeProjectQuickDraft({ create: false })?.record) {
@@ -419,31 +397,56 @@ function modelProtectedRanges(record = activeProjectQuickDraft({ create: false }
   ]);
 }
 
-function selectionLineRanges() {
+// Where the selection is read from is where the writer is. In the darkroom the
+// paper is a rendered pane, not Quick Draft's textarea, so the selection in
+// front of the writer is the pane's; the textarea is only asked while Quick
+// Draft itself is the window in use. The pane's selection is turned into the
+// lines of the darkroom's own subject -- which may be another document.
+function lightroomSelectionReport() {
+  if (typeof lightroomPaneSelection === "function" && typeof lightroomIsMenuContext === "function" && lightroomIsMenuContext()) {
+    return lightroomPaneSelection();
+  }
   const el = refs.draft;
-  if (!el) return [];
-  return window.AISystem6ProtectedRanges?.lassoLineRanges(
-    String(el.value || ""),
-    Number(el.selectionStart) || 0,
-    Number(el.selectionEnd) || 0
-  ) || [];
+  const ranges = el
+    ? window.AISystem6ProtectedRanges?.lassoLineRanges(
+      String(el.value || ""),
+      Number(el.selectionStart) || 0,
+      Number(el.selectionEnd) || 0
+    ) || []
+    : [];
+  return { ranges, reason: ranges.length ? "" : "empty" };
+}
+
+function selectionLineRanges() {
+  return lightroomSelectionReport().ranges;
+}
+
+function selectionMissingMessage(report, fallbackKey) {
+  if (report.reason === "ambiguous") return t("lightroom_selection_ambiguous");
+  if (report.reason === "not-found") return t("lightroom_selection_not_found");
+  return t(fallbackKey);
 }
 
 async function protectSelectionFromTextarea() {
-  const ranges = selectionLineRanges();
+  const report = lightroomSelectionReport();
+  const ranges = report.ranges;
   if (!ranges.length) {
-    setQuickDraftStatus(t("quick_draft_protect_no_selection"));
-    refs.draft?.focus();
+    const message = selectionMissingMessage(report, "quick_draft_protect_no_selection");
+    setQuickDraftStatus(message);
+    setLightroomStatus(message);
+    if (!(typeof lightroomIsMenuContext === "function" && lightroomIsMenuContext())) refs.draft?.focus();
     return false;
   }
   const next = normalizeAdjustmentLayerMask([...protectedRangesSnapshot(), ...ranges]);
   const previousRecord = activeProjectQuickDraft({ create: false })?.record;
+  const stepBefore = lightroomStepBefore();
   const committed = await commitQuickDraft({ workspace: { protectedRanges: next } });
   if (!committed.ok) {
     renderQuickDraft(previousRecord);
     setQuickDraftStatus(t("quick_draft_save_failed"));
     return false;
   }
+  lightroomNoteStep("edit_step_protect", stepBefore);
   const record = committed.record;
   renderProtectedRangeControls(record);
   updateQuickDraftShellState(record);
@@ -489,10 +492,13 @@ async function notePasteLineShift(textarea, shift = {}) {
 }
 
 async function scopeSelectionToLayer(kind = "") {
-  const ranges = selectionLineRanges();
+  const report = lightroomSelectionReport();
+  const ranges = report.ranges;
   if (!ranges.length) {
-    setQuickDraftStatus(t("quick_draft_scope_no_selection"));
-    refs.draft?.focus();
+    const message = selectionMissingMessage(report, "quick_draft_scope_no_selection");
+    setQuickDraftStatus(message);
+    setLightroomStatus(message);
+    if (!(typeof lightroomIsMenuContext === "function" && lightroomIsMenuContext())) refs.draft?.focus();
     return false;
   }
   const layers = adjustmentLayersSnapshot();
@@ -501,32 +507,18 @@ async function scopeSelectionToLayer(kind = "") {
   const merged = normalizeAdjustmentLayerMask([...(layer.mask || []), ...ranges]);
   const next = layers.map((item) => (item.kind === kind ? { ...item, mask: merged } : item));
   const previousRecord = activeProjectQuickDraft({ create: false })?.record;
+  const stepBefore = lightroomStepBefore();
   const committed = await commitQuickDraft({ workspace: { adjustmentLayers: next } });
   if (!committed.ok) {
     renderQuickDraft(previousRecord);
     setQuickDraftStatus(t("quick_draft_save_failed"));
     return false;
   }
+  lightroomNoteStep("edit_step_layer_scope", stepBefore);
   renderAdjustmentLayers(committed.record);
   refreshQuickDraftPreviewIfOpen();
   setQuickDraftStatus(t("quick_draft_scope_saved"));
   return true;
-}
-
-function densityStrengthPromptLine(strength = ADJUSTMENT_DEFAULT_STRENGTH, zh = true) {
-  if (strength === 25) {
-    return zh
-      ? "- 密度调整层：少压。几乎保留全部原句，只压掉最妨碍“当天能录”的啰嗦；顺序、口气和判断不动。"
-      : "- Density adjustment: less compression. Keep nearly every original sentence; cut only the redundancy that blocks same-day recording; keep order, voice, and judgment.";
-  }
-  if (strength === 75) {
-    return zh
-      ? "- 密度调整层：多压。明显压缩：合并冗余句、删空话、让段落更密；不新增事实、不丢未测边界、不用风格覆盖事实。"
-      : "- Density adjustment: more compression. Compress hard: merge redundant sentences, cut filler, make the passage denser; never add facts, drop untested boundaries, or let style override facts.";
-  }
-  return zh
-    ? "- 密度调整层：标准。适度压缩：合并可省的句子、压掉泛泛总结，但保留作者判断、具体细节和已写出的口气。"
-    : "- Density adjustment: standard. Compress moderately: merge what can be saved and trim generic summary, but keep the author's judgment, concrete detail, and written voice.";
 }
 
 function adjustmentStrengthPromptLine(strength = ADJUSTMENT_DEFAULT_STRENGTH, zh = true) {
@@ -585,52 +577,80 @@ function quickDraftDictionaryTerms() {
   return [...terms].slice(0, 120);
 }
 
-function quickDraftCleanPromptLines(zh = true) {
+// The project dictionary a clean-up pass corrects misheard words against. It is
+// the one dynamic line a layer's prompt file cannot hold, so it is appended to
+// the file's own instructions.
+function quickDraftDictionaryLine(zh = true) {
   const terms = quickDraftDictionaryTerms();
-  const dictionary = terms.length
-    ? (zh ? `- 项目词典（听错时按这里改正写法）：${terms.join("、")}` : `- Project dictionary (use these spellings when a word was misheard): ${terms.join(", ")}`)
-    : "";
-  return [
-    zh
-      ? "- 清稿：这是作者口述的逐字稿。只做四件事：删掉口头禅和无意义的重复；作者改口时只留最后的说法；把口述的条目排成列表；按项目词典改正听错的字，补上标点。不换说法，不改语气，不增删观点和事实，不润色。"
-      : "- Clean-up: this is the author's spoken transcript. Do exactly four things: remove fillers and pointless repetition; where the author corrects themselves keep only the final wording; set spoken lists as lists; fix misheard words from the project dictionary and add punctuation. Never reword, never change the voice, never add or drop claims or facts, never polish.",
-    dictionary,
-  ].filter(Boolean).join("\n");
+  if (!terms.length) return "";
+  return zh
+    ? `项目词典（听错时按这里改正写法）：${terms.join("、")}`
+    : `Project dictionary (use these spellings when a word was misheard): ${terms.join(", ")}`;
 }
 
-function adjustmentLayerCompositionInstruction(layer = {}, zh = true, protectedRanges = protectedRangesSnapshot()) {
+// Each layer's instructions live in a prompt file (content/ai-prompts/other-apps),
+// so the writer can read them in the Finder and rewrite them for the project.
+// The layer's kind names the file; its stop picks the wording inside it.
+const LIGHTROOM_LAYER_PROMPT_IDS = Object.freeze({
+  clean: "other-apps.darkroom-clean",
+  mingming: "other-apps.darkroom-reader-eye",
+  luoluo: "other-apps.darkroom-listener-ear",
+  hkrr: "other-apps.darkroom-hkrr-lift",
+  density: "other-apps.darkroom-density",
+});
+const LIGHTROOM_LAYER_RULES_ID = "other-apps.darkroom-layer-rules";
+
+// Resolving a prompt file also files a run record, so a run resolves each one
+// once and reuses it for every layer: the shared rules are one record, not one
+// per layer.
+let lightroomPromptMemo = null;
+
+function lightroomPromptFile(id, zh = true) {
+  const key = `${id}:${zh ? "zh" : "en"}`;
+  if (lightroomPromptMemo?.has(key)) return lightroomPromptMemo.get(key);
+  const text = resolveWritingRoutePrompt(id, zh ? "zh" : "en");
+  lightroomPromptMemo?.set(key, text);
+  return text;
+}
+
+// One layer's instructions as the model reads them: its prompt file at its own
+// stop, plus the project dictionary for a clean-up. No names, no strength
+// sentence written in code.
+function lightroomLayerInstruction(layer = {}, zh = true) {
   const kind = String(layer?.kind || "");
-  const strength = Number(layer?.strength) || ADJUSTMENT_DEFAULT_STRENGTH;
-  const lensLine = kind === "clean"
-    ? quickDraftCleanPromptLines(zh)
-    : kind === "density"
-    ? densityStrengthPromptLine(strength, zh)
-    : kind === "mingming"
-    ? (zh
-      ? "- 铭铭视角调整：朝“能拍、能念、能成立的当天口播”收紧这一遍；保留作者判断、犹豫和已写出的口气。"
-      : "- Mingming-perspective adjustment: tighten this pass toward shootable, speakable, defensible same-day spoken copy; keep the author's judgment, hesitation, and written voice.")
-    : kind === "luoluo"
-    ? (zh
-      ? "- 落落接收视角调整：让段落更容易直接开口念、不要求他重新拆资料；保留判断和真实口气，不写私人建议。"
-      : "- Luoluo-receiving adjustment: make the passage easier to read aloud without re-triaging sources; keep judgment and real voice; no private advice.")
-    : kind === "hkrr"
-    ? (zh
-      ? "- HKRR 调整：加发现感、信息增量、人的感受和节奏；不编造，不抹平边界。"
-      : "- HKRR adjustment: add discovery, information gain, human feeling, and rhythm; never invent, never flatten boundaries.")
-    : "";
-  const strengthLine = kind === "density" || kind === "clean" ? "" : adjustmentStrengthPromptLine(strength, zh);
+  const id = LIGHTROOM_LAYER_PROMPT_IDS[kind];
+  if (!id) return "";
+  const develop = window.AISystem6DarkroomDevelop;
+  const parsed = develop.parseLayerPrompt(lightroomPromptFile(id, zh));
+  const step = window.AISystem6DarkroomRecord.darkroomStepFromStrength(layer?.strength);
+  const text = develop.layerPromptText(parsed, step);
+  return [text, kind === "clean" ? quickDraftDictionaryLine(zh) : ""].filter(Boolean).join("\n");
+}
+
+// Where in its input a layer works. `scopeLines` is already in the input's own
+// line numbers (the composition rule remaps the first layer's scope onto the
+// sentinel layout and clamps a later layer's to the text it reads).
+function lightroomScopeLine(scoped, scopeLines = [], zh = true) {
+  if (!scoped) return zh ? "本层作用于全文。" : "This layer applies to the whole text.";
+  if (!scopeLines.length) {
+    return zh ? "本层蒙版所在的行全部受保护，这一层不改任何内容。" : "Every line this layer masks is protected; this layer changes nothing.";
+  }
+  const summary = adjustmentMaskSummary(scopeLines);
+  return zh
+    ? `本层只作用于下面正文的第 ${summary} 行；其余行保持原样，不要给建议。`
+    : `This layer applies only to lines ${summary} of the text below; leave every other line alone.`;
+}
+
+// Kept for the guest bridge, which asks for one layer's instruction beside a
+// protected body: the same file text and the same scope sentence the develop
+// pipeline sends, composed for a single layer.
+function adjustmentLayerCompositionInstruction(layer = {}, zh = true, protectedRanges = protectedRangesSnapshot()) {
   const originalMask = normalizeAdjustmentLayerMask(layer?.mask);
   const maskRanges = window.AISystem6ProtectedRanges.remapLineRangesAfterSentinels(originalMask, protectedRanges);
-  const maskLine = !originalMask.length
-    ? (zh ? "- 本层作用于全文。" : "- This layer applies to the whole draft.")
-    : maskRanges.length
-    ? (zh
-      ? `- 本层只作用于下面正文的第 ${adjustmentMaskSummary(maskRanges)} 行；其余行保持原样，不要给建议。`
-      : `- This layer applies only to lines ${adjustmentMaskSummary(maskRanges)} of the text below; leave every other line alone.`)
-    : (zh
-      ? "- 本层蒙版所在的行全部受保护，这一层不改任何内容。"
-      : "- Every line this layer masks is protected; this layer changes nothing.");
-  return [lensLine, strengthLine, maskLine].filter(Boolean).join("\n");
+  return [
+    lightroomLayerInstruction(layer, zh),
+    lightroomScopeLine(originalMask.length > 0, maskRanges, zh),
+  ].filter(Boolean).map((line) => `- ${line}`).join("\n");
 }
 
 // The prompt lists the sentinel tokens and demands they survive verbatim.
@@ -664,19 +684,21 @@ function grainMaskEntries(bodyText = "") {
 }
 
 // ---- Non-destructive composition and develop ----------------------------
-// Body = negative + enabled adjustments applied in stored order. Each layer
-// reads the negative, never another layer's output, so every prefix of the
-// stack is its own cache key. The pure rule lives in app/core/text-compose.js;
-// this module keeps the in-memory cache, the prompt, and the record writes.
+// Body = negative + enabled adjustments applied in stored order. The first
+// layer reads the negative and every later layer reads the output of the one
+// before it: one model call per layer, each output cached in the darkroom
+// record under the hash of what the layer read and how it was set, so a change
+// to layer 3 re-runs layer 3 and nothing before it. The pure rule lives in
+// app/core/text-compose.js; this module keeps the prompt, the model call, and
+// the record writes.
 
-const quickDraftCompositeCache = new Map();
-const QUICK_DRAFT_COMPOSITION_PROMPT_VERSION = 2;
+const QUICK_DRAFT_COMPOSITION_PROMPT_VERSION = 3;
 let quickDraftLastComposite = "";
 let quickDraftLastCompositeKey = "";
-// The composite text is already durable in workspace.composition.composite
-// the moment Apply commits below; this id only carries the receipt across to
-// whichever explicit action the writer takes next — Develop (adopted) or
-// Discard (rejected) — so that decision is on the honest record too.
+// The composite text is already durable in the darkroom record the moment a
+// preview commits below; this id only carries the receipt across to whichever
+// explicit action the writer takes next — Develop (adopted) or Discard
+// (rejected) — so that decision is on the honest record too.
 let quickDraftLastCompositeReceiptId = "";
 
 function quickDraftCompositeSource(record = activeProjectQuickDraft({ create: false })?.record) {
@@ -684,51 +706,98 @@ function quickDraftCompositeSource(record = activeProjectQuickDraft({ create: fa
   // The composite reads the darkroom's subject: usually the draft in front of
   // the writer, but a developed document composes from its own text — the
   // instruments must never read one text and report on another.
-  const base = lightroomIsReadOnly()
+  const base = lightroomSubject
     ? lightroomBodyText()
     : String(refs.draft?.value || workspace.body || "");
-  return hasRecordedNegative(record) ? darkroomOf(record).negative : base;
+  const negative = String(darkroomOf(record).negative || "");
+  return hasRecordedNegative(record) && negative.trim() ? negative : base;
 }
 
+// The stack, as far as a run is concerned. Adjustments off is the bypass: the
+// layers stay as they are, and nothing is asked of the model.
 function enabledAdjustmentLayers(record = activeProjectQuickDraft({ create: false })?.record) {
+  if (darkroomOf(record).settings?.disabled === true) return [];
   return adjustmentLayersSnapshot(record).filter((layer) => layer.enabled);
 }
 
 function compositionCacheContext(record = activeProjectQuickDraft({ create: false })?.record) {
   const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
-  const targetFormat = normalizeScenario(refs.format?.value || workspace.intake.setup.scenario);
+  // A format and a length belong to the draft the desk is writing. Another
+  // document has neither, and borrowing the draft's would split its cache by a
+  // setting that never reached it.
+  const own = typeof lightroomSubjectIsOwnDraft !== "function" || lightroomSubjectIsOwnDraft();
+  const targetFormat = own ? normalizeScenario(refs.format?.value || workspace.intake.setup.scenario) : "";
   return {
     language: currentLanguage,
     targetFormat,
-    targetDuration: normalizeDuration(refs.duration?.value || workspace.intake.setup.targetDuration, targetFormat),
+    targetDuration: own ? normalizeDuration(refs.duration?.value || workspace.intake.setup.targetDuration, targetFormat) : "",
     modelId: typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : (modelInput?.value?.trim() || ""),
     promptVersion: QUICK_DRAFT_COMPOSITION_PROMPT_VERSION,
   };
 }
 
+// The layer outputs this document already has, as a Map-shaped cache. The
+// entries live in the darkroom record; a run writes them back at its end.
+function lightroomLayerCache(record = activeProjectQuickDraft({ create: false })?.record, onChange) {
+  return window.AISystem6DarkroomRecord.createDarkroomLayerCache(darkroomOf(record).layerCache || [], { onChange });
+}
+
+// A clean-up's output depends on the project dictionary, which is not part of
+// its input, so the dictionary is part of its key.
+function lightroomLayerExtra(layer) {
+  return layer?.kind === "clean" ? quickDraftDictionaryTerms().join("|") : "";
+}
+
+// Layers a run would actually call, with the sentinel/scope rules applied once
+// so the preview, the plan and the status line agree on the number.
+function lightroomRunPlan(record = activeProjectQuickDraft({ create: false })?.record) {
+  const layers = enabledAdjustmentLayers(record);
+  const source = quickDraftCompositeSource(record);
+  return {
+    layers,
+    source,
+    ...planLayerRun({
+      source,
+      layers,
+      protectedRanges: protectedRangesSnapshot(record),
+      cache: lightroomLayerCache(record),
+      cacheContext: compositionCacheContext(record),
+      layerExtra: lightroomLayerExtra,
+    }),
+  };
+}
+
+// What the paper can show for the current stack. `proof` says the text is a
+// real composite of the stack as it now stands (a stored one, or one rebuilt
+// entirely from cached layers); without it the text is just the body and
+// there is nothing to develop.
 function currentCompositeState(record = activeProjectQuickDraft({ create: false })?.record) {
   const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
-  const body = lightroomIsReadOnly()
+  const body = lightroomSubject
     ? lightroomBodyText()
     : String(refs.draft?.value || workspace.body || "");
   const layers = enabledAdjustmentLayers(record);
-  if (!layers.length) return { text: body, ready: true, stale: false };
+  if (!layers.length) return { text: body, ready: true, stale: false, proof: false };
   const source = quickDraftCompositeSource(record);
   const key = composeCacheKey({ source, layers, protectedRanges: protectedRangesSnapshot(record), ...compositionCacheContext(record) });
   const darkroom = darkroomOf(record);
   if (darkroom.currentKey === key && darkroom.composite) {
-    return { text: darkroom.composite, ready: true, stale: false };
+    return { text: darkroom.composite, ready: true, stale: false, proof: true };
   }
-  if (quickDraftCompositeCache.has(key)) {
-    return { text: quickDraftCompositeCache.get(key), ready: true, stale: false };
+  const plan = lightroomRunPlan(record);
+  // A stack whose every layer is already cached is a proof without a call --
+  // unless the writer threw that proof away, which stays thrown away until the
+  // next preview of the same stack.
+  if (plan.total > 0 && plan.calls === 0 && plan.text && darkroom.discardedKey !== key) {
+    return { text: plan.text, ready: true, stale: false, proof: true };
   }
   if (quickDraftLastCompositeKey === key && quickDraftLastComposite) {
-    return { text: quickDraftLastComposite, ready: true, stale: false };
+    return { text: quickDraftLastComposite, ready: true, stale: false, proof: true };
   }
   if (!quickDraftLastCompositeKey) {
-    return { text: body, ready: true, stale: false };
+    return { text: body, ready: true, stale: false, proof: false };
   }
-  return { text: quickDraftLastComposite || body, ready: false, stale: true };
+  return { text: quickDraftLastComposite || body, ready: false, stale: true, proof: false };
 }
 
 function renderQuickDraftCompositePreview() {
@@ -750,70 +819,88 @@ function renderQuickDraftReadingView() {
   refs.preview.innerHTML = `<div class="quick-draft-reading">${quickDraftMarkdownHtml(state.text)}</div>`;
 }
 
-function buildCompositionPrompt({ sourceText = "", sentinels = [], layers = [] }) {
+// The model sees one layer at a time. The frame is structure only -- which
+// layer this is, where it works, and the source -- and every instruction in it
+// comes from a prompt file.
+/** @param {{ input?: string, sentinels?: any[], layer?: any, index?: number, count?: number, scopeLines?: any[] }} options */
+function buildLayerPrompt({ input = "", sentinels = [], layer = {}, index = 0, count = 1, scopeLines = [] }) {
   const zh = currentLanguage === "zh";
-  const firstDay = firstDaySnapshot();
-  const targetFormat = normalizeScenario(refs.format?.value || FIRST_DAY_FORMAT);
-  const targetDuration = normalizeDuration(refs.duration?.value, targetFormat);
-  const formatText = formatLabel(targetFormat);
-  const lengthText = durationLabel(targetDuration, targetFormat);
-  const context = [
-    `对象/标题：${meaningfulFirstDayTitle(firstDay.title) || firstDay.subject || titleFromBody(sourceText)}`,
-    `稿件类型：${formatText}`,
-    `目标长度：${lengthText}`,
-  ].filter(Boolean).join("\n");
-  const protectedRanges = modelProtectedRanges();
-  const layerInstructions = layers
-    .map((layer) => adjustmentLayerCompositionInstruction(layer, zh, protectedRanges))
-    .filter(Boolean)
-    .join("\n\n");
-  return zh
-    ? [
-        "钟点稿非破坏调整合成：",
-        "这是把下面的原稿按顺序应用已启用的调整层。你的任务是一遍完成全部调整，输出合成后的整篇正文。",
-        context,
-        "原稿（必须基于它改写，只改应改的部分；受保护内容已被占位符替换，保持原样）：",
-        sourceText || "（原稿为空）",
-        protectedSentinelBlock(sentinels, zh),
-        "调整层（按此顺序应用）：",
-        layerInstructions,
-        "- 事实只来自素材区和原稿；不新增事实、不把没亲测写成体验、不丢地区/Beta/待核边界、不用风格覆盖事实。",
-        "- 保留作者判断、具体细节和已写出的口气；不要只沿着上一版 AI 稿自我复制。",
-        "- 只输出正文文本本身：不要 Markdown 标题、说明、列表、JSON 或后台标签；不要用“当然”“好的”“以下是”开头。",
-        "- 受保护占位符必须逐字保留在输出中。",
-      ].filter(Boolean).join("\n\n")
-    : [
-        "Quick Draft non-destructive composition:",
-        "Apply the enabled adjustment layers below to the source text, in order, in one pass, and return the full composed body.",
-        context,
-        "Source (rewrite from this; change only what a layer asks for; protected content is already replaced by placeholders):",
-        sourceText || "(empty source)",
-        protectedSentinelBlock(sentinels, zh),
-        "Adjustment layers (apply in this order):",
-        layerInstructions,
-        "- Facts come only from the material pane and the source; do not add facts, do not turn untested material into experience, do not drop region/Beta/pending-check boundaries, and do not let style override facts.",
-        "- Preserve the author's judgment, concrete detail, and written voice; do not self-replicate from a previous AI draft.",
-        "- Output the body text only: no Markdown headings, notes, lists, JSON, or backstage labels; do not begin with 'Sure', 'Of course', or 'Here is'.",
-        "- Protected placeholders must appear verbatim in the output.",
-      ].filter(Boolean).join("\n\n");
+  const own = typeof lightroomSubjectIsOwnDraft !== "function" || lightroomSubjectIsOwnDraft();
+  let context = "";
+  if (own) {
+    const firstDay = firstDaySnapshot();
+    const targetFormat = normalizeScenario(refs.format?.value || FIRST_DAY_FORMAT);
+    const targetDuration = normalizeDuration(refs.duration?.value, targetFormat);
+    context = [
+      `${zh ? "对象/标题" : "Subject/title"}: ${meaningfulFirstDayTitle(firstDay.title) || firstDay.subject || titleFromBody(input)}`,
+      `${zh ? "稿件类型" : "Format"}: ${formatLabel(targetFormat)}`,
+      `${zh ? "目标长度" : "Target length"}: ${durationLabel(targetDuration, targetFormat)}`,
+    ].join("\n");
+  } else {
+    context = `${zh ? "文档" : "Document"}: ${String(lightroomSubject?.name || titleFromBody(input) || "")}`;
+  }
+  const scoped = normalizeAdjustmentLayerMask(layer?.mask).length > 0;
+  const label = t(adjustmentLayerLabelKey(layer?.kind));
+  return [
+    zh
+      ? `文字亮室逐层调整，第 ${index + 1}/${count} 层「${label}」：只做这一层，返回整篇正文。`
+      : `Text Lightroom, adjustment layer ${index + 1} of ${count}, ${label}: do this layer only and return the whole text.`,
+    context,
+    lightroomLayerInstruction(layer, zh),
+    lightroomScopeLine(scoped, scopeLines, zh),
+    lightroomPromptFile(LIGHTROOM_LAYER_RULES_ID, zh),
+    zh ? "输入正文（受保护内容已被占位符替换，保持原样）：" : "Input text (protected content is already replaced by placeholders):",
+    input || (zh ? "（输入为空）" : "(empty input)"),
+    protectedSentinelBlock(sentinels, zh),
+  ].filter(Boolean).join("\n\n");
 }
 
-async function compositionModelCall({ key, source, protectedText, sentinels, layers, signal }) {
-  const prompt = buildCompositionPrompt({ sourceText: protectedText, sentinels, layers });
+// A layer returns about as much text as it was given. The old flat 5200 was
+// sized for a spoken draft; a longer document needs its own room, bounded so a
+// runaway reply still ends.
+function lightroomLayerTokenBudget(input = "") {
+  return Math.min(8000, Math.max(1600, Math.ceil(String(input).length * 1.1) + 400));
+}
+
+function cleanLayerOutput(markdown = "") {
+  return stripQuickDraftModelFence(markdown).replace(/\n{3,}/g, "\n\n").trim();
+}
+
+// One layer, one call, streamed. A stream is what keeps a local model honest
+// about being alive: the local client abandons a call that does not begin
+// answering within 45 seconds and one that goes quiet mid-answer, instead of
+// leaving the desk marked busy for the whole of a long document.
+async function lightroomLayerModelCall({ layer, index, count, input, sentinels, scopeLines, signal, onProgress }) {
+  const prompt = buildLayerPrompt({ input, sentinels, layer, index, count, scopeLines });
   const response = await fetchModelPayload({
     model: typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : (modelInput?.value?.trim() || ""),
     messages: withMarkdownModelMessages([{ role: "user", content: prompt }]),
     temperature: 0.4,
-    max_tokens: 5200,
+    max_tokens: lightroomLayerTokenBudget(input),
     ai_system6_task_kind: "mingming_rewrite",
-    stream: false,
+    stream: true,
   }, signal);
   if (!response.ok) {
     throw new Error(serviceErrorDetail(response.status, await response.text()));
   }
-  const result = await response.json().catch(() => ({}));
-  const raw = String(result?.choices?.[0]?.message?.content || "").trim();
-  return cleanMingmingQuickDraftBody(raw);
+  const contentType = response.headers?.get?.("content-type") || "";
+  let raw;
+  if (response.body && /event-stream|text\/plain|octet-stream/i.test(contentType)) {
+    const final = await readChatCompletionStream(response, (snapshot) => onProgress?.(String(snapshot || "").length), signal);
+    raw = String(final?.content || "").trim();
+  } else {
+    const result = await response.json().catch(() => ({}));
+    raw = String(result?.choices?.[0]?.message?.content || "").trim();
+  }
+  return cleanLayerOutput(raw);
+}
+
+// The darkroom's own status line. The Quick Draft status bar is not on screen
+// while the darkroom is the front window, so a run that reported only there
+// ran in silence.
+function setLightroomStatus(message = "") {
+  const status = document.getElementById("lightroom-status");
+  if (status) status.textContent = String(message || "");
 }
 
 async function applyAdjustmentLayers() {
@@ -835,47 +922,67 @@ async function applyAdjustmentLayers() {
   const layers = enabledAdjustmentLayers(slot.record);
   if (!layers.length) {
     setQuickDraftStatus(t("quick_draft_apply_none"));
+    setLightroomStatus(t("quick_draft_apply_none"));
     return false;
   }
   if (!quickDraftModelAvailable()) {
     setQuickDraftStatus(t("quick_draft_connect_ai"));
+    setLightroomStatus(t("quick_draft_connect_ai"));
     return false;
   }
   const source = quickDraftCompositeSource(slot.record);
   if (!String(source || "").trim()) {
     setQuickDraftStatus(t("quick_draft_empty_body"));
+    setLightroomStatus(t("quick_draft_empty_body"));
     refs.draft?.focus();
     return false;
   }
   const requestGuard = beginQuickDraftRequest();
   setBusy(true);
-  setQuickDraftStatus(t("quick_draft_applying"));
+  let cacheDirty = false;
+  lightroomPromptMemo = new Map();
+  const cache = lightroomLayerCache(slot.record, () => { cacheDirty = true; });
   try {
     const protectedRanges = protectedRangesSnapshot(slot.record);
-    const applicableLayers = layers.filter((layer) => (
-      !normalizeAdjustmentLayerMask(layer.mask).length
-      || window.AISystem6ProtectedRanges.remapLineRangesAfterSentinels(layer.mask, protectedRanges).length
-    ));
-    if (!applicableLayers.length) {
+    const cacheContext = compositionCacheContext(slot.record);
+    const plan = planLayerRun({ source, layers, protectedRanges, cache, cacheContext, layerExtra: lightroomLayerExtra });
+    if (!plan.total) {
       setQuickDraftStatus(t("quick_draft_apply_none"));
+      setLightroomStatus(t("quick_draft_apply_none"));
       return false;
     }
-    const cacheContext = compositionCacheContext(slot.record);
+    // Say how many layers will be called before calling any of them.
+    const announced = t("lightroom_run_plan", plan.calls, plan.total, plan.cached);
+    setQuickDraftStatus(announced);
+    setLightroomStatus(announced);
+    const labelOf = (kind) => t(adjustmentLayerLabelKey(kind));
     const composed = await composeDocument({
       source,
-      layers: applicableLayers,
+      layers,
       protectedRanges,
-      cache: quickDraftCompositeCache,
+      cache,
       cacheContext,
-      runModel: (args) => compositionModelCall({ ...args, signal: requestGuard.signal }),
+      layerExtra: lightroomLayerExtra,
+      runModel: (args) => lightroomLayerModelCall({
+        ...args,
+        signal: requestGuard.signal,
+        onProgress: (chars) => setLightroomStatus(t("lightroom_run_layer_streaming", args.index + 1, args.count, labelOf(args.layer.kind), chars)),
+      }),
+      onLayer: (step, { index, count }) => setLightroomStatus(t(
+        step.cached ? "lightroom_run_layer_cached" : "lightroom_run_layer_done",
+        index + 1,
+        count,
+        labelOf(step.kind)
+      )),
     });
     quickDraftLastComposite = composed.text;
     quickDraftLastCompositeKey = composeCacheKey({
       source,
-      layers: applicableLayers,
+      layers,
       protectedRanges: composed.ranges,
       ...cacheContext,
     });
+    if (typeof noteLightroomRun === "function") noteLightroomRun();
     if (!task.stillOwnsActiveProject()) {
       // The writer switched projects while the model composed. Discard the
       // composite: it belongs to the old project and must not touch Project B.
@@ -884,21 +991,21 @@ async function applyAdjustmentLayers() {
     const currentRecord = task.currentRecord();
     const committed = await task.commit({ workspace: { composition: {
       ...darkroomOf(currentRecord),
+      layerCache: cache.entries(),
       currentKey: quickDraftLastCompositeKey,
       composite: composed.text,
       generatedAt: new Date().toISOString(),
+      discardedKey: "",
       sourceHash: textComposeHash(source),
     } } }, { captureForm: false });
     if (!committed.ok) throw committed.error;
     renderQuickDraft(committed.record);
     // Apply means look: the composite opens in the reading view, because the
     // body itself stays untouched until develop.
-    const container = refs.draft?.closest(".teachtext-editor-container");
-    const showingComposite = Boolean(container?.classList.contains("is-previewing"))
-      && quickDraftDisplayMode === "read";
-    if (!showingComposite) setQuickDraftDisplayMode("read");
+    if (!(quickDraftPreviewIsOpen() && quickDraftDisplayMode === "read")) setQuickDraftDisplayMode("read");
     setQuickDraftStatus(t("quick_draft_apply_done"));
     noteLightroomReceipt("quick_draft_preview_adjustments", { model: quickDraftConnectedModelName() });
+    if (typeof lightroomRefreshChrome === "function") lightroomRefreshChrome();
     const composedRecorded = await window.AISystem6RunReceipts?.recordModelAnswer?.({
       projectId: task.projectId,
       sourceAppId: "quickDraft",
@@ -914,28 +1021,44 @@ async function applyAdjustmentLayers() {
     const timedOut = quickDraftRequestTimedOut(error, requestGuard);
     if (error?.name !== "AbortError" || timedOut) {
       if (error?.code === "PROTECTED_RANGE_VIOLATION") {
-        setQuickDraftStatus(t("quick_draft_protect_failed", quickDraftFailureMessage(error)));
+        const message = t("quick_draft_protect_failed", quickDraftFailureMessage(error));
+        setQuickDraftStatus(message);
+        setLightroomStatus(message);
+      } else if (error?.code === "EMPTY_LAYER_OUTPUT") {
+        const message = t("lightroom_layer_empty", t(adjustmentLayerLabelKey(error.kind)));
+        setQuickDraftStatus(message);
+        setLightroomStatus(message);
       } else {
         presentQuickDraftModelFailure(error, timedOut ? { timeout: true } : {});
+        setLightroomStatus(quickDraftFailureMessage(error));
       }
+    }
+    // The layers that finished are real work: keep them, so the retry (or the
+    // next preview) picks up where this one stopped instead of paying again.
+    if (cacheDirty && task.stillOwnsActiveProject()) {
+      task.commit({ workspace: { layerCache: cache.entries() } }, { captureForm: false }).catch(() => {});
     }
     return false;
   } finally {
+    lightroomPromptMemo = null;
     settleQuickDraftRequest(requestGuard);
     setBusy(false);
   }
 }
 
 // Develop is an explicit action, never a side effect of export: the current
-// composite is written into the body only after (1) a revision of the current
-// body is saved and (2) the writer confirms this becomes the new working body.
-// Any failure leaves the original body untouched.
+// composite is written into the document only after (1) a revision of the
+// current text is saved and (2) the writer confirms this becomes the new
+// working body. It writes through whoever owns the document -- Quick Draft for
+// its own draft, TeachText for a document it holds, the record for one nobody
+// is editing -- and never through a window that does not hold the pen. Any
+// failure leaves the original text untouched.
 async function developAdjustmentLayers() {
-  // Develop writes the document, and a subject this application does not own
-  // never accepts a write — the menu row and the button both grey, and this
-  // guard holds even for a caller that reached the verb some other way.
-  if (lightroomIsReadOnly()) {
-    setQuickDraftStatus(t("lightroom_read_only"));
+  const decision = lightroomWriteDecision();
+  if (!decision.canWrite) {
+    const message = lightroomWriteNotice(decision);
+    setQuickDraftStatus(message);
+    setLightroomStatus(message);
     return false;
   }
   const slot = activeProjectQuickDraft();
@@ -948,60 +1071,65 @@ async function developAdjustmentLayers() {
     setQuickDraftStatus(t("quick_draft_no_project"));
     return false;
   }
+  if (lightroomNegativeReport(slot.record).state === "stale") {
+    // The proof is built from the negative, and the writer has kept writing past
+    // it: developing now would replace their newer words with a rewrite of older
+    // ones. Re-shooting first makes the proof start from what they wrote last.
+    setQuickDraftStatus(t("lightroom_develop_stale"));
+    setLightroomStatus(t("lightroom_develop_stale"));
+    return false;
+  }
   const state = currentCompositeState(slot.record);
-  if (!state.ready || !String(state.text || "").trim()) {
+  if (!state.ready || !state.proof || !String(state.text || "").trim()) {
     setQuickDraftStatus(t("quick_draft_develop_none"));
+    setLightroomStatus(t("quick_draft_develop_none"));
     return false;
   }
   const composite = state.text;
-  const previousBody = String(refs.draft?.value || slot.record.workspace.body || "");
+  const previousBody = lightroomBodyText();
   const confirmed = await showSystemModal(t("quick_draft_develop_confirm"), "confirm");
   if (confirmed !== "yes") {
     setQuickDraftStatus(t("quick_draft_develop_cancelled"));
     return false;
   }
   if (!task.stillOwnsActiveProject()) return false;
-  if (slot.record.workspace.projectDocId && typeof createDocumentRevision === "function") {
+  const historyBefore = typeof lightroomHistoryRead === "function" ? lightroomHistoryRead() : null;
+  const documentId = lightroomSubjectDocumentId();
+  if (documentId && typeof createDocumentRevision === "function") {
     try {
       await createDocumentRevision({
         projectId: task.projectId,
-        documentId: slot.record.workspace.projectDocId,
+        documentId,
         body: previousBody,
         origin: "system",
         operation: "quick-draft-develop",
       });
     } catch (error) {
       setQuickDraftStatus(t("quick_draft_develop_revision_failed"));
+      setLightroomStatus(t("quick_draft_develop_revision_failed"));
       return false;
     }
   }
   if (!task.stillOwnsActiveProject()) return false;
-  const patch = { stage: "draft", workspace: {} };
+  const darkroom = darkroomOf(slot.record);
+  const now = new Date().toISOString();
+  const patch = { workspace: {} };
   if (previousBody.trim()) {
     const version = normalizeQuickDraftVersion({
       id: stableId("version"),
       body: previousBody,
-      title: slot.record.workspace.title,
-      createdAt: new Date().toISOString(),
+      title: lightroomSubject ? String(lightroomSubject.name || "") : slot.record.workspace.title,
+      createdAt: now,
       reason: "before-develop",
       source: "quick-draft",
     });
-    patch.workspace.versions = [...darkroomOf(slot.record).versions, version].slice(-100);
-  }
-  if (!hasRecordedNegative(slot.record)) {
-    patch.workspace.composition = {
-      ...darkroomOf(slot.record),
-      negative: previousBody,
-      negativeUpdatedAt: new Date().toISOString(),
-    };
+    patch.workspace.versions = window.AISystem6DarkroomRecord.pruneDarkroomVersions([...darkroom.versions, version]);
   }
   patch.workspace.adjustmentLayers = normalizeAdjustmentLayers(
     adjustmentLayersSnapshot(slot.record).map((layer) => ({ ...layer, enabled: false }))
   );
-  patch.workspace.body = composite;
-  patch.workspace.title = titleFromBody(composite);
   patch.workspace.composition = {
-    ...patch.workspace.composition,
+    ...darkroom,
     currentKey: composeCacheKey({
       source: quickDraftCompositeSource(slot.record),
       layers: enabledAdjustmentLayers(slot.record),
@@ -1009,25 +1137,54 @@ async function developAdjustmentLayers() {
       ...compositionCacheContext(slot.record),
     }),
     composite,
-    generatedAt: new Date().toISOString(),
+    generatedAt: now,
     modelDelivered: composite,
-    modelDeliveredAt: new Date().toISOString(),
+    modelDeliveredAt: now,
   };
-  refs.draft.value = composite;
+  if (!hasRecordedNegative(slot.record)) {
+    patch.workspace.composition.negative = previousBody;
+    patch.workspace.composition.negativeUpdatedAt = now;
+  }
   quickDraftLastComposite = "";
   quickDraftLastCompositeKey = "";
-  const committed = await task.commit(patch, { captureForm: false });
-  if (!committed.ok) {
-    // The composite must not masquerade as the working body when the write
-    // failed; restore the original text and leave the record modified.
-    refs.draft.value = previousBody;
-    renderQuickDraft(activeProjectQuickDraft({ create: false })?.record);
-    setQuickDraftStatus(t("quick_draft_save_failed"));
-    return false;
+  if (decision.path === "draft") {
+    // Quick Draft's own draft is written in the same commit as the record.
+    patch.stage = "draft";
+    patch.workspace.body = composite;
+    patch.workspace.title = titleFromBody(composite);
+    if (refs.draft) refs.draft.value = composite;
+    const committed = await task.commit(patch, { captureForm: false });
+    if (!committed.ok) {
+      // The composite must not masquerade as the working body when the write
+      // failed; restore the original text and leave the record modified.
+      if (refs.draft) refs.draft.value = previousBody;
+      renderQuickDraft(activeProjectQuickDraft({ create: false })?.record);
+      setQuickDraftStatus(t("quick_draft_save_failed"));
+      return false;
+    }
+    renderQuickDraft(committed.record);
+  } else {
+    // Another owner holds the pen: the text goes through it first, and the
+    // darkroom's record only follows a write that landed.
+    const written = await lightroomApplyBody(composite, { operation: "darkroom-develop", previousBody, decision });
+    if (!written.ok) {
+      const message = t("lightroom_write_failed");
+      setQuickDraftStatus(message);
+      setLightroomStatus(message);
+      return false;
+    }
+    const committed = await task.commit(patch, { captureForm: false });
+    if (!committed.ok) {
+      await lightroomApplyBody(previousBody, { operation: "darkroom-develop-rollback", previousBody: composite, decision });
+      setQuickDraftStatus(t("quick_draft_save_failed"));
+      setLightroomStatus(t("quick_draft_save_failed"));
+      return false;
+    }
+    renderQuickDraft(committed.record);
   }
-  renderQuickDraft(committed.record);
   setQuickDraftStatus(t("quick_draft_develop_done"));
   noteLightroomReceipt("quick_draft_develop", { model: quickDraftConnectedModelName() });
+  if (typeof lightroomRecordStep === "function") lightroomRecordStep("edit_step_develop", historyBefore);
   if (quickDraftLastCompositeReceiptId) {
     window.AISystem6RunReceipts?.recordUserAction?.(quickDraftLastCompositeReceiptId, {
       action: "accept",
@@ -1054,6 +1211,14 @@ async function discardLightroomComposite() {
     setQuickDraftStatus(t("quick_draft_no_project"));
     return false;
   }
+  // The layers' outputs stay cached (that is work already paid for), so the
+  // proof has to be marked thrown away or it would rebuild itself from them.
+  const discardedKey = composeCacheKey({
+    source: quickDraftCompositeSource(slot.record),
+    layers: enabledAdjustmentLayers(slot.record),
+    protectedRanges: protectedRangesSnapshot(slot.record),
+    ...compositionCacheContext(slot.record),
+  });
   quickDraftLastComposite = "";
   quickDraftLastCompositeKey = "";
   const committed = await task.commit({ workspace: { composition: {
@@ -1061,6 +1226,7 @@ async function discardLightroomComposite() {
     currentKey: "",
     composite: "",
     generatedAt: "",
+    discardedKey,
   } } }, { captureForm: false });
   if (!committed.ok) {
     setQuickDraftStatus(t("quick_draft_save_failed"));
@@ -1128,8 +1294,11 @@ function cleanMingmingQuickDraftBody(markdown = "") {
 // differently. It is read-only; the pure diff lives in app/core/grain-diff.js.
 
 function hasRecordedNegative(record = activeProjectQuickDraft({ create: false })?.record) {
-  const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
-  return Boolean(darkroomOf(record).negativeUpdatedAt) || Boolean(humanAnchorSnapshot(record));
+  // A version is not a negative. A copy kept on leaving, or one the writer kept
+  // by hand, used to make this answer yes through the first version's body, and
+  // the preview then composed from the empty negative beside it.
+  const darkroom = darkroomOf(record);
+  return Boolean(darkroom.negativeUpdatedAt) || Boolean(String(darkroom.negative || "").trim());
 }
 
 function grainVersionChain(record) {
@@ -1137,7 +1306,10 @@ function grainVersionChain(record) {
   return grainChainFromRecordParts({
     humanAnchor: darkroomOf(record).negative,
     humanAnchorUpdatedAt: darkroomOf(record).negativeUpdatedAt,
-    dumps: (darkroomOf(record).versions || []).map((entry) => entry.body),
+    // Only the bodies a model pass replaced are passes. A copy kept on leaving,
+    // the negative a re-shoot set aside, and anything from before a re-shoot are
+    // history of another baseline, and counting them would age the grain.
+    dumps: window.AISystem6DarkroomRecord.darkroomChainVersions(darkroomOf(record)).map((entry) => entry.body),
   });
 }
 
@@ -1156,7 +1328,7 @@ function quickDraftGrainReport(record = activeProjectQuickDraft({ create: false 
   // The views read whatever the darkroom has as its subject. Usually that is
   // the draft in front of the writer; when it is another document, the same
   // instruments read that one instead.
-  const body = lightroomIsReadOnly()
+  const body = lightroomSubject
     ? lightroomBodyText()
     : String(record ? normalizeQuickDraftWorkspace(record.workspace, record).body : refs.draft?.value || "");
   const chain = grainVersionChain(record);
@@ -1454,7 +1626,7 @@ function renderFatBitsCells(report, protectedLines = new Set()) {
     return [
       `<li class="quick-draft-fatbit${locked ? " is-protected" : ""}${outside ? " is-outside-canvas" : ""}${edge ? " is-canvas-edge" : ""}" data-fatbit-line="${cell.line}">`,
       `<span class="quick-draft-fatbit-index">${index + 1}</span>`,
-      `<span class="quick-draft-fatbit-text"${lightroomIsReadOnly() ? "" : ' contenteditable="plaintext-only" role="textbox" data-requires-write'} spellcheck="false" data-fatbit-cell="${index}">${inner}</span>`,
+      `<span class="quick-draft-fatbit-text"${lightroomWriteDecision().path === "draft" ? ' contenteditable="plaintext-only" role="textbox" data-requires-write' : ""} spellcheck="false" data-fatbit-cell="${index}">${inner}</span>`,
       `<span class="quick-draft-fatbit-badge">${citedBy ? `<i class="quick-draft-fatbit-cite">${escapeHtml(citedBy)}</i>` : ""}${brush}${undo}${locked ? `<i class="quick-draft-fatbit-lock" aria-hidden="true"></i>` : ""}${badge}</span>`,
       `</li>`,
     ].join("");

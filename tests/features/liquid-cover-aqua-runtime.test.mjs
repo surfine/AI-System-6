@@ -14,8 +14,8 @@ function walk(node) {
   for (const value of Object.values(node)) if (Array.isArray(value)) value.forEach(walk); else if (value && typeof value === 'object') walk(value);
 }
 walk(ast);
-const names = ['isSolidLayer', 'applyFontSelection', 'setSlider', 'applyPreset', 'recipeByKey', 'applyRecipeByName', 'thumbSampleText', 'thumbSdfFor', 'recipeRenderParams', 'renderPresetThumbs', 'syncPresetButtons', 'setActivePreset', 'onPresetClick', 'cloneLayerForHistory', 'historyControlValues', 'captureHistoryState', 'historySignature', 'updateHistoryButtons', 'beginHistory', 'commitHistory', 'runHistoryAction', 'restoreHistoryState', 'undoEditor', 'liquidModeValue', 'syncLiquidControls'];
-const actual = ['PRESETS', 'HISTORY_CONTROL_IDS'].map(n => 'const ' + declarations.get(n) + ';').join('\n') + '\n' + names.map(n => {
+const names = ['cloneStackLayer', 'cloneVariants', 'snapshotSignature', 'isSolidLayer', 'applyFontSelection', 'setSlider', 'applyPreset', 'recipeByKey', 'applyRecipeByName', 'thumbSampleText', 'thumbSdfFor', 'recipeRenderParams', 'renderPresetThumbs', 'syncPresetButtons', 'setActivePreset', 'onPresetClick', 'cloneLayerForHistory', 'historyControlValues', 'captureHistoryState', 'historySignature', 'updateHistoryButtons', 'beginHistory', 'cancelHistory', 'commitHistory', 'runHistoryAction', 'restoreHistoryState', 'undoEditor', 'liquidModeValue', 'syncLiquidControls'];
+const actual = ['PRESETS', 'HISTORY_CONTROL_IDS', 'coverHistory'].map(n => 'const ' + declarations.get(n) + ';').join('\n') + '\n' + names.map(n => {
   assert.ok(functions.has(n), 'actual production function exists: ' + n); return functions.get(n);
 }).join('\n');
 const plain = value => JSON.parse(JSON.stringify(value));
@@ -29,7 +29,9 @@ function fixture({ mode = 'glass', locked = false, shape = false } = {}) {
   const noOp = () => {};
   const context = vm.createContext({
     layers: [layer, sibling], sel: 0, selectedLayerIds: new Set([layer.id]), fg: { x: .5, y: .5, scale: 1, registered: true }, glassFx: { bodyFactor: 30 }, activePresetKey: 'cover', activeBg: 0, currentBgUrl: 'real-photo', nextLayerId: 3,
-    undoStack: [], redoStack: [], pendingHistory: null, historyRestoring: false, HISTORY_LIMIT: 50,
+    picStack: [], picSlot: 1, selectedStackIds: new Set(), selStack: '', bgState: { kind: 'builtin', url: 'real-photo', assetId: '' }, variants: {}, variantKey: '16:9',
+    markCoverDirty: noOp, restoreBackgroundState: noOp, syncRendererPictures: noOp, renderStackInspector: noOp, syncSubjectControls: noOp,
+    historyRestoring: false, HISTORY_LIMIT: 50,
     $: id => controls.get(id), tr: (_k, fallback) => fallback, setFontStatus: noOp, refreshSystemSelectControls: noOp,
     clampNum: (n, lo, hi, fallback) => Number.isFinite(Number(n)) ? Math.min(hi, Math.max(lo, Number(n))) : fallback,
     rebuildAllSDF: noOp, loadLayerIntoPanel: noOp, syncValueLabels: noOp, renderNow: noOp, scheduleRender: noOp, renderLayerList: noOp, setInspectorPanel: noOp, isShapeLayer: L => !!(L.shape || L.shapeKind), applyAspect: noOp, setBgFromUrl: noOp,
@@ -38,7 +40,9 @@ function fixture({ mode = 'glass', locked = false, shape = false } = {}) {
     rasterizeText(opts) { rasterCalls.push(opts); return { alpha: [255], width: 1, height: 1 }; }, alphaToSignedDistance: () => new Float32Array([-8]), smoothSDF: noOp, gaussianWeights: r => [r], validHex: value => value, hexToRgb: value => [1,3,5].map(i => parseInt(value.slice(i,i+2),16)/255),
     Renderer: class { constructor() { this.canvas = { toDataURL: () => 'data:image/png;base64,stub' }; } setBackground() {} setLayerSDF() {} render(p) { thumbRenders.push(p); } },
   });
-  vm.runInContext(actual + '\nthis.findRecipe = recipeByKey;', context);
+  context.window = context;
+  vm.runInContext(readFileSync(new URL('../../apps/desktop/app/core/edit-history.js', import.meta.url), 'utf8'), context);
+  vm.runInContext(actual + '\nthis.findRecipe = recipeByKey; this.coverHistory = coverHistory;', context);
   return { context, controls, font, rasterCalls, thumbRenders, aqua: context.findRecipe('aqua') };
 }
 function snapshot(f) { return plain(f.context.captureHistoryState()); }
@@ -52,12 +56,12 @@ for (const mode of ['glass', 'solid']) test('Aqua converts only active ' + mode 
   assert.equal(f.context.currentBgUrl, before.currentBgUrl); assert.equal(f.context.activePresetKey, 'aqua');
   assert.equal(L.tintColor, '#369dd1'); assert.equal(L.tintAlpha, 18); assert.equal(L.refThickness, 85);
   assert.equal(Number(f.controls.get('lc-refraction').value), 37.5); assert.equal(Number(f.controls.get('lc-splay').value), 80);
-  assert.equal(f.context.glassFx.bodyFactor, 0); assert.equal(f.context.undoStack.length, 1);
+  assert.equal(f.context.glassFx.bodyFactor, 0); assert.equal(f.context.coverHistory.size().undo, 1);
   f.context.undoEditor(); assert.deepEqual(snapshot(f), before, 'real single-step undo restores globals, selected state and layers');
 });
 test('locked selected layer rejects Aqua before changing optics, preset or history', () => {
   const f = fixture({ locked: true }), before = snapshot(f);
-  f.context.onPresetClick(f.aqua); assert.deepEqual(snapshot(f), before); assert.equal(f.context.undoStack.length, 0);
+  f.context.onPresetClick(f.aqua); assert.deepEqual(snapshot(f), before); assert.equal(f.context.coverHistory.size().undo, 0);
   f.context.applyPreset(f.aqua.p); assert.deepEqual(snapshot(f), before);
   f.context.applyRecipeByName('aqua'); assert.deepEqual(snapshot(f), before);
 });

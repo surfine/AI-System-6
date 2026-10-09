@@ -222,6 +222,7 @@ window.AISystem6ProjectDiskBackup = (() => {
     } else {
       if (!recordId(bundle.project.id)) error("backup.project.id", "project id is required");
       if (!recordId(bundle.project.name)) error("backup.project.name", "project name is required");
+      validateReviewComments(bundle.project.reviewComments, error);
     }
 
     arrayKeys.forEach((key) => {
@@ -478,8 +479,19 @@ window.AISystem6ProjectDiskBackup = (() => {
         for (const field of ["negative", "composite"]) {
           if (typeof record[field] !== "string") error(`${path}.${field}`, "must be a string");
         }
-        for (const field of ["adjustmentLayers", "protectedRanges", "versions"]) {
-          if (!Array.isArray(record[field])) error(`${path}.${field}`, "must be an array");
+        // Schema 2 keeps the stack and the locks together in `settings`; a
+        // schema-1 record, which any older backup still carries, keeps them as
+        // two arrays. Either shape is a whole record; a mixture of nothing is not.
+        if (isPlainObject(record.settings)) {
+          for (const field of ["layers", "protected"]) {
+            if (!Array.isArray(record.settings[field])) error(`${path}.settings.${field}`, "must be an array");
+          }
+          if (record.layerCache !== undefined && !Array.isArray(record.layerCache)) error(`${path}.layerCache`, "must be an array");
+          if (!Array.isArray(record.versions)) error(`${path}.versions`, "must be an array");
+        } else {
+          for (const field of ["adjustmentLayers", "protectedRanges", "versions"]) {
+            if (!Array.isArray(record[field])) error(`${path}.${field}`, "must be an array");
+          }
         }
       });
     }
@@ -611,6 +623,51 @@ window.AISystem6ProjectDiskBackup = (() => {
     if (!match) return value;
     const mapped = idMaps[match[1]]?.get(match[2]);
     return mapped ? `${match[1]}:${mapped}` : value;
+  }
+
+  // Review Desk's comment threads ride on the project record
+  // (project.reviewComments), so they travel, restore and recover with it and
+  // need no collection, no format bump and no id remap of their own: every id
+  // in them names another comment of the same list. What the validator owns is
+  // the shape, because a damaged list is read by the desk on the next open.
+  // app/core/review-comments.js (validateList) states the same rules.
+  const reviewCommentTypes = new Set(["comment", "reply", "state", "track", "tick"]);
+  const reviewCommentStates = new Set(["accepted", "rejected", "completed", "open"]);
+  function validateReviewComments(list, report) {
+    if (list === undefined) return;
+    const path = "backup.project.reviewComments";
+    if (!Array.isArray(list)) {
+      report(path, "must be an array");
+      return;
+    }
+    const roots = new Set(list.filter((item) => isPlainObject(item) && item.type === "comment").map((item) => recordId(item.id)));
+    const ids = new Set();
+    list.forEach((item, index) => {
+      const at = `${path}[${index}]`;
+      if (!isPlainObject(item)) return report(at, "must be an object");
+      const id = recordId(item.id);
+      if (!id) report(`${at}.id`, "id is required");
+      else if (ids.has(id)) report(`${at}.id`, `duplicate id ${id}`);
+      else ids.add(id);
+      if (!reviewCommentTypes.has(item.type)) return report(`${at}.type`, "unknown type");
+      if (item.type === "comment") {
+        if (item.rootId !== item.id) report(`${at}.rootId`, "a comment is its own root");
+        const anchor = item.anchor;
+        if (!isPlainObject(anchor) || typeof anchor.quote !== "string" || !anchor.quote
+          || typeof anchor.prefix !== "string" || typeof anchor.suffix !== "string" || !Number.isFinite(anchor.offset)) {
+          report(`${at}.anchor`, "anchor must carry quote, prefix, suffix and offset");
+        }
+      } else if (!roots.has(recordId(item.rootId))) {
+        report(`${at}.rootId`, `refers to missing comment ${recordId(item.rootId)}`);
+      }
+      if (["comment", "reply", "state"].includes(item.type)) {
+        if (typeof item.text !== "string") report(`${at}.text`, "must be a string");
+        if (!isPlainObject(item.author) || !["writer", "reviewer"].includes(item.author.role)) report(`${at}.author`, "author role is required");
+      }
+      if (item.type === "state" && !reviewCommentStates.has(item.state)) report(`${at}.state`, "unknown state");
+      if (item.type === "track" && !Number.isFinite(item.offset)) report(`${at}.offset`, "offset must be a number");
+      if (item.type === "tick" && (typeof item.by !== "string" || typeof item.checked !== "boolean")) report(`${at}.by`, "tick needs a name and a flag");
+    });
   }
 
   function remapRelations(value, idMaps, key = "", fields = relationFields, arrayFields = relationArrayFields) {

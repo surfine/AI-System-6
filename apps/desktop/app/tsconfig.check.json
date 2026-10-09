@@ -29,6 +29,7 @@
     "features/quick-draft-intake.js",
     "features/quick-draft-editor.js",
     "features/quick-draft-composition.js",
+    "features/lightroom-develop.js",
     "features/quick-draft-ai.js",
     "features/quick-draft-tracks.js",
     "features/quick-draft-handoff.js",

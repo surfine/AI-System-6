@@ -7,9 +7,14 @@ function setup(capture) {
   const classes = new Set();
   const win = { isConnected: true, classList: { contains: (key) => classes.has(key) } };
   let calls = 0;
-  const scope = { window: { AISystem6WindowMinimize: { captureDomWindowBitmap: (...args) => { calls++; return capture(...args); } } } };
+  const clock = { now: 0 };
+  const scope = { Date: { now: () => clock.now }, window: { AISystem6WindowMinimize: { captureDomWindowBitmap: (...args) => { calls++; return capture(...args); } } } };
   runInNewContext(source, scope);
-  return { api: scope.window.AISystem6WindowPreview, win, classes, calls: () => calls };
+  // Each call to get() is a fresh moment unless a test holds the clock: the
+  // three-second reuse window is pinned by its own test below.
+  const api = scope.window.AISystem6WindowPreview;
+  const timed = { ...api, get: (...args) => { if (!clock.held) clock.now += 5000; return api.get(...args); } };
+  return { api: timed, win, classes, calls: () => calls, clock };
 }
 test('real capture cached for hidden states without invoking capture or changing state', async () => {
   const h = setup(async () => ({ source: 'dom', dataUrl: 'data:real' }));
@@ -44,6 +49,17 @@ test('never accepts schematic paint and returns an honest unavailable result', a
   h.classes.add('is-minimized');
   assert.equal((await h.api.get(h.win)).url, null);
   assert.equal(h.calls(), 1);
+});
+test('a picture taken in the last three seconds is reused, not retaken', async () => {
+  const h = setup(async () => ({ source: 'dom', dataUrl: 'data:once' }));
+  h.clock.held = true;
+  assert.equal((await h.api.get(h.win)).url, 'data:once');
+  h.clock.now += 2900;
+  assert.equal((await h.api.get(h.win)).url, 'data:once');
+  assert.equal(h.calls(), 1);
+  h.clock.now += 200;
+  await h.api.get(h.win);
+  assert.equal(h.calls(), 2);
 });
 test('release forgets memory-only picture and failed capture retains previous picture', async () => {
   let fails = false;

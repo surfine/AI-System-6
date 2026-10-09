@@ -398,7 +398,10 @@ async function buildImageAttachments(files, options = {}) {
  * Newest first, which is the order every surface displays.
  *
  * @param {string} projectId
- * @param {{ surface?: string, limit?: number }} [options]
+ * @param {{ surface?: string, limit?: number, includeStaged?: boolean, includeParts?: boolean }} [options]
+ * Staged pictures (an editor's working material, app/core/edit-assets.js) are
+ * left out unless asked for, and so are the layers of a layered sketch
+ * (`includeParts`): the picture other apps see is its composite.
  * @returns {any[]}
  */
 function imageAttachmentsForProject(projectId, options = {}) {
@@ -406,7 +409,9 @@ function imageAttachmentsForProject(projectId, options = {}) {
   if (!id) return [];
   const surface = options.surface ? String(options.surface) : "";
   return imageAttachments
-    .filter((item) => item && item.projectId === id && (!surface || item.surface === surface))
+    .filter((item) => item && item.projectId === id && (!surface || item.surface === surface) && (item.status !== "staged" || options.includeStaged)
+      // A layered sketch is its composite here; its layers are parts of it.
+      && (options.includeParts || !["sketch-layer", "sketch-tracing", "cutout-mask"].includes(item.role)))
     .sort((left, right) => String(right.createdAt || "").localeCompare(String(left.createdAt || "")))
     .slice(0, Number.isFinite(options.limit) ? Number(options.limit) : IMAGE_ATTACHMENT_DEFAULT_LIMIT);
 }

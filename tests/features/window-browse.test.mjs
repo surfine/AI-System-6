@@ -162,7 +162,7 @@ test("browse keeps the search caret, links real options, respects IME and commit
 });
 
 
-test("hover projection leaves focus alone, space only enlarges a focused row, picker does not restore", async () => {
+test("Dock hover shows cards and leaves focus alone; the explicit list keeps search and Space; picker does not restore", async () => {
   const h = createAppBootVm();
   await h.settleBoot();
   const caller = h.document.createElement("input");
@@ -183,8 +183,15 @@ test("hover projection leaves focus alone, space only enlarges a focused row, pi
   const api = h.context.AISystem6WindowBrowse;
   api.open({ appId: "a", hover: true, returnFocus: false, filterEntries: (entry) => entry.state === "open", onSelect: (name) => selected.push(name) });
   assert.equal(h.document.activeElement, caller);
-  assert.equal(hiddenHints, 1, "hover removes the old name balloon before showing the picture");
+  assert.equal(hiddenHints, 1, "hover removes the old name balloon before showing the cards");
   assert.deepEqual(Array.from(api.entries(), (entry) => entry.name), ["one"]);
+  assert.equal(h.document.querySelector(".window-browse-search"), null, "the Dock's cards carry no search field");
+  const card = h.document.querySelector(".window-card");
+  card.dispatchEvent({ type: "click", target: card });
+  assert.deepEqual(selected, ["one"]);
+  assert.equal(h.document.querySelector(".window-browse-menu"), null);
+  // The Window menu's list keeps search, rows and the Space enlargement.
+  api.open({ returnFocus: false, onSelect: (name) => selected.push(name) });
   const panel = h.document.querySelector(".window-browse-popover");
   const search = h.document.querySelector(".window-browse-search");
   const row = h.document.querySelector('[role="option"]');
@@ -193,9 +200,8 @@ test("hover projection leaves focus alone, space only enlarges a focused row, pi
   assert.ok(!panel.classList.contains("is-preview-expanded"));
   assert.ok(space(row).prevented);
   assert.ok(panel.classList.contains("is-preview-expanded"));
-  row.dispatchEvent({ type: "click", target: row });
-  assert.deepEqual(selected, ["one"]);
-  assert.equal(h.document.querySelector(".window-browse-menu"), null);
+  api.close({ returnFocus: false });
+  caller.focus();
   api.open({ hover: true, returnFocus: false });
   api.closeHover();
   assert.equal(h.document.querySelector(".window-browse-menu"), null);
@@ -226,14 +232,14 @@ test("Dock hover includes a collapsed side slot and restores that same registere
   assert.equal(api.entries()[0].state, 'slide-hidden');
   assert.equal(h.document.activeElement, anchor);
   assert.equal(restored.length, 0, 'hover never wakes the side slot');
-  const row = h.document.querySelector('[role="option"]');
-  row.dispatchEvent({ type: 'click', target: row });
+  const card = h.document.querySelector('.window-card');
+  card.dispatchEvent({ type: 'click', target: card });
   assert.equal(restored.length, 1);
   assert.equal(restored[0][0], win);
   assert.equal(restored[0][1], false);
 });
 
-test("Dock hover bounds use panel geometry after async image load and preserve the 160ms transfer grace", async () => {
+test("Dock hover bounds use panel geometry after async image load and preserve the 180ms transfer grace", async () => {
   const h = createAppBootVm();
   await h.settleBoot();
   h.context.innerWidth = 1024;
@@ -274,7 +280,7 @@ test("Dock hover bounds use panel geometry after async image load and preserve t
   assert.equal(panel.getBoundingClientRect().top, 602);
   deliver({ url: "data:image/png;base64,photo", stale: false });
   for (let turn = 0; turn < 8; turn++) await Promise.resolve();
-  const img = h.document.querySelector(".window-browse-preview img");
+  const img = h.document.querySelector(".window-card-picture img");
   assert.ok(img);
   panelHeight = 320;
   img.dispatchEvent({ type: "load" });
@@ -285,13 +291,13 @@ test("Dock hover bounds use panel geometry after async image load and preserve t
   assert.equal(panel.getBoundingClientRect().left, 8);
   assert.equal(panel.getBoundingClientRect().top, 8);
   api.hoverLeave(anchor);
-  advance(159);
+  advance(179);
   assert.ok(h.document.querySelector(".window-browse-menu"));
   panel.dispatchEvent({ type: "pointerenter" });
   advance(10);
   assert.ok(h.document.querySelector(".window-browse-menu"));
   panel.dispatchEvent({ type: "pointerleave" });
-  advance(159);
+  advance(179);
   assert.ok(h.document.querySelector(".window-browse-menu"));
   advance(1);
   assert.equal(h.document.querySelector(".window-browse-menu"), null);

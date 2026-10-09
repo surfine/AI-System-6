@@ -2634,10 +2634,16 @@ body.use-modern-fonts .mde-surface * {
      (2026-10-08). The bar now spans the whole first row under the path and
      view strips, so its own grid puts Zoom at the window's right end, and the
      view strip stops short of it by a margin rather than covering it. The
-     bars keep their own material (Liquid Glass's blur included). */
+     bars keep their own material (Liquid Glass's blur included). An era
+     whose sidebar runs to the top of the window (macOS 11) drops the seam
+     between the sidebar and the bar. */
   body[data-finder-layout="one-row"] .is-toolbar-window > .title-bar {
     grid-area: 1 / 1 / 2 / -1;
     min-height: 52px;
+  }
+
+  body[data-finder-layout="one-row"] .is-toolbar-window > .finder-sidebar {
+    border-top: var(--finder-one-row-side-seam, var(--tdi-rail-border));
   }
 
   body[data-finder-layout="one-row"] .is-toolbar-window > .details-bar {
@@ -2672,6 +2678,17 @@ select:not(:disabled):hover {
 
 select:disabled {
   color: var(--shade-dark);
+  background-color: var(--control-disabled-field-bg, var(--panel));
+}
+
+/* A disabled text field says so the way a disabled pop-up does: the era's
+   disabled ink on its disabled field fill. Without it the field recipe's
+   var(--ink) won, and Big Sur's unavailable field read exactly like an
+   editable one (2026-10-09 audit). */
+input:not([type="checkbox"], [type="radio"], [type="range"], [type="button"], [type="submit"], [type="reset"], [type="color"], [type="file"], [type="image"]):disabled,
+textarea:disabled {
+  color: var(--system-disabled-fg, var(--shade-dark));
+  -webkit-text-fill-color: currentColor;
   background-color: var(--control-disabled-field-bg, var(--panel));
 }
 

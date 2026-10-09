@@ -1338,6 +1338,9 @@ function createProjectRecord(name) {
     documentTabs: [],
     activeDocumentTabIds: { reader: null, teachText: null, docMap: null, timeMachine: null },
     dictionaryTerms: [],
+    // Review Desk's comment threads (app/core/review-comments.js). They live on
+    // the record, so a backup, a restore and Recovery carry them with it.
+    reviewComments: [],
     flowState: {
       topic: false,
       research: false,

@@ -32,7 +32,7 @@ test("defaults, corruption, persistence and actual control-panel changes", () =>
   const restarted = setup(h.context.localStorage.getItem("ai-system-6-windowshade-preferences"));
   assert.equal(restarted.api.get('edgeSlideOver'), false, "a fresh boot reads the durable control choice");
 });
-test("hover waits 350 ms, cancels stale loading, and yields until leave", async () => {
+test("hover waits 250 ms, cancels stale loading, and yields until leave", async () => {
   const { h, api, timers } = setup();
   const calls = []; let resolveLoad;
   h.context.AISystem6WindowBrowse = { open: options => calls.push(options), closeHover: owner => calls.push(['close', owner]), hoverLeave: owner => calls.push(['leave', owner]) };
@@ -41,7 +41,7 @@ test("hover waits 350 ms, cancels stale loading, and yields until leave", async 
   api.bindDockHover(node, 'quickDraft');
   const fire = type => node.dispatchEvent(new h.context.Event(type));
   fire('pointerenter');
-  assert.equal([...timers.values()].at(-1).delay, 350);
+  assert.equal([...timers.values()].at(-1).delay, 250);
   const pending = [...timers.values()].at(-1).fn();
   fire('contextmenu'); resolveLoad(); await pending;
   assert.equal(calls.filter(call => call.appId).length, 0);
@@ -115,28 +115,30 @@ test("36 Dock bindings capture only the selected hover and reject old lazy and p
     api.bindDockHover(node, `app-${index}`); return node;
   });
   const fire = (node, type) => node.dispatchEvent(new h.context.Event(type));
-  const nextIntent = () => [...timers].find(([, timer]) => timer.delay === 350);
+  const nextIntent = () => [...timers].find(([, timer]) => timer.delay === 250);
   const runIntent = () => { const [id, timer] = nextIntent(); timers.delete(id); return timer.fn(); };
   fire(icons[0], 'pointerenter'); const oldLoad = runIntent();
   for (let index = 0; index < 35; index++) {
     fire(icons[index], 'pointerleave'); fire(icons[index + 1], 'pointerenter');
-    assert.equal([...timers.values()].filter(timer => timer.delay === 350).length, 1, 'rapid traversal keeps only current intent timer');
+    assert.equal([...timers.values()].filter(timer => timer.delay === 250).length, 1, 'rapid traversal keeps only current intent timer');
   }
   const lastLoad = runIntent();
   pendingLoads[1](); await lastLoad;
   pendingLoads[0](); await oldLoad;
-  assert.deepEqual(captures, ['dense-35'], 'only selected window is captured, not the other 36 windows');
+  // The cards show every window of the hovered app, and only those.
+  assert.deepEqual(captures, ['dense-35', 'dense-extra'], "only the hovered app's windows are captured, not the other 35 apps'");
   fire(icons[35], 'pointerleave'); fire(icons[34], 'pointerenter');
   const newerLoad = runIntent(); pendingLoads[2](); await newerLoad;
-  assert.deepEqual(captures, ['dense-35', 'dense-34']);
+  assert.deepEqual(captures, ['dense-35', 'dense-extra', 'dense-34']);
   pictureResolvers.get('dense-34')({ url: 'data:image/png;base64,new', stale: false });
   await Promise.resolve(); await Promise.resolve();
   pictureResolvers.get('dense-35')({ url: 'data:image/png;base64,old', stale: false });
   await Promise.resolve(); await Promise.resolve();
-  const image = h.document.querySelector('.window-browse-preview img');
+  const image = h.document.querySelector('.window-card-picture img');
   assert.equal(image.src, 'data:image/png;base64,new', 'late previous capture cannot replace current picture');
+  assert.equal(h.document.querySelectorAll('.window-card').length, 1, 'the panel holds only the current app');
   await Promise.resolve(); await Promise.resolve();
-  assert.equal(captures.length, 2, 'idle hover performs no additional capture');
-  assert.equal([...timers.values()].filter(timer => timer.delay === 350).length, 0, 'hover does not reschedule capture intent');
+  assert.equal(captures.length, 3, 'idle hover performs no additional capture');
+  assert.equal([...timers.values()].filter(timer => timer.delay === 250).length, 0, 'hover does not reschedule capture intent');
   h.context.AISystem6WindowBrowse.close();
 });

@@ -15,6 +15,9 @@
   let referenceName = "";
   let wiredWindow = null;
   let activeRequest = null;
+  // Set when a storyboard shot opened the studio (「精修这一镜…」): where the
+  // idea came from, and the way back for the picture the writer generates.
+  let storyboardShot = null;
 
   function $(id) {
     return document.getElementById(id);
@@ -304,6 +307,60 @@
     activeRequest?.abort();
   }
 
+  // --- from a storyboard shot ------------------------------------------------
+  // The idea arrives written by the storyboard (a pure function there owns
+  // it); the studio only shows where it came from and offers the way back.
+  // Writing the prompt, copying it and generating elsewhere work as always:
+  // this window never makes a picture.
+
+  function syncStoryboardShot() {
+    const source = $("ips-source");
+    const putBack = $("ips-put-back");
+    if (source) {
+      source.hidden = !storyboardShot;
+      source.textContent = storyboardShot?.sourceLabel || "";
+    }
+    if (!putBack) return;
+    putBack.hidden = !storyboardShot;
+    const state = storyboardShot?.putBack?.state?.() || { disabled: true, reasonKey: "" };
+    putBack.disabled = Boolean(state.disabled);
+    if (state.disabled && state.reasonKey) {
+      putBack.dataset.balloonHelpDisabled = state.reasonKey;
+      putBack.title = tr(state.reasonKey, "");
+    } else {
+      delete putBack.dataset.balloonHelpDisabled;
+      putBack.removeAttribute("title");
+    }
+  }
+
+  function prefill({ idea = "", aspect = "16:9", sourceLabel = "", putBack = null } = {}) {
+    render();
+    const ideaField = $("ips-idea");
+    if (ideaField) ideaField.value = String(idea || "");
+    if (ASPECTS.includes(aspect)) selectValue("ips-aspect", aspect);
+    storyboardShot = { sourceLabel: String(sourceLabel || ""), putBack };
+    syncStoryboardShot();
+    syncPlate();
+  }
+
+  function putBackPicture() {
+    syncStoryboardShot();
+    const state = storyboardShot?.putBack?.state?.();
+    if (!storyboardShot || state?.disabled) {
+      if (state?.reasonKey) setStatus(state.reasonKey, "");
+      return;
+    }
+    openTransientFilePicker({
+      accept: CLIO_IMAGE_ACCEPT,
+      onSelect: (files) => storyboardShot?.putBack?.choose?.(files),
+    });
+  }
+
+  function setStatusText(text) {
+    const el = $("ips-status");
+    if (el) el.textContent = String(text || "");
+  }
+
   async function generate() {
     if (activeRequest) return;
     const idea = ($("ips-idea").value || "").trim();
@@ -468,6 +525,7 @@
       '<div class="ips-body">',
       '<section class="ips-brief ips-group" aria-labelledby="ips-legend-input">',
       '<h2 class="ips-legend" id="ips-legend-input" data-i18n="ips_group_input">What you want</h2>',
+      '<p class="hint ips-source" id="ips-source" hidden></p>',
       '<label class="ips-control"><span class="ips-label" data-i18n="ips_idea">Idea</span><textarea id="ips-idea" rows="5" data-i18n-placeholder="ips_idea_hint" data-balloon-help="balloon_ips_idea" placeholder="e.g. calm tech blue, cinematic..."></textarea></label>',
       '<label class="ips-control"><span class="ips-label" data-i18n="ips_title">Title / overlay text (optional)</span><input type="text" id="ips-title" data-balloon-help="balloon_ips_title"></label>',
       // The choice shows its shape: each ratio is drawn, and the native radio
@@ -494,6 +552,8 @@
       // prompt, so it sits at the far left of the same row.
       '<div class="button-row ips-actions">',
       '<button class="btn" type="button" id="ips-sideask" data-i18n="ips_sideask">Ask SideAsk</button>',
+      // Only a storyboard shot opens the studio with a way back.
+      '<button class="btn" type="button" id="ips-put-back" data-i18n="ips_put_back" hidden>Put Back in Shot…</button>',
       '<span class="spacer"></span>',
       '<button class="btn" type="button" id="ips-cancel" data-i18n="ips_cancel" hidden>Cancel</button>',
       '<button class="btn default" type="button" id="ips-go" data-i18n="ips_generate" data-balloon-help="balloon_ips_generate">Write Prompt</button>',
@@ -534,12 +594,16 @@
     const win = buildStudioWindow();
     if (wiredWindow === win) {
       updateReferenceImageAvailability();
+      syncStoryboardShot();
       return;
     }
     wiredWindow = win;
     $("ips-go")?.addEventListener("click", generate);
     $("ips-cancel")?.addEventListener("click", cancelGenerate);
     $("ips-sideask")?.addEventListener("click", openSideAsk);
+    $("ips-put-back")?.addEventListener("click", putBackPicture);
+    // The storyboard may be saved while the studio is open.
+    win.addEventListener("focusin", syncStoryboardShot);
     const copyGpt = $("ips-copy-gpt");
     copyGpt?.addEventListener("click", () => copy(copyGpt, "ips-gpt-out"));
     const copyUniversal = $("ips-copy-universal");
@@ -592,7 +656,7 @@
     }
   }
 
-  window.AISystem6ImagePromptStudio = Object.freeze({ render });
+  window.AISystem6ImagePromptStudio = Object.freeze({ render, prefill, setStatusText });
 
   window.AISystem6Runtime?.registerApplication({
     id: "imagePromptStudio",

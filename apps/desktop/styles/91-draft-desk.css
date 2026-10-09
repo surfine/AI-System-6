@@ -1157,6 +1157,174 @@
   background: var(--quick-draft-actions-bg);
 }
 
+/* ---- 文字亮室 develop model --------------------------------------------------
+   The stack stays on screen when there is nothing to adjust, greyed and inert,
+   and folds away on a desk with Hide Adjustments (the narrow layouts have their
+   own drawer). The notices above the paper -- a stale negative, one layer's
+   changes, a comparison -- sit on the light table in the paper's own colours,
+   and a changed word is drawn the way the 1-bit screen drew a selection:
+   reversed. Everything reads from the era's ink and paper tokens. */
+.draft-desk-inspector.is-idle {
+  opacity: 0.55;
+}
+
+.lightroom-layout.is-inspector-hidden {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.lightroom-layout.is-inspector-hidden > .draft-desk-inspector {
+  display: none;
+}
+
+.lightroom-notices {
+  display: grid;
+  gap: 6px;
+  max-width: 44em;
+  margin: 0 auto 10px;
+}
+
+.lightroom-notices:empty {
+  display: none;
+}
+
+.lightroom-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 5px 8px;
+  border: 1px solid var(--ink);
+  background: var(--teachtext-preview-bg);
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.lightroom-notice > span:first-child {
+  flex: 1 1 12em;
+  min-width: 0;
+}
+
+.lightroom-notice small {
+  color: var(--quick-draft-secondary-fg);
+}
+
+.lightroom-notice.is-stale {
+  border-width: 2px;
+}
+
+.lightroom-compare-sides {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10em, 1fr));
+  gap: 14px;
+}
+
+.lightroom-compare-sides h4 {
+  margin: 0 0 4px;
+  font-size: 11px;
+}
+
+.lightroom-changes {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+mark.lightroom-changed {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+mark.lightroom-changed.is-before,
+del.lightroom-changed {
+  background: transparent;
+  color: inherit;
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.draft-desk-bypass {
+  padding: 4px 8px 0;
+}
+
+.draft-desk-presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px 0;
+}
+
+.draft-desk-presets > .select-wrap-inline {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.draft-desk-layer-tools {
+  display: inline-flex;
+  align-items: center;
+  justify-self: end;
+  gap: 3px;
+}
+
+/* A layer with three stops keeps its name and the Δ key on one row and drops the
+   stops under them, as it already did when the column was narrow. */
+.draft-desk-layer:has(> .draft-desk-strength) > .draft-desk-layer-tools {
+  order: 1;
+  margin-inline-start: auto;
+}
+
+.draft-desk-layer:has(> .draft-desk-strength) > .draft-desk-strength {
+  order: 2;
+  flex: 1 1 100%;
+  margin-inline-start: 0;
+}
+
+.draft-desk-layer-tools > .draft-desk-layer-solo {
+  min-width: 0;
+  width: 26px;
+  padding: 0;
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.draft-desk-bypass span {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.draft-desk-layer-solo.is-active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* The film strip: the version list laid out as frames in a row, each with the
+   few things that can be done to a frame under it. */
+.draft-desk-versions-list.is-film {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 6px;
+  padding: 6px 8px 8px;
+  overflow-x: auto;
+}
+
+.draft-desk-versions-list.is-film .draft-desk-version-row {
+  flex: 0 0 9em;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  padding: 0;
+  border-bottom: 0;
+}
+
+.draft-desk-version-row > .draft-desk-version-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.draft-desk-version-row.is-named .draft-desk-version-frame b {
+  text-decoration: underline;
+}
+
 .quick-draft-track-embrace {
   margin: 0 0 12px;
   white-space: pre-wrap;
@@ -1531,6 +1699,12 @@
 
   .lightroom-actions > .draft-desk-lightroom-stack {
     grid-area: 1 / 2;
+  }
+
+  /* The footer has no room for a third key on a phone: Compare is the View
+     menu's row there (and the film frame's button on a wider screen). */
+  .lightroom-actions > [data-lightroom-compare-toggle] {
+    display: none;
   }
 
   .lightroom-actions > #quick-draft-display-body {

@@ -64,7 +64,10 @@
   --desk-dock-mark-lift: 3px; /* M14: centre ~8px up */
   --desk-dock-front-band: 3px;
   --desk-dock-front-bg: linear-gradient(to bottom, rgb(255 255 255 / 0.55), rgb(255 255 255 / 0.15));
-  /* M15: Snow Leopard/Lion's separator is a column of 8 perspective dashes
+  /* M15: desk-dock.js now draws Snow Leopard's and Lion's separator by
+     projecting the shelf plane (perspectiveDivider); this hand-set column is
+     only the stand-in until that runs. Snow Leopard/Lion's separator is a
+     column of 8 perspective dashes
      painted only on the shelf -- narrower/shorter at the back, wider/taller
      toward the front, from 3px below the back edge to ~5px above the front
      line. Layered gradients on the separator element, positioned within the
@@ -238,7 +241,7 @@
   background: var(--desk-dock-label-bg);
 }
 
-.desk-dock-item:is(:hover, :focus-visible) > .desk-dock-label {
+.desk-dock-item:is(:hover, :focus-visible):not(.is-window-cards-anchor, .is-dock-menu-owner) > .desk-dock-label {
   visibility: visible;
 }
 
@@ -375,6 +378,50 @@
 
 .desk-dock-menu {
   position: fixed;
+  overflow: visible;
+}
+.desk-dock-menu.is-scrolling {
+  overflow-y: auto;
+}
+.desk-dock-submenu {
+  left: var(--desk-dock-submenu-left, 0);
+  top: var(--desk-dock-submenu-top, 0);
+}
+
+/* Snow Leopard's and Lion's Dock menus are dark and translucent with white
+   text, unlike their light menu-bar menus (Ars Technica's 10.6 review,
+   about rgb 40/33/41 over a purple desktop; Macworld's 10.7 capture, rgb 64
+   over a light window). Every other era's Dock menu is its ordinary menu. */
+body:is([data-theme="snow-leopard"], [data-theme="lion"]) .desk-dock-menu {
+  --menu-panel-bg: var(--desk-dock-dark-menu-bg, rgb(22 22 24 / 0.84));
+  /* The shared menu surface paints with the paper token in these eras. */
+  --paper: var(--menu-panel-bg);
+  --menu-panel-border: 1px solid rgb(255 255 255 / 0.28);
+  --menu-panel-radius: 5px;
+  --menu-item-bg: transparent;
+  --menu-item-fg: #ffffff;
+  --menu-item-disabled-fg: rgb(255 255 255 / 0.45);
+  --menu-panel-backdrop-filter: blur(12px);
+  color: #ffffff;
+}
+
+/* The Dock menu points at its icon (every capture, 10.2 to 26): a small
+   wedge of the menu's own material under the panel, centred on the icon. */
+.desk-dock-menu.has-dock-pointer::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: var(--desk-dock-menu-pointer-x, 50%);
+  width: 16px;
+  height: 8px;
+  margin-left: -8px;
+  background: inherit;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.desk-dock-menu .has-submenu::after {
+  content: "\25B8";
+  justify-self: end;
 }
 
 /* A Dock item being dragged to a new place in the row. */

@@ -53,6 +53,8 @@ const studioActionNames = new Set([
   "open-outline",
   "open-section-drafts",
   "open-review-desk",
+  "open-review-comments",
+  "open-review-compare",
   "open-style-sheet",
   "open-claim-check",
   "open-project-cd",

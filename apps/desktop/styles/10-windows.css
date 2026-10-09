@@ -4096,11 +4096,14 @@ dialog[data-enter-default-wired="true"] .btn.default:not([data-loading="true"]):
   box-shadow: var(--system-inset);
 }
 
+/* The section's name sits in a gap in the border by default; an era whose
+   group boxes carry their heading inside (macOS 11's preference panes) moves
+   it by token. */
 .control-section h3 {
-  margin: -11px 0 0;
-  padding: 0 7px;
+  margin: var(--control-section-title-margin, -11px 0 0);
+  padding: var(--control-section-title-padding, 0 7px);
   justify-self: start;
-  background: var(--paper);
+  background: var(--control-section-title-bg, var(--paper));
   font-family: var(--title-font);
   font-size: 13px;
   line-height: 1;
@@ -4263,7 +4266,7 @@ dialog[data-enter-default-wired="true"] .btn.default:not([data-loading="true"]):
   border-radius: var(--system-select-radius);
   background: var(--paper);
   color: var(--ink);
-  box-shadow: var(--system-inset);
+  box-shadow: var(--system-select-shadow, var(--system-inset));
   font: inherit;
   font-family: var(--ui-font);
   font-size: var(--system-control-size);
@@ -4291,14 +4294,28 @@ dialog[data-enter-default-wired="true"] .btn.default:not([data-loading="true"]):
 .system-select-button::after {
   content: "";
   position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-3px);
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 6px solid var(--ink);
+  /* The wedge by default; an era whose pop-up carries an arrow well (Yosemite's
+     blue chevrons) supplies the well's art and size and drops the wedge, by
+     token, without a rule of its own. */
+  right: var(--system-select-arrow-right, 8px);
+  top: var(--system-select-arrow-top, 50%);
+  transform: var(--system-select-arrow-transform, translateY(-3px));
+  width: var(--system-select-arrow-width, 0);
+  height: var(--system-select-arrow-height, 0);
+  border-left: var(--system-select-arrow-side, 5px solid transparent);
+  border-right: var(--system-select-arrow-side, 5px solid transparent);
+  border-top: var(--system-select-arrow-wedge, 6px solid var(--ink));
+  background: var(--system-select-arrow-bg, none) center / var(--system-select-arrow-width, 0) var(--system-select-arrow-height, 0) no-repeat;
+}
+
+/* An era can dress the arrows by state in the same box: macOS 11 keeps its
+   blue well for the key window and draws bare chevrons behind another window
+   or when the pop-up is disabled. Eras that set neither keep one art. */
+.window:not(.is-active) .system-select-button::after {
+  background-image: var(--system-select-arrow-inactive-bg, var(--system-select-arrow-bg, none));
+}
+.system-select-button:disabled::after {
+  background-image: var(--system-select-arrow-disabled-bg, var(--system-select-arrow-inactive-bg, var(--system-select-arrow-bg, none)));
 }
 
 /* Dimmed once, by ink — the same doctrine as .btn:disabled above. This rule
@@ -4688,9 +4705,14 @@ body.is-cloud-configured .cloud-state-panel {
   background: var(--control-footer-bg);
 }
 
-.control-checkbox-grid {
+.control-checkbox-grid,
+.control-radio-group {
   display: grid;
   gap: 5px;
+}
+
+.control-radio-group {
+  margin: 4px 0 6px;
 }
 
 .control-panel .field-row {
@@ -5085,6 +5107,72 @@ body.is-balloon-help [data-balloon-help] {
 .window-browse-popover:has(.window-browse-preview) {
   display: flex;
   flex-direction: column;
+}
+
+/* The Dock's window cards (WindowShade's window browsing): one era menu
+   surface holding a card per window, a picture and its title. One window is
+   one card, two or three stand in a row, four make a square, five or more
+   run three to a row. The picture keeps a window's shape, 16:10. */
+.window-browse-popover.window-cards {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  max-width: calc(100vw - 16px);
+}
+.window-cards-title {
+  padding: 0 4px;
+  font-weight: var(--system-emphasis-weight);
+  text-align: center;
+}
+.window-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--window-cards-columns, 1), 176px);
+  gap: 8px;
+}
+.window-cards[data-card-count="2"] { --window-cards-columns: 2; }
+.window-cards:is([data-card-count="3"], [data-card-count="5"]) { --window-cards-columns: 3; }
+.window-cards[data-card-count="4"] { --window-cards-columns: 2; }
+.window-browse-popover.window-cards .window-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: stretch;
+  gap: 4px;
+  min-width: 0;
+  padding: 4px;
+  border: 0;
+  border-radius: var(--menu-item-radius, 0);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+}
+.window-browse-popover.window-cards .window-card:is(:hover, :focus-visible) {
+  background: var(--menu-item-active-bg);
+  color: var(--menu-item-active-fg);
+}
+.window-card-picture {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+}
+.window-card-picture img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.window-card-title,
+.window-card-state {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.window-card-state {
+  font-size: 11px;
+  opacity: 0.75;
 }
 .window-browse-popover:has(.window-browse-preview) .window-browse-list {
   min-height: 40px;

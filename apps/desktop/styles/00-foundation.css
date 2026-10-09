@@ -508,9 +508,15 @@
   --control-motion-medium-in: 160ms;
   --control-motion-medium-out: 120ms;
   --control-motion-ease: cubic-bezier(0.2, 0, 0, 1);
-  --control-focus-outline: var(--system-border);
+  /* Keyboard focus is a dotted frame, as the era's own text fields draw it.
+     A solid line read as the default button's ring, so System 6 and 7 could
+     not tell Return's button from Tab's (2026-10-09 audit). */
+  --control-focus-outline: 1px dotted var(--ink);
   --control-focus-offset: 2px;
   --control-disabled-opacity: 0.56;
+  /* System 6 and 7 dim a disabled control by its ink and frame alone; the
+     diagonal hatch that stood in for a fill here read as "busy". */
+  --control-disabled-bg: var(--paper);
   --control-choice-hover-shadow: 0 0 0 1px var(--ink);
   /* Memory Cards uses color + object silhouette as the paired information.
      Both themes keep the same board geometry and state model. */
@@ -1477,14 +1483,9 @@
   --find-path-empty-note-padding: 10px 12px;
   --find-path-empty-note-border: 1px dotted var(--shade-dark);
   --find-path-empty-note-radius: 0;
-  --find-path-empty-note-bg:
-    repeating-linear-gradient(
-      -45deg,
-      var(--paper) 0,
-      var(--paper) 6px,
-      #f1f1f1 6px,
-      #f1f1f1 12px
-    );
+  /* Plain paper: a diagonal hatch reads as "busy" or "unavailable", and an
+     idle search pane is neither (2026-10-09 audit). */
+  --find-path-empty-note-bg: var(--paper);
   --find-path-empty-note-shadow: none;
   --find-path-empty-note-fg: var(--ink);
   --find-path-result-gap: 2px;
@@ -3430,6 +3431,53 @@ body[data-menu-bar-model="system-owned"] {
   height: var(--alert-icon-size, 32px);
   display: var(--alert-icon-display, block);
   background: var(--alert-icon-image, url("./assets/themes/classic/alert-caution-32.svg")) center / contain no-repeat;
+}
+
+/* The centred alert (alertLayout "centered", macOS 11 onward; 512 Pixels'
+   Empty Trash and Mail draft captures, and Ars Technica's Big Sur review:
+   "center-aligned text, and text and buttons that spread out vertically").
+   The icon sits on top, the message is centred and bold under it, and the
+   buttons are large and share the width; with three answers they stack, the
+   default first and Cancel last, set apart. A candidate for reading keeps the
+   ordinary left-aligned page. The era supplies the material. */
+body[data-alert-layout="centered"] .system-modal:not(.is-reading-candidate) {
+  width: var(--alert-centered-width, 260px);
+  padding: 20px 16px 16px;
+  text-align: center;
+}
+body[data-alert-layout="centered"] .system-modal:not(.is-reading-candidate) #system-modal-message {
+  margin: 0;
+  padding-left: 0;
+  font-weight: 700;
+}
+body[data-alert-layout="centered"] .system-modal:not(.is-reading-candidate) #system-modal-message::before {
+  position: static;
+  width: var(--alert-centered-icon-size, 64px);
+  height: var(--alert-centered-icon-size, 64px);
+  margin: 0 auto 12px;
+}
+body[data-alert-layout="centered"] .system-modal .button-row {
+  gap: 8px;
+}
+body[data-alert-layout="centered"] .system-modal .button-row > .btn {
+  flex: 1 1 0;
+  min-height: 28px;
+  margin: 0;
+}
+body[data-alert-layout="centered"] .system-modal .button-row > .btn:not(.default) {
+  border-color: var(--alert-button-border-color, var(--btn-border-color));
+  background: var(--alert-button-bg, var(--btn-bg));
+  box-shadow: var(--alert-button-shadow, var(--btn-shadow));
+}
+body[data-alert-layout="centered"] .system-modal .button-row:has(> #system-modal-no:not([hidden])) {
+  flex-direction: column;
+  align-items: stretch;
+}
+body[data-alert-layout="centered"] .system-modal .button-row:has(> #system-modal-no:not([hidden])) > #system-modal-yes { order: 1; }
+body[data-alert-layout="centered"] .system-modal .button-row:has(> #system-modal-no:not([hidden])) > #system-modal-no { order: 2; }
+body[data-alert-layout="centered"] .system-modal .button-row:has(> #system-modal-no:not([hidden])) > #system-modal-cancel {
+  order: 3;
+  margin-top: 8px;
 }
 
 .startup-settings-modal {

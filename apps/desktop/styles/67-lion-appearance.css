@@ -23,6 +23,9 @@
    - the Andromeda galaxy as the default desktop picture. */
 html[data-theme="lion"],
 body[data-theme="lion"] {
+  /* Lion's Dock menu: dark grey, nearly opaque (Macworld's 10.7 capture,
+     rgb 64 over a light window); 88-desk-dock.css draws it. */
+  --desk-dock-dark-menu-bg: rgb(48 48 50 / 0.92);
   /* Title bar, HIG p.142 / p.160 at 1x (512 Pixels agrees at 2x).
      The full 22pt stack lives in the gradient: #f1f1f1 highlight, silver
      ramp to #b7b7b7, #bcbcbc light band, then the #696969 baseline. A CSS

@@ -90,14 +90,29 @@
     return Boolean(win?.classList?.contains("is-minimized"));
   }
 
-  // Plain CSS fallback when WebGL / three.js is unavailable or motion is off.
+  // Plain CSS fallback when WebGL / three.js is unavailable. It flies from
+  // where the window was (the frame remembered before it was hidden; by the
+  // time this runs the window is gone and measures zero) to its own tile in
+  // the Dock, as the warp does, and only to the Trash if no tile is drawn.
   function flyToDockCss(win) {
     try {
       if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
-      const target = document.querySelector(".desk-dock [data-dock-key='trash']");
-      const from = win.getBoundingClientRect?.();
+      const from = {
+        left: Number(win.dataset.minimizeFxLeft), top: Number(win.dataset.minimizeFxTop),
+        width: Number(win.dataset.minimizeFxWidth), height: Number(win.dataset.minimizeFxHeight),
+      };
+      if (!(from.width > 0 && from.height > 0)) return;
+      requestAnimationFrame(() => requestAnimationFrame(() => flyGhost(win, from)));
+    } catch (error) { /* The picture is optional; the verb has already happened. */ }
+  }
+
+  function flyGhost(win, from) {
+    try {
+      const key = win.dataset.window || "";
+      const target = (key && document.querySelector(`.desk-dock-items [data-miniwindow="${CSS.escape(key)}"]`))
+        || document.querySelector(".desk-dock [data-dock-key='trash']");
       const to = target?.getBoundingClientRect?.();
-      if (!to || !from || from.width <= 0 || from.height <= 0) return;
+      if (!to) return;
       const ghost = document.createElement("div");
       ghost.className = "minimize-ghost";
       Object.assign(ghost.style, {
@@ -176,7 +191,10 @@
             "width", "height", "min-width", "min-height", "max-width", "max-height", "box-sizing",
             "flex-direction", "flex-wrap", "flex-grow", "flex-shrink", "flex-basis", "order",
             "align-items", "align-self", "align-content", "justify-content", "justify-items", "justify-self",
-            "gap", "row-gap", "column-gap", "grid-template-columns", "grid-template-rows", "grid-auto-flow",
+            // grid-template-areas too: Finder's toolbar windows place every bar
+            // by area name, and without the names the copy put them all past
+            // the grid's edge, so the picture came out as an empty frame.
+            "gap", "row-gap", "column-gap", "grid-template-columns", "grid-template-rows", "grid-template-areas", "grid-auto-flow",
             "grid-column", "grid-row", "grid-auto-columns", "grid-auto-rows",
             "background-color", "background-image", "background-size", "background-position", "background-repeat",
             "color", "border-top", "border-right", "border-bottom", "border-left", "border-radius",
@@ -234,8 +252,9 @@
         });
 
         clone.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+        inlineWindowAssets(source, clone).then(() => rasterize()).catch(() => finish(null));
+        function rasterize() {
         const serialized = new XMLSerializer().serializeToString(clone);
-        if (performance.now() > captureDeadline) return finish(null);
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${cw}" height="${ch}"><foreignObject x="0" y="0" width="${width}" height="${height}" transform="scale(${scale})"><div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;overflow:hidden;">${serialized}</div></foreignObject></svg>`;
         // A data: URL, never a blob: URL. Chromium loads an SVG <img> holding a
         // <foreignObject> from a blob URL as cross-origin data, so drawing it
@@ -272,10 +291,69 @@
         // settles, not a tight budget. The caller's warp race stays short.
         setTimeout(() => finish(null), 400);
         img.src = url;
+        }
       } catch (error) {
         finish(null);
       }
     });
+  }
+
+  // An SVG drawn as an image loads nothing from outside itself, so the icons
+  // and painted backgrounds of a window (its <image>/<img> art and url()
+  // backgrounds) came out blank in every picture: a Finder window was an empty
+  // frame. The copy carries them as data instead. Each file is read once per
+  // session and reused; only what is actually showing is carried, and a slow
+  // read is left out after 600 ms rather than holding the picture back.
+  const inlinedAssets = new Map();
+  function assetDataUrl(url) {
+    if (!inlinedAssets.has(url)) {
+      inlinedAssets.set(url, fetch(url)
+        .then((response) => (response.ok ? response.blob() : null))
+        .then((blob) => (blob ? new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : null);
+          reader.onerror = () => resolve(null);
+          reader.readAsDataURL(blob);
+        }) : null))
+        .catch(() => null));
+    }
+    return inlinedAssets.get(url);
+  }
+
+  function inlineWindowAssets(live, copy) {
+    const jobs = [];
+    const liveArt = live.querySelectorAll("image, img");
+    const copyArt = copy.querySelectorAll("image, img");
+    liveArt.forEach((node, index) => {
+      const target = copyArt[index];
+      const bounds = node.getBoundingClientRect();
+      if (!target || bounds.width <= 0 || bounds.height <= 0) return;
+      const raw = node.tagName === "IMG" ? node.currentSrc || node.src : node.getAttribute("href") || node.getAttribute("xlink:href");
+      if (!raw || raw.startsWith("data:")) return;
+      const url = new URL(raw, document.baseURI).href;
+      jobs.push(assetDataUrl(url).then((data) => {
+        if (!data) return;
+        if (target.tagName === "IMG") target.setAttribute("src", data);
+        else { target.setAttribute("href", data); target.removeAttribute("xlink:href"); }
+      }));
+    });
+    const painted = [copy, ...copy.querySelectorAll("*")];
+    for (const node of painted) {
+      const background = node.style?.getPropertyValue?.("background-image") || "";
+      if (!background.includes("url(")) continue;
+      const urls = [...background.matchAll(/url\("?([^")]+)"?\)/g)].map((match) => match[1]).filter((url) => !url.startsWith("data:"));
+      if (!urls.length) continue;
+      jobs.push(Promise.all(urls.map((url) => assetDataUrl(new URL(url, document.baseURI).href))).then((data) => {
+        let next = node.style.getPropertyValue("background-image");
+        urls.forEach((url, index) => { if (data[index]) next = next.split(url).join(data[index]); });
+        node.style.setProperty("background-image", next);
+      }));
+    }
+    if (!jobs.length) return Promise.resolve();
+    return Promise.race([
+      Promise.all(jobs),
+      new Promise((resolve) => setTimeout(resolve, 600)),
+    ]);
   }
 
   // Eager stand-in paint so the first minimize can hand the lazy three.js
@@ -851,6 +929,10 @@
     lamp.disabled = !isMinimizable(win);
     syncLampBalloon(lamp);
     lamp.addEventListener("click", () => minimize(win));
+    // Resting on the lamp is the intent: fetch the warp then, so the first
+    // minimize does not stall on loading it (WindowShade builds its panel on
+    // the first hover rather than at the end of the delay).
+    lamp.addEventListener("pointerenter", () => { ensureDockMinimizeFx(); }, { once: true });
     lamp.addEventListener("pointerdown", (event) => event.stopPropagation());
     // Next to Close in the DOM as well as on screen: the tab order through a
     // title bar should read the way the group is drawn, whichever order the bar
@@ -926,23 +1008,26 @@
     field.hidden = !(current === "nextstep" || theme?.hasCapability?.("dock") === true);
     const input = field.querySelector("#dock-visible");
     if (input) input.checked = dockVisible();
-    const span = field.querySelector("span");
-    if (span && typeof t === "function") span.textContent = t("show_dock");
+    const label = field.querySelector("label");
+    if (label && typeof t === "function") label.textContent = t("show_dock");
   }
 
   function injectDockVisibilityField() {
     if (document.querySelector("#dock-visible")) return;
     const anchor = document.querySelector(".liquid-tint-field");
     if (!anchor) return;
-    const field = document.createElement("label");
-    field.className = "control-field dock-visible-field";
+    // Same markup as the hand-written checkbox rows in index.html: a
+    // control-field label is the bold two-column pop-up grid.
+    const field = document.createElement("div");
+    field.className = "field-row dock-visible-field";
     const input = document.createElement("input");
     input.type = "checkbox";
     input.id = "dock-visible";
-    const span = document.createElement("span");
-    span.dataset.i18n = "show_dock";
-    span.textContent = typeof t === "function" ? t("show_dock") : "Show Dock";
-    field.append(input, span);
+    const label = document.createElement("label");
+    label.htmlFor = "dock-visible";
+    label.dataset.i18n = "show_dock";
+    label.textContent = typeof t === "function" ? t("show_dock") : "Show Dock";
+    field.append(input, label);
     input.addEventListener("change", () => setDockVisible(input.checked));
     anchor.after(field);
     syncDockVisibilityField();
@@ -956,23 +1041,24 @@
     field.hidden = !(theme?.getCurrentTheme?.() === "nextstep" || theme?.hasCapability?.("minimize-lamp") === true);
     const input = field.querySelector("#minimize-enabled");
     if (input) input.checked = minimizeEnabled();
-    const span = field.querySelector("span");
-    if (span && typeof t === "function") span.textContent = t("minimize_windows_setting");
+    const label = field.querySelector("label");
+    if (label && typeof t === "function") label.textContent = t("minimize_windows_setting");
   }
 
   function injectMinimizeField() {
     if (document.querySelector("#minimize-enabled")) return;
     const anchor = document.querySelector(".dock-visible-field") || document.querySelector(".liquid-tint-field");
     if (!anchor) return;
-    const field = document.createElement("label");
-    field.className = "control-field minimize-enabled-field";
+    const field = document.createElement("div");
+    field.className = "field-row minimize-enabled-field";
     const input = document.createElement("input");
     input.type = "checkbox";
     input.id = "minimize-enabled";
-    const span = document.createElement("span");
-    span.dataset.i18n = "minimize_windows_setting";
-    span.textContent = typeof t === "function" ? t("minimize_windows_setting") : "Allow minimizing windows";
-    field.append(input, span);
+    const label = document.createElement("label");
+    label.htmlFor = "minimize-enabled";
+    label.dataset.i18n = "minimize_windows_setting";
+    label.textContent = typeof t === "function" ? t("minimize_windows_setting") : "Allow minimizing windows";
+    field.append(input, label);
     input.addEventListener("change", () => setMinimizeEnabled(input.checked));
     anchor.after(field);
     syncMinimizeField();

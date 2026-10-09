@@ -784,17 +784,16 @@ body[data-lineage~="platinum"] .btn.default::before {
   pointer-events: none;
 }
 
-body[data-lineage~="platinum"] .theme-lab-focus-demo {
-  border: 1px solid #000000;
-  box-shadow: -1px -1px 0 #888888;
-  outline: 2px solid #6666cc;
-  outline-offset: 0;
+/* A held checkbox or radio darkens its well, as Mac OS 9 inks it
+   (classic-stylesheets macos9: #777 well, #444-#bbb radio). The Lab's
+   "Pressed" specimen poses the same state with .is-active. */
+body[data-lineage~="platinum"] input[type="checkbox"]:is(:active, .is-active):not(:disabled) {
+  background-color: var(--choice-pressed-bg);
+  box-shadow: var(--choice-pressed-shadow);
 }
 
-body[data-lineage~="platinum"] input[type="radio"]:checked:disabled {
-  background-color: #dddddd;
-  background-image: radial-gradient(circle, #888888 0 3px, transparent 3px);
-  background-size: 6px 6px;
+body[data-lineage~="platinum"] input[type="radio"]:is(:active, .is-active):not(:disabled) {
+  filter: var(--radio-pressed-filter);
 }
 
 /* Mac OS 9's list view carries its sort-direction button at the right end of

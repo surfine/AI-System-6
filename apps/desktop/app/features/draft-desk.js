@@ -339,7 +339,10 @@ async function persistQuickDraftWorkspace(projectId = activeProjectId) {
 // document yet answers with a blank record rather than null, so no caller has
 // to ask whether this draft has ever been developed.
 
-const DARKROOM_FIELDS = Object.freeze(["composition", "adjustmentLayers", "protectedRanges", "versions"]);
+// `adjustmentLayers` and `protectedRanges` stay accepted as patch fields: the
+// working shape the layer code speaks. splitDarkroomPatch files them under the
+// record's `settings`, which is the only place they are stored.
+const DARKROOM_FIELDS = Object.freeze(["composition", "adjustmentLayers", "protectedRanges", "versions", "settings", "layerCache"]);
 
 function darkroomDocumentId(record) {
   return String(normalizeQuickDraftRecord(record).workspace.projectDocId || "");
@@ -359,7 +362,7 @@ function darkroomTargetDocumentId(record, projectId = activeProjectId) {
 
 function darkroomOf(record = activeProjectQuickDraft({ create: false })?.record, projectId = activeProjectId) {
   const blank = window.AISystem6DarkroomRecord?.blankDarkroomRecord?.()
-    || { negative: "", negativeUpdatedAt: "", modelDelivered: "", modelDeliveredAt: "", composite: "", currentKey: "", generatedAt: "", adjustmentLayers: [], protectedRanges: [], versions: [] };
+    || { negative: "", negativeUpdatedAt: "", modelDelivered: "", modelDeliveredAt: "", composite: "", currentKey: "", generatedAt: "", settings: { layers: [], protected: [], disabled: false }, layerCache: [], versions: [] };
   const documentId = darkroomTargetDocumentId(record, projectId);
   if (documentId) return window.AISystem6DarkroomStore?.darkroomRecord?.(projectId, documentId) || blank;
   // No document yet, so the state is waiting in the pending bucket. Reading it
@@ -370,6 +373,13 @@ function darkroomOf(record = activeProjectQuickDraft({ create: false })?.record,
   return pending
     ? (window.AISystem6DarkroomRecord?.darkroomRecordFromWorkspace?.(pending) || blank)
     : blank;
+}
+
+// The stack as the layer code works on it ({ kind, enabled, strength, mask }),
+// derived from the record's settings. Reading goes through here so the stored
+// shape and the working shape never need to agree about a field name.
+function darkroomLayersOf(record = activeProjectQuickDraft({ create: false })?.record, projectId = activeProjectId) {
+  return window.AISystem6DarkroomRecord?.darkroomLayersFromSettings?.(darkroomOf(record, projectId).settings) || [];
 }
 
 // A patch aimed at the darkroom is split out of the workspace patch here, so a
@@ -383,15 +393,26 @@ function darkroomOf(record = activeProjectQuickDraft({ create: false })?.record,
 function splitDarkroomPatch(projectId, record, patchWorkspace = {}) {
   /** @type {Record<string, any>} */
   const workspacePatch = { ...patchWorkspace };
+  /** @type {Record<string, any>} */
   const darkroomPatch = {};
   let touched = false;
+  const recordTools = window.AISystem6DarkroomRecord;
+  // The two working-shape fields land in the settings; a patch may also carry
+  // whole settings, which they then refine. Whatever the settings hold that the
+  // patch does not mention (the bypass switch, a layer's other fields) stays.
+  let settings = null;
+  const settingsNow = () => settings || (settings = { ...(darkroomOf(record, projectId).settings || recordTools?.blankDarkroomSettings?.() || {}) });
   for (const field of DARKROOM_FIELDS) {
     if (!(field in workspacePatch)) continue;
     touched = true;
     if (field === "composition") Object.assign(darkroomPatch, workspacePatch.composition || {});
+    else if (field === "adjustmentLayers") settings = recordTools.darkroomSettingsFromLayers(workspacePatch.adjustmentLayers, settingsNow());
+    else if (field === "protectedRanges") settings = { ...settingsNow(), protected: workspacePatch.protectedRanges };
+    else if (field === "settings") settings = { ...settingsNow(), ...workspacePatch.settings };
     else darkroomPatch[field] = workspacePatch[field];
     delete workspacePatch[field];
   }
+  if (settings) darkroomPatch.settings = settings;
   if (touched) {
     const documentId = darkroomTargetDocumentId(record, projectId);
     if (documentId) {
@@ -539,6 +560,13 @@ function saveQuickDraft(patch = {}, { announce = false } = {}) {
 
 function setQuickDraftStatus(message, { live = true } = {}) {
   if (refs.status) refs.status.textContent = message || t("quick_draft_ready");
+  // The Quick Draft status bar is not on screen while the darkroom is the window
+  // in use, so what its verbs say (a layer saved, a lock kept, a model not
+  // connected) is also put on the darkroom's own line.
+  if (live && message && typeof lightroomIsMenuContext === "function" && lightroomIsMenuContext()) {
+    const own = document.getElementById("lightroom-status");
+    if (own) own.textContent = message;
+  }
   getWindow("quickDraft")?.classList.toggle("has-live-quick-draft-status", !!live);
 }
 
@@ -640,6 +668,14 @@ function syncQuickDraftAiAvailability() {
     const reason = !modelAvailable ? "quick_draft_connect_ai" : "quick_draft_needs_body";
     setQuickDraftCommandAvailability(actionButton(action), modelAvailable && state.hasBody, reason);
   });
+  // 「分镜图」 is split by a model (STORYBOARD-SPEC H4): greyed, with the
+  // reason, until one is connected.
+  const storyboardReady = typeof modelReadyForRequests === "function" ? modelReadyForRequests() : modelAvailable;
+  setQuickDraftCommandAvailability(
+    quickDraftQuery('[data-quick-draft-delivery="export-shot-list"]'),
+    storyboardReady && state.hasBody,
+    storyboardReady ? "quick_draft_needs_body" : "storyboard_needs_model"
+  );
   if (refs.saveButton) {
     const action = refs.saveButton.dataset.quickDraftPrimaryAction || "draft";
     const enabled = action === "deliver" || action === "continue"
@@ -695,11 +731,14 @@ function promoteWellTextToBody() {
 // Studio or an older draft off the Project Hard Disk has a negative and a
 // chain of its own, and the same instruments read them.
 //
-// A subject other than the writer's own draft is read-only here, and says so.
-// The views can be computed from any text, but writing back into a document
-// another application owns needs that application to hand over the pen, and
-// claiming an edit landed when it did not is the one thing this surface must
-// never do.
+// Whether the darkroom may also WRITE a subject is not a property of the
+// subject but of who holds the pen on it right now, and that is the writing
+// route's question: one editable owner per document, never two. The decision
+// table is pure (app/core/darkroom-develop.js, darkroomWriteDecision); this
+// section only gathers what it asks about. A subject nobody else is editing
+// can be developed; one another window holds is previewed, and the darkroom
+// says which window that is. Claiming an edit landed when it did not is the
+// one thing this surface must never do.
 let lightroomSubject = null;
 
 function lightroomSubjectDocumentId() {
@@ -718,8 +757,98 @@ function lightroomBodyText() {
   return String(lightroomSubjectFile()?.body || "");
 }
 
+// The darkroom is reading the draft Quick Draft is writing -- either because no
+// other subject was chosen, or because the subject chosen is that draft's own
+// document.
+function lightroomSubjectIsOwnDraft() {
+  if (!lightroomSubject) return true;
+  const draftDocument = darkroomDocumentId(activeProjectQuickDraft({ create: false })?.record);
+  return Boolean(draftDocument) && draftDocument === lightroomSubject.documentId;
+}
+
+// What the route says about a document that might be its manuscript. The
+// manuscript is the one document with a phase: Section Drafts hold the pen
+// while drafting, the manuscript once it owns the text.
+function lightroomRouteFacts(file, heldByTeachText) {
+  if (!file) return { isManuscript: false, phase: "" };
+  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  if (heldByTeachText) {
+    // The editor holding it answers by the route's own rule: a manuscript is
+    // locked to its phase only while it is the live projection of the outline.
+    // (A scratch file, or a manuscript nobody has outlined yet, is nobody's
+    // projection and is free.)
+    const projection = typeof isTeachTextManuscriptRole === "function" && isTeachTextManuscriptRole()
+      && typeof shouldSyncProjectOutlineAsManuscript === "function" && shouldSyncProjectOutlineAsManuscript();
+    return projection && typeof manuscriptPhase === "function"
+      ? { isManuscript: true, phase: manuscriptPhase() }
+      : { isManuscript: false, phase: "" };
+  }
+  // Not on screen in TeachText, so the editor's own state cannot answer: a
+  // manuscript tab that points at the file marks it as the route document, and
+  // its phase is read from the project and the file's label.
+  const isManuscript = (project?.documentTabs || []).some((tab) => (
+    tab?.app === "teachText"
+    && tab.role === "manuscript"
+    && (tab.state?.activeTextFileId === file.id || tab.backing?.id === file.id)
+  ));
+  if (!isManuscript) return { isManuscript: false, phase: "" };
+  const phase = String(file.label || "") === "final" ? "review" : project?.manuscriptOwnsDraft === true ? "manuscript" : "drafting";
+  return { isManuscript, phase };
+}
+
+function lightroomWriteInputs() {
+  const lease = window.AISystem6WriteLease;
+  const leaseMode = !lease ? "writer" : lease.isReadOnly?.() ? "readonly" : lease.canMutate?.() === false ? "handoff" : "writer";
+  const isDraft = lightroomSubjectIsOwnDraft();
+  const file = isDraft ? null : lightroomSubjectFile();
+  const documentId = lightroomSubjectDocumentId();
+  const heldByTeachText = Boolean(documentId && typeof activeTextFileId === "string" && activeTextFileId === documentId);
+  const route = lightroomRouteFacts(file, heldByTeachText);
+  return {
+    leaseMode,
+    found: isDraft || Boolean(file),
+    isDraft,
+    isRouteManuscript: route.isManuscript,
+    phase: route.phase,
+    openIn: heldByTeachText ? "teachText" : "",
+    routeStop: typeof currentWritingRouteStop === "function" ? currentWritingRouteStop() : "",
+  };
+}
+
+/** @returns {{ canWrite: boolean, owner: string, path: string, reason: string }} */
+function lightroomWriteDecision() {
+  const develop = window.AISystem6DarkroomDevelop;
+  // Without the table loaded, fall back to the old, safe answer: the writer's
+  // own draft is writable and nothing else is.
+  if (!develop?.darkroomWriteDecision) {
+    return lightroomSubject
+      ? { canWrite: false, owner: "none", path: "", reason: "missing" }
+      : { canWrite: true, owner: "quickDraft", path: "draft", reason: "" };
+  }
+  return develop.darkroomWriteDecision(lightroomWriteInputs());
+}
+
 function lightroomIsReadOnly() {
-  return Boolean(lightroomSubject);
+  return !lightroomWriteDecision().canWrite;
+}
+
+// A subject that is another document altogether. The content track, the listen
+// view and the sentence-level rewrites all write the Quick Draft's own draft,
+// so they stay off for such a subject however writable it is.
+function lightroomForeignSubject() {
+  return Boolean(lightroomSubject) && !lightroomSubjectIsOwnDraft();
+}
+
+// Why the darkroom cannot write, in the words of the window that can.
+function lightroomWriteNotice(decision = lightroomWriteDecision()) {
+  const keys = {
+    handoff: "lightroom_write_handoff",
+    missing: "lightroom_write_missing",
+    "route-owned": "lightroom_write_route_owned",
+    "open-in-owner": "lightroom_write_open_in_owner",
+    "route-unknown": "lightroom_write_route_unknown",
+  };
+  return t(keys[decision.reason] || "lightroom_read_only");
 }
 
 // The read-only subject greys the window's own write controls through the one
@@ -728,8 +857,32 @@ function lightroomIsReadOnly() {
 // 试看 deliberately carries no data-requires-write: it writes only the
 // darkroom record, which is this application's own state.
 window.AISystem6WriteLease?.registerReadOnlyRule?.((element) => (
-  lightroomIsReadOnly() && Boolean(element?.closest?.('[data-window="lightroom"]'))
+  // Only a control that writes the DOCUMENT follows the document's owner. The
+  // stack, the locks and the presets are the darkroom's own record, and a
+  // darkroom that could not set a layer could not preview what it may not write.
+  Boolean(element?.hasAttribute?.("data-writes-document"))
+  && Boolean(element?.closest?.('[data-window="lightroom"]'))
+  && lightroomIsReadOnly()
 ));
+
+// The decision depends on things that change without the darkroom being told --
+// the route moving a phase, a document being opened in TeachText, the lease
+// changing hands -- so it is re-read whenever the darkroom comes into view and
+// the grey follows it.
+function lightroomRefreshWrite() {
+  window.AISystem6WriteLease?.syncReadOnlySurface?.();
+  const status = document.getElementById("lightroom-status");
+  const decision = lightroomWriteDecision();
+  if (status && lightroomSubject) {
+    const notice = lightroomWriteNotice(decision);
+    if (!decision.canWrite) status.textContent = notice;
+    else if (status.textContent === t("lightroom_read_only") || status.dataset.writeNotice === "true") status.textContent = "";
+    status.dataset.writeNotice = decision.canWrite ? "" : "true";
+  }
+  renderLightroomSubject({ force: false });
+  if (typeof updateMenuState === "function") updateMenuState();
+  return decision;
+}
 
 // Open the darkroom on a document that Quick Draft is not writing.
 async function developDocument(documentId = "") {
@@ -737,7 +890,21 @@ async function developDocument(documentId = "") {
   if (!id || typeof chatFiles === "undefined") return false;
   const file = chatFiles.find((item) => item.id === id && item.type === "text");
   if (!file) return false;
-  lightroomSubject = { documentId: id, name: String(file.name || "") };
+  // Leaving the document that was on the bench keeps one automatic version of it.
+  if (typeof lightroomLeaveDocument === "function") lightroomLeaveDocument();
+  const draftDocument = darkroomDocumentId(activeProjectQuickDraft({ create: false })?.record);
+  // Whether the route holds this text, and in which phase, is the writing flow's
+  // to say; it loads on demand, and the decision needs it only for a document an
+  // editor is holding.
+  if (id === (typeof activeTextFileId === "string" ? activeTextFileId : "") && typeof ensureWritingFlowModule === "function") {
+    try {
+      await ensureWritingFlowModule();
+    } catch {
+      // An editor that cannot say is treated as not holding the route's text,
+      // which the write decision then answers conservatively.
+    }
+  }
+  lightroomSubject = id === draftDocument ? null : { documentId: id, name: String(file.name || "") };
   const store = window.AISystem6DarkroomStore;
   if (store) {
     try {
@@ -747,12 +914,12 @@ async function developDocument(documentId = "") {
       return false;
     }
   }
+  if (typeof lightroomSubjectChanged === "function") lightroomSubjectChanged();
   await openWindow("lightroom", { skipQuickDraftEntrypoint: true });
   renderLightroomSubject({ force: true });
-  const status = document.getElementById("lightroom-status");
-  if (status) status.textContent = t("lightroom_read_only");
-  window.AISystem6WriteLease?.syncReadOnlySurface?.();
-  setQuickDraftDisplayMode("grain");
+  lightroomRefreshWrite();
+  setQuickDraftDisplayMode(lightroomSubject ? "grain" : "read");
+  renderQuickDraft(activeProjectQuickDraft({ create: false })?.record);
   if (typeof updateMenuState === "function") updateMenuState();
   return true;
 }
@@ -764,6 +931,11 @@ async function developDocument(documentId = "") {
 // than in window-manager.js, which has no business knowing what a layer is.
 
 function hasQuickDraftSelection() {
+  // In the darkroom the selection is the pane's; Quick Draft's textarea is only
+  // asked while Quick Draft is the window in use.
+  if (typeof lightroomHasPaneSelection === "function" && typeof lightroomIsMenuContext === "function" && lightroomIsMenuContext()) {
+    return lightroomHasPaneSelection();
+  }
   const el = refs.draft;
   return Boolean(
     el
@@ -795,8 +967,10 @@ function lightroomVersionRows() {
 function lightroomDocumentRows() {
   if (typeof getProjectFiles !== "function") return [];
   const current = lightroomSubjectDocumentId();
+  // Receipts and prompt run records are files too, but they are the desk's own
+  // paperwork, not something the writer develops.
   return getProjectFiles()
-    .filter((file) => file.type === "text" && String(file.body || "").trim())
+    .filter((file) => file.type === "text" && !file.artifactKind && String(file.body || "").trim())
     .slice(0, 20)
     .map((file) => ({
       label: String(file.name || t("quick_draft_versions")),
@@ -805,9 +979,54 @@ function lightroomDocumentRows() {
     }));
 }
 
+// Rows that act on a version by name, a stored preset, a document to copy the
+// stack to, or a thing to compare against. Each is built from the state that
+// owns the object, and each action carries the object's id.
+function lightroomNameVersionRows() {
+  const record = activeProjectQuickDraft({ create: false })?.record;
+  const stampOf = (value) => (value
+    ? new Date(value).toLocaleTimeString(currentLanguage === "zh" ? "zh-CN" : "en-US", { hour: "2-digit", minute: "2-digit" })
+    : "");
+  return [...(darkroomOf(record).versions || [])].reverse().slice(0, 12).map((entry) => ({
+    label: [stampOf(entry.createdAt), String(entry.name || "") || textExcerpt(entry.body, 18) || t("quick_draft_versions")].filter(Boolean).join(" · "),
+    action: `lightroom-name-version:${entry.id}`,
+  }));
+}
+
+function lightroomPresetRows() {
+  return (window.AISystem6LightroomDevelop?.presets?.() || []).map((preset) => ({
+    label: preset.name,
+    action: `lightroom-preset-apply:${preset.id}`,
+  }));
+}
+
+function lightroomCopyRows() {
+  if (typeof getProjectFiles !== "function") return [];
+  const current = lightroomSubjectDocumentId();
+  return getProjectFiles()
+    .filter((file) => file.type === "text" && !file.artifactKind && file.id !== current)
+    .slice(0, 20)
+    .map((file) => ({ label: String(file.name || t("quick_draft_versions")), action: `lightroom-copy-settings:${file.id}` }));
+}
+
+function lightroomCompareRows() {
+  const api = window.AISystem6LightroomDevelop;
+  const current = api?.compareSources?.() || [];
+  const chosen = typeof lightroomCompare !== "undefined" && lightroomCompare.on ? lightroomCompare.sourceId : "";
+  return current.slice(0, 16).map((source) => ({
+    label: source.label,
+    action: `lightroom-compare-source:${source.id}`,
+    checked: source.id === chosen,
+  }));
+}
+
 function lightroomMenuRows(kind = "") {
   if (kind === "versions") return lightroomVersionRows();
   if (kind === "documents") return lightroomDocumentRows();
+  if (kind === "nameVersions") return lightroomNameVersionRows();
+  if (kind === "presets") return lightroomPresetRows();
+  if (kind === "copyTo") return lightroomCopyRows();
+  if (kind === "compareSources") return lightroomCompareRows();
   if (kind === "voices") return window.AISystem6QuickDraftListen?.voiceRows?.() || [];
   return [];
 }
@@ -830,7 +1049,12 @@ function syncLightroomMenuState() {
   const bar = document.querySelector(".menu-bar");
   if (!bar || !bar.querySelector('[data-menu-id="adjust"], [data-menu-id="listen"], [data-lightroom-rows]')) return;
   const record = activeProjectQuickDraft({ create: false })?.record;
-  const readOnly = lightroomIsReadOnly();
+  // Two different greys. The stack, the locks and the presets are the darkroom's
+  // own record and need only a text to read; the rows that write the Quick
+  // Draft's draft (the listening rewrites, the explanation lens) are off for any
+  // subject that is another document.
+  const idle = !String(lightroomBodyText() || "").trim();
+  const readOnly = lightroomForeignSubject();
   const zoom = typeof currentQuickDraftGrainZoom === "function" ? currentQuickDraftGrainZoom() : "grain";
   const lens = (typeof getActiveProject === "function" && getActiveProject()?.explanationLens) || {};
   const inspectorOpen = quickDraftPanelVisible("inspector");
@@ -851,27 +1075,47 @@ function syncLightroomMenuState() {
     if (button.dataset.lightroomLayerStrength) {
       paintLightroomMenuRow(button, {
         checked: Number(button.dataset.lightroomLayerStrength) === Number(layer?.strength ?? ADJUSTMENT_DEFAULT_STRENGTH),
-        disabled: readOnly || !enabled,
+        disabled: idle || !enabled,
       });
       return;
     }
     if (button.dataset.lightroomLayerRow === "enabled") {
-      paintLightroomMenuRow(button, { checked: enabled, disabled: readOnly });
+      paintLightroomMenuRow(button, { checked: enabled, disabled: idle });
       return;
     }
     if (button.dataset.lightroomLayerRow === "scope-selection") {
-      paintLightroomMenuRow(button, { disabled: readOnly || !hasQuickDraftSelection() });
+      paintLightroomMenuRow(button, { disabled: idle || !hasQuickDraftSelection() });
       return;
     }
     if (button.dataset.lightroomLayerRow === "scope-all") {
+      const scoped = Boolean((layer?.mask || []).length);
+      paintLightroomMenuRow(button, { checked: !scoped, disabled: idle || !scoped });
+      return;
+    }
+    if (button.dataset.lightroomLayerRow === "solo") {
       paintLightroomMenuRow(button, {
-        checked: !String(layer?.mask || "").trim(),
-        disabled: readOnly || !String(layer?.mask || "").trim(),
+        checked: typeof lightroomSoloKind !== "undefined" && lightroomSoloKind === button.dataset.lightroomLayer,
+        disabled: idle || !enabled,
       });
       return;
     }
-    paintLightroomMenuRow(button, { disabled: readOnly });
+    paintLightroomMenuRow(button, { disabled: idle });
   });
+  // The bypass, the compare switch and the compare modes: checkmarks that follow
+  // state the develop model keeps.
+  const bypassRow = /** @type {HTMLElement | null} */ (bar.querySelector('[data-lightroom-bypass-row]'));
+  if (bypassRow) paintLightroomMenuRow(bypassRow, { checked: darkroomOf(record).settings?.disabled !== true, disabled: idle });
+  const compareOn = typeof lightroomCompare !== "undefined" && lightroomCompare.on;
+  const compareRow = /** @type {HTMLElement | null} */ (bar.querySelector('[data-lightroom-compare-row="toggle"]'));
+  if (compareRow) paintLightroomMenuRow(compareRow, { checked: compareOn, disabled: idle });
+  /** @type {NodeListOf<HTMLElement>} */ (bar.querySelectorAll("[data-lightroom-compare-mode-row]")).forEach((button) => {
+    paintLightroomMenuRow(button, {
+      checked: typeof lightroomCompare !== "undefined" && lightroomCompare.mode === button.dataset.lightroomCompareModeRow,
+      disabled: idle,
+    });
+  });
+  const reshootRow = /** @type {HTMLElement | null} */ (bar.querySelector('[data-action="lightroom-reshoot"]'));
+  if (reshootRow) paintLightroomMenuRow(reshootRow, { disabled: idle || !darkroomOf(record).negativeUpdatedAt });
   const eli5Row = /** @type {HTMLElement | null} */ (bar.querySelector('[data-lightroom-eli5="enabled"]'));
   if (eli5Row) paintLightroomMenuRow(eli5Row, { checked: lens.enabled === true, disabled: readOnly });
   /** @type {NodeListOf<HTMLElement>} */ (bar.querySelectorAll("[data-lightroom-eli5-baseline]")).forEach((button) => {
@@ -937,6 +1181,7 @@ function clearLightroomSubject() {
   lightroomSubject = null;
   const status = document.getElementById("lightroom-status");
   if (status) status.textContent = "";
+  if (typeof lightroomSubjectChanged === "function") lightroomSubjectChanged();
   renderLightroomSubject({ force: true });
   window.AISystem6WriteLease?.syncReadOnlySurface?.();
   if (typeof updateMenuState === "function") updateMenuState();
@@ -1005,6 +1250,7 @@ function installLightroomWindow() {
                     </span>
                   </div>
             <div class="lightroom-view" id="lightroom-paper-view" role="tabpanel">
+                    <div id="lightroom-notices" class="lightroom-notices"></div>
                     <div id="quick-draft-preview" class="teachtext-preview is-hidden"></div>
             </div>
               <aside id="quick-draft-adjustments-drawer" class="draft-desk-inspector" aria-labelledby="quick-draft-adjustments-title">
@@ -1014,35 +1260,42 @@ function installLightroomWindow() {
                     <button class="btn mini-btn draft-desk-drawer-close" type="button" data-quick-draft-drawer-close="inspector" data-i18n="quick_draft_drawer_close" data-i18n-aria-label="quick_draft_close_adjustments">Close</button>
                   </div>
                   <span id="quick-draft-adjustment-strength-label" class="visually-hidden" data-i18n="quick_draft_adjustment_strength">Adjustment layer strength</span>
+                  <label class="draft-desk-layer-row draft-desk-bypass" data-balloon-help="lightroom_bypass_help"><input type="checkbox" data-requires-write data-lightroom-bypass checked /><span data-i18n="lightroom_adjustments_on">Adjustments on</span></label>
                   <div class="draft-desk-layer-stack">
                     <div class="draft-desk-layer" data-quick-draft-adjustment-layer="clean" data-balloon-help="quick_draft_layer_clean_desc">
                       <label class="draft-desk-layer-row"><input type="checkbox" data-requires-write data-quick-draft-adjustment-enabled="clean" /><i data-quick-draft-layer-order="clean" aria-hidden="true"></i><span id="quick-draft-layer-clean-label" data-i18n="quick_draft_adjustment_clean">Clean-up</span></label>
-                      <button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="clean" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button>
+                      <span class="draft-desk-layer-tools"><button class="btn mini-btn draft-desk-layer-solo" type="button" data-lightroom-layer-solo="clean" aria-pressed="false" data-i18n-aria-label="lightroom_layer_solo_aria" data-balloon-help="lightroom_layer_solo_help" data-i18n="lightroom_layer_solo">Δ</button><button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="clean" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button></span>
                     </div>
                     <div class="draft-desk-layer" data-quick-draft-adjustment-layer="mingming" data-balloon-help="quick_draft_layer_mingming_desc">
                       <label class="draft-desk-layer-row">
                         <input type="checkbox" data-requires-write data-quick-draft-adjustment-enabled="mingming" checked />
                         <i data-quick-draft-layer-order="mingming" aria-hidden="true"></i>
-                        <span id="quick-draft-layer-mingming-label" data-i18n="quick_draft_chip_mingming">Mingming's Eye</span>
+                        <span id="quick-draft-layer-mingming-label" data-i18n="quick_draft_chip_mingming">Reader's Eye</span>
                       </label>
                       <span class="select-wrap-inline"><select data-requires-write data-quick-draft-adjustment-strength="mingming" aria-labelledby="quick-draft-layer-mingming-label quick-draft-adjustment-strength-label"><option value="25" data-i18n="quick_draft_adjustment_light">Light</option><option value="50" selected data-i18n="quick_draft_adjustment_standard">Normal</option><option value="75" data-i18n="quick_draft_adjustment_heavy">Strong</option></select></span>
-                      <button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="mingming" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button>
+                      <span class="draft-desk-layer-tools"><button class="btn mini-btn draft-desk-layer-solo" type="button" data-lightroom-layer-solo="mingming" aria-pressed="false" data-i18n-aria-label="lightroom_layer_solo_aria" data-balloon-help="lightroom_layer_solo_help" data-i18n="lightroom_layer_solo">Δ</button><button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="mingming" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button></span>
                     </div>
                     <div class="draft-desk-layer" data-quick-draft-adjustment-layer="luoluo" data-balloon-help="quick_draft_layer_luoluo_desc">
-                      <label class="draft-desk-layer-row"><input type="checkbox" data-requires-write data-quick-draft-adjustment-enabled="luoluo" checked /><i data-quick-draft-layer-order="luoluo" aria-hidden="true"></i><span id="quick-draft-layer-luoluo-label" data-i18n="quick_draft_chip_luoluo">Luoluo Receive</span></label>
+                      <label class="draft-desk-layer-row"><input type="checkbox" data-requires-write data-quick-draft-adjustment-enabled="luoluo" checked /><i data-quick-draft-layer-order="luoluo" aria-hidden="true"></i><span id="quick-draft-layer-luoluo-label" data-i18n="quick_draft_chip_luoluo">Listener's Ear</span></label>
                       <span class="select-wrap-inline"><select data-requires-write data-quick-draft-adjustment-strength="luoluo" aria-labelledby="quick-draft-layer-luoluo-label quick-draft-adjustment-strength-label"><option value="25" data-i18n="quick_draft_adjustment_light">Light</option><option value="50" selected data-i18n="quick_draft_adjustment_standard">Normal</option><option value="75" data-i18n="quick_draft_adjustment_heavy">Strong</option></select></span>
-                      <button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="luoluo" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button>
+                      <span class="draft-desk-layer-tools"><button class="btn mini-btn draft-desk-layer-solo" type="button" data-lightroom-layer-solo="luoluo" aria-pressed="false" data-i18n-aria-label="lightroom_layer_solo_aria" data-balloon-help="lightroom_layer_solo_help" data-i18n="lightroom_layer_solo">Δ</button><button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="luoluo" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button></span>
                     </div>
                     <div class="draft-desk-layer" data-quick-draft-adjustment-layer="hkrr" data-balloon-help="quick_draft_layer_hkrr_desc">
                       <label class="draft-desk-layer-row"><input type="checkbox" data-requires-write data-quick-draft-adjustment-enabled="hkrr" checked /><i data-quick-draft-layer-order="hkrr" aria-hidden="true"></i><span id="quick-draft-layer-hkrr-label" data-i18n="quick_draft_chip_hkrr">HKRR Lift</span></label>
                       <span class="select-wrap-inline"><select data-requires-write data-quick-draft-adjustment-strength="hkrr" aria-labelledby="quick-draft-layer-hkrr-label quick-draft-adjustment-strength-label"><option value="25" data-i18n="quick_draft_adjustment_light">Light</option><option value="50" selected data-i18n="quick_draft_adjustment_standard">Normal</option><option value="75" data-i18n="quick_draft_adjustment_heavy">Strong</option></select></span>
-                      <button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="hkrr" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button>
+                      <span class="draft-desk-layer-tools"><button class="btn mini-btn draft-desk-layer-solo" type="button" data-lightroom-layer-solo="hkrr" aria-pressed="false" data-i18n-aria-label="lightroom_layer_solo_aria" data-balloon-help="lightroom_layer_solo_help" data-i18n="lightroom_layer_solo">Δ</button><button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="hkrr" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button></span>
                     </div>
                     <div class="draft-desk-layer" data-quick-draft-adjustment-layer="density" data-balloon-help="quick_draft_layer_density_desc">
                       <label class="draft-desk-layer-row"><input type="checkbox" data-requires-write data-quick-draft-adjustment-enabled="density" checked /><i data-quick-draft-layer-order="density" aria-hidden="true"></i><span id="quick-draft-layer-density-label" data-i18n="quick_draft_adjustment_density">Density</span></label>
                       <span class="select-wrap-inline"><select data-requires-write data-quick-draft-adjustment-strength="density" aria-labelledby="quick-draft-layer-density-label quick-draft-adjustment-strength-label"><option value="25" data-i18n="quick_draft_adjustment_density_light">Less</option><option value="50" selected data-i18n="quick_draft_adjustment_density_standard">Normal</option><option value="75" data-i18n="quick_draft_adjustment_density_heavy">More</option></select></span>
-                      <button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="density" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button>
+                      <span class="draft-desk-layer-tools"><button class="btn mini-btn draft-desk-layer-solo" type="button" data-lightroom-layer-solo="density" aria-pressed="false" data-i18n-aria-label="lightroom_layer_solo_aria" data-balloon-help="lightroom_layer_solo_help" data-i18n="lightroom_layer_solo">Δ</button><button class="btn mini-btn draft-desk-layer-disclosure" type="button" data-quick-draft-layer-disclosure="density" aria-expanded="false" aria-controls="quick-draft-layer-detail" data-i18n-aria-label="quick_draft_scope_edit">▶</button></span>
                     </div>
+                  </div>
+                  <div class="draft-desk-presets" data-balloon-help="lightroom_presets_help">
+                    <span class="select-wrap-inline"><select data-lightroom-preset-select data-i18n-aria-label="lightroom_preset_label"><option value="" data-i18n="lightroom_preset_none">No presets yet</option></select></span>
+                    <button class="btn mini-btn" type="button" data-requires-write data-lightroom-preset-apply data-i18n="lightroom_preset_apply">Apply</button>
+                    <button class="btn mini-btn" type="button" data-lightroom-preset-save data-i18n="lightroom_preset_save">Save as…</button>
+                    <button class="btn mini-btn" type="button" data-requires-write data-lightroom-preset-delete data-i18n="lightroom_preset_delete">Remove</button>
                   </div>
                   <div class="draft-desk-layer-scope-row">
                     <span data-quick-draft-active-layer-scope></span>
@@ -1093,13 +1346,14 @@ function installLightroomWindow() {
                 <button class="view-switch-option" type="button" role="tab" id="quick-draft-toggle-listen" data-quick-draft-display="listen" aria-controls="lightroom-paper-view" aria-selected="false" data-i18n="quick_draft_listen" data-balloon-help="quick_draft_listen_balloon">Listen</button>
               </span>
               <button class="btn draft-desk-lightroom-stack" type="button" data-action="lightroom-toggle-inspector" data-i18n="quick_draft_adjustments_label">Adjustments</button>
+              <button class="btn" type="button" data-lightroom-compare-toggle aria-pressed="false" data-balloon-help="lightroom_compare_help" data-i18n="lightroom_compare">Compare</button>
               <span class="draft-desk-action-gap"></span>
               <button class="btn door" id="quick-draft-display-body" type="button" data-quick-draft-display="body" data-i18n="lightroom_back_to_draft" data-balloon-help="balloon_lightroom_back">Back to the Draft</button>
               <!-- The darkroom's own two verbs sit in its footer, on every screen.
                    They lived only in a drawer row the desktop never showed, so
                    the window offered 23 controls and not one of them developed. -->
               <button type="button" class="btn" data-quick-draft-adjustment-apply data-i18n="quick_draft_preview_adjustments" data-balloon-help="balloon_qd_apply">Preview</button>
-              <button type="button" class="btn" data-requires-write data-quick-draft-adjustment-develop data-i18n="quick_draft_develop" data-balloon-help="balloon_qd_develop">Develop</button>
+              <button type="button" class="btn" data-requires-write data-writes-document data-quick-draft-adjustment-develop data-i18n="quick_draft_develop" data-balloon-help="balloon_qd_develop">Develop</button>
           </footer>`,
   });
 }
@@ -1113,6 +1367,9 @@ async function openLightroomWindow() {
   renderLightroomSubject({ force: true });
   renderQuickDraft(activeProjectQuickDraft({ create: false })?.record);
   if (typeof syncQuickDraftTrackToggle === "function") syncQuickDraftTrackToggle();
+  // The pen can have moved while the darkroom was away.
+  if (typeof lightroomRefreshWrite === "function") lightroomRefreshWrite();
+  if (typeof lightroomRefreshChrome === "function") lightroomRefreshChrome();
 }
 
 /**
@@ -1154,8 +1411,12 @@ function renderLightroomSubject({ force = false } = {}) {
   // name. The draft's title must never overwrite it — that is how the status
   // bar came to claim one document while the views showed another.
   if (lightroomSubject) {
-    subject.textContent = [String(lightroomSubject.name || ""), t("lightroom_read_only_badge")]
-      .filter(Boolean).join(" · ");
+    // The name, and the window the darkroom writes it through -- or, when it
+    // may not write, the window that holds the pen.
+    const decision = lightroomWriteDecision();
+    const owner = t(`lightroom_owner_${decision.owner}`);
+    const badge = decision.canWrite ? t("lightroom_writes_through", owner) : t("lightroom_held_by", owner);
+    subject.textContent = [String(lightroomSubject.name || ""), badge].filter(Boolean).join(" · ");
     return;
   }
   const record = activeProjectQuickDraft({ create: false })?.record;
@@ -1218,13 +1479,20 @@ function applyQuickDraftPaperSurface() {
   getWindow("quickDraft")?.classList.toggle("is-quick-draft-empty", next === "intake");
   if (refs.intakeWell) refs.intakeWell.hidden = next !== "intake";
   if (refs.bodySurface) refs.bodySurface.hidden = next !== "editor";
-  // The darkroom is worth nothing until a draft exists, so it must not stand
-  // between the writer and the first one. Before there is a body it is not
-  // dimmed or disabled — it is not there, and a new writer's first screen is
-  // the material and one action rather than four adjustment layers they cannot
-  // use yet.
+  // The darkroom's adjustments are shown even when there is nothing to adjust.
+  // They used to vanish with an empty body, which made the panel a thing that
+  // appears and disappears under the writer; now it stays where it is, greyed
+  // and inert, until there is text to develop. (The writer's first screen in
+  // Quick Draft is unaffected: the panel lives in the darkroom's own window.)
   const inspector = document.getElementById("quick-draft-adjustments-drawer");
-  if (inspector) inspector.hidden = next !== "editor";
+  if (inspector) {
+    const idle = !String(lightroomBodyText() || "").trim();
+    inspector.hidden = false;
+    inspector.classList.toggle("is-idle", idle);
+    inspector.inert = idle;
+    if (idle) inspector.setAttribute("aria-disabled", "true");
+    else inspector.removeAttribute("aria-disabled");
+  }
   const drawerSwitch = quickDraftQuery(".draft-desk-drawer-switch");
   if (drawerSwitch) drawerSwitch.hidden = next !== "editor";
   if (next === "intake") closeQuickDraftDrawer({ restoreFocus: false });
@@ -1301,12 +1569,14 @@ function syncQuickDraftPrimaryAction(record = activeProjectQuickDraft({ create: 
 function updateQuickDraftShellState(record = activeProjectQuickDraft({ create: false })?.record) {
   const workspace = normalizeQuickDraftRecord(record).workspace;
   if (refs.protectState) {
-    const lines = (darkroomOf(record).protectedRanges || [])
+    const lines = (darkroomOf(record).settings?.protected || [])
       .reduce((total, range) => total + Math.max(0, (range.end - range.start) + 1), 0);
     refs.protectState.textContent = lines ? t("quick_draft_protect_state", lines) : "";
   }
   if (refs.stackState) {
-    const enabled = (darkroomOf(record).adjustmentLayers || []).filter((layer) => layer.enabled).length;
+    const enabled = typeof enabledAdjustmentLayers === "function"
+      ? enabledAdjustmentLayers(record).length
+      : darkroomLayersOf(record).filter((layer) => layer.enabled).length;
     refs.stackState.textContent = enabled ? t("quick_draft_stack_state", enabled) : "";
   }
 }
@@ -1481,30 +1751,45 @@ function quickDraftUsesDrawerLayout() {
 // toggle below both read this SAME function, so "Show Adjustments" cannot
 // light up on one condition and refuse on another again.
 function quickDraftPanelActionable(panel = "shelf") {
+  // The darkroom's stack can always be shown or hidden: an empty darkroom shows
+  // it greyed, so there is nothing to wait for.
+  if (panel === "inspector") return Boolean(document.querySelector(".lightroom-layout"));
   if (!refs.form) return false;
-  if (panel === "inspector" && lightroomSubject) {
-    return Boolean(String(lightroomBodyText() || "").trim());
-  }
   return !refs.form.classList.contains("is-empty-draft");
 }
 
 function quickDraftPanelVisible(panel = "shelf") {
   const target = panel === "inspector" ? "inspector" : "shelf";
   if (!quickDraftPanelActionable(target)) return false;
-  if (target === "inspector" && lightroomUsesStackDrawer()) {
-    return Boolean(document.querySelector(".lightroom-layout")?.classList.contains("is-stack-open"));
+  if (target === "inspector") {
+    // The stack lives in the darkroom's window, so its state is the darkroom's
+    // layout class -- never Quick Draft's form, which the stack is not inside.
+    const layout = document.querySelector(".lightroom-layout");
+    if (!layout) return false;
+    return lightroomUsesStackDrawer()
+      ? layout.classList.contains("is-stack-open")
+      : !layout.classList.contains("is-inspector-hidden");
   }
   if (quickDraftUsesDrawerLayout()) {
-    return refs.form.classList.contains(target === "inspector" ? "is-inspector-open" : "is-shelf-open");
+    return refs.form.classList.contains("is-shelf-open");
   }
-  return !refs.form.classList.contains(target === "inspector" ? "is-inspector-hidden" : "is-shelf-hidden");
+  return !refs.form.classList.contains("is-shelf-hidden");
 }
 
 function toggleQuickDraftPanel(panel = "shelf") {
   const target = panel === "inspector" ? "inspector" : "shelf";
   if (!quickDraftPanelActionable(target)) return false;
-  if (target === "inspector" && lightroomUsesStackDrawer()) return toggleLightroomStack();
-  const hiddenClass = target === "inspector" ? "is-inspector-hidden" : "is-shelf-hidden";
+  if (target === "inspector") {
+    // Hide Adjustments used to flip a class on Quick Draft's form and leave the
+    // stack standing in the other window: a menu row that did nothing. On a
+    // phone the stack is a drawer; on a desk it is a column that folds away.
+    if (lightroomUsesStackDrawer()) return toggleLightroomStack();
+    const layout = document.querySelector(".lightroom-layout");
+    const hidden = layout?.classList.toggle("is-inspector-hidden");
+    if (typeof updateMenuState === "function") updateMenuState();
+    return hidden === false;
+  }
+  const hiddenClass = "is-shelf-hidden";
   if (quickDraftUsesDrawerLayout()) {
     refs.form.classList.remove(hiddenClass);
     const open = quickDraftPanelVisible(target);
@@ -1585,6 +1870,7 @@ function renderQuickDraft(record = activeProjectQuickDraft({ create: false })?.r
   renderAdjustmentLayers(source);
   renderProtectedRangeControls(source);
   renderQuickDraftVersions(source);
+  if (typeof lightroomRefreshChrome === "function") lightroomRefreshChrome();
   syncQuickDraftPaperFromState();
   updateQuickDraftShellState(source);
   syncQuickDraftControlAvailability(hasBody);
@@ -1957,7 +2243,11 @@ function bind() {
       if (typeof updateMenuState === "function") updateMenuState();
     });
   });
-  refs.form.addEventListener("change", async (event) => {
+  // The stack, the strength stops, the scope and the locks are controls of the
+  // darkroom's own window, which is not inside this form. They were bound to the
+  // form alone, so a layer switched in the darkroom changed a checkbox and
+  // nothing else; both roots take the one handler now.
+  const onQuickDraftChange = async (event) => {
     const enabledToggle = event.target?.closest?.("[data-quick-draft-adjustment-enabled]");
     if (enabledToggle) {
       const kind = enabledToggle.dataset.quickDraftAdjustmentEnabled;
@@ -1985,19 +2275,22 @@ function bind() {
     if (protectedInput) {
       const next = normalizeAdjustmentLayerMask(protectedInput.value);
       const previousRecord = activeProjectQuickDraft({ create: false })?.record;
+      const stepBefore = lightroomStepBefore();
       const committed = await commitQuickDraft({ workspace: { protectedRanges: next } });
       if (!committed.ok) {
         renderQuickDraft(previousRecord);
         setQuickDraftStatus(t("quick_draft_save_failed"));
         return;
       }
+      lightroomNoteStep("edit_step_protect", stepBefore);
       const record = committed.record;
       renderProtectedRangeControls(record);
       updateQuickDraftShellState(record);
       refreshQuickDraftPreviewIfOpen();
       setQuickDraftStatus(t("quick_draft_protect_saved"));
     }
-  });
+  };
+  [refs.form, getWindow("lightroom")].forEach((root) => root?.addEventListener("change", onQuickDraftChange));
   refs.format?.addEventListener("change", () => {
     syncQuickDraftTemplateUi();
     refreshQuickDraftSelectControls();
@@ -2055,8 +2348,8 @@ function bind() {
   refs.saveButton?.addEventListener("click", () => {
     const action = refs.saveButton.dataset.quickDraftPrimaryAction || "draft";
     if (action === "develop") {
-      const ready = currentCompositeState(activeProjectQuickDraft({ create: false })?.record).ready;
-      if (ready) developAdjustmentLayers();
+      const proof = currentCompositeState(activeProjectQuickDraft({ create: false })?.record);
+      if (proof.ready && proof.proof) developAdjustmentLayers();
       else void applyAdjustmentLayers().then((applied) => applied && developAdjustmentLayers());
       return;
     }
@@ -2096,39 +2389,6 @@ function bind() {
       const mode = button.dataset.quickDraftDisplay || "body";
       setQuickDraftDisplayMode(mode);
     });
-  });
-  // 兴趣｜内容｜并排, 试看 and 冲洗 sit on the lightroom window. The form
-  // listener below never sees them, so a click there used to do nothing.
-  getWindow("lightroom")?.addEventListener("click", async (event) => {
-    const target = event.target instanceof Element ? event.target : null;
-    if (!target) return;
-    const trackButton = target.closest("[data-quick-draft-track]");
-    if (trackButton) {
-      closeQuickDraftMenus();
-      if (typeof setQuickDraftTrack === "function") {
-        await setQuickDraftTrack(trackButton.getAttribute("data-quick-draft-track") || "interest");
-      }
-      return;
-    }
-    const applyButton = target.closest("[data-quick-draft-adjustment-apply]");
-    if (applyButton) {
-      closeQuickDraftMenus();
-      if (typeof quickDraftTrackOwnsPaper === "function" && quickDraftTrackOwnsPaper()) {
-        await generateQuickDraftTraffic({ force: true });
-        return;
-      }
-      await applyAdjustmentLayers();
-      return;
-    }
-    const developButton = target.closest("[data-quick-draft-adjustment-develop]");
-    if (developButton) {
-      closeQuickDraftMenus();
-      if (typeof quickDraftTrackShouldDevelop === "function" && quickDraftTrackShouldDevelop()) {
-        await developQuickDraftTraffic();
-        return;
-      }
-      await developAdjustmentLayers();
-    }
   });
   document.querySelectorAll("[data-quick-draft-drawer]").forEach((element) => {
     const button = /** @type {HTMLElement} */ (element);
@@ -2198,7 +2458,10 @@ function bind() {
     const target = /** @type {Element | null} */ (event.target);
     if (!target?.closest(".draft-desk-command-menu")) closeQuickDraftMenus();
   });
-  refs.form.addEventListener("click", async (event) => {
+  // One click handler for both windows: 兴趣｜内容｜并排, 试看 and 冲洗, the
+  // layer rows, the grain zoom and the version frames all sit in 文字亮室,
+  // outside the form, and a listener on the form alone never saw them.
+  const onQuickDraftClick = async (event) => {
     const layerDisclosure = event.target.closest("[data-quick-draft-layer-disclosure]");
     if (layerDisclosure) {
       toggleQuickDraftLayerDisclosure(layerDisclosure.dataset.quickDraftLayerDisclosure || "");
@@ -2305,21 +2568,13 @@ function bind() {
     const applyButton = event.target.closest("[data-quick-draft-adjustment-apply]");
     if (applyButton) {
       closeQuickDraftMenus();
-      if (typeof quickDraftTrackOwnsPaper === "function" && quickDraftTrackOwnsPaper()) {
-        await generateQuickDraftTraffic({ force: true });
-        return;
-      }
-      await applyAdjustmentLayers();
+      await lightroomPreview();
       return;
     }
     const developButton = event.target.closest("[data-quick-draft-adjustment-develop]");
     if (developButton) {
       closeQuickDraftMenus();
-      if (typeof quickDraftTrackShouldDevelop === "function" && quickDraftTrackShouldDevelop()) {
-        await developQuickDraftTraffic();
-        return;
-      }
-      await developAdjustmentLayers();
+      await lightroomDevelop();
       return;
     }
     const quickDraftAction = event.target.closest("[data-quick-draft-chat-action]");
@@ -2327,7 +2582,8 @@ function bind() {
       closeQuickDraftMenus();
       await runClioTalkAction(quickDraftAction.dataset.quickDraftChatAction || "", { announceUser: true });
     }
-  });
+  };
+  [refs.form, getWindow("lightroom")].forEach((root) => root?.addEventListener("click", onQuickDraftClick));
   document.addEventListener("keydown", (event) => {
     const quickDraftWindow = getWindow("quickDraft");
     const quickDraftActive = Boolean(
@@ -2458,8 +2714,16 @@ async function ensureDarkroomReady(projectId = activeProjectId) {
       return false;
     }
     await store.loadDarkroomRecord(projectId, documentId);
-    store.setDarkroomRecord(projectId, documentId, plan.darkroomRecordFromWorkspace(pending));
-    await store.persistDarkroomRecord(projectId, documentId);
+    // The bucket fills a record that has nothing yet; it never replaces one that
+    // does. A saved Quick Draft record keeps two aliases of the darkroom (the
+    // negative and its stamp), and every load rebuilds a bucket from them: the
+    // old drain took that bucket for a record from before the move and wrote it
+    // over the document's real record, so the stack, the locks and the versions
+    // went with every reload and only the negative came back.
+    if (!plan.darkroomRecordHasState(store.darkroomRecord(projectId, documentId))) {
+      store.setDarkroomRecord(projectId, documentId, plan.darkroomRecordFromWorkspace(pending));
+      await store.persistDarkroomRecord(projectId, documentId);
+    }
     const next = { ...slot.record.workspace };
     delete next.pendingDarkroom;
     slot.project.quickDraft = { ...slot.record, workspace: next };

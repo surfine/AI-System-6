@@ -436,17 +436,17 @@ body[data-lineage~="platinum"] {
   --theme-lab-checkbox-disabled-mark-color: #888888;
   --theme-lab-checkbox-disabled-mark-shadow: none;
   --theme-lab-checkbox-disabled-mark-filter: grayscale(1) opacity(0.55);
-  --theme-lab-checkbox-active-bg: #777777;
-  --theme-lab-checkbox-active-shadow: inset 1px 1px 0 #555555, inset -1px -1px 0 #999999;
+  /* Held checkbox and radio, recorded from classic-stylesheets macos9. Real
+     controls wear them (65-platinum-utility.css), so the Lab's specimen needs no
+     darkening of its own. */
+  --choice-pressed-bg: #777777;
+  --choice-pressed-shadow: inset 1px 1px 0 #555555, inset -1px -1px 0 #999999;
+  --radio-pressed-filter: brightness(0.55);
+  --theme-lab-choice-active-filter: none;
   --theme-lab-radio-checked-bg: var(--radio-checked-image);
   --theme-lab-radio-checked-shadow: none;
   --theme-lab-radio-dot-content: none;
   --theme-lab-radio-dot-bg: #000000;
-  --theme-lab-radio-disabled-dot-bg: #888888;
-  --theme-lab-radio-active-bg: linear-gradient(to bottom right, #444444, #bbbbbb);
-  --theme-lab-radio-active-shadow: inset 1px 1px 0 #444444;
-  --theme-lab-radio-disabled-bg: #dddddd;
-  --theme-lab-radio-disabled-image: none;
   --theme-lab-form-gap: 6px 12px;
   --theme-lab-form-label-columns: minmax(82px, max-content) minmax(0, 1fr);
   --theme-lab-form-label-align: right;
@@ -1413,6 +1413,19 @@ body[data-theme="yosemite"] {
   --control-focus-outline: 3px solid rgba(78, 158, 255, 0.52);
   --control-focus-offset: 1px;
   --control-disabled-bg: #f3f3f3;
+  /* Disabled controls lighten their edge too; the shared default is the dark
+     shade, which made the disabled pop-up heavier than the live one. */
+  --control-disabled-border: rgba(0, 0, 0, 0.12);
+  /* The pop-up's blue arrow well (10.10 General preferences capture): a 16x20
+     well flush to the button's right edge with up and down chevrons. */
+  --system-select-arrow-bg: url("./assets/themes/yosemite/popup-arrows.svg");
+  --system-select-arrow-width: 16px;
+  --system-select-arrow-height: 20px;
+  --system-select-arrow-right: 0;
+  --system-select-arrow-top: 50%;
+  --system-select-arrow-transform: translateY(-50%);
+  --system-select-arrow-side: 0 solid transparent;
+  --system-select-arrow-wedge: 0 solid transparent;
   --control-disabled-field-bg: #f1f1f1;
   --system-border: 1px solid rgba(0, 0, 0, 0.16);
   --system-inset: inset 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -1719,6 +1732,32 @@ body[data-lineage~="platinum"] {
   font-variation-settings: "wdth" 113;
 }
 
+/* System 6 and System 7 draw a scroll arrow as an outline with a stem, not a
+   filled wedge: system.css-reference/icon/scrollbar-up.svg (a System 6
+   reconstruction) and the System 7.5.3 canvas read in
+   internal/evidence/drafts/system-7-reference ("hollow line" arrows). Platinum
+   and Drawing Board keep the filled Mac OS 9 wedge, so the family is narrowed
+   to the two monochrome-lineage eras. Drawn from 1px ink rects so the empty,
+   inactive and pressed states keep recolouring it through the arrow ink. */
+body[data-theme-family="classic"]:not([data-lineage~="platinum"]) {
+  /* A System 6 pop-up is a square white box with a 1px drop shadow and a black
+     wedge (system.css-reference style.css, select); it was a rounded bevel. */
+  --system-select-radius: 0;
+  --system-select-shadow: 1px 1px 0 var(--ink);
+  --window-frame-arrow-up-art: linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink));
+  --window-frame-arrow-up-art-size: 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 4px 1px, 4px 1px, 1px 3px, 1px 3px, 5px 1px;
+  --window-frame-arrow-up-art-position: left 7px top 3px, left 6px top 4px, left 8px top 4px, left 5px top 5px, left 9px top 5px, left 4px top 6px, left 10px top 6px, left 3px top 7px, left 11px top 7px, left 2px top 8px, left 9px top 8px, left 5px top 9px, left 9px top 9px, left 5px top 12px;
+  --window-frame-arrow-down-art: linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink));
+  --window-frame-arrow-down-art-size: 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 4px 1px, 4px 1px, 1px 3px, 1px 3px, 5px 1px;
+  --window-frame-arrow-down-art-position: left 7px top 10px, left 6px top 9px, left 8px top 9px, left 5px top 8px, left 9px top 8px, left 4px top 7px, left 10px top 7px, left 3px top 6px, left 11px top 6px, left 2px top 5px, left 9px top 5px, left 5px top 2px, left 9px top 2px, left 5px top 1px;
+  --window-frame-arrow-left-art: linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink));
+  --window-frame-arrow-left-art-size: 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 4px, 1px 4px, 3px 1px, 3px 1px, 1px 5px;
+  --window-frame-arrow-left-art-position: left 3px top 7px, left 4px top 6px, left 4px top 8px, left 5px top 5px, left 5px top 9px, left 6px top 4px, left 6px top 10px, left 7px top 3px, left 7px top 11px, left 8px top 2px, left 8px top 9px, left 9px top 5px, left 9px top 9px, left 12px top 5px;
+  --window-frame-arrow-right-art: linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink));
+  --window-frame-arrow-right-art-size: 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 4px, 1px 4px, 3px 1px, 3px 1px, 1px 5px;
+  --window-frame-arrow-right-art-position: left 10px top 7px, left 9px top 6px, left 9px top 8px, left 8px top 5px, left 8px top 9px, left 7px top 4px, left 7px top 10px, left 6px top 3px, left 6px top 11px, left 5px top 2px, left 5px top 9px, left 2px top 5px, left 2px top 9px, left 1px top 5px;
+}
+
 /* P14: native Mac OS 9 — on each side, a black outer line, then a raised 4px
    strip, then a black content border; the scroll lanes sit INSIDE that content
    border. The geometry (5px insets for the frame bars and the grow box, 2px
@@ -1939,11 +1978,14 @@ body[data-lineage~="platinum"] input[type="radio"] {
   transition: none;
 }
 
+/* The well greys (#888 frame, #ddd face), but the radio and the check are
+   bitmap art the frame colour cannot reach, so the control also fades: at
+   opacity 1 a disabled selected radio drew exactly like a live one. */
 body[data-lineage~="platinum"] :is(input[type="checkbox"], input[type="radio"]):disabled {
   border-color: #888888;
   background-color: #dddddd;
   box-shadow: none;
-  opacity: 1;
+  opacity: 0.45;
 }
 
 body[data-lineage~="platinum"] .menu-bar {
@@ -2167,6 +2209,12 @@ body[data-theme="yosemite"] select:not([multiple]) {
   font-size: var(--system-control-size);
 }
 
+/* A disabled pop-up's well goes grey with the rest of it, or the blue still
+   says "click me". */
+body[data-theme="yosemite"] .system-select-button:disabled::after {
+  filter: grayscale(1) opacity(0.45);
+}
+
 body[data-theme="yosemite"] :is(select, input, .system-select-button):disabled {
   /* Dimmed once, by ink, on the shared disabled-fg token. The old literal
      #a0a0a0 read 2.31:1 over this field even before the base rule's opacity
@@ -2309,24 +2357,12 @@ body[data-theme="yosemite"] .theme-lab-choice-matrix input[type="radio"]:checked
   box-shadow: var(--radio-shadow);
 }
 
-body[data-theme="yosemite"] .theme-lab-choice-matrix input[type="checkbox"]:is(:active, .is-active):not(:disabled) {
-  background-color: var(--theme-lab-checkbox-active-bg, var(--choice-checked-bg));
-  background-image:
-    var(--theme-lab-checkbox-checkmark-image, var(--choice-checkmark-image)),
-    var(--choice-checked-bg-image, none);
-  box-shadow: var(--control-active-shadow);
-}
-
-body[data-theme="yosemite"] .theme-lab-choice-matrix input[type="radio"]:is(:active, .is-active):not(:disabled) {
-  background-color: var(--theme-lab-checkbox-active-bg, var(--choice-checked-bg));
-  background-image: var(--theme-lab-radio-checked-bg, var(--radio-checked-image));
-  box-shadow: var(--control-active-shadow);
-}
-
+/* A disabled control that is on stays on, faded: the grey well belongs to the
+   unchecked one only, or a checked box shows a white tick on near-white. */
 body[data-theme="yosemite"] .theme-lab-choice-matrix :is(
   input[type="checkbox"],
   input[type="radio"]
-):disabled {
+):disabled:not(:checked) {
   background-color: var(--control-disabled-bg);
   box-shadow: none;
   opacity: var(--control-disabled-opacity, 0.56);

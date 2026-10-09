@@ -826,6 +826,17 @@ function getReaderSelectionContext(selection, selectedText, radius = 220) {
     selected: selectedText,
     after,
     text: [before, selectedText, after].filter(Boolean).join(" "),
+    // Where the passage can be found again: the quote, 32 characters either
+    // side, and the offset, all in the page's whitespace-collapsed text (the
+    // shape and the search are app/core/text-quote.js). Clips made before this
+    // have none and keep working from their quote alone.
+    anchor: {
+      quote: selected,
+      prefix: fullText.slice(Math.max(0, index - 32), index),
+      suffix: fullText.slice(index + selected.length, index + selected.length + 32),
+      offset: index,
+      space: container ? "reader-body" : "page-text",
+    },
   };
 }
 

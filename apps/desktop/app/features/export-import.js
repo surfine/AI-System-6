@@ -184,7 +184,9 @@ async function buildProjectDiskExport(project = getActiveProject()) {
       getReferences: async () => projectReferences.filter((reference) => reference.projectId === projectId),
       getDocumentRevisions: () => collectProjectDocumentRevisions(projectId),
       getDarkroomRecords: () => collectProjectDarkroomRecords(projectId),
-      getImageAttachments: async () => imageAttachments.filter((entry) => entry?.projectId === projectId),
+      // An editor's staged working pictures (app/core/edit-assets.js) are not
+      // part of the disk until the document they belong to is saved.
+      getImageAttachments: async () => imageAttachments.filter((entry) => entry?.projectId === projectId && entry.status !== "staged"),
       getWorkingSession: () => readWorkingSessionForBackup(projectId),
     },
   });

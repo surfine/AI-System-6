@@ -123,8 +123,12 @@ corpus.forEach((record) => {
 });
 const untouched = corpus.filter((record) => !record.descriptions && !record.partOf);
 // The three review prompts the writing methodology added (2026-09-30) are
-// ordinary prompt files too, so the untouched set grew from 63 to 66.
-test.assert(untouched.length === 66, `${untouched.length} prompts carry no skill metadata and stay ordinary prompt files`);
+// ordinary prompt files too, so the untouched set grew from 63 to 66; ClioChart's
+// drawing contract and the one-line edit contract (2026-10-09) made it 68, the
+// darkroom's six layer prompts (2026-10-09) made it 74, and
+// other-apps.storyboard-ascii (an ordinary prompt file, not a routable skill)
+// made it 75.
+test.assert(untouched.length === 75, `${untouched.length} prompts carry no skill metadata and stay ordinary prompt files`);
 
 // ------------------------------------------- precedence, reused not rebuilt
 api.upsertProjectPromptOverride(projectId, "writing-route.skill-table-shaping", "This project hands over CSV, never a sheet.");

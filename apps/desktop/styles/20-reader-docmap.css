@@ -1591,224 +1591,6 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   container-type: size;
 }
 
-.clio-stage-slide-frame {
-  width: min(100%, calc(100cqh * 16 / 9));
-  max-width: 920px;
-  max-height: 100%;
-  aspect-ratio: 16 / 9;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  background: #f7f6ef;
-  border: var(--clio-stage-slide-frame-border);
-  border-radius: var(--clio-stage-slide-frame-radius);
-  box-shadow: var(--clio-stage-slide-frame-shadow);
-  padding: clamp(20px, 4.5%, 42px);
-  overflow: hidden;
-  color: var(--ink);
-}
-
-.clio-stage-slide-stage {
-  min-height: 0;
-  display: grid;
-  align-items: center;
-  overflow: hidden;
-  container-type: inline-size;
-}
-
-/* Keynote-style fit: the body shrinks as one piece when the stage cannot
-   hold it; at the floor the stage scrolls instead. */
-.clio-stage-fit-body { transform-origin: top left; width: var(--clio-stage-fit-width, auto); }
-.clio-stage-fit-active { align-items: start; }
-.clio-stage-fit-scroll { overflow-y: auto; }
-
-.clio-stage-slide-header,
-.clio-stage-slide-footer {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  font-family: var(--mono-font);
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  opacity: 0.55;
-}
-
-.clio-stage-slide-header {
-  border-bottom: 1px solid currentColor;
-  padding-bottom: 6px;
-  margin-bottom: 10px;
-}
-
-.clio-stage-slide-footer {
-  border-top: 1px solid currentColor;
-  padding-top: 6px;
-  margin-top: 10px;
-}
-
-.clio-stage-slide-page {
-  margin-left: auto;
-  font-variant-numeric: tabular-nums;
-}
-
-.clio-stage-slide-4-3 {
-  width: min(100%, calc(100cqh * 4 / 3));
-  aspect-ratio: 4 / 3;
-}
-
-.clio-stage-slide-body {
-  max-height: 100%;
-  overflow: hidden;
-  font-family: var(--text-font);
-  word-break: normal;
-  overflow-wrap: break-word;
-}
-
-.clio-stage-slide-body h1,
-.clio-stage-slide-body h2 {
-  margin: 0 0 .58em;
-  padding: 0;
-  border: 0;
-  font-family: var(--title-font);
-  font-size: clamp(22px, 5cqw, 44px);
-  line-height: 1.08;
-  text-align: left;
-}
-
-.clio-stage-slide-body h1 {
-  max-width: 17ch;
-  font-size: clamp(28px, 6.2cqw, 54px);
-}
-
-.clio-stage-slide-body h2 {
-  border-left: clamp(6px, 1.2cqw, 12px) solid var(--ink);
-  padding-left: clamp(12px, 2.4cqw, 24px);
-}
-
-.clio-stage-slide-body h3 {
-  margin: .8em 0 .42em;
-  font-family: var(--title-font);
-  font-size: clamp(17px, 3cqw, 28px);
-}
-
-.clio-stage-slide-body p,
-.clio-stage-slide-body li,
-.clio-stage-slide-body blockquote {
-  font-size: clamp(14px, 2.6cqw, 24px);
-  line-height: 1.32;
-}
-
-.clio-stage-slide-body p {
-  max-width: 40ch;
-}
-
-.clio-stage-slide-body ul,
-.clio-stage-slide-body ol {
-  display: grid;
-  gap: .38em;
-  max-width: 42ch;
-  margin: .4em 0 0;
-  padding-left: 1.1em;
-}
-
-.clio-stage-slide-body strong {
-  background: var(--ink);
-  color: var(--paper);
-  padding: 0 .16em;
-}
-
-.clio-stage-slide-body blockquote {
-  max-width: 26ch;
-  margin: .5em 0 0;
-  padding: .05em 0 .05em .8em;
-  border-left: clamp(5px, .9cqw, 9px) solid var(--ink);
-}
-
-.clio-stage-slide-body pre {
-  max-width: 100%;
-  overflow: auto;
-  font-size: .86em;
-}
-
-.clio-stage-slide-kind-lead,
-.clio-stage-slide-kind-contrast {
-  background: var(--ink);
-  color: var(--paper);
-}
-
-.clio-stage-slide-kind-lead .clio-stage-slide-body h1,
-.clio-stage-slide-kind-lead .clio-stage-slide-body h2,
-.clio-stage-slide-kind-contrast .clio-stage-slide-body h1,
-.clio-stage-slide-kind-contrast .clio-stage-slide-body h2 {
-  color: var(--paper);
-  border-color: var(--paper);
-}
-
-.clio-stage-slide-kind-lead .clio-stage-slide-body strong,
-.clio-stage-slide-kind-contrast .clio-stage-slide-body strong {
-  background: var(--paper);
-  color: var(--ink);
-}
-
-.clio-stage-slide-kind-lead .clio-stage-slide-body h1 {
-  max-width: 13ch;
-  font-size: clamp(34px, 7.6cqw, 70px);
-}
-
-.clio-stage-slide-kind-divider {
-  align-items: end;
-  background: #e4ecd8;
-}
-
-.clio-stage-slide-kind-divider .clio-stage-slide-body h1,
-.clio-stage-slide-kind-divider .clio-stage-slide-body h2 {
-  max-width: 14ch;
-  border-left: 0;
-  padding-left: 0;
-  font-size: clamp(32px, 7cqw, 64px);
-}
-
-.clio-stage-slide-kind-quote {
-  background: #f1f5f6;
-}
-
-.clio-stage-slide-kind-quote .clio-stage-slide-body blockquote {
-  max-width: 21ch;
-  margin: 0;
-  padding-left: 0;
-  border-left: 0;
-  font-family: var(--title-font);
-  font-size: clamp(26px, 5.2cqw, 48px);
-  line-height: 1.16;
-}
-
-.clio-stage-slide-kind-evidence {
-  align-items: start;
-  background: #f8f6ee;
-  border-color: #263c45;
-}
-
-.clio-stage-slide-kind-evidence .clio-stage-slide-body h2 {
-  border-left-color: #263c45;
-  font-size: clamp(22px, 4.1cqw, 36px);
-}
-
-.clio-stage-slide-kind-evidence .clio-stage-slide-body p,
-.clio-stage-slide-kind-evidence .clio-stage-slide-body li {
-  font-size: clamp(13px, 2.25cqw, 20px);
-}
-
-.clio-stage-slide-kind-takeaway {
-  background: #f7f6ef;
-  border: clamp(8px, 1.8cqw, 18px) solid var(--ink);
-}
-
-.clio-stage-slide-kind-takeaway .clio-stage-slide-body h1,
-.clio-stage-slide-kind-takeaway .clio-stage-slide-body h2 {
-  max-width: 15ch;
-  border-left: 0;
-  padding-left: 0;
-  font-size: clamp(30px, 6.2cqw, 58px);
-}
-
 .clio-stage-source {
   padding: 0;
   overflow: auto;
@@ -1826,93 +1608,6 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   overflow-wrap: anywhere;
 }
 
-/* Stage themes. Original recipes wearing Marp's theme names: the frontmatter
-   says `theme: gaia` and gets this house's reading of warm ground and deep
-   headings, never a copied stylesheet. `ink` is the black stage the prompter
-   already wears. */
-.clio-stage-theme-ink {
-  background: #16161a;
-  color: #f4f2ea;
-}
-
-.clio-stage-theme-ink .clio-stage-slide-body h2 {
-  border-left-color: #f4f2ea;
-}
-
-.clio-stage-theme-ink .clio-stage-slide-body strong {
-  background: #f4f2ea;
-  color: #16161a;
-}
-
-.clio-stage-theme-ink .clio-stage-slide-body blockquote {
-  border-left-color: #8b8b93;
-  color: #d8d6cc;
-}
-
-.clio-stage-theme-ink .clio-stage-slide-body pre {
-  background: #26262c;
-  color: #ececec;
-}
-
-.clio-stage-theme-gaia {
-  background: #f3e9d7;
-  color: #2c2a24;
-}
-
-.clio-stage-theme-gaia .clio-stage-slide-body h1,
-.clio-stage-theme-gaia .clio-stage-slide-body h2,
-.clio-stage-theme-gaia .clio-stage-slide-body h3 {
-  color: #1f4d43;
-}
-
-.clio-stage-theme-gaia .clio-stage-slide-body h2 {
-  border-left-color: #1f4d43;
-}
-
-.clio-stage-theme-gaia .clio-stage-slide-body strong {
-  background: #1f4d43;
-  color: #f3e9d7;
-}
-
-.clio-stage-theme-gaia .clio-stage-slide-body blockquote {
-  border-left-color: #b08b4f;
-}
-
-.clio-stage-theme-uncover {
-  background: #fbfbf8;
-}
-
-.clio-stage-theme-uncover .clio-stage-slide-stage {
-  text-align: center;
-}
-
-.clio-stage-theme-uncover .clio-stage-slide-body h1,
-.clio-stage-theme-uncover .clio-stage-slide-body h2 {
-  border-left: 0;
-  padding-left: 0;
-}
-
-.clio-stage-theme-uncover .clio-stage-slide-body h1 {
-  max-width: none;
-  text-align: center;
-}
-
-.clio-stage-theme-uncover .clio-stage-slide-body h2 {
-  display: inline-block;
-  border-bottom: 2px solid var(--ink);
-  padding-bottom: .18em;
-  text-align: center;
-}
-
-.clio-stage-theme-uncover .clio-stage-slide-body p,
-.clio-stage-theme-uncover .clio-stage-slide-body ul,
-.clio-stage-theme-uncover .clio-stage-slide-body ol,
-.clio-stage-theme-uncover .clio-stage-slide-body blockquote {
-  margin-left: auto;
-  margin-right: auto;
-  text-align: left;
-}
-
 .clio-stage-cue-notes-body p {
   margin: .2em 0 0;
 }
@@ -1927,9 +1622,12 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   color: var(--paper);
 }
 
+/* The prompter's current page: the printed page, centred and scaled to fit. */
 .clio-stage-cue-current {
+  display: grid;
+  place-items: center;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   font-family: var(--title-font);
   font-size: var(--clio-stage-cue-current-font-size);
   line-height: 1.28;
@@ -1993,6 +1691,196 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   letter-spacing: var(--clio-stage-page-letter-spacing);
   font-variant-numeric: tabular-nums;
   line-height: 1;
+}
+
+/* Slide View is edited on the page. The rail of page thumbnails sits beside the
+   slide, above it when the viewport is narrow; the stage around the frame is its
+   own size container so the slide scales against the room the rail leaves. */
+.clio-stage-slide-mode.has-rail {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.clio-stage-edit-shell {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.clio-stage-edit-stage {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  container-type: size;
+}
+
+.clio-stage-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.clio-stage-rail-tools {
+  display: flex;
+  flex: none;
+  gap: 4px;
+}
+
+.clio-stage-rail-button {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-inline: 4px;
+}
+
+.clio-stage-thumbs {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.clio-stage-thumb-item {
+  flex: none;
+}
+
+.clio-stage-thumb {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 5px 7px;
+  border: 1px solid var(--clio-stage-view-button-border-color);
+  background: var(--clio-stage-view-button-bg);
+  color: var(--clio-stage-view-button-fg);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+}
+
+.clio-stage-thumb[aria-current="true"] {
+  border-color: var(--ink);
+  background: var(--clio-stage-view-default-bg);
+  color: var(--clio-stage-view-default-fg);
+  box-shadow: inset 4px 0 0 var(--ink);
+}
+
+.clio-stage-thumb[data-surface="dark"] .clio-stage-thumb-title,
+.clio-stage-thumb[data-surface="hero"] .clio-stage-thumb-title {
+  font-weight: 700;
+}
+
+.clio-stage-thumb-number {
+  font-family: var(--mono-font);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+.clio-stage-thumb-title,
+.clio-stage-thumb-layout {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clio-stage-thumb-layout {
+  opacity: 0.7;
+}
+
+.clio-stage-thumb-item.is-drop-before {
+  box-shadow: 0 -3px 0 var(--ink);
+}
+
+.clio-stage-thumb-item.is-drop-after {
+  box-shadow: 0 3px 0 var(--ink);
+}
+
+.clio-stage-layout-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.clio-stage-layout-field[hidden],
+.clio-stage-reset-layout[hidden] {
+  display: none;
+}
+
+/* The page on the stage (features/clio-stage.js) is the printed sheet's own
+   <section>, inside this host's shadow root, scaled as one piece; nothing in
+   this sheet reaches it. The host wears the appearance's frame around it. */
+.clio-stage-page-host {
+  border: var(--clio-stage-slide-frame-border);
+  border-radius: var(--clio-stage-slide-frame-radius);
+  box-shadow: var(--clio-stage-slide-frame-shadow);
+  overflow: hidden;
+}
+
+/* A deck arriving: the newest pages ease in. The keyframe names only where they
+   start, so an engine that never runs it leaves the page fully shown. */
+@keyframes clio-stage-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.clio-stage-thumb-item.is-arriving,
+.clio-stage-page-host.is-arriving {
+  animation: clio-stage-arrive 240ms ease-out backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clio-stage-thumb-item.is-arriving,
+  .clio-stage-page-host.is-arriving {
+    animation: none;
+  }
+}
+
+@container (max-width: 639px) {
+  .clio-stage-edit-shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .clio-stage-rail {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .clio-stage-rail-tools {
+    flex: none;
+    flex-direction: column;
+    width: 64px;
+  }
+
+  .clio-stage-thumbs {
+    flex-direction: row;
+  }
+
+  .clio-stage-thumb-item {
+    flex: 0 0 112px;
+  }
+
+  .clio-stage-thumb-item.is-drop-before {
+    box-shadow: -3px 0 0 var(--ink);
+  }
+
+  .clio-stage-thumb-item.is-drop-after {
+    box-shadow: 3px 0 0 var(--ink);
+  }
 }
 
 .dictionary-window {
@@ -2395,4 +2283,51 @@ body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
   border-radius: var(--dictionary-recent-button-radius);
   background: var(--dictionary-recent-button-bg);
   color: var(--dictionary-recent-button-fg);
+}
+
+/* A one-line edit from SideAsk, side by side under the slide. */
+.clio-stage-proposal {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--rule);
+  background: var(--panel);
+  font-size: 11px;
+}
+
+.clio-stage-proposal p {
+  margin: 0;
+}
+
+.clio-stage-proposal-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.clio-stage-proposal-pair figure {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  min-width: 0;
+  margin: 0;
+}
+
+.clio-stage-proposal-page {
+  max-height: 140px;
+  overflow: auto;
+  padding: 6px 8px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  font-size: 11px;
+}
+
+.clio-stage-proposal-refused {
+  font-weight: 700;
+}
+
+.clio-stage-proposal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
 }

@@ -1,0 +1,287 @@
+/* Review Desk: comment threads and version compare.
+
+   Lazy: this file is a second source of the edit-kernel sheet
+   (tooling/style-manifest.mjs), brought in by the Review Desk comments loader
+   (app/core/config.js). Every selector is scoped to .review-comments-panel,
+   .review-thread* or .review-compare*, and colour and rules come from the
+   tokens the Review Desk already uses, so each appearance dresses it. */
+
+.review-comments-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  padding: 10px 12px;
+  overflow: auto;
+  background: var(--review-surface-bg);
+}
+
+.review-comments-panel.is-hidden {
+  display: none;
+}
+
+.review-comments-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.review-comments-tabs {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.review-comments-tab.is-active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.review-comments-as {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.review-comments-as input {
+  width: 12em;
+  min-width: 0;
+}
+
+.review-comments-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.review-comments-body.is-hidden {
+  display: none;
+}
+
+.review-comments-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.review-comments-tools input[type="search"] {
+  flex: 1 1 10em;
+  min-width: 0;
+}
+
+.review-comments-counts {
+  margin: 0;
+  color: var(--shade-dark);
+  font-size: 0.92em;
+}
+
+.review-comment-composer {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: var(--system-border);
+}
+
+.review-comment-composer textarea,
+.review-thread-replybox textarea {
+  width: 100%;
+  min-width: 0;
+  resize: vertical;
+}
+
+.review-comment-composer-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.review-comment-quote,
+.review-thread-quote {
+  margin: 0;
+  padding: 2px 0 2px 8px;
+  border-left: 3px solid var(--ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.review-comment-quote.is-empty {
+  border-left-style: dotted;
+  color: var(--shade-dark);
+}
+
+.review-thread-list,
+.review-thread-replies {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.review-thread {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: var(--system-border);
+}
+
+.review-thread.is-current {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+.review-thread.is-lost .review-thread-quote {
+  border-left-style: dashed;
+  color: var(--shade-dark);
+}
+
+.review-thread[data-state="accepted"],
+.review-thread[data-state="rejected"],
+.review-thread[data-state="completed"] {
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+}
+
+.review-thread-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+}
+
+.review-thread-meta time,
+.review-thread-label {
+  color: var(--shade-dark);
+  font-size: 0.9em;
+}
+
+.review-thread-state {
+  padding: 0 5px;
+  border: 1px solid var(--ink);
+  font-size: 0.85em;
+}
+
+.review-thread-state.is-accepted,
+.review-thread-state.is-completed {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.review-thread-state.is-rejected {
+  text-decoration: line-through;
+}
+
+.review-thread-lostmark {
+  padding: 0 5px;
+  border: 1px dashed var(--ink);
+  font-size: 0.85em;
+}
+
+.review-thread-lostnote {
+  margin: 0;
+  color: var(--shade-dark);
+  font-size: 0.9em;
+}
+
+.review-thread-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.review-thread-replies {
+  padding-left: 12px;
+  border-left: 1px dotted var(--shade);
+}
+
+.review-thread-actions,
+.review-thread-replybox {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.review-thread-replybox textarea {
+  flex: 1 1 14em;
+}
+
+.review-thread-tick.is-on {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* ---- compare two versions ---------------------------------------------- */
+
+.review-compare {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.review-compare-pick,
+.review-compare-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.review-compare-pick label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.review-compare-pick .select-wrap {
+  min-width: 13em;
+  max-width: 100%;
+}
+
+.review-compare-summary {
+  margin: 0;
+  color: var(--shade-dark);
+}
+
+.review-compare-position {
+  min-width: 5em;
+  text-align: center;
+}
+
+.review-compare-view {
+  max-height: 16em;
+  padding: 8px;
+  border: var(--system-border);
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+
+.review-diff-same {
+  color: color-mix(in srgb, var(--ink) 70%, transparent);
+}
+
+.review-diff-del {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.review-diff-ins {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+.review-diff-hunk.is-current {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}

@@ -751,7 +751,7 @@ async function requestEli5FixOne(index) {
   // A fix writes the document; a read-only subject never accepts one. The
   // listen view can read a developed document, but the pen stays with the
   // application that owns it.
-  if (typeof lightroomIsReadOnly === "function" && lightroomIsReadOnly()) {
+  if (typeof lightroomForeignSubject === "function" && lightroomForeignSubject()) {
     setQuickDraftStatus(t("lightroom_read_only"));
     return false;
   }
@@ -881,7 +881,7 @@ function renderQuickDraftFixDiff(index) {
 }
 
 async function applyQuickDraftEli5Fix(index) {
-  if (typeof lightroomIsReadOnly === "function" && lightroomIsReadOnly()) {
+  if (typeof lightroomForeignSubject === "function" && lightroomForeignSubject()) {
     setQuickDraftStatus(t("lightroom_read_only"));
     return false;
   }
@@ -942,7 +942,7 @@ async function applyQuickDraftEli5Fix(index) {
 // The spoken version came out of the author's own mouth during rehearsal:
 // adopting it is a splice of their words, no model involved.
 async function adoptSpokenRewording(index) {
-  if (typeof lightroomIsReadOnly === "function" && lightroomIsReadOnly()) {
+  if (typeof lightroomForeignSubject === "function" && lightroomForeignSubject()) {
     setQuickDraftStatus(t("lightroom_read_only"));
     return false;
   }
@@ -1109,51 +1109,31 @@ async function exportQuickDraftListenSrt() {
 // estimate at the SRT's rate; the pure rows live in listen-beats.js. Visual,
 // footage and cuttable judgments belong to the writer, so the skeleton fills
 // only what the draft itself shows and leaves the rest empty.
+// 「分镜图」 on the Deliver menu: the same storyboard TeachText's Commands menu
+// makes, from the draft this desk is writing. The module is lazy and needs a
+// model; the row is greyed with the reason when none is connected.
 async function exportQuickDraftShotList() {
   const state = ensureQuickDraftListenState();
   if (!state.beats.length) {
     setQuickDraftStatus(t("quick_draft_listen_empty"));
     return false;
   }
-  const beatsApi = window.AISystem6ListenBeats;
-  const rows = beatsApi.buildStoryboardRows(quickDraftListenBody(), {
+  if (typeof modelReadyForRequests === "function" && !modelReadyForRequests()) {
+    setQuickDraftStatus(t("storyboard_needs_model"));
+    return false;
+  }
+  await ensureStoryboardAsciiModule();
+  const result = await window.AISystem6StoryboardAscii.generateStoryboard({
+    body: quickDraftListenBody(),
+    title: quickDraftListenExportName(),
+    source: quickDraftListenExportName(),
+    keys: [activeProjectQuickDraft({ create: false })?.record?.workspace?.title || ""],
     rate: Number(state.rate) || 1,
-    cues: state.visualCues || [],
+    // The sentences the writer marked 「加画面提示」 travel with their paragraph.
+    cues: (state.visualCues || []).filter((cue) => cue?.visual === true),
+    report: (message) => setQuickDraftStatus(message),
   });
-  const cueLabel = (cue) => [
-    cue.narration === true ? t("quick_draft_finding_visual_narration") : "",
-    cue.visual === true ? t("quick_draft_finding_visual_cue") : "",
-  ].filter(Boolean).join(" + ");
-  const cueOpening = (quote) => {
-    const clause = String(quote || "").trim().split(/[，。！？；,.!?;\n]/)[0];
-    return clause.length > 16 ? `${clause.slice(0, 16)}…` : clause;
-  };
-  // The one shootable-visual classifier (可拍画面) from the intake strategy
-  // signals, reused as a hint — never a claim that footage exists.
-  const visual = (row) => (row.cues.length
-    ? row.cues.map((cue) => t("quick_draft_storyboard_cue_at", cueLabel(cue), cueOpening(cue.quote))).join("；")
-    : (QUICK_DRAFT_SHOOTABLE_PATTERN.test(row.text) ? t("quick_draft_shootable_hint") : ""));
-  const title = `${quickDraftListenExportName()} · ${t("quick_draft_export_shot_list")}`;
-  const markdown = beatsApi.buildStoryboardMarkdown(rows, {
-    title,
-    intro: t("quick_draft_storyboard_intro"),
-    columns: [
-      t("quick_draft_storyboard_col_paragraph"),
-      t("quick_draft_storyboard_col_visual"),
-      t("quick_draft_storyboard_col_footage"),
-      t("quick_draft_storyboard_col_duration"),
-      t("quick_draft_storyboard_col_cuttable"),
-    ],
-    notesHeading: t("quick_draft_storyboard_notes"),
-    visual,
-  });
-  const saved = window.AISystem6WebPlatform.saveArtifact({
-    text: markdown,
-    fileName: `${title}.md`,
-    mimeType: "text/markdown;charset=utf-8",
-  });
-  setQuickDraftStatus(saved ? t("quick_draft_export_shot_list_done") : t("markdown_download_failed"));
-  return saved;
+  return Boolean(result);
 }
 
 window.AISystem6QuickDraftListen = Object.freeze({

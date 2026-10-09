@@ -1585,6 +1585,9 @@ function clioTalkSideAskGroundingSource() {
   if (anchor === "clioStage" && typeof clioStageState !== "undefined" && clioStageState?.source?.markdown) {
     return { key: "sideask:clioStage", citation: "", label: `${t("clio_stage_label")} / ${clioStageState.source.title || t("clio_stage_label")}`, kind: "sideask" };
   }
+  if (anchor === "clioChart" && window.AISystem6ClioChart?.sideAskContext?.()) {
+    return { key: "sideask:clioChart", citation: "", label: t("clio_chart_label"), kind: "sideask" };
+  }
   if (anchor === "timeMachine" && typeof currentTimeMachinePage !== "undefined" && currentTimeMachinePage?.reader?.text) {
     const page = currentTimeMachinePage;
     return { key: "sideask:timeMachine", citation: "", label: `${t("time_machine")} / ${page.reader.title || page.title || t("time_machine")}`, kind: "sideask" };
@@ -3486,7 +3489,30 @@ function formatSideAskAnchorContext() {
     return section(`${t("docmap")} / ${currentDocMap.sourceLabel || t("docmap")}`, formatDocMapMarkdown(currentDocMap), 12000);
   }
   if (anchor === "clioStage" && typeof clioStageState !== "undefined" && clioStageState?.source?.markdown) {
-    return section(`${t("clio_stage_label")} / ${clioStageState.source.title || t("clio_stage_label")}`, clioStageState.source.markdown, 14000);
+    // The page in front, and the part selected on it, come first: "this page"
+    // in a question means this one.
+    const focus = window.AISystem6ClioStage?.sideAskContext?.();
+    const lead = focus
+      ? [
+        zh ? `当前是第 ${focus.index + 1} / ${focus.count} 页：` : `Current page ${focus.index + 1} of ${focus.count}:`,
+        focus.page,
+        focus.selected ? (zh ? `选中的部分：${focus.selected}` : `Selected part: ${focus.selected}`) : "",
+        zh ? "整份幻灯片：" : "Whole deck:",
+      ].filter(Boolean).join("\n")
+      : "";
+    return section(`${t("clio_stage_label")} / ${clioStageState.source.title || t("clio_stage_label")}`, `${lead}\n${clioStageState.source.markdown}`, 14000);
+  }
+  if (anchor === "clioChart") {
+    const focus = window.AISystem6ClioChart?.sideAskContext?.();
+    if (!focus) return "";
+    const body = focus.kind === "data"
+      ? focus.table
+      : [
+        `${zh ? "画法" : "Drawing"}: ${focus.kind}${focus.title ? ` · ${focus.title}` : ""}`,
+        focus.scope === "selection" ? (zh ? "选中的方框：" : "Selected boxes:") : (zh ? "全部方框：" : "All boxes:"),
+        ...focus.nodes.map((node) => `- ${node.label}${node.quote ? (zh ? `（出处：「${node.quote}」）` : ` (source: "${node.quote}")`) : (zh ? "（无出处）" : " (no source)")}`),
+      ].join("\n");
+    return section(t("clio_chart_label"), body, 12000);
   }
   if (anchor === "timeMachine" && typeof currentTimeMachinePage !== "undefined" && currentTimeMachinePage?.reader?.text) {
     const page = currentTimeMachinePage;

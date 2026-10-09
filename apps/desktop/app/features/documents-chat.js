@@ -3036,20 +3036,46 @@ function openTextFile(fileId) {
   if (isDocMapRoute && window.AISystem6DocMapLoaded && openSavedDocMapFile(file)) {
     return;
   }
-
-  const folder = getProjectFolders().find((item) => item.id === file.folderId);
-  openTeachTextStateInTab({
-    title: file.name,
-    backing: { type: "projectText", id: file.id },
-    state: {
-      activeTextFileId: file.id,
-      name: file.name,
-      folder: folder ? displayFolderName(folder.name) : t("default_folder"),
-      body: file.body || "",
-      label: normalizeFileLabel(file.label || ""),
-      statusKey: "saved",
-    },
-  });
+  const openInTeachText = () => {
+    const folder = getProjectFolders().find((item) => item.id === file.folderId);
+    openTeachTextStateInTab({
+      title: file.name,
+      backing: { type: "projectText", id: file.id },
+      state: {
+        activeTextFileId: file.id,
+        name: file.name,
+        folder: folder ? displayFolderName(folder.name) : t("default_folder"),
+        body: file.body || "",
+        label: normalizeFileLabel(file.label || ""),
+        statusKey: "saved",
+      },
+    });
+  };
+  // A saved ClioChart drawing or table opens in ClioChart, a saved deck in
+  // ClioStage — the same lazy two-step; the readable text still opens in
+  // TeachText if the application will not take it.
+  if (openResolution?.ok && openResolution.appId === "clioChart") {
+    ensureClioChartModule().then(() => {
+      const chart = window.AISystem6ClioChart;
+      const opened = file.clioDiagram ? chart?.openSavedDiagram?.(file) : chart?.openSavedTable?.(file);
+      if (!opened) openInTeachText();
+    });
+    return;
+  }
+  if (openResolution?.ok && openResolution.appId === "clioStage") {
+    ensureClioStageModule().then(async () => {
+      if (!(await window.AISystem6ClioStage?.openFile?.(file))) openInTeachText();
+    });
+    return;
+  }
+  // A saved Cover Glass cover opens in Cover Glass, the same lazy two-step.
+  if (openResolution?.ok && openResolution.appId === "coverGlass") {
+    ensureCoverGlassModule().then(() => window.AISystem6CoverGlass?.openSavedCover?.(file))
+      .then((opened) => { if (!opened) openInTeachText(); })
+      .catch(() => openInTeachText());
+    return;
+  }
+  openInTeachText();
 }
 
 function openTeachTextDocument(documentId) {
@@ -3558,6 +3584,14 @@ async function runEditCommand(command) {
     target?.focus();
     const cut = document.execCommand("cut");
     if (cut) setStatus(t("cut_selection"));
+    return;
+  }
+  // No text field is the target: Undo and Redo belong to the window's own
+  // editor history when it registered one (a focused field keeps its native one).
+  const history = !target && (command === "undo" || command === "redo") ? editHistoryFor() : null;
+  if (history) {
+    if (!history[command]()) setStatus(t(command === "undo" ? "nothing_to_undo_here" : "nothing_to_redo_here"));
+    if (typeof updateMenuState === "function") updateMenuState();
     return;
   }
   if (!target && (command === "undo" || command === "redo")) {

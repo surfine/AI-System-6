@@ -192,6 +192,8 @@ function normalizeQuickDraftVersion(entry, index = 0) {
     createdAt: String(source.createdAt || source.timestamp || ""),
     reason: String(source.reason || "before-ai"),
     source: String(source.source || source.sourceKind || "quick-draft"),
+    // A name is the writer's own label on a version; absent means unnamed.
+    ...(String(source.name || "").trim() ? { name: String(source.name).trim() } : {}),
   };
 }
 
@@ -282,12 +284,18 @@ function normalizeQuickDraftWorkspace(value = {}, legacy = {}) {
     if (version.body.trim() && !versionsById.has(identity)) versionsById.set(identity, version);
   });
   const compositionSource = source.composition && typeof source.composition === "object" ? source.composition : {};
+  // The negative's two aliases on a saved record (humanAnchor and its stamp) are
+  // read back from the darkroom every time the record is written. Once the
+  // workspace is schema 4 the darkroom has moved out and they are echoes, not
+  // data: reading them back made every load invent a "pending" darkroom, which
+  // the drain then wrote over the document's real record.
+  const aliasesAreData = !(Number(source.schemaVersion) >= 4);
   const composition = {
     currentKey: String(compositionSource.currentKey || ""),
     composite: String(compositionSource.composite || ""),
     generatedAt: String(compositionSource.generatedAt || ""),
-    negative: String(compositionSource.negative ?? source.humanAnchor ?? legacy.humanAnchor ?? ""),
-    negativeUpdatedAt: String(compositionSource.negativeUpdatedAt ?? source.humanAnchorUpdatedAt ?? legacy.humanAnchorUpdatedAt ?? ""),
+    negative: String(compositionSource.negative ?? (aliasesAreData ? (source.humanAnchor ?? legacy.humanAnchor) : undefined) ?? ""),
+    negativeUpdatedAt: String(compositionSource.negativeUpdatedAt ?? (aliasesAreData ? (source.humanAnchorUpdatedAt ?? legacy.humanAnchorUpdatedAt) : undefined) ?? ""),
     // The body as the model last handed it back. The version chain records what
     // each pass replaced, so it cannot tell text the writer typed after the last
     // pass from text that pass produced. This is the missing reference; a record

@@ -467,7 +467,7 @@
     ["assistant", "ClioTalk"], ["controlPanel", "Control / Settings"],
     ["reviewDesk", "Review Desk"], ["docMap", "DocMap"],
     ["rootline", "Rootline"], ["joyride", "Joyride"], ["mingwen", "Plaintext"],
-    ["imagePromptStudio", "Image Prompt Studio"], ["lightroom", "Lightroom"],
+    ["imagePromptStudio", "Image Prompt Studio"], ["lightroom", "Text Lightroom"],
     ["micropolis", "Micropolis"], ["openttd", "OpenTTD"], ["doom", "DOOM"], ["bonsaiCity", "Bonsai City"],
     ["clioPaint", "ClioPaint"], ["clioProject", "ClioProject"], ["oneMoreTune", "One More Tune"],
   ]);

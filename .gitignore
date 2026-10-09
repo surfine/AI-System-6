@@ -20,6 +20,7 @@ internal/archive/runtime-legacy/
 /apps/desktop/styles.joyride.css
 /apps/desktop/styles.project-disks.css
 /apps/desktop/styles.clio-project.css
+/apps/desktop/styles.edit-kernel.css
 /apps/desktop/styles.docmap.css
 /apps/desktop/styles.searcher.css
 /apps/desktop/styles.big-sur.css
@@ -34,6 +35,7 @@ internal/archive/runtime-legacy/
 /apps/desktop/styles.liquid-glass.css
 apps/desktop/app/vendor/markmap/*.js
 apps/desktop/app/vendor/embed-model/
+apps/desktop/app/vendor/cutout-model/
 apps/desktop/app/vendor/embed/ort-wasm-simd-threaded*
 .venv-markitdown/
 .venv-markitdown-trim/
