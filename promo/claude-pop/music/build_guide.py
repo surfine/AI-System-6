@@ -55,6 +55,8 @@ DRUM = {"kick": 36, "snare": 38, "ghost": 38, "clap": 39, "hat": 42, "openHat": 
 TARGET_LUFS = -14.0
 CEILING = -1.2              # limiter ceiling, dBTP (the brief: <= -1)
 VOX_OVER_BED = 3.5          # dB, 1-5 kHz, on sung frames
+DRUM_DIP = 5.0              # dB taken out of the kit at 1.8 and 3.6 kHz
+CONS_DUCK = 6.0             # dB the band's 1.2-8 kHz dips under each sung consonant
 
 
 def log(msg, t0=[time.time()]):
@@ -337,6 +339,60 @@ def band_ratio(vox, bed, lo=1000.0, hi=5000.0, win=0.05, rel=15.0):
     return float(10 * np.log10(pv[m].mean() / (pb[m].mean() + 1e-20))), int(m.sum())
 
 
+def cons_key(metas, n, pre=0.025, post=0.035):
+    """1 inside every consonant of the lead, chant, spoken and call phrases (+ margins), 0 elsewhere,
+    with 8 ms ramps."""
+    k = np.zeros(n)
+    for m in metas:
+        if m["track"] in ("lead", "chant", "spoken") or (m["track"] == "choir" and m.get("role") == "call" and m["voice"] == "af_heart"):
+            for a, b in m.get("cons", []):
+                k[max(0, n_of(a - pre)):min(n, n_of(b + post))] = 1.0
+    r = n_of(0.008)
+    return np.convolve(k, np.ones(r) / r, mode="same")
+
+
+def duck_band(x, key, depth_db, lo=1200.0, hi=8000.0):
+    from dsp import bp
+    band = bp(x, lo, hi, 2)
+    g = 1.0 - (1.0 - undb(-depth_db)) * key
+    return x - band * (1.0 - g)[:, None]
+
+
+def read_lyrics(path):
+    import re
+    s = open(path).read()
+    i = s.index("const LYRICS = ") + len("const LYRICS = ")
+    j = s.index("\n];", i) + 2
+    return json.loads(re.sub(r",\s*\]", "]", s[i:j]))
+
+
+def line_ride(lyrics, vox, bed, n, lo=-6.0, hi=6.0):
+    """Per-line vocal gain (linear curve) so that each lead / chant / spoken / call line measures
+    VOX_OVER_BED over the bed (1-5 kHz, its sung frames); 60 ms moves between lines, held in the gaps."""
+    pts = []
+    for L in sorted(lyrics, key=lambda L: L["start"]):
+        if not (L["voice"] in ("lead", "chant", "spoken") or L.get("role") == "call"):
+            continue
+        a, b = n_of(max(0.0, L["start"] - 0.05)), min(n, n_of(L["end"] + 0.05))
+        r, nf = band_ratio(vox[a:b], bed[a:b], win=0.025)
+        if r is None or nf < 4:
+            continue
+        pts.append((a, b, float(np.clip(VOX_OVER_BED - r, lo, hi))))
+    g = np.zeros(n)
+    if not pts:
+        return np.ones(n), []
+    cur = pts[0][2]
+    last = 0
+    for a, b, d in pts:
+        g[last:a] = cur if last else d       # gaps hold the previous line's gain
+        g[a:b] = d
+        cur, last = d, b
+    g[last:] = cur
+    k = n_of(0.06)
+    g = np.convolve(np.pad(g, (k // 2, k - k // 2 - 1), mode="edge"), np.ones(k) / k, mode="valid")
+    return undb(g), [round(p[2], 2) for p in pts]
+
+
 def tame(x, crest_db):
     """Hold a bus's peaks to crest_db over its active RMS (a transparent brick-wall on the GM kit's and
     the stab chords' transients, so the master limiter does not have to)."""
@@ -456,9 +512,15 @@ def main():
     for k in ("keys", "strings", "mallets"):
         groups[k] = pocket(groups[k], vdry, lo=800, hi=5000, depth=3.0)
     groups["drums"] = pocket(groups["drums"], vdry, lo=1500, hi=6000, depth=1.5)
-    # a gentle presence dip in the band where the consonants live
-    for k in ("drums", "keys", "strings", "mallets"):
+    # a gentle presence dip in the band where the consonants live; the kit gives up most of the speech band
+    # (at equal in-band level, drums mask Whisper's words more than any tonal part: see PRODUCTION.md)
+    for k in ("keys", "strings", "mallets"):
         groups[k] = eq(groups[k], ("peak", 3300, 1.1, -2.5))
+    groups["drums"] = eq(groups["drums"], ("peak", 1800, 0.8, -DRUM_DIP), ("peak", 3600, 1.0, -DRUM_DIP))
+    # and every consonant the voice sings gets a moment of air: the band's 1.2-8 kHz ducks under it
+    ck = cons_key(metas, N)
+    for k in groups:
+        groups[k] = duck_band(groups[k], ck, CONS_DUCK)
     bed = sum(groups.values())
     vox = vdry + vwet
 
@@ -477,9 +539,15 @@ def main():
         gdb[s["name"]] = float(np.clip(VOX_OVER_BED - rr, -6.0, 4.0))
     vg = section_gain(S, DUR, gdb, ramp=0.08)[:, None]
     vox = vox * undb(g_glob) * vg
-    vdry = vdry * undb(g_glob) * vg
+    # then ride the vocal line by line (an engineer's fader automation): every sung line sits at the
+    # same +3.5 dB over the band underneath it
+    lyr = read_lyrics(os.path.join(ROOT, "data", "data.js"))
+    ride, ride_db = line_ride(lyr, vox, bed, N)
+    vg = vg * undb(g_glob) * ride[:, None]
+    vox = vox * ride[:, None]
+    vdry = vdry * vg
     for k in vtracks:
-        vtracks[k] = vtracks[k] * undb(g_glob) * vg
+        vtracks[k] = vtracks[k] * vg
     for s in S["sections"]:
         a, b = n_of(s["startBeat"] * spb), min(N, n_of((s["startBeat"] + s["beats"]) * spb))
         rr, nfr = band_ratio(vox[a:b], bed[a:b])
@@ -543,6 +611,7 @@ def main():
         sf.write(os.path.join(BUILD, "guide_stems", "dr_" + k + ".wav"), x.astype(np.float32), SR, subtype="PCM_24")
     log("wrote build/guide.wav, guide_vocals.wav, guide_instrumental.wav, guide_stems/")
     info = {"vox_over_bed_1_5k_db": per, "vox_global_gain_db": round(g_glob, 2),
+            "vox_line_ride_db": {"min": min(ride_db), "max": max(ride_db), "median": float(np.median(ride_db)), "n": len(ride_db)},
             "vox_section_gain_db": {k: round(v, 2) for k, v in gdb.items()}, "master_input_gain_db": round(gin, 2),
             "limiter_max_db": round(-float(db(gl.min())), 2)}
     with open(os.path.join(BUILD, "guide-mix.json"), "w") as f:

@@ -57,7 +57,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 KDIR = os.path.join(ROOT, ".cache", "kokoro")
 CACHE = os.path.join(ROOT, ".cache", "sing_world")
-ENGINE = "sw-world-10"
+ENGINE = "sw-world-11"
 
 KSR = 24000           # Kokoro sample rate
 HOP = 600             # samples per Kokoro duration unit
@@ -636,7 +636,8 @@ def sing_phrase(spec):
     osp = np.exp(lsp[i0] * (1 - w1)[:, None] + lsp[i1] * w1[:, None])
     oap = ap[i0] * (1 - w1)[:, None] + ap[i1] * w1[:, None]
     fsrc = np.where((fa[i0] > 0) & (fa[i1] > 0), fa[i0] * (1 - w1) + fa[i1] * w1, np.where(w1 < 0.5, fa[i0], fa[i1]))
-    meta = {"nuclei": []}
+    meta = {"nuclei": [], "cons": [[L["origin"] + L["spans"][k][0] * FS, L["origin"] + L["spans"][k][1] * FS]
+                                   for k in range(len(info)) if info[k]["cls"] == "C" and L["spans"][k][1] > L["spans"][k][0]]}
     if style == "spoken":
         out_f0 = fsrc
         gain = np.ones(nfr)
@@ -707,7 +708,8 @@ def sing_phrase(spec):
 
 
 def _abs_meta(meta, t_ref):
-    return {"nuclei": [[a + t_ref, b + t_ref, [[m, t + t_ref, d] for m, t, d in nn]] for a, b, nn in meta["nuclei"]]}
+    return {"nuclei": [[a + t_ref, b + t_ref, [[m, t + t_ref, d] for m, t, d in nn]] for a, b, nn in meta["nuclei"]],
+            "cons": [[a + t_ref, b + t_ref] for a, b in meta.get("cons", [])]}
 
 
 def breath(y24, L, length, seed):
@@ -865,5 +867,5 @@ def render(score, total_s, workers=4, progress=True):
             tr[i0:i0 + k, 1] += y[:k] * gr
         metas.append(dict(track=spec["track"], voice=spec["voice"], style=spec["style"], lines=spec["lines"],
                           role=spec.get("role"), t0=t0, delay=spec.get("delay", 0.0), detune=spec.get("detune", 0.0),
-                          nuclei=meta["nuclei"]))
+                          nuclei=meta["nuclei"], cons=meta["cons"]))
     return tracks, metas
