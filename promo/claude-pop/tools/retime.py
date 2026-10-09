@@ -340,13 +340,16 @@ def measure(ref, rec, dur_ref):
     a, b = theil_sen(rt[ii], ct[jj])
     a, b = huber_line(rt[ii], ct[jj], a, b)
     pred = a * rt + b
-    pairs = dp_align(ref, rec, pred, tol=0.8, wt=1.0)
-    ii, jj, _ = anchors(pairs)
-    if len(ii) >= 6:
+    pairs = dp_align(ref, rec, pred, tol=1.2, wt=1.0)
+    # the drift may be piecewise: follow the local median offset, tighter each round
+    for tol, half in ((0.5, 10.0), (0.35, 8.0)):
+        ii, jj, _ = anchors(pairs)
+        if len(ii) < 6:
+            break
         res = ct[jj] - pred[ii]
-        keep = np.abs(res - np.median(res)) < 1.5
-        pred = pred + local_median_offset(rt[ii][keep], res[keep], rt, half=12.0)
-        pairs = dp_align(ref, rec, pred, tol=0.4, wt=1.0)
+        keep = np.abs(res - np.median(res)) < 2.0
+        pred = pred + local_median_offset(rt[ii][keep], res[keep], rt, half=half)
+        pairs = dp_align(ref, rec, pred, tol=tol, wt=1.0)
     log("alignment: %d ref words, %d recognised words, %d paired (%.1fs)" % (len(ref), len(rec), len(pairs), time.time() - t0))
     out = []
     for i, j, s in pairs:
@@ -595,42 +598,47 @@ def onset_grid_report(on_src, tm, data, bias=0.0):
             "within_60ms_pct": round(100 * float(np.mean(np.abs(d) <= 0.06)), 1)}
 
 
-def refine_piecewise_beats(tm_pw, times, env, data, search=0.15, min_contrast=3.0):
-    """Fine-tune a lyric-based piecewise map on the drums: in every section, shift the map by the delta
-    (within +-search) that puts the section's beats on the input's strongest onsets.  Sections whose beat
-    evidence is weak keep the lyric value.  Deltas are joined linearly through the section centres."""
+def refine_piecewise_beats(tm_pw, times, env, data, search=0.21, step=0.003, lam=1.0):
+    """Fine-tune a lyric-based piecewise map on the drums.  The unknowns are the offsets at every section
+    boundary (each within +-search of the lyric map); between boundaries the offset is linear.  A Viterbi
+    pass maximises the onset strength found at the BEATS, minus a weak pull (lam per 50 ms squared) toward
+    the lyric value, so sections without drums just keep the lyric map.  Returns (map, sections_scored)."""
     beats = np.array(data["beats"], float)
-    centres, deltas, n_ok = [], [], 0
-    for s in data["sections"]:
-        bts = beats[(beats >= s["start"]) & (beats < s["end"])]
-        if len(bts) < 6:
+    kn = np.array(sorted(set([0.0] + [s["start"] for s in data["sections"]] + [data["dur"]])))
+    K = len(kn)
+    base = tm_pw.offset(kn)
+    grid = np.arange(-search, search + 1e-9, step)
+    G = len(grid)
+    prior = lam * (grid / 0.05) ** 2
+    segs, n_scored = [], 0
+    for i in range(K - 1):
+        bts = beats[(beats >= kn[i]) & (beats < kn[i + 1])]
+        if len(bts) == 0:
+            segs.append(np.zeros((G, G)))
             continue
-        grid = np.arange(-search, search + 1e-9, 0.004)
-        base = tm_pw.f(bts)
-        sc = np.array([np.interp(base + d, times, env, left=0, right=0).mean() for d in grid])
-        k = int(np.argmax(sc))
-        c = float(sc[k] / (np.median(sc) + 1e-9))
-        d = grid[k]
-        if 0 < k < len(grid) - 1:
-            y0, y1, y2 = sc[k - 1], sc[k], sc[k + 1]
-            den = y0 - 2 * y1 + y2
-            if den < 0:
-                d += 0.5 * (y0 - y2) / den * 0.004
-        centres.append(0.5 * (s["start"] + s["end"]))
-        if c >= min_contrast:
-            deltas.append(d - BEAT_BIAS)
-            n_ok += 1
-        else:
-            deltas.append(0.0)
-    if not centres:
-        return tm_pw, 0
-    centres, deltas = np.array(centres), np.array(deltas)
-    knots = np.unique(np.concatenate([tm_pw.k, centres, [0.0, data["dur"]]]))
-    off = tm_pw.offset(knots) + np.interp(knots, centres, deltas)
-    src = knots + off
-    for i in range(1, len(src)):
-        src[i] = max(src[i], src[i - 1] + 0.5 * (knots[i] - knots[i - 1]))
-    return TimeMap("piecewise", knots, src), n_ok
+        n_scored += 1
+        u = (bts - kn[i]) / (kn[i + 1] - kn[i])
+        oi = (base[i] + grid)[:, None, None]
+        oj = (base[i + 1] + grid)[None, :, None]
+        t = bts[None, None, :] + oi * (1 - u) + oj * u + BEAT_BIAS
+        v = np.interp(t.ravel(), times, env, left=0.0, right=0.0).reshape(t.shape).sum(axis=-1)
+        # forbid absurd stretches (> 12 %) inside a section
+        tempo = 1.0 + ((base[i + 1] + grid)[None, :] - (base[i] + grid)[:, None]) / (kn[i + 1] - kn[i])
+        v = np.where((tempo > 0.88) & (tempo < 1.12), v, -1e9)
+        segs.append(v)
+    score = -prior.copy()
+    back = []
+    for i in range(K - 1):
+        cand = score[:, None] + segs[i] - prior[None, :]
+        back.append(np.argmax(cand, axis=0))
+        score = cand.max(axis=0)
+    idx = np.zeros(K, int)
+    idx[-1] = int(np.argmax(score))
+    for i in range(K - 2, -1, -1):
+        idx[i] = back[i][idx[i + 1]]
+    off = base + grid[idx]
+    src = kn + off
+    return TimeMap("piecewise", kn, src), n_scored
 
 
 def tempo_estimate(times, env, fs):
@@ -848,6 +856,8 @@ def main():
     ap.add_argument("--bias-ms", type=float, default=1000 * LYRIC_BIAS,
                     help="how early Whisper stamps a sung word against its note start (default %.0f, measured on "
                          "build/song.wav); 0 shows raw numbers" % (1000 * LYRIC_BIAS))
+    ap.add_argument("--engine", default="auto", choices=["auto", "rubberband", "atempo"],
+                    help="time stretcher: ffmpeg rubberband when available (better), else atempo")
     ap.add_argument("--whisper-model", default="small.en")
     ap.add_argument("--cache-dir", default=os.path.join(ROOT, "build", "retime-cache"))
     ap.add_argument("--no-cache", action="store_true")
@@ -858,7 +868,7 @@ def main():
     ref = ref_words(data["lyrics"], args.include_choir)
     section_order = [s["name"] for s in data["sections"]]
     line_order = [l["id"] for l in data["lyrics"] if not l.get("role") or args.include_choir]
-    engine = "rubberband" if have_filter("rubberband") else "atempo"
+    engine = args.engine if args.engine != "auto" else ("rubberband" if have_filter("rubberband") else "atempo")
 
     log("loading %s" % args.input)
     y = load_audio(args.input)
@@ -938,7 +948,7 @@ def main():
             tm, kind, use = beat_tm, "linear (beat grid)", "beats"
     else:
         tm, kind, use = tm_lyric, chosen + " (lyrics)", "lyrics"
-        if args.sync != "lyrics" and beat_good:
+        if args.sync != "lyrics" and (beat_good or chosen == "piecewise"):
             if chosen in ("const", "linear"):
                 gap = max(abs(float(beat_tm.offset(t) - tm_lyric.offset(t))) for t in (0.0, dur / 2, dur))
                 if gap <= 0.10:
