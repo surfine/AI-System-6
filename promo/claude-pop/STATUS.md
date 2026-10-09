@@ -53,5 +53,8 @@ anchor per lyric line, speed clamped to 0.8-1.25) and `src/main.js` draws `warpT
 4. `node tools/weigh.mjs`, `node tools/srt.mjs`, `node render.mjs video --scale 6 --out build/claude-pop-4k.mp4`,
    split into ≤30 MB parts, plus a 1080p60 share copy; open the PR.
 
+Preview: `node tools/serve.mjs`, then open http://127.0.0.1:8640/promo/claude-pop/index.html (opening index.html from disk
+cannot read the icons or load three.js).
+
 Setup on a fresh machine: `tools/setup.sh`, then `pip install kokoro-onnx pyworld gradio_client` and download the
 Kokoro files into `.cache/kokoro/` (see `music/PRODUCTION.md`).

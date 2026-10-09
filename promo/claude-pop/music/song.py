@@ -949,6 +949,6 @@ SCORE = {
 if __name__ == "__main__":
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "score.json")
     with open(out, "w") as f:
-        json.dump(SCORE, f, indent=1)
+        json.dump(SCORE, f, separators=(",", ":"))   # compact: the film is weighed against one floppy
     print("wrote %s: %d beats = %.1f s, %d sections, %d chords, %d lines" % (
         out, DURATION_BEATS, DURATION_BEATS * 60 / BPM, len(SECTIONS), len(CHORDS), len(LINES)))

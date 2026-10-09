@@ -129,7 +129,8 @@
   // black, and its cyan halo cuts it off the one behind; only the floor, the table's rings and the fog dither. A world unit
   // is a pixel of the 2D line: at CUT3 the camera sits where the 3D line lands exactly on the 2D one. Two formations: the
   // LINE across the diameter and the RING (the twelve round the rim like the hours of a music box). The camera keys are in
-  // the table's frame (c11_cam), so an orbit is an orbit of the line, whatever the table does ----
+  // the table's frame (c11_stage turns them with it), so an orbit is an orbit of the line, whatever the table does. Every
+  // framing is checked against the lyric's letter boxes: no stage pixel inside a glyph, hats >= 19 px under DO! ----
   const CUT3 = T0 + 4 * F1, PX3 = 60, RT = 420, DRUM = 56, NB = 60, RING = 260, P3 = [FLD, BLK, WHT];
   function c11_top() {
     const c = 192; disc(c, c, c - 1, FLD);
@@ -170,20 +171,20 @@
     CAM3 = [[CUT3, CUTK],
       // the crane: up and back off the hat line to the music box (lower left, under PEN and left of PAL), the line opening
       // into the ring; the ring revolves past the lens, then settles low under THE for the silent pen
-      [CUT3 + 11 * F1, OB(900, -.5, 400, 230, 200), 'snap'], [PAL1, OB(1100, -.9, 500, 168, 350), 'hard'], [LB.start, OB(1100, .9, 500, 168, 350), 'lin'], [LB.start + .5, OB(1100, 1.2, 480, 175, 240), 'lin'], [BAND_OUT, OB(1100, 1.5, 480, 175, 240), 'lin'],
+      [CUT3 + 11 * F1, OB(900, .5, 400, 245, 200), 'lin'], [PAL1, OB(1100, .9, 500, 176, 350), 'snap'], [LB.start, OB(1100, -.9, 500, 176, 350), 'lin'], [LB.start + .5, OB(1100, -1.2, 480, 175, 240), 'lin'], [BAND_OUT, OB(1100, -1.5, 480, 175, 240), 'lin'],
       // the slam back: low, three-quarter, the line slanting away behind the hero
       [SLAM, OB(860, -.55, 250, 190), 'cut'], [LD.start, OB(780, -.4, 230, 190), 'lin'], [LE.start - F1, OB(760, -.35, 230, 190), 'lin'],
       // THE HERO ORBIT: a half turn and more round the line, broadside, end-on (a column at the lens) on "pen", broadside from behind
       [LE.start, OB(1250, -.25, 360, 250), 'cut'], [LEE.start, OB(1250, PI - .1, 360, 250), 'lin'], [LF.start - F1, OB(1250, PI + .1, 360, 250), 'lin'],
       // the give-back: down low, the empty stage a marquee drum along the bottom behind the hero; on WHO the twelve pop up
-      // through its traps as the camera pushes in to the hat line
+      // through its traps as the camera pushes in to the hat line, then eases back so YOU DO!'s floppy bar clears their feet
       [LF.start, OB(1300, PI + .4, 70, 220, -250), 'cut'], [PW + .25, OB(1300, PI + .2, 70, 220, -250), 'lin'], [LG.start + .25, OB(880, PI, 200, 216), 'hard'],
-      [LH.start, OB(880, PI, 200, 216), 'lin'], [LH.start + 4 * F1, OB(1050, PI, 200, 235, -20), 'hard'], [DO2, OB(1030, PI - .05, 200, 235, -20), 'lin']];
+      [LH.start, OB(1050, PI, 200, 235, -20), 'lin'], [DO2, OB(1030, PI - .05, 200, 235, -20), 'lin']];
     // the table spins under the camera keys (the floor drifts); its own revolve is in the keys' azimuths
     TURN3 = [[CUT3, 0], [T1, .9, 'lin']];
     // the line's spacing: the 2D line's 52 at the cut, opening to 60, wider in the close shots so every silhouette reads
     SP3 = [[PAL1, 60], [LE.start, 60], [LE.start + F1, 66, 'cut'], [LF.start, 66], [LG.start, 76, 'cut']];
-    FORM3 = [[CUT3, 0], [CUT3 + .15, 0], [PAL1, 1, 'hard'], [LB.start + 8 * F1, 1], [LB.start + 9 * F1, 0, 'cut']];
+    FORM3 = [[CUT3, 0], [PAL1 - .125, 0], [PAL1 + .25, 1, 'hard'], [LB.start + 8 * F1, 1], [LB.start + 9 * F1, 0, 'cut']];
   }
   // the dancer's place on the table: the line (spacing px) or the ring, the even ones to the front half, the odd to the back
   function c11_place(i, px, ox, k) {
@@ -196,7 +197,7 @@
     const S = st.o, th = c11_kf(t, TURN3), c = Math.cos(th), s = Math.sin(th), rot = p => [p[0] * c + p[2] * s, p[1], -p[0] * s + p[2] * c];
     const ks = cam3d(t, CAM3), cs = { ...ks, pos: rot(ks.pos), look: rot(ks.look) };
     aim3d(st.cam, cs);
-    const d0 = Math.hypot(...cs.pos); st.scene.fog.near = d0; st.scene.fog.far = d0 + 560;
+    const d0 = Math.hypot(...cs.pos); st.scene.fog.near = d0 - 40; st.scene.fog.far = d0 + 480;
     const sl = c11_fr(t, SLAM), ty = sl >= 0 && sl < 5 ? [-320, -120, 28, 8, 0][sl] : 0;
     S.turn.rotation.y = th; S.turn.position.y = ty; S.floor.visible = ty < 0;
     S.bulbs.forEach((q, j) => matOf(q).color.set(j === Math.floor(beatAt(t) * 4 + 1e-6) % 3 ? WHT : FLD));   // chasing on the 16ths
@@ -376,7 +377,7 @@
     if (t >= HOLD1) py = 6 - [0, 46, 96, 146, 186][Math.min(4, Math.floor((t - HOLD1) / S16 + 1e-6) + 1)];
     if (t >= KEY) py = LOWPY(t);
     c11_rings(t, px, py);
-    c11_line(t, { dy: c11_dy(t, LB.start, null) });
+    const sk = c11_dy(t, LB.start, null); c11_line(t, { dy: sk, sink: Math.min(140, 2 * sk) });   // in 3D they drop twice as fast (clear of THE)
     const f0 = c11_fr(t, LB.start), rise = f0 < 4 ? [96, 64, 32, 8][f0] : 0, up = t >= HOLD1;
     // the hero pops up right of the slot, reaches on "hold", freezes when the band drops
     c11_dancer(W / 2 + 100, H - 2 + rise, 5, tt, up ? { pose: 'pointUp', p: .5, flip: c11_leftUp(tt), ...(frozen ? { mouth: { open: .6, shape: 'E' } } : {}) } : {});
@@ -502,7 +503,8 @@
     c11_base(t, c11_mid(lay.lines[2]));
     const px = 60, py = 4, g = c11_sig(t);
     c11_rings(t, px, py);
-    c11_line(t, { dy: c11_dy(t, null, LG.start), dance: g ? {} : { pose: 'pointUp', p: beatPhase(t) } });
+    const uf = c11_fr(t, LG.start);   // in 3D they rise through the traps over 8 frames (4 was a flash with the push-in)
+    c11_line(t, { dy: c11_dy(t, null, LG.start), sink: uf >= 0 && uf < 8 ? [120, 100, 80, 62, 44, 28, 14, 4][uf] : 0, dance: g ? {} : { pose: 'pointUp', p: beatPhase(t) } });
     c11_lines(['WHO', 'HOLDS', 'THE PEN?'], opt, [{ stepIn: { t0: ws[0].start, div: 4, enter: 'slam' } }, { stepIn: { t0: ws[1].start, div: 8, enter: 'slam' } }, { stepIn: { t0: ws[2].start, div: 8, enter: 'slam' } }]);
     const bob = R(2 * pulse(t, 1, 6)), tip = c11_pen(t, px, py, { a: 0, back: [W - 186, 24 + bob], sag: 3, cs: 2 });
     c11_ripple(t, tip[0], tip[1]);
@@ -526,7 +528,8 @@
     c11_rings(t, thrown ? nx : px, thrown ? ny : py);
     const df = c11_fr(t, LH.words[1].start);   // DO! slams the line down into the stage (its overshoot never meets a hat)
     // and the line goes down its traps before the throw, a few pixels a frame (gone at once, it was a flash with DO!'s slam)
-    if (!thrown) c11_line(t, { dy: 20, sink: Math.max(df >= 0 && df < 8 ? [30, 26, 20, 14, 9, 5, 2, 1][df] : 0, R(150 * easeIn(prog(t, YOU2 + SPB / 2, DO2)))) });
+    // the twelve keep WHO's point at the pen through YOU's slam, then point at you (one change at a time: flash budget)
+    if (!thrown) c11_line(t, { dy: 20, sink: Math.max(df >= 0 && df < 8 ? [40, 36, 28, 20, 13, 7, 3, 1][df] : 0, R(150 * easeIn(prog(t, YOU2 + SPB / 2, DO2)))), dance: t < LH.start + SPB / 2 ? { pose: 'pointUp', p: beatPhase(t) } : {} });
     c11_bar(t);
     if (c11_fr(t, YOU2) < 2) { rect(l0.x - 2 * l0.sx, l0.y - 2 * l0.sy, l0.w + 4 * l0.sx, l0.h + 4 * l0.sy, BLK); bigType('YOU', { ...yo, xor: FLD }); }   // the E5
     else bigType('YOU', yo);
