@@ -13,6 +13,35 @@ const iworkMaxInflatedXmlBytes = Math.max(
   1024 * 1024,
   Number(process.env.AI_SYSTEM6_IWORK_MAX_XML_BYTES || 8 * 1024 * 1024)
 );
+// ClioWorks v4.3 (I43-01 / Q01): Snappy output is capped BEFORE any
+// allocation. A tiny IWA chunk can declare an arbitrarily large expanded
+// length; without this cap the header alone decides how much memory the
+// import grabs. The cap is per block AND per import job (every chunk of every
+// .iwa entry shares one budget), so a file made of many "modest" chunks cannot
+// slip past it either.
+const iworkMaxSnappyOutputBytes = Math.max(
+  1024 * 1024,
+  Number(process.env.AI_SYSTEM6_IWORK_MAX_SNAPPY_BYTES || 128 * 1024 * 1024)
+);
+
+function iwaError(code, message) {
+  const error = /** @type {Error & { code?: string }} */ (new Error(message));
+  error.code = code;
+  return error;
+}
+
+/** Budget errors abort the whole import: they mean the input asked for more
+ * memory than the job allows, and silently skipping only that chunk would turn
+ * a refused bomb into a half-read file (the exact "silent loss" class v4 was
+ * told to close). Parse errors on individual chunks stay non-fatal and are
+ * counted in the archive report instead. */
+function isFatalIwaError(error) {
+  return error && typeof error.code === "string" && error.code.startsWith("IWORK_");
+}
+
+function createIwaDecodeBudget(totalBytes = iworkMaxSnappyOutputBytes) {
+  return { remaining: totalBytes };
+}
 const { extractPdfText, renderPdfOcrImages } = require("./pdf.js");
 const { extractImageText } = require("./image-ocr.js");
 
@@ -114,11 +143,26 @@ function readProtoFields(buffer) {
   return fields;
 }
 
-function uncompressSnappyBlock(input) {
-  let offset = 0;
-  const length = readProtoVarintNumber(input, offset);
-  offset = length.offset;
-  const output = Buffer.allocUnsafe(length.value);
+function uncompressSnappyBlock(input, { maxOutputBytes = iworkMaxSnappyOutputBytes, budget = null } = {}) {
+  const header = readProtoVarintNumber(input, 0);
+  let offset = header.offset;
+
+  // The declared expansion is checked against the single-block cap AND the
+  // remaining job budget BEFORE Buffer.allocUnsafe runs: a header that lies
+  // about its size must never reach an allocation (I43-01 / Q01).
+  if (header.value > maxOutputBytes) {
+    throw iwaError("IWORK_SNAPPY_BLOCK_LIMIT",
+      `Snappy block declares ${header.value} bytes; the per-block limit is ${maxOutputBytes}.`);
+  }
+  if (budget) {
+    if (!Number.isSafeInteger(budget.remaining) || budget.remaining < header.value) {
+      throw iwaError("IWORK_SNAPPY_JOB_LIMIT",
+        `Snappy expansion budget exhausted (needed ${header.value}, ${Math.max(budget.remaining, 0)} left).`);
+    }
+    budget.remaining -= header.value;
+  }
+
+  const output = Buffer.allocUnsafe(header.value);
   let outOffset = 0;
 
   while (offset < input.length) {
@@ -132,6 +176,7 @@ function uncompressSnappyBlock(input) {
         literalLength += 1;
       } else {
         const lengthBytes = literalLength - 59;
+        if (offset + lengthBytes > input.length) throw new Error("Invalid Snappy literal length.");
         literalLength = 0;
         for (let index = 0; index < lengthBytes; index += 1) {
           literalLength |= input[offset + index] << (8 * index);
@@ -153,14 +198,17 @@ function uncompressSnappyBlock(input) {
     let copyOffset = 0;
 
     if (type === 1) {
+      if (offset >= input.length) throw new Error("Invalid Snappy copy command.");
       copyLength = ((tag >> 2) & 0x07) + 4;
       copyOffset = ((tag & 0xe0) << 3) | input[offset];
       offset += 1;
     } else if (type === 2) {
+      if (offset + 2 > input.length) throw new Error("Invalid Snappy copy command.");
       copyLength = (tag >> 2) + 1;
       copyOffset = input[offset] | (input[offset + 1] << 8);
       offset += 2;
     } else {
+      if (offset + 4 > input.length) throw new Error("Invalid Snappy copy command.");
       copyLength = (tag >> 2) + 1;
       copyOffset = (input[offset] | (input[offset + 1] << 8) | (input[offset + 2] << 16) | (input[offset + 3] << 24)) >>> 0;
       offset += 4;
@@ -181,7 +229,7 @@ function uncompressSnappyBlock(input) {
   return output;
 }
 
-function decompressIwa(buffer) {
+function decompressIwa(buffer, { budget = null } = {}) {
   const chunks = [];
   let offset = 0;
 
@@ -191,8 +239,10 @@ function decompressIwa(buffer) {
     }
     const length = buffer[offset + 1] | (buffer[offset + 2] << 8) | (buffer[offset + 3] << 16);
     offset += 4;
-    if (offset + length > buffer.length) throw new Error("Truncated IWA Snappy chunk.");
-    chunks.push(uncompressSnappyBlock(buffer.subarray(offset, offset + length)));
+    if (length === 0 || offset + length > buffer.length) throw new Error("Truncated IWA Snappy chunk.");
+    // Each chunk also sees the job budget, so a single .iwa entry cannot
+    // outrun the whole import by splitting itself into chunks.
+    chunks.push(uncompressSnappyBlock(buffer.subarray(offset, offset + length), { budget }));
     offset += length;
   }
 
@@ -352,68 +402,31 @@ function extractPagesStorageArchiveText(buffer) {
   return cleanPagesIwaText(text);
 }
 
-function extractPagesIwaText(entries) {
-  const iwaEntries = Array.from(entries.entries())
-    .filter(([name, data]) => /^Index\/.+\.iwa$/i.test(name) && data?.length)
-    .sort(([nameA], [nameB]) => {
-      if (nameA === "Index/Document.iwa") return -1;
-      if (nameB === "Index/Document.iwa") return 1;
-      return nameA.localeCompare(nameB);
-    });
+function extractPagesIwaText(entries, { budget = createIwaDecodeBudget(), report = null } = {}) {
+  const store = parseIwaArchive(entries, { budget, report });
   const chunks = [];
-  const seen = new Set();
+  let sawStorageArchive = false;
 
-  for (const [, iwaBuffer] of iwaEntries) {
-    let data;
+  // The previous scan deduplicated extracted text and required >= 12 readable
+  // characters, which deleted short notes and every repeated sentence (Q03).
+  // Objects are already unique through the archive store, so text is appended
+  // as-is; finding pages storage structure is what proves a readable document,
+  // and a 2-character note reads back whole.
+  for (const message of store.all()) {
+    if (!pagesStorageArchiveTypes.has(message.type)) continue;
+    sawStorageArchive = true;
+
+    let text = "";
     try {
-      data = decompressIwa(iwaBuffer);
+      text = extractPagesStorageArchiveText(message.payload);
     } catch {
       continue;
     }
-
-    try {
-      let offset = 0;
-      while (offset < data.length) {
-        const headerLength = readProtoVarintNumber(data, offset);
-        offset = headerLength.offset;
-        const headerEnd = offset + headerLength.value;
-        if (headerEnd > data.length) break;
-
-        const archive = parseIwaArchiveInfo(data.subarray(offset, headerEnd));
-        offset = headerEnd;
-
-        for (const info of archive.messageInfos) {
-          const payloadEnd = offset + info.length;
-          if (payloadEnd > data.length) {
-            offset = data.length;
-            break;
-          }
-
-          const payload = data.subarray(offset, payloadEnd);
-          offset = payloadEnd;
-          if (!pagesStorageArchiveTypes.has(info.type)) continue;
-
-          let text = "";
-          try {
-            text = extractPagesStorageArchiveText(payload);
-          } catch {
-            continue;
-          }
-          const key = text.replace(/\s+/g, " ").trim();
-          if (key && !seen.has(key)) {
-            seen.add(key);
-            chunks.push(text);
-          }
-        }
-      }
-    } catch {
-      continue;
-    }
+    if (text) chunks.push(text);
   }
 
-  const text = cleanPagesIwaText(chunks.join("\n\n"));
-  const readable = text.match(/[\p{Script=Han}\p{L}\p{N}]/gu)?.length || 0;
-  return readable >= 12 ? text : "";
+  if (!sawStorageArchive) return "";
+  return cleanPagesIwaText(chunks.join("\n\n"));
 }
 
 function extractPagesXmlText(entries) {
@@ -451,22 +464,29 @@ function iworkPreviewPdf(entries) {
   return entries.get("QuickLook/Preview.pdf") || entries.get("QuickLook/Thumbnail.pdf") || entries.get("preview.pdf");
 }
 
+/**
+ * A .pages/.numbers/.key bundle ships preview.jpg / preview-web.jpg /
+ * QuickLook/Thumbnail — renderings of the SAME first page at different sizes,
+ * not pages of the document (Q04). OCR gets the single largest one; it is
+ * labeled as a preview and the page count stays 0 (unknown), because a preview
+ * proves nothing about how many pages the document has.
+ */
 function imagePreviewOcrPages(entries) {
-  return previewImages(entries).map((image, index) => ({
-    pageNumber: index + 1,
-    mimeType: image.mimeType,
-    buffer: image.data,
-  }));
+  const images = previewImages(entries);
+  if (!images.length) return [];
+  const best = images[0];
+  return [{ pageNumber: null, kind: "preview", mimeType: best.mimeType, buffer: best.data }];
 }
 
 async function renderIworkOcrImages(buffer, kind, options = {}) {
   const entries = readZipEntries(buffer);
+  const budget = createIwaDecodeBudget();
   const normalizedKind = String(kind || "").toLowerCase();
   const readableText = normalizedKind === "numbers"
-    ? extractNumbersIwaText(entries)
+    ? extractNumbersIwaText(entries, { budget })
     : normalizedKind === "keynote"
-      ? extractKeynoteIwaText(entries)
-      : extractPagesIwaText(entries) || extractPagesXmlText(entries);
+      ? extractKeynoteIwaText(entries, { budget })
+      : extractPagesIwaText(entries, { budget }) || extractPagesXmlText(entries);
   if (readableText) {
     return { text: readableText, pages: [], pageCount: 0, truncated: false };
   }
@@ -475,14 +495,15 @@ async function renderIworkOcrImages(buffer, kind, options = {}) {
   if (previewPdf) return renderPdfOcrImages(previewPdf, options);
 
   const pages = imagePreviewOcrPages(entries);
-  if (pages.length) return { pages, pageCount: pages.length, truncated: false };
+  if (pages.length) return { pages, pageCount: 0, truncated: false, previewOnly: true };
 
   throw new Error("This iWork file needs a readable PDF or image preview for PaddleOCR.");
 }
 
 async function extractPagesText(buffer, options = {}) {
   const entries = readZipEntries(buffer);
-  const iwaText = extractPagesIwaText(entries);
+  const budget = createIwaDecodeBudget();
+  const iwaText = extractPagesIwaText(entries, { budget });
   if (iwaText) return iwaText;
 
   const pagesXmlText = extractPagesXmlText(entries);
@@ -500,56 +521,118 @@ async function extractPagesText(buffer, options = {}) {
   throw new Error("Pages files need a PDF or image preview. Export to DOCX or PDF if this file cannot be read.");
 }
 
-function parseIwaRecords(entries) {
-  const records = new Map();
+/**
+ * One pass over every .iwa entry. An archive header may carry several messages
+ * for the same identifier (arch variants); the previous map kept only the last
+ * one, so objects silently disappeared (Q02). Messages are kept individually
+ * as {id, type, ordinal, payload, file}; `get` prefers an expected type and
+ * `all` iterates every message in stable file/archive/ordinal order.
+ *
+ * `report` counts what happened — skipped entries and archives are facts about
+ * the file, not noise to swallow. Fatal budget errors propagate; a refused
+ * oversized input must not degrade into a "successfully read" half file.
+ */
+function parseIwaArchive(entries, { budget = createIwaDecodeBudget(), report = null } = {}) {
+  const byId = new Map();
+  const ordered = [];
+  const counts = report || {
+    files: 0, skippedFiles: 0, archives: 0, skippedArchives: 0,
+    messages: 0, multiMessageArchives: 0, repeatedIdentifiers: 0,
+  };
+
   const iwaEntries = Array.from(entries.entries())
     .filter(([name, data]) => /^Index\/.+\.iwa$/i.test(name) && data?.length)
-    .sort(([nameA], [nameB]) => nameA.localeCompare(nameB));
+    .sort(([nameA], [nameB]) => {
+      if (nameA === "Index/Document.iwa") return -1;
+      if (nameB === "Index/Document.iwa") return 1;
+      return nameA.localeCompare(nameB);
+    });
 
   for (const [name, iwaBuffer] of iwaEntries) {
+    counts.files += 1;
     let data;
     try {
-      data = decompressIwa(iwaBuffer);
-    } catch {
+      data = decompressIwa(iwaBuffer, { budget });
+    } catch (error) {
+      if (isFatalIwaError(error)) throw error;
+      counts.skippedFiles += 1;
       continue;
     }
 
-    try {
-      let offset = 0;
-      while (offset < data.length) {
-        const headerLength = readProtoVarintNumber(data, offset);
-        offset = headerLength.offset;
-        const headerEnd = offset + headerLength.value;
-        if (headerEnd > data.length) break;
+    let offset = 0;
+    while (offset < data.length) {
+      let headerLength;
+      try {
+        headerLength = readProtoVarintNumber(data, offset);
+      } catch (error) {
+        counts.skippedArchives += 1;
+        break;
+      }
+      offset = headerLength.offset;
+      const headerEnd = offset + headerLength.value;
+      if (headerEnd > data.length) {
+        counts.skippedArchives += 1;
+        break;
+      }
 
-        const archive = parseIwaArchiveInfo(data.subarray(offset, headerEnd));
+      let archive;
+      try {
+        archive = parseIwaArchiveInfo(data.subarray(offset, headerEnd));
+      } catch (error) {
+        counts.skippedArchives += 1;
         offset = headerEnd;
+        continue;
+      }
+      offset = headerEnd;
+      counts.archives += 1;
+      if (archive.messageInfos.length > 1) counts.multiMessageArchives += 1;
+      if (archive.identifier && byId.has(archive.identifier)) counts.repeatedIdentifiers += 1;
 
-        for (const info of archive.messageInfos) {
-          const payloadEnd = offset + info.length;
-          if (payloadEnd > data.length) {
-            offset = data.length;
-            break;
-          }
-
-          const payload = data.subarray(offset, payloadEnd);
-          offset = payloadEnd;
-          if (archive.identifier) {
-            records.set(archive.identifier, {
-              id: archive.identifier,
-              type: info.type,
-              payload,
-              file: name,
-            });
-          }
+      for (const info of archive.messageInfos) {
+        const payloadEnd = offset + info.length;
+        if (payloadEnd > data.length) {
+          counts.skippedArchives += 1;
+          offset = data.length;
+          break;
+        }
+        const payload = data.subarray(offset, payloadEnd);
+        offset = payloadEnd;
+        const message = {
+          id: archive.identifier,
+          type: info.type,
+          ordinal: archive.messageInfos.indexOf(info),
+          payload,
+          file: name,
+        };
+        ordered.push(message);
+        counts.messages += 1;
+        if (archive.identifier) {
+          const list = byId.get(archive.identifier);
+          if (list) list.push(message);
+          else byId.set(archive.identifier, [message]);
         }
       }
-    } catch {
-      continue;
     }
   }
 
-  return records;
+  return {
+    report: counts,
+    get(identifier, expectedTypes = null) {
+      const list = byId.get(String(identifier || ""));
+      if (!list) return null;
+      if (expectedTypes) {
+        const types = Array.isArray(expectedTypes) ? expectedTypes : [expectedTypes];
+        for (const type of types) {
+          const hit = list.find((message) => message.type === type);
+          if (hit) return hit;
+        }
+      }
+      return list[0];
+    },
+    all() {
+      return ordered;
+    },
+  };
 }
 
 function protoNumber(value) {
@@ -828,46 +911,45 @@ function extractNumbersTableRows(records, tableRecord) {
   };
 }
 
-function extractNumbersIwaText(entries) {
-  const records = parseIwaRecords(entries);
+function extractNumbersIwaText(entries, { budget = createIwaDecodeBudget(), report = null } = {}) {
+  const store = parseIwaArchive(entries, { budget, report });
   const tables = [];
-  const seen = new Set();
 
-  for (const record of records.values()) {
+  // Q03: every table model object is a real table of the document; two tables
+  // with identical content are still two tables, so there is no text-level
+  // dedup any more. Reading enough structure IS the gate — a found table with
+  // any readable cell returns, however short (a one-cell "买牛奶" list is a
+  // document, not noise).
+  for (const record of store.all()) {
     if (!numbersTableModelTypes.has(record.type)) continue;
 
     let table;
     try {
-      table = extractNumbersTableRows(records, record);
+      table = extractNumbersTableRows(store, record);
     } catch {
       continue;
     }
 
     const rows = table.rows.filter((row) => row.some(Boolean));
+    if (!rows.length) continue;
     const filledCells = rows.reduce((sum, row) => sum + row.filter(Boolean).length, 0);
     if (!table.name && filledCells < 2) continue;
-    if (!rows.length) continue;
 
     const title = table.name || `Table ${tables.length + 1}`;
     const lines = rows
       .map((row) => row.map(formatNumbersCellValue).join("\t").trimEnd())
       .filter((line) => line.trim());
     const text = cleanImportedText(`# ${title}\n${lines.join("\n")}`);
-    const signature = text.replace(/\s+/g, " ").trim();
-    if (text && !seen.has(signature)) {
-      seen.add(signature);
-      tables.push(text);
-    }
+    if (text) tables.push(text);
   }
 
-  const text = cleanImportedText(tables.join("\n\n"));
-  const readable = text.match(/[\p{Script=Han}\p{L}\p{N}]/gu)?.length || 0;
-  return readable >= 12 ? text : "";
+  return tables.length ? cleanImportedText(tables.join("\n\n")) : "";
 }
 
 async function extractNumbersText(buffer, options = {}) {
   const entries = readZipEntries(buffer);
-  const iwaText = extractNumbersIwaText(entries);
+  const budget = createIwaDecodeBudget();
+  const iwaText = extractNumbersIwaText(entries, { budget });
   if (iwaText) return iwaText;
 
   const previewPdf = iworkPreviewPdf(entries);
@@ -882,7 +964,7 @@ async function extractNumbersText(buffer, options = {}) {
   throw new Error("Numbers files need readable tables or a preview image. Export to XLSX or PDF if this file cannot be read.");
 }
 
-function extractKeynoteIwaText(entries) {
+function extractKeynoteIwaText(entries, { budget = createIwaDecodeBudget(), report = null } = {}) {
   const slideNames = Array.from(entries.keys())
     .filter((name) => /^Index\/Slide(?:-\d+)?\.iwa$/i.test(name))
     .filter((name) => !/^Index\/TemplateSlide/i.test(name));
@@ -890,10 +972,12 @@ function extractKeynoteIwaText(entries) {
 
   const slideOrder = new Map(slideNames.map((name, index) => [name, index]));
   const slides = slideNames.map(() => []);
-  const seenBySlide = slideNames.map(() => new Set());
-  const records = parseIwaRecords(entries);
+  const store = parseIwaArchive(entries, { budget, report });
 
-  for (const record of records.values()) {
+  // Q02/Q03: iterate every message — an archive header with several messages
+  // for one identifier used to collapse to its last variant — and keep repeats
+  // (the same sentence on two slides is two objects, not one).
+  for (const record of store.all()) {
     const slideIndex = slideOrder.get(record.file);
     if (slideIndex === undefined) continue;
 
@@ -902,7 +986,7 @@ function extractKeynoteIwaText(entries) {
       if (pagesStorageArchiveTypes.has(record.type)) {
         text = extractPagesStorageArchiveText(record.payload);
       } else if (numbersTableModelTypes.has(record.type)) {
-        const table = extractNumbersTableRows(records, record);
+        const table = extractNumbersTableRows(store, record);
         const rows = table.rows.filter((row) => row.some(Boolean));
         if (rows.length) {
           const title = table.name ? `Table: ${table.name}\n` : "";
@@ -914,11 +998,7 @@ function extractKeynoteIwaText(entries) {
     }
 
     text = cleanPagesIwaText(text);
-    const signature = text.replace(/\s+/g, " ").trim();
-    if (signature && !seenBySlide[slideIndex].has(signature)) {
-      seenBySlide[slideIndex].add(signature);
-      slides[slideIndex].push(text);
-    }
+    if (text) slides[slideIndex].push(text);
   }
 
   const chunks = slides
@@ -927,14 +1007,13 @@ function extractKeynoteIwaText(entries) {
       return body ? `# Slide ${index + 1}\n${body}` : "";
     })
     .filter(Boolean);
-  const text = cleanImportedText(chunks.join("\n\n"));
-  const readable = text.match(/[\p{Script=Han}\p{L}\p{N}]/gu)?.length || 0;
-  return readable >= 12 ? text : "";
+  return chunks.length ? cleanImportedText(chunks.join("\n\n")) : "";
 }
 
 async function extractKeynoteText(buffer, options = {}) {
   const entries = readZipEntries(buffer);
-  const iwaText = extractKeynoteIwaText(entries);
+  const budget = createIwaDecodeBudget();
+  const iwaText = extractKeynoteIwaText(entries, { budget });
   if (iwaText) return iwaText;
 
   const previewPdf = iworkPreviewPdf(entries);

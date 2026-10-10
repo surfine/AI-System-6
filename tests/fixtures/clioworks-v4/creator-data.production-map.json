@@ -1,0 +1,3469 @@
+{
+ "schema": 1,
+ "description": "ClioWorks v4 production preservation mapping for the synthetic creator-data.xlsx fixture (V4-01). Unlisted parts must be byte-identical (opaque carry). Listed parts keep the locked attribute values, locked child elements and locked text per xpath; attribute order, child order, namespace declarations/prefixes, XML declaration bytes, ZIP layout and shared-string reference rewrites are not semantics.",
+ "namespaces": {
+  "s": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
+  "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+  "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+  "rel": "http://schemas.openxmlformats.org/package/2006/relationships",
+  "ct": "http://schemas.openxmlformats.org/package/2006/content-types"
+ },
+ "attrAliases": {
+  "xml:space": "{http://www.w3.org/XML/1998/namespace}space",
+  "mc:Ignorable": "{http://schemas.openxmlformats.org/markup-compatibility/2006}Ignorable"
+ },
+ "allowAdditions": [
+  "docProps/core.xml",
+  "docProps/app.xml"
+ ],
+ "edit": {
+  "part": "xl/sharedStrings.xml",
+  "xpath": ".//s:si/s:t",
+  "match": "any",
+  "before": "synthetic-log-01",
+  "after": "synthetic-log-01-reviewed"
+ },
+ "parts": {
+  "xl/workbook.xml": [
+   {
+    "xpath": ".//s:workbook",
+    "keepAttrs": [],
+    "keepChildren": [
+     "sheets"
+    ],
+    "keepText": false,
+    "allowAddedChildren": true
+   },
+   {
+    "xpath": ".//s:sheets",
+    "keepAttrs": [],
+    "keepChildren": [
+     "sheet"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:sheet[1]",
+    "keepAttrs": [
+     "name",
+     "sheetId",
+     "r:id"
+    ],
+    "keepChildren": [],
+    "keepText": false,
+    "reference": true
+   },
+   {
+    "xpath": ".//s:sheet[2]",
+    "keepAttrs": [
+     "name",
+     "sheetId",
+     "r:id"
+    ],
+    "keepChildren": [],
+    "keepText": false,
+    "reference": true
+   }
+  ],
+  "xl/sharedStrings.xml": [
+   {
+    "xpath": ".//s:sst",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": false,
+    "allowAddedChildren": true
+   }
+  ],
+  "xl/styles.xml": [
+   {
+    "xpath": ".//s:styleSheet",
+    "keepAttrs": [],
+    "keepChildren": [
+     "borders",
+     "cellStyleXfs",
+     "cellStyles",
+     "cellXfs",
+     "fills",
+     "fonts",
+     "numFmts"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:numFmts[1]",
+    "keepAttrs": [
+     "count"
+    ],
+    "keepChildren": [
+     "numFmt"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:numFmts[1]/s:numFmt[1]",
+    "keepAttrs": [
+     "formatCode",
+     "numFmtId"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fonts[1]",
+    "keepAttrs": [
+     "count"
+    ],
+    "keepChildren": [
+     "font"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fonts[1]/s:font[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "name",
+     "sz"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fonts[1]/s:font[1]/s:sz[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fonts[1]/s:font[1]/s:name[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fonts[1]/s:font[2]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "name",
+     "sz"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fonts[1]/s:font[2]/s:sz[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fonts[1]/s:font[2]/s:name[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fonts[1]/s:font[3]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "b",
+     "color",
+     "name",
+     "sz"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fonts[1]/s:font[3]/s:b[1]",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fonts[1]/s:font[3]/s:sz[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fonts[1]/s:font[3]/s:color[1]",
+    "keepAttrs": [
+     "rgb"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fonts[1]/s:font[3]/s:name[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fonts[1]/s:font[4]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "b",
+     "name",
+     "sz"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fonts[1]/s:font[4]/s:b[1]",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fonts[1]/s:font[4]/s:sz[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fonts[1]/s:font[4]/s:name[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fills[1]",
+    "keepAttrs": [
+     "count"
+    ],
+    "keepChildren": [
+     "fill"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fills[1]/s:fill[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "patternFill"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fills[1]/s:fill[1]/s:patternFill[1]",
+    "keepAttrs": [
+     "patternType"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fills[1]/s:fill[2]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "patternFill"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fills[1]/s:fill[2]/s:patternFill[1]",
+    "keepAttrs": [
+     "patternType"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fills[1]/s:fill[3]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "patternFill"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fills[1]/s:fill[3]/s:patternFill[1]",
+    "keepAttrs": [
+     "patternType"
+    ],
+    "keepChildren": [
+     "fgColor"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fills[1]/s:fill[3]/s:patternFill[1]/s:fgColor[1]",
+    "keepAttrs": [
+     "rgb"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fills[1]/s:fill[4]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "patternFill"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fills[1]/s:fill[4]/s:patternFill[1]",
+    "keepAttrs": [
+     "patternType"
+    ],
+    "keepChildren": [
+     "fgColor"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:fills[1]/s:fill[4]/s:patternFill[1]/s:fgColor[1]",
+    "keepAttrs": [
+     "rgb"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:borders[1]",
+    "keepAttrs": [
+     "count"
+    ],
+    "keepChildren": [
+     "border"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:borders[1]/s:border[1]",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:borders[1]/s:border[2]",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellStyleXfs[1]",
+    "keepAttrs": [
+     "count"
+    ],
+    "keepChildren": [
+     "xf"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellStyleXfs[1]/s:xf[1]",
+    "keepAttrs": [
+     "borderId",
+     "fillId",
+     "fontId",
+     "numFmtId"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]",
+    "keepAttrs": [
+     "count"
+    ],
+    "keepChildren": [
+     "xf"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[1]",
+    "keepAttrs": [
+     "borderId",
+     "fillId",
+     "fontId",
+     "numFmtId",
+     "xfId"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[2]",
+    "keepAttrs": [
+     "applyBorder",
+     "applyFill",
+     "applyFont",
+     "applyNumberFormat",
+     "borderId",
+     "fillId",
+     "fontId",
+     "numFmtId",
+     "xfId"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[3]",
+    "keepAttrs": [
+     "applyBorder",
+     "applyFill",
+     "applyFont",
+     "applyNumberFormat",
+     "borderId",
+     "fillId",
+     "fontId",
+     "numFmtId",
+     "xfId"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[4]",
+    "keepAttrs": [
+     "applyAlignment",
+     "applyBorder",
+     "applyFill",
+     "applyFont",
+     "applyNumberFormat",
+     "borderId",
+     "fillId",
+     "fontId",
+     "numFmtId",
+     "xfId"
+    ],
+    "keepChildren": [
+     "alignment"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[4]/s:alignment[1]",
+    "keepAttrs": [
+     "vertical"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[5]",
+    "keepAttrs": [
+     "applyBorder",
+     "applyFill",
+     "applyFont",
+     "applyNumberFormat",
+     "borderId",
+     "fillId",
+     "fontId",
+     "numFmtId",
+     "xfId"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[6]",
+    "keepAttrs": [
+     "applyAlignment",
+     "applyBorder",
+     "applyFill",
+     "applyFont",
+     "applyNumberFormat",
+     "borderId",
+     "fillId",
+     "fontId",
+     "numFmtId",
+     "xfId"
+    ],
+    "keepChildren": [
+     "alignment"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[6]/s:alignment[1]",
+    "keepAttrs": [
+     "vertical"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[7]",
+    "keepAttrs": [
+     "applyAlignment",
+     "applyBorder",
+     "applyFill",
+     "applyFont",
+     "applyNumberFormat",
+     "borderId",
+     "fillId",
+     "fontId",
+     "numFmtId",
+     "xfId"
+    ],
+    "keepChildren": [
+     "alignment"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[7]/s:alignment[1]",
+    "keepAttrs": [
+     "vertical"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[8]",
+    "keepAttrs": [
+     "applyAlignment",
+     "applyBorder",
+     "applyFill",
+     "applyFont",
+     "applyNumberFormat",
+     "borderId",
+     "fillId",
+     "fontId",
+     "numFmtId",
+     "xfId"
+    ],
+    "keepChildren": [
+     "alignment"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[8]/s:alignment[1]",
+    "keepAttrs": [
+     "vertical"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[9]",
+    "keepAttrs": [
+     "applyAlignment",
+     "applyBorder",
+     "applyFill",
+     "applyFont",
+     "applyNumberFormat",
+     "borderId",
+     "fillId",
+     "fontId",
+     "numFmtId",
+     "xfId"
+    ],
+    "keepChildren": [
+     "alignment"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[9]/s:alignment[1]",
+    "keepAttrs": [
+     "vertical"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[10]",
+    "keepAttrs": [
+     "applyAlignment",
+     "applyBorder",
+     "applyFill",
+     "applyFont",
+     "applyNumberFormat",
+     "borderId",
+     "fillId",
+     "fontId",
+     "numFmtId",
+     "xfId"
+    ],
+    "keepChildren": [
+     "alignment"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[10]/s:alignment[1]",
+    "keepAttrs": [
+     "vertical"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[11]",
+    "keepAttrs": [
+     "applyAlignment",
+     "applyBorder",
+     "applyFill",
+     "applyFont",
+     "applyNumberFormat",
+     "borderId",
+     "fillId",
+     "fontId",
+     "numFmtId",
+     "xfId"
+    ],
+    "keepChildren": [
+     "alignment"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[11]/s:alignment[1]",
+    "keepAttrs": [
+     "vertical"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[12]",
+    "keepAttrs": [
+     "applyAlignment",
+     "applyBorder",
+     "applyFill",
+     "applyFont",
+     "applyNumberFormat",
+     "borderId",
+     "fillId",
+     "fontId",
+     "numFmtId",
+     "xfId"
+    ],
+    "keepChildren": [
+     "alignment"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[12]/s:alignment[1]",
+    "keepAttrs": [
+     "vertical"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[13]",
+    "keepAttrs": [
+     "applyAlignment",
+     "applyBorder",
+     "applyFill",
+     "applyFont",
+     "applyNumberFormat",
+     "borderId",
+     "fillId",
+     "fontId",
+     "numFmtId",
+     "xfId"
+    ],
+    "keepChildren": [
+     "alignment"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[13]/s:alignment[1]",
+    "keepAttrs": [
+     "vertical"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[14]",
+    "keepAttrs": [
+     "applyAlignment",
+     "applyBorder",
+     "applyFill",
+     "applyFont",
+     "applyNumberFormat",
+     "borderId",
+     "fillId",
+     "fontId",
+     "numFmtId",
+     "xfId"
+    ],
+    "keepChildren": [
+     "alignment"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[14]/s:alignment[1]",
+    "keepAttrs": [
+     "vertical"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[15]",
+    "keepAttrs": [
+     "applyAlignment",
+     "applyBorder",
+     "applyFill",
+     "applyFont",
+     "applyNumberFormat",
+     "borderId",
+     "fillId",
+     "fontId",
+     "numFmtId",
+     "xfId"
+    ],
+    "keepChildren": [
+     "alignment"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[15]/s:alignment[1]",
+    "keepAttrs": [
+     "vertical"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[16]",
+    "keepAttrs": [
+     "applyAlignment",
+     "applyBorder",
+     "applyFill",
+     "applyFont",
+     "applyNumberFormat",
+     "borderId",
+     "fillId",
+     "fontId",
+     "numFmtId",
+     "xfId"
+    ],
+    "keepChildren": [
+     "alignment"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[16]/s:alignment[1]",
+    "keepAttrs": [
+     "vertical"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[17]",
+    "keepAttrs": [
+     "applyAlignment",
+     "applyBorder",
+     "applyFill",
+     "applyFont",
+     "applyNumberFormat",
+     "borderId",
+     "fillId",
+     "fontId",
+     "numFmtId",
+     "xfId"
+    ],
+    "keepChildren": [
+     "alignment"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[17]/s:alignment[1]",
+    "keepAttrs": [
+     "wrapText"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[18]",
+    "keepAttrs": [
+     "applyAlignment",
+     "applyBorder",
+     "applyFill",
+     "applyFont",
+     "applyNumberFormat",
+     "borderId",
+     "fillId",
+     "fontId",
+     "numFmtId",
+     "xfId"
+    ],
+    "keepChildren": [
+     "alignment"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[18]/s:alignment[1]",
+    "keepAttrs": [
+     "wrapText"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[19]",
+    "keepAttrs": [
+     "applyAlignment",
+     "applyBorder",
+     "applyFill",
+     "applyFont",
+     "applyNumberFormat",
+     "borderId",
+     "fillId",
+     "fontId",
+     "numFmtId",
+     "xfId"
+    ],
+    "keepChildren": [
+     "alignment"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[19]/s:alignment[1]",
+    "keepAttrs": [
+     "wrapText"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[20]",
+    "keepAttrs": [
+     "applyAlignment",
+     "applyBorder",
+     "applyFill",
+     "applyFont",
+     "applyNumberFormat",
+     "borderId",
+     "fillId",
+     "fontId",
+     "numFmtId",
+     "xfId"
+    ],
+    "keepChildren": [
+     "alignment"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellXfs[1]/s:xf[20]/s:alignment[1]",
+    "keepAttrs": [
+     "wrapText"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellStyles[1]",
+    "keepAttrs": [
+     "count"
+    ],
+    "keepChildren": [
+     "cellStyle"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:styleSheet/s:cellStyles[1]/s:cellStyle[1]",
+    "keepAttrs": [
+     "name",
+     "xfId"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   }
+  ],
+  "xl/theme/theme1.xml": [
+   {
+    "xpath": ".//a:theme",
+    "keepAttrs": [
+     "name"
+    ],
+    "keepChildren": [
+     "themeElements"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "clrScheme",
+     "fmtScheme",
+     "fontScheme"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]",
+    "keepAttrs": [
+     "name"
+    ],
+    "keepChildren": [
+     "accent1",
+     "accent2",
+     "accent3",
+     "accent4",
+     "accent5",
+     "accent6",
+     "dk1",
+     "dk2",
+     "folHlink",
+     "hlink",
+     "lt1",
+     "lt2"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:dk1[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "sysClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:dk1[1]/a:sysClr[1]",
+    "keepAttrs": [
+     "lastClr",
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:lt1[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "sysClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:lt1[1]/a:sysClr[1]",
+    "keepAttrs": [
+     "lastClr",
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:dk2[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "srgbClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:dk2[1]/a:srgbClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:lt2[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "srgbClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:lt2[1]/a:srgbClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:accent1[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "srgbClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:accent1[1]/a:srgbClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:accent2[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "srgbClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:accent2[1]/a:srgbClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:accent3[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "srgbClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:accent3[1]/a:srgbClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:accent4[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "srgbClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:accent4[1]/a:srgbClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:accent5[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "srgbClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:accent5[1]/a:srgbClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:accent6[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "srgbClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:accent6[1]/a:srgbClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:hlink[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "srgbClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:hlink[1]/a:srgbClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:folHlink[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "srgbClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:clrScheme[1]/a:folHlink[1]/a:srgbClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fontScheme[1]",
+    "keepAttrs": [
+     "name"
+    ],
+    "keepChildren": [
+     "majorFont",
+     "minorFont"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fontScheme[1]/a:majorFont[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "cs",
+     "ea",
+     "latin"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fontScheme[1]/a:majorFont[1]/a:latin[1]",
+    "keepAttrs": [
+     "typeface"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fontScheme[1]/a:majorFont[1]/a:ea[1]",
+    "keepAttrs": [
+     "typeface"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fontScheme[1]/a:majorFont[1]/a:cs[1]",
+    "keepAttrs": [
+     "typeface"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fontScheme[1]/a:minorFont[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "cs",
+     "ea",
+     "latin"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fontScheme[1]/a:minorFont[1]/a:latin[1]",
+    "keepAttrs": [
+     "typeface"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fontScheme[1]/a:minorFont[1]/a:ea[1]",
+    "keepAttrs": [
+     "typeface"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fontScheme[1]/a:minorFont[1]/a:cs[1]",
+    "keepAttrs": [
+     "typeface"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]",
+    "keepAttrs": [
+     "name"
+    ],
+    "keepChildren": [
+     "bgFillStyleLst",
+     "effectStyleLst",
+     "fillStyleLst",
+     "lnStyleLst"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "gradFill",
+     "solidFill"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:solidFill[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "schemeClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:solidFill[1]/a:schemeClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "gsLst",
+     "lin"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[1]/a:gsLst[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "gs"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[1]",
+    "keepAttrs": [
+     "pos"
+    ],
+    "keepChildren": [
+     "schemeClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[1]/a:schemeClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [
+     "lumMod",
+     "satMod",
+     "tint"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[1]/a:schemeClr[1]/a:tint[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[1]/a:schemeClr[1]/a:lumMod[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[1]/a:schemeClr[1]/a:satMod[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[2]",
+    "keepAttrs": [
+     "pos"
+    ],
+    "keepChildren": [
+     "schemeClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[2]/a:schemeClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [
+     "lumMod",
+     "satMod",
+     "tint"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[2]/a:schemeClr[1]/a:tint[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[2]/a:schemeClr[1]/a:lumMod[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[2]/a:schemeClr[1]/a:satMod[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[3]",
+    "keepAttrs": [
+     "pos"
+    ],
+    "keepChildren": [
+     "schemeClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[3]/a:schemeClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [
+     "lumMod",
+     "satMod",
+     "tint"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[3]/a:schemeClr[1]/a:tint[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[3]/a:schemeClr[1]/a:lumMod[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[3]/a:schemeClr[1]/a:satMod[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[1]/a:lin[1]",
+    "keepAttrs": [
+     "ang",
+     "scaled"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[2]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "gsLst",
+     "lin"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[2]/a:gsLst[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "gs"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[2]/a:gsLst[1]/a:gs[1]",
+    "keepAttrs": [
+     "pos"
+    ],
+    "keepChildren": [
+     "schemeClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[2]/a:gsLst[1]/a:gs[1]/a:schemeClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [
+     "lumMod",
+     "satMod",
+     "tint"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[2]/a:gsLst[1]/a:gs[1]/a:schemeClr[1]/a:tint[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[2]/a:gsLst[1]/a:gs[1]/a:schemeClr[1]/a:lumMod[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[2]/a:gsLst[1]/a:gs[1]/a:schemeClr[1]/a:satMod[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[2]/a:gsLst[1]/a:gs[2]",
+    "keepAttrs": [
+     "pos"
+    ],
+    "keepChildren": [
+     "schemeClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[2]/a:gsLst[1]/a:gs[2]/a:schemeClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [
+     "lumMod",
+     "satMod",
+     "shade"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[2]/a:gsLst[1]/a:gs[2]/a:schemeClr[1]/a:shade[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[2]/a:gsLst[1]/a:gs[2]/a:schemeClr[1]/a:lumMod[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[2]/a:gsLst[1]/a:gs[2]/a:schemeClr[1]/a:satMod[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[2]/a:gsLst[1]/a:gs[3]",
+    "keepAttrs": [
+     "pos"
+    ],
+    "keepChildren": [
+     "schemeClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[2]/a:gsLst[1]/a:gs[3]/a:schemeClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [
+     "lumMod",
+     "satMod",
+     "shade"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[2]/a:gsLst[1]/a:gs[3]/a:schemeClr[1]/a:shade[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[2]/a:gsLst[1]/a:gs[3]/a:schemeClr[1]/a:lumMod[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[2]/a:gsLst[1]/a:gs[3]/a:schemeClr[1]/a:satMod[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:fillStyleLst[1]/a:gradFill[2]/a:lin[1]",
+    "keepAttrs": [
+     "ang",
+     "scaled"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:lnStyleLst[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "ln"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:lnStyleLst[1]/a:ln[1]",
+    "keepAttrs": [
+     "w"
+    ],
+    "keepChildren": [
+     "prstDash",
+     "solidFill"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:lnStyleLst[1]/a:ln[1]/a:solidFill[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "schemeClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:lnStyleLst[1]/a:ln[1]/a:solidFill[1]/a:schemeClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:lnStyleLst[1]/a:ln[1]/a:prstDash[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:lnStyleLst[1]/a:ln[2]",
+    "keepAttrs": [
+     "w"
+    ],
+    "keepChildren": [
+     "prstDash",
+     "solidFill"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:lnStyleLst[1]/a:ln[2]/a:solidFill[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "schemeClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:lnStyleLst[1]/a:ln[2]/a:solidFill[1]/a:schemeClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:lnStyleLst[1]/a:ln[2]/a:prstDash[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:lnStyleLst[1]/a:ln[3]",
+    "keepAttrs": [
+     "w"
+    ],
+    "keepChildren": [
+     "prstDash",
+     "solidFill"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:lnStyleLst[1]/a:ln[3]/a:solidFill[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "schemeClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:lnStyleLst[1]/a:ln[3]/a:solidFill[1]/a:schemeClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:lnStyleLst[1]/a:ln[3]/a:prstDash[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:effectStyleLst[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "effectStyle"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:effectStyleLst[1]/a:effectStyle[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "effectLst"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:effectStyleLst[1]/a:effectStyle[1]/a:effectLst[1]",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:effectStyleLst[1]/a:effectStyle[2]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "effectLst"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:effectStyleLst[1]/a:effectStyle[2]/a:effectLst[1]",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:effectStyleLst[1]/a:effectStyle[3]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "effectLst"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:effectStyleLst[1]/a:effectStyle[3]/a:effectLst[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "outerShdw"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:effectStyleLst[1]/a:effectStyle[3]/a:effectLst[1]/a:outerShdw[1]",
+    "keepAttrs": [
+     "blurRad",
+     "dir",
+     "dist"
+    ],
+    "keepChildren": [
+     "srgbClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:effectStyleLst[1]/a:effectStyle[3]/a:effectLst[1]/a:outerShdw[1]/a:srgbClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [
+     "alpha"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:effectStyleLst[1]/a:effectStyle[3]/a:effectLst[1]/a:outerShdw[1]/a:srgbClr[1]/a:alpha[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "gradFill",
+     "solidFill"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:solidFill[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "schemeClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:solidFill[1]/a:schemeClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:solidFill[2]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "schemeClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:solidFill[2]/a:schemeClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [
+     "satMod",
+     "tint"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:solidFill[2]/a:schemeClr[1]/a:tint[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:solidFill[2]/a:schemeClr[1]/a:satMod[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:gradFill[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "gsLst",
+     "lin"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:gradFill[1]/a:gsLst[1]",
+    "keepAttrs": [],
+    "keepChildren": [
+     "gs"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[1]",
+    "keepAttrs": [
+     "pos"
+    ],
+    "keepChildren": [
+     "schemeClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[1]/a:schemeClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [
+     "lumMod",
+     "satMod",
+     "shade",
+     "tint"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[1]/a:schemeClr[1]/a:tint[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[1]/a:schemeClr[1]/a:shade[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[1]/a:schemeClr[1]/a:lumMod[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[1]/a:schemeClr[1]/a:satMod[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[2]",
+    "keepAttrs": [
+     "pos"
+    ],
+    "keepChildren": [
+     "schemeClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[2]/a:schemeClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [
+     "lumMod",
+     "satMod",
+     "shade",
+     "tint"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[2]/a:schemeClr[1]/a:tint[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[2]/a:schemeClr[1]/a:shade[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[2]/a:schemeClr[1]/a:lumMod[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[2]/a:schemeClr[1]/a:satMod[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[3]",
+    "keepAttrs": [
+     "pos"
+    ],
+    "keepChildren": [
+     "schemeClr"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[3]/a:schemeClr[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [
+     "satMod",
+     "shade"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[3]/a:schemeClr[1]/a:shade[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:gradFill[1]/a:gsLst[1]/a:gs[3]/a:schemeClr[1]/a:satMod[1]",
+    "keepAttrs": [
+     "val"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//a:theme/a:themeElements[1]/a:fmtScheme[1]/a:bgFillStyleLst[1]/a:gradFill[1]/a:lin[1]",
+    "keepAttrs": [
+     "ang",
+     "scaled"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   }
+  ],
+  "xl/worksheets/sheet1.xml": [
+   {
+    "xpath": ".//s:worksheet",
+    "keepAttrs": [],
+    "keepChildren": [
+     "sheetViews",
+     "sheetFormatPr",
+     "cols",
+     "sheetData",
+     "mergeCells",
+     "dataValidations",
+     "pageMargins"
+    ],
+    "keepText": false,
+    "allowAddedChildren": true
+   },
+   {
+    "xpath": ".//s:sheetViews",
+    "keepAttrs": [],
+    "keepChildren": [
+     "sheetView"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:pane",
+    "keepAttrs": [
+     "activePane",
+     "state",
+     "topLeftCell",
+     "ySplit"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:sheetFormatPr",
+    "keepAttrs": [
+     "defaultRowHeight"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:pageMargins",
+    "keepAttrs": [
+     "bottom",
+     "footer",
+     "header",
+     "left",
+     "right",
+     "top"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:sheetView[1]",
+    "keepAttrs": [
+     "workbookViewId"
+    ],
+    "keepChildren": [
+     "pane"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:cols",
+    "keepAttrs": [],
+    "keepChildren": [
+     "col"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:mergeCells",
+    "keepAttrs": [],
+    "keepChildren": [
+     "mergeCell"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:mergeCells/s:mergeCell[1]",
+    "keepAttrs": [
+     "ref"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:mergeCells/s:mergeCell[2]",
+    "keepAttrs": [
+     "ref"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:dataValidations",
+    "keepAttrs": [
+     "count"
+    ],
+    "keepChildren": [
+     "dataValidation"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:dataValidations/s:dataValidation[1]",
+    "keepAttrs": [
+     "sqref",
+     "type"
+    ],
+    "keepChildren": [
+     "formula1"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:dataValidations/s:dataValidation[1]/s:formula1",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true
+   },
+   {
+    "xpath": ".//s:sheetData",
+    "keepAttrs": [],
+    "keepChildren": [
+     "row"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:row[@r='1']",
+    "keepAttrs": [
+     "customHeight",
+     "ht",
+     "r"
+    ],
+    "keepChildren": [
+     "c"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A1']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A1']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:c[@r='B1']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='C1']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='D1']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='E1']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:row[@r='2']",
+    "keepAttrs": [
+     "customHeight",
+     "ht",
+     "r"
+    ],
+    "keepChildren": [
+     "c"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A2']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A2']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:c[@r='B2']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='C2']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='D2']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='E2']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:row[@r='3']",
+    "keepAttrs": [
+     "customHeight",
+     "ht",
+     "r"
+    ],
+    "keepChildren": [
+     "c"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A3']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='B3']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='C3']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='D3']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='E3']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:row[@r='4']",
+    "keepAttrs": [
+     "customHeight",
+     "ht",
+     "r"
+    ],
+    "keepChildren": [
+     "c"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A4']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A4']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:c[@r='B4']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='B4']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:c[@r='C4']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='C4']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:c[@r='D4']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='D4']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:c[@r='E4']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='E4']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:row[@r='5']",
+    "keepAttrs": [
+     "customHeight",
+     "ht",
+     "r"
+    ],
+    "keepChildren": [
+     "c"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A5']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A5']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:c[@r='B5']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='B5']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "notes": "numeric value"
+   },
+   {
+    "xpath": ".//s:c[@r='C5']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='C5']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "notes": "numeric value"
+   },
+   {
+    "xpath": ".//s:c[@r='D5']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='D5']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:c[@r='E5']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='E5']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:row[@r='6']",
+    "keepAttrs": [
+     "customHeight",
+     "ht",
+     "r"
+    ],
+    "keepChildren": [
+     "c"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A6']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A6']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:c[@r='B6']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='B6']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "notes": "numeric value"
+   },
+   {
+    "xpath": ".//s:c[@r='C6']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='C6']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "notes": "numeric value"
+   },
+   {
+    "xpath": ".//s:c[@r='D6']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='D6']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:c[@r='E6']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='E6']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:row[@r='7']",
+    "keepAttrs": [
+     "customHeight",
+     "ht",
+     "r"
+    ],
+    "keepChildren": [
+     "c"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A7']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A7']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:c[@r='B7']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='C7']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='D7']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='D7']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:c[@r='E7']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='E7']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:row[@r='8']",
+    "keepAttrs": [
+     "customHeight",
+     "ht",
+     "r"
+    ],
+    "keepChildren": [
+     "c"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A8']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='B8']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='C8']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='D8']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='E8']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:row[@r='9']",
+    "keepAttrs": [
+     "customHeight",
+     "ht",
+     "r"
+    ],
+    "keepChildren": [
+     "c"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A9']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A9']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:c[@r='B9']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "f",
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='B9']/s:f",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "notes": "formula text must not be rewritten"
+   },
+   {
+    "xpath": ".//s:c[@r='B9']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "notes": "numeric value"
+   },
+   {
+    "xpath": ".//s:c[@r='C9']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='D9']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='E9']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:row[@r='10']",
+    "keepAttrs": [
+     "customHeight",
+     "ht",
+     "r"
+    ],
+    "keepChildren": [
+     "c"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A10']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A10']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:c[@r='B10']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "f",
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='B10']/s:f",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "notes": "formula text must not be rewritten"
+   },
+   {
+    "xpath": ".//s:c[@r='B10']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "notes": "numeric value"
+   },
+   {
+    "xpath": ".//s:c[@r='C10']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='D10']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='E10']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:row[@r='11']",
+    "keepAttrs": [
+     "customHeight",
+     "ht",
+     "r"
+    ],
+    "keepChildren": [
+     "c"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A11']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='B11']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='C11']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='D11']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='E11']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:row[@r='12']",
+    "keepAttrs": [
+     "customHeight",
+     "ht",
+     "r"
+    ],
+    "keepChildren": [
+     "c"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A12']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='B12']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='C12']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='D12']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='E12']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   }
+  ],
+  "xl/worksheets/sheet2.xml": [
+   {
+    "xpath": ".//s:worksheet",
+    "keepAttrs": [],
+    "keepChildren": [
+     "sheetFormatPr",
+     "cols",
+     "sheetData",
+     "pageMargins"
+    ],
+    "keepText": false,
+    "allowAddedChildren": true
+   },
+   {
+    "xpath": ".//s:sheetFormatPr",
+    "keepAttrs": [
+     "defaultRowHeight"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:pageMargins",
+    "keepAttrs": [
+     "bottom",
+     "footer",
+     "header",
+     "left",
+     "right",
+     "top"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:cols",
+    "keepAttrs": [],
+    "keepChildren": [
+     "col"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:sheetData",
+    "keepAttrs": [],
+    "keepChildren": [
+     "row"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:row[@r='1']",
+    "keepAttrs": [
+     "customHeight",
+     "ht",
+     "r"
+    ],
+    "keepChildren": [
+     "c"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A1']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A1']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:c[@r='B1']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='B1']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:row[@r='2']",
+    "keepAttrs": [
+     "customHeight",
+     "ht",
+     "r"
+    ],
+    "keepChildren": [
+     "c"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A2']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A2']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:c[@r='B2']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='B2']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:row[@r='3']",
+    "keepAttrs": [
+     "customHeight",
+     "ht",
+     "r"
+    ],
+    "keepChildren": [
+     "c"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A3']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A3']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:c[@r='B3']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='B3']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:row[@r='4']",
+    "keepAttrs": [
+     "customHeight",
+     "ht",
+     "r"
+    ],
+    "keepChildren": [
+     "c"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A4']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A4']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:c[@r='B4']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='B4']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:row[@r='5']",
+    "keepAttrs": [
+     "customHeight",
+     "ht",
+     "r"
+    ],
+    "keepChildren": [
+     "c"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A5']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='A5']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   },
+   {
+    "xpath": ".//s:c[@r='B5']",
+    "keepAttrs": [
+     "s"
+    ],
+    "keepChildren": [
+     "v"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//s:c[@r='B5']/s:v",
+    "keepAttrs": [],
+    "keepChildren": [],
+    "keepText": true,
+    "reference": true,
+    "notes": "cell value; shared-string index may be rewritten when resolved text is identical"
+   }
+  ],
+  "_rels/.rels": [
+   {
+    "xpath": ".//rel:Relationships",
+    "keepAttrs": [],
+    "keepChildren": [
+     "Relationship"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//rel:Relationship[@Id='Rcdd1b26165c0487f']",
+    "keepAttrs": [
+     "Type",
+     "Target",
+     "Id"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   }
+  ],
+  "xl/_rels/workbook.xml.rels": [
+   {
+    "xpath": ".//rel:Relationships",
+    "keepAttrs": [],
+    "keepChildren": [
+     "Relationship"
+    ],
+    "keepText": false
+   },
+   {
+    "xpath": ".//rel:Relationship[@Id='Rd7c83242ab8d4873']",
+    "keepAttrs": [
+     "Type",
+     "Target",
+     "Id"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//rel:Relationship[@Id='Rec8a301442714347']",
+    "keepAttrs": [
+     "Type",
+     "Target",
+     "Id"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//rel:Relationship[@Id='R122a39923d534ceb']",
+    "keepAttrs": [
+     "Type",
+     "Target",
+     "Id"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//rel:Relationship[@Id='R51d099308c45465d']",
+    "keepAttrs": [
+     "Type",
+     "Target",
+     "Id"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//rel:Relationship[@Id='R75ef52a5dfa4489f']",
+    "keepAttrs": [
+     "Type",
+     "Target",
+     "Id"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//rel:Relationship[@Id='rIdClioFixture']",
+    "keepAttrs": [
+     "Type",
+     "Target",
+     "Id"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   }
+  ],
+  "[Content_Types].xml": [
+   {
+    "xpath": ".//ct:Types",
+    "keepAttrs": [],
+    "keepChildren": [
+     "Default",
+     "Override"
+    ],
+    "keepText": false,
+    "allowAddedChildren": true
+   },
+   {
+    "xpath": ".//ct:Default[@Extension='rels']",
+    "keepAttrs": [
+     "Extension",
+     "ContentType"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//ct:Override[@PartName='/xl/styles.xml']",
+    "keepAttrs": [
+     "PartName",
+     "ContentType"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//ct:Override[@PartName='/xl/theme/theme1.xml']",
+    "keepAttrs": [
+     "PartName",
+     "ContentType"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//ct:Override[@PartName='/xl/sharedStrings.xml']",
+    "keepAttrs": [
+     "PartName",
+     "ContentType"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//ct:Override[@PartName='/xl/worksheets/sheet1.xml']",
+    "keepAttrs": [
+     "PartName",
+     "ContentType"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   },
+   {
+    "xpath": ".//ct:Override[@PartName='/xl/worksheets/sheet2.xml']",
+    "keepAttrs": [
+     "PartName",
+     "ContentType"
+    ],
+    "keepChildren": [],
+    "keepText": false
+   }
+  ]
+ }
+}

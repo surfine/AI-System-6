@@ -45,6 +45,9 @@ export const repoRoot = repositoryRoot;
 export const stampedIndexAssets = [
   "styles.bundle.css",
   "app.bundle.js",
+  // Hand-stamped in index.html by the ClioWorks v3 fixture gate; listed here
+  // so a release rewrites its stamp like every other immutable app/ reference.
+  "app/vendor/clioworks-v3/fixture.js",
   "app/generated/build-info.js",
   "app/core/theme-registry.js",
   "app/core/theme-body-init.js",

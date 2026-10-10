@@ -27,6 +27,9 @@ function applicationItemKind(item) {
   if (!item) return "";
   if (item.type === "chat") return "chat";
   if (item.type === "alias") return "alias";
+  // A native OOXML package rides on the desk's native-binaries store: the
+  // kind is the file extension, never a text body guess.
+  if (item.type === "nativeBinary" && typeof item.format === "string") return item.format.toLowerCase();
   if (item.type === "text") {
     if (item.clioDiagram) return "clio-diagram";
     // A saved Cover Glass cover: the layer JSON rides on the document.
@@ -451,6 +454,85 @@ registerApplication({
     return { ok: !!(await window.AISystem6CoverGlass?.openSavedCover?.(file)) };
   },
 });
+
+registerApplication({
+  id: "clioWorksLedger",
+  labelKey: "clioworks_ledger_label",
+  // The workbook surface is the chart window the native host opens; there is
+  // no "clioWorks" window (the window-registry contract walks every literal
+  // windowName, and a named-but-unbuilt window hides from its instruments).
+  windowName: "clioChart",
+  acceptedItemKinds: ["xlsx"],
+  acceptedIntents: ["open", "read", "edit", "export"],
+  defaultOpener: true,
+  recordsRuns: ["edit", "export"],
+  handler: async (items, context) => {
+    const file = items[0];
+    if (!file) return { ok: false, reason: "missing" };
+    if (typeof ensureNativeBinariesModule !== "function" || typeof ensureClioWorksLedgerModule !== "function") {
+      return { ok: false, reason: "clioworks-unavailable" };
+    }
+    await ensureNativeBinariesModule();
+    await ensureClioWorksLedgerModule();
+    if (context.intent === "read") {
+      // Reading intent: open the existing text projection in Reader; never
+      // overwrites the native source.
+      if (typeof createReaderFileDocumentTab === "function" && typeof openReaderDocumentTab === "function") {
+        const tab = createReaderFileDocumentTab(file.name);
+        openReaderDocumentTab(tab.id);
+        openWindow("reader");
+        return { ok: true };
+      }
+      return { ok: false, reason: "reader-unavailable" };
+    }
+    if (context.intent === "edit" || context.intent === "open") {
+      return window.AISystem6ClioWorks?.openNativeWorkbook?.(file, context);
+    }
+    return { ok: false, reason: "unsupported-intent" };
+  },
+});
+
+// ClioWorks v4 (V4-01): Word and PowerPoint packages get the same read/edit
+// intent split as workbooks. Edit goes through the real Quire/Lectern adapters
+// (no upstream window substitute; the S11 editor screens arrive later); read
+// opens the text projection in Reader and never touches the native bytes.
+for (const [appId, labelKey, kind] of [
+  ["clioWorksQuire", "clioworks_quire_label", "docx"],
+  ["clioWorksLectern", "clioworks_lectern_label", "pptx"],
+]) {
+  registerApplication({
+    id: appId,
+    labelKey,
+    // Document-model apps: their editor surfaces (S11) are still pending
+    // design review, so they name no window yet.
+    windowName: "",
+    acceptedItemKinds: [kind],
+    acceptedIntents: ["open", "read", "edit", "export"],
+    recordsRuns: ["edit", "export"],
+    handler: async (items, context) => {
+      const file = items[0];
+      if (!file) return { ok: false, reason: "missing" };
+      if (typeof ensureNativeBinariesModule !== "function" || typeof ensureClioWorksLedgerModule !== "function") {
+        return { ok: false, reason: "clioworks-unavailable" };
+      }
+      await ensureNativeBinariesModule();
+      await ensureClioWorksLedgerModule();
+      if (context.intent === "read") {
+        if (typeof createReaderFileDocumentTab === "function" && typeof openReaderDocumentTab === "function") {
+          const tab = createReaderFileDocumentTab(file.name);
+          openReaderDocumentTab(tab.id);
+          openWindow("reader");
+          return { ok: true };
+        }
+        return { ok: false, reason: "reader-unavailable" };
+      }
+      if (context.intent === "edit" || context.intent === "open") {
+        return window.AISystem6ClioWorks?.openNativeDocument?.(file, context);
+      }
+      return { ok: false, reason: "unsupported-intent" };
+    },
+  });
+}
 
 registerApplication({
   id: "reviewDesk",

@@ -109,15 +109,29 @@ final class TimeMachineBrowser: NSObject, WKScriptMessageHandlerWithReply, WKScr
       injectionTime: .atDocumentStart,
       forMainFrameOnly: true
     ))
-    Task { await loadAdBlocker() }
+    // The extension load stays off `Bundle.main`'s paths (see
+    // shellExecutableURL in main.swift): macOS 27 WebKit's manifest
+    // localization for `__MSG_*__` extensions asserts if the app's main
+    // bundle was touched first, and the trap cannot be caught here.
+    Task { @MainActor in
+      await loadAdBlocker()
+    }
   }
 
   // MARK: Ad blocking
 
   /// uBlock Origin Lite's own Safari build, loaded through WebKit's web
-  /// extension support: the same filters Safari users run, unmodified.
+  /// extension support: the same filters Safari users run, unmodified. The
+  /// release bundle uses a ZIP because older WebKit builds can assert while
+  /// loading a directory resource URL.
   private func loadAdBlocker() async {
-    guard let extensionURL, FileManager.default.fileExists(atPath: extensionURL.appendingPathComponent("manifest.json").path) else {
+    guard let extensionURL else {
+      shellLog("time machine: no ad blocker bundled")
+      return
+    }
+    let isArchive = extensionURL.pathExtension.lowercased() == "zip"
+    let hasManifest = FileManager.default.fileExists(atPath: extensionURL.appendingPathComponent("manifest.json").path)
+    guard FileManager.default.fileExists(atPath: extensionURL.path), isArchive || hasManifest else {
       shellLog("time machine: no ad blocker bundled")
       return
     }

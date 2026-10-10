@@ -63,6 +63,8 @@ const desktopEntryFiles = new Set([
   "styles.soundscape.css",
   "styles.liquid-cover.css",
   "styles.image-prompt-studio.css",
+  "styles.clioworks-native.css",
+  "styles.clio-stage-audit.css",
 ]);
 
 /** Resolve a browser-logical source path to its physical repository file. */

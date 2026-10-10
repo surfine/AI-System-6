@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "description": "One declared content-field edit; every other part must remain byte-identical. This is a sentinel, not Office approval.",
+  "originalSha256": "17dcbf6d88ac681a9a83e6562d80809bf7026b023ec2e52b4098812300bb0381",
+  "xmlEdits": {
+    "ppt/slides/slide1.xml": [
+      {
+        "xpath": ".//a:t[.='一次导出：42 秒']",
+        "namespace": {
+          "a": "http://schemas.openxmlformats.org/drawingml/2006/main"
+        },
+        "before": "一次导出：42 秒",
+        "after": "一次导出用了 42 秒"
+      }
+    ]
+  }
+}

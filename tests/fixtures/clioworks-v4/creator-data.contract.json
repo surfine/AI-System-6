@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "description": "One declared content-field edit; every other part must remain byte-identical. This is a sentinel, not Office approval.",
+  "originalSha256": "9a0f1a85be629519e34dfb9e6da45629e346b5d63b88e6aac80bdc452c8794f2",
+  "xmlEdits": {
+    "xl/worksheets/sheet1.xml": [
+      {
+        "xpath": ".//s:c[@r='D5']/s:v",
+        "namespace": {
+          "s": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+        },
+        "before": "synthetic-log-01",
+        "after": "synthetic-log-01-reviewed"
+      }
+    ]
+  }
+}

@@ -960,6 +960,10 @@ function restoreFileFloppyWorkingSession(state = {}) {
   mountedTextDisk.fileBodies = { ...(disk.fileBodies || {}) };
   mountedTextDisk.fileDiagnostics = { ...(disk.fileDiagnostics || {}) };
   mountedTextDisk.fileSources = { ...(disk.fileSources || {}) };
+  // ClioWorks v4: native Office packages ride the same session snapshot.
+  // Restoring them reattaches original bytes; a missing/older snapshot simply
+  // leaves the store empty (versioned field extension, no migration).
+  mountedTextDisk.nativeFiles = { ...(disk.nativeFiles || {}) };
   mountedTextDisk.chunks = Number(disk.chunks || 0);
   mountedTextDisk.projectId = disk.projectId || state.projectId || null;
   selectedMountedFile = state.selectedMountedFile || mountedTextDisk.files[0] || null;

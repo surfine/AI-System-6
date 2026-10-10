@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "description": "One declared content-field edit; every other part must remain byte-identical. This is a sentinel, not Office approval.",
+  "originalSha256": "c098d304649492543ceb8710dda402f6090fcec37006b6972f1a37e5509e860c",
+  "xmlEdits": {
+    "word/document.xml": [
+      {
+        "xpath": ".//w:t[.='这次导出用了 42 秒。它没有快到让人忘记等待，但足够让我把这一期视频做完。']",
+        "namespace": {
+          "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+        },
+        "before": "这次导出用了 42 秒。它没有快到让人忘记等待，但足够让我把这一期视频做完。",
+        "after": "这次导出耗时 42 秒。它没有快到让人忘记等待，但足够让我把这一期视频做完。"
+      }
+    ]
+  }
+}

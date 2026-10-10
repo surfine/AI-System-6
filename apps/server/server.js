@@ -143,6 +143,32 @@ server.listen(port, host, () => {
   }
 });
 
+// A second app instance (or a leftover server) can already own the port. If a
+// healthy desk answers there, this process is redundant: say so and leave
+// quietly instead of dying with an unhandled-error stack in the shell's log.
+server.on("error", (error) => {
+  if (/** @type {any} */ (error).code !== "EADDRINUSE") {
+    console.error(`Server error: ${error.message}`);
+    process.exit(1);
+  }
+  const probe = http.get({ host, port, path: "/", timeout: 3000 }, (res) => {
+    const healthy = res.statusCode === 200;
+    res.resume();
+    res.on("end", () => {
+      if (healthy) {
+        console.log(`Another AI System 6 server already listens on ${host}:${port}; reusing it.`);
+        process.exit(0);
+      }
+      console.error(`Port ${port} is held by something that did not serve the desk; exiting.`);
+      process.exit(1);
+    });
+  });
+  probe.on("error", () => {
+    console.error(`Port ${port} is in use and did not answer a probe; exiting.`);
+    process.exit(1);
+  });
+});
+
 let shuttingDown = false;
 function shutdown(signal) {
   if (shuttingDown) return;

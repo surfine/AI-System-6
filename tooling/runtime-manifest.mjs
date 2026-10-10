@@ -128,6 +128,7 @@ export const appModulePaths = [
 
 export const lazyRuntimePaths = [
   "app/vendor/stream-markdown-parser.global.js",
+  "app/features/clio-stage-audit.js",
   "app/core/web-app-shell.js",
   "app/core/liquid-glass-overlay.js",
   "app/core/launch-intent.js",
@@ -313,6 +314,17 @@ export const lazyStartupExclusions = [
   "app/vendor/markmap/markmap-view.js",
   "app/vendor/markmap/markmap-lib.js",
   ...lazyRuntimePaths,
+];
+
+// ClioWorks v4 native Office editing: never in the boot bundle, never in the
+// floppy budget. Loaded on demand only when an xlsx edit intent actually
+// fires (ensureClioWorksLedgerModule).
+export const clioWorksNativeRuntimePaths = [
+  "app/core/native-binaries.js",
+  "app/vendor/clioworks-v3/native-host.js",
+  "app/vendor/clioworks-v3/ledger-adapter.js",
+  "app/vendor/clioworks-v3/quire-adapter.js",
+  "app/vendor/clioworks-v3/lectern-adapter.js",
 ];
 
 export const appRuntimePaths = [

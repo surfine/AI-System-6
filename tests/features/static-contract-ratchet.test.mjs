@@ -60,7 +60,7 @@ const budget = JSON.parse(readFileSync(budgetPath, "utf8"));
 // are named rather than all of apps/server: importing a data module is not
 // executing an endpoint, and a signal that wide would hand the whole server
 // tree's neighbours a slot each.
-const executingSignal = /node:vm|boot-vm\.mjs|draft-desk-vm\.mjs|write-lease-vm\.mjs|backup-vm\.mjs|app-boot-vm\.mjs|^\.\.\/\.\.\/(?:functions\/(?:_lib|api)|workers|apps\/server\/server\/routes)\//;
+const executingSignal = /node:vm|boot-vm\.mjs|draft-desk-vm\.mjs|write-lease-vm\.mjs|backup-vm\.mjs|app-boot-vm\.mjs|^\.\.\/\.\.\/(?:functions\/(?:_lib|api)|workers|apps\/server)\//;
 const suiteInfrastructure = new Set([
   "static-contract-ratchet.test.mjs",
   "gate-self-proof.test.mjs",

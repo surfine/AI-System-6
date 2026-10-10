@@ -2766,6 +2766,39 @@ async function importFilesToMountedTextDisk(files, options = {}) {
         };
       }
       chunks.push(...fileChunks);
+
+      // ClioWorks v4 (V4-01 host): an OOXML package keeps its original bytes
+      // beside the text projection. The projection above stays the reading
+      // aid; the bytes below are what "edit the file" opens and what a
+      // preserving save reads back. Never an extracted-text overwrite.
+      // The store itself is lazy: make sure it is loaded BEFORE deciding the
+      // file is a native package, otherwise the first import of a session
+      // would silently skip byte registration.
+      if (/\.(xlsx|docx|pptx)$/i.test(file.name || "") && !window.AISystem6NativeBinaries && typeof ensureNativeBinariesModule === "function") {
+        try {
+          await ensureNativeBinariesModule();
+        } catch (nativeError) {
+          failures.push({ name: file.name, message: t("clioworks_native_register_failed", nativeError?.message || String(nativeError)) });
+        }
+      }
+      if (window.AISystem6NativeBinaries && /\.(xlsx|docx|pptx)$/i.test(file.name || "")) {
+        try {
+          const bytes = new Uint8Array(await file.arrayBuffer());
+          if (!mountedTextDisk.nativeFiles) mountedTextDisk.nativeFiles = {};
+          const record = window.AISystem6NativeBinaries.register({
+            mountedName,
+            fileName: file.name,
+            format: window.AISystem6NativeBinaries.formatForName(file.name),
+            bytes,
+            projectId: importProjectId,
+          });
+          mountedTextDisk.nativeFiles[mountedName] = record;
+        } catch (nativeError) {
+          // A package whose bytes cannot be read stays a plain text mount —
+          // the failure is recorded, never a silent fallback to text editing.
+          failures.push({ name: file.name, message: t("clioworks_native_register_failed", nativeError?.message || String(nativeError)) });
+        }
+      }
     } catch (error) {
       if (isAbortError(error)) throw error;
       failures.push({ name: file.name, message: error.message || String(error) });

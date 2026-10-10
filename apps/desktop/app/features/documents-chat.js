@@ -3093,6 +3093,15 @@ function openMountedTextFile(name) {
   const body = mountedTextDisk.fileBodies[name];
   if (typeof body !== "string") return;
 
+  // ClioWorks v4 (V4-01 host): a native Office package carries its original
+  // bytes next to this text projection. Opening it asks the S01 intent once —
+  // edit in place through the real adapter, or read the projection. The text
+  // is never written back over the package.
+  if (window.AISystem6NativeBinaries?.isNative?.(name)) {
+    void openNativeFileIntent(name);
+    return;
+  }
+
   if (typeof createReaderFileDocumentTab === "function" && typeof openReaderDocumentTab === "function") {
     const tab = createReaderFileDocumentTab(name);
     openReaderDocumentTab(tab.id);
@@ -3111,6 +3120,31 @@ function openMountedTextFile(name) {
       statusKey: "viewing_mounted_file",
     },
   });
+}
+
+/** S01: 原生檔案打開意圖——編輯檔案 / 作為資料閱讀 / 取消。 */
+async function openNativeFileIntent(name) {
+  const record = window.AISystem6NativeBinaries?.recordFor?.(name);
+  if (!record) return;
+  const answer = await showSystemModal(t("clioworks_open_native_message", record.fileName || name), "confirm", {
+    confirmKey: "clioworks_open_native_edit",
+    altKey: "clioworks_open_native_read",
+    defaultAction: "cancel",
+  });
+  if (answer === "yes") {
+    if (typeof ensureNativeBinariesModule !== "function" || typeof ensureClioWorksLedgerModule !== "function") return;
+    await ensureNativeBinariesModule();
+    await ensureClioWorksLedgerModule();
+    await window.AISystem6ClioWorks?.openNativeDocument?.({ mountedName: name }, { intent: "edit" });
+    return;
+  }
+  if (answer === "no") {
+    if (typeof createReaderFileDocumentTab === "function" && typeof openReaderDocumentTab === "function") {
+      const tab = createReaderFileDocumentTab(name);
+      openReaderDocumentTab(tab.id);
+      openWindow("reader");
+    }
+  }
 }
 
 // 并排: the source and the finished page, two sheets side by side. The window

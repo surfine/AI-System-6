@@ -42,6 +42,7 @@ TWELVE APPEARANCES IN ALL. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 ## Contents
 
 - [Recent progress](#recent-progress)
+- [What's new in 1.0.58](#whats-new-in-1058)
 - [What's new in 1.0.57](#whats-new-in-1057)
 - [What's new in 1.0.56](#whats-new-in-1056)
 - [What this protects](#what-this-protects)
@@ -70,7 +71,29 @@ TWELVE APPEARANCES IN ALL. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 Projects stay in your browser. Export a backup to keep another copy. You can explore the desktop, play games and open the **36 demonstration project disks** without connecting an AI model.
 
 <details>
-<summary>Release details: 1.0.57 and 1.0.56</summary>
+<summary>Release details: 1.0.58, 1.0.57 and 1.0.56</summary>
+
+## What's new in 1.0.58
+
+- **Office files keep their own bytes.** Bring a DOCX, XLSX or PPTX onto the
+  File Floppy and the original package rides beside the extracted text copy;
+  opening it asks once whether to edit the file itself or read the text copy in
+  Reader. An unedited save returns the exact original bytes; after an edit only
+  the touched parts are rewritten, and parts the editor does not model keep
+  their original bytes. Round trips are held to semantic preservation guards;
+  acceptance in Microsoft Office itself has not yet been run.
+- **ClioStage checks the page you are on.** A real layout pass measures the
+  printed page and reports text that overruns its frame, blocks crossing the
+  page edge, placed blocks that overlap and distorted pictures. Locate the
+  block, preview a geometry-only fix, adopt it as one undoable step, and
+  re-check; a paper's numbers and quotes are never rewritten to pass a layout
+  check. The deck also exports as a native PowerPoint file whose text stays
+  editable and whose speaker notes stay notes.
+- **iWork imports read more and invent less.** Pages, Numbers and Keynote text
+  extraction keeps short notes and repeated sentences instead of dropping
+  them, preview images are labelled as previews instead of being counted as
+  pages, and a compressed stream that claims more memory than the import
+  allows is refused before any allocation happens.
 
 ## What's new in 1.0.57
 
@@ -545,7 +568,7 @@ The writing runtime keeps author, recipient, voice and medium independent, share
 ## Built under a 1988 constraint
 
 ```text
-boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,940,943 bytes
+boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,945,864 bytes
 two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 bytes
 heavy tools             load lazily, from a third disk
 ```

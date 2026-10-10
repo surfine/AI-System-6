@@ -1,0 +1,71 @@
+/* PRODUCTION CANDIDATE: layout only, for ClioWorksHost.mountNative inside an existing AI System 6 window.
+ * Load the existing host theme/styles first. Do NOT load the kit's workspace.css or demo/*.css here.
+ * Buttons keep the host's .btn class. This file does not redraw their material or state.
+ * Source of truth: ClioWorks-Interaction-Kit-v3 src/native-layout.css (transplanted 2026-10-10). */
+.cw-native {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  min-block-size: 0;
+  block-size: 100%;
+  container-type: inline-size;
+}
+.cw-native > .cw-toolbar {
+  display: flex;
+  align-items: center;
+  flex: none;
+  flex-wrap: nowrap;
+  gap: 4px;
+  padding: 6px 8px;
+  background: var(--toolbar-bg);
+  border-block-end: var(--toolbar-border);
+}
+.cw-native .cw-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.cw-native .cw-icon {
+  inline-size: 16px;
+  block-size: 16px;
+  flex: none;
+  pointer-events: none;
+}
+.cw-native .cw-tool-divider {
+  align-self: stretch;
+  flex: none;
+  margin: 3px 4px;
+  border-inline-start: var(--system-secondary-divider);
+}
+.cw-native .cw-more { margin-inline-start: auto; }
+.cw-native > .cw-editor-area {
+  flex: 1;
+  min-inline-size: 0;
+  min-block-size: 0;
+  position: relative;
+  /* Flex column so a re-parented host editor (e.g. TeachText's
+     .teachtext-editor-container, itself flex:1) fills the area. */
+  display: flex;
+  flex-direction: column;
+}
+/* The 更多 popup reuses the host's shared .menu-popover surface (material,
+   layering token, item + disabled styling) and adds only scroll geometry. */
+.cw3-more-menu {
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+}
+@container (max-width: 820px) {
+  .cw-native .cw-optional { display: none; }
+}
+@container (max-width: 600px) {
+  .cw-native > .cw-toolbar { gap: 3px; padding: 4px; }
+  .cw-native .cw-tool .cw-button-label { display: none; }
+  .cw-native .cw-more .cw-button-label { display: inline; }
+  .cw-native .cw-tool { min-inline-size: 32px; }
+  .cw-native .cw-tool-divider { margin-inline: 1px; }
+}
+@media (pointer: coarse) {
+  .cw-native .cw-tool { min-inline-size: 44px; min-block-size: 44px; }
+}

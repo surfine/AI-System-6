@@ -1461,3 +1461,32 @@ landscape sweep) stay open and are tracked in the 1.0.52 closeout.
 - **Text Lightroom (文字亮室) develops layer by layer.** Each layer is one model call cached by its input, so changing a later layer never re-runs an earlier one; Just This Layer shows a word diff; a negative made stale by later edits says so and can be re-shot, keeping the old one as a version.
 - **ASCII storyboards.** TeachText's Commands and Quick Draft's Deliver menu turn a script into storyboard shot groups drawn in characters (a model is required, and the item says so when none is connected); a second pass updates only the changed paragraphs and keeps hand edits; the sheet exports as PNG pages; one shot can be refined in Image Prompt Studio and its picture put back; keyframes can be taken from a finished video. The real-model steps of its acceptance walk have not yet been run.
 - **Control Panel's Dock and window switches sit as ordinary checkbox rows** instead of a bold two-column grid, in every appearance.
+
+## Public Beta 1.0.58 - 2026-10-10
+
+The ClioWorks rounds reach the product: Office packages become first-class
+materials that keep their own bytes, ClioStage learns to check the page it is
+showing, and the iWork import path is hardened in both directions — it reads
+more of what is there and refuses what would lie.
+
+- Office files (DOCX/XLSX/PPTX) mounted on the File Floppy keep the original
+  package beside the extracted text copy; opening one asks whether to edit the
+  file itself or read the text copy in Reader. Unedited saves return the exact
+  original bytes; edits go through preserving writers where only the touched
+  parts are rewritten and unmodeled parts keep their bytes, held to semantic
+  preservation guards (Office-own acceptance still not run).
+- ClioStage gained a current-page check: a real layout pass measures the
+  printed page (fonts settled), reports text overruns, page-edge crossings,
+  overlapping placed blocks and distorted pictures, locates the block, previews
+  a geometry-only fix and adopts it as one undoable step, then re-checks.
+  Decks export as native editable PPTX with speaker notes intact, through the
+  same single-writer path as v4's office codecs.
+- The iWork importer no longer drops short notes or repeated sentences, no
+  longer numbers preview images as document pages, keeps every message of a
+  multi-message IWA archive (with skipped-entry counts in a structured
+  report), and caps Snappy decompression budgets per block and per import
+  before any allocation happens.
+- Workspace hygiene: earlier ClioWorks rounds' registrations completed across
+  the release toolchains (stamped index assets, lazy-module ordering, release
+  asset lists, window registry naming, integration ledger), and the full
+  473-contract feature lane runs green again.

@@ -91,6 +91,8 @@ const exactPublicFiles = new Set([
   "styles.soundscape.css",
   "styles.liquid-cover.css",
   "styles.image-prompt-studio.css",
+  "styles.clioworks-native.css",
+  "styles.clio-stage-audit.css",
   "endfield-terminal.html",
 ]);
 

@@ -870,6 +870,10 @@ function ensureLazySystemModule(path, loadedFlag) {
 }
 function ensureFinderObjectsModule() { return ensureLazySystemModule("app/features/finder-objects.js", "AISystem6FinderObjectsLoaded"); }
 function ensureDesktopMaintenanceModule() { return ensureLazySystemModule("app/core/desktop-maintenance.js", "AISystem6DesktopMaintenanceLoaded"); }
+function ensureNativeBinariesModule() { return ensureLazySystemModule("app/core/native-binaries.js", "AISystem6NativeBinaries"); }
+function ensureClioWorksLedgerModule() { return ensureLazySystemModule("app/vendor/clioworks-v3/native-host.js", "AISystem6ClioWorksLoaded"); }
+const ensureClioStageAuditModuleLoaded = createLazyModuleLoader("AISystem6ClioStageAuditLoaded", ["app/features/clio-stage-audit.js"], false, ["styles.clio-stage-audit.css"]);
+function ensureClioStageAuditModule() { return ensureClioStageAuditModuleLoaded(); }
 // The sheet travels with the module: DocMap's styles are lazy too.
 const ensureDocMapModuleLoaded = createLazyModuleLoader("AISystem6DocMapLoaded", ["app/features/docmap.js"], false, ["styles.docmap.css"]);
 function ensureDocMapModule() { return ensureDocMapModuleLoaded(); }

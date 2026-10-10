@@ -33,6 +33,11 @@ const clioStageState = {
   deckSpec: null,
   mode: "document",
   index: 0,
+  // ClioWorks v4.2 audit identity: generation bumps when a different deck is
+  // attached; editRevision counts every applied markdown change (edits, undo,
+  // redo — the history write path comes through applyMarkdown too).
+  generation: 1,
+  editRevision: 0,
   startedAt: 0,
   timerId: 0,
   // A deck being drafted from text: what it is drafted from, the way to run
@@ -112,6 +117,8 @@ async function saveClioStageDraft() {
   const file = saveTemporaryClioStageDeck(source.markdown, source.saveTarget || { name: source.sourceLabel || source.title });
   if (!file) return null;
   clioStageState.source = { ...source, title: file.name, sourceKind: "teachText", sourceItemId: file.id, temporary: false };
+  clioStageState.generation = (clioStageState.generation || 1) + 1;
+  clioStageState.editRevision = 0;
   syncClioStageControls();
   setStatus(t("clio_stage_saved_as", file.name));
   if (typeof updateMenuState === "function") updateMenuState();
@@ -721,6 +728,8 @@ async function loadClioStageSource(source) {
   clioStageState.selected = -1;
   clioStageState.history = clioStageNewHistory();
   clioStageState.source = { ...source, title, markdown };
+  clioStageState.generation = (clioStageState.generation || 1) + 1;
+  clioStageState.editRevision = 0;
   clioStageState.parsed = null;
   const deckRuntime = clioStageDeckRuntime();
   // cleanSpec, not the raw reader: the era becomes a class name on every frame
@@ -1060,6 +1069,7 @@ function clioStageApplyMarkdown(next, { index, record = true, label, render = tr
   if (record) clioStagePushHistory(source.markdown, label);
   const previousIndex = clioStageState.index;
   source.markdown = next;
+  clioStageState.editRevision += 1;
   clioStageState.parsed = parsed;
   clioStageState.index = Math.max(0, Math.min(parsed.slides.length - 1, index === undefined ? previousIndex : index));
   if (clioStageState.index !== previousIndex) clioStageState.selected = -1;
@@ -1698,6 +1708,8 @@ function showClioStageStreaming(markdownSoFar, { label = "" } = {}) {
   const previous = clioStageState.parsed?.slides.length || 0;
   const following = first || !clioStageState.parsed || clioStageState.index >= previous - 1;
   clioStageState.source = { markdown: complete, title: pending.label || t("clio_stage_label"), streaming: true, temporary: false };
+  clioStageState.generation = (clioStageState.generation || 1) + 1;
+  clioStageState.editRevision = 0;
   clioStageState.parsed = parsed;
   clioStageState.arrivedFrom = previous;
   const runtime = clioStageDeckRuntime();
@@ -1762,6 +1774,18 @@ function clioStageEnsureExportButton() {
   button.setAttribute("data-i18n", "print_pdf");
   button.textContent = t("print_pdf");
   bar.insertBefore(button, bar.querySelector("#clio-stage-status"));
+  // ClioWorks v4.2 (D42-02): the current-page check. The entry lives with the
+  // deck's other tools in the details bar; the rail is 132px and full.
+  if (!document.querySelector("#clio-stage-audit")) {
+    const audit = document.createElement("button");
+    audit.className = "btn details-bar-button";
+    audit.type = "button";
+    audit.id = "clio-stage-audit";
+    audit.setAttribute("data-action", "clio-stage-audit");
+    audit.setAttribute("data-i18n", "clio_stage_audit_title");
+    audit.textContent = t("clio_stage_audit_title");
+    bar.insertBefore(audit, bar.querySelector("#clio-stage-status"));
+  }
 }
 
 bindClioStageControls();
@@ -2186,6 +2210,11 @@ window.AISystem6ClioStage = {
   sideAskContext: clioStageSideAskContext,
   deckSpec: () => clioStageState.deckSpec,
   health: clioStageDeckHealth,
+  // ClioWorks v4.2 audit (D42-02): read-only accessors for the lazily loaded
+  // check panel. clioStageState and clioStageSlideContext are lexical — the
+  // audit module must go through here, never through window guesses.
+  auditContext: () => ({ state: clioStageState, slideContext: clioStageSlideContext }),
+  pageFrameElement: () => clioStageFrameElement(),
 };
 
 const CLIO_STAGE_COMMAND_NAMES = [
@@ -2193,6 +2222,7 @@ const CLIO_STAGE_COMMAND_NAMES = [
   "clio-stage-save-draft",
   "clio-stage-import",
   "clio-stage-export-pdf",
+  "clio-stage-audit",
   "clio-stage-print-preview",
   "clio-stage-restyle-classic",
   "clio-stage-restyle-platinum",
@@ -2284,6 +2314,11 @@ function runClioStageRuntimeCommand(action) {
   if (command === "previous") return window.AISystem6ClioStage.previous?.();
   if (command === "next") return window.AISystem6ClioStage.next?.();
   if (command === "export-pdf") return clioStageExportPdf();
+  if (command === "audit") {
+    // Lazy: the check module and its styles load on first use only.
+    if (typeof ensureClioStageAuditModule !== "function") return;
+    return ensureClioStageAuditModule().then(() => window.AISystem6ClioStageAudit?.toggle?.());
+  }
   if (command === "print-preview") return window.AISystem6ClioStage.setMode?.("print");
   if (command === "save-draft") return saveClioStageDraft();
   if (command === "add-slide") return clioStageAddSlide();

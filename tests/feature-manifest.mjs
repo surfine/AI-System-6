@@ -46,6 +46,13 @@ export const publicProductContracts = [
     tests: ["public/file-floppy-contract.test.mjs"],
   },
   {
+    // ClioWorks v4.3 (I43-01): the server iWork importer's resource and
+    // result-reporting contracts (bounded Snappy, multi-message archives,
+    // short/repeated text, preview honesty).
+    feature: "iWork Import",
+    tests: ["iwork-import-quality.test.mjs"],
+  },
+  {
     feature: "ClioTalk",
     tests: ["public/clio-talk-contract.test.mjs"],
   },

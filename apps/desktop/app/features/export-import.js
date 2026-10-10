@@ -1336,7 +1336,13 @@ async function extractRenderedPagesWithBrowserPaddle(file, options = {}) {
     try {
       const image = await loadImageElementFromBlobUrl(url);
       const text = await recognizePaddleImageElement(image, { signal });
-      if (text) chunks.push(`第 ${page.pageNumber || chunks.length + 1} 页\n${text}`);
+      // ClioWorks v4.3 (I43-01/Q04): an iWork bundle without readable text
+      // sends its single best PREVIEW image — one rendering of the first page,
+      // not page 1 of a one-page document — so it is labelled for what it is.
+      const pageLabel = page.kind === "preview"
+        ? (currentLanguage === "zh" ? "预览图" : "Preview image")
+        : t("public_import_page", page.pageNumber || chunks.length + 1);
+      if (text) chunks.push(`${pageLabel}\n${text}`);
     } finally {
       URL.revokeObjectURL(url);
     }

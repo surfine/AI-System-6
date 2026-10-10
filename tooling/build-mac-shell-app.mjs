@@ -223,8 +223,11 @@ try {
   const pin = JSON.parse(readFileSync(join(repoRoot, "vendor", "ubol", "PIN.json"), "utf8"));
   const ubolSafari = join(repoRoot, ".cache", "ubol", pin.version, "safari");
   if (existsSync(join(ubolSafari, "manifest.json"))) {
-    cpSync(ubolSafari, join(resourcesDir, "ubol-safari"), { recursive: true });
-    console.log(`Bundled uBlock Origin Lite ${pin.version} (Safari build).`);
+    // Bundled as a ZIP archive: one resource file, and the same native
+    // WKWebExtension form either way (see TimeMachineBrowser.loadAdBlocker).
+    const archivePath = join(resourcesDir, "ubol-safari.zip");
+    execFileSync("/usr/bin/zip", ["-q", "-r", archivePath, "."], { cwd: ubolSafari });
+    console.log(`Bundled uBlock Origin Lite ${pin.version} (Safari ZIP).`);
   } else {
     console.warn("uBlock Origin Lite is not fetched (npm run browse:fetch-filters); Time Machine will not block ads.");
   }

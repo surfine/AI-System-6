@@ -87,6 +87,18 @@ export const lazyStyleBundles = [
     loader: "app/core/config.js",
     sources: ["styles/66-theme-lab.css"],
   },
+  {
+    id: "clioworks-native",
+    output: "styles.clioworks-native.css",
+    loader: "app/vendor/clioworks-v3/fixture.js",
+    sources: ["styles/92-clioworks-native.css"],
+  },
+  {
+    id: "clio-stage-audit",
+    output: "styles.clio-stage-audit.css",
+    loader: "app/core/config.js",
+    sources: ["styles/93-clioworks-audit.css"],
+  },
   // Endfield Terminal is a standalone lab surface: verify:css already classifies
   // it as one, its module has always been lazy, and every selector is scoped to
   // .endfield-* (the only others are keyframe steps). 9.7 KB that no boot needs.
@@ -305,6 +317,8 @@ export const styleLayerByPath = Object.freeze({
   "styles/89-control-strip.css": "control-strip",
   "styles/90-endfield-terminal.css": "endfield-terminal",
   "styles/91-draft-desk.css": "draft-desk",
+  "styles/92-clioworks-native.css": "clioworks-native",
+  "styles/93-clioworks-audit.css": "clio-stage-audit",
   // Lazy sheets load after the boot bundle, so their layers sit after every
   // eager layer. That matches the cascade the product has today (a lazy sheet
   // wins ties against everything already loaded); the 66- number of Theme Lab

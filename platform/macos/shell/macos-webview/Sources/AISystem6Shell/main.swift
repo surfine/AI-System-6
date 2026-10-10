@@ -75,16 +75,37 @@ private func resolveRepoRoot(options: ShellOptions) -> URL? {
     return root
   }
 
-  if let executable = Bundle.main.executableURL, let root = findRepoRoot(startingAt: executable) {
+  if let executable = shellExecutableURL(), let root = findRepoRoot(startingAt: executable) {
     return root
   }
 
-  let bundleParent = Bundle.main.bundleURL.deletingLastPathComponent()
-  if let root = findRepoRoot(startingAt: bundleParent) {
+  if let appParent = shellExecutableURL()?.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent(),
+     let root = findRepoRoot(startingAt: appParent) {
     return root
   }
 
   return nil
+}
+
+/// The running executable's URL, without NSBundle. Touching the main bundle
+/// (`Bundle.main.resourceURL` and friends) before `WKWebExtension` parses an
+/// extension whose manifest uses localization (`__MSG_*__`, `_locales/`)
+/// derails WebKit's own manifest localization on macOS 27 and ends in an
+/// uncatchable release assertion inside WebExtensionCocoa.mm. The Time
+/// Machine engine loads such an extension (uBlock Origin Lite) at launch, so
+/// every launch-time bundle path derives from the executable instead.
+func shellExecutableURL() -> URL? {
+  guard let path = CommandLine.arguments.first, !path.isEmpty else { return nil }
+  return URL(fileURLWithPath: path)
+}
+
+/// Contents/Resources next to the running executable, without NSBundle.
+func shellResourcesDirectory() -> URL? {
+  // Contents/MacOS/AISystem6Shell -> Contents/Resources
+  shellExecutableURL()?
+    .deletingLastPathComponent()
+    .deletingLastPathComponent()
+    .appendingPathComponent("Resources")
 }
 
 func shellLog(_ message: String) {
@@ -357,9 +378,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
   }
 
   private func startBundledServerIfPresent() -> Bool {
-    shellLog("resourceURL=\(Bundle.main.resourceURL?.path ?? "[nil]")")
     guard
-      let resources = Bundle.main.resourceURL,
+      let resources = shellResourcesDirectory(),
       let serverURL = bundledServerURL(in: resources)
     else {
       shellLog("no bundled server found")
@@ -408,7 +428,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
     environment["AI_SYSTEM6_HOST"] = "127.0.0.1"
     environment["AI_SYSTEM6_SHELL"] = "macos"
     // The document reader bundled next to this binary (see build-mac-shell-app).
-    if let vision = Bundle.main.executableURL?.deletingLastPathComponent().appendingPathComponent("AISystem6Vision"),
+    if let vision = shellExecutableURL()?.deletingLastPathComponent().appendingPathComponent("AISystem6Vision"),
        FileManager.default.isExecutableFile(atPath: vision.path) {
       environment["AI_SYSTEM6_VISION_HELPER"] = vision.path
     }
@@ -631,10 +651,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
 
   /// uBlock Origin Lite's Safari build: bundled in the app, or fetched into
   /// the checkout's cache by `npm run browse:fetch-filters` during development.
+  /// Uses `shellResourcesDirectory()` (see its comment) rather than
+  /// `Bundle.main.resourceURL`.
   private func adBlockerExtensionURL() -> URL? {
-    if let bundled = Bundle.main.resourceURL?.appendingPathComponent("ubol-safari", isDirectory: true),
-       FileManager.default.fileExists(atPath: bundled.appendingPathComponent("manifest.json").path) {
-      return bundled
+    if let resources = shellResourcesDirectory() {
+      let archive = resources.appendingPathComponent("ubol-safari.zip")
+      if FileManager.default.fileExists(atPath: archive.path) {
+        return archive
+      }
+      let unpacked = resources.appendingPathComponent("ubol-safari", isDirectory: true)
+      if FileManager.default.fileExists(atPath: unpacked.appendingPathComponent("manifest.json").path) {
+        return unpacked
+      }
     }
     guard let root = resolveRepoRoot(options: options),
           let pin = try? Data(contentsOf: root.appendingPathComponent("vendor/ubol/PIN.json")),
