@@ -1,0 +1,10 @@
+# sha256 of the `tjs` binary inside each saghul/txiki.js release zip we fetch.
+# cli.js (cross-arch/universal builds), setup.sh, setup.ps1 and release.yml
+# check downloads against these; cli.js also re-checks its cache on every
+# reuse (#26) — the cache is user-writable and whatever sits there gets
+# bundled and codesigned.
+# Bumping TJS_VERSION: add the new version's lines (the zips' own digests are
+# on the GitHub release; hash the extracted tjs, not the zip).
+b7c97823d6f64fcf06f343caaa238376da637c9d4b666154d0d120cbad1f02a2  v26.6.0/txiki-macos-arm64
+82944be7faca4a477adcf47696c547ab231e2e6c1240a75453f4150a8e085550  v26.6.0/txiki-macos-x86_64
+d94fac3d8626936cb081736569d0b63a465c8a1b22b4a45b960abd4e4da5a513  v26.6.0/txiki-windows-x86_64

@@ -13,7 +13,7 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 const test = createFeatureTest("working-session");
 const source = read("app/core/working-session.js");
 const switchProjectSource = read("app/core/desktop-runtime.js");
-const exportImportSource = read("app/features/export-import.js");
+const exportImportSource = read("app/features/export-import.js") + "\n" + read("app/features/project-backup-export-data.js");
 const bootSource = read("app/core/boot.js");
 
 const desktopKey = "workingSession:v3:desktop";

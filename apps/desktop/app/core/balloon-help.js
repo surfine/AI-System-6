@@ -740,6 +740,9 @@ function unavailableControlFromEvent(event) {
     "button:disabled, button.is-disabled, [aria-disabled='true'], summary.is-disabled, .is-disabled[data-action], textarea:disabled, input:disabled, select:disabled",
   );
   if (direct && controlIsUnavailable(direct) && unavailableControlReasonKey(direct)) return direct;
+  // A live foreground control owns the click. Disabled controls in lower
+  // windows must not intercept it through the hit-test stack.
+  if (event.target?.closest?.("button, summary, [role='button'], [role='tab'], input, textarea, select")) return null;
   // Native :disabled does not receive the click; hit-test recovers the control.
   if (typeof document.elementsFromPoint !== "function") return null;
   const x = event.clientX;

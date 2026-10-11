@@ -1410,12 +1410,17 @@ let startupProjectId = null;
 // it for itself. The switch above the Finder marks either one the same way, but
 // only a chosen pin outranks the project the writer was last working in.
 let startupProjectPinned = false;
-let startupEnvironment = "finder";
+// Unified spec W06 (product decision, spec §1.1): a NEW desk runs as
+// MultiFinder. A user's explicitly saved environment (working-session
+// runtimeEnvironment, including a chosen "finder") always wins over this
+// default — the restore path reads it before anything consults these
+// initial values.
+let startupEnvironment = "multifinder";
 let startupOpenMode = "cliotalk";
 let startupSelectedApplicationAction = "open-assistant";
 let startupSelectedApplicationName = "";
 let startupOpenedWindowNames = [];
-let runtimeEnvironment = "finder";
+let runtimeEnvironment = "multifinder";
 let sideAskEnabled = false;
 let sideAskAnchorAppId = "teachText";
 let sideAskAnchorOwnerAppId = "teachText";
@@ -1497,6 +1502,7 @@ let publicSharedCloudAvailable = false;
 // time, then it resets — later boots read a clean, keyless record and have
 // nothing left to report.
 let cloudLegacyKeyMigrated = false;
+let tinyShellLegacyKeyPending = "";
 const CLOUD_STORAGE_KEY = "ai-system6-cloud-config";
 const CLOUD_SESSION_KEY = "ai-system6-cloud-api-key";
 
@@ -1572,6 +1578,7 @@ function loadCloudConfig() {
         legacyApiKey = typeof persistedConfig.apiKey === "string"
           ? persistedConfig.apiKey.trim()
           : "";
+        if (window.tiny?.api && legacyApiKey) tinyShellLegacyKeyPending = legacyApiKey;
         delete persistedConfig.apiKey;
       }
     }
@@ -1582,7 +1589,8 @@ function loadCloudConfig() {
   let sessionApiKey = "";
   try {
     sessionApiKey = (sessionStorage.getItem(CLOUD_SESSION_KEY) || "").trim();
-    sessionStorage.removeItem(CLOUD_SESSION_KEY);
+    if (!window.tiny?.api) sessionStorage.removeItem(CLOUD_SESSION_KEY);
+    else if (sessionApiKey) tinyShellLegacyKeyPending = sessionApiKey;
   } catch {
     sessionApiKey = "";
   }
@@ -1597,6 +1605,12 @@ function loadCloudConfig() {
     && persistedConfig.credentialMode !== "shared"
   ) {
     persistedConfig.active = false;
+  }
+
+  // Native migration requires user confirmation and a verified Keychain write.
+  if (window.tiny?.api && tinyShellLegacyKeyPending) {
+    cloudConfig = persistedConfig;
+    return cloudConfig;
   }
 
   // Remove credentials written by older builds. Only a local-service
@@ -1627,6 +1641,8 @@ function consumeCloudLegacyKeyMigration() {
 }
 
 function saveCloudConfig() {
+  // Keep original persisted key/config until native migration succeeds.
+  if (window.tiny?.api && tinyShellLegacyKeyPending) return;
   try {
     if (cloudConfig) {
       const persistedConfig = { ...cloudConfig };

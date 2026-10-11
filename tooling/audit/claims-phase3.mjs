@@ -14,7 +14,7 @@ const scripts = pkg.scripts ?? {};
 const docs = execFileSync("git", ["ls-files", "internal/agents", "internal/operations"], { cwd: root, encoding: "utf8" })
   .split("\n")
   .filter((path) => path.endsWith(".md") && !path.endsWith(".zh-CN.md"))
-  .concat(["README.md", "CONTRIBUTING.md", "SECURITY.md", "CHANGELOG.md", "CODE_OF_CONDUCT.md", "ICON-LINEAGE-AUDIT.md"]);
+  .concat(["README.md", "CONTRIBUTING.md", "SECURITY.md", "CHANGELOG.md", "CODE_OF_CONDUCT.md"]);
 
 const isRecord = (path) =>
   /HANDOFF|CLOSEOUT|RELEASE-NOTES|CHANGELOG|ICON-LINEAGE-AUDIT|GOLDEN-GATE|ICON-ERA/.test(path);

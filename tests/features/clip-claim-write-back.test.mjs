@@ -241,7 +241,7 @@ const test = createFeatureTest("clip-claim-write-back");
 // own dispatch result (it can refuse - e.g. no File constructor - even
 // though the content built fine). ---
 {
-  const exportImport = read("app/features/export-import.js");
+  const exportImport = read("app/features/export-import.js") + read("app/features/project-backup-export-data.js");
   test.assertIncludes(
     exportImport,
     'setStatus(dispatched ? t("project_disk_exported", backup.project.name) : t("project_disk_export_dispatch_failed"));',

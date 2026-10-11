@@ -50,6 +50,12 @@ const SYSTEM_SOUND_TONES = Object.freeze({
     Object.freeze({ f: 220, t: 0, d: 0.08, v: 0.04, wave: "square" }),
     Object.freeze({ f: 110, t: 0.06, d: 0.12, v: 0.025, wave: "sawtooth" }),
   ]),
+  error: Object.freeze([
+    // A failed action: two low short beeps, falling — the classic "can't do
+    // that" sound, distinct from alert's double-beep by register and direction.
+    Object.freeze({ f: 220, t: 0, d: 0.09, v: 0.05 }),
+    Object.freeze({ f: 180, t: 0.12, d: 0.14, v: 0.05 }),
+  ]),
   alert: Object.freeze([
     Object.freeze({ f: 330, t: 0, d: 0.12, v: 0.05, wave: "square" }),
     Object.freeze({ f: 330, t: 0.16, d: 0.12, v: 0.045, wave: "square" }),

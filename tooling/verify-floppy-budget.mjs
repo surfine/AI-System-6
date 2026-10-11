@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { appRuntimePaths, coreFiles, floppyBudgetBytes, lazyStartupExclusions } from "./runtime-manifest.mjs";
 import { lazyStyleBundles } from "./style-manifest.mjs";
+import { checkStamp } from "./lib/check-stamp.mjs";
 import { resolveProjectPath } from "./lib/paths.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -96,4 +97,5 @@ if (!existsSync(receiptPath) || readFileSync(receiptPath, "utf8") !== serialized
   writeFileSync(receiptPath, serializedReceipt);
 }
 
+console.log(checkStamp());
 console.log("OK  System Floppy Budget");

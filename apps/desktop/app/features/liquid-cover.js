@@ -207,6 +207,7 @@ Glass</textarea>
                     <option value='"SF Compact Rounded", "SF Compact", ui-rounded, -apple-system, sans-serif' data-font-family="SF Compact Rounded">SF Compact Rounded</option>
                     <option value='"SF Mono", ui-monospace, monospace' data-font-family="SF Mono">SF Mono</option>
                     <option value='"New York", "New York Small", "New York Medium", "New York Large", serif' data-font-family="New York">New York</option>
+                    <option value='"Macintosh Skeletal Filled", sans-serif' data-font-bundled="true" data-font-static="true">Macintosh Skeletal Filled</option>
                   </optgroup>
                   <optgroup label="中文">
                     <option value='"PingFang SC", -apple-system, sans-serif' data-font-family="PingFang SC">苹方简体 · PingFang SC</option>
@@ -1626,12 +1627,24 @@ installLiquidCoverWindow();
       if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
       return false;
     }
-    if (L.font !== select.value) runHistoryAction("liquid_cover_edit_action", "Edit layer", () => {
+    if (L.font !== select.value || (option?.dataset.fontStatic === "true" && L.fontWeight !== 400)) runHistoryAction("liquid_cover_edit_action", "Edit layer", () => {
       L.font = select.value;
-      if (option?.dataset.fontSerif === "true") {
+      if (option?.dataset.fontStatic === "true") {
+        L.fontWeight = 400;
+        $("lc-font-weight").value = "400";
+      } else if (option?.dataset.fontSerif === "true") {
         L.fontWeight = 600;
       }
     });
+    syncValueLabels();
+    if (option?.dataset.fontStatic === "true") {
+      document.fonts?.load('400 72px "Macintosh Skeletal Filled"').then(() => {
+        if (layers.some((layer) => String(layer.font).includes("Macintosh Skeletal Filled"))) {
+          rebuildAllSDF();
+          scheduleRender();
+        }
+      }).catch(() => {});
+    }
     setFontStatus("liquid_cover_font_active", "Using {0}.", option?.dataset.baseLabel || option?.textContent || "");
     return true;
   }

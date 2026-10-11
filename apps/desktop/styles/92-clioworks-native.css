@@ -69,3 +69,27 @@
 @media (pointer: coarse) {
   .cw-native .cw-tool { min-inline-size: 44px; min-block-size: 44px; }
 }
+
+/* CW51-03: the one context strip over a mounted editor. Same tokens as the
+   toolbar; the label names the current object, buttons filter by selection. */
+.cw-native .cw5-context {
+  display: flex;
+  align-items: center;
+  flex: none;
+  flex-wrap: nowrap;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--toolbar-bg);
+  border-block-end: var(--toolbar-border);
+}
+
+.cw-native .cw5-context-label {
+  font-family: var(--title-font);
+  font-size: 11px;
+  margin-inline-end: 4px;
+  white-space: nowrap;
+}
+
+.cw-native .cw5-context .cw-button[hidden] {
+  display: none;
+}

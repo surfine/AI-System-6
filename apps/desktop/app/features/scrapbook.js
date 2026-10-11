@@ -101,6 +101,22 @@ function scrapSourceLines(scrap) {
   ].filter(Boolean);
 }
 
+// S03: marks the selected scrap as an open question (lazy module).
+function markSelectedScrapAsOpenQuestion() {
+  const scrap = scraps.find((item) => item.id === selectedScrapId && isInActiveProject(item));
+  if (!scrap) {
+    setStatus(t("select_text_first"));
+    return;
+  }
+  if (typeof ensureOpenQuestionsModule === "function") ensureOpenQuestionsModule();
+  if (window.AISystem6OpenQuestions?.markScrap?.(scrap, { gapPrompt: t("scrap_open_question_gap_prompt") })) {
+    refreshScrapMetadata(scrap);
+    noteScrapChanged(scrap);
+    setStatus(t("scrap_marked_open_question"));
+    renderScraps();
+  }
+}
+
 function scrapDocumentText(scrap) {
   const body = String(scrap?.body || "");
   if (!isClipScrap(scrap) || /\n---\nSource:/.test(body)) return body;
@@ -729,6 +745,10 @@ function scrapListItemHtml(scrap) {
   const translationBadge = scrapHasTranslation(scrap)
     ? `<b class="scrap-translation-badge" title="${escapeHtml(t("show_translation"))}">${escapeHtml(t("translation_badge"))}</b>`
     : "";
+  // S03: an open-question scrap wears its named state (lazy label).
+  const questionBadge = String(scrap?.noteKind || "") === "open-question"
+    ? `<b class="scrap-question-badge" data-question-status="${escapeHtml(String(scrap?.status || "open"))}">${escapeHtml(window.AISystem6OpenQuestions?.statusLabel?.(scrap?.status, currentLanguage) || "")}</b>`
+    : "";
   const citationCount = typeof getCitingDraftsForSource === "function"
     ? getCitingDraftsForSource(`scrap:${scrap.id}`).length
     : 0;
@@ -740,6 +760,7 @@ function scrapListItemHtml(scrap) {
     ${icon}
     <span class="scrap-card-list-title">${escapeHtml(scrap.title)}</span>
     ${translationBadge}
+    ${questionBadge}
     ${citationBadge}
     <small class="scrap-card-list-meta">${escapeHtml([meta, date].filter(Boolean).join(" \u00b7 "))}</small>
     <small class="scrap-card-list-stats">${escapeHtml(preview || "--")}</small>
@@ -1156,6 +1177,9 @@ function renderContextPanel() {
   ].join("::");
   if (shouldSkipRender("contextPanel", signature)) return;
   listEl.replaceChildren();
+
+  // C08: the folded run details (lazy; no-ops unless there is something to fold).
+  window.AISystem6ChatRunDetails?.renderInto?.(listEl, loadout?.compaction || null, window.lastClioTalkUsage || null, currentLanguage);
 
   if (loadout?.entries?.length) {
     const title = document.createElement("div");

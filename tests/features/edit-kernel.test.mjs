@@ -175,7 +175,7 @@ let threw = false;
 try { assets.stageAsset({ id: "z" }, { app: "x", group: "g", role: "anything" }); } catch { threw = true; }
 test.assert(threw, "an unknown role is refused rather than stored");
 test.assertIncludes(read("app/core/image-attachments.js"), '(item.status !== "staged" || options.includeStaged)', "the Picture Album leaves staged pictures out");
-test.assertIncludes(read("app/features/export-import.js"), 'entry.status !== "staged"', "a disk backup leaves staged pictures out");
+test.assertIncludes(read("app/features/project-backup-export-data.js"), 'entry.status !== "staged"', "a disk backup leaves staged pictures out");
 
 // ---- The embed envelope (app/core/edit-embeds.js) ---------------------------
 vm.runInContext(read("app/core/edit-embeds.js"), context);

@@ -1462,6 +1462,8 @@ function getApplicationActionHandlers() {
     "add-question-sheet-photo": () => addQuestionSheetPhotos(),
     "scrapbook-clip-picture": () => clipPictureToScrapbookFromPicker(),
     "scrapbook-read-picture": () => readSelectedScrapPicture(),
+    // S03: only the user's acceptance moves an open question's status.
+    "scrapbook-mark-open-question": () => markSelectedScrapAsOpenQuestion(),
     "scrapbook-keep-reading": () => keepScrapReadingProposal(),
     "scrapbook-discard-reading": () => discardScrapReadingProposal(),
     "toggle-question-preview": () => toggleTeachTextSurfacePreview("questionSheet"),

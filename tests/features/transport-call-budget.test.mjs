@@ -153,6 +153,9 @@ Object.assign(app, {
   invalidateClioImageFileTokens: noop,
 });
 vm.runInContext(functions(read("app/core/chat-messages.js"), ["fetchModelPayload", "throwModelResponseError", "retryCloudFilePayloadInline", "requestModelResponse"]), app);
+// C04: the prepared-request snapshot now lives in the lazy chat-compaction
+// module; the transport test does not exercise it. Stub the optional call.
+server.ensureChatCompactionModule = async () => {};
 let cloudDispatches = 0;
 let sentParentLimits;
 app.fetch = async (url, options) => {

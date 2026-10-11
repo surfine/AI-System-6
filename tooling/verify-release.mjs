@@ -105,6 +105,12 @@ if (appBundle.status === 0) {
   fail(`app bundle build failed\n${appBundle.stderr || appBundle.stdout}`);
 }
 
+if (existsSync(join(root, "platform/macos/tinyjs/tinyjs.json"))) {
+  const tinyjsBaseline = runReceiptCheck("tinyjs-baseline", process.execPath, ["tooling/verify-tinyjs-baseline.mjs"], { cwd: root, encoding: "utf8" });
+  if (tinyjsBaseline.status === 0) ok("TinyJS upstream baseline");
+  else fail("TinyJS upstream baseline differs");
+}
+
 const releaseAssets = runReceiptCheck("release-assets", process.execPath, ["tooling/check-release-assets.mjs"], {
   cwd: root,
   encoding: "utf8",

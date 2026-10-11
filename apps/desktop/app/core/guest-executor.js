@@ -139,7 +139,14 @@ window.AISystem6GuestExecutor = (() => {
 
   function connectEventSource() {
     if (stopped || source || socket || typeof EventSource !== "function") return;
-    source = new EventSource(`/api/agent/executor?desk=${encodeURIComponent(ensureDeskId())}`);
+    try {
+      source = new EventSource(`/api/agent/executor?desk=${encodeURIComponent(ensureDeskId())}`);
+    } catch (error) {
+      // A blocked origin throws at construction. That is an environment
+      // fact, not a crash: go offline and back off like any other failure.
+      scheduleReconnect();
+      return;
+    }
     source.addEventListener("hello", (event) => handleExecutorEvent("hello", parseEvent(event)));
     source.addEventListener("guests", (event) => handleExecutorEvent("guests", parseEvent(event)));
     source.addEventListener("call", (event) => handleExecutorEvent("call", parseEvent(event)));
@@ -173,7 +180,13 @@ window.AISystem6GuestExecutor = (() => {
   function connectWebSocket() {
     if (stopped || source || socket || typeof WebSocket !== "function") return;
     const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-    const activeSocket = new WebSocket(protocol + "//" + location.host + "/api/agent/executor?desk=" + encodeURIComponent(ensureDeskId()));
+    let activeSocket;
+    try {
+      activeSocket = new WebSocket(protocol + "//" + location.host + "/api/agent/executor?desk=" + encodeURIComponent(ensureDeskId()));
+    } catch (error) {
+      scheduleReconnect();
+      return;
+    }
     socket = activeSocket;
     activeSocket.onmessage = (event) => {
       const packet = parseEvent(event);

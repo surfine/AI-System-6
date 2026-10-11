@@ -485,6 +485,10 @@ async function boot() {
     // whether the desk it woke on can show the way back to it.
     if (typeof releaseOrphanedMiniwindows === "function") releaseOrphanedMiniwindows();
     document.body.dataset.appReady = "ready";
+    if (window.tiny?.api) {
+      ensureTinyShellModule().then(() => window.AISystem6TinyShell.init())
+        .catch((error) => setStatus(t("native_operation_failed", error.message)));
+    }
     // This timer fires after boot() has already returned, so nothing here is
     // inside boot()'s own try/catch any more — an uncaught throw in this
     // callback would be genuinely invisible. Each step gets its own

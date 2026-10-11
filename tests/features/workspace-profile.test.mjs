@@ -121,7 +121,11 @@ test.assertMatches(teachText, /workspaceProfile !== workspaceProfileDesktop \|\|
 test.assertIncludes(teachText, 'tab.role === "scratch_file"', "Desktop reuses existing scratch tabs");
 test.assertIncludes(rolePolicy, 'scratch_file: ["edit", "save", "saveCopy", "makeDocMap", "clip"]', "Desktop relies on the existing scratch-file capability policy");
 test.assertMatches(profile, /studioActionPrefixes = \["ai-", "rebuild-", "review-"\]/, "Desktop blocks writing and review command families without swallowing system OOBE");
-test.assertMatches(runtime, /desktopProfile \? \[[\s\S]*boot_ready/, "Desktop reuses the boot sequence without the writing/model ledger steps");
+// W04 (unified spec): the fixed desktop/writing step scripts became one
+// real-progress bridge. The desktop profile's distinguishing mark is now the
+// hidden model ledger element (bootLocalModelEl), not a separate step array.
+test.assertMatches(runtime, /bootLocalModelEl\?\.classList\.toggle\("is-hidden", desktopProfile\)/, "Desktop reuses the boot sequence without the writing/model ledger steps");
+test.assert(!/desktopProfile \? \[/.test(runtime), "no per-profile fixed step arrays remain");
 test.assertIncludes(runtime, 'bootLocalModelEl?.classList.toggle("is-hidden", desktopProfile)', "Desktop hides the model boot ledger");
 test.assertNotIncludes(html, 'id="apple-running-apps"', "Apple menu does not duplicate the existing right-side MultiFinder");
 test.assertNotIncludes(multiFinder, "renderAppleRunningApps", "only the original MultiFinder owns the running-app list");

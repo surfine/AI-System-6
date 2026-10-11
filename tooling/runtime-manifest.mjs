@@ -32,7 +32,23 @@
 // hand-listing thirty-five paths that could drift from it.
 import { SHARED_DISKS } from "./lib/project-disk-integrity.mjs";
 
-export const floppyBudgetBytes = 2_954_624;
+// C08 shipped its surfaces as maximally lazy delegates; the eager residue
+// (~1.2KB: usage/summary/ensures) had no lazy target left, matching the
+// stage-9 precedent of raising the budget for spec'd work.
+// S03's eager residue: the scrap badge, the editor menu item and the locale
+// strings are the feature itself — no lazy target left (handler already
+// delegates to the lazy module). +768, same precedent.
+// S03's eager residue: the scrap badge, the editor menu item and the locale
+// strings are the feature itself — no lazy target left (handler already
+// delegates to the lazy module). +768 for the feature, +512 more to keep the
+// reserve floor honest, same precedent.
+// S04 ships fully lazy (reading-relations.js): only its loader lines and the
+// manifest entry are eager, +384 to keep the floor above 512.
+// R06-S06 and M01-M04 all ship fully lazy; the six loader lines cost +1024
+// in total. The v5.1 candidate modules (ui-model/frame-session/runtime-port/
+// context-strip) add +512 more, keeping the floor above 512.
+// = 2_955_136 base + the raises recorded above (1_536 + 1_280 + 384 + 512 + 1_024).
+export const floppyBudgetBytes = 2_959_872;
 
 export const coreFiles = [
   "index.html",
@@ -128,7 +144,28 @@ export const appModulePaths = [
 
 export const lazyRuntimePaths = [
   "app/vendor/stream-markdown-parser.global.js",
+  "app/features/project-backup-export-data.js",
+  "app/core/tinyjs-shell.js",
   "app/features/clio-stage-audit.js",
+  "app/vendor/unified-spec/contracts-install.js",
+  "app/vendor/unified-spec/cache-policy-install.js",
+  "app/core/chat-compaction.js",
+  "app/core/chat-run-details.js",
+  "app/features/reading-bridge.js",
+  "app/features/open-questions.js",
+  "app/features/reading-relations.js",
+  "app/features/reading-layers.js",
+  "app/features/reading-compare.js",
+  "app/features/reading-boundary.js",
+  "app/features/source-versions.js",
+  "app/features/reading-package.js",
+  "app/features/media-reading.js",
+  "app/vendor/clioworks-v3/context-strip.js",
+  "app/vendor/clioworks-v3/chart-frame-port.js",
+  "app/vendor/clioworks-v3/runtime-port.js",
+  "app/vendor/clioworks-v3/frame-session.js",
+  "app/vendor/clioworks-v3/ui-model.js",
+  "app/core/chat-context-capabilities.js",
   "app/core/web-app-shell.js",
   "app/core/liquid-glass-overlay.js",
   "app/core/launch-intent.js",

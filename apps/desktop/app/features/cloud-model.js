@@ -175,6 +175,12 @@
     const data = await changeLocalCredential("persist", {
       credential_id: cloudConfig.credentialId,
     });
+    if (window.tiny?.api) {
+      if (data.persistence !== "keychain") throw new Error(t("native_key_failed"));
+      const check = await changeLocalCredential("available", { credential_id: cloudConfig.credentialId,
+        provider: cloudConfig.provider || "deepseek", base_url: PROVIDER_BASE_URLS[cloudConfig.provider] || DEEPSEEK_BASE_URL });
+      if (!check.available) throw new Error(t("native_key_failed"));
+    }
     cloudConfig.credentialPersistence = String(data?.persistence || "service-session");
     saveCloudConfig();
   }
@@ -773,6 +779,10 @@
       await checkCloudStatus();
       if (cloudStatusDot.classList.contains("is-connected")) {
         await persistVerifiedCloudCredential();
+        if (window.tiny?.api && tinyShellLegacyKeyPending) {
+          tinyShellLegacyKeyPending = "";
+          setCloudRuntimeApiKey(""); cloudApiKeyEl.value = "";
+        }
         cloudConfig.active = true;
         cloudConfig.credentialMode = cloudCredentialMode();
         cloudConfig.baseUrl = PROVIDER_BASE_URLS[cloudConfig.provider] || DEEPSEEK_BASE_URL;
@@ -993,6 +1003,7 @@
   // would send a public deployment's migrated key down the local Keychain
   // path (which does not exist there), and it would be lost outright.
   function restoreCloudCredentialAfterBoot(legacyCloudKeyMigrated) {
+    if (window.tiny?.api && tinyShellLegacyKeyPending) return;
     const profileKnown = legacyCloudKeyMigrated && cloudRuntimeApiKey && window.AISystem6PublicAccess?.getCapabilities
       ? window.AISystem6PublicAccess.getCapabilities().catch(function () {})
       : Promise.resolve();
@@ -1020,6 +1031,29 @@
       }
     });
   }
+
+  window.migrateTinyShellCloudCredential = async function () {
+    if (!window.tiny?.api || !tinyShellLegacyKeyPending) return;
+    const previous = { ...cloudConfig }, key = tinyShellLegacyKeyPending;
+    try {
+      const staged = await stageCloudCredentialIfNeeded();
+      await checkCloudStatus();
+      if (!cloudStatusDot.classList.contains("is-connected")) throw new Error(t("native_key_failed"));
+      await persistVerifiedCloudCredential();
+      const available = await changeLocalCredential("available", {
+        credential_id: staged.credentialId, provider: cloudConfig.provider,
+        base_url: PROVIDER_BASE_URLS[cloudConfig.provider] || DEEPSEEK_BASE_URL,
+      });
+      if (!available.available || cloudConfig.credentialPersistence !== "keychain") throw new Error(t("native_key_failed"));
+      tinyShellLegacyKeyPending = "";
+      setCloudRuntimeApiKey(""); cloudApiKeyEl.value = "";
+      saveCloudConfig(); updateCheckButtonState();
+    } catch (e) {
+      cloudConfig = previous; tinyShellLegacyKeyPending = key;
+      setCloudRuntimeApiKey(key); cloudApiKeyEl.value = "";
+      updateCheckButtonState(); throw e;
+    }
+  };
 
   // Restore saved config
   loadCloudConfig();

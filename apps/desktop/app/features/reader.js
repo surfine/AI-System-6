@@ -292,19 +292,20 @@ function removeReaderTab(tabId) {
 function captureActiveReaderTabState() {
   const tab = activeReaderTab();
   if (!tab || !currentReaderPage) return;
-  tab.title = currentReaderPage.title || currentReaderPage.fileName || tab.title || t("reader");
-  tab.backing = {
-    ...(tab.backing || {}),
-    type: currentReaderPage.kind === "fileDisk" ? "fileDisk" : tab.backing?.type || "web",
-    fileName: currentReaderPage.fileName || tab.backing?.fileName || "",
-    url: currentReaderPage.url || tab.backing?.url || "",
-  };
-  tab.state = {
-    ...(tab.state || {}),
-    ...currentReaderPage,
-    scrollTop: readerContentEl?.scrollTop || 0,
-  };
-  tab.updatedAt = new Date().toISOString();
+  stampChanged(tab, () => {
+    tab.title = currentReaderPage.title || currentReaderPage.fileName || tab.title || t("reader");
+    tab.backing = {
+      ...(tab.backing || {}),
+      type: currentReaderPage.kind === "fileDisk" ? "fileDisk" : tab.backing?.type || "web",
+      fileName: currentReaderPage.fileName || tab.backing?.fileName || "",
+      url: currentReaderPage.url || tab.backing?.url || "",
+    };
+    tab.state = {
+      ...(tab.state || {}),
+      ...currentReaderPage,
+      scrollTop: readerContentEl?.scrollTop || 0,
+    };
+  });
 }
 
 function renderReaderUnavailableTab(tab) {

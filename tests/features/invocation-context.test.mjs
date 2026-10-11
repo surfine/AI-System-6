@@ -66,6 +66,8 @@ const sandbox = vm.createContext({
   estimateTokenCount: (content) => Math.ceil(String(content).length / 4),
   clioRunHash: (text) => `hash:${text}`, clioProductHelpReceipt: () => [], t: (key) => key,
   ensurePromptFilesData: async () => {}, fitPayloadWithModelBudget: async (payload) => payload,
+  checkedBudget: async () => ({ fits: true }),
+  ensureChatCompactionModule: async () => {},
   isGemma4ModelName: () => false, clioCloudRouteActive: () => false,
   withBrowserLocalSafetyMessages: (messages) => messages, clioTalkPreviousNativeResponseId: () => null,
   retryCloudFilePayloadInline: async (response) => response, scrubVisibleModelOutput: (text) => text.trim(),
@@ -82,18 +84,21 @@ const sandbox = vm.createContext({
 vm.runInContext(functions(chat, [
   "clioTaskSnapshot", "createClioTaskInvocation", "assertClioTaskInvocationActive", "updateClioTaskInvocation",
   "recordContextLoadout", "buildPayload", "fetchModelPayload", "requestModelResponse", "sendLocalModelTask",
+  "isChatConversationTaskKind", "commitCompactionRecord", "chatCompactionApi",
   "readJsonModelResult", "chargeClioServerModelCalls", "modelMessageText", "noteClioTalkModelAttempt", "createClioTalkAssistantRecord",
   "createClioTalkPreflightRunManifest",
 ]) + "\n" + functions(retrieval, ["retrieveContext"]), sandbox);
 
-function start(project, source, { skipContext = false } = {}) {
+async function start(project, source, { skipContext = false } = {}) {
   sandbox.activeProjectId = project;
   sandbox.activeTextFileId = `document-${project}`;
   descriptors = [{ id: source, name: source, body: `Evidence ${source}`, kind: "input", projectId: project }];
   sandbox.window.nextTaskInputFileIds = new Set([source]);
   const invocation = sandbox.createClioTaskInvocation({ userText: `Question ${source}` });
   const controller = new AbortController();
-  const payload = sandbox.buildPayload(`Question ${source}`, { invocation, skipContext });
+  // C02: buildPayload is async (its compaction candidate awaits the lazy
+  // module), so assembly itself is awaited before the send starts.
+  const payload = await sandbox.buildPayload(`Question ${source}`, { invocation, skipContext });
   const promise = sandbox.sendLocalModelTask({ invocation, payload, signal: controller.signal, streamPreference: "json" });
   return { invocation, controller, payload, promise };
 }
@@ -114,9 +119,9 @@ function completeRecord(task, result) {
 }
 
 // Actual assembly, provider request and assistant receipt with reverse arrival.
-const a = start("project-A", "source-A");
+const a = await start("project-A", "source-A");
 await waitRequests(1);
-const b = start("project-B", "source-B");
+const b = await start("project-B", "source-B");
 await waitRequests(2);
 assert.ok(pending[0].payload.messages.some((message) => String(message.content).includes("Evidence source-A")));
 pending[1].resolve(jsonResponse("Answer B", "served-B", "length"));
@@ -141,7 +146,7 @@ assert.ok(Object.isFrozen(a.invocation.runManifest.contextManifest.sources));
 assert.throws(() => { a.invocation.runManifest.inputFiles[0].id = "corrupted"; }, TypeError);
 
 // No-context / unknown-model turns cannot borrow a previous source or model.
-const unknown = start("project-B", "source-unknown", { skipContext: true });
+const unknown = await start("project-B", "source-unknown", { skipContext: true });
 await waitRequests(3);
 pending[2].resolve(jsonResponse("Unknown-model answer"));
 const resultUnknown = await unknown.promise;
@@ -153,7 +158,7 @@ assert.equal(answers.at(-1).model, "");
 assert.equal(recordA.harness.model, "served-A");
 
 // A provider ignoring abort cannot convert a stopped invocation into an answer.
-const stopped = start("project-B", "source-stopped");
+const stopped = await start("project-B", "source-stopped");
 await waitRequests(4);
 stopped.controller.abort();
 pending[3].resolve(jsonResponse("Late cancelled answer", "served-late"));
@@ -164,11 +169,13 @@ assert.equal(answers.some((answer) => answer.answerText === "Late cancelled answ
 assert.equal(recordB.runManifest.invocationId, b.invocation.id);
 
 // A project switch before assembly cannot retrieve project B into project A.
+// C02: buildPayload is async (its compaction candidate awaits the lazy
+// module), so the stale-invocation refusal is a rejected promise.
 const stale = sandbox.createClioTaskInvocation({ projectId: "project-A" });
-assert.throws(() => sandbox.buildPayload("old question", { invocation: stale }), { name: "AbortError" });
+await assert.rejects(() => sandbox.buildPayload("old question", { invocation: stale }), { name: "AbortError" });
 
 // Tool rounds retain immutable earlier snapshots and one ordered attempt list.
-const rounds = start("project-B", "source-round");
+const rounds = await start("project-B", "source-round");
 await waitRequests(5);
 pending[4].resolve(jsonResponse("Round one", "model-one"));
 const roundOne = await rounds.promise;
@@ -179,17 +186,20 @@ const roundTwo = await second;
 assert.equal(roundOne.runManifest.servedModel, "model-one");
 assert.equal(roundOne.runManifest.attempts.length, 1);
 assert.deepEqual(JSON.parse(JSON.stringify(roundTwo.runManifest.attempts.map((attempt) => attempt.model))), ["model-one", "model-two"]);
-// Cancellation during asynchronous budget fitting prevents dispatch itself.
+// Cancellation during asynchronous budget checking prevents dispatch itself.
+// C01: the chat path's async boundary is now checkedBudget (the destructive
+// fitting pipeline no longer runs for chat), so the deferral hook moves with it.
 const fitNormally = sandbox.fitPayloadWithModelBudget;
+const budgetNormally = sandbox.checkedBudget;
 let finishBudget;
-sandbox.fitPayloadWithModelBudget = (payload) => new Promise((resolve) => { finishBudget = () => resolve(payload); });
-const beforeDispatch = start("project-B", "source-before-dispatch");
+sandbox.checkedBudget = (payload) => new Promise((resolve) => { finishBudget = () => resolve({ fits: true, payload }); });
+const beforeDispatch = await start("project-B", "source-before-dispatch");
 for (let index = 0; !finishBudget && index < 20; index += 1) await new Promise((resolve) => setImmediate(resolve));
 beforeDispatch.controller.abort();
 finishBudget();
 await assert.rejects(beforeDispatch.promise, { name: "AbortError" });
 assert.equal(pending.length, 6);
-sandbox.fitPayloadWithModelBudget = fitNormally;
+sandbox.checkedBudget = budgetNormally;
 
 // Browser repair really is a second provider request; its served model and
 // finish reason belong to that returned answer, including an unknown model.
@@ -199,7 +209,7 @@ sandbox.window.AISystem6ModelTaskRuntime = {
   findHumanizerOutputHits: (text) => text.includes("bad") ? ["bad"] : [],
   buildHumanizerRepairMessages: (text) => [{ role: "user", content: text }],
 };
-const repair = start("project-B", "source-repair");
+const repair = await start("project-B", "source-repair");
 // This explicit second send uses the same invocation and an auto repair policy.
 await waitRequests(7);
 pending[6].resolve(jsonResponse("Initial complete answer", "model-initial"));

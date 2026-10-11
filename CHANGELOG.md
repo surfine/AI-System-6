@@ -1462,13 +1462,24 @@ landscape sweep) stay open and are tracked in the 1.0.52 closeout.
 - **ASCII storyboards.** TeachText's Commands and Quick Draft's Deliver menu turn a script into storyboard shot groups drawn in characters (a model is required, and the item says so when none is connected); a second pass updates only the changed paragraphs and keeps hand edits; the sheet exports as PNG pages; one shot can be refined in Image Prompt Studio and its picture put back; keyframes can be taken from a finished video. The real-model steps of its acceptance walk have not yet been run.
 - **Control Panel's Dock and window switches sit as ordinary checkbox rows** instead of a bold two-column grid, in every appearance.
 
-## Public Beta 1.0.58 - 2026-10-10
+## Public Beta 1.0.58 - 2026-10-11
 
-The ClioWorks rounds reach the product: Office packages become first-class
-materials that keep their own bytes, ClioStage learns to check the page it is
-showing, and the iWork import path is hardened in both directions — it reads
-more of what is there and refuses what would lie.
+The Mac app moves to TinyJS on Apple silicon (macOS 15 or later) and ships the
+complete product — Node, the local server and the web desk — as an update the
+writer installs with one click. The ClioWorks rounds reach the product and then
+become editable in place: Office packages keep their own bytes, and a chart on a
+page or document opens as a real copy with its own undo.
 
+- **TinyJS macOS shell.** The app carries the whole product and updates itself:
+  it checks for a package, saves work and defers active model, import and export
+  tasks, then installs when the writer clicks Install and Restart. An
+  independent Node worker verifies HTTPS, SHA-256, the package signature and the
+  application identity before replacing anything; the new desk has to report its
+  startup identity and a matching persistent-data fingerprint before the old
+  package is cleared, and a package that fails that check rolls back. The first
+  OTA is ad-hoc signed while Developer ID and notarization are pending. Cover
+  Glass ships its own bundled typeface.
+- ClioWorks rounds reach the product (2026-10-10):
 - Office files (DOCX/XLSX/PPTX) mounted on the File Floppy keep the original
   package beside the extracted text copy; opening one asks whether to edit the
   file itself or read the text copy in Reader. Unedited saves return the exact
@@ -1490,3 +1501,26 @@ more of what is there and refuses what would lie.
   the release toolchains (stamped index assets, lazy-module ordering, release
   asset lists, window registry naming, integration ledger), and the full
   473-contract feature lane runs green again.
+
+ClioWorks rounds become editable in place (2026-10-11):
+
+The chart on a page or document opens as a real copy with its own undo, a
+context strip names the object you are on, and the whole round is held to receipts — a commit the network loses
+is queried, never re-fired; a disposal mid-commit reports the receipt as
+detached instead of pretending nothing happened.
+
+- Chart copies edit in place: select, 编辑副本, edit in ClioChart with a
+  separate undo; adopt lands as one undoable parent step while the source
+  stays byte-identical; a parent edit under an open draft refuses the commit
+  rather than overwriting either side.
+- A context strip names the current object with the commands that apply to it
+  and states why anything is disabled; the command matrix answers identically
+  across all twelve appearances.
+- Open questions are notes too: a scrap can carry a question with its own
+  quoted source; its status moves only by your acceptance, and similar
+  questions surface as local, dismissible hints.
+- Reading stays honest under version churn: annotations remember their
+  revision, only real content changes become review candidates, and dead
+  anchors keep your original words flagged.
+- Reliability sweep: nine defects fixed across the v5.1 surface, every fix
+  pinned by an executable contract (505 feature contracts green).

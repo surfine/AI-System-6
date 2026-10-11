@@ -32,7 +32,7 @@
     const state = {
       kind: 'chart', documentId: 'clio-chart-scratch', sessionId: 'cw3-chart-' + Math.random().toString(36).slice(2, 8),
       generation: 1, editRevision: 0, selectionEpoch: 0,
-      readonly: false, composing: false, saving: false, closed: false,
+      readonly: false, writeAllowed: true, composing: false, saving: false, closed: false,
       canUndo: false, canRedo: false,
       supported: ['edit.undo', 'edit.redo'],
     };
@@ -56,8 +56,8 @@
       // file.save is really wired only for extraction charts (saveClioChartAsDocument);
       // a pasted scratch table has no document save — do not advertise one.
       state.supported = engineState()?.extraction?.temporary
-        ? ['edit.undo', 'edit.redo', 'file.save']
-        : ['edit.undo', 'edit.redo'];
+        ? ['edit.undo', 'edit.redo', 'file.save', 'embed.edit']
+        : ['edit.undo', 'edit.redo', 'embed.edit'];
     };
 
     const grid = () => doc.getElementById('clio-chart-grid');
@@ -71,8 +71,88 @@
     on(split, 'keyup', () => { state.selectionEpoch += 1; }, true);
     on(split, 'mouseup', () => { state.selectionEpoch += 1; }, true);
 
+    // CW51-03: the strip and command matrix need the engine's REAL selection —
+    // a chart grid always has exactly one selected cell, so the selection is
+    // a table selection with that identity; the whole table is an embedded
+    // copy of its source (the extraction/original), which inspect can name.
+    const chartSelection = () => {
+      const engine = engineState();
+      const row = engine?.selection?.row ?? 0;
+      const column = engine?.selection?.column ?? 0;
+      // Sources a chart copy can honestly name: an extraction, a saved
+      // template — or the owning document itself (a saved chart-table file
+      // is its own source record; owner.kind "file" points at it locally).
+      const ownerIsLocalFile = engine?.owner?.kind === 'file' && Boolean(engine?.owner?.fileId);
+      const hasSource = Boolean(engine?.extraction || engine?.templateFileId || ownerIsLocalFile);
+      return {
+        kind: 'chart', ids: [`cell-${row}-${column}`],
+        embedded: Boolean(engine?.table), editable: Boolean(engine?.table),
+        locked: false,
+        hasSource,
+        sourceAccessible: Boolean(engine?.extraction) || ownerIsLocalFile,
+      };
+    };
+
+    // CW51-04 wiring: the real engine wrapped in the frame port's shape.
+    // Every member maps onto the ClioChart surface (see the mapping in the
+    // v5.1 handoff): the history and the owner write-back stay the engine's
+    // own — this façade invents no state and no persistence.
+    const chartEngineFacade = () => ({
+      readTable: () => engineState()?.table || null,
+      applyTable(table) {
+        const text = window.serializeClioChartTable(table);
+        return window.clioChartTableChange('frame_apply', () => window.restoreClioChartText(text));
+      },
+      serialize: (table) => window.serializeClioChartTable(table),
+      parse: (text) => window.parseClioChartTable(text, engineState()?.table?.offset || 0),
+      undoOnce: () => window.undoClioChart(),
+      beginChange: (mutate) => window.clioChartTableChange('frame_metadata', mutate),
+      ownerId: () => engineState()?.owner?.fileId || engineState()?.owner?.kind || 'clio-chart-scratch',
+      objectId: () => 'clio-chart-grid',
+      revision: () => engineHistory()?.size?.().undo || 0,
+    });
+
+    // The one frame session per mount. embed.edit opens it; adopt/cancel
+    // close it. frameState rides getContext so the matrix can gate a second
+    // edit while a frame is open (FRAME_ACTIVE).
+    let frameSession = null;
+    const frameState = () => frameSession?.snapshot()?.state || 'idle';
+
+    async function openEmbedFrame() {
+      const engine = engineState();
+      if (!engine?.table) return { status: 'blocked', code: 'NO_DOCUMENT' };
+      if (typeof window.ClioWorksFrames?.FrameSession !== 'function'
+        || typeof window.AISystem6ChartFramePort?.createChartFramePort !== 'function') {
+        return { status: 'blocked', code: 'NOT_WIRED', message: 'frame 模組未載入。' };
+      }
+      if (frameSession && frameSession.snapshot().state !== 'idle') {
+        return { status: 'blocked', code: 'FRAME_ALREADY_OPEN' };
+      }
+      frameSession = new window.ClioWorksFrames.FrameSession(
+        window.AISystem6ChartFramePort.createChartFramePort(chartEngineFacade()),
+        { onChange: () => notify() },
+      );
+      const outcome = await frameSession.open('clio-chart-grid');
+      if (outcome.status !== 'ok') {
+        frameSession = null;
+      }
+      syncDerived(); notify();
+      return outcome.status === 'ok' ? { status: 'ok' } : outcome;
+    }
+
     const adapter = {
-      getContext() { syncDerived(); return { ...state }; },
+      getContext() {
+        syncDerived();
+        const engine = engineState();
+        return {
+          ...state,
+          selection: chartSelection(),
+          active: !state.closed,
+          mayRestoreFocus: !state.composing,
+          modalOpen: false,
+          frameState: frameState(),
+        };
+      },
       async execute(command) {
         if (disposed) return { status: 'blocked', code: 'DISPOSED' };
         syncDerived();
@@ -85,6 +165,9 @@
           state.editRevision += 1;
           syncDerived(); notify();
           return ok ? { status: 'ok' } : { status: 'blocked', code: undo ? 'NOTHING_TO_UNDO' : 'NOTHING_TO_REDO' };
+        }
+        if (command === 'embed.edit') {
+          return openEmbedFrame();
         }
         if (command === 'file.save') {
           const engine = engineState();

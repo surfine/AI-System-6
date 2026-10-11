@@ -1,5 +1,22 @@
-import { spawnSync } from "node:child_process";
-import { closeSync, mkdirSync, mkdtempSync, openSync, readSync, statSync } from "node:fs";
+import { execSync, spawnSync } from "node:child_process";
+
+// W08: every check is marked with the commit and the desk version it ran
+// against. Inline on purpose — development-feedback copies this file into a
+// scratch tree, so it may not import sibling libs.
+function deskCheckStamp() {
+  let commit = "unknown";
+  try {
+    commit = String(execSync("git rev-parse --short HEAD", {
+      encoding: "utf8", stdio: ["ignore", "pipe", "ignore"],
+    }).trim() || "unknown");
+  } catch {}
+  let version = "unknown";
+  try {
+    version = String(JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version || "unknown");
+  } catch {}
+  return `commit ${commit} · desk v${version}`;
+}
+import { closeSync, mkdirSync, mkdtempSync, openSync, readFileSync, readSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -247,4 +264,5 @@ for (const check of checks) {
 }
 
 console.log(`Quick logs: ${logDir}`);
+console.log(deskCheckStamp());
 console.log(`OK  quick verification passed in ${((performance.now() - started) / 1000).toFixed(2)}s.`);

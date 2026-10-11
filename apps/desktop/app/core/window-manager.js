@@ -3777,10 +3777,13 @@ async function loadLazyWindowAppearanceShell(name) {
 // "unregistered" cheaply, so the second try costs nothing.
 async function mountWindowApplication(name, { reentrant = false } = {}) {
   const runtime = window.AISystem6Runtime;
-  if (typeof runtime?.mountApplication !== "function") return;
+  if (typeof runtime?.mountApplication !== "function") return { ok: true, status: "ok" };
   const byWindow = await runtime.mountApplication(name, { windowName: name, reentrant });
-  if (byWindow?.status !== "unregistered") return;
-  await runtime.mountApplication(getWindowAppId(name), { windowName: name, reentrant });
+  if (byWindow?.status !== "unregistered") return byWindow;
+  // Unregistered by window name: the desk's window metadata may still name an
+  // application id (legacy windows predate per-window registration).
+  const byAppId = await runtime.mountApplication(getWindowAppId(name), { windowName: name, reentrant });
+  return byAppId ?? { ok: true, status: "ok" };
 }
 
 // Windows whose open is on the stack right now. A module may build its own
@@ -3790,6 +3793,24 @@ async function mountWindowApplication(name, { reentrant = false } = {}) {
 // inside. Without the mark, that promise waits on itself and the app never
 // appears (Cover Glass, Quick Draft).
 const windowsBeingOpened = new Set();
+
+// ClioWorks unified spec (W03): every explicit user open takes a presentation
+// ticket — a monotonic epoch captured when the open starts. An open that is
+// slow across its awaits (Finder-mode transitions, lazy module loads, mounts)
+// checks its ticket at the boundaries and stands down when a newer user open
+// has begun, instead of finishing late and stealing the focus/keyboard from
+// the window the user chose afterwards. Nested opens share the outer ticket:
+// they are the same user intent continuing, not a new claim.
+let windowPresentationEpoch = 0;
+
+function takeWindowPresentationTicket() {
+  windowPresentationEpoch += 1;
+  return windowPresentationEpoch;
+}
+
+function windowPresentationIsCurrent(ticket) {
+  return ticket === windowPresentationEpoch;
+}
 
 async function openWindow(name, options = {}) {
   const nestedOpen = windowsBeingOpened.has(name);
@@ -3806,6 +3827,12 @@ async function openWindowInner(name, options = {}, nestedOpen = false) {
     updateMenuState();
     return;
   }
+  // W03: a fresh open claims the presentation epoch; a nested open continues
+  // the caller's claim. The ticket is re-checked after every await that can
+  // let a newer user open slip in — standing down means no focus, no reveal
+  // sound, and no foreground-affecting side effects from this late opener.
+  const presentationTicket = nestedOpen ? windowPresentationEpoch : takeWindowPresentationTicket();
+  const presentationStale = () => !windowPresentationIsCurrent(presentationTicket);
   const {
     skipFinderMode = false,
     skipPlacement = false,
@@ -3878,8 +3905,17 @@ async function openWindowInner(name, options = {}, nestedOpen = false) {
     ? document.querySelector(".window.is-active:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)")
     : null;
   const targetAppId = getWindowAppId(name);
+  // W01: what the Finder-mode transition hides must come back if the open
+  // later fails — a refused open is not allowed to leave the desk blank.
+  const singleTaskHiddenWindows = !isMultiFinderMode() && !skipFinderMode
+    ? Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)"))
+        .filter((item) => getWindowAppId(item.dataset.window || item) !== targetAppId)
+    : [];
   const canOpen = skipFinderMode ? true : await prepareFinderModeForApp(targetAppId);
   if (!canOpen) return;
+  // W03 checkpoint: the Finder-mode transition awaited above can let a newer
+  // user open begin. The late opener stands down before it hides anything.
+  if (presentationStale()) return;
   const finderReplacementFrame = replaceVisibleFinderLocation(name);
   if (sourceWindowForSingleTask && sourceWindowForSingleTask !== win) {
     win.dataset.returnWindowName = sourceWindowForSingleTask.dataset.window || "";
@@ -3894,7 +3930,40 @@ async function openWindowInner(name, options = {}, nestedOpen = false) {
 
   await loadLazyWindowModule(name);
 
-  await mountWindowApplication(name, { reentrant: nestedOpen });
+  // W01: the mount's result decides whether this open may proceed to reveal.
+  // A failed initialization must not fire onOpen/onReveal, play the open
+  // sound, or take focus — the window stays hidden and the failure is
+  // reported in place, with the previous foreground untouched.
+  const mountResult = await mountWindowApplication(name, { reentrant: nestedOpen });
+  // "unregistered" is not a failure: markup-only windows (projectDisks,
+  // the Finder pages) have no runtime application by design and work as
+  // pure DOM. Only a mount that RAN and failed gates the reveal.
+  const mountFailed = mountResult && mountResult.ok === false
+    && mountResult.status !== "unregistered";
+  if (mountFailed) {
+    // W01 restore: the Finder-mode transition hid the previous application's
+    // windows before the mount ran; a failed mount puts them back, so a
+    // refused open leaves the desk exactly as it was.
+    for (const item of singleTaskHiddenWindows) {
+      if (!item.isConnected) continue;
+      item.classList.remove("is-hidden");
+    }
+    if (singleTaskHiddenWindows.some((item) => item.classList.contains("is-active"))) {
+      // The transition also moved .is-active; give it back to the first
+      // restored window so the keyboard returns where the user left it.
+      focusWindow(singleTaskHiddenWindows.find((item) => item.classList.contains("is-active")) || singleTaskHiddenWindows[0]);
+    }
+    if (!nestedOpen && typeof setStatus === "function") {
+      const detail = mountResult.error?.message || mountResult.status || "initialization failed";
+      setStatus(t("window_mount_failed", name, detail));
+    }
+    if (typeof playSystemSound === "function" && !nestedOpen) playSystemSound("error");
+    return { ok: false, status: mountResult.status || "mount-failed", error: mountResult.error };
+  }
+  // W03 checkpoint: a slow module load or mount must not surface a window the
+  // user has since superseded. The window stays mounted (the initialization
+  // work is done and reusable) but does not reveal or focus.
+  if (presentationStale()) return;
   runWindowHook(name, "onOpen", { win, wasAlreadyOpen });
   // Reopening a window that was shaded must restore the size the shade saved
   // before the collapsed class comes off, or Expand would measure the stub.
@@ -4026,6 +4095,11 @@ async function openWindowInner(name, options = {}, nestedOpen = false) {
   }
 
   if (!skipFocus) {
+    // W03 final checkpoint: focus is the one effect that cannot be taken back
+    // politely, so it re-checks the ticket at the last moment.
+    // W03 final checkpoint: focus is the one effect that cannot be taken back
+    // politely, so it re-checks the ticket at the last moment.
+    if (presentationStale()) return;
     focusWindow(win);
     // …and put the keyboard in it, so Tab continues inside the window the person
     // just opened instead of walking the desk behind it. skipFocus is what a

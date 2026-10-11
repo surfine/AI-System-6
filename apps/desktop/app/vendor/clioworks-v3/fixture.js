@@ -197,6 +197,12 @@
       // V3-E-1 (GridCraft): real ClioChart engine adapter in the real window.
       await loadScript('app/vendor/clioworks-v3/more-menu.js');
       await loadScript('app/vendor/clioworks-v3/chart-adapter.js');
+      await loadScript('app/vendor/clioworks-v3/ui-model.js');
+      await loadScript('app/vendor/clioworks-v3/context-strip.js');
+      // CW51-04: the frame session and its native chart port — the copy
+      // editor's engine. Without these, 编辑副本 has no target.
+      await loadScript('app/vendor/clioworks-v3/frame-session.js');
+      await loadScript('app/vendor/clioworks-v3/chart-frame-port.js');
       openWindow('clioChart');
       let chartWin = null;
       for (let i = 0; i < 80 && !chartWin; i += 1) {
@@ -234,9 +240,24 @@
           adapter: integration.adapter,
           menuPort: integration.menuPort,
           hostWindow: window,
+          // CW51-07: the v5.1 catalog and its matrix are the command truth
+          // for this mount — the core catalog lacks the copy-edit commands.
+          catalog: window.ClioWorksUIModel.CATALOG,
+          resolveCommand: window.ClioWorksUIModel.commandState,
           onError: (error) => log('fixture: mount error ' + (error && error.message)),
           onTheme: (info) => { window.__CW3_THEME__ = info; },
         });
+        // CW51-03: attach the context strip over the mounted editor.
+        if (!window.ClioWorksContextStrip?.attachContextStrip) {
+          log('fixture: context strip module missing — chart branch loaded without ui-model.js/context-strip.js');
+        } else {
+          window.__CW3_STRIP__ = window.ClioWorksContextStrip.attachContextStrip({
+            mounted, adapter: integration.adapter,
+            onError: (error) => log('fixture: strip error ' + (error && error.message)),
+          });
+          }
+          // CW51-04 smoke hook: the frame snapshot, read by the acceptance lane.
+          window.__CW3_FRAME__ = () => integration.adapter.getContext().frameState;
       } catch (error) {
         log('fixture: mountNative failed ' + (error && error.message));
         integration.dispose();

@@ -9,7 +9,7 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 const test = createFeatureTest("backup-fail-closed");
 const backupSource = read("app/core/project-disk-backup.js");
 const assemblerSource = read("app/core/project-backup-assembler.js");
-const exportImportSource = read("app/features/export-import.js");
+const exportImportSource = read("app/features/export-import.js") + "\n" + read("app/features/project-backup-export-data.js");
 
 function makeContext({ readRevisionsFails = false } = {}) {
   const keyval = new Map();

@@ -33,6 +33,20 @@ function documentTabNow() {
   return new Date().toISOString();
 }
 
+/**
+ * Captures run on every select, scroll and restore, and they write what the
+ * screen shows back into the record. Stamping updatedAt no matter what made a
+ * launch that changed nothing rewrite the project anyway - the update health
+ * check compares whole stores, so a boot that merely re-captured the same
+ * values reported different data and the updater rolled the update back. The
+ * stamp belongs to a change, so it is applied only when the record moved.
+ */
+function stampChanged(record, capture) {
+  const before = JSON.stringify(record);
+  capture();
+  if (JSON.stringify(record) !== before) record.updatedAt = documentTabNow();
+}
+
 function createDocumentTabRecord(app, role, options = {}) {
   const now = documentTabNow();
   return {
@@ -136,9 +150,12 @@ function getActiveDocumentTab(app, project = getActiveProject()) {
 function setActiveDocumentTab(app, tabId, project = getActiveProject()) {
   if (!project) return null;
   const tab = getDocumentTabs(app, project).find((item) => item.id === tabId) || null;
-  project.activeDocumentTabIds = activeDocumentTabIdsFallback(project);
-  project.activeDocumentTabIds[app] = tab?.id || null;
-  project.updatedAt = documentTabNow();
+  // A restore that re-selects the tab already active is not a change, and it
+  // happens on every launch; stamping here rewrote the project each time.
+  stampChanged(project, () => {
+    project.activeDocumentTabIds = activeDocumentTabIdsFallback(project);
+    project.activeDocumentTabIds[app] = tab?.id || null;
+  });
   return tab;
 }
 
@@ -154,10 +171,11 @@ function upsertDocumentTab(app, role, options = {}, project = getActiveProject()
       && (backing.url ? item.backing?.url === backing.url : true));
   }
   if (tab) {
-    tab.title = options.title || tab.title;
-    tab.backing = { ...(tab.backing || {}), ...backing };
-    tab.state = { ...(tab.state || {}), ...(options.state || {}) };
-    tab.updatedAt = documentTabNow();
+    stampChanged(tab, () => {
+      tab.title = options.title || tab.title;
+      tab.backing = { ...(tab.backing || {}), ...backing };
+      tab.state = { ...(tab.state || {}), ...(options.state || {}) };
+    });
   } else {
     tab = createDocumentTabRecord(app, role, { ...options, order: tabs.length });
     tabs.push(tab);

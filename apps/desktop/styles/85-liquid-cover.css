@@ -11,6 +11,14 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "Macintosh Skeletal Filled";
+  src: url("../assets/fonts/macintosh-skeletal-filled/MacintoshSkeletalFilled.otf") format("opentype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 /* A copy of a boot rule that must keep beating this sheet's own rule below:
    the same selector and specificity, scoped by :where() to this surface, and
    first in the sheet so every rule after it keeps its place. Under a per-file

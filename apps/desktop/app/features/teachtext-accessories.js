@@ -99,26 +99,27 @@ function captureActiveTeachTextTabState() {
   const editorIsEmpty = !(teachTextBodyInput.value || "").trim();
   const tabHasText = !!String(tab.state?.body || "").trim();
   if (editorIsEmpty && tabHasText && tab.id !== teachTextLoadedTabId) return;
-  tab.title = getTeachTextDocumentName({ fallback: teachTextNameInput?.value?.trim() || tab.title || t("untitled") });
-  tab.role = teachTextDocumentRole || tab.role;
-  tab.backing = tab.role === "manuscript"
-    ? { type: "manuscript" }
-    : { ...(tab.backing || {}), id: activeTextFileId || tab.backing?.id || "" };
-  tab.state = {
-    ...(tab.state || {}),
-    activeTextFileId,
-    documentRole: teachTextDocumentRole || "scratch_file",
-    name: teachTextNameInput?.value?.trim() || tab.title,
-    folder: teachTextFolderInput?.value?.trim() || preferredFolderName(),
-    body: teachTextBodyInput.value || "",
-    label: normalizeFileLabel(teachTextFileLabel),
-    workflowState: normalizeTeachTextWorkflowState(teachTextWorkflowState),
-    statusKey: teachTextStatusEl?.dataset.statusKey || "unsaved",
-    selectionStart: teachTextBodyInput.selectionStart ?? 0,
-    selectionEnd: teachTextBodyInput.selectionEnd ?? 0,
-    scrollTop: teachTextBodyInput.scrollTop || 0,
-  };
-  tab.updatedAt = new Date().toISOString();
+  stampChanged(tab, () => {
+    tab.title = getTeachTextDocumentName({ fallback: teachTextNameInput?.value?.trim() || tab.title || t("untitled") });
+    tab.role = teachTextDocumentRole || tab.role;
+    tab.backing = tab.role === "manuscript"
+      ? { type: "manuscript" }
+      : { ...(tab.backing || {}), id: activeTextFileId || tab.backing?.id || "" };
+    tab.state = {
+      ...(tab.state || {}),
+      activeTextFileId,
+      documentRole: teachTextDocumentRole || "scratch_file",
+      name: teachTextNameInput?.value?.trim() || tab.title,
+      folder: teachTextFolderInput?.value?.trim() || preferredFolderName(),
+      body: teachTextBodyInput.value || "",
+      label: normalizeFileLabel(teachTextFileLabel),
+      workflowState: normalizeTeachTextWorkflowState(teachTextWorkflowState),
+      statusKey: teachTextStatusEl?.dataset.statusKey || "unsaved",
+      selectionStart: teachTextBodyInput.selectionStart ?? 0,
+      selectionEnd: teachTextBodyInput.selectionEnd ?? 0,
+      scrollTop: teachTextBodyInput.scrollTop || 0,
+    };
+  });
 }
 
 function renderTeachTextTabs() {

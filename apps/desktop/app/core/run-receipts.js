@@ -96,6 +96,8 @@ function buildRunReceiptRecord(input = {}, now = runReceiptNow()) {
     status: "running",
     publicErrorReason: "",
     replayContract: input.replayContract || null,
+    // C08: usage rides the receipt — native or a flagged estimate.
+    usage: (typeof window !== "undefined" && window.AISystem6ChatRunDetails?.usageFromInput?.(input.usage)) || null,
   };
 }
 
@@ -129,6 +131,8 @@ function formatRunReceiptBody(record = {}) {
     `- Inputs: ${(record.inputObjectIds || []).join(", ") || "—"}`,
     `- Affected: ${(record.affectedObjectIds || []).join(", ") || "—"}`,
     `- Provider / model: ${record.provider || "—"} / ${record.model || "—"}`,
+    // C08: the usage verdict — "—" on receipts older than accounting.
+    `- Usage: ${(typeof window !== "undefined" && window.AISystem6ChatRunDetails?.usageLine?.(record.usage)) || "—"}`,
     `- Attempts: ${(record.attempts || []).length ? record.attempts.map((attempt) => `${attempt.model} [${attempt.provider}] ${attempt.outcome}`).join("; ") : "—"}`,
     `- Allowed tools: ${(record.allowedTools || []).join(", ") || "—"}`,
     `- Tool calls: ${tools.length ? tools.map((tool) => `${tool.name} [${tool.effect || ""}] ${tool.ok ? "ok" : "failed"}`).join("; ") : "—"}`,
@@ -396,11 +400,15 @@ async function recordModelAnswer({
   status = "completed",
   publicErrorReason = "",
   runManifest = null,
+  usage = null,
 } = {}) {
   const text = String(answerText || "");
   if (!text.trim()) return { ok: false, reason: "empty" };
   const created = await createReceipt({
     projectId, sourceAppId, intent, provider, model, attempts, inputObjectIds, sourceScope,
+    // C08: billing facts ride the receipt — native accounting or an
+    // explicitly flagged estimate, never an unverified ratio.
+    usage,
     extraFields: runManifest ? { runManifest: JSON.parse(JSON.stringify(runManifest)) } : null,
   });
   if (!created.ok) return created;

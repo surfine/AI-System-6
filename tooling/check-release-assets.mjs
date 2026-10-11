@@ -6,6 +6,7 @@ import {
   themeLabPackagedAssetReport,
   themeStandalonePackagedAssets,
 } from "./lib/generated-era-runtime-assets.mjs";
+import { fontCoverageReport } from "./lib/font-asset-coverage.mjs";
 import { resolveProjectPath } from "./lib/paths.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -186,6 +187,10 @@ for (const file of themeStandalonePackagedAssets(root)) {
   console.log(`OK  packaged standalone theme asset ${file.packagePath} (${file.bytes} bytes)`);
 }
 
+const fontCoverage = fontCoverageReport({ repoRoot: root });
+for (const reference of fontCoverage.fonts) console.log(`OK  packaged stylesheet font ${reference}`);
+for (const reference of fontCoverage.failures) packaging.push(`a packaged stylesheet loads a font the manifest does not ship: ${reference}`);
+
 if (!missing.length && !empty.length && !packaging.length) {
   console.log(`OK  release assets present (${requiredAssets.length})`);
   process.exit(0);
@@ -202,7 +207,7 @@ if (empty.length) {
 }
 
 if (packaging.length) {
-  console.error("Invalid packaged icon assets:");
+  console.error("Invalid packaged assets:");
   packaging.forEach((message) => console.error(`- ${message}`));
 }
 

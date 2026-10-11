@@ -79,6 +79,13 @@ export const GATE_INPUT_RULES = Object.freeze([
     // decides which Playwright, and therefore which browser, takes the picture.
   },
   {
+    id: "tinyjs-runtime-source",
+    pattern: /^vendor\/tinyjs\//,
+    gates: ALL,
+    // Native runtime bytes affect the complete packaged product and invalidate
+    // every reused ship receipt when its controlled pin changes.
+  },
+  {
     id: "ad-block-source",
     pattern: /^vendor\/ubol\//,
     gates: ALL,

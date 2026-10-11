@@ -60,7 +60,7 @@ const budget = JSON.parse(readFileSync(budgetPath, "utf8"));
 // are named rather than all of apps/server: importing a data module is not
 // executing an endpoint, and a signal that wide would hand the whole server
 // tree's neighbours a slot each.
-const executingSignal = /node:vm|boot-vm\.mjs|draft-desk-vm\.mjs|write-lease-vm\.mjs|backup-vm\.mjs|app-boot-vm\.mjs|^\.\.\/\.\.\/(?:functions\/(?:_lib|api)|workers|apps\/server)\//;
+const executingSignal = /node:vm|boot-vm\.mjs|draft-desk-vm\.mjs|write-lease-vm\.mjs|backup-vm\.mjs|app-boot-vm\.mjs|^\.\.\/\.\.\/(?:functions\/(?:_lib|api)|workers|apps\/server|platform\/macos\/tinyjs\/src\/node)\//;
 const suiteInfrastructure = new Set([
   "static-contract-ratchet.test.mjs",
   "gate-self-proof.test.mjs",
@@ -69,6 +69,10 @@ const suiteInfrastructure = new Set([
   // Executes the snapshot retry helper and checks its wiring: tooling
   // infrastructure, like the generator-cache contract above.
   "appearance-snapshot-retry.test.mjs",
+  // Execute packaging policy and publication validation, with actual pinned
+  // patch inputs and invalid manifests. These exercise tooling, not app UI.
+  "tinyjs-packaging.test.mjs",
+  "tinyjs-ota-publish.test.mjs",
 ]);
 
 /** Every module specifier the file imports, static or dynamic. */
@@ -101,12 +105,14 @@ function importSpecifiers(source) {
 }
 
 /**
- * Does the file SPAWN the real server and drive it over HTTP?
+ * Does the file spawn the real server, or compile the shipped native helper?
  *
  * That is the strongest form of what this ratchet asks for — a VM harness runs
  * the app's code, a spawned server runs the whole product including its
  * routing, its guards and its process boundary — and it has no import to read,
- * because the path is an argument. It is still taken from the syntax tree and
+ * because the path is an argument. The Swift download contract likewise compiles
+ * the shipped Downloads.swift and executes the resulting binary against real
+ * files, including an existing file and a symlink target. It is taken from the syntax tree and
  * never from the text: a comment naming the same call must not buy a slot, the
  * way one did before the import rule landed.
  */
@@ -118,9 +124,9 @@ function spawnsRealServer(source) {
       node.type === "CallExpression"
       && /^(spawn|spawnSync|fork|execFile|execFileSync)$/.test(node.callee?.name || "")
       && node.arguments.some((argument) => (
-        (argument.type === "Literal" && /apps\/server\/server\.js$/.test(String(argument.value)))
+        (argument.type === "Literal" && /(?:apps\/server\/server\.js|platform\/macos\/tinyjs\/native\/Downloads\.swift)$/.test(String(argument.value)))
         || (argument.type === "ArrayExpression" && argument.elements.some((element) => (
-          element?.type === "Literal" && /apps\/server\/server\.js$/.test(String(element.value))
+          element?.type === "Literal" && /(?:apps\/server\/server\.js|platform\/macos\/tinyjs\/native\/Downloads\.swift)$/.test(String(element.value))
         )))
       ))
     ) {

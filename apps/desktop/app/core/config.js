@@ -873,6 +873,34 @@ function ensureDesktopMaintenanceModule() { return ensureLazySystemModule("app/c
 function ensureNativeBinariesModule() { return ensureLazySystemModule("app/core/native-binaries.js", "AISystem6NativeBinaries"); }
 function ensureClioWorksLedgerModule() { return ensureLazySystemModule("app/vendor/clioworks-v3/native-host.js", "AISystem6ClioWorksLoaded"); }
 const ensureClioStageAuditModuleLoaded = createLazyModuleLoader("AISystem6ClioStageAuditLoaded", ["app/features/clio-stage-audit.js"], false, ["styles.clio-stage-audit.css"]);
+function ensureUnifiedSpecContractsModule() { return ensureLazySystemModule("app/vendor/unified-spec/contracts-install.js", "ClioWorksUnifiedContractsLoaded"); }
+const ensureChatCompactionModuleLoaded = createLazyModuleLoader("AISystem6ChatCompactionLoaded", ["app/core/chat-compaction.js"]);
+const ensureChatContextCapabilitiesModuleLoaded = createLazyModuleLoader("AISystem6ChatContextCapabilitiesLoaded", ["app/core/chat-context-capabilities.js"]);
+function ensureChatContextCapabilitiesModule() { return ensureChatContextCapabilitiesModuleLoaded(); }
+function ensureChatCompactionModule() { return ensureChatCompactionModuleLoaded(); }
+function ensureChatCachePolicyModule() { return ensureLazySystemModule("app/vendor/unified-spec/cache-policy-install.js", "AISystem6ChatCachePolicyLoaded"); }
+const ensureChatRunDetailsModuleLoaded = createLazyModuleLoader("AISystem6ChatRunDetailsLoaded", ["app/core/chat-run-details.js"]);
+function ensureChatRunDetailsModule() { return ensureChatRunDetailsModuleLoaded(); }
+const ensureReadingBridgeModuleLoaded = createLazyModuleLoader("AISystem6ReadingBridgeLoaded", ["app/features/reading-bridge.js"]);
+function ensureReadingBridgeModule() { return ensureReadingBridgeModuleLoaded(); }
+const ensureOpenQuestionsModuleLoaded = createLazyModuleLoader("AISystem6OpenQuestionsLoaded", ["app/features/open-questions.js"]);
+const ensureClioWorksV51Loaded = createLazyModuleLoader("AISystem6ClioWorksV51Loaded", ["app/vendor/clioworks-v3/ui-model.js", "app/vendor/clioworks-v3/frame-session.js", "app/vendor/clioworks-v3/runtime-port.js", "app/vendor/clioworks-v3/context-strip.js", "app/vendor/clioworks-v3/chart-frame-port.js"]);
+function ensureClioWorksV51Modules() { return ensureClioWorksV51Loaded(); }
+function ensureOpenQuestionsModule() { return ensureOpenQuestionsModuleLoaded(); }
+const ensureReadingRelationsModuleLoaded = createLazyModuleLoader("AISystem6ReadingRelationsLoaded", ["app/features/reading-relations.js"]);
+function ensureReadingRelationsModule() { return ensureReadingRelationsModuleLoaded(); }
+const ensureReadingLayersModuleLoaded = createLazyModuleLoader("AISystem6ReadingLayersLoaded", ["app/features/reading-layers.js"]);
+function ensureReadingLayersModule() { return ensureReadingLayersModuleLoaded(); }
+const ensureReadingCompareModuleLoaded = createLazyModuleLoader("AISystem6ReadingCompareLoaded", ["app/features/reading-compare.js"]);
+function ensureReadingCompareModule() { return ensureReadingCompareModuleLoaded(); }
+const ensureReadingBoundaryModuleLoaded = createLazyModuleLoader("AISystem6ReadingBoundaryLoaded", ["app/features/reading-boundary.js"]);
+function ensureReadingBoundaryModule() { return ensureReadingBoundaryModuleLoaded(); }
+const ensureSourceVersionsModuleLoaded = createLazyModuleLoader("AISystem6SourceVersionsLoaded", ["app/features/source-versions.js"]);
+function ensureSourceVersionsModule() { return ensureSourceVersionsModuleLoaded(); }
+const ensureReadingPackageModuleLoaded = createLazyModuleLoader("AISystem6ReadingPackageLoaded", ["app/features/reading-package.js"]);
+function ensureReadingPackageModule() { return ensureReadingPackageModuleLoaded(); }
+const ensureMediaReadingModuleLoaded = createLazyModuleLoader("AISystem6MediaReadingLoaded", ["app/features/media-reading.js"]);
+function ensureMediaReadingModule() { return ensureMediaReadingModuleLoaded(); }
 function ensureClioStageAuditModule() { return ensureClioStageAuditModuleLoaded(); }
 // The sheet travels with the module: DocMap's styles are lazy too.
 const ensureDocMapModuleLoaded = createLazyModuleLoader("AISystem6DocMapLoaded", ["app/features/docmap.js"], false, ["styles.docmap.css"]);
@@ -1119,3 +1147,6 @@ function installLazyFunctionStub(name, ensureModule) {
   "runClaimCheck",
   "readRebuildMarkdownPackStream",
 ].forEach((name) => installLazyFunctionStub(name, ensureOutlineClaimModule));
+
+const ensureProjectBackupExportData = createLazyModuleLoader("AISystem6ProjectBackupExportData", ["app/features/project-backup-export-data.js"]);
+const ensureTinyShellModule = createLazyModuleLoader("AISystem6TinyShell", ["app/core/tinyjs-shell.js"]);

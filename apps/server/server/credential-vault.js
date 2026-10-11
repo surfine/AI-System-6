@@ -196,7 +196,23 @@ async function persistCloudCredential(credentialId) {
       "credential_not_staged"
     );
   }
+  const requireKeychain = process.env.AI_SYSTEM6_REQUIRE_KEYCHAIN === "1";
+  const previousSecret = requireKeychain ? await readKeychainCredential(id) : "";
   const stored = await writeKeychainCredential(id, secret);
+  if (!stored && requireKeychain) {
+    throw credentialRequestError("Keychain could not save this credential; the previous configuration is retained.", 503, "keychain_unavailable");
+  }
+  if (stored && requireKeychain) {
+    const readback = await readKeychainCredential(id);
+    const hash = (value) => crypto.createHash("sha256").update(value).digest();
+    if (!crypto.timingSafeEqual(hash(secret), hash(readback))) {
+      if (previousSecret) await writeKeychainCredential(id, previousSecret);
+      else await deleteKeychainCredential(id);
+      throw credentialRequestError("Keychain verification failed; keep the original configuration.", 503, "keychain_unavailable");
+    }
+    // A subsequent availability check must exercise Keychain, not this cache.
+    stagedCredentials.delete(id);
+  }
   return {
     credentialId: id,
     persistence: stored ? "keychain" : "service-session",

@@ -11,19 +11,19 @@
     <!-- Let the system choose status glyph contrast. -->
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20261010.2" />
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20261010.2" />
-    <link rel="manifest" href="assets/app-icon/manifest.json?v=20261010.2" />
-    <script src="app/core/theme-registry.js?v=20261010.2"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20261010.2" />
+    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20261012.4" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20261012.4" />
+    <link rel="manifest" href="assets/app-icon/manifest.json?v=20261012.4" />
+    <script src="app/core/theme-registry.js?v=20261012.4"></script>
+    <link rel="stylesheet" href="styles.bundle.css?v=20261012.4" />
     <!-- Preload the application while parsing the desktop. -->
-    <link rel="preload" as="script" href="app.bundle.js?v=20261010.2" />
+    <link rel="preload" as="script" href="app.bundle.js?v=20261012.4" />
   </head>
   <body class="is-booting">
     <pre id="cw3-log" style="position:fixed;left:8px;bottom:8px;z-index:9999;max-width:46vw;max-height:38vh;overflow:auto;margin:0;padding:8px;background:rgba(0,0,0,.72);color:#7CFC9B;font:11px/1.4 ui-monospace,Menlo,monospace;border-radius:6px;white-space:pre-wrap;" hidden></pre>
-    <script src="app/core/theme-body-init.js?v=20261010.2"></script>
+    <script src="app/core/theme-body-init.js?v=20261012.4"></script>
     <!-- Register crash recovery before the application bundle. -->
-    <script src="app/core/boot-safety-net.js?v=20261010.2"></script>
+    <script src="app/core/boot-safety-net.js?v=20261012.4"></script>
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
         <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
@@ -1782,6 +1782,7 @@
             <summary data-i18n="project_backup">Project backup</summary>
             <span data-i18n="project_backup_preview">Project Hard Disk Backup Preview</span>
             <div class="backup-action-row">
+              <button class="btn" type="button" data-action="export-project-backup" data-i18n="export_project_backup">Export Backup…</button>
               <div class="file-picker">
                 <button id="project-backup-file-button" class="btn file-picker-button" type="button" data-i18n="select_backup_button">Choose Backup</button>
                 <span id="project-backup-selection" class="file-picker-name" data-file-picker-empty="no_backup_selected">No backup selected</span>
@@ -2160,6 +2161,7 @@
                 <div class="teachtext-command-popover scrap-picture-popover">
                   <button class="btn" type="button" data-action="scrapbook-clip-picture" data-i18n="scrap_clip_picture">Clip Picture</button>
                   <button class="btn" type="button" id="read-scrap-picture" data-action="scrapbook-read-picture" data-i18n="scrap_read_picture">Read Picture</button>
+                  <button class="btn" type="button" data-action="scrapbook-mark-open-question" data-i18n="scrap_mark_open_question">Mark as Open Question</button>
                 </div>
               </details>
               <button class="btn default" type="button" id="insert-scrap" data-action="scrapbook-insert" data-i18n="insert" data-balloon-help-disabled="balloon_scrapbook_empty">Insert</button>
@@ -3485,10 +3487,10 @@
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20261010.2"></script>
+    <script src="app/generated/build-info.js?v=20261012.4"></script>
     <template id="standard-window-controls"><button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button><button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button><button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button></template>
-    <script src="app.bundle.js?v=20261010.2"></script>
-    <script src="app/vendor/clioworks-v3/fixture.js?v=20261010.2"></script>
+    <script src="app.bundle.js?v=20261012.4"></script>
+    <script src="app/vendor/clioworks-v3/fixture.js?v=20261012.4"></script>
 
   </body>
 </html>

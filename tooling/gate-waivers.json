@@ -21,6 +21,7 @@
     "tooling/verify-windowshade-browser.mjs": "Maintainer real-browser adapter contract for the WindowShade module, run by hand for both Chromium and WebKit; it launches Playwright, loads tests/fixtures/windowshade-adapter.html and measures shade, roll-up and grow geometry in a real engine. The same module's headless behaviour is asserted by tests/features/windowshade.test.mjs and its window-menu entry by the window-menu contract, so this stays an instrument outside the release runner, where a Playwright download is not part of every gate.",
     "tooling/verify-theme-lab-fidelity.mjs": "Maintainer theme-lab fidelity capture (npm run verify:theme-lab:fidelity); it compares local screenshot boards by hand and is not part of verify:release.",
     "tooling/verify-web-vitals.mjs": "Performance budget probe for the phone and laptop start-up path, run on demand; a wall clock on a shared machine is not repeatable enough to refuse a release, so it reports numbers rather than gating them.",
-    "tooling/visual-snapshot.mjs": "Superseded local visual-snapshot utility kept for maintainer inspection; the appearance snapshot and token tables own pixel coverage now."
+    "tooling/visual-snapshot.mjs": "Superseded local visual-snapshot utility kept for maintainer inspection; the appearance snapshot and token tables own pixel coverage now.",
+    "tooling/verify-adoption.mjs": "引进消化吸收再创新的执行门（npm run verify:adoption）：纯文件检查，已在 npm test 链首运行并作为 clioworks-v51 合同的断言对象；此处登记是为保持台账与 runner 的映射完整，同样的断言以 adoption-doctrine 特性合同在每个测试车道运行；本脚本是维护者的独立快捷入口。"
   }
 }

@@ -32,6 +32,8 @@ const {
   runWithLocalRequestGuard,
 } = require("./server/security/local-request.js");
 
+const { shellOwned, handleShellSession, watchShellParent } = require("./server/shell-session.js");
+
 const port = Number(process.env.PORT || 4173);
 const localRequestPolicy = configuredLocalRequestPolicy(port);
 const host = localRequestPolicy.host;
@@ -52,6 +54,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
   applySecurityHeaders(res);
+  if (handleShellSession(req, res)) return;
   if (
     deploymentProfile === "public"
     && String(req.url || "").split("?")[0].startsWith("/api/")
@@ -151,6 +154,10 @@ server.on("error", (error) => {
     console.error(`Server error: ${error.message}`);
     process.exit(1);
   }
+  if (shellOwned) {
+    console.error(`Shell listener port ${port} is already owned; refusing reuse.`);
+    process.exit(1);
+  }
   const probe = http.get({ host, port, path: "/", timeout: 3000 }, (res) => {
     const healthy = res.statusCode === 200;
     res.resume();
@@ -183,3 +190,5 @@ function shutdown(signal) {
 
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 process.on("SIGINT", () => shutdown("SIGINT"));
+
+watchShellParent(() => shutdown("shell parent lost"));

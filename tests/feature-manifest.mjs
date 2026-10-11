@@ -53,6 +53,53 @@ export const publicProductContracts = [
     tests: ["iwork-import-quality.test.mjs"],
   },
   {
+    // Unified spec (2026-10-10) W02: the mount:open reentrancy contract —
+    // nested opens complete, shared initialization runs once, and a second
+    // open of a mounting window waits instead of returning an early ready.
+    feature: "Window Open Reentrancy",
+    tests: ["window-open-reentrancy.test.mjs"],
+  },
+  {
+    // Unified spec (2026-10-10) C01: chat history integrity — no arbitrary
+    // last-6 window, no text-identity dedup, block-on-overflow for the chat
+    // path, and compaction that never splices the original history.
+    feature: "Chat History Integrity",
+    tests: ["chat-history-integrity.test.mjs"],
+  },
+  {
+    // Unified spec (2026-10-10) C02: the send view is separate from the
+    // original record — versioned compaction records with identity fields,
+    // legacy-unverified handling, a user-role envelope (never system), and
+    // a CAS-style coverage commit in the send path.
+    feature: "Compaction Record",
+    tests: ["compaction-record.test.mjs"],
+  },
+  {
+    // Unified spec (2026-10-10) C03: the budget comes from the final payload
+    // and the provider's real input limit; unknown providers carry nulls,
+    // never advertised maxima; the vendored contextBudget formula is the 8K
+    // fixture's authority.
+    feature: "Chat Context Budget",
+    tests: ["chat-context-budget.test.mjs"],
+  },
+  {
+    // Unified spec (2026-10-10) C05: summary content and permissions — pins
+    // app-verified against originals, model summaries structurally validated,
+    // assistant suggestions never recorded as user decisions, and provenance
+    // (open questions, covered ids, source versions) riding the record.
+    feature: "Chat Compaction C05",
+    tests: ["chat-compaction-c05.test.mjs"],
+  },
+  {
+    // Unified spec (2026-10-10) C04: the prepared-request snapshot at the
+    // last send boundary carries no credentials, and the compaction fork is
+    // gated on the vendored canForkSafely contract (tools never execute
+    // server-side; a forced tool call or any changed prefix component
+    // blocks the hot-prefix reuse — standalone request with tools closed).
+    feature: "Chat Compaction Fork",
+    tests: ["chat-compaction-fork.test.mjs"],
+  },
+  {
     feature: "ClioTalk",
     tests: ["public/clio-talk-contract.test.mjs"],
   },

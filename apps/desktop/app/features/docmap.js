@@ -162,8 +162,9 @@ function setCurrentDocMapLayout(layout) {
     currentDocMap.layout = nextLayout;
     const tab = activeDocMapTab();
     if (tab) {
-      tab.state = { ...(tab.state || {}), map: structuredClone(currentDocMap), selectedNodeId: selectedDocMapNodeId || "central", zoomMode: "fit" };
-      tab.updatedAt = new Date().toISOString();
+      stampChanged(tab, () => {
+        tab.state = { ...(tab.state || {}), map: structuredClone(currentDocMap), selectedNodeId: selectedDocMapNodeId || "central", zoomMode: "fit" };
+      });
     }
     renderDocMap();
   }
@@ -2213,14 +2214,15 @@ function captureActiveDocMapTabState() {
   const tab = activeDocMapTab();
   if (!tab || !currentDocMap) return;
   if (currentDocMap.kind === "videoDocMap" && currentDocMap.status !== "saved") return;
-  tab.title = currentDocMap.title || tab.title || t("docmap");
-  tab.state = {
-    ...(tab.state || {}),
-    map: structuredClone(currentDocMap),
-    selectedNodeId: selectedDocMapNodeId || "central",
-    zoomMode: docMapZoomMode || "fit",
-  };
-  tab.updatedAt = new Date().toISOString();
+  stampChanged(tab, () => {
+    tab.title = currentDocMap.title || tab.title || t("docmap");
+    tab.state = {
+      ...(tab.state || {}),
+      map: structuredClone(currentDocMap),
+      selectedNodeId: selectedDocMapNodeId || "central",
+      zoomMode: docMapZoomMode || "fit",
+    };
+  });
 }
 
 function renderDocMapTabs() {

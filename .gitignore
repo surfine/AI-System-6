@@ -166,3 +166,16 @@ internal/design-proposals/aaronlau-me/assets/_ref/
 # Claude-Pop promo video: generated audio, renders, downloaded voice models
 /promo/claude-pop/build/
 /promo/claude-pop/.cache/
+
+# A session's own scratch plans — never workspace content.
+.zcode/
+internal/plans/creator-blueprint/
+
+# Stale verification state and template accidents at the root.
+.batch-*.json
+.drain-*.json
+{{HOMEBREW_PREFIX}}/
+{{pkgetc}}/
+test-results/
+output/
+.DS_Store

@@ -11,6 +11,7 @@ import {
   bundleInputsDigest,
   markBundleBuilt,
 } from "./lib/incremental-bundle.mjs";
+import { stampCssAssetUrls } from "./lib/css-asset-stamp.mjs";
 import { minifyCss } from "./lib/minify-css.mjs";
 import { desktopRoot, repositoryRoot } from "./lib/paths.mjs";
 import { patchTesseractWorker } from "./patch-tesseract-worker.mjs";
@@ -38,6 +39,7 @@ const cssBundlePath = "styles.bundle.css";
 const sharedInputs = [
   fileURLToPath(import.meta.url),
   join(root, "tooling", "patch-tesseract-worker.mjs"),
+  join(root, "tooling", "lib", "css-asset-stamp.mjs"),
   join(root, "tooling", "lib", "minify-css.mjs"),
   join(root, "tooling", "runtime-manifest.mjs"),
   join(root, "tooling", "style-manifest.mjs"),
@@ -179,19 +181,6 @@ if (!jsCached) {
 // not wrapped in a layer, so emitting it ahead of the migration is safe; the
 // order itself is single-sourced in style-manifest.mjs.
 const layerPreamble = `@layer ${styleLayerOrder.join(", ")};\n`;
-
-// The origin serves non-HTML/JS/CSS assets with a bounded cache lifetime
-// (public, max-age=86400) and the CSS refers to them by stable URLs, so a
-// release that changes an asset would leave returning visitors on the old
-// bytes for up to a day. index.html already busts its own bundle refs with
-// ?v=<build>; stamp every static asset url() in the CSS bundle with the same
-// build so a new release always fetches fresh icons, sprites and fonts.
-function stampCssAssetUrls(css, build) {
-  return css.replace(
-    /url\(\s*(['"]?)((?:\.{0,2}\/)*assets\/[\w./-]+\.(?:svg|png|jpg|jpeg|webp|gif|ico|woff|woff2|dat|ttf)(?:\?[^)'"]*)?)\1\s*\)/gi,
-    (match, quote, url) => (/\?/.test(url) ? match : `url(${quote}${url}?v=${build}${quote})`)
-  );
-}
 
 if (!cssCached) {
   const cssSource = layerPreamble + styleRuntimePaths

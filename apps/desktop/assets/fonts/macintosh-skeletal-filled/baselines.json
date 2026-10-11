@@ -1,0 +1,8 @@
+{
+  "upstream": "https://github.com/npwitk/Macintosh-Skeletal-Filled",
+  "commit": "8c4fe0acd9a079217e247fc9fcc6be9a7bc9f251",
+  "files": {
+    "MacintoshSkeletalFilled.otf": "sha256:9410ee1b9d3a1d5ab563c5c5f1d233bdf24864081ea5931f951a81eb7697594a",
+    "LICENSE": "sha256:cb93ca865ec8281bc6bd2ada3787a485db8fc038b2f5c4fd6d862eb9e0fe8ca4"
+  }
+}

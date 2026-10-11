@@ -1,0 +1,3534 @@
+// tinyjs backend bridge.
+//
+// Spawns the native webview launcher and bridges it to your API over a Unix
+// domain socket in a private (0700) temp dir. No network, no ports.
+//
+// Wire protocol (newline-delimited; payloads are JSON, or wire-escaped via
+// esc() so they never contain a raw \n that would break line framing):
+//   launcher -> backend:  CALL <id> <json-args-array>
+//   backend -> launcher:  RET <id> <status> <json>    resolve/reject a call
+//                         EVAL <js>                   run JS in the page
+//                                                     (js is esc()-escaped;
+//                                                     launcher wire_unescapes)
+//                         TITLE <text>                set window title
+//                         SIZE <w> <h>                resize window
+//                         DLG <id> <op>               native dialog; launcher
+//                                                     answers the call itself
+//                         QUIT                        close the window
+
+import { bundlePath, checkForUpdate, installUpdate, relaunch, RELAUNCH_FLAG } from './update.js';
+
+const enc = new TextEncoder();
+const dec = new TextDecoder();
+// Bridge tracing is opt-in and EXPLICIT. `tinyjs dev` seeds TINYJS_DEBUG='dev'
+// for the launcher's devtools (any non-empty value arms F12), which must not
+// drag the full message trace along with it — and a shell's `=0`/`=false` is
+// someone asking for silence, not a truthy string.
+const DEBUG = !['', '0', 'false', 'dev'].includes(String(tjs.env.TINYJS_DEBUG || ''));
+// txiki has no tjs.platform; OS=Windows_NT is always set by Windows itself,
+// and navigator.platform reads "Linux …" from uname on Linux.
+const IS_WIN = tjs.env.OS === 'Windows_NT';
+const IS_LINUX = !IS_WIN && /linux/i.test(globalThis.navigator?.platform ?? '');
+// navigator.platform here is the runtime's own (uname on Linux), not a
+// webview's — so unlike the page it reports the real machine.
+const ARCH = /aarch64|arm64/i.test(globalThis.navigator?.platform ?? '') ? 'arm64'
+  : /x86_64|amd64/i.test(globalThis.navigator?.platform ?? '') ? 'x86_64'
+  : IS_WIN ? 'x86_64' : 'arm64';
+const OS = IS_WIN ? 'windows' : IS_LINUX ? 'linux' : 'macos';
+// Linux only: several capabilities exist on X11 but not on Wayland, which
+// hides other windows and the global pointer by design. GDK_BACKEND wins
+// because that is what the launcher will actually use (see windowPlacement).
+const ON_X11 = IS_LINUX && (tjs.env.GDK_BACKEND === 'x11'
+  || (!!tjs.env.DISPLAY && tjs.env.GDK_BACKEND !== 'wayland'
+      && tjs.env.XDG_SESSION_TYPE !== 'wayland'));
+
+// Windows: argv transform that routes a console command through
+// `launcher --run` (CREATE_NO_WINDOW) so no terminal window flashes when a
+// GUI-subsystem app shells out — tjs.spawn has no flag for this. Identity
+// everywhere else. Module-scoped because the fetch shim's curl hops and
+// probeOk run outside createApp, where the launcher path is otherwise found.
+let runPrefix = null;               // ['<launcher>', '--run'] once known
+let runPrefixTried = false;
+const hiddenArgv = (args) => (runPrefix ? [...runPrefix, ...args] : args);
+// createApp sets runPrefix (it validates the path and honors the launcherPath
+// option), but a backend's module top level runs BEFORE createApp — and a
+// fetch there is exactly a case that can need curl. So resolve it on first
+// use too, with createApp's precedence minus the option it can't see.
+async function readyHiddenArgv() {
+  if (!IS_WIN || runPrefix || runPrefixTried) return;
+  runPrefixTried = true;
+  // A built app never takes its launcher from the env (#29, see createApp).
+  const envLauncher = (await bundlePath()) ? null : tjs.env.TINYJS_LAUNCHER;
+  const cand = envLauncher || dirOf(tjs.exePath) + '/launcher.exe';
+  try {
+    await tjs.stat(cand);
+    runPrefix = [cand, '--run'];
+  } catch {}                        // no launcher yet: plain spawn, as before
+}
+
+// ── fetch repair shim ───────────────────────────────────────────────────────
+// txiki v26.6.0's fetch has two wire-level bugs (repros + fix notes in
+// TODO-txiki.md; both verified against real hosts):
+//   A. a root-path URL goes out as 'GET //' — S3/CloudFront-backed hosts
+//      answer 404 to the double slash (Radiotopia's publicfeeds.net feeds,
+//      pdrl.fm's redirect targets)
+//   B. mbedtls never completes a handshake with TLS 1.2-only hosts
+//      ("mbedtls connect -1 5 0" — rss.art19.com, anchor.fm, Fastly's
+//      older TLS profiles)
+// Until a patched tjs ships, wrap fetch: follow redirects ourselves so every
+// hop is visible, and route EXACTLY the broken cases through the system curl
+// (always present on macOS/Linux; Windows ships curl.exe since 10 1803).
+// A real HTTP error from a working request is never retried — a genuine 404
+// stays a 404 — and curl bodies stream, so internet radio stays live. Both
+// backend fetch() and every page's tiny.fetch inherit this.
+const nativeFetch = globalThis.fetch?.bind(globalThis);
+let curlProbe = null;
+const haveCurl = () => (curlProbe ??= probeOk(['curl', '--version']));
+const REDIRECT_CODES = new Set([301, 302, 303, 307, 308]);
+// Request headers a redirect must not carry to another origin (#27). WHATWG
+// fetch drops Authorization there; a browser never lets a page set Cookie or
+// Proxy-Authorization at all, but tiny.fetch does, so those go too.
+const CROSS_ORIGIN_STRIP = new Set(['authorization', 'cookie', 'proxy-authorization']);
+// …and the body's own headers once a redirect turns the request into a GET.
+const BODY_HEADERS = new Set(['content-type', 'content-length', 'content-encoding',
+                              'content-language', 'content-location']);
+// A Headers object, not pairs: txiki's native fetch reads an array as a plain
+// object ({"0": "k,v", "length": …} went onto the wire, measured 26.6.0).
+const dropHeaders = (H, names) =>
+  new Headers(headerPairs(H).filter(([k]) => !names.has(String(k).toLowerCase())));
+
+// Header init (Headers, [[k, v], ...] or a plain object) as validated pairs.
+// WHATWG fetch rejects a name that isn't an RFC 9110 token and a value with
+// CR/LF/NUL; txiki's native fetch checks neither (measured 26.6.0: a CRLF in
+// a value went onto the wire as a separate header), and curl's -H turns a CRLF
+// into extra request lines and a ':' in the name into a different header
+// (Host included). A page's tiny.fetch lands here, so this is the gate.
+const HEADER_NAME = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
+function headerPairs(H) {
+  const pairs = [];
+  if (!H) return pairs;
+  if (Array.isArray(H)) for (const [k, v] of H) pairs.push([k, v]);
+  else if (typeof H.forEach === 'function') H.forEach((v, k) => pairs.push([k, v]));
+  else for (const k of Object.keys(H)) pairs.push([k, H[k]]);
+  for (const [k, v] of pairs) {
+    if (!HEADER_NAME.test(String(k))) throw new TypeError('Invalid header name: ' + JSON.stringify(String(k)));
+    if (/[\r\n\0]/.test(String(v))) throw new TypeError('Invalid header value for ' + k);
+  }
+  return pairs;
+}
+
+// One hop via curl, returned as a real Response with a streaming body.
+// -i puts the header block on stdout ahead of the body; no -L — the wrapper
+// follows redirects itself, so one call is always exactly one hop.
+async function curlFetch(url, init = {}) {
+  const method = (init.method || 'GET').toUpperCase();
+  // --proto locks curl to http(s) even if a caller slips something exotic
+  // past the wrapper; --proto-redir guards curl's own redirect handling
+  // (unused — we never pass -L — but belt and braces)
+  const args = ['curl', '-s', '-i', '--connect-timeout', '30',
+                '--proto', '=http,https', '--proto-redir', '=http,https'];
+  if (method === 'HEAD') args.push('--head');
+  else if (method !== 'GET') args.push('-X', method);
+  // validated again here (fetchRepaired already did): a CRLF in an -H arg is
+  // request smuggling, so this hop doesn't lean on its caller
+  const pairs = headerPairs(init.headers);
+  // identity unless the caller asked for something: curl won't decode what we
+  // don't tell the server to send, and honest lengths beat saved bytes here
+  if (!pairs.some(([k]) => k.toLowerCase() === 'accept-encoding')) pairs.push(['accept-encoding', 'identity']);
+  // hiddenArgv: on Windows every hop would otherwise flash a console window
+  // (curl.exe is a console app, the packaged app is GUI-subsystem)
+  await readyHiddenArgv();
+  const body = init.body;
+  if (body != null && typeof body !== 'string' && !(body instanceof Uint8Array))
+    throw new TypeError('fetch fallback: only string/Uint8Array bodies');
+  // Headers and body go through files in a 0700 temp dir, never argv: argv is
+  // readable by every local user via `ps`, and headers carry Authorization /
+  // Cookie (#27). One header per line (headerPairs already refused CR/LF);
+  // "Name:" with nothing after it tells curl to REMOVE that header, "Name;"
+  // is its spelling for sending it empty. `-H @file` needs curl 7.55 (2017;
+  // Windows 10 1803's curl.exe is 7.55.1). The body is a file rather than
+  // stdin because txiki 26.6.0 never settles a spawned child's stdin write
+  // (saghul/txiki.js#1027, fixed after that release). The dir goes once curl
+  // has exited.
+  const ioDir = await tjs.makeTempDir(tjs.tmpDir + '/tinyjs-fetch-XXXXXX');
+  const dropIo = () => tjs.remove(ioDir, { recursive: true }).catch(() => {});
+  try {
+    const lines = pairs.map(([k, v]) => (String(v).trim() === '' ? k + ';' : k + ': ' + v));
+    await tjs.writeFile(ioDir + '/headers', enc.encode(lines.join('\n') + '\n'));
+    args.push('-H', '@' + ioDir + '/headers');
+    if (body != null) {
+      await tjs.writeFile(ioDir + '/body', typeof body === 'string' ? enc.encode(body) : body);
+      args.push('--data-binary', '@' + ioDir + '/body');
+    }
+  } catch (e) { dropIo(); throw e; }
+  args.push('--', url);   // never let a URL parse as a flag
+  let p;
+  try {
+    p = tjs.spawn(hiddenArgv(args), { stdin: 'ignore', stdout: 'pipe', stderr: 'ignore' });
+  } catch (e) { dropIo(); throw e; }
+  p.wait().then(dropIo, dropIo);
+  if (init.signal) {
+    const kill = () => { try { p.kill(); } catch {} };
+    init.signal.aborted ? kill() : init.signal.addEventListener('abort', kill);
+  }
+  const reader = p.stdout.getReader();
+  // accumulate until the end of the header block; 1xx interim blocks (100
+  // Continue from the --data-binary path) are skipped like a client should
+  let buf = new Uint8Array(0);
+  const blockEnd = (b, from) => {
+    for (let i = from; i + 3 < b.length; i++)
+      if (b[i] === 13 && b[i + 1] === 10 && b[i + 2] === 13 && b[i + 3] === 10) return i;
+    return -1;
+  };
+  let head = null, rest = null;
+  while (head === null) {
+    const { done, value } = await reader.read();
+    if (value) {
+      const n = new Uint8Array(buf.length + value.length);
+      n.set(buf); n.set(value, buf.length); buf = n;
+    }
+    let idx;
+    while ((idx = blockEnd(buf, 0)) !== -1) {
+      const block = dec.decode(buf.subarray(0, idx));
+      buf = buf.subarray(idx + 4);
+      const m = /^HTTP\/[\d.]+ (\d{3})(?: (.*))?/.exec(block);
+      if (!m) break;                       // not HTTP — fail below
+      if (+m[1] >= 200 || +m[1] < 100) { head = { status: +m[1], statusText: m[2] || '', block }; rest = buf; break; }
+    }
+    if (done) break;
+  }
+  if (!head) {
+    const st = await p.wait();
+    throw new TypeError('Network request failed (curl exit ' + (st.term_signal || st.exit_status) + ')');
+  }
+  const headers = [];
+  for (const line of head.block.split('\r\n').slice(1)) {
+    const c = line.indexOf(':');
+    if (c > 0) headers.push([line.slice(0, c).trim(), line.slice(c + 1).trim()]);
+  }
+  const noBody = method === 'HEAD' || head.status === 204 || head.status === 304 || head.status === 205;
+  const stream = noBody ? null : new ReadableStream({
+    start(c) { if (rest.length) c.enqueue(rest.slice()); },
+    async pull(c) {
+      const { done, value } = await reader.read();
+      if (done) { c.close(); p.wait().catch(() => {}); }
+      else c.enqueue(value);
+    },
+    cancel() { try { p.kill(); } catch {} },
+  });
+  return new Response(stream, { status: head.status, statusText: head.statusText, headers });
+}
+
+if (nativeFetch) globalThis.fetch = async function fetchRepaired(input, init = {}) {
+  // before any routing: the native path needs this as much as curl does
+  headerPairs(init.headers);
+  if (input?.headers) headerPairs(input.headers);        // a Request object
+  // exotic inputs (Request objects, data:/file: urls, stream bodies) keep the
+  // native path untouched — the repair rules only understand plain http(s)
+  const url0 = typeof input === 'string' ? input : (input instanceof URL ? input.href : null);
+  if (url0 === null || !/^https?:\/\//i.test(url0)) return nativeFetch(input, init);
+  const mode = init.redirect || 'follow';
+  let url = url0;
+  let method = (init.method || 'GET').toUpperCase();
+  let body = init.body;
+  let headers = init.headers;
+  for (let hop = 0; ; hop++) {
+    let rootPath = false;
+    try { const u = new URL(url); rootPath = u.pathname === '/' || u.pathname === ''; } catch {}
+    let res;
+    if (rootPath && await haveCurl()) {
+      res = await curlFetch(url, { ...init, headers, method, body });        // bug A
+    } else {
+      try {
+        res = await nativeFetch(url, { ...init, headers, method, body, redirect: 'manual' });
+      } catch (e) {
+        if (!(await haveCurl())) throw e;
+        res = await curlFetch(url, { ...init, headers, method, body });      // bug B — no response existed
+      }
+    }
+    const loc = REDIRECT_CODES.has(res.status) ? res.headers.get('location') : null;
+    if (!loc || mode === 'manual') {
+      // best effort: report the landing url like a spec fetch would
+      if (hop > 0) try {
+        Object.defineProperty(res, 'url', { get: () => url });
+        Object.defineProperty(res, 'redirected', { get: () => true });
+      } catch {}
+      return res;
+    }
+    if (mode === 'error') throw new TypeError('redirected (redirect: "error")');
+    if (hop >= 20) throw new TypeError('too many redirects');
+    try { res.body?.cancel(); } catch {}
+    // a hostile Location: must not walk us onto another scheme — curl would
+    // happily fetch file:///etc/passwd
+    const next = new URL(loc, url);
+    if (next.protocol !== 'http:' && next.protocol !== 'https:')
+      throw new TypeError('redirect to non-http(s) scheme blocked: ' + next.protocol);
+    // credentials stay with the origin they were given to — once stripped
+    // they stay stripped, even if a later hop comes back
+    if (next.origin !== new URL(url).origin) headers = dropHeaders(headers, CROSS_ORIGIN_STRIP);
+    url = next.href;
+    // 303 always becomes GET; 301/302 downgrade POST like browsers do;
+    // 307/308 keep the method and body
+    if (res.status === 303 || ((res.status === 301 || res.status === 302) && method === 'POST')) {
+      if (method !== 'HEAD') method = 'GET';
+      body = undefined;
+      headers = dropHeaders(headers, BODY_HEADERS);
+    }
+  }
+};
+
+// ── system requirements ─────────────────────────────────────────────────────
+// Linux ships its media stack in pieces, and which pieces are present varies
+// by distro and install. Rather than let a feature fail mutely (silent audio,
+// a dead tray), an app can ask what's missing and tell the user exactly what
+// to install. Every entry is a real probe, not a guess about the distro.
+
+// Package names per family, keyed by the manager an app should suggest.
+const PKG_MANAGERS = [
+  { id: 'apt', test: /debian|ubuntu|mint|pop|elementary/i, cmd: 'sudo apt install' },
+  { id: 'dnf', test: /fedora|rhel|centos|rocky|alma/i, cmd: 'sudo dnf install' },
+  { id: 'pacman', test: /arch|manjaro|endeavour/i, cmd: 'sudo pacman -S' },
+  { id: 'zypper', test: /suse/i, cmd: 'sudo zypper install' },
+];
+
+let osRelease = null;
+async function distroId() {
+  if (osRelease !== null) return osRelease;
+  try {
+    const txt = new TextDecoder().decode(await tjs.readFile('/etc/os-release'));
+    const id = /^ID=(.*)$/m.exec(txt)?.[1]?.replace(/"/g, '') ?? '';
+    const like = /^ID_LIKE=(.*)$/m.exec(txt)?.[1]?.replace(/"/g, '') ?? '';
+    osRelease = `${id} ${like}`;
+  } catch { osRelease = ''; }
+  return osRelease;
+}
+
+// does `argv` exit 0? used to ask gst-inspect whether a decoder exists
+// Where a built Linux app's single-instance socket lives. $XDG_RUNTIME_DIR
+// is the per-user 0700 dir made for exactly this. Without it (services,
+// containers) the name still has to be guessable — a second launch finds the
+// first by app id alone — so it goes in a per-user dir under tmp rather than
+// loose in the shared one, where any local user could squat the name or
+// connect and feed us open-url/open-files (#12). A dir already there that
+// isn't a 0700 one we own may be someone else's squat: no single instance
+// beats trusting it.
+async function linuxInstanceSock(name) {
+  let dir = tjs.env.XDG_RUNTIME_DIR;
+  if (!dir) {
+    const uid = tjs.system.userInfo.userId;
+    dir = tjs.tmpDir + '/tinyjs-' + uid;
+    await tjs.makeDir(dir, { mode: 0o700 }).catch(() => {});
+    try {
+      const st = await tjs.lstat(dir);            // lstat: a symlink fails isDirectory
+      if (!st.isDirectory || st.uid !== uid || (st.mode & 0o077)) throw 0;
+    } catch {
+      console.log(`tinyjs: ${dir} is not a private dir owned by this user — single instance and URL/file handoff are off`);
+      return null;
+    }
+  }
+  return dir + '/tinyjs-app-' + name + '.sock';
+}
+
+// Windows session pipe: resolve with the {readable, writable} of the first
+// connection whose opening line is `HELLO <token>`, the launcher's proof
+// (see pipeToken). Connections are vetted in parallel so one that never
+// speaks can't hold the real launcher up; a failed one is hung up after at
+// most 10 s, and nothing is ever written to it. Bytes that arrived behind
+// the HELLO line are handed on in front of the rest of the stream.
+function acceptWithToken(acceptReader, token) {
+  const want = 'HELLO ' + token;
+  let won = false;
+  return new Promise((resolve) => {
+    const vet = async (sock) => {
+      const { readable, writable } = await sock.opened;
+      const rd = readable.getReader();
+      let buf = new Uint8Array(0), nl = -1;
+      const timer = setTimeout(() => rd.cancel().catch(() => {}), 10000);
+      while (nl < 0 && buf.length <= want.length + 1) {
+        const { value, done } = await rd.read();
+        if (done) break;
+        const next = new Uint8Array(buf.length + value.length);
+        next.set(buf); next.set(value, buf.length);
+        buf = next;
+        nl = buf.indexOf(10);
+      }
+      clearTimeout(timer);
+      const line = new TextDecoder().decode(buf.subarray(0, nl < 0 ? 0 : nl));
+      if (won || nl < 0 || line.replace(/\r$/, '') !== want) {
+        rd.cancel().catch(() => {});
+        sock.close?.();
+        return;
+      }
+      won = true;
+      const rest = buf.subarray(nl + 1);
+      resolve({
+        writable,
+        readable: new ReadableStream({
+          start(c) { if (rest.length) c.enqueue(rest); },
+          async pull(c) {
+            const { value, done } = await rd.read();
+            if (done) c.close(); else c.enqueue(value);
+          },
+          cancel(r) { return rd.cancel(r); },
+        }),
+      });
+    };
+    (async () => {
+      for (;;) {
+        const { value: sock, done } = await acceptReader.read();
+        if (done) return;
+        if (won) { sock.close?.(); continue; }
+        vet(sock).catch(() => sock.close?.());
+      }
+    })().catch(() => {});
+  });
+}
+
+async function probeOk(argv) {
+  try {
+    await readyHiddenArgv();
+    const p = tjs.spawn(hiddenArgv(argv), { stdin: 'ignore', stdout: 'ignore', stderr: 'ignore' });
+    return (await p.wait()).exit_status === 0;
+  } catch { return false; }
+}
+
+const GST_CODECS = ['gstreamer1.0-plugins-bad', 'gstreamer1.0-plugins-ugly', 'gstreamer1.0-libav'];
+const REQUIREMENTS = {
+  'media.aac': {
+    feature: 'AAC / M4A playback',
+    detail: 'WebKitGTK decodes through GStreamer, and AAC lives in the optional '
+      + 'plugin sets. Without them <audio> refuses AAC outright — most podcasts '
+      + 'and internet radio.',
+    probe: () => probeOk(['gst-inspect-1.0', 'avdec_aac']).then((a) => a || probeOk(['gst-inspect-1.0', 'faad'])),
+    packages: { apt: GST_CODECS, dnf: ['gstreamer1-plugins-bad-free', 'gstreamer1-libav'],
+                pacman: ['gst-plugins-bad', 'gst-plugins-ugly', 'gst-libav'],
+                zypper: ['gstreamer-plugins-bad', 'gstreamer-plugins-libav'] },
+  },
+  'media.h264': {
+    feature: 'H.264 video playback',
+    detail: 'Same GStreamer plugin sets as AAC; without them <video> stays black.',
+    probe: () => probeOk(['gst-inspect-1.0', 'avdec_h264']).then((a) => a || probeOk(['gst-inspect-1.0', 'openh264dec'])),
+    packages: { apt: GST_CODECS, dnf: ['gstreamer1-plugins-bad-free', 'gstreamer1-libav'],
+                pacman: ['gst-plugins-bad', 'gst-libav'], zypper: ['gstreamer-plugins-libav'] },
+  },
+  'media.mp3': {
+    feature: 'MP3 playback',
+    detail: 'Usually present as part of the base GStreamer install.',
+    probe: () => probeOk(['gst-inspect-1.0', 'mpg123audiodec']).then((a) => a || probeOk(['gst-inspect-1.0', 'avdec_mp3'])),
+    packages: { apt: ['gstreamer1.0-plugins-good'], dnf: ['gstreamer1-plugins-good'],
+                pacman: ['gst-plugins-good'], zypper: ['gstreamer-plugins-good'] },
+  },
+  'speech': {
+    feature: 'tiny.app.say / voices',
+    detail: 'Speech goes through speech-dispatcher; without it say() resolves false.',
+    probe: () => probeOk(['sh', '-c', 'command -v spd-say']),
+    packages: { apt: ['speech-dispatcher'], dnf: ['speech-dispatcher'],
+                pacman: ['speech-dispatcher'], zypper: ['speech-dispatcher'] },
+  },
+  'spotlight.index': {
+    feature: 'fast tiny.app.spotlight',
+    detail: 'With plocate the search is indexed and instant; without it tinyjs '
+      + 'falls back to a bounded find under $HOME, which is slower and name-only.',
+    probe: () => probeOk(['sh', '-c', 'command -v plocate || command -v locate']),
+    packages: { apt: ['plocate'], dnf: ['plocate'], pacman: ['plocate'], zypper: ['plocate'] },
+  },
+  'audioTap': {
+    feature: 'tiny.audioTap',
+    detail: 'Capturing the system mix needs pw-cat (PipeWire) or parec (PulseAudio).',
+    probe: () => probeOk(['sh', '-c', 'command -v pw-cat || command -v parec']),
+    packages: { apt: ['pipewire-bin'], dnf: ['pipewire-utils'], pacman: ['pipewire'],
+                zypper: ['pipewire-tools'] },
+  },
+  'mouseTracking': {
+    feature: 'tiny.app.mouseTracking (Wayland)',
+    detail: 'Outside-the-window tracking on Wayland rides the ScreenCast '
+      + 'portal\'s cursor metadata; without a portal answering ScreenCast, '
+      + 'start() fails. (The PipeWire side is compiled into the launcher — '
+      + 'nothing to install for that.) Real X11 sessions track globally and '
+      + 'need none of this.',
+    // A property read, not NameHasOwner: the portal is D-Bus-activatable, so
+    // the name can be unowned right up until someone talks to it. This call
+    // both activates it and proves the ScreenCast interface is really there
+    // (a portal whose backend lacks ScreenCast answers with an error).
+    probe: async () => (ON_X11 && !tjs.env.WAYLAND_DISPLAY) || probeOk(['gdbus', 'call',
+      '--session', '-d', 'org.freedesktop.portal.Desktop',
+      '-o', '/org/freedesktop/portal/desktop',
+      '-m', 'org.freedesktop.DBus.Properties.Get',
+      'org.freedesktop.portal.ScreenCast', 'version']),
+    // The base service; the ScreenCast BACKEND ships with the desktop
+    // (portal-gnome, -kde, -wlr…), so on the big desktops installing this is
+    // either enough or already done.
+    packages: { apt: ['xdg-desktop-portal'], dnf: ['xdg-desktop-portal'],
+                pacman: ['xdg-desktop-portal'], zypper: ['xdg-desktop-portal'] },
+  },
+  'tray': {
+    feature: 'tiny.tray',
+    detail: 'The tray needs an AppIndicator/StatusNotifier host. GNOME needs the '
+      + 'AppIndicator shell extension; most other desktops have one built in.',
+    probe: async () => !!(await busNameOwned('org.kde.StatusNotifierWatcher')),
+    // openSUSE ships no tray-host package in its default repos (GNOME users
+    // get the AppIndicator extension from extensions.gnome.org), so zypper
+    // gets no install line rather than one zypper cannot satisfy.
+    packages: { apt: ['gnome-shell-extension-appindicator'], dnf: ['gnome-shell-extension-appindicator'],
+                pacman: ['libappindicator-gtk3'] },
+  },
+  'windowPosition': {
+    feature: 'placing your own windows (setPosition / center)',
+    // nothing to install — it is the session, so say so plainly
+    detail: 'Wayland forbids a client from placing its own toplevels. Set '
+      + '"windowPlacement": true in tinyjs.json to run under X11/XWayland, or log '
+      + 'out and pick an X11 session.',
+    probe: async () => ON_X11,
+    packages: null,
+  },
+};
+
+// is a bus name currently owned? (tray host detection)
+async function busNameOwned(name) {
+  return probeOk(['sh', '-c',
+    `gdbus call --session -d org.freedesktop.DBus -o /org/freedesktop/DBus `
+    + `-m org.freedesktop.DBus.NameHasOwner ${name} 2>/dev/null | grep -q true`]);
+}
+
+const reqCache = new Map();
+async function systemRequirements(ids, refresh) {
+  const wanted = (Array.isArray(ids) && ids.length ? ids : Object.keys(REQUIREMENTS))
+    .filter((id) => REQUIREMENTS[id]);
+  // Only Linux splits these out; elsewhere the platform ships them.
+  if (!IS_LINUX) return wanted.map((id) => ({ id, ok: true, feature: REQUIREMENTS[id].feature }));
+  const distro = await distroId();
+  const mgr = PKG_MANAGERS.find((m) => m.test.test(distro)) ?? PKG_MANAGERS[0];
+  const out = [];
+  for (const id of wanted) {
+    const r = REQUIREMENTS[id];
+    // refresh: the user has just installed something and wants a fresh answer,
+    // so the cached "missing" must not outlive the fix.
+    if (refresh) reqCache.delete(id);
+    if (!reqCache.has(id)) reqCache.set(id, await r.probe().catch(() => false));
+    const ok = reqCache.get(id);
+    const pkgs = r.packages?.[mgr.id] ?? null;
+    out.push({
+      id, ok, feature: r.feature,
+      detail: ok ? null : r.detail,
+      // ready to show, e.g. "sudo apt install gstreamer1.0-plugins-bad …"
+      install: ok || !pkgs ? null : { manager: mgr.id, packages: pkgs, command: `${mgr.cmd} ${pkgs.join(' ')}` },
+    });
+  }
+  return out;
+}
+
+function systemInfo() {
+  return {
+    os: OS,
+    arch: ARCH,
+    // Linux desktops differ enough that apps sometimes need the specifics;
+    // null everywhere else.
+    session: IS_LINUX ? (ON_X11 ? 'x11' : (tjs.env.XDG_SESSION_TYPE || null)) : null,
+    desktop: IS_LINUX ? (tjs.env.XDG_CURRENT_DESKTOP || null) : null,
+  };
+}
+
+// Tools offered to the on-device model for the CURRENT generate() call, plus
+// the log of what it actually invoked. One generation at a time (the launcher
+// serialises them on one queue), so a map and an array are enough.
+const aiTools = new Map();
+const aiToolCalls = [];
+
+// tiny.macos.* is the "no equivalent anywhere else" namespace, so calling it
+// off macOS is a bug in the app rather than a missing feature — say so with
+// the real reason instead of a silent no-op.
+function macosOnly(name) {
+  if (OS !== 'macos')
+    throw new Error('tiny.macos.' + name + ' is macOS-only (this is ' + OS +
+                    ') — guard with tiny.system.isMacOS()');
+}
+
+// What this machine can actually do, so an app can degrade on purpose
+// instead of calling something that quietly does nothing. true = works,
+// false = the OS/session has no equivalent. Anything absent from a platform's
+// column below is simply true on that platform.
+// Unity's LauncherEntry DBus protocol carries the launcher badge count and
+// progress bar. It is a desktop-shell feature, not a Linux one: KDE Plasma,
+// Ubuntu's Dock and Dash-to-Dock implement it, vanilla GNOME Shell doesn't.
+// A launcher that implements it takes the com.canonical.Unity bus name, so ask
+// the bus rather than guessing from XDG_CURRENT_DESKTOP (a colon-separated
+// list, "ubuntu:GNOME"): the name is what libunity itself looks for, and the
+// desktop-name guess is wrong in both directions — false for plain GNOME with
+// Dash-to-Dock added, true for an Ubuntu session with the dock removed. The
+// guess survives only as the answer for a box with no gdbus to ask with.
+const UNITY_LAUNCHER_GUESS = IS_LINUX &&
+  /kde|plasma|unity|ubuntu|pantheon|lxqt/.test((tjs.env.XDG_CURRENT_DESKTOP || '').toLowerCase());
+
+// audio.filters on macOS rides on Core Audio process taps, which are 14.2+
+// while tinyjs's floor is 14.0 — so there is a real window where everything
+// else works and this doesn't. Ask the launcher rather than parsing a version
+// string: it answers from the same @available the code path itself is behind.
+let macFilters = null;
+async function hasMacAudioFilters(query) {
+  if (OS !== 'macos' || !query) return false;
+  if (macFilters === null) macFilters = (await query('audiofilters'))?.available === true;
+  return macFilters;
+}
+
+let unityLauncher = null;
+async function hasUnityLauncher() {
+  // The table below is built on every OS, so answer without spawning anything
+  // off Linux. Probed once — a dock does not come and go mid-run.
+  if (!IS_LINUX) return false;
+  if (unityLauncher === null) {
+    unityLauncher = (await busNameOwned('com.canonical.Unity'))
+      || (!(await probeOk(['sh', '-c', 'command -v gdbus'])) && UNITY_LAUNCHER_GUESS);
+  }
+  return unityLauncher;
+}
+
+// `query` is the launcher read-back and `aiStatus` the AI availability probe,
+// both handed in because they live in the app factory's scope — only macOS
+// needs either (see hasMacAudioFilters and the `ai` key).
+async function systemCapabilities(query, aiStatus) {
+  const linux = {
+    // Wayland forbids a client placing its own toplevels, reading the global
+    // pointer, seeing other windows, or synthesising input. X11 allows all of
+    // it — see the "windowPlacement" manifest key, which selects X11.
+    windowPosition: ON_X11,
+    // ON_X11 alone is not enough here: an XWayland app (windowPlacement) can
+    // place windows fine, but its pointer query is the xeyes problem — frozen
+    // whenever the cursor is over a native Wayland surface. Only a real X11
+    // session is fully sighted; everything else needs mouseTracking.start().
+    mousePosition: ON_X11 && !tjs.env.WAYLAND_DISPLAY,
+    captureScreen: ON_X11,
+    keystroke: ON_X11,
+    // Claimed ON_X11 until 2026-07-27, but nothing implements them: the
+    // launcher's GET has no arm for either name, so both fall through to the
+    // final `null` — which a caller can't tell from "Accessibility isn't
+    // granted". X11 could do this (XQueryTree / the AT-SPI text interface);
+    // nobody has written it. WINCTRL is explicit about it already
+    // ("moving other apps' windows isn't supported on Linux").
+    otherWindows: false,
+    moveOtherWindows: false,
+    selectedText: false,
+    // no Linux equivalent at all
+    recorder: false,
+    ocr: false,
+    quickLook: false,
+    share: false,
+    applescript: false,
+    ai: false,
+    // Portable in principle, so it stays on tiny.system: /proc/net/wireless
+    // has rssi AND noise in dBm with no dependency at all, and NetworkManager
+    // over D-Bus (which the launcher already speaks) has ssid/bssid. Route
+    // and caveats in TODO-linux.md.
+    wifi: false,
+    // No locale reader in this launcher yet. g_get_language_names() is the
+    // route (LANG/LC_ALL with the fallback chain the OS itself uses) — see
+    // TODO-linux.md.
+    locale: false,
+    authenticate: false,
+    // app.badge / app.progress ride the Unity LauncherEntry DBus protocol,
+    // which KDE Plasma, Ubuntu Dock and Dash-to-Dock implement but vanilla
+    // GNOME Shell does not — so this is per-desktop, not per-OS.
+    badge: await hasUnityLauncher(),
+    progress: await hasUnityLauncher(),
+    // The rest of the app surface is X11-only, and not by our choice: these go
+    // out as the window icon, the WM_HINTS urgency bit and the skip-taskbar
+    // hint, and GTK's Wayland backend has nowhere to put any of them. Measured
+    // with WAYLAND_DEBUG on GNOME 46 — the three calls produce not one byte of
+    // protocol traffic, while on XWayland each moves its X property.
+    icon: ON_X11,
+    attention: ON_X11,
+    presence: ON_X11,
+    // chrome.windowControls: GTK can only hide the CLOSE button portably
+    // (gtk_window_set_deletable); minimize/maximize go out as _MOTIF_WM_HINTS,
+    // which the WM is free to ignore. So: partial, not false.
+    windowControls: ON_X11,
+    // present, with the caveats in the README
+    globalHotkeys: true, tray: true, notifications: true,
+    notificationActions: true, notificationReply: false,
+    secrets: true, mediaKeys: true, nowPlaying: true, audioTap: true,
+    speech: true, pickColor: true, spotlight: true, launchAtLogin: true,
+    printToPDF: true, transparency: true, vibrancy: false,
+    // Native DSP on our own output. Exists here precisely BECAUSE Web Audio
+    // can't do it on WebKitGTK (crackles; measured, TODO-linux.md). macOS has
+    // it too (process tap); Windows is a measured permanent no — see the
+    // windows block below and TODO-audio-filters.md.
+    audioFilters: true,
+    // tiny.audio.sampler mixes in the launcher (miniaudio decode + a
+    // pw_stream on PipeWire's RT data loop) for the same reason audioFilters
+    // is native here: Web Audio reaching ctx.destination crackles under
+    // WebKitGTK. Informational — the API is identical either way.
+    sampler: 'native',
+    // Browser affordances for wrapped sites (TODO-site-wrapper.md): the
+    // WebKitGTK leg — script-dialog, download-started, decide-policy +
+    // create, WebKitFindController (the one launcher whose match counts come
+    // from the engine, not the JS text-walk). Origin stamping rides the
+    // webview's main-frame URI (frame-blind — WebKitGTK's script-message
+    // carries no frame info; caveat in TODO-site-wrapper.md).
+    jsDialogs: true, downloads: true, navigation: true, popups: true,
+    findInPage: true,
+  };
+  const windows = {
+    // Permanent, not pending: measured 2026-07-28. Process-loopback capture is
+    // post-mute AND post-volume, so silencing the dry signal means session
+    // volume — and that is PERSISTED mixer state keyed on the shared
+    // msedgewebview2.exe runtime path, so a crash while attenuated would
+    // near-silence every WebView2 app on the machine (the PipeWire/Firefox
+    // incident with a registry key). Apps use Web Audio here instead — it
+    // works on Chromium. Full numbers in TODO-audio-filters.md.
+    audioFilters: false,
+    applescript: false, ai: false, quickLook: false, share: false,
+    vibrancy: false, selectedText: false, ocr: false,
+    windowPosition: true, mousePosition: true, captureScreen: true,
+    keystroke: true, recorder: false,
+    // Same audit, 2026-07-27. otherWindows falls through the launcher's GET to
+    // null (the source comment says so outright: "wifi/selectedtext/
+    // otherwindows/debug:* -> null"); WINCTRL, PICKCOLOR and SPOTLIGHT each
+    // reach got_unsupported. All four claimed support by omission.
+    otherWindows: false, moveOtherWindows: false,
+    spotlight: false,
+    // No system eyedropper to call, but WebView2 is Chromium and Chromium has
+    // the EyeDropper API — a real route, unlike the two above. Route and the
+    // three things that differ from NSColorSampler in TODO-windows.md.
+    pickColor: false,
+    // No media-key path at all: nothing in launcher-win.cc ever writes a
+    // MEDIAKEY line, so onMediaKey could never fire. The keys themselves want
+    // the same SystemMediaTransportControls nowPlaying does — one job, not two.
+    mediaKeys: false,
+    // Same: no locale arm in launcher-win.cc. GetUserPreferredUILanguages is
+    // the route — and the one platform where an app CAN'T fall back to LANG,
+    // since Windows has no such variable. See TODO-windows.md.
+    locale: false,
+    // The launcher answers null for a wifi query unconditionally, so claiming
+    // it (by omission, under the "absent = true" rule) was another instance of
+    // the same over-claim nowPlaying had. NOT macOS-only in principle, which
+    // is why it stays on tiny.system rather than moving to tiny.macos: the
+    // WLAN API can supply ssid/bssid/txRate, though `noise` has no equivalent
+    // there at all and `rssi` only as a 0-100 quality percentage. Route and
+    // caveats in TODO-windows.md.
+    wifi: false,
+    // app.attention (FlashWindowEx) and app.presence (WS_EX_TOOLWINDOW) both
+    // work. app.badge renders an overlay HICON at runtime and hands it to
+    // ITaskbarList3::SetOverlayIcon; it was declared false while it existed
+    // only as compiled-but-unrun code, and was SEEN on Windows 11 26200 on
+    // 2026-07-28 — a red disc with a white '3' on the taskbar button,
+    // photographed against a held state. badge('NEW') collapses to the
+    // documented bullet (16px fits 1-2 glyphs), badge+progress compose, and
+    // both clear back to a pixel-identical baseline.
+    badge: true, icon: true, progress: true,
+    // Same trap as badge, found by auditing every wire op the bridge can send
+    // against what launcher-win.cc actually dispatches (2026-07-25): NOWPLAYING
+    // reaches the launcher's else-if chain, matches nothing and is dropped, so
+    // it resolved true while doing nothing. It wants the WinRT
+    // SystemMediaTransportControls — see TODO-windows.md.
+    nowPlaying: false,
+    // tiny.audio.sampler mixes in the main window's page (Web Audio is
+    // RT-scheduled on Chromium's audio service) — see TODO-audio-sampler.md.
+    sampler: 'page',
+    // Browser affordances for wrapped sites (TODO-site-wrapper.md): the
+    // WebView2 leg — ScriptDialogOpening, DownloadStarting, NavigationStarting
+    // + NewWindowRequested, and a page-side window.find + text-walk for find
+    // (WebView2 has no find API of its own). Origin stamping rides the
+    // message Source, so "api" origin sub-gates work here too.
+    jsDialogs: true, downloads: true, navigation: true, popups: true,
+    findInPage: true,
+    // Fire-and-forget calls that no-op here — listed so `caps.x !== false`
+    // doesn't read them as supported: no tiny-media:// scheme handler in the
+    // WebView2 launcher, and no all-desktops window flag on Windows.
+    proxyURL: false, setAllSpaces: false,
+  };
+  const macos = { vibrancy: true, applescript: true, quickLook: true, share: true,
+    // Browser affordances for wrapped sites (TODO-site-wrapper.md): JS
+    // dialogs, downloads, navigation events + policy, window.open, find.
+    jsDialogs: true, downloads: true, navigation: true, popups: true,
+    findInPage: true,
+    // Native DSP on our own output, via a muted Core Audio process tap fed
+    // back through an aggregate device. 14.2+, so the launcher answers.
+    audioFilters: await hasMacAudioFilters(query),
+    // A BUILD decision, not an OS one: FoundationModels needs the macOS 26 SDK
+    // + swiftc, so a stock build has no AI in it at all and generate() rejects
+    // with "not built in". Absent from this table it read as supported on
+    // every Mac — the same over-claim by omission as badge and nowPlaying, and
+    // the worst-placed one, since the fallback for "no model" is a whole
+    // different feature. Ask the launcher rather than guessing from the OS
+    // version: only the binary knows whether it was compiled with it.
+    // Guarded like hasMacAudioFilters: this object is built on every OS, so
+    // without the check every Linux/Windows capabilities() call would spend a
+    // round trip asking about a model that isn't there.
+    ai: OS === 'macos' && aiStatus ? (await aiStatus()) !== 'unsupported' : false,
+    // tiny.audio.sampler mixes in the main window's page (Web Audio rides
+    // Core Audio's RT render thread) — see TODO-audio-sampler.md.
+    sampler: 'page' };
+  const table = IS_LINUX ? linux : IS_WIN ? windows : macos;
+  return { os: OS, ...table };
+}
+// Strip the file name off a path, tolerating both separators (Windows paths
+// arrive with backslashes).
+const dirOf = (p) => String(p).replace(/[\\/][^\\/]*$/, '');
+const isAbs = (p) => p.startsWith('/') || /^[A-Za-z]:[\\/]/.test(p);
+// Windows has no HOME env var; macOS-ish app code (tjs.env.HOME + '/…') dies
+// at import without it. Point it at the profile so such apps degrade instead.
+if (IS_WIN && !tjs.env.HOME) tjs.env.HOME = tjs.homeDir;
+
+function dbg(dir, line) {
+  if (!DEBUG) return;
+  line = redact(line);
+  console.log(dir, line.length > 160 ? line.slice(0, 160) + '…' : line);
+}
+
+// The trace goes to stderr, which ends up in terminals, CI logs and bug
+// reports — so clipboard contents and keychain values never reach it (#30).
+// Ops that carry them print as `OP <id> [redacted]`; their answers (GOT for
+// the bridge's own reads, RET for a page's call) are matched by id and
+// redacted too. Only the built-in channels are known here: an app's own
+// method that ships a token is its business.
+const quietIds = new Set();
+const QUIET_CALL = /\\?"method\\?"\s*:\s*\\?"(secrets|clip)\./;
+function redact(line) {
+  const sp = line.indexOf(' ');
+  const op = sp < 0 ? line : line.slice(0, sp);
+  const rest = sp < 0 ? '' : line.slice(sp + 1);
+  const id = rest.slice(0, (rest + ' ').indexOf(' '));
+  const hide = () => op + (id ? ' ' + id : '') + ' [redacted]';
+  switch (op.replace(/@.*/, '')) {
+    case 'CLIPWRITE': case 'CLIPCHANGE': return op + ' [redacted]';
+    case 'SECRET': quietIds.add(id); return hide();
+    case 'GET': if (/ clipboard$/.test(line)) quietIds.add(id); return line;
+    case 'CALL': if (!QUIET_CALL.test(rest)) return line; quietIds.add(id); return hide();
+    case 'GOT': case 'RET': return quietIds.delete(id) ? hide() : line;
+    default: return line;
+  }
+}
+
+// Dialogs run in the launcher, which answers the page's call directly.
+// Each entry maps a method to its wire op and the params serialized as
+// tab-separated args (order matters; see launcher-macos.cc do_dialog).
+const one = (s) => String(s ?? '').replace(/[\t\n\r]/g, ' ');
+// Same, but real line breaks survive as a literal \n for the launcher to undo.
+// Existing backslashes are doubled first so text that already contained "\n"
+// comes out as itself rather than as a break. Only the Linux launcher unescapes
+// this, so elsewhere keep flattening — a stray "\n" on screen would be worse
+// than a long line, and requirements (the reason this exists) only ever report
+// something missing on Linux anyway.
+const lines = (s) => (IS_LINUX
+  ? String(s ?? '').replace(/\\/g, '\\\\').replace(/[\t\r]/g, ' ').replace(/\n/g, '\\n')
+  : one(s));
+// Wire-escape for payloads that must survive tabs/newlines intact (clipboard
+// text, drag-out paths); the launcher reverses it (wire_unescape).
+const esc = (s) => String(s ?? '')
+  .replace(/\\/g, '\\\\').replace(/\t/g, '\\t')
+  .replace(/\r/g, '\\r').replace(/\n/g, '\\n');
+// Reverse of esc() / the launcher's wire_escape, for inbound tab fields.
+const unesc = (s) => String(s ?? '').replace(/\\(.)/g,
+  (_, c) => c === 'n' ? '\n' : c === 't' ? '\t' : c === 'r' ? '\r' : c);
+// tiny.audio.filters types -> libpipewire-module-filter-chain builtins.
+const FILTER_LABELS = {
+  peaking: 'bq_peaking', lowshelf: 'bq_lowshelf', highshelf: 'bq_highshelf',
+  lowpass: 'bq_lowpass', highpass: 'bq_highpass', bandpass: 'bq_bandpass',
+  notch: 'bq_notch', allpass: 'bq_allpass',
+  // 'gain' is a builtin too, but it fails to load on PipeWire 1.0.5 — `linear`
+  // multiplies by the same factor and does load.
+  gain: 'linear',
+};
+
+// app.playSound: four portable names, because every OS ships alert sounds but
+// none of them agree on what they're called — 'Ping' is macOS-only, Windows
+// wants a registry alias, Linux a freedesktop sound-theme name. Asking for a
+// MEANING works everywhere; anything else is passed straight through, so a
+// real OS sound name or an audio file path still does exactly what it says.
+const SOUND_ALIASES = {
+  macos: { info: 'Ping', success: 'Glass', alert: 'Funk', error: 'Basso' },
+  windows: { info: 'SystemAsterisk', success: 'SystemNotification',
+             alert: 'SystemExclamation', error: 'SystemHand' },
+  linux: { info: 'dialog-information', success: 'complete',
+           alert: 'dialog-warning', error: 'dialog-error' },
+};
+
+// chrome.windowControls accepts true | false | ['close','minimize'] | [].
+// The wire carries a token rather than a bit so the array form survives:
+// '' = leave unchanged, 'all', 'none', or a comma list. 'zoom' is accepted
+// as a macOS-flavoured alias for 'maximize'.
+const CONTROL_NAMES = { close: 'close', minimize: 'minimize', maximize: 'maximize', zoom: 'maximize' };
+function controlsWire(v) {
+  if (v === undefined) return '';
+  if (v === true) return 'all';
+  if (v === false) return 'none';
+  if (Array.isArray(v)) {
+    const names = v.map((n) => CONTROL_NAMES[String(n).toLowerCase()]).filter(Boolean);
+    return names.length ? [...new Set(names)].join(',') : 'none';
+  }
+  return '';
+}
+
+// The CHROME wire fields — shared by both setChrome flavours and by the
+// Linux spawn env (TINYJS_CHROME), which applies tinyjs.json chrome before
+// the window first shows so a frameless app never flashes a decorated
+// frame. Same shape as TINYJS_TRANSPARENT on Windows.
+function chromeWire(opts = {}) {
+  const bit = (v) => (v === undefined ? '' : v ? '1' : '0');
+  const vib = opts.vibrancy === undefined ? ''
+            : opts.vibrancy === null || opts.vibrancy === false ? 'none'
+            : String(opts.vibrancy);
+  // windowControlsPos: { x, y } from the window's top-left, or null to go
+  // back to the OS layout. macOS only (the buttons the other platforms draw
+  // sit in a real titlebar); elsewhere the field is carried and ignored.
+  const p = opts.windowControlsPos;
+  const pos = p === undefined ? ''
+            : p === null || p === false ? 'default'
+            : `${p.x | 0},${p.y | 0}`;
+  return [bit(opts.frame), controlsWire(opts.windowControls),
+          bit(opts.transparent), one(vib), bit(opts.squareCorners),
+          bit(opts.acceptsFirstMouse), bit(opts.menu), pos].join('\t');
+}
+
+// File-type filter for the pickers: extensions only, dots and case forgiven,
+// anything that couldn't be an extension dropped. Rides the wire as one
+// comma-separated field; empty means no filter.
+const extList = (types) => (Array.isArray(types) ? types : [])
+  .map((t) => String(t).trim().replace(/^\./, '').toLowerCase())
+  .filter((t) => /^[a-z0-9][a-z0-9+._-]*$/.test(t))
+  .join(',');
+
+const DIALOG_OPS = {
+  'dialog.openFile': { op: 'open', args: (p) => [extList(p.types)] },
+  'dialog.openFiles': { op: 'openmulti', args: (p) => [extList(p.types)] },
+  'dialog.pickFolder': { op: 'dir', args: () => [] },
+  'dialog.saveFile': { op: 'save', args: (p) => [extList(p.types)] },
+  // A dialog's detail is the one field where line breaks earn their keep — a
+  // list of what's missing, or a command on a line of its own. The wire is
+  // newline-delimited, so they ride across escaped and the launcher puts them
+  // back; everything else still gets flattened by one().
+  'dialog.alert': { op: 'alert', args: (p) => [one(p.message), lines(p.detail), one(p.ok)] },
+  'dialog.confirm': { op: 'confirm', args: (p) => [one(p.message), lines(p.detail), one(p.ok), one(p.cancel)] },
+  'dialog.prompt': { op: 'prompt', args: (p) => [one(p.message), one(p.default), one(p.ok), one(p.cancel)] },
+};
+
+// Capability gating (tinyjs.json "api"). `tiny` is injected into EVERY
+// origin, so a wrapped third-party site's own JavaScript holds an RPC channel
+// to this backend — the gate is what makes that shippable. Enforced HERE, the
+// single chokepoint, never in the page (the page-side tiny object is
+// attacker-modifiable on a hostile origin).
+//
+//   "api": { "disable": ["*"], "enable": ["notify", "win.*"] }   explicit
+//   "api": "wrapper"                                             preset
+//   "api": { "preset": "wrapper", "enable": ["myMethod"] }       preset + extra
+//
+// Precedence, in one line: enable wins over disable; absent "api" allows all.
+// Names are the wire method names (the app's own api methods gate by their
+// bare name); "ns.*" covers a namespace, bare "*" everything. Denied calls
+// REJECT with a readable reason — resolving null feeds bad data into callers
+// while a rejection degrades visibly.
+// The client's own bootstrap. NOT debug.get: it's a raw launcher read-back
+// (clipboard, wifi, frontmost, other windows, selected text...), so under a
+// gate it passes only when a manifest names it (#11).
+const API_ALWAYS = ['client.hello'];
+const API_PRESETS = {
+  // A site wrapper's posture: OS chrome, windows, dialogs, the app's own
+  // store in; filesystem, clipboard READ, secrets, capture and automation out.
+  // The app's OWN api methods are gated off too — enable them by name.
+  wrapper: {
+    disable: ['*'],
+    enable: ['notify', 'dialog.*', 'win.*', 'menu.*', 'tray.*', 'store.*',
+             'clip.write', 'shell.open', 'theme.get', 'system.locale',
+             'system.capabilities', 'system.requirements', 'system.info',
+             'app.info', 'app.badge', 'app.attention', 'app.progress',
+             'sound.play', 'nowplaying.*', 'power.prevent', 'power.allow'],
+  },
+};
+// One name-list -> gate function (null = allow everything). Accepts the
+// explicit {disable, enable} object, a preset name, "all"/"none", or a bare
+// array of names (sugar for deny-by-default + that enable list). An unknown
+// preset denies everything rather than allowing it — a typo in a security
+// setting must fail closed, and loudly.
+function compileNameGate(spec) {
+  if (spec == null || spec === 'all' || spec === true) return null;
+  if (spec === 'none' || spec === false) spec = { disable: ['*'] };
+  else if (typeof spec === 'string') {
+    if (!API_PRESETS[spec]) {
+      console.log(`tinyjs: unknown "api" preset "${spec}" — denying everything (fail closed)`);
+      spec = { disable: ['*'] };
+    } else spec = API_PRESETS[spec];
+  } else if (Array.isArray(spec)) spec = { disable: ['*'], enable: spec };
+  let disable = [], enable = [];
+  const add = (s) => {
+    if (!s) return;
+    disable = disable.concat(s.disable ?? []);
+    enable = enable.concat(s.enable ?? []);
+  };
+  if (spec.preset) {
+    if (!API_PRESETS[spec.preset]) {
+      console.log(`tinyjs: unknown "api" preset "${spec.preset}" — denying everything (fail closed)`);
+      add({ disable: ['*'] });
+    } else add(API_PRESETS[spec.preset]);
+  }
+  add(spec);
+  if (!disable.length) return null; // nothing denied = no gate
+  const match = (pats, m) => pats.some((p) =>
+    p === '*' || p === m || (p.endsWith('.*') && m.startsWith(p.slice(0, -1))));
+  return (m) => API_ALWAYS.includes(m) || match(enable, m) || !match(disable, m);
+}
+
+// The full gate: (method, origin) -> allowed. "origins" scopes by the CALLING
+// FRAME's origin — stamped onto each CALL by the launcher from WebKit's own
+// frameInfo.securityOrigin, so a hostile page can't spoof it. Keys are origin
+// patterns ('*' wildcards anywhere: "file://*", "https://*.airtable.com").
+// A '*' is an unbounded .* — dots and colons included, whole origin
+// anchored — so "https://*.a.com" is every subdomain at any depth, and a
+// key ending in '*' after the host ("https://a.com*") also matches
+// "https://a.com.evil.net". Intended and documented (docs.html #wrapper).
+// First matching key in manifest order wins. An origin matching NO key gets
+// the top-level lists if any, else NOTHING (origins present = deny-by-default
+// for strangers — redirects to unlisted domains shouldn't inherit the keys).
+// All three launchers stamp now (macOS: frameInfo.securityOrigin; Windows:
+// the WebMessageReceived Source; Linux: the webview's main-frame URI —
+// engine-attested but frame-blind, see TODO-site-wrapper.md). A call with
+// no stamp (an older launcher) skips origin scoping and uses the top-level
+// lists.
+// Subframes (an iframe inside an app page or a wrapped site) never get the
+// shim or tiny.js, so a call from one is always hand-built — a CodePen embed
+// or an ad poking window.webkit.messageHandlers.tiny. Only macOS can deliver
+// one (it marks it SUBFRAME_MARK); Linux drops them at the launcher (#18)
+// and WebView2 only hands over top-level documents' messages. Such a call
+// runs only when an "api".origins key EXPLICITLY names its origin, and then
+// under that key's lists. No "api", top-level lists, presets and unmatched
+// origins all count for nothing here: an app that never wrote an "api"
+// block must not be callable from someone else's iframe.
+const SUBFRAME_MARK = 'tiny:subframe';
+export function compileSubframeGate(spec) {
+  const origins = spec && typeof spec === 'object' && !Array.isArray(spec) &&
+    spec.origins && typeof spec.origins === 'object'
+    ? Object.entries(spec.origins).map(([pat, sub]) => ({
+        re: new RegExp('^' + pat.split('*').map((s) =>
+          s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$'),
+        gate: compileNameGate(sub),
+      }))
+    : [];
+  return (m, origin) => {
+    if (typeof origin !== 'string') return false;
+    const hit = origins.find((o) => o.re.test(origin));
+    return !!hit && (!hit.gate || hit.gate(m));
+  };
+}
+
+function compileApiGate(spec) {
+  if (!spec) return null;
+  const base = compileNameGate(typeof spec === 'string' || Array.isArray(spec)
+    ? spec : { ...spec, origins: undefined });
+  const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const origins = spec.origins && typeof spec.origins === 'object'
+    ? Object.entries(spec.origins).map(([pat, sub]) => ({
+        re: new RegExp('^' + pat.split('*').map(escRe).join('.*') + '$'),
+        gate: compileNameGate(sub),
+      }))
+    : null;
+  if (!base && !origins) return null;
+  const strangerGate = (m) => API_ALWAYS.includes(m); // bootstrap only
+  const gateFor = (origin) => {
+    if (origins && origin !== undefined) {
+      const hit = origins.find((o) => o.re.test(origin));
+      if (hit) return hit.gate; // may be null = allow all
+      return base ?? strangerGate;
+    }
+    return base;
+  };
+  const fn = (m, origin) => {
+    const g = gateFor(origin);
+    return g ? g(m) : true;
+  };
+  fn.gateFor = gateFor; // capabilities() reports per-origin denials
+  return fn;
+}
+
+// getUserMedia consent (#24), and the tiny-media proxy (#30, kind "proxy",
+// pseudo-method media.proxy: a proxied response is CORS-open, so the proxy
+// is a read-anything key). The launcher grants mic/camera silently only to
+// the app's own pages (file://, plus the frontend dev server in dev) and to
+// origins the manifest EXPLICITLY trusts: an "api.origins" key whose gate
+// allows the pseudo-method "media.camera" / "media.microphone". Top-level
+// lists and an absent "api" never count — a wrapped site or a redirect target
+// must not inherit the device just because the app itself may use it.
+// Everything else gets the engine's per-origin prompt (macOS) or a denial
+// (Linux, which has no prompt). Windows keeps WebView2's own prompt.
+// Wire shape: TINYJS_MEDIA_ORIGINS = "<kind> <pattern>" lines, '*' globs.
+// A packaged macOS app's launcher is started by LaunchServices, not by us, so
+// `tinyjs build` writes the same lines into Info.plist (TinyjsMediaOrigins).
+export function mediaTrustLines(spec, ownOrigins) {
+  const lines = [];
+  for (const o of ownOrigins) lines.push('camera ' + o, 'microphone ' + o, 'proxy ' + o);
+  if (spec && typeof spec === 'object' && !Array.isArray(spec) &&
+      spec.origins && typeof spec.origins === 'object') {
+    for (const [pat, sub] of Object.entries(spec.origins)) {
+      if (/\s/.test(pat)) continue; // can't be an origin; would break the wire
+      const g = compileNameGate(sub);
+      for (const kind of ['camera', 'microphone', 'proxy'])
+        if (!g || g('media.' + kind)) lines.push(kind + ' ' + pat);
+    }
+  }
+  return lines.join('\n');
+}
+
+// Per-app data root: ~/Library/Application Support/<id> (macOS),
+// %APPDATA%\<id> (Windows), or $XDG_DATA_HOME/<id> (Linux).
+function appDataDir(appId) {
+  const id = appId || 'tinyjs-app';
+  if (IS_WIN) return (tjs.env.APPDATA || tjs.homeDir + '/AppData/Roaming') + '/' + id;
+  if (IS_LINUX) return (tjs.env.XDG_DATA_HOME || tjs.homeDir + '/.local/share') + '/' + id;
+  return tjs.homeDir + '/Library/Application Support/' + id;
+}
+
+// Linux XDG user dirs (Downloads, Desktop, Documents) from user-dirs.dirs, the
+// file g_get_user_special_dir reads, so the bridge agrees with the launcher
+// on a localized desktop (~/Téléchargements). Missing keys fall back to
+// ~/<Name>. Only "$HOME/…" and absolute values are valid there.
+async function linuxUserDirs() {
+  const home = tjs.homeDir;
+  const dirs = { DOWNLOAD: home + '/Downloads', DESKTOP: home + '/Desktop', DOCUMENTS: home + '/Documents' };
+  const conf = (tjs.env.XDG_CONFIG_HOME || home + '/.config') + '/user-dirs.dirs';
+  let txt = '';
+  try { txt = new TextDecoder().decode(await tjs.readFile(conf)); } catch {}
+  for (const line of txt.split('\n')) {
+    const m = /^\s*XDG_([A-Z]+)_DIR\s*=\s*"(.*)"\s*$/.exec(line);
+    if (!m || !(m[1] in dirs)) continue;
+    const v = m[2].replace(/^\$HOME(?=\/|$)/, home).replace(/\/+$/, '');
+    // Not home itself (or /): Downloads is a #36 write root for other
+    // origins' PDFs, and a whole-home root would undo that confinement.
+    if (v.startsWith('/') && v !== home) dirs[m[1]] = v;
+  }
+  return dirs;
+}
+
+// Tiny persistent JSON store in the per-app data dir.
+// Flat string keys, JSON values, atomic writes.
+function makeStore(appId) {
+  const dir = appDataDir(appId);
+  const path = dir + '/store.json';
+  let data = null;
+  // A null-prototype object, so every key is just a key: on a plain {},
+  // get('constructor') answered Object's own function and set('__proto__', v)
+  // swapped the store's prototype instead of storing anything (#30).
+  async function load() {
+    if (data) return data;
+    let parsed = null;
+    try { parsed = JSON.parse(dec.decode(await tjs.readFile(path))); } catch {}
+    data = Object.create(null);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) Object.assign(data, parsed);
+    return data;
+  }
+  // Persistence is best-effort: the in-memory value is always updated, and a
+  // write failure (bad path, full disk, permissions) resolves false instead
+  // of rejecting — an un-awaited store.set() must never crash the backend.
+  let tmpSeq = 0;
+  async function doSave() {
+    try {
+      await tjs.makeDir(dir, { recursive: true }).catch(() => {});
+      // Unique tmp per write so concurrent (un-awaited) set()s don't race on
+      // the same rename source.
+      const tmp = path + '.' + (tmpSeq = (tmpSeq + 1) % 1e6) + '.tmp';
+      await tjs.writeFile(tmp, enc.encode(JSON.stringify(data, null, 2) + '\n'));
+      // Windows: a freshly-written target can be transiently locked by
+      // Defender / the indexer, failing the rename with EPERM even with a
+      // single writer — retry briefly before giving up.
+      for (let attempt = 0; ; attempt++) {
+        try {
+          await tjs.rename(tmp, path);
+          break;
+        } catch (e) {
+          if (attempt >= 5) throw e;
+          await new Promise((r) => setTimeout(r, 25 * (attempt + 1)));
+        }
+      }
+      return true;
+    } catch (e) {
+      console.log('tinyjs store write failed:', e?.message ?? String(e));
+      return false;
+    }
+  }
+  // One save in flight at a time: overlapping renames onto the same target
+  // throw EPERM on Windows (seen when a burst of windows all set() at boot).
+  // Each caller still gets the result of a save that includes its write.
+  let saveChain = Promise.resolve(true);
+  function save() {
+    saveChain = saveChain.then(doSave, doSave);
+    return saveChain;
+  }
+  return {
+    async get(key) { return (await load())[key] ?? null; },
+    async set(key, value) { await load(); data[key] = value; return save(); },
+    async delete(key) { await load(); delete data[key]; return save(); },
+    async all() { return { ...(await load()) }; },
+  };
+}
+
+export async function createApp({ html, htmlPath, url = null, title = 'tinyjs', size = '960x640', version = '0.0.0', tinyjsVersion = 'dev', id = null, launcherPath, api = {}, onMenu, onTray, onHotkey, onContextMenu, onSystem, onOpenUrl, onOpenFiles, onNotificationClick, onNotificationAction, onMediaKey, onWindowClosed, onWindowState, onClipboardChange, onUpdateAvailable, onAudioTap, onLocale, onNavigate, onDownload, onWindowOpen, chrome = null, update = null, activation = null, readAccess = null, audioTap = null, windowPlacement = null, contextMenu = true, browserAccelerators = false, debug = false, about = null, userAgent = null, urlScheme = null, fileExtensions = null, openFolders = false, permissions = null, offscreenRescue = null, downloads = null, popups = null, apiAccess = null, inject = null }) {
+  const exeDir = dirOf(tjs.exePath) + '/';
+  const xdgDirs = IS_LINUX ? await linuxUserDirs() : null;
+
+  async function exists(p) {
+    try {
+      await tjs.stat(p);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // Two arrangements:
+  //  - attach (packaged .app): the launcher IS the bundle executable — it owns
+  //    the window, already loaded Resources/app/frontend, listens on a socket,
+  //    and spawned us with TINYJS_SOCKET pointing at it. Being the
+  //    LaunchServices-registered process gives it deep links, file-open events,
+  //    and single-instancing.
+  //  - spawn (dev + bare binary): we create the socket and spawn the launcher.
+  // A built Windows/Linux app runs as built: the TINYJS_* env knobs are dev
+  // plumbing (cli.js sets them), and honoring inherited ones let whatever
+  // started the app swap its page (TINYJS_HTML), its launcher, inject script,
+  // widen media/read access, or hand WebView2 flags like
+  // --remote-debugging-port (#29). Only attach is macOS-.app plumbing, so it
+  // is ignored there too.
+  const built = (IS_WIN || IS_LINUX) && !!(await bundlePath());
+  const attachPath = built ? null : tjs.env.TINYJS_SOCKET;
+  let proc = null;
+  let readable, writable;
+  let pagePath = null;
+  let ownsPage = false; // true when the bridge materialized the page file
+  let cleanup = async () => {};
+
+  if (attachPath) {
+    const conn = await tjs.connect('pipe', attachPath);
+    ({ readable, writable } = await conn.opened);
+  } else {
+    // Launcher: explicit option > env override > next to the executable.
+    const launcherName = IS_WIN ? 'launcher.exe' : 'launcher';
+    let launcher = launcherPath || (built ? null : tjs.env.TINYJS_LAUNCHER);
+    if (!launcher && (await exists(exeDir + launcherName))) launcher = exeDir + launcherName;
+    if (!launcher || !(await exists(launcher))) {
+      throw new Error('tinyjs launcher binary not found (looked at: ' + (launcher || exeDir + launcherName) + ')');
+    }
+    if (IS_WIN) { runPrefix = [launcher, '--run']; runPrefixTried = true; }
+
+    // Private rendezvous dir for the materialized frontend. The transport is a
+    // Unix domain socket inside it — or, on Windows, a named pipe whose name
+    // is derived from the (random) dir name; both are per-user namespaces.
+    const workDir = await tjs.makeTempDir(tjs.tmpDir + '/tinyjs-XXXXXX');
+    const sockPath = IS_WIN
+      ? '\\\\.\\pipe\\' + workDir.slice(dirOf(workDir).length + 1)
+      : workDir + '/app.sock';
+
+    // Page source, in precedence order:
+    //  - TINYJS_HTML env override (self-contained test pages): materialized
+    //  - htmlPath: the real file is handed to the launcher, so sibling css/js/
+    //    images load relatively (multi-file frontends); RELOAD re-reads disk
+    //  - html string: materialized into the private workDir
+    const overridePath = built ? null : tjs.env.TINYJS_HTML;
+    if (url && !overridePath) {
+      // "url": the main window IS a remote page (site wrappers) — nothing to
+      // materialize; the launcher navigates straight there (the same branch
+      // a frontend.devUrl rides). Packaged .apps carry it as TinyjsUrl.
+      pagePath = String(url);
+    } else if (!overridePath && htmlPath) {
+      pagePath = htmlPath;
+    } else {
+      let pageHtml = html;
+      if (overridePath) pageHtml = dec.decode(await tjs.readFile(overridePath));
+      if (pageHtml == null) throw new Error('createApp needs `html` (string) or `htmlPath`');
+      pagePath = workDir + '/index.html';
+      await tjs.writeFile(pagePath, enc.encode(pageHtml));
+      ownsPage = true;
+    }
+
+    const server = await tjs.listen('pipe', sockPath);
+    const serverInfo = await server.opened;
+
+    // Accessory activation (menu-bar agents) rides in on the env; packaged
+    // apps get it from the plist instead (LSUIElement + TinyjsActivation).
+    // readAccess widens the page's file:// read root (same, via the env in
+    // dev / the TinyjsReadAccess plist key in packaged apps).
+    const spawnEnv = { ...tjs.env };
+    // Built: drop every inherited knob before setting our own (see `built`).
+    // TINYJS_LAUNCHER_DEBUG stays — Windows drag diagnostics, logging only.
+    if (built) {
+      for (const k of Object.keys(spawnEnv)) {
+        if (/^(tinyjs|webview2)_/i.test(k) && !/^tinyjs_launcher_debug$/i.test(k)) delete spawnEnv[k];
+      }
+    }
+    if (activation === 'accessory') spawnEnv.TINYJS_ACTIVATION = 'accessory';
+    // Windows: a transparent main window must drop its GDI redirection
+    // bitmap AT CREATION (stale white shows through a late-cleared webview
+    // otherwise) — but a window without one can't draw a Win32 menu bar
+    // (GDI), so the launcher only does it when the manifest asks for
+    // transparency. Declare it in tinyjs.json "chrome" — a setChrome from
+    // page JS alone is too late for the main window on Windows.
+    if (IS_WIN && chrome?.transparent) spawnEnv.TINYJS_TRANSPARENT = '1';
+    // Linux: startup chrome rides the env so the launcher applies it BEFORE
+    // the window first shows — the socket CHROME line lands with the window
+    // already on screen, so a frameless app briefly flashed its decorated
+    // frame. (The title bar that STAYED was a different bug — see
+    // set_mwm_buttons in the launcher.)
+    if (IS_LINUX && chrome) spawnEnv.TINYJS_CHROME = chromeWire(chrome);
+    if (readAccess) spawnEnv.TINYJS_READ_ACCESS = readAccess === true ? tjs.homeDir : String(readAccess);
+    // "windowPlacement": true — the app places its own windows (setPosition/
+    // center), e.g. to snap or dock them. Wayland forbids a client from
+    // placing its own toplevels, so those calls do nothing there; X11 permits
+    // them. Ask GTK for the X11 backend when an X server is reachable
+    // (XWayland counts), which is the only way such an app works on a Wayland
+    // desktop. No-op on macOS and Windows, which always allow placement.
+    if (IS_LINUX && windowPlacement && tjs.env.DISPLAY && !tjs.env.GDK_BACKEND) {
+      spawnEnv.GDK_BACKEND = 'x11';
+    }
+    // Custom User-Agent: WKWebView's default UA lacks the "Version/x Safari/x"
+    // suffix, so UA-sniffing sites reject it. Packaged apps use the
+    // TinyjsUserAgent plist key instead (this env only applies to the dev spawn).
+    if (userAgent) spawnEnv.TINYJS_UA = String(userAgent);
+    // Wrapped-site affordances (macOS launcher today; packaged .apps carry
+    // the same three as Tinyjs* plist keys / Resources/app/inject.js):
+    // "downloads": auto | ask | deny, "popups": external | window | deny,
+    // "inject": document-start JS source (already bundled by cli.js).
+    if (downloads) spawnEnv.TINYJS_DOWNLOADS = String(downloads);
+    if (popups) spawnEnv.TINYJS_POPUPS = String(popups);
+    if (inject) spawnEnv.TINYJS_INJECT = String(inject);
+    // "debug": false (default) = no inspector anywhere, true = F12 (mac also
+    // Cmd+Opt+I) opens one detached, 'open' = every window auto-opens its
+    // own. `tinyjs dev` seeds TINYJS_DEBUG='dev' in the inherited env, so dev
+    // always has devtools; the manifest can raise that to 'open' but a
+    // truthy manifest value is what carries into a packaged app (macOS
+    // .app via the TinyjsDebug plist key, not this env).
+    if (debug) spawnEnv.TINYJS_DEBUG = debug === 'open' ? 'open' : '1';
+    // "browserAccelerators": true keeps the engine's own key set (Ctrl+F
+    // find bar, Ctrl+R reload, Ctrl+P print…) reachable in-page. Default is
+    // suppressed — an app's menu accelerators are unaffected either way.
+    // Only WebView2 has such a set; no-op elsewhere.
+    if (browserAccelerators) spawnEnv.TINYJS_BROWSERACCEL = '1';
+    // Linux getUserMedia: WebKitGTK denies an unanswered permission-request,
+    // and there is no OS consent dialog underneath (no TCC, no WebView2
+    // prompt) — so the launcher grants exactly what tinyjs.json's
+    // "permissions" block declared, forwarded here.
+    if (IS_LINUX && permissions) {
+      const media = ['camera', 'microphone'].filter((k) => permissions[k]);
+      if (media.length) spawnEnv.TINYJS_MEDIA = media.join(',');
+    }
+    // …and which origins may have it without asking (mediaTrustLines). Set
+    // unconditionally so an inherited value can't widen it.
+    {
+      const own = ['file://'];
+      if (htmlPath && /^https?:\/\//i.test(String(htmlPath)))
+        try { own.push(new URL(String(htmlPath)).origin); } catch {}
+      spawnEnv.TINYJS_MEDIA_ORIGINS = mediaTrustLines(apiAccess, own);
+    }
+    // Windows built apps: hand the launcher our exe so taskbar pins and the
+    // Start-Menu shortcut relaunch the APP — the visible window belongs to
+    // launcher.exe, which can't start on its own, so a default pin would be
+    // dead on next launch. Dev spawns set nothing (nothing worth pinning).
+    if (IS_WIN && (await bundlePath())) spawnEnv.TINYJS_APP_EXE = tjs.exePath;
+    // Windows: each app gets its own WebView2 profile next to its store.json.
+    // Stock WebView2 keys the profile on the exe name, and every tinyjs app's
+    // window is launcher.exe — so all of them shared cookies, localStorage
+    // (file:// is one origin here), IndexedDB and permissions (#29). No
+    // migration from the old shared %APPDATA%\launcher.exe: apps start fresh.
+    if (IS_WIN) spawnEnv.TINYJS_WEBVIEW2_DATA = (appDataDir(id) + '/WebView2').replace(/\//g, '\\');
+    // Linux: the app id names the WM class (window ↔ .desktop matching) and
+    // the notification identity. Dev sets it from the CLI; built apps here.
+    if (IS_LINUX && id && !spawnEnv.TINYJS_APP_ID) spawnEnv.TINYJS_APP_ID = id;
+    // Windows/Linux built apps: the icon rides inside the compiled binary
+    // (app root of the TPK extraction, next to the frontend/ the page loads
+    // from); a dist/icon.png next to the binary still wins for older builds.
+    // Dev passes TINYJS_ICON from the CLI instead.
+    if ((IS_WIN || IS_LINUX) && !spawnEnv.TINYJS_ICON) {
+      const tpkIcon = pagePath ? dirOf(dirOf(pagePath)) + '/icon.png' : null;
+      if (await exists(exeDir + 'icon.png')) spawnEnv.TINYJS_ICON = exeDir + 'icon.png';
+      else if (tpkIcon && (await exists(tpkIcon))) spawnEnv.TINYJS_ICON = tpkIcon;
+    }
+    // Windows: Chromium gives every file:// URL an opaque origin, which
+    // TAINTS local media in the WebAudio graph — createMediaElementSource
+    // on a local track outputs pure zeros (macOS WKWebView doesn't taint
+    // page-dir files). The WebView2 loader honors this env var; the flag
+    // makes file:// same-origin so local media drives analysers/EQs like it
+    // does on macOS. Tradeoff: file:// pages can then read other local
+    // files — acceptable here because the page already holds an RPC channel
+    // to a backend with full filesystem access.
+    if (IS_WIN) {
+      // --ignore-gpu-blocklist: WebGPU parity with the macOS launcher (which
+      // force-enables the WebKit feature flag) — without it, virtualized or
+      // older GPUs answer requestAdapter() with null.
+      // autoplay: WKWebView never gates playback on a gesture, Chromium does
+      // — and satellite windows (visualizers analysing a silent twin stream)
+      // may never receive a click at all.
+      const flags = ['--allow-file-access-from-files', '--ignore-gpu-blocklist',
+                     '--enable-unsafe-webgpu',
+                     '--autoplay-policy=no-user-gesture-required'];
+      let extra = spawnEnv.WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS || '';
+      for (const f of flags) if (!extra.includes(f)) extra = (extra ? extra + ' ' : '') + f;
+      spawnEnv.WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = extra;
+    }
+    // Windows: the session pipe's name is random but listable, and libuv's
+    // default DACL lets any user (and Anonymous) connect read-only — so the
+    // FIRST connection isn't necessarily our launcher, and whoever it is
+    // would get every line we send. The launcher proves itself with a token
+    // that only rides its env (other users can't read our processes' env);
+    // a read-only connection can never send it. Unix: the socket sits in a
+    // 0700 dir, nobody else gets that far.
+    const pipeToken = IS_WIN
+      ? Array.from(crypto.getRandomValues(new Uint8Array(32)),
+          (b) => b.toString(16).padStart(2, '0')).join('')
+      : null;
+    if (pipeToken) spawnEnv.TINYJS_PIPE_TOKEN = pipeToken;
+    const spawnOpts = { stderr: 'inherit', env: spawnEnv };
+    // macOS: a bare (non-bundled) binary takes its OS-facing app name — menu
+    // bar, cmd-tab — from the executable's file name. In dev that reads
+    // "launcher". Exec through a symlink named after the app instead, so the
+    // real title shows everywhere the OS names the app; bundled .apps carry
+    // CFBundleName and never take this path.
+    let launcherExe = launcher;
+    if (!IS_WIN && !IS_LINUX && title) {
+      const link = workDir + '/' + (String(title).replace(/[/\\:]+/g, '') || 'launcher');
+      try {
+        await tjs.symlink(launcher, link);
+        launcherExe = link;
+      } catch { }                     // fall back to the plain launcher
+    }
+    proc = tjs.spawn([launcherExe, pagePath, sockPath, title, size, version], spawnOpts);
+
+    cleanup = async () => {
+      if (!IS_WIN) await tjs.remove(sockPath).catch(() => {}); // pipes aren't files
+      await tjs.remove(workDir, { recursive: true }).catch(() => tjs.remove(workDir).catch(() => {}));
+    };
+
+    // Wait for the launcher to connect, but bail out if it dies instead.
+    const acceptReader = serverInfo.readable.getReader();
+    const connected = pipeToken ? acceptWithToken(acceptReader, pipeToken)
+      : acceptReader.read().then(({ value }) => value.opened);
+    const first = await Promise.race([
+      connected.then((io) => ({ io })),
+      proc.wait().then((st) => ({ exited: st })),
+    ]);
+    if (first.exited) {
+      await cleanup();
+      throw new Error('launcher exited before connecting: ' + JSON.stringify(first.exited));
+    }
+
+    ({ readable, writable } = first.io);
+  }
+
+  const writer = writable.getWriter();
+  // Frontend base for win.open page resolution: a directory in file mode, or
+  // the dev-server origin when htmlPath is a URL (devUrl mode).
+  const isUrl = (s) => /^https?:\/\//i.test(String(s ?? ''));
+  const frontendDir = htmlPath
+    ? (isUrl(htmlPath) ? htmlPath.replace(/\/+$/, '') : dirOf(htmlPath))
+    : null;
+  // A PAGE's win.open page (#29.3). The "wrapper" preset hands win.* to the
+  // wrapped site, and every launcher loads file:// with file-to-file reads
+  // allowed (Windows --allow-file-access-from-files, Linux/macOS universal
+  // access) — so an absolute path, or a ../ walk out of the frontend, let a
+  // hostile page open a file it planted (a download, say) as a privileged
+  // file:// window that reads the disk. Pages get http(s) URLs and files
+  // INSIDE the frontend dir; backend app.openWindow stays unrestricted.
+  const normPath = (p) => {
+    const parts = String(p).replace(/\\/g, '/').split('/');
+    const out = [];
+    for (const seg of parts.slice(1)) {
+      if (seg === '' || seg === '.') continue;
+      if (seg === '..') out.pop(); else out.push(seg);
+    }
+    return parts[0] + '/' + out.join('/');
+  };
+  function pageForWindow(page) {
+    if (page == null) return page;
+    const p = String(page);
+    if (isUrl(p)) return p;
+    const refuse = () => {
+      throw new Error('win.open from a page takes an http(s) URL or a page inside the app\'s frontend');
+    };
+    if (p.includes('\0') || (/^[A-Za-z][\w+.-]*:/.test(p) && !/^[A-Za-z]:[\\/]/.test(p))) refuse();
+    if (!frontendDir) refuse();
+    const rooted = isAbs(p) || /^[\\/]/.test(p); // incl. \\server\share
+    if (isUrl(frontendDir)) return rooted ? refuse() : p;
+    const fold = (s) => (IS_WIN ? s.toLowerCase() : s);
+    const root = normPath(frontendDir).replace(/\/$/, '');
+    const abs = normPath(rooted ? p : frontendDir + '/' + p);
+    if (!fold(abs).startsWith(fold(root) + '/')) refuse();
+    return abs;
+  }
+
+  // Read-backs: <OP> <qid> <rest> → launcher answers GOT <qid> <json>.
+  let qidSeq = 1;
+  const pendingGets = new Map();
+  function ask(op, rest) {
+    return new Promise((resolve) => {
+      const qid = String(qidSeq++);
+      pendingGets.set(qid, resolve);
+      send(op + ' ' + qid + (rest != null ? ' ' + rest : ''));
+    });
+  }
+  const query = (what) => ask('GET', what);
+  // A save panel whose answer comes back HERE, not to a page (#36): the DLG
+  // id is q<qid>, which every launcher answers as GOT <qid> <path|null>.
+  // Page call ids can't take that shape (they carry ':' or are hex).
+  function askSavePath(name) {
+    return new Promise((resolve) => {
+      const qid = String(qidSeq++);
+      pendingGets.set(qid, resolve);
+      send(`DLG q${qid} save\tpdf\t${one(name)}`);
+    });
+  }
+
+  // Where a PAGE's tiny.win.printToPDF(path) may write (#36). The app's own
+  // pages (file://, the dev server) keep the path they asked for. Any other
+  // origin (a wrapped site, a page it navigated to) writes directly only
+  // inside Downloads, the app's data dir or the temp dir (a bare name lands
+  // in Downloads); for anything else the user picks the destination in a save
+  // panel pre-filled with the requested name. Otherwise a hostile page could
+  // drop PDF bytes over any file the user can write. Backend app.printToPDF
+  // is unrestricted.
+  const ownPageOrigins = new Set(['file://']);
+  if (htmlPath && isUrl(String(htmlPath)))
+    try { ownPageOrigins.add(new URL(String(htmlPath)).origin); } catch {}
+  async function pdfPathForPage(path, origin) {
+    const p = path == null ? '' : String(path);
+    if (origin !== undefined && ownPageOrigins.has(origin)) return p;
+    const fold = (x) => (IS_WIN ? x.toLowerCase() : x);
+    const home = IS_WIN ? (tjs.env.USERPROFILE || tjs.homeDir) : tjs.homeDir;
+    const downloads = IS_LINUX ? xdgDirs.DOWNLOAD : home + '/Downloads';
+    const roots = [downloads, appDataDir(id), tjs.tmpDir];
+    if (!IS_WIN) roots.push('/tmp', '/private/tmp');
+    if (p && !p.includes('\0') && !(/^[A-Za-z][\w+.-]*:/.test(p) && !/^[A-Za-z]:[\\/]/.test(p))) {
+      const abs = normPath(isAbs(p) || /^[\\/]/.test(p) ? p : downloads + '/' + p);
+      const inside = roots.some((r) => r && fold(abs).startsWith(fold(normPath(r).replace(/\/$/, '')) + '/'));
+      if (inside) return IS_WIN ? abs.replace(/\//g, '\\') : abs;
+    }
+    const name = p.replace(/^.*[\\/]/, '') || 'page.pdf';
+    const picked = await askSavePath(name);
+    if (!picked) throw new Error('printToPDF: cancelled');
+    return picked;
+  }
+  const shellOp = async (op, target) => {
+    const r = await ask('SHELL', op + '\t' + esc(target));
+    if (!r?.ok) throw new Error(r?.error ?? op + ' failed');
+    return true;
+  };
+
+  // Menu items, shared by menu bar / tray / context menu. Items support
+  // { id, label, key?, checked?, enabled?, submenu?: [...] } | { separator }.
+  // Stock editing items, placed by role inside an item list: { role: 'copy' },
+  // or { role: 'standard' } for the whole Undo…Select All group. Every
+  // launcher draws them: macOS as real responder-chain items, Linux through
+  // WebKitGTK's editing commands, Windows by replaying the shortcut into
+  // WebView2. The tray skips them (nothing to edit there).
+  const STOCK_ROLES = new Set(['standard', 'undo', 'redo', 'cut', 'copy', 'paste', 'selectAll']);
+
+  function sendItems(items) {
+    for (const it of items ?? []) {
+      if (it.role) { if (STOCK_ROLES.has(it.role)) send('ROLEITEM ' + it.role); continue; }
+      if (it.separator) { send('SEP'); continue; }
+      if (it.submenu) {
+        send('SUB ' + [one(it.id), one(it.label ?? it.id)].join('\t'));
+        sendItems(it.submenu);
+        send('SUBEND');
+        continue;
+      }
+      const flags = (it.checked ? 'c' : '') + (it.enabled === false ? 'd' : '');
+      send('ITEM ' + [one(it.id), one(it.label ?? it.id), one(it.key ?? ''), flags].join('\t'));
+    }
+  }
+
+  // The menu-bar declaration block. `win` names a single window's own menu
+  // ('main' included); null declares the APP menu — the one every window
+  // that hasn't overridden shows. Both end with a bare MENUEND: the target
+  // is remembered from the BEGIN line.
+  function sendMenuBlock(menus, win) {
+    send('MENUBEGIN' + (win ? '@' + win : ''));
+    for (const m of menus ?? []) {
+      // A role block claims a slot the LAUNCHER fills. 'edit' is the Edit
+      // menu: on macOS the stock group comes first and your items go below
+      // it — unless your items place stock roles themselves ({ role: 'copy' },
+      // { role: 'standard' }), which hands you the whole order, or
+      // standard: false says no stock items at all. Windows/Linux have no
+      // implicit stock Edit menu, so there the menu is exactly your items —
+      // stock roles included, which is how one declaration gets the same
+      // Edit menu on all three. 'app' (macOS) puts your items INSIDE the
+      // application menu, beside About — which is where Settings… belongs
+      // and the one place setMenu could not previously reach. Elsewhere the
+      // role is unknown and its items are dropped, which is why an app
+      // declares Settings here AND in a menu of its own off-macOS.
+      if (m?.role) {
+        const nostd = m.standard === false && !IS_WIN && !IS_LINUX;   // a macOS-only switch
+        send('MENUROLE ' + one(m.role) + (nostd ? '\tnostd' : ''));
+        sendItems(m.items);
+        continue;
+      }
+      send('MENU ' + one(m.title));
+      sendItems(m.items);
+    }
+    send('MENUEND');
+  }
+
+  // MENUUPD payload: '' in a field means "leave this one alone".
+  function menuUpdWire(id, patch = {}) {
+    const bit = (v) => (v === undefined ? '' : v ? '1' : '0');
+    return [one(id), one(patch.label ?? ''), bit(patch.checked), bit(patch.enabled)].join('\t');
+  }
+
+  // Desktop notification. Packaged apps (attach mode: the launcher is the
+  // bundle executable) get real Notification Center banners — the app's own
+  // icon, permission prompt on first use, and clicks back as the
+  // 'notification-click' event (opts: { id, subtitle, sound }). Dev has no
+  // bundle for UNUserNotificationCenter, so it falls back to osascript
+  // (banner appears under "Script Editor").
+  async function notify({ title, body, subtitle, id: nid, sound, actions } = {}) {
+    // Windows (tray balloon / toast) and Linux (org.freedesktop.Notifications
+    // over DBus) notify from the launcher in every mode — no bundle
+    // requirement — so the osascript fallback below stays macOS-only.
+    if (attachPath || IS_WIN || IS_LINUX) {
+      // actions: [{ id, title, reply?, placeholder?, destructive? }] — buttons
+      // (or a reply field) on the banner; taps come back as 'notification-action'.
+      const acts = actions?.length ? esc(JSON.stringify(actions)) : '';
+      send('NOTIFY ' + [one(nid ?? ''), one(title ?? 'tinyjs'), one(body ?? ''),
+                        one(subtitle ?? ''), sound ? '1' : '0', acts].join('\t'));
+      return true;
+    }
+    // notify() is naturally fire-and-forget; an unhandled rejection here
+    // would kill the whole backend, so it never throws — it resolves false.
+    try {
+      const aq = (s) => '"' + String(s ?? '').replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+      let script = 'display notification ' + aq(body ?? '') + ' with title ' + aq(title ?? 'tinyjs');
+      if (subtitle) script += ' subtitle ' + aq(subtitle);
+      const p = tjs.spawn(['/usr/bin/osascript', '-e', script], { stdout: 'ignore', stderr: 'ignore' });
+      const st = await p.wait();
+      return st.exit_status === 0 && !st.term_signal;
+    } catch (e) {
+      console.log('tinyjs notify failed:', e?.message ?? String(e));
+      return false;
+    }
+  }
+
+  function send(line) {
+    dbg('>>', line);
+    // EPIPE is normal during shutdown (the launcher closes the socket the
+    // moment the window goes away) — only unexpected errors are worth noise.
+    writer.write(enc.encode(line + '\n')).catch((e) => {
+      if (!/EPIPE|ECONNRESET/.test(String(e))) console.log('tinyjs send error:', e);
+    });
+  }
+
+  function push(event, data) {
+    // Broadcast so secondary windows receive backend events too.
+    // esc() so any backslash in the JSON survives wire_unescape on the launcher.
+    send('EVAL@* ' + esc('window.__emit && window.__emit(' + JSON.stringify({ event, data }) + ')'));
+  }
+
+  // ── off-screen rescue policy ──────────────────────────────────────────────
+  // The launcher owns the geometry (WINOP `onscreen` clamps a window with
+  // less than a sliver visible on any screen onto the nearest one); THIS owns
+  // when it happens. Apps fling windows off-screen on purpose (coo3d), so
+  // ordinary moves must never be touched: rescue arms only when the screen
+  // fingerprint changed since the app last ran — the one situation where a
+  // restored position can point into empty space — and, armed, chases each
+  // window's first show and first pos with an `onscreen`. A display departing
+  // mid-session is the launcher's own pass, gated by `WINOP rescue 0|1`.
+  // "offscreenRescue": false in tinyjs.json turns all of the automatic parts
+  // off; win.ensureOnScreen() is the manual verb and always works.
+  const store = makeStore(id);
+  const rescueOn = offscreenRescue !== false;
+  let rescueArmed = null;                  // null = fingerprint still resolving
+  const rescuePending = new Set();         // first-moves seen while resolving
+  const rescueSeen = new Set();            // 'winid:pos' / 'winid:show' consumed
+  const sendOnscreen = (wid) => send(wid === 'main' ? 'WINOP onscreen' : 'WINOP@' + one(wid) + ' onscreen');
+  function rescueNote(wid, kind) {
+    if (!rescueOn || rescueArmed === false) return;
+    const key = wid + ':' + kind;
+    if (rescueSeen.has(key)) return;
+    rescueSeen.add(key);
+    if (rescueArmed) sendOnscreen(wid);
+    else rescuePending.add(wid);
+  }
+  (async () => {
+    if (!rescueOn) { send('WINOP rescue 0'); rescueArmed = false; rescuePending.clear(); return; }
+    let armed = false;
+    try {
+      const fp = JSON.stringify(((await query('screens')) || [])
+        .map((s) => [s.x, s.y, s.width, s.height, s.scale]).sort());
+      const prev = await store.get('__screens');
+      armed = prev != null && prev !== fp;   // first run ever: nothing stale to fix
+      if (prev !== fp) store.set('__screens', fp);
+    } catch (e) {}
+    rescueArmed = armed;
+    // main is shown by the launcher itself, so its "first show" never routes
+    // through here — an armed boot checks it directly (a no-op when it's fine)
+    if (armed) { sendOnscreen('main'); for (const wid of rescuePending) sendOnscreen(wid); }
+    rescuePending.clear();
+  })();
+
+  const app = {
+    push,
+    // tjs.spawn, minus the console window on Windows: console tools spawned
+    // from a GUI-subsystem app each pop a terminal, so this routes through
+    // `launcher --run` (CREATE_NO_WINDOW). Elsewhere it's plain tjs.spawn.
+    spawnHidden(args, opts) { return tjs.spawn(hiddenArgv(args), opts); },
+    setTitle(t) { send('TITLE ' + one(t)); },
+    // Content size — the page's own box, decorations excluded, the same units
+    // tinyjs.json's "size" and getState().width/height use.
+    setSize(w, h) { send(`SIZE ${w | 0} ${h | 0}`); },
+    // Not JS eval(): sends script to the app's own page via webview_eval,
+    // the same channel push() uses. Never receives external input.
+    // esc() keeps newlines intact — flattening them would let a // line
+    // comment swallow the rest of a multi-line snippet.
+    eval(js) { send('EVAL ' + esc(js)); },
+    // Re-render the page from disk. `newHtml` only applies to materialized
+    // pages (html-string mode); direct htmlPath pages always reload the
+    // real file, which is the point.
+    async reload(newHtml) {
+      if (newHtml != null && ownsPage) await tjs.writeFile(pagePath, enc.encode(newHtml));
+      send('RELOAD');
+    },
+    // menus: [{ title, items: [{ id, label, key? } | { separator: true }] }]
+    // Clicks arrive as a 'menu' page event and via the onMenu option.
+    //
+    // { role: 'edit' } is a placeholder for the standard Edit menu (Undo,
+    // Cut, Copy, Paste, Select All) — put it wherever you want it in the bar.
+    // Give it items and they go below Select All; on Windows/Linux those
+    // items alone make an "Edit" menu in that slot. Stock roles inside items
+    // ({ role: 'copy' }, { role: 'standard' }) put the stock entries where
+    // you want them instead — on every platform, so the same declaration
+    // gives the same menu everywhere — and standard: false leaves macOS's
+    // implicit ones out (it keeps ⌘C/⌘V working regardless).
+    // macOS installs that menu whether you ask or not, because the webview
+    // needs its key equivalents to have working ⌘C/⌘V, so declaring the role
+    // is the only way to say "and NOT first". Windows and Linux have no such
+    // menu, and skip the entry.
+    //
+    // This is the APP menu: every window shows it, including windows opened
+    // later. macOS has one bar for the whole app and always did; Windows and
+    // Linux draw a copy of it inside each window. One window can say
+    // something different with app.window(id).setMenu(), or show no bar at
+    // all with chrome.menu:false — neither disturbs the others.
+    setMenu(menus) { sendMenuBlock(menus, null); },
+    // Patch a live item without redeclaring the menu: { label?, checked?, enabled? }.
+    // Every copy of that id moves, in every window carrying it — which is what
+    // one shared macOS bar already did. To move a single window's tick, use
+    // app.window(id).updateMenuItem().
+    updateMenuItem(id, patch = {}) { send('MENUUPD ' + menuUpdWire(id, patch)); },
+    // { exists, label, checked, enabled } for a menu/tray/context item.
+    getMenuItem(id) { return query('item:' + one(id)); },
+    // { x, y, width, height, fullscreen, minimized, visible, focused,
+    //   alwaysOnTop, resizable, screen: { width, height, scale } }
+    getWinState() { return query('win'); },
+    restore() { send('WINOP restore'); },
+    setFullscreen(v) { send('WINOP fullscreen ' + (v ? 1 : 0)); },
+    notify,
+    // Window visibility & app presence. hide() hides the APP (NSApp hide):
+    // macOS returns focus to the previously active app on its own, so
+    // hide-then-paste palettes need no frontmost-tracking. show() re-activates;
+    // show({ activate: false }) surfaces the window without stealing focus
+    // (overlay/HUD panels).
+    //
+    // hide({ app: false }) puts away THIS WINDOW and nothing else — the app
+    // stays frontmost and its other windows stay where they are. On macOS
+    // that's [win orderOut:] instead of [NSApp hide:]; on Windows and Linux a
+    // hide was always window-scoped, so the flag changes nothing there.
+    hide(opts) { send('WINOP ' + (opts?.app === false ? 'hidewin' : 'hide')); },
+    show(opts) { send('WINOP show' + (opts?.activate === false ? ' 0' : '')); rescueNote('main', 'show'); },
+    center() { send('WINOP center'); },
+    minimize() { send('WINOP minimize'); },
+    // Toggles native fullscreen.
+    fullscreen() { send('WINOP fullscreen'); },
+    setAlwaysOnTop(v) { send('WINOP ontop ' + (v ? 1 : 0)); },
+    setResizable(v) { send('WINOP resizable ' + (v ? 1 : 0)); },
+    // Mouse events pass through to whatever is behind (draw-on-screen
+    // overlays, HUDs). Pair with setChrome({ transparent: true }).
+    setClickThrough(v) { send('WINOP clickthrough ' + (v ? 1 : 0)); },
+    // Stack the window in a band: 'normal' | 'floating' (= alwaysOnTop) |
+    // 'overlay' (above almost everything, incl. most fullscreen apps) |
+    // 'desktop' (behind normal windows — wallpaper/pets).
+    setLevel(level) { send('WINOP level ' + one(level ?? 'normal')); },
+    // Follow the user onto every Space and float over fullscreen apps.
+    setAllSpaces(v) { send('WINOP allspaces ' + (v ? 1 : 0)); },
+    // Top-left origin in screen points (CSS-style coordinates).
+    setPosition(x, y) { send(`WINOP pos ${x | 0} ${y | 0}`); rescueNote('main', 'pos'); },
+    // Clamp this window onto the nearest screen if nobody could see or grab
+    // it (less than a sliver visible). The manual verb behind the automatic
+    // policy above — for apps that set "offscreenRescue": false but still
+    // want a one-shot rescue at a moment of their choosing.
+    ensureOnScreen() { send('WINOP onscreen'); },
+    // 'menubar': no Dock icon / taskbar button / app-switcher entry;
+    // 'normal': a normal app. Same name on both sides of the bridge.
+    presence(mode) { send('WINOP presence ' + (mode === 'menubar' ? 0 : 1)); },
+    // true: the close button hides the window instead of quitting.
+    // A macOS idea — there the app outlives its last window and the Dock icon
+    // brings it back. Windows and Linux have nowhere to put that, so the flag
+    // holds there only while something can bring the app back: a tray icon,
+    // accessory mode, or another window still on screen. Closing the last
+    // window of an ordinary app quits it, the way every other app does.
+    setHideOnClose(v) { send('WINOP hideonclose ' + (v ? 1 : 0)); },
+    // spec: { title?, icon?, template?, tooltip?, primaryAction?,
+    //         menu?: [{ id, label, key? } | { separator: true }] }
+    // icon is a png path (absolute or project-relative), 'sf:<name>' for an
+    // SF Symbol (e.g. 'sf:cup.and.saucer.fill' — no shipped assets needed;
+    // macOS only), or 'emoji:<glyph>' for a glyph drawn as a monochrome
+    // tray silhouette (Windows only) — branch per-OS for asset-free icons;
+    // template: false keeps its colors instead of adapting to the menu bar
+    // (default true). Menu clicks arrive as a 'tray' page event and via the
+    // onTray option; with no menu, icon clicks arrive as 'trayclick'.
+    // primaryAction: true splits the two — left click fires 'trayclick' (a
+    // Caffeine-style toggle) and the menu opens on right/ctrl-click.
+    tray: {
+      set(spec = {}) {
+        let icon = spec.icon ?? '';
+        if (icon && !isAbs(icon) && !icon.startsWith('sf:') && !icon.startsWith('emoji:')) icon = tjs.cwd + '/' + icon;
+        send('TRAYBEGIN ' + [one(spec.title), one(icon),
+                             spec.template === false ? '0' : '1',
+                             one(spec.tooltip),
+                             spec.primaryAction ? '1' : '0'].join('\t'));
+        sendItems(spec.menu);
+        send('TRAYEND');
+      },
+      remove() { send('TRAYREMOVE'); },
+      // The tray icon's on-screen rect { x, y, width, height } (top-left
+      // coords) — anchor a dropdown window under it. null if no tray set.
+      position: () => query('traypos'),
+    },
+    print() { send('PRINT'); },
+    // Render the page to a PDF file (WKWebView vector PDF) -> { path }.
+    async printToPDF(path) {
+      const r = await ask('PDF', esc(path));
+      if (!r?.ok) throw new Error(r?.error ?? 'pdf failed');
+      return { path: r.path };
+    },
+    // Replace the app icon from a png (render a canvas → live tiles). ''
+    // resets to the bundle icon. macOS Dock tile / Linux window icon.
+    icon(pngPath) { send('APPICON ' + esc(pngPath ?? '')); return true; },
+    // Find files by name or content (Spotlight/NSMetadataQuery, home scope)
+    // -> up to 100 absolute paths. Rejects where there is no search backend.
+    async spotlight(queryText) {
+      const r = await ask('SPOTLIGHT', esc(String(queryText ?? '')));
+      // `?? []` here used to swallow the launcher's {ok:false,error} — Windows
+      // answers got_unsupported for SPOTLIGHT, so every query came back as an
+      // empty array, i.e. "nothing matched" rather than "not supported here".
+      // Those are opposite answers to a caller, and only the second is true.
+      if (!r?.ok) throw new Error(r?.error ?? 'unsupported');
+      return r.paths ?? [];
+    },
+    // Window chrome: { frame?, windowControls?, windowControlsPos?, transparent?,
+    // vibrancy?, squareCorners?, acceptsFirstMouse?, menu? }. frame:false hides the titlebar
+    // (content extends under it; keep your own drag region via data-tiny-drag).
+    // vibrancy: material name or null. squareCorners:true drops macOS's rounded
+    // corners by making the window BORDERLESS — square, no titlebar, no traffic
+    // lights. The tradeoff: no native titlebar drag (use data-tiny-drag) and
+    // it's a deliberately un-native look; resize edges, shadow, and keyboard
+    // focus are kept. acceptsFirstMouse:true makes the click that focuses an
+    // unfocused window ALSO reach the page (default macOS behavior swallows it
+    // — "click once to focus, again to act"); handy for palettes/toolbars, and
+    // for DOM drag regions on unfocused windows. Declare it in tinyjs.json
+    // "chrome" so it applies before the first paint (no rounded→square flash).
+    //
+    // menu:false means this window shows no menu bar — the app menu keeps
+    // showing everywhere else. Windows and Linux draw the bar inside each
+    // window, so that is a real per-window question there; macOS has one bar
+    // for the whole app and ignores the flag (a bar-less mac app isn't a
+    // thing). Frameless and transparent windows never get a Win32 bar
+    // regardless — GDI can't draw one over a cleared background.
+    //
+    // windowControlsPos: { x, y } moves the traffic-light group; the offset
+    // is from the window's top-left in points, null puts them back. macOS
+    // only (pair with frame:false, where the lights float over the page and
+    // a taller custom bar wants them recentered); ignored elsewhere. The
+    // launcher re-applies it across resizes and fullscreen round-trips —
+    // AppKit re-lays-out the buttons on those — so set it once, not per event.
+    setChrome(opts = {}) {
+      send('CHROME ' + chromeWire(opts));
+    },
+    // Native DSP on this app's own output — see tiny.audio.filters. The chain
+    // is rebuilt only when its SHAPE changes; moving a control goes through
+    // setAudioFilter, which retunes in place.
+    setAudioFilters(list) {
+      const spec = (list ?? []).map((f) => {
+        const row = [FILTER_LABELS[f.type] ?? 'bq_peaking',
+          Number(f.freq ?? 1000), Number(f.q ?? 1), Number(f.gain ?? 0)];
+        // gainR only rides along when the channels actually differ, so the
+        // common symmetric case stays a 4-field row
+        if (f.gainR != null && Number(f.gainR) !== Number(f.gain ?? 0)) row.push(Number(f.gainR));
+        return row.join(',');
+      });
+      send('AUDIOFILTERS' + (spec.length ? ' ' + spec.join('\t') : ''));
+    },
+    setAudioBalance(v) {
+      const b = Math.max(-1, Math.min(1, Number(v) || 0));
+      send('AUDIOBALANCE ' + b);
+    },
+    setAudioFilter(i, f) {
+      send('AUDIOFILTERSET ' + [Number(i) | 0, Number(f.freq ?? 1000),
+        Number(f.q ?? 1), Number(f.gain ?? 0)].join('\t'));
+    },
+    startDrag() { send('DRAGWIN'); },
+    // edge: 'n'|'ne'|'e'|'se'|'s'|'sw'|'w'|'nw' — frameless windows have no
+    // WM resize border, so the page supplies the grip.
+    startResize(edge) { send('RESIZEWIN ' + String(edge || 'se')); },
+    zoom() { send('WINOP zoom'); },
+    // Native NSPasteboard — no osascript/pbpaste spawns, no scratch files.
+    clipboard: {
+      // { kind: 'files'|'image'|'color'|'text'|'empty', changeCount, text,
+      //   html, paths, image (png temp path, valid until the clipboard
+      //   changes again — copy it to keep it), imageSize ({ width, height }
+      //   px), color ('#rrggbb[aa]'), concealed (password-manager marker —
+      //   history apps must skip), sourceApp ({ name, bundleId } — frontmost
+      //   when the change was noticed; exact while watch() runs), sourceURL
+      //   (page a Chromium-browser copy came from) }
+      read: () => query('clipboard'),
+      async changeCount() { return (await query('clipboard:count'))?.changeCount ?? 0; },
+      // { text?, html?, paths?, image?, color? } — image: png path, data:
+      // URL, or base64. Multiple paths flush reliably (long-lived process).
+      write({ text, html, image, color, paths } = {}) {
+        send('CLIPWRITE ' + [esc(text), esc(html), esc(image), esc(color),
+                             ...(paths ?? []).map(esc)].join('\t'));
+        return true;
+      },
+      // Poll changeCount in the launcher (in-process, ~free); changes arrive
+      // as the 'clipboard-change' event / onClipboardChange option with
+      // { changeCount, self } — self: our own write() caused it.
+      watch(intervalMs = 500) { send('CLIPWATCH ' + (intervalMs | 0)); },
+      unwatch() { send('CLIPWATCH 0'); },
+    },
+    // Post a real CGEvent keystroke (combo like 'cmd+v') from the launcher —
+    // one Accessibility grant that names your app, no osascript spawn.
+    // -> { ok, trusted }; trusted:false means Accessibility isn't granted
+    // (see app.permissions).
+    keystroke: (combo) => ask('KEYSTROKE', one(combo)),
+    // Paste into the frontmost app (hide your window first).
+    paste: () => ask('KEYSTROKE', 'cmd+v'),
+    // TCC permissions: 'accessibility' | 'screen' | 'notifications' |
+    // 'automation[:<bundle-id>]'. check -> 'granted'|'denied'|'undetermined'|
+    // 'unsupported'; request also prompts (accessibility opens System
+    // Settings pointing at your app).
+    permissions: {
+      async check(name) { return (await ask('PERMCHK', one(name)))?.status ?? 'unsupported'; },
+      async request(name) { return (await ask('PERMREQ', one(name)))?.status ?? 'unsupported'; },
+    },
+    // Global cursor position, same top-left coordinates as setPosition /
+    // getState: { x, y, window: { x, y, inside }, screen: { x, y, width,
+    // height, scale } } — window is relative to the main window's content
+    // area (clientX/clientY units, even while the cursor is outside);
+    // screen is the display the cursor is on.
+    mousePosition: () => query('mouse'),
+    // Opt-in outside-the-window tracking. Everywhere but Linux-Wayland the
+    // coordinates above are global already, so start() is a cheap ok. On
+    // Wayland the compositor hides the pointer once it leaves the app;
+    // start() arms the one sanctioned route — the ScreenCast portal's
+    // cursor-metadata stream — which shows a consent dialog on first use
+    // (remembered: the grant's restore token is kept in the store) and the
+    // system's screen-sharing indicator while armed. Resolves { ok: true }
+    // or { ok: false, code: 'unsupported' | 'denied' | 'failed', message }.
+    mouseTracking: {
+      async start() {
+        if (!IS_LINUX) return { ok: true };
+        const KEY = '__tinyjs.mouseTracking.restoreToken';
+        const saved = await app.store.get(KEY);
+        const r = await ask('MOUSETRACK', one(saved ?? ''));
+        if (r?.ok && r.restoreToken && r.restoreToken !== saved) {
+          await app.store.set(KEY, r.restoreToken);
+        }
+        return r ?? { ok: false, code: 'failed' };
+      },
+      stop() {
+        if (IS_LINUX) send('MOUSETRACK STOP');
+        return true;
+      },
+    },
+    // Every display, same top-left coordinates as setPosition / getState:
+    // [{ id, name, x, y, width, height, visible: { x, y, width, height },
+    //   scale, primary }] — visible excludes the menu bar and Dock; primary
+    // is the menu-bar screen (the coordinate origin).
+    screens: () => query('screens'),
+    // NSWorkspace verbs — no `open` spawns. open() takes a URL (any scheme)
+    // or a file path; reveal() shows the file in Finder; trash() moves it to
+    // the Trash (recoverable — prefer it over tjs.remove for user files).
+    // Resolve true; throw with the reason ('no such file', 'no application
+    // registered for URL', …) on failure.
+    shell: {
+      open: (target) => shellOp('open', target),
+      reveal: (path) => shellOp('reveal', path),
+      trash: (path) => shellOp('trash', path),
+    },
+    // Launch at login (SMAppService — bundle mode on macOS 13+, otherwise
+    // 'unsupported'; dev mode has no bundle identity to register). get() ->
+    // 'enabled' | 'disabled' | 'requires-approval' | 'unsupported'. set(v)
+    // returns the resulting status: 'requires-approval' means macOS wants
+    // the user to allow it in System Settings > General > Login Items.
+    launchAtLogin: {
+      // Windows: the launcher needs the app's exe path for the HKCU Run key
+      // (a dev run's tjs.exe is refused there — built apps only).
+      async get() {
+        const rest = 'get' + (IS_WIN ? '\t' + esc(tjs.exePath) : '');
+        return (await ask('LOGIN', rest))?.status ?? 'unsupported';
+      },
+      async set(enabled) {
+        const rest = 'set ' + (enabled ? 1 : 0) + (IS_WIN ? '\t' + esc(tjs.exePath) : '');
+        const r = await ask('LOGIN', rest);
+        if (r?.ok === false && r?.error) throw new Error(r.error);
+        return r?.status ?? 'unsupported';
+      },
+    },
+    // Decorate the OS's app surface (Dock / taskbar / launcher). badge('3')
+    // shows a count, badge('') clears it. attention() bounces the Dock icon /
+    // flashes the taskbar button / sets the urgency hint until the app is
+    // activated; { critical: true } keeps going until the user acts.
+    badge(text) { send('BADGE ' + esc(text ?? '')); return true; },
+    attention(opts) { send('ATTENTION ' + (opts?.critical ? 1 : 0)); return true; },
+    // 0..1 draws a bar on the app icon / taskbar button; null (or anything
+    // non-numeric) clears it. Sent as -1 to mean "no bar" so the wire stays
+    // one plain number.
+    progress(value) {
+      const n = value === null || value === undefined ? -1 : Number(value);
+      const wire = Number.isFinite(n) ? Math.max(-1, Math.min(1, n)) : -1;
+      send('PROGRESS ' + wire);
+      return true;
+    },
+    // Keep the system awake (one IOPMAssertion, replaced on each call —
+    // it dies with the process, so a crashed app never wedges sleep,
+    // unlike a spawned `caffeinate`). { display: true } also keeps the
+    // screen on. The reason shows in `pmset -g assertions`.
+    power: {
+      async preventSleep(reason, opts) {
+        const r = await ask('POWER', 'on\t' + (opts?.display ? 1 : 0) + '\t' + esc(reason));
+        return r?.ok === true;
+      },
+      async allowSleep() { return (await ask('POWER', 'off'))?.ok === true; },
+    },
+    // The active app right now: { name, bundleId, pid } | null — who focus
+    // returns to after hide() (pair with paste()).
+    frontmostApp: () => query('frontmost'),
+    // System beep / a sound. `target` is one of the four portable names
+    // ('info' | 'success' | 'alert' | 'error'), a platform sound name
+    // ('Ping' on macOS, 'SystemHand' on Windows, 'bell' on Linux) or an audio
+    // file path. Resolves false if the name/file didn't load — a name from the
+    // wrong platform is a false, not a throw and not silence.
+    async beep() { return (await ask('SOUND'))?.ok === true; },
+    async playSound(target) {
+      const name = SOUND_ALIASES[OS]?.[target] ?? target;
+      return (await ask('SOUND', esc(name)))?.ok === true;
+    },
+    // Now Playing (Control Center / lock screen) + hardware media keys.
+    // set({ title, artist, album, duration, elapsed, playing }) also arms
+    // the media keys — presses arrive as the 'media-key' event / onMediaKey
+    // option with { command: 'play'|'pause'|'toggle'|'next'|'previous'|
+    // 'seek', time? }. clear() tears it down.
+    nowPlaying: {
+      set(info = {}) { send('NOWPLAYING ' + esc(JSON.stringify(info))); return true; },
+      clear() { send('NOWPLAYING clear'); return true; },
+    },
+    // Speak text with a system voice (AVSpeechSynthesizer). voice: a voice
+    // id from voices() or a BCP-47 language ('en-AU'); rate 0..1 (~0.5
+    // default). Resolves when playback FINISHES (false if interrupted).
+    async say(text, { voice, rate } = {}) {
+      return (await ask('SAY', esc(String(text ?? '')) + '\t' + esc(voice ?? '') +
+                        '\t' + (rate ?? 0)))?.ok === true;
+    },
+    stopSpeaking() { send('SAYSTOP'); return true; },
+    // Installed voices: [{ id, name, lang, quality: 'default'|'enhanced'|
+    // 'premium' }]. Enhanced/premium need a one-time download in System
+    // Settings > Accessibility > Spoken Content.
+    async voices() { return (await ask('VOICES'))?.voices ?? []; },
+    // Screenshot a display (id from screens(); default primary) ->
+    // { path (png in the temp dir — the caller owns it), width, height }.
+    // Needs the 'screen' permission and macOS 14+; throws with the reason
+    // otherwise.
+    async captureScreen(screenId) {
+      const r = await ask('CAPTURE', String(screenId ?? 0));
+      if (!r?.ok) throw new Error(r?.error ?? 'capture failed');
+      return { path: r.path, width: r.width, height: r.height };
+    },
+    // The system eyedropper (NSColorSampler) — works across every app and
+    // screen, and needs NO screen-recording permission. Resolves '#rrggbb',
+    // or null if the user cancels (esc).
+    async pickColor() {
+      const r = await ask('PICKCOLOR');
+      if (!r?.ok) throw new Error(r?.error ?? 'unsupported');
+      return r.color;
+    },
+    // A thumbnail png for ANY file type Quick Look understands (PSD, video,
+    // 3D models, …) -> { path (temp png, yours), width, height }. size is
+    // the bounding box in points (rendered @2x).
+    async thumbnail(path, size = 256) {
+      const r = await ask('THUMB', esc(path) + '\t' + (size | 0));
+      if (!r?.ok) throw new Error(r?.error ?? 'no thumbnail');
+      return { path: r.path, width: r.width, height: r.height };
+    },
+    // Keychain-backed secrets (generic passwords under the app id) — the
+    // keytar/safeStorage role. Values survive reinstalls; never store
+    // tokens in tiny.store when this exists. set() replaces rather than
+    // duplicating; delete() of a key that was never there still resolves
+    // true; an unsaved key reads back null, not an error. macOS files the
+    // ACL against the binary that wrote it, so a value saved by `tinyjs
+    // dev` prompts once when the BUILT app first reads it.
+    secrets: {
+      async get(key) {
+        const r = await ask('SECRET', 'get\t' + esc(id || 'tinyjs-app') + '\t' + esc(key));
+        if (!r?.ok) throw new Error(r?.error ?? 'keychain error');
+        return r.value ?? null;
+      },
+      async set(key, value) {
+        const r = await ask('SECRET', 'set\t' + esc(id || 'tinyjs-app') + '\t' + esc(key) + '\t' + esc(String(value)));
+        if (!r?.ok) throw new Error(r?.error ?? 'keychain error');
+        return true;
+      },
+      async delete(key) {
+        const r = await ask('SECRET', 'del\t' + esc(id || 'tinyjs-app') + '\t' + esc(key));
+        if (!r?.ok) throw new Error(r?.error ?? 'keychain error');
+        return true;
+      },
+    },
+    // Touch ID (or the account-password sheet on Macs without it) — "the
+    // user proved it's them". Resolves true/false; false covers cancel.
+    async authenticate(reason) {
+      return (await ask('AUTH', esc(reason ?? 'authenticate')))?.ok === true;
+    },
+    // Run AppleScript in-process (no osascript spawn) — Apple Events hit
+    // Machine state rather than things this app does — mirrors
+    // tiny.system.* in the page, same names both sides.
+    system: {
+      // { percent, charging, plugged, minutesRemaining } | null (on desktops
+      // without a battery).
+      battery: () => query('battery'),
+      // { ssid, bssid, rssi, noise, txRate } | null. ssid/bssid are null
+      // without the Location permission on macOS 14+.
+      wifi: () => query('wifi'),
+      // Seconds since the user's last input, session-wide — pause polling /
+      // dim UI when they walk away.
+      idleTime: async () => (await query('idle'))?.seconds ?? 0,
+      // The user's language preferences and time zone, read from the OS:
+      // { language, languages, system, region, timeZone }.
+      //
+      // `languages` is what the APP should render — on macOS it's filtered to
+      // the localizations the bundle declares. `system` is the raw user
+      // preference, whatever this app happens to speak. They disagree exactly
+      // when you'd want to know: an English-only app on a French Mac.
+      //
+      // A page can already read navigator.language and use Intl; this is for
+      // the BACKEND, which has neither (txiki has no Intl at all) and where
+      // reading LANG would be wrong — Windows has no such variable, and an
+      // inherited one describes the parent process, not the user.
+      locale: () => query('locale'),
+    },
+    // macOS-only: concepts the other OSes don't have at all, so they live in
+    // their own namespace instead of pretending to be portable. Same shape
+    // and same names as tiny.macos.* in the page.
+    macos: {
+      // AppleScript in-process (no osascript spawn). Uses the same
+      // 'automation' TCC permission that permissions.check('automation:…')
+      // covers. Resolves the script result as a string (null if it isn't
+      // text); throws with the script error message.
+      async applescript(source) {
+        const r = await ask('OSA', esc(source));
+        if (!r?.ok) throw new Error(r?.error ?? 'script error');
+        return r.result ?? null;
+      },
+      // Quick Look (the Finder-spacebar preview panel, no qlmanage spawn).
+      // Path or array of paths (arrow keys page through); quickLook() closes.
+      quickLook(paths) {
+        const list = paths == null ? [] : [].concat(paths);
+        send('QUICKLOOK' + (list.length ? ' ' + list.map(esc).join('\t') : ''));
+        return true;
+      },
+      // On-device OCR (Vision, accurate mode) -> { text, blocks: [{ text,
+      // confidence, box }] }; box is normalized 0..1, top-left origin.
+      // Pairs with captureScreen() for screenshot-to-text.
+      async ocr(path) {
+        const r = await ask('OCR', esc(path));
+        if (!r?.ok) throw new Error(r?.error ?? 'ocr failed');
+        return { text: r.text, blocks: r.blocks };
+      },
+      // Record a display to an .mp4 (SCStream → AVAssetWriter). start()
+      // resolves once capture is running; stop() resolves { path, duration }
+      // once the file is finalized. Needs the 'screen' permission + macOS 14;
+      // rejects with the reason. Video only (no audio track yet). One
+      // recording at a time.
+      recorder: {
+        async start({ screenId, path } = {}) {
+          if (!path) throw new Error('recorder.start needs a { path }');
+          const r = await ask('RECORD', 'start ' + (screenId ?? 0) + '\t' + esc(path));
+          if (!r?.ok) throw new Error(r?.error ?? 'record failed');
+          return true;
+        },
+        async stop() {
+          const r = await ask('RECORD', 'stop');
+          if (!r?.ok) throw new Error(r?.error ?? 'record failed');
+          return { path: r.path, duration: r.duration };
+        },
+      },
+      // On-device LLM (Apple's FoundationModels — offline, no API key). Needs
+      // macOS 26 and Apple Intelligence switched on, so check availability
+      // first: 'unsupported' covers both an OS too old and a launcher built
+      // against an SDK that didn't carry the framework.
+      ai: {
+        // 'available' | 'unavailable' (Apple Intelligence off / not downloaded)
+        // | 'unsupported' (older macOS or a non-AI build).
+        async availability() { return (await ask('AI available'))?.status ?? 'unsupported'; },
+        // generate(prompt, { instructions, tools }) -> the completion text;
+        // throws with the reason (incl. 'not built in' where the shim wasn't
+        // compiled).
+        //
+        // tools: [{ name, description, parameters, run }] — the model decides
+        // whether and when to call them; run(args) is your function and its
+        // return value goes back to the model (objects are JSON'd). Backend
+        // tools only for now: run is a real function, so it can't cross the
+        // bridge from a page.
+        //   parameters: { x: 'integer',
+        //                 label: { type: 'string', description: 'why' } }
+        //
+        // With tools this resolves { text, calls } instead of a bare string,
+        // and `calls` is the record to trust. Measured on macOS 26.5: asked
+        // for three tool calls in one turn, the model made all three in ONE
+        // run out of four — and claimed all three in its prose EVERY time,
+        // including the runs where it silently skipped one.
+        async generate(prompt, { instructions, tools } = {}) {
+          aiTools.clear();
+          aiToolCalls.length = 0;
+          const specs = [];
+          for (const t of tools ?? []) {
+            if (!t?.name || typeof t.run !== 'function') continue;
+            aiTools.set(t.name, t);
+            specs.push({ name: t.name, description: t.description ?? t.name,
+                         parameters: t.parameters ?? {} });
+          }
+          const r = await ask('AI generate',
+            esc(String(prompt ?? '')) + '\t' + esc(instructions ?? '') +
+            (specs.length ? '\t' + esc(JSON.stringify(specs)) : ''));
+          const calls = aiToolCalls.slice();
+          aiTools.clear();
+          aiToolCalls.length = 0;
+          if (!r?.ok) throw new Error(r?.error ?? 'generation failed');
+          return specs.length ? { text: r.text, calls } : r.text;
+        },
+      },
+      // The text currently selected in the frontmost app (PopClip-style
+      // popovers) — needs the Accessibility permission. null if nothing is
+      // selected or the app doesn't expose it.
+      selectedText: () => query('selectedtext'),
+      // Every on-screen window of OTHER apps (Rectangle/Magnet territory):
+      // [{ app, bundleId, pid, title, index, x, y, width, height }] in
+      // top-left screen coords. Needs Accessibility; null if not granted.
+      otherWindows: () => query('otherwindows'),
+      // Move + resize another app's frontmost window (pid from otherWindows()
+      // or frontmostApp()), top-left screen coords. Needs Accessibility;
+      // resolves true or throws.
+      async moveWindow(pid, { x, y, width, height } = {}) {
+        const r = await ask('WINCTRL', [pid | 0, x | 0, y | 0, width | 0, height | 0].join('\t'));
+        if (!r?.ok) throw new Error(r?.error ?? 'move failed');
+        return true;
+      },
+    },
+    // Ask the OS to make this app the default opener for a file extension (or
+    // 'folder'). Linux only for now, and deliberately not faked elsewhere:
+    // macOS wants LSSetDefaultRoleHandlerForContentType from the launcher, and
+    // Windows guards the UserChoice key precisely so apps can't do this behind
+    // the user's back — a no-op that resolved true would be a lie on both.
+    //
+    // -> 'ok' | 'unsupported' | 'failed'. Registration must have happened
+    // first (a built app writes its .desktop on first run), since xdg-mime
+    // points a mime at a .desktop that has to exist.
+    async setAsDefaultHandler(ext) {
+      if (!IS_LINUX) return 'unsupported';
+      const appIdStr = id || 'tinyjs-app';
+      const safeId = appIdStr.toLowerCase().replace(/[^a-z0-9.-]/g, '-');
+      const clean = String(ext ?? '').replace(/^\./, '').toLowerCase();
+      if (!clean) return 'failed';
+      // 'folder' is the one non-extension case worth spelling, since it's the
+      // mime a folder-opening app actually needs.
+      const mime = clean === 'folder' ? 'inode/directory'
+                                      : 'application/x-' + safeId + '-' + clean;
+      try {
+        const p = tjs.spawn(['xdg-mime', 'default', appIdStr + '.desktop', mime],
+                            { stdout: 'ignore', stderr: 'ignore' });
+        const st = await p.wait();
+        return st.exit_status === 0 ? 'ok' : 'failed';
+      } catch {
+        return 'failed';   // no xdg-mime on this box
+      }
+    },
+    // Standard per-app directories (data/cache/logs are per app id, not
+    // auto-created — tjs.makeDir(..., { recursive: true }) first write).
+    // Prefer these over hardcoding ~/Library paths.
+    paths: IS_WIN
+      ? {
+          home: tjs.homeDir,
+          data: appDataDir(id),
+          cache: (tjs.env.LOCALAPPDATA || tjs.homeDir + '/AppData/Local') + '/' + (id || 'tinyjs-app') + '/Cache',
+          logs: (tjs.env.LOCALAPPDATA || tjs.homeDir + '/AppData/Local') + '/' + (id || 'tinyjs-app') + '/Logs',
+          temp: tjs.tmpDir,
+          downloads: tjs.homeDir + '/Downloads',
+          desktop: tjs.homeDir + '/Desktop',
+          documents: tjs.homeDir + '/Documents',
+        }
+      : IS_LINUX
+      ? {
+          home: tjs.homeDir,
+          data: appDataDir(id),
+          cache: (tjs.env.XDG_CACHE_HOME || tjs.homeDir + '/.cache') + '/' + (id || 'tinyjs-app'),
+          logs: (tjs.env.XDG_STATE_HOME || tjs.homeDir + '/.local/state') + '/' + (id || 'tinyjs-app'),
+          temp: tjs.tmpDir,
+          downloads: xdgDirs.DOWNLOAD,
+          desktop: xdgDirs.DESKTOP,
+          documents: xdgDirs.DOCUMENTS,
+        }
+      : {
+          home: tjs.homeDir,
+          data: tjs.homeDir + '/Library/Application Support/' + (id || 'tinyjs-app'),
+          cache: tjs.homeDir + '/Library/Caches/' + (id || 'tinyjs-app'),
+          logs: tjs.homeDir + '/Library/Logs/' + (id || 'tinyjs-app'),
+          temp: tjs.tmpDir,
+          downloads: tjs.homeDir + '/Downloads',
+          desktop: tjs.homeDir + '/Desktop',
+          documents: tjs.homeDir + '/Documents',
+        },
+    // Raw launcher read-back (debug/test surface; the page twin is the
+    // 'debug.get' builtin).
+    debug: (what) => query(String(what)),
+    // Persistent settings (see makeStore).
+    store,
+    // System-wide hotkeys; combos like 'cmd+shift+k'. Presses arrive as a
+    // 'hotkey' page event and via the onHotkey option.
+    hotkey: {
+      register(hid, combo) { send('HKREG ' + one(hid) + '\t' + one(combo)); },
+      unregister(hid) { send('HKUNREG ' + one(hid)); },
+    },
+    // Replace the right-click menu: [{ id, label } | { separator: true }].
+    // null/empty restores WebKit's default menu. Clicks: 'contextmenu' event.
+    setContextMenu(items) {
+      if (!items || !items.length) { send('CTXCLEAR'); return; }
+      send('CTXBEGIN');
+      sendItems(items);
+      send('CTXEND');
+    },
+    quit() { send('QUIT'); },
+    // --- multi-window ---------------------------------------------------
+    // Open (or focus) a secondary window. `page` is an html file in your
+    // frontend dir (e.g. 'settings.html') or an absolute path. Each window
+    // runs the same tiny.* bridge; win.* calls from its page target itself.
+    // `size` is the page's box: a frameless window is exactly that big, a
+    // titled one is that plus a title bar.
+    // chrome ({ frame?, windowControls?, windowControlsPos?, transparent?,
+    // vibrancy?, squareCorners?, acceptsFirstMouse?, menu? }) and position ({ x, y }) are
+    // applied BEFORE the window paints — no titlebar flash for frameless
+    // panels, no jump from center, and a window born with chrome.menu:false
+    // never flickers a bar. A new window inherits the app menu (setMenu)
+    // unless it opts out that way or declares its own.
+    // parent: true (= 'main') or a window id keeps this window above that one
+    // — the native owner/transient/child relation, so it stays over its parent
+    // without sitting over other apps the way setLevel('floating') would. It
+    // also minimizes/hides with the parent, closes when the parent closes, and
+    // on Windows/Linux gets no taskbar entry of its own. Open-time only, like
+    // `transparent` — ownership doesn't retrofit on Windows.
+    openWindow(id, { page, title, size, minSize, chrome, x, y, parent } = {}) {
+      let p = String(page ?? 'index.html');
+      if (!isUrl(p) && !isAbs(p)) {
+        if (!frontendDir) throw new Error('win.open needs an absolute page path or URL here');
+        p = frontendDir + '/' + p;
+      }
+      const bit = (v) => (v === undefined ? '' : v ? '1' : '0');
+      const c = chrome ?? {};
+      const vib = c.vibrancy === undefined ? ''
+                : c.vibrancy === null || c.vibrancy === false ? 'none'
+                : String(c.vibrancy);
+      const hasPos = x != null && y != null;
+      const wcp = c.windowControlsPos;
+      send('WINOPEN ' + [one(id), one(p), one(title ?? id), one(size ?? '600x400'),
+                         bit(c.frame), controlsWire(c.windowControls), bit(c.transparent), one(vib),
+                         bit(c.squareCorners), bit(c.acceptsFirstMouse),
+                         hasPos ? (x | 0) : '', hasPos ? (y | 0) : '',
+                         bit(c.menu),
+                         wcp ? `${wcp.x | 0},${wcp.y | 0}` : '',
+                         one(parent === true ? 'main' : parent || '')].join('\t'));
+      // minSize: "WxH" — a floor under user resizes, so a layout with a
+      // natural size can't be shrunk until content falls off the bottom.
+      if (minSize) send('WINOP@' + one(id) + ' minsize ' + one(minSize));
+      // a window BORN at a restored position is the classic stale-coordinates
+      // case — same chase as a first setPosition (armed boots only)
+      if (hasPos) rescueNote(id, 'pos');
+    },
+    // Handle for any window ('main' or a secondary id).
+    window(id) {
+      const t = (cmd, rest) => send(id === 'main'
+        ? cmd + (rest != null ? ' ' + rest : '')
+        : cmd + '@' + id + (rest != null ? ' ' + rest : ''));
+      return {
+        eval: (js) => t('EVAL', esc(js)),
+        push: (event, data) =>
+          t('EVAL', esc('window.__emit && window.__emit(' + JSON.stringify({ event, data }) + ')')),
+        close: () => { if (id !== 'main') send('WINCLOSE ' + one(id)); },
+        setTitle: (v) => t('TITLE', one(v)),
+        setSize: (w2, h2) => t('SIZE', `${w2 | 0} ${h2 | 0}`),
+        setPosition: (x, y) => { t('WINOP', `pos ${x | 0} ${y | 0}`); rescueNote(id, 'pos'); },
+        ensureOnScreen: () => t('WINOP', 'onscreen'),
+        center: () => t('WINOP', 'center'),
+        // hide({ app: false }) orders this window out on its own; a bare
+        // hide() on 'main' still hides the whole app (see app.hide above).
+        hide: (opts) => t('WINOP', opts?.app === false ? 'hidewin' : 'hide'),
+        show: (opts) => { t('WINOP', 'show' + (opts?.activate === false ? ' 0' : '')); rescueNote(id, 'show'); },
+        minimize: () => t('WINOP', 'minimize'),
+        restore: () => t('WINOP', 'restore'),
+        zoom: () => t('WINOP', 'zoom'),
+        fullscreen: () => t('WINOP', 'fullscreen'),
+        setFullscreen: (v) => t('WINOP', 'fullscreen ' + (v ? 1 : 0)),
+        setAlwaysOnTop: (v) => t('WINOP', 'ontop ' + (v ? 1 : 0)),
+        setResizable: (v) => t('WINOP', 'resizable ' + (v ? 1 : 0)),
+        setMinSize: (w, h) => t('WINOP', 'minsize ' + (w | 0) + 'x' + (h | 0)),
+        setZoom: (f) => t('WINOP', 'zoomfactor ' + Number(f || 1)),
+        // Both must name the window: a bare DRAGWIN/RESIZEWIN means 'main', so
+        // a satellite's grip would have moved/resized the deck instead.
+        startDrag: () => t('DRAGWIN'),
+        startResize: (edge) => t('RESIZEWIN', String(edge || 'se')),
+        setClickThrough: (v) => t('WINOP', 'clickthrough ' + (v ? 1 : 0)),
+        setLevel: (level) => t('WINOP', 'level ' + one(level ?? 'normal')),
+        setAllSpaces: (v) => t('WINOP', 'allspaces ' + (v ? 1 : 0)),
+        setChrome(opts = {}) {
+          t('CHROME', chromeWire(opts));
+        },
+        // This window's OWN menu bar, overriding the app menu for it alone.
+        // Same spec shape as app.setMenu, clicks arrive the same way (a plain
+        // `MENU <id>`), so a handler doesn't have to care which bar it came
+        // from. Always addressed as '@<id>' — a bare MENUBEGIN is the app
+        // menu, so 'main' has to name itself to declare a menu of its own.
+        //
+        // macOS has one bar for the whole app, so it swaps this one in while
+        // the window is key and puts the app menu back when it isn't.
+        setMenu: (menus) => sendMenuBlock(menus, id),
+        // Drop the override: back to showing the app menu.
+        resetMenu: () => send('MENURESET@' + id),
+        // Patch an item in THIS window's bar only, leaving other windows'
+        // copies of the same id where they are.
+        updateMenuItem: (mid, patch = {}) => send('MENUUPD@' + id + ' ' + menuUpdWire(mid, patch)),
+        // item@<win>:<id> — this window's copy. (Bare `item:<id>` answers from
+        // whichever window happens to hold one, which is what app.getMenuItem
+        // and the tray/context items still want.)
+        getMenuItem: (mid) => query('item@' + one(id) + ':' + one(mid)),
+        getState: () => query(id === 'main' ? 'win' : 'win:' + id),
+        // This window's own page, on paper or as a PDF file — the print
+        // panel is modal to it, and the PDF is of its document, not the
+        // main window's. tiny.win.print()/printToPDF() in a page land here
+        // for the window that called them.
+        print: () => t('PRINT'),
+        async printToPDF(path) {
+          const r = await ask(id === 'main' ? 'PDF' : 'PDF@' + id, esc(path));
+          if (!r?.ok) throw new Error(r?.error ?? 'pdf failed');
+          return { path: r.path };
+        },
+        // Native share sheet ({ text?, url?, paths? }) anchored at page
+        // coordinates (pass the click's clientX/clientY; 0,0 otherwise).
+        share({ text, url, paths, x, y } = {}) {
+          t('SHARE', [(x | 0) + '', (y | 0) + '', esc(text), esc(url),
+                      ...(paths ?? []).map(esc)].join('\t'));
+          return true;
+        },
+      };
+    },
+    windows: () => query('windows'),
+    // { version: <app>, tinyjs: <framework that built it>, runtime: <txiki> }
+    info: { version, tinyjs: tinyjsVersion, runtime: 'txiki.js ' + tjs.version },
+    // Auto-update (tinyjs.json "update": { "url": "https://…/manifest.json" }).
+    // check() -> { available, current, latest, notes }; install() downloads,
+    // verifies, swaps the .app, relaunches the new version, and quits this
+    // instance. "auto": "launch" | "daily" checks in the background (packaged
+    // apps only) and fires the 'update-available' page event /
+    // onUpdateAvailable export with { current, latest, notes } — wire your
+    // own prompt, then update.install().
+    update: {
+      check: () => checkForUpdate({ url: update?.url, version }),
+      async install() {
+        const bundle = await installUpdate({ url: update?.url, version });
+        relaunch(bundle);
+        setTimeout(() => app.quit(), 250);
+        return true;
+      },
+    },
+    done: null, // filled below
+  };
+
+  // Reserved methods every tinyjs exposes; user API is merged on top but
+  // cannot shadow the win.* namespace.
+  // tiny.fetch — run WHATWG fetch in the backend (a native process, so no
+  // CORS/CSP/mixed-content and no browser Origin) and hand the result to the
+  // page. Small responses come back whole (base64 in the RET); with
+  // { stream: true } the body stays open and the page pulls it chunk-by-chunk
+  // (fetch.pull), so an endless source (internet radio) streams with natural
+  // backpressure and never buffers unbounded. Keyed by the CALLING window plus
+  // the page-supplied id: every page counts f1, f2… from scratch, so a bare id
+  // let two windows' streams collide and one window pull (or cancel) another's
+  // body (#30). Cancelled by fetch.cancel or when the owner window closes.
+  const fetchStreams = new Map(); // '<win>\n<id>' -> { reader, win }
+  const streamKey = (m, id) => (m?.window || 'main') + '\n' + String(id);
+  // tiny.audioTap: one native tap per app; `audioTapOwner` is the window that
+  // started it, so closing that window tears the tap down (like fetchStreams).
+  let audioTapOwner = null;
+  function stopAudioTap() {
+    if (!audioTapOwner) return;
+    send('AUDIOTAP STOP');
+    audioTapOwner = null;
+  }
+  const u8ToB64 = (u8) => {
+    let s = '';
+    for (let i = 0; i < u8.length; i += 0x8000)
+      s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+    return btoa(s);
+  };
+  const b64ToU8 = (str) => {
+    const bin = atob(str);
+    const u8 = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    return u8;
+  };
+  function cancelFetchStream(key) {
+    const s = fetchStreams.get(key);
+    if (!s) return;
+    fetchStreams.delete(key);
+    try { s.reader.cancel(); } catch {}
+  }
+  async function doFetch(p, _a, m) {
+    const init = {};
+    if (p.method) init.method = p.method;
+    if (p.headers) init.headers = p.headers;
+    if (p.redirect) init.redirect = p.redirect;
+    if (p.bodyText != null) init.body = p.bodyText;
+    else if (p.bodyB64 != null) init.body = b64ToU8(p.bodyB64);
+    const res = await globalThis.fetch(String(p.url), init);
+    const headers = {};
+    res.headers.forEach((v, k) => { headers[k] = v; });
+    const head = {
+      ok: res.ok, status: res.status, statusText: res.statusText,
+      url: res.url ?? '', redirected: !!res.redirected, headers,
+    };
+    if (!p.stream) return { ...head, bodyB64: u8ToB64(new Uint8Array(await res.arrayBuffer())) };
+    // The page pulls chunks on demand; keep the reader alive under its id.
+    // A reloaded page reuses ids — drop the stream it left behind first.
+    const key = streamKey(m, p.id);
+    cancelFetchStream(key);
+    fetchStreams.set(key, { reader: res.body.getReader(), win: m?.window || 'main' });
+    return { ...head, streaming: true };
+  }
+  async function pullFetchStream({ id }, _a, m) {
+    const key = streamKey(m, id);
+    const s = fetchStreams.get(key);
+    if (!s) return { done: true };
+    let r;
+    try {
+      r = await s.reader.read();
+    } catch (e) {
+      fetchStreams.delete(key);
+      throw e; // surfaces as an error on the page's ReadableStream
+    }
+    if (r.done) { fetchStreams.delete(key); return { done: true }; }
+    return { done: false, bodyB64: u8ToB64(r.value) };
+  }
+
+  // ── tiny.audio.sampler hub ────────────────────────────────────────────────
+  // One sampled-SFX mixer per app; the bridge owns its state (bank manifest
+  // name→path, master volume, voice-id sequence) whichever backend mixes:
+  // the Linux launcher (native — Web Audio crackles under WebKitGTK) or a
+  // Web Audio host armed in the MAIN window's page on macOS/Windows (always
+  // exists, can't close — see TODO-audio-sampler.md). One state owner means
+  // page calls and backend calls are a single code path, and a main-page
+  // reload on mac/win re-arms the bank from here (playing voices die at
+  // reload — documented). Voice ids are assigned HERE so play() is one
+  // fire-and-forget line to either backend; the bridge can refuse unknown
+  // names itself because it holds the manifest.
+  const sampler = {
+    bank: new Map(),         // name -> absolute path (the decode source of truth)
+    master: 1,
+    seq: 1,
+    pending: new Map(),      // name -> [{ resolve, timer }] awaiting the mac/win host
+  };
+  const smpNum = (v, lo, hi, dflt) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : dflt;
+  };
+  // Inject into the main-window host. The guard makes a line landing before
+  // tiny.js has run (or after a reload wiped the page) a silent no-op — the
+  // client hello replays the bank once the page is back.
+  const smpHost = (js) => send('EVAL ' + esc('window.__tinySampler&&window.__tinySampler.' + js));
+  const smpHostLoad = (name, path) =>
+    smpHost('load(' + JSON.stringify(name) + ',' + JSON.stringify(path) + ')');
+  function samplerResolve(name, result) {
+    const waiters = sampler.pending.get(name);
+    if (!waiters) return;
+    sampler.pending.delete(name);
+    for (const w of waiters) { clearTimeout(w.timer); w.resolve(result); }
+  }
+  // A page hands sampler.load any path, and on mac/win the host reads it back
+  // through sampler.bytes — so without a check that pair reads ANY file the
+  // user can (#28). Only audio passes: an audio extension AND a file that
+  // starts like one — the container magics Web Audio / miniaudio decode
+  // (RIFF/RF64 WAVE, AIFF, CAF, Ogg, FLAC, ID3-tagged or raw MPEG/ADTS
+  // frames, ISO-BMFF m4a/mp4, EBML webm). Magic alone isn't enough: a raw
+  // MPEG sync is just FF Ex, which every UTF-16LE text file (BOM FF FE —
+  // .reg exports, logs) starts with, and `ftyp` is also HEIC photos and
+  // QuickTime movies, so ISO-BMFF must carry an audio-capable brand too.
+  const AUDIO_EXT = /\.(wav|wave|mp3|mpga|m4a|m4b|mp4|aac|adts|ogg|oga|opus|flac|aif|aiff|aifc|caf|webm|weba)$/i;
+  const BMFF_BRANDS = new Set(['M4A ', 'M4B ', 'M4P ', 'mp41', 'mp42', 'isom', 'iso2',
+                               'iso5', 'iso6', 'dash', '3gp4', '3gp5', '3gp6', 'F4A ']);
+  // Files sampler.load(name, bytes) spilled itself: the page already had the
+  // bytes, and they carry no extension, so the read-back check skips them.
+  const samplerSpilled = new Set();
+  async function looksLikeAudio(path) {
+    if (!AUDIO_EXT.test(String(path))) return false;
+    let f;
+    try {
+      f = await tjs.open(path, 'r');
+      const b = new Uint8Array(12);
+      const n = await f.read(b, 0);
+      if (n < 4) return false;
+      const at = (i, str) => [...str].every((c, j) => b[i + j] === c.charCodeAt(0));
+      return ((at(0, 'RIFF') || at(0, 'RF64')) && at(8, 'WAVE')) ||
+        (at(0, 'FORM') && (at(8, 'AIFF') || at(8, 'AIFC'))) ||
+        at(0, 'caff') || at(0, 'OggS') || at(0, 'fLaC') || at(0, 'ID3') ||
+        (b[0] === 0xff && (b[1] & 0xe0) === 0xe0) ||
+        (n >= 12 && at(4, 'ftyp') && BMFF_BRANDS.has(String.fromCharCode(...b.subarray(8, 12)))) ||
+        (b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3);
+    } catch { return false; }
+    finally { f?.close().catch(() => {}); }
+  }
+  // load(name, path | bytes). Bytes are spilled to the cache dir once and
+  // loaded by path from there — the wire never carries sample data, and the
+  // mac/win re-arm can replay the load from the file (binary rules in
+  // TODO-audio-sampler.md).
+  async function samplerLoad(name, source) {
+    name = String(name);
+    let path;
+    if (typeof source === 'string') {
+      path = source;
+      if (!isAbs(path)) path = tjs.cwd + '/' + path;
+      // before the bank entry exists: bytes() reads whatever the bank names
+      if (!(await looksLikeAudio(path))) throw new Error('sampler.load: not an audio file: ' + path);
+    } else {
+      let bytes = source;
+      if (bytes instanceof ArrayBuffer) bytes = new Uint8Array(bytes);
+      else if (ArrayBuffer.isView(bytes)) bytes = new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      if (!(bytes instanceof Uint8Array)) throw new Error('sampler.load: pass a path or an ArrayBuffer');
+      const dir = app.paths.cache + '/sampler';
+      await tjs.makeDir(dir, { recursive: true }).catch(() => {});
+      path = dir + '/' + encodeURIComponent(name);
+      await tjs.writeFile(path, bytes);
+      samplerSpilled.add(path);
+    }
+    if (IS_LINUX) {
+      const r = await ask('SAMPLER', 'LOAD\t' + esc(name) + '\t' + esc(path));
+      if (!r?.ok) throw new Error(r?.error ?? 'sampler: load failed');
+      sampler.bank.set(name, path);
+      return true;
+    }
+    // mac/win: the host decodes and answers back via 'sampler.hostResult'.
+    // The bank entry goes in FIRST so a load racing the main page's boot
+    // still lands: the eval is lost on a page that isn't there yet, but the
+    // client hello that follows replays the whole bank, and the host's
+    // answer resolves this same waiter (pending is keyed by name).
+    sampler.bank.set(name, path);
+    const result = await new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        samplerResolve(name, { ok: false, error: 'sampler: no answer from the main window (is its page loaded?)' });
+      }, 15000);
+      (sampler.pending.get(name) ?? sampler.pending.set(name, []).get(name)).push({ resolve, timer });
+      smpHostLoad(name, path);
+    });
+    if (!result.ok) {
+      sampler.bank.delete(name);
+      throw new Error(result.error ?? 'sampler: decode failed');
+    }
+    return true;
+  }
+  function samplerPlay(name, opts = {}) {
+    name = String(name);
+    if (!sampler.bank.has(name)) throw new Error('sampler: no sound named "' + name + '" (load it first)');
+    const vol = smpNum(opts.vol, 0, 8, 1);
+    const pan = smpNum(opts.pan, -1, 1, 0);
+    const rate = smpNum(opts.rate, 0.0625, 16, 1);
+    const loop = opts.loop ? 1 : 0;
+    const id = sampler.seq++;
+    if (IS_LINUX) {
+      send('SAMPLER PLAY ' + id + '\t' + esc(name) + '\t' + vol + '\t' + pan + '\t' + rate + '\t' + loop);
+    } else {
+      smpHost('play(' + id + ',' + JSON.stringify(name) + ',' + vol + ',' + pan + ',' + rate + ',' + loop + ')');
+    }
+    return id;
+  }
+  function samplerSet(id, patch = {}) {
+    const vol = patch.vol == null ? null : smpNum(patch.vol, 0, 8, null);
+    const pan = patch.pan == null ? null : smpNum(patch.pan, -1, 1, null);
+    const rate = patch.rate == null ? null : smpNum(patch.rate, 0.0625, 16, null);
+    if (IS_LINUX) {
+      send('SAMPLER SET ' + (id | 0) + '\t' + (vol ?? '_') + '\t' + (pan ?? '_') + '\t' + (rate ?? '_'));
+    } else {
+      smpHost('set(' + (id | 0) + ',' + vol + ',' + pan + ',' + rate + ')');
+    }
+  }
+  function samplerStop(id) {
+    if (IS_LINUX) send('SAMPLER STOP ' + (id | 0));
+    else smpHost('stop(' + (id | 0) + ')');
+  }
+  function samplerStopAll() {
+    if (IS_LINUX) send('SAMPLER STOPALL');
+    else smpHost('stopAll()');
+  }
+  function samplerMaster(v) {
+    sampler.master = smpNum(v, 0, 8, 1);
+    if (IS_LINUX) send('SAMPLER MASTER ' + sampler.master);
+    else smpHost('master(' + sampler.master + ')');
+  }
+  function samplerUnload(name) {
+    name = String(name);
+    if (!sampler.bank.delete(name)) return;
+    if (IS_LINUX) send('SAMPLER UNLOAD ' + esc(name));
+    else smpHost('unload(' + JSON.stringify(name) + ')');
+  }
+  // Re-arm the mac/win host: the main page just said hello (first boot or a
+  // reload), so its Web Audio state is blank — replay master + the bank.
+  // Loads still pending resolve off these replays' answers.
+  function samplerRearm() {
+    if (IS_LINUX || (!sampler.bank.size && sampler.master === 1)) return;
+    if (sampler.master !== 1) smpHost('master(' + sampler.master + ')');
+    for (const [name, path] of sampler.bank) smpHostLoad(name, path);
+  }
+  // The host couldn't read the bank file directly (outside the page's
+  // read-access root) — hand it the bytes once, over the call channel. Not
+  // the wire between bridge and launcher, and only on the fallback path;
+  // the fast path stays fetch(file://).
+  async function samplerBytes(name, m) {
+    // host-only: the host lives in the main window's page on mac/win, and
+    // Linux mixes natively (no host to feed)
+    if (IS_LINUX || (m?.window || 'main') !== 'main') throw new Error('sampler.bytes: host-only');
+    const path = sampler.bank.get(String(name));
+    if (!path) throw new Error('sampler: unknown sound');
+    // re-checked at read time: the file can have changed since load()
+    if (!samplerSpilled.has(path) && !(await looksLikeAudio(path)))
+      throw new Error('sampler: not an audio file');
+    return { b64: u8ToB64(await tjs.readFile(path)) };
+  }
+  const samplerVoice = (id) => ({
+    id,
+    set: (patch) => (samplerSet(id, patch), true),
+    stop: () => (samplerStop(id), true),
+  });
+  // Backend-side surface (same mixer, same state as the pages' calls).
+  app.audio = {
+    sampler: {
+      load: (name, source) => samplerLoad(name, source),
+      play: async (name, opts) => samplerVoice(samplerPlay(name, opts)),
+      stop: (id) => (samplerStop(id | 0), true),
+      stopAll: () => (samplerStopAll(), true),
+      master: (v) => (samplerMaster(v), true),
+      unload: (name) => (samplerUnload(name), true),
+    },
+  };
+
+  const builtins = {
+    fetch: doFetch,
+    'fetch.pull': pullFetchStream,
+    'fetch.cancel': async ({ id }, _a, m) => (cancelFetchStream(streamKey(m, id)), true),
+    ping: async () => 'pong',
+    log: async ({ msg }) => (console.log('[web]', msg), true),
+    quit: async () => (app.quit(), true),
+    // win.* calls target the window the page lives in.
+    'win.setTitle': async ({ title: t }, _a, m) => (forWin(m).setTitle(t), true),
+    'win.setSize': async ({ width, height }, _a, m) => (forWin(m).setSize(width, height), true),
+    'win.hide': async (p, _a, m) => (forWin(m).hide(p), true),
+    'win.show': async (p, _a, m) => (forWin(m).show(p), true),
+    'win.center': async (_p, _a, m) => (forWin(m).center(), true),
+    'win.ensureOnScreen': async (_p, _a, m) => (forWin(m).ensureOnScreen(), true),
+    'win.minimize': async (_p, _a, m) => (forWin(m).minimize(), true),
+    'win.fullscreen': async (_p, _a, m) => (forWin(m).fullscreen(), true),
+    'win.setAlwaysOnTop': async ({ enabled }, _a, m) => (forWin(m).setAlwaysOnTop(enabled), true),
+    'win.setResizable': async ({ enabled }, _a, m) => (forWin(m).setResizable(enabled), true),
+    'win.setMinSize': async ({ width, height }, _a, m) => (forWin(m).setMinSize(width, height), true),
+    'win.setZoom': async ({ factor }, _a, m) => (forWin(m).setZoom(factor), true),
+    'win.setClickThrough': async ({ enabled }, _a, m) => (forWin(m).setClickThrough(enabled), true),
+    'win.setLevel': async ({ level }, _a, m) => (forWin(m).setLevel(level), true),
+    'win.setAllSpaces': async ({ enabled }, _a, m) => (forWin(m).setAllSpaces(enabled), true),
+    'macos.selectedText': async () => (macosOnly('selectedText'), app.macos.selectedText()),
+    'macos.otherWindows': async () => (macosOnly('otherWindows'), app.macos.otherWindows()),
+    'macos.moveWindow': async ({ pid, ...rect }) => (macosOnly('moveWindow'), app.macos.moveWindow(pid, rect)),
+    'tray.position': async () => app.tray.position(),
+    'win.printToPDF': async ({ path }, _a, m) => forWin(m).printToPDF(await pdfPathForPage(path, m.origin)),
+    'app.icon': async ({ path }) => app.icon(path),
+    'system.battery': async () => app.system.battery(),
+    'system.wifi': async () => app.system.wifi(),
+    'app.spotlight': async ({ query: q }) => app.spotlight(q),
+    'macos.ai.availability': async () => (macosOnly('ai.availability'), app.macos.ai.availability()),
+    // No `tools` here on purpose: a tool's run() is a real function and can't
+    // cross the bridge from a page. Backend code calls app.macos.ai.generate
+    // directly and keeps its handlers in scope.
+    'macos.ai.generate': async ({ prompt, instructions }) => (macosOnly('ai.generate'), app.macos.ai.generate(prompt, { instructions })),
+    'win.setPosition': async ({ x, y }, _a, m) => (forWin(m).setPosition(x, y), true),
+    'win.open': async ({ id: wid, ...opts }) =>
+      (app.openWindow(wid, { ...opts, page: pageForWindow(opts.page) }), true),
+    'win.close': async ({ id: wid }, _a, m) => {
+      const target = wid ?? m?.window ?? 'main';
+      if (target === 'main') app.quit();
+      else app.window(target).close();
+      return true;
+    },
+    'win.windows': async () => app.windows(),
+    'win.setHideOnClose': async ({ enabled }) => (app.setHideOnClose(enabled), true),
+    'notify': async (params) => notify(params),
+    'app.presence': async ({ mode }) => {
+      if (mode !== 'normal' && mode !== 'menubar')
+        throw new Error("app.presence expects 'normal' or 'menubar', got: " + mode);
+      app.presence(mode);
+      return true;
+    },
+    'menu.set': async ({ menus }) => (app.setMenu(menus), true),
+    'tray.set': async (spec) => (app.tray.set(spec), true),
+    'tray.remove': async () => (app.tray.remove(), true),
+    'update.check': async () => {
+      const { available, current, latest, notes } = await app.update.check();
+      return { available, current, latest, notes };
+    },
+    'update.install': async () => app.update.install(),
+    'win.print': async (_p, _a, m) => (forWin(m).print(), true),
+    'store.get': async ({ key }) => app.store.get(key),
+    'store.set': async ({ key, value }) => app.store.set(key, value),
+    'store.delete': async ({ key }) => app.store.delete(key),
+    'store.all': async () => app.store.all(),
+    'hotkey.register': async ({ id: hid, combo }) => (app.hotkey.register(hid, combo), true),
+    'hotkey.unregister': async ({ id: hid }) => (app.hotkey.unregister(hid), true),
+    // Read the app's (or system's) rendered audio output as PCM chunks
+    // ('audio-tap' events). Gated by the "audioTap" manifest key; the requested
+    // scope must be covered by the declared one.
+    'audioTap.start': async ({ scope = 'app', excludeSelf = false, interval = 80 } = {}, _a, m) => {
+      if (!audioTap)
+        return { ok: false, code: 'not-declared',
+                 message: 'add "audioTap": "app" | "system" to tinyjs.json' };
+      if (scope === 'system' && audioTap !== 'system')
+        return { ok: false, code: 'not-declared',
+                 message: 'system scope requires "audioTap": "system" in tinyjs.json' };
+      const iv = Math.max(20, Math.min(500, interval | 0));
+      const r = await ask('AUDIOTAP', scope + '\t' + (excludeSelf ? 1 : 0) + '\t' + iv);
+      if (r && r.ok) audioTapOwner = m?.window || 'main';
+      return r ?? { ok: false, code: 'failed' };
+    },
+    'audioTap.stop': async () => (stopAudioTap(), true),
+    'menu.setContext': async ({ items }) => (app.setContextMenu(items), true),
+    'menu.update': async ({ id: mid, ...patch }) => (app.updateMenuItem(mid, patch), true),
+    'menu.get': async ({ id: mid }) => app.getMenuItem(mid),
+    // tiny.win.menu.* — the calling window's own bar (see app.window().setMenu).
+    'win.menu.set': async ({ menus }, _a, m) => (forWin(m).setMenu(menus), true),
+    'win.menu.reset': async (_p, _a, m) => (forWin(m).resetMenu(), true),
+    'win.menu.update': async ({ id: mid, ...patch }, _a, m) =>
+      (forWin(m).updateMenuItem(mid, patch), true),
+    'win.menu.get': async ({ id: mid }, _a, m) => forWin(m).getMenuItem(mid),
+    'win.getState': async (_p, _a, m) => forWin(m).getState(),
+    'debug.get': async ({ what }) => query(String(what)),
+    'win.restore': async (_p, _a, m) => (forWin(m).restore(), true),
+    'win.setFullscreen': async ({ enabled }, _a, m) => (forWin(m).setFullscreen(enabled), true),
+    'win.setChrome': async (opts, _a, m) => (forWin(m).setChrome(opts), true),
+    'audio.filters': async ({ filters }) => (app.setAudioFilters(filters), true),
+    'audio.filterSet': async ({ index, filter }) => (app.setAudioFilter(index, filter ?? {}), true),
+    'audio.balance': async ({ value }) => (app.setAudioBalance(value), true),
+    // tiny.audio.sampler (hub above). Pages send a path or the bytes as
+    // base64 — bytes are spilled to the cache dir and loaded by path.
+    'sampler.load': async ({ name, path, bytesB64 }) =>
+      samplerLoad(name, path != null ? String(path) : b64ToU8(String(bytesB64 ?? ''))),
+    'sampler.play': async ({ name, ...opts }) => ({ id: samplerPlay(name, opts) }),
+    'sampler.set': async ({ id, ...patch }) => (samplerSet(id, patch), true),
+    'sampler.stop': async ({ id }) => (samplerStop(id), true),
+    'sampler.stopAll': async () => (samplerStopAll(), true),
+    'sampler.master': async ({ value }) => (samplerMaster(value), true),
+    'sampler.unload': async ({ name }) => (samplerUnload(name), true),
+    // The two host-only calls: the main window's Web Audio host answering a
+    // load, and asking for bytes when the bank file sits outside its
+    // file:// read root.
+    'sampler.hostResult': async ({ name, ok, error }) =>
+      (samplerResolve(String(name), { ok: !!ok, error }), true),
+    'sampler.bytes': async ({ name }, _a, m) => samplerBytes(name, m),
+    // Every page announces itself once tiny.js is up. The main window's
+    // hello doubles as the sampler re-arm signal on mac/win: a reload wiped
+    // the host's decoded bank, so replay it (TODO-audio-sampler.md).
+    'client.hello': async (_p, _a, m) => {
+      if ((m?.window || 'main') === 'main') samplerRearm();
+      return true;
+    },
+    'win.startDrag': async (_p, _a, m) => (forWin(m).startDrag(), true),
+    'win.startResize': async ({ edge } = {}, _a, m) => (forWin(m).startResize(edge), true),
+    'win.zoom': async (_p, _a, m) => (forWin(m).zoom(), true),
+    // Drag files OUT of the window (page must call this from a mousedown,
+    // while the button is still held). files: real paths; image: optional
+    // custom drag-image png (file icons otherwise).
+    'win.dragOut': async ({ files, paths, image }, _a, m) => {
+      const list = files ?? paths ?? [];
+      const win = m?.window || 'main';
+      send((win === 'main' ? 'DRAGOUT' : 'DRAGOUT@' + win) + ' ' +
+           [esc(image), ...list.map(esc)].join('\t'));
+      return true;
+    },
+    'clip.read': async () => app.clipboard.read(),
+    'clip.write': async (data) => app.clipboard.write(data),
+    'clip.changeCount': async () => app.clipboard.changeCount(),
+    'clip.watch': async ({ intervalMs }) => (app.clipboard.watch(intervalMs ?? 500), true),
+    'clip.unwatch': async () => (app.clipboard.unwatch(), true),
+    'app.keystroke': async ({ combo }) => app.keystroke(combo),
+    'app.paste': async () => app.paste(),
+    'perm.check': async ({ name }) => app.permissions.check(name),
+    'perm.request': async ({ name }) => app.permissions.request(name),
+    // Pages get `window` relative to their own window.
+    'app.mouse': async (_p, _a, m) => {
+      const win = m?.window || 'main';
+      return query(win === 'main' ? 'mouse' : 'mouse:' + win);
+    },
+    'theme.get': async () => lastTheme,
+    // Cached from the last SYSLOCALE, so a page that just wants "what is it
+    // now" doesn't pay a round trip; null until the first change.
+    'system.locale': async () => lastLocale ?? query('locale'),
+    'app.info': async () => app.info,
+    'system.info': async () => systemInfo(),
+    'system.capabilities': async (_p, _a, m) => ({
+      ...(await systemCapabilities(query, () => app.macos.ai.availability())),
+      // what the "api" gate denies the CALLING origin (empty when ungated)
+      api: gateInfo(m?.origin),
+    }),
+    'system.requirements': async ({ ids, refresh } = {}) => systemRequirements(ids, refresh),
+    'app.screens': async () => app.screens(),
+    'app.paths': async () => app.paths,
+    'app.setAsDefaultHandler': async ({ ext }) => app.setAsDefaultHandler(ext),
+    'shell.open': async ({ target }) => app.shell.open(target),
+    'shell.reveal': async ({ path }) => app.shell.reveal(path),
+    'shell.trash': async ({ path }) => app.shell.trash(path),
+    'login.get': async () => app.launchAtLogin.get(),
+    'login.set': async ({ enabled }) => app.launchAtLogin.set(enabled),
+    'app.badge': async ({ text }) => app.badge(text ?? ''),
+    'app.attention': async (p) => app.attention(p),
+    'app.progress': async ({ value }) => app.progress(value),
+    'power.prevent': async ({ reason, display }) => app.power.preventSleep(reason, { display }),
+    'power.allow': async () => app.power.allowSleep(),
+    'app.frontmost': async () => app.frontmostApp(),
+    'sound.play': async ({ target }) => (target ? app.playSound(target) : app.beep()),
+    'win.share': async (p, _a, m) => forWin(m).share(p),
+    'system.idleTime': async () => app.system.idleTime(),
+    'macos.quickLook': async ({ paths }) => (macosOnly('quickLook'), app.macos.quickLook(paths)),
+    'app.captureScreen': async ({ screenId }) => app.captureScreen(screenId),
+    'app.pickColor': async () => app.pickColor(),
+    'app.mouseTracking.start': async () => app.mouseTracking.start(),
+    'app.mouseTracking.stop': async () => app.mouseTracking.stop(),
+    'macos.ocr': async ({ path }) => (macosOnly('ocr'), app.macos.ocr(path)),
+    'app.thumbnail': async ({ path, size }) => app.thumbnail(path, size ?? 256),
+    'secrets.get': async ({ key }) => app.secrets.get(key),
+    'secrets.set': async ({ key, value }) => app.secrets.set(key, value),
+    'secrets.delete': async ({ key }) => app.secrets.delete(key),
+    'app.authenticate': async ({ reason }) => app.authenticate(reason),
+    'macos.applescript': async ({ source }) => (macosOnly('applescript'), app.macos.applescript(source)),
+    'macos.recorder.start': async (opts) => (macosOnly('recorder.start'), app.macos.recorder.start(opts)),
+    'macos.recorder.stop': async () => (macosOnly('recorder.stop'), app.macos.recorder.stop()),
+    'nowplaying.set': async (info) => app.nowPlaying.set(info),
+    'nowplaying.clear': async () => app.nowPlaying.clear(),
+    'app.say': async ({ text, voice, rate }) => app.say(text, { voice, rate }),
+    'app.stopSpeaking': async () => app.stopSpeaking(),
+    'app.voices': async () => app.voices(),
+  };
+  const forWin = (m) => app.window(m?.window || 'main');
+  const methods = { ...api, ...builtins };
+  const apiGate = compileApiGate(apiAccess);
+  const subframeGate = compileSubframeGate(apiAccess);
+  // capabilities() reports what the gate denies THE CALLING ORIGIN, so a
+  // page can hide UI for features it would only watch fail.
+  const gateInfo = (origin) => {
+    if (!apiGate) return { gated: false, denied: [] };
+    const names = [...new Set([...Object.keys(methods), ...Object.keys(DIALOG_OPS),
+                               'win.find', 'win.stopFind'])];
+    const g = apiGate.gateFor(origin);
+    return { gated: true, denied: g ? names.filter((m) => !g(m)).sort() : [] };
+  };
+  let lastTheme = null; // { dark } once the launcher reports it (at startup)
+  let lastLocale = null;   // last SYSLOCALE payload
+  let markEof;
+  const eofDone = new Promise((r) => { markEof = () => r({ exit_status: 0 }); });
+
+  async function handleCall(line) {
+    const sp = line.indexOf(' ', 5);
+    const id = line.slice(5, sp);
+    // Call ids are "<windowId>:<seq>" — routing lives inside the id, so
+    // RET lines need no changes and handlers learn who called.
+    const callerWin = id.includes(':') ? id.slice(0, id.indexOf(':')) : 'main';
+    let status = 0;
+    let result;
+    try {
+      // Launcher forwards the bound call's argument array: ["<payload>"] —
+      // plus the calling frame's origin, which every launcher APPENDS, so it
+      // is always the LAST element (engine-attested, not page-claimed).
+      //
+      // Read it by position-from-the-end, never as [1]. On Windows the main
+      // window's RPC rides the webview library's bind(), whose argument array
+      // is whatever the page passed to window.__invoke(...) — so a hostile
+      // wrapped site could pass a second argument of its own and land it
+      // where [1] reads, claiming any origin the manifest trusts and
+      // inheriting that keyhole's grant. That defeats "api".origins on the
+      // very window that hosts the wrapped site. (macOS and Linux build the
+      // two-element array themselves from the message body and were never
+      // exposed; the page's extra arguments now simply sit in the middle and
+      // are ignored.) Found by review 2026-08-06, before any of this shipped.
+      const callArgs = JSON.parse(line.slice(sp + 1));
+      const payload = callArgs[0];
+      const origin = callArgs.length > 1 ? callArgs[callArgs.length - 1] : undefined;
+      // A subframe marker can only sit between payload and origin. On
+      // Windows' main window the page controls that middle, but a marker
+      // there only makes its own call stricter.
+      const subframe = callArgs.length > 2 &&
+        callArgs.slice(1, -1).includes(SUBFRAME_MARK);
+      const { method, params } = JSON.parse(payload);
+
+      // Capability gate FIRST — the dialog and find paths below short-circuit
+      // to the launcher before `methods` is consulted, and they must not slip
+      // past it.
+      if (subframe && !subframeGate(method, origin)) {
+        if (tjs.env.TINYJS_DEBUG) console.log(`tinyjs: denied "${method}" for subframe ${origin ?? 'unknown origin'} (tinyjs.json "api".origins)`);
+        throw new Error(`"${method}" from a subframe (${origin}) needs a tinyjs.json "api".origins key that allows it`);
+      }
+      if (apiGate && !apiGate(method, origin)) {
+        if (tjs.env.TINYJS_DEBUG) console.log(`tinyjs: denied "${method}" for ${origin ?? 'unknown origin'} (tinyjs.json "api")`);
+        throw new Error(`"${method}" is disabled by tinyjs.json "api"`);
+      }
+
+      // Native dialogs: hand the call id to the launcher; it runs the panel
+      // on the UI thread and resolves the page's promise itself.
+      const dlg = DIALOG_OPS[method];
+      if (dlg) {
+        send(`DLG ${id} ${[dlg.op, ...dlg.args(params ?? {})].join('\t')}`);
+        return;
+      }
+
+      // Find-in-page: launcher-answered like dialogs (all three platforms).
+      if (method === 'win.find' || method === 'win.stopFind') {
+        if (method === 'win.find') {
+          const p = params ?? {};
+          send(`FIND ${id} ${[one(p.term), p.forward === false ? '0' : '1', p.matchCase ? '1' : '0'].join('\t')}`);
+        } else {
+          send(`STOPFIND ${id}`);
+        }
+        return;
+      }
+
+      const fn = methods[method];
+      if (!fn) throw new Error('unknown method: ' + method);
+      result = await fn(params ?? {}, app, { window: callerWin, origin });
+    } catch (e) {
+      status = 1;
+      result = String((e && e.message) || e);
+    }
+    send(`RET ${id} ${status} ${JSON.stringify(result === undefined ? null : result)}`);
+  }
+
+  // An app's own event handler must never take the read loop down with it.
+  // The loop is one async IIFE: anything an onX callback threw propagated out
+  // of it, hit the .catch below and called markEof(), leaving the app DEAF —
+  // no further events, no api calls, no store writes, and nothing on screen
+  // to say why. (Measured on Windows 2026-08-01 with a one-line bug in an
+  // app's onWindowClosed: the whole app stopped answering.) A handler's
+  // mistake is now reported and stepped over, whether it throws synchronously
+  // or returns a promise that rejects — an async handler's rejection would
+  // otherwise have been an unhandled rejection nobody sees either.
+  function fire(name, fn, ...args) {
+    if (!fn) return;
+    try {
+      const r = fn(...args);
+      if (r && typeof r.then === 'function')
+        r.then(undefined, (e) => console.log(`tinyjs ${name} handler failed:`, e));
+    } catch (e) {
+      console.log(`tinyjs ${name} handler failed:`, e);
+    }
+  }
+
+  (async () => {
+    const reader = readable.getReader();
+    let buf = '';
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let i;
+      while ((i = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, i);
+        buf = buf.slice(i + 1);
+        dbg('<<', line);
+        if (line.startsWith('CALL ')) handleCall(line);
+        else if (line.startsWith('MENU ')) {
+          const id = line.slice(5);
+          push('menu', { id });
+          fire('onMenu', onMenu, id, app);
+        } else if (line.startsWith('TRAY ')) {
+          const id = line.slice(5);
+          push('tray', { id });
+          fire('onTray', onTray, id, app);
+        } else if (line === 'TRAYCLICK') {
+          push('trayclick', {});
+          fire('onTray', onTray, null, app);
+        } else if (line.startsWith('DROP ')) {
+          // Files dragged onto the window; real filesystem paths.
+          try { push('drop', { paths: JSON.parse(line.slice(5)) }); } catch {}
+        } else if (line.startsWith('HOTKEY ')) {
+          const id = line.slice(7);
+          push('hotkey', { id });
+          fire('onHotkey', onHotkey, id, app);
+        } else if (line.startsWith('AUDIOTAP ')) {
+          // A tap PCM chunk: AUDIOTAP <pcmB64>\t<sampleRate>\t<channels>\t<frames>\t<t>
+          const [pcm, sr, ch, frames, t] = line.slice(9).split('\t');
+          const chunk = { pcm, sampleRate: +sr, channels: +ch, frames: +frames, t: +t };
+          push('audio-tap', chunk);
+          fire('onAudioTap', onAudioTap, chunk, app);
+        } else if (line.startsWith('CTX ')) {
+          const id = line.slice(4);
+          push('contextmenu', { id });
+          fire('onContextMenu', onContextMenu, id, app);
+        } else if (line.startsWith('SYSLOCALE ')) {
+          let info = null;
+          try { info = JSON.parse(line.slice(10)); } catch {}
+          if (info) {
+            lastLocale = info;
+            push('locale', info);
+            fire('onLocale', onLocale, info, app);
+          }
+        } else if (line.startsWith('SYS ')) {
+          const [kind, value] = line.slice(4).split(' ');
+          if (kind === 'theme') {
+            lastTheme = { dark: value === 'dark' };
+            push('theme', lastTheme);
+          } else {
+            push(kind, {}); // 'sleep' | 'wake'
+          }
+          fire('onSystem', onSystem, kind, value ?? null, app);
+        } else if (line.startsWith('AITOOL ')) {
+          // The model wants a tool run. The launcher thread that asked is
+          // BLOCKED until we answer, so answer on every path — including a
+          // handler that throws or a name we don't know.
+          const sp = line.indexOf(' ', 7);
+          const id = line.slice(7, sp);
+          const [rawName, rawArgs] = line.slice(sp + 1).split('\t');
+          const name = unesc(rawName);
+          let args = {};
+          try { args = JSON.parse(unesc(rawArgs ?? '{}')); } catch {}
+          (async () => {
+            const tool = aiTools.get(name);
+            let result;
+            try {
+              result = tool ? await tool.run(args) : { error: 'no such tool: ' + name };
+            } catch (e) {
+              // The model copes with an error string far better than with a
+              // silence, and it sometimes recovers by calling something else.
+              result = { error: String(e?.message ?? e) };
+            }
+            aiToolCalls.push({ name, args, result });
+            send('AITOOLRESULT ' + id + ' ' +
+                 esc(typeof result === 'string' ? result : JSON.stringify(result ?? null)));
+          })();
+        } else if (line.startsWith('GOT ')) {
+          const sp = line.indexOf(' ', 4);
+          const resolve = pendingGets.get(line.slice(4, sp));
+          if (resolve) {
+            pendingGets.delete(line.slice(4, sp));
+            let v = null;
+            try { v = JSON.parse(line.slice(sp + 1)); } catch {}
+            resolve(v);
+          }
+        } else if (line.startsWith('CLIPCHANGE ')) {
+          const [count, selfFlag] = line.slice(11).split(' ');
+          const info = { changeCount: parseInt(count, 10), self: selfFlag === '1' };
+          push('clipboard-change', info);
+          fire('onClipboardChange', onClipboardChange, info, app);
+        } else if (line.startsWith('WINCLOSED ')) {
+          const id = line.slice(10);
+          // Tear down any streaming tiny.fetch the closed window still owns.
+          for (const [sid, s] of fetchStreams) if (s.win === id) cancelFetchStream(sid);
+          // …and the audio tap, if this was the window that started it.
+          if (audioTapOwner === id) stopAudioTap();
+          push('window-closed', { id });
+          fire('onWindowClosed', onWindowClosed, id, app);
+        } else if (line.startsWith('WINSTATE ')) {
+          // Launcher-side deduped snapshot ({ fullscreen, maximized,
+          // minimized, focused }) — fires on transitions from ANY cause:
+          // green button / View menu / F11 / a programmatic setFullscreen.
+          const sp = line.indexOf(' ', 9);
+          if (sp !== -1) {
+            let st = null;
+            try { st = JSON.parse(line.slice(sp + 1)); } catch {}
+            if (st) {
+              const info = { win: line.slice(9, sp), ...st };
+              push('window-state', info);
+              fire('onWindowState', onWindowState, info, app);
+            }
+          }
+        } else if (line.startsWith('NOTIFYCLICK ')) {
+          const id = line.slice(12);
+          push('notification-click', { id });
+          fire('onNotificationClick', onNotificationClick, id, app);
+        } else if (line.startsWith('NOTIFYACTION ')) {
+          const [id, action, reply] = line.slice(13).split('\t');
+          const info = { id, action, reply: unesc(reply ?? '') };
+          push('notification-action', info);
+          fire('onNotificationAction', onNotificationAction, info, app);
+        } else if (line.startsWith('MEDIAKEY ')) {
+          const [command, secs] = line.slice(9).split('\t');
+          const info = { command, time: secs != null ? +secs : undefined };
+          push('media-key', info);
+          fire('onMediaKey', onMediaKey, info, app);
+        } else if (line.startsWith('OPENURL ')) {
+          // Deep link (custom URL scheme; packaged .app only).
+          const url = line.slice(8);
+          push('open-url', { url });
+          fire('onOpenUrl', onOpenUrl, url, app);
+        } else if (line.startsWith('OPENFILES ')) {
+          // "Open With" / Dock drop / file association (packaged .app only).
+          try {
+            const paths = JSON.parse(line.slice(10));
+            push('open-files', { paths });
+            fire('onOpenFiles', onOpenFiles, paths, app);
+          } catch {}
+        } else if (line.startsWith('NAVQ ')) {
+          // Navigation policy ask: NAVQ <qid> <winid>\t<url>\t<frame>.
+          // The launcher holds the webview's decision handler, so answer
+          // promptly. Main-frame http(s): an app with no onNavigate (or one
+          // that returns nothing) allows; the launcher allows after 400ms.
+          // Any other scheme (mailto:, ms-settings:, someapp://…, in any
+          // frame — #30): only 'external' hands it to the OS; no handler or
+          // no verdict denies, and the launcher denies after 400ms. frame is
+          // main|sub, or empty where the engine can't tell (older launchers
+          // send none: those only ever asked about the main frame).
+          const sp = line.indexOf(' ', 5);
+          const qid = line.slice(5, sp);
+          const [win, navUrl, frame] = line.slice(sp + 1).split('\t');
+          const web = /^(https?|file|about|data|blob):/i.test(navUrl ?? '');
+          const isMainFrame = frame === undefined || frame === 'main' ? true : frame === 'sub' ? false : null;
+          (async () => {
+            let verdict = web ? 'allow' : 'deny';
+            if (onNavigate) {
+              try {
+                const r = await onNavigate({ window: win, url: navUrl, kind: 'policy', isMainFrame }, app);
+                if (r === 'deny' || r === 'external') verdict = r;
+              } catch (e) {
+                console.log('tinyjs onNavigate policy failed:', e);
+              }
+            }
+            send(`NAVR ${qid} ${verdict}`);
+          })();
+        } else if (line.startsWith('NAV ')) {
+          // Navigation lifecycle: {window, kind: start|commit|finish|fail|crash,
+          // url, error?} — the raw material for loading / offline / crashed UI.
+          let info = null;
+          try { info = JSON.parse(line.slice(4)); } catch {}
+          if (info) {
+            push('navigate', info);
+            fire('onNavigate', onNavigate, info, app);
+          }
+        } else if (line.startsWith('DOWNLOAD ')) {
+          // {id, url, filename, path, state: started|done|failed|denied|cancelled, error?}
+          let info = null;
+          try { info = JSON.parse(line.slice(9)); } catch {}
+          if (info) {
+            push('download', info);
+            fire('onDownload', onDownload, info, app);
+          }
+        } else if (line.startsWith('POPUPQ ')) {
+          // window.open policy ask: POPUPQ <qid> <popupid|->\t<opener>\t<url>\t<mode>.
+          // In "window" mode the popup already exists (hidden, loading) under
+          // <popupid>; the verdict shows or closes it. Elsewhere only
+          // 'external'/'deny' can be honored — the webview had to be returned
+          // (or not) synchronously. Unanswered after 400ms = configured mode.
+          const sp = line.indexOf(' ', 7);
+          const qid = line.slice(7, sp);
+          const [pid, opener, popUrl, mode] = line.slice(sp + 1).split('\t');
+          (async () => {
+            let verdict = mode;
+            if (onWindowOpen) {
+              try {
+                const r = await onWindowOpen({ window: pid === '-' ? null : pid, opener, url: popUrl, kind: 'policy', mode }, app);
+                if (r === 'window' || r === 'external' || r === 'deny') verdict = r;
+              } catch (e) {
+                console.log('tinyjs onWindowOpen policy failed:', e);
+              }
+            }
+            send(`POPUPR ${qid} ${verdict}`);
+          })();
+        } else if (line.startsWith('POPUP ')) {
+          // window.open / target=_blank was resolved: {window, url, action}.
+          // action 'window' means a real popup window exists under that id
+          // (app.window(id).close() still works to veto later).
+          let info = null;
+          try { info = JSON.parse(line.slice(6)); } catch {}
+          if (info) {
+            push('popup', info);
+            fire('onWindowOpen', onWindowOpen, { ...info, kind: 'open' }, app);
+          }
+        }
+      }
+    }
+    markEof();
+  })().catch((e) => { console.log('tinyjs read loop error:', e); markEof(); });
+
+  // Attach mode has no child process: done = the launcher closing the socket.
+  app.done = proc
+    ? proc.wait().then(async (st) => {
+        await cleanup();
+        return st;
+      })
+    : eofDone;
+
+  // Attach mode: the launcher booted with plist defaults; apply the app's
+  // configured title/size now.
+  if (attachPath) {
+    app.setTitle(title);
+    const [w, h] = String(size).split('x').map((n) => parseInt(n, 10));
+    if (w && h) app.setSize(w, h);
+  }
+  // Chrome from tinyjs.json. Packaged apps already applied it from the plist
+  // (flash-free); re-sending is idempotent. Dev applies it here.
+  if (chrome && !attachPath) app.setChrome(chrome);
+
+  // contextMenu:false in the manifest suppresses WebKit's default right-click
+  // menu (Reload/Back/Inspect Element…). A custom setContextMenu() still wins.
+  if (contextMenu === false) send('CTXSUPPRESS 1');
+
+  // about:'menu' turns the macOS About item into a plain menu click — the
+  // launcher sends `MENU about`, so it lands in onMenu('about') and the page
+  // 'menu' event like any other item ('about' is a reserved id). Windows and
+  // Linux have no default About item, so there's nothing to hook there.
+  if (about === 'menu' && !IS_WIN && !IS_LINUX) send('ABOUTHOOK 1');
+
+  // A clipboard handler implies watching; apps needing a custom interval can
+  // call app.clipboard.watch(ms) on top (idempotent).
+  if (onClipboardChange) app.clipboard.watch();
+
+  // --- files named on the command line ------------------------------------
+  // A CLI shim is just `exec <exe> "$@"`, so argv is where documents arrive
+  // when an app is started from a terminal — on every platform, and before
+  // LaunchServices or the .desktop handler get a look in.
+  //
+  // tjs.args is [argv0, ...user args] in a built app. Flags are skipped and
+  // relative paths resolved against the cwd the user typed them in; anything
+  // that isn't an existing path is dropped rather than guessed at, so
+  // `myapp --verbose` doesn't hand the app a document called "--verbose".
+  async function argvPaths() {
+    const out = [];
+    for (const a of tjs.args.slice(1)) {
+      if (!a || a.startsWith('-')) continue;
+      const abs = isAbs(a) ? a : tjs.cwd + '/' + a;
+      if (await exists(abs)) out.push(abs);
+    }
+    return out;
+  }
+  // Documents named on the command line are a packaged-app feature (a CLI
+  // shim `exec <exe> "$@"`, LaunchServices, file associations). In dev the
+  // backend is spawned as `tjs run entry.js`, so parsing tjs.args there hands
+  // the page an open-files event whose "document" is the entry module itself
+  // — every dev launch, on every platform (#32).
+  const cliPaths = (await bundlePath()) ? await argvPaths() : [];
+
+  // --- Windows/Linux: single instance + deep links / file associations -----
+  // Built apps only (macOS gets all of this from LaunchServices + the plist).
+  // The app listens on \\.\pipe\tinyjs-app-<id>-<user> (Windows) or
+  // $XDG_RUNTIME_DIR/tinyjs-app-<id>.sock (Linux); `launcher --open` (the
+  // registered protocol/extension handler) forwards URLs and file paths
+  // over it, starting the app first when needed. A second direct launch of
+  // the exe detects the pipe, activates the running instance, and exits.
+  if ((IS_WIN || IS_LINUX) && (await bundlePath())) {
+    // Windows pipe names are one machine-wide namespace, so the user is part
+    // of the name (two users on one box each get their own instance). That
+    // name is guessable, so it's no defence on its own: the launcher locks
+    // the pipe's DACL to this user once we own it, and a hand-off only goes
+    // to a pipe whose server runs as this user (#29.2, the #12 twin).
+    const instPipe = IS_WIN
+      ? '\\\\.\\pipe\\tinyjs-app-' + (id || 'tinyjs-app') + '-' +
+        String(tjs.system.userInfo.userName ?? '').replace(/[^\w.-]/g, '_')
+      : await linuxInstanceSock(id || 'tinyjs-app');
+    const handoffExe = exeDir + 'launcher.exe';
+    let haveInstancePipe = false;
+    // Relaunched by an update: the instance that spawned us still owns the
+    // pipe until it finishes quitting, and handing off to it would leave no
+    // app running at all. Poll (connect, then hang up without a message —
+    // the owner ignores an empty connection) until it lets go. Each probe is
+    // capped: a pipe whose owner is mid-exit can make connect wait 30 s
+    // (measured, libuv's WaitNamedPipe). Past the deadline the old one is
+    // stuck, and the ordinary hand-off below at least activates it.
+    if (instPipe && tjs.args.includes(RELAUNCH_FLAG)) {
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        const probe = tjs.connect('pipe', instPipe)
+          .then(async (c) => { await c.opened; c.close(); return true; }, () => false);
+        const owned = await Promise.race([probe, new Promise((r) => setTimeout(() => r(true), 500))]);
+        if (!owned) break;
+        await new Promise((r) => setTimeout(r, 50));
+      }
+    }
+    let squatted = false;
+    if (instPipe) try {
+      const conn = await tjs.connect('pipe', instPipe);
+      const { writable } = await conn.opened;
+      // Carry the argv documents over: the running instance opens them, which
+      // is what `myapp notes.md` should do whether or not the app is already
+      // up. The receiving end already understands `paths`.
+      const msg = JSON.stringify(
+        cliPaths.length ? { activate: true, paths: cliPaths } : { activate: true });
+      if (IS_WIN) {
+        // Something answers — hang up unsent (the owner ignores an empty
+        // connection) and let the launcher deliver, since only it can ask
+        // who the server is. 0 = handed over, 2 = not this user's pipe.
+        conn.close();
+        const st = await tjs.spawn([handoffExe, '--handoff', instPipe, msg],
+          { stdin: 'ignore', stdout: 'ignore', stderr: 'ignore' }).wait();
+        if (st.exit_status === 0) tjs.exit(0);
+        if (st.exit_status === 2) squatted = true;
+      } else {
+        const w = writable.getWriter();
+        await w.write(enc.encode(msg + '\n'));
+        tjs.exit(0); // another instance owns the app — hand over
+      }
+    } catch {}
+    if (squatted) {
+      console.log(`tinyjs: ${instPipe} is held by another user — single instance and URL/file handoff are off`);
+    }
+    // A unix socket left by a crashed instance blocks listen() — nothing
+    // answered above, so it's stale; clear it. (Windows pipes need no cleanup.)
+    if (IS_LINUX && instPipe) await tjs.remove(instPipe).catch(() => {});
+    if (instPipe && !squatted) try {
+      const srv = await tjs.listen('pipe', instPipe);
+      const srvInfo = await srv.opened;
+      // the socket comes out umask-wide; the dir around it is already 0700
+      // (#12), this is belt and braces
+      if (IS_LINUX) await tjs.chmod(instPipe, 0o600).catch(() => {});
+      // libuv creates the pipe with the default DACL (Everyone + Anonymous
+      // may connect read-only) and keeps no handle we can reach; the launcher
+      // re-ACLs it to this user + SYSTEM, network denied — later instances
+      // libuv creates inherit that.
+      if (IS_WIN) send('PIPELOCK ' + instPipe);
+      haveInstancePipe = true;
+      (async () => {
+        const acceptReader = srvInfo.readable.getReader();
+        for (;;) {
+          const { value: sock, done } = await acceptReader.read();
+          if (done) break;
+          (async () => {
+            const { readable: r } = await sock.opened;
+            const rd = r.getReader();
+            let buf = '';
+            for (;;) {
+              const { value, done: d } = await rd.read();
+              if (d) break;
+              buf += dec.decode(value, { stream: true });
+            }
+            for (const line of buf.split('\n')) {
+              if (!line.trim()) continue;
+              let msg = null;
+              try { msg = JSON.parse(line); } catch { continue; }
+              app.show();
+              if (msg.url) {
+                push('open-url', { url: msg.url });
+                fire('onOpenUrl', onOpenUrl, msg.url, app);
+              } else if (msg.paths?.length) {
+                push('open-files', { paths: msg.paths });
+                fire('onOpenFiles', onOpenFiles, msg.paths, app);
+              }
+            }
+          })().catch(() => {});
+        }
+      })();
+    } catch {}
+
+    // --- Linux registration: a .desktop entry (app menu, window icon
+    // matching via StartupWMClass) written on first run — idempotent file
+    // writes under $XDG_DATA_HOME, no root. urlScheme becomes an
+    // x-scheme-handler MimeType (+ xdg-mime default); fileExtensions get
+    // glob'd mime types via a shared-mime-info package. Failures are silent:
+    // a sandboxed/odd session still runs the app, just unregistered.
+    if (IS_LINUX && haveInstancePipe) {
+      try {
+        const dataHome = tjs.env.XDG_DATA_HOME || tjs.homeDir + '/.local/share';
+        const appIdStr = id || 'tinyjs-app';
+        const openCmd = '"' + exeDir + 'launcher" --open ' + instPipe + ' "' + tjs.exePath + '" %u';
+        let iconLine = '';
+        if (await exists(exeDir + 'icon.png')) iconLine = 'Icon=' + exeDir + 'icon.png\n';
+        else if (pagePath && (await exists(dirOf(dirOf(pagePath)) + '/icon.png'))) {
+          iconLine = 'Icon=' + dirOf(dirOf(pagePath)) + '/icon.png\n';
+        }
+        const mimes = [];
+        for (const scheme of urlScheme ? [].concat(urlScheme) : []) {
+          mimes.push('x-scheme-handler/' + scheme);
+        }
+        // A folder isn't a file type with an extension — it's one fixed mime,
+        // so it needs no shared-mime-info XML of its own.
+        if (openFolders) mimes.push('inode/directory');
+        if (fileExtensions?.length) {
+          const safeId = appIdStr.toLowerCase().replace(/[^a-z0-9.-]/g, '-');
+          let xml = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+            '<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">\n';
+          for (const ext of fileExtensions) {
+            const e = String(ext).replace(/^\./, '');
+            const mt = 'application/x-' + safeId + '-' + e.toLowerCase();
+            mimes.push(mt);
+            xml += `  <mime-type type="${mt}"><comment>${title} document</comment><glob pattern="*.${e}"/></mime-type>\n`;
+          }
+          xml += '</mime-info>\n';
+          await tjs.makeDir(dataHome + '/mime/packages', { recursive: true });
+          await tjs.writeFile(dataHome + '/mime/packages/' + safeId + '.xml', enc.encode(xml));
+          tjs.spawn(['update-mime-database', dataHome + '/mime'],
+                    { stdout: 'ignore', stderr: 'ignore' }).wait().catch(() => {});
+        }
+        const desktop = '[Desktop Entry]\nType=Application\nName=' + title +
+          '\nExec=' + openCmd + '\n' + iconLine +
+          'Terminal=false\nStartupWMClass=' + appIdStr + '\n' +
+          (mimes.length ? 'MimeType=' + mimes.join(';') + ';\n' : '');
+        await tjs.makeDir(dataHome + '/applications', { recursive: true });
+        await tjs.writeFile(dataHome + '/applications/' + appIdStr + '.desktop', enc.encode(desktop));
+        tjs.spawn(['update-desktop-database', dataHome + '/applications'],
+                  { stdout: 'ignore', stderr: 'ignore' }).wait().catch(() => {});
+        for (const scheme of urlScheme ? [].concat(urlScheme) : []) {
+          tjs.spawn(['xdg-mime', 'default', appIdStr + '.desktop', 'x-scheme-handler/' + scheme],
+                    { stdout: 'ignore', stderr: 'ignore' }).wait().catch(() => {});
+        }
+      } catch {}
+    }
+
+    // Registration (idempotent HKCU writes; no admin). The handler command
+    // is the launcher's --open mode pointing at this exe + instance pipe.
+    if (IS_WIN && haveInstancePipe && (urlScheme || fileExtensions?.length)) {
+      const launcherExe = exeDir + 'launcher.exe';
+      const openCmd = '"' + launcherExe + '" --open ' + instPipe + ' "' + tjs.exePath + '" "%1"';
+      const reg = (args) => tjs.spawn(hiddenArgv(['reg', 'add', ...args, '/f']),
+        { stdout: 'ignore', stderr: 'ignore' }).wait().catch(() => {});
+      const CLS = 'HKCU\\Software\\Classes\\';
+      for (const scheme of urlScheme ? [].concat(urlScheme) : []) {
+        await reg([CLS + scheme, '/ve', '/d', 'URL:' + title]);
+        await reg([CLS + scheme, '/v', 'URL Protocol', '/d', '']);
+        await reg([CLS + scheme + '\\DefaultIcon', '/ve', '/d', tjs.exePath + ',0']);
+        await reg([CLS + scheme + '\\shell\\open\\command', '/ve', '/d', openCmd]);
+      }
+      if (fileExtensions?.length) {
+        const progid = 'tinyjs.' + (id || 'tinyjs-app');
+        await reg([CLS + progid, '/ve', '/d', title]);
+        await reg([CLS + progid + '\\DefaultIcon', '/ve', '/d', tjs.exePath + ',0']);
+        await reg([CLS + progid + '\\shell\\open\\command', '/ve', '/d', openCmd]);
+        for (const ext of fileExtensions) {
+          await reg([CLS + '.' + String(ext).replace(/^\./, '') + '\\OpenWithProgIds',
+                     '/v', progid, '/d', '']);
+        }
+      }
+    }
+  }
+
+  // Documents from argv, delivered the same way the OS handlers deliver
+  // theirs. The backend hook is the reliable half: onOpenFiles fires here and
+  // now. The page event is best-effort, exactly like OPENFILES from
+  // LaunchServices — there's no page-loaded signal to wait for, so a page that
+  // wants cold-start files should register its handler in its first script,
+  // or read them from the backend instead.
+  if (cliPaths.length) {
+    push('open-files', { paths: cliPaths });
+    fire('onOpenFiles', onOpenFiles, cliPaths, app);
+  }
+
+  // Background update checks ("update": { "auto": "launch" | "daily" }).
+  // Packaged apps only — dev processes have no bundle to update, and their
+  // 0.0.0 version would flag every manifest as "available". Failures are
+  // silent (offline is normal); the app decides the prompt UX.
+  const auto = update?.auto;
+  if ((auto === 'launch' || auto === 'daily') && update?.url && (await bundlePath())) {
+    const autoCheck = async () => {
+      try {
+        const r = await app.update.check();
+        if (!r.available) return;
+        const info = { current: r.current, latest: r.latest, notes: r.notes ?? null };
+        push('update-available', info);
+        fire('onUpdateAvailable', onUpdateAvailable, info, app);
+      } catch {}
+    };
+    setTimeout(autoCheck, 5000); // let the window come up first
+    if (auto === 'daily') setInterval(autoCheck, 24 * 60 * 60 * 1000);
+  }
+
+  return app;
+}

@@ -24,7 +24,7 @@ import { webcrypto } from "node:crypto";
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("darkroom-import");
-const exportImportSource = read("app/features/export-import.js");
+const exportImportSource = read("app/features/export-import.js") + "\n" + read("app/features/project-backup-export-data.js");
 
 function makeImportContext() {
   const keyval = new Map();

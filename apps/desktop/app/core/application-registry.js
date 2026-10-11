@@ -707,12 +707,32 @@ const applicationLifecycles = new Map();
 function registerApplicationLifecycle(appId, handlers = {}) {
   const id = String(appId || "").trim();
   if (!id) throw new TypeError("Application lifecycle requires an app id.");
+  // W05: the vendored lane contract is lazy; ask for it now and upgrade this
+  // record (and any earlier lane-less ones) when it arrives. Until then the
+  // legacy hook path below keeps working — the upgrade is behavior-preserving.
+  if (!window.ClioWorksUnifiedContracts && typeof ensureUnifiedSpecContractsModule === "function") {
+    ensureUnifiedSpecContractsModule()
+      .then(() => upgradeLifecycleLanes())
+      .catch(() => {});
+  }
   const hook = (name) => (typeof handlers[name] === "function" ? handlers[name] : null);
-  // Re-registering (a module reloaded, an app rebuilt after dispose) starts
-  // the app active again — dispose is never the resting state of a live app.
+  // ClioWorks unified spec (W05): each application instance carries its own
+  // lifecycle lane (the vendored reference contract createLifecycleLane).
+  // One lane per app means a slow suspend never blocks another application's
+  // transitions, and a fast suspend→resume flip during one hook's await
+  // converges: after the hook settles, the lane re-reads the LATEST desired
+  // state and continues toward it, instead of the stale transition winning.
+  const lane = window.ClioWorksUnifiedContracts?.createLifecycleLane
+    ? window.ClioWorksUnifiedContracts.createLifecycleLane({
+        suspend: async () => { await hook("onSuspend")?.({ appId: id, reason: pendingReasons.get(id) || "" }); },
+        resume: async () => { await hook("onResume")?.({ appId: id, reason: pendingReasons.get(id) || "" }); },
+        dispose: async () => { await hook("onDispose")?.({ appId: id, reason: pendingReasons.get(id) || "" }); },
+      }, "active")
+    : null;
   const record = {
     id,
     state: "active",
+    lane,
     onSuspend: hook("onSuspend"),
     onResume: hook("onResume"),
     onDispose: hook("onDispose"),
@@ -721,6 +741,51 @@ function registerApplicationLifecycle(appId, handlers = {}) {
   return () => {
     if (applicationLifecycles.get(id) === record) applicationLifecycles.delete(id);
   };
+}
+
+// The reason a drive was requested with, consumed by whichever hook run the
+// lane performs for it (a queued drive overwrites it — the last request's
+// reason is what the settling hook should see).
+const pendingReasons = new Map();
+
+/** Attach lanes to records registered before the lazy contract arrived.
+ * Behavior-preserving: a record already driving through runApplicationLifecycle
+ * Hook switches to the lane mid-flight safely, because both paths converge on
+ * the same hooks and the lane starts from the record's CURRENT state. */
+function upgradeLifecycleLanes() {
+  const contract = window.ClioWorksUnifiedContracts;
+  if (!contract?.createLifecycleLane) return;
+  for (const record of applicationLifecycles.values()) {
+    if (record.lane) continue;
+    record.lane = contract.createLifecycleLane({
+      suspend: async () => { await record.onSuspend?.({ appId: record.id, reason: pendingReasons.get(record.id) || "" }); },
+      resume: async () => { await record.onResume?.({ appId: record.id, reason: pendingReasons.get(record.id) || "" }); },
+      dispose: async () => { await record.onDispose?.({ appId: record.id, reason: pendingReasons.get(record.id) || "" }); },
+    }, record.state === "active" ? "active" : record.state === "suspended" ? "suspended" : "disposed");
+  }
+}
+
+/** Drive one app's lane toward the desired state. Returns the lane's promise
+ * when the vendored contract is available, so failures stay per-app. */
+async function driveLifecycleLane(record, nextState, reason) {
+  pendingReasons.set(record.id, String(reason || ""));
+  if (record.lane) {
+    try {
+      await record.lane.setDesired(nextState);
+      // The lane may have converged through MORE than one transition (a
+      // suspend→resume flip while the first hook was in flight), so the
+      // record's settled state is whatever the lane actually reached.
+      record.state = record.lane.snapshot().actual;
+      return true;
+    } catch (error) {
+      // The lane rejects all current waiters on a hook failure; the record's
+      // state stays at the last settled value and future transitions retry.
+      console.warn(`Application ${record.id} transition to ${nextState} failed.`, error);
+      record.state = record.lane.snapshot().actual;
+      return false;
+    }
+  }
+  return runApplicationLifecycleHook(record, nextState === "suspended" ? "onSuspend" : nextState === "active" ? "onResume" : "onDispose", nextState, reason);
 }
 
 function getApplicationLifecycleState(appId) {
@@ -744,14 +809,19 @@ async function runApplicationLifecycleHook(record, hookName, nextState, reason) 
 
 async function suspendApplication(appId, reason = "") {
   const record = applicationLifecycles.get(String(appId || ""));
-  if (!record || record.state !== "active") return false;
-  return runApplicationLifecycleHook(record, "onSuspend", "suspended", reason);
+  if (!record || record.state === "disposed") return false;
+  // A settled no-op stays free: suspending an already-suspended (and not
+  // mid-transition) app runs nothing. Mid-flight (lane running) requests go
+  // through — the lane converges them (W05).
+  if (record.state === "suspended" && !(record.lane && record.lane.snapshot().running)) return false;
+  return driveLifecycleLane(record, "suspended", reason);
 }
 
 async function resumeApplication(appId, reason = "") {
   const record = applicationLifecycles.get(String(appId || ""));
-  if (!record || record.state !== "suspended") return false;
-  return runApplicationLifecycleHook(record, "onResume", "active", reason);
+  if (!record || record.state === "disposed") return false;
+  if (record.state === "active" && !(record.lane && record.lane.snapshot().running)) return false;
+  return driveLifecycleLane(record, "active", reason);
 }
 
 // Total release. Nothing resumes a disposed app; its next attach registers the
@@ -759,7 +829,7 @@ async function resumeApplication(appId, reason = "") {
 async function disposeApplication(appId, reason = "") {
   const record = applicationLifecycles.get(String(appId || ""));
   if (!record || record.state === "disposed") return false;
-  return runApplicationLifecycleHook(record, "onDispose", "disposed", reason);
+  return driveLifecycleLane(record, "disposed", reason);
 }
 
 async function syncApplicationLifecycle({ foregroundAppIds = [], documentHidden = false, reason = "" } = {}) {
@@ -788,6 +858,7 @@ window.AISystem6ApplicationRegistry = Object.freeze({
   openProjectObject,
   itemKind: applicationItemKind,
   registerApplicationLifecycle,
+  upgradeLifecycleLanes,
   getApplicationLifecycleState,
   suspendApplication,
   resumeApplication,

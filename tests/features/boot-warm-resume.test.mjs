@@ -12,7 +12,11 @@ const boot = read("app/core/boot.js");
 test.assertIncludes(desktopRuntime, '"ai-system6-boot-seen"', "warm resume uses a session-only boot flag");
 test.assertIncludes(desktopRuntime, "function sessionBootSeen", "the warm flag is read from sessionStorage");
 test.assertIncludes(desktopRuntime, "function clearSessionBootSeen", "Restart can force a cold boot");
-test.assertIncludes(desktopRuntime, "warmResume ? (index === steps.length - 1 ? 80 : 0)", "warm resume cancels the visual holds");
+// W04 (unified spec): the fixed step script became a real-progress bridge.
+// The warm/cold distinction survives as the brand-hold length: cold keeps a
+// 430ms chime+Happy-Mac hold, warm keeps only an 80ms flash.
+test.assertIncludes(desktopRuntime, "const brandHoldMs = warmResume ? 80 : 430;", "warm resume cancels the visual holds (80ms flash vs. cold 430ms hold)");
+test.assert(!desktopRuntime.includes('"84%"'), "no fixed 84% percentage is written any more");
 test.assertIncludes(desktopRuntime, "warmResume ? 140 : 260", "warm fade is shorter than the cold fade");
 test.assertIncludes(desktopRuntime, "if (!warmResume) markSessionBootSeen()", "only a cold boot records the flag");
 test.assertIncludes(windowManager, "clearSessionBootSeen()", "explicit Restart clears the warm flag");

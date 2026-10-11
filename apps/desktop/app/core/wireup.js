@@ -1558,6 +1558,11 @@ function wireAppEvents() {
         bar.removeEventListener("lostpointercapture", stopMove);
         window.removeEventListener("pointerup", stopMove);
         window.removeEventListener("pointercancel", stopMove);
+        // W07: the desk losing focus mid-drag (a browser switch, a devtools
+        // focus grab) is the case pointerup never arrives for — the grow box
+        // already ends on blur; the move path must too, or the dotted ghost
+        // outlives the gesture with nothing left able to clear it.
+        window.removeEventListener("blur", stopMove);
         // A click that never moved is not a drag: leave the window exactly
         // where it is and keep it system-positioned.
         if (!didMove) {
@@ -1576,7 +1581,7 @@ function wireAppEvents() {
         markWindowUserPositioned?.(win);
         scheduleWorkingSessionSave?.();
       }
-  
+
       bar.addEventListener("pointermove", moveWindow);
       bar.addEventListener("pointerup", stopMove);
       bar.addEventListener("pointercancel", stopMove);
@@ -1587,6 +1592,7 @@ function wireAppEvents() {
       bar.addEventListener("lostpointercapture", stopMove);
       window.addEventListener("pointerup", stopMove);
       window.addEventListener("pointercancel", stopMove);
+      window.addEventListener("blur", stopMove);
     });
   }
 

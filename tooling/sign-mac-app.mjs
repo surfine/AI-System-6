@@ -25,7 +25,7 @@ import process from "node:process";
 function run(command, args, { cwd } = {}) {
   const result = spawnSync(command, args, { cwd, encoding: "utf8", stdio: "inherit" });
   if (result.status !== 0) {
-    console.error(`command failed: ${command} ${args.join(" ")}`);
+    console.error(`command failed: ${command} (exit ${result.status}; arguments omitted)`);
     process.exit(1);
   }
   return result;

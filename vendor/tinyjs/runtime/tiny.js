@@ -1,0 +1,1102 @@
+// tinyjs client shim. Everything the runtime injects lives under `tiny`.
+// window.__invoke is the native bound function (already promise-returning);
+// window.__emit is how the backend pushes events into the page.
+(() => {
+  const call = (method, params) => window.__invoke(JSON.stringify({ method, params }));
+  const handlers = {};
+
+  // tiny.fetch: like window.fetch, but the request runs in the backend (a
+  // native process) — no CORS, CSP, or mixed-content limits, so the page can
+  // reach any origin. Resolves to a real Response. Small responses arrive
+  // whole; pass { stream: true } for a live streaming body — the Response's
+  // body pulls chunks from the backend on demand (backpressured), which is
+  // what an endless source like internet radio needs (a buffered fetch of a
+  // never-ending stream would never resolve).
+  const fetchSeq = new Uint32Array(1);
+  const u8ToB64 = (u8) => {
+    let s = '';
+    for (let i = 0; i < u8.length; i += 0x8000)
+      s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+    return btoa(s);
+  };
+  const b64ToU8 = (str) => {
+    const bin = atob(str);
+    const u8 = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    return u8;
+  };
+  const headersToObject = (h) => {
+    if (!h) return undefined;
+    if (typeof Headers !== 'undefined' && h instanceof Headers) {
+      const o = {}; h.forEach((v, k) => { o[k] = v; }); return o;
+    }
+    if (Array.isArray(h)) { const o = {}; for (const [k, v] of h) o[k] = v; return o; }
+    return h;
+  };
+  const normalizeBody = async (body) => {
+    if (body == null) return {};
+    if (typeof body === 'string') return { bodyText: body };
+    if (body instanceof URLSearchParams) return { bodyText: body.toString() };
+    if (body instanceof ArrayBuffer) return { bodyB64: u8ToB64(new Uint8Array(body)) };
+    if (ArrayBuffer.isView(body)) return { bodyB64: u8ToB64(new Uint8Array(body.buffer, body.byteOffset, body.byteLength)) };
+    if (typeof Blob !== 'undefined' && body instanceof Blob) return { bodyB64: u8ToB64(new Uint8Array(await body.arrayBuffer())) };
+    return { bodyText: String(body) };
+  };
+  const tinyFetch = async (url, init = {}) => {
+    const id = 'f' + (++fetchSeq[0]);
+    const streaming = !!init.stream;
+    const { bodyText, bodyB64 } = await normalizeBody(init.body);
+    const head = await call('fetch', {
+      url: String(url), id, stream: streaming,
+      method: init.method, headers: headersToObject(init.headers),
+      redirect: init.redirect, bodyText, bodyB64,
+    });
+    const respInit = { status: head.status, statusText: head.statusText, headers: head.headers };
+    let resp;
+    if (streaming) {
+      const stream = new ReadableStream({
+        async pull(controller) {
+          const r = await call('fetch.pull', { id });
+          if (r.done) { controller.close(); return; }
+          controller.enqueue(b64ToU8(r.bodyB64));
+        },
+        cancel() { return call('fetch.cancel', { id }); },
+      });
+      // 204/205/304 are null-body per spec — a Response body would throw.
+      const nullBody = head.status === 204 || head.status === 205 || head.status === 304;
+      resp = new Response(nullBody ? null : stream, respInit);
+    } else {
+      resp = new Response(head.bodyB64 ? b64ToU8(head.bodyB64) : null, respInit);
+    }
+    // Response.url / .redirected are read-only getters; shadow them so callers
+    // that inspect the post-redirect URL see the real value.
+    try {
+      Object.defineProperty(resp, 'url', { value: head.url, configurable: true });
+      Object.defineProperty(resp, 'redirected', { value: head.redirected, configurable: true });
+    } catch {}
+    return resp;
+  };
+
+  window.tiny = {
+    api: {
+      call,
+      // Additive, like addEventListener: every fn registered for an event is
+      // called on each push. Returns an unsubscribe — keep it if the handler
+      // doesn't live as long as the page (all the tiny.*.on sugar returns it
+      // too, and there the returned fn is the ONLY way to unhook, because the
+      // sugar wraps your callback so off() can't match it by reference).
+      on(event, fn) {
+        (handlers[event] ||= []).push(fn);
+        return () => window.tiny.api.off(event, fn);
+      },
+      off(event, fn) {
+        const a = handlers[event];
+        const i = a ? a.indexOf(fn) : -1;
+        if (i !== -1) a.splice(i, 1);
+      },
+    },
+
+    // Backend-proxied fetch (no CORS/CSP). Same shape as window.fetch, returns
+    // a Response. Add { stream: true } for a live body (res.body.getReader())
+    // — required for endless sources like internet radio.
+    fetch: (url, init) => tinyFetch(url, init),
+
+    // Same-app URL that streams a remote http(s) resource through the native
+    // layer with permissive CORS. Drop it into a media element to get a
+    // cross-origin stream (internet radio) into Web Audio — a MediaElementSource
+    // on a cross-origin <audio> outputs silence by spec, but this URL is
+    // CORS-approved so the EQ/analyser graph gets real samples:
+    //   audio.crossOrigin = 'anonymous';
+    //   audio.src = tiny.proxyURL('https://example.com/stream.mp3');
+    // The native layer does the HTTP (redirects, byte-range/seek), so playback
+    // keeps CoreMedia's buffering/reconnect. http/https upstreams only. The
+    // launcher serves it only to the app's own origins and to "api".origins
+    // keys that allow media.proxy (#30).
+    proxyURL: (url) => 'tiny-media://proxy/?u=' + encodeURIComponent(String(url)),
+
+    // A correct file:// URL for a disk path on BOTH platforms — hand-rolled
+    // versions break on Windows (file://C:/… makes the drive the URL host).
+    // Use for <audio>/<img>/<video> src of backend-provided paths.
+    //
+    // The URL is only half of it: the page can load a file:// path only if it
+    // sits under the page's read root, which is the directory the page itself
+    // was loaded from. Anything outside that — and a backend-provided path
+    // usually is — needs "readAccess" in tinyjs.json (true for the home dir,
+    // or a specific directory). Without it the element just fires `error`,
+    // with nothing saying why.
+    fileURL: (p) => {
+      p = String(p);
+      // Backslashes are separators ONLY in Windows-shaped paths (drive
+      // letter or \\server UNC) — Unix filenames may legally contain them.
+      if (/^[A-Za-z]:[\\/]/.test(p) || p.startsWith('\\\\')) p = p.replace(/\\/g, '/');
+      const unc = p.startsWith('//'); // \\server\share — network/Parallels mounts
+      if (!unc && !p.startsWith('/')) p = '/' + p; // C:/… needs the third slash
+      const enc = p.split('/').map(encodeURIComponent).join('/')
+        .replace(/%3A/gi, ':'); // keep the drive colon
+      // UNC: the server becomes the URL host (file://server/share/…)
+      return (unc ? 'file:' : 'file://') + enc;
+    },
+
+    log: (msg) => call('log', { msg }),
+    quit: () => call('quit'),
+
+    // Which machine is this? os()/isMacOS()/isWindows()/isLinux() answer
+    // synchronously (the webview's own UA is decisive: WKWebView says
+    // Macintosh, WebView2 says Windows NT, WebKitGTK says Linux), so they're
+    // safe to branch on during page setup. architecture() and capabilities()
+    // ask the backend, which sees the real machine — a Mac webview reports
+    // "MacIntel" even on Apple silicon, so arch cannot be read from the page.
+    system: {
+      os: () => (/Windows/i.test(navigator.userAgent) ? 'windows'
+        : /Linux|X11/i.test(navigator.userAgent) ? 'linux' : 'macos'),
+      isMacOS: () => window.tiny.system.os() === 'macos',
+      isWindows: () => window.tiny.system.os() === 'windows',
+      isLinux: () => window.tiny.system.os() === 'linux',
+      // -> { os, arch: 'arm64'|'x86_64', session, desktop }. session/desktop
+      // are the Linux display server ('x11' | 'wayland') and desktop name;
+      // null elsewhere.
+      info: () => call('system.info'),
+      architecture: async () => (await call('system.info')).arch,
+      // -> { os, <feature>: boolean, … }. What this machine can actually do,
+      // so an app can degrade deliberately instead of calling something that
+      // quietly does nothing (Wayland, for instance, ignores setPosition).
+      capabilities: () => call('system.capabilities'),
+      // The user's language preferences + time zone, from the OS:
+      // { language, languages, system, region, timeZone }.
+      //
+      // A page usually doesn't need this — navigator.language, navigator.
+      // languages and the whole of Intl already work here, and the
+      // 'languagechange' event fires on window. Reach for it when you want
+      // what the SYSTEM prefers rather than what this app declares it speaks:
+      // on macOS navigator.language is filtered to the app's bundle
+      // localizations, so an English-only app reports 'en' on a French Mac
+      // while locale().system still says fr-FR.
+      locale: () => call('system.locale'),
+
+      // --- machine state -------------------------------------------------
+      // Facts about the machine rather than things this app does, which is
+      // why these live here and not on tiny.app.
+      // { percent, charging, plugged, minutesRemaining } | null (desktops).
+      battery: () => call('system.battery'),
+      // { ssid, bssid, rssi, noise, txRate } | null (ssid needs Location).
+      wifi: () => call('system.wifi'),
+      // Seconds since the user's last input — pause polling when idle.
+      idleTime: () => call('system.idleTime'),
+
+      // What this machine is MISSING for a feature, and how to fix it. Linux
+      // ships its media stack in pieces (AAC and H.264 live in optional
+      // GStreamer plugin sets), so a feature can be absent on one box and
+      // present on the next — ask instead of assuming, and tell the user
+      // something actionable rather than letting audio go quiet.
+      //
+      //   const [aac] = await tiny.system.requirements(['media.aac']);
+      //   if (!aac.ok) alert(`${aac.feature} needs:\n${aac.install.command}`);
+      //
+      // -> [{ id, ok, feature, detail, install: { manager, packages, command } }]
+      // install is null when it's already there, or when nothing installable
+      // would fix it (windowPosition on Wayland is the session, not a package).
+      // Ids: media.aac, media.h264, media.mp3, speech, spotlight.index,
+      // audioTap, mouseTracking, tray, windowPosition. Everything reports ok
+      // on macOS/Windows.
+      // Probes are cached for the life of the app, so a missing package stays
+      // "missing" even after the user installs it — pass { refresh: true } to
+      // re-probe, e.g. when they come back from a terminal and retry.
+      requirements: (ids, opts = {}) =>
+        call('system.requirements', { ids: ids ?? null, refresh: !!opts.refresh }),
+      // Just the ones that aren't satisfied — the common case.
+      missing: async (ids) => (await call('system.requirements', { ids: ids ?? null }))
+        .filter((r) => !r.ok),
+
+      // The presentable version: check, and if anything is missing put a native
+      // dialog in front of the user that names the feature, explains why it's
+      // absent, and offers to COPY the install command — nobody retypes
+      // "gstreamer1.0-plugins-bad" correctly from a toast. Returns without
+      // showing anything when everything is present, so it's safe to call
+      // straight from a failure path:
+      //
+      //   audio.addEventListener('error', () => tiny.system.promptMissing(['media.aac']));
+      //
+      // -> { missing: [...], copied: boolean }. Packages for several missing
+      // features merge into ONE command, so the user runs a single line.
+      // opts: { title?, ok?, cancel? }.
+      async promptMissing(ids, opts = {}) {
+        const missing = (await call('system.requirements', { ids: ids ?? null }))
+          .filter((r) => !r.ok);
+        if (!missing.length) return { missing: [], copied: false };
+        // One command for everything missing: same manager, packages merged,
+        // deduped, order preserved.
+        const mgr = missing.find((r) => r.install)?.install ?? null;
+        const pkgs = [...new Set(missing.flatMap((r) => r.install?.packages ?? []))];
+        const at = mgr ? mgr.command.indexOf(mgr.packages[0]) : -1;
+        const cmd = !mgr || !pkgs.length ? null
+          : at < 0 ? mgr.command                      // unexpected shape — use it as given
+          : mgr.command.slice(0, at) + pkgs.join(' ');
+        const detail = missing.map((r) => '• ' + r.feature + ' — ' + r.detail).join('\n\n')
+          + (cmd ? '\n\n' + cmd : '');
+        const title = opts.title
+          ?? (missing.length === 1
+            ? missing[0].feature + ' needs a system package'
+            : 'Some features need system packages');
+        // Nothing installable would fix it (Wayland's setPosition, say) — then
+        // there is no command to copy, so just say what's up.
+        if (!cmd) {
+          await call('win.alert', { message: title, detail });
+          return { missing, copied: false };
+        }
+        const yes = await call('win.confirm', {
+          message: title, detail,
+          ok: opts.ok ?? 'Copy install command',
+          cancel: opts.cancel ?? 'Not now',
+        });
+        if (!yes) return { missing, copied: false };
+        try { await call('clip.write', { text: cmd }); } catch (e) { return { missing, copied: false }; }
+        return { missing, copied: true };
+      },
+    },
+    // opts: { id?, subtitle?, sound? }. Packaged apps get real Notification
+    // Center banners (app icon, permission prompt); clicks arrive via
+    // tiny.app.onNotificationClick. Dev falls back to osascript.
+    notify: (title, body, opts = {}) => call('notify', { title, body, ...opts }),
+
+    win: {
+      // Which window this page lives in. A GETTER on purpose: in a Linux
+      // window-mode popup the page runs its OPENER's document-start shim, so
+      // the baked-in id is the opener's until the launcher corrects
+      // window.__TINY_WIN — which it does from the UI process, after this
+      // client has already been built. Read late and it's the popup's own id;
+      // read once at construction and `app.window(tiny.win.id)` from a popup
+      // targets MAIN.
+      get id() { return window.__TINY_WIN || 'main'; },
+      // Open (or focus) another window; page = html file in your frontend dir.
+      // size: 'WxH' is the page's box — a frameless window gets exactly that,
+      // a titled one gets it plus a title bar (and, on Windows/Linux, plus a
+      // menu bar when it has one: `size` stays the page's box either way).
+      // The new window shows the app menu unless opened with
+      // chrome: { menu: false }.
+      open: (id, opts = {}) => call('win.open', { id, ...opts }),
+      close: (id) => call('win.close', id ? { id } : {}),  // no id = this window
+      windows: () => call('win.windows'),                  // ['main', ...]
+      setTitle: (title) => call('win.setTitle', { title }),
+      // The PAGE's box, decorations excluded — the same units win.open's
+      // `size`, setMinSize and getState().width/height speak, so reading the
+      // size and handing it straight back is a no-op. Top-left stays put.
+      setSize: (width, height) => call('win.setSize', { width, height }),
+      // hide(): hides the APP — focus returns to the previous app (palettes
+      // can hide-then-paste with no frontmost tracking). hide({ app: false }):
+      // put away just this window, the app stays put. show({ activate:
+      // false }): surface the window without stealing focus (overlays/HUDs).
+      hide: (opts) => call('win.hide', opts ?? {}),
+      show: (opts) => call('win.show', opts ?? {}),
+      center: () => call('win.center'),
+      minimize: () => call('win.minimize'),
+      fullscreen: () => call('win.fullscreen'),                    // toggles
+      setAlwaysOnTop: (enabled) => call('win.setAlwaysOnTop', { enabled }),
+      setResizable: (enabled) => call('win.setResizable', { enabled }),
+      // Floor for user resizes (and win.open takes minSize: 'WxH'). Use it
+      // when shrinking the window would push content out of view.
+      setMinSize: (width, height) => call('win.setMinSize', { width, height }),
+      // Native page zoom (0.25–5). The page keeps laying out in CSS px; the
+      // window renders factor× — pair with setSize(w*f, h*f) for a crisp
+      // "double size" mode on hi-dpi screens.
+      setZoom: (factor) => call('win.setZoom', { factor }),
+      // Mouse events pass through to what's behind (overlays/HUDs).
+      setClickThrough: (enabled) => call('win.setClickThrough', { enabled }),
+      // 'normal' | 'floating' | 'overlay' (above fullscreen) | 'desktop'.
+      setLevel: (level) => call('win.setLevel', { level }),
+      // Follow the user across every Space + float over fullscreen apps.
+      setAllSpaces: (enabled) => call('win.setAllSpaces', { enabled }),
+      // Top-left origin. Wayland forbids a client from placing its own
+      // toplevels, so this (and center()) do nothing there — check
+      // getWinState().canPosition and fall back to startDrag() for dragging.
+      setPosition: (x, y) => call('win.setPosition', { x, y }),
+      // Clamp this window onto the nearest screen if nobody could see or
+      // grab it (less than a sliver visible on any display). One-shot manual
+      // form of the automatic stale-position rescue — mainly for apps that
+      // set "offscreenRescue": false and place windows off-screen on purpose,
+      // at the one moment they DO want a window back (e.g. after a restore).
+      ensureOnScreen: () => call('win.ensureOnScreen'),
+      restore: () => call('win.restore'),
+      setFullscreen: (enabled) => call('win.setFullscreen', { enabled }),
+      // { x, y, width, height, outer: { width, height }, fullscreen,
+      //   minimized, visible, focused, alwaysOnTop, resizable,
+      //   screen: { width, height, scale } }
+      // width/height are the page's box (what setSize takes); `outer` is the
+      // footprint on screen, decorations in — window.outerWidth/outerHeight
+      // are 0 in a WKWebView, so this is the only way to ask. x/y are the
+      // window's top-left, which is what setPosition takes.
+      getState: () => call('win.getState'),
+      // Window-state transitions as an event, no polling: fn gets { win,
+      // fullscreen, maximized, minimized, focused } whenever one of those
+      // flips, whatever the cause (green button, View menu, F11, a
+      // programmatic setFullscreen). Broadcast to every window — check
+      // data.win ('main' or a win.open id) if you only care about your own.
+      // Same vocabulary as getState(). Returns an unsubscribe function.
+      // Wayland never reports minimized (the compositor keeps it private).
+      onState: (fn) => window.tiny.api.on('window-state', fn),
+      // true: the close button hides the window instead of quitting the app.
+      // A macOS idea — there the app outlives its last window and the Dock
+      // icon brings it back. Windows and Linux have nowhere to put that (a
+      // hidden window takes its taskbar button with it), so there the flag
+      // holds only while there IS a way back: a tray icon, accessory mode, or
+      // another window still up. Closing the last window of an ordinary app
+      // quits it, as it does in every other app on those platforms.
+      setHideOnClose: (enabled) => call('win.setHideOnClose', { enabled }),
+      // { frame?, windowControls?, windowControlsPos?, transparent?, vibrancy?,
+      // menu? } — frameless windows keep native resize/focus; mark your own
+      // titlebar with data-tiny-drag. windowControls is the close/minimize/
+      // maximize group (macOS's "traffic lights"): true | false | a subset
+      // array such as ['close'] | [] for none. What each OS can honour
+      // differs — ask tiny.system.capabilities().windowControls.
+      // windowControlsPos: { x, y } from the window's top-left recenters the
+      // traffic lights in a custom titlebar (frameless apps); null restores
+      // the OS layout. macOS only, ignored elsewhere; survives resizes and
+      // fullscreen round-trips — the launcher re-applies it.
+      // menu:false shows no menu bar on THIS window (the app menu carries on
+      // everywhere else) — a Windows/Linux question, ignored on macOS, where
+      // the bar belongs to the app. Frameless and transparent windows never
+      // draw one on Windows anyway.
+      setChrome: (opts) => call('win.setChrome', opts),
+      // No args: drag the window (frameless chrome). With { files: [path…],
+      // image? }: drag real files OUT of the app (into Finder, Slack, …) —
+      // call from a mousedown handler while the button is held.
+      startDrag: (opts) => opts?.files ? call('win.dragOut', opts) : call('win.startDrag'),
+      // Begin a resize from an edge: 'n','ne','e','se','s','sw','w','nw'.
+      // Frameless windows get invisible grips automatically (see below); this
+      // is for putting a resize handle somewhere of your own.
+      startResize: (edge) => call('win.startResize', { edge }),
+      dragOut: (opts) => call('win.dragOut', opts),
+      zoom: () => call('win.zoom'),
+      print: () => call('win.print'),
+      // Render the page to a PDF file (vector) -> { path }.
+      printToPDF: (path) => call('win.printToPDF', { path }),
+      // Find-in-page (⌘F UI is the app's; this is the engine underneath).
+      // -> { found, matches, activeMatch }: the next match is selected and
+      // scrolled into view; call again to step. Counts are a JS text-walk on
+      // top of the native find (approximate on exotic pages — hidden text
+      // counts, shadow DOM doesn't). macOS today — ask
+      // tiny.system.capabilities().findInPage.
+      find: (term, opts = {}) => call('win.find', { term, forward: opts.forward !== false, matchCase: !!opts.matchCase }),
+      stopFind: () => call('win.stopFind'),
+      // This window's OWN menu bar — same spec and same click event as
+      // tiny.menu, but for this window alone. Windows without an override
+      // keep showing the app menu, and a window opened later inherits it too.
+      //
+      // Hiding a bar is chrome, not menu: tiny.win.setChrome({ menu: false }),
+      // or chrome.menu:false in tinyjs.json / win.open. The app menu is
+      // untouched, so the other windows keep theirs.
+      //
+      // macOS has one bar for the whole app: it swaps to this window's menu
+      // while the window is key, and back to the app menu when it isn't.
+      menu: {
+        set: (menus) => call('win.menu.set', { menus }),
+        // Back to showing the app menu.
+        reset: () => call('win.menu.reset'),
+        // Patch one item in THIS window's bar; tiny.menu.update patches every
+        // window's copy.
+        update: (id, patch = {}) => call('win.menu.update', { id, ...patch }),
+        get: (id) => call('win.menu.get', { id }),
+      },
+      // fn(paths): files dragged onto the window, as real filesystem paths.
+      onDrop(fn) { return window.tiny.api.on('drop', ({ paths }) => fn(paths)); },
+      // Native share sheet ({ text?, url?, paths?, x?, y? }) — anchor it at
+      // the click: tiny.win.share({ url, x: e.clientX, y: e.clientY }).
+      share: (opts) => call('win.share', opts ?? {}),
+    },
+
+    menu: {
+      // menus: [{ title, items: [...] }]; items support { id, label, key?,
+      // checked?, enabled?, submenu?: [...] } | { separator: true } — same
+      // item shape works for tray and context menus.
+      //
+      // The APP menu: it shows on every window, including windows opened
+      // later. (macOS has one bar for the whole app; Windows and Linux draw a
+      // copy of it in each window.) For one window to differ, see
+      // tiny.win.menu; for one window to show no bar, chrome.menu:false.
+      set: (menus) => call('menu.set', { menus }),
+      on(fn) { return window.tiny.api.on('menu', ({ id }) => fn(id)); },
+      // Patch one item in place: update('mute', { checked: true, label: 'Muted' })
+      update: (id, patch = {}) => call('menu.update', { id, ...patch }),
+      get: (id) => call('menu.get', { id }),   // { exists, label, checked, enabled }
+      // Right-click menu: [{ id, label } | { separator: true }]; null restores default.
+      setContext: (items) => call('menu.setContext', { items }),
+      onContext(fn) { return window.tiny.api.on('contextmenu', ({ id }) => fn(id)); },
+    },
+
+    // Persistent settings (JSON, in ~/Library/Application Support/<app id>/).
+    store: {
+      get: (key) => call('store.get', { key }),          // value | null
+      set: (key, value) => call('store.set', { key, value }),
+      delete: (key) => call('store.delete', { key }),
+      all: () => call('store.all'),
+    },
+
+    // System-wide hotkeys, e.g. register('boss', 'cmd+shift+k').
+    hotkey: {
+      register: (id, combo) => call('hotkey.register', { id, combo }),
+      unregister: (id) => call('hotkey.unregister', { id }),
+      on(fn) { return window.tiny.api.on('hotkey', ({ id }) => fn(id)); },
+    },
+
+    // Read the app's (or system's) rendered audio output as PCM — for VU
+    // meters / visualizers, including audio that bypasses Web Audio (native
+    // HLS, CORS-tainted streams). Read-only: it observes, it can't process.
+    // Requires an "audioTap" key in tinyjs.json. macOS 14.4+.
+    //   await tiny.audioTap.start({ scope: 'app', interval: 80 });
+    //   tiny.audioTap.on(({ pcm, sampleRate, channels, frames, t }) => {
+    //     const bin = atob(pcm), n = bin.length / 2, s = new Int16Array(n);
+    //     for (let i = 0; i < n; i++) s[i] = (bin.charCodeAt(2*i) | (bin.charCodeAt(2*i+1) << 8)) << 16 >> 16;
+    //     // …float = s[i] / 32768, interleaved by `channels`
+    //   });
+    // Native DSP on this app's OWN output — a graphic EQ, headphone
+    // correction, a crossover — applied below the browser.
+    //
+    // Web Audio's BiquadFilterNode is the obvious tool, and on macOS and Windows
+    // it works — reach for it when the page owns the samples anyway. These
+    // filters exist for what it can't do: they apply to audio the page never
+    // sees (raw radio, native HLS, a CORS-tainted <audio>), survive a reload,
+    // and are one call instead of a graph. On Linux they're the ONLY option:
+    // WebKitGTK renders the Web Audio graph on a normal-priority thread while
+    // its media threads get real-time priority, so anything reaching
+    // ctx.destination crackles however it's fed.
+    //
+    // Linux runs them in PipeWire; macOS (14.2+) in a muted Core Audio process
+    // tap fed back through an aggregate device, with the same biquad maths, so
+    // the same numbers give the same curve on both. Windows has no equivalent
+    // yet and reports false. Check before using:
+    //
+    //   const can = await tiny.system.capabilities();
+    //   if (can.audioFilters) await tiny.audio.filters(bands);
+    //   else buildWebAudioChain();          // fine on macOS/Windows
+    //
+    // Types: peaking, lowshelf, highshelf, lowpass, highpass, bandpass, notch,
+    // allpass (freq/q/gain, gain in dB) and gain (a linear multiplier, for a
+    // preamp). Filters run in the order given.
+    //
+    // Every filter takes an optional `gainR` — the right channel's gain, when
+    // it differs from the left. That's how you get balance without spending a
+    // filter slot: fold it into a gain you already have.
+    //   { type: 'gain', gain: 1.0, gainR: 0.4 }   // panned left
+    //
+    // At most 28 filters (15 if any filter uses gainR — per-channel gains
+    // double the node count): PipeWire's filter-chain crashes above its node
+    // ceiling, so the list is truncated rather than allowed to take the audio
+    // server down. macOS caps at 32 for the same "a page shouldn't be able to
+    // ask for unbounded work on the audio thread" reason.
+    //
+    // macOS only: taking audio off the speakers to filter it needs the
+    // system-audio-capture permission, which is granted to a PACKAGED app on
+    // first use (`tinyjs dev` has no bundle identity to grant it to). Until
+    // that lands the chain is armed but idle — audio keeps playing unfiltered
+    // rather than going silent, which is the one outcome worth designing
+    // against here.
+    // Replacing the chain rebuilds it (a brief gap) while changing only VALUES
+    // retunes in place — so if a slider drives it, keep the shape stable and
+    // vary the numbers.
+    audio: {
+      // Replace the whole chain. Idempotent; [] (or nothing) removes it and
+      // restores unprocessed output.
+      //   await tiny.audio.filters([{ type: 'peaking', freq: 60, q: 1.1, gain: 4 }]);
+      filters: (list) => call('audio.filters', { filters: list ?? [] }),
+      // Retune ONE filter in place — no rebuild, no gap. This is what a slider
+      // drag should call.
+      //   tiny.audio.filter(0, { gain: -3 });
+      filter: (index, patch) => call('audio.filterSet', { index, filter: patch ?? {} }),
+      // Stereo balance, -1 (left) .. 0 .. 1 (right) — applied to the chain's
+      // output, so it costs no filter slot and never rebuilds. Needs an active
+      // chain (filters() with at least one entry); amp keeps a flat chain up
+      // for exactly this.
+      balance: (v) => call('audio.balance', { value: v }),
+      clear: () => call('audio.filters', { filters: [] }),
+      // The same chain, built from Web Audio nodes IN THE PAGE — for where the
+      // native chain doesn't exist. On Windows it can't (silencing the direct
+      // path means session volume, which Windows persists on a key every
+      // WebView2 app shares — TODO-audio-filters.md has the measurements), so
+      // capabilities().audioFilters is false there and this is the fallback.
+      // Web Audio's BiquadFilterNode is the same RBJ cookbook as PipeWire's
+      // bq_* and the macOS tap, so the same numbers give the same curve.
+      //
+      // Same verbs as tiny.audio itself, so an app picks a backend once:
+      //
+      //   const can = await tiny.system.capabilities();
+      //   const eq = can.audioFilters ? tiny.audio : tiny.audio.pageChain(ctx);
+      //   if (eq.input) src.connect(eq.input), eq.output.connect(ctx.destination);
+      //   await eq.filters(bands);      // identical from here on
+      //
+      // Page-SCOPED, and that's the honest difference: it filters only what
+      // you route through input→output, not native HLS or a CORS-tainted
+      // <audio> the page never gets samples for. Two more edges, both real:
+      // shelf `q` is ignored (Web Audio shelves fix S=1; native honors it),
+      // and per-filter `gainR` is ignored — use balance(). Do NOT reach for
+      // this on Linux: anything hitting ctx.destination crackles there
+      // (measured — it's why the native chain exists).
+      pageChain(ctx) {
+        const input = ctx.createGain();
+        // Balance stage: force stereo up-front (a mono source into a bare
+        // splitter puts silence on the right), then split, per-side gains,
+        // merge. Always in-line, unity until balance() is called.
+        const balIn = ctx.createGain();
+        balIn.channelCount = 2;
+        balIn.channelCountMode = 'explicit';
+        const split = ctx.createChannelSplitter(2);
+        const gL = ctx.createGain(), gR = ctx.createGain();
+        const merge = ctx.createChannelMerger(2);
+        const output = ctx.createGain();
+        balIn.connect(split);
+        split.connect(gL, 0);
+        split.connect(gR, 1);
+        gL.connect(merge, 0, 0);
+        gR.connect(merge, 0, 1);
+        merge.connect(output);
+        let nodes = [];
+        // Retunes ramp over ~15ms (a bare .value write zippers audibly on a
+        // slider drag); a NEW node gets its values outright — ramping there
+        // would sweep in from Web Audio's defaults instead.
+        const tune = (p, v, now) =>
+          now ? (p.value = v) : p.setTargetAtTime(v, ctx.currentTime, 0.015);
+        const apply = (node, f, now) => {
+          if (node.frequency) {
+            tune(node.frequency, Number(f.freq ?? 1000), now);
+            tune(node.Q, Number(f.q ?? 1), now);
+            tune(node.gain, Number(f.gain ?? 0), now);  // dB, like the native chain
+          } else {
+            tune(node.gain, Number(f.gain ?? 1), now);  // 'gain' is a linear multiplier
+          }
+        };
+        const chain = {
+          input, output,
+          filters(list) {
+            input.disconnect();
+            for (const n of nodes) n.disconnect();
+            nodes = (list ?? []).map((f) => {
+              let n;
+              if (f.type === 'gain') n = ctx.createGain();
+              else { n = ctx.createBiquadFilter(); n.type = f.type ?? 'peaking'; }
+              apply(n, f, true);
+              return n;
+            });
+            let prev = input;
+            for (const n of nodes) { prev.connect(n); prev = n; }
+            prev.connect(balIn);
+            return true;
+          },
+          filter(i, patch) {
+            if (nodes[i]) apply(nodes[i], patch ?? {});
+            return true;
+          },
+          balance(v) {
+            const b = Math.max(-1, Math.min(1, Number(v) || 0));
+            tune(gL.gain, b > 0 ? 1 - b : 1);
+            tune(gR.gain, b < 0 ? 1 + b : 1);
+            return true;
+          },
+          clear() { chain.filters([]); chain.balance(0); return true; },
+        };
+        chain.filters([]);
+        return chain;
+      },
+
+      // One sampled-SFX mixer per app: short decoded sounds (wav/mp3/flac
+      // guaranteed) fired with per-voice volume, pan and pitch, mixed into
+      // one output. Game/UI sound effects — not streaming, not music (that's
+      // <audio>), not a sequencer.
+      //
+      //   const s = tiny.audio.sampler;
+      //   await s.load('coo', '/abs/path/coo.mp3');   // or an ArrayBuffer
+      //   const v = await s.play('coo', { vol: 0.8, pan: -0.3, rate: 1.06 });
+      //   v.set({ pan: 0.1 });      // live, no restart
+      //   v.stop();                 // short fade-out, no click
+      //   s.master(0.5);
+      //   s.unload('coo');          // frees the decoded PCM; cuts its voices
+      //
+      // vol is linear 0..1, pan −1..1 equal-power (StereoPanner's law), rate
+      // a playbackRate-style ratio (pitch and speed together). Up to 32
+      // voices; past that play() steals the oldest rather than failing.
+      // App-scoped: every window and the backend (app.audio.sampler) drive
+      // the SAME mixer. On macOS/Windows it mixes in the main window's page
+      // via Web Audio (a reload re-arms the bank by itself; playing voices
+      // die); on Linux the launcher mixes natively, because Web Audio
+      // crackles under WebKitGTK — capabilities().sampler says which, but
+      // the API is identical. Load by path when you can: bytes are written
+      // to the app cache once and loaded from disk, never streamed around.
+      // Out of scope: sample-accurate scheduling (`start(when)`), per-voice
+      // filters, MediaStreams.
+      sampler: {
+        async load(name, source) {
+          const params = { name: String(name) };
+          if (typeof source === 'string') params.path = source;
+          else if (source instanceof ArrayBuffer) params.bytesB64 = u8ToB64(new Uint8Array(source));
+          else if (ArrayBuffer.isView(source)) params.bytesB64 = u8ToB64(new Uint8Array(source.buffer, source.byteOffset, source.byteLength));
+          else if (typeof Blob !== 'undefined' && source instanceof Blob) params.bytesB64 = u8ToB64(new Uint8Array(await source.arrayBuffer()));
+          else throw new Error('sampler.load: pass a path or an ArrayBuffer');
+          return call('sampler.load', params);
+        },
+        // opts: { vol?, pan?, rate?, loop? } -> a voice handle
+        // { id, set({ vol?, pan?, rate? }), stop() }.
+        async play(name, opts = {}) {
+          const { id } = await call('sampler.play', { name: String(name), ...opts });
+          return {
+            id,
+            set: (patch) => call('sampler.set', { id, ...(patch ?? {}) }),
+            stop: () => call('sampler.stop', { id }),
+          };
+        },
+        stopAll: () => call('sampler.stopAll'),
+        master: (v) => call('sampler.master', { value: v }),
+        unload: (name) => call('sampler.unload', { name: String(name) }),
+      },
+    },
+
+    audioTap: {
+      // opts: { scope?: 'app'|'system', excludeSelf?: boolean, interval?: ms }.
+      // Resolves true, or throws an Error with a .code: 'unsupported' |
+      // 'not-declared' | 'denied' | 'failed'.
+      async start(opts = {}) {
+        const r = await call('audioTap.start', opts);
+        if (!r || !r.ok) {
+          const e = new Error(r?.message || ('audioTap: ' + (r?.code || 'failed')));
+          e.code = r?.code || 'failed';
+          throw e;
+        }
+        return true;
+      },
+      stop: () => call('audioTap.stop'),
+      // fn({ pcm, sampleRate, channels, frames, t }); pcm is base64 of
+      // interleaved little-endian Int16.
+      on(fn) { return window.tiny.api.on('audio-tap', fn); },
+    },
+
+    // Native clipboard (NSPasteboard in the launcher — no polling spawns).
+    clipboard: {
+      // -> { kind: 'files'|'image'|'color'|'text'|'empty', changeCount,
+      //      text, html, paths, image (png temp path), imageSize, color,
+      //      concealed (password-manager marker — history apps must skip),
+      //      sourceApp ({ name, bundleId }), sourceURL (Chromium copies) }
+      read: () => call('clip.read'),
+      // { text?, html?, paths?, image? (png path/data-url/base64), color? }
+      write: (data) => call('clip.write', data),
+      changeCount: () => call('clip.changeCount'),
+      watch: (intervalMs) => call('clip.watch', { intervalMs }),
+      unwatch: () => call('clip.unwatch'),
+      // fn({ changeCount, self }) after watch(); self = our own write().
+      onChange(fn) { return window.tiny.api.on('clipboard-change', fn); },
+    },
+
+    // Calls with no equivalent anywhere else — not "not ported yet", but
+    // concepts the other OSes simply don't have. Anything that COULD exist
+    // elsewhere stays on tiny.app and answers 'unsupported' until it does,
+    // so implementing it later isn't another breaking rename.
+    //
+    // These reject on Windows and Linux. Guard with tiny.system.isMacOS().
+    macos: {
+      // AppleScript in-process (no osascript) -> result string | null;
+      // rejects with the script error. Uses the 'automation' permission.
+      applescript: (source) => call('macos.applescript', { source }),
+      // Quick Look panel for path(s); quickLook() closes it.
+      quickLook: (paths) => call('macos.quickLook', { paths }),
+      // On-device OCR -> { text, blocks: [{ text, confidence, box }] }
+      // (box normalized 0..1, top-left origin).
+      ocr: (path) => call('macos.ocr', { path }),
+      // Record a display to an .mp4. start({ screenId?, path }) resolves
+      // once capturing; stop() -> { path, duration }. Needs the 'screen'
+      // permission + macOS 14; rejects otherwise. Video only, one at a time.
+      recorder: {
+        start: (opts) => call('macos.recorder.start', opts ?? {}),
+        stop: () => call('macos.recorder.stop'),
+      },
+      // On-device LLM (FoundationModels; offline, no key). Needs macOS 26 and
+      // Apple Intelligence switched on — check ai.availability() first,
+      // always; 'unsupported' also covers a launcher built without it.
+      ai: {
+        // 'available' | 'unavailable' | 'unsupported'
+        availability: () => call('macos.ai.availability'),
+        // generate(prompt, { instructions }) -> completion text; throws.
+        generate: (prompt, opts) => call('macos.ai.generate', { prompt, ...(opts ?? {}) }),
+      },
+      // Text selected in the frontmost app (Accessibility) — null if none.
+      selectedText: () => call('macos.selectedText'),
+      // Other apps' on-screen windows (Accessibility): [{ app, bundleId,
+      // pid, title, index, x, y, width, height }] | null if not granted.
+      otherWindows: () => call('macos.otherWindows'),
+      // Move/resize another app's frontmost window (pid from otherWindows()).
+      moveWindow: (pid, rect) => call('macos.moveWindow', { pid, ...(rect ?? {}) }),
+    },
+
+    // Native dialogs, run by the launcher — NSOpenPanel / NSAlert on macOS,
+    // the common item dialog + MessageBox on Windows, GTK's chooser and
+    // message dialogs on Linux. They're application-modal rather than
+    // attached to a window, which is why they aren't on tiny.win.
+    dialog: {
+      // File pickers take { types: ['md', 'txt', ...] } — extensions, no dots —
+      // to filter what's choosable (allowedContentTypes / COMDLG_FILTERSPEC /
+      // GtkFileFilter). Omit types and everything is selectable.
+      openFile: (opts = {}) => call('dialog.openFile', { types: opts.types }),    // path | null
+      openFiles: (opts = {}) => call('dialog.openFiles', { types: opts.types }),  // paths[] | null
+      pickFolder: () => call('dialog.pickFolder'),                                // path | null
+      saveFile: (opts = {}) => call('dialog.saveFile', { types: opts.types }),    // path | null
+      alert: (message, detail) => call('dialog.alert', { message, detail }),
+      confirm: (message, opts = {}) => call('dialog.confirm', { message, ...opts }), // true | false
+      prompt: (message, opts = {}) => call('dialog.prompt', { message, ...opts }),   // string | null
+    },
+
+    // System theme; also 'sleep'/'wake' events via tiny.api.on.
+    theme: {
+      get: () => call('theme.get'),                      // { dark } | null
+      on(fn) { return window.tiny.api.on('theme', ({ dark }) => fn(dark)); },
+    },
+
+    app: {
+      // { version: <app>, tinyjs: <framework that built it>, runtime: <txiki> }
+      info: () => call('app.info'),
+      // Deep links + file associations (packaged .app; see tinyjs.json
+      // "urlScheme" and "fileExtensions"). Cold-start events are buffered.
+      onOpenUrl(fn) { return window.tiny.api.on('open-url', ({ url }) => fn(url)); },
+      onOpenFiles(fn) { return window.tiny.api.on('open-files', ({ paths }) => fn(paths)); },
+      // fn(id): a notification banner was clicked (packaged apps).
+      onNotificationClick(fn) { return window.tiny.api.on('notification-click', ({ id }) => fn(id)); },
+      // fn({ id, action, reply }): a notification action button / reply field
+      // was used (tiny.notify(t, b, { actions: [{ id, title, reply? }] })).
+      onNotificationAction(fn) { return window.tiny.api.on('notification-action', fn); },
+      // Post a native keystroke (e.g. 'cmd+v') -> { ok, trusted }; needs the
+      // Accessibility permission (which names your app, not osascript).
+      keystroke: (combo) => call('app.keystroke', { combo }),
+      // keystroke('cmd+v'): paste into the frontmost app (hide first).
+      paste: () => call('app.paste'),
+      // 'accessibility' | 'screen' | 'notifications' | 'automation[:<id>]'
+      // -> 'granted' | 'denied' | 'undetermined' | 'unsupported'
+      permissions: {
+        check: (name) => call('perm.check', { name }),
+        request: (name) => call('perm.request', { name }),
+      },
+      // Global cursor position (same top-left coords as win.setPosition):
+      // { x, y, window: { x, y, inside }, screen: { x, y, width, height,
+      //   scale } } — window is relative to THIS window's content area
+      // (clientX/clientY units, works even while the cursor is outside it)
+      mousePosition: () => call('app.mouse'),
+      // Opt-in outside-the-window tracking. mousePosition() is global on
+      // macOS, Windows and X11 out of the box; on Linux-Wayland it only
+      // tracks while the cursor is over the app (window.inside goes false
+      // when it leaves). start() arms live global coords there via the
+      // ScreenCast portal: one system consent dialog (remembered across
+      // runs), and the screen-sharing indicator shows while armed. Resolves
+      // true, or throws an Error with .code: 'unsupported'|'denied'|'failed'.
+      mouseTracking: {
+        async start() {
+          const r = await call('app.mouseTracking.start');
+          if (!r || !r.ok) {
+            const e = new Error(r?.message || ('mouseTracking: ' + (r?.code || 'failed')));
+            e.code = r?.code || 'failed';
+            throw e;
+          }
+          return true;
+        },
+        stop: () => call('app.mouseTracking.stop'),
+      },
+      // Every display (same top-left coords as win.setPosition): [{ id,
+      // name, x, y, width, height, visible: {x,y,width,height}, scale,
+      // primary }] — visible excludes the menu bar and Dock.
+      screens: () => call('app.screens'),
+      // Standard per-app directories: { home, data, cache, logs, temp,
+      // downloads, desktop, documents } (data/cache/logs are per app id).
+      paths: () => call('app.paths'),
+      // Become the default opener for a file extension (or 'folder').
+      // -> 'ok' | 'unsupported' | 'failed'. Linux only today; macOS and
+      // Windows answer 'unsupported' rather than pretending, since one wants
+      // a LaunchServices call and the other deliberately guards the setting.
+      // Ask because the user asked — claiming .md on first run is the kind of
+      // thing that makes people uninstall an app.
+      setAsDefaultHandler: (ext) => call('app.setAsDefaultHandler', { ext }),
+      // NSWorkspace verbs. open(): URL (any scheme) or file path in the
+      // default app; reveal(): show in Finder; trash(): move to Trash
+      // (recoverable). Resolve true; reject with the reason on failure.
+      shell: {
+        open: (target) => call('shell.open', { target }),
+        reveal: (path) => call('shell.reveal', { path }),
+        trash: (path) => call('shell.trash', { path }),
+      },
+      // Launch at login (built apps on all three OSes; dev mode → 'unsupported').
+      // get()/set(v) -> 'enabled' | 'disabled' | 'requires-approval' |
+      // 'unsupported'; 'requires-approval' = user must allow it in System
+      // Settings > General > Login Items.
+      launchAtLogin: {
+        get: () => call('login.get'),
+        set: (enabled) => call('login.set', { enabled }),
+      },
+      // --- decorating the OS's app surface ---------------------------------
+      // The Dock (macOS), taskbar (Windows) and launcher (Linux) are surfaces
+      // the OS owns and you decorate — so these are verbs named for intent,
+      // not a namespace named after furniture. Each degrades honestly; ask
+      // tiny.system.capabilities() what this machine can actually show.
+      //
+      // badge('3') shows a count; badge('') clears it.
+      badge: (text) => call('app.badge', { text }),
+      // Ask for the user's attention — bounce (macOS), flash the taskbar
+      // button (Windows), set the urgency hint (Linux). Stops when the app is
+      // activated; { critical: true } keeps going until the user acts.
+      attention: (opts) => call('app.attention', opts ?? {}),
+      // Replace the app icon from a png; '' resets to the bundle icon.
+      // Render a canvas for live tiles. Composes with badge() and progress().
+      icon: (path) => call('app.icon', { path }),
+      // A determinate progress bar on the app icon: 0..1, null clears.
+      // macOS draws it into the Dock tile (over icon(), if you set one);
+      // Windows uses the taskbar button; Linux needs a dock that speaks the
+      // Unity protocol (KDE Plasma, Ubuntu Dock) — capabilities() knows.
+      progress: (value) => call('app.progress', { value }),
+      // 'normal' — a normal app. 'menubar' — tray / menu-bar only: no Dock
+      // icon or taskbar button, and out of the app switcher.
+      presence: (mode) => call('app.presence', { mode }),
+      // Keep the system awake (replaces `caffeinate`; released on quit or
+      // crash automatically). { display: true } also keeps the screen on.
+      power: {
+        preventSleep: (reason, opts) => call('power.prevent', { reason, ...opts }),
+        allowSleep: () => call('power.allow'),
+      },
+      // The active app right now: { name, bundleId, pid } | null.
+      frontmostApp: () => call('app.frontmost'),
+      // Find files by name/content (Spotlight) -> up to 100 paths.
+      spotlight: (query) => call('app.spotlight', { query }),
+      // The system alert beep — the one portable sound, everywhere.
+      beep: () => call('sound.play', {}),
+      // playSound(target) -> false if the name/file didn't load. `target` is:
+      //   'info' | 'success' | 'alert' | 'error' — portable, mapped to each
+      //     OS's nearest sound (Ping/Glass/Funk/Basso on macOS, the
+      //     SystemAsterisk-family aliases on Windows, the freedesktop sound
+      //     theme on Linux). Use these unless you need a specific sound.
+      //   a platform sound name — 'Glass' (macOS), 'SystemHand' (Windows),
+      //     'complete' (Linux). Names do NOT port: asking for 'Glass' on
+      //     Windows resolves false rather than throwing or silently beeping.
+      //   an absolute audio file path — the portable way to ship your own.
+      playSound: (target) => call('sound.play', { target }),
+      // Screenshot a display (id from screens(); default primary) ->
+      // { path (png temp file — copy to keep), width, height }. Needs the
+      // 'screen' permission + macOS 14; rejects with the reason otherwise.
+      captureScreen: (screenId) => call('app.captureScreen', { screenId }),
+      // System eyedropper (no screen-recording permission!) -> '#rrggbb'
+      // or null on cancel.
+      pickColor: () => call('app.pickColor'),
+      // Thumbnail png for ANY file type -> { path, width, height };
+      // size = bounding box in points (rendered @2x).
+      thumbnail: (path, size) => call('app.thumbnail', { path, size }),
+      // Keychain secrets under the app id (keytar role) — use for tokens,
+      // never tiny.store.
+      secrets: {
+        get: (key) => call('secrets.get', { key }),          // string | null
+        set: (key, value) => call('secrets.set', { key, value }),
+        delete: (key) => call('secrets.delete', { key }),
+      },
+      // Touch ID / account-password sheet -> true | false (false = cancel).
+      authenticate: (reason) => call('app.authenticate', { reason }),
+      // Now Playing (Control Center / lock screen) + media keys. set() arms
+      // the keys; presses arrive via onMediaKey.
+      nowPlaying: {
+        set: (info) => call('nowplaying.set', info ?? {}),   // { title, artist,
+        clear: () => call('nowplaying.clear'),               //  album, duration,
+      },                                                     //  elapsed, playing }
+      // fn({ command, time }): a media key / Control Center transport fired
+      // (command: play|pause|toggle|next|previous|seek; time = seek target).
+      onMediaKey(fn) { return window.tiny.api.on('media-key', fn); },
+      // Speak text with a system voice -> resolves when playback finishes.
+      // opts: { voice (id from voices() or a lang like 'en-AU'), rate 0..1 }.
+      say: (text, opts) => call('app.say', { text, ...(opts ?? {}) }),
+      stopSpeaking: () => call('app.stopSpeaking'),
+      // [{ id, name, lang, quality }] — installed speech voices.
+      voices: () => call('app.voices'),
+    },
+
+    tray: {
+      // spec: { title?, icon?, template?, tooltip?, primaryAction?,
+      //         menu?: [{ id, label, key? } | { separator: true }] }
+      // icon: png path or 'sf:<name>' (SF Symbol); primaryAction: true makes a
+      // left click fire onClick and moves the menu to right-click.
+      set: (spec) => call('tray.set', spec),
+      remove: () => call('tray.remove'),
+      // The tray icon's on-screen rect { x, y, width, height } | null.
+      position: () => call('tray.position'),
+      on(fn) { return window.tiny.api.on('tray', ({ id }) => fn(id)); },          // menu item clicks
+      onClick(fn) { return window.tiny.api.on('trayclick', () => fn()); },        // icon clicks
+    },
+  };
+
+  window.__emit = (msg) => {
+    // Snapshot: a handler that unsubscribes (itself or a sibling) mid-dispatch
+    // must not make forEach skip the next one.
+    (handlers[msg.event] || []).slice().forEach((fn) => fn(msg.data));
+  };
+
+  // The tiny.audio.sampler HOST — the Web Audio mixer the bridge drives by
+  // eval into the MAIN window on macOS/Windows (Linux mixes in the launcher
+  // instead; there this object is simply never called). Defined on every
+  // page for uniformity, used only where the bridge points at it. Not API:
+  // pages call tiny.audio.sampler, which routes through the bridge so every
+  // window and the backend share one mixer and one state owner.
+  {
+    let sctx = null, smaster = null, smval = 1, sseq = 1;
+    const sbufs = {};    // name -> AudioBuffer
+    const svoices = {};  // id -> { src, g, p, name, t }
+    const ensure = () => {
+      if (!sctx) {
+        sctx = new AudioContext();
+        smaster = sctx.createGain();
+        smaster.gain.value = smval;
+        smaster.connect(sctx.destination);
+      }
+      // Injected evals are never a user gesture; resume() covers a context
+      // that came up suspended (autoplay policy) — it's ~ms when allowed.
+      if (sctx.state === 'suspended') sctx.resume().catch(() => {});
+      return sctx;
+    };
+    const glide = (param, v) => param.setTargetAtTime(v, sctx.currentTime, 0.005);
+    const kill = (id, fade) => {
+      const v = svoices[id];
+      if (!v) return;
+      delete svoices[id];
+      try {
+        if (fade) { glide(v.g.gain, 0); v.src.stop(sctx.currentTime + 0.05); }
+        else v.src.stop();
+      } catch {}
+    };
+    window.__tinySampler = {
+      async load(name, path) {
+        try {
+          const ctx = ensure();
+          let bytes;
+          // Fast path: read the bank file directly (zero bytes over any
+          // wire). Files outside the page's read root can't be — fall back
+          // to asking the bridge for the bytes once.
+          try {
+            const r = await fetch(window.tiny.fileURL(path));
+            if (!r.ok) throw new Error('http ' + r.status);
+            bytes = await r.arrayBuffer();
+          } catch {
+            const { b64 } = await call('sampler.bytes', { name });
+            bytes = b64ToU8(b64).buffer;
+          }
+          sbufs[name] = await ctx.decodeAudioData(bytes);
+          call('sampler.hostResult', { name, ok: true });
+        } catch (e) {
+          call('sampler.hostResult', { name, ok: false, error: String((e && e.message) || e) });
+        }
+      },
+      play(id, name, vol, pan, rate, loop) {
+        const buf = sbufs[name];
+        if (!buf) return;
+        const ctx = ensure();
+        // Voice cap with oldest-first stealing — the same 32 as the Linux
+        // native mixer, so an app hears the same behavior everywhere.
+        const ids = Object.keys(svoices);
+        if (ids.length >= 32) {
+          let oldest = null;
+          for (const k of ids) if (!oldest || svoices[k].t < svoices[oldest].t) oldest = k;
+          kill(+oldest, true);
+        }
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.playbackRate.value = rate;
+        src.loop = !!loop;
+        const g = ctx.createGain();
+        g.gain.value = vol;
+        const p = ctx.createStereoPanner();
+        p.pan.value = pan;
+        src.connect(g); g.connect(p); p.connect(smaster);
+        src.onended = () => {
+          delete svoices[id];
+          try { src.disconnect(); g.disconnect(); p.disconnect(); } catch {}
+        };
+        svoices[id] = { src, g, p, name, t: sseq++ };
+        src.start();
+      },
+      set(id, vol, pan, rate) {
+        const v = svoices[id];
+        if (!v) return;
+        if (vol != null) glide(v.g.gain, vol);
+        if (pan != null) glide(v.p.pan, pan);
+        if (rate != null) v.src.playbackRate.value = rate;
+      },
+      stop(id) { kill(id, true); },
+      stopAll() { for (const k of Object.keys(svoices)) kill(+k, true); },
+      master(v) {
+        smval = v;
+        if (smaster) glide(smaster.gain, v);
+      },
+      unload(name) {
+        delete sbufs[name];
+        // Cut, not fade: matches the native backend's documented unload.
+        for (const k of Object.keys(svoices)) if (svoices[k].name === name) kill(+k, false);
+      },
+    };
+  }
+
+  // Announce this page to the backend once tiny is up. First boot and every
+  // reload land here; the bridge uses the MAIN window's hello to re-arm the
+  // sampler host on macOS/Windows (a reload wiped its decoded bank).
+  call('client.hello').catch(() => {});
+
+  // Drag regions for frameless windows: any element with data-tiny-drag acts
+  // as a titlebar — drag moves the window, double-click zooms. Interactive
+  // children (or anything inside data-tiny-nodrag) are left alone.
+  window.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    if (!e.target.closest('[data-tiny-drag]')) return;
+    if (e.target.closest('button, a, input, textarea, select, [contenteditable], [data-tiny-nodrag]')) return;
+    if (e.detail === 2) call('win.zoom');
+    else call('win.startDrag');
+  });
+
+  // Resize grips for frameless windows. An undecorated window has no WM resize
+  // border and the WebView covers the whole surface, so without these a
+  // frameless app simply cannot be resized. Eight thin strips around the edge,
+  // invisible, above the page, each starting a native resize drag — so every
+  // app gets working edges without doing anything, and pages that already have
+  // their own handle are unaffected (theirs sits inside these 5px).
+  // Only where the platform doesn't provide them. __TINY_FRAMELESS is injected
+  // (as a boolean) by the Linux launcher, so its presence marks the host; its
+  // value can't be trusted on its own, because the page is injected before the
+  // CHROME op removes the decorations — ask the window itself instead.
+  if (typeof window.__TINY_FRAMELESS === 'boolean') {
+    const T = 5;                     // grip thickness, px
+    const EDGES = [
+      ['nw', 'nwse-resize', { left: 0, top: 0, width: T, height: T }],
+      ['ne', 'nesw-resize', { right: 0, top: 0, width: T, height: T }],
+      ['sw', 'nesw-resize', { left: 0, bottom: 0, width: T, height: T }],
+      ['se', 'nwse-resize', { right: 0, bottom: 0, width: T, height: T }],
+      ['n', 'ns-resize', { left: T, right: T, top: 0, height: T }],
+      ['s', 'ns-resize', { left: T, right: T, bottom: 0, height: T }],
+      ['w', 'ew-resize', { top: T, bottom: T, left: 0, width: T }],
+      ['e', 'ew-resize', { top: T, bottom: T, right: 0, width: T }],
+    ];
+    const mount = () => {
+      if (document.getElementById('__tinyGrips')) return;
+      const host = document.createElement('div');
+      host.id = '__tinyGrips';
+      // pointer-events only on the strips, so the page keeps every other pixel
+      host.style.cssText = 'position:fixed;inset:0;z-index:2147483647;pointer-events:none';
+      for (const [edge, cursor, box] of EDGES) {
+        const g = document.createElement('div');
+        let css = 'position:absolute;pointer-events:auto;cursor:' + cursor + ';';
+        for (const k in box) css += k + ':' + box[k] + 'px;';
+        g.style.cssText = css;
+        g.addEventListener('mousedown', (e) => {
+          if (e.button !== 0) return;
+          e.preventDefault(); e.stopPropagation();
+          call('win.startResize', { edge });
+        });
+        host.appendChild(g);
+      }
+      document.body.appendChild(host);
+    };
+    // Not every frameless window wants edges: a fixed-size skin (a Winamp-style
+    // deck) is meant to stay put, and it still resizes ITSELF for a shade view.
+    // Opt out per page with <html data-tiny-noresize>, or globally by making the
+    // window non-resizable — either way the grips stay off.
+    const optedOut = () => document.documentElement.hasAttribute('data-tiny-noresize')
+      || !!(document.body && document.body.hasAttribute('data-tiny-noresize'));
+    call('win.getState')
+      .then((s) => {
+        if (!s || !s.chrome || s.chrome.frame !== false) return;
+        if (s.resizable === false) return;
+        const go = () => { if (!optedOut()) mount(); };
+        if (document.body) go();
+        else document.addEventListener('DOMContentLoaded', go);
+      })
+      .catch(() => {});
+  }
+})();

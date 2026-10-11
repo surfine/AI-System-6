@@ -113,6 +113,7 @@ function noteMissingParts(paths) {
 }
 
 function canKeepApplicationShell() {
+  if (window.tiny?.api) return false; // Native OTA owns the complete local payload.
   // Reading the property is enough to throw: a browser with service workers
   // switched off (a private window, an enterprise policy, an automation
   // context) still has the key on navigator and raises SecurityError on

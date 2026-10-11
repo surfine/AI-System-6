@@ -2916,6 +2916,7 @@ function pushSystemNotification(message, options = {}) {
     updateNotificationIndicator();
   }
   window.AISystem6JourneyGates?.syncDeskProbe?.();
+  if (item.state !== previousState) window.AISystem6TinyShell?.notify(item);
   return item.id;
 }
 
@@ -3159,6 +3160,7 @@ function longTaskReceiptInfo(key, statusText = "") {
 }
 
 function beginLongTask(key, statusText = "") {
+  if (window.AISystem6TinyShell?.isInstalling()) return false;
   if (activeAbortController || activeLongTasks.size > 0) {
     setStatus(t("task_already_running", localModelState.task || t("working_locally")));
     return false;

@@ -1969,6 +1969,22 @@ body[data-line-spacing="relaxed"] {
   white-space: nowrap;
 }
 
+/* S03: the open-question badge shares the translation badge's slot. */
+.scrap-question-badge {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  display: inline-grid;
+  place-items: center;
+  height: 16px;
+  padding: 0 4px;
+  border: var(--scrap-translation-badge-border);
+  font-family: var(--text-font);
+  font-size: 10px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
 .scrap-translation-badge {
   grid-column: 3;
   grid-row: 1;

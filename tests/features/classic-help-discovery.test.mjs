@@ -2,6 +2,8 @@
 // startup settings explain Finder versus MultiFinder, and user-activated
 // Balloon Help identifies unfamiliar objects without replacing System Help.
 
+import vm from "node:vm";
+import assert from "node:assert/strict";
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("classic-help-discovery");
@@ -200,5 +202,20 @@ test.assert(["\n.close-box,", "\n.cloud-model-indicator {"].every((rule) => wind
   "the help pointer follows the window-control cursors it replaces, in their own sheet");
 test.assertIncludes(liquid, "--balloon-help-radius: var(--r-lg)", "Liquid Glass changes balloon material through tokens");
 test.assertNotIncludes(liquid, "body[data-theme=\"liquid-glass\"] .balloon-help", "Liquid Glass does not fork the Balloon Help DOM or selector");
+
+// Exercise hit testing with a disabled button behind a live foreground tab.
+const disabledBehind = { matches: () => true, disabled: true };
+const hitContext = vm.createContext({
+  document: { elementsFromPoint: () => [disabledBehind] },
+  controlIsUnavailable: (el) => el === disabledBehind,
+  unavailableControlReasonKey: () => "unavailable",
+});
+vm.runInContext(balloon.slice(balloon.indexOf("function unavailableControlFromEvent("), balloon.indexOf("function installGrayAffordanceClicks(")), hitContext);
+const hit = hitContext.unavailableControlFromEvent;
+const liveTab = { closest: (selector) => selector.includes("role='tab'") ? {} : null };
+assert.equal(hit({ target: liveTab, clientX: 10, clientY: 10 }), null);
+assert.equal(hit({ target: { closest: () => disabledBehind }, clientX: 10, clientY: 10 }), disabledBehind);
+assert.equal(hit({ target: { closest: () => null }, clientX: 10, clientY: 10 }), disabledBehind);
+test.assert(true, "live foreground controls win over lower disabled controls while disabled-control hit recovery remains available");
 
 test.finish();

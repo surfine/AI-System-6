@@ -43,8 +43,7 @@ TWELVE APPEARANCES IN ALL. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 
 - [Recent progress](#recent-progress)
 - [What's new in 1.0.58](#whats-new-in-1058)
-- [What's new in 1.0.57](#whats-new-in-1057)
-- [What's new in 1.0.56](#whats-new-in-1056)
+- [Earlier releases](#earlier-releases--1058--1057--1056-click-to-expand)
 - [What this protects](#what-this-protects)
 - [Run it in 60 seconds](#run-it-in-60-seconds)
 - [The route is the product](#the-route-is-the-product)
@@ -75,6 +74,21 @@ Projects stay in your browser. Export a backup to keep another copy. You can exp
 
 ## What's new in 1.0.58
 
+- **The Mac app moves to TinyJS on Apple silicon, macOS 15 or later.** The complete app includes Node, the local server and the web desk. Updates check automatically; choose Install and Restart after work is saved and active model, import and export tasks finish. The first 1.0.58 OTA uses ad-hoc signing: it checks HTTPS, SHA-256 and the application signature, while Developer ID and notarization remain pending. First installation may need the macOS Open Anyway step.
+- **Mac collection stays under your control.** Clipboard collection starts off. Selected text and screenshot OCR become editable candidates before you confirm their destination. The Mac Application panel also offers a selection shortcut, Quick Look and download controls. Existing model keys ask before migration to Keychain; failed or cancelled migration preserves the original configuration.
+
+
+- **Charts edit in place as real copies.** Select a chart, choose 编辑副本, and it opens in ClioChart with its own undo; adopt lands as one undoable parent step while the source stays byte-identical. A parent edit under an open draft refuses the commit instead of overwriting either side.
+- **A context strip names the object you are on** — the commands that apply to the current selection, with a stated reason for anything disabled, answering identically across all twelve appearances.
+- **Credibility when the network lies.** A commit whose receipt the transport lost leaves the session explicitly uncertain and reconciles by querying the original request — it never re-fires the write or reports a landed apply as cancelled.
+- **Open questions are notes too.** Mark a scrap 待解：it keeps the quoted source, and its status moves only by your acceptance; similar questions surface as local, dismissible hints.
+- **Reading stays honest under version churn.** Annotations remember their revision; only real content changes become review candidates; dead anchors keep your words flagged.
+
+<details>
+<summary><b>Earlier releases — 1.0.58 / 1.0.57 / 1.0.56</b> (click to expand)</summary>
+
+**1.0.58**
+
 - **Office files keep their own bytes.** Bring a DOCX, XLSX or PPTX onto the
   File Floppy and the original package rides beside the extracted text copy;
   opening it asks once whether to edit the file itself or read the text copy in
@@ -95,7 +109,7 @@ Projects stay in your browser. Export a backup to keep another copy. You can exp
   pages, and a compressed stream that claims more memory than the import
   allows is refused before any allocation happens.
 
-## What's new in 1.0.57
+**1.0.57**
 
 - **The Dock runs several applications at once.** With the Dock shown, a Mac
   OS X appearance always runs as MultiFinder (Mac OS X had no single-application
@@ -131,7 +145,7 @@ Projects stay in your browser. Export a backup to keep another copy. You can exp
   model is required; the real-model steps of its acceptance walk have not yet
   been run.
 
-## What's new in 1.0.56
+**1.0.56**
 
 - **Endfield Terminal has a refreshed v1.5 archive.** The 2026-10-08 refresh includes 332 missions, 32 operators, 349 tutorials, 548 lore entries and 76 central documents. Dialogue and radio are both searchable; retained older records keep their own dates and versions. [Danqingdu preparation](docs/endfield-corpus.md) is ready for the announced October 15 release, without treating previews as released story.
 
@@ -291,6 +305,9 @@ Projects stay in your browser. Export a backup to keep another copy. You can exp
   Results arriving after cancellation, a project switch or an intervening edit
   cannot overwrite the captured document. Model-output comparisons are still
   pending; these are editing contracts, not a claim of measured quality gains.
+
+</details>
+
 
 </details>
 
@@ -568,7 +585,7 @@ The writing runtime keeps author, recipient, voice and medium independent, share
 ## Built under a 1988 constraint
 
 ```text
-boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,945,864 bytes
+boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,959,340 bytes
 two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 bytes
 heavy tools             load lazily, from a third disk
 ```

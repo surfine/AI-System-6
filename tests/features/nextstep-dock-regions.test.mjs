@@ -306,12 +306,15 @@ test.assert(
   "a localStorage that throws leaves the Dock visible by default and the preference functions never throw",
 );
 
-// NeXTSTEP is a multitasking system (owner, 2026-09-25): even in the desk's
-// default single-Finder mode, launching another application under NeXTSTEP
-// never closes the one before it or its miniwindows.
+// NeXTSTEP is a multitasking system (owner, 2026-09-25): launching another
+// application under NeXTSTEP never closes the one before it or its
+// miniwindows. (Unified spec W06 made MultiFinder the new-desk default, so
+// the fixture asserts the NeXTSTEP-era semantics directly rather than
+// pinning the desk-wide default that no longer exists.)
 test.assert(
-  vmw.run("isMultiFinderMode()") === false,
-  "the fixture is in the default single-Finder mode",
+  (await vmw.context.prepareFinderModeForApp("reader")) === true
+    && vmw.run('getWindow("documents").classList.contains("is-minimized") && !getWindow("documents").classList.contains("is-hidden")'),
+  "under NeXTSTEP a launch leaves the other application's windows and miniwindows on the desk",
 );
 test.assert(
   (await vmw.context.prepareFinderModeForApp("reader")) === true

@@ -1253,10 +1253,10 @@ function recordContextLoadout(payload, invocation) {
   const skipped = (invocation?.assembly?.contextItems || [])
     .filter((item) => item.included === false || item.excluded)
     .map((item) => ({ id: item.id || getContextSourceKey(item), kind: "skipped", label: contextSourceLabel(item), estimatedTokens: 0, reason: item.excluded ? "disabled by user" : "budget or ranking" }));
+  // C08: compaction coverage rides the loadout (built by the lazy module).
+  const compaction = window.AISystem6ChatCompaction?.compactionCoverage(compressedConversationMemory) || null;
   const loadout = {
-    capturedAt: new Date().toISOString(),
-    entries,
-    skipped,
+    capturedAt: new Date().toISOString(), entries, skipped, compaction,
     promptTokens: entries.reduce((sum, entry) => sum + entry.estimatedTokens, 0),
     contextTokens: Number(invocation?.contextBudget?.contextTokens || 0),
   };
@@ -1398,11 +1398,35 @@ function restoreClioTalkRuntimeState(state = null) {
   })));
   restoreClioImageInputsFromConversation();
   activeChatFileId = String(state.activeChatFileId || "") || null;
-  compressedConversationMemory = {
-    text: String(state.compressedConversationMemory?.text || ""),
-    sourceMessages: Number(state.compressedConversationMemory?.sourceMessages || 0),
-    updatedAt: String(state.compressedConversationMemory?.updatedAt || ""),
-  };
+  const restored = state.compressedConversationMemory || {};
+  if (restored.version === 1) {
+    compressedConversationMemory = {
+      ...compactionRecordVersion1({
+        text: restored.text, throughMessageId: restored.throughMessageId,
+        firstKeptMessageId: restored.firstKeptMessageId, coveredHash: restored.coveredHash,
+        sourceMessages: restored.sourceMessages, model: restored.model,
+        projectId: restored.projectId, chatId: restored.chatId,
+      }),
+      committed: restored.committed === true,
+    };
+  } else if (String(restored.text || "").trim()) {
+    // legacy-unverified: keep the text readable; rebuild the identity only
+    // when the covered message is still there to anchor it.
+    const rebuildable = legacyCompactionIsRebuildable(restored);
+    compressedConversationMemory = {
+      version: 0,
+      legacy: true,
+      legacyRebuildable: rebuildable,
+      text: String(restored.text || ""),
+      sourceMessages: Number(restored.sourceMessages || 0),
+      throughMessageId: rebuildable ? String(conversation[Number(restored.sourceMessages) - 1].id || "") : "",
+      coveredHash: "",
+      updatedAt: String(restored.updatedAt || ""),
+      committed: false,
+    };
+  } else {
+    compressedConversationMemory = { text: "", sourceMessages: 0, updatedAt: "" };
+  }
   (Array.isArray(state.attachedClipIds) ? state.attachedClipIds : []).forEach((id) => attachedClipIds.add(id));
   window.nextTaskInputFileIds = new Set(
     Array.isArray(state.nextTaskInputFileIds) ? state.nextTaskInputFileIds : []
@@ -1604,6 +1628,13 @@ function uniqueClioTalkGroundingSources(sources = []) {
     seen.add(key);
     return true;
   });
+}
+
+/** C01: the chat conversation paths that must keep the WHOLE history and
+ * block on overflow instead of running the destructive fitting pipeline. */
+function isChatConversationTaskKind(taskKind = "chat") {
+  const kind = String(taskKind || "").toLowerCase();
+  return kind === "chat" || kind === "sideask" || kind === "side-ask" || kind === "";
 }
 
 function isClioTalkAnswerContractTask(taskKind = "chat", options = {}) {
@@ -3577,10 +3608,15 @@ function buildEndfieldSourceContext() {
   return `${label}\n\n${body}`;
 }
 
-function buildPayload(userText, options = {}) {
+async function buildPayload(userText, options = {}) {
   const invocation = options.invocation || createClioTaskInvocation({ ...options, userText });
   assertClioTaskInvocationActive(invocation, options.signal, true);
-  compactConversationMemoryIfNeeded(options);
+  // C08: ensure the usage and cache policies (fire-and-forget).
+  if (typeof ensureChatCachePolicyModule === "function") ensureChatCachePolicyModule();
+  if (typeof ensureUnifiedSpecContractsModule === "function") ensureUnifiedSpecContractsModule();
+  if (typeof ensureChatRunDetailsModule === "function") ensureChatRunDetailsModule();
+  // C02: prepare the candidate; the send path commits coverage (CAS).
+  await compactConversationMemoryIfNeeded(options);
   const contextSections = [];
   const skipContext = options.skipContext === true;
   const temporaryChat = options.temporaryChat === true || clioTalkTemporaryMode;
@@ -3674,10 +3710,9 @@ function buildPayload(userText, options = {}) {
   const useBroadContext = !temporaryChat && !skipContext && !isScopedSideAskChat && (rememberInput.checked || attachedClipIds.size > 0);
   const useContext = useBroadContext || hasMountedFileDisk;
   const continuationMessages = clioTalkContinuationMessages(options);
+  // C01: whole delivered conversation; fitting happens downstream.
   const recentMessages = !continuationMessages.length && !skipContext && (temporaryChat || rememberInput.checked || isScopedSideAskChat)
-    ? conversation
-        .filter((message) => !["failed", "sending"].includes(message?.deliveryState))
-        .slice(-6)
+    ? conversation.filter((message) => !["failed", "sending"].includes(message?.deliveryState))
     : [];
   const budgetInfo = getRagContextBudget(userText, recentMessages);
   const retrievedContext = useContext
@@ -3960,65 +3995,81 @@ function importantConversationLines(text, limit = 8) {
     .map((line) => line.length > 260 ? `${line.slice(0, 257).trim()}...` : line);
 }
 
+
 function compactMessageForMemory(message, index) {
-  const content = String(message?.content || "").trim();
-  if (!content) return "";
-  const lines = importantConversationLines(content, 6);
-  return [
-    `### ${index + 1}. ${messageRoleLabel(message.role)}`,
-    lines.length ? lines.map((line) => `- ${line}`).join("\n") : clipContextContent(content, 520),
-  ].join("\n").trim();
+  const api = chatCompactionApi();
+  if (!api) return "";
+  return api.compactMessageForMemory(message, index, messageRoleLabel);
 }
 
-function buildConversationMemoryText(messages, previousMemory = "") {
-  const usable = messages.filter((message) => (
-    !["failed", "sending"].includes(message?.deliveryState)
-      && String(message?.content || "").trim()
-  ));
-  const firstUser = usable.find((message) => message.role === "user");
-  const memoryTurns = uniqueMessages([firstUser, ...usable.slice(-14)])
-    .map((message, index) => compactMessageForMemory(message, index))
-    .filter(Boolean)
-    .join("\n\n");
-  return [
-    "# Conversation Memory",
-    "This is an automatic continuity note. Treat it as compressed working memory, not as source text to quote.",
-    previousMemory ? `## Prior compressed memory\n${clipContextContent(previousMemory, 5000)}` : "",
-    memoryTurns ? `## Compressed turns\n${memoryTurns}` : "",
-  ].filter(Boolean).join("\n\n").trim();
+/** C02: the lazy compaction module's API accessor (null = not loaded). */
+function chatCompactionApi() {
+  return window.AISystem6ChatCompaction || null;
 }
 
-function compactConversationMemoryIfNeeded(options = {}) {
+/** The lazy module's builder consults the host's role labels via this hook. */
+function root_setCompactionRoleLabel() {
+  if (typeof window !== "undefined") window.__compactionRoleLabel = messageRoleLabel;
+}
+
+async function compactConversationMemoryIfNeeded(options = {}) {
   if (sideAskEnabled && !isMultiFinderMode()) return false;
+  if (!window.AISystem6ChatCompaction && typeof ensureChatCompactionModule === "function") {
+    await ensureChatCompactionModule();
+  }
   const temporaryChat = options.temporaryChat === true || clioTalkTemporaryMode;
   if ((!temporaryChat && !rememberInput?.checked) || options.skipContext === true) return false;
-  const keepMessages = Number.isFinite(options.keepMessages) ? options.keepMessages : 6;
-  const cutoff = Math.max(0, conversation.length - keepMessages);
-  if (cutoff < 4) return false;
-  if (!options.force && cutoff <= Number(compressedConversationMemory?.sourceMessages || 0)) return false;
-
-  const nextText = buildConversationMemoryText(
-    conversation.slice(0, cutoff),
-    compressedConversationMemory?.text || ""
-  );
-  compressedConversationMemory = {
-    text: clipContextContent(nextText, 14000),
-    sourceMessages: cutoff,
-    updatedAt: new Date().toISOString(),
-  };
+  // C02: prepare the uncommitted candidate; the send path commits (CAS).
+  const api = chatCompactionApi();
+  if (!api) return false; // the lazy module failed to load; try next send
+  const candidate = api.prepareCandidate(conversation, {
+    keepMessages: options.keepMessages,
+    force: options.force === true,
+    previousSourceMessages: Number(compressedConversationMemory?.sourceMessages || 0),
+    previousText: compressedConversationMemory?.text || "",
+    model: options.model || "",
+    projectId: activeProjectId || "",
+    chatId: activeChatFileId || "",
+    contextEpoch: workingSessionContextEpoch?.() || 0,
+    providerScope: window.AISystem6ChatContextCapabilities
+      ?.resolveInputLimit(clioCloudRouteActive?.() ? "cloud" : "local", cloudConfig?.provider || "", options.model || "")?.providerScope || "local",
+    uniqueTurns: uniqueMessages,
+    roleLabel: messageRoleLabel,
+    clip: clipContextContent,
+  });
+  if (!candidate) return false;
+  compressedConversationMemory = candidate;
   scheduleSettingsSave();
   return true;
+}
+
+/** C02: commit a candidate compaction — the CAS-style coverage advance.
+ * Delegates to the lazy module; the store callback lands the committed record. */
+function commitCompactionRecord(record) {
+  const api = chatCompactionApi();
+  if (!api || !record || record.committed) return record;
+  return api.commitCompactionRecord(record, conversation, {
+    commit: (committed) => {
+      compressedConversationMemory = committed;
+      scheduleSettingsSave();
+    },
+  });
 }
 
 function conversationMemorySystemMessage(options = {}) {
   if (sideAskEnabled && !isMultiFinderMode()) return null;
   const temporaryChat = options.temporaryChat === true || clioTalkTemporaryMode;
   if ((!temporaryChat && !rememberInput?.checked) || options.skipContext === true) return null;
-  const text = String(compressedConversationMemory?.text || "").trim();
+  const record = compressedConversationMemory;
+  const text = String(record?.text || "").trim();
   if (!text) return null;
+  // C02: USER-role envelope — summarized material gains no instruction
+  // authority. Shape: built by the lazy compaction module.
+  // C02: USER-role envelope via the lazy memoryEnvelope.
   return {
-    role: "system",
-    content: `${text}\n\nContinuity memory only. Current user instructions override it.`,
+    role: "user",
+    content: chatCompactionApi()?.memoryEnvelope(record) || "",
+    ai_system6_compaction_envelope: true,
   };
 }
 
@@ -4027,6 +4078,13 @@ function invalidateSessionContextAfterTrash() {
 }
 
 function isConversationMemoryMessage(message) {
+  if (message?.ai_system6_compaction_envelope === true) return true;
+  if (typeof message?.content === "string" && message.content.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(message.content);
+      return parsed?.kind === "historical_context_data";
+    } catch {}
+  }
   return /^# Conversation Memory\b/.test(String(message?.content || ""));
 }
 
@@ -4057,12 +4115,24 @@ function modelMessageContentReceipt(content) {
 }
 
 function uniqueMessages(messages) {
+  // C01 (unified spec): two messages with different places in the
+  // conversation are two messages even when their text is identical — the
+  // same sentence asked twice, two "好的" answers to two different questions.
+  // Deduplicate only true structural duplicates (the same OBJECT twice),
+  // which come from building the payload, not from the user's history.
   const seen = new Set();
   return messages.filter((message) => {
     if (!message) return false;
-    const key = `${message.role}\n${modelMessageContentIdentity(message.content)}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
+    const key = String(message.id || "");
+    if (key) {
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }
+    // An id-less message (synthesized system/memory/context wrappers) passes
+    // through unless it is literally the same object already taken.
+    if (seen.has(message)) return false;
+    seen.add(message);
     return true;
   });
 }
@@ -4162,19 +4232,36 @@ async function readModelBudget(payload, options = {}, signal = null) {
       ? getEffectiveContextTokens()
       : contextLengthInput?.value || 8192
   ) || 8192);
+  // C03: count the FINAL payload's real inputs — every message (fixed rules,
+  // sources, memory, history), plus the format schema overhead per message.
+  // The estimate is the same one the vendor contextBudget contract assumes.
   const promptTokens = (payload.messages || []).reduce(
     (sum, message) => sum + estimateTokenCount(message?.content || "") + 6,
     0
   );
   const requestedOutputTokens = defaultRequestedOutputTokens(options);
   const availableOutputTokens = Math.max(0, contextLength - promptTokens - reservedSafetyTokens);
+
+  // C03: provider INPUT limit (chat-context-capabilities.js).
+  const caps = window.AISystem6ChatContextCapabilities;
+  const resolved = typeof caps?.resolveInputLimit === "function"
+    ? caps.resolveInputLimit(typeof clioCloudRouteActive === "function" && clioCloudRouteActive() ? "cloud" : "local", cloudConfig?.provider || "", payload?.model || cloudConfig?.model || "")
+    : { inputLimit: null, providerScope: "local", source: "browser-estimate" };
+  const inputLimit = resolved.inputLimit;
+  const providerScope = resolved.providerScope;
+
   const budget = {
     context_length: contextLength,
+    input_limit: inputLimit,
+    provider_scope: providerScope,
     prompt_tokens: promptTokens,
     requested_output_tokens: requestedOutputTokens,
     available_output_tokens: availableOutputTokens,
-    fits: availableOutputTokens >= requestedOutputTokens,
-    budget_source: "browser_estimate",
+    // C03: the input limit caps the prompt even when the window is larger
+    // (a provider can accept less input than its window implies).
+    fits: availableOutputTokens >= requestedOutputTokens
+      && (inputLimit === null || promptTokens <= inputLimit),
+    budget_source: inputLimit !== null ? "provider-input-limit" : "browser_estimate",
   };
   endPerf?.({ source: budget.budget_source, fits: budget.fits });
   return budget;
@@ -4188,6 +4275,10 @@ function recordModelBudget(budget) {
     promptTokens: budget.prompt_tokens,
     availableOutputTokens: budget.available_output_tokens,
     budgetSource: budget.budget_source,
+    // C03/C08: the provider scope and input limit travel with the budget so
+    // the context panel can name what the cache actually did.
+    providerScope: budget.provider_scope || "",
+    inputLimit: budget.input_limit || null,
   };
   scheduleRenderTasks("contextPanel");
 }
@@ -4664,6 +4755,7 @@ function modelMetricsFromResponse(data, content, elapsedMs) {
   const measuredMs = Number(serverMetrics.elapsed_ms || elapsedMs || 0);
   return {
     elapsedMs: measuredMs,
+    usageSummary: window.AISystem6ChatRunDetails?.usageSummary?.(usage, tokens) || null,
     tokens,
     tokensPerSecond: measuredMs > 0 ? tokens / (measuredMs / 1000) : 0,
     stopReason: data?.choices?.[0]?.finish_reason || serverMetrics.finish_reason || "--",
@@ -4885,6 +4977,13 @@ function clioTalkPreviousNativeResponseId(taskKind = "") {
   const previous = conversation[currentUserIndex - 1];
   if (previous?.role !== "assistant") return null;
   if (!previous.providerResponse?.id || !["lmstudio-native-v1", "lmstudio-responses-v1"].includes(previous.providerResponse?.api)) return null;
+  // C07: a committed compaction rebuilds the native chain from the new view —
+  // the old full-history response id can no longer serve as the prefix when
+  // the compaction covers messages the response was built against.
+  if (compressedConversationMemory?.committed === true
+      && Number(compressedConversationMemory?.sourceMessages || 0) >= currentUserIndex) {
+    return null;
+  }
   const scope = currentClioTalkNativeResponseScope();
   if (!scope.provider || !scope.endpoint || !scope.model) return null;
   if (previous.providerResponse.provider !== scope.provider
@@ -4976,6 +5075,10 @@ function fetchModelPayload(payload, signal, options = {}) {
     nextPayload.ai_system6_max_followup_calls = allowance.remainingRequests;
     nextPayload.ai_system6_max_repair_calls = Math.min(allowance.remainingRequests, allowance.remainingRepairs);
   }
+  // C04: prepared-request snapshot at the last send boundary (no credentials;
+  // comparison hashes only — see chat-compaction.js).
+  window.AISystem6ChatCompaction?.capturePreparedRequestSnapshot?.(nextPayload, { isCloud });
+
   const endpoint = getChatCompletionsEndpoint();
   if (endpoint === "same-origin-cloud-chat") {
     return window.AISystem6Capabilities.requestService("cloud.chat", {
@@ -5127,9 +5230,42 @@ async function sendLocalModelTask(options = {}) {
   window.lastLocalModelResponseId = "";
   window.lastLocalModelResponseApi = "";
   const endPerf = window.AISystem6Perf?.start("model_request", { taskKind, streamPreference });
-  const requestPayload = payload || buildPayload(userText, { ...options, taskKind });
+  const requestPayload = payload || await buildPayload(userText, { ...options, taskKind });
   if (window.lastAutoSkillCall?.length) options.onAutoSkillCall?.(window.lastAutoSkillCall);
-  const budgetedPayload = await fitPayloadWithModelBudget(requestPayload, { ...options, taskKind }, signal);
+  // C02: the compaction candidate this payload was built against commits
+  // HERE — the payload exists, the invocation is alive, and the conversation
+  // the summary covered is verified unchanged (CAS in commitCompactionRecord).
+  // A failed send leaves the previous coverage standing.
+  if (isChatConversationTaskKind(taskKind)) {
+    if (!window.AISystem6ChatCompaction && typeof ensureChatCompactionModule === "function") {
+      await ensureChatCompactionModule().catch(() => {});
+    }
+    commitCompactionRecord(compressedConversationMemory);
+    // C03: the budget check consults the provider capability profile; make
+    // sure the (lazy) profile is present before checkedBudget runs.
+    if (!window.AISystem6ChatContextCapabilities && typeof ensureChatContextCapabilitiesModule === "function") {
+      await ensureChatContextCapabilitiesModule().catch(() => {});
+    }
+  }
+  // C01 (unified spec): the CHAT path no longer runs the destructive
+  // fitting pipeline — the whole delivered conversation is the context and
+  // a message that genuinely cannot fit blocks the send instead of being
+  // silently slimmed or clipped. Writing-tool tasks keep their existing
+  // fittings until their own migration passes (spec §12 P5).
+  const chatPath = isChatConversationTaskKind(taskKind);
+  let budgetedPayload;
+  if (chatPath) {
+    const budget = await checkedBudget(requestPayload, { ...options, taskKind }, signal);
+    if (budget?.fits === false) {
+      const error = new Error(t("chat_payload_too_large"));
+      error.code = "CHAT_PAYLOAD_TOO_LARGE";
+      error.userText = userText;
+      throw error;
+    }
+    budgetedPayload = requestPayload;
+  } else {
+    budgetedPayload = await fitPayloadWithModelBudget(requestPayload, { ...options, taskKind }, signal);
+  }
   assertClioTaskInvocationActive(invocation, signal);
   const normalizedTaskKind = String(taskKind || "").toLowerCase();
   const explicitHumanizerRewrite = window.AISystem6ModelTaskRuntime
@@ -5450,6 +5586,8 @@ function createClioTalkAssistantRecord({
     // and it stays a proposal until Use Result writes it.
     manuscriptPatch: clioTalkProposedManuscriptPatch(),
     webSearch: webSearch || null,
+    // C08: what the run cost — native accounting or a flagged estimate.
+    usage: invocation?.modelResult?.metrics?.usageSummary || null,
     productHelpTopics: clioProductHelpReceipt(),
     helpActions: clioProductHelpActions(),
     providerResponse: nativeResponseId && nativeResponseApi ? {
@@ -5476,6 +5614,8 @@ function createClioTalkAssistantRecord({
   // to the receipt store — independent of clioTalkTemporaryMode and of
   // whether the conversation itself is ever saved as a file — and records
   // the id on the record so a later Use Result can mark it adopted.
+  // C08: the panel's fold reads the latest run usage (display only).
+  window.lastClioTalkUsage = record.usage || null;
   const receiptAnswerText = String(content || "").trim();
   if (receiptAnswerText) {
     window.AISystem6RunReceipts?.recordModelAnswer?.({
@@ -5485,6 +5625,8 @@ function createClioTalkAssistantRecord({
       provider: servedProviderName,
       model: servedModelName,
       attempts: modelAttempts,
+      // C08: native accounting or a flagged estimate rides the receipt.
+      usage: invocation?.modelResult?.metrics?.usageSummary || null,
       runManifest,
       answerText: receiptAnswerText,
     }).then((recorded) => {
@@ -6101,6 +6243,16 @@ async function submitUserTextCore(userText, options = {}) {
       console.error("ClioTalk received a model reply but could not complete local bookkeeping.", error);
       updateLocalModelState({ server: true, selected: true, ready: true, running: false, task: "" });
       setStatus(t("clio_reply_preserved_record_warning"));
+    } else if (error?.code === "CHAT_PAYLOAD_TOO_LARGE") {
+      // C01: the message itself cannot fit — the input and attachments stay
+      // in the composer untouched, and the pending bubble says exactly that.
+      resolvePendingStatus(pendingMessage, t("chat_payload_too_large"), {
+        retryText: cleanText,
+        retryOptions: clioTalkReplayOptions(options, options.taskKind || "chat"),
+        userRecordId: submittedUserRecord?.id || "",
+      });
+      syncClioTalkSendButton();
+      return null;
     } else {
       const code = typeof classifyLmStudioError === "function" ? classifyLmStudioError(error) : "";
       const isCloudActive = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active;

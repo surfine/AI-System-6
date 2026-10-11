@@ -1,0 +1,49 @@
+{
+  "name": "ai-system6-shell",
+  "title": "AI System 6 Beta",
+  "id": "local.aisystem6.beta.shell",
+  "version": "1.0.0",
+  "minTinyjs": "0.50.1",
+  "size": "1280x800",
+  "backend": "src/main.js",
+  "downloads": "auto",
+  "popups": "external",
+  "windowPlacement": true,
+  "urlScheme": "ai-system-6",
+  "fileExtensions": [
+    "docx",
+    "json"
+  ],
+  "api": {
+    "disable": [
+      "*"
+    ],
+    "origins": {
+      "http://127.0.0.1:4173": {
+        "disable": [
+          "*"
+        ],
+        "enable": [
+          "shell.ready",
+          "shell.settings",
+          "shell.selection",
+          "shell.screenshot",
+          "shell.files",
+          "shell.readFile",
+          "shell.quickLook",
+          "shell.previewFile",
+          "shell.closePreview",
+          "shell.notify",
+          "shell.checkUpdate",
+          "shell.installUpdate",
+          "system.capabilities",
+          "dialog.confirm",
+          "dialog.alert",
+          "shell.revealDownload",
+          "shell.cancelDownload",
+          "shell.bootDiagnostic"
+        ]
+      }
+    }
+  }
+}

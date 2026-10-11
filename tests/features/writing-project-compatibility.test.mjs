@@ -56,7 +56,7 @@ function runtime(seed) {
     },
   };
   vm.createContext(context);
-  for (const source of ["core/state-stores", "core/run-receipts", "core/markdown", "core/context-retrieval", "core/project-disk-backup", "core/project-backup-assembler", "features/export-import"]) {
+  for (const source of ["core/state-stores", "core/run-receipts", "core/markdown", "core/context-retrieval", "core/project-disk-backup", "core/project-backup-assembler", "features/export-import", "features/project-backup-export-data"]) {
     vm.runInContext(read(`app/${source}.js`), context, { filename: `${source}.js` });
   }
   return { context, durable, backup: context.AISystem6ProjectDiskBackup };

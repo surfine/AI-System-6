@@ -311,6 +311,9 @@ const TimeMachineEngines = (() => {
     if (!event || typeof event !== "object") return;
     const tabId = String(event.tab || "");
     switch (event.type) {
+      case "download":
+        window.AISystem6TinyShell?.receiveNativeDownload(event);
+        break;
       case "state": {
         const state = {
           url: String(event.url || "").slice(0, 4096),

@@ -1,10 +1,27 @@
-import { spawn } from "node:child_process";
+import { execSync, spawn } from "node:child_process";
 import { appendFileSync, closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { dirname, join } from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 import { batchContractNames, publicContractFiles, publicProductContracts } from "../tests/feature-manifest.mjs";
+
+// W08: every check is marked with the commit and the desk version it ran
+// against. Inline on purpose — development-feedback copies this file into a
+// scratch tree, so it may not import sibling libs.
+function deskCheckStamp() {
+  let commit = "unknown";
+  try {
+    commit = String(execSync("git rev-parse --short HEAD", {
+      encoding: "utf8", stdio: ["ignore", "pipe", "ignore"],
+    }).trim() || "unknown");
+  } catch {}
+  let version = "unknown";
+  try {
+    version = String(JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version || "unknown");
+  } catch {}
+  return `commit ${commit} · desk v${version}`;
+}
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const featureDir = join(root, "tests/features");
@@ -226,6 +243,7 @@ const slowest = selectedTests
   }))
   .sort((a, b) => b.durationMs - a.durationMs)
   .slice(0, Math.min(5, selectedTests.length));
+console.log(deskCheckStamp());
 console.log("\nSlowest feature contracts:");
 slowest.forEach(({ durationMs, label }) => {
   console.log(`  ${durationMs.toFixed(0).padStart(5)}ms  ${label}`);
@@ -254,4 +272,4 @@ if (publicCoverageFailures || missingContracts.length) {
   process.exit(1);
 }
 
-console.log(`\nFeature verification passed: ${selectedTests.length} feature test(s) with ${Math.min(concurrency, selectedTests.length)} worker(s) in ${((performance.now() - suiteStarted) / 1000).toFixed(2)}s.`);
+console.log(`\nFeature verification passed: [${deskCheckStamp()}]  ${selectedTests.length} feature test(s) with ${Math.min(concurrency, selectedTests.length)} worker(s) in ${((performance.now() - suiteStarted) / 1000).toFixed(2)}s.`);

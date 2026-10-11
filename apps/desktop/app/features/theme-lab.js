@@ -474,7 +474,7 @@
   const OBJECT_IDS = new Set(OBJECTS.map(([id]) => id));
   const OBJECT_LABELS = Object.fromEntries(OBJECTS);
 
-  // Provenance from ICON-LINEAGE-AUDIT.md → "Provenance classes". A is a
+  // Provenance from docs/ICON-LINEAGE-AUDIT.md → "Provenance classes". A is a
   // native prototype reconstruction, B a period analog adaptation, C an
   // original period-plausible design. Three objects change class along the
   // lineage; an object entry may therefore be a per-era map with a fallback.

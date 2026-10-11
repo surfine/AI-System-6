@@ -43,6 +43,69 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// ClioWorks unified spec (W04): the boot screen's progress is a function of
+// REAL completed boot steps, not a fixed script of percentages. boot.js
+// reports every step it settles through AISystem6BootProgress; this module
+// subscribes and maps each settled step onto the Happy Mac screen (message,
+// stage, mac face). Two guarantees the old fixed-timer script could not make:
+//   - the screen finishes exactly when boot's own work finishes (no long
+//     park at 84% while the desk is already ready behind it), and
+//   - a slow machine keeps seeing movement (every settled step advances the
+//     bar), while a genuinely hung boot is the safety net's problem, not a
+//     progress bar pretending otherwise.
+// A minimal brand hold remains on cold boot so the chime and Happy Mac flash
+// stay legible; warm resumes keep their short flash only.
+const BOOT_SETTLED_STEP_WORDS = Object.freeze({
+  boot: "boot_starting", "write lease": "boot_starting", clock: "boot_fonts",
+  preloads: "boot_fonts", "desk state": "boot_disks", language: "boot_disks",
+  "markdown parser": "boot_disks", projects: "boot_disks", references: "boot_disks",
+  scrapbook: "boot_disks", trash: "boot_disks", documents: "boot_disks",
+  "boot sequence": "boot_model",
+});
+
+let bootSettledSteps = 0;
+let bootProgressListener = null;
+
+function bootScreenApplyProgress(step) {
+  bootSettledSteps += 1;
+  // 24 known-ish steps before "boot sequence"; the bar fills against a floor
+  // of 30 so an unusually short or long step list still reads as progress.
+  const percent = Math.min(90, Math.round((bootSettledSteps / 30) * 88) + 2);
+  const word = BOOT_SETTLED_STEP_WORDS[step] || "boot_disks";
+  const macState = step === "boot sequence" || step === "appearance" ? "happy" : "sleeping";
+  setBootMacState(macState);
+  updateBootLedger(word === "boot_starting" ? "startup" : word === "boot_fonts" ? "system" : word === "boot_model" ? "model" : "project");
+  if (bootMessageEl && typeof t === "function") {
+    const message = t(word);
+    if (message && message !== word) bootMessageEl.textContent = message;
+  }
+  if (bootProgressFillEl) bootProgressFillEl.style.setProperty("--boot-progress-fill", `${percent}%`);
+}
+
+function startBootProgressBridge() {
+  bootSettledSteps = 0;
+  const previous = window.AISystem6BootProgress;
+  bootProgressListener = function bootProgressBridge(step) {
+    try {
+      if (typeof bootScreenApplyProgress === "function" && bootScreenEl && !bootScreenEl.hidden) {
+        bootScreenApplyProgress(step);
+      }
+    } catch {}
+    if (typeof previous === "function") previous(step);
+  };
+  bootProgressListener.__previous = previous;
+  window.AISystem6BootProgress = bootProgressListener;
+}
+
+function stopBootProgressBridge() {
+  // The safety net owns the hook after the screen is gone; restore whoever
+  // was chained before this bridge so late steps keep feeding the net.
+  if (bootProgressListener && window.AISystem6BootProgress === bootProgressListener) {
+    window.AISystem6BootProgress = bootProgressListener.__previous || null;
+  }
+  bootProgressListener = null;
+}
+
 async function runBootSequence() {
   document.body.classList.add("is-booting");
   if (!bootScreenEl) {
@@ -54,37 +117,42 @@ async function runBootSequence() {
   bootProjectDiskEl?.classList.toggle("is-hidden", desktopProfile);
   bootLocalModelEl?.classList.toggle("is-hidden", desktopProfile);
   updateBootLedger("startup");
-  const steps = desktopProfile ? [
-    [t("boot_starting"), "24%", "startup", "sleeping", 190],
-    [t("boot_fonts"), "56%", "system", "sleeping", 190],
-    [t("boot_disks"), "84%", "project", "happy", 430],
-    [t("boot_ready"), "84%", "ready", "happy", 760],
-  ] : [
-    [t("boot_starting"), "18%", "startup", "sleeping", 190],
-    [t("boot_fonts"), "42%", "system", "sleeping", 190],
-    [t("boot_disks"), "66%", "project", "sleeping", 190],
-    [t("boot_model"), "84%", "model", "happy", 430],
-    [t("boot_ready"), "84%", "ready", "happy", 760],
-  ];
+  if (bootMessageEl && typeof t === "function") {
+    const opening = t("boot_starting");
+    if (opening && opening !== "boot_starting") bootMessageEl.textContent = opening;
+  }
+  bootProgressFillEl?.style.setProperty("--boot-progress-fill", "2%");
 
   const warmResume = sessionBootSeen();
   // Warm resume plays no boot chime: the sound engine may queue it until the
   // first user gesture, which would turn a refresh into a delayed boot sound.
   if (!warmResume) playSystemSound("boot");
-  steps.forEach(([message, progress, stage, macState]) => {
-    setBootMacState(macState);
-    updateBootLedger(stage);
-    if (bootMessageEl) bootMessageEl.textContent = message;
-    if (bootProgressFillEl) bootProgressFillEl.style.setProperty("--boot-progress-fill", progress);
-  });
-  // Warm resume cancels the visual holds (only a short Happy Mac flash and
-  // fade remain); it never skips loadDeskState, migration, storage restore or
-  // the Working Session, which all run before this sequence.
-  for (let index = 0; index < steps.length; index += 1) {
-    await delay(warmResume ? (index === steps.length - 1 ? 80 : 0) : steps[index][4]);
+
+  // W04: the screen now reflects real settled steps. Most of boot's real
+  // work has ALREADY run by the time the sequence starts (this module loads
+  // behind the step pipeline), so the bridge replays what has settled and
+  // then follows the remaining steps live. A short brand hold remains on
+  // cold boot — chime + Happy Mac stay legible — and warm resumes keep only
+  // their brief flash. No fixed 84% park: the screen ends when boot ends.
+  startBootProgressBridge();
+  const brandHoldMs = warmResume ? 80 : 430;
+  const brandStart = Date.now();
+  // Let any steps settling between screen paint and now paint immediately.
+  await Promise.resolve();
+  const elapsed = Date.now() - brandStart;
+  if (elapsed < brandHoldMs) await delay(brandHoldMs - elapsed);
+  setBootMacState("happy");
+  updateBootLedger("ready");
+  if (bootMessageEl && typeof t === "function") {
+    const ready = t("boot_ready");
+    if (ready && ready !== "boot_ready") bootMessageEl.textContent = ready;
   }
+  bootProgressFillEl?.style.setProperty("--boot-progress-fill", "100%");
+  // Give the ready frame one paint before the fade, whatever the machine.
+  await new Promise((resolve) => requestAnimationFrame(() => resolve()));
   bootScreenEl.classList.add("is-done");
   await delay(warmResume ? 140 : 260);
+  stopBootProgressBridge();
   bootScreenEl.hidden = true;
   document.body.classList.remove("is-booting");
   if (!warmResume) markSessionBootSeen();
@@ -99,6 +167,11 @@ function setBootMacState(state = "sleeping") {
 }
 
 function showBootFailure(error) {
+  if (window.tiny?.api) {
+    const identifier = String(error?.message || "").match(/^([A-Za-z_$][\w$]{0,63}) is not defined$/)?.[1] || "";
+    const frames = String(error?.stack || "").split("\n").slice(1, 5).map((line) => line.replace(/\?.*?(?=:\d+:\d+)/g, "").slice(0, 200));
+    void window.tiny.api.call("shell.bootDiagnostic", { name: String(error?.name || "Error"), identifier, frames }).catch(() => {});
+  }
   console.error("AI System 6 failed to start.", error);
   setBootMacState("sad");
   if (bootScreenEl) {

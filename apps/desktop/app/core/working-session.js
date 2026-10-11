@@ -622,7 +622,13 @@ async function restoreWindowWorkingSession(state = {}) {
   document.querySelectorAll(".window[data-window]").forEach((win) => invalidateWindowAutoLayout(win));
   if (!windows.length) return false;
 
-  runtimeEnvironment = state.runtimeEnvironment === "multifinder" ? "multifinder" : startupEnvironment;
+  // Unified spec W06: the saved environment is authoritative — including an
+  // explicitly chosen "finder", which must survive the MultiFinder default
+  // for new desks. Only a snapshot with no recorded environment falls back
+  // to the startup default.
+  runtimeEnvironment = state.runtimeEnvironment === "multifinder" || state.runtimeEnvironment === "finder"
+    ? state.runtimeEnvironment
+    : startupEnvironment;
   topZ = Math.min(windowLayerMaxZ, Math.max(topZ, workingSessionNumber(state.topZ, topZ)));
   cascadeOffset = workingSessionNumber(state.cascadeOffset, cascadeOffset);
   clearSideAskMode();

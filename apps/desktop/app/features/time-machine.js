@@ -594,31 +594,32 @@ function captureActiveTimeMachineTabState() {
   const tab = activeTimeMachineTab();
   if (!tab) return;
   const previousState = tab.state || {};
-  tab.title = currentTimeMachinePage?.title || tab.title || t("time_machine_new_tab");
-  tab.backing = {
-    ...(tab.backing || {}),
-    type: "webNavigation",
-    url: timeMachineAddressInput?.value || previousState.address || "",
-  };
-  tab.state = {
-    ...previousState,
-    address: timeMachineAddressInput?.value || "",
-    archiveEnabled: !!timeMachineEnabledInput?.checked,
-    targetDate: timeMachineDateInput?.value || "",
-    providerPreference: timeMachineProviderInput?.value || "auto",
-    viewMode: currentTimeMachineView,
-    page: currentTimeMachinePage ? {
-      title: currentTimeMachinePage.title || "",
-      url: currentTimeMachinePage.url || "",
-      fetchedUrl: currentTimeMachinePage.fetchedUrl || "",
-      reader: currentTimeMachinePage.reader || null,
-      retrievedAt: currentTimeMachinePage.retrievedAt || "",
-      archive: currentTimeMachinePage.archive || null,
-      engine: currentTimeMachinePage.engine || "",
-    } : null,
-    readerScrollTop: timeMachineReaderEl?.scrollTop || 0,
-  };
-  tab.updatedAt = new Date().toISOString();
+  stampChanged(tab, () => {
+    tab.title = currentTimeMachinePage?.title || tab.title || t("time_machine_new_tab");
+    tab.backing = {
+      ...(tab.backing || {}),
+      type: "webNavigation",
+      url: timeMachineAddressInput?.value || previousState.address || "",
+    };
+    tab.state = {
+      ...previousState,
+      address: timeMachineAddressInput?.value || "",
+      archiveEnabled: !!timeMachineEnabledInput?.checked,
+      targetDate: timeMachineDateInput?.value || "",
+      providerPreference: timeMachineProviderInput?.value || "auto",
+      viewMode: currentTimeMachineView,
+      page: currentTimeMachinePage ? {
+        title: currentTimeMachinePage.title || "",
+        url: currentTimeMachinePage.url || "",
+        fetchedUrl: currentTimeMachinePage.fetchedUrl || "",
+        reader: currentTimeMachinePage.reader || null,
+        retrievedAt: currentTimeMachinePage.retrievedAt || "",
+        archive: currentTimeMachinePage.archive || null,
+        engine: currentTimeMachinePage.engine || "",
+      } : null,
+      readerScrollTop: timeMachineReaderEl?.scrollTop || 0,
+    };
+  });
 }
 
 function renderTimeMachineTabs(project = getActiveProject()) {

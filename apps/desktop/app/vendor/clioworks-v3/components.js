@@ -41,17 +41,17 @@ function button({label,icon:which,onClick,primary=false,disabled=false,title='',
  const el=h('button',{type:'button',class:`btn cw-button ${primary?'default':''} ${className}`,disabled,title,...attrs},[which?icon(which):null,h('span',{class:'cw-button-label',text:label})]);
  if(onClick)el.addEventListener('click',onClick);return el;
 }
-function createToolbar({items,onCommand,getContext,label='文档工具'}){
+function createToolbar({items,onCommand,getContext,label='文档工具',catalog=C.COMMANDS,resolveCommand=C.commandState}){
  const element=h('div',{class:'cw-toolbar',role:'toolbar','aria-label':label});const buttons=new Map();
  for(const item of items){
   if(item==='separator'){element.append(h('span',{class:'cw-tool-divider',role:'separator','aria-orientation':'vertical'}));continue;}
-  const c=C.COMMANDS.find(x=>x.id===item.id);if(!c)throw new Error(`Unknown toolbar command ${item.id}`);
+  const c=catalog.find(x=>x.id===item.id);if(!c)throw new Error(`Unknown toolbar command ${item.id}`);
   const b=button({label:item.label||c.label,icon:c.icon,className:`cw-tool ${item.optional?'cw-optional':''}`,attrs:{dataset:{command:c.id},'aria-label':item.label||c.label},onClick:()=>onCommand(c.id,b)});
   buttons.set(c.id,b);element.append(b);
  }
  const more=button({label:'更多',icon:'more',className:'cw-tool cw-more',attrs:{'aria-haspopup':'menu'},onClick:()=>onCommand('menu.more',more)});element.append(more);
  const nav=D.roving(element);
- function refresh(){const ctx=getContext();for(const [id,b]of buttons){const s=C.commandState(id,ctx);b.disabled=!s.enabled;b.title=s.reason||C.COMMANDS.find(c=>c.id===id).label;if(s.reason)b.setAttribute('aria-description',s.reason);else b.removeAttribute('aria-description');}nav.sync();}
+ function refresh(){const ctx=getContext();for(const [id,b]of buttons){const s=resolveCommand(id,ctx);b.disabled=!s.enabled;b.title=s.reason||catalog.find(c=>c.id===id).label;if(s.reason)b.setAttribute('aria-description',s.reason);else b.removeAttribute('aria-description');}nav.sync();}
  refresh();return {element,refresh,dispose:()=>nav.dispose(),buttons};
 }
 class PopupMenu{
