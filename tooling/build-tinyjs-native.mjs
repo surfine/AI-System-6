@@ -41,6 +41,10 @@ export function extendLauncher(source) {
       } else if (line.rfind("HKREG ", 0) == 0) {`);
   replace('      attach_tiny_bridge(mwv.configuration.userContentController, "main");', `      attach_tiny_bridge(mwv.configuration.userContentController, "main");
       // Existing Time Machine engine, independent of the retired Swift main.
+      // installBrowser bails silently while the webview is not yet in a
+      // window, and this runs before the first navigation — a bail here would
+      // leave the desk without AISystem6Native forever — so retry on the main
+      // runloop until the webview has both a window and a superview.
       NSString *resourceRoot = [[[NSBundle mainBundle] bundlePath]
           stringByAppendingPathComponent:@"Contents/Resources"];
       void *browserLibrary = dlopen([[resourceRoot stringByAppendingPathComponent:
@@ -48,9 +52,40 @@ export function extendLauncher(source) {
       if (browserLibrary) {
         using BrowserInstall = void (*)(void *, void *, void *, const char *);
         auto install = (BrowserInstall)dlsym(browserLibrary, "AISystem6InstallBrowser");
-        if (install) install((__bridge void *)mwv, (__bridge void *)mwv.superview,
-          (__bridge void *)mwv.window, [[resourceRoot stringByAppendingPathComponent:
-          @"ubol-safari.zip"] fileSystemRepresentation]);
+        if (!install) {
+          NSLog(@"AI System 6 browser: dlsym(AISystem6InstallBrowser) failed: %s", dlerror());
+        }
+        if (install) {
+          struct BrowserInstallWait {
+            BrowserInstall install;
+            WKWebView *webview;
+            NSString *extensionZip;
+            int attempts;
+          };
+          // Retain the wait state on the heap; the tick deletes it on either
+          // terminal path. Marked hidden so the block literal can capture it.
+          auto wait = new BrowserInstallWait{install, mwv,
+            [resourceRoot stringByAppendingPathComponent:@"ubol-safari.zip"], 0};
+          static void (*browserInstallTick)(void *);
+          browserInstallTick = [](void *context) {
+            auto *w = (BrowserInstallWait *)context;
+            if (w->webview.window && w->webview.superview) {
+              w->install((__bridge void *)w->webview, (__bridge void *)w->webview.superview,
+                (__bridge void *)w->webview.window, [w->extensionZip fileSystemRepresentation]);
+              delete w;
+              return;
+            }
+            if (++w->attempts > 300) {
+              NSLog(@"AI System 6 browser: engine not installed — webview never entered a window");
+              delete w;
+              return;
+            }
+            dispatch_after_f(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)),
+              dispatch_get_main_queue(), context, browserInstallTick);
+          };
+          dispatch_after_f(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)),
+            dispatch_get_main_queue(), wait, browserInstallTick);
+        }
       }`);
   replace('static TinyWebDelegate *g_web_delegate = nil;', `static void do_preview_pick(webview_t, void *arg) {
   auto *request = static_cast<std::string *>(arg);

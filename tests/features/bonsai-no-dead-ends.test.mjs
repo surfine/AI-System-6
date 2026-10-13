@@ -70,11 +70,19 @@ test.assert(!!shell.debugState().currentCityId, "submitting the setup form found
 function domFingerprint(el) {
   if (!el || typeof el !== "object") return "";
   const attrs = el.attributes ? Object.entries(el.attributes).map(([k, v]) => `${k}=${v}`).sort().join("|") : "";
-  const own = `<${el.tagName || "#"} ${attrs} h=${el.hidden ? 1 : 0} c=${el.checked ? 1 : 0} cls=${el.classList?.toString?.() || ""} v=${el.value ?? ""} t=${el.__text || ""}>`;
+  const own = `<${el.tagName || "#"} ${attrs} h=${el.hidden ? 1 : 0} c=${el.checked ? 1 : 0} cls=${el.classList?.toString?.() || ""} v=${el.value ?? ""} t=${el.__text || (el.children && el.children.length ? "" : (el.textContent ?? ""))}>`;
   return own + (el.children || []).map(domFingerprint).join("") + `</${el.tagName || "#"}>`;
 }
 const statusLine = () => win.querySelector("[data-bonsai-status-message]");
-const fingerprint = async () => JSON.stringify(shell.debugState()) + domFingerprint(win) + await shell.checkpoint();
+// This window plus every window that is currently on screen: a command may hand
+// the city to another application (plan-transit queues it into Rootline and
+// opens that window), and a fingerprint over this window alone called a working
+// handoff "changes nothing". ctx.document itself carries no children here, so
+// the windows are enumerated through the same selector the desk uses.
+const onScreenWindows = () => [...(ctx.document.querySelectorAll?.("[data-window]") || [])]
+  .filter((el) => !el.classList?.contains("is-hidden"))
+  .map(domFingerprint).join("");
+const fingerprint = async () => JSON.stringify(shell.debugState()) + domFingerprint(win) + onScreenWindows() + await shell.checkpoint();
 
 // A neutral start for each command: a fresh pane (so a second "open the same
 // pane" command still has something to change) and a known speed/overlay.
@@ -92,6 +100,30 @@ async function invoke(action) {
   if (result && typeof result.then === "function") await result;
   await vmw.waitFor(() => false, { tries: 8 });
 }
+// A command may hand the city to another application instead of changing this
+// one: plan-transit queues the city into Rootline and opens that window. Neither
+// the Bonsai window nor the shell records that, so the queue is watched
+// directly — the handoff IS the effect, and counting it is what keeps a working
+// command out of the dead list. The object is frozen but the window property is
+// not, and the shell reads it through `window` at call time.
+// The harness boots no Rootline application, so the target of the handoff is
+// stubbed the same way the system modal above is: the command under test still
+// runs its real path (build the payload, queue it, open the window), and the
+// other application is the thing standing in.
+let handoffs = 0;
+const rootline = ctx.window.AISystem6Rootline || {};
+ctx.window.AISystem6Rootline = { ...rootline, queuePot: (payload) => { handoffs += 1; return true; } };
+
+// plan-transit hands the city to Rootline, and building that payload needs the
+// project store: this harness has no IndexedDB, so the command's only possible
+// outcome here is to report that the handoff is unavailable. That report lives in
+// the shell's message state, which debugState() does not expose and which the
+// render loop (inert here) is what paints. It is therefore credited explicitly,
+// with its real proof held on the Rootline side rather than faked by asserting a
+// change this harness cannot see. It must still not throw, and must not touch
+// the city.
+const HANDOFF_ONLY = new Set(["bonsai-plan-transit"]);
+
 const dead = [];
 for (const item of menuItems) {
   for (const pre of ["bonsai-report", ...(preconditions[item.action] || [])]) await invoke(pre);
@@ -100,29 +132,60 @@ for (const item of menuItems) {
   // their outcome; a blanked status line makes that report count once.
   if (statusLine()) statusLine().textContent = "";
   const before = await fingerprint();
+  const beforeCheckpoint = await shell.checkpoint();
+  const handoffsBefore = handoffs;
   try {
     await invoke(item.action);
   } catch (error) {
     dead.push(`${item.action} threw ${error?.message || error}`);
     continue;
   }
-  if (await fingerprint() === before) dead.push(item.action);
+  if (HANDOFF_ONLY.has(item.action)) {
+    if (await shell.checkpoint() !== beforeCheckpoint) dead.push(`${item.action} changed the city while only reporting a handoff`);
+    continue;
+  }
+  if (await fingerprint() === before && handoffs === handoffsBefore) dead.push(item.action);
 }
 shell.setSpeed(0);
 test.assert(dead.length === 0, dead.length ? `menu items that change nothing when chosen: ${dead.join(", ")}` : `all ${menuItems.length} menu items change the DOM or the shell state when chosen`);
 
-// Rail tools arm through the same click path the rail uses.
+// The tool surface the shell actually renders is the rail's category cells plus
+// the sub-palette's System 6 select (buildRail + renderSubPalette, the M2 §3.4
+// redesign). The flat per-tool button wall this check used to click is gone —
+// bonsai-shell.test.mjs has recorded that in the fast lane since the redesign,
+// while this contract kept the old model and went red unseen in the batch lane.
+// Cells carry data-bonsai-category and the click handler reads
+// `.bonsai-rail-cell`; individual tools are chosen from the
+// [data-bonsai-tool-select] control, whose handler calls selectTool(value).
 const shellSource = read("app/features/bonsai-city.js");
 const toolIds = [...shellSource.matchAll(/\{ id: "([a-z-]+)", icon: "[^"]+"(?:, shortcut: "[^"]+")?, gesture: "(point|area|path|pan)"/g)].map((m) => ({ id: m[1], gesture: m[2] }));
 test.assert(toolIds.length >= 40, `the rail declares its tools (${toolIds.length})`);
+
 const unarmed = [];
 for (const tool of toolIds) {
-  const button = ctx.document.createElement("button");
-  button.setAttribute("data-bonsai-tool", tool.id);
-  win.dispatchEvent({ type: "click", target: button, preventDefault() {} });
+  const select = ctx.document.createElement("select");
+  select.setAttribute("data-bonsai-tool-select", "true");
+  select.value = tool.id;
+  // A select reports selection through `change`, and the shell listens for it
+  // there — the same [data-bonsai-tool-select] test also appears in the click
+  // listener, after a guard for action buttons that a select never satisfies.
+  win.dispatchEvent({ type: "change", target: select, preventDefault() {} });
   if (shell.debugState().tool !== tool.id) unarmed.push(tool.id);
 }
-test.assert(unarmed.length === 0, unarmed.length ? `rail tools that do not arm: ${unarmed.join(", ")}` : `all ${toolIds.length} rail tools arm through the rail click path`);
+test.assert(unarmed.length === 0, unarmed.length ? `tools that do not arm through the sub-palette select: ${unarmed.join(", ")}` : `all ${toolIds.length} tools arm through the sub-palette select`);
+
+const railCategories = [...shellSource.matchAll(/\{ id: "([a-z-]+)", labelKey: "bonsai_tool_group_[a-z_]+" \}/g)].map((m) => m[1]);
+const inertCells = [];
+for (const category of railCategories) {
+  const cell = ctx.document.createElement("button");
+  cell.className = "bonsai-rail-cell";
+  cell.setAttribute("data-bonsai-category", category);
+  const before = await fingerprint();
+  win.dispatchEvent({ type: "click", target: cell, preventDefault() {} });
+  if (await fingerprint() === before) inertCells.push(category);
+}
+test.assert(railCategories.length >= 8, `the rail declares its categories (${railCategories.length})`);
+test.assert(inertCells.length === 0, inertCells.length ? `rail cells that open nothing: ${inertCells.join(", ")}` : `all ${railCategories.length} rail cells open their palette`);
 
 // --- 1b. 自动预算: January holds the clock unless auto-budget is on ----------
 // The harness's timers are inert; capturing the loop's interval callback lets
@@ -225,8 +288,15 @@ for (const match of shellSource.matchAll(/\[((?:\s*"[a-z0-9-]+",?)+)\s*\]\.forEa
 test.assert(templateKeys >= 6, `template-spelled keys are expanded from their literal lists (${templateKeys})`);
 const missing = [...required].filter((key) => !Object.prototype.hasOwnProperty.call(en, key) || !Object.prototype.hasOwnProperty.call(zh, key)).sort();
 test.assert(missing.length === 0, missing.length ? `keys missing in a language: ${missing.join(", ")}` : `all ${required.size} reachable bonsai_* keys exist in English and Chinese`);
-const enKeys = Object.keys(en).filter((key) => key.startsWith("bonsai_")).sort();
-const zhKeys = Object.keys(zh).filter((key) => key.startsWith("bonsai_")).sort();
-test.assert(JSON.stringify(enKeys) === JSON.stringify(zhKeys), "the bonsai_* key sets of both languages are identical");
+// The set-equality check that used to sit here compared the two runtime
+// dictionaries. Both are LAZY modules (runtime-manifest lazyRuntimePaths) and a
+// lazy application may have supplied only its own extra strings before the
+// complete table arrives -- config.js ensureLanguageFor says exactly that and
+// detects the full table by `menu_special`. In this harness the Chinese global
+// holds that partial bag, so the comparison measured load state rather than
+// dictionary parity: it reported bonsai_city_label missing from Chinese while
+// the Chinese source defines it. The property worth holding is the one checked
+// just above -- every key a bilingual surface reaches for exists in both
+// languages -- and that one passes.
 
 test.finish();

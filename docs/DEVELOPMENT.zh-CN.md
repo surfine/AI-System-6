@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/DEVELOPMENT.md -->
-<!-- source-sha256: 2c140211bfe2c1da5ac595e3bb29236bc86e0a15633a916435e4549bea07016c -->
+<!-- source-sha256: c8f756f1554dcabbfba45596265fbb82b52294c39ced50e3d9ef76f637975ec8 -->
 
 > 英文版为准 ・ 仅供人类参考
 

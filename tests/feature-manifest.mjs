@@ -174,26 +174,53 @@ export function publicContractFiles() {
 }
 
 /**
- * The contracts that simulate a whole system, and cost a whole minute.
+ * The contracts that exercise a whole system, and cost the wall clock.
  *
- * Measured on this machine with the suite otherwise idle (2026-09-15): the 334
- * contracts finish in 42 s, and these five are 104 s of that work — the
- * slowest one alone (bonsai-no-dead-ends) sets the wall clock at 41 s. They
- * run the city simulator for simulated years and build the atlas; none of them
- * can answer a question about a stylesheet or a window, which is what a
- * development loop is usually asking.
+ * Measured on this machine, 2026-10-12, from the newest fast-lane run
+ * (dist/verification/features-NYlH21 — 516 contracts, 310 s wall): the default
+ * lane's wall clock is set by a handful of whole-system contracts — joyride
+ * 160 s, bonsai-playable 99 s, bonsai-sc2 97 s, basin-flip-pot 88 s,
+ * basin-flip-pot-ui 81 s, bonsai-city-windows 69 s. They run a city simulator, a
+ * street drive or a world model for simulated time; none of them can answer a
+ * question about a stylesheet or a window, which is what a development loop is
+ * usually asking.
  *
- * So the default `npm test` is the fast lane and leaves these out, and it says
- * how many it left out. `npm run verify:features -- --all` runs everything,
- * `--lane batch` runs only these, and naming one runs it. They stay required
- * where a whole-system answer is the point: the nightly run, and the public
- * repository's CI on a push to main.
+ * Recompute this list from measured cost — the per-contract `durationMs` in
+ * `dist/verification/features-<run>/summary.json` — rather than from memory.
+ * Before 2026-10-12 it had not moved since 2026-09-15, when the suite was 334
+ * contracts and the six names below were 104 s of a 42 s run; the suite has
+ * since grown past 520 contracts, so a list drawn from that impression had
+ * stopped matching what is actually slow (it deferred none of the six above).
+ *
+ * The default `npm test` is the fast lane and leaves these out, and it says how
+ * many it left out. `npm run verify:features -- --all` runs everything,
+ * `--lane batch` runs only these, and naming one runs it. A release does NOT
+ * skip them: `verify:release` runs the whole suite, so a contract the
+ * development loop defers is still verified before anything ships. (Cloud CI is
+ * off, so that release step is the only gate that sees them.)
  */
 export const batchContractNames = Object.freeze([
+  // Bonsai City and the Micropolis it grew from: simulated years, the atlas,
+  // the save/continuation path.
   "bonsai-no-dead-ends",
   "bonsai-atlas",
   "bonsai-kernel",
   "bonsai-save",
   "bonsai-systems",
+  "bonsai-playable",
+  "bonsai-sc2",
+  "bonsai-city-windows",
+  "bonsai-osm-import",
+  "bonsai-renderer",
+  "bonsai-micropolis-roundtrip",
+  "bonsai-playthrough",
+  "bonsai-save-continuation",
+  "micropolis-scenarios",
+  // Other world models and games.
+  "joyride",
+  "basin-flip-pot",
+  "basin-flip-pot-ui",
+  // Not a simulation, but it walks the whole lazy-command graph: a whole-system
+  // answer, and the wall clock follows it.
   "lazy-command-loading",
 ]);

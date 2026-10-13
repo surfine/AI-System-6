@@ -79,20 +79,26 @@ function checkCssFile(relPath, budgets) {
   const importantCount = countMatches(text, /!important/g);
   const zIndexCount = countMatches(text, /\bz-index\s*:/g);
 
-  const importantBudget = budgets.important[relPath];
-  if (importantBudget === undefined) {
-    fail(`${relPath} has no !important budget entry; add one in tooling/css-budget.json`);
-  } else if (importantCount > importantBudget) {
-    fail(`${relPath}: !important = ${importantCount}, budget = ${importantBudget}. Stop adding overrides; fix specificity or move the rule out of the override layer.`);
+  // A stylesheet with no entry is held to zero, not refused for being
+  // unregistered. Requiring an entry for every sheet made adding one a hand edit
+  // of this JSON even when it carried no overrides: of the last 40 commits that
+  // touched tooling/css-budget.json, 34 changed no number at all, and the rows
+  // they added were mostly the `: 0` half of a new file. An entry is now what a
+  // sheet EARNS by using an override, and the refusal names the count.
+  const importantBudget = budgets.important[relPath] ?? 0;
+  if (importantCount > importantBudget) {
+    fail(importantBudget === 0
+      ? `${relPath}: !important = ${importantCount}, and it has no budget entry. Add one in tooling/css-budget.json that says why, or fix specificity instead.`
+      : `${relPath}: !important = ${importantCount}, budget = ${importantBudget}. Stop adding overrides; fix specificity or move the rule out of the override layer.`);
   } else {
     ok(`${relPath}: !important ${importantCount}/${importantBudget}`);
   }
 
-  const zBudget = budgets.zIndex[relPath];
-  if (zBudget === undefined) {
-    fail(`${relPath} has no z-index budget entry; add one in tooling/css-budget.json`);
-  } else if (zIndexCount > zBudget) {
-    fail(`${relPath}: z-index uses = ${zIndexCount}, budget = ${zBudget}. Reuse an existing layer or add a --z-* token instead.`);
+  const zBudget = budgets.zIndex[relPath] ?? 0;
+  if (zIndexCount > zBudget) {
+    fail(zBudget === 0
+      ? `${relPath}: z-index uses = ${zIndexCount}, and it has no budget entry. Add one in tooling/css-budget.json that says why, or reuse an existing layer or a --z-* token.`
+      : `${relPath}: z-index uses = ${zIndexCount}, budget = ${zBudget}. Reuse an existing layer or add a --z-* token instead.`);
   } else {
     ok(`${relPath}: z-index ${zIndexCount}/${zBudget}`);
   }
@@ -262,13 +268,15 @@ cssFiles
     }
   });
 
-// Catch CSS files that exist on disk but were not added to the budget.
+// Catch entries for sheets that no longer exist. With a missing entry held to
+// zero, a stale entry is now the only registration error left, so both maps are
+// swept rather than just `important`.
 if (!scopedCssCheck) {
-  Object.keys(budget.important).forEach((relPath) => {
+  for (const relPath of new Set([...Object.keys(budget.important), ...Object.keys(budget.zIndex)])) {
     if (!allCssFiles.includes(relPath)) {
       fail(`css-budget.json mentions ${relPath} but the file no longer exists; remove the stale entry`);
     }
-  });
+  }
 }
 
 const INLINE_PATTERN = /\.style\.(top|left|right|bottom|width|height|padding|margin|maxWidth|maxHeight|minWidth|minHeight)\b/g;

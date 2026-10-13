@@ -1,28 +1,30 @@
 #!/usr/bin/env node
-// Release step-resume: bank each completed release-prepare step's outcome
-// keyed by (step name + every input the step reads), so a refused release's
-// RETRY pays only for what changed — not for the 20 minutes it already paid.
+// Release step-resume: inspect or clear the checkpoint bank that
+// release-prepare writes when AI_SYSTEM6_STEP_BANK=1.
 //
 //   node tooling/release-step-resume.mjs          # show banked steps
 //   node tooling/release-step-resume.mjs --clear  # drop the bank (fresh start)
 //
-// The release-prepare orchestrator consults the bank automatically when it
-// exists (see releasePrepareOptions.resumeBank): a step whose identity
-// matches a green banked outcome is marked REUSED-FROM-BANK and skipped;
-// anything else runs for real. A refusal clears only the failed step's
-// entry — the survivors keep their credit, exactly like checkpoint-restart.
+// The bank sits beside the release directories. This CLI used to look for it at
+// dist/release-step-bank.json — a path nothing writes — so it reported "empty"
+// and cleared nothing while a real bank sat on disk, and it printed "?" for
+// every step because it read a `durationS` field the writer never sets. Both
+// programs now derive the path from releaseStepBankPath() in
+// tooling/lib/release-receipt.mjs, and tests/features/release-step-resume.test.mjs
+// holds them to it.
 //
-// Identity = sha256 of: the step's command, the frozen-tree input set the
-// step declares (via the same coverage rules the ship gates use), and the
-// release identity (version/build/sourceCommit). Changing any of those is a
-// different step and pays again — by design, never by accident.
-import { readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
-import { join, dirname } from "node:path";
+// The bank is opt-in and must stay that way: a reused step is never re-run, but
+// its outputs live in trees each run recreates, so reuse currently breaks the
+// retry it is meant to accelerate. See createStepBank in release-prepare.mjs.
+
+import { readFileSync, existsSync, rmSync } from "node:fs";
+import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createHash } from "node:crypto";
+
+import { releaseStepBankPath } from "./lib/release-receipt.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
-const bankPath = join(root, "dist", "release-step-bank.json");
+const bankPath = releaseStepBankPath(root);
 
 function load() {
   if (!existsSync(bankPath)) return { schemaVersion: 1, steps: {} };
@@ -35,25 +37,21 @@ function load() {
 
 if (process.argv.includes("--clear")) {
   rmSync(bankPath, { force: true });
-  console.log("release-step-bank cleared.");
+  console.log(`release-step-bank cleared (${bankPath}).`);
   process.exit(0);
 }
 
 const bank = load();
 const names = Object.keys(bank.steps);
+console.log(`release-step-bank: ${bankPath}`);
 if (!names.length) {
-  console.log("release-step-bank is empty — no steps banked yet.");
+  console.log("empty — no steps banked yet.");
   process.exit(0);
 }
-console.log(`release-step-bank: ${names.length} step outcome(s) banked\n`);
+console.log(`${names.length} step outcome(s) banked\n`);
 for (const name of names) {
   const entry = bank.steps[name];
-  console.log(`  ${entry.status === "ok" ? "✓" : "✗"} ${name}  (${entry.status}, ${entry.identity.slice(0, 12)}, ${entry.durationS?.toFixed?.(1) ?? "?"}s)`);
+  const seconds = Number.isFinite(entry.durationMs) ? `${(entry.durationMs / 1000).toFixed(1)}s` : "?";
+  console.log(`  ${entry.status === "ok" ? "✓" : "✗"} ${name}  (${entry.status}, ${String(entry.identity).slice(0, 12)}, ${seconds}, ${entry.at || "?"})`);
 }
-console.log("\nA retried release reuses green entries whose identity matches;");
-
-// Exported helpers used by release-prepare (classic script context reads the
-// file directly; this CLI keeps it human-inspectable and clearable).
-export function stepIdentity({ command, inputsHash, release }) {
-  return createHash("sha256").update(JSON.stringify({ command, inputsHash, release })).digest("hex");
-}
+console.log("\nA retried release spends a green entry whose identity matches; a refusal clears its own.");

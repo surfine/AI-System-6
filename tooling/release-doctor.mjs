@@ -63,8 +63,11 @@ if (latestBeta === pkg.version) {
 
 // 4. zh twins: every canonical markdown doc under docs/ and
 // internal/operations has a .zh-CN.md, and a stale hash marker means the
-// English moved without `npm run docs:sync-hashes`.
-const localeCheck = sh("node", ["tooling/verify-doc-locales.mjs"]);
+// English moved without `npm run docs:sync-hashes`. --require-fresh is what
+// makes the stale half a failure here: the gate reports it by default so the
+// development loop does not pay a resync per English edit, and this doctor is
+// one of the two places that wants the old guarantee.
+const localeCheck = sh("node", ["tooling/verify-doc-locales.mjs", "--require-fresh"]);
 if (localeCheck.status === 0) {
   note("doc locales: all zh twins present with fresh hashes");
 } else {

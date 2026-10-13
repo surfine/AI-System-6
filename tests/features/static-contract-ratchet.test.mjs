@@ -69,10 +69,20 @@ const suiteInfrastructure = new Set([
   // Executes the snapshot retry helper and checks its wiring: tooling
   // infrastructure, like the generator-cache contract above.
   "appearance-snapshot-retry.test.mjs",
+  // Runs the shared-control gate's own self-test in a browser and requires each
+  // historical defect to be rejected. That is a claim about the GATE, the way
+  // gate-self-proof above is, not about the product — the history it replays is
+  // the gate's, not the app's.
+  "visual-primitives.test.mjs",
   // Execute packaging policy and publication validation, with actual pinned
   // patch inputs and invalid manifests. These exercise tooling, not app UI.
   "tinyjs-packaging.test.mjs",
   "tinyjs-ota-publish.test.mjs",
+  // Runs the release checkpoint CLI for real in a temporary tree and holds it
+  // to the bank path the orchestrator writes. It makes a claim about the
+  // release tooling, not about the product, so it belongs on this side of the
+  // count like the two above.
+  "release-step-resume.test.mjs",
 ]);
 
 /** Every module specifier the file imports, static or dynamic. */

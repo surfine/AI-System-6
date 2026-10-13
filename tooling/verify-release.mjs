@@ -251,18 +251,21 @@ if (smokeRelease.status === 0) {
 // general check alongside interactive desktop work. Keep its deferral visible.
 console.log("-- Bonsai simulation cost: deferred to the quiet ship gate (verify:bonsai-sim-cost)");
 
-// The contract suite is 105 s of the release's first two minutes, and the
-// published repository's CI runs exactly this command on every push. A fast
-// release defers it and SAYS SO in the receipt; `release:prepare --batch` (or
-// `npm run verify:features` while working) runs it here.
+// The release runs the WHOLE feature suite, batch lane included. The
+// development loop's fast lane defers the whole-system contracts (joyride, the
+// Bonsai City simulations, the basin world) because they set the wall clock and
+// cannot answer a question about a window or a stylesheet — but a release must
+// not skip what the development loop skipped, and cloud CI is off, so this step
+// is the only gate that sees them. A fast release defers the suite entirely and
+// SAYS SO in the receipt (AI_SYSTEM6_DEFER_FEATURE_TESTS=1).
 const deferFeatureTests = process.env.AI_SYSTEM6_DEFER_FEATURE_TESTS === "1";
 const featureTests = deferFeatureTests
   ? { status: 0 }
-  : runReceiptCheck("feature-tests", process.execPath, ["tooling/verify-features.mjs"], {
-    cwd: root,
-    encoding: "utf8",
-    maxBuffer: 64 * 1024 * 1024,
-  });
+  : runReceiptCheck("feature-tests", process.execPath, ["tooling/verify-features.mjs", "--all"], {
+      cwd: root,
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+    });
 if (deferFeatureTests) {
   receiptChecks.push({
     name: "feature-tests",
@@ -270,9 +273,9 @@ if (deferFeatureTests) {
     exitCode: 0,
     durationMs: 0,
     deferred: true,
-    reason: "the public repository's CI runs npm test on every push; release:prepare --batch runs it here",
+    reason: "AI_SYSTEM6_DEFER_FEATURE_TESTS=1 — the feature suite is deferred to a batch run",
   });
-  console.log("--  feature verification deferred to the batch lane and the public CI");
+  console.log("--  feature verification deferred (AI_SYSTEM6_DEFER_FEATURE_TESTS=1)");
 } else if (featureTests.status === 0) {
   ok("feature verification");
 } else {
@@ -284,7 +287,10 @@ if (deferFeatureTests) {
   fail(`feature verification failed\n${featureFailureDetails}`);
 }
 
-const docLocales = runReceiptCheck("docs", process.execPath, ["tooling/verify-doc-locales.mjs"], {
+// --require-fresh: the development loop reports stale Chinese mirrors, a release
+// refuses them. "The mirrors were current when this shipped" is a release
+// guarantee, not something every English sentence should pay for.
+const docLocales = runReceiptCheck("docs", process.execPath, ["tooling/verify-doc-locales.mjs", "--require-fresh"], {
   cwd: root,
   encoding: "utf8",
 });

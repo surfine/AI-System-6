@@ -3,6 +3,6 @@
 // index.html cache-busters.
 window.AISystem6BuildInfo = Object.freeze({
   "version": "1.0.58",
-  "build": "20261012.4",
-  "sourceCommit": "afab21b10bd1db607d46943dfb722ca9dc5e1eca"
+  "build": "20261012.5",
+  "sourceCommit": "143fdf7430fcbcaa5cd509a65533295e535eda5c"
 });

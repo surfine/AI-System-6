@@ -29,7 +29,13 @@ const args = process.argv.slice(2).filter((arg) => arg !== "--");
 const requested = [];
 let requestedJobs = process.env.AI_SYSTEM6_TEST_JOBS;
 let verbose = false;
-let includeBatch = false;
+// The whole-system contracts are deferred by default; AI_SYSTEM6_INCLUDE_BATCH
+// says the same thing --all does, so a caller that must run the whole suite can
+// ask through the environment and still invoke the ordinary `npm test`. The
+// public snapshot's self-test needs exactly that: it runs the same `npm test`
+// the public repository's CI runs, and a release must not skip what the
+// development loop skips. An explicit --lane fast still wins over the variable.
+let includeBatch = process.env.AI_SYSTEM6_INCLUDE_BATCH === "1";
 let onlyBatch = false;
 
 for (let index = 0; index < args.length; index += 1) {
@@ -63,13 +69,16 @@ for (let index = 0; index < args.length; index += 1) {
   npm run verify:features -- <feature> [feature...]
   npm run verify:features -- --jobs <1-16> [feature...]
 
-AI_SYSTEM6_TEST_JOBS sets the same bounded worker count. The default uses up
+AI_SYSTEM6_TEST_JOBS sets the same bounded worker count. AI_SYSTEM6_INCLUDE_BATCH=1
+sets the same thing --all does, for a caller that must run the whole suite while
+still invoking npm test. The default uses up
 to eight logical CPUs. Successful assertion logs stay in dist/verification/;
 --verbose replays all logs. Failures print a bounded tail and the full log path.
 
 The whole-system contracts (batchContractNames in tests/feature-manifest.mjs)
-are left out of the default run: measured 2026-09-15, six of them are 104 s of a
-42 s suite, and the slowest sets the wall clock on its own.`);
+are left out of the default run. The list was recomputed from measured cost on
+2026-10-12 and now names the simulations and games that set the wall clock
+(joyride, the Bonsai City and basin worlds); --all runs everything.`);
     process.exit(0);
   } else {
     requested.push(arg);
@@ -138,8 +147,8 @@ const selectedTests = requested.length
   : defaultTests;
 
 // A run that leaves the whole-system contracts out says so, once, with the
-// number: a green "334 feature tests" that quietly skipped six of them would
-// be exactly the kind of claim this suite exists to prevent.
+// number: a green "504 feature tests" that quietly skipped the simulations
+// would be exactly the kind of claim this suite exists to prevent.
 if (!requested.length && !includeBatch && batchTests.length) {
   console.log(
     `${fastTests.length} contract(s) ran; ${batchTests.length} whole-system contract(s) deferred`

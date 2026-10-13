@@ -769,7 +769,7 @@ export function usage() {
     "  --arch <arm64>       target architecture (arm64 only)",
     "  --dmg                also request a .dmg (app + zip are always produced)",
     "  --production         require Developer ID and notarization unless --allow-adhoc is authorized",
-    "  --allow-adhoc        explicit public ad-hoc policy (authorized for 1.0.59)",
+    "  --allow-adhoc        explicit public ad-hoc signing policy (Developer ID pending)",
     "  --config <path>      tinyjs.json (default platform/macos/tinyjs/tinyjs.json)",
     "  --entitlements <p>   entitlements plist passed to sign-mac-app.mjs",
     "  --help               this text",

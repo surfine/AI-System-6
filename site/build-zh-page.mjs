@@ -12,6 +12,25 @@ const root = dirname(fileURLToPath(import.meta.url));
 const sourcePath = join(root, "index.html");
 const outputPath = join(root, "zh-CN.html");
 
+// The product version appears inside localized sentences (the Mac FAQ names the
+// release that is ad-hoc signed). Keeping it in both the English page and the
+// copy map below made every renumber a trap: the English key changed, the
+// replacement silently stopped matching, and English copy was left on the
+// Chinese page until `site:check` refused. Normalize the version out of both
+// sides before matching and put the real one back afterwards, so the map is
+// stable across renumbers and only the version source has to move.
+const VERSION_TOKEN = "\u0000VERSION\u0000";
+const productVersion = (() => {
+  try {
+    return JSON.parse(readFileSync(join(root, "..", "package.json"), "utf8")).version || "";
+  } catch {
+    return "";
+  }
+})();
+const withVersionToken = (text) =>
+  (productVersion ? text.split(productVersion).join(VERSION_TOKEN) : text);
+const fromVersionToken = (text) => text.split(VERSION_TOKEN).join(productVersion);
+
 const replacements = [
   ["Recent progress", "近期进展"],
   ["More ways to work<br>with your own material.", "用自己的材料，<br>继续完成作品。"],
@@ -152,7 +171,7 @@ const replacements = [
   ['Does it work on a phone or an iPad?', '手机和 iPad 能用吗？'],
   ['Yes, upright or sideways. On an iPhone you can add it to the Home Screen and open it like an app.', '能，竖着横着都行。在 iPhone 上，可以把它添加到主屏幕，像一个应用那样打开。'],
   ['How is the Mac app different?', 'Mac 版有什么不同？'],
-  ['The same desk, packaged with Node and its local server for Apple silicon and macOS 15 or later. TinyJS checks for complete app updates; you choose Install and Restart after saving and finishing active tasks. Clipboard collection starts off. Quick Look, selected-text collection and screenshot OCR are in the Mac Application panel. The 1.0.59 download and OTA use ad-hoc signing while Developer ID and notarization are pending; macOS may require Open Anyway on first installation.', '同一张桌面，为 Apple 芯片和 macOS 15 及以上打包携带 Node 与本地服务器。TinyJS 检查完整应用更新；保存工作、结束正在运行的任务后，由你点击安装并重启。剪贴板收集默认关闭。快速预览、选中文字收集和截屏取字位于“Mac 应用”设置。1.0.58 下载与 OTA 暂用 ad-hoc 签名，Developer ID 与公证待补；首次安装可能需要 macOS 的“仍要打开”。'],
+  [`The same desk, packaged with Node and its local server for Apple silicon and macOS 15 or later. TinyJS checks for complete app updates; you choose Install and Restart after saving and finishing active tasks. Clipboard collection starts off. Quick Look, selected-text collection and screenshot OCR are in the Mac Application panel. The ${VERSION_TOKEN} download and OTA use ad-hoc signing while Developer ID and notarization are pending; macOS may require Open Anyway on first installation.`, `同一张桌面，为 Apple 芯片和 macOS 15 及以上打包携带 Node 与本地服务器。TinyJS 检查完整应用更新；保存工作、结束正在运行的任务后，由你点击安装并重启。剪贴板收集默认关闭。快速预览、选中文字收集和截屏取字位于“Mac 应用”设置。${VERSION_TOKEN} 下载与 OTA 暂用 ad-hoc 签名，Developer ID 与公证待补；首次安装可能需要 macOS 的“仍要打开”。`],
   ['Why is it called System 6?', '为什么叫 System 6？'],
   ['Because its rules come from System 6, in 1988: things you can see, saving on purpose, one job per window. It borrows the look and the manners of that era. It is not made by Apple.', '因为它的规矩来自 1988 年的 System 6：东西看得见，保存靠自己，一扇窗口只做一件事。它借用的是那个年代的样子和规矩，不是 Apple 做的。'],
   ['Next time AI offers to write it,<br>don\'t copy it just yet.', '下次 AI 说要替你写，<br>先别急着复制。'],
@@ -363,9 +382,11 @@ const replacements = [
 ];
 
 function buildChinesePage() {
-  let output = readFileSync(sourcePath, "utf8");
-  for (const [from, to] of replacements) output = output.split(from).join(to);
-  return output;
+  let output = withVersionToken(readFileSync(sourcePath, "utf8"));
+  for (const [from, to] of replacements) {
+    output = output.split(withVersionToken(from)).join(withVersionToken(to));
+  }
+  return fromVersionToken(output);
 }
 
 const next = buildChinesePage();

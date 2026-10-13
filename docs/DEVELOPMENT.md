@@ -38,10 +38,19 @@ browser bundle before starting the server.
 | `npm run test:integration` | Run route tests against local fake upstreams |
 | `npm run test:static-smoke` | Boot the desk in Chromium and WebKit from a static file server (startup, persistence, two windows) |
 | `npm run verify:version` | Check package, build, runtime, and release identity |
+| `npm run version:set` | Move the release version and/or build stamp and regenerate every surface derived from them |
 | `npm run verify:checkjs` | Type-check the annotated frontend JavaScript |
 | `npm run verify:src` | Type-check the canonical Node server |
 | `npm run verify:public-tree` | Verify commands, required files, asset budgets, docs, and CI |
 | `npm run verify:public` | Compatibility alias for `verify:public-tree` |
+
+The release identity is two values with one source each: `version` in
+`package.json` and `build` in `build-info.json`. `npm run version:set -- 1.0.59`
+(or `--build 20261013.1` for a stamp alone) writes those, regenerates the
+generated identity files, the `?v=` cache-busters in `index.html` and the
+tracked stylesheets, and the Chinese site page, then names the release records a
+person still has to write. It never touches changelogs, release notes or
+handoffs: those describe a specific release. `--dry-run` says what it would do.
 
 CI installs from the lockfile, lints, builds, runs contracts, focused unit and
 fake-upstream integration tests, checks version/checkJs/server types/docs/public
@@ -52,18 +61,26 @@ directory and really runs `npm ci`, `npm run build`, and `npm test` there.
 ### The loop you actually work in
 
 The contracts (`node tooling/verify-features.mjs --list` prints the current
-count, 361 at the last audit) are about 210 CPU-seconds together. Paying that
-for a module you touched is the single largest cost of a small change, so pick
-the run that matches the work:
+count; 522 at the 2026-10-12 audit) are about 2,100 CPU-seconds together, and
+the whole-system simulations are most of that. Paying it for a module you
+touched is the single largest cost of a small change, so pick the run that
+matches the work:
 
 | Command | What it runs | Cost |
 | --- | --- | --- |
 | `npm run verify:quick -- --file <path>` | only the contracts that READ that file | seconds |
 | `npm run verify:changed -- --base <sha>` | the same selection, derived from your diff | seconds |
-| `npm test` | the fast lane: every contract except the six whole-system simulations | ~30 s |
-| `npm run verify:features -- --lane batch` | only those six simulators | ~45 s |
-| `npm run verify:features -- --all` | every contract: the nightly and CI answer | ~45 s |
+| `npm test` | the fast lane: every contract except the whole-system simulations and games | minutes |
+| `npm run verify:features -- --lane batch` | only those simulations and games | minutes |
+| `npm run verify:features -- --all` | every contract — what `verify:release` runs | minutes |
 | `node tooling/preview-translation-pad.mjs` | one component in a real browser: the shipped Translation Pad, the shipped markup, and a translation that answers on demand | seconds |
+
+`batchContractNames` in `tests/feature-manifest.mjs` is the deferred set. It was
+recomputed from measured per-contract cost on 2026-10-12 (it had not moved since
+2026-09-15, when the suite was 334 contracts and the list matched what was slow;
+past 520 contracts it no longer did). `dist/verification/features-<run>/summary.json`
+carries the per-contract `durationMs` to recompute it again. A release does not
+skip these: `verify:release` runs `--all`.
 
 One runner, several names: `npm test`, `npm run verify:contracts` and
 `npm run verify:features` all run `tooling/verify-features.mjs`, and `verify:feature`
