@@ -13,6 +13,7 @@ const menuItem = (action, labelKey, shortcutId = "", extra = {}) => ({
   ...extra,
 });
 const menuSeparator = Object.freeze({ type: "separator" });
+const TABS_GATE = { menuCondition: "window-tabs" };
 const submenu = (labelKey, items, extra = {}) => ({ type: "submenu", labelKey, items, ...extra });
 const menuSectionLabel = (labelKey, menuCondition = "") => ({ type: "section-label", labelKey, menuCondition });
 
@@ -89,6 +90,10 @@ const appearanceItems = (window.AISystem6Theme?.themes || window.AISystem6Theme?
 
 const systemSpecialItems = [
   menuItem("tile-windows", "tile_windows"),
+  // Tile's desk-wide sibling: the Window menu raises one application's windows
+  // (Bring All to Front, where macOS keeps it), this raises every window on the
+  // desk. Both live where the desk keeps desk-wide window verbs.
+  menuItem("bring-all-windows-to-front", "bring_all_windows_to_front"),
   menuSeparator,
   submenu("appearance", appearanceItems),
   menuItem("toggle-balloon-help", "show_balloon_help"),
@@ -103,9 +108,13 @@ const menu = (id, labelKey, items, extra = {}) => ({ id, labelKey, items, ...ext
 // arrangement popover, Tile). Peek acts on one rolled-up window and already
 // lives in the Window menu and inside Arrange Window…, so a third copy on
 // Special was one more greyed row to read (seen 2026-10-08).
+// The overview and the arrangement popover moved off the Window menu when it
+// took the macOS shape (owner, 2026-10-13), so Special is now their one home in
+// every era that has one -- except NeXTSTEP, which carries both in its own
+// Windows submenu and would otherwise show each twice.
 const specialMenu = (appItems = []) => menu("special", "menu_special", [
   menuItem("window-browse", "window_browse", "", { menuCondition: "window-browse-special" }),
-  menuItem("windowshade-arrange-menu", "window_arrange_menu"),
+  menuItem("windowshade-arrange-menu", "window_arrange_menu", "", { menuCondition: "window-arrange-special" }),
   ...appItems,
   ...(appItems.length ? [menuSeparator] : []),
   ...systemSpecialItems,
@@ -117,39 +126,89 @@ const specialMenu = (appItems = []) => menu("special", "menu_special", [
 // hides it in the classic, Platinum, Drawing Board and NeXTSTEP eras. Every
 // row routes through windowshade-entry.js's one command registry, which owns
 // the single availability question and the arrangement geometry.
+//
+// Its shape follows the modern macOS template, in that order: Minimize, Zoom,
+// Fill, Center, Move & Resize, Enter Full Screen, Pin, the Dock switch, Bring
+// All to Front, then this application's own windows. The verbs the desk has and
+// macOS does not -- Roll Up/Unroll/Peek, Slide Over, Split, the pin stack --
+// are all still here, one submenu down, so nothing was dropped to match a
+// template. Cross-application "All Windows…" is the desk's own overview and
+// lives on Special now, where the desk-wide verbs already are; the list at the
+// bottom of this menu is this application's windows, which is what macOS means
+// by the same position.
 const windowMenu = () => menu("window", "menu_window", [
-  menuItem("window-browse", "window_browse"),
+  menuItem("minimize-window", "window_minimize", "minimize-window"),
+  menuItem("zoom-window", "window_zoom"),
   menuSeparator,
-  menuItem("window-shade", "window_shade"),
-  menuItem("window-expand", "window_expand"),
-  menuItem("window-peek", "window_peek"),
-  menuItem("windowshade-arrange-menu", "window_arrange_menu"),
-  menuSeparator,
-  menuItem("window-layout-left", "window_arrange_left"),
-  menuItem("window-layout-right", "window_arrange_right"),
   menuItem("window-layout-fill", "window_arrange_fill"),
-  menuItem("window-slide-left", "window_slide_left"),
-  menuItem("window-slide-right", "window_slide_right"),
-  menuItem("window-slide-hide", "window_slide_hide"),
-  menuItem("window-slide-show", "window_slide_show"),
-  menuItem("window-slide-exit", "window_slide_exit"),
-  menuItem("window-split-choose", "window_split_choose"),
+  menuItem("window-layout-center", "window_center"),
+  submenu("move_and_resize", [
+    menuItem("window-layout-left", "window_arrange_left"),
+    menuItem("window-layout-right", "window_arrange_right"),
+    menuItem("window-layout-top", "window_arrange_top"),
+    menuItem("window-layout-bottom", "window_arrange_bottom"),
+    menuSeparator,
+    menuItem("window-layout-top-left", "window_arrange_top_left"),
+    menuItem("window-layout-top-right", "window_arrange_top_right"),
+    menuItem("window-layout-bottom-left", "window_arrange_bottom_left"),
+    menuItem("window-layout-bottom-right", "window_arrange_bottom_right"),
+    menuSeparator,
+    menuItem("window-layout-left-two-thirds", "window_arrange_left_two_thirds"),
+    menuItem("window-layout-right-two-thirds", "window_arrange_right_two_thirds"),
+    menuItem("window-layout-left-third", "window_arrange_left_third"),
+    menuItem("window-layout-right-third", "window_arrange_right_third"),
+    menuSeparator,
+    // The desk's own window verbs, one submenu down rather than gone. The
+    // arrangement popover still carries the whole vocabulary; this is the
+    // short list a menu is for.
+    menuItem("window-shade", "window_shade"),
+    menuItem("window-expand", "window_expand"),
+    menuItem("window-peek", "window_peek"),
+    menuSeparator,
+    // Slide Over's five rows sit here rather than in a submenu of their own:
+    // the desk's menu grammar stops after one submenu layer.
+    menuItem("window-slide-left", "window_slide_left"),
+    menuItem("window-slide-right", "window_slide_right"),
+    menuItem("window-slide-hide", "window_slide_hide"),
+    menuItem("window-slide-show", "window_slide_show"),
+    menuItem("window-slide-exit", "window_slide_exit"),
+    menuSeparator,
+    menuItem("window-split-choose", "window_split_choose"),
+    menuSeparator,
+    menuItem("window-layout-undo", "window_arrange_undo"),
+    menuItem("window-layout-recover", "window_arrange_recover"),
+  ]),
+  menuItem("toggle-full-screen-window", "window_full_screen"),
+  // Sierra's window-tab verbs (WINDOW-TABS-SPEC §5), between Enter Full Screen
+  // and Pinned — the place Part 2 left for them. They appear only where the
+  // era carries the `window-tabs` capability.
+  menuItem("show-previous-tab", "tabs_previous", "", TABS_GATE),
+  menuItem("show-next-tab", "tabs_next", "", TABS_GATE),
+  menuItem("toggle-tab-bar", "tabs_show_bar", "", TABS_GATE),
+  // The two verbs a second window makes expressible (§4.2 of the multi-instance
+  // work order): bring a second window's tabs back into this one, or send this
+  // window's tab out into a window of its own.
+  menuItem("merge-all-windows", "tabs_merge_all_windows", "", TABS_GATE),
+  menuItem("move-tab-to-new-window", "tabs_move_to_new_window", "", TABS_GATE),
   menuSeparator,
-  menuItem("window-layout-undo", "window_arrange_undo"),
-  menuItem("window-layout-recover", "window_arrange_recover"),
-  menuSeparator,
-  menuItem("window-pin", "window_pin"),
-  menuItem("window-unpin", "window_unpin"),
-  menuItem("window-pinned-list", "window_pinned_list"),
-  menuItem("window-pin-suspend", "window_pin_suspend"),
-  menuItem("window-pin-restore", "window_pin_restore"),
-  menuItem("window-pin-clear", "window_pin_clear"),
-  menuSeparator,
+  submenu("pinned", [
+    menuItem("window-pin", "window_pin"),
+    menuItem("window-unpin", "window_unpin"),
+    menuItem("window-pinned-list", "window_pinned_list"),
+    menuSeparator,
+    menuItem("window-pin-suspend", "window_pin_suspend"),
+    menuItem("window-pin-restore", "window_pin_restore"),
+    menuItem("window-pin-clear", "window_pin_clear"),
+  ]),
   // The Dock ships off in the Mac OS X eras (owner, 2026-09-25) and the only
   // switch was a Control Panel row nobody is told about. The Window menu is
   // where a put-away window is looked for, so the switch sits here too
   // (owner, 2026-10-08); the row reads Show or Hide to match the preference.
   menuItem("window-toggle-dock", "show_dock"),
+  menuSeparator,
+  menuItem("bring-app-front", "bring_all_to_front"),
+  menuSeparator,
+  { type: "window-list" },
 ], { menuCondition: "window-menu" });
 
 // Finder's File menu holds only verbs that make sense for *any* selected
@@ -251,7 +310,7 @@ const teachTextMenus = [
     if (!row) return menuSeparator;
     const [command, label = command] = row.split(":");
     return menuItem(`format-${command}`, `format_${label.replace(/-/g, "_")}`, command === "rule" ? "" : `format-${command}`);
-  }).concat(menuItem("open-image-manager", "image_manager")), { menuCondition: "writing-format-menu" }),
+  }), { menuCondition: "writing-format-menu" }),
   menu("writing", "menu_writing", [
     submenu("menu_go_to", [
       menuItem("open-question-sheet", "question_sheet", "route-question-sheet"),
@@ -299,8 +358,8 @@ const teachTextMenus = [
       menuItem("advance-outline-to-drafts", "to_section_drafts"),
     ], { surface: "outline" }),
     submenu("section_drafts", [
-      menuItem("previous-section-draft", "previous_section"),
-      menuItem("next-section-draft", "next_section"),
+      menuItem("previous-section-draft", "previous_draft"),
+      menuItem("next-section-draft", "next_draft"),
       menuItem("draft-current-section", "draft_section"),
       menuItem("polish-draft", "polish_draft"),
       menuItem("suggest-draft", "suggest_draft"),
@@ -490,6 +549,12 @@ const lightroomMenus = [
     menuSeparator,
     submenu("quick_draft_listen_voice", [{ type: "lightroom-rows", rowKind: "voices" }], { dataset: { lightroomRows: "voices" } }),
   ], { menuCondition: "lightroom-listen" }),
+  // The darkroom carried no Window menu while its conditional budget was two
+  // (lightroom-file, lightroom-listen). Every other Mac OS X-era application on
+  // the desk has one, and a window that can be shaded, split, tiled and put
+  // full screen is exactly where a writer looks for those verbs (owner,
+  // 2026-10-13), so the budget is three.
+  windowMenu(),
   specialMenu(),
 ];
 
@@ -577,6 +642,12 @@ const clioTalkMenus = [
   menu("conversation", "menu_conversation", [
     menuItem("open-clio-attachment-picker", "compose_attach_project_file"),
     menuItem("clear-attached-clips", "clear_context"),
+    menuSeparator,
+    // The exchange-level verbs. Both actions were registered and gated in
+    // window-manager.js, but their only affordance was a composer button kept
+    // out of the everyday row, so neither verb could be reached at all.
+    menuItem("clip-assistant-selection", "clip_assistant_selection"),
+    menuItem("retry-last-message", "retry"),
     menuSeparator,
     menuItem("start-temporary-clio-chat", "temporary_conversation"),
     menuSeparator,
@@ -669,7 +740,7 @@ const docMapMenus = [
     menuSeparator,
     menuItem("docmap-send-question", "to_question_sheet"),
     menuItem("docmap-insert-outline", "insert_outline"),
-    menuItem("docmap-hkrr", "review_hkrr_section"),
+    menuItem("docmap-hkrr", "docmap_hkrr_document"),
     menuItem("focus-docmap-question", "ask"),
     menuSeparator,
     // The two layouts the renderer actually has, named exactly as the DocMap
@@ -705,7 +776,7 @@ const scrapbookMenus = [
     menuItem("scrapbook-insert", "insert"),
     menuItem("scrapbook-attach", "attach_to_assistant"),
     menuItem("scrapbook-send-question", "to_question_sheet"),
-    menuItem("scrapbook-outline", "make_outline"),
+    menuItem("scrapbook-outline", "scrap_outline"),
     menuItem("make-docmap", "make_docmap"),
     menuItem("make-docmap-source", "docmap_from_source"),
     menuItem("make-chart", "make_chart"),
@@ -1001,6 +1072,31 @@ function renderApplicationMenuItem(item) {
       button.dataset.action = row.action;
       button.textContent = row.label;
       if (row.checked) button.classList.add("is-checked");
+      fragment.append(button);
+    });
+    return fragment;
+  }
+  // The Window menu's own list, the way macOS ends it: this application's open
+  // windows, front-most first, with the one in front marked. Order and state
+  // vocabulary come from multi-finder's projection -- the same one the
+  // NeXTSTEP Windows submenu and the cross-app browse list already read -- so
+  // the menu adds no second copy of window state. Nothing open means no rows at
+  // all, rather than a section that says nothing.
+  if (item.type === "window-list") {
+    const fragment = document.createDocumentFragment();
+    const windows = typeof applicationWindowOrder === "function" ? applicationWindowOrder() : [];
+    windows.forEach((win) => {
+      const name = win.dataset.window || "";
+      if (!name) return;
+      // Rows name the identity, kind:instance; main keeps the bare-kind form.
+      const button = document.createElement("button");
+      button.type = "button";
+      const inst = win.dataset.windowInstance;
+      button.dataset.action = `window-list-row:${name}${inst ? ":" + inst : ""}`;
+      button.textContent = typeof applicationWindowTitle === "function"
+        ? applicationWindowTitle(win, { markState: true })
+        : name;
+      if (win.classList.contains("is-active")) button.classList.add("is-checked");
       fragment.append(button);
     });
     return fragment;

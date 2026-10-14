@@ -87,18 +87,27 @@
       ...menuSetForApp(appId)
         .filter((definition) => definition.menuCondition !== "window-menu")
         .map((definition) => ({ ...definition, type: "submenu",
-          items: definition.items.filter((item) => item.menuCondition !== "window-browse-special") })),
+          items: definition.items.filter((item) => item.menuCondition !== "window-browse-special"
+            && item.menuCondition !== "window-arrange-special") })),
       ...(writingFamily.has(appId)
         ? [submenu("nextstep_tools", [menuItem("nextstep-writing-flow", "nextstep_writing_flow_command")])]
         : []),
       submenu("selection_services", selectionTools),
+      // 3.3's Windows menu: three commands in the chapter's own order, then the
+      // document-window list the Application Kit generates. Zoom and WindowShade
+      // are deliberately absent (the Window chapter names only a miniaturize and
+      // a close button); the desk's cross-era rows follow the second rule, kept
+      // for the writer, never passing for this era's own menu (owner, 2026-10-13).
       submenu("nextstep_windows", [
+        menuItem("nextstep-arrange-in-front", "nextstep_arrange_in_front"),
+        menuItem("minimize-window", "minimize_window_command"),
+        menuItem("close-active-window", "close_window"),
+        menuSeparator,
+        ...applicationWindowOrder(appId).map((win) => ({ type: "window", win, label: applicationWindowTitle(win, { markState: true }) })),
+        menuSeparator,
         menuItem("window-browse", "window_browse"),
         menuItem("windowshade-arrange-menu", "window_arrange_menu"),
         menuItem("window-peek", "window_peek"),
-        menuItem("nextstep-zoom-window", "nextstep_zoom"),
-        menuItem("nextstep-shade-window", "nextstep_shade"),
-        ...applicationWindowOrder(appId).map((win) => ({ type: "window", win, label: applicationWindowTitle(win, { markState: true }) })),
       ]),
       menuSeparator,
       ...applicationVerbRows().map((node) => node.dataset.action ? menuItem(node.dataset.action, node.textContent) : menuSeparator),
@@ -397,7 +406,121 @@
   function schedule() { if (!queued) { queued = true; queueMicrotask(sync); } }
   document.addEventListener("ai-system6-themechange", schedule);
   window.addEventListener("resize", schedule);
-  window.AISystem6Runtime.registerCommand("nextstep-zoom-window", { handler: () => { const win = resolveMenuContextWindow(); if (win) zoomWindow(win); } });
-  window.AISystem6Runtime.registerCommand("nextstep-shade-window", { handler: () => { const win = resolveMenuContextWindow(); if (win) toggleCollapsed(win); } });
-  window.AISystem6NextstepMenus = Object.freeze({ sync: schedule, rootRect, writingFamily });
+
+  // ---- The era's own window verbs (3.3) -----------------------------------
+  //
+  // The implementations live here, in the lazy module only this era loads: the
+  // eager bundle answers for a put-away writer's boot, and these two verbs are
+  // 3.3's alone. The eager command registrations (windowshade-entry.js)
+  // dispatch through the frozen API below. Geometry and stack owners are the
+  // shared ones (placeWindowForExplicitLayout, setWindowLayerZ); neither
+  // persistence nor a z layer is added.
+  const arrangeInFrontStep = 22;
+
+  // Menus chapter: "Stacks and offsets all the application's document windows."
+  // Front window keeps the base position and stays key; each window behind takes
+  // one more step, and one the work area cannot hold gives its offset back (the
+  // reachableFrame rule) instead of being pushed off the desk for looks.
+  function arrangeInFront(appId = frontApplicationId()) {
+    const covers = applicationWindowOrder(appId)
+      .filter((win) => applicationWindowPresentation(win) === "open")
+      // A CSS-owned split pane and reserved-band windows take no frame write.
+      .filter((win) => !windowUsesCssLayer(win) && reservedWindowLayerZ(win) === null);
+    if (!covers.length) {
+      if (typeof setStatus === "function") setStatus(t("nextstep_arrange_none"));
+      return false;
+    }
+    const desktop = document.querySelector(".desktop");
+    const desktopRect = desktop?.getBoundingClientRect();
+    if (!desktopRect) return false;
+    const margin = 24;
+    const avoidance = getDesktopAvoidanceInsets({ margin, spineGap: 18, iconGap: 48 });
+    const baseLeft = Math.max(avoidance.left, margin);
+    const baseTop = Math.max(writingSpineAlignedTopForWindow(covers[0], 18), margin);
+    const workRight = Math.max(baseLeft, desktopRect.width - avoidance.right - margin);
+    const workBottom = Math.max(baseTop, desktopRect.height - deskDockReserve() - margin);
+    const frames = covers.map((win, index) => {
+      const rect = win.getBoundingClientRect();
+      const width = Math.round(rect.width) || 520;
+      const height = Math.round(rect.height) || 360;
+      return {
+        left: Math.min(Math.max(baseLeft, workRight - width), baseLeft + index * arrangeInFrontStep),
+        top: Math.min(Math.max(baseTop, workBottom - height), baseTop + index * arrangeInFrontStep),
+        width,
+        height,
+      };
+    });
+    // The moved test reads frames, not the whole style attribute: a pass that
+    // only re-raised the stack (z-order) did not rearrange anything.
+    const inlineFrame = (win) => ["left", "top", "width", "height"].map((prop) => win.style.getPropertyValue(prop));
+    const before = covers.map(inlineFrame);
+    covers.forEach((win, index) => placeWindowForExplicitLayout(win, {
+      left: frames[index].left,
+      top: frames[index].top,
+      width: frames[index].width,
+      height: frames[index].height,
+      transform: "none",
+    }));
+    // The front window is the key window, and arrange stacks behind it. The
+    // receipt is the one Bring All to Front uses, so a second arrange on an
+    // arranged desk says so instead of going quiet.
+    focusWindow(covers[0], false);
+    scheduleWorkingSessionSave?.();
+    const moved = covers.some((win, index) => {
+      const frame = before[index];
+      return inlineFrame(win).some((value, position) => value !== frame[position]);
+    });
+    if (typeof setStatus === "function") {
+      setStatus(moved ? t("nextstep_arrange_done") : t("nextstep_arrange_already"));
+    }
+    return moved;
+  }
+
+  // One band, one ascending run of z values: the shape compactWindowLayerStack
+  // writes, so "front of the tier" and "back" are real positions, not a one-step
+  // raise that leaves the moved window mid-stack.
+  function restackTier(ordered, layer) {
+    const base = layer === "pinned" ? windowPinnedZ : windowLayerCompactBaseZ;
+    ordered.forEach((win, index) => setWindowLayerZ(win, base + index));
+  }
+
+  // Window chapter: "Command-up arrow moves the backmost panel (if it's in the
+  // lowest tier) or standard window to the front of the tier. Command-down arrow
+  // moves the frontmost one to the back." A tier is the desk's own stack band
+  // (normal or pinned). The tier's new front window takes focus: this desk's
+  // front window IS the active application's key window, and leaving the old one
+  // key while it sits behind would split the menu bar from the screen.
+  function windowWithinTier(direction) {
+    const contextWin = resolveMenuContextWindow();
+    if (!contextWin) return false;
+    const layer = windowStackLayer(contextWin);
+    const members = layer === "pinned" ? pinnedLayerWindows() : normalLayerWindows();
+    if (members.length < 2) {
+      if (typeof setStatus === "function") setStatus(t("nextstep_tier_only_one"));
+      return false;
+    }
+    const ordered = members.slice()
+      .sort((a, b) => Number(a.style.zIndex || 0) - Number(b.style.zIndex || 0));
+    const moving = direction === "front" ? ordered[0] : ordered[ordered.length - 1];
+    const rest = ordered.filter((win) => win !== moving);
+    const next = direction === "front" ? [...rest, moving] : [moving, ...rest];
+    restackTier(next, layer);
+    const front = next[next.length - 1];
+    focusWindow(front, false);
+    scheduleWorkingSessionSave?.();
+    // The two keys are a cycle, not a silent reshuffle: name the window that
+    // now owns the front of the tier.
+    if (typeof setStatus === "function") setStatus(t("window_front_now", applicationWindowTitle(front)));
+    return true;
+  }
+
+  // This module is the era's menu presentation. The verbs its rows name are
+  // registered with the desk's other window commands in windowshade-entry.js,
+  // because Command-up/down are registry shortcuts and may not name an action
+  // only a lazily loaded palette module registers. Zoom and WindowShade belong
+  // to no 3.3 menu (owner, 2026-10-13); both keep their other homes.
+  window.AISystem6NextstepMenus = Object.freeze({
+    sync: schedule, rootRect, writingFamily,
+    arrangeInFront, windowWithinTier,
+  });
 })();

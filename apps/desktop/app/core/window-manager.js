@@ -23,8 +23,14 @@ function teachTextUnsavedChangesMessage() {
   return t("unsaved_changes", name);
 }
 
+// A name is a kind; the element without data-window-instance is its main
+// (second-instance machinery: lazy window-instances.js).
 function getWindow(name) {
-  return document.querySelector(`[data-window="${name}"]`);
+  return document.querySelector(`[data-window="${name}"]:not([data-window-instance])`);
+}
+function getWindowInstance(name, instance = "main") {
+  return instance === "main" ? getWindow(name)
+    : document.querySelector(`[data-window="${name}"][data-window-instance="${instance}"]`);
 }
 
 const writerModeCssOwnedWindows = new Set(["teachText", "assistant", "findPath", "contextPanel"]);
@@ -1017,10 +1023,6 @@ function updateSideAskSourceChrome() {
     sourceName.textContent = t("sideask_paired_with", sideAskSourceDisplayLabel());
   }
   syncSideAskApplyEdit(sideAskActive);
-  document.getElementById("compose-tools-quick-draft")?.classList.add("is-hidden");
-  document.querySelectorAll(".compose-tools-quick-draft-import").forEach((item) => {
-    item.classList.add("is-hidden");
-  });
   const quickDraftHint = document.getElementById("quick-draft-cliotalk-hint");
   if (quickDraftHint) {
     quickDraftHint.classList.add("is-hidden");
@@ -1359,6 +1361,9 @@ function focusWindow(win, reveal=false) {
     item.classList.remove("is-active");
   });
   win.classList.add("is-active");
+  // P2 (§2.7): the document-state globals follow the key window; the buckets
+  // live in the lazy identity layer (window-instances.js).
+  window.AISystem6InstanceDocState?.focus(win);
   // WM1: a real focus is the only thing that advances last-used order.
   windowFocusRanks.set(win, ++windowFocusRankCounter);
   // The status line follows the active window, so a message set while another
@@ -3041,6 +3046,16 @@ function getActionAvailability() {
   const windowMenuAvailable = windowMenuEra && !isNarrowViewport();
   const windowMenuBrowseAvailable = !!document.querySelector(".window[data-window]:not(.is-hidden)");
   const arrangementAvailable = (action) => isWindowArrangementActionAvailable(windowMenuFrontWindow, action);
+  const nextstepEra = window.AISystem6Theme?.getCurrentTheme?.() === "nextstep";
+  // The era's title bar carries its own miniaturize button and no
+  // `minimize-lamp` capability, so the lamp gate below left the standard
+  // Miniaturize Window row greyed. Same shared verb; live only where the
+  // title bar really has the button.
+  const nextstepMiniaturizeWindow = nextstepEra
+    && typeof appearanceHoldsMiniwindows === "function" && appearanceHoldsMiniwindows()
+    && !!windowMenuFrontWindow
+    && !["about", "saveChat"].includes(windowMenuFrontWindow.dataset.window)
+    && !!windowMenuFrontWindow.querySelector(".title-bar .close-box");
 
   const availability = {
     // Both open a scratch document, which never touches the project — that is
@@ -3384,6 +3399,33 @@ function getActionAvailability() {
     "hide-other-apps": getRunningApps().some((app) => app.id !== activeAppId && !nonQuittableAppIds.has(app.id) && !app.hidden && visibleWindowsForApp(app.id).length > 0),
     "show-all-apps": hiddenAppIds.size > 0,
     "bring-app-front": visibleWindowsForApp(activeAppId).length > 0,
+    // The desk-wide sibling, and the two Option variants of Minimize/Zoom. Each
+    // greys with the truth: an all-windows verb with nothing to act on stays
+    // grey instead of looking live and doing nothing.
+    "bring-all-windows-to-front": !!document.querySelector('.window[data-window]:not(.is-hidden)'),
+    "minimize-all-windows": visibleWindowsForApp(activeAppId).length > 0,
+    "zoom-all-windows": visibleWindowsForApp(activeAppId).some((win) => isZoomableWindow(win)),
+    // The Window menu's three single-window verbs. Minimize greys in an era with
+    // no yellow lamp (there is nowhere for the window to go) and when the front
+    // window is already put away; NeXTSTEP's own miniaturize button is the one
+    // other control that puts a window away, so it keeps the row live there.
+    // Zoom follows the same resize-box the traffic light does; full screen
+    // answers through the era capability, which is where the desk records which
+    // appearances shipped the button at all.
+    "minimize-window": (window.AISystem6WindowMinimize?.lampEnabled?.() === true || nextstepMiniaturizeWindow)
+      && !!visibleWindowsForApp(activeAppId).length,
+    "zoom-window": (() => {
+      const win = document.querySelector(".window.is-active[data-window]");
+      return !!win && isZoomableWindow(win);
+    })(),
+    // NeXTSTEP 3.3's own window verbs; the era is the whole gate (the keys are
+    // scope "global" because runShortcut has no per-era scope, §6B). A verb
+    // with nothing to do reports from the command instead of going quiet.
+    "nextstep-arrange-in-front": nextstepEra,
+    "nextstep-window-front": nextstepEra,
+    "nextstep-window-back": nextstepEra,
+    "toggle-full-screen-window": window.AISystem6Theme?.hasCapability?.("full-screen") === true
+      && !!document.querySelector(".window.is-active[data-window]"),
     "quit-active-app": !nonQuittableAppIds.has(activeAppId),
     "view-small-icons": true,
     "view-icons": true,
@@ -3420,8 +3462,16 @@ function getActionAvailability() {
     // window rows grey themselves when there is nothing to act on.
     "window-menu": windowMenuAvailable
       && (windowMenuBrowseAvailable || window.AISystem6Theme?.hasCapability?.("dock") === true),
-    "window-browse-special": isNarrowViewport() || (getCurrentTheme() !== "nextstep"
-      && (!windowMenuAvailable || !document.querySelector('[data-menu-condition="window-menu"]'))),
+    // The two desk-wide window verbs Special owns. They left the Window menu
+    // when it took the macOS shape, so the question is no longer "does an era
+    // have a Window menu" but "does another menu already carry this verb" --
+    // only NeXTSTEP does, in its own Windows submenu. Narrow viewports still
+    // fall back to Special, where the title-bar gestures stand down.
+    // Sierra's window tabs appear only where the capability does (big-sur and
+    // liquid-glass; yosemite predates Sierra — WINDOW-TABS-SPEC §2.1).
+    "window-tabs": window.AISystem6Theme?.hasCapability?.("window-tabs") === true,
+    "window-browse-special": isNarrowViewport() || getCurrentTheme() !== "nextstep",
+    "window-arrange-special": isNarrowViewport() || getCurrentTheme() !== "nextstep",
     "window-shade": arrangementAvailable("shade"),
     "window-expand": arrangementAvailable("expand"),
     "window-layout-left": arrangementAvailable("left"),
@@ -3633,6 +3683,13 @@ function updateMenuState() {
     if (action === "window-toggle-dock") {
       btn.textContent = t(window.AISystem6WindowMinimize?.dockVisible?.() ? "hide_dock" : "show_dock");
     }
+    // Full screen is one row that names where it goes next, the way the Dock
+    // switch above reads Show or Hide: macOS shows Exit Full Screen while the
+    // window is already there.
+    if (action === "toggle-full-screen-window") {
+      const front = document.querySelector(".window.is-active[data-window]");
+      btn.textContent = t(front?.classList.contains("is-fullscreen") ? "window_exit_full_screen" : "window_full_screen");
+    }
     if (action === "reset-system") {
       btn.classList.toggle("is-hidden", !state[action]);
     }
@@ -3813,12 +3870,24 @@ function windowPresentationIsCurrent(ticket) {
 }
 
 async function openWindow(name, options = {}) {
-  const nestedOpen = windowsBeingOpened.has(name);
-  if (!nestedOpen) windowsBeingOpened.add(name);
+  // The in-flight key is the identity: two instances of one kind opening
+  // concurrently must not read each other's nesting (kind ids never contain
+  // ":", so main's bare name never collides with an instance's key). A call
+  // that names NO instance is the one case the identity cannot answer — and it
+  // is exactly the re-entrant one: a `mount: open` module opens its own window
+  // from inside a mount whose options are { appId, windowName, reentrant }, so
+  // the instance never travels to that call. Any in-flight open of the kind is
+  // therefore that call's own open; without the fallback the inner open is not
+  // recognized, the runtime hands it the promise it is already inside, and the
+  // app never appears.
+  const openKey = name + ":" + (options.instance || "");
+  const nestedOpen = windowsBeingOpened.has(openKey)
+    || (!options.instance && [...windowsBeingOpened].some((key) => key.startsWith(`${name}:`)));
+  if (!nestedOpen) windowsBeingOpened.add(openKey);
   try {
     return await openWindowInner(name, options, nestedOpen);
   } finally {
-    if (!nestedOpen) windowsBeingOpened.delete(name);
+    if (!nestedOpen) windowsBeingOpened.delete(openKey);
   }
 }
 
@@ -3881,7 +3950,12 @@ async function openWindowInner(name, options = {}, nestedOpen = false) {
   // lazy module that owns its interior. This keeps unopened games off the
   // startup disk while preserving the ordinary window-manager contract.
   if (!getWindow(name) && lazyWindowRecord(name)) await loadLazyWindowModule(name);
-  const win = getWindow(name);
+  // A second instance's element is built by the kind's own builder through the
+  // lazy identity layer; every step below — chrome, placement, focus, hooks,
+  // the session record — is the one path the main instance takes.
+  // An instance's element is built by the identity layer BEFORE it calls this
+  // path, so the lookup is all that is needed here.
+  const win = getWindowInstance(name, options.instance);
   // ADHD journey shell: summoning Hold / notify / bell / todo closes the other
   // journey accessories so the chain does not stack-open (harvest O / v228).
   if (
@@ -5424,8 +5498,22 @@ function setAssistantDesklet(enabled) {
   }
 }
 
-async function closeWindow(name, force = false) {
-  const win = getWindow(name);
+// The user verb: a deliberate click on the temporary peek surface unrolls the
+// shade for real. The toggle lives HERE, with the shade it changes; the peek
+// state machine itself (begin/end/isWindowPeeking) is the lazy peek module's.
+function commitPeek(win = null) {
+  const peeking = window.AISystem6WindowPeek;
+  const target = win || peeking?.shadePeekWindow?.() || null;
+  if (!target) return false;
+  const wasPeeking = !!peeking?.isWindowPeeking?.(target);
+  peeking?.endPeek?.(target);
+  if (!target.classList.contains("is-collapsed")) return wasPeeking;
+  toggleCollapsed(target);
+  return true;
+}
+
+async function closeWindow(name, force = false, instance) {
+  const win = getWindowInstance(name, instance);
   if (!win) return false;
 
   if (
@@ -5481,10 +5569,14 @@ async function closeWindow(name, force = false) {
   if (name === "themeLab") window.AISystem6ThemeLab?.cleanup?.();
   // A closed window must not be moved by a callback scheduled before the close.
   invalidateWindowAutoLayout(win);
-  endPeek(win);
+  window.AISystem6WindowPeek?.endPeek?.(win);
   window.AISystem6WindowShade?.detach(win, true);
   window.AISystem6WindowPreview?.release(win);
   window.AISystem6WindowMinimize?.releaseCapture(win);
+  // A second instance's tab set goes with its window (§4.2, ruling of
+  // 2026-10-14). The identity layer is loaded whenever an instance exists and
+  // answers nothing for a main window, so this is silent on the ordinary close.
+  window.AISystem6WindowInstances?.dropTabs?.(win);
   delete win.dataset.windowPinned;
   win.classList.add("is-hidden");
   win.classList.remove("is-minimized");
@@ -5631,7 +5723,7 @@ function toggleCollapsed(win) {
   const willCollapse = !win.classList.contains("is-collapsed");
   // The writer's own roll up or down: from here the shade is theirs, not Hide's.
   delete win.dataset.appHiddenCollapsed;
-  endPeek(win);
+  window.AISystem6WindowPeek?.endPeek?.(win);
   const before = win.getBoundingClientRect();
   if (willCollapse) {
     const width = Math.round(before.width);
@@ -5667,72 +5759,7 @@ function toggleCollapsed(win) {
   scheduleWorkingSessionSave?.();
 }
 
-// Temporary shade peek: the durable state stays collapsed. No Working Session
-// write, no MRU change, no focus steal, no second DOM identity.
-let shadePeekWindow = null;
 
-function canPeekWindow(win) {
-  if (!win?.isConnected || !win.classList.contains("is-collapsed")) return false;
-  if (win.matches(".is-hidden, .is-app-hidden, .is-minimized, .is-fullscreen, .is-mobile-fullscreen")) return false;
-  if (win.dataset.windowShadePeek === "false") return false;
-  if (win.querySelector("input[type='password']")) return false;
-  if (win.querySelector("iframe")) return false;
-  return !!win.querySelector(":scope > .title-bar");
-}
-
-function isWindowPeeking(win = shadePeekWindow) {
-  return !!win && win === shadePeekWindow && win.classList.contains("is-shade-peeking");
-}
-
-function beginPeek(win) {
-  if (!canPeekWindow(win)) return false;
-  if (isWindowPeeking(win)) return true;
-  if (shadePeekWindow && shadePeekWindow !== win) endPeek(shadePeekWindow);
-  const height = win.dataset.shadeRestoreHeight || "";
-  const maxHeight = win.dataset.shadeRestoreMaxHeight || "";
-  if (height) setInlineStyleValue(win, "height", height);
-  if (maxHeight) setInlineStyleValue(win, "max-height", maxHeight);
-  win.classList.add("is-shade-peeking");
-  shadePeekWindow = win;
-  return true;
-}
-
-function endPeek(win = shadePeekWindow) {
-  if (!win?.classList?.contains("is-shade-peeking")) {
-    if (shadePeekWindow === win) shadePeekWindow = null;
-    return false;
-  }
-  win.classList.remove("is-shade-peeking");
-  if (win.classList.contains("is-collapsed")) {
-    setInlineStyleValue(win, "height", "");
-    setInlineStyleValue(win, "max-height", "");
-  }
-  if (shadePeekWindow === win) shadePeekWindow = null;
-  return true;
-}
-
-function commitPeek(win = shadePeekWindow) {
-  if (!win) return false;
-  const wasPeeking = isWindowPeeking(win);
-  endPeek(win);
-  if (!win.classList.contains("is-collapsed")) return wasPeeking;
-  toggleCollapsed(win);
-  return true;
-}
-
-function cancelAllWindowPeeks() {
-  if (shadePeekWindow) endPeek(shadePeekWindow);
-}
-
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") cancelAllWindowPeeks();
-}, true);
-window.addEventListener("blur", cancelAllWindowPeeks);
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden) cancelAllWindowPeeks();
-});
-document.addEventListener("ai-system6-themechange", cancelAllWindowPeeks);
-window.addEventListener("resize", cancelAllWindowPeeks);
 
 // WindowShade rolls up and down in place. Start Here is centred by a transform,
 // and compact layouts re-anchor a collapsed window from the viewport to the

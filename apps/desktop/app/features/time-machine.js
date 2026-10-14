@@ -624,9 +624,12 @@ function captureActiveTimeMachineTabState() {
 
 function renderTimeMachineTabs(project = getActiveProject()) {
   if (!timeMachineTabsEl) return;
-  const tabs = getTimeMachineTabs(project);
+  // The rail shows the window it sits in (§4.2): a tab moved to another window
+  // belongs to that window and stops rendering here.
+  const instance = documentTabInstanceOfRail(timeMachineTabsEl);
+  const tabs = getWindowDocumentTabs("timeMachine", project, instance);
   renderTdiTabStrip(timeMachineTabsEl, tabs, {
-    activeId: project?.activeDocumentTabIds?.timeMachine,
+    activeId: project?.activeDocumentTabIds?.[activeDocumentTabKey("timeMachine", instance)],
     labelFor: (tab, index) => `${index + 1}. ${tab.title || t("time_machine_new_tab")}`,
     compactLabelFor: (tab) => tab.title || t("time_machine_new_tab"),
     iconFor: () => "timeMachine",
@@ -897,6 +900,84 @@ function timeMachineRenderReader() {
     return;
   }
   timeMachineReaderEl.append(title, meta, body);
+}
+
+// The Time Machine second window's view (§3.1, shape (V)): a READ-ONLY
+// snapshot of the tab that is open on the desk — its address, target date,
+// archive, the page's reading text, and the trail of visits in that tab. The
+// main window's own renderer cannot be reused: timeMachineRenderReader writes
+// #time-machine-reader and reads the single currentTimeMachinePage, and every
+// control above it is wired to one set of module-scope elements, so a second
+// caller would repaint the browser that is already on the desk.
+//
+// The view is a snapshot: it reads the tab once, when the window opens, and
+// never re-reads it. It carries no [data-action], no input and no element id,
+// so the desk-wide action delegate and the write-lease freeze leave it alone —
+// the single interactive affordance is the title bar's own Close / Zoom /
+// WindowShade, wired with the instance id.
+function renderTimeMachineReadOnly(container) {
+  if (!container) return false;
+  const state = activeTimeMachineTab()?.state || null;
+  const page = state?.page || currentTimeMachinePage || null;
+  const reader = page?.reader || null;
+  const article = document.createElement("article");
+  article.className = "time-machine-reader";
+  const heading = document.createElement("h1");
+  heading.textContent = reader?.title || page?.title || state?.address || t("time_machine");
+  const meta = document.createElement("div");
+  meta.className = "time-machine-reader-meta";
+  meta.textContent = timeMachineReadOnlyMeta(state, page);
+  article.append(heading, meta);
+  const text = String(reader?.text || "").trim();
+  if (text) {
+    const body = document.createElement("div");
+    body.className = "reader-body-content";
+    body.innerHTML = markdownToSystemHtml(text);
+    article.append(body);
+    if (reader.completeness === "partial") {
+      const partial = document.createElement("p");
+      partial.className = "hint control-status";
+      partial.textContent = t("time_machine_reader_partial");
+      article.append(partial);
+    }
+  } else {
+    // The main window's Reading View offers Web View beside this note; a view
+    // with no action surface offers the sentence alone.
+    const empty = document.createElement("p");
+    empty.className = "empty-folder-note";
+    empty.textContent = t("time_machine_home_body");
+    article.append(empty);
+  }
+  // The trail is what makes this a view of the HISTORY rather than a copy of
+  // one page: where this tab has been, and which stop the page above is.
+  const history = Array.isArray(state?.history) ? state.history : [];
+  if (history.length) {
+    const trailTitle = document.createElement("h2");
+    trailTitle.textContent = t("time_machine_history");
+    const trail = document.createElement("ol");
+    history.forEach((entry, index) => {
+      const item = document.createElement("li");
+      item.textContent = [String(entry?.targetDate || ""), String(entry?.url || "")].filter(Boolean).join(" · ");
+      if (index === state.historyIndex) item.setAttribute("aria-current", "true");
+      trail.append(item);
+    });
+    article.append(trailTitle, trail);
+  }
+  container.append(article);
+  return true;
+}
+
+// The view's provenance line, in the main window's own Reading View vocabulary
+// — the two label helpers below are the ones timeMachineRenderReader uses.
+function timeMachineReadOnlyMeta(state, page) {
+  const parts = [];
+  const address = state?.address || page?.url || "";
+  if (address) parts.push(address);
+  if (state?.targetDate) parts.push(`${t("time_machine_target_date")}: ${state.targetDate}`);
+  const archive = page?.archive;
+  if (archive?.provider) parts.push(timeMachineProviderLabel(archive.provider));
+  if (archive?.capturedAt) parts.push(timeMachineCapturedLabel(archive.capturedAt));
+  return parts.join(" · ");
 }
 
 function timeMachineSyncViewButtons() {
@@ -2050,6 +2131,11 @@ window.AISystem6TimeMachine = Object.freeze({
   menuState: timeMachineMenuState,
   setStatus: timeMachineSetStatus,
 });
+
+// The second window's read-only view (§3.1 shape (V)). Its own name, not the
+// browser's: the lazy builder in time-machine-instances.js renders through
+// this, and nothing else may.
+window.AISystem6TimeMachineView = Object.freeze({ render: renderTimeMachineReadOnly });
 
 const TIME_MACHINE_COMMAND_NAMES = [
   "time-machine-new-tab",

@@ -859,41 +859,10 @@ function syncClioTalkModelAvailability() {
   if (typeof syncPromptPlaceholder === "function") syncPromptPlaceholder();
 }
 
-function formatClioTalkContextTokens(tokens) {
-  const value = Math.max(0, Number(tokens) || 0);
-  if (value >= 1000) return `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}K`;
-  return String(Math.round(value));
-}
-
-function renderClioTalkContextSpace() {
-  const contextSpaceEl = document.querySelector("#assistant-context-space");
-  if (!contextSpaceEl) return;
-  const total = Number(lastContextBudget?.contextTokens || (
-    typeof getEffectiveContextTokens === "function" ? getEffectiveContextTokens() : 0
-  ));
-  if (!total) {
-    contextSpaceEl.textContent = t("clio_context_space_empty");
-    contextSpaceEl.title = t("clio_context_space_help");
-    return;
-  }
-  const prompt = Math.max(0, Number(window.lastContextLoadout?.promptTokens || lastContextBudget?.promptTokens || 0));
-  const available = Math.max(0, total - prompt);
-  const percent = Math.round((available / total) * 100);
-  contextSpaceEl.textContent = t(
-    "clio_context_space",
-    formatClioTalkContextTokens(available),
-    formatClioTalkContextTokens(total),
-    percent
-  );
-  contextSpaceEl.title = t(
-    "clio_context_space_detail",
-    formatClioTalkContextTokens(available),
-    formatClioTalkContextTokens(total),
-    percent
-  );
-  window.AISystem6ControlStrip?.refreshStrip?.();
-}
-
+// The context-capacity estimate lives in the Context Panel
+// (#context-panel-budget, built by renderContextPanel). The composer used to
+// mirror it into a button that could never be shown; that button is gone and
+// the estimate keeps its one home.
 function clioRunHash(body = "") {
   return window.AISystem6PromptFilesRuntime?.hashPromptBody(String(body || ""))
     || `length-${String(body || "").length}`;
@@ -1325,7 +1294,6 @@ function recordContextLoadout(payload, invocation) {
       window.lastContextLoadout = clioTaskSnapshot(loadout);
     }
   }
-  renderClioTalkContextSpace();
   renderClioTalkRunAssembly();
   scheduleRenderTasks("contextPanel");
 }
@@ -1360,7 +1328,7 @@ function resetClioTalkRuntimeState(options = {}) {
   window.lastTaskExplicitInputFiles = [];
   window.lastTaskImageInputs = [];
   window.nextTaskInputFileIds = new Set();
-  renderClioTalkContextSpace();
+  renderClioTalkRunAssembly();
   lastRetrievedContextItems = [];
   if (typeof ragRankCache !== "undefined" && typeof ragRankCache.clear === "function") ragRankCache.clear();
   renderAttachedClips();
@@ -4427,10 +4395,6 @@ function setComposerBusy(isBusy) {
   messagesEl?.setAttribute("aria-busy", String(isBusy));
   promptInput.disabled = false;
   composeToolsToggleButton.disabled = false;
-  clipSelectionButton.disabled = isBusy;
-  clearButton.disabled = isBusy;
-  retryButton.disabled = isBusy;
-  retryButton.hidden = true;
   setComposerSubmitMode(isBusy);
   if (composerKeyHintEl) {
     const hintKey = isBusy ? "clio_composer_draft_hint" : "clio_composer_key_hint";

@@ -26,7 +26,10 @@ test("the browse projection is one cross-application read of the real windows", 
 
 test("recovery maps each real state to its existing entry, never a re-summon", () => {
   const body = finder.slice(finder.indexOf("function restoreWindowBrowseEntry("));
-  assert.match(body, /restoreApplicationWindow\(win\)/);
+  // The entry names an identity (name, instance); the element it resolves goes
+  // through the same shared restore path. A bare (name) call resolves to the
+  // kind's main instance — every row on today's desk.
+  assert.match(body, /restoreApplicationWindow\(getWindowInstance\(name, instance\)\)/);
   // No unconditional openWindow: an already-open window is brought back, not
   // summoned, so the writing route's summon / restore exclusivity holds.
   assert.doesNotMatch(body, /openWindow\s*\(/);
@@ -48,8 +51,11 @@ test("the surface is a lazy module and idle costs nothing", () => {
   // Hover closing uses an event-triggered timeout; no timer starts at load.
 });
 
-test("the Window menu exposes the discoverable row and the command loads on demand", () => {
-  assert.match(menus, /menuItem\("window-browse", "window_browse"\)/);
+test("the Special menu exposes the discoverable row and the command loads on demand", () => {
+  // All Windows is the desk's cross-application overview, so it lives on
+  // Special, gated only against NeXTSTEP (which carries it in its own Windows
+  // submenu); the Window menu's own list is this application's windows.
+  assert.match(menus, /menuItem\("window-browse", "window_browse", "", \{ menuCondition: "window-browse-special" \}\)/);
   assert.match(entry, /registerCommand\?\.\("window-browse"/);
   assert.match(entry, /app\/features\/window-browse\.js/);
   for (const locale of [en, zh]) {

@@ -207,7 +207,7 @@
     if (activeWindowID && activeWindowID !== id) close(activeWindowID);
     adopt(id, win);
     // The eager geometry lives in window-manager; this never writes style.
-    const shown = typeof beginPeek === "function" ? beginPeek(win) : false;
+    const shown = beginPeek(win);
     if (!shown) { restore(id); return false; }
     activeWindowID = id;
     activeKind = capability(win);
@@ -219,7 +219,7 @@
     if (activeWindowID === id) { activeWindowID = null; activeKind = null; }
     unwatch();
     const win = windowFor(id);
-    if (typeof endPeek === "function" && win) endPeek(win);
+    if (win) endPeek(win);
     else if (typeof cancelAllWindowPeeks === "function") cancelAllWindowPeeks();
     restore(id);
   }
@@ -293,6 +293,9 @@
   function commit(win) {
     if (!win) return false;
     clearDeadline();
+    // commitPeek stays in window-manager: it is the one peek verb that TOGGLES
+    // the shade (the writer clicked the temporary surface and asked to unroll),
+    // and this module's presentation half must never toggle it.
     if (typeof commitPeek === "function") return commitPeek(win);
     return false;
   }
@@ -319,6 +322,69 @@
   if (typeof document !== "undefined") document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && explicitFocus) { const target = explicitFocus; explicitFocus = null; cancel(); target?.focus?.({ preventScroll: true }); }
   });
+// Temporary shade peek: the durable state stays collapsed. No Working Session
+// write, no MRU change, no focus steal, no second DOM identity.
+let shadePeekWindow = null;
+
+function canPeekWindow(win) {
+  if (!win?.isConnected || !win.classList.contains("is-collapsed")) return false;
+  if (win.matches(".is-hidden, .is-app-hidden, .is-minimized, .is-fullscreen, .is-mobile-fullscreen")) return false;
+  if (win.dataset.windowShadePeek === "false") return false;
+  if (win.querySelector("input[type='password']")) return false;
+  if (win.querySelector("iframe")) return false;
+  return !!win.querySelector(":scope > .title-bar");
+}
+
+function isWindowPeeking(win = shadePeekWindow) {
+  return !!win && win === shadePeekWindow && win.classList.contains("is-shade-peeking");
+}
+
+function beginPeek(win) {
+  if (!canPeekWindow(win)) return false;
+  if (isWindowPeeking(win)) return true;
+  if (shadePeekWindow && shadePeekWindow !== win) endPeek(shadePeekWindow);
+  const height = win.dataset.shadeRestoreHeight || "";
+  const maxHeight = win.dataset.shadeRestoreMaxHeight || "";
+  if (height) setInlineStyleValue(win, "height", height);
+  if (maxHeight) setInlineStyleValue(win, "max-height", maxHeight);
+  win.classList.add("is-shade-peeking");
+  shadePeekWindow = win;
+  return true;
+}
+
+function endPeek(win = shadePeekWindow) {
+  if (!win?.classList?.contains("is-shade-peeking")) {
+    if (shadePeekWindow === win) shadePeekWindow = null;
+    return false;
+  }
+  win.classList.remove("is-shade-peeking");
+  if (win.classList.contains("is-collapsed")) {
+    setInlineStyleValue(win, "height", "");
+    setInlineStyleValue(win, "max-height", "");
+  }
+  if (shadePeekWindow === win) shadePeekWindow = null;
+  return true;
+}
+
+function cancelAllWindowPeeks() {
+  if (shadePeekWindow) endPeek(shadePeekWindow);
+}
+
+// Listeners attach only where there is a document. This module's judgement
+// half is loadable in a bare context — its contract does exactly that — and a
+// desk with no document has no peek to cancel.
+if (typeof document !== "undefined") {
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") cancelAllWindowPeeks();
+  }, true);
+  window.addEventListener("blur", cancelAllWindowPeeks);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) cancelAllWindowPeeks();
+  });
+  document.addEventListener("ai-system6-themechange", cancelAllWindowPeeks);
+  window.addEventListener("resize", cancelAllWindowPeeks);
+}
+
   globalThis.AISystem6WindowPeek = Object.freeze({
     GlanceIntent, show,
     capability,
@@ -330,7 +396,17 @@
     forget,
     commit,
     menuHandoff,
-    isPreviewing: (win) => (typeof isWindowPeeking === "function" ? isWindowPeeking(win) : false),
+    // The peek state machine's own surface: window-manager's close and shade
+    // paths, the entry's title-bar click and windowshade reach it through these
+    // names, every one of them optionally (a desk that never loaded this module
+    // has no peek to end).
+    beginPeek,
+    endPeek,
+    cancelAllPeeks: cancelAllWindowPeeks,
+    canPeekWindow,
+    isWindowPeeking,
+    shadePeekWindow: () => shadePeekWindow,
+    isPreviewing: (win) => isWindowPeeking(win),
     activeID: () => intent.activeID,
     previewKind: () => activeKind,
     nextDeadline: () => intent.nextDeadline(),

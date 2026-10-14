@@ -35,8 +35,22 @@ const keyboardShortcutRegistry = [
   // the lamp and which window takes it), so this row prints ⌘M beside
   // "Minimize Window" and in Key Caps without dispatching a second minimize.
   { id: "minimize-window", key: "m", code: "KeyM", action: "minimize-window", display: "⌘M", labelKey: "minimize_window_command", keyCaps: true, dispatch: false, scope: "global" },
+  // Sierra's tab walking (WINDOW-TABS-SPEC §6, option (i)): global scope, the
+  // capability gate lives in the commands' own availability, and Key Caps greys
+  // by the same table. ⌃Tab is macOS's own combination; a browser that claims
+  // it keeps it and the desk says nothing — the same honest limit ⌘` lives with.
+  { id: "show-next-tab-key", key: "tab", ctrl: true, action: "show-next-tab", display: "⌃⇥", labelKey: "tabs_next", keyCaps: true, scope: "global" },
+  { id: "show-previous-tab-key", key: "tab", ctrl: true, shift: true, action: "show-previous-tab", display: "⌃⇧⇥", labelKey: "tabs_previous", keyCaps: true, scope: "global" },
   { id: "cycle-window", key: "`", code: "Backquote", action: "cycle-window", display: "⌘`", labelKey: "cycle_window", keyCaps: true, scope: "global" },
   { id: "cycle-window-back", key: "`", code: "Backquote", shift: true, action: "cycle-window-back", display: "⇧⌘`", labelKey: "cycle_window_back", keyCaps: true, scope: "global" },
+  // NeXTSTEP 3.3's within-tier reorder (Window chapter: ⌘↑ sends the tier's
+  // backmost window to its front, ⌘↓ the frontmost to its back). runShortcut
+  // has no era scope, so the key is global and the command carries the era gate
+  // (§6B). suppressInEditable is load-bearing: in a text field both
+  // combinations are macOS's caret-to-start/end, and a global entry without it
+  // would swallow that in every era.
+  { id: "nextstep-window-front", key: "arrowup", action: "nextstep-window-front", display: "⌘↑", labelKey: "nextstep_window_front", keyCaps: true, suppressInEditable: true, scope: "global" },
+  { id: "nextstep-window-back", key: "arrowdown", action: "nextstep-window-back", display: "⌘↓", labelKey: "nextstep_window_back", keyCaps: true, suppressInEditable: true, scope: "global" },
   // Holding a thought has to work while the writer is typing, so it is
   // deliberately NOT suppressed in an editable — mid-sentence is exactly when
   // the door goes — and it claims nothing a text field already uses. It matches
@@ -149,10 +163,11 @@ function shortcutUsesCommandKey() {
 }
 
 function shortcutModifierPressed(event) {
-  if (shortcutUsesCommandKey()) {
-    return event.metaKey && !event.ctrlKey;
-  }
-  return event.ctrlKey && !event.metaKey;
+  // Exactly one modifier family passes on command-key platforms: ⌘-combos as
+  // always, and ⌃-combos (⌃⇥ tab walking is macOS's own) — the registry
+  // lookup below is the real gate, so an unmatched ⌃-combo falls through to
+  // the browser untouched, exactly as an unmatched ⌘-combo always has.
+  return shortcutUsesCommandKey() ? event.metaKey !== event.ctrlKey : event.ctrlKey && !event.metaKey;
 }
 
 function shortcutDisplayLabel(shortcut) {
@@ -192,19 +207,8 @@ function syncKeyboardShortcutLabels() {
   });
 }
 
-function renderKeyCapsShortcuts() {
-  const grid = document.querySelector("#shortcut-grid");
-  if (!grid) return;
-  const fragment = document.createDocumentFragment();
-  keyboardShortcutRegistry.filter((shortcut) => shortcut.keyCaps).forEach((shortcut) => {
-    const key = document.createElement("span");
-    const label = document.createElement("b");
-    key.textContent = shortcutDisplayLabel(shortcut);
-    label.textContent = t(shortcut.labelKey);
-    fragment.append(key, label);
-  });
-  grid.replaceChildren(fragment);
-}
+// Key Caps' shortcut grid is app/features/command-sheet.js's (lazy): it is
+// only on screen while that window is open, so nothing here renders it.
 
 
 // The Window menu's Dock switch. The preference and the Control Panel row are
@@ -1421,6 +1425,34 @@ function getApplicationActionHandlers() {
       const win = document.querySelector(".window.is-active[data-window]");
       if (win) minimizeWindow(win);
     },
+    // NeXTSTEP 3.3's three window verbs are runtime commands registered in
+    // windowshade-entry.js, not entries here: their implementations live in the
+    // lazy nextstep-menus.js (the floppy budget asks an era-only verb to stay
+    // off the boot bundle), and a runtime command resolves from boot regardless.
+    // Zoom and full screen are window verbs, not arrangements: they keep their
+    // own engines (zoomWindow, window-fullscreen.js) and answer for themselves
+    // in the availability map, so they register here beside Minimize.
+    "zoom-window": () => {
+      const win = document.querySelector(".window.is-active[data-window]");
+      if (win) zoomWindow(win);
+    },
+    "toggle-full-screen-window": () => {
+      const win = document.querySelector(".window.is-active[data-window]");
+      if (win) window.AISystem6WindowFullscreen?.toggle?.(win);
+    },
+    // The Option variants macOS puts beside Minimize and Zoom. They act on the
+    // front application's own windows, the scope those two verbs already use.
+    "minimize-all-windows": () => {
+      const windows = typeof applicationWindowOrder === "function" ? applicationWindowOrder() : [];
+      windows.forEach((win) => minimizeWindow(win));
+      return windows.length > 0;
+    },
+    "zoom-all-windows": () => {
+      const windows = (typeof applicationWindowOrder === "function" ? applicationWindowOrder() : [])
+        .filter((win) => typeof isZoomableWindow !== "function" || isZoomableWindow(win));
+      windows.forEach((win) => zoomWindow(win));
+      return windows.length > 0;
+    },
     "close-writing-flow": () => setWritingFlowClosed(true),
     "show-writing-flow": () => setWritingFlowClosed(false),
     "toggle-writing-flow-shade": toggleWritingToolsShade,
@@ -1706,7 +1738,14 @@ function getApplicationActionHandlers() {
     "close-active-window": async () => {
       const active = document.querySelector(".window.is-active:not(.is-hidden):not(.is-app-hidden)");
       if (active) {
-        const closed = await closeWindow(active.dataset.window);
+        // ⌘W with a shown tab bar closes the CURRENT TAB (WINDOW-TABS-SPEC
+        // §7B) — its own close button is the one path that knows the save
+        // rules; a DISABLED one (non-closable tab) and every other case
+        // closes the window as it always did.
+        const tabClose = window.AISystem6Theme?.hasCapability?.("window-tabs")
+          && active.querySelector(".tdi-tab.is-active .tdi-tab-close");
+        if (tabClose && !tabClose.disabled) { tabClose.click(); return; }
+        const closed = await closeWindow(active.dataset.window, false, active.dataset.windowInstance);
         // A blocked close (unsaved save prompt, failed flush) keeps the window
         // foreground; never hand focus to another window over it.
         if (closed === false) return;
@@ -1762,6 +1801,18 @@ function getApplicationActionHandlers() {
     "hide-other-apps": hideOtherApps,
     "show-all-apps": showAllApps,
     "bring-app-front": () => bringAppToFront(activeAppId),
+    // The desk-wide version, for Special: every window, not one application's.
+    "bring-all-windows-to-front": () => bringAllWindowsToFront(),
+    // One row of the Window menu's own list. Raising a window that is already
+    // in front changes nothing, which is what restoreApplicationWindow already
+    // reports, so the row reuses it rather than re-raising by hand.
+    // windowName may be kind:instance; a bare kind is the main instance
+    // (getWindowInstance's own default).
+    "window-list-row": ({ windowName } = {}) => {
+      const [kind, instance] = windowName.split(":");
+      const win = getWindowInstance(kind, instance);
+      if (win) restoreApplicationWindow(win);
+    },
     // The window half of the same question: ⌘` walks the application's own
     // windows, front-most first.
     "cycle-window": () => cycleApplicationWindows(1),
@@ -1818,6 +1869,13 @@ async function handleAction(action, commandContext = {}) {
   if (String(action).startsWith("open-chat-file:")) {
     commandContext = { ...commandContext, fileId: String(action).slice("open-chat-file:".length) };
     action = "open-chat-file";
+  }
+  // The Window menu's own rows name a window the way the chat list names a
+  // file: a menu click carries nothing else, so the identity travels in the
+  // action — kind:instance, where the bare kind is the main instance.
+  if (String(action).startsWith("window-list-row:")) {
+    commandContext = { ...commandContext, windowName: String(action).slice("window-list-row:".length) };
+    action = "window-list-row";
   }
   if (String(action).startsWith("open-droplet:")) {
     commandContext = { ...commandContext, dropletId: String(action).slice("open-droplet:".length) };
@@ -1916,6 +1974,12 @@ function runShortcut(event) {
       && (candidate.code ? candidate.code === event.code : candidate.key === key)
       && !!candidate.shift === !!event.shiftKey
       && !!candidate.option === !!event.altKey
+      // Which command modifier the row means. The gate above admits ⌘-combos
+      // and (on a command-key keyboard) ⌃-combos, so the match has to name one:
+      // ⌘ unless the row declares `ctrl`, which is how the desk's single ⌃
+      // family — ⌃⇥ tab walking — stays the only thing ⌃ reaches. Without
+      // this, ⌃S would fire the ⌘S verb.
+      && (candidate.ctrl ? event.ctrlKey : shortcutUsesCommandKey() ? event.metaKey : event.ctrlKey)
       && (
         candidate.scope === "global"
         || candidate.scope === "application"
@@ -1934,7 +1998,7 @@ function runShortcut(event) {
 // Key Caps opens on the command sheet for the application behind it
 // (app/features/command-sheet.js).
 window.AISystem6Runtime?.registerApplication({id:"keyCaps",windowName:"keyCaps",commands:{"open-key-caps":{handler:()=>{openWindow("keyCaps");ensureCommandSheetModule().then(()=>window.AISystem6CommandSheet.render({focus:!0}),()=>{})},isAvailable:()=>!0}}});
-window.AISystem6DirectCmfEntry = () => handleAction("open-cmf-studio");
+window.AISystem6Runtime?.registerLazyCommand?.("open-window-instance",{ensure:()=>ensureLazySystemModule("app/core/window-instances.js","AISystem6WinInst")});
 window.AISystem6Runtime?.registerLazyCommand?.("see-as-chart",{ensure:ensureClioChartModule});
 window.AISystem6Runtime?.registerLazyCommand?.("clio-project-reset-layout",{ensure:ensureClioProjectModule});
 window.AISystem6Runtime?.registerCommand?.("peek-project-disk",{handler:async({peekProjectId=""}={})=>{await ensureProjectPeekModule();await openProjectPeek(peekProjectId);},isAvailable:()=>!0});

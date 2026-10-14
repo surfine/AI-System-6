@@ -837,8 +837,8 @@
   flex: 0 0 auto;
 }
 
-/* Flex, not grid: #documents-up is hidden at the top level, and with fixed
-   columns the remaining children slid left onto the flexible track. */
+/* Flex, not grid: the folder label is a flexible track, and with fixed
+   columns the remaining children slid left onto it. */
 .documents-toolbar {
   display: flex;
   gap: 6px;

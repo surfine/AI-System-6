@@ -78,12 +78,20 @@ test("only a declared same-dom-readonly window may show a DOM preview", () => {
 });
 
 test("window-manager owns geometry; window-peek owns the read-only presentation", () => {
-  assert.match(managerSource, /function beginPeek\(/);
-  assert.match(managerSource, /function endPeek\(/);
+  // The peek state machine lives in the module that exists to own the glance
+  // (it moved out of window-manager as a byte-for-byte relocation: the same
+  // functions, one owner). The manager keeps geometry and reaches the machine
+  // through the module's own API.
+  const peekSource = readFileSync(new URL("../../apps/desktop/app/core/window-peek.js", import.meta.url), "utf8");
+  assert.match(peekSource, /function beginPeek\(/);
+  assert.match(peekSource, /function endPeek\(/);
+  // commitPeek stays with the shade it toggles: it is the user verb (the
+  // writer clicked the temporary surface), not presentation.
   assert.match(managerSource, /function commitPeek\(/);
-  // The eager manager must not also inert content, or the adapter's restore
-  // would put back an already-`true` value.
-  const begin = managerSource.slice(managerSource.indexOf("function beginPeek("), managerSource.indexOf("function isWindowPeeking("));
+  assert.match(managerSource, /window\.AISystem6WindowPeek\?\.endPeek\?\.\(win\)/);
+  // The module must not inert content either, or the adapter's restore would
+  // put back an already-`true` value.
+  const begin = peekSource.slice(peekSource.indexOf("function beginPeek("), peekSource.indexOf("function isWindowPeeking("));
   assert.doesNotMatch(begin, /inert/);
 });
 

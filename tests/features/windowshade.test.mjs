@@ -45,6 +45,21 @@ test("partitions are in the desktop coordinate system, with one gap", () => {
   assert.equal(p.targetFrame("rightTwoThirds", box).left, 422);
 });
 
+// The two halves and the centring verb the modern Window menu adds. Top and
+// bottom are fractions like left and right, so they answer here; Center keeps
+// the window's own size and has no fractional share, so targetFrame() returns
+// null for it by design and the engine computes it from the live frame instead
+// (windowshade.js's centeredFrame). The menu rows are pinned by window-menu.
+test("the menu's top and bottom halves divide the same work area", () => {
+  assert.deepEqual(plain(p.targetFrame("topHalf", box)), { left: 18, top: 42, width: 1200, height: 416 });
+  assert.deepEqual(plain(p.targetFrame("bottomHalf", box)), { left: 18, top: 466, width: 1200, height: 416 });
+  const top = p.targetFrame("topHalf", box);
+  const bottom = p.targetFrame("bottomHalf", box);
+  assert.equal(bottom.top - top.top - top.height, 8);
+  assert.equal(Object.prototype.hasOwnProperty.call(p.slots, "center"), false);
+  assert.equal(p.targetFrame("center", box), null);
+});
+
 test("minimum-size refusal never manufactures a larger out-of-bounds frame", () => {
   assert.equal(p.targetFrame("leftThird", box, { minWidth: 540 }), null);
   assert.equal(p.targetFrame("topLeft", box, { minHeight: 500 }), null);
@@ -89,9 +104,9 @@ test("parity surfaces pin and peek through the shared WindowShade / window-core 
   const finder = readFileSync(new URL("../../apps/desktop/app/core/multi-finder.js", import.meta.url), "utf8");
   const session = readFileSync(new URL("../../apps/desktop/app/core/working-session.js", import.meta.url), "utf8");
   assert.match(manager, /function setWindowPinned\(/);
-  assert.match(manager, /function beginPeek\(/);
-  assert.match(manager, /function endPeek\(/);
-  assert.match(manager, /function commitPeek\(/);
+  // The peek state machine moved to the lazy window-peek.js (the module that
+  // owns the glance); the manager reaches it by name.
+  assert.match(manager, /window\.AISystem6WindowPeek\?\.endPeek\?\.\(win\)/);
   assert.match(manager, /windowStackLayer/);
   assert.match(engine, /action === "pin" \|\| action === "unpin"/);
   assert.match(entry, /beginPeek/);
@@ -121,7 +136,10 @@ test("parity surfaces pin and peek through the shared WindowShade / window-core 
   assert.match(session, /restoreWindowSessionPresentation\(win, entry\)/);
   assert.match(session, /frameForPersistence\?\.\(win\)/);
   assert.match(session, /layerForPersistence\?\.\(win\)/);
-  assert.match(finder, /const membershipChanged = /);
+  // The walk's snapshot re-checks live membership each press (the multi-instance
+  // identity made the snapshot element-based; the check merged into the if).
+  assert.match(finder, /windows\.length !== windowWalk\.names\.length/);
+  assert.match(finder, /windowWalk\.names\.some\(\(win\) => !windows\.includes\(win\)\)/);
 });
 
 test("title-bar flick and wheel classifiers stay web-honest", () => {

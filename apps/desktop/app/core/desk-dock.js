@@ -501,16 +501,19 @@
     minimized.forEach((win) => {
       const label = applicationWindowTitle(win) || win.dataset.window || "";
       const appId = getWindowAppId(win);
+      // One instance, one cell: main keeps the bare kind name, another
+      // instance reads kind:instance.
+      const cellKey = win.dataset.windowInstance ? `${win.dataset.window}:${win.dataset.windowInstance}` : (win.dataset.window || "");
       const node = buildCell({
         iconId: "document",
         label,
-        key: `window:${win.dataset.window}`,
+        key: `window:${cellKey}`,
         appId,
         extraClass: "is-miniwindow",
         content: miniatureFor(win, appId),
         onActivate: () => restoreMinimizedWindow(win),
       });
-      node.dataset.miniwindow = win.dataset.window;
+      node.dataset.miniwindow = cellKey;
       nodes.push(node);
     });
 
@@ -804,6 +807,19 @@
           : applicationWindowTitle(win, { markState: true });
         add(title, () => restoreApplicationWindow(win), { mark });
       });
+      // A kind on the multi-instance whitelist opens a second window from the
+      // Dock — macOS's own affordance. The condition reads the registry's
+      // declaration (eager, always present); the identity layer itself loads
+      // on the click, so the boot bundle never pays for this row (P1: Reader,
+      // and the second window is a read-only view).
+      const multiKind = ["reader", "docMap", "timeMachine"].find((kind) =>
+        getWindowAppId(kind) === appId && getWindowRecord(kind)?.instances === "multi");
+      if (multiKind) {
+        add(t("window_new_instance", multiKind), async () => {
+          await ensureLazySystemModule("app/core/window-instances.js", "AISystem6WinInst");
+          await window.AISystem6WindowInstances?.open?.(multiKind);
+        });
+      }
       const running = runningIds().has(appId);
       const quittable = running && !nonQuittableAppIds.has(appId);
       if (appId !== "finder") {

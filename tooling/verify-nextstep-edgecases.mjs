@@ -247,6 +247,49 @@ add("dock-drag-unpin", ["NS-14"], async (page) => {
   assert.equal(await tile.getAttribute("data-state"), "running", "unpinned running application remains reachable");
 });
 
+add("tier-reorder", ["NS-23"], async (page) => {
+  // 3.3's Window chapter: "Command-up arrow moves the backmost panel (if it's
+  // in the lowest tier) or standard window to the front of the tier.
+  // Command-down arrow moves the frontmost one to the back." One tier here is
+  // the desk's normal z band; after either move the tier's new front window is
+  // the key window, because this desk's key window is the active application's
+  // front one.
+  await page.evaluate(async () => {
+    await setFinderEnvironment("multifinder", { persistStartup: false });
+    await openWindow("projects");
+    await openWindow("applications");
+    focusWindow(getWindow("projects"), true);
+  });
+  const tierOrder = () => page.evaluate(() => [...document.querySelectorAll(".window[data-window]")]
+    .filter((win) => windowStackLayer(win) === "normal" && !win.classList.contains("is-hidden")
+      && !win.classList.contains("is-app-hidden") && !win.classList.contains("is-minimized"))
+    .sort((a, b) => Number(a.style.zIndex || 0) - Number(b.style.zIndex || 0))
+    .map((win) => win.dataset.window));
+  const keyWindow = () => page.evaluate(() => document.querySelector(".window.is-active")?.dataset.window || "");
+  assert.equal(await keyWindow(), "projects", "the fixture starts with the project window key");
+  const before = await tierOrder();
+  assert.equal(before.at(-1), "projects", "and at the front of its tier");
+  await page.keyboard.press("Meta+ArrowDown");
+  await page.waitForFunction(() => document.querySelector(".window.is-active")?.dataset.window !== "projects");
+  const afterDown = await tierOrder();
+  assert.equal(afterDown[0], "projects", "Command-down already sent the frontmost window to the back of the tier");
+  assert.equal(await keyWindow(), afterDown.at(-1), "and the tier's new front window became key");
+  await page.keyboard.press("Meta+ArrowUp");
+  await page.waitForFunction(() => document.querySelector(".window.is-active")?.dataset.window === "projects");
+  const afterUp = await tierOrder();
+  assert.equal(afterUp.at(-1), "projects", "Command-up brought the backmost window back to the front of the tier");
+  assert.equal(await keyWindow(), "projects", "and it is key again");
+  // A tier of one has nothing to reorder: the key must report that instead of
+  // silently moving something.
+  await page.evaluate(() => {
+    for (const win of document.querySelectorAll(".window[data-window]")) {
+      if (win !== getWindow("projects")) win.classList.add("is-hidden");
+    }
+  });
+  assert.equal(await page.evaluate(() => handleAction("nextstep-window-front")), false, "a single-window tier refuses the reorder");
+  assert.equal(await page.evaluate(() => handleAction("nextstep-window-back")), false, "in both directions");
+});
+
 const chosen = requested.length ? scenes.filter(({ name }) => requested.includes(name)) : scenes;
 assert.ok(chosen.length, `No scene matched --scene ${requested.join(",")}`);
 assert.ok(requested.every((name) => scenes.some((scene) => scene.name === name)), "Unknown scene name");
@@ -258,7 +301,7 @@ try {
     const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     await context.addInitScript(() => {
       if (window !== window.top) return;
-      localStorage.setItem("ai-system-6-nextstep-dock", JSON.stringify(["finder"]));
+      localStorage.setItem("ai-system-6-nextstep-dock", JSON.stringify(["finder", "teachText"]));
     });
     const page = await context.newPage();
     page.setDefaultTimeout(10000);

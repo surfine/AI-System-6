@@ -1417,7 +1417,7 @@ async function writingDemoScrapbook() {
   demoScraps.slice(0, 4).forEach((scrap) => selectedScrapIds.add(scrap.id));
   selectedScrapId = selectedScrapIds.values().next().value || selectedScrapId;
   renderScraps();
-  await writingDemoHighlightElement(document.querySelector("#send-scraps-to-question") || getWindow("scrapbook"), currentLanguage === "zh" ? "送到问题单" : "To Question Sheet", { ms: 1000 });
+  await writingDemoHighlightElement(document.querySelector("#scrap-multi-more") || getWindow("scrapbook"), currentLanguage === "zh" ? "送到问题单" : "To Question Sheet", { ms: 1000 });
   sendSelectedScrapsToQuestionSheet();
   await writingDemoPause(900);
 }

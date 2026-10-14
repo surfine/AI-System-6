@@ -79,6 +79,10 @@ const commandBlocks = [
 const runtimeCommandIds = new Set(
   [
     ...commandBlocks.flatMap((block) => [...block.matchAll(/\[\s*"([a-z0-9-]+)"/g)].map((match) => match[1])),
+    // Part 2's window verbs register from windowshade-entry.js, and Sierra's
+    // tab verbs (WINDOW-TABS-SPEC §5) register there too. Each carries its own
+    // isAvailable, so naming them here is reading the gate where it is written.
+    ...[...read("app/core/windowshade-entry.js").matchAll(/registerCommand\?\.\("([a-z0-9-]+)"/g)].map((match) => match[1]),
     ...timeMachine.matchAll(/"(open-time-machine|time-machine-[a-z0-9-]+)"/g).map((match) => match[1]),
     ...bureaucracyMeme.matchAll(/"(open-bureaucracy-meme|meme-[a-z0-9-]+)"/g).map((match) => match[1]),
     ...soundscape.matchAll(/"(open-soundscape|soundscape-[a-z0-9-]+)"/g).map((match) => match[1]),

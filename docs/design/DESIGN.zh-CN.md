@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/DESIGN.md -->
-<!-- source-sha256: c422e5d98e2864ba18bc39aa12deed2bf8db0c22e016f49bbc9dfe2c07b84742 -->
+<!-- source-sha256: 6ca0f139601515416a80d8407d02a564a183a6dbb2e475e1c867b82fd8a9c979 -->
 
 # AI System 6 设计合约
 

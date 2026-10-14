@@ -54,8 +54,14 @@
     const labelledBy = String(options.labelledBy || "").trim();
     if (!windowName || !labelledBy) throw new TypeError("Dynamic application windows require windowName and labelledBy.");
 
+    // The dedupe key is the identity (kind, instance), not the kind (§5.4):
+    // the main instance answers a main request, and a second instance's
+    // element is its own — a reader view must never be handed the reader
+    // window that is already on the desk.
+    const instanceId = String(options.instance || "main");
     const existing = [...document.querySelectorAll("[data-window]")]
-      .find((candidate) => candidate.dataset.window === windowName);
+      .find((candidate) => candidate.dataset.window === windowName
+        && (candidate.dataset.windowInstance || "main") === instanceId);
     if (existing) {
       if (!existing.applicationTitleBar) existing.applicationTitleBar = existing.querySelector?.(":scope > .title-bar") || null;
       if (!existing.applicationStatusBar) existing.applicationStatusBar = existing.querySelector?.(":scope > .details-bar") || null;
@@ -66,6 +72,7 @@
     const win = document.createElement("section");
     win.className = classNames("window", options.windowClass, "is-hidden");
     win.dataset.window = windowName;
+    if (instanceId !== "main") win.dataset.windowInstance = instanceId;
     win.setAttribute("aria-labelledby", labelledBy);
 
     const titleBar = createTitleBar(options);

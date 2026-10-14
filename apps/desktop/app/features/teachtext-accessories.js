@@ -129,11 +129,14 @@ function renderTeachTextTabs() {
   // but the rail reads better with the Manuscript's own heading above the
   // drafts' heading rather than interleaved by creation order (a stable sort
   // clusters by role only; it never reorders drafts among themselves).
-  const tabs = getDocumentTabs("teachText")
+  // The rail shows the window it sits in (§4.2): a tab moved to another window
+  // belongs to that window and stops rendering here.
+  const instance = documentTabInstanceOfRail(teachTextTabsEl);
+  const tabs = getWindowDocumentTabs("teachText", getActiveProject(), instance)
     .filter((tab) => workspaceProfile !== workspaceProfileDesktop || tab.role === "scratch_file")
     .slice()
     .sort((a, b) => (a.role === "manuscript" ? 0 : 1) - (b.role === "manuscript" ? 0 : 1));
-  const activeId = getActiveTeachTextDocumentTab()?.id;
+  const activeId = getActiveDocumentTab("teachText", getActiveProject(), instance)?.id;
   renderTdiTabStrip(teachTextTabsEl, tabs, {
     activeId,
     labelFor: (tab) => tab.title || teachTextRoleLabel(tab.role),

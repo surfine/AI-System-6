@@ -11,19 +11,19 @@
     <!-- Let the system choose status glyph contrast. -->
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20261012.5" />
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20261012.5" />
-    <link rel="manifest" href="assets/app-icon/manifest.json?v=20261012.5" />
-    <script src="app/core/theme-registry.js?v=20261012.5"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20261012.5" />
+    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20261014.1" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20261014.1" />
+    <link rel="manifest" href="assets/app-icon/manifest.json?v=20261014.1" />
+    <script src="app/core/theme-registry.js?v=20261014.1"></script>
+    <link rel="stylesheet" href="styles.bundle.css?v=20261014.1" />
     <!-- Preload the application while parsing the desktop. -->
-    <link rel="preload" as="script" href="app.bundle.js?v=20261012.5" />
+    <link rel="preload" as="script" href="app.bundle.js?v=20261014.1" />
   </head>
   <body class="is-booting">
     <pre id="cw3-log" style="position:fixed;left:8px;bottom:8px;z-index:9999;max-width:46vw;max-height:38vh;overflow:auto;margin:0;padding:8px;background:rgba(0,0,0,.72);color:#7CFC9B;font:11px/1.4 ui-monospace,Menlo,monospace;border-radius:6px;white-space:pre-wrap;" hidden></pre>
-    <script src="app/core/theme-body-init.js?v=20261012.5"></script>
+    <script src="app/core/theme-body-init.js?v=20261014.1"></script>
     <!-- Register crash recovery before the application bundle. -->
-    <script src="app/core/boot-safety-net.js?v=20261012.5"></script>
+    <script src="app/core/boot-safety-net.js?v=20261014.1"></script>
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
         <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
@@ -573,13 +573,6 @@
                     <small id="compose-endfield-source-help" data-i18n="compose_endfield_source_help_off">Off: normal conversations do not search the Endfield corpus. Turn on to retrieve story + worldview evidence for every message.</small>
                   </span>
                 </button>
-                <button class="compose-tools-quick-draft-import is-hidden" type="button" role="menuitem" data-action="quick-draft-import-chat" aria-describedby="compose-chat-import-help" data-i18n-aria-label="quick_draft_import_chat_records">
-                  <span class="sys-icon" data-system-icon="chatImport" aria-hidden="true"></span>
-                  <span class="compose-tool-copy">
-                    <b data-i18n="quick_draft_import_chat_records">Import Chat Records</b>
-                    <small id="compose-chat-import-help" data-i18n="quick_draft_import_chat_records_help">Choose screenshots or MP4 screen recordings; OCR is deduped into Quick Draft material.</small>
-                  </span>
-                </button>
               </div>
             </div>
             <button class="btn composer-file-button composer-icon-button clio-web-search-toggle is-hidden" id="clio-web-search-toggle" type="button" aria-expanded="false" data-i18n-aria-label="clio_web_search_switch" data-i18n-title="clio_web_search_switch" data-balloon-help="balloon_clio_web_search">
@@ -593,12 +586,6 @@
             </button>
             <button class="clio-entry-loadout" id="clio-entry-loadout" type="button" data-action="open-context-panel" aria-label="Memory Inspector" data-i18n-aria-label="context_panel" disabled></button>
             <span class="composer-key-hint" data-i18n="clio_composer_key_hint">Shift+Enter for a new line</span>
-            <div class="button-row composer-hidden-actions">
-              <button id="assistant-context-space" type="button" data-action="open-context-panel" data-i18n="clio_context_space_empty" hidden>Context available --</button>
-              <button class="btn" type="button" id="clip-selection" data-i18n="clip" hidden>Clip</button>
-              <button class="btn" type="button" id="clear" data-i18n="clear" hidden>Clear</button>
-              <button class="btn" type="button" id="retry" data-i18n="retry" hidden>Retry</button>
-            </div>
             <button class="assistant-meter is-hidden" id="assistant-meter" type="button" data-action="open-model-meter">-- tok/s</button>
             <button class="btn default composer-submit-button composer-icon-button" id="send" type="submit" data-requires-write data-mode="send" data-i18n-aria-label="send" data-i18n-title="send" data-balloon-help="balloon_clio_send" data-balloon-help-disabled="balloon_clio_send_disabled" disabled>
               <svg class="composer-send-glyph" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
@@ -614,6 +601,11 @@
       <aside class="window control-panel is-collapsed" data-window="control" aria-labelledby="control-title">
         <div class="title-bar" data-standard-controls>
           <h2 id="control-title" data-i18n="control_panel">Control Panel</h2>
+          <!-- This window's own zoom affordance. It is default-hidden and disabled
+               because the Control Panel is a fixed-size sheet in most appearances,
+               but it must stay in the markup: syncZoomLamp (window-fullscreen.js:202)
+               and the full-screen contract both ask the title bar whether a
+               .resize-box exists before a green Zoom lamp is drawn at the left. -->
           <button class="resize-box hidden" aria-label="Zoom" data-i18n-aria-label="zoom" disabled aria-hidden="true"></button>
         </div>
         <div class="window-pane settings control-settings">
@@ -1049,9 +1041,6 @@
               </select>
             </span>
             <button class="btn default" type="button" id="text-disk-more-go" data-i18n="do_selected" data-balloon-help-disabled="balloon_text_disk_select_first">Do Selected</button>
-            <button class="btn" type="button" data-action="insert-text-disk" hidden data-i18n="mount_text_disk">Insert File Floppy</button>
-            <button class="btn" type="button" data-action="add-text-disk-project" hidden data-i18n="add_to_project_disk">Write to Project Hard Disk</button>
-            <button class="btn danger" type="button" data-action="eject-text-disk" hidden data-i18n="eject">Eject</button>
           </div>
           <div id="text-disk-grid" class="finder-grid text-disk-grid window-frame-scroller"></div>
         </div>
@@ -1848,7 +1837,6 @@
         </div>
         <div class="window-pane documents-pane">
           <div class="documents-toolbar">
-            <button class="btn" type="button" id="documents-up" data-i18n="all_documents" hidden>All Documents</button>
             <span id="documents-folder-label" class="visually-hidden" data-i18n="all_folders">All folders</span>
             <input id="new-folder-name" type="text" value="Project Notes" aria-labelledby="new-folder" />
             <button class="btn" type="button" id="new-folder" data-i18n="new_folder">New Folder</button>
@@ -2166,7 +2154,6 @@
               </details>
               <button class="btn default" type="button" id="insert-scrap" data-action="scrapbook-insert" data-i18n="insert" data-balloon-help-disabled="balloon_scrapbook_empty">Insert</button>
             </div>
-            <button class="btn" type="button" id="attach-scrap-to-assistant" data-action="scrapbook-attach" data-i18n="attach_to_assistant" hidden>Attach to ClioTalk</button>
             <div class="scrap-selection-actions">
               <div id="scrap-selection-count" class="scrap-selection-count" data-i18n="no_scraps_selected">No scraps selected</div>
               <p class="small-muted" data-i18n="scrap_multi_hint">These act on every selected scrap. Click one scrap on its own to edit it.</p>
@@ -2174,16 +2161,12 @@
                 <span class="select-wrap select-wrap-inline">
                   <select id="scrap-multi-more" class="mini-select" aria-label="Scrapbook selection actions" data-i18n-aria-label="scrap_multi_more">
                     <option value="scrapbook-send-question" data-i18n="to_question_sheet">To Question Sheet</option>
-                    <option value="scrapbook-outline" data-i18n="make_outline">Make Outline</option>
+                    <option value="scrapbook-outline" data-i18n="scrap_outline">Outline This Scrap</option>
                     <option value="make-docmap" data-i18n="docmap">DocMap</option>
                     <option value="scrapbook-export-bilingual" data-i18n="download_bilingual_md">Bilingual .md</option>
                   </select>
                 </span>
                 <button class="btn" type="button" id="scrap-multi-go" data-i18n="do_selected" data-balloon-help-disabled="balloon_scrapbook_empty">Do Selected</button>
-                <button class="btn" type="button" id="send-scraps-to-question" hidden data-action="scrapbook-send-question" data-i18n="to_question_sheet">To Question Sheet</button>
-                <button class="btn" type="button" id="outline-scraps" hidden data-action="scrapbook-outline" data-i18n="make_outline">Make Outline</button>
-                <button class="btn" type="button" id="scrapbook-docmap" hidden data-action="make-docmap" data-i18n="docmap">DocMap</button>
-                <button class="btn" type="button" id="download-scraps-bilingual" hidden data-action="scrapbook-export-bilingual" data-i18n="download_bilingual_md">Bilingual .md</button>
               </div>
             </div>
           </form>
@@ -2225,8 +2208,6 @@
               </select>
             </span>
             <button class="btn default" type="button" id="trash-more-go" data-i18n="do_selected" data-balloon-help-disabled="balloon_trash_empty_first">Do Selected</button>
-            <button class="btn" type="button" id="restore-trash" hidden disabled aria-hidden="true" tabindex="-1" data-i18n="restore_latest">Restore Latest</button>
-            <button class="btn danger" type="button" id="empty-trash" hidden disabled aria-hidden="true" tabindex="-1" data-i18n="empty">Empty</button>
           </div>
           <div id="trash-list" class="trash-list window-frame-scroller"></div>
         </div>
@@ -2443,7 +2424,7 @@
               <details class="teachtext-command-menu specialized-command-menu">
                 <summary class="btn"><span class="mobile-control-long" data-i18n="teachtext_commands">Commands</span><span class="mobile-control-short" data-i18n="commands_short">Cmds</span></summary>
                 <div class="teachtext-command-popover">
-                  <button class="btn" type="button" data-action="generate-outline" data-i18n="writing_ai_outline">AI Outline</button>
+                  <button class="btn" type="button" data-action="generate-outline" data-i18n="make_outline">Make Outline</button>
                   <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#question-sheet-body" data-i18n="teachtext_focus_off">Focus: Off</button>
                   <button class="btn" type="button" data-action="question-sheet-view-page" aria-pressed="true" data-i18n="question_sheet_view_page">As Page</button>
                   <button class="btn" type="button" data-action="question-sheet-view-cards" aria-pressed="false" data-i18n="question_sheet_view_cards">As Cards</button>
@@ -2547,8 +2528,6 @@
                   <button class="btn" type="button" data-mde-focus-cycle data-mde-target="#draft-body" data-i18n="teachtext_focus_off">Focus: Off</button>
                     <button class="btn" type="button" data-action="polish-draft" data-i18n="polish_draft" data-balloon-help-disabled="balloon_draft_needs_content">AI Polish</button>
                     <button class="btn" type="button" data-action="suggest-draft" data-i18n="suggest_draft" data-balloon-help-disabled="balloon_draft_needs_content">AI Suggestions</button>
-                    <button class="btn writing-eli5-action" type="button" data-action="eli5-rewrite-section" data-i18n="quick_draft_eli5_rewrite" hidden>Make it listenable</button>
-                    <button class="btn writing-eli5-action" type="button" data-action="eli5-review-section" data-i18n="quick_draft_eli5_review" hidden>Find where it gets lost</button>
                     <hr />
                     <button class="btn" type="button" data-action="return-document-to-section-drafts" data-i18n="edit_sections_again">Edit Sections Again</button>
                   <hr />
@@ -3487,10 +3466,10 @@
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20261012.5"></script>
+    <script src="app/generated/build-info.js?v=20261014.1"></script>
     <template id="standard-window-controls"><button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button><button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button><button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button></template>
-    <script src="app.bundle.js?v=20261012.5"></script>
-    <script src="app/vendor/clioworks-v3/fixture.js?v=20261012.5"></script>
+    <script src="app.bundle.js?v=20261014.1"></script>
+    <script src="app/vendor/clioworks-v3/fixture.js?v=20261014.1"></script>
 
   </body>
 </html>

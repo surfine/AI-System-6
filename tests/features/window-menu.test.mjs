@@ -53,24 +53,43 @@ test.assert(
   Object.values(menuSets).filter((definitions) => windowDefinition(definitions)).length >= 10,
   "the Window menu is offered by the desk's real applications, not only two",
 );
-// The darkroom already spends both conditional slots on its mutually exclusive
-// stack/listen menus; a third would put six menus on the bar, so it is exempt.
+// The darkroom carried no Window menu while its conditional budget was two;
+// every other Mac OS X-era application has one, and a darkroom window can be
+// shaded, split, tiled and put full screen, so the budget is three (owner,
+// 2026-10-13).
 test.assert(
-  !windowDefinition(menuSets.lightroom),
-  "the darkroom keeps its two-slot conditional budget and does not gain a third",
+  windowDefinition(menuSets.lightroom)?.labelKey === "menu_window",
+  "the darkroom carries the Window menu too, so its window verbs have a home",
 );
 
-// All Windows leads; the authorized WindowShade commands stay in their
-// functional sections and all resolve through the live runtime registry.
+// The modern macOS order: Minimize, Zoom, Fill, Center, Move & Resize, Enter
+// Full Screen, Pin, the Dock switch, Bring All to Front, this application's
+// windows. The desk-only verbs live inside Move & Resize and Pinned, so the
+// template shape is matched without dropping a single one.
 const expectedItems = [
-  ["window-browse", "window_browse"],
+  ["minimize-window", "window_minimize"],
+  ["zoom-window", "window_zoom"],
+  ["window-layout-fill", "window_arrange_fill"],
+  ["window-layout-center", "window_center"],
+  ["submenu:move_and_resize", "move_and_resize"],
+  ["window-layout-left", "window_arrange_left"],
+  ["window-layout-right", "window_arrange_right"],
+  ["window-layout-top", "window_arrange_top"],
+  ["window-layout-bottom", "window_arrange_bottom"],
+  ["window-layout-top-left", "window_arrange_top_left"],
+  ["window-layout-top-right", "window_arrange_top_right"],
+  ["window-layout-bottom-left", "window_arrange_bottom_left"],
+  ["window-layout-bottom-right", "window_arrange_bottom_right"],
+  ["window-layout-left-two-thirds", "window_arrange_left_two_thirds"],
+  ["window-layout-right-two-thirds", "window_arrange_right_two_thirds"],
+  ["window-layout-left-third", "window_arrange_left_third"],
+  ["window-layout-right-third", "window_arrange_right_third"],
+  // The desk's own window verbs, one submenu down rather than gone.
   ["window-shade", "window_shade"],
   ["window-expand", "window_expand"],
   ["window-peek", "window_peek"],
-  ["windowshade-arrange-menu", "window_arrange_menu"],
-  ["window-layout-left", "window_arrange_left"],
-  ["window-layout-right", "window_arrange_right"],
-  ["window-layout-fill", "window_arrange_fill"],
+  // Slide Over's rows are inline: the desk's grammar stops after one submenu
+  // layer, so Move & Resize is the only layer here.
   ["window-slide-left", "window_slide_left"],
   ["window-slide-right", "window_slide_right"],
   ["window-slide-hide", "window_slide_hide"],
@@ -79,6 +98,18 @@ const expectedItems = [
   ["window-split-choose", "window_split_choose"],
   ["window-layout-undo", "window_arrange_undo"],
   ["window-layout-recover", "window_arrange_recover"],
+  ["toggle-full-screen-window", "window_full_screen"],
+  // Sierra's window-tab verbs (WINDOW-TABS-SPEC §5): between Enter Full Screen
+  // and Pinned, where Part 2 left room for them. Gated by the `window-tabs`
+  // capability, so they appear only in the post-Sierra eras.
+  ["show-previous-tab", "tabs_previous"],
+  ["show-next-tab", "tabs_next"],
+  ["toggle-tab-bar", "tabs_show_bar"],
+  // The two verbs a second window makes expressible (§4.2 of the multi-instance
+  // work order), in the same gated block as the three above.
+  ["merge-all-windows", "tabs_merge_all_windows"],
+  ["move-tab-to-new-window", "tabs_move_to_new_window"],
+  ["submenu:pinned", "pinned"],
   ["window-pin", "window_pin"],
   ["window-unpin", "window_unpin"],
   ["window-pinned-list", "window_pinned_list"],
@@ -87,12 +118,25 @@ const expectedItems = [
   ["window-pin-clear", "window_pin_clear"],
   // The Dock switch (owner, 2026-10-08): the row reads Show or Hide to match.
   ["window-toggle-dock", "show_dock"],
+  ["bring-app-front", "bring_all_to_front"],
+  // The list macOS ends its Window menu with, drawn from the same projection
+  // the NeXTSTEP Windows submenu reads.
+  ["window-list", "window-list"],
 ];
 const windowItems = menuDefinitionItems(windowDefinition(menuSets.finder).items);
 function menuDefinitionItems(definitions) {
-  return (definitions || [])
-    .filter((definition) => definition.type !== "separator")
-    .map((item) => [item.action, item.labelKey]);
+  const rows = [];
+  (definitions || []).forEach((item) => {
+    if (item.type === "separator") return;
+    if (item.type === "window-list") { rows.push(["window-list", "window-list"]); return; }
+    if (item.type === "submenu") {
+      rows.push([`submenu:${item.labelKey}`, item.labelKey]);
+      rows.push(...menuDefinitionItems(item.items));
+      return;
+    }
+    rows.push([item.action, item.labelKey]);
+  });
+  return rows;
 }
 test.assert(
   JSON.stringify(windowItems) === JSON.stringify(expectedItems),
@@ -136,7 +180,7 @@ for (const era of ["classic", "system-7", "platinum", "drawing-board", "aqua", "
     narrow = phone;
     const state = h.context.getActionAvailability();
     test.assert(state["window-browse"] === true, `${era} ${phone ? "narrow" : "wide"} keeps All Windows usable`);
-    test.assert(state["window-menu"] || state["window-browse-special"], `${era} ${phone ? "narrow" : "wide"} exposes a menu path to All Windows`);
+    test.assert(state["window-browse-special"], `${era} ${phone ? "narrow" : "wide"} keeps a menu path to All Windows, which now lives on Special`);
   }
 }
 // --- (b2) an empty desk in a Dock era ----------------------------------------
@@ -234,7 +278,7 @@ test.assert(state["window-shade"] && state["window-layout-recover"], "fixed wind
 front.classList.add("is-minimized");
 front.classList.remove("is-active");
 state = h.context.getActionAvailability();
-test.assert(state["window-browse"] && state["window-menu"], "when every window is minimized the Window menu still exposes All Windows");
+test.assert(state["window-browse"] && state["window-menu"], "when every window is minimized the desk still exposes a window path");
 test.assert(!state["window-shade"] && !state["window-layout-fill"], "an all-minimized desk offers no front-window arrangement");
 
 test.assertIncludes(
@@ -243,10 +287,21 @@ test.assertIncludes(
   "the NeXTSTEP palette drops the era-gated Window menu instead of showing it unconditionally",
 );
 
-// --- (c) the commands live in the one shared registry -----------------------
+// --- (c) every row resolves somewhere ---------------------------------------
+// Window verbs answer through the one runtime registry. Minimize and Bring All
+// to Front are application commands (actions.js's handler map) whose
+// availability window-manager already answers for, so they are checked there.
+// A submenu trigger and the window list are not commands at all: the trigger
+// opens rows, and the list's rows carry their own window-list-row action.
+const applicationHandlers = typeof h.context.getApplicationActionHandlers === "function"
+  ? h.context.getApplicationActionHandlers()
+  : {};
 for (const [action] of expectedItems) {
+  if (action.startsWith("submenu:") || action === "window-list") continue;
   const command = h.context.AISystem6Runtime.getCommand(action);
-  test.assert(typeof command?.handler === "function", `${action} resolves to a callable runtime command`);
+  const resolves = typeof command?.handler === "function"
+    || typeof applicationHandlers[action] === "function";
+  test.assert(resolves, `${action} resolves to a callable command`);
 }
 test.assertIncludes(entry, "window-pin", "the pin command is registered beside the arrangement commands");
 test.assertIncludes(
@@ -254,9 +309,18 @@ test.assertIncludes(
   "window.AISystem6Runtime?.registerCommand?.(commandId,",
   "every Window menu row routes through the one runtime command registry",
 );
+// The list's rows are the window projection, not a second copy of window state.
+// Rows name the identity: kind:instance in the action string, with the main
+// instance keeping the bare-kind form the list always carried (multi-instance
+// spec §4 — the second-instance machinery ships empty at P0).
+test.assertIncludes(menus, 'button.dataset.action = `window-list-row:${name}${inst ? ":" + inst : ""}`', "the window list asks the projection for its rows");
+test.assertIncludes(menus, "typeof applicationWindowOrder === \"function\"", "and draws them in the one order multi-finder already owns");
 
 // --- both languages carry the copy ------------------------------------------
-for (const key of ["menu_window", ...expectedItems.map(([, labelKey]) => labelKey)]) {
+// "window-list" is the pseudo-row's marker, not a label key: its rows are
+// window titles, so there is no copy to translate.
+const labelKeys = expectedItems.map(([, labelKey]) => labelKey).filter((key) => key !== "window-list");
+for (const key of ["menu_window", ...labelKeys]) {
   test.assert(
     enText.includes(`${key}:`) && zhText.includes(`${key}:`),
     `${key} exists in both languages`,

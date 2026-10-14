@@ -255,9 +255,12 @@ function formatReaderTabSubtitle(tab) {
 
 function renderReaderTabs(project = getActiveProject()) {
   if (!readerTabsEl) return;
-  const tabs = getReaderTabs(project);
+  // The rail shows the window it sits in (§4.2): a tab moved to another window
+  // belongs to that window and stops rendering here.
+  const instance = documentTabInstanceOfRail(readerTabsEl);
+  const tabs = getWindowDocumentTabs("reader", project, instance);
   renderTdiTabStrip(readerTabsEl, tabs, {
-    activeId: project?.activeDocumentTabIds?.reader,
+    activeId: project?.activeDocumentTabIds?.[activeDocumentTabKey("reader", instance)],
     labelFor: (tab, index) => `${index + 1}. ${tab.title || tab.url}`,
     compactLabelFor: (tab) => tab.title || tab.url || t("reader"),
     sublabelFor: (tab) => formatReaderTabSubtitle(tab),

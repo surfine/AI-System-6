@@ -497,6 +497,7 @@ function captureWindowWorkingSession() {
       };
       return {
         name: win.dataset.window,
+        instance: win.dataset.windowInstance ?? "main",
         appId: getWindowAppId(win),
         visible: !win.classList.contains("is-hidden"),
         appHidden: win.classList.contains("is-app-hidden"),
@@ -616,6 +617,10 @@ function restoreWindowSessionPresentation(win, entry) {
 }
 
 async function restoreWindowWorkingSession(state = {}) {
+  // Instances re-mount by save order (§9B). At P0 every record is main and
+  // "absent instance" IS main — the element stays bare. A record carrying a
+  // real instance id is future multi-instance data; P1's restore calls the
+  // lazy identity layer's save-order dedup (assignRestoreIds) before this loop.
   const windows = Array.isArray(state.windows) ? state.windows : [];
   // Moving to a new scene retires every pending title alignment: the delayed
   // callbacks were scheduled against the previous project's frames.
@@ -642,7 +647,11 @@ async function restoreWindowWorkingSession(state = {}) {
       // openWindow() loads it through the registry, so the record counts as
       // the window. Without this every game and lab fell out of the restored
       // scene once its markup left index.html.
-      && (getWindow(entry.name) || lazyWindowRecord(entry.name))
+      && (getWindow(entry.name) || lazyWindowRecord(entry.name)
+        // A whitelisted kind's instances are built by the identity layer (its
+        // builder covers main too) — the record counts as the window, like the
+        // lazy-record clause above.
+        || window.AISystem6WindowInstances?.whitelist().includes(entry.name))
       && isWorkspaceWindowAllowed(entry.name)
     ))
     .sort((a, b) => workingSessionNumber(a.zIndex, 0) - workingSessionNumber(b.zIndex, 0));
@@ -652,21 +661,31 @@ async function restoreWindowWorkingSession(state = {}) {
 
   for (const entry of visibleWindows) {
     // A lazy window's module can fail to load (offline, a bad deploy); that
-    // window stays closed and the rest of the scene still comes back.
+    // window stays closed and the rest of the scene still comes back. Second
+    // instances go through the identity layer, then rejoin this restore.
     try {
-      await openWindow(entry.name, {
-        skipFinderMode: true,
-        skipPlacement: true,
-        skipFocus: true,
-        skipSideAsk: entry.name === "quickDraft",
-        // Keep a saved multi-DA desk intact; journey exclusivity is for summons.
-        skipJourneyExclusive: true,
-      });
+      if (entry.instance && entry.instance !== "main") {
+        await window.AISystem6WindowInstances?.open?.(entry.name, { instance: entry.instance });
+      } else {
+        await openWindow(entry.name, {
+          skipFinderMode: true,
+          skipPlacement: true,
+          skipFocus: true,
+          skipSideAsk: entry.name === "quickDraft",
+          // Keep a saved multi-DA desk intact; journey exclusivity is for summons.
+          skipJourneyExclusive: true,
+        });
+      }
     } catch (error) {
       console.warn(`Working Session could not reopen "${entry.name}".`, error);
       continue;
     }
-    const win = getWindow(entry.name);
+    // The record's OWN instance: the window that was just restored. This read
+    // `instanceId` — a name this file never declares, so it resolved to the
+    // write lease's boot-scope variable and asked for an instance that cannot
+    // exist. Every restored window then skipped its saved app id, put-away state
+    // and geometry below. Found by the contract that pins this line.
+    const win = getWindowInstance(entry.name, entry.instance || "main");
     if (!win) continue;
     win.dataset.app = entry.appId || getWindowAppId(win);
     ensureRunningApp(win.dataset.app, entry.name);
@@ -741,7 +760,12 @@ async function restoreWindowWorkingSession(state = {}) {
   }
 
   const foregroundEntries = visibleWindows.filter((entry) => !entry.minimized && !entry.appHidden);
-  const activeName = foregroundEntries.find((entry) => entry.name === state.activeWindowName || entry.active)?.name || foregroundEntries.at(-1)?.name;
+  // Every entry here is a main instance (see the filter above), so the saved
+  // key window resolves by name, with `entry.active` as the fallback — the
+  // same read the desk has always made. P2 pairs this by instance again, once
+  // a session can bring back more than one window per kind.
+  const activeName = foregroundEntries.find((entry) => entry.name === state.activeWindowName || entry.active)?.name
+    || foregroundEntries.at(-1)?.name;
   const activeWin = activeName ? getWindow(activeName) : null;
   if (activeWin && !activeWin.classList.contains("is-hidden")) {
     focusWindow(activeWin);

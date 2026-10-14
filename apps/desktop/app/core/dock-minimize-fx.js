@@ -54,8 +54,14 @@
     return threePromise;
   }
 
+  // Main keeps the bare kind name as its put-away key; another instance
+  // reads kind:instance, so two cells of one kind never collide.
+  function miniwindowKey(win) {
+    return win?.dataset.windowInstance ? `${win.dataset.window}:${win.dataset.windowInstance}` : (win?.dataset?.window || "");
+  }
+
   function dockTargetRect(win) {
-    const key = win?.dataset?.window;
+    const key = miniwindowKey(win);
     const cell = key
       ? document.querySelector(`.desk-dock-items [data-miniwindow="${CSS.escape(key)}"]`)
       : null;
@@ -544,7 +550,7 @@
     // Give the Dock a couple of frames to paint the miniwindow cell, then
     // suck toward that tile; fall back to Trash / the shelf.
     await waitFrames(2);
-    const key = win?.dataset?.window;
+    const key = miniwindowKey(win);
     const cell = key
       ? document.querySelector(`.desk-dock-items [data-miniwindow="${CSS.escape(key)}"]`)
       : null;

@@ -31,7 +31,10 @@ test.assertIncludes(en, "download_markdown", "Download uses a shared key");
 
 // Close semantics: every first-class writing app flushes before closing, and
 // a failed flush keeps the window open.
-test.assertIncludes(actions, 'const closed = await closeWindow(active.dataset.window)', "close-active-window awaits the close");
+// The close targets the key window's own instance (multi-instance spec §4:
+// closeWindow升级为 (kind, force, instance)); the await and the blocked-close
+// rule are unchanged.
+test.assertIncludes(actions, 'const closed = await closeWindow(active.dataset.window, false, active.dataset.windowInstance)', "close-active-window awaits the close");
 test.assertIncludes(actions, 'if (closed === false) return', "a blocked close never hands focus away");
 
 // Error copy pairs message + next step across the five apps' high-frequency

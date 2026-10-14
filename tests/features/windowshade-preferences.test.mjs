@@ -89,7 +89,12 @@ test("existing Dock switches receive the late bilingual language sweep", async (
   for (const [language, expected] of [['en', ['Show Dock', 'Allow minimizing windows']], ['zh', ['显示 Dock', '允许最小化窗口']]]) {
     h.run(readFileSync(new URL(`../../apps/desktop/app/data/translations-${language}.js`, import.meta.url), 'utf8'));
     const table = h.context[language === 'en' ? 'AISystem6TranslationsEn' : 'AISystem6TranslationsZh'];
-    h.context.t = key => table[key] || key;
+    // A stand-in for the real t(): some entries are parametrized functions
+    // (`find_sources: (provider) => ...`), and the real t() calls them. A stub
+    // that hands the function straight back to its caller breaks applyLanguage's
+    // own sweep the moment a menu label carrying such a key is on the page —
+    // which it is, now that fragment insertion is real in the VM.
+    h.context.t = key => { const value = table[key]; return typeof value === 'function' ? value() : (value || key); };
     h.context.applyLanguage();
     assert.deepEqual(labels.map(label => label.textContent), expected);
   }

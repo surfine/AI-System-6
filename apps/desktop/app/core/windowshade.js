@@ -4,14 +4,19 @@
 (() => {
   const slots = Object.freeze({
     leftHalf: [0, 0, 1 / 2, 1], rightHalf: [1 / 2, 0, 1, 1],
+    topHalf: [0, 0, 1, 1 / 2], bottomHalf: [0, 1 / 2, 1, 1],
     leftTwoThirds: [0, 0, 2 / 3, 1], rightTwoThirds: [1 / 3, 0, 1, 1],
     leftThird: [0, 0, 1 / 3, 1], rightThird: [2 / 3, 0, 1, 1],
     topLeft: [0, 0, 1 / 2, 1 / 2], topRight: [1 / 2, 0, 1, 1 / 2],
     bottomLeft: [0, 1 / 2, 1 / 2, 1], bottomRight: [1 / 2, 1 / 2, 1, 1],
     fill: [0, 0, 1, 1],
   });
+  // Center is a placement too, but it names no share of the work area: it keeps
+  // the window's own size, so target() computes it from the live frame.
+  const ownSizeSlots = Object.freeze(["center"]);
   Object.values(slots).forEach(Object.freeze);
-  const hasSlot = (action) => Object.prototype.hasOwnProperty.call(slots, action);
+  const ownsSlot = (action) => Object.prototype.hasOwnProperty.call(slots, action);
+  const hasSlot = (action) => ownsSlot(action) || ownSizeSlots.includes(action);
   const finite = (n) => typeof n === "number" && Number.isFinite(n);
   const validRect = (r) => !!r && [r.left, r.top, r.width, r.height].every(finite)
     && r.width > 0 && r.height > 0;
@@ -73,7 +78,7 @@
     return collapsed ? "expand" : "fill";
   }
   function targetFrame(action, area, limits = {}) {
-    const slot = hasSlot(action) ? slots[action] : null;
+    const slot = ownsSlot(action) ? slots[action] : null;
     if (!slot || !validRect(area)) return null;
     const gap = limits.gap === undefined ? 8 : limits.gap;
     const minWidth = limits.minWidth === undefined ? 1 : limits.minWidth;
@@ -165,6 +170,8 @@
     menu: "window_arrange_menu", shade: "window_shade", expand: "window_expand",
     pin: "window_pin", unpin: "window_unpin",
     leftHalf: "window_arrange_left", rightHalf: "window_arrange_right",
+    topHalf: "window_arrange_top", bottomHalf: "window_arrange_bottom",
+    center: "window_center",
     leftTwoThirds: "window_arrange_left_two_thirds", rightTwoThirds: "window_arrange_right_two_thirds",
     leftThird: "window_arrange_left_third", rightThird: "window_arrange_right_third",
     topLeft: "window_arrange_top_left", topRight: "window_arrange_top_right",
@@ -280,12 +287,32 @@
   }
   function target(win, action) {
     if (!isResizableWindow(win)) return null;
+    const area = areaFor(win);
+    if (action === "center") return centeredFrame(win, area);
     const css = getComputedStyle(win);
-    return targetFrame(action, areaFor(win), {
+    return targetFrame(action, area, {
       minWidth: Math.max(1, parseFloat(css.minWidth) || 1),
       minHeight: Math.max(1, parseFloat(css.minHeight) || 1, win.querySelector(":scope > .title-bar").getBoundingClientRect().height + 48),
       aspect: typeof aspectRatioForWindow === "function" ? aspectRatioForWindow(win) : 0,
     });
+  }
+  // The modern Center verb repositions without resizing, so this reads the live
+  // frame and only clamps what a smaller work area cannot hold.
+  function centeredFrame(win, area) {
+    if (!validRect(area)) return null;
+    const frame = localFrame(win);
+    if (!validRect(frame)) return null;
+    const css = getComputedStyle(win);
+    const minWidth = Math.max(1, parseFloat(css.minWidth) || 1);
+    const minHeight = Math.max(1, parseFloat(css.minHeight) || 1, win.querySelector(":scope > .title-bar").getBoundingClientRect().height + 48);
+    const width = clamp(frame.width, minWidth, area.width);
+    const height = clamp(frame.height, minHeight, area.height);
+    return {
+      left: clamp(Math.round(area.left + (area.width - width) / 2), area.left, area.left + Math.max(0, area.width - width)),
+      top: clamp(Math.round(area.top + (area.height - height) / 2), area.top, area.top + Math.max(0, area.height - height)),
+      width,
+      height,
+    };
   }
   function writeFrame(win, frame) {
     if (win.classList.contains("is-collapsed")) toggleCollapsed(win);
@@ -772,7 +799,7 @@
     panel.setAttribute("aria-label", label("menu"));
     Object.assign(panel.style, { position: "relative", display: "block", left: "0", top: "0", minWidth: "220px", maxHeight: `${window.innerHeight - 24}px`, overflowY: "auto" });
     const pinAction = win.dataset.windowPinned === "true" ? "unpin" : "pin";
-    const actions = ["peek", "slideLeft", "slideRight", ...(slides.has(win) ? [slides.get(win).hidden ? "slideShow" : "slideHide", "slideExit"] : []), "splitChoose", "pinList", window.AISystem6WindowPinControls?.isSuspended() ? "pinRestore" : "pinSuspend", "pinClear", win.classList.contains("is-collapsed") ? "expand" : "shade", pinAction, "fill", "leftHalf", "rightHalf", "leftTwoThirds", "rightTwoThirds", "leftThird", "rightThird", "topLeft", "topRight", "bottomLeft", "bottomRight", "undo", "recover"];
+    const actions = ["peek", "slideLeft", "slideRight", ...(slides.has(win) ? [slides.get(win).hidden ? "slideShow" : "slideHide", "slideExit"] : []), "splitChoose", "pinList", window.AISystem6WindowPinControls?.isSuspended() ? "pinRestore" : "pinSuspend", "pinClear", win.classList.contains("is-collapsed") ? "expand" : "shade", pinAction, "fill", "center", "leftHalf", "rightHalf", "topHalf", "bottomHalf", "leftTwoThirds", "rightTwoThirds", "leftThird", "rightThird", "topLeft", "topRight", "bottomLeft", "bottomRight", "undo", "recover"];
     for (const action of actions) {
       const button = document.createElement("button");
       button.type = "button";
@@ -1032,10 +1059,10 @@
     slideState: (win) => slides.get(win) || null,
     pairState: (win) => [...pairs].find((pair) => pair.wins.includes(win)) || null,
     isPinned: (win) => !!win && win.dataset.windowPinned === "true",
-    beginPeek: (win) => (typeof beginPeek === "function" ? beginPeek(win) : false),
-    endPeek: (win) => (typeof endPeek === "function" ? endPeek(win) : false),
+    beginPeek: (win) => window.AISystem6WindowPeek?.beginPeek?.(win) || false,
+    endPeek: (win) => window.AISystem6WindowPeek?.endPeek?.(win) || false,
     commitPeek: (win) => (typeof commitPeek === "function" ? commitPeek(win) : false),
-    isPeeking: (win) => (typeof isWindowPeeking === "function" ? isWindowPeeking(win) : false),
+    isPeeking: (win) => window.AISystem6WindowPeek?.isWindowPeeking?.(win) || false,
   });
   globalThis.AISystem6WindowShadeLoaded = true;
 })();

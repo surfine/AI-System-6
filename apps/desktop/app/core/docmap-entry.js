@@ -514,7 +514,6 @@ function updateDocMapEntryButtons() {
   syncDocMapEntryButton(document.querySelector("#reader-docmap-source-command"), readerSourceReadiness);
   syncDocMapEntryButton(teachTextDocMapButton, teachTextReadiness);
   syncDocMapEntryButton(clipboardDocMapButton, clipboardReadiness);
-  syncDocMapEntryButton(scrapbookDocMapButton, scrapbookReadiness);
 
   const timeMachineButton = document.querySelector("#time-machine-docmap");
   const timeMachineReadiness = window.AISystem6TimeMachine?.docMapReadiness?.();

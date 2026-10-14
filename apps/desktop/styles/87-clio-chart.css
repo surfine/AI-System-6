@@ -874,14 +874,14 @@ body .clio-chart-projection-switcher .btn {
     gap: 8px;
   }
 
-  .clio-chart-window .button-row:not(.composer-hidden-actions) {
+  .clio-chart-window .button-row {
     flex-direction: column;
     align-items: stretch;
     flex-wrap: nowrap;
     gap: 8px;
   }
 
-  .clio-chart-window .button-row:not(.composer-hidden-actions) > .btn.default,
+  .clio-chart-window .button-row > .btn.default,
   .clio-chart-window .btn.default {
     width: 100%;
     min-height: var(--touch-primary-min-height);

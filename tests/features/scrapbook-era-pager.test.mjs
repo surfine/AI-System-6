@@ -23,8 +23,8 @@ test.assertIncludes(scrapbook, 'selectedScrapIds.has(scrap.id) ? "is-multi-selec
 test.assertIncludes(scrapbook, 'tick.setAttribute("aria-pressed", selectedScrapIds.has(scrap.id) ? "true" : "false")', "tick selection state is announced");
 test.assertMatches(scrapbook, /tick\.addEventListener\("click", \(event\) => \{\s*const wasSelected[\s\S]{0,200}event\.metaKey \|\| event\.ctrlKey \|\| event\.shiftKey/, "tick clicks reuse the list rows' modifier multi-select grammar");
 test.assertIncludes(scrapbook, '["scrapbook-page-previous",showPreviousScrapbookPage]', "the page arrows use the shared runtime command list");
-test.assertIncludes(scrapbook, "sendScrapsToQuestionButton.disabled = !selectedCount", "Scrapbook owns the real availability of its batch actions");
-test.assertMatches(read("app/features/scrapbook.js"), /"scrapbook-send-question":\(\)=>sctrl\("#send-scraps-to-question"\)/, "the Scrap menu reads owned availability, not the mirrored is-disabled class");
+test.assertIncludes(scrapbook, '"scrapbook-send-question":()=>getSelectedScraps().length>0', "the Scrap menu reads the real selection, not a hidden button's mirrored state");
+test.assertIncludes(scrapbook, '"scrapbook-export-bilingual":()=>getSelectedScraps().some(scrapHasTranslation)', "bilingual export is available exactly when a selected scrap has a translation");
 test.assertIncludes(foundation, "--scrapbook-list-display: none;", "Classic defaults to the native single-item projection");
 test.assertIncludes(foundation, "--scrapbook-pager-display: grid;", "Classic reveals the page rail");
 test.assertIncludes(apps, "display: var(--scrapbook-pager-display);", "the base recipe consumes the era projection token");

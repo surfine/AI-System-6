@@ -113,6 +113,7 @@ window.AISystem6TinyShell = (() => {
       else if (!silent) message(t("native_update_current"));
       const button = document.querySelector("#native-install-update");
       if (button) button.disabled = !lastUpdate.available;
+      if (typeof refreshDisabled === "function") refreshDisabled();
     } catch (e) { if (!silent) message(t("native_update_failed", e.message)); }
   }
   async function installUpdate() {
@@ -235,39 +236,102 @@ window.AISystem6TinyShell = (() => {
     const pane = document.createElement("div");
     pane.id = "control-panel-native"; pane.dataset.controlPanel = "native"; pane.hidden = true;
     pane.setAttribute("role", "tabpanel"); pane.setAttribute("aria-labelledby", tab.id);
+    // Built from the Control Panel's own group-box idiom: each concern is a
+    // .control-section with its own h3, settings are .field-row/.control-field,
+    // and actions are .btn inside a .button-row. Before this the pane stacked
+    // eight bare `system-button` elements and no rule owned their face or
+    // arrangement. Groups are named for what is in them and keep each control
+    // beside what it drives: the selection shortcut sits with the buttons it
+    // arms, and the Quick Look pair lives in its own group.
+    const section = (titleKey) => {
+      const el = document.createElement("section"); el.className = "control-section";
+      const heading = document.createElement("h3");
+      heading.dataset.i18n = titleKey; heading.textContent = t(titleKey);
+      el.append(heading);
+      return el;
+    };
+    const actionRow = (...buttons) => {
+      const row = document.createElement("div"); row.className = "button-row";
+      row.append(...buttons);
+      return row;
+    };
+    const actionButton = (key, action, id, disabled = false) => {
+      const button = document.createElement("button"); button.type = "button"; button.className = "btn";
+      button.id = id; button.dataset.i18n = key; button.textContent = t(key); button.disabled = disabled;
+      button.addEventListener("click", async () => {
+        if (button.disabled) return;
+        button.disabled = true;
+        try { await action(); }
+        catch (e) { message(t("native_operation_failed", e.message)); }
+        finally { refreshDisabled(); }
+      });
+      return button;
+    };
+
+    const capture = section("native_group_capture");
+    const checkboxRow = document.createElement("label"); checkboxRow.className = "field-row";
     const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.id = "native-clipboard";
     checkbox.checked = preferences().clipboard === true;
-    const label = document.createElement("label"); label.className = "control-field";
-    label.append(checkbox, document.createTextNode(t("native_clipboard"))); pane.append(label);
+    const clipboardText = document.createElement("span");
+    clipboardText.dataset.i18n = "native_clipboard"; clipboardText.textContent = t("native_clipboard");
+    checkboxRow.append(checkbox, clipboardText); capture.append(checkboxRow);
     const shortcut = document.createElement("input"); shortcut.type = "text"; shortcut.value = preferences().hotkey || "";
     shortcut.placeholder = "cmd+shift+k";
     const shortcutLabel = document.createElement("label"); shortcutLabel.className = "control-field";
-    shortcutLabel.append(document.createTextNode(t("native_shortcut")), shortcut); pane.append(shortcutLabel);
+    const shortcutText = document.createElement("span");
+    shortcutText.dataset.i18n = "native_shortcut"; shortcutText.textContent = t("native_shortcut");
+    shortcutLabel.append(shortcutText, shortcut); capture.append(shortcutLabel);
     async function changed() {
       const next = { clipboard: checkbox.checked, hotkey: shortcut.value.trim().toLowerCase() };
       try { await call("settings", next); localStorage.setItem(preferencesKey, JSON.stringify(next)); }
       catch (e) { message(t("native_operation_failed", e.message)); checkbox.checked = preferences().clipboard === true; shortcut.value = preferences().hotkey || ""; }
     }
     checkbox.addEventListener("change", changed); shortcut.addEventListener("change", changed);
-    for (const [key, action, id] of [["native_check_update", checkUpdate, "native-check-update"],
-      ["native_install_update", installUpdate, "native-install-update"], ["native_capture", () => command("screenshot"), "native-capture"],
-      ["native_selection", () => command("selected-text"), "native-selection"],
-      ["native_preview", () => call("previewFile"), "native-preview"],
-      ["native_close_preview", () => call("closePreview"), "native-close-preview"],
-      ["native_reveal_download", revealDownload, "native-reveal-download"],
-      ["native_cancel_download", cancelDownload, "native-cancel-download"]]) {
-      const button = document.createElement("button"); button.type = "button"; button.className = "system-button";
-      button.id = id; button.textContent = t(key); button.disabled = id === "native-install-update";
-      button.addEventListener("click", async () => {
-        if (button.disabled) return;
-        button.disabled = true;
-        try { await action(); }
-        catch (e) { message(t("native_operation_failed", e.message)); }
-        finally { button.disabled = id === "native-install-update" && (!lastUpdate?.available || busy); }
-      });
-      pane.append(button);
+    const captureButtons = [
+      actionButton("native_capture", () => command("screenshot"), "native-capture"),
+      actionButton("native_selection", () => command("selected-text"), "native-selection"),
+    ];
+    capture.append(actionRow(...captureButtons));
+    pane.append(capture);
+
+    const quickLook = section("native_group_quick_look");
+    const previewButton = actionButton("native_preview", async () => {
+      const result = await call("previewFile");
+      if (result?.previewing) previewing = true;
+    }, "native-preview");
+    const closePreviewButton = actionButton("native_close_preview", async () => {
+      await call("closePreview");
+      previewing = false;
+    }, "native-close-preview");
+    quickLook.append(actionRow(previewButton, closePreviewButton));
+    pane.append(quickLook);
+
+    const updates = section("native_group_updates");
+    updates.append(actionRow(
+      actionButton("native_check_update", checkUpdate, "native-check-update"),
+      actionButton("native_install_update", installUpdate, "native-install-update", true)));
+    pane.append(updates);
+
+    const downloads = section("native_group_downloads");
+    const revealButton = actionButton("native_reveal_download", revealDownload, "native-reveal-download");
+    const cancelButton = actionButton("native_cancel_download", cancelDownload, "native-cancel-download");
+    downloads.append(actionRow(revealButton, cancelButton));
+    pane.append(downloads);
+
+    // Buttons whose meaning depends on live state stay disabled while that
+    // state is absent, the way a toolbar button does — no dead clicks. Quick
+    // Look is a native panel with no DOM surface, so its state is tracked
+    // from the calls' results.
+    let previewing = false;
+    function refreshDisabled() {
+      closePreviewButton.disabled = !previewing;
+      cancelButton.disabled = pendingNativeDownloads.size === 0;
+      revealButton.disabled = !lastDownload;
+      previewButton.disabled = busy;
     }
-    statusEl = document.createElement("p"); statusEl.setAttribute("role", "status"); pane.append(statusEl);
+    refreshDisabled();
+
+    statusEl = document.createElement("p"); statusEl.className = "hint"; statusEl.setAttribute("role", "status"); pane.append(statusEl);
     generalPanel.parentNode.append(pane);
   }
   async function init() {
@@ -297,6 +361,7 @@ window.AISystem6TinyShell = (() => {
       if (event.state === "done") { lastDownload = { id: event.id, nativeBrowser }; message(t("native_download_done", event.filename || "")); }
       else message(t(event.state === "cancelled" ? "native_download_cancelled" : "native_download_failed"));
     }
+    if (typeof refreshDisabled === "function") refreshDisabled();
   }
   async function revealDownload() {
     if (!lastDownload) { message(t("native_target_missing")); return; }

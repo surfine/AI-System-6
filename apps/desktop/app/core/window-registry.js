@@ -178,7 +178,19 @@ const windowRegistry = Object.freeze({
   docMap: {
     app: "docMap",
     sidebar: true,
-    onOpen: () => { if (window.AISystem6DocMapLoaded) renderDocMap(); },
+    // Multi-instance (§3.1, shape (V)): the second window is a READ-ONLY view
+    // of the same map, built by the kind's own lazy module. The concentrated
+    // table in lazy window-instances.js names the same kind; the contract holds
+    // the two layers equal.
+    instances: "multi",
+    instanceModule: "app/features/docmap-instances.js",
+    // This hook renders the MAIN instance — renderDocMap writes the main
+    // window's tree. A second view is already built by its builder, so opening
+    // one must not re-render the main map underneath it.
+    onOpen: ({ win } = {}) => {
+      if (win?.dataset?.windowInstance) return;
+      if (window.AISystem6DocMapLoaded) renderDocMap();
+    },
   },
   documents: {
     app: "finder",
@@ -435,6 +447,12 @@ const windowRegistry = Object.freeze({
   reader: {
     app: "reader",
     sidebar: true,
+    // Multi-instance (§9C): Reader is the first kind that may open a second
+    // window — a read-only view of the same document. The concentrated table
+    // in lazy window-instances.js names the same kind; the contract holds the
+    // two layers equal.
+    instances: "multi",
+    instanceModule: "app/features/reader-instances.js",
     // onReveal, not onOpen: the rail's axis is a container query answer, and a
     // hidden container has no size to answer with.
     onReveal: () => readerOnReveal(),
@@ -527,6 +545,13 @@ const windowRegistry = Object.freeze({
   },
   timeMachine: {
     app: "timeMachine",
+    // Multi-instance (§3.1, shape (V)): the second window is a READ-ONLY view of
+    // the same history, built by the kind's own lazy module. Unlike docMap there
+    // is no hook to guard: `lazy.attach` runs only when the main instance is not
+    // on the desk (window-manager's loadLazyWindowModule), and the mount below
+    // is a one-time wire-up whose element reads are all null-safe.
+    instances: "multi",
+    instanceModule: "app/features/time-machine-instances.js",
     lazy: {
     ensure: () => ensureTimeMachineModule(),
     attach: () => window.AISystem6TimeMachine?.attach?.(),

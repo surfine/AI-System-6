@@ -643,7 +643,6 @@ function renderDocuments() {
 
   documentsCountEl.textContent = t("items_count", visibleFiles.length + visibleFolders.length);
   documentsFolderLabelEl.textContent = selectedFolder ? getFolderPath(selectedFolder.id).join(" / ") : t("all_folders");
-  documentsUpButton.hidden = true;
   renderFinderNavigationBar(getWindow("documents"));
   grid.dataset.dropTarget = "document-current-folder";
   grid.dataset.folderId = selectedFolder?.id || "";

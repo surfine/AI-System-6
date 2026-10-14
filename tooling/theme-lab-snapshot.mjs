@@ -313,24 +313,61 @@ async function captureTheme(browser, url, themeId) {
       el.style.right = "auto";
       el.style.transform = "none";
     });
+    // Expand the disposable capture page BEFORE the box is measured. The Theme
+    // Lab window is absolutely positioned, so a tall evidence section can extend
+    // beyond the document's scroll height, and a full-page capture would crop it
+    // with transparent rows after the viewport boundary.
+    //
+    // It runs here, ahead of the measurement, because the expansion is itself a
+    // layout change — it grows the page by thousands of pixels — and a layout
+    // change is what lets a late font swap land. Measured 2026-10-14 in
+    // liquid-glass: done after the box read it grew the board by 4px UNDER the
+    // shot (twenty-seven single-line text elements each gaining one line box,
+    // 5695 -> 5699), on every run and on a tree from before the work being
+    // released, which is what made a release refuse. Ahead of the settle loop
+    // the same swap is absorbed by the wait for a still box.
+    const provisional = await target.evaluate((el) => {
+      const rect = el.getBoundingClientRect();
+      return { y: Math.round(rect.y), height: Math.round(rect.height) };
+    });
+    await page.evaluate(({ y, height }) => {
+      const captureHeight = `${Math.ceil(y + height)}px`;
+      document.documentElement.style.minHeight = captureHeight;
+      document.body.style.minHeight = captureHeight;
+    }, provisional);
+    // Paint once before measuring. The expansion above makes the page thousands
+    // of pixels taller, and the board only finishes laying out for that taller
+    // page when something paints it: measured 2026-10-14 in liquid-glass, the box
+    // read 5695 with nothing pending — faces loaded, images decoded, three agreed
+    // reads — and 5699 straight after the capture's own paint, on every run and
+    // on a tree from before the work being released, which is what made a release
+    // refuse. This throwaway shot IS that paint, and it is discarded.
+    await page.screenshot({ fullPage: true, animations: "disabled" });
     // A fixed pause was not enough: the desk finishes dressing itself after
     // the lab opens (a banner or the boot screen's last class lands late), and
     // the window's own top moved 20px between two reads of an unchanged tree.
     // Every pixel in the board rides on that origin, so wait for it to hold
     // still instead of for a guessed number of milliseconds.
+    const pendingAssets = async () => page.evaluate(async () => {
+      await Promise.all([...document.fonts].map((face) => face.load().catch(() => null)));
+      await document.fonts.ready;
+      await Promise.all([...document.images].map((img) => (img.complete ? null : img.decode().catch(() => null))));
+    });
     let previousBox = null;
-    for (let attempt = 0; attempt < 24; attempt += 1) {
+    let agreeing = 0;
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      await pendingAssets();
       const read = await target.evaluate((el) => {
         const rect = el.getBoundingClientRect();
         return { x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width), height: Math.round(rect.height) };
       });
-      if (previousBox
+      agreeing = previousBox
         && read.x === previousBox.x && read.y === previousBox.y
-        && read.width === previousBox.width && read.height === previousBox.height) {
-        break;
-      }
+        && read.width === previousBox.width && read.height === previousBox.height
+        ? agreeing + 1 : 0;
       previousBox = read;
-      await page.waitForTimeout(80);
+      if (agreeing >= 2) break;
+      await page.waitForTimeout(120);
     }
     const box = await target.evaluate((el) => {
       const r = el.getBoundingClientRect();
@@ -345,15 +382,6 @@ async function captureTheme(browser, url, themeId) {
     // difference between two runs of an unchanged tree turned out to be. The
     // sidecar makes that origin a measurement instead of a guess.
     captureGeometry.set(themeId, box);
-    // The Theme Lab window is absolutely positioned, so a tall evidence
-    // section can extend beyond the document's scroll height. Expand only the
-    // disposable capture page before full-page capture; otherwise the crop
-    // below would contain transparent rows after the viewport boundary.
-    await page.evaluate(({ y, height }) => {
-      const captureHeight = `${Math.ceil(y + height)}px`;
-      document.documentElement.style.minHeight = captureHeight;
-      document.body.style.minHeight = captureHeight;
-    }, box);
     const path = join(CURRENT_DIR, `${themeId}.png`);
     const fullPath = join(CURRENT_DIR, `${themeId}-full.png`);
     // Park the pointer before the shot. Playwright leaves it at (0,0), which in

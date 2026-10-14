@@ -59,6 +59,22 @@ export function read(path) {
   return readFileSync(resolveProjectPath(path), "utf8");
 }
 
+/**
+ * A module's source with its comments removed: what the file DOES, without what
+ * its banner SAYS. The boot bundle strips comments, so a contract about a code
+ * fact ("this view registers no data-action surface") must not be answered by a
+ * sentence in the file's own header that names the very attribute it disclaims —
+ * reader-instances.js's banner does exactly that, and kept two assertNotIncludes
+ * checks failing in silence. Full-line comments and block comments only: a
+ * trailing comment survives, which can only ever hide a violation, never invent
+ * one, and keeps a string like "https://…" intact.
+ */
+export function codeOnly(source) {
+  return String(source)
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/^[ \t]*\/\/.*$/gm, "");
+}
+
 export function exists(path) {
   return existsSync(resolveProjectPath(path));
 }

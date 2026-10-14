@@ -81,10 +81,15 @@ Control meanings are load-bearing:
   still launches from the desk icons, switches from the menu bar and lists
   put-away windows in the Apple menu, so hiding it never strands a window.
   Listing windows in the Apple menu is the product's adaptation: Mac OS X's
-  Apple menu never listed windows. All Windows uses the existing Window menu
-  in Mac OS X appearances, Special in early appearances and narrow layouts,
-  and the Windows palette in desktop NeXTSTEP. Applications without a Window
-  menu retain the Special fallback. Browse and Dock restore the registered
+  Apple menu never listed windows. All Windows is the desk's cross-application
+  overview, so it lives on Special in every era that has one, alongside the
+  arrangement popover; desktop NeXTSTEP carries both in its Windows palette
+  instead. The Mac OS X-era Window menu ends with this application's own open
+  windows, the list macOS puts in that position, drawn from the same
+  projection. A Window menu in Mac OS X appearances carries Minimize, Zoom and
+  Bring All to Front, which is why the Apple menu's MultiFinder section stands
+  down where one is on the bar; applications without a Window menu keep the
+  Special fallback. Browse and Dock restore the registered
   window itself, preserving its content, scroll position and manual shade.
 - Arrangement uses one measured desktop area, including the menu bar, Dock,
   NeXTSTEP icon regions and existing desktop avoidance. Tile excludes hidden,

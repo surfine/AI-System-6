@@ -2325,10 +2325,6 @@ del.lightroom-changed {
   border-top: var(--quick-draft-divider-border);
 }
 
-.compose-tools-quick-draft-import.is-hidden {
-  display: none;
-}
-
 .quick-draft-cliotalk-hint {
   font-size: 11px;
   color: var(--shade-dark);

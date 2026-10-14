@@ -477,7 +477,7 @@ async function boot() {
     markBootProgress("boot sequence");
     await runBootSequence();
     markBootProgress("boot sequence done");
-    if (bootDebugTheme?.releaseReady === false && developmentPreviewAllowed) await window.AISystem6Theme.previewExperimentalTheme(bootDebugTheme.id);
+    if (bootDebugTheme && developmentPreviewAllowed) await window.AISystem6Theme.previewExperimentalTheme(bootDebugTheme.id);
     await startupTaskWithTimeout(window.AISystem6Theme?.whenReady?.(), "appearance", 8000);
     markBootProgress("appearance");
     // The appearance is final only now (boot passes through the release theme

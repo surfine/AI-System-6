@@ -21,7 +21,11 @@ function handleShellSession(req, res) {
       // derived offline caches; projects and browser storage remain intact.
       const script = `(async()=>{try{if(navigator.serviceWorker){const registrations=await navigator.serviceWorker.getRegistrations();await Promise.all(registrations.filter(r=>[r.active,r.waiting,r.installing].some(w=>w&&new URL(w.scriptURL).pathname==="/sw.js")).map(r=>r.unregister()));}if(window.caches){await Promise.all((await caches.keys()).filter(n=>n.startsWith("ais6-")).map(n=>caches.delete(n)));}location.replace("/");}catch{document.body.textContent="Could not prepare the local application. Please restart.";}})();`;
       res.writeHead(200, { "Content-Type": path.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8", "Cache-Control": "no-store" });
-      res.end(path.endsWith(".js") ? script : '<!doctype html><meta charset="utf-8"><title>AI System 6</title><body>Starting AI System 6…<script src="/api/shell/bootstrap.js"></script>');
+      // Silent handoff: this page only clears the previous service worker's
+      // derived caches and hands over to "/". The desk's own boot screen owns
+      // the visible "starting" message; printing it here as well showed the
+      // same sentence twice, once here unstyled.
+      res.end(path.endsWith(".js") ? script : '<!doctype html><meta charset="utf-8"><title>AI System 6</title><style>html{background:#e9e9e9}</style><body><script src="/api/shell/bootstrap.js"></script>');
     }
     return true;
   }

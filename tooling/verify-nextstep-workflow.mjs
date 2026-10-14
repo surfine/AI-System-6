@@ -117,8 +117,17 @@ try {
     assert.equal(await page.locator('[data-miniwindow="teachText"]').count(), 0);
     await page.evaluate(() => AISystem6NextstepDock.activate("teachText"));
     assert.equal(await win.evaluate((node) => node.classList.contains("is-minimized")), true);
+    // An era that holds no miniwindow control releases the put-away window by
+    // rolling it up where it stood (d5949b2a9: a put-away window always has a
+    // way back -- the scene's old expectation, that is-minimized survives the
+    // switch, predates that rule and the 08:58 commit; the last green evidence
+    // ran at 08:21). The window stays on the desk, shaded, same element.
     await page.evaluate(() => applyTheme("liquid-glass"));
-    assert.equal(await win.evaluate((node) => node.classList.contains("is-minimized")), true);
+    assert.deepEqual(await win.evaluate((node) => ({
+      minimized: node.classList.contains("is-minimized"),
+      collapsed: node.classList.contains("is-collapsed"),
+      hidden: node.classList.contains("is-hidden"),
+    })), { minimized: false, collapsed: true, hidden: false }, "liquid-glass rolls the put-away window up in place instead of dropping it");
     await page.evaluate(() => focusWindow(getWindow("teachText")));
     assert.equal(await page.locator(".nextstep-dock").count(), 0);
     assert.equal(await page.evaluate(() => retainedEditor === teachTextBodyInput), true);
@@ -154,6 +163,54 @@ try {
     await page.evaluate((id) => { chatFiles.splice(chatFiles.findIndex((file) => file.id === id), 1); renderProjectDisks(); }, ids.file);
     await viewer.locator(".nextstep-shelf .is-stale").waitFor();
     assert.equal(await viewer.locator(".nextstep-shelf .is-stale").getAttribute("data-object-id"), ids.file);
+  });
+
+  await scene("arrange-in-front", async (page) => {
+    // 3.3's Arrange in Front: "Stacks and offsets all the application's
+    // document windows." The window list is the application's, the front window
+    // keeps the base position and stays key, and a window the work area cannot
+    // hold gives its offset back rather than being pushed off the desk.
+    await page.evaluate(async () => {
+      await setFinderEnvironment("multifinder", { persistStartup: false });
+      await openWindow("projects");
+      await openWindow("applications");
+      await openWindow("trash");
+      focusWindow(getWindow("projects"), true);
+    });
+    assert.equal(await page.evaluate(() => document.querySelector(".window.is-active")?.dataset.window), "projects");
+    assert.equal(await page.evaluate(() => handleAction("nextstep-arrange-in-front")), true, "Arrange in Front reports that it moved the stack");
+    const arranged = await page.evaluate(() => {
+      const frames = applicationWindowOrder("finder").map((win) => {
+        const box = win.getBoundingClientRect();
+        return { name: win.dataset.window, left: box.left, top: box.top, right: box.right, bottom: box.bottom };
+      });
+      const desk = document.querySelector(".desktop").getBoundingClientRect();
+      return {
+        frames,
+        desk: { right: desk.right, bottom: desk.bottom },
+        inset: getDesktopAvoidanceInsets({ margin: 24, spineGap: 18, iconGap: 48 }),
+        active: document.querySelector(".window.is-active")?.dataset.window,
+      };
+    });
+    assert.equal(arranged.active, "projects", "the front window stays key across the cascade");
+    assert.equal(arranged.frames[0].name, "projects", "and keeps the base position");
+    assert.ok(arranged.frames.length >= 3, `three document windows of the application were cascaded (got ${arranged.frames.length})`);
+    for (let index = 1; index < arranged.frames.length; index += 1) {
+      assert.ok(arranged.frames[index].left >= arranged.frames[index - 1].left, `window ${index} takes a step right, not left`);
+      assert.ok(arranged.frames[index].top >= arranged.frames[index - 1].top, `window ${index} takes a step down, not up`);
+    }
+    for (const frame of arranged.frames) {
+      // Every window stayed reachable: inside the work area's right and bottom
+      // edges, and never left of or above the desk.
+      assert.ok(frame.left >= 0 && frame.top >= 0, `${frame.name} stays inside the desk`);
+      assert.ok(frame.right <= arranged.desk.right - arranged.inset.right + 1, `${frame.name} does not run under the Dock`);
+      assert.ok(frame.bottom <= arranged.desk.bottom - arranged.inset.bottom + 1, `${frame.name} does not run past the bottom edge`);
+    }
+    assert.equal(await page.evaluate(() => handleAction("nextstep-arrange-in-front")), false, "a second arrange on an arranged desk reports that instead of moving anything");
+    // An application whose only document window is already where the cascade
+    // would put it reports instead of going quiet: close the assistant
+    // ClioTalk opens during onboarding, so its window list is genuinely empty.
+    assert.equal(await page.evaluate(async () => { await closeWindow("assistant"); return handleAction("nextstep-arrange-in-front", { appId: "clioTalk" }); }), false, "an application with no document windows reports that too");
   });
 
   await scene("key-main", async (page, context) => {
@@ -238,15 +295,32 @@ try {
   });
 
   await scene("touch", async (page) => {
+    // A phone has no desk (nextstep-shell.css): the palette, the Dock column
+    // and the desk row come off the phone line, and the shared phone menu bar
+    // carries the same menus. The scene used to tap the Dock on the phone;
+    // that path is from 2026-09-22–25, the three-day window when the phone
+    // still drew the column, and the instrument's last full pass (2026-09-23)
+    // predates the decision that took it off. The phone opens the era's
+    // windows through the shared menu bar, like every other era does.
     await page.evaluate(() => applyTheme("nextstep", { experimental: true, persist: false }));
-    await page.locator(".nextstep-dock").waitFor();
-    await page.locator('[data-dock-key="app:teachText"]').tap();
+    const menuBar = page.locator(".menu-bar");
+    await menuBar.waitFor();
+    // display:none is the CSS phone rule's answer; the palette module keeps its
+    // own hidden attribute (the owner switch), so the paint state is what the
+    // phone must prove, not the DOM node's absence.
+    assert.equal(await page.evaluate(() => {
+      const palette = document.querySelector(".nextstep-menu-palette");
+      const dock = document.querySelector(".nextstep-dock");
+      return [palette, dock].every((node) => !node || getComputedStyle(node).display === "none");
+    }), true, "neither the palette nor the Dock paints on the phone");
+    // The era's own windows come from the phone menu bar's menus.
+    await page.evaluate(() => handleAction("open-teachtext"));
     await page.locator('[data-window="teachText"]:not(.is-hidden)').waitFor();
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     await page.setViewportSize({ width: 844, height: 390 });
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
-    assert.ok(await page.locator(".nextstep-dock").isVisible());
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "forced colors keep the phone line inside its width");
   }, { viewport: { width: 390, height: 760 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
 } finally {
   await writeFile(resolve(output, "results.json"), JSON.stringify({ checkedAt: new Date().toISOString(), url, evidence }, null, 2));

@@ -164,7 +164,6 @@ if (
   "draft-section-source",
   "draft-title",
   "reader-clip-translate-button",
-  "download-scraps-bilingual",
   "draft-list",
   "claim-results",
   "scrap-source-info",

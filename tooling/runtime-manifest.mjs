@@ -98,8 +98,6 @@ export const appModulePaths = [
   "app/core/system-sounds.js",
   "app/features/project-disk.js",
   "app/core/desktop-runtime.js",
-  "app/core/adjustment-layers.js",
-  "app/core/protected-ranges.js",
   "app/core/document-revisions.js",
   "app/core/modal.js",
   "app/core/external-drop.js",
@@ -176,6 +174,13 @@ export const lazyRuntimePaths = [
   "app/generated/ai-prompt-files.js",
   "app/features/find-change.js",
   "app/core/quick-draft-workspace.js",
+  /* The quick-draft family's two shared model halves. Both sat here in the boot
+     bundle as 18.0KB that no eager file referenced — measured 2026-10-14, while
+     the document-tab store's window dimension needed equal-value displacement.
+     They ride the two loaders whose modules consume them (ensureQuickDraftModule
+     and ensureGuestToolsModule) instead. */
+  "app/core/adjustment-layers.js",
+  "app/core/protected-ranges.js",
   "app/data/translations-en.js",
   "app/data/translations-zh.js",
   "app/data/system-concepts.js",
@@ -259,9 +264,14 @@ export const lazyRuntimePaths = [
   "app/core/window-fullscreen.js",
   "app/core/window-pin-controls.js",
   "app/core/window-preview.js",
+  "app/core/window-instances.js",
   "app/core/windowshade.js",
   "app/core/window-peek.js",
   "app/features/window-browse.js",
+  "app/features/reader-instances.js",
+  "app/features/docmap-instances.js",
+  "app/features/time-machine-instances.js",
+  "app/features/window-tabs.js",
   "app/core/desk-dock.js",
   "app/features/finder-columns.js",
   "app/core/text-compose.js",

@@ -1952,6 +1952,74 @@ function renderDocMapMarkmap(map = currentDocMap) {
   return true;
 }
 
+// The DocMap second window's view (§3.1, shape (V)): the same map, the same
+// transform and the same Markmap the main window draws, painted once with no
+// interaction and no write surface. The main window's own renderer cannot be
+// reused for it — renderDocMap() writes the main tree (#docmap-tree), owns the
+// one Markmap instance and the one zoom mode, so a second caller would repaint
+// the main map underneath the view.
+//
+// The view is a snapshot: it reads the map that is on the desk when the second
+// window opens and never re-reads it. It carries no [data-action], no control
+// and no element id, so the desk-wide action delegate and the write-lease
+// freeze both leave it alone. The balanced (two-sided) layout still applies —
+// that is a property of the map, not of the interaction — so the view runs the
+// module's own mirror pass and reads the same shape as the main window.
+function renderDocMapReadOnly(container) {
+  if (!container) return Promise.resolve(false);
+  const map = currentDocMap;
+  if (!map) {
+    // The idle note without the main window's buttons: a view that offers
+    // Reader is an action surface, and this window has none.
+    const note = document.createElement("p");
+    note.className = "empty-folder-note docmap-empty-note";
+    note.dataset.docmapState = "idle";
+    note.textContent = typeof t === "function" ? t("docmap_empty") : "";
+    container.append(note);
+    return Promise.resolve(false);
+  }
+  const balanced = docMapLayoutFor(map) === "balanced";
+  const zone = document.createElement("div");
+  zone.className = "docmap-drop-zone";
+  const tree = document.createElement("div");
+  tree.className = "docmap-tree window-frame-scroller";
+  const frame = document.createElement("div");
+  frame.className = "docmap-markmap-frame";
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "docmap-markmap-svg");
+  svg.setAttribute("aria-label", String(map.central?.title || map.title || ""));
+  // A snapshot, not a canvas: the pointer never reaches the drawing, so
+  // Markmap's fold circles and the node pick are the main window's alone.
+  svg.style.pointerEvents = "none";
+  frame.append(svg);
+  tree.append(frame);
+  zone.append(tree);
+  container.append(zone);
+  return ensureDocMapMarkmap().then((loaded) => {
+    if (!loaded || !window.markmap?.Transformer || !window.markmap?.Markmap) return false;
+    const { root } = new window.markmap.Transformer().transform(docMapMarkdownForMarkmap(map));
+    const instance = window.markmap.Markmap.create(svg, {
+      // Balanced fits itself after mirroring, exactly as the main window's
+      // renderer does; let Markmap fit the others.
+      autoFit: !balanced,
+      duration: 0,
+      fitRatio: 0.94,
+      maxInitialScale: 1.25,
+      maxWidth: 280,
+      spacingHorizontal: 84,
+      spacingVertical: 8,
+      initialExpandLevel: -1,
+      pan: false,
+      zoom: false,
+      ...window.markmap.deriveOptions({ color: docMapPalette(), colorFreezeLevel: 2 }),
+    }, root);
+    if (balanced) {
+      requestAnimationFrame(() => requestAnimationFrame(() => mirrorMarkmapBalanced(instance)));
+    }
+    return true;
+  });
+}
+
 // --- Picking a branch ------------------------------------------------------
 //
 // The canvas is Markmap's drawing of the map's Markdown, and Markmap only
@@ -2227,8 +2295,11 @@ function captureActiveDocMapTabState() {
 
 function renderDocMapTabs() {
   if (!docMapTabsEl || typeof getDocumentTabs !== "function") return;
-  const tabs = getDocumentTabs("docMap");
-  const activeId = activeDocMapTab()?.id;
+  // The rail shows the window it sits in (§4.2): a tab moved to another window
+  // belongs to that window and stops rendering here.
+  const instance = documentTabInstanceOfRail(docMapTabsEl);
+  const tabs = getWindowDocumentTabs("docMap", getActiveProject(), instance);
+  const activeId = getActiveDocumentTab("docMap", getActiveProject(), instance)?.id;
   renderTdiTabStrip(docMapTabsEl, tabs, {
     activeId,
     labelFor: (tab) => tab.title || t("docmap"),
@@ -3293,6 +3364,10 @@ async function sendDocMapToSlides() {
 }
 
 window.AISystem6DocMapEmbeds = Object.freeze({ branchDiagram: docMapBranchDiagram, deckMarkdown: docMapDeckMarkdown });
+// The second window's read-only view (§3.1 shape (V)). Its own name, not
+// AISystem6DocMapEmbeds: that one is a document-embedding helper, this one is a
+// window surface — the lazy builder in docmap-instances.js renders through it.
+window.AISystem6DocMapView = Object.freeze({ render: renderDocMapReadOnly });
 
 function docMapCommandAvailable(action) {
   if (action === "open-docmap") return true;

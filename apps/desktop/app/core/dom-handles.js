@@ -39,9 +39,6 @@ function getElements() {
   const loadModelButton = document.querySelector("#load-model");
   const loadModelStatusEl = document.querySelector("#load-model-status");
   const rememberInput = document.querySelector("#remember");
-  const clearButton = document.querySelector("#clear");
-  const clipSelectionButton = document.querySelector("#clip-selection");
-  const retryButton = document.querySelector("#retry");
   const composerSubmitButton = document.querySelector("#send");
   const clockEl = document.querySelector("#clock");
   const filesInput = document.querySelector("#files");
@@ -87,12 +84,8 @@ function getElements() {
   const deleteScrapButton = document.querySelector("#delete-scrap");
   const openScrapSourceButton = document.querySelector("#open-scrap-source");
   const scrapSelectionCountEl = document.querySelector("#scrap-selection-count");
-  const sendScrapsToQuestionButton = document.querySelector("#send-scraps-to-question");
-  const outlineScrapsButton = document.querySelector("#outline-scraps");
-  const scrapbookDocMapButton = document.querySelector("#scrapbook-docmap");
   const scrapbookAskForm = document.querySelector("#scrapbook-ask-form");
   const scrapbookQuestionInput = document.querySelector("#scrapbook-question");
-  const downloadScrapsBilingualButton = document.querySelector("#download-scraps-bilingual");
   const scrapListEl = document.querySelector("#scrap-list");
   const scrapCountEl = document.querySelector("#scrap-count");
   const scrapbookPagePreviousButton = document.querySelector("#scrapbook-page-previous");
@@ -101,8 +94,6 @@ function getElements() {
   const scrapbookPagePositionEl = document.querySelector("#scrapbook-page-position");
   const trashListEl = document.querySelector("#trash-list");
   const trashCountEl = document.querySelector("#trash-count");
-  const restoreTrashButton = document.querySelector("#restore-trash");
-  const emptyTrashButton = document.querySelector("#empty-trash");
   const projectCdCountEl = document.querySelector("#project-cd-count");
   const projectCdGridEl = document.querySelector("#project-cd-grid");
   const downloadProjectCdButton = document.querySelector("#download-project-cd");
@@ -122,7 +113,6 @@ function getElements() {
   const documentsCountEl = document.querySelector("#documents-count");
   const documentsFolderLabelEl = document.querySelector("#documents-folder-label");
   const documentIconGridEl = document.querySelector("#document-icon-grid");
-  const documentsUpButton = document.querySelector("#documents-up");
   const chatFileTitleEl = document.querySelector("#chat-file-title");
   const chatFileMetaEl = document.querySelector("#chat-file-meta");
   const chatFileBodyEl = document.querySelector("#chat-file-body");
@@ -370,7 +360,6 @@ function getElements() {
   const notificationCenterListEl = document.querySelector("#notification-center-list");
   const attachedClipsShelfEl = document.querySelector("#attached-clips");
   const attachedClipsToolbarEl = document.querySelector("#attached-clips-toolbar");
-  const attachScrapButton = document.querySelector("#attach-scrap-to-assistant");
   const fileInfoNameEl = document.querySelector("#info-file-name");
   const fileInfoKindEl = document.querySelector("#info-file-kind");
   const fileInfoSizeEl = document.querySelector("#info-file-size");
@@ -431,9 +420,6 @@ function getElements() {
     loadModelButton,
     loadModelStatusEl,
     rememberInput,
-    clearButton,
-    clipSelectionButton,
-    retryButton,
     composerSubmitButton,
     clockEl,
     filesInput,
@@ -479,12 +465,8 @@ function getElements() {
     deleteScrapButton,
     openScrapSourceButton,
     scrapSelectionCountEl,
-    sendScrapsToQuestionButton,
-    outlineScrapsButton,
-    scrapbookDocMapButton,
     scrapbookAskForm,
     scrapbookQuestionInput,
-    downloadScrapsBilingualButton,
     scrapListEl,
     scrapCountEl,
     scrapbookPagePreviousButton,
@@ -493,8 +475,6 @@ function getElements() {
     scrapbookPagePositionEl,
     trashListEl,
     trashCountEl,
-    restoreTrashButton,
-    emptyTrashButton,
     projectCdCountEl,
     projectCdGridEl,
     downloadProjectCdButton,
@@ -514,7 +494,6 @@ function getElements() {
     documentsCountEl,
     documentsFolderLabelEl,
     documentIconGridEl,
-    documentsUpButton,
     chatFileTitleEl,
     chatFileMetaEl,
     chatFileBodyEl,
@@ -762,7 +741,6 @@ function getElements() {
     notificationCenterListEl,
     attachedClipsShelfEl,
     attachedClipsToolbarEl,
-    attachScrapButton,
     fileInfoNameEl,
     fileInfoKindEl,
     fileInfoSizeEl,

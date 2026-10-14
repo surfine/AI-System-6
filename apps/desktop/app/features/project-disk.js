@@ -47,12 +47,31 @@ function stampChanged(record, capture) {
   if (JSON.stringify(record) !== before) record.updatedAt = documentTabNow();
 }
 
+// Which WINDOW holds a tab (§4.1). The store has always been keyed by project x
+// kind; a tab now also carries the window instance that holds it, and an absent
+// instance means the main instance — the rule the session's own window records
+// follow (§9B), so a project written before this field maps onto the desk's
+// first window with no migration at all. The active-tab map keeps the bare app
+// key for main and a `kind:instance` key for every other window, the shape
+// put-away already gives a second instance's cell.
+const documentTabMainInstance = "main";
+
+function documentTabInstanceOf(tab) {
+  return tab?.instance || documentTabMainInstance;
+}
+
+function activeDocumentTabKey(app, instance = documentTabMainInstance) {
+  const owner = instance || documentTabMainInstance;
+  return owner === documentTabMainInstance ? app : `${app}:${owner}`;
+}
+
 function createDocumentTabRecord(app, role, options = {}) {
   const now = documentTabNow();
   return {
     id: options.id || crypto.randomUUID(),
     app,
     role,
+    instance: typeof options.instance === "string" && options.instance ? options.instance : documentTabMainInstance,
     title: options.title || t(app === "teachText" && role === "manuscript" ? "document_role_manuscript" : "untitled"),
     backing: options.backing || {},
     state: options.state || {},
@@ -127,7 +146,7 @@ function ensureProjectDocumentTabs(project) {
     // the one that was already there. Treating it as one marked every disk on
     // the desk unsaved on every save, because this projection runs whenever a
     // project is read - so every save wrote every project back out.
-    const nextId = project.documentTabs.find((tab) => tab.app === app)?.id || null;
+    const nextId = project.documentTabs.find((tab) => tab.app === app && documentTabInstanceOf(tab) === documentTabMainInstance)?.id || null;
     if (activeId === nextId) return;
     project.activeDocumentTabIds[app] = nextId;
     changed = true;
@@ -141,20 +160,41 @@ function getDocumentTabs(app = "", project = getActiveProject()) {
   return app ? tabs.filter((tab) => tab.app === app).sort((a, b) => (a.order || 0) - (b.order || 0)) : tabs;
 }
 
-function getActiveDocumentTab(app, project = getActiveProject()) {
-  if (!project) return null;
-  const id = ensureProjectDocumentTabs(project) && project.activeDocumentTabIds?.[app];
-  return getDocumentTabs(app, project).find((tab) => tab.id === id) || null;
+// The tabs ONE WINDOW holds (§4.2): the second instance's rail renders its own
+// set and nothing else, and a tab moved to a second window stops rendering in
+// the main instance's rail. Without an instance this is the main set, which is
+// every tab a project written before the dimension has.
+function getWindowDocumentTabs(app = "", project = getActiveProject(), instance = documentTabMainInstance) {
+  const owner = instance || documentTabMainInstance;
+  return getDocumentTabs(app, project).filter((tab) => documentTabInstanceOf(tab) === owner);
 }
 
-function setActiveDocumentTab(app, tabId, project = getActiveProject()) {
+// Which window a rail belongs to: the rail lives inside a window element, and a
+// window without the attribute IS that kind's main instance (window-instances.js
+// §2.1). Every rail on the desk is a main window's today — a shape (V) second
+// window is a read-only view with no rail — so this reads "main" everywhere it
+// is called, and a shape (I) instance would get its own set without a change.
+function documentTabInstanceOfRail(container) {
+  const win = container?.closest?.(".window");
+  return win?.dataset?.windowInstance || documentTabMainInstance;
+}
+
+function getActiveDocumentTab(app, project = getActiveProject(), instance = documentTabMainInstance) {
   if (!project) return null;
-  const tab = getDocumentTabs(app, project).find((item) => item.id === tabId) || null;
+  const id = ensureProjectDocumentTabs(project) && project.activeDocumentTabIds?.[activeDocumentTabKey(app, instance)];
+  return getWindowDocumentTabs(app, project, instance).find((tab) => tab.id === id) || null;
+}
+
+function setActiveDocumentTab(app, tabId, project = getActiveProject(), instance = documentTabMainInstance) {
+  if (!project) return null;
+  // A window can only make one of ITS OWN tabs active: another window's tab is
+  // not on this desk's rail to pick.
+  const tab = getWindowDocumentTabs(app, project, instance).find((item) => item.id === tabId) || null;
   // A restore that re-selects the tab already active is not a change, and it
   // happens on every launch; stamping here rewrote the project each time.
   stampChanged(project, () => {
     project.activeDocumentTabIds = activeDocumentTabIdsFallback(project);
-    project.activeDocumentTabIds[app] = tab?.id || null;
+    project.activeDocumentTabIds[activeDocumentTabKey(app, instance)] = tab?.id || null;
   });
   return tab;
 }
@@ -163,9 +203,12 @@ function upsertDocumentTab(app, role, options = {}, project = getActiveProject()
   if (!project) return null;
   const tabs = ensureProjectDocumentTabs(project);
   const backing = options.backing || {};
+  const instance = options.instance || documentTabMainInstance;
   let tab = options.id ? tabs.find((item) => item.id === options.id) : null;
   if (!tab && backing.type && options.forceNew !== true) {
-    tab = tabs.find((item) => item.app === app && item.role === role && item.backing?.type === backing.type
+    // The reuse search stays inside the window the caller is opening in: the
+    // same document open in another window is that window's tab, not this one's.
+    tab = tabs.find((item) => item.app === app && documentTabInstanceOf(item) === instance && item.role === role && item.backing?.type === backing.type
       && (backing.id ? item.backing?.id === backing.id : true)
       && (backing.fileName ? item.backing?.fileName === backing.fileName : true)
       && (backing.url ? item.backing?.url === backing.url : true));
@@ -177,10 +220,10 @@ function upsertDocumentTab(app, role, options = {}, project = getActiveProject()
       tab.state = { ...(tab.state || {}), ...(options.state || {}) };
     });
   } else {
-    tab = createDocumentTabRecord(app, role, { ...options, order: tabs.length });
+    tab = createDocumentTabRecord(app, role, { ...options, instance, order: tabs.length });
     tabs.push(tab);
   }
-  setActiveDocumentTab(app, tab.id, project);
+  setActiveDocumentTab(app, tab.id, project, instance);
   return tab;
 }
 
@@ -190,15 +233,42 @@ function removeDocumentTab(app, tabId, project = getActiveProject()) {
   const index = tabs.findIndex((tab) => tab.id === tabId);
   if (index < 0) return null;
   const removed = tabs[index];
-  const wasActive = project.activeDocumentTabIds?.[app] === removed.id;
+  // The active slot the removal has to fix up is the one of the window that
+  // held the tab, and the successor is that window's next tab.
+  const instance = documentTabInstanceOf(removed);
+  const key = activeDocumentTabKey(app, instance);
+  const windowIndex = getWindowDocumentTabs(app, project, instance).findIndex((tab) => tab.id === tabId);
+  const wasActive = project.activeDocumentTabIds?.[key] === removed.id;
   project.documentTabs = (project.documentTabs || []).filter((tab) => tab.id !== removed.id);
-  const remaining = getDocumentTabs(app, project);
-  const next = remaining[Math.max(0, index - 1)] || remaining[0] || null;
+  const remaining = getWindowDocumentTabs(app, project, instance);
+  const next = remaining[Math.max(0, windowIndex - 1)] || remaining[0] || null;
   project.activeDocumentTabIds = activeDocumentTabIdsFallback(project);
-  if (wasActive) project.activeDocumentTabIds[app] = next?.id || null;
+  if (wasActive) project.activeDocumentTabIds[key] = next?.id || null;
   project.updatedAt = documentTabNow();
   markProjectTabsDirty(project);
   return { removed, index, remaining, next, wasActive };
+}
+
+// Hand a tab to another window (§4.2). This is the write Move Tab to New Window
+// and Merge All Windows are made of; the window itself is opened or closed by
+// the verb that calls it. The window the tab leaves keeps a sensible active tab
+// — the same repair a removal does, for the same reason: an active slot that
+// points at a tab no longer in the window draws a rail with nothing picked.
+function assignDocumentTabWindow(app, tabId, instance, project = getActiveProject()) {
+  if (!project || !tabId) return null;
+  const tab = ensureProjectDocumentTabs(project).find((item) => item.id === tabId);
+  if (!tab) return null;
+  const to = instance || documentTabMainInstance;
+  const from = documentTabInstanceOf(tab);
+  if (from === to) return tab;
+  const wasActive = project.activeDocumentTabIds?.[activeDocumentTabKey(app, from)] === tab.id;
+  stampChanged(tab, () => { tab.instance = to; });
+  if (wasActive) {
+    const remaining = getWindowDocumentTabs(app, project, from);
+    setActiveDocumentTab(app, remaining[0]?.id || null, project, from);
+  }
+  markProjectTabsDirty(project);
+  return tab;
 }
 
 function moveDocumentTab(app, tabId, targetTabId, project = getActiveProject()) {
@@ -216,8 +286,70 @@ function moveDocumentTab(app, tabId, targetTabId, project = getActiveProject()) 
   return true;
 }
 
-let tdiDocumentStackDismissalReady = false;
+// --- Dragging a tab OUT of the rail (§4.2) ----------------------------------
+//
+// A rail tab has two landings and they mean different things: a sibling tab
+// (reorder — the gesture the rail always had) and anywhere OUTSIDE the rail
+// (open this tab in a window of its own). The preview is what tells them apart:
+// while a tab is in flight the desk wears the shared drop-target overlay
+// (30-surfaces.css — the same one Reader and DocMap use), and that overlay
+// appears the moment the pointer leaves the rail.
+//
+// The overlay is all this costs: no new style, no new layer, and no new state —
+// this half of the gesture writes nothing.
 
+let tabDragOut = null;
+
+function tabDragOutDesktop() {
+  return document.querySelector(".desktop");
+}
+
+function beginTabDragOut(tabId, rail) {
+  tabDragOut = { tabId, rail };
+  const desktop = tabDragOutDesktop();
+  if (!desktop) return;
+  // Structure now; the highlight comes when the pointer leaves the rail.
+  desktop.classList.add("drop-target");
+  desktop.dataset.dropLabel = typeof t === "function" ? t("tabs_drop_new_window") : "";
+  document.addEventListener("dragover", tabDragOutOver, true);
+  document.addEventListener("drop", endTabDragOut, true);
+  document.addEventListener("dragend", endTabDragOut, true);
+}
+
+// The overlay says "letting go here opens a window", so it may only show where
+// that is true. Over the rail the landing is the sibling reorder, which the
+// rail's own dragover answers.
+function tabDragOutOver(event) {
+  if (!tabDragOut) return;
+  const outsideRail = !event.target?.closest?.(".tdi-tabs");
+  tabDragOutDesktop()?.classList.toggle("is-dragging", outsideRail);
+  if (!outsideRail) return;
+  event.preventDefault();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+}
+
+function endTabDragOut(event) {
+  const dragging = tabDragOut;
+  tabDragOut = null;
+  const desktop = tabDragOutDesktop();
+  if (desktop) {
+    desktop.classList.remove("drop-target", "is-dragging");
+    delete desktop.dataset.dropLabel;
+  }
+  document.removeEventListener("dragover", tabDragOutOver, true);
+  document.removeEventListener("drop", endTabDragOut, true);
+  document.removeEventListener("dragend", endTabDragOut, true);
+  // A drop that landed outside the rail is the window landing (§4.2's action
+  // half). The verb lives with the window tabs it belongs to, in the lazy
+  // window-tabs.js, and this may be the first thing on the desk to need it.
+  if (event?.type !== "drop" || !dragging?.tabId) return;
+  if (event.target?.closest?.(".tdi-tabs")) return;
+  Promise.resolve(ensureLazySystemModule("app/features/window-tabs.js", "AISystem6WinTabs"))
+    .then(() => window.AISystem6WindowTabs?.moveTabToNewWindow?.(dragging.tabId, { rail: dragging.rail }))
+    .catch(() => {});
+}
+
+let tdiDocumentStackDismissalReady = false;
 function ensureTdiDocumentStackDismissal() {
   if (tdiDocumentStackDismissalReady) return;
   tdiDocumentStackDismissalReady = true;
@@ -529,11 +661,13 @@ function renderTdiTabStrip(container, tabs, options = {}) {
         event.dataTransfer.setData("text/plain", tab.id);
         container.dataset.draggingTabId = tab.id;
         wrap.classList.add("is-dragging");
+        beginTabDragOut(tab.id, container);
       });
       wrap.addEventListener("dragend", () => {
         delete container.dataset.draggingTabId;
         wrap.classList.remove("is-dragging");
         container.querySelectorAll(".is-drop-target").forEach((item) => item.classList.remove("is-drop-target"));
+        endTabDragOut();
       });
       wrap.addEventListener("dragover", (event) => {
         const draggingId = container.dataset.draggingTabId;

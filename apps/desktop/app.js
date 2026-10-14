@@ -552,11 +552,16 @@ appearanceThemeInput?.append(...window.AISystem6Theme.getReleaseReadyThemes().ma
   }
   return option;
 }));
-if (bootDebugTheme && bootDebugTheme.releaseReady === false && developmentPreviewAllowed) {
+if (bootDebugTheme && developmentPreviewAllowed) {
   // Dev-only session preview, never persisted: the Appearance selector keeps
   // reflecting the release base, and a reload without the parameter restores
-  // the saved theme.
-  if (appearanceThemeInput) appearanceThemeInput.value = window.AISystem6Theme.normalizeReleaseThemeId(bootDebugTheme.id);
+  // the saved theme. A release-ready era named here applies as a session
+  // preview too -- its acceptance instruments (?debugTheme=nextstep) broke the
+  // moment the era shipped (releaseReady:true, 2026-09-23) and the parameter
+  // silently stopped selecting it.
+  if (appearanceThemeInput) appearanceThemeInput.value = bootDebugTheme.releaseReady === false
+    ? window.AISystem6Theme.normalizeReleaseThemeId(bootDebugTheme.id)
+    : bootThemeId;
   window.AISystem6Theme.previewExperimentalTheme(bootDebugTheme.id);
 } else {
   if (appearanceThemeInput) appearanceThemeInput.value = bootThemeId;
@@ -2040,9 +2045,10 @@ function applyShowUnmountedDisks(options = {}) {
 // the pixels in four Appearance cells.
 //
 // The loops below are deliberately a copy rather than an extraction: inside
-// applyLanguage() they are interleaved with renderKeyCapsShortcuts(), which
-// emits i18n attributes of its own, so the sweeps there cannot be reordered
-// into one call without leaving that output untranslated.
+// applyLanguage() they are interleaved with the Key Caps grid call (now the
+// lazy module's renderShortcutGrid), which emits i18n attributes of its own, so
+// the sweeps there cannot be reordered into one call without leaving that
+// output untranslated.
 function translateWithin(root) {
   if (!root || typeof root.querySelectorAll !== "function") return;
   root.querySelectorAll("[data-i18n]").forEach((el) => {
@@ -2104,7 +2110,11 @@ function applyLanguage() {
       el.textContent = value;
     }
   });
-  if (typeof renderKeyCapsShortcuts === "function") renderKeyCapsShortcuts();
+  // Key Caps' shortcut grid belongs to the Key Caps surface (the lazy
+  // app/features/command-sheet.js). A language switch while that window is
+  // open re-renders it; if the module never loaded, the grid is not on screen
+  // to relabel.
+  window.AISystem6CommandSheet?.renderShortcutGrid?.();
   document.querySelectorAll("[data-i18n-count]").forEach((el) => {
     const count = Number(el.dataset.i18nCountValue || 0);
     el.textContent = t(el.dataset.i18nCount, count);

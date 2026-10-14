@@ -876,14 +876,6 @@ function renderScraps() {
   // activeOwnedControlEnabled instead of the mirrored is-disabled class).
   // Grey affordances keep a one-tap why (ADHD) — empty scrap vs no bilingual.
   const emptyScrapReason = "balloon_scrapbook_empty";
-  if (sendScrapsToQuestionButton) {
-    sendScrapsToQuestionButton.disabled = !selectedCount;
-    sendScrapsToQuestionButton.dataset.balloonHelpDisabled = emptyScrapReason;
-  }
-  if (outlineScrapsButton) {
-    outlineScrapsButton.disabled = !selectedCount;
-    outlineScrapsButton.dataset.balloonHelpDisabled = emptyScrapReason;
-  }
   if (insertScrapButton) {
     insertScrapButton.disabled = !selectedCount;
     insertScrapButton.dataset.balloonHelpDisabled = emptyScrapReason;
@@ -892,17 +884,7 @@ function renderScraps() {
     deleteScrapButton.disabled = !selectedCount;
     deleteScrapButton.dataset.balloonHelpDisabled = emptyScrapReason;
   }
-  const scrapMultiGo = document.querySelector("#scrap-multi-go");
-  if (scrapMultiGo) {
-    scrapMultiGo.disabled = !selectedCount;
-    scrapMultiGo.dataset.balloonHelpDisabled = emptyScrapReason;
-  }
-  if (downloadScrapsBilingualButton) {
-    const canExportBilingual = getSelectedScraps().some(scrapHasTranslation);
-    downloadScrapsBilingualButton.disabled = !canExportBilingual;
-    downloadScrapsBilingualButton.classList.toggle("is-disabled", !canExportBilingual);
-    downloadScrapsBilingualButton.dataset.balloonHelpDisabled = "balloon_scrapbook_needs_translation";
-  }
+  syncScrapMultiActionControls();
   if (scrapStackSelect) scrapStackSelect.value = selectedScrapStack;
   const signature = [
     activeProjectId,
@@ -1146,7 +1128,6 @@ function renderContextPanel() {
   const countEl = document.querySelector("#context-panel-count");
   const budgetEl = document.querySelector("#context-panel-budget");
   if (!listEl || !countEl) return;
-  renderClioTalkContextSpace();
 
   const loadout = window.lastContextLoadout || null;
   const usedContextItems = lastRetrievedContextItems.filter((contextItem) => contextItem.included !== false && !contextItem.excluded);
@@ -1442,15 +1423,6 @@ function syncTrashActionControls() {
   go.dataset.balloonHelpDisabled = "balloon_trash_empty_first";
   go.classList.toggle("danger", !empty && select?.value === "empty");
   go.classList.toggle("default", empty || select?.value !== "empty");
-  // Legacy Restore/Empty stay hidden — one primary Do Selected only (no dual primary).
-  if (restoreTrashButton) {
-    restoreTrashButton.hidden = true;
-    restoreTrashButton.disabled = true;
-  }
-  if (emptyTrashButton) {
-    emptyTrashButton.hidden = true;
-    emptyTrashButton.disabled = true;
-  }
 }
 
 function runTrashMoreAction() {
@@ -1582,6 +1554,22 @@ function insertScrapIntoPrompt() {
   // Insert is durable only when the destination paints the new text; ClioTalk
   // and any open scrap stack must both show the change without a second click.
   if (typeof renderScraps === "function") renderScraps();
+}
+
+// The chooser names the verb, so the grey reason has to follow it: "Bilingual
+// .md" is unavailable for a different cause than an empty selection, and the
+// receipt it used to carry on its own retired button reads here instead.
+function syncScrapMultiActionControls() {
+  const go = document.querySelector("#scrap-multi-go");
+  const select = document.querySelector("#scrap-multi-more");
+  if (!go) return;
+  const selectedCount = getSelectedScraps().length;
+  const wantsBilingual = select?.value === "scrapbook-export-bilingual";
+  const cannotExportBilingual = wantsBilingual && !getSelectedScraps().some(scrapHasTranslation);
+  go.disabled = !selectedCount || cannotExportBilingual;
+  go.dataset.balloonHelpDisabled = cannotExportBilingual
+    ? "balloon_scrapbook_needs_translation"
+    : "balloon_scrapbook_empty";
 }
 
 function runScrapMultiAction() {
@@ -1750,9 +1738,9 @@ function deleteSelectedScrap() {
   if (selected.length) playSystemSound("trash");
 }
 
-let smounted=!1;function mountScrapbookRuntime(){if(smounted)return!0;smounted=!0;scrapbookAskForm?.addEventListener("submit",askScrapbookQuestion);registerAskBarSource("scrapbook",describeScrapbookAskScope);toggleScrapTranslationButton?.addEventListener("click",toggleScrapTranslationView);document.querySelector("#scrap-multi-go")?.addEventListener("click",runScrapMultiAction);const filter=document.getElementById("scrap-filter");filter?.addEventListener("input",()=>setScrapFilter(filter.value));filter?.addEventListener("keydown",event=>{if(event.key==="Escape"&&filter.value){event.preventDefault();filter.value="";setScrapFilter("")}});return!0}
+let smounted=!1;function mountScrapbookRuntime(){if(smounted)return!0;smounted=!0;scrapbookAskForm?.addEventListener("submit",askScrapbookQuestion);registerAskBarSource("scrapbook",describeScrapbookAskScope);toggleScrapTranslationButton?.addEventListener("click",toggleScrapTranslationView);document.querySelector("#scrap-multi-go")?.addEventListener("click",runScrapMultiAction);document.querySelector("#scrap-multi-more")?.addEventListener("change",syncScrapMultiActionControls);const filter=document.getElementById("scrap-filter");filter?.addEventListener("input",()=>setScrapFilter(filter.value));filter?.addEventListener("keydown",event=>{if(event.key==="Escape"&&filter.value){event.preventDefault();filter.value="";setScrapFilter("")}});return!0}
 function swin(){return document.querySelector(".window.is-active")?.dataset.window==="scrapbook"}function sctrl(s){const c=document.querySelector(s);return!!c&&!c.disabled&&!c.hidden}
-const sav={"open-scrapbook":()=>!0,"scrapbook-open-source":()=>sctrl("#open-scrap-source"),"scrapbook-page-previous":()=>canMoveScrapbookPage(-1),"scrapbook-page-next":()=>canMoveScrapbookPage(1),"scrapbook-keep-reading":()=>!!scrapReadingProposal,"scrapbook-discard-reading":()=>!!scrapReadingProposal,"scrapbook-toggle-translation":()=>sctrl("#toggle-scrap-translation"),"scrapbook-insert":()=>sctrl("#insert-scrap"),"scrapbook-attach":()=>sctrl("#attach-scrap-to-assistant"),"scrapbook-send-question":()=>sctrl("#send-scraps-to-question"),"scrapbook-outline":()=>sctrl("#outline-scraps"),"scrapbook-export-bilingual":()=>sctrl("#download-scraps-bilingual"),"scrapbook-delete":()=>sctrl("#delete-scrap"),"focus-scrapbook-question":()=>getSelectedScraps().length>0};
+const sav={"open-scrapbook":()=>!0,"scrapbook-open-source":()=>sctrl("#open-scrap-source"),"scrapbook-page-previous":()=>canMoveScrapbookPage(-1),"scrapbook-page-next":()=>canMoveScrapbookPage(1),"scrapbook-keep-reading":()=>!!scrapReadingProposal,"scrapbook-discard-reading":()=>!!scrapReadingProposal,"scrapbook-toggle-translation":()=>sctrl("#toggle-scrap-translation"),"scrapbook-insert":()=>sctrl("#insert-scrap"),"scrapbook-attach":()=>getSelectedScraps().length>0,"scrapbook-send-question":()=>getSelectedScraps().length>0,"scrapbook-outline":()=>getSelectedScraps().length>0,"scrapbook-export-bilingual":()=>getSelectedScraps().some(scrapHasTranslation),"scrapbook-delete":()=>sctrl("#delete-scrap"),"focus-scrapbook-question":()=>getSelectedScraps().length>0};
 
 /**
  * Whether a Scrapbook command can run, and what it is waiting for.

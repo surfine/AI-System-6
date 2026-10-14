@@ -233,7 +233,7 @@
       systemFontSize: 13,
       fontStrategy: "theme",
       overlay: "none",
-      capabilities: Object.freeze(["vibrancy", "translucent-sidebar", "traffic-lights", "minimize-lamp", "dock", "window-menu"]),
+      capabilities: Object.freeze(["vibrancy", "translucent-sidebar", "traffic-lights", "minimize-lamp", "dock", "full-screen", "window-menu"]),
     }),
     Object.freeze({
       id: "big-sur",
@@ -266,7 +266,17 @@
       // Dock evidence is recorded (internal/evidence/drafts/dock-reference):
       // the yellow lamp is real only where the window it puts away has a place
       // to go and a way back. Both start off as preferences.
-      capabilities: Object.freeze(["vibrancy", "translucent-sidebar", "traffic-lights", "independent-icons", "minimize-lamp", "dock", "window-menu"]),
+      // `full-screen` joins them here and on Yosemite: Lion introduced it
+      // (10.7) and every release kept it, so leaving it off the later eras made
+      // the newest appearances the only ones without a full-screen button. The
+      // record is internal/evidence/drafts/full-screen-reference.md.
+      // `window-tabs`: Sierra (10.12, 2016) added system-level window tabs, so
+      // only the 2020-and-later appearances carry the capability. Yosemite
+      // (10.10, 2014) deliberately does NOT — it predates Sierra by two
+      // releases — and the desk has no Sierra/High Sierra/Mojave era at all,
+      // which is why exactly two appearances are on this list. Do not read the
+      // gap as an omission; the era axis is WINDOW-TABS-SPEC §2.1.
+      capabilities: Object.freeze(["vibrancy", "translucent-sidebar", "traffic-lights", "independent-icons", "minimize-lamp", "dock", "full-screen", "window-menu", "window-tabs"]),
     }),
     Object.freeze({
       id: "liquid-glass",
@@ -282,7 +292,7 @@
       systemFontSize: 13,
       fontStrategy: "modern",
       overlay: "liquid-glass",
-      capabilities: Object.freeze(["vibrancy", "continuous-glass", "liquid-overlay", "traffic-lights", "minimize-lamp", "dock", "window-menu"]),
+      capabilities: Object.freeze(["vibrancy", "continuous-glass", "liquid-overlay", "traffic-lights", "minimize-lamp", "dock", "full-screen", "window-menu", "window-tabs"]),
     }),
     Object.freeze({
       id: "nextstep",

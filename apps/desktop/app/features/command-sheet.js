@@ -134,10 +134,29 @@
     empty.textContent = t("command_sheet_none");
   }
 
+  // Key Caps prints two lists of the same table: this command sheet, and the
+  // shortcut grid below it. Both are only on screen while the window is open,
+  // so both live here rather than in the boot bundle — the product's key
+  // bindings are the registry's (actions.js), read at render time.
+  function renderShortcutGrid() {
+    const grid = document.querySelector("#shortcut-grid");
+    if (!grid) return;
+    const fragment = document.createDocumentFragment();
+    keyboardShortcutRegistry.filter((shortcut) => shortcut.keyCaps).forEach((shortcut) => {
+      const key = document.createElement("span");
+      const label = document.createElement("b");
+      key.textContent = shortcutDisplayLabel(shortcut);
+      label.textContent = t(shortcut.labelKey);
+      fragment.append(key, label);
+    });
+    grid.replaceChildren(fragment);
+  }
+
   function renderCommandSheet({ focus = false } = {}) {
     const host = commandSheetHost();
     if (!host) return;
     sheetState.rows = commandSheetRows();
+    renderShortcutGrid();
     const appName = document.querySelector("#current-app-menu-label")?.textContent.trim() || "";
     host.querySelector(".command-sheet-title").textContent = appName ? t("command_sheet_title_for", appName) : t("command_sheet_title");
     host.querySelector('label[for="command-sheet-search"]').textContent = t("command_sheet_search");
@@ -150,6 +169,7 @@
 
   window.AISystem6CommandSheet = Object.freeze({
     render: renderCommandSheet,
+    renderShortcutGrid,
     rows: commandSheetRows,
     matches: commandSheetMatches,
   });

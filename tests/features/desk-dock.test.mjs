@@ -312,17 +312,17 @@ vmw.run("window.AISystem6WindowMinimize.setDockVisible(true)");
 await vmw.waitFor(() => vmw.run('document.querySelectorAll(".desk-dock").length === 1'));
 test.assert(JSON.parse(appKeys())[0] === last, "the order survives hiding and showing the Dock");
 
-// The application menu names the verb where the lamp is drawn.
+// The Window menu names the verb where the era has one (owner, 2026-10-13), so
+// the application menu leaves it there rather than naming the same verb twice.
+// There is no second branch to exercise: every era that draws the lamp also has
+// the Window menu, and a narrow viewport draws no lamp, so the row below is
+// doing the work in every case where it can be reached at all.
 vmw.run("renderMultiFinderMenu()");
 test.assert(
-  vmw.run('document.querySelector(\'#current-app-menu-section [data-action="minimize-window"]\') !== null'),
-  "the application menu offers Minimize Window in an era that draws the lamp",
+  vmw.run('document.querySelector(\'#current-app-menu-section [data-action="minimize-window"]\') === null'),
+  "on a wide bar the application menu leaves Minimize Window to the Window menu",
 );
 vmw.run("window.AISystem6WindowMinimize.setMinimizeEnabled(false)");
-test.assert(
-  vmw.run('document.querySelector(\'#current-app-menu-section [data-action="minimize-window"]\') === null'),
-  "and not once minimizing is switched off",
-);
 vmw.run("window.AISystem6WindowMinimize.setMinimizeEnabled(true)");
 
 test.assert(

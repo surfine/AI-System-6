@@ -248,8 +248,12 @@ function runningApplicationRows() {
     `;
     rows.push(button);
   });
-  rows.push(document.createElement("hr"));
-  rows.push(applicationRow("bring-app-front", t("bring_all_to_front")));
+  // The Window menu carries this verb in the eras that have one; see
+  // windowMenuOwnsWindowVerbs above.
+  if (!windowMenuOwnsWindowVerbs()) {
+    rows.push(document.createElement("hr"));
+    rows.push(applicationRow("bring-app-front", t("bring_all_to_front")));
+  }
   return rows;
 }
 
@@ -348,6 +352,7 @@ function windowBrowseEntries() {
     const appId = getWindowAppId(win);
     entries.push({
       name: win.dataset.window,
+      instance: win.dataset.windowInstance,
       appId,
       appLabel: multiFinderAppLabels[appId] || appId,
       title: applicationWindowTitle(win),
@@ -365,11 +370,10 @@ function windowBrowseEntries() {
 // entry point. It never calls openWindow: a window that is already open is
 // brought back, not summoned again, so the writing route's summon / restore
 // exclusivity is preserved. A stale (closed) id returns false and the caller
-// drops the row.
-function restoreWindowBrowseEntry(name) {
-  const win = typeof getWindow === "function" ? getWindow(name) : null;
-  if (!win) return false;
-  return restoreApplicationWindow(win);
+// drops the row. The instance argument defaults to the kind's main.
+function restoreWindowBrowseEntry(name, instance) {
+  // A stale identity resolves to null; restoreApplicationWindow reports it.
+  return restoreApplicationWindow(getWindowInstance(name, instance));
 }
 
 /**
@@ -388,19 +392,19 @@ function restoreWindowBrowseEntry(name) {
  */
 let windowWalk = { appId: "", names: [], index: 0 };
 
+// The walk snapshot holds window ELEMENTS: identity, membership and cursor
+// all compare the element; a closed window stops being live (§2.4).
 function cycleApplicationWindows(direction = 1) {
   const appId = frontApplicationId();
   const windows = applicationWindowOrder(appId);
-  const frontName = windows.find((win) => win.classList.contains("is-active"))?.dataset.window || "";
+  const frontWin = windows.find((win) => win.classList.contains("is-active"));
   // The snapshot follows live membership: a window opened or closed since the
   // last press must join (or leave) the walk, and the cursor must point at the
-  // window the writer is actually in, not at a stale name's old slot.
-  const currentNames = new Set(windows.map((win) => win.dataset.window));
-  const membershipChanged = currentNames.size !== windowWalk.names.length
-    || windowWalk.names.some((name) => !currentNames.has(name));
-  if (windowWalk.appId !== appId || membershipChanged || windowWalk.names[windowWalk.index] !== frontName) {
-    const names = windows.map((win) => win.dataset.window);
-    windowWalk = { appId, names, index: Math.max(0, names.indexOf(frontName)) };
+  // window the writer is actually in, not at a stale slot.
+  if (windowWalk.appId !== appId || windows.length !== windowWalk.names.length
+      || windowWalk.names.some((win) => !windows.includes(win))
+      || windowWalk.names[windowWalk.index] !== frontWin) {
+    windowWalk = { appId, names: windows, index: Math.max(0, windows.indexOf(frontWin)) };
   }
   if (windows.length === 1 && (windows[0].classList.contains("is-minimized")
       || windows[0].classList.contains("is-collapsed"))) {
@@ -425,11 +429,10 @@ function cycleApplicationWindows(direction = 1) {
   let next = null;
   for (let hop = 0; hop < count && !next; hop += 1) {
     windowWalk.index = ((windowWalk.index + step) % count + count) % count;
-    const candidate = getWindow(windowWalk.names[windowWalk.index]);
-    // A window can close, or another application's window can reuse the name,
-    // while the walk is still open; the snapshot skips stale identities rather
-    // than stopping the key dead or landing in the wrong app.
-    if (candidate?.isConnected && currentNames.has(candidate.dataset.window)
+    const candidate = windowWalk.names[windowWalk.index];
+    // A window can close while the walk is still open; the snapshot skips
+    // stale identities rather than stopping the key dead.
+    if (candidate?.isConnected && windows.includes(candidate)
         && !candidate.classList.contains("is-hidden") && getWindowAppId(candidate) === appId) next = candidate;
   }
   if (!next) {
@@ -449,14 +452,26 @@ function cycleApplicationWindows(direction = 1) {
 // own rows in the Apple menu, because there the right end is an indicator and
 // has no list to hang them from. They are named after activeAppId, which is
 // exactly the application each one acts on.
+// Minimize and Bring All to Front are macOS Window-menu verbs. The eras that
+// have a Window menu carry them there (owner, 2026-10-13); the Apple menu's
+// MultiFinder section was their home before that and stays their home in the
+// eras without one, so it stands down rather than naming the same verb twice.
+// The era is the whole question: every era that draws the yellow lamp also has
+// the Window menu, and a narrow viewport draws no lamp at all (lampEnabled()
+// answers for the width), so Minimize has nothing to fall back to there.
+function windowMenuOwnsWindowVerbs() {
+  return window.AISystem6Theme?.hasCapability?.("window-menu") === true;
+}
+
 function applicationVerbRows() {
   return [
     applicationRow("hide-active-app", t("hide_app", activeAppLabel())),
     applicationRow("hide-other-apps", t("hide_others")),
     applicationRow("show-all-apps", t("show_all")),
     // Where the era draws the yellow lamp, the application menu also names the
-    // verb, with the shortcut the host may or may not let through.
-    ...(window.AISystem6WindowMinimize?.lampEnabled?.()
+    // verb, with the shortcut the host may or may not let through -- unless the
+    // Window menu already names it, which is the same era the lamp belongs to.
+    ...(window.AISystem6WindowMinimize?.lampEnabled?.() && !windowMenuOwnsWindowVerbs()
       ? [applicationRow("minimize-window", t("minimize_window_command"))]
       : []),
     document.createElement("hr"),
@@ -813,6 +828,31 @@ function installApplicationLifecycleWatch() {
       reason: "pagehide",
     });
   });
+}
+
+// The desk-wide half of the same verb: "Bring All to Front" raises every
+// window on the desk, where bringAppToFront raises one application's. Same
+// restack, same receipt, so a row that changed nothing still says so.
+function bringAllWindowsToFront() {
+  const windows = [...document.querySelectorAll(".window[data-window]")]
+    .filter((win) => win.isConnected && applicationWindowPresentation(win) !== "closed");
+  if (!windows.length) {
+    if (typeof setStatus === "function") setStatus(t("bring_all_to_front_none"));
+    return false;
+  }
+  const ordered = windows
+    .slice()
+    .sort((a, b) => Number(a.style.zIndex || 0) - Number(b.style.zIndex || 0));
+  const before = ordered.map((win) => win.style.zIndex || "");
+  ordered.forEach((win) => {
+    setWindowLayerZ(win, nextWindowLayerZ());
+  });
+  focusWindow(ordered[ordered.length - 1], 1);
+  const moved = ordered.some((win, index) => (win.style.zIndex || "") !== before[index]);
+  if (typeof setStatus === "function") {
+    setStatus(moved ? t("bring_all_to_front_done") : t("bring_all_to_front_already"));
+  }
+  return moved;
 }
 
 function bringAppToFront(appId = activeAppId) {

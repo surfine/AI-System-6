@@ -181,7 +181,21 @@
     "window-expand": "expand",
     "window-layout-left": "left",
     "window-layout-right": "right",
+    "window-layout-top": "topHalf",
+    "window-layout-bottom": "bottomHalf",
     "window-layout-fill": "fill",
+    "window-layout-center": "center",
+    // The quarters and the thirds are the same engine slots the arrangement
+    // popover has always offered; the Window menu names them too, so they need
+    // ids of their own rather than living only inside the popover.
+    "window-layout-top-left": "topLeft",
+    "window-layout-top-right": "topRight",
+    "window-layout-bottom-left": "bottomLeft",
+    "window-layout-bottom-right": "bottomRight",
+    "window-layout-left-two-thirds": "leftTwoThirds",
+    "window-layout-right-two-thirds": "rightTwoThirds",
+    "window-layout-left-third": "leftThird",
+    "window-layout-right-third": "rightThird",
     "window-layout-undo": "undo",
     "window-layout-recover": "recover",
     // WM3: the pin command is a real stack action, not a layout slot; the
@@ -242,5 +256,74 @@
         .then(() => window.AISystem6WindowBrowse?.open?.({ returnFocus }));
     },
     isAvailable: () => !!document.querySelector(".window[data-window]:not(.is-hidden)"),
+  });
+  // Sierra's window-tab verbs (WINDOW-TABS-SPEC §5): the behaviour is the lazy
+  // window-tabs.js, but the availability question is cheap DOM, so it stays
+  // eager and the rows can grey with a reason without loading anything.
+  const windowTabs = () => ensureLazySystemModule("app/features/window-tabs.js", "AISystem6WinTabs");
+  // Registered EAGERLY: a menu row must resolve in the one runtime registry,
+  // and its availability is cheap DOM (the strip of the key window), so the
+  // row can grey with a reason before the lazy module ever loads.
+  const windowTabsCommand = (verb) => ({
+    handler: async () => { await windowTabs(); return window.AISystem6WindowTabs?.[verb]?.(); },
+    isAvailable: () => {
+      // The rail writes its tabCount on every render, so the count is read
+      // from the strip itself.
+      const strip = document.querySelector(".window.is-active[data-window] .tdi-tabs");
+      return !!strip && (verb === "toggleTabBar" || +strip.dataset.tabCount > 1);
+    },
+    unavailableReason: () => "balloon_disabled_tabs_empty",
+  });
+  window.AISystem6Runtime?.registerCommand?.("show-previous-tab", windowTabsCommand("stepPrevious"));
+  window.AISystem6Runtime?.registerCommand?.("show-next-tab", windowTabsCommand("stepNext"));
+  window.AISystem6Runtime?.registerCommand?.("toggle-tab-bar", windowTabsCommand("toggleTabBar"));
+  // The two verbs a second window makes expressible (§4.2). They register here
+  // for the same reason as the three above — a menu row must resolve in the one
+  // runtime registry — and their availability is cheap DOM plus the registry's
+  // own declaration of who may open a second window, so a row greys with a
+  // reason before anything loads.
+  const keyWindowKind = () => document.querySelector(".window.is-active[data-window]")?.dataset?.window || "";
+  window.AISystem6Runtime?.registerCommand?.("merge-all-windows", {
+    handler: async () => { await windowTabs(); return window.AISystem6WindowTabs?.mergeAllWindows?.(); },
+    isAvailable: () => !!document.querySelector(`.window[data-window="${keyWindowKind()}"][data-window-instance]`),
+    unavailableReason: () => "balloon_disabled_merge_needs_second_window",
+  });
+  window.AISystem6Runtime?.registerCommand?.("move-tab-to-new-window", {
+    handler: async () => { await windowTabs(); return window.AISystem6WindowTabs?.moveTabToNewWindow?.(); },
+    // Two questions, both cheap and both about the key window: may its kind open
+    // a second window at all (the registry's own declaration), and has it a tab
+    // to move. Reading the tab, not the drawn rail — a rail that has not been
+    // rendered yet is not a reason to refuse the verb.
+    isAvailable: () => {
+      const win = document.querySelector(".window.is-active[data-window]");
+      const kind = win?.dataset?.window || "";
+      if (!getWindowRecord(kind)?.instances) return false;
+      return !!getActiveDocumentTab(kind, getActiveProject(), win.dataset.windowInstance || "main");
+    },
+    unavailableReason: () => (getWindowRecord(keyWindowKind())?.instances
+      ? "balloon_disabled_tabs_empty"
+      : "balloon_disabled_no_second_window_kind"),
+  });
+  // NeXTSTEP 3.3's own window verbs. The implementations live in the lazy
+  // nextstep-menus.js (only that era loads it; the floppy budget asks an
+  // era-only verb to stay off the boot bundle), but the commands themselves
+  // register here, eagerly: Command-up and Command-down are registry shortcuts
+  // and may not name an action no loaded module registers. The era gate is
+  // window-manager.js's availability map, not these rows.
+  const nextstepVerbs = () => ensureLazySystemModule("app/core/nextstep-menus.js", "AISystem6NextstepMenus");
+  window.AISystem6Runtime?.registerCommand?.("nextstep-arrange-in-front", {
+    handler: async (context = {}) => {
+      await nextstepVerbs();
+      return window.AISystem6NextstepMenus?.arrangeInFront?.(context.appId);
+    },
+    isAvailable: () => true,
+  });
+  window.AISystem6Runtime?.registerCommand?.("nextstep-window-front", {
+    handler: async () => { await nextstepVerbs(); return window.AISystem6NextstepMenus?.windowWithinTier?.("front"); },
+    isAvailable: () => true,
+  });
+  window.AISystem6Runtime?.registerCommand?.("nextstep-window-back", {
+    handler: async () => { await nextstepVerbs(); return window.AISystem6NextstepMenus?.windowWithinTier?.("back"); },
+    isAvailable: () => true,
   });
 })();

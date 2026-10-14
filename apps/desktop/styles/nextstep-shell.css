@@ -793,11 +793,20 @@ body.nextstep-main-menu .field-row > label > :is(span, .control-grid) {
    60-responsive.css:800, which reaches .system-modal at (0,1,0); the material
    counterpart in 69 is body[data-theme] :is(...) at (0,2,2) and already wins,
    so here the higher-specificity body.nextstep-main-menu form descendants
-   carry the metrics. */
+   carry the metrics. The panel grows to its row of buttons: three fixed
+   128px buttons with gaps are 400px wide and a 320px dialog with 18px padding
+   is 284px of content, so the row used to overflow the dialog's own
+   overflow:auto box and the leftmost button (Cancel) sat outside the panel,
+   unpaintable and unclickable (found 2026-10-13 by the windows scene, broken
+   since dfc08e49e -- while ?debugTheme=nextstep was dead, nothing could see
+   it). A 3.3 alert sizes itself to its buttons. */
 body.nextstep-main-menu .system-modal {
   top: 22vh;
   transform: translateX(-50%);
   padding: 30px 18px 16px;
+  width: fit-content;
+  min-width: 320px;
+  max-width: calc(100vw - 32px);
 }
 
 body.nextstep-main-menu .system-modal::before {

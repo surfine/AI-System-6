@@ -108,7 +108,8 @@
 
   function flyGhost(win, from) {
     try {
-      const key = win.dataset.window || "";
+      // Main keeps the bare kind name; another instance reads kind:instance.
+      const key = miniwindowKey(win);
       const target = (key && document.querySelector(`.desk-dock-items [data-miniwindow="${CSS.escape(key)}"]`))
         || document.querySelector(".desk-dock [data-dock-key='trash']");
       const to = target?.getBoundingClientRect?.();
@@ -735,6 +736,12 @@
   // miniwindows in its dock; the rows here are the desk's list, and they read
   // the same state.
 
+  // Main keeps the bare kind name as its put-away key; another instance reads
+  // kind:instance, so two cells of one kind never collide.
+  function miniwindowKey(win) {
+    return win.dataset.windowInstance ? `${win.dataset.window}:${win.dataset.windowInstance}` : (win.dataset.window || "");
+  }
+
   // Newest first, by the stamp minimize() writes. A window restored from a
   // saved session carries no stamp, so it falls back to z-index among its peers
   // rather than sorting to the bottom arbitrarily.
@@ -769,7 +776,7 @@
       const row = document.createElement("button");
       row.type = "button";
       row.className = "multifinder-app multifinder-miniwindow";
-      row.dataset.miniwindow = win.dataset.window;
+      row.dataset.miniwindow = miniwindowKey(win);
       row.innerHTML = `
       <span class="multifinder-mark">▫</span>
       <span>${escapeHtml(applicationWindowTitle(win))}</span>

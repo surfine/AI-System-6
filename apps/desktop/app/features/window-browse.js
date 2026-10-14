@@ -15,6 +15,8 @@
   let entries = [];
   let cursor = 0;
   let previousFocus = null;
+  // The projection carries the raw dataset value; absent is main.
+  const inst = (entry) => entry?.instance || "main";
   let watcher = null;
   let options = {};
   let previewEl = null;
@@ -67,7 +69,7 @@
         else await ensureLazySystemModule("app/core/window-preview.js", "AISystem6WindowPreviewLoaded");
       }
       if (ticket !== previewTicket || !previewEl) return;
-      const win = typeof getWindow === "function" ? getWindow(entry.name) : null;
+      const win = getWindowInstance(entry.name, inst(entry));
       const picture = await window.AISystem6WindowPreview.get(win);
       if (ticket !== previewTicket || !previewEl) return;
       if (picture.url) {
@@ -142,13 +144,14 @@
       const row = document.createElement("button");
       row.type = "button";
       row.tabIndex = index === cursor ? 0 : -1;
-      row.id = `window-browse-option-${encodeURIComponent(entry.name)}`;
+      row.id = `window-browse-option-${encodeURIComponent(`${entry.name}:${entry.instance || "main"}`)}`;
       row.setAttribute("role", "option");
       row.setAttribute("aria-selected", String(index === cursor));
       row.dataset.windowBrowseName = entry.name;
+      row.dataset.windowBrowseInstance = entry.instance || "main";
       row.textContent = `${entry.appLabel} — ${entry.title}${stateSuffix(entry)}`;
       if (index === cursor) row.setAttribute("aria-current", "true");
-      row.addEventListener("click", () => commit(entry.name));
+      row.addEventListener("click", () => commit(entry.name, entry.instance || "main"));
       row.addEventListener("focus", () => {
         cursor = index;
         listEl.querySelectorAll("button").forEach((item) => {
@@ -170,10 +173,12 @@
   }
 
   function refresh() {
-    const selected = visibleEntries()[cursor]?.name;
+    const selected = visibleEntries()[cursor];
     entries = project();
     if (options.hover || options.cards) { renderCards(); return; }
-    cursor = Math.max(0, visibleEntries().findIndex((entry) => entry.name === selected));
+    cursor = Math.max(0, visibleEntries().findIndex((entry) => (
+      entry.name === selected?.name && (entry.instance || "main") === (selected?.instance || "main")
+    )));
     render();
     // Only a list the writer asked for reports that it is empty; a Dock hover
     // over an app with no windows simply shows nothing.
@@ -206,6 +211,7 @@
     card.type = "button";
     card.className = "window-card";
     card.dataset.windowBrowseName = entry.name;
+    card.dataset.windowBrowseInstance = entry.instance || "main";
     card.setAttribute("role", "listitem");
     const picture = document.createElement("span");
     picture.className = "window-card-picture";
@@ -215,7 +221,7 @@
     const state = document.createElement("span");
     state.className = "window-card-state";
     card.append(picture, title, state);
-    card.addEventListener("click", () => commit(entry.name));
+    card.addEventListener("click", () => commit(entry.name, entry.instance || "main"));
     return updateCard(card, entry);
   }
 
@@ -233,9 +239,11 @@
     if (!listEl) return;
     if (titleEl) titleEl.textContent = entries[0]?.appLabel || "";
     panelEl.dataset.cardCount = String(Math.min(entries.length, 5));
-    const existing = new Map([...listEl.children].map((node) => [node.dataset.windowBrowseName, node]));
+    const existing = new Map([...listEl.children].map((node) => [
+      `${node.dataset.windowBrowseName}:${node.dataset.windowBrowseInstance || "main"}`, node,
+    ]));
     listEl.replaceChildren(...entries.map((entry) => {
-      const card = existing.get(entry.name);
+      const card = existing.get(`${entry.name}:${entry.instance || "main"}`);
       return card ? updateCard(card, entry) : buildCard(entry);
     }));
     fillCardPictures();
@@ -276,9 +284,10 @@
     const worker = async () => {
       while (queue.length && ticket === pictureTicket && listEl) {
         const entry = queue.shift();
-        const card = [...listEl.children].find((node) => node.dataset.windowBrowseName === entry.name);
+        const card = [...listEl.children].find((node) => node.dataset.windowBrowseName === entry.name
+          && (node.dataset.windowBrowseInstance || "main") === (entry.instance || "main"));
         if (!card || card.dataset.pictured === "true") continue;
-        const win = typeof getWindow === "function" ? getWindow(entry.name) : null;
+        const win = getWindowInstance(entry.name, inst(entry));
         let picture = { url: null, stale: false, unavailable: true };
         try { picture = await window.AISystem6WindowPreview.get(win); } catch (_) { /* labelled unavailable below */ }
         if (ticket !== pictureTicket || !card.isConnected) return;
@@ -300,14 +309,15 @@
     if (ticket === pictureTicket) positionAtAnchor();
   }
 
-  function commit(name) {
+  function commit(name, instance = "main") {
     // Restoring raises the window it names; binding is closed first so the
-    // list's own focus rules never fight the restored window.
+    // list's own focus rules never fight the restored window. The identity
+    // is the (name, instance) pair, not the kind's main by default.
     const returnTarget = previousFocus;
     const select = options.onSelect;
     close({ returnFocus: false });
     if (select) { select(name); return; }
-    if (typeof restoreWindowBrowseEntry === "function" && !restoreWindowBrowseEntry(name)) {
+    if (typeof restoreWindowBrowseEntry === "function" && !restoreWindowBrowseEntry(name, instance)) {
       returnTarget?.focus?.({ preventScroll: true });
     }
   }
@@ -415,7 +425,7 @@
     previewEl.type = "button";
     previewEl.className = "window-browse-preview";
     previewEl.setAttribute("aria-label", label("window_preview_restore"));
-    previewEl.addEventListener("click", () => { const entry = visibleEntries()[cursor]; if (entry) commit(entry.name); });
+    previewEl.addEventListener("click", () => { const entry = visibleEntries()[cursor]; if (entry) commit(entry.name, entry.instance || "main"); });
     panelEl.append(searchEl, listEl, previewEl);
     panelEl.addEventListener("pointerenter", () => clearTimeout(leaveTimer));
     panelEl.addEventListener("pointerleave", () => hoverLeave());

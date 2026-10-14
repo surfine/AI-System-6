@@ -338,9 +338,12 @@
     // window, so restoring one cannot restore the other by accident.
     function addMiniwindow(win, container) {
       const title = applicationWindowTitle(win);
+      const cellKey = win.dataset.windowInstance ? `${win.dataset.window}:${win.dataset.windowInstance}` : (win.dataset.window || "");
       const node = tile(t("nextstep_restore", title),
-        () => window.AISystem6NextstepShell.restore(win), "document", `window:${win.dataset.window}`);
-      node.dataset.miniwindow = win.dataset.window;
+        () => window.AISystem6NextstepShell.restore(win), "document", `window:${cellKey}`);
+      // One instance, one cell: main keeps the bare kind name, another
+      // instance reads kind:instance.
+      node.dataset.miniwindow = cellKey;
       node.classList.add("is-miniwindow");
       const caption = document.createElement("span");
       caption.className = "nextstep-dock-tile-label";

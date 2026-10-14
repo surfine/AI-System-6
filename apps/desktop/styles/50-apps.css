@@ -2437,10 +2437,6 @@ body:not([data-theme="liquid-glass"]) .scrap-list button.is-multi-selected:not(.
   grid-column: 1 / -1;
 }
 
-#attach-scrap-to-assistant[hidden] {
-  display: none;
-}
-
 .small-muted {
   color: var(--shade-dark);
   font-size: 12px;

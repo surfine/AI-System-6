@@ -153,27 +153,11 @@ function wireAppEvents() {
     items[next].focus();
   });
 
-  clearButton.addEventListener("click", () => {
-    startNewClioTalkConversation();
-    promptInput.focus();
-  });
-
   composerSubmitButton.addEventListener("click", (event) => {
     if (composerSubmitButton.dataset.mode !== "stop") return;
     event.preventDefault();
     stopGeneration();
   });
-
-  retryButton.addEventListener("click", () => {
-    if (!lastUserText) {
-      setStatus(t("no_retry"));
-      return;
-    }
-  
-    submitUserText(lastUserText);
-  });
-
-  clipSelectionButton.addEventListener("click", clipAssistantSelection);
 
   scrapBodyInput.addEventListener("input", updateSelectedScrapMetadata);
 
@@ -411,25 +395,6 @@ function wireAppEvents() {
   });
 
   projectDiskUpButton?.addEventListener("click", openProjectFinderParentFolder);
-
-  documentsUpButton.addEventListener("click", () => {
-    const folder = getSelectedFolder();
-    selectedFolderId = folder?.parentId || "all";
-    selectedChatFileId = null;
-    selectedDocumentFolderId = null;
-    renderDocuments();
-  });
-
-  restoreTrashButton.addEventListener("click", () => {
-    const selected = getSelectedTrashItem();
-    const itemIndex = selected ? trashItems.indexOf(selected) : trashItems.findIndex(isInActiveProject);
-    const item = itemIndex === -1 ? null : trashItems[itemIndex];
-    if (!item) return;
-  
-    putAwayTrashItem(item);
-  });
-
-  emptyTrashButton.addEventListener("click", emptyActiveProjectTrash);
 
   document.querySelector("#trash-more-go")?.addEventListener("click", () => {
     if (typeof runTrashMoreAction === "function") runTrashMoreAction();
@@ -1398,7 +1363,7 @@ function wireAppEvents() {
     window.AISystem6NextstepShell?.wire(win);
     win.querySelectorAll(".title-bar").forEach((bar) => wireTitleBarChrome(bar));
 
-    win.querySelector(".close-box")?.addEventListener("click", () => closeWindow(win.dataset.window));
+    win.querySelector(".close-box")?.addEventListener("click", () => closeWindow(win.dataset.window, false, win.dataset.windowInstance));
 
     win.querySelector(".resize-box")?.addEventListener("click", () => {
       zoomWindow(win);

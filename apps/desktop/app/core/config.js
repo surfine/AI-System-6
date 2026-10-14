@@ -628,8 +628,14 @@ const ensureTimeMachineEngineModule = createLazyModuleLoader("AISystem6TimeMachi
 const ensureTimeMachineModule = createLazyModuleLoader("AISystem6TimeMachineLoaded", ["app/features/time-machine-engine.js", "app/features/time-machine.js"], false, ["styles.time-machine.css"]);
 const ensureHkrrReviewModule = createLazyModuleLoader("", ["app/features/hkrr-review.js"]);
 // The guest bridge: tool handlers, the approval dialog and the Chooser guest
-// list load together on the first guest call or when Chooser opens.
-const ensureGuestToolsModule = createLazyModuleLoader("AISystem6GuestTools", ["app/features/guest-tools.js"]);
+// list load together on the first guest call or when Chooser opens. The sentinel
+// tools it shares with the quick-draft family load with it too (see the note on
+// ensureQuickDraftModule below).
+const ensureGuestToolsModule = createLazyModuleLoader("AISystem6GuestTools", [
+  "app/core/adjustment-layers.js",
+  "app/core/protected-ranges.js",
+  "app/features/guest-tools.js",
+]);
 const ensureRebuildPackModule = createLazyModuleLoader("AISystem6RebuildPack", ["app/core/rebuild-pack.js"]);
 // The outbound half: the servers this desk asks, and the File Floppy landing
 // every answer takes. Chooser loads it; so does Searcher when the chosen
@@ -667,6 +673,14 @@ const ensureQuickDraftModule = createLazyModuleLoader("AISystem6QuickDraftLoaded
   "app/core/application-shell.js",
   "app/core/explanation-lens.js",
   "app/core/model-user-errors.js",
+  /* The family's two shared model halves: the adjustment-layer strength/mask
+     normalizers and the immutable-sentinel protection tools. Both were eager
+     with no eager consumer at all — measured 2026-10-14, while the
+     document-tab store's window dimension needed equal-value displacement —
+     18.0KB of boot payload that only these lazy modules referenced. They load
+     before text-compose.js and draft-desk.js, which consume them. */
+  "app/core/adjustment-layers.js",
+  "app/core/protected-ranges.js",
   "app/core/text-compose.js",
   "app/features/mingming-lens.js",
   "app/core/author-thesis-guidance.js",

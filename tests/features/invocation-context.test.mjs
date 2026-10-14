@@ -61,7 +61,7 @@ const sandbox = vm.createContext({
   sourceCitationForContextItem: (item, index) => `[S${index + 1}]`,
   contextSourceLabel: (item) => item.name, clipContextContent: (text) => text,
   contextContentHash: (text) => `hash:${text}`, finderLabelContextRulesSnapshot: () => ({ exclude: [] }),
-  scheduleRenderTasks: noop, renderClioTalkContextSpace: noop, renderClioTalkRunAssembly: noop,
+  scheduleRenderTasks: noop, renderClioTalkRunAssembly: noop,
   modelMessageContentReceipt: (content) => String(content), modelMessageContentIdentity: (content) => String(content),
   estimateTokenCount: (content) => Math.ceil(String(content).length / 4),
   clioRunHash: (text) => `hash:${text}`, clioProductHelpReceipt: () => [], t: (key) => key,

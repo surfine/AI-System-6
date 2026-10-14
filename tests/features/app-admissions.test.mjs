@@ -67,9 +67,13 @@ test.assert(
   source.includes("byCommand") && source.includes("if (!byCommand.has(command))"),
   "the table de-duplicates by command id before registering, so two windows may share one command",
 );
+// open-window-instance is the multi-instance identity layer's own verb (lazy
+// window-instances.js): it opens no kind by itself — the empty whitelist
+// refuses everything — so it is not an opener the table could own. Every other
+// hand-registered "open-" lazy command stays forbidden.
 test.assert(
-  !/registerLazyCommand\?\.\("open-/.test(actions),
-  "actions.js registers no lazy opener by hand: the table is the only place",
+  !/registerLazyCommand\?\.\("open-(?!window-instance")/.test(actions.replace("open-window-instance", "")),
+  "actions.js registers no lazy opener by hand: the table is the only place (the identity layer's verb excepted)",
 );
 test.assertIncludes(actions, "registerOpeners", "the boot hands the table's openers to the runtime");
 

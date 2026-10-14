@@ -3365,12 +3365,6 @@ body[data-selection-model="key-window"] .window[data-window]:not(.is-active) {
   white-space: nowrap;
 }
 
-.composer .composer-hidden-actions {
-  display: none;
-  flex: 0 1 auto;
-  min-width: 0;
-}
-
 .assistant-window .composer .composer-submit-button {
   display: inline-grid;
   width: 36px;
@@ -3874,8 +3868,7 @@ dialog[data-enter-default-wired="true"] .btn.default:not([data-loading="true"]):
 #teachtext-translate,
 #teachtext-download-bilingual,
 #reader-clip-translate-button,
-#toggle-scrap-translation,
-#download-scraps-bilingual {
+#toggle-scrap-translation {
   min-width: fit-content;
   max-width: 100%;
 }

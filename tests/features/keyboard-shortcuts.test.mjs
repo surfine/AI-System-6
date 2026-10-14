@@ -189,9 +189,37 @@ test.assertIncludes(actions, 'candidate.scope === "global"', "global shortcuts r
 test.assertIncludes(actions, 'candidate.scope.includes(shortcutAppId)', "application shortcuts resolve against the foreground app");
 const app = read("app.js");
 test.assertIncludes(app, "syncKeyboardShortcutLabels();", "language changes resync menu shortcut labels");
-test.assertIncludes(app, "renderKeyCapsShortcuts();", "language changes rerender Key Caps");
+// The grid renderer moved into the lazy Key Caps surface
+// (app/features/command-sheet.js): it is only on screen while that window is
+// open, so the boot bundle keeps the pointer and not the renderer. Same output
+// from the same registry — the assertion moved with the code rather than being
+// dropped, and the eager copy must not survive as a duplicate.
+test.assertIncludes(app, "window.AISystem6CommandSheet?.renderShortcutGrid?.();", "language changes rerender Key Caps through its own module");
+test.assertIncludes(read("app/features/command-sheet.js"), "keyboardShortcutRegistry.filter((shortcut) => shortcut.keyCaps)", "the grid renders from the shortcut registry");
+test.assertNotIncludes(actions, "function renderKeyCapsShortcuts", "and the eager copy is gone, not duplicated");
 test.assertIncludes(translationsEn, "physical keyboard", "English hint explains mobile keyboard requirements");
 test.assertIncludes(translationsZh, "实体键盘", "Chinese hint explains mobile keyboard requirements");
+
+// ...and the moved renderer really paints. A name check sees the call site; it
+// cannot see a grid that reads a stale table or paints nothing, which is the
+// only way this relocation could go wrong.
+await vmw.settleBoot();
+await vmw.run(`ensureLazySystemModule("app/features/command-sheet.js", "AISystem6CommandSheet")`);
+await vmw.settleBoot();
+vmw.run("window.AISystem6CommandSheet.renderShortcutGrid()");
+const grid = vmw.document.querySelector("#shortcut-grid");
+const keyCapsEntries = registry.filter((entry) => entry.keyCaps);
+// Each shortcut paints a pair: the key it answers to, then its label.
+const painted = [...grid.children];
+test.assert(
+  painted.length === keyCapsEntries.length * 2 && keyCapsEntries.length > 5,
+  `the lazy grid paints every keyCaps row of the real registry (${painted.length / 2} of ${keyCapsEntries.length})`,
+);
+const paintedKeys = painted.filter((_, index) => index % 2 === 0).map((node) => node.textContent);
+test.assert(
+  paintedKeys.includes("⌃⇥") && paintedKeys.includes("⌘W"),
+  `and prints the real key equivalents (${paintedKeys.slice(0, 4).join(", ")} …)`,
+);
 
 test.finish();
 process.exit(0);

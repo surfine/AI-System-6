@@ -3108,7 +3108,7 @@ input[type="radio"] {
       .cmf-studio-window,
       .liquid-cover-window,
       .rebuild-flow-window
-    ) .button-row:not(.composer-hidden-actions) {
+    ) .button-row {
       flex-direction: column;
       align-items: stretch;
       flex-wrap: nowrap;
@@ -3140,7 +3140,7 @@ input[type="radio"] {
       .cmf-studio-window,
       .liquid-cover-window,
       .rebuild-flow-window
-    ) .button-row:not(.composer-hidden-actions) > .btn.default {
+    ) .button-row > .btn.default {
       width: 100%;
       min-height: var(--touch-primary-min-height);
       justify-content: center;
@@ -3179,7 +3179,6 @@ input[type="radio"] {
       min-height: var(--touch-primary-min-height);
     }
 
-    .documents-toolbar #documents-up,
     .documents-toolbar #new-folder {
       min-height: var(--touch-primary-min-height);
     }
@@ -3535,7 +3534,7 @@ input[type="radio"] {
       .time-machine-window,
       .soundscape-window,
       .dictionary-window
-    ) .button-row:not(.composer-hidden-actions) {
+    ) .button-row {
       flex-direction: column;
       align-items: stretch;
       flex-wrap: nowrap;
@@ -3579,7 +3578,7 @@ input[type="radio"] {
       .time-machine-window,
       .soundscape-window,
       .dictionary-window
-    ) .button-row:not(.composer-hidden-actions) > .btn.default {
+    ) .button-row > .btn.default {
       width: 100%;
       min-height: var(--touch-primary-min-height);
       justify-content: center;

@@ -266,6 +266,25 @@ function createDomShim(contextRef) {
   // behaves like one: it can be detached, it is not an element, and it never
   // reaches `children` as a bare primitive -- which a later `replaceChildren`
   // would then try to hang a `parentElement` on, throwing in strict mode.
+  // A fragment is a container, not a node: real insertion splices its CHILDREN
+  // into the parent, and the fragment itself is left empty. This shim used to
+  // answer createDocumentFragment() with a sink, so every renderer built the
+  // real way — collect into a fragment, then `container.replaceChildren(fragment)`
+  // — painted into a void and the container came back with exactly one child.
+  // A test could then only prove the call had run, never what it produced: the
+  // Key Caps shortcut grid was invisible to its own contract for that reason.
+  // Insertion sites call insertablesOf() rather than asInsertable() so a
+  // fragment splices like the real thing; its own append() collects too.
+  function makeFragment() {
+    return {
+      nodeType: 11,
+      children: [],
+      append(...nodes) { insertablesOf(nodes).forEach((node) => this.children.push(node)); },
+      appendChild(node) { const [first] = insertablesOf([node]); this.children.push(first); return first; },
+      replaceChildren(...nodes) { this.children = insertablesOf(nodes); },
+    };
+  }
+
   function asInsertable(node) {
     if (typeof node === "string" || typeof node === "number") {
       return { nodeType: 3, data: String(node), textContent: String(node), parentElement: null, parentNode: null, children: [] };
@@ -273,12 +292,19 @@ function createDomShim(contextRef) {
     return node;
   }
 
+  function insertablesOf(nodes) {
+    return nodes.flatMap((node) => {
+      const item = asInsertable(node);
+      return item && item.nodeType === 11 ? insertablesOf(item.children) : [item];
+    });
+  }
+
   function insertSiblings(reference, nodes, offset) {
     const parent = reference?.parentNode;
     if (!parent) return;
     let at = parent.children.indexOf(reference) + offset;
     if (at < 0) at = parent.children.length;
-    nodes.map(asInsertable).forEach((node) => {
+    insertablesOf(nodes).forEach((node) => {
       parent.children.splice(at, 0, node);
       adopt(parent, node);
       at += 1;
@@ -467,8 +493,8 @@ function createDomShim(contextRef) {
       // DOM insertion promotes into the queryable registry (see `promote`
       // above) exactly when — and only when — the parent is itself already
       // reachable from a tracked root.
-      append(...nodes) { nodes.map(asInsertable).forEach((node) => { this.children.push(node); adopt(this, node); }); },
-      prepend(...nodes) { nodes.map(asInsertable).forEach((node) => { this.children.unshift(node); adopt(this, node); }); },
+      append(...nodes) { insertablesOf(nodes).forEach((node) => { this.children.push(node); adopt(this, node); }); },
+      prepend(...nodes) { insertablesOf(nodes).forEach((node) => { this.children.unshift(node); adopt(this, node); }); },
       // Real insertion on both sides, for the same reason append() is real:
       // app/core/nextstep-shell.js moves the close box with `close.before(marker)`
       // and app/core/window-minimize.js puts the minimize lamp next to Close with
@@ -505,7 +531,7 @@ function createDomShim(contextRef) {
       replaceChildren(...nodes) {
         [...this.children].forEach(detach);
         this.children = [];
-        nodes.map(asInsertable).forEach((node) => { this.children.push(node); adopt(this, node); });
+        insertablesOf(nodes).forEach((node) => { this.children.push(node); adopt(this, node); });
       },
       replaceWith: () => {},
       cloneNode: () => makeElement(tag, id),
@@ -672,17 +698,22 @@ function createDomShim(contextRef) {
     const cached = compoundCache.get(key);
     if (cached) return cached;
     let rest = String(text).trim();
+    // :not(...) is stripped BEFORE the attribute pass: an attribute selector
+    // inside a :not belongs to the inner compound, and stripping attrs first
+    // would hoist it into the outer one — turning "element without
+    // data-window-instance" into "element WITH it" (found 2026-10-13 when
+    // getWindow's main-instance selector answered null for every main).
+    const nots = [];
+    rest = rest.replace(/:not\(([^()]*)\)/g, (_, inner) => {
+      inner.split(",").forEach((part) => { if (part.trim()) nots.push(parseCompound(part.trim())); });
+      return "";
+    });
     const attrs = [];
     rest = rest.replace(/\[([\w:-]+)\s*(?:([~^$*|]?=)\s*(?:"([^"]*)"|'([^']*)'|([^\]]*)))?\]/g, (_, attr, op, dq, sq, bare) => {
       const value = dq ?? sq ?? (bare === undefined ? undefined : bare.trim());
       // The dataset key is worked out here, once for each distinct selector,
       // rather than for every element the matcher compares.
       attrs.push({ attr, op: op || null, value, datasetKey: attr.startsWith("data-") ? dataAttrKey(attr) : null });
-      return "";
-    });
-    const nots = [];
-    rest = rest.replace(/:not\(([^()]*)\)/g, (_, inner) => {
-      inner.split(",").forEach((part) => { if (part.trim()) nots.push(parseCompound(part.trim())); });
       return "";
     });
     const pseudos = [];
@@ -1091,7 +1122,7 @@ function createDomShim(contextRef) {
     // SVG elements are ordinary shim elements: this shim has no namespaces,
     // and nothing on these paths reads one back.
     createElementNS: (_ns, tag) => makeElement(tag),
-    createDocumentFragment: () => ({ append: () => {}, appendChild: () => {}, children: [] }),
+    createDocumentFragment: makeFragment,
     createTextNode: (text) => ({ nodeType: 3, textContent: String(text) }),
     ...createEventTarget(),
   };

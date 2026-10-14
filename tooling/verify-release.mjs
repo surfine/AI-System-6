@@ -493,10 +493,11 @@ if (appDataSource.includes('scrapbook: "Scrapbook"') && !appDataSource.includes(
 }
 
 const indexSource = readFileSync(join(root, "apps/desktop/index.html"), "utf8");
+// Scrapbook's bilingual export moved out of its own hidden button and into the
+// multi-select ("Bilingual .md" + Do Selected), so it is no longer an id here.
 [
   "reader-clip-translate-button",
   "toggle-scrap-translation",
-  "download-scraps-bilingual",
   "clipboard-translate",
 ].forEach((id) => {
   if (indexSource.includes(`id="${id}"`)) ok(`translation control #${id}`);
