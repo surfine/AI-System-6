@@ -21,6 +21,8 @@ jobs:
         run: npm run lint
       - name: Build the browser bundle
         run: npm run build
+      - name: CSS budgets and cascade-layer conformance
+        run: npm run verify:css
       - name: Source contract tests
         run: npm run verify:contracts
       - name: Focused unit tests

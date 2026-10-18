@@ -223,4 +223,11 @@ test.assertMatches(worker, /refreshShellDocument\(\)\.then\([\s\S]{0,200}shell-r
 test.assertIncludes(worker, 'if (!isCacheableResponse(response)) throw new Error(',
   "while a deployment that cannot answer leaves the shell the device already has");
 
+// D2: an update never reloads under the writer's fingers, and the desk's
+// record is flushed before any reload.
+test.assertMatches(source, /if \(writerIsBusy\(\)\) \{[\s\S]*?visibilityState === "hidden"\) void reloadAfterFlush\(\);[\s\S]*?return "deferred";/,
+  "a writer who is typing keeps the page until it is put away");
+test.assertMatches(source, /async function reloadAfterFlush\(\) \{[\s\S]*?flushWorkingSessionCommit[\s\S]*?saveDeskState[\s\S]*?global\.location\.reload\(\);/,
+  "every update reload flushes the Working Session and the desk first");
+
 test.finish();

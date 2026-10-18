@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/city-simulator/README.md -->
-<!-- source-sha256: 5afe7e0c7a6586180811200f9f18e5a20a4f66e87acdb4a778ceff76ad018db4 -->
+<!-- source-sha256: a9aae5fb0292ed6e2caa6081c9085dc16664e39a27d2bc29acda25e85c5fcd92 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -82,7 +82,7 @@ Phase 0 不实现玩法、地图渲染、窗口、持久化 store 或依赖。
   缓存，以及确定性的原创图集。渲染器消费纯 `buildRenderSnapshot`；指针、
   键盘与触控仍然只产生命令。由 `tests/features/bonsai-renderer.test.mjs`、
   `tests/features/bonsai-atlas.test.mjs` 与真实浏览器
-  `verify:bonsai-acceptance` 门禁钉死。
+  `audit:bonsai-acceptance` 门禁钉死。
 - 图集家族新增夜间变体集（M5-2c）：每一座生长建筑、设施与目录特殊建筑
   都获得一帧调暗并亮起窗户的夜间图，Canvas 渲染器的昼夜门禁在黄昏换用
   这些帧，并把记录的窗位坐标在夜景层上画成亮窗——SimCity 2000 的夜间
@@ -161,13 +161,13 @@ Phase 0 不实现玩法、地图渲染、窗口、持久化 store 或依赖。
     理解每个工具命令，并要求每个可达的 `bonsai_*` 键在两种语言里都存在。
     自动预算上线：默认关闭，每年一月停表并打开预算面板；开启后沿用上一年的
     预算线继续。从菜单选择的灾害现在会在状态行报告。
-  - 两小时不卡壳：`npm run verify:bonsai-playthrough` 在无头核心上运行一个
+  - 两小时不卡壳：`npm run audit:bonsai-playthrough` 在无头核心上运行一个
     确定性的脚本市长（路网格、按需求分区、电厂与水厂、服务与交通、债券、
     法令、每十年一次灾害、奖励），遇到停滞、奖励未放置、报纸故事缺失或
     连续十二个月赤字即拒绝。它第一次运行就发现核心在振荡（一座 6 000 人的
     有服务城市两个月内跌到 16 人）；现在供给过剩必须持续三个结算月，正常
     运转的建筑才会衰退。市长在游戏年 1909 达到 50 000 人，在 128 格地图上
-    稳定在约 68 000 人。它是一个安静的发布门禁。
+    稳定在约 68 000 人。它是一个按需运行的审计（`npm run audit:bonsai-playthrough`）。
   - SC2K 对等：煤电厂占 4×4（存档规则 3.1，旧电厂保持 2×2，查询气球会
     说明），`sc2DerivedGrids` 读出 64×64 / 32×32 网格，EQ/LE 法令挂钩确认
     已生效，[SC2-COMPAT.md](SC2-COMPAT.zh-CN.md) 带上所有者的认证运行表。
@@ -266,7 +266,7 @@ Phase 0 不实现玩法、地图渲染、窗口、持久化 store 或依赖。
 npm run verify:quick -- --feature city-simulator-foundation --docs --no-build
 npm run verify:feature -- city-simulator-foundation
 npm run verify:docs
-npm run verify:bonsai-playthrough   # 脚本市长的两小时试玩（安静发布门禁）
+npm run audit:bonsai-playthrough   # 脚本市长的两小时试玩（按需审计）
 ```
 
 仓库级发布门禁见 [DEVELOPMENT.md](../DEVELOPMENT.zh-CN.md)。

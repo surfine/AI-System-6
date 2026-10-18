@@ -62,6 +62,7 @@ const SCHEMES = {
   rootline: scheme("#66aa99", "#ccffdd", "#337766"),
   joyride: scheme("#cc6655", "#ffccaa", "#883333"),
   mingwen: scheme("#ffdd88", "#ffffcc", "#bb9933"),
+  clioWrite: scheme("#ffffcc", "#ffffee", "#99aa66"),
   lightroom: scheme("#ffcc99", "#ffeecc", "#cc6633"),
   imagePromptStudio: scheme("#ffccff", "#ffeeff", "#993399"),
   liquidCover: scheme("#99ccff", "#cceeff", "#3366cc"),

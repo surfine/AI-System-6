@@ -785,7 +785,7 @@ function handleClioStageKeydown(event) {
   if (!clioStageState.parsed || !["slide", "cue"].includes(clioStageState.mode)) return;
   const win = getWindow("clioStage");
   if (!win || win.classList.contains("is-hidden") || !win.classList.contains("is-active")) return;
-  if (getActiveEditableElement()) return;
+  if (getActiveEditableElement() || window.AISystem6ClioStageNative?.current?.()) return;
   if (event.key === "ArrowLeft") {
     event.preventDefault();
     showClioStageSlide(clioStageState.index - 1);
@@ -1006,7 +1006,8 @@ function clioStageStepHistory(command) {
 const undoClioStage = () => clioStageStepHistory("undo");
 const redoClioStage = () => clioStageStepHistory("redo");
 
-registerEditHistory("clioStage", () => (clioStageState.source?.streaming || !clioStageState.history ? null : {
+// A mounted pptx (clio-stage-native.js) owns the window: Edit › Undo is its adapter's history.
+registerEditHistory("clioStage", () => (window.AISystem6ClioStageNative?.current?.() ? window.AISystem6ClioStageNative.editHistory?.() || null : clioStageState.source?.streaming || !clioStageState.history ? null : {
   undo: undoClioStage,
   redo: redoClioStage,
   canUndo: clioStageCanUndo,
@@ -2249,16 +2250,12 @@ function clioStageCommandAvailable(action) {
   if (action === "open-clio-stage") return true;
   const activeWindow = document.querySelector(".window.is-active");
   if (activeWindow?.dataset.window !== "clioStage") return false;
-  // "#clio-stage-docmap" is the one button here that also carries its own
-  // data-action, so the generic menu-availability sweep in window-manager.js
-  // toggles its "is-disabled" class from THIS function's own return value
-  // every updateMenuState() cycle. Reading that class back here would close
-  // a loop on itself: once a session starts with no deck loaded, the class
-  // starts true, this function forever sees it as true, and the sweep keeps
-  // reapplying it — the button never recovers even after syncDocMapEntryButton
-  // correctly clears the .disabled property once a real deck is loaded. Only
-  // the DOM-native .disabled/.hidden are load-bearing; the class is an output
-  // of this computation, not an input to it.
+  // The native surface owns the window: no Markdown-deck command may act on the hidden deck.
+  if (window.AISystem6ClioStageNative?.current?.()) return false;
+  // "#clio-stage-docmap" also carries its own data-action, so the menu sweep in
+  // window-manager.js toggles its "is-disabled" class from THIS return value
+  // every cycle. Never read that class back here (it would loop on itself);
+  // only the DOM-native .disabled/.hidden are inputs.
   const controlEnabled = (selector) => {
     const control = document.querySelector(selector);
     return !!control && !control.disabled && !control.hidden;

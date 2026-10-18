@@ -290,7 +290,21 @@ function wordTableRawRowWidths(raw) {
     .map((line) => line.trim())
     .filter((line) => line.includes("|"))
     .slice(2)
-    .map((line) => line.replace(/^\|/, "").replace(/\|$/, "").split(/(?<!\\)\|/).length);
+    .map((line) => countTableCells(line.replace(/^\|/, "").replace(/\|$/, "")));
+}
+
+// Cells separated by an unescaped pipe. Scanned rather than split on a
+// lookbehind: older WebKit (macOS 12) rejects one at parse time.
+function countTableCells(line) {
+  let cells = 1;
+  for (let index = 0; index < line.length; index += 1) {
+    if (line[index] === "\\") {
+      index += 1;
+    } else if (line[index] === "|") {
+      cells += 1;
+    }
+  }
+  return cells;
 }
 
 /**

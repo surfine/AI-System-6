@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const outDir = join(root, "history");
-const ORIGIN = "https://aisystem6.pages.dev";
+const ORIGIN = "https://aisystem6.aaronlau.me";
 const LIVE = "https://system6.aaronlau.me";
 const VERSION = "20260923a";
 

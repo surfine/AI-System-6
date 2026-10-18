@@ -23,11 +23,18 @@ body[data-theme]:not(.use-modern-fonts) {
 html[data-lineage~="platinum"],
 body[data-lineage~="platinum"] {
   /* Apple names Charcoal as the default system font. The face remains
-     local-only; Geneva is the historically adjacent installed fallback. */
+     local-only; Geneva, installed only on a Mac, now precedes the bundled
+     Asap, so a Mac draws the era's own face and every other platform keeps
+     Asap. The window title keeps the Asap metrics it was measured with
+     (see the Platinum .title-bar h1/h2 rule). */
   /* 华文宋体: the Simplified face Mac OS 8.5/9 shipped with the Chinese
      Language Kit. PingFang did not exist until El Capitan in 2015. */
-  --theme-ui-font: Charcoal, "Charcoal CY", "Platinum Asap", Geneva, "ChicagoFLF", Chicago, "STSong", "Songti SC", "SimSun", serif;
-  --theme-title-font: var(--theme-ui-font);
+  --theme-ui-font: Charcoal, "Charcoal CY", Geneva, "Platinum Asap", "ChicagoFLF", Chicago, "STSong", "Songti SC", "SimSun", serif;
+  /* Bold chrome (push buttons, popups, menu titles, window titles) keeps a
+     face that has a bold: Chromium on macOS has none for Geneva, and the real
+     machine's chrome is bold Charcoal (C3). Regular-weight text takes the
+     Geneva-first stack above. */
+  --theme-title-font: Charcoal, "Charcoal CY", "Platinum Asap", var(--theme-ui-font);
   /* Platinum paints its native popup arrow in the wrapper well. */
   --select-wrapper-arrow-display: block;
   --system-readable-min: 12px;
@@ -557,7 +564,10 @@ body[data-lineage~="platinum"] {
   --menu-panel-padding: 2px 0;
   --menu-item-min-height: 18px;
   --menu-item-padding: 1px 3px 1px 21px;
-  --menu-item-font-family: var(--theme-ui-font);
+  /* Menu rows are bold Charcoal on the real machine; Chromium on macOS has no
+     bold for Geneva, so with Geneva first (A2) every row fell to regular
+     weight. Rows keep a face that has a bold, as the window title does (C3). */
+  --menu-item-font-family: Charcoal, "Charcoal CY", "Platinum Asap", var(--theme-ui-font);
   --menu-item-font-size: var(--system-control-size);
   --menu-item-line-height: 16px;
   --menu-item-disabled-bg: #dddddd;
@@ -707,33 +717,34 @@ body[data-lineage~="platinum"] {
      rule. Platinum's strip clips, so the rail has to carry this floor or the
      settings grid can hand the row less than its tabs need. */
   --control-chooser-min-height: 29px;
-  /* Control Strip — Platinum is the strip's native era (Mac OS 8/9): raised
-     #DDD body with an outer-end half-capsule tab, ribbed grip, and each
-     module as a small bevel button that presses to an inset. Approximation
-     from Mac OS 9 captures (512pixels / GUIdebook), not a resource decode. */
+  /* Control Strip, measured on Mac OS 9.0.4 (exe study 2026-10-16): square
+     #c0c0c0 body in a black frame, each module a full-height tile between
+     1px black separators, lit white one pixel in from its top-left and shaded
+     #a0a0a0 then #808080 at its bottom-right. No gradients, no capsule. The
+     pressed tile inverts the bevel (approximation: no pressed capture). */
   --control-strip-thickness: 24px;
-  --control-strip-bg: #dddddd;
-  --control-strip-border: 1px solid #333333;
-  --control-strip-divider: 1px solid transparent;
-  --control-strip-radius: 4px 12px 12px 4px;
-  --control-strip-radius-mirrored: 12px 4px 4px 12px;
-  --control-strip-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #9e9e9e, 1px 2px 0 rgba(0, 0, 0, 0.35);
-  --control-strip-tile-bg: linear-gradient(#f4f4f4, #c9c9c9);
-  --control-strip-tile-radius: 3px;
-  --control-strip-tile-shadow: inset 0 0 0 1px #7a7a7a, inset 1px 1px 0 rgba(255, 255, 255, 0.85), inset -1px -1px 0 #9a9a9a;
-  --control-strip-tile-margin: 2px 1px;
-  --control-strip-tile-height: calc(var(--control-strip-thickness) - 6px);
-  --control-strip-tile-hover-shadow: inset 0 0 0 1px #6f6f6f, inset 1px 1px 0 #ffffff, inset -1px -1px 0 #9a9a9a;
-  --control-strip-hover-bg: rgba(255, 255, 255, 0.55);
-  --control-strip-hover-fg: #111111;
+  --control-strip-bg: #c0c0c0;
+  --control-strip-border: 1px solid #000000;
+  --control-strip-divider: 1px solid #000000;
+  --control-strip-radius: 0;
+  --control-strip-radius-mirrored: 0;
+  --control-strip-shadow: none;
+  --control-strip-tile-bg: #c0c0c0;
+  --control-strip-tile-radius: 0;
+  --control-strip-tile-shadow: inset 1px 1px #c0c0c0, inset 2px 2px #ffffff, inset -1px -1px #808080, inset -2px -2px #a0a0a0;
+  --control-strip-tile-margin: 0;
+  --control-strip-tile-height: calc(var(--control-strip-thickness) - 2px);
+  --control-strip-tile-hover-shadow: var(--control-strip-tile-shadow);
+  --control-strip-hover-bg: #c0c0c0;
+  --control-strip-hover-fg: #000000;
   --control-strip-hover-shadow: none;
-  --control-strip-active-bg: linear-gradient(#bfbfbf, #d8d8d8);
-  --control-strip-active-fg: #111111;
-  --control-strip-active-shadow: inset 0 0 0 1px #6f6f6f, inset 1px 1px 0 rgba(0, 0, 0, 0.35);
+  --control-strip-active-bg: #a0a0a0;
+  --control-strip-active-fg: #000000;
+  --control-strip-active-shadow: inset 1px 1px #808080, inset -1px -1px #ffffff;
   --control-strip-gauge: #333333;
   --control-strip-gauge-bg: #ffffff;
   --control-strip-grip-inset: 5px 0;
-  --control-strip-grip: repeating-linear-gradient(to bottom, #f6f6f6 0 1px, #8e8e8e 1px 2px, rgba(0, 0, 0, 0) 2px 4px) 50% 50% / 10px 100% no-repeat;
+  --control-strip-grip: repeating-linear-gradient(to bottom, #ffffff 0 1px, #555555 1px 2px, transparent 2px 4px) 50% 50% / 6px 100% no-repeat;
 
   /* P01: native 07, every tab 21 rows with the baseline at y121, #ddd between
      tab tops, a 4-row rounded corner then a 1px step every 3 rows. The native-cut
@@ -1819,6 +1830,7 @@ body[data-lineage~="platinum"] .title-bar:not(.spine-title-row) {
 }
 
 body[data-lineage~="platinum"] .title-bar :is(h1, h2) {
+  --title-font: Charcoal, "Charcoal CY", "Platinum Asap", var(--theme-ui-font);
   padding-inline: 4px;
   font-weight: 700;
   font-variation-settings: "wdth" 123;
@@ -1933,7 +1945,7 @@ body[data-lineage~="platinum"] :is(select, .system-select-button) {
   background-color: #dddddd;
   background-image: none;
   box-shadow: inset 1px 1px #ffffff, inset -1px -1px #aaaaaa;
-  font-family: var(--theme-ui-font);
+  font-family: var(--theme-title-font);
   font-size: var(--system-control-size);
   font-weight: 700;
   line-height: 16px;

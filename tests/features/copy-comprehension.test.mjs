@@ -36,8 +36,8 @@ test.assertIncludes(dictionary, "built-in file cabinet is called IndexedDB", "Sy
 test.assertIncludes(dictionary, "Appearing on screen and being saved are different states", "System Help separates visible model output from saved work");
 test.assertIncludes(dictionary, "它不能自动证明论断为真", "Fact Check keeps its accuracy boundary");
 
-test.assertIncludes(en, "<strong>Hi. I’m Clio, the conversation app.</strong>", "English introduction answers what it is before touring features");
-test.assertIncludes(zh, "你好，我是 Clio，这张桌面上的对话应用。", "Chinese introduction answers what it is before touring features");
+test.assertIncludes(en, 'about_first_tagline: "A writing desk that protects your own language.', "English introduction answers what it is before touring features");
+test.assertIncludes(zh, 'about_first_tagline: "一张保护你自己语言的写作桌。', "Chinese introduction answers what it is before touring features");
 test.assertNotIncludes(en, "It reads, it asks", "the system is not presented as an all-owning assistant");
 test.assertNotIncludes(zh, "它会读、会问", "中文不把整张桌面拟人成万能助手");
 test.assertIncludes(en, "The current model connection did not respond", "generic model errors stay provider-neutral");

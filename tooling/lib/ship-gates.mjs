@@ -1,201 +1,45 @@
-// The gates a release must pass, declared once: eight that drive a browser and
-// one CPU-only playthrough.
+// The gates a release must pass, declared once.
 //
-// verify-ship.mjs runs them as a queue; verify-gate.mjs runs one of them during
-// development and banks the receipt. Both read this list, so a developer and a
-// release always speak about the same gate with the same name and the same
-// command.
+// Three, all deterministic, all unattended, together about five minutes:
 //
-// Which lane each gate runs in is `quiet` below, and the plan built from this
-// list is tooling/lib/gate-lanes.mjs. One list, one plan, two callers.
+//   static-smoke           one real Chromium boot of the desk
+//   cascade-ledger-desktop the winning CSS rule of every cell, desktop viewport
+//   cascade-ledger-phone   the same, phone viewport
+//
+// They compare declared rules and computed values, never pixels, so a machine's
+// fonts, compositor and load cannot change a verdict. The pixel appearance
+// nets, the Theme Lab regression, the device matrix, the eight-stop walk and
+// the Bonsai runs are audits a person runs on demand (`npm run audit:*`);
+// internal/operations/RELEASE.md says what each one checked and why it left
+// the gate.
+//
+// tooling/verify-ship.mjs runs this list. The build happens once before it
+// (verify:release in a release, `npm run build:app` by hand), so every gate
+// here passes --no-build or boots the already-built desk.
 
 export const SHIP_REQUIRED_CHECKS = Object.freeze([
-  "theme-lab-regression",
-  "appearance-real-apps",
-  "bonsai-acceptance",
-  "bonsai-playthrough",
-  "bonsai-sim-cost",
-  "eight-stop-walk",
-  "appearance-phase5",
-  "appearance-snapshot",
-  "appearance-token-tables",
-  "device-matrix",
-  "display-corners",
+  "static-smoke",
+  "cascade-ledger-desktop",
+  "cascade-ledger-phone",
 ]);
 
-/**
- * Two properties decide when a gate may run, and they are the gate's own, not
- * the scheduler's guesswork:
- *
- * `quiet` — the gate's verdict depends on this machine being quiet. Pixels are
- * the common case (a concurrent backdrop-filter is not reproducible), and a
- * clock is the other one: a walk that waits for a window to appear times out on
- * a busy machine. A quiet gate runs alone, and the reason is written on it.
- *
- * `costHintMs` — the last measured wall clock, used only to order the queue.
- * A wrong hint costs ordering, never correctness.
- *
- * The queue then puts the cheap gates in front of the expensive ones, so a
- * release that is going to fail says so in seconds instead of minutes.
- *
- * The hints below were re-measured on a real release run on 2026-09-03 and are
- * within a second or two of what that run spent, apart from the pixel net —
- * see its entry.
- */
-
-/**
- * Which lane a gate belongs to decides WHEN it runs, not whether it matters.
- *
- * `release` — the fast half runs on every release: about two minutes together.
- * They are the checks that answer "did this change alter what any era looks
- * like or how a control behaves": the token/geometry table, the era
- * propagation sweep, the Theme Lab's six era screenshots, and the 74-control
- * pass.
- *
- * `batch` — the expensive half runs on demand and nightly: the 37-cell pixel
- * net, the phone matrix, the two Bonsai runs and the eight-stop walk, about
- * fourteen minutes together. They are not weaker checks; they are the ones
- * whose evidence a writer can afford to wait for, and whose cost made every
- * release a fifteen-minute appointment.
- *
- * The release report NAMES every deferred gate and the release receipt records
- * that it was deferred, so nobody can read a fast release as a full one. Add
- * `--batch` to a prepare, or run `npm run verify:gate -- --all --release-stamp`,
- * when the full set is the point.
- */
-export const BATCH_LANE = "batch";
-export const RELEASE_LANE = "release";
 export const SHIP_GATES = Object.freeze([
   {
-    // The fast half of the collapsed matrix: the controls-tier cells the pixel
-    // net no longer renders for the four middle eras are held as computed
-    // token/geometry deltas against Classic instead of screenshots. It drops a
-    // probe it measures as unstable, so it stays quiet to keep its coverage.
-    name: "appearance-token-tables",
-    args: ["tooling/appearance-token-check.mjs", "--verify"],
-    quiet: true,
-    costHintMs: 8_000,
+    // One engine on purpose. By itself the smoke also boots WebKit, whose
+    // local-model probe of 127.0.0.1:1234 fails its CORS check whenever LM
+    // Studio is running on the machine (seen 2026-10-15): a verdict about the
+    // machine, not the desk. `npm run test:static-smoke` still runs both.
+    name: "static-smoke",
+    args: ["tests/e2e/static-only-smoke.mjs"],
+    env: { AISYSTEM6_STATIC_ENGINE: "chromium" },
   },
   {
-    // Who owns a corner: the display, or the era. The phone shapes are what
-    // make this a measurement rather than a reading of the stylesheet — the
-    // surface that takes the display's curve is the one whose box reaches the
-    // screen edge, and which boxes do that depends on the shape and the insets.
-    name: "display-corners",
-    args: ["tooling/verify-display-corners.mjs"],
-    lane: "batch",
-    quiet: true,
-    costHintMs: 60_000,
+    name: "cascade-ledger-desktop",
+    args: ["tooling/cascade-ledger.mjs", "--verify", "--no-build"],
   },
   {
-    // Geometry and reachability on a phone, at three real device sizes and in
-    // both orientations. It photographs nothing, so another browser beside it
-    // changes the clock and not the verdict.
-    name: "device-matrix",
-    args: ["tooling/verify-device-matrix.mjs"],
-    lane: "batch",
-    // It photographs nothing and asserts no clock, so a neighbour once seemed
-    // free. Measured 2026-09-15, beside the acceptance gate: one cell reported a
-    // window that never opened (`iphone-duo-inner-landscape findChange opens
-    // 0x0`), and the same cell passes on its own. The matrix carries its own
-    // parallelism inside one gate (four cells, each with its own context) and
-    // that is the whole of its budget; the lane stays alone.
-    quiet: true,
-    // Re-measured 2026-09-15, when the matrix stopped measuring one cell at a
-    // time: nine cells, four at a time, is three waves of about 85-95s plus the
-    // desk cells. The old one-at-a-time run cost 1055_000 here.
-    costHintMs: 360_000,
-  },
-  {
-    name: "appearance-real-apps",
-    args: ["tooling/verify-appearance-app-coverage.mjs"],
-    quiet: true,
-    costHintMs: 25_000,
-  },
-  {
-    name: "theme-lab-regression",
-    args: ["tooling/theme-lab-snapshot.mjs", "--verify"],
-    quiet: true,
-    costHintMs: 26_000,
-  },
-  {
-    name: "appearance-phase5",
-    args: ["tooling/verify-appearance-phase5.mjs"],
-    quiet: true,
-    costHintMs: 27_000,
-  },
-  {
-    // The executable form of 「两小时试玩不卡壳」: a scripted mayor plays the
-    // headless core to the population target with disasters, bonds,
-    // ordinances, rewards, and the newspaper, and a stall is a refusal.
-    // No browser; CPU only, so it runs alone to keep its clock honest.
-    name: "bonsai-playthrough",
-    args: ["tooling/play-bonsai-two-hours.mjs", "--quiet"],
-    lane: "batch",
-    quiet: true,
-    costHintMs: 90_000,
-  },
-  {
-    // Tick duration is a wall-clock budget, so competing work must not share
-    // this measurement. Keep the original 0.5ms / 15ms limits in the probe.
-    name: "bonsai-sim-cost",
-    args: ["tooling/probe-bonsai-sim-cost.mjs"],
-    lane: "batch",
-    quiet: true,
-    costHintMs: 4_000,
-  },
-  {
-    // Behaviour AND the clock: twelve browser scenarios that assert what the
-    // game does, and hold the frame rate and the long-task budget while they do
-    // it. So it cannot share the machine — see the lane note above `quiet`.
-    // Measured 2026-09-15: beside the parallel phone matrix it threw on
-    // `classic-zh-phone` for a 150ms interaction long task, which is a
-    // measurement of the four browsers painting next to it rather than of the
-    // game. Alone it passes with the floors holding (5th-percentile 46.9-57.8
-    // against floors of 42-55).
-    //
-    // It runs on the browser's own rasteriser rather than SwiftShader: the
-    // scenarios, the FPS floors and the long-task contracts are unchanged, and
-    // the gate's summary records which graphics path ran. Forcing software cost
-    // a 128x128 city a sixty-second paint here (measured 2026-09-15) — a fact
-    // about the CPU rasteriser, not about the game, since nobody plays sixteen
-    // thousand tiles through one. On hardware all twelve scenarios pass.
-    name: "bonsai-acceptance",
-    args: ["tooling/verify-bonsai-acceptance.mjs", "--hardware"],
-    lane: "batch",
-    quiet: true,
-    costHintMs: 90_000,
-  },
-  {
-    // The eight-stop live walk: a real browser clicks through Project Hard
-    // Disk -> File Floppy -> Question Sheet -> Outline -> Section Drafts ->
-    // Manuscript -> Review Desk -> Project CD on a clean profile, plus the
-    // DTK demo disk restored through the real import path. A release cannot
-    // proceed without this passing — see internal/operations/RELEASE.md.
-    // It asserts what is on screen, never how it is painted — but it asserts it
-    // through waits, and a machine carrying three other browsers does not
-    // answer them in time. Measured 2026-09-15: alongside the parallel phone
-    // matrix and the acceptance gate, each stop took 13-20s instead of 4-7s and
-    // the Project CD export never landed before its 15s deadline. Alone, the
-    // same run walks the whole route in 162s and passes. So it runs alone.
-    name: "eight-stop-walk",
-    args: ["tooling/verify-walk.mjs"],
-    lane: "batch",
-    quiet: true,
-    costHintMs: 118_000,
-  },
-  {
-    // 90 s, measured on a real release run and matching the ~90 s the 35-cell
-    // net is documented to take. The hint said 360_000 — what the net cost
-    // before the four middle eras collapsed into the token table beside it. A
-    // stale hint costs ordering, never correctness; but ordering IS the
-    // fail-fast profile, and a gate believed to cost four times its real price
-    // was held behind every cheaper refusal for no gain.
-    name: "appearance-snapshot",
-    args: ["tooling/appearance-snapshot.mjs", "--verify"],
-    lane: "batch",
-    quiet: true,
-    costHintMs: 90_000,
+    name: "cascade-ledger-phone",
+    args: ["tooling/cascade-ledger.mjs", "--verify", "--viewport", "390x844", "--no-build"],
   },
 ]);
 
@@ -203,13 +47,7 @@ export function shipGate(name) {
   return SHIP_GATES.find((gate) => gate.name === name) || null;
 }
 
-/**
- * The gate entry script, which is also the head of its import closure.
- *
- * The reuse policy walks that closure to prove a gate reads nothing it did not
- * declare, so the entry point must come from the same declaration as the
- * command that runs it.
- */
+/** The gate's entry script: the first argument of its command. */
 export function shipGateEntry(gate) {
   return gate.args[0];
 }

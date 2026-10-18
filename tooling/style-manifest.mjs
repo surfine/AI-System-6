@@ -90,7 +90,7 @@ export const lazyStyleBundles = [
   {
     id: "clioworks-native",
     output: "styles.clioworks-native.css",
-    loader: "app/vendor/clioworks-v3/fixture.js",
+    loader: "app/core/config.js",
     sources: ["styles/92-clioworks-native.css"],
   },
   {
@@ -145,11 +145,19 @@ export const lazyStyleBundles = [
   // chart snapshot), and a snapshot can come back from a restored session
   // without ClioChart having been opened this boot — so ClioStage's loader
   // pulls this sheet too. ClioStage is itself lazy, so no boot pays for it.
+  // The xlsx workbook surface (S11 M1) and its comments windoid ride the same
+  // sheet: they only ever draw inside the ClioChart window, so they arrive with
+  // it instead of as a request of their own. Every selector in the two files is
+  // scoped to .clio-chart-workbook, the window's .is-workbook-mounted flag, the
+  // workbook pop-ups (.cwk-menu) or the windoid. ClioStage's native pptx
+  // surface (S11 M2) rides it too: ClioStage's loader already pulls this sheet,
+  // and its selectors are scoped to .clio-stage-native / .is-native-mounted.
+  // ClioWrite (S11 M3) draws its docx window with it too: .clio-write-window / .cw-menu.
   {
     id: "clio-chart",
     output: "styles.clio-chart.css",
     loader: "app/core/config.js",
-    sources: ["styles/87-clio-chart.css"],
+    sources: ["styles/87-clio-chart.css", "styles/84-clio-chart-workbook.css", "styles/84-windoid.css", "styles/84-clio-stage-native.css", "styles/84-clio-write.css"],
   },
   {
     id: "micropolis",
@@ -261,6 +269,14 @@ export const lazyStyleBundles = [
   // and every selector is scoped to .edit-kernel-* / .command-sheet-*. Review
   // Desk's comments and compare (styles/99-review-comments.css, scoped to
   // .review-comments-panel / .review-thread* / .review-compare*) ride in it.
+  // About AI System 6: built on demand by app/features/about-desk.js, every
+  // selector scoped to .about-*, so the sheet travels with that loader.
+  {
+    id: "about",
+    output: "styles.about.css",
+    loader: "app/core/config.js",
+    sources: ["styles/99-about-desk.css"],
+  },
   {
     id: "edit-kernel",
     output: "styles.edit-kernel.css",
@@ -313,6 +329,10 @@ export const styleLayerByPath = Object.freeze({
   "styles/95-image-prompt-studio.css": "image-prompt-studio",
   "styles/86-cmf-studio.css": "cmf-studio",
   "styles/87-clio-chart.css": "clio-chart",
+  "styles/84-clio-chart-workbook.css": "clio-chart-workbook",
+  "styles/84-windoid.css": "windoid",
+  "styles/84-clio-stage-native.css": "clio-stage-native",
+  "styles/84-clio-write.css": "clio-write",
   "styles/88-soundscape.css": "soundscape",
   "styles/89-control-strip.css": "control-strip",
   "styles/90-endfield-terminal.css": "endfield-terminal",
@@ -335,6 +355,7 @@ export const styleLayerByPath = Object.freeze({
   "styles/99-review-comments.css": "edit-kernel",
   "styles/99-rootline.css": "rootline",
   "styles/99-joyride.css": "joyride",
+  "styles/99-about-desk.css": "about",
 });
 
 // Layer order = eager files in bundle order, then lazy sheets in declaration

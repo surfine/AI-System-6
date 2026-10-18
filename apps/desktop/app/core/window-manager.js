@@ -102,7 +102,6 @@ function isWindowPinned(win) {
 // normal / pinned / system-modal ownership — one place for focus, raise, hide.
 function windowStackLayer(win) {
   if (!win) return "normal";
-  if (win.dataset.window === "about") return "system-modal";
   if (isWindowPinned(win)) return "pinned";
   return "normal";
 }
@@ -121,7 +120,6 @@ function windowUsesCssLayer(win) {
 // About and the save sheet own system bands; a full-screen window owns the
 // priority band; a phone shade and a mobile system page own the pinned band.
 function reservedWindowLayerZ(win) {
-  if (win.dataset.window === "about") return systemModalZ;
   if (win.dataset.window === "saveChat") return windowSaveZ;
   if (win.classList.contains("is-fullscreen")) return windowPriorityZ;
   if (win.dataset.windowSlide && !isWindowPinned(win)) return windowLayerMaxZ + 1;
@@ -211,7 +209,7 @@ function setWindowLayerZ(win, value) {
 function canPinWindow(win) {
   if (!win?.isConnected || !win.matches?.(".window[data-window]")) return false;
   if (win.matches(".is-hidden, .is-fullscreen, .is-mobile-fullscreen")) return false;
-  if (win.dataset.window === "about" || win.dataset.window === "saveChat") return false;
+  if (win.dataset.window === "saveChat") return false;
   if (typeof isCenteredSystemWindow === "function" && isCenteredSystemWindow(win)) return false;
   if (writerMode && (writerModeCssOwnedWindows.has(win.dataset.window) || win.dataset.window === "systemHelp")) return false;
   return true;
@@ -1151,6 +1149,10 @@ async function quitApp(appId = activeAppId) {
     }
   }
 
+  // A workbook or presentation asks once when dirty and unmounts when clean; Cancel keeps the app.
+  const native = { clioChart: window.AISystem6ClioChartWorkbook, clioStage: window.AISystem6ClioStageNative, clioWrite: window.AISystem6ClioWrite }[appId];
+  if (native?.current?.() && await native.close() === "cancelled") return;
+
   // Quitting is the total release: an application that declared onDispose
   // frees its engine, canvas, timers and audio here. The explicit game calls
   // below stay as the floor for a build whose lifecycle never registered.
@@ -1383,14 +1385,6 @@ function focusWindow(win, reveal=false) {
   }
   syncReviewDeskFocusQuiet(win);
 
-  if (win.dataset.window === "about") {
-    win.style.zIndex = systemModalZ;
-    updateMenuState();
-    renderMultiFinderMenu();
-    scheduleWorkingSessionSave?.();
-    return;
-  }
-
   if (win.dataset.window === "saveChat") {
     win.style.zIndex = windowSaveZ;
     updateMenuState();
@@ -1490,6 +1484,7 @@ const mobileFullScreenAppIds = new Set([
   "docMap",
   "clioStage",
   "clioChart",
+  "clioWrite",
   "clioProject",
   "liquidCover",
   "cmfStudio",
@@ -1853,10 +1848,9 @@ const mobileDialogWindowNames = new Set([
   "fileInfo",
   "projectInfo",
   "finishingReceipt",
-  "about",
 ]);
 
-const mobileSystemPageWindowNames = new Set(["systemHelp", "themeLab"]);
+const mobileSystemPageWindowNames = new Set(["systemHelp", "themeLab", "about"]);
 
 const mobilePresentationClassNames = [
   "is-mobile-app-page",
@@ -2434,7 +2428,7 @@ function alignWindowTitleBottomToWritingSpine(win) {
   // / project switch) must not be pulled back to the spine by a late callback.
   if (!win || !win.isConnected || win.dataset.userPositioned === "true") return;
   if (writerMode || isPortraitDocumentFlow()) return;
-  if (["about", "saveChat"].includes(win.dataset.window)) return;
+  if (win.dataset.window === "saveChat") return;
   // Hardening: every put-away presentation owns its own frame, so a stale
   // callback must not move a hidden, app-hidden, minimized, shaded or
   // full-screen window back to the spine line.
@@ -3054,7 +3048,7 @@ function getActionAvailability() {
   const nextstepMiniaturizeWindow = nextstepEra
     && typeof appearanceHoldsMiniwindows === "function" && appearanceHoldsMiniwindows()
     && !!windowMenuFrontWindow
-    && !["about", "saveChat"].includes(windowMenuFrontWindow.dataset.window)
+    && windowMenuFrontWindow.dataset.window !== "saveChat"
     && !!windowMenuFrontWindow.querySelector(".title-bar .close-box");
 
   const availability = {
@@ -3483,7 +3477,12 @@ function getActionAvailability() {
     "window-unpin": arrangementAvailable("unpin"),
     "window-browse": windowMenuBrowseAvailable,
     // The Dock switch lives in the Window menu of the eras that draw a Dock.
-    "window-toggle-dock": window.AISystem6Theme?.hasCapability?.("dock") === true
+    "window-toggle-dock": window.AISystem6Theme?.hasCapability?.("dock") === true,
+    // Which of a mounted workbook's wired commands the ClioChart menus list.
+    "cwk-on": !!window.AISystem6ClioChartWorkbook?.listed?.("view.mode"),
+    "cwk-off": !window.AISystem6ClioChartWorkbook?.current?.(),
+    "cwk-revert": !!window.AISystem6ClioChartWorkbook?.listed?.("file.revert"),
+    "cwk-comment": !!window.AISystem6ClioChartWorkbook?.listed?.("comments.open")
   };
   // A lazy command answers for itself once its admission row exists: the row is
   // the declaration that the window, its loader and its opener are real, so the
@@ -3610,6 +3609,7 @@ function updateMenuState() {
       btn.classList.toggle("is-checked", lensOn);
       if (btn.hasAttribute("aria-pressed")) btn.setAttribute("aria-pressed", String(lensOn));
     }
+    if (action === "clio-chart-workbook-mode") btn.classList.toggle("is-checked", window.AISystem6ClioChartWorkbook?.current?.()?.mode === "full");
     if (action === "toggle-sideask") {
       btn.classList.toggle("is-hidden", isMultiFinderMode());
       btn.classList.toggle("is-checked", sideAskEnabled);
@@ -4091,7 +4091,7 @@ async function openWindowInner(name, options = {}, nestedOpen = false) {
     clearWindowInlineGeometry(win);
   }
 
-  if (shouldPlaceWindow && !isCenteredSystemWindow(name) && !["about", "saveChat"].includes(name)
+  if (shouldPlaceWindow && !isCenteredSystemWindow(name) && name !== "saveChat"
       && !(writerMode && writerModeCssOwnedWindows.has(name))) {
     if (!useNarrowWindowFlow(win)) {
       const desktop = document.querySelector(".desktop");
@@ -4205,9 +4205,6 @@ async function openWindowInner(name, options = {}, nestedOpen = false) {
     else if (shouldPlaceWindow) arrangeActiveWritingWorkspace();
   }
 
-  if (name === "about") {
-    modalScrim.classList.remove("is-hidden");
-  }
   syncMobileAppForeground();
   if (window.AISystem6JourneyGates?.isJourneyShellWindow?.(name)) {
     window.AISystem6JourneyGates.markShellWindow?.(win, name);
@@ -4780,7 +4777,7 @@ function getTileCandidateWindows() {
   if (isNarrowViewport()) return [];
   return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)"))
     .filter((win) => {
-      if (["about", "saveChat"].includes(win.dataset.window)) return false;
+      if (win.dataset.window === "saveChat") return false;
       if (isCenteredSystemWindow(win) || applicationWindowPresentation(win) !== "open") return false;
       if (isDeskAccessoryPlacementWindow(win)) return false;
       if (isMultiFinderMode()) return true;
@@ -5516,14 +5513,7 @@ async function closeWindow(name, force = false, instance) {
   const win = getWindowInstance(name, instance);
   if (!win) return false;
 
-  if (
-    name === "assistant"
-    && typeof isClioIntroductionActive === "function"
-    && isClioIntroductionActive()
-    && conversation.length === 0
-  ) {
-    await completeClioOnboarding("closed");
-  }
+  if (name === "about") await window.AISystem6About?.closing?.();
 
   if (name === "assistant" && clioTalkTemporaryMode) {
     if (activeAbortController && !force) {
@@ -5544,6 +5534,11 @@ async function closeWindow(name, force = false, instance) {
       setTeachTextStatus("saved"); // clear dirty state after discard
     }
   }
+
+  // A mounted workbook or presentation asks about unsaved edits (cancelled
+  // keeps the window) and, answered or clean, unmounts and gives the window its chrome back.
+  const native = { clioChart: window.AISystem6ClioChartWorkbook, clioStage: window.AISystem6ClioStageNative, clioWrite: window.AISystem6ClioWrite }[name];
+  if (native?.current?.() && await native.close() === "cancelled") return false;
 
   // Draft Desk closes like every first-class writing app: pending or Modified
   // work is flushed before the window hides, and a failed persist keeps the
@@ -5649,9 +5644,6 @@ async function closeWindow(name, force = false, instance) {
   }
   updateMenuState();
 
-  if (name === "about") {
-    modalScrim.classList.add("is-hidden");
-  }
   forgetWindowFromRunningApps(name);
   let restoredSource = null;
   const returnWindowName = !isMultiFinderMode() ? (win.dataset.returnWindowName || "") : "";
@@ -5908,7 +5900,7 @@ function avoidWritingSpineOverlap(win, { gap = 18 } = {}) {
     || isPortraitDocumentFlow()
     || win.classList.contains("is-hidden")
     || win.classList.contains("is-app-hidden")
-    || ["about", "saveChat"].includes(win.dataset.window)
+    || win.dataset.window === "saveChat"
   ) return false;
 
   const desktop = document.querySelector(".desktop");

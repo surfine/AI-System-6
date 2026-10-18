@@ -50,17 +50,14 @@
 
 import { execFileSync, spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import { join } from "node:path";
 import { startAppServer, stopProcess } from "./lib/app-preview-server.mjs";
+import { buildInstrumentSource } from "./lib/cascade-instrument.mjs";
+import { bootThemedPage, launchChromium, openEveryWindow, registeredThemeIds, revealAndSettle } from "./lib/cascade-page.mjs";
+import { stampCssAssetUrls as stampWithBuild } from "./lib/css-asset-stamp.mjs";
 import { minifyCss } from "./lib/minify-css.mjs";
 import { desktopRoot, repositoryRoot } from "./lib/paths.mjs";
 import { lazyStyleBundles, styleLayerByPath, styleLayerOrder, styleRuntimePaths } from "./style-manifest.mjs";
-import { enableMultiFinder } from "../tests/e2e/helpers.mjs";
-
-import { stubLocalModels } from "./lib/stub-local-models.mjs";
-const require = createRequire(import.meta.url);
-const { chromium } = require("playwright");
 
 const args = process.argv.slice(2);
 const argValue = (name) => {
@@ -71,7 +68,6 @@ const OUT_PATH = join(repositoryRoot, argValue("--out") || "dist/verification/la
 const VARIANT_DIR = join(repositoryRoot, "dist/layer-flips/variant");
 const [viewportWidth, viewportHeight] = (argValue("--viewport") || "1440x960").split("x").map(Number);
 const VIEWPORT = { width: viewportWidth, height: viewportHeight };
-const PHONE = VIEWPORT.width < 768;
 // --current-digest <file>: also write a per-element hash of TODAY's computed
 // style, so a rule move can be proven not to change the current cascade
 // anywhere the page renders (diff two files with --compare-digest a b).
@@ -91,11 +87,6 @@ if (args.includes("--compare-digest")) {
   console.log(`current cascade: ${changed} changed, ${missing} rendered only before, ${added} rendered only after`);
   process.exit(changed || missing || added ? 1 : 0);
 }
-// Windows that start a network session, a game loop or a model call on open
-// are still opened: their chrome is the measured surface, and a failure to
-// open is recorded as coverage, never skipped silently.
-const WINDOW_OPEN_TIMEOUT = 20000;
-
 // ---------------------------------------------------------------------------
 // 1. Variant sheets
 // ---------------------------------------------------------------------------
@@ -108,14 +99,11 @@ const indexHtml = readFileSync(join(desktopRoot, "index.html"), "utf8");
 const build = (indexHtml.match(/styles\.bundle\.css\?v=([^"']+)/) || [])[1];
 if (!build) throw new Error("index.html carries no styles.bundle.css build stamp; run the build first");
 
-// build-app-bundle.mjs's own URL stamp, applied to the variant so every url()
-// resolves to the byte-identical request the served sheet makes.
-function stampCssAssetUrls(css) {
-  return css.replace(
-    /url\(\s*(['"]?)((?:\.{0,2}\/)*assets\/[\w./-]+\.(?:svg|png|jpg|jpeg|webp|gif|ico|woff|woff2|dat|ttf)(?:\?[^)'"]*)?)\1\s*\)/gi,
-    (match, quote, url) => (/\?/.test(url) ? match : `url(${quote}${url}?v=${build}${quote})`)
-  );
-}
+// build-app-bundle.mjs's own URL stamp (tooling/lib/css-asset-stamp.mjs, the one
+// the build calls), applied to the variant so every url() resolves to the
+// byte-identical request the served sheet makes. A private copy of its pattern
+// here had no .otf, so the control rebuild could not reproduce Cover Glass.
+const stampCssAssetUrls = (css) => stampWithBuild(css, build);
 
 const read = (path) => readFileSync(join(desktopRoot, path), "utf8");
 const wrap = (path) => {
@@ -175,267 +163,12 @@ const layerToFile = Object.fromEntries(Object.entries(styleLayerByPath).map(([pa
 // 2. In-page instrument (runs in the page; plain function, no closures)
 // ---------------------------------------------------------------------------
 
-function installInstrument(layerOrderList) {
-  const SEP = "\u0001";
-  const PSEUDOS = ["", "::before", "::after"];
-  const layerRank = new Map(layerOrderList.map((name, index) => [name, index]));
-  let propertyNames = null;
-  const properties = () => {
-    if (propertyNames) return propertyNames;
-    // Logical longhands (padding-inline-start, inset-block-end, inline-size…)
-    // restate a physical one in horizontal, left-to-right writing; comparing
-    // both would count every such difference twice, and only the physical one
-    // is what the rules here declare.
-    const style = getComputedStyle(document.documentElement);
-    const names = [];
-    for (let index = 0; index < style.length; index += 1) {
-      const name = style.item(index);
-      if (/-(?:inline|block)(?:-|$)|^(?:min-|max-)?(?:inline|block)-size$/.test(name)) continue;
-      names.push(name);
-    }
-    propertyNames = names;
-    return names;
-  };
-
-  function splitList(text) {
-    const out = [];
-    let current = "";
-    let paren = 0;
-    let bracket = 0;
-    let quote = "";
-    for (let i = 0; i < text.length; i += 1) {
-      const char = text[i];
-      if (quote) {
-        current += char;
-        if (char === "\\") { current += text[i + 1] || ""; i += 1; } else if (char === quote) quote = "";
-        continue;
-      }
-      if (char === '"' || char === "'") { quote = char; current += char; continue; }
-      if (char === "(") paren += 1;
-      else if (char === ")") paren -= 1;
-      else if (char === "[") bracket += 1;
-      else if (char === "]") bracket -= 1;
-      if (char === "," && !paren && !bracket) { out.push(current.trim()); current = ""; } else current += char;
-    }
-    if (current.trim()) out.push(current.trim());
-    return out;
-  }
-
-  // Selectors Level 4 specificity: :where() is zero, :is()/:not()/:has() take
-  // their most specific argument, :nth-child(… of S) adds S.
-  function specificity(selector) {
-    let a = 0;
-    let b = 0;
-    let c = 0;
-    let i = 0;
-    const identEnd = (start) => {
-      let j = start;
-      while (j < selector.length && /[\w\-\u0080-￿\\]/.test(selector[j])) j += selector[j] === "\\" ? 2 : 1;
-      return j;
-    };
-    const parenEnd = (start) => {
-      let depth = 0;
-      let quote = "";
-      for (let j = start; j < selector.length; j += 1) {
-        const char = selector[j];
-        if (quote) { if (char === "\\") j += 1; else if (char === quote) quote = ""; continue; }
-        if (char === '"' || char === "'") quote = char;
-        else if (char === "(") depth += 1;
-        else if (char === ")") { depth -= 1; if (!depth) return j + 1; }
-      }
-      return selector.length;
-    };
-    const maxOf = (list) => splitList(list).map(specificity)
-      .reduce((best, next) => (compare(next, best) > 0 ? next : best), [0, 0, 0]);
-    while (i < selector.length) {
-      const char = selector[i];
-      if (char === "#") { a += 1; i = identEnd(i + 1); } else if (char === ".") { b += 1; i = identEnd(i + 1); } else if (char === "[") {
-        b += 1;
-        let quote = "";
-        let j = i + 1;
-        for (; j < selector.length; j += 1) {
-          const inner = selector[j];
-          if (quote) { if (inner === quote) quote = ""; continue; }
-          if (inner === '"' || inner === "'") quote = inner;
-          else if (inner === "]") break;
-        }
-        i = j + 1;
-      } else if (char === ":") {
-        if (selector[i + 1] === ":") {
-          c += 1;
-          i = identEnd(i + 2);
-          if (selector[i] === "(") i = parenEnd(i);
-          continue;
-        }
-        const end = identEnd(i + 1);
-        const name = selector.slice(i + 1, end).toLowerCase();
-        i = end;
-        if (selector[i] === "(") {
-          const close = parenEnd(i);
-          const inner = selector.slice(i + 1, close - 1);
-          i = close;
-          if (name === "where") continue;
-          if (["is", "not", "has", "matches", "-webkit-any"].includes(name)) {
-            const [x, y, z] = maxOf(inner);
-            a += x; b += y; c += z;
-          } else if (name === "nth-child" || name === "nth-last-child") {
-            b += 1;
-            const of = inner.search(/\sof\s/i);
-            if (of !== -1) { const [x, y, z] = maxOf(inner.slice(of + 4)); a += x; b += y; c += z; }
-          } else b += 1;
-        } else if (["before", "after", "first-line", "first-letter"].includes(name)) c += 1;
-        else b += 1;
-      } else if (/[A-Za-z_\u0080-￿\\-]/.test(char)) {
-        c += 1;
-        i = identEnd(i);
-      } else i += 1;
-    }
-    return [a, b, c];
-  }
-  function compare(left, right) {
-    for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
-      const delta = (left[index] ?? 0) - (right[index] ?? 0);
-      if (delta) return delta;
-    }
-    return 0;
-  }
-
-  const pseudoOf = (selector) => {
-    const match = selector.match(/(::?(?:before|after))\s*$/i);
-    if (match) return { pseudo: `::${match[1].replace(/^:+/, "").toLowerCase()}`, base: selector.slice(0, -match[0].length) || "*" };
-    if (/::[\w-]+(\([^)]*\))?\s*$/.test(selector)) return { pseudo: "other", base: selector };
-    return { pseudo: "", base: selector };
-  };
-
-  function sheetLabel(sheet, index) {
-    const node = sheet.ownerNode;
-    if (node?.dataset?.layerVariant) return node.dataset.layerVariant;
-    if (sheet.href) return new URL(sheet.href).pathname.split("/").pop();
-    const id = node?.id ? `#${node.id}` : "";
-    return `inline <style>${id} #${index}`;
-  }
-
-  function collectRules() {
-    const rules = [];
-    const walk = (list, context) => {
-      for (const rule of list) {
-        if (rule instanceof CSSLayerBlockRule) walk(rule.cssRules, { ...context, layer: rule.name });
-        else if (rule instanceof CSSMediaRule) { if (matchMedia(rule.conditionText || rule.media.mediaText).matches) walk(rule.cssRules, context); } else if (rule instanceof CSSSupportsRule) { if (CSS.supports(rule.conditionText)) walk(rule.cssRules, context); } else if (typeof CSSContainerRule !== "undefined" && rule instanceof CSSContainerRule) walk(rule.cssRules, { ...context, container: rule.conditionText });
-        else if (rule instanceof CSSStyleRule) {
-          rules.push({
-            rule,
-            selectors: splitList(rule.selectorText).map((text) => ({ text, ...pseudoOf(text), spec: specificity(text) })),
-            layer: context.layer ?? null,
-            sheet: context.sheet,
-            container: context.container || null,
-            order: rules.length,
-          });
-        }
-      }
-    };
-    Array.from(document.styleSheets).forEach((sheet, index) => {
-      if (sheet.disabled) return;
-      let list;
-      try { list = sheet.cssRules; } catch { return; }
-      walk(list, { sheet: sheetLabel(sheet, index), layer: null });
-    });
-    return rules;
-  }
-
-  // Every rule that matches one target, with its most specific matching
-  // selector; computed once per target and filtered per property.
-  function matchedRules(rules, element, pseudo) {
-    const found = [];
-    for (const entry of rules) {
-      let best = null;
-      for (const selector of entry.selectors) {
-        if (selector.pseudo !== pseudo) continue;
-        let hit = false;
-        try { hit = element.matches(selector.base); } catch { hit = false; }
-        if (hit && (!best || compare(selector.spec, best.spec) > 0)) best = selector;
-      }
-      if (best) found.push({ entry, selector: best });
-    }
-    return found;
-  }
-
-  function candidatesFor(matched, property) {
-    const found = [];
-    for (const { entry, selector } of matched) {
-      const value = entry.rule.style.getPropertyValue(property);
-      if (!value) continue;
-      found.push({ entry, selector, value, important: entry.rule.style.getPropertyPriority(property) === "important" });
-    }
-    return found;
-  }
-
-  // Today: no layers anywhere, so importance, then specificity, then order.
-  // After the wrap: normal declarations rank layers first (unlayered above
-  // every layer), important ones rank them in reverse (unlayered below).
-  function winner(candidates, layered) {
-    let best = null;
-    let bestKey = null;
-    for (const candidate of candidates) {
-      const rank = candidate.entry.layer === null ? Infinity : (layerRank.get(candidate.entry.layer) ?? -1);
-      const layerKey = !layered ? 0 : candidate.important ? -rank : rank;
-      const key = [candidate.important ? 1 : 0, layerKey, ...candidate.selector.spec, candidate.entry.order];
-      if (!best || compare(key, bestKey) > 0) { best = candidate; bestKey = key; }
-    }
-    return best;
-  }
-
-  function describe(candidate, inlineValue) {
-    if (inlineValue) return { file: "inline style attribute", selector: "", value: inlineValue };
-    if (!candidate) return null;
-    return {
-      sheet: candidate.entry.sheet,
-      layer: candidate.entry.layer,
-      selector: candidate.selector.text,
-      specificity: candidate.selector.spec.join(","),
-      important: candidate.important,
-      value: candidate.value,
-      ...(candidate.entry.container ? { container: candidate.entry.container } : {}),
-    };
-  }
-
-  function pathOf(element) {
-    const parts = [];
-    let node = element;
-    while (node && node.nodeType === 1 && node !== document.documentElement) {
-      let part = node.localName;
-      if (node.id) part += `#${node.id}`;
-      else {
-        const classes = [...node.classList].slice(0, 3);
-        if (classes.length) part += `.${classes.join(".")}`;
-        const parent = node.parentElement;
-        if (parent) {
-          const same = [...parent.children].filter((child) => child.localName === node.localName);
-          if (same.length > 1) part += `:nth-of-type(${same.indexOf(node) + 1})`;
-        }
-      }
-      if (node.dataset?.window) part += `[data-window="${node.dataset.window}"]`;
-      parts.unshift(part);
-      if (node.id) break;
-      node = node.parentElement;
-    }
-    return parts.join(" > ");
-  }
-
-  function visibleTargets() {
-    const targets = [];
-    for (const element of [document.documentElement, ...document.body.querySelectorAll("*"), document.body]) {
-      if (element !== document.documentElement && element !== document.body
-        && !element.checkVisibility({ visibilityProperty: true })) continue;
-      for (const pseudo of PSEUDOS) {
-        if (pseudo) {
-          const content = getComputedStyle(element, pseudo).content;
-          if (!content || content === "none" || content === "normal") continue;
-        }
-        targets.push([element, pseudo]);
-      }
-    }
-    return targets;
-  }
+// The variant-specific half of the in-page instrument. The cascade helpers
+// (rule collection, specificity, winner, paths, rendered targets) come from
+// tooling/lib/cascade-instrument.mjs as `core`; this adds the layered twins,
+// the two-cascade capture and the comparison. Runs in the page.
+function installInstrument(core) {
+  const { SEP, properties, pseudoOf, collectRules, matchedRules, candidatesFor, winner, describe, pathOf, visibleTargets } = core;
 
   const state = { snapshot: null, targets: null, visibleToday: null, visibleWrapped: null, installed: false };
   const variantStyles = () => [...document.querySelectorAll("style[data-layer-variant]")];
@@ -632,17 +365,14 @@ function auditCandidates() {
 // 4. Drive
 // ---------------------------------------------------------------------------
 
-const registryWindow = {};
-const vm = await import("node:vm");
-vm.runInNewContext(read("app/core/theme-registry.js"), { window: registryWindow });
-const allThemes = registryWindow.AISystem6Theme.themes.map(({ id }) => id);
+const allThemes = registeredThemeIds();
 const themes = argValue("--themes") ? argValue("--themes").split(",") : allThemes;
 
 const candidates = auditCandidates();
 const candidatePairs = candidates.map(({ earlier, later }) => [earlier, later]);
 
 const server = await startAppServer(repositoryRoot);
-const browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--force-color-profile=srgb", "--disable-gpu"] });
+const browser = await launchChromium();
 const report = {
   generatedBy: "tooling/measure-layer-flips.mjs",
   generatedAt: new Date().toISOString(),
@@ -657,72 +387,11 @@ const coMatchByTheme = {};
 try {
   for (const theme of themes) {
     const started = Date.now();
-    const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1, colorScheme: "light", reducedMotion: "reduce", hasTouch: PHONE, isMobile: PHONE });
-    // The saved-appearance boot appearance-snapshot.mjs uses; local model
-    // probes answered offline so no window waits on developer software.
-    await stubLocalModels(context);
-    await context.addInitScript((id) => {
-      localStorage.setItem("ai-system-6-theme", id);
-      localStorage.removeItem("ai-system-6-liquid-glass");
-    }, theme);
-    const page = await context.newPage();
-    context.on("page", (popup) => { if (popup !== page) popup.close().catch(() => {}); });
-    page.on("dialog", (dialog) => dialog.dismiss().catch(() => {}));
-    const pageErrors = [];
-    page.on("pageerror", (error) => pageErrors.push(error.message));
-    await page.goto(server.url, { waitUntil: "domcontentloaded" });
-    await page.waitForFunction(() => ["ready", "error"].includes(document.body.dataset.appReady), null, { timeout: 60000, polling: 100 });
-    await page.evaluate(async (id) => {
-      await window.AISystem6Theme.applyTheme(id, { experimental: true, persist: false, announce: false, modernFontPreference: false });
-      if (typeof activateWorkspaceProfile === "function") await activateWorkspaceProfile("writing", { persist: false, announce: false });
-    }, theme);
-    // MultiFinder, as census:controls runs it: under the single-application
-    // Finder, opening an application quits the one before, and its windows go.
-    await enableMultiFinder(page);
+    const { context, page, pageErrors } = await bootThemedPage(browser, server.url, theme, VIEWPORT);
+    const { windowNames, opened, failed } = await openEveryWindow(page);
+    const revealed = await revealAndSettle(page, opened);
 
-    // Every registered window, as census:controls opens them.
-    const windowNames = await page.evaluate(() => Object.keys(typeof windowRegistry === "object" ? windowRegistry : {}));
-    const opened = [];
-    const failed = [];
-    for (const name of windowNames) {
-      try {
-        await Promise.race([
-          page.evaluate((windowName) => openWindow(windowName), name),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("open timeout")), WINDOW_OPEN_TIMEOUT)),
-        ]);
-        const shown = await page.evaluate((windowName) => {
-          const win = document.querySelector(`[data-window="${windowName}"]`);
-          return Boolean(win && !win.classList.contains("is-hidden") && !win.classList.contains("is-app-hidden"));
-        }, name);
-        (shown ? opened : failed).push(shown ? name : { window: name, error: "not shown after openWindow" });
-      } catch (error) {
-        failed.push({ window: name, error: String(error?.message || error).split("\n")[0] });
-      }
-    }
-    // MultiFinder hides the windows of every application but the front one
-    // (is-app-hidden), so after the walk only the last application would be on
-    // screen. Every window that opened is shown again for the measurement --
-    // a combined state no single click reaches, but each window keeps its own
-    // DOM and classes. Then close anything modal an open left behind and open
-    // every menu of the menu bar at once: their popovers are the other large
-    // surface.
-    const revealed = await page.evaluate((names) => {
-      let count = 0;
-      for (const name of names) {
-        const win = document.querySelector(`[data-window="${name}"]`);
-        if (win?.classList.contains("is-app-hidden")) { win.classList.remove("is-app-hidden"); count += 1; }
-      }
-      for (const dialog of document.querySelectorAll("dialog[open]")) dialog.close();
-      for (const menu of document.querySelectorAll(".menu-bar .menu")) menu.classList.add("is-open");
-      return count;
-    }, opened);
-    await page.evaluate(() => window.AISystem6Theme.whenReady());
-    await page.waitForFunction(() => [...document.querySelectorAll('link[rel="stylesheet"]')].every((link) => {
-      try { return Boolean(link.sheet); } catch { return true; }
-    }), null, { timeout: 20000, polling: 100 }).catch(() => {});
-    await page.evaluate(() => document.fonts?.ready);
-
-    await page.evaluate(`window.__layerFlips = (${installInstrument.toString()})(${JSON.stringify(layerOrder)})`);
+    await page.evaluate(`window.__layerFlips = ${buildInstrumentSource(installInstrument, layerOrder)}`);
     const unswapped = await page.evaluate((texts) => window.__layerFlips.unswapped(texts), variants);
     const { twins: swapped, mismatched } = await page.evaluate((texts) => window.__layerFlips.install(texts), variants);
     if (mismatched.length) throw new Error(`${theme}: layered twins lost or gained style rules: ${mismatched.join(", ")}`);

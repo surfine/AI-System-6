@@ -36,7 +36,7 @@
 //
 // The baseline lives with the pixel baseline (git-ignored, machine-local):
 //   internal/evidence/drafts/appearance-baseline/token-deltas.json
-// npm run snapshot:appearance refreshes both; npm run verify:appearance-tokens
+// npm run snapshot:appearance refreshes both; npm run audit:appearance-tokens
 // runs only this fast path.
 
 import { createHash } from "node:crypto";

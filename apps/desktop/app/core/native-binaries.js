@@ -118,7 +118,9 @@
 
   /** Working-session snapshot shape: serialisable records only. */
   function snapshot() {
-    return JSON.parse(JSON.stringify(nativeFiles()));
+    // liveAdapter is the in-memory document model, not a serialisable record;
+    // the saved bytes (workingBase64) are what a session carries.
+    return JSON.parse(JSON.stringify(nativeFiles(), (key, value) => (key === 'liveAdapter' ? undefined : value)));
   }
 
   function restore(records) {

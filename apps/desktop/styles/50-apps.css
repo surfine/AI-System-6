@@ -2454,19 +2454,6 @@ body:not([data-theme="liquid-glass"]) .scrap-list button.is-multi-selected:not(.
   border-bottom: var(--pane-actions-border-bottom);
 }
 
-.about-pane {
-  display: grid;
-  justify-items: center;
-  gap: 10px;
-  overflow: auto;
-  text-align: center;
-}
-
-.about-pane p {
-  margin: 0;
-  line-height: 1.35;
-}
-
 .about-stats {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);

@@ -9,7 +9,7 @@ vm.runInContext(read("app/core/system-icons.js"), sandbox);
 const api = sandbox.window.AISystem6Theme;
 const svg = (id, size = 32) => sandbox.systemIconSvg(id, { modernSourceSize: size, platinumSourceSize: size, sourceSize: size });
 const select = (id) => api.applyTheme(id, { announce: false, persist: false, experimental: id === "nextstep" });
-const additions = ["clioPaint", "clioProject", "oneMoreTune", "rootline", "joyride", "mingwen", "imagePromptStudio", "micropolis", "openttd", "doom", "lightroom", "bonsaiCity"];
+const additions = ["clioPaint", "clioProject", "oneMoreTune", "rootline", "joyride", "mingwen", "clioWrite", "imagePromptStudio", "micropolis", "openttd", "doom", "lightroom", "bonsaiCity"];
 for (const id of additions) {
   test.assert(sandbox.window.AISystem6SystemIcons.ids.includes(id), `${id} is part of the shared renderer vocabulary`);
   select("classic");

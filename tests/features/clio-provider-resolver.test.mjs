@@ -3,6 +3,7 @@
 // opening an API form, and the product snapshot Clio sees is allowlisted:
 // no credentials, endpoints, document bodies, or lease-owner identifiers.
 
+import vm from "node:vm";
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("clio-provider-resolver");
@@ -15,10 +16,10 @@ const wireup = read("app/core/wireup.js");
 
 // --- Preference: persisted, validated, migrated -----------------------------
 
-test.assertIncludes(resolver, 'const validPreferences = new Set(["auto", "local", "website", "byok"]);', "the preference is a closed set");
+test.assertIncludes(resolver, 'const validPreferences = new Set(["auto", "local", "device", "website", "byok"]);', "the preference is a closed set");
 test.assertMatches(
   persistence,
-  /clioProviderPreference = \["auto", "local", "website", "byok"\]\.includes\(settings\.clioProviderPreference\)\s*\n\s*\? settings\.clioProviderPreference\s*\n\s*: "auto";/,
+  /clioProviderPreference = \["auto", "local", "device", "website", "byok"\]\.includes\(settings\.clioProviderPreference\)\s*\n\s*\? settings\.clioProviderPreference\s*\n\s*: "auto";/,
   "stored preferences load validated; new users default to auto"
 );
 test.assertMatches(persistence, /^\s*clioProviderPreference,$/m, "the preference persists through the ordinary settings record");
@@ -29,15 +30,15 @@ test.assertIncludes(wireup, 'window.AISystem6ClioProvider?.setPreference?.("loca
 
 test.assertMatches(
   resolver,
-  /target === "mac"\s*\n\s*\? \["local", "website", "byok"\]/,
-  "the Mac auto order is LM Studio, then Website Shared AI, then BYOK"
+  /target === "mac"\s*\n\s*\? \["local", "device", "website", "byok"\]/,
+  "the Mac auto order is LM Studio, the on-device model, Website Shared AI, then BYOK"
 );
 test.assertMatches(
   resolver,
   /\["vps", "pages"\]\.includes\(target\)\s*\n\s*\? \["website", "byok"\]/,
   "VPS and Pages auto order starts from the same-origin Website Shared AI"
 );
-test.assertIncludes(resolver, ': ["local", "byok"]', "an ordinary local web run tries the local provider first");
+test.assertIncludes(resolver, ': ["local", "device", "byok"]', "an ordinary local web run tries the local provider first, then the on-device model");
 test.assertIncludes(resolver, ": [selectedPreference];", "an explicit preference never silently falls back across providers");
 test.assertIncludes(resolver, "capabilities?.deployment_target", "the deployment target comes from the capability document");
 test.assertNotIncludes(resolver, "location.hostname", "the resolver never guesses the deployment from the hostname");
@@ -48,6 +49,22 @@ test.assertIncludes(resolver, 'signal: abortSignal(target === "mac" ? 1500 : 250
 test.assertIncludes(resolver, '"local.lmstudio.start"', "the Mac launch goes through the one registered start capability");
 test.assertIncludes(resolver, "abortSignal(6500)", "waiting for LM Studio to start is bounded");
 test.assertNotMatches(resolver, /lms get|download/i, "the resolver never requests a model download");
+
+// --- The on-device model is probed first and never swallows the walk ----------
+
+test.assertIncludes(resolver, "const deviceProbe = candidates.includes(\"device\")", "the on-device status read starts before the walk, so a slow LM Studio launch cannot delay it");
+test.assertNotIncludes(resolver, 'route: "device"', "the on-device model is never published as the general chat route, which ClioTalk readiness cannot serve");
+test.assertMatches(resolver, /selectedPreference === "auto" \|\| selectedPreference === "device"\s*\n\s*\? \(target/, "a stored device preference walks like auto, so Website and key routes stay reachable");
+test.assertMatches(resolver, /publish\(\{ device: \{ status: device\.available \? "available" : "unavailable", reason: device\.reason, engine: device\.engine \} \}\);\s*\n[^\n]*\n[^\n]*\n\s*continue;/, "the device candidate only publishes its status for the ask-only doors, then the walk continues");
+test.assertIncludes(resolver, 'await ensureDeviceModelModule()', "the device client loads lazily, not at boot");
+
+// --- Built-in first on the Mac's local route ----------------------------------
+
+test.assertMatches(resolver, /const device = selectedPreference !== "local" && !localReady\(\) && deviceProbe \? await deviceProbe : null;\s*\n\s*if \(device\?\.engine === "mlx"\)/,
+  "the local step takes the built-in model first, unless the writer picked LM Studio or already has a model loaded there");
+test.assertIncludes(resolver, 'provider: "built-in"', "the built-in model is published as the local route's provider");
+test.assertIncludes(resolver, '!(selectedPreference === "local" && existing.provider === "built-in")', "picking local after the built-in took the route hands it back to LM Studio");
+test.assertIncludes(chatMessages, "builtIn?.active && builtIn.canServe(nextPayload)", "the local transport sends what the built-in model can read to it, and the rest to LM Studio");
 
 // --- One in-flight resolution, sticky once a chat has output ------------------
 
@@ -151,5 +168,34 @@ test.assertMatches(
   /workspaceProfile === workspaceProfileDesktop && clioStudioHelpActions\.has\(action\)[\s\S]{0,80}action = "open-writing-studio";/,
   "Desktop-profile writing-route suggestions route through Writing Studio"
 );
+
+// --- Behaviour: a stored "device" preference still reaches the general routes --
+
+async function walk({ preference, deviceAvailable, cloud }) {
+  const events = new EventTarget();
+  const window = {
+    dispatchEvent: (event) => events.dispatchEvent(event),
+    addEventListener: (...args) => events.addEventListener(...args),
+    AISystem6PublicAccess: { getCapabilities: async () => ({ deployment_target: "mac" }) },
+    AISystem6DeviceModel: { status: async () => ({ available: deviceAvailable, reason: deviceAvailable ? null : "modelNotReady" }) },
+  };
+  const context = vm.createContext({
+    window, document: { documentElement: { dataset: {} } }, CustomEvent, AbortSignal, console,
+    clioProviderPreference: preference,
+    ensureDeviceModelModule: async () => {},
+    connectLocalLmStudio: async () => null,
+    cloudConfig: cloud ? { active: true, provider: "p", model: "m" } : { active: false },
+    cloudCredentialReady: () => Boolean(cloud),
+    cloudCredentialMode: () => "byok",
+  });
+  vm.runInContext(resolver, context);
+  return window.AISystem6ClioProvider.resolve({ force: true });
+}
+
+const deviceOnly = await walk({ preference: "device", deviceAvailable: true, cloud: false });
+test.assert(deviceOnly.route !== "device" && deviceOnly.status === "unavailable" && deviceOnly.device.status === "available",
+  "a device preference never publishes a device chat route, and the doors still see the model as available");
+const deviceWithKey = await walk({ preference: "device", deviceAvailable: true, cloud: true });
+test.assert(deviceWithKey.status === "ready" && deviceWithKey.route === "byok", "a device preference walks on to a key route for general chat");
 
 test.finish();

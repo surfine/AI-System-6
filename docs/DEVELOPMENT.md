@@ -89,9 +89,9 @@ twice — pick one. `verify:public` is an alias of `verify:public-tree`.
 
 `--file` over-approximates on purpose: a contract that mentions the path still
 runs, and a path no contract mentions runs none — the run says so rather than
-quietly passing. The appearance pixel net is not in any of these; it runs in the
-release lane (see `internal/operations/RELEASE.md`), because a screenshot is
-worth a minute and a unit of source is not.
+quietly passing. The appearance pixel net is not in any of these; it is an on-demand audit
+(`npm run audit:appearance`, see `internal/operations/RELEASE.md`), because a
+screenshot is worth a minute and a unit of source is not.
 
 ## Editing the browser runtime
 
@@ -123,8 +123,9 @@ boundary. Prefer testing observable structure or behavior over implementation
 spelling.
 
 The Chromium and WebKit static smoke runs in CI on every change
-(`.github/workflows/ci.yml`, one job per engine); a release adds the eight-stop
-`verify:walk` on top of it. Broader browser probes remain diagnostics, and no
+(`.github/workflows/ci.yml`, one job per engine); the release gate boots the desk
+in Chromium once and runs the cascade ledger at two viewports, and the
+eight-stop `audit:walk` is an on-demand audit. Broader browser probes remain diagnostics, and no
 browser probe replaces a deterministic product contract.
 
 ## Assets and generated files
@@ -267,4 +268,4 @@ edit — is held by the record feed.
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for community and review expectations.
 
-<!-- claim-check: node tooling/verify-features.mjs --list (361 contracts) | npm run verify:floppy (budget + bundle sizes) | .github/workflows/ci.yml | apps/desktop/app/core/persistence-scan-shadow.js -->
+<!-- claim-check: node tooling/verify-features.mjs --list (prints the current contract count) | npm run verify:floppy (budget + bundle sizes) | .github/workflows/ci.yml | apps/desktop/app/core/persistence-scan-shadow.js -->

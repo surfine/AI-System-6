@@ -76,6 +76,37 @@ try {
     console.log("Real ad-hoc app, ZIP, checksum and signature rejection verified.");
   } else console.log("SKIP native signature/ZIP evidence: requires arm64 macOS.");
   test.assert(true, "update transport and native candidate boundaries passed");
+
+  // WebKit's HTTP cache outlives the swap; the first launch of a different
+  // payload drops it, a relaunch of the same payload keeps it.
+  const caches = join(dir, "Caches/app"), cacheDir = join(caches, "WebKit/NetworkCache"), markerFile = join(dir, "frontend-identity.json");
+  const identity = { shellVersion: "1.0.1", productVersion: "1.0.58", productBuild: "20261014.3", sourceCommit: "b".repeat(40) };
+  const cached = async () => stat(join(cacheDir, "Version 17/Records/entry")).then(() => true, () => false);
+  await mkdir(join(cacheDir, "Version 17/Records"), { recursive: true });
+  await writeFile(join(cacheDir, "Version 17/Records/entry"), "stale desk");
+  assert.deepEqual(await worker.frontendCache({ identity, cacheDir, markerFile }), { purged: true });
+  assert.equal(await cached(), false);
+  await mkdir(join(cacheDir, "Version 17/Records"), { recursive: true });
+  await writeFile(join(cacheDir, "Version 17/Records/entry"), "current desk");
+  assert.deepEqual(await worker.frontendCache({ identity, cacheDir, markerFile }), { purged: false });
+  assert.equal(await cached(), true);
+  // Same build stamp, different payload: the stamp alone is not identity.
+  assert.deepEqual(await worker.frontendCache({ identity: { ...identity, sourceCommit: "c".repeat(40) }, cacheDir, markerFile }), { purged: true });
+  assert.deepEqual(await worker.frontendCache({ identity, cacheDir, markerFile, force: true }), { purged: false });
+  await assert.rejects(worker.frontendCache({ identity, cacheDir: caches, markerFile }), /Invalid cache directory/);
+  test.assert(true, "a different payload (even under the same build stamp) drops the WebKit HTTP cache once; a relaunch keeps it");
+
+  // Health gate: the handed-over fingerprint must match, and a build that
+  // measures its boot must have lost no writer record.
+  const healthyFile = join(dir, "gate-health.json");
+  const gateIdentity = { shellVersion: "1.0.1", productBuild: "20261014.3", productVersion: "1.0.58", sourceCommit: "b".repeat(40), storageSchema: 6 };
+  const gate = { healthyFile, startedAt: Date.now() - 1000, dataFingerprint: "d".repeat(64) };
+  const report = (extra) => writeFile(healthyFile, JSON.stringify({ ...gateIdentity, ready: true, time: Date.now(), dataFingerprint: "d".repeat(64), ...extra }));
+  await report({}); assert.equal((await worker.health(gate, gateIdentity, 500)).ready, true);
+  await report({ writerData: { checked: true, lost: 0 } }); assert.equal((await worker.health(gate, gateIdentity, 500)).writerData.lost, 0);
+  await report({ writerData: { checked: true, lost: 1 } }); await assert.rejects(worker.health(gate, gateIdentity, 500), /did not become healthy/);
+  await report({ dataFingerprint: "e".repeat(64) }); await assert.rejects(worker.health(gate, gateIdentity, 500), /did not become healthy/);
+  test.assert(true, "the health gate needs the handed-over fingerprint and refuses a boot that lost writer records");
 } finally {
   await new Promise((resolve) => server.close(resolve));
   await rm(dir, { recursive: true, force: true });

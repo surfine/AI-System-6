@@ -111,6 +111,17 @@ if (existsSync(join(root, "platform/macos/tinyjs/tinyjs.json"))) {
   else fail("TinyJS upstream baseline differs");
 }
 
+// The bundle must parse on the Macs the app ships to. A lookbehind in a boot
+// file stopped 1.0.59 from starting on macOS 12's WebKit (see the gate's own
+// header); this costs milliseconds and reads the built bundle plus the app's
+// own sources.
+const webkitCompat = runReceiptCheck("webkit-compat", process.execPath, ["tooling/verify-webkit-compat.mjs"], {
+  cwd: root,
+  encoding: "utf8",
+});
+if (webkitCompat.status === 0) ok("WebKit compatibility");
+else fail(`WebKit compatibility failed\n${webkitCompat.stderr || webkitCompat.stdout}`);
+
 const releaseAssets = runReceiptCheck("release-assets", process.execPath, ["tooling/check-release-assets.mjs"], {
   cwd: root,
   encoding: "utf8",
@@ -247,9 +258,9 @@ if (smokeRelease.status === 0) {
   fail(`release smoke verification failed\n${smokeRelease.stderr || smokeRelease.stdout}`);
 }
 
-// Timing evidence belongs to the shared quiet-machine ship lane, not this
-// general check alongside interactive desktop work. Keep its deferral visible.
-console.log("-- Bonsai simulation cost: deferred to the quiet ship gate (verify:bonsai-sim-cost)");
+// Timing evidence depends on a quiet machine, so it is an on-demand audit, not
+// part of this general check or the release gate. Keep that visible.
+console.log("-- Bonsai simulation cost: an on-demand audit (audit:bonsai-sim-cost)");
 
 // The release runs the WHOLE feature suite, batch lane included. The
 // development loop's fast lane defers the whole-system contracts (joyride, the

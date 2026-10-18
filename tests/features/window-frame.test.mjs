@@ -70,12 +70,12 @@ test.assertMatches(
 );
 test.assertMatches(
   windows,
-  /\.window-frame-bar\.is-vertical \{[^}]*bottom: var\(--window-frame-lane\)/,
+  /\.window-frame-bar\.is-vertical \{[^}]*bottom: (?:calc\()?var\(--window-frame-lane\)/,
   "The vertical bar stops one cell short — that cell is the grow box"
 );
 test.assertMatches(
   windows,
-  /\.window-frame-bar\.is-horizontal \{[^}]*right: var\(--window-frame-lane\)/,
+  /\.window-frame-bar\.is-horizontal \{[^}]*right: (?:calc\()?var\(--window-frame-lane\)/,
   "The horizontal bar stops at the same corner cell"
 );
 

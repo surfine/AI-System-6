@@ -1,7 +1,8 @@
-// A true first launch opens ClioTalk as the front door. Onboarding is one
-// conversation surface, not a wizard or a mounted Welcome Floppy: resumable
-// work always wins, the starters only fill the composer, and Replay
-// Introduction is a session state that never resets completion.
+// A true first launch opens About on its "First time here" face: three equal
+// doors (pick a Mac, write one line, watch the film), not a wizard and not a
+// mounted Welcome Floppy. Resumable work always wins; any door, or an
+// ordinary ClioTalk exchange, completes the introduction; Replay Introduction
+// reopens the same face and never resets completion. (DESIGN.md, 2026-10-16.)
 
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
@@ -11,6 +12,7 @@ const actions = read("app/core/actions.js");
 const boot = read("app/core/boot.js");
 const desktopRuntime = read("app/core/desktop-runtime.js");
 const guide = read("app/features/writer-guide.js");
+const about = read("app/features/about-desk.js");
 const html = read("index.html");
 const en = read("app/data/translations-en.js");
 const zh = read("app/data/translations-zh.js");
@@ -28,8 +30,13 @@ test.assertMatches(
 );
 test.assertMatches(
   desktopRuntime,
-  /if \(!clioOnboardingCompleted\) \{\s*\n\s*openFirstRunClioTalk\(\);\s*\n\s*return;/,
-  "a true first launch opens ClioTalk instead of mounting a Welcome Floppy"
+  /if \(aboutStartup\.show === true \|\| \(aboutStartup\.show === null && !clioOnboardingCompleted\)\) \{[\s\S]{0,260}?assistant\?\.classList\.add\("is-hidden"\);[\s\S]{0,160}?openAboutFirstTime\(\{ startup: true \}\);\s*\n\s*return;/,
+  "a true first launch, or a writer who asked for it, opens About's first-time face and nothing else"
+);
+test.assertMatches(
+  desktopRuntime,
+  /!clioOnboardingCompleted && aboutStartup\.show === null && aboutStartup\.shows >= 2\) \{\s*\n\s*completeClioOnboarding\("seen-twice"\)/,
+  "someone who closed the doors twice is not shown them a third time"
 );
 // Someone who wrote a paragraph is not on first launch, whatever the flag
 // says. The restored Working Session always wins over onboarding.
@@ -38,66 +45,40 @@ test.assertMatches(
   /const resumedWorkingSession = !writerMode[\s\S]*if \(!clioOnboardingCompleted && !resumedWorkingSession\) \{[\s\S]*?openStartupItems\(\)/,
   "resumable work is never dropped for onboarding"
 );
-test.assertMatches(
-  guide,
-  /async function openFirstRunClioTalk\(\)[\s\S]*?openWindow\("assistant"\)[\s\S]*?AISystem6ClioProvider\?\.resolve\?\.\(\{ reason: "first-run" \}\)/,
-  "first run opens the existing ClioTalk window and starts the provider resolver in the background"
-);
+test.assertNotIncludes(guide, "openFirstRunClioTalk", "ClioTalk is no longer the front door");
+test.assertMatches(guide, /async function openAboutFirstTime\(\{ startup = false \} = \{\}\) \{\s*\n\s*await ensureAboutModule\(\);\s*\n\s*return window\.AISystem6About\.open\(\{ face: "first", startup \}\);/, "the front door is About's first-time face, loaded on demand");
 
-// --- The introduction surface ----------------------------------------------
+// --- The doors ------------------------------------------------------------
 
-test.assertIncludes(guide, "return clioIntroductionReplay || !clioOnboardingCompleted;", "the introduction is active for new users and during a replay");
-// Write access used to lead this chain. It no longer appears in it: a window
-// that does not hold the write lease still talks and still saves, because its
-// writes travel to the window that holds the database connection. A true first
-// use greets before any model gate, as it always did.
-test.assertMatches(
-  chatMessages,
-  /const welcomeKey = introducing && !sideAskEnabled && !clioTalkTemporaryMode\s*\n\s*\? "clio_first_welcome_message"\s*\n\s*: providerResolving\s*\n\s*\? "clio_provider_resolving_message"/,
-  "a true first use greets before any model gate"
-);
-test.assertIncludes(chatMessages, '? "clio_first_welcome_message"', "a true first use greets with the Clio introduction");
-test.assertIncludes(chatMessages, ': (clioTalkTemporaryMode ? "temporary_welcome_message" : "welcome_message")', "returning users keep the ordinary ClioTalk welcome");
-// Still a quiet note inside the greeting, never a gate — but it now says WHICH
-// of the two reasons applies. The website's own AI is the default, so the
-// honest sentence is usually not "connect a model": it is that today's shared
-// budget is spent, and where to add your own key.
-test.assertIncludes(chatMessages, '"clio_first_welcome_no_model"', "a first use without a model gets a quiet note inside the greeting, not a gate");
-test.assertIncludes(chatMessages, '"clio_shared_quota_spent"', "and a spent shared budget says so, instead of asking for a model that is already there");
-test.assertIncludes(chatMessages, 'providerState.quota?.state === "exhausted"', "the note reads the resolver's own quota state rather than guessing");
-for (const starter of ["idea", "notes", "file", "explore"]) {
-  test.assertMatches(chatMessages, new RegExp(`\\["${starter}", "clio_starter_${starter}"\\]`), `the introduction offers the ${starter} starter`);
+for (const door of ["mac", "line", "film"]) {
+  test.assertIncludes(about, `door("${door}", "about_door_${door}"`, `the ${door} door exists`);
+  test.assertIncludes(en, `about_door_${door}:`, `English copy names the ${door} door`);
+  test.assertIncludes(zh, `about_door_${door}:`, `Chinese copy names the ${door} door`);
 }
-test.assertMatches(
-  guide,
-  /function activateClioStarter\(starterId = ""\)[\s\S]*?promptInput\.value = t\(key\);[\s\S]*?promptInput\.focus\(\);/,
-  "with a model, a starter only puts an editable phrase into the composer"
-);
-test.assertMatches(
-  guide,
-  /if \(id === "explore"\) \{\s*\n\s*if \(typeof handleAction !== "function"\) return false;\s*\n\s*handleAction\("play-teaser-demo"\);/,
-  "the stranger's card plays the offline tour in every model state, never a prompt-prose introduction"
-);
-test.assertNotIncludes(guide, "clio_starter_explore_prompt", "the prompt-prose introduction is retired");
-test.assertNotIncludes(en, "clio_starter_explore_prompt:", "the retired explore prompt is gone from English copy");
-test.assertNotIncludes(zh, "clio_starter_explore_prompt:", "the retired explore prompt is gone from Chinese copy");
-test.assertMatches(
-  guide,
-  /idea: "open-quick-draft",\s*\n\s*notes: "open-note-pad",\s*\n\s*file: "open-import-utility",\s*\n\s*\}\[id\];/,
-  "without a model, the intent starters open the nearest working door instead of prefilling a composer that cannot send"
-);
-test.assertNotMatches(
-  guide,
-  /function activateClioStarter\(starterId = ""\)[\s\S]*?(requestSubmit|submitUserText)/,
-  "starters never auto-send a message"
-);
-test.assertIncludes(chatMessages, 'button.dataset.balloonHelp = "balloon_clio_starter_explore"', "Balloon Help says the tour is offline, 30 seconds, and restores the desk");
-test.assertIncludes(en, "clio_first_welcome_message:", "English copy exists for the Clio introduction");
-test.assertIncludes(zh, "clio_first_welcome_message:", "Chinese copy exists for the Clio introduction");
-test.assertIncludes(en, "clio_first_welcome_no_model:", "English copy exists for the no-model greeting note");
-test.assertIncludes(zh, "clio_first_welcome_no_model:", "Chinese copy exists for the no-model greeting note");
+test.assertMatches(about, /function playFilm\(\) \{[\s\S]*?if \(face === "first"\) finishDoor\("film"\);/, "the film door counts once play is pressed");
+test.assertMatches(about, /appearanceGrid\(\{ onPick: \(\) => finishDoor\("mac"\) \}\)/, "picking a Mac finishes that door");
+test.assertMatches(about, /landLineOnNotePad\(text\);\s*\n\s*await finishDoor\("line"\);/, "a kept line lands as a Note Pad slip and finishes that door");
+test.assertMatches(about, /async function finishDoor\(door\) \{[\s\S]*?completeClioOnboarding\(`about-\$\{door\}`\)[\s\S]*?show: false/, "a finished door completes the introduction and clears Show at startup");
+test.assertMatches(about, /async function lineToClio\(\) \{[\s\S]*?promptInput\.value = t\("about_door_ask_prompt", keptLine\);[\s\S]*?promptInput\.focus\(\);\s*\n\s*\}/, "Clio only asks: the composer is filled, never sent");
+test.assertNotMatches(about, /requestSubmit|submitUserText/, "no door sends a message on the writer's behalf");
+test.assertMatches(about, /if \(!can\.ok\) \{\s*\n\s*ask\.disabled = true;\s*\n\s*ask\.dataset\.balloonHelpDisabled = can\.reason;\s*\n\s*row\.append\(ask, el\("p", "about-fine", t\(can\.reason\)\)\);/, "without a model the ask button is grey and says why");
 test.assertNotIncludes(en, "Tell me what you are working on", "charter: desktop first copy never asks what the user is working on");
 test.assertNotIncludes(zh, "告诉我你正在做什么", "charter: desktop 首句文案不以询问对方在做什么开场");
+const firstFace = about.slice(about.indexOf("function renderFirst(host)"), about.indexOf("// ---- Render"));
+test.assertNotMatches(firstFace, /provider|api[_ ]?key|apiKey|open-control|model_settings/i, "the first face never leads with provider fields");
+
+// --- ClioTalk keeps its ordinary welcome ------------------------------------
+
+test.assertMatches(
+  chatMessages,
+  /const welcomeKey = providerResolving\s*\n\s*\? "clio_provider_resolving_message"\s*\n\s*: !modelReady\s*\n\s*\? "clio_model_required_message"/,
+  "ClioTalk opens with its ordinary welcome; there is no first-run greeting"
+);
+for (const key of ["clio_first_welcome_message:", "clio_starter_idea:", "clio_starter_explore:"]) {
+  test.assertNotIncludes(en, key, `retired first-run copy ${key} is gone from English`);
+  test.assertNotIncludes(zh, key, `retired first-run copy ${key} is gone from Chinese`);
+}
+test.assertIncludes(chatMessages, '"clio_shared_quota_spent"', "a spent shared budget still says so in the ordinary welcome");
 
 // --- Completion and migration ----------------------------------------------
 
@@ -107,7 +88,7 @@ test.assertMatches(
   "sending the first durable Chat message completes onboarding; Temporary Chat and SideAsk do not"
 );
 test.assertIncludes(actions, '"skip-clio-introduction": () => completeClioOnboarding("skipped")', "explicitly skipping completes onboarding");
-test.assertIncludes(windowManager, 'await completeClioOnboarding("closed");', "closing the first-run ClioTalk window also completes onboarding");
+test.assertIncludes(windowManager, 'if (name === "about") await window.AISystem6About?.closing?.();', "closing About lets it tear the film down and count a dismissed first face");
 test.assertMatches(
   guide,
   /async function completeClioOnboarding\(reason = "completed"\)[\s\S]*?clioOnboardingCompleted = true;[\s\S]*?await saveDeskState\(\);/,
@@ -133,14 +114,13 @@ test.assertNotMatches(persistence, /^\s*guideSeen,$/m, "saves no longer write th
 
 // --- Replay Introduction -----------------------------------------------------
 
-test.assertIncludes(guide, "if (replay) clioIntroductionReplay = true;", "Replay Introduction is a session-only state");
-test.assertIncludes(actions, '"replay-clio-introduction": () => openClioIntroduction({ replay: true })', "the replay action reuses the introduction surface");
+test.assertIncludes(actions, '"replay-clio-introduction": () => openAboutFirstTime()', "the replay action reopens About's first-time face");
 test.assertIncludes(actions, 'registerCommand?.("replay-clio-introduction"', "replay is a registered command available everywhere");
 test.assert(
   html.split('data-action="replay-clio-introduction"').length - 1 >= 3,
   "the Apple menu, Control Panel, and Help Folder share the one replay action"
 );
-test.assertMatches(html, /apple-menu-popover[\s\S]{0,600}data-action="replay-clio-introduction"/, "Replay Clio Introduction lives in the Apple menu Start section");
+test.assertMatches(html, /apple-menu-popover[\s\S]{0,600}data-action="replay-clio-introduction"/, "Replay Introduction lives in the Apple menu Start section");
 
 // --- The Welcome Floppy is gone ---------------------------------------------
 
@@ -156,7 +136,9 @@ for (const key of ["welcome_floppy:", "welcome_read_me:", "welcome_ai_setup:", "
 
 // --- Discovery surfaces the floppy used to carry ------------------------------
 
-test.assertMatches(html, /about-links[\s\S]{0,400}data-action="open-project-site"[\s\S]{0,200}data-action="open-github-repo"[\s\S]{0,200}data-action="open-guide-promo"/, "About keeps the project site, source, and film links");
+test.assertIncludes(about, 'button("about_place_site"', "About keeps the project site");
+test.assertIncludes(about, 'button("about_place_source"', "About keeps the source code link");
+test.assertIncludes(about, "function filmCard(", "About keeps the film");
 test.assertIncludes(actions, '"play-teaser-demo": playWelcomeTour', "the deterministic 30-second tour keeps its entrypoint");
 test.assertIncludes(read("app/data/system-dictionary.js"), 'id: "install-web-app"', "iPhone install instructions live in System Help");
 test.assertIncludes(read("app/data/system-dictionary.js"), 'id: "quick-tour"', "System Help keeps a door to the quick introduction");

@@ -129,11 +129,19 @@ try {
           if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) continue;
           const box = element.getBoundingClientRect();
           if (box.width < 8 || box.height < 8) continue;
+          // A safe-area inset holds a surface off the display's curve: with a
+          // home indicator under it, the composer's own rounded corner sits
+          // above the curve rather than inside it, and its own radius is the
+          // right one (that is what the phone composer's rule already does, by
+          // multiplying the inset into the corner it chooses). Only a corner
+          // that really reaches the display is the display's.
+          const insets = getComputedStyle(document.documentElement);
+          const lifted = (side) => (Number.parseFloat(insets.getPropertyValue(`--safe-area-${side}`)) || 0) > 0;
           const corners = [
-            ["top-left", box.left <= 1 && box.top <= 1, style.borderTopLeftRadius],
-            ["top-right", box.right >= width - 1 && box.top <= 1, style.borderTopRightRadius],
-            ["bottom-left", box.left <= 1 && box.bottom >= height - 1, style.borderBottomLeftRadius],
-            ["bottom-right", box.right >= width - 1 && box.bottom >= height - 1, style.borderBottomRightRadius],
+            ["top-left", !lifted("top") && box.left <= 1 && box.top <= 1, style.borderTopLeftRadius],
+            ["top-right", !lifted("top") && box.right >= width - 1 && box.top <= 1, style.borderTopRightRadius],
+            ["bottom-left", !lifted("bottom") && box.left <= 1 && box.bottom >= height - 1, style.borderBottomLeftRadius],
+            ["bottom-right", !lifted("bottom") && box.right >= width - 1 && box.bottom >= height - 1, style.borderBottomRightRadius],
           ];
           for (const [corner, touches, radius] of corners) {
             if (!touches) continue;

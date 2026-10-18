@@ -39,6 +39,28 @@ function stripRebuildMarkdownFence(markdown) {
     .trim();
 }
 
+// One block's sentences: a sentence ends after its punctuation and the
+// whitespace that follows it (no whitespace, no split). Scanned rather than
+// split on a lookbehind: WebKit builds before 16.4, including the macOS 12
+// WKWebView, reject one while parsing, and this file is in the boot bundle,
+// so a parse error here stops the whole desk before boot() runs.
+const SENTENCE_END = "。！？.!?";
+
+function rebuildSentences(text) {
+  const parts = [];
+  let start = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    if (!SENTENCE_END.includes(text[index]) || !/\s/.test(text[index + 1] || "")) continue;
+    let end = index + 1;
+    while (end < text.length && /\s/.test(text[end])) end += 1;
+    parts.push(text.slice(start, end));
+    start = end;
+    index = end - 1;
+  }
+  if (start < text.length) parts.push(text.slice(start));
+  return parts;
+}
+
 function getRebuildParagraphs(text) {
   const blocks = String(text || "")
     .split(/\n\s*\n+/)
@@ -47,8 +69,7 @@ function getRebuildParagraphs(text) {
 
   if (blocks.length >= 3) return blocks;
 
-  return String(text || "")
-    .split(/(?<=[。！？.!?])\s+/)
+  return rebuildSentences(String(text || ""))
     .map((item) => item.replace(/\s+/g, " ").trim())
     .filter((item) => item.length > 30);
 }

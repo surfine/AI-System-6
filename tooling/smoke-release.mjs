@@ -214,23 +214,21 @@ if (
   else fail(`app hook missing: ${name}`);
 });
 
-// CLAUDE.md is the single source of truth. Enforce key sections still present.
+// CLAUDE.md is the single source of truth. Enforce key sections still present
+// (outline of 2026-10-15: the entrypoint is held to about 200 lines, so the
+// old fifteen headings are folded into these twelve).
 [
   "What This Is",
-  "Run",
-  "Architecture",
-  "Build System",
-  "Module Loading",
+  "Run, Architecture, Build",
   "Verification",
-  "Floppy Budget",
-  "Storage",
-  "Server API Routes",
-  "Environment Variables",
+  "Storage and Server",
   "Naming Rules",
   "Design Rules",
-  "Common Pitfalls",
-  "Context Economy",
-  "Parallel Work",
+  "Do Not Introduce",
+  "How To Work Here",
+  "Codex / Claude Continuity",
+  "Repo Etiquette",
+  "Reference Tiers",
 ].forEach((section) => {
   const sectionPattern = new RegExp(`^##\\s+${section.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "m");
   if (sectionPattern.test(claudeDoc)) ok(`CLAUDE.md section ${section}`);

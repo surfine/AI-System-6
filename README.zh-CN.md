@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: 266bf7d6b79b4f038ed0deecedbceb8626f65e36f2ef9a0ba10bcc4e9ccf3ea4 -->
+<!-- source-sha256: 5e58de0eef5fdf3583f0dc83bc6eb778137f75bc8da9f0f2d88e257feefdcbc1 -->
 
 > 英文版为准 / 仅供人类参考
 
@@ -18,7 +18,7 @@
 [![Model](https://img.shields.io/badge/model-bring%20your%20own-000000?style=flat-square)](#自带模型)
 [![Live](https://img.shields.io/badge/live-system6.aaronlau.me-000000?style=flat-square)](https://system6.aaronlau.me)
 
-[**立即启动**](https://system6.aaronlau.me)&nbsp;&nbsp;·&nbsp;&nbsp;[**50 秒影片**](https://www.bilibili.com/video/BV1ht3m6UEDb/)&nbsp;&nbsp;·&nbsp;&nbsp;[**产品官网**](https://aisystem6.pages.dev/zh-CN.html)&nbsp;&nbsp;·&nbsp;&nbsp;[**Mac 测试版**](https://github.com/surfine/AI-System-6/releases/latest)&nbsp;&nbsp;·&nbsp;&nbsp;[English](README.md)
+[**立即启动**](https://system6.aaronlau.me)&nbsp;&nbsp;·&nbsp;&nbsp;[**宣传片**](https://www.bilibili.com/video/BV1gYph6hEE6/)&nbsp;&nbsp;·&nbsp;&nbsp;[**产品官网**](https://aisystem6.aaronlau.me/zh-CN.html)&nbsp;&nbsp;·&nbsp;&nbsp;[**Mac 测试版**](https://github.com/surfine/AI-System-6/releases/latest)&nbsp;&nbsp;·&nbsp;&nbsp;[English](README.md)
 
 <br>
 
@@ -45,7 +45,7 @@
 ## 目录
 
 - [近期进展](#近期进展)
-- [1.0.58 有什么新东西](#1058-有什么新东西)
+- [1.0.59 有什么新东西](#1059-有什么新东西)
 - [更早版本](#更早版本--1058--1057--1056点击展开)
 - [它保护的是什么](#它保护的是什么)
 - [60 秒跑起来](#60-秒跑起来)
@@ -64,6 +64,7 @@
 
 ## 近期进展
 
+- **直接在桌面上编辑手头的 Office 文件。** Excel 工作簿（.xlsx）在 ClioChart 打开，PowerPoint 演示（.pptx）在 ClioStage 打开，Word 文稿（.docx）在 ClioWrite 打开。Express 只改单元格的值、幻灯片文字与备注、段落文字；完整编辑再加公式、页面与版式命令，以及标题、粗斜体和列表。表格、图表、SmartArt 和图片只读并原样保留，批注可以阅读、添加和回复。存储时文件里其余内容保持原样；第一次存储会用白话列出将被转换或丢掉的东西，并标出所在的工作表或页面，默认按钮是「取消」。「编辑 › 撤销」可以按名称逐步退回。目前不能从零新建文件；三种格式的往返都已在 LibreOffice 中核对过，Excel 与 PowerPoint 另在 Microsoft 365 for Mac 中核对过；Word 的核对尚未进行。
 - **把原文整理成图表或幻灯片。** ClioChart 保留图中内容对应的原句。ClioStage 可以直接编辑幻灯片页面，并在打印前预览。AI 起草需要连接模型，分享前仍需检查结果。
 - **图像换了应用，仍能继续编辑。** 图表、绘图和封面可以作为可编辑副本插入其他编辑器。原件变化后，由你决定是否同步副本。每个编辑器分别保存撤销历史。
 - **找到要继续工作的窗口。** Dock 先显示应用的窗口预览，选中后再打开。Mac OS X 外观的 Dock 默认关闭，可在控制面板中启用。十二套外观都可以选择。
@@ -73,24 +74,32 @@
 项目保存在浏览器里。请导出备份，另存一份。逛桌面、玩游戏和打开 **36 张示例项目硬盘**，都不需要连接 AI 模型。
 
 <details>
-<summary>版本详情：1.0.58、1.0.57 与 1.0.56</summary>
+<summary>版本详情：1.0.59、1.0.58、1.0.57 与 1.0.56</summary>
 
-## 1.0.58 有什么新东西
+## 1.0.59 有什么新东西
+
+- **桌面在 macOS 12 上重新可启动。** 启动包里的一条正则让 1.0.59 在 WebKit 16.4 之前（Intel/Monterey 应用与较旧 Safari 所依赖的引擎）无法启动。现在已不再使用该写法；Intel 应用由同一份源码重建，使用 Developer ID 签名并完成公证。
+- **直接在桌面上编辑 Office 文件。** Excel 工作簿（.xlsx）在 ClioChart 打开，PowerPoint 演示（.pptx）在 ClioStage 打开，Word 文稿（.docx）在新的 ClioWrite 窗口打开。Express 只改单元格的值、幻灯片文字与备注、段落文字；完整编辑再加公式、页面与版式命令，以及标题、粗斜体和列表。手机和平板上也能看到 ClioWrite。
+- **存储时文件里其余内容保持原样。** 表格、图表、SmartArt 和图片只读并原样保留；批注可以阅读、添加和回复。第一次存储会用白话列出将被转换或丢掉的东西，并标出所在的工作表或页面，默认按钮是「取消」。「编辑 › 撤销」可以按名称逐步退回。目前不能从零新建文件。三种格式的往返都已在 LibreOffice 中核对过，Excel 与 PowerPoint 另在 Microsoft 365 for Mac 中核对过；Word 的核对尚未进行，ClioWrite 的图标暂时是一幅线条草图。
+- **「关于」成了可以一直开着的窗口。** 需要时才打开，不再挡住桌面。里面有影片和制作名单，「初次使用」给出三种上手方式：挑一台 Mac、在便签本的一张便条上写一句话，或者看影片。启动清单只在启动变慢或出错时才出现。
+- **Platinum 更像 Mac OS 9。** 窗口边框、滚动条、桌面与苹果菜单图标、Control Strip，以及列表、标签和状态栏里的小字，都照真实的 Mac OS 9 画面调整。标题、按钮和菜单的粗体保留粗体字面，因为 Geneva 没有粗体。阅读与编辑的文字仍用现代字号。
+- **Classic 外观的单选钮和复选框又显示了。** 有些安装里它们是空白的，控制面板的「AI 连接」列表因此只剩文字。
+- **网页桌面能通知你，也能链接到对象。** 标签页在后台时，新通知会以系统通知送达，第一次使用会先征求许可。点击通知回到它所指的对象；形如 `?open=scrapbook&id=…` 的链接，会在桌面已打开的项目里打开该对象。
+- **《明文》换了外观，故事也更长。** 新的「打字与便条」界面：港雾灰底、墨蓝文字，默认浅色，深色随系统或设置。白狼改成霜的形状，真结局多了一段尾声，支线改写成友情结局「同行」，第十章新增四个选择。
+
+<details>
+<summary><b>更早版本 —— 1.0.58 / 1.0.57 / 1.0.56</b>（点击展开）</summary>
+
+**1.0.58**
 
 - **Mac 应用改用 TinyJS，支持 Apple silicon、macOS 15 及以上。** 完整应用随包携带 Node、本地服务器和网页桌面。自动检查更新；工作保存、模型与导入导出任务结束后，由你点击“安装并重启”。1.0.58 首次 OTA 采用 ad-hoc 签名，校验 HTTPS、SHA-256 和应用签名；Developer ID 与公证待补，首次安装可能需要 macOS 的“仍要打开”步骤。
 - **Mac 收集由你决定。** 剪贴板收集默认关闭；选中文字与截屏取字先进入可编辑候选，再确认归档位置。“Mac 应用”设置还提供选区快捷键、快速预览和下载控制。旧模型密钥迁移到钥匙串前询问，取消或失败保留原配置。
-
 
 - **图表以真实副本原位编辑。** 选中图表，选择 编辑副本，它会在 ClioChart 中打开并拥有独立撤销；采用作为父文档中一次可撤销的步骤落地，而来源保持逐字节不变。草稿打开期间父文档若被修改，提交会被拒绝而不是覆盖任何一方。
 - **上下文条会说出你正在哪个对象上** —— 列出对当前选择适用的命令，并对任何禁用项给出理由，在全部十二个外观下回答一致。
 - **网络说谎时的可信度。** 提交的回执在传输中丢失时，会话会明确进入不确定态并通过查询原请求来核对——绝不重发写入，也绝不把已落地的应用报成取消。
 - **没有答案的问题也是笔记。** 把剪藏标记为待解：它保留引用的原文，状态只经你的接受而变化；相似问题以本地、可关闭的提示出现。
 - **版本变迁下阅读保持诚实。** 批注记住自己基于的版本；只有真正的语义变化才成为复核候选；死锚保留你的原话并加标记。
-
-<details>
-<summary><b>更早版本 —— 1.0.58 / 1.0.57 / 1.0.56</b>（点击展开）</summary>
-
-**1.0.58**
 
 - **Office 文件保留自己的字节。** 把 DOCX、XLSX 或 PPTX 放上文件软盘，原始包与提取出的文字副本同在；打开时只问一次——编辑文件本身，还是在阅读器里读文字副本。未编辑的保存返回与原件完全相同的字节；编辑后只重写改过的部分，编辑器不认识的部件按原字节保留。往返由语义保留哨兵把关；Microsoft Office 本身的验收尚未运行。
 - **ClioStage 检查你所在的那一页。** 一次真实的排版测量会报告超出文本框的文字、跨出页边的对象、互相重叠的放置块和比例失真的图片。定位对象、预览纯几何修正、以一次可撤销的操作采用、重新检查；绝不为了通过排版检查改写稿件的数字或引文。幻灯片还可以导出为原生 PowerPoint 文件——文字保持可编辑，演讲备注仍是备注。
@@ -479,13 +488,13 @@ flowchart LR
 ## 在一个 1988 年的约束下建造
 
 ```text
-启动关键载荷            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,955,314 字节
-两张 1.44 MB 软盘       ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 字节
+启动关键载荷            始终在系统软盘预算之内：2,959,872 字节
+两张 1.44 MB 软盘       2,949,120 字节容量，门禁另留一段余量
 重型工具                按需懒加载，从第三张盘上来
 ```
 
 发布检查会测量启动桌面所需的文件。按需加载的工具和 AI 模型不计入这个数字。
-实测启动载荷比两张软盘的容量少 8,177 字节，上面的刻度使用构建实测值。
+实测载荷只出现在构建输出里（`npm run verify:floppy` 写入 `site/data/floppy-budget.json`，官网从那里读）；README 只承诺预算，不引用会随每次构建变化的数字。
 
 ## 自带模型
 
@@ -515,7 +524,7 @@ flowchart LR
 `site/data/floppy-budget.json` 的；官网去取它，这个页面引用它。这道门禁建好的当天，
 它就抓到这份 README 在一个下午里三次引用了过期的数字。
 
-这个页面和[产品官网](https://aisystem6.pages.dev)上的每一张产品截图，都由
+这个页面和[产品官网](https://aisystem6.aaronlau.me)上的每一张产品截图，都由
 `npm run site:capture-frames`、`npm run site:capture-route` 和
 `tooling/capture-site-proofs.mjs` 从运行中的应用重新拍摄。它们每一个都会把应用启动起来、
 拍下真实的窗口，所以不存在一个会过期的手工营销图目录 —— 因为根本没有手工营销图。
@@ -572,6 +581,6 @@ Lite 的规则表（GPL-3.0），许可证与来源记录在 vendor/ubol/。
 
 如果 AI 写作工具应该放过你的嗓音，就 **[★ 给 AI System 6 加星](https://github.com/surfine/AI-System-6)**。
 
-[**线上桌面**](https://system6.aaronlau.me)&nbsp;&nbsp;·&nbsp;&nbsp;[**哔哩哔哩影片**](https://www.bilibili.com/video/BV1ht3m6UEDb/)&nbsp;&nbsp;·&nbsp;&nbsp;[**产品官网**](https://aisystem6.pages.dev)&nbsp;&nbsp;·&nbsp;&nbsp;[**最新版本**](https://github.com/surfine/AI-System-6/releases/latest)
+[**线上桌面**](https://system6.aaronlau.me)&nbsp;&nbsp;·&nbsp;&nbsp;[**哔哩哔哩影片**](https://www.bilibili.com/video/BV1gYph6hEE6/)&nbsp;&nbsp;·&nbsp;&nbsp;[**产品官网**](https://aisystem6.aaronlau.me)&nbsp;&nbsp;·&nbsp;&nbsp;[**最新版本**](https://github.com/surfine/AI-System-6/releases/latest)
 
 </div>

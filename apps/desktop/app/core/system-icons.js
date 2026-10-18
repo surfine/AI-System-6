@@ -205,6 +205,7 @@ const systemIconPaths = {
     <path d="M13 8h3v8M13 24h3v-8M16 16h3" />
     <path d="M16 14l3 2-3 2z" />
   `,
+  clioWrite: `<path d="M6 3h14l6 6v20H6zM20 3v6h6M10 13h12M10 17h12M10 21h7"/><path class="classic-ink" d="M21 26l7-7 2 2-7 7-3 1z"/>`,
   clioPaint: `
     <path d="M13.5 5C9.9 5 7 8.4 7 12.7c0 5.4 4.6 9.4 10 9.4 2.6 0 4-1 4-2.6 0-.8-.3-1.4-.3-2.2 0-1 .6-1.8 1.5-2.3 1.6-1 3.3-2.6 3.3-5.1C25.5 6.9 20.4 5 13.5 5z" />
     <circle cx="11" cy="10.5" r="2.2" />
@@ -656,7 +657,7 @@ const completeEraSystemIconIds = new Set(("startupDisk hardDisk folder document 
   + "cmfStudio soundscape scrapbook systemFolder helpFolder importUtility controlPanel chooser systemHelp dictionary "
   + "teachText writingDemo chatFile chatImport systemStatus contextPanel rebuildArticle bureaucracyMeme "
   + "endfieldTerminal documents alias systemFile multiFinderApp daHandler writingBell trashFull control localModel "
-  + "controlStrip imagePromptStudio micropolis openttd doom lightroom bonsaiCity clioPaint clioProject oneMoreTune rootline joyride mingwen").split(" "));
+  + "controlStrip imagePromptStudio micropolis openttd doom lightroom bonsaiCity clioPaint clioProject oneMoreTune rootline joyride mingwen clioWrite").split(" "));
 const supplementarySystemIconIds = new Set("clioPaint clioProject oneMoreTune".split(" "));
 // NeXTSTEP's own objects. The three applications above are "supplementary" to
 // Classic; these are the objects and system applications the era really drew
@@ -674,11 +675,11 @@ const nextstepCoreSystemIconIds = new Set((
   + "rebuildArticle bureaucracyMeme endfieldTerminal "
   + "clioStage clioChart liquidCover cmfStudio soundscape multiFinderApp "
   + "cloudModel cloudModelOff timeMachine systemStatus contextPanel daHandler "
-  + "writingBell control localModel controlStrip imagePromptStudio micropolis openttd doom lightroom bonsaiCity rootline joyride mingwen"
+  + "writingBell control localModel controlStrip imagePromptStudio micropolis openttd doom lightroom bonsaiCity rootline joyride mingwen clioWrite"
 ).split(" "));
 // rootline, joyride and mingwen joined the canonical family, so every id in
 // the vocabulary paints its own era art instead of a Classic glyph substitute.
-const liquidGlassRoundedRectIconIds = new Set(("finderApp assistant writingStudio cloudModel cloudModelOff reviewDesk searcher reader timeMachine docMap clioStage clioChart liquidCover cmfStudio soundscape scrapbook importUtility controlPanel chooser systemHelp dictionary teachText chatImport systemStatus contextPanel rebuildArticle bureaucracyMeme endfieldTerminal multiFinderApp daHandler writingBell control localModel controlStrip clioPaint clioProject oneMoreTune rootline joyride mingwen").split(" "));
+const liquidGlassRoundedRectIconIds = new Set(("finderApp assistant writingStudio cloudModel cloudModelOff reviewDesk searcher reader timeMachine docMap clioStage clioChart liquidCover cmfStudio soundscape scrapbook importUtility controlPanel chooser systemHelp dictionary teachText chatImport systemStatus contextPanel rebuildArticle bureaucracyMeme endfieldTerminal multiFinderApp daHandler writingBell control localModel controlStrip clioPaint clioProject oneMoreTune rootline joyride mingwen clioWrite").split(" "));
 function liquidGlassIconUsesRoundedRect(iconId) {
   return liquidGlassRoundedRectIconIds.has(iconId);
 }
@@ -853,7 +854,7 @@ function systemIconSvg(iconId, options = {}) {
   const requestedPlatinumSize = Number(options.platinumSourceSize);
   const platinumSourceSize = [16, 32, 42].includes(requestedPlatinumSize)
     ? requestedPlatinumSize
-    : String(options.size || "") === "desktop" ? 42 : sourceSize;
+    : String(options.size || "") === "desktop" ? 32 : sourceSize;
   const coreArt = classicSystemIconArt(id, sourceSize);
   const platinumArt = platinumCoreSystemIconArt(id, platinumSourceSize);
   const modernDisplaySize = systemIconDisplaySize(options, sourceSize);
@@ -916,7 +917,7 @@ function hydrateSystemIcons(root = document) {
       // legacy `.sys-icon-mini` hint and painted 16px artwork inside a 34px
       // cell — the only era small enough to notice, and the reason this is
       // spelled out rather than left to the source-size hint.
-      platinumSourceSize: useFinderSource ? 32 : useSmallSource ? 16 : usePlatinumDesktopSource ? 42 : 32,
+      platinumSourceSize: useFinderSource ? 32 : useSmallSource ? 16 : 32,
       // Finder icon view owns the actual 44 px display contract even when
       // legacy markup still carries the compact `sys-icon-mini` class.  The
       // rendered context must win over that historical source-size hint or a

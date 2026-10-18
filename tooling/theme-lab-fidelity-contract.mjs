@@ -582,9 +582,12 @@ export function validateFidelityManifest(manifest, { expectedTheme, label = "fid
   requireString(manifest.tolerancePolicy, `${label}.tolerancePolicy`);
   validateCapture(manifest.capture);
   const sourcesById = validateSources(manifest.sources);
-  const dpr2 = manifest.capture?.deviceScaleFactor === 2;
-  const requiredList = dpr2
-    ? REQUIRED_DPR2_SPECIMENS[theme] || []
+  // Any board off the 1x grid is a supplementary acceptance board: it pins a
+  // subset of controls (Yosemite's 2x set; Platinum's small controls at
+  // 1.25x, 1.5x and 2x) rather than the whole historical contract.
+  const dpr = Number(manifest.capture?.deviceScaleFactor) || 1;
+  const requiredList = dpr !== 1
+    ? (dpr === 2 ? REQUIRED_DPR2_SPECIMENS[theme] || [] : [])
     : REQUIRED_FIDELITY_SPECIMENS[theme];
   validateSpecimens(manifest.specimens, sourcesById, theme, requiredList);
   if (manifest.output !== undefined) {

@@ -9,7 +9,6 @@ import { createAppBootVm } from "../helpers/app-boot-vm.mjs";
 import { createFeatureTest, read, windowRegistryRecords } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("first-visit-no-model-w08");
-const chat = read("app/core/chat-messages.js");
 
 const boot = createAppBootVm();
 const ctx = boot.context;
@@ -23,24 +22,21 @@ test.assert(Object.keys(handlers).length > 150,
 test.assert(!ctx.cloudConfig?.active,
   "the boot state is a desk with no cloud model active");
 
-// The welcome-key order: the scripted first-visit greeting leads the chain,
-// so a true first visit never leads with "connect a model" even though no
-// model is connected. The ternary order in the source IS the product rule.
-const welcomeOrder = chat.slice(chat.indexOf('const welcomeKey = introducing'));
-test.assert(welcomeOrder.indexOf('"clio_first_welcome_message"')
-  < welcomeOrder.indexOf('"clio_model_required_message"'),
-  "the first-visit welcome precedes the model-required gate in the key order");
-test.assert(welcomeOrder.startsWith('const welcomeKey = introducing'),
-  "the welcome key starts from the first-visit introduction state");
-
-// The visitor copy exists in both locales and never promises a model.
+// The first visit leads with About's three doors, none of which needs a model:
+// picking a Mac and keeping a line are local, and the film is a frame. The
+// only door that asks a model ("let Clio ask me three questions") is grey with
+// its reason when none is connected, and the first face never mentions one.
+const about = read("app/features/about-desk.js");
+test.assertMatches(about, /function modelCanAsk\(\) \{[\s\S]*?return \{ ok: false, reason: "about_door_ask_no_model" \};/,
+  "the one model-backed follow-up reports why it cannot run instead of failing");
 for (const locale of ["zh", "en"]) {
-  const key = `clio_first_welcome_message`;
   const localized = read(`app/data/translations-${locale}.js`);
-  const line = localized.split("\n").find((row) => row.includes(`${key}: "`)) || "";
-  const copy = (line.match(/: "(.*)"/) || [])[1] || "";
-  test.assert(copy.length > 20 && !/connect|连接/.test(copy),
-    `the ${locale} first-visit welcome needs no model (${copy.slice(0, 40)}…)`);
+  for (const key of ["about_first_tagline", "about_door_mac_body", "about_door_line_body", "about_door_film_body"]) {
+    const line = localized.split("\n").find((row) => row.includes(`${key}: "`)) || "";
+    const copy = (line.match(/: "(.*)"/) || [])[1] || "";
+    test.assert(copy.length > 8 && !/connect|连接|model|模型/i.test(copy),
+      `the ${locale} first-visit copy ${key} needs no model (${copy.slice(0, 40)}…)`);
+  }
 }
 
 // Basic tools are registered where dispatch actually looks: the command

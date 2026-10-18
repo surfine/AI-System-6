@@ -37,7 +37,16 @@
     const ids = [];
     let index = 0;
     // Split on sentence enders (CJK and Latin), keeping the ends attached.
-    const parts = text.split(/(?<=[。！？；.!?;])/);
+    // Scanned, not split on a lookbehind: older WebKit (macOS 12) rejects one
+    // at parse time and the module would not load.
+    const parts = [];
+    let start = 0;
+    for (let index = 0; index < text.length; index += 1) {
+      if (!"。！？；.!?;".includes(text[index])) continue;
+      parts.push(text.slice(start, index + 1));
+      start = index + 1;
+    }
+    if (start < text.length) parts.push(text.slice(start));
     parts.forEach((part) => {
       const trimmed = part.trim();
       if (!trimmed) return;

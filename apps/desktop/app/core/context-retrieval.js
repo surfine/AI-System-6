@@ -938,6 +938,9 @@ function currentModelMaxContextTokens() {
 }
 
 function getEffectiveContextTokens(options = {}) {
+  // The built-in model's window is its own (16K for Qwen3.5), not LM Studio's setting.
+  const builtIn = window.AISystem6BuiltInLocal;
+  if (builtIn?.active && builtIn.contextSize > 0 && !options.contextTokens) return builtIn.contextSize;
   const requested = Number(options.contextTokens || contextLengthInput.value || 8192);
   const modelMax = Number(options.maxContextTokens || currentModelMaxContextTokens() || 0);
   if (modelMax > 0) return clampNumber(requested, contextMinLength || 1024, modelMax);

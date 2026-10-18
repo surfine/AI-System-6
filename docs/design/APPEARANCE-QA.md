@@ -28,7 +28,7 @@ The eight release appearances (registry `releaseReady: true`) are exposed in the
 Control Panel Appearance selector and the Special menu. NeXTSTEP joined them on
 2026-09-23, on the owner's decision, once its workflow and edge-case gates, its
 59 of 59 icons and its touch targets were recorded. The four historical appearances are additionally held to
-their pinned canonical references by `npm run verify:theme-lab:fidelity`, which
+their pinned canonical references by `npm run audit:theme-lab:fidelity`, which
 checks two separate tiers: the recorded-run `tolerances` (regression) and the
 shared `FIDELITY_FLOOR` (absolute distance from the era target). Each specimen
 declares where it stands in its `floor` ledger, so a board can never report
@@ -40,6 +40,9 @@ Current floor standing (derived from the committed manifests, not estimated):
 | Board | Specimens | Meets the floor | Recorded gap | Unusable reference |
 | --- | --- | --- | --- | --- |
 | Platinum | 20 | 14 | 0 | 6 (three photo-thumbnail crops plus three crops of the wrong object) |
+| Platinum 1.25x | 6 | 6 | 0 | 0 |
+| Platinum 1.5x | 6 | 5 | 1 (Trash 32 material) | 0 |
+| Platinum 2x | 6 | 5 | 1 (Trash 32) | 0 |
 | Aqua | 18 | 18 | 0 | 0 |
 | Snow Leopard | 19 | 19 | 0 | 0 |
 | Yosemite | 17 | 15 | 0 | 2 (checkbox/radio marks pinned only to clone assets) |
@@ -154,7 +157,7 @@ keep their design contract plus regression baseline; no fake fidelity board is
 created for them.
 Liquid Glass is being recalibrated to macOS 27 Golden Gate through the existing
 theme IDs and material tokens; it does not introduce a new theme or family.
-`npm run verify:appearance-apps` separately renders the real windows listed by
+`npm run audit:appearance-apps` separately renders the real windows listed by
 `REPRESENTATIVE_WINDOWS` under every appearance, proving that ordinary and
 visually-special apps receive the same system title-bar painter without
 conflating that propagation check with either pixel regression or historical
@@ -163,8 +166,8 @@ fidelity.
 QA criteria per surface: no clipping, no unreadable text, no wrong contrast,
 no broken focus, no wrong icon, and no malformed window chrome.
 
-<!-- claim-check: npm run verify:theme-lab:fidelity — run 2026-09-19, all five boards exit 0 (platinum 12/20 met, aqua 17/18, snow-leopard 18/18, yosemite 5/17 with 10 gaps and 2 unreliable references, yosemite-2x 3/4). The run before that failed every board at the content fingerprint, because the fingerprint hashed the build stamp; tooling/theme-lab-fidelity.mjs now strips that query before hashing, and platinum still passed after the stamp moved to 20260919.1. Re-run the command before quoting these numbers. -->
-<!-- claim-check: npm run verify:appearance, verify:appearance-apps -->
+<!-- claim-check: npm run audit:theme-lab:fidelity — run 2026-09-19, all five boards exit 0 (platinum 12/20 met, aqua 17/18, snow-leopard 18/18, yosemite 5/17 with 10 gaps and 2 unreliable references, yosemite-2x 3/4). The run before that failed every board at the content fingerprint, because the fingerprint hashed the build stamp; tooling/theme-lab-fidelity.mjs now strips that query before hashing, and platinum still passed after the stamp moved to 20260919.1. Re-run the command before quoting these numbers. -->
+<!-- claim-check: npm run audit:appearance, audit:appearance-apps -->
 
 ### Fidelity boards and stability boards (2026-10-08)
 
@@ -216,7 +219,7 @@ column Finder/Shelf, scroll-frame geometry, IME deferral, offline resources and
 cross-theme/session restoration. Every object the appearance maps now has its
 own 3.3-style icon (59 of 59), so the Classic icon fallback is gone. NeXTSTEP
 has no canonical Theme Lab board: `verify-nextstep-workflow` and its edge-case
-companion are its instruments, and a green `verify:theme-lab:fidelity` says
+companion are its instruments, and a green `audit:theme-lab:fidelity` says
 nothing about it. Its release does not upgrade the earlier historical fidelity
 results or certify all icon families.
 
@@ -228,11 +231,11 @@ split into what is automated now and what stays human / deferred:
 | Instrument | What it locks | Gate |
 | --- | --- | --- |
 | `appearance-system` + `harvest-ux` contracts | Registry timeline, polishPending honesty, Theme Lab calm hooks (`quiet-focus` / key-window / vibrancy / grayscale measure attributes), Drawing Board sketch asset wiring | `verify:quick -- --feature appearance-system` / `harvest-ux` |
-| `tooling/verify-appearance-app-coverage.mjs` | Per-appearance computed styles on every registered window; Retina raster floor; menu-bar model; role screenshots for representatives only | ship-only `appearance-real-apps` |
-| `tests/visual/theme-lab/<id>.png` | Twelve Theme Lab regression baselines (web adaptation, not native fidelity) | ship `theme-lab-regression` |
+| `tooling/verify-appearance-app-coverage.mjs` | Per-appearance computed styles on every registered window; Retina raster floor; menu-bar model; role screenshots for representatives only | `audit:appearance-apps` (on demand) |
+| `tests/visual/theme-lab/<id>.png` | Twelve Theme Lab regression baselines (web adaptation, not native fidelity) | `audit:theme-lab` (on demand) |
 | Theme Lab Surfaces → Polish boards | Live `measurePolishBoards()` writes `data-theme-lab-measure-*` for key-window distinctness, vibrancy `backdrop-filter`, and L0–L3 grey steps; calm select is product UI | manual / future probe |
 
 **Deferred (not required for this harvest):** full twelve × every-window screenshot CI,
-canonical historical fidelity (`verify:theme-lab:fidelity`, human cache), and
+canonical historical fidelity (`audit:theme-lab:fidelity`, human cache), and
 clearing remaining docs/P5 `polishTodos` (System 7 / Lion / Drawing Board).
 Theme Lab displays open polishTodos; it does not clear the registry.

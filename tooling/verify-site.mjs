@@ -183,7 +183,7 @@ for (const needle of [
   'id="temporary"',
   'id="chat"',
   "https://system6.aaronlau.me",
-  "https://www.bilibili.com/video/BV1ht3m6UEDb/",
+  "https://www.bilibili.com/video/BV1gYph6hEE6/",
   "https://github.com/surfine/AI-System-6",
   'src="js/main.js',
 ]) {
@@ -201,7 +201,7 @@ for (const needle of [
   '<html lang="zh-CN">',
   // The URL that answers 200. The file is still zh-CN.html; Pages redirects
   // that name to /zh-CN, so the canonical has to name the final address.
-  '<link rel="canonical" href="https://aisystem6.pages.dev/zh-CN">',
+  '<link rel="canonical" href="https://aisystem6.aaronlau.me/zh-CN">',
   "写到最后",
   "模型可以帮忙，却不能悄悄接过笔",
   "审校台",
@@ -354,7 +354,7 @@ if (index.includes('id="argument"')
 } else {
   fail("the appearance argument is incomplete or detached from the live era");
 }
-if (quickTime.includes("https://player.bilibili.com/player.html?bvid=BV1ht3m6UEDb")
+if (quickTime.includes("https://player.bilibili.com/player.html?bvid=BV1gYph6hEE6")
   && quickTime.includes('poster.addEventListener("click"')) {
   ok("Bilibili film embed loads only after the poster is clicked");
 } else {
@@ -406,8 +406,13 @@ for (const slug of ["safufu"]) {
 // Counting them here made the gate depend on whether Finder had ever opened
 // `site/` in this checkout, and charged the release for bytes no reader fetches.
 // Keep this predicate identical to the packaging filter.
+// The build scripts at the root of site/ (build-zh-page, build-history-page,
+// build-about-chapters) write files into the repository; no page loads them,
+// and the site is deployed from a directory holding only the site's content
+// (2026-10-16), so they are not part of what a reader downloads either.
 const isShippedSiteFile = (file) => {
   const name = path.basename(file);
+  if (path.dirname(file) === siteRoot && /^build-.*\.mjs$/.test(name)) return false;
   return name !== ".DS_Store" && !name.startsWith("._");
 };
 
@@ -450,9 +455,10 @@ if (siteBytes <= sitePayloadBudget) {
   }
 }
 
-// The floppy claim appears in three places, so only one of them is allowed
-// to be a source: the receipt verify:floppy writes. A hand-edited README is
-// how this number quietly stopped being true before.
+// The README and the site state the System Floppy Budget, an invariant that
+// moves only when the manifest's budget moves. The measured payload is the
+// gate's own fact and lives in the receipt verify:floppy writes (the site reads
+// it at runtime); a README that quoted it needed a sync commit on every build.
 {
   const receiptPath = path.join(siteRoot, "data", "floppy-budget.json");
   if (!existsSync(receiptPath)) {
@@ -460,9 +466,40 @@ if (siteBytes <= sitePayloadBudget) {
   } else {
     const receipt = JSON.parse(readFileSync(receiptPath, "utf8"));
     const readme = readFileSync(path.join(root, "README.md"), "utf8");
-    const quoted = receipt.bytes.toLocaleString("en-US");
-    if (readme.includes(quoted)) ok(`README quotes the measured payload (${quoted} bytes)`);
-    else fail(`README does not quote the measured payload ${quoted}; run npm run sync:readme-payload`);
+    const budgetQuoted = receipt.budgetBytes.toLocaleString("en-US");
+    if (readme.includes(budgetQuoted)) ok(`README states the System Floppy Budget (${budgetQuoted} bytes)`);
+    else fail(`README must state the System Floppy Budget ${budgetQuoted} bytes (the measured payload is not quoted in prose)`);
+  }
+}
+
+// D4 (2026-10-16): About's chapters are generated from this site. The desk's
+// copy must be current, every "Open" must name a command the desk registers,
+// and no chapter may be emptied by an edit that dropped its marks.
+{
+  const { renderAboutChapters, aboutChaptersOutput, aboutChapterIds } = await import("../site/build-about-chapters.mjs");
+  const generated = renderAboutChapters();
+  let current = "";
+  try { current = readFileSync(aboutChaptersOutput, "utf8"); } catch {}
+  if (current === generated) ok("About chapters match the official site (node site/build-about-chapters.mjs)");
+  else fail("apps/desktop/app/content/about-chapters.js is stale; run node site/build-about-chapters.mjs");
+  const sandbox = {};
+  new Function("window", generated)(sandbox);
+  const chapters = sandbox.AISystem6AboutChapters.chapters;
+  const appRoot = path.join(root, "apps", "desktop", "app");
+  const sources = walk(appRoot, (file) => file.endsWith(".js") && !/[\\/](vendor|generated|content)[\\/]/.test(file))
+    .map((file) => ({ file, text: readFileSync(file, "utf8") }));
+  const registers = (id) => sources.some(({ file, text }) => text.includes(`"${id}"`)
+    && (/registerCommand|registerApplication/.test(text) || /app-admissions\.js$|actions\.js$/.test(file)));
+  for (const id of aboutChapterIds) {
+    for (const locale of ["en", "zh"]) {
+      const blocks = chapters[id]?.[locale] || [];
+      if (blocks.some((block) => block.kind === "head") && blocks.length >= 2) ok(`About chapter ${id} (${locale}) has ${blocks.length} blocks`);
+      else fail(`About chapter ${id} (${locale}) is empty or headless; mark its paragraphs with data-desk-chapter="${id}"`);
+    }
+    const opens = [...new Set((chapters[id]?.en || []).map((block) => block.open).filter(Boolean))];
+    const missing = opens.filter((open) => !registers(open));
+    if (!missing.length) ok(`About chapter ${id}: ${opens.length} Open button(s) name registered commands`);
+    else fail(`About chapter ${id}: data-desk-open names unregistered command(s) ${missing.join(", ")}`);
   }
 }
 

@@ -807,3 +807,170 @@ body[data-lineage~="platinum"] .finder-sort-direction {
   --finder-sort-direction-active-shadow: inset 1px 1px 0 #111111, inset 2px 2px 0 #555555, inset -1px -1px 0 #222222, inset -2px -2px 0 #444444;
   color: #000000;
 }
+
+/* ---- exe study 2026-10-16: window frame, cursor, scroll bars, desktop and
+   Apple menu, measured against Mac OS 9.0.4 frames (internal evidence
+   exe-study-2026-10-16/shots/os9-*.png; never shipped). ---------------- */
+
+/* A1: the content well. From the content outward the real frame is a black
+   content border, then the 4px raised strip (white, #ccc, #ccc, #999 on the
+   left; mirrored on the right and bottom so the strip reads as a ridge), then
+   the black outer frame and its 1px drop. P14's padding (2px 5px 5px) already
+   leaves the strip's room; the strip's inner edge and the content border are
+   painted into it here. They start under the title bar, whose own bottom rows
+   (#999, then black) carry them across the top, so they read y = title-bar
+   height and one below it. A background window draws only a #555 content
+   border on a flat strip. A collapsed window has no well. */
+body[data-lineage~="platinum"] .window:not(.is-collapsed) {
+  /* P14's own note: the scroll lanes and the grow box sit inside the content
+     border, five pixels in from the outer frame. */
+  --window-frame-inset-right: 5px;
+  --window-frame-inset-bottom: 5px;
+  background-image:
+    linear-gradient(#999999, #999999), linear-gradient(#000000, #000000),
+    linear-gradient(#999999, #999999), linear-gradient(#000000, #000000),
+    linear-gradient(#000000, #000000), linear-gradient(#ffffff, #ffffff),
+    linear-gradient(#000000, #000000), linear-gradient(#ffffff, #ffffff);
+  background-position:
+    left 3px top var(--system-titlebar-height), left 4px top calc(var(--system-titlebar-height) + 1px),
+    left 3px top var(--system-titlebar-height), left 4px top calc(var(--system-titlebar-height) + 1px),
+    right 4px top calc(var(--system-titlebar-height) + 1px), right 3px top calc(var(--system-titlebar-height) + 1px),
+    left 4px bottom 4px, left 4px bottom 3px;
+  background-size:
+    calc(100% - 7px) 1px, calc(100% - 8px) 1px,
+    1px calc(100% - var(--system-titlebar-height) - 4px), 1px calc(100% - var(--system-titlebar-height) - 5px),
+    1px calc(100% - var(--system-titlebar-height) - 5px), 1px calc(100% - var(--system-titlebar-height) - 4px),
+    calc(100% - 8px) 1px, calc(100% - 7px) 1px;
+  background-repeat: no-repeat;
+}
+
+body[data-lineage~="platinum"] .window:not(.is-active, .is-collapsed) {
+  background-image: linear-gradient(#555555, #555555), linear-gradient(#555555, #555555), linear-gradient(#555555, #555555), linear-gradient(#555555, #555555);
+  background-position: left 4px top calc(var(--system-titlebar-height) + 1px), left 4px top calc(var(--system-titlebar-height) + 1px), right 4px top calc(var(--system-titlebar-height) + 1px), left 4px bottom 4px;
+  background-size: calc(100% - 8px) 1px, 1px calc(100% - var(--system-titlebar-height) - 5px), 1px calc(100% - var(--system-titlebar-height) - 5px), calc(100% - 8px) 1px;
+}
+
+/* A3: Mac OS 9 has no pointing-hand cursor. System chrome -- title-bar boxes,
+   menus and menu-bar extras, Finder objects and controls -- keeps the arrow;
+   links inside content (citations, file and source links) keep the hand. */
+body[data-lineage~="platinum"] :is(.close-box, .resize-box, .title-bar > .minimize-box, .title-bar > .shade-box, .menu-sub-popover button, .cloud-model-indicator, .guest-indicator, .view-btn, .finder-item, .finder-list-row, .finder-sort-direction, .finder-toolbar-place, .finder-breadcrumb, .outline-tree-row, .scrap-list button, .trash-list button, .scrapbook-page-tick, .system-track, .system-segments, .system-tab, .control-advanced > summary, .file-picker .file-picker-button, .alarm-clock-lever, .control-strip-scroll, .control-strip-module, .control-strip-handle) {
+  cursor: default;
+}
+
+/* A4: every other scroll area (text areas, lists, settings panes, menus'
+   neighbours) showed the host's own scroll bar; the window-frame lanes are
+   untouched because they set scrollbar-width: none, which disables these
+   pseudo-elements. :where() keeps this at zero class weight, so the menu and
+   Control Panel scroll bars that already own a recipe still win. A phone keeps
+   its native overlay scrolling. */
+@media (hover: hover) and (pointer: fine) {
+  :where(body[data-lineage~="platinum"]) ::-webkit-scrollbar {
+    width: var(--scrollbar-width);
+    height: var(--scrollbar-width);
+    background: var(--window-frame-empty-track-bg);
+  }
+
+  /* The track pseudo-element ignores its border, and :vertical/:horizontal
+     did not match on it, so the lane's black edge is the first inset ring on
+     both leading sides and P27's double bevel steps in behind it. */
+  :where(body[data-lineage~="platinum"]) ::-webkit-scrollbar-track {
+    background: var(--window-frame-track-bg);
+    box-shadow: inset 1px 1px #000000, inset 2px 2px #777777, inset 3px 3px #888888, inset -1px -1px #cccccc, inset -2px -2px #bbbbbb;
+  }
+
+  :where(body[data-lineage~="platinum"]) ::-webkit-scrollbar-thumb {
+    border: var(--window-frame-thumb-border);
+    background: var(--window-frame-thumb-bg);
+    box-shadow: inset 1px 1px #ccccff, inset -1px -1px #6666cc;
+  }
+
+  /* No arrow boxes: Chromium on macOS never paints ::-webkit-scrollbar-button,
+     so they could not be checked against the frame lanes, which keep theirs. */
+  :where(body[data-lineage~="platinum"]) ::-webkit-scrollbar-corner { background: #cccccc; }
+}
+
+/* B2: desktop icons at the native 32px tier (system-icons.js hands the
+   desktop the 32px source in this era), so each authored pixel is one CSS
+   pixel; the label keeps its backing box at the small system size (11px:
+   an 8px cap height, as Geneva 9 on the real desktop). The hit target is the
+   whole .desktop-icon cell, which this does not shrink. */
+body[data-lineage~="platinum"] .desktop:not(.is-small-icons) .desktop-icon .sys-icon {
+  width: 32px;
+  height: 32px;
+}
+
+body[data-lineage~="platinum"] .desktop:not(.is-small-icons) .desktop-icon span:last-child {
+  font-size: 11px;
+}
+
+/* B3: Mac OS 9 shows a 16px icon beside every Apple-menu item. The group
+   headers stay; About and the language switch keep the bare text, as About
+   This Computer does. Each icon reuses a shipped Platinum asset: the menu cuts
+   where one exists, the object family otherwise, and the generic desk
+   accessory for a DA with no art of its own. */
+body[data-lineage~="platinum"] .apple-menu-popover > button[data-action]:not([data-action="open-about"], [data-action="switch-language"]) {
+  position: relative;
+  padding-left: 42px;
+}
+
+body[data-lineage~="platinum"] :where(.apple-menu-popover > button[data-action]:not([data-action="open-about"], [data-action="switch-language"]))::before {
+  content: "";
+  position: absolute;
+  left: 21px;
+  top: calc(50% - 8px);
+  width: 16px;
+  height: 16px;
+  background: url("./assets/themes/platinum/icons/daHandler-16.png") 0 0 / 16px 16px no-repeat;
+  image-rendering: pixelated;
+}
+
+/* The per-item art below is unprefixed on purpose: only the Platinum rule
+   above gives these ::before boxes content, so in every other appearance the
+   image has nothing to paint on, and each line out-ranks that rule's
+   :where()-weighted default. */
+
+body[data-lineage~="platinum"] .apple-menu-popover > [data-action="replay-clio-introduction"]::before { background-image: url("./assets/themes/platinum/icons/assistant-16.png"); }
+body[data-lineage~="platinum"] .apple-menu-popover > [data-action="open-system-help"]::before { background-image: url("./assets/themes/platinum/icons/systemHelp-16.png"); }
+body[data-lineage~="platinum"] .apple-menu-popover > :is([data-action="guide-start-route"], [data-action="show-writing-flow"])::before { background-image: url("./assets/themes/platinum/icons/writingStudio-16.png"); }
+body[data-lineage~="platinum"] .apple-menu-popover > [data-action="hold-that-thought"]::before { background-image: url("./assets/themes/platinum/icons/document-16.png"); }
+body[data-lineage~="platinum"] .apple-menu-popover > [data-action="resume-my-place"]::before { background-image: url("./assets/themes/platinum/icons/alias-16.png"); }
+body[data-lineage~="platinum"] .apple-menu-popover > [data-action="open-hold-thought"]::before { background-image: url("./assets/themes/platinum/icons/documents-16.png"); }
+body[data-lineage~="platinum"] .apple-menu-popover > [data-action="open-note-pad"]::before { background-image: url("./assets/themes/platinum/menu/stickies.svg"); }
+body[data-lineage~="platinum"] .apple-menu-popover > [data-action="open-clipboard"]::before { background-image: url("./assets/themes/platinum/icons/clipboard-16.png"); }
+body[data-lineage~="platinum"] .apple-menu-popover > [data-action="open-writing-bell"]::before { background-image: url("./assets/themes/platinum/icons/writingBell-16.png"); }
+body[data-lineage~="platinum"] .apple-menu-popover > [data-action="open-dictionary"]::before { background-image: url("./assets/themes/platinum/icons/dictionary-16.png"); }
+body[data-lineage~="platinum"] .apple-menu-popover > [data-action="open-key-caps"]::before { background-image: url("./assets/themes/platinum/menu/key-caps.svg"); }
+body[data-lineage~="platinum"] .apple-menu-popover > [data-action="open-calculator"]::before { background-image: url("./assets/themes/platinum/menu/calculator.svg"); }
+body[data-lineage~="platinum"] .apple-menu-popover > [data-action="open-chooser"]::before { background-image: url("./assets/themes/platinum/menu/chooser.svg"); }
+body[data-lineage~="platinum"] .apple-menu-popover > [data-action="open-control"]::before { background-image: url("./assets/themes/platinum/menu/control-panels.svg"); }
+body[data-lineage~="platinum"] .apple-menu-popover > [data-action="open-find-file"]::before { background-image: url("./assets/themes/platinum/menu/sherlock.svg"); }
+body[data-lineage~="platinum"] .apple-menu-popover > [data-action="open-system-status"]::before { background-image: url("./assets/themes/platinum/menu/system-profiler.svg"); }
+body[data-lineage~="platinum"] .apple-menu-popover > [data-action="open-about-multifinder"]::before { background-image: url("./assets/themes/platinum/icons/multiFinderApp-16.png"); }
+
+/* B5 (owner decision G1): system chrome inside windows takes Mac OS 9's own
+   text sizes; reading, editing and previews keep their modern sizes. Measured
+   on shots/os9-desktop.png and os9-about.png: the views font (Geneva 9 --
+   Finder labels and rows, the "9 items, 705 MB available" placard, About This
+   Computer's rows) has an 8px cap height, and Chromium's Geneva matches it,
+   width included (within 3%), at 10px; the small system font (Geneva 10, the
+   caption under a control) is one step up at 11px; menus, buttons, dialog
+   messages and window names stay Charcoal 12. Fine pointers only: a phone
+   keeps the 12px readable floor. */
+@media (hover: hover) and (pointer: fine) {
+  /* Small system font: the hint or status line under a control. */
+  body[data-lineage~="platinum"] .hint {
+    font-size: 11px;
+  }
+
+  /* Views font: list rows, item labels, status and details bars, Get Info
+     and System Status (About This Computer) facts. Key Caps' key column
+     keeps 12px: its mono key letters fall below legibility at 10px. */
+  body[data-lineage~="platinum"] :is(.details-bar > :is(span, p, output), .da-origin:not([hidden]), .finder-item > span:last-child, .finder-list-header, .finder-list-row, .finder-list-group, :is(.scrap-list, .trash-list) > button > :is(span, small), .system-help-list > :is(button, .system-help-group), .shortcut-grid > b, .command-sheet-menu, .command-sheet-label, .info-main > .hint, .info-stats > :is(dt, dd), .info-content-stats, .about-stats > :is(dt, dd), .model-state-panel li > *) {
+    font-size: var(--system-caption-size);
+  }
+
+  /* System font: a dialog's object name and a Chooser group title. */
+  body[data-lineage~="platinum"] :is(.info-main > h3, .chooser-section > h3) {
+    font-size: var(--system-title-size);
+  }
+}

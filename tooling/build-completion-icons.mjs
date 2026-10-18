@@ -78,7 +78,7 @@ export async function buildCompletionIcons({eras=COMPLETION_ERAS,partial=false}=
     }
     ledger.eras[era]={icons};
   }
-  ledger.complete=COMPLETION_ERAS.every(era=>Object.keys(ledger.eras[era]?.icons||{}).length===(['big-sur','nextstep'].includes(era)?9:3));
+  ledger.complete=COMPLETION_ERAS.every(era=>Object.keys(ledger.eras[era]?.icons||{}).length===(['big-sur','nextstep'].includes(era)?10:4));
   writeFileSync(ledgerPath,JSON.stringify(ledger,null,2)+'\n');
   console.log(`Image Gen completion: ${count} assets rebuilt; complete=${ledger.complete}`);
   return ledger;

@@ -100,7 +100,7 @@ here only as history.
   `buildRenderSnapshot`; pointer, keyboard, and touch input still emit commands
   only. Pinned by `tests/features/bonsai-renderer.test.mjs`,
   `tests/features/bonsai-atlas.test.mjs`, and the real-browser
-  `verify:bonsai-acceptance` gate.
+  `audit:bonsai-acceptance` gate.
 - The atlas family grows a night variant set (M5-2c): every growable
   building, facility, and catalog special gains a dimmed lit-window frame,
   and the Canvas renderer's time-of-day gate swaps to those frames at dusk,
@@ -205,7 +205,7 @@ the historical phase descriptions below do not override them.
     off by default, January holds the clock with the budget pane open; on,
     the previous budget lines roll on. A disaster chosen from the menu now
     reports in the status line.
-  - Two hours without a stall: `npm run verify:bonsai-playthrough` runs a
+  - Two hours without a stall: `npm run audit:bonsai-playthrough` runs a
     deterministic scripted mayor on the headless core (lattice, zoning by
     demand, plants and waterworks, services and transit, bonds, ordinances,
     one disaster per decade, rewards) and refuses on a stall, a reward left
@@ -213,8 +213,8 @@ the historical phase descriptions below do not override them.
     run found the core oscillating (a serviced 6 000-resident city fell to
     16 in two months); oversupply now has to hold for three settled months
     before a working building declines. The mayor reaches 50 000 residents
-    in game year 1909 and plateaus near 68 000 on a 128-square map. It is a
-    quiet ship gate.
+    in game year 1909 and plateaus near 68 000 on a 128-square map. It is an
+    on-demand audit (`npm run audit:bonsai-playthrough`).
   - SC2K parity: a coal plant takes the 4×4 pad (save rule 3.1, older
     plants keep 2×2 and the query balloon says so), `sc2DerivedGrids` reads
     the 64×64 / 32×32 grids, the EQ/LE ordinance hooks are confirmed live,
@@ -352,7 +352,7 @@ the historical phase descriptions below do not override them.
 npm run verify:quick -- --feature city-simulator-foundation --docs --no-build
 npm run verify:feature -- city-simulator-foundation
 npm run verify:docs
-npm run verify:bonsai-playthrough   # the scripted two-hour mayor (quiet ship gate)
+npm run audit:bonsai-playthrough   # the scripted two-hour mayor (on-demand audit)
 ```
 
 Repo-wide release gates are documented in [DEVELOPMENT.md](../DEVELOPMENT.md).

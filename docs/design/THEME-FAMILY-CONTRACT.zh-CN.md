@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/THEME-FAMILY-CONTRACT.md -->
-<!-- source-sha256: bcf828df30562bbb5e203f7c2a7fdfe0c8f4b7e80bf928d107474805356ab72d -->
+<!-- source-sha256: a0d096be4ff889d8a71bf3a7f1e34c51ea4dc9c36b47fb22c14978f28447b428 -->
 
 英文版为准。本文档仅供人类参考。
 
@@ -211,7 +211,7 @@ NeXTSTEP       ->  NeXTSTEP
 
 Classic → Platinum 成对回归即 canonical fidelity 工具
 (`npm run compare:theme-lab:canonical`) 加 Theme Lab 快照
-(`npm run verify:theme-lab`)。共享基础设施的修改单独提交，不携带任何
+(`npm run audit:theme-lab`)。共享基础设施的修改单独提交，不携带任何
 子主题专属值，并跑六主题回归。
 
 ## 8. Golden master
@@ -263,8 +263,8 @@ materialError     <= 12     内部颜色差在 255 的 12 以内（约 4.7%）
 
 ```sh
 npm run verify:css                      # 预算、ratchet、选择器上限
-npm run verify:theme-lab                # 六时代 Theme Lab 回归快照
-npm run verify:theme-lab:fidelity       # canonical fidelity：四时代 + Retina board
+npm run audit:theme-lab                # 六时代 Theme Lab 回归快照
+npm run audit:theme-lab:fidelity       # canonical fidelity：四时代 + Retina board
 npm run compare:theme-lab:canonical     # 单块 board，附评审产物
 npm run audit:theme-coverage            # 注册表驱动的 app 覆盖审计
 npm run screenshot:windows              # 逐个截图每个已注册窗口

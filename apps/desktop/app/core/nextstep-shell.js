@@ -22,7 +22,7 @@
     if (!enabled() || chrome.has(win)) return;
     const bar = win.querySelector(".title-bar");
     const close = bar?.querySelector(".close-box");
-    if (!close || ["about", "saveChat"].includes(win.dataset.window)) return;
+    if (!close || win.dataset.window === "saveChat") return;
     const marker = document.createComment("close-box position");
     close.before(marker);
     const button = document.createElement("button");

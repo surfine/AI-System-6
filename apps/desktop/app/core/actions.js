@@ -1307,8 +1307,15 @@ async function playWritingDemoFromGuide() {
 
 async function playWelcomeTour() {
   // The optional tour is seeded and deterministic: it needs no model,
-  // network, or profile switch, and always restores the user's desk.
-  await ensureWritingDemoModule();
+  // network, or profile switch, and always restores the user's desk. Its own
+  // files still have to arrive: a desk served from an offline cache that
+  // lacks them says so instead of doing nothing.
+  try {
+    await ensureWritingDemoModule();
+  } catch {
+    setStatus(t("about_tour_offline"), { notify: true });
+    return false;
+  }
   await window.AISystem6WritingDemo?.playTeaser?.();
 }
 
@@ -1336,7 +1343,7 @@ function getApplicationActionHandlers() {
     },
     "start-new-clio-chat": startNewClioTalkConversation,
     "start-temporary-clio-chat": startTemporaryClioTalkConversation,
-    "replay-clio-introduction": () => openClioIntroduction({ replay: true }),
+    "replay-clio-introduction": () => openAboutFirstTime(),
     "skip-clio-introduction": () => completeClioOnboarding("skipped"),
     "use-this-window-for-clio": useThisWindowForClio,
     "remember-chat-as-project-memory": async () => {
@@ -2042,10 +2049,10 @@ window.AISystem6Runtime?.registerCommand?.("open-text-disk",{handler:()=>{render
 window.AISystem6Runtime?.registerCommand?.("open-finder",{handler:()=>{openWindow("finder");navigateSystemFolderPath("");},isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-documents",{handler:()=>{renderDocuments();openWindow("documents");},isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-github-repo",{handler:()=>window.open("https://github.com/surfine/AI-System-6","_blank","noopener"),isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-project-site",{handler:()=>window.open("https://aisystem6.pages.dev/","_blank","noopener"),isAvailable:()=>!0});
-window.AISystem6Runtime?.registerCommand?.("open-guide-promo",{handler:()=>window.open("https://www.bilibili.com/video/BV1ht3m6UEDb/","_blank","noopener"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-project-site",{handler:async()=>{await ensureAboutModule();return window.AISystem6About.openProjectSite()},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-guide-promo",{handler:async()=>{await ensureAboutModule();return window.AISystem6About.open({face:"overview",play:!0})},isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-about-multifinder",{handler:showAboutMultiFinder,isAvailable:()=>typeof isMultiFinderMode==="function"&&isMultiFinderMode(),unavailableReason:()=>"balloon_disabled_menu_multifinder"});
-window.AISystem6Runtime?.registerCommand?.("replay-clio-introduction",{handler:()=>openClioIntroduction({replay:true}),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("replay-clio-introduction",{handler:()=>openAboutFirstTime(),isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-clio-model-settings",{handler:openModelSettings,isAvailable:()=>!0});
 // The 说明 folder's four documents are one shape — a key, an id, and the same
 // opener — so they are one registration rather than four near-identical lines.

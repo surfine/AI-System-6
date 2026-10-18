@@ -6,7 +6,9 @@ import { createServer } from "node:http";
 import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { webcrypto } from "node:crypto";
 import { createFeatureTest, root } from "../helpers/feature-test-harness.mjs";
+import { fakeAppDb, memoryStorage } from "../helpers/fake-app-db.mjs";
 const test = createFeatureTest("tinyjs-lifecycle");
 const require = createRequire(import.meta.url);
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -35,7 +37,14 @@ try {
   const js = await fetch(new URL("/api/shell/bootstrap.js", url));
   const removed = [], registrations = [], destinations = [];
   const caches = { keys: async () => ["ais6-old-boot", "other-product"], delete: async (name) => { removed.push(name); return true; } };
-  const context = vm.createContext({ URL, window: { caches }, caches, location: { replace: (path) => destinations.push(path) },
+  // The bootstrap measures storage before it hands over to the desk: when
+  // the desk starts, the arrival record must already exist.
+  const appDb = fakeAppDb(new Map([["projects", new Map([["p", { id: "p" }]])], ["keyval", new Map([["settings", {}]])]]));
+  const session = memoryStorage();
+  let arrivalAtHandoff = null;
+  const context = vm.createContext({ URL, window: { caches }, caches, indexedDB: appDb.indexedDB, sessionStorage: session,
+    localStorage: { getItem: () => null }, crypto: webcrypto, TextEncoder, Blob, Date, DOMException, setTimeout,
+    location: { replace: (path) => { arrivalAtHandoff = session.getItem("ai-system6-storage-arrival"); destinations.push(path); } },
     navigator: { serviceWorker: { getRegistrations: async () => [
       { active: { scriptURL: new URL("/sw.js?v=old", url).href }, unregister: async () => registrations.push("own") },
       { active: { scriptURL: new URL("/other-sw.js", url).href }, unregister: async () => registrations.push("other") },
@@ -43,7 +52,10 @@ try {
   await vm.runInContext(await js.text(), context);
   assert.deepEqual(removed, ["ais6-old-boot"]); assert.deepEqual(registrations, ["own"]);
   assert.deepEqual(destinations, ["/"]);
-  test.assert(true, "native bootstrap bypasses old offline routing and removes only own derived caches before loading the current payload");
+  const arrival = JSON.parse(arrivalAtHandoff || "{}");
+  assert.match(arrival.fingerprint || "", /^[a-f0-9]{64}$/); assert.deepEqual(arrival.manifest.projects, ['"p"']);
+  assert.equal(appDb.counters().closed, 1);
+  test.assert(true, "native bootstrap measures storage before any desk code, bypasses old offline routing and removes only own derived caches before loading the current payload");
 } finally { await new Promise((resolve) => server.close(resolve)); }
 
 const dir = await mkdtemp(join(tmpdir(), "system6-supervisor-"));

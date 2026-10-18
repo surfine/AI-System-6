@@ -1,0 +1,268 @@
+/* ClioChart workbook surface (S11 M1): an xlsx workbook mounted inside the
+   ClioChart window. The status bar is the desk's own .details-bar.app-status-bar
+   (three slots), the grid wears ClioChart's grid tokens, so all twelve
+   appearances dress it without a sheet of their own. Every selector is scoped
+   to .clio-chart-workbook, the window flag .is-workbook-mounted, or the
+   workbook's pop-up menus (.cwk-menu). */
+
+/* The chart's own chrome steps aside while a workbook is mounted: its details
+   bar, the grid/projection split and the chart copy's context strip. */
+.clio-chart-window.is-workbook-mounted .clio-chart-details-bar,
+.clio-chart-window.is-workbook-mounted .clio-chart-split,
+.clio-chart-window.is-workbook-mounted .cw5-chart-host {
+  display: none;
+}
+
+.clio-chart-workbook {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  background: var(--clio-chart-surface, var(--paper));
+  color: var(--clio-chart-ink, var(--ink));
+}
+
+.clio-chart-workbook .cwk-status {
+  flex: none;
+  gap: 10px;
+}
+
+.clio-chart-workbook .cwk-receipt {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clio-chart-workbook .cwk-context {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.clio-chart-workbook .cwk-file {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The bar's slots are .details-bar > span { overflow: hidden }, which cut the
+   keyboard focus ring off the pop-up buttons inside them (Classic's dotted
+   ring showed only at its ends). The file name and the receipt clip their own
+   text, so the slots themselves let the ring through. */
+.clio-chart-workbook .cwk-status > .cwk-context,
+.clio-chart-workbook .cwk-status > .cwk-trailing {
+  overflow: visible;
+}
+
+/* A pop-up button is the desk's closed-set select button (.system-select-button),
+   so the appearance's own pop-up tokens dress it. Here it only stops filling its
+   slot: it is as wide as its label. */
+.clio-chart-workbook .cwk-pop {
+  flex: none;
+  width: auto;
+}
+
+/* The input bar of full editing: address, ✕, ✓, content (S11-17). */
+.clio-chart-workbook .cwk-input {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--details-bar-border, var(--ink));
+}
+
+.clio-chart-workbook .cwk-input[hidden] {
+  display: none;
+}
+
+.clio-chart-workbook .cwk-addr {
+  flex: none;
+  width: 64px;
+  min-width: 0;
+  box-sizing: border-box;
+  font-family: ui-monospace, monospace;
+}
+
+.clio-chart-workbook .cwk-content {
+  flex: 1 1 0;
+  min-width: 0;
+  box-sizing: border-box;
+  font-family: ui-monospace, monospace;
+}
+
+.clio-chart-workbook .cwk-bar-button {
+  flex: none;
+  min-width: 26px;
+  padding-inline: 4px;
+}
+
+.clio-chart-workbook .cwk-body {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.clio-chart-workbook .cwk-scroll {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.clio-chart-workbook .cwk-grid {
+  table-layout: fixed;
+}
+
+.clio-chart-workbook .cwk-grid col.cwk-col-head {
+  width: 40px;
+}
+
+.clio-chart-workbook .cwk-grid col.cwk-col {
+  width: 104px;
+}
+
+.clio-chart-workbook .cwk-grid th {
+  cursor: default;
+  text-align: center;
+}
+
+.clio-chart-workbook .cwk-grid th:hover {
+  background: var(--clio-chart-panel);
+}
+
+.clio-chart-workbook .cwk-grid td {
+  overflow: hidden;
+  text-align: left;
+  text-overflow: clip;
+  cursor: cell;
+}
+
+.clio-chart-workbook .cwk-grid td.is-numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 「尚未重算」 is told apart by words and a dashed frame, never by colour. */
+.clio-chart-workbook .cwk-grid td.is-stale {
+  outline: 1px dashed var(--clio-chart-ink, var(--ink));
+  outline-offset: -3px;
+  font-style: italic;
+}
+
+.clio-chart-workbook .cwk-grid td:focus-visible {
+  outline: 2px solid var(--system-focus-outline, var(--ink));
+  outline-offset: -2px;
+}
+
+.clio-chart-workbook .cwk-grid sup {
+  margin-inline-start: 2px;
+  font-size: 9px;
+}
+
+.clio-chart-workbook .cwk-cellinput {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+}
+
+.clio-chart-workbook .cwk-caption {
+  flex: none;
+  margin: 0;
+  padding: 2px 8px;
+  border-top: 1px solid var(--details-bar-border, var(--ink));
+  font-size: var(--system-caption-size, 11px);
+}
+
+/* The first-save list: a fixed alert, double border, no title bar, cannot be moved. */
+.clio-chart-workbook .cwk-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clio-chart-workbook .cwk-layer[hidden] {
+  display: none;
+}
+
+.clio-chart-workbook .cwk-alert {
+  max-width: min(440px, 92%);
+  padding: 1px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.clio-chart-workbook .cwk-alert-in {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 2px solid var(--ink);
+}
+
+.clio-chart-workbook .cwk-alert p,
+.clio-chart-workbook .cwk-alert ul {
+  margin: 0;
+}
+
+.clio-chart-workbook .cwk-alert ul {
+  padding-inline-start: 18px;
+}
+
+.clio-chart-workbook .cwk-alert-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* The workbook's pop-up menus reuse the desk's menu panel, placed under their button. */
+.menu-popover.cwk-menu {
+  display: block;
+  position: fixed;
+  top: var(--cwk-menu-y, 0);
+  left: var(--cwk-menu-x, 0);
+}
+
+.cwk-menu .cwk-menu-label small {
+  display: block;
+  font-size: var(--system-caption-size, 11px);
+  white-space: normal;
+}
+
+.cwk-menu button.is-disabled {
+  color: var(--shade-dark, var(--ink));
+}
+
+.cwk-menu kbd {
+  font: inherit;
+}
+
+/* Touch: the status bar, the input bar and the pop-ups grow to 44px; the
+   cells keep their density (sign-off Q5). */
+@media (hover: none) and (pointer: coarse) {
+  .clio-chart-workbook .cwk-status .btn,
+  .clio-chart-workbook .cwk-status .cwk-pop,
+  .clio-chart-workbook .cwk-input .btn,
+  .clio-chart-workbook .cwk-input input,
+  .cwk-menu button {
+    min-height: 44px;
+  }
+
+  .clio-chart-workbook .cwk-bar-button {
+    min-width: 44px;
+  }
+}

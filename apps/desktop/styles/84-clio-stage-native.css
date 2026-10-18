@@ -1,0 +1,384 @@
+/* ClioStage native presentation surface (S11 M2): a pptx mounted inside the
+   ClioStage window. The status bar is the desk's own .details-bar.app-status-bar
+   (three slots) with .system-select-button pop-ups, the page list and notes wear
+   the desk's paper and ink, so every appearance dresses it without a sheet of
+   its own. The page itself is the file's: its size, background and text sizes
+   come from the presentation, drawn at its own pt geometry and scaled to fit.
+   Every selector is scoped to .clio-stage-native, the window flag
+   .is-native-mounted, or the surface's pop-up menus (.csn-menu). */
+
+/* ClioStage's Markdown chrome steps aside while a presentation is mounted. */
+.clio-stage-window.is-native-mounted .clio-stage-details-bar,
+.clio-stage-window.is-native-mounted .clio-stage-pane > :not(.clio-stage-native) {
+  display: none;
+}
+
+/* The pane is a three-row grid for the Markdown deck; the surface spans it whole. */
+.clio-stage-native {
+  grid-row: 1 / -1;
+  align-self: stretch;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.clio-stage-native .csn-status {
+  flex: none;
+  gap: 10px;
+}
+
+.clio-stage-native .csn-receipt,
+.clio-stage-native .csn-file {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clio-stage-native .csn-context {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* The slots clip their text; the pop-up buttons' focus rings stay visible. */
+.clio-stage-native .csn-status > .csn-context,
+.clio-stage-native .csn-status > .csn-trailing {
+  overflow: visible;
+}
+
+.clio-stage-native .csn-pop {
+  flex: none;
+  width: auto;
+}
+
+.clio-stage-native .csn-pop[hidden] {
+  display: none;
+}
+
+.clio-stage-native .csn-body {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Page order: number and title, the current page marked by weight and frame. */
+.clio-stage-native .csn-rail {
+  flex: none;
+  width: min(168px, 34%);
+  margin: 0;
+  padding: 4px 0;
+  overflow: auto;
+  list-style: none;
+  border-right: 1px solid var(--details-bar-border, var(--ink));
+}
+
+.clio-stage-native .csn-rail li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 8px;
+  cursor: default;
+}
+
+.clio-stage-native .csn-rail li.is-current {
+  /* The frame is a shadow, so the focus outline can sit inside it and both show. */
+  box-shadow: inset 0 0 0 1px var(--ink);
+  font-weight: bold;
+}
+
+.clio-stage-native .csn-rail li:focus-visible {
+  outline: var(--system-focus-outline, 1px dotted var(--ink));
+  outline-offset: -3px;
+}
+
+.clio-stage-native .csn-rail li.is-hidden-slide .csn-rail-title {
+  text-decoration: line-through;
+}
+
+.clio-stage-native .csn-rail-number {
+  flex: none;
+  min-width: 1.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.clio-stage-native .csn-rail-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clio-stage-native .csn-rail small {
+  flex: none;
+  font-size: var(--system-caption-size, 11px);
+}
+
+.clio-stage-native .csn-main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  /* A short window scrolls the main area; the notes never slide under the caption. */
+  overflow-y: auto;
+}
+
+.clio-stage-native .csn-stage {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  min-height: 96px;
+  overflow: hidden;
+}
+
+/* The fit box takes the scaled size; the page inside keeps its own pt size. */
+.clio-stage-native .csn-fit {
+  flex: none;
+  width: var(--fit-w, auto);
+  height: var(--fit-h, auto);
+  overflow: hidden;
+}
+
+.clio-stage-native .csn-page {
+  position: relative;
+  width: var(--page-w, 960px);
+  height: var(--page-h, 540px);
+  overflow: hidden;
+  transform: scale(var(--csn-scale, 1));
+  transform-origin: 0 0;
+  background: var(--page-bg, #ffffff);
+  color: #000000;
+  box-shadow: 0 0 0 1px var(--ink);
+  font-family: var(--ui-font);
+}
+
+.clio-stage-native .csn-shape {
+  position: absolute;
+  left: var(--x, 0);
+  top: var(--y, 0);
+  width: var(--w, 0);
+  height: var(--h, 0);
+  box-sizing: border-box;
+}
+
+.clio-stage-native .csn-shape.is-selected {
+  outline: 1px dashed currentColor;
+}
+
+.clio-stage-native .csn-shape:focus-visible {
+  outline: var(--system-focus-outline, 1px dotted var(--ink));
+}
+
+/* What this surface cannot model is framed and named, never dropped. */
+.clio-stage-native .csn-shape.is-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed currentColor;
+}
+
+.clio-stage-native .csn-placeholder-label {
+  padding: 2px 6px;
+  font-size: 12px;
+  text-align: center;
+}
+
+.clio-stage-native .csn-shape.is-line {
+  height: 0;
+  border-top: 1px solid currentColor;
+}
+
+.clio-stage-native .csn-shape img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.clio-stage-native .csn-text {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 3.6px 7.2px;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.clio-stage-native .csn-para[data-align="ctr"] {
+  text-align: center;
+}
+
+.clio-stage-native .csn-para[data-align="r"] {
+  text-align: right;
+}
+
+.clio-stage-native .csn-para[data-bullet="true"]::before {
+  content: "• ";
+}
+
+.clio-stage-native .csn-run {
+  font-size: var(--size, 18px);
+  color: var(--color, inherit);
+  line-height: 1.2;
+  white-space: pre-wrap;
+}
+
+.clio-stage-native .csn-run.is-bold {
+  font-weight: bold;
+}
+
+.clio-stage-native .csn-run.is-italic {
+  font-style: italic;
+}
+
+.clio-stage-native .csn-run.is-underline {
+  text-decoration: underline;
+}
+
+.clio-stage-native .csn-shape[data-editable="true"] .csn-run {
+  cursor: text;
+}
+
+.clio-stage-native .csn-run:focus-visible,
+.clio-stage-native .csn-run[contenteditable] {
+  outline: var(--system-focus-outline, 1px dotted var(--ink));
+  outline-offset: 1px;
+}
+
+/* Speaker notes: only for the speaker; the audience screen and exports never show them. */
+.clio-stage-native .csn-notes {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 8px 6px;
+  border-top: 1px solid var(--details-bar-border, var(--ink));
+}
+
+.clio-stage-native .csn-notes-label {
+  font-size: var(--system-caption-size, 11px);
+}
+
+.clio-stage-native .csn-notes-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 3.6em;
+  resize: vertical;
+  font: inherit;
+}
+
+.clio-stage-native .csn-caption {
+  flex: none;
+  margin: 0;
+  padding: 2px 8px;
+  border-top: 1px solid var(--details-bar-border, var(--ink));
+  font-size: var(--system-caption-size, 11px);
+}
+
+.clio-stage-native .csn-check-summary,
+.clio-stage-native .csn-check-head {
+  margin: 4px 0;
+  font-weight: bold;
+}
+
+.clio-stage-native .csn-check-list,
+.clio-stage-native .csn-check-missed {
+  margin: 0;
+  padding-inline-start: 16px;
+}
+
+.clio-stage-native .csn-check-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin-bottom: 4px;
+}
+
+/* The first-save list: a fixed alert, double border, no title bar, cannot be moved. */
+.clio-stage-native .csn-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clio-stage-native .csn-layer[hidden] {
+  display: none;
+}
+
+.clio-stage-native .csn-alert {
+  max-width: min(440px, 92%);
+  padding: 1px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.clio-stage-native .csn-alert-in {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 2px solid var(--ink);
+}
+
+.clio-stage-native .csn-alert p,
+.clio-stage-native .csn-alert ul {
+  margin: 0;
+}
+
+.clio-stage-native .csn-alert ul {
+  padding-inline-start: 18px;
+}
+
+.clio-stage-native .csn-alert-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.menu-popover.csn-menu {
+  display: block;
+  position: fixed;
+  top: var(--csn-menu-y, 0);
+  left: var(--csn-menu-x, 0);
+}
+
+.csn-menu .csn-menu-label small {
+  display: block;
+  font-size: var(--system-caption-size, 11px);
+  white-space: normal;
+}
+
+.csn-menu button.is-disabled {
+  color: var(--shade-dark, var(--ink));
+}
+
+.csn-menu kbd {
+  font: inherit;
+}
+
+/* Touch: the status bar, the page list, the notes and the pop-ups grow to 44px (sign-off Q5). */
+@media (hover: none) and (pointer: coarse) {
+  .clio-stage-native .csn-status .btn,
+  .clio-stage-native .csn-status .csn-pop,
+  .clio-stage-native .csn-rail li,
+  .csn-menu button {
+    min-height: 44px;
+  }
+
+  .clio-stage-native .csn-notes-input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+}

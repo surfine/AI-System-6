@@ -49,13 +49,13 @@
 ### 4.1 Web（无需安装，处处可用）
 
 ```text
-https://aisystem6.pages.dev/?launch=endfield-terminal&mode=fullscreen
+https://aisystem6.aaronlau.me/?launch=endfield-terminal&mode=fullscreen
 ```
 
 或短品牌路由：
 
 ```text
-https://aisystem6.pages.dev/go/endfield-terminal?mode=fullscreen
+https://aisystem6.aaronlau.me/go/endfield-terminal?mode=fullscreen
 ```
 
 参数：

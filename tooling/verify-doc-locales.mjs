@@ -98,7 +98,11 @@ if (stale) {
   for (const example of staleExamples) console.log(`  ${example}`);
   if (stale > staleExamples.length) console.log(`  …and ${stale - staleExamples.length} more`);
   if (requireFresh) {
-    fail(`${stale} Chinese mirror(s) are behind their English source and this run requires them fresh; run \`npm run docs:sync-hashes\``);
+    // A release used to refuse here. Since 2026-10-15 a stale mirror is a
+    // report everywhere: the English text is authoritative, the mirror says
+    // so, and locking a translation to a hash cost a sync commit for every
+    // English edit. Run `npm run docs:sync-hashes` after translating.
+    console.log("  (release run: reported, not refused)");
   }
 } else {
   console.log(`\nAll ${checked} Chinese mirror(s) match their English source.`);

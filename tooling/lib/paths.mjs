@@ -50,6 +50,7 @@ const desktopEntryFiles = new Set([
   "styles.project-disks.css",
   "styles.clio-project.css",
   "styles.edit-kernel.css",
+  "styles.about.css",
   "styles.big-sur.css",
   "styles.tiger.css",
   "styles.system-7.css",

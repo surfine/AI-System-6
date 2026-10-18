@@ -27,11 +27,13 @@
 // Contract: tests/features/window-registry.test.mjs
 
 const windowRegistry = Object.freeze({
+  // About is an ordinary window built on demand (app/features/about-desk.js):
+  // the instrument, the film, the chapters and the first-time doors.
   about: {
+    builtByModule: true,
     app: "system",
-    mobileOverlay: true,
-    centered: true,
-    onOpen: () => renderAboutMacintosh(),
+    onOpen: () => window.AISystem6About?.render?.(),
+    lazy: { ensure: () => ensureAboutModule() },
   },
   alarmClock: {
     app: "accessories",

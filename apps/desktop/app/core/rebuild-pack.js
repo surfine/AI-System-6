@@ -35,9 +35,11 @@
   // Categories of detail that never belong in a shipped project, found by
   // shape rather than by a list of the very words they would leak.
   const CATEGORY_PATTERNS = Object.freeze([
-    { category: "phone-number", pattern: /(?<![\d.])1[3-9]\d{9}(?![\d.])/ },
+    // Prefix-consumed forms: WebKit before 16.4 (macOS 12) rejects lookbehind
+    // at parse time. These patterns are only tested, never used to cut text.
+    { category: "phone-number", pattern: /(?:^|[^\d.])1[3-9]\d{9}(?![\d.])/ },
     { category: "qq-number", pattern: /QQ\s*[:：号]?\s*\d{5,11}/i },
-    { category: "shop-stall", pattern: /(?<!文)档口|维修部[，,]?\s*\d{2,}/ },
+    { category: "shop-stall", pattern: /(?:^|[^文])档口|维修部[，,]?\s*\d{2,}/ },
     { category: "private-ai-conversation", pattern: /https?:\/\/(?:chatgpt\.com|chat\.openai\.com)\/(?:c|backend-api)\/|https?:\/\/claude\.ai\/chat\// },
   ]);
 

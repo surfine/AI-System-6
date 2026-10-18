@@ -17,8 +17,8 @@
 // tooling/static-contract-budget.json — and every converted contract lowers
 // this number by exactly one, verified in the same commit.
 
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { createFeatureTest, forEachAstChild, parseJsSource, root } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("static-contract-ratchet");
@@ -149,9 +149,29 @@ function spawnsRealServer(source) {
   return found;
 }
 
-function executesAppCode(source) {
+/**
+ * A test-local module (under tests/) that itself runs code in a VM context — a
+ * fixture builder that loads the shipped adapters with vm.runInContext, or an
+ * editor harness like tests/helpers/quire-editor-vm.mjs. The test that imports
+ * it executes app code exactly as one importing app-boot-vm.mjs does; only the
+ * helper's name differs (learned 2026-10-18 from the ClioWorks S11 round-trip
+ * kits and the ClioWrite events contract). One level deep, and only for files
+ * that both import node:vm and call into a VM context.
+ */
+function importsVmRunningModule(source, fileDir) {
+  return importSpecifiers(source).some((specifier) => {
+    if (!specifier.startsWith(".")) return false;
+    const target = resolve(fileDir, specifier);
+    if (!target.startsWith(join(root, "tests") + "/") || !existsSync(target)) return false;
+    const helper = readFileSync(target, "utf8");
+    return importSpecifiers(helper).includes("node:vm") && /\bvm\.(?:runInContext|runInNewContext|runInThisContext|Script)\b|new\s+vm\.Script\b/.test(helper);
+  });
+}
+
+function executesAppCode(source, fileDir = featureDir) {
   return importSpecifiers(source).some((specifier) => executingSignal.test(specifier))
-    || spawnsRealServer(source);
+    || spawnsRealServer(source)
+    || importsVmRunningModule(source, fileDir);
 }
 
 function collectTestFiles(dir, base = "") {
@@ -174,7 +194,7 @@ test.assert(
 );
 
 const staticOnlyFiles = allTestFiles.filter(
-  (relative) => !executesAppCode(readFileSync(join(featureDir, relative), "utf8")),
+  (relative) => !executesAppCode(readFileSync(join(featureDir, relative), "utf8"), dirname(join(featureDir, relative))),
 );
 
 test.assert(

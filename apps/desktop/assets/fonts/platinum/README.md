@@ -11,5 +11,7 @@ priority; macOS `Geneva` remains the last era-adjacent local fallback.
 - License: SIL Open Font License 1.1; see `OFL.txt`
 
 The fallback is not represented as an original Apple font. Platinum uses its
-width axis at 113 and a 650 regular UI weight to match the measured Charcoal
-sample's x-height, advance width, and compact system-control rhythm.
+width axis at 113 and a 400 regular UI weight (600 menu items, 700 buttons and
+titles) to match the measured Charcoal sample's x-height, advance width, and
+compact system-control rhythm. On a Mac the stack reaches the installed Geneva
+before this fallback; the title bar keeps Asap.

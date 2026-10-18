@@ -19,7 +19,7 @@
 // Usage: node tooling/play-bonsai-browser.mjs [--output DIR] [--only ID]
 //        [--hardware] [--profile] [--stop-after-build]
 // Needs a built app (npm run build:app). By default Chromium runs on
-// SwiftShader software GL, as verify:bonsai-acceptance does; --hardware drops
+// SwiftShader software GL, as audit:bonsai-acceptance does; --hardware drops
 // those flags AND selects the full `chromium` channel (the default headless
 // shell can disable the GPU), so a machine with a GPU actually uses it (without
 // one, Chromium falls back to CPU raster). With --hardware the real

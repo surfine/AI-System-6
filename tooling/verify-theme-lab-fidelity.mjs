@@ -2,7 +2,7 @@
 // fidelity board (historical HIG/screenshot boards where they exist; authored
 // Theme Lab design-specimen boards elsewhere).
 //
-// The regression snapshot (verify:theme-lab) answers "is today identical to
+// The regression snapshot (audit:theme-lab) answers "is today identical to
 // yesterday". This harness answers "how far from the pinned target" and exits
 // non-zero when a pinned specimen exceeds its manifest tolerance (geometry,
 // edge, material), a canonical source is missing or tampered with, a required
@@ -51,6 +51,12 @@ console.log(`[theme-lab-fidelity] Not measured here: (none — every registry ap
 // Retina control-acceptance board (2x), supplementary to the 1x contract.
 const DPR2_RUNS = [
   { label: "yosemite-2x", args: ["--theme", "yosemite", "--manifest", "tests/visual/theme-lab-fidelity/yosemite-2x.json"] },
+  // Platinum's small controls off the 1x grid (C2, 2026-10-16): 1x native
+  // references enlarged nearest-neighbour to 1.25x, 1.5x and 2x.
+  ...["1.25x", "1.5x", "2x"].map((scale) => ({
+    label: `platinum-${scale}`,
+    args: ["--theme", "platinum", "--manifest", `tests/visual/theme-lab-fidelity/platinum-${scale}.json`],
+  })),
 ];
 
 let failed = 0;

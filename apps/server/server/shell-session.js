@@ -4,11 +4,19 @@
 // HTTP 200. This proof is private to the backend and its own Node child.
 const crypto = require("node:crypto");
 const { sendJson } = require("./lib/http.js");
-const { appVersion, appBuild, appSourceCommit } = require("./lib/build-info.js");
+const { readFileSync } = require("node:fs");
+const path = require("node:path");
+const { appVersion, appBuild, appSourceCommit, desktopRoot } = require("./lib/build-info.js");
 
 const token = String(process.env.AI_SYSTEM6_SHELL_TOKEN || "");
 const parentPid = Number(process.env.AI_SYSTEM6_SHELL_PARENT_PID || 0);
 const owned = !require("./runtime-profile.js").isPublicDeployment && /^[a-f0-9]{64}$/.test(token) && Number.isSafeInteger(parentPid) && parentPid > 1;
+
+let fingerprintScript = null;
+function fingerprintSource() {
+  fingerprintScript ??= readFileSync(path.join(desktopRoot, "app/core/storage-fingerprint.js"), "utf8");
+  return fingerprintScript;
+}
 
 function handleShellSession(req, res) {
   const path = (req.url || "").split("?")[0];
@@ -19,7 +27,10 @@ function handleShellSession(req, res) {
     } else {
       // /api always bypasses the previous browser service worker. Remove only
       // derived offline caches; projects and browser storage remain intact.
-      const script = `(async()=>{try{if(navigator.serviceWorker){const registrations=await navigator.serviceWorker.getRegistrations();await Promise.all(registrations.filter(r=>[r.active,r.waiting,r.installing].some(w=>w&&new URL(w.scriptURL).pathname==="/sw.js")).map(r=>r.unregister()));}if(window.caches){await Promise.all((await caches.keys()).filter(n=>n.startsWith("ais6-")).map(n=>caches.delete(n)));}location.replace("/");}catch{document.body.textContent="Could not prepare the local application. Please restart.";}})();`;
+      // Before anything else, measure storage exactly as the previous app left
+      // it: no desk code has run on this origin yet, so nothing can have written.
+      // The updater's health gate compares this arrival fingerprint.
+      const script = `${fingerprintSource()}\n(async()=>{try{try{await window.AISystem6StorageFingerprint.recordArrival();}catch{}if(navigator.serviceWorker){const registrations=await navigator.serviceWorker.getRegistrations();await Promise.all(registrations.filter(r=>[r.active,r.waiting,r.installing].some(w=>w&&new URL(w.scriptURL).pathname==="/sw.js")).map(r=>r.unregister()));}if(window.caches){await Promise.all((await caches.keys()).filter(n=>n.startsWith("ais6-")).map(n=>caches.delete(n)));}location.replace("/");}catch{document.body.textContent="Could not prepare the local application. Please restart.";}})();`;
       res.writeHead(200, { "Content-Type": path.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/html; charset=utf-8", "Cache-Control": "no-store" });
       // Silent handoff: this page only clears the previous service worker's
       // derived caches and hands over to "/". The desk's own boot screen owns

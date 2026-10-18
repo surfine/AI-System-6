@@ -51,6 +51,9 @@ async function updateWorker(command, request) {
     return await processJson([resources + "/app/src/node/update.cjs", command, file]);
   } finally { await tjs.remove(file).catch(() => {}); }
 }
+const purgeFrontendCache = (force = false) => updateWorker("frontendCache", {
+  identity, force, cacheDir: host.paths.cache + "/WebKit/NetworkCache", markerFile: host.paths.data + "/frontend-identity.json" });
+let frontendReloaded = false;
 async function publishHealth(report = {}) {
   healthReport = { ...healthReport, ...report };
   const snapshot = { ...identity, ready, time: Date.now(), backendPid: tjs.pid,
@@ -86,12 +89,16 @@ export async function init(app) {
     await publishHealth();
     const recovery = await updateWorker("recover", {});
     if (recovery.recovering) { host.quit(); return; }
+    // Before the WebView first reaches the private server: a payload it has
+    // not run before must not be served the previous payload's cached desk.
+    await purgeFrontendCache().catch((error) => console.error("AI System 6 cache:", String(error.message).slice(0, 200)));
     const tokenBytes = crypto.getRandomValues(new Uint8Array(32));
     const token = [...tokenBytes].map((b) => b.toString(16).padStart(2, "0")).join("");
     supervisor = tjs.spawn([node, resources + "/app/src/node/supervisor.cjs", resources + "/server", String(tjs.pid)], {
       stdin: "ignore", stdout: "ignore", stderr: "ignore",
       env: { ...tjs.env, AI_SYSTEM6_DEPLOYMENT_PROFILE: "local", AI_SYSTEM6_SHELL: "macos",
-        AI_SYSTEM6_SHELL_TOKEN: token, AI_SYSTEM6_VISION_HELPER: resources.replace(/Resources$/, "MacOS/AISystem6Vision"), AI_SYSTEM6_SHELL_PROCESS_FILE: host.paths.data + "/process.json" },
+        AI_SYSTEM6_SHELL_TOKEN: token, AI_SYSTEM6_VISION_HELPER: resources.replace(/Resources$/, "MacOS/AISystem6Vision"),
+        AI_SYSTEM6_DEVICE_MODEL_HELPER: resources.replace(/Resources$/, "MacOS/AISystem6Intelligence"), AI_SYSTEM6_SHELL_PROCESS_FILE: host.paths.data + "/process.json" },
     });
     await publishHealth();
     const deadline = Date.now() + 30000;
@@ -192,12 +199,30 @@ const handlers = {
       frames: (Array.isArray(frames) ? frames : []).slice(0, 4).map((line) => String(line).slice(0, 200)) };
     await publishHealth({ bootDiagnostic }); return true;
   },
-  "shell.ready": async ({ dataFingerprint, frontendVersion, frontendBuild, frontendSource }) => {
+  "shell.ready": async ({ dataFingerprint, writerData, frontendVersion, frontendBuild, frontendSource }) => {
     if (!/^[a-f0-9]{64}$/.test(dataFingerprint || "")) throw new Error("Storage must be checked first");
     if (frontendVersion !== identity.productVersion || frontendBuild !== identity.productBuild
-        || frontendSource !== identity.sourceCommit) throw new Error("The desktop payload does not match the installed application");
+        || frontendSource !== identity.sourceCommit) {
+      // A stale desk survived the cache purge (or the purge failed): drop the
+      // cache once more and start this launch's desk again, once.
+      if (!frontendReloaded) {
+        frontendReloaded = true;
+        await purgeFrontendCache(true).catch(() => {});
+        host.eval('location.replace("http://127.0.0.1:4173/api/shell/bootstrap")');
+      }
+      throw new Error("The desktop payload does not match the installed application");
+    }
+    const lost = writerData?.lost;
+    if (writerData !== undefined && (!Number.isSafeInteger(lost) || lost < 0)) throw new Error("Storage must be checked first");
+    if (lost > 0) {
+      await publishHealth({ writerData: { checked: true, lost, missing: (writerData.missing || []).slice(0, 10).map((item) => String(item).slice(0, 120)) } });
+      throw new Error("Writer data is missing after startup");
+    }
+    const writer = writerData && { checked: writerData.checked === true, lost: 0, rewritten: writerData.rewritten === true,
+      stores: Object.fromEntries(Object.entries(writerData.stores || {}).slice(0, 32)
+        .filter(([name, count]) => /^[A-Za-z0-9_-]{1,64}$/.test(name) && Number.isSafeInteger(count))) };
     ready = true;
-    await publishHealth({ dataFingerprint });
+    await publishHealth({ dataFingerprint, ...(writer ? { writerData: writer } : {}) });
     // Permission diagnostics are optional; a delayed OS callback must not
     // block startup or the independently verified update health report.
     void Promise.all(["accessibility", "screen", "notifications"].map(async (name) => [name,

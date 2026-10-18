@@ -10,7 +10,7 @@ export const THEME_LAB_PACKAGED_ERAS = Object.freeze(["system-7", "aqua", "snow-
 const COMPLETE_ICON_IDS = Object.freeze([...ICON_IDS, ...ADDED_APP_ICON_IDS]);
 const EXTENDED_ICON_IDS = Object.freeze([
   "micropolis", "openttd", "doom", "bonsaiCity", "lightroom", "imagePromptStudio",
-  "rootline", "joyride", "mingwen",
+  "rootline", "joyride", "mingwen", "clioWrite",
 ]);
 // Standalone PNGs referenced outside the complete per-era icon-family globs.
 // Aqua/Snow sprites remain compatibility artifacts; contextual icon dispatch

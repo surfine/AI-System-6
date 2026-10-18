@@ -179,12 +179,11 @@ for (const name of [
   "verify:floppy",
   "verify:release",
   "verify:ship",
-  "verify:gate",
-  "verify:walk",
+  "audit:walk",
   "census:controls",
   "test:static-smoke",
-  "verify:appearance",
-  "verify:device-matrix",
+  "audit:appearance",
+  "audit:device-matrix",
 ]) {
   claim(`CLAUDE:npm script ${name}`, () => ({ ok: typeof scripts[name] === "string" }));
 }
@@ -205,10 +204,9 @@ claim("CLAUDE:feature logs live under dist/verification/", () => {
   const hits = grep("dist/verification", ["tooling/verify-features.mjs", "tooling/verify-quick.mjs", "tooling/lib"]);
   return { ok: hits.length > 0, detail: hits.slice(0, 3).join(", ") };
 });
-claim("CLAUDE:verify:gate accepts --no-build/--release-stamp", () => {
-  if (!exists("tooling/verify-gate.mjs")) return { ok: false, detail: "missing" };
-  const src = read("tooling/verify-gate.mjs");
-  return { ok: /--no-build/.test(src) && /--release-stamp/.test(src) };
+claim("CLAUDE:verify:quick --ship runs the release gate once", () => {
+  const src = read("tooling/verify-quick.mjs");
+  return { ok: src.includes('"--ship"') && src.includes("tooling/verify-ship.mjs") };
 });
 
 // CLAUDE.md — Playwright removal history
@@ -228,11 +226,14 @@ claim("CLAUDE:legacy Playwright specs no longer present", () => {
 });
 
 // CLAUDE.md — budgets and storage
-claim("CLAUDE:floppy budget literal 2954624 matches runtime manifest", () => {
+claim("CLAUDE:floppy budget literal matches runtime manifest", () => {
+  // The audit used to pin the literal itself (2954624), which made the audit
+  // stale the moment the manifest moved. It now reads the manifest and asks
+  // only that the entrypoint states that number.
   const src = read("tooling/runtime-manifest.mjs");
   const match = src.match(/floppyBudgetBytes\s*=\s*([0-9_]+)/);
   const value = match ? Number(match[1].replaceAll("_", "")) : NaN;
-  return { ok: value === 2954624 && read("CLAUDE.md").includes("2,954,624"), detail: String(value) };
+  return { ok: Number.isFinite(value) && read("CLAUDE.md").includes(value.toLocaleString("en-US")), detail: String(value) };
 });
 claim("CLAUDE:verify:floppy writes site/data/floppy-budget.json", () => {
   const src = read("tooling/verify-floppy-budget.mjs");
@@ -492,7 +493,7 @@ claim("product:Review Desk checks AI-mouthpiece risk", () => {
 claim("product:census ratchet baseline is a real file", () => ({
   ok: exists("tooling/control-census-baseline.json") && exists("tooling/verify-control-census.mjs"),
 }));
-claim("product:verify:walk is the eight-stop route and runbook says instruments-not-a-suite", () => {
+claim("product:audit:walk is the eight-stop route and runbook says instruments-not-a-suite", () => {
   const walk = read("tooling/verify-walk.mjs");
   const runbook = read("internal/operations/REPO-RUNBOOK.md");
   return {

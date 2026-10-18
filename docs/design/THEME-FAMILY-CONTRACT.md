@@ -219,7 +219,7 @@ shared kernel   ->  all eight
 
 The Classic → Platinum paired regression is the canonical fidelity harness
 (`npm run compare:theme-lab:canonical`) plus the Theme Lab snapshot
-(`npm run verify:theme-lab`). A shared-infrastructure change is its own
+(`npm run audit:theme-lab`). A shared-infrastructure change is its own
 commit, carries no child-specific values, and runs the six-theme regression.
 
 ## 8. Golden master
@@ -276,8 +276,8 @@ board green. Fix the painter, or improve the reference and re-measure.
 
 ```sh
 npm run verify:css                      # budgets, ratchets, selector limits
-npm run verify:theme-lab                # six-era Theme Lab regression snapshots
-npm run verify:theme-lab:fidelity       # canonical fidelity: 4 eras + Retina board
+npm run audit:theme-lab                # six-era Theme Lab regression snapshots
+npm run audit:theme-lab:fidelity       # canonical fidelity: 4 eras + Retina board
 npm run compare:theme-lab:canonical     # one board, with review artifacts
 npm run audit:theme-coverage            # registry-driven app coverage audit
 npm run screenshot:windows              # every registered window, one theme

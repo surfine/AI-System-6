@@ -126,7 +126,7 @@ function getEditableTextTarget(target) {
   }
 
   const editable = target.closest?.("[contenteditable='true'], [contenteditable='']");
-  if (!editable || editable.closest(".dictation-window")) return null;
+  if (!editable || editable.closest(".dictation-window, .cw-scroller")) return null;
   return editable;
 }
 
@@ -338,6 +338,9 @@ function dictationButtonWouldCoverControl(candidate, target) {
     right: candidate.left + candidate.width,
     bottom: candidate.top + candidate.height,
   };
+  // A window's status bar (.app-status-bar: ClioStage, the workbook, ClioWrite)
+  // is in the list whole, not only its buttons: under Liquid Glass the button
+  // sat on the bar's 「命令…」 and the gaps between its buttons (Q-M2-6).
   // .da-origin is no control, but it is the row saying where this accessory's
   // text came from, and it sits directly above the field -- exactly where the
   // button prefers to go. Covering it is as bad as covering a button.
@@ -345,7 +348,7 @@ function dictationButtonWouldCoverControl(candidate, target) {
   // The field is in this list too: its first line is where a writer puts the
   // caret, and a slot clamped into the window's lane lands right there and
   // swallows the click that was meant for the paper.
-  const controls = [target, ...document.querySelectorAll("button, [role='button'], summary, select, input[type='button'], input[type='submit'], .da-origin")];
+  const controls = [target, ...document.querySelectorAll("button, [role='button'], summary, select, input[type='button'], input[type='submit'], .da-origin, .app-status-bar")];
   return controls.some((control) => {
     if (control === dictationFieldButton || (control !== target && target.contains?.(control))) return false;
     // A disabled button still occupies its place: Section Drafts' "Next
@@ -465,6 +468,8 @@ function positionDictationFieldButton(target = dictationFieldButtonTarget) {
     canSitOutside
       ? { left: rect.right + gap, top: rect.top + gap, width: buttonWidth, height: buttonHeight }
       : null,
+    // Last resort before the first slot wins: under the field's left end.
+    { left: rect.left, top: rect.bottom + gap, width: buttonWidth, height: buttonHeight },
   ].filter(Boolean);
 
   const clampedCandidates = candidates.map((candidate) => ({

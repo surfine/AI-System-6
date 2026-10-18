@@ -106,18 +106,29 @@ Control meanings are load-bearing:
 
 Progressive discovery divides responsibility instead of building one tutorial:
 
-- On a true first use with no Working Session to resume, ClioTalk opens to one
-  short greeting and a few optional conversation starters. They are prompts,
-  not permanent modes. The writer may ignore them, type anything, or skip the
-  introduction; the first ordinary exchange completes it. Returning empty
-  Chats use ClioTalk's normal welcome. OOBE never becomes a wizard and never
-  leads with provider fields, project setup, or a feature inventory.
+- On a true first use with no Working Session to resume, boot says
+  “Welcome to AI System 6.” and opens one window: About AI System 6 on its
+  “First time here” face. It offers three equal doors, not steps: pick a Mac
+  (switches the appearance at once), write one line (it lands as a Note Pad
+  slip that AI has not touched), and watch the film. Any door completes the
+  introduction (the film counts once play is pressed), and so does an ordinary
+  exchange in ClioTalk. A “Show this window at startup” checkbox clears itself
+  when a door is done; the Apple menu always reaches About. ClioTalk opens with
+  its normal welcome, not a first-run greeting. OOBE never becomes a wizard and
+  never leads with provider fields, project setup, or a feature inventory; a
+  door that needs a model or the network says why when it cannot run.
 - Clio introduces named objects only when the current task reaches them. It may
   offer an existing application action for Project Hard Disk, Scrapbook,
   Question Sheet, TeachText, Review Desk, or AI Settings, but it does not
   reproduce those applications inside conversation or make model output saved
-  work. Start Here and Replay Introduction return to this same short ClioTalk
-  entry; the deterministic 30-second tour remains optional, not a boot step.
+  work. Start Here and Replay Introduction open About on “First time here”;
+  the deterministic 30-second tour lives in About's “This Desk” chapter, is
+  optional, and is never a boot step.
+- About AI System 6 is an ordinary non-modal window built on demand. Its first
+  chapter is an instrument (version, where your words live, this project's AI
+  runs and adoptions from run receipts, the current model); the other chapters
+  are generated from the official site and every button in them opens a real
+  window or switches a real setting.
 - MultiFinder is discovered through the startup environment: briefly explain
   Finder versus MultiFinder where that choice is made, then teach the real
   menu-bar switcher only after MultiFinder is enabled.

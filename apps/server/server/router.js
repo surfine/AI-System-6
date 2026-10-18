@@ -72,6 +72,8 @@ const handleMacSharedSessionDelete = lazyHandler(() => require("./routes/mac-sha
 const handleMacSharedChat = lazyHandler(() => require("./routes/mac-shared.js"), "./routes/mac-shared.js", "handleMacSharedChat");
 const handleMacSharedQuota = lazyHandler(() => require("./routes/mac-shared.js"), "./routes/mac-shared.js", "handleMacSharedQuota");
 const handleChat = lazyHandler(() => require("./routes/chat.js"), "./routes/chat.js", "handleChat");
+const handleDeviceModelStatus = lazyHandler(() => require("./routes/device-model.js"), "./routes/device-model.js", "handleDeviceModelStatus");
+const handleDeviceModelChat = lazyHandler(() => require("./routes/device-model.js"), "./routes/device-model.js", "handleDeviceModelChat");
 const handleDraftThesis = lazyHandler(() => require("./routes/draft-thesis.js"), "./routes/draft-thesis.js", "handleDraftThesis");
 const handleBureaucracyCaptions = lazyHandler(() => require("./routes/bureaucracy-captions.js"), "./routes/bureaucracy-captions.js", "handleBureaucracyCaptions");
 const handleImageGenerate = lazyHandler(() => require("./routes/image-generate.js"), "./routes/image-generate.js", "handleImageGenerate");
@@ -154,6 +156,8 @@ const localExactRoutes = new Map([
   ["POST /api/mac-shared/chat", handleMacSharedChat],
   ["GET /api/mac-shared/quota", handleMacSharedQuota],
   ["POST /api/chat", handleChat],
+  ["GET /api/device-model/status", handleDeviceModelStatus],
+  ["POST /api/device-model/chat", handleDeviceModelChat],
   ["POST /api/draft/thesis", handleDraftThesis],
   ["POST /api/bureaucracy/captions", handleBureaucracyCaptions],
   ["POST /api/image/generate", handleImageGenerate],

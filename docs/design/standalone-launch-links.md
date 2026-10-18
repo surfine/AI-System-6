@@ -52,13 +52,13 @@ of the desktop stays one obvious step away.
 ### 4.1 Web (works everywhere, no install)
 
 ```text
-https://aisystem6.pages.dev/?launch=endfield-terminal&mode=fullscreen
+https://aisystem6.aaronlau.me/?launch=endfield-terminal&mode=fullscreen
 ```
 
 or a short branded route:
 
 ```text
-https://aisystem6.pages.dev/go/endfield-terminal?mode=fullscreen
+https://aisystem6.aaronlau.me/go/endfield-terminal?mode=fullscreen
 ```
 
 Parameters:

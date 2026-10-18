@@ -1,0 +1,249 @@
+/* Windoid: a small tool window with a thin title bar and a close box only.
+
+   Lazy: brought in with the ClioChart workbook surface (app/core/config.js),
+   built by AISystem6Windoid.create in features/clio-chart-comments.js. The
+   primitive is deliberately plain: System 6 drawing (1px ink rules, a
+   striped title bar, a square close box) written only in terms of tokens. The
+   frame, title bar and body wear the appearance's own window tokens
+   (--window-*, --system-titlebar-active-bg, --titlebar-*), the body a reading
+   surface where the appearance has one (--glass-reading-surface, opaque under
+   Liquid Glass), and an era can retune it with the --windoid-* hooks below,
+   never by new selectors. Docking is data-windoid-placement, set by
+   windoidPlacement(); --windoid-main-top (set from script) is where the host's
+   main area starts, so the windoid never covers the bars above it. */
+
+.has-windoid {
+  position: relative;
+}
+
+.windoid {
+  --windoid-width: 280px;
+  --windoid-dock-height: 188px;
+  --windoid-title-height: var(--system-titlebar-height, 17px);
+  --windoid-close-size: 11px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border: var(--windoid-border, var(--window-border, 1px solid var(--ink)));
+  border-radius: var(--windoid-radius, var(--window-radius, 0));
+  /* Two reading surfaces stack (frame and body), so nothing shows through. */
+  background: var(--glass-reading-surface, var(--paper));
+  box-shadow: var(--windoid-shadow, var(--window-shadow, 1px 1px 0 var(--ink)));
+  color: var(--ink);
+  font-family: var(--ui-font);
+  font-size: var(--windoid-font-size, 12px);
+}
+
+.windoid[data-windoid-placement="float-right"] {
+  position: absolute;
+  top: calc(var(--windoid-main-top, 0px) + 8px);
+  right: 8px;
+  width: var(--windoid-width);
+  max-height: calc(100% - var(--windoid-main-top, 0px) - 16px);
+}
+
+.windoid[data-windoid-placement="dock-below"] {
+  position: relative;
+  flex: none;
+  width: auto;
+  max-height: var(--windoid-dock-height);
+  margin: 0;
+  border-width: 1px 0 0;
+  box-shadow: none;
+}
+
+.windoid[data-windoid-placement="swap"] {
+  position: absolute;
+  top: var(--windoid-main-top, 0px);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  box-shadow: none;
+}
+
+.windoid-titlebar {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  height: var(--windoid-title-height);
+  border-bottom: var(--windoid-title-border, var(--titlebar-border, 1px solid var(--ink)));
+  background: var(--windoid-title-bg, var(--system-titlebar-active-bg, var(--paper)));
+  background-origin: var(--system-titlebar-background-origin, padding-box);
+  background-clip: var(--system-titlebar-background-clip, border-box);
+  box-shadow: var(--titlebar-shadow, none);
+}
+
+.windoid-title {
+  max-width: calc(100% - 48px);
+  padding: 0 6px;
+  overflow: hidden;
+  background: var(--titlebar-title-bg, var(--paper));
+  color: var(--titlebar-title-fg, var(--ink));
+  font-family: var(--title-font, var(--ui-font));
+  font-size: var(--system-titlebar-font-size, inherit);
+  font-weight: 700;
+  line-height: calc(var(--windoid-title-height) - 2px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.windoid-close {
+  position: absolute;
+  top: 50%;
+  left: 6px;
+  width: var(--windoid-close-size);
+  height: var(--windoid-close-size);
+  padding: 0;
+  transform: translateY(-50%);
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  cursor: default;
+}
+
+.windoid-close::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+}
+
+.windoid-close:active {
+  background: var(--ink);
+}
+
+.windoid-close:focus-visible,
+.windoid-input:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+.windoid-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding: 8px;
+  overflow: auto;
+  background: var(--windoid-bg, var(--glass-reading-surface, var(--window-bg, var(--paper))));
+}
+
+.windoid-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.windoid-input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  /* 16px keeps iOS from zooming the page into the field. */
+  font-size: max(16px, 1em);
+  resize: vertical;
+}
+
+.windoid-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.windoid-threads {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.windoid-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--shade);
+}
+
+.windoid-comment.is-reply {
+  margin-left: 12px;
+  padding-left: 8px;
+  border-left: 1px solid var(--ink);
+}
+
+.windoid-comment-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  align-items: baseline;
+}
+
+.windoid-author {
+  font-weight: 700;
+}
+
+.windoid-anchor,
+.windoid-date {
+  font-style: italic;
+}
+
+/* Resolved is told by a word and an inverted tag, never by colour alone. */
+.windoid-done {
+  padding: 0 4px;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.windoid-text {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.windoid-reply {
+  align-self: flex-start;
+}
+
+.windoid-group-title {
+  margin: 0;
+  padding-top: 4px;
+  border-top: 1px solid var(--ink);
+  font-size: inherit;
+}
+
+.windoid-hint,
+.windoid-empty,
+.windoid-note {
+  margin: 0;
+}
+
+.windoid-hint {
+  font-style: italic;
+}
+
+.windoid-note {
+  font-weight: 700;
+}
+
+/* Buttons in a windoid are the desk's own .btn (10-windows.css and every
+   appearance's button recipe); this file styles none of them. */
+@media (hover: none) and (pointer: coarse) {
+  /* The close box stays 11x11; the hit area grows to 44x36, inward and
+     downward because the windoid's overflow clips whatever leaves its edge. */
+  .windoid-close::before {
+    inset: -3px -27px -22px -6px;
+  }
+
+  /* Windoid buttons keep their fine-pointer look; touch gets the desk's 44px target. */
+  .windoid .btn {
+    min-block-size: 44px;
+  }
+}

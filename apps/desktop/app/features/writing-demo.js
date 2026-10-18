@@ -2298,6 +2298,9 @@ async function showTeaserClosingCard() {
     confirmKey: "teaser_closing_look_around",
     altKey: "teaser_closing_draft_one",
     hideCancel: true,
+    // A finished tour is a moment to keep going, not a warning: the card is
+    // read without the caution icon.
+    reading: true,
   });
   if (choice === "no" && typeof handleAction === "function") handleAction("open-quick-draft");
 }

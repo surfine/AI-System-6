@@ -1,26 +1,39 @@
 #!/usr/bin/env node
-// Developer ID signing + notarization for the macOS app.
+// Developer ID signing + notarization for the macOS app and its DMG.
 //
-// Credential input contract (environment variables; never commit values):
-//   AI_SYSTEM6_DEVELOPER_ID        "Developer ID Application: Name (TEAMID)"
-//   AI_SYSTEM6_TEAM_ID             Apple Developer team id (for stapler/notary)
-//   AI_SYSTEM6_NOTARY_KEY_ID       App Store Connect API key id
-//   AI_SYSTEM6_NOTARY_ISSUER       App Store Connect API issuer id
-//   AI_SYSTEM6_NOTARY_KEY          App Store Connect API key (.p8 contents or path)
-//   AI_SYSTEM6_NOTARY_APPLE_ID     Apple ID (alternative to API key)
-//   AI_SYSTEM6_NOTARY_APP_PASSWORD App-specific password for Apple ID
+// Identity: --identity <sha1> or AI_SYSTEM6_DEVELOPER_ID. Prefer the SHA-1 of
+// the certificate so a duplicate-named certificate can never be picked.
+//
+// Notary credentials (never commit values), first match wins:
+//   --keychain-profile <name> / AI_SYSTEM6_NOTARY_PROFILE   notarytool keychain profile
+//   AI_SYSTEM6_NOTARY_KEY_ID + _ISSUER + _KEY               App Store Connect API key
+//   AI_SYSTEM6_NOTARY_APPLE_ID + _APP_PASSWORD + AI_SYSTEM6_TEAM_ID
+//
+// Signing order (the reason --deep is not used to sign):
+//   1. every nested Mach-O, deepest first, one codesign each; only the embedded
+//      Node binary gets entitlements (JIT), because --force drops entitlements
+//      and Node dies under hardened runtime without them;
+//   2. the bundle itself, shallow, hardened runtime + secure timestamp;
+//   3. --deep appears only in the verify step.
 //
 // Behavior (fail honest):
-//   - no DEVELOPER_ID            -> ad-hoc sign only, report NOT EXECUTED
-//   - DEVELOPER_ID only          -> sign + verify, notarization NOT EXECUTED
-//   - full credentials           -> sign + verify + notarize + staple + verify
+//   - no identity                -> ad-hoc sign only, report NOT EXECUTED
+//   - identity only              -> sign + verify, notarization NOT EXECUTED
+//   - identity + notary creds    -> sign + verify + notarize + staple + verify
 //
-//   node tooling/sign-mac-app.mjs --app dist/AI-System-6.app [--entitlements path]
+//   node tooling/sign-mac-app.mjs --app dist/X.app [--dmg dist/X.dmg]
+//     [--identity <sha1>] [--keychain-profile <name>] [--node-entitlements <node.plist>] [--entitlements <app.plist>]
 
-import { existsSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { resolve } from "node:path";
+import { tmpdir } from "node:os";
+import { basename, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import process from "node:process";
+
+import { collectMachOFiles } from "./build-tinyjs-shell-app.mjs";
+
+export const NODE_ENTITLEMENTS = resolve(fileURLToPath(new URL("../platform/macos/tinyjs/entitlements.node.plist", import.meta.url)));
 
 function run(command, args, { cwd } = {}) {
   const result = spawnSync(command, args, { cwd, encoding: "utf8", stdio: "inherit" });
@@ -36,107 +49,173 @@ function runCapture(command, args) {
   return { status: result.status, stdout: String(result.stdout || ""), stderr: String(result.stderr || "") };
 }
 
-function xcrun(name) {
+function xcrun() {
   const candidates = ["/usr/bin/xcrun", "/Applications/Xcode.app/Contents/Developer/usr/bin/xcrun"];
-  for (const candidate of candidates) {
-    if (existsSync(candidate)) return candidate;
-  }
-  return "xcrun";
+  return candidates.find((candidate) => existsSync(candidate)) || "xcrun";
 }
 
-function parseArguments(argv) {
-  const options = { app: "", entitlements: "" };
+function parseArguments(argv, env = process.env) {
+  const options = {
+    app: "", dmg: "", nodeEntitlements: NODE_ENTITLEMENTS, entitlements: "",
+    identity: String(env.AI_SYSTEM6_DEVELOPER_ID || "").trim(),
+    keychainProfile: String(env.AI_SYSTEM6_NOTARY_PROFILE || "").trim(),
+  };
+  const take = (index) => argv[index + 1] || "";
   for (let index = 0; index < argv.length; index += 1) {
-    if (argv[index] === "--app") options.app = resolve(argv[index + 1]);
-    else if (argv[index] === "--entitlements") options.entitlements = resolve(argv[index + 1]);
-    else if (argv[index] === "--help" || argv[index] === "-h") {
-      console.log("Usage: node tooling/sign-mac-app.mjs --app <path.app> [--entitlements <path.plist>]");
+    const arg = argv[index];
+    if (arg === "--app") options.app = resolve(take(index));
+    else if (arg === "--dmg") options.dmg = resolve(take(index));
+    else if (arg === "--node-entitlements") options.nodeEntitlements = resolve(take(index));
+    else if (arg === "--entitlements") options.entitlements = resolve(take(index));
+    else if (arg === "--identity") options.identity = take(index).trim();
+    else if (arg === "--keychain-profile") options.keychainProfile = take(index).trim();
+    else if (arg === "--help" || arg === "-h") {
+      console.log("Usage: node tooling/sign-mac-app.mjs [--app <path.app>] [--dmg <path.dmg>] [--identity <sha1>] "
+        + "[--keychain-profile <name>] [--node-entitlements <node.plist>] [--entitlements <app.plist>]");
       process.exit(0);
     }
+    if (["--app", "--dmg", "--node-entitlements", "--entitlements", "--identity", "--keychain-profile"].includes(arg)) index += 1;
   }
   return options;
 }
 
-function notaryCredentials() {
-  const env = process.env;
+/**
+ * Debug entitlements make a binary debuggable by any process, so a signed
+ * (non ad-hoc) build never carries them. Returns the offending plist or "".
+ */
+export function debugEntitlementsIn(plistPaths, readText = (file) => readFileSync(file, "utf8")) {
+  return plistPaths.filter(Boolean).find((file) => /com\.apple\.security\.get-task-allow/.test(readText(file))) || "";
+}
+
+/** notarytool credential arguments, or null when none are configured. */
+export function notaryArguments(options, env = process.env) {
+  if (options.keychainProfile) return ["--keychain-profile", options.keychainProfile];
+  const argvWarning = "WARNING: notarization credentials from the environment are passed to notarytool on its command line, "
+    + "where other local processes can read them. Prefer a keychain profile (--keychain-profile / AI_SYSTEM6_NOTARY_PROFILE).";
   if (env.AI_SYSTEM6_NOTARY_KEY_ID && env.AI_SYSTEM6_NOTARY_ISSUER && env.AI_SYSTEM6_NOTARY_KEY) {
-    return { kind: "api-key" };
+    console.error(argvWarning);
+    return ["--key-id", env.AI_SYSTEM6_NOTARY_KEY_ID, "--issuer", env.AI_SYSTEM6_NOTARY_ISSUER, "--key", env.AI_SYSTEM6_NOTARY_KEY];
   }
   if (env.AI_SYSTEM6_NOTARY_APPLE_ID && env.AI_SYSTEM6_NOTARY_APP_PASSWORD && env.AI_SYSTEM6_TEAM_ID) {
-    return { kind: "apple-id" };
+    console.error(argvWarning);
+    return ["--apple-id", env.AI_SYSTEM6_NOTARY_APPLE_ID, "--password", env.AI_SYSTEM6_NOTARY_APP_PASSWORD, "--team-id", env.AI_SYSTEM6_TEAM_ID];
   }
   return null;
 }
 
-const options = parseArguments(process.argv.slice(2));
-if (!options.app || !existsSync(options.app)) {
-  console.error(`App bundle not found: ${options.app || "(none)"}`);
-  process.exit(1);
+function codesignBase(identity) {
+  return identity === "-"
+    ? ["--force", "--sign", "-"]
+    : ["--force", "--options", "runtime", "--timestamp", "--sign", identity];
 }
 
-const developerId = String(process.env.AI_SYSTEM6_DEVELOPER_ID || "").trim();
-const notary = notaryCredentials();
-
-if (!developerId) {
-  console.error("NOT EXECUTED: no AI_SYSTEM6_DEVELOPER_ID certificate identity available; signing ad-hoc (Control-click -> Open still required).");
-  run("/usr/bin/codesign", ["--force", "--deep", "--sign", "-", options.app]);
-  process.exit(0);
+/** Nested code first, deepest path first; only Node carries entitlements. */
+function signNested(app, identity, nodeEntitlements) {
+  const files = collectMachOFiles(app);
+  files.sort((a, b) => (b.split("/").length - a.split("/").length) || (b.length - a.length));
+  for (const file of files) {
+    const args = codesignBase(identity);
+    if (identity !== "-" && basename(file) === "node") args.push("--entitlements", nodeEntitlements);
+    run("/usr/bin/codesign", [...args, file]);
+  }
+  console.log(`OK  signed ${files.length} nested Mach-O file(s) inside-out`);
 }
 
-const signArgs = ["--force", "--deep", "--options", "runtime", "--timestamp", "--sign", developerId];
-if (options.entitlements) signArgs.push("--entitlements", options.entitlements);
-signArgs.push(options.app);
-run("/usr/bin/codesign", signArgs);
-
-const verify = runCapture("/usr/bin/codesign", ["--verify", "--deep", "--strict", "--verbose=2", options.app]);
-if (verify.status !== 0) {
-  console.error("codesign --verify failed:\n" + verify.stderr);
-  process.exit(1);
-}
-console.log("OK  codesign --verify --deep --strict");
-
-const spctl = runCapture("/usr/sbin/spctl", ["--assess", "--type", "execute", "--verbose=4", options.app]);
-if (spctl.status !== 0) {
-  console.error("spctl assessment failed (expected before notarization):\n" + spctl.stderr);
-} else {
-  console.log("OK  spctl --assess --type execute");
+function verifyBundle(app) {
+  const verify = runCapture("/usr/bin/codesign", ["--verify", "--deep", "--strict", "--verbose=2", app]);
+  if (verify.status !== 0) {
+    console.error("codesign --verify failed:\n" + verify.stderr);
+    process.exit(1);
+  }
+  console.log("OK  codesign --verify --deep --strict");
 }
 
-if (!notary) {
-  console.error("NOT EXECUTED: notarization credentials unavailable (App Store Connect API key or Apple ID + app password + team id). The app is signed with Hardened Runtime but not notarized.");
-  process.exit(0);
+function notarize(artifact, credentials) {
+  run(xcrun(), ["notarytool", "submit", artifact, "--wait", "--timeout", "20m", ...credentials]);
 }
 
-const archive = `${options.app}.zip`;
-run("/usr/bin/ditto", ["-c", "-k", "--keepParent", options.app, archive]);
-
-const notaryArgs = ["notarytool", "submit", archive, "--wait", "--timeout", "20m"];
-if (notary.kind === "api-key") {
-  notaryArgs.push(
-    "--key-id", process.env.AI_SYSTEM6_NOTARY_KEY_ID,
-    "--issuer", process.env.AI_SYSTEM6_NOTARY_ISSUER,
-    "--key", process.env.AI_SYSTEM6_NOTARY_KEY,
-  );
-} else {
-  notaryArgs.push(
-    "--apple-id", process.env.AI_SYSTEM6_NOTARY_APPLE_ID,
-    "--password", process.env.AI_SYSTEM6_NOTARY_APP_PASSWORD,
-    "--team-id", process.env.AI_SYSTEM6_TEAM_ID,
-  );
+function staple(artifact) {
+  run(xcrun(), ["stapler", "staple", artifact]);
+  const validate = runCapture(xcrun(), ["stapler", "validate", artifact]);
+  if (validate.status !== 0) {
+    console.error("stapler validate failed:\n" + validate.stderr);
+    process.exit(1);
+  }
+  console.log(`OK  stapler validate ${basename(artifact)} — ticket stapled`);
 }
-run(xcrun("xcrun"), notaryArgs);
 
-run(xcrun("xcrun"), ["stapler", "staple", options.app]);
-const staple = runCapture(xcrun("xcrun"), ["stapler", "validate", options.app]);
-if (staple.status !== 0) {
-  console.error("stapler validate failed:\n" + staple.stderr);
-  process.exit(1);
+function assess(artifact, type, required) {
+  const context = type === "open" ? ["--context", "context:primary-signature"] : [];
+  const result = runCapture("/usr/sbin/spctl", ["--assess", "--type", type, ...context, "--verbose=4", artifact]);
+  if (result.status === 0) console.log(`OK  spctl --assess --type ${type} ${basename(artifact)}`);
+  else if (required) {
+    console.error("spctl assessment failed:\n" + result.stderr);
+    process.exit(1);
+  } else console.error("spctl assessment failed (expected before notarization):\n" + result.stderr);
 }
-console.log("OK  stapler validate — ticket stapled");
 
-const spctlFinal = runCapture("/usr/sbin/spctl", ["--assess", "--type", "execute", "--verbose=4", options.app]);
-if (spctlFinal.status !== 0) {
-  console.error("spctl assessment after notarization failed:\n" + spctlFinal.stderr);
-  process.exit(1);
+function signApp(options, credentials) {
+  const { app, identity } = options;
+  signNested(app, identity, options.nodeEntitlements);
+  const seal = codesignBase(identity);
+  if (identity !== "-" && options.entitlements) seal.push("--entitlements", options.entitlements);
+  run("/usr/bin/codesign", [...seal, app]);
+  verifyBundle(app);
+  if (identity === "-") return;
+  assess(app, "execute", false);
+  if (!credentials) return;
+  const scratch = mkdtempSync(join(tmpdir(), "ai-system6-notary-"));
+  try {
+    const archive = join(scratch, basename(app) + ".zip");
+    run("/usr/bin/ditto", ["-c", "-k", "--keepParent", app, archive]);
+    notarize(archive, credentials);
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
+  }
+  staple(app);
+  assess(app, "execute", true);
 }
-console.log("OK  spctl --assess after notarization — double-click launch without Control-click");
+
+function signDmg(options, credentials) {
+  run("/usr/bin/codesign", [...codesignBase(options.identity), options.dmg]);
+  console.log(`OK  signed ${basename(options.dmg)}`);
+  if (!credentials) return;
+  notarize(options.dmg, credentials);
+  staple(options.dmg);
+  assess(options.dmg, "open", true);
+}
+
+function main() {
+  const options = parseArguments(process.argv.slice(2));
+  const targets = [options.app, options.dmg].filter(Boolean);
+  if (targets.length === 0 || targets.some((target) => !existsSync(target))) {
+    console.error(`Nothing to sign or not found: ${targets.join(", ") || "(none)"}`);
+    process.exit(1);
+  }
+  for (const [label, file] of [["Node entitlements", options.nodeEntitlements], ["App entitlements", options.entitlements]]) {
+    if (options.app && file && !existsSync(file)) {
+      console.error(`${label} plist not found: ${file}`);
+      process.exit(1);
+    }
+  }
+  if (!options.identity) {
+    console.error("NOT EXECUTED: no signing identity (--identity or AI_SYSTEM6_DEVELOPER_ID); signing ad-hoc (Control-click -> Open still required).");
+    options.identity = "-";
+  }
+  const debuggable = options.identity === "-" || !options.app ? "" : debugEntitlementsIn([options.nodeEntitlements, options.entitlements]);
+  if (debuggable) {
+    console.error(`Refusing to sign with get-task-allow in ${debuggable}: a signed build must not be debuggable.`);
+    process.exit(1);
+  }
+  const credentials = options.identity === "-" ? null : notaryArguments(options);
+  if (options.identity !== "-" && !credentials) {
+    console.error("NOT EXECUTED: notarization credentials unavailable (keychain profile, App Store Connect API key, or Apple ID + app password + team id). Signed with Hardened Runtime but not notarized.");
+  }
+  if (options.app) signApp(options, credentials);
+  if (options.dmg && options.identity !== "-") signDmg(options, credentials);
+}
+
+const invokedDirectly = process.argv[1]
+  ? resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+  : false;
+if (invokedDirectly) main();

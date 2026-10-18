@@ -106,6 +106,13 @@ function stopBootProgressBridge() {
   bootProgressListener = null;
 }
 
+// System 6 greeted with one sentence, not a checklist. The startup checks
+// appear only when starting is slow (or fails), as the reason for the wait.
+setTimeout(() => {
+  const screen = document.getElementById("boot-screen");
+  if (screen && !screen.hidden && !screen.classList.contains("is-done")) screen.classList.add("is-slow");
+}, 3000);
+
 async function runBootSequence() {
   document.body.classList.add("is-booting");
   if (!bootScreenEl) {
@@ -118,8 +125,8 @@ async function runBootSequence() {
   bootLocalModelEl?.classList.toggle("is-hidden", desktopProfile);
   updateBootLedger("startup");
   if (bootMessageEl && typeof t === "function") {
-    const opening = t("boot_starting");
-    if (opening && opening !== "boot_starting") bootMessageEl.textContent = opening;
+    const opening = t("boot_welcome");
+    if (opening && opening !== "boot_welcome") bootMessageEl.textContent = opening;
   }
   bootProgressFillEl?.style.setProperty("--boot-progress-fill", "2%");
 
@@ -143,7 +150,7 @@ async function runBootSequence() {
   if (elapsed < brandHoldMs) await delay(brandHoldMs - elapsed);
   setBootMacState("happy");
   updateBootLedger("ready");
-  if (bootMessageEl && typeof t === "function") {
+  if (bootMessageEl && typeof t === "function" && bootScreenEl.classList.contains("is-slow")) {
     const ready = t("boot_ready");
     if (ready && ready !== "boot_ready") bootMessageEl.textContent = ready;
   }
@@ -178,6 +185,7 @@ function showBootFailure(error) {
     document.body.classList.add("is-booting");
     bootScreenEl.hidden = false;
     bootScreenEl.classList.remove("is-done");
+    bootScreenEl.classList.add("is-slow");
   }
   const failureCopy = typeof t === "function" ? t("boot_failed_recovery") : "AI System 6 couldn't finish starting.";
   const resolvedCopy = failureCopy && failureCopy !== "boot_failed_recovery"
@@ -255,6 +263,38 @@ function updateBootLedger(stage = "startup") {
   );
 }
 
+// A page's front door is the URL it was opened with. The shell receives
+// `ai-system-6:` links from the OS and routes them through its own
+// confirm-and-switch path, because a link from outside may move the reader to
+// another disk and that is worth asking about. A page has no such handler, so
+// `?open=<target>&id=<id>` resolves here instead - and it stays inside the
+// mounted project: an untrusted URL does not get to switch disks.
+async function openDeepLink(target = "", id = "") {
+  const name = String(target || "");
+  if (!name) return false;
+  if (name === "settings") { await openWindow("control"); return true; }
+  if (name === "project") { await openWindow("projects"); return true; }
+  const item = id ? (name === "scrapbook" ? scraps.find((entry) => entry.id === id)
+    : chatFiles.find((entry) => entry.id === id && entry.type === "text")) : null;
+  if (name === "scrapbook") {
+    if (id && !item) { if (typeof message === "function") message(t("native_target_missing")); return false; }
+    if (item) {
+      selectedScrapId = item.id;
+      selectedScrapIds.clear();
+      selectedScrapIds.add(item.id);
+      if (typeof renderScraps === "function") renderScraps();
+    }
+    await openWindow("scrapbook");
+    return true;
+  }
+  if (name === "teachtext" || name === "teachText") {
+    if (item && typeof openTextFile === "function") openTextFile(item.id);
+    else await openWindow("teachText");
+    return true;
+  }
+  return false;
+}
+
 // Mounting a disk brings back that disk's own desktop scene. Pass
 // { resumeScene: false } when the caller owns the windows itself (a writing
 // surface that mounts a disk on the way to opening its own window).
@@ -274,6 +314,7 @@ async function switchProject(projectId, options = {}) {
     setStatus(t("quick_draft_save_failed"));
     return false;
   }
+  for (const native of [window.AISystem6ClioChartWorkbook, window.AISystem6ClioStageNative, window.AISystem6ClioWrite]) if (native?.current?.() && await native.close() === "cancelled") return false;
   // Flush the Working Session before activeProjectId moves: the old project's
   // scene (windows, selection, cursor, scroll) must never be saved under the
   // new project's ownership.
@@ -802,13 +843,22 @@ async function handleStartupSettingsClose() {
 
 function openStartupItems() {
   if (!clioOnboardingCompleted) {
-    // First launch stays on the ordinary Desktop; ClioTalk is the front door,
-    // not a route-only writing surface.
+    // First launch stays on the ordinary Desktop; About's "First time here" is
+    // the front door, not a route-only writing surface.
     setWorkspaceProfile(workspaceProfileDesktop, { persist: false });
   }
   quietStartup();
-  if (!clioOnboardingCompleted) {
-    openFirstRunClioTalk();
+  // Someone who closed the doors twice without opening one has seen enough of
+  // them; the Apple menu still reaches About.
+  if (!clioOnboardingCompleted && aboutStartup.show === null && aboutStartup.shows >= 2) {
+    completeClioOnboarding("seen-twice");
+  }
+  if (aboutStartup.show === true || (aboutStartup.show === null && !clioOnboardingCompleted)) {
+    // One window on the desk: About, not ClioTalk behind it.
+    const assistant = getWindow("assistant");
+    assistant?.classList.add("is-hidden");
+    if (assistant) forgetWindowFromRunningApps("assistant");
+    openAboutFirstTime({ startup: true });
     return;
   }
   if (workspaceProfile === workspaceProfileDesktop) {

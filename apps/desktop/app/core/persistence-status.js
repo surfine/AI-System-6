@@ -408,6 +408,7 @@ function settingsSnapshotPayload() {
     writerMode: false,
     projectMounted: isProjectMounted,
     clioOnboardingCompleted,
+    aboutStartup,
     clioProviderPreference,
     multiFinderSwitcherHintSeen,
     writingBell: getWritingBellState(),
@@ -2206,7 +2207,11 @@ function applySettings(settings) {
   clioOnboardingCompleted = typeof settings.clioOnboardingCompleted === "boolean"
     ? settings.clioOnboardingCompleted
     : guideSeen;
-  clioProviderPreference = ["auto", "local", "website", "byok"].includes(settings.clioProviderPreference)
+  aboutStartup = {
+    show: typeof settings.aboutStartup?.show === "boolean" ? settings.aboutStartup.show : null,
+    shows: Math.max(0, Number(settings.aboutStartup?.shows) || 0),
+  };
+  clioProviderPreference = ["auto", "local", "device", "website", "byok"].includes(settings.clioProviderPreference)
     ? settings.clioProviderPreference
     : "auto";
   if (typeof settings.multiFinderSwitcherHintSeen === "boolean") {
@@ -2413,16 +2418,9 @@ async function loadAppVersion() {
   }
 }
 
+// About is built on demand; it repaints itself only once it exists.
 function renderAboutMacintosh() {
-  if (aboutVersionEl) aboutVersionEl.textContent = formatAppVersionCompact();
-  const cloudActive = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.provider && cloudCredentialReady();
-  const aboutModelLabelEl = document.getElementById("about-model-label");
-  if (aboutModelLabelEl) aboutModelLabelEl.textContent = cloudActive ? t("about_cloud_model") : t("about_model");
-  if (aboutModelEl) {
-    aboutModelEl.textContent = cloudActive
-      ? (cloudConfig.model || t("cloud_model"))
-      : getLocalModelDisplayName();
-  }
+  window.AISystem6About?.render?.();
   renderSystemStatus();
 }
 
@@ -2899,6 +2897,21 @@ function pushSystemNotification(message, options = {}) {
       systemNotifications.unshift(item);
       systemNotifications.splice(16);
     }
+  }
+
+  // The native shell raises an OS notification through its own bridge. A page
+  // has the same ability through the Notification API and nothing used it, so
+  // the public deployment could not tell anyone anything while its tab was in
+  // the background. Same rule as the shell: a new message only, and only when
+  // the desk is not in front of the reader (on screen the Notification Center
+  // already is the notification).
+  if (!wasExisting && document.hidden && typeof Notification !== "undefined") {
+    let raised = null;
+    if (Notification.permission === "granted") raised = new Notification(text);
+    else if (Notification.permission === "default") Notification.requestPermission();
+    // The shell turns a click on its notification into the object that
+    // notification named; a page's can do the same.
+    if (raised) raised.onclick = () => openSystemNotification(item.id);
   }
 
   // Written through the ordinary desk save, so a message and the way back it

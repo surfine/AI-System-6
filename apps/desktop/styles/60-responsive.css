@@ -1815,19 +1815,6 @@ body.is-writer-mode .system-help-window .system-help-pane {
     transform: none;
   }
 
-  body:not(.is-writer-mode) .window.about-window:not(.is-hidden):not(.is-mobile-dialog):not(.is-mobile-system-page) {
-    position: relative;
-    order: 2;
-    left: auto;
-    right: auto;
-    top: auto;
-    justify-self: center;
-    width: min(430px, 100%);
-    height: auto;
-    max-width: none;
-    max-height: none;
-    transform: none;
-  }
 
   body:not(.is-writer-mode) .window.is-mobile-work-area.assistant-window:not(.is-mobile-fullscreen):not(.is-collapsed),
   body:not(.is-writer-mode) .window.is-mobile-work-area.assistant-window.is-desklet:not(.is-mobile-fullscreen):not(.is-collapsed) {
@@ -2416,7 +2403,7 @@ body.use-modern-fonts .mde-surface * {
      Aqua/Snow/Yosemite Theme Lab specimens to reach their measured rows. */
   min-height: var(--menu-item-min-height, var(--system-control-min-height));
   padding: var(--menu-item-padding, 3px 14px 3px 30px);
-  font-family: var(--ui-font);
+  font-family: var(--menu-item-font-family, var(--ui-font));
   font-size: var(--system-readable-min);
   font-weight: var(--menu-item-font-weight, 400);
   line-height: var(--menu-item-line-height-menu, normal);
@@ -3798,29 +3785,7 @@ input[type="radio"] {
       min-width: 0;
     }
 
-    /* E10 about / getinfo / timemachine / sound / dict */
-    .about-window .about-pane > .btn.default,
-    .about-window .about-links {
-      width: 100%;
-    }
-
-    .about-window .about-pane > .btn.default {
-      min-height: var(--touch-primary-min-height);
-      justify-content: center;
-    }
-
-    .about-window .about-links {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 6px;
-    }
-
-    .about-window .about-links > .btn {
-      width: 100%;
-      min-height: 40px;
-      justify-content: center;
-    }
-
+    /* E10 getinfo / timemachine / sound / dict */
     .info-window .info-kind-actions,
     .info-window .button-row {
       flex-direction: column;

@@ -22,6 +22,7 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
+  chmodSync,
   closeSync,
   copyFileSync,
   cpSync,
@@ -35,7 +36,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import process from "node:process";
 
@@ -53,6 +54,24 @@ export const DIST_DIR = "dist";
 export const SERVER_PAYLOAD_DIR = "dist/mac-server-payload";
 export const SERVER_RESOURCES_DIRNAME = "server";
 export const VISION_HELPER_NAME = "AISystem6Vision";
+export const INTELLIGENCE_HELPER_NAME = "AISystem6Intelligence";
+// Every helper the app ships in Contents/MacOS. Each names the SwiftPM package
+// that builds it: Vision stays in the macOS 11 WKWebView package, Intelligence
+// (Apple's model and MLX) is its own macOS 14 package. A product its package
+// does not declare is skipped, not an error. `resourceBundles` helpers also
+// ship the package's SwiftPM `*.bundle` directories (MLX's default.metallib
+// lives in mlx-swift_Cmlx.bundle).
+export const HELPERS = Object.freeze([
+  Object.freeze({ name: VISION_HELPER_NAME, packageDir: "platform/macos/shell/macos-webview", resourceBundles: false }),
+  Object.freeze({ name: INTELLIGENCE_HELPER_NAME, packageDir: "platform/macos/shell/macos-intelligence", resourceBundles: true }),
+]);
+export const HELPER_NAMES = Object.freeze(HELPERS.map((helper) => helper.name));
+// Where the bundles go inside the .app. MLX finds default.metallib through the
+// main bundle's resourceURL (Contents/Resources/mlx-swift_Cmlx.bundle) and
+// Bundle.module finds the Hub/Crypto bundles the same way. Contents/MacOS
+// would make codesign treat a loose metallib as unsigned code, and the .app
+// root is sealed, so Contents/Resources is the one place that works.
+export const HELPER_RESOURCE_BUNDLES_DIR = "Contents/Resources";
 export const APP_ICON_SOURCE = "system.css-reference/docs/icon.png";
 export const SUPPORTED_ARCHES = Object.freeze(["arm64"]);
 export const MIN_PACKAGED_NODE_MAJOR = 24;
@@ -219,7 +238,8 @@ export function notaryCredentialsPresent(env = {}) {
   const appleId = Boolean(
     env.AI_SYSTEM6_NOTARY_APPLE_ID && env.AI_SYSTEM6_NOTARY_APP_PASSWORD && env.AI_SYSTEM6_TEAM_ID,
   );
-  return apiKey || appleId;
+  const profile = Boolean(env.AI_SYSTEM6_NOTARY_PROFILE);
+  return apiKey || appleId || profile;
 }
 
 // Honest signing plan. Production fails closed without Developer ID AND
@@ -272,6 +292,22 @@ export function isMachOFile(filePath) {
   }
 }
 
+// Libraries the build copies into Contents/Frameworks and links by this path.
+export const EMBEDDED_FRAMEWORKS_REF = "@executable_path/../Frameworks";
+
+/** `@rpath/<name>.dylib` dependencies from `otool -L`, which only resolve on a
+ * machine with the toolchain that built the binary. */
+export function parseRpathDylibs(otoolOutput) {
+  return [...String(otoolOutput || "").matchAll(/^\s*@rpath\/([^\s]+\.dylib)\s/gm)].map((match) => match[1]);
+}
+
+/** Absolute LC_RPATH entries that point at a toolchain, not the system. */
+export function parseLocalRpaths(otoolLoadCommands) {
+  return [...String(otoolLoadCommands || "").matchAll(/cmd LC_RPATH[\s\S]*?path (\S+) \(offset/g)]
+    .map((match) => match[1])
+    .filter((path) => path.startsWith("/") && !path.startsWith("/usr/lib/") && !path.startsWith("/System/"));
+}
+
 export function parseOtoolLibraries(stdout, selfNames = []) {
   const own = new Set(selfNames.map((name) => String(name)));
   const foreign = [];
@@ -281,6 +317,7 @@ export function parseOtoolLibraries(stdout, selfNames = []) {
     const library = trimmed.split(" (compatibility version")[0].trim();
     if (!library || own.has(library)) continue;
     if (library.startsWith("/usr/lib/") || library.startsWith("/System/")) continue;
+    if (library.startsWith(EMBEDDED_FRAMEWORKS_REF + "/")) continue;
     foreign.push(library);
   }
   return foreign;
@@ -343,17 +380,18 @@ function inspectNode({ nodePath, platform, minNodeMajor, runCommand, reasons }) 
 function inspectHelper({ helperPath, platform, minMacOsMajor, runCommand, reasons }) {
   const helper = { path: helperPath || "", foreign: null, archVerified: false, minOs: "" };
   if (!helperPath) return helper;
-  inspectLibraries("vision helper", helperPath, runCommand, reasons, (value) => { helper.foreign = value; });
+  const label = (basename(helperPath).replace(/^AISystem6/, "").toLowerCase() || "native") + " helper";
+  inspectLibraries(label, helperPath, runCommand, reasons, (value) => { helper.foreign = value; });
   const lipo = runCommand("lipo", ["-verify_arch", platform, helperPath]);
   helper.archVerified = lipo.status === 0;
-  if (commandFailed(lipo)) reasons.push("vision helper is not " + platform + " (lipo -verify_arch failed)");
+  if (commandFailed(lipo)) reasons.push(label + " is not " + platform + " (lipo -verify_arch failed)");
   const load = runCommand("otool", ["-l", helperPath]);
   if (load.status === 0) {
     helper.minOs = parseMinimumOsVersion(load.stdout);
     const major = Number(String(helper.minOs).split(".")[0]);
     const tooOld = helper.minOs && minMacOsMajor && Number.isFinite(major) && major > minMacOsMajor;
     if (tooOld) {
-      reasons.push("vision helper targets macOS " + helper.minOs + ", above the supported macOS " + minMacOsMajor);
+      reasons.push(label + " targets macOS " + helper.minOs + ", above the supported macOS " + minMacOsMajor);
     }
   }
   return helper;
@@ -363,6 +401,7 @@ function inspectHelper({ helperPath, platform, minMacOsMajor, runCommand, reason
 export function evaluatePackagedRuntime({
   nodePath = "",
   helperPath = "",
+  helperPaths = [],
   arch = "arm64",
   minNodeMajor = MIN_PACKAGED_NODE_MAJOR,
   minMacOsMajor = MIN_MACOS_MAJOR,
@@ -376,25 +415,20 @@ export function evaluatePackagedRuntime({
     reasons.push(error.message);
   }
   let node = { path: nodePath, version: "", foreign: null, archVerified: false };
-  let helper = { path: helperPath, foreign: null, archVerified: false, minOs: "" };
+  const allHelperPaths = [helperPath, ...helperPaths].filter(Boolean);
+  let helpers = allHelperPaths.map((path) => ({ path, foreign: null, archVerified: false, minOs: "" }));
   if (platform) {
     node = inspectNode({ nodePath, platform, minNodeMajor, runCommand, reasons });
-    helper = inspectHelper({ helperPath, platform, minMacOsMajor, runCommand, reasons });
+    helpers = allHelperPaths.map((path) => inspectHelper({ helperPath: path, platform, minMacOsMajor, runCommand, reasons }));
   }
-  return { ok: reasons.length === 0, reasons, node, helper };
+  // `helper` stays the first helper for callers that predate the list.
+  const helper = helpers[0] || { path: "", foreign: null, archVerified: false, minOs: "" };
+  return { ok: reasons.length === 0, reasons, node, helper, helpers };
 }
 
-// Mirror the existing shell builder's helper-discovery convention:
-// dirname(AI_SYSTEM6_SHELL_BINARY)/AISystem6Vision, default debug build.
-export function visionHelperCandidates(repoRoot = REPO_ROOT, env = {}) {
-  const explicit = String(env.AI_SYSTEM6_SHELL_BINARY || "").trim();
-  const shellDir = explicit
-    ? dirname(resolve(repoRoot, explicit))
-    : join(repoRoot, "platform", "macos", "shell", "macos-webview", ".build", "debug");
-  return [
-    join(shellDir, VISION_HELPER_NAME),
-    join(repoRoot, "platform", "macos", "shell", "macos-webview", ".build", "release", VISION_HELPER_NAME),
-  ];
+// Products the SwiftPM manifest declares: `.executable(name: "X", ...)`.
+export function declaredHelperProducts(packageSwiftText = "") {
+  return [...String(packageSwiftText).matchAll(/\.executable\(\s*name:\s*"([^"]+)"/g)].map((match) => match[1]);
 }
 
 export function discoverBuiltApp(root, expectedName, { maxDepth = 6 } = {}) {
@@ -480,11 +514,14 @@ export function planTinyjsPackaging({
     dmgPath: join(repoRoot, DIST_DIR, identity.appTitle + ".dmg"),
     serverPayloadDir: join(repoRoot, SERVER_PAYLOAD_DIR),
     serverResourcesDir: join(appDir, "Contents", "Resources", SERVER_RESOURCES_DIRNAME),
-    helper: {
-      name: VISION_HELPER_NAME,
-      sourceCandidates: visionHelperCandidates(repoRoot, env),
-      destination: join(appDir, "Contents", "MacOS", VISION_HELPER_NAME),
-    },
+    helpers: HELPERS.map((helper) => ({
+      name: helper.name,
+      destination: join(appDir, "Contents", "MacOS", helper.name),
+      packageDir: join(repoRoot, helper.packageDir),
+      packageRelativeDir: helper.packageDir,
+      resourceBundles: helper.resourceBundles,
+      resourcesDestination: join(appDir, HELPER_RESOURCE_BUNDLES_DIR),
+    })),
     icon: {
       sourcePath: join(repoRoot, APP_ICON_SOURCE),
       version: identity.productVersion,
@@ -579,27 +616,16 @@ export function collectMachOFiles(root) {
   return out;
 }
 
-function codesignArgs(identity) {
-  const args = ["--force", "--sign", identity];
-  if ((identity === "-") === false) args.push("--options", "runtime", "--timestamp");
+// sign-mac-app.mjs signs nested Mach-O inside-out (Node with JIT entitlements),
+// seals the bundle without --deep, and notarizes + staples when credentials exist.
+function signArgs(plan, target) {
+  const args = ["tooling/sign-mac-app.mjs", ...target];
+  args.push("--identity", plan.signing.identity);
   return args;
 }
 
-function signMachOFiles(plan) {
-  const files = collectMachOFiles(plan.appDir);
-  files.sort((a, b) => (b.split(sep).length - a.split(sep).length) || (b.length - a.length));
-  for (const file of files) {
-    runChecked("/usr/bin/codesign", [...codesignArgs(plan.signing.identity), file], {
-      label: "codesign " + relative(REPO_ROOT, file),
-    });
-  }
-  return files.length;
-}
-
-// After nested signing, the existing credential contract seals the bundle and
-// performs notarization + stapling when credentials are present.
 function signBundle(plan) {
-  const args = ["tooling/sign-mac-app.mjs", "--app", plan.appDir];
+  const args = signArgs(plan, ["--app", plan.appDir]);
   if (plan.entitlements) args.push("--entitlements", plan.entitlements);
   runChecked(process.execPath, args, { cwd: REPO_ROOT, label: "sign-mac-app.mjs" });
 }
@@ -622,6 +648,83 @@ export function sha256Buffer(buffer) {
 
 export function sha256File(filePath) {
   return sha256Buffer(readFileSync(filePath));
+}
+
+/**
+ * A SwiftPM helper can link toolchain back-deployment dylibs through @rpath
+ * (libswiftCompatibilitySpan.dylib) that only the build machine has. Copy each
+ * into Contents/Frameworks, link it by @executable_path, and drop the
+ * toolchain rpaths so a missing library fails here instead of on a customer's
+ * Mac. The dylibs are Mach-O, so the signing collector seals them inside-out.
+ */
+function embedHelperDylibs(helperPath, appDir) {
+  const listed = spawnSync("otool", ["-L", helperPath], { encoding: "utf8" });
+  const loads = spawnSync("otool", ["-l", helperPath], { encoding: "utf8" });
+  if (commandFailed(listed) || commandFailed(loads)) throw new Error("otool could not read " + helperPath);
+  const rpaths = parseLocalRpaths(loads.stdout);
+  const frameworks = join(appDir, "Contents", "Frameworks");
+  for (const name of parseRpathDylibs(listed.stdout)) {
+    const origin = rpaths.map((dir) => join(dir, name)).find((candidate) => existsSync(candidate));
+    if (!origin) throw new Error(basename(helperPath) + " needs @rpath/" + name + " but no toolchain rpath provides it.");
+    mkdirSync(frameworks, { recursive: true });
+    copyFileSync(origin, join(frameworks, name));
+    chmodSync(join(frameworks, name), 0o755);
+    runChecked("/usr/bin/install_name_tool", ["-change", "@rpath/" + name, EMBEDDED_FRAMEWORKS_REF + "/" + name, helperPath]);
+    console.log("Embedded " + name + " for " + basename(helperPath) + ".");
+  }
+  for (const rpath of rpaths) runChecked("/usr/bin/install_name_tool", ["-delete_rpath", rpath, helperPath]);
+}
+
+/** SwiftPM resource bundle directories next to a built product. */
+export function listResourceBundles(binDir) {
+  try {
+    return readdirSync(binDir, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && entry.name.endsWith(".bundle"))
+      .map((entry) => entry.name)
+      .sort();
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Build each helper product with SwiftPM from its own package and copy it into
+ * Contents/MacOS (plus its resource bundles into Contents/Resources). Returns
+ * the destinations that were built; a product its package does not declare is
+ * skipped with a visible line.
+ */
+function buildHelpers(plan) {
+  const built = [];
+  for (const helper of plan.helpers) {
+    const manifest = readFileSync(join(helper.packageDir, "Package.swift"), "utf8");
+    if (declaredHelperProducts(manifest).includes(helper.name) === false) {
+      console.log("Helper " + helper.name + " skipped: product not declared in " + helper.packageRelativeDir + "/Package.swift.");
+      continue;
+    }
+    runChecked("/usr/bin/swift", ["build", "-c", "release", "--arch", "arm64", "--product", helper.name,
+      "--package-path", helper.packageDir], { label: "swift build " + helper.name });
+    const binPath = spawnSync("/usr/bin/swift", ["build", "-c", "release", "--arch", "arm64", "--package-path",
+      helper.packageDir, "--show-bin-path"], { encoding: "utf8" });
+    if (commandFailed(binPath)) throw new Error("swift build --show-bin-path failed for " + helper.name);
+    const binDir = String(binPath.stdout).trim();
+    const source = join(binDir, helper.name);
+    if (existsSync(source) === false) throw new Error("swift build produced no " + source);
+    mkdirSync(dirname(helper.destination), { recursive: true });
+    copyFileSync(source, helper.destination);
+    chmodSync(helper.destination, 0o755);
+    embedHelperDylibs(helper.destination, plan.appDir);
+    if (helper.resourceBundles) {
+      const bundles = listResourceBundles(binDir);
+      if (bundles.length === 0) throw new Error(helper.name + " needs its SwiftPM resource bundles but " + binDir + " has none.");
+      mkdirSync(helper.resourcesDestination, { recursive: true });
+      for (const bundle of bundles) copyTree(join(binDir, bundle), join(helper.resourcesDestination, bundle));
+      console.log("Bundled helper " + helper.name + " with " + bundles.join(", ") + ".");
+    } else {
+      console.log("Bundled helper " + helper.name + ".");
+    }
+    built.push(helper.destination);
+  }
+  return built;
 }
 
 /** Drive the pinned CLI, assemble, validate, sign, seal, archive, manifest. */
@@ -667,10 +770,7 @@ function buildTinyjsApp(plan) {
   copyFileSync(join(nativeOutput, "launcher"), join(plan.appDir, "Contents/MacOS", plan.identity.executableName));
   copyFileSync(join(nativeOutput, "libAISystem6Browser.dylib"), join(plan.appDir, "Contents/Resources/libAISystem6Browser.dylib"));
   copyFileSync(join(nativeOutput, "bridge.js"), join(plan.appDir, "Contents/Resources/app/bridge.js"));
-  runChecked("/usr/bin/swiftc", ["-target", "arm64-apple-macos15.0",
-    join(REPO_ROOT, "platform/macos/shell/macos-webview/Sources/AISystem6Vision/main.swift"),
-    "-o", plan.helper.destination], { label: "compile Vision helper" });
-  const helperSource = plan.helper.destination;
+  const builtHelpers = buildHelpers(plan);
   const pin = JSON.parse(readFileSync(join(REPO_ROOT, "vendor/ubol/PIN.json"), "utf8"));
   const extension = join(REPO_ROOT, ".cache/ubol", pin.version, "safari");
   if (!existsSync(join(extension, "manifest.json"))) throw new Error("Pinned Safari ad blocker is missing; run browse:fetch-filters first");
@@ -684,7 +784,7 @@ function buildTinyjsApp(plan) {
 
   const runtime = evaluatePackagedRuntime({
     nodePath: join(plan.serverResourcesDir, "node"),
-    helperPath: helperSource ? plan.helper.destination : "",
+    helperPaths: builtHelpers,
     arch: plan.arch,
   });
   if (runtime.ok === false) {
@@ -695,8 +795,6 @@ function buildTinyjsApp(plan) {
   const productIdentity = { ...plan.identity, tinyjsPin: baseline.commit, tinyjsVersion: baseline.version,
     txikiVersion: baseline.runtime, nodeVersion: runtime.node.version };
   writeFileSync(join(plan.appDir, "Contents/Resources/PRODUCT-IDENTITY.json"), JSON.stringify(productIdentity, null, 2) + "\n");
-  const signed = signMachOFiles(plan);
-  console.log("Signed " + signed + " nested Mach-O file(s) inside-out; sealing bundle.");
   signBundle(plan);
   verifySealed(plan);
 
@@ -707,7 +805,7 @@ function buildTinyjsApp(plan) {
     rmSync(plan.dmgPath, { force: true });
     runChecked("/usr/bin/hdiutil", ["create", "-volname", plan.identity.appTitle, "-srcfolder", imageRoot,
       "-ov", "-format", "UDZO", plan.dmgPath], { label: "archive final sealed app to DMG" });
-    if (plan.signing.mode === "developer-id") runChecked("/usr/bin/codesign", codesignArgs(plan.signing.identity).concat(plan.dmgPath));
+    runChecked(process.execPath, signArgs(plan, ["--dmg", plan.dmgPath]), { cwd: REPO_ROOT, label: "sign-mac-app.mjs dmg" });
   }
 
   // Archive only after the seal, then derive OTA metadata from that exact zip.
@@ -771,7 +869,7 @@ export function usage() {
     "  --production         require Developer ID and notarization unless --allow-adhoc is authorized",
     "  --allow-adhoc        explicit public ad-hoc signing policy (Developer ID pending)",
     "  --config <path>      tinyjs.json (default platform/macos/tinyjs/tinyjs.json)",
-    "  --entitlements <p>   entitlements plist passed to sign-mac-app.mjs",
+    "  --entitlements <p>   app-bundle entitlements plist passed to sign-mac-app.mjs (Node keeps its own checked-in plist)",
     "  --help               this text",
     "",
     "The adapter never runs tinyjs publish: it rebuilds the bundle and discards",

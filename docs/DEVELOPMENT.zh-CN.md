@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/DEVELOPMENT.md -->
-<!-- source-sha256: c8f756f1554dcabbfba45596265fbb82b52294c39ced50e3d9ef76f637975ec8 -->
+<!-- source-sha256: bfe7a043416cf3cbc3c8cc05f95fe85b5a3ad29bbf98ee39fffb4186fac8db44 -->
 
 > 英文版为准 ・ 仅供人类参考
 
@@ -52,7 +52,7 @@ npm start
 
 CI 会按锁文件安装依赖、执行 lint 与构建，运行契约、重点单测和使用假上游的集成测试，
 再检查版本、checkJs、服务端类型、文档和公开文件树，并在独立的 Chromium 与 WebKit job
-中执行静态 smoke；发布时在其上再加八站 `verify:walk`。维护者源树还会在临时目录生成干净公开快照，并在其中真实执行 `npm ci`、
+中执行静态 smoke；发布门禁在 Chromium 里启动一次桌面并跑两个视口的 cascade ledger，八站 `audit:walk` 是按需运行的审计。维护者源树还会在临时目录生成干净公开快照，并在其中真实执行 `npm ci`、
 `npm run build` 与 `npm test`。
 
 ## 编辑浏览器运行时
@@ -78,7 +78,7 @@ CI 会按锁文件安装依赖、执行 lint 与构建，运行契约、重点�
 `tests/features/` 中的功能测试是轻量、可执行的契约。若 bug 暴露了缺失不变量，或功能
 建立了新边界，就应增加测试。优先测试可观察结构或行为，而不是实现文字。
 
-Chromium 与 WebKit 静态 smoke 在 CI 的每次改动上运行（`.github/workflows/ci.yml`，每个引擎一个 job）；发布时在它之上再加八站 `verify:walk`。更广泛的浏览器探针仍为诊断，任何浏览器探针
+Chromium 与 WebKit 静态 smoke 在 CI 的每次改动上运行（`.github/workflows/ci.yml`，每个引擎一个 job）；发布门禁在 Chromium 里启动一次桌面并跑两个视口的 cascade ledger，八站 `audit:walk` 是按需运行的审计。更广泛的浏览器探针仍为诊断，任何浏览器探针
 都不能取代确定性产品契约。
 
 ## 资产与生成文件

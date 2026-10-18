@@ -1,10 +1,10 @@
 {
   "name": "ai-system-6",
-  "version": "1.0.58",
+  "version": "1.0.59",
   "description": "A local-first, model-agnostic AI desktop inspired by Macintosh System 6.",
   "private": true,
   "license": "MIT",
-  "homepage": "https://aisystem6.pages.dev",
+  "homepage": "https://aisystem6.aaronlau.me",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/surfine/AI-System-6.git"
@@ -40,7 +40,7 @@
     "test": "npm run verify:features",
     "test:integration": "node tooling/run-node-tests.mjs tests/integration",
     "test:static-smoke": "node tests/e2e/static-only-smoke.mjs",
-    "test:unit": "node tooling/run-node-tests.mjs tests/features/credential-boundary.test.mjs tests/features/shared-cloud-budget.test.mjs tests/features/shared-cloud-settlement.test.mjs tests/features/single-writer-lease.test.mjs tests/features/single-writer-race.test.mjs tests/features/takeover-handshake.test.mjs tests/features/cmf-worker-scheduler.test.mjs tests/features/public-rate-limit-proxy.test.mjs",
+    "test:unit": "node tooling/run-node-tests.mjs tests/features/credential-boundary.test.mjs tests/features/shared-cloud-budget.test.mjs tests/features/shared-cloud-settlement.test.mjs tests/features/single-writer-lease.test.mjs tests/features/single-writer-race.test.mjs tests/features/takeover-handshake.test.mjs tests/features/cmf-worker-scheduler.test.mjs tests/features/public-rate-limit-proxy.test.mjs tests/unit/cascade-diff.test.mjs",
     "verify:checkjs": "node tooling/verify-frontend-jsdoc.mjs",
     "verify:contracts": "npm run verify:features",
     "verify:css": "node tooling/verify-css.mjs",

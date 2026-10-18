@@ -82,9 +82,10 @@ const MARKER = "--control-census-server";
 // deliberately.
 const DESTRUCTIVE_PATTERN = /delete|trash|burn|reset|quit|shut-?down|export|download|erase|discard|empty|remove/i;
 // Actions whose handler is a literal window.open() to a real external host.
-// Found by grepping apps/desktop/app for window.open( with a literal
-// https?:// URL; see the report for the exact three ids.
-const EXTERNAL_NAV_ACTIONS = new Set(["open-github-repo", "open-project-site", "open-guide-promo"]);
+// open-project-site and open-guide-promo left this list on 2026-10-16: the
+// first opens Time Machine (or says why it opened the browser instead), the
+// second plays the film inside About.
+const EXTERNAL_NAV_ACTIONS = new Set(["open-github-repo"]);
 
 function classifyDenylist(rawAction) {
   const base = rawAction.split(":")[0];

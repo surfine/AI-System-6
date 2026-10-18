@@ -28,7 +28,7 @@
     "playwrightVersion": "1.63.0",
     "browserRevision": "1243",
     "browserVersion": "153.0.8010.12",
-    "contentSha256": "2a675019de61449e84b326273d8073f9462cca0684af6b7efb984873288130f9",
+    "contentSha256": "aa1c18116af61d4393bbf9686d7d95a887a05345d9ef334974507095e855720e",
     "historicalFontTarget": "Charcoal 12 pt",
     "legalFallback": "OFL-licensed Asap variable font",
     "fontProbeSelectors": [
@@ -40,8 +40,8 @@
     "fontAssertions": [
       {
         "selector": ".theme-lab-controls h3",
-        "requiredFamily": "Asap",
-        "isCustomFont": true
+        "requiredFamily": "Geneva",
+        "isCustomFont": false
       },
       {
         "selector": ".theme-lab-window-specimens > .window.is-active > .title-bar h2",

@@ -157,15 +157,18 @@ async function waitDead(pid, timeout = 30000) {
   }
   throw new Error("Previous shell is still running");
 }
-async function health(state, identity) {
-  const deadline = Date.now() + 30000;
+async function health(state, identity, timeout = 30000) {
+  const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
     try {
       const report = JSON.parse(await fs.readFile(state.healthyFile));
       if (report.shellVersion === identity.shellVersion && report.productBuild === identity.productBuild
           && report.productVersion === identity.productVersion && report.ready === true
           && report.sourceCommit === identity.sourceCommit && report.storageSchema === identity.storageSchema
-          && report.time >= state.startedAt && report.dataFingerprint === state.dataFingerprint) return report;
+          && report.time >= state.startedAt && report.dataFingerprint === state.dataFingerprint
+          // A build that measures its boot (writerData) must also have lost no
+          // record while booting; older builds report only the fingerprint.
+          && (report.writerData === undefined || report.writerData?.lost === 0)) return report;
     } catch {}
     await sleep(250);
   }
@@ -277,12 +280,32 @@ async function recover(request) {
   return { recovering: true };
 }
 
+// WebKit's HTTP cache outlives an in-place swap of the application, and the
+// desk's `?v=<build>` assets are cached as immutable by older servers. The
+// first launch of a different payload therefore drops the app's HTTP cache
+// before the WebView loads anything from the private server.
+async function frontendCache(request) {
+  const id = request.identity || {};
+  const stamp = [id.shellVersion, id.productVersion, id.productBuild, id.sourceCommit].join("/");
+  const cache = path.resolve(String(request.cacheDir || ""));
+  if (!request.cacheDir || path.basename(cache) !== "NetworkCache" || path.basename(path.dirname(cache)) !== "WebKit") throw new Error("Invalid cache directory");
+  let previous = null;
+  try { previous = JSON.parse(await fs.readFile(request.markerFile, "utf8")).stamp; } catch {}
+  if (previous === stamp && !request.force) return { purged: false };
+  const stale = cache + ".stale-" + process.pid + "-" + Date.now();
+  let moved = false;
+  try { await fs.rename(cache, stale); moved = true; } catch (e) { if (e.code !== "ENOENT") throw e; }
+  if (moved) await fs.rm(stale, { recursive: true, force: true });
+  await journal(request.markerFile, { stamp, time: Date.now() });
+  return { purged: moved };
+}
+
 if (require.main === module) {
   (async () => {
     const command = process.argv[2];
     const result = command === "install" ? await install(process.argv[3])
-      : await ({ check, prepare, recover }[command])(JSON.parse(await fs.readFile(process.argv[3])));
+      : await ({ check, prepare, recover, frontendCache }[command])(JSON.parse(await fs.readFile(process.argv[3])));
     process.stdout.write(JSON.stringify(result) + "\n");
   })().catch((e) => { console.error(JSON.stringify({ error: String(e.message).slice(0, 500) })); process.exitCode = 1; });
 }
-module.exports = { safeUrl, newer, boundedFetch, check, prepare, install, inspectApp, recover };
+module.exports = { safeUrl, newer, boundedFetch, check, prepare, install, inspectApp, recover, frontendCache, health };

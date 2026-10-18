@@ -32,6 +32,7 @@ window.AISystem6Admissions = (() => {
   // a window with no command is opened by a desk accessory row, a menu of its
   // own, or another window's action.
   const WINDOWS = {
+    about: { app: "system", load: ensureAboutModule },
     alarmClock: { app: "accessories", load: ensureAlarmClockModule, command: "open-alarm-clock" },
     bonsaiCity: { app: "bonsaiCity", load: ensureBonsaiCityModule, command: "open-bonsai-city" , multiFinder: "Bonsai City" , applicationGroup: "games", appLabel: "bonsai_city_label", appIcon: "bonsaiCity", appDesc: "app_desc_bonsai_city", api: "AISystem6BonsaiCity", appearance: 1, phone: 2, tile: 1, grow: 1, repaint: "renderBonsaiCityLanguage" },
     bureaucracyMeme: { app: "bureaucracyMeme", load: ensureBureaucracyMemeModule, command: "open-bureaucracy-meme" , multiFinder: "Bureaucracy Meme" , applicationGroup: "extras", appLabel: "bureaucracy_meme_label", appIcon: "bureaucracyMeme", appIconClass: "tools-icon", appDesc: "app_desc_bureaucracy" },
@@ -39,6 +40,7 @@ window.AISystem6Admissions = (() => {
     clioPaint: { app: "clioPaint", load: ensureClioPaintModule, command: "open-clio-paint" , multiFinder: "ClioPaint" , applicationGroup: "create", appLabel: "clio_paint_label", appIcon: "clioPaint", appIconClass: "tools-icon", api: "AISystem6ClioPaint", width: 640, phone: 1, tile: 1, grow: 1 },
     clioProject: { app: "clioProject", load: ensureClioProjectModule, command: "open-clio-project" , multiFinder: "ClioProject" , applicationGroup: "create", appLabel: "clio_project_label", appIcon: "clioProject", appIconClass: "tools-icon" },
     clioStage: { app: "clioStage", load: ensureClioStageModule, command: "open-clio-stage" , multiFinder: "ClioStage" , applicationGroup: "create", appLabel: "clio_stage_label", appIcon: "clioStage", appIconClass: "tools-icon", appDesc: "app_desc_clio_stage" },
+    clioWrite: { app: "clioWrite", load: ensureClioWriteModule, command: "open-clio-write" , multiFinder: "ClioWrite" , applicationGroup: "create", appLabel: "clio_write_label", appIcon: "clioWrite", appIconClass: "tools-icon", appDesc: "app_desc_clio_write", api: "AISystem6ClioWrite", width: 720, tile: 1, grow: 1 },
     cmfStudio: { app: "cmfStudio", load: ensureCmfStudioModule, command: "open-cmf-studio" , multiFinder: "CMF Studio" , applicationGroup: "create", appLabel: "cmf_studio_label", appIcon: "cmfStudio", appIconClass: "tools-icon", appDesc: "app_desc_cmf_studio" },
     doom: { app: "doom", load: ensureDoomModule, command: "open-doom" , multiFinder: "DOOM" , applicationGroup: "games", appLabel: "doom_label", appIcon: "doom", appDesc: "app_desc_doom", api: "AISystem6Doom", phone: 2 },
     endfieldTerminal: { app: "endfield", load: ensureEndfieldTerminalModule, command: "open-endfield-terminal" , applicationGroup: "extras", appLabel: "endfield_terminal_label", appIcon: "endfieldTerminal", appIconClass: "tools-icon", appDesc: "app_desc_endfield" },

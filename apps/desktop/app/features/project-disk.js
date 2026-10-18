@@ -2898,6 +2898,7 @@ function closeProjectScopedWindows() {
     "rebuildFlow",
     "docMap",
     "dictionary",
+    "clioChart",
   ].forEach(closeWindow);
 }
 

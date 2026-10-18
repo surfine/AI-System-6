@@ -4,6 +4,14 @@
 // PRODUCTION preservation map — the kit's pre-made candidate is never reused
 // as a product result.
 //
+// Layers 1-5 cover the V4-01 creator-script path. Layers 6-8 (S11 M3, §八 item 4) extend the contract
+// to the S11-4 subset over the frozen quire-s11.docx; clioworks-s11-m3-quire-adapter.test.mjs owns the
+// per-operation round trips (heading/list/style/split/merge/undo, one comment save+reopen, read-only
+// refusals, picture-part bytes), so layers 6-8 only add what it does not assert:
+//   6. read-only blocks stay byte-identical in the XML (not just in text) through text AND format edits
+//   7. comment threads survive a second save/reopen generation, an edit inside the commented paragraph,
+//      and land in commentsExtended as resolved
+//   8. exportReport names what saving converts or drops, and says nothing before any edit
 // Layers:
 //   1. the adapter loads its own module chain and opens the fixture
 //   2. an untouched save short-circuits to the ORIGINAL BYTES (adapter contract)
@@ -17,6 +25,7 @@ import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import AdmZip from "adm-zip";
 import { createFeatureTest, read, resolveProjectPath } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("clioworks-v4-quire");
@@ -191,6 +200,106 @@ zout.close()
     "--contract", SYNTHETIC_CONTRACT);
   test.assert(kitPair.status === 0 && kitPair.report?.status === "passed",
     "the synthetic sentinel still passes on the kit's own pre-made candidate pair");
+
+  // 6-8. S11 M3 extension over the frozen quire-s11.docx, through the same adapter and context.
+  const S11 = new Uint8Array(readFileSync(resolveProjectPath("tests/fixtures/clioworks-s11/quire-s11.docx")));
+  const openBytes = async (bytes, name = "quire-s11.docx") => {
+    context.__s11 = bytes;
+    return vm.runInContext(`ClioWorksQuireAdapter.open(globalThis.__s11, { name: ${JSON.stringify(name)} })`, context);
+  };
+  const byText = (d, prefix) => d.paragraphs().find((q) => q.text.startsWith(prefix));
+  const zipOf = (bytes) => new AdmZip(Buffer.from(bytes));
+  const tableXml = (xml) => xml.match(/<w:tbl>.*<\/w:tbl>/s)?.[0] || "";
+  // The writer hoists namespace declarations to the root; the element itself must not change.
+  const drawingXml = (xml) => (xml.match(/<w:drawing>.*?<\/w:drawing>/s)?.[0] || "").replace(/ xmlns:\w+="[^"]*"/g, "");
+
+  // 6. Tables and pictures are kept as XML, not merely as text, through every kind of subset edit.
+  {
+    const original = zipOf(S11).readAsText("word/document.xml");
+    test.assert(tableXml(original) !== "" && drawingXml(original) !== "", "the S11 fixture carries one table and one drawing to compare");
+    const d = await openBytes(S11);
+    d.setRunText(byText(d, "最后一段").id, 0, "最后一段，改过。");
+    d.toggleRunStyle(byText(d, "先把").id, "b", { from: 0, to: 2 });
+    d.setHeading(byText(d, "这个周末").id, 2);
+    d.setList(byText(d, "胶带").id, "number");
+    d.splitParagraph(byText(d, "最后一段").id, 4);
+    const out = await d.save();
+    test.assert(out.mode === "preserving-edit", "a mixed subset edit goes through the preserving writer");
+    const pkg = zipOf(out.bytes);
+    const edited = pkg.readAsText("word/document.xml");
+    test.assert(tableXml(edited) === tableXml(original), "the table's XML is byte-identical after text, style, heading, list and split edits");
+    test.assert(drawingXml(edited) === drawingXml(original) && /r:embed="rId\d+"/.test(edited), "the picture's drawing element is unchanged apart from hoisted namespace declarations");
+    const rawDrawing = (x) => x.match(/<w:drawing>.*?<\/w:drawing>/s)?.[0] || "";
+    test.assert(rawDrawing(edited) === rawDrawing(original), `the untouched drawing keeps its original bytes, inner namespace declarations included (${rawDrawing(original).length} -> ${rawDrawing(edited).length})`);
+    test.assert(pkg.getEntry("word/media/image1.png").getData().equals(zipOf(S11).getEntry("word/media/image1.png").getData()) && pkg.getEntry("word/settings.xml")?.getData().equals(zipOf(S11).getEntry("word/settings.xml").getData()),
+      "the picture and settings parts keep their original bytes");
+    const back = await openBytes(new Uint8Array(out.bytes));
+    test.assert(back.tables()[0].readOnly === true && byText(back, "新书架").runs[0].kind === "image" && back.tables()[0].rows[1][1].text === "20",
+      "after the save the table and picture are still read-only blocks with their content");
+  }
+
+  // 7. Comments: second generation, edit inside the commented paragraph, resolved flag in the package.
+  {
+    const d = await openBytes(S11);
+    const root = d.comments().find((c) => c.text === "纸箱数量再确认一下");
+    const commented = byText(d, "先把");
+    test.assert(commented.id === root.anchor.paragraphId, "the fixture's comment lives in the paragraph this layer edits");
+    const firstRun = d.runs(commented.id)[0];
+    d.setRunText(commented.id, firstRun.runIndex, firstRun.text + "（已改）");
+    test.assert(d.comments().find((c) => c.id === root.id).anchor.quote === "纸箱", "typing next to a comment's range leaves its landing range on the same words");
+    d.replyComment(root.id, { author: "小禾", text: "第一代回复", date: "2026-10-16T09:00:00Z" });
+    d.setCommentDone(root.id, true);
+    const gen1 = new Uint8Array((await d.save()).bytes);
+    const mid = await openBytes(gen1);
+    const reopenedRoot = mid.comments().find((c) => c.text === "纸箱数量再确认一下");
+    test.assert(reopenedRoot.anchor.quote === "纸箱" && reopenedRoot.done === true && byText(mid, "先把").text.includes("（已改）"),
+      "generation 1: the edit, the resolved root and its range all come back");
+    mid.replyComment(reopenedRoot.id, { author: "阿澄", text: "第二代回复", date: "2026-10-16T09:10:00Z" });
+    mid.setCommentDone(reopenedRoot.id, false);
+    const gen2 = new Uint8Array((await mid.save()).bytes);
+    const last = await openBytes(gen2);
+    const thread = last.comments();
+    const top = thread.find((c) => c.text === "纸箱数量再确认一下");
+    const replies = thread.filter((c) => c.parentId === top.id).map((c) => `${c.author}:${c.text}`).sort();
+    test.assert(replies.join("|") === "小禾:第一代回复|阿澄:第二代回复" && top.done === false && thread.length === 3,
+      `generation 2: both replies stay in one thread and re-opening the thread sticks (${replies.join("|")}, done=${top.done}, total=${thread.length})`);
+    const ext = zipOf(gen1).readAsText("word/commentsExtended.xml");
+    test.assert(/w15:done="1"/.test(ext) && /w15:paraIdParent=/.test(ext), "the package marks the resolved thread and the reply's parent in commentsExtended");
+    test.assert(zipOf(gen2).readAsText("word/commentsExtended.xml").match(/w15:done="1"/g) === null, "re-opening the thread clears the resolved mark in the package");
+  }
+
+  // 8. exportReport names what saving converts or drops; silent before any edit.
+  {
+    const base = zipOf(S11);
+    const xml = base.readAsText("word/document.xml");
+    const variant = (change) => { const z = zipOf(S11); z.updateFile("word/document.xml", Buffer.from(change(xml))); return new Uint8Array(z.toBuffer()); };
+    const noGrid = variant((x) => x.replace(/<w:tblGrid>.*?<\/w:tblGrid>/s, "<w:tblGrid/>"));
+    const orphanBookmark = variant((x) => x.replace("<w:p>", '<w:p><w:bookmarkStart w:id="77" w:name="orphan"/>'));
+    const edit = (d) => d.setRunText(byText(d, "最后一段").id, 0, "最后一段，改过。");
+
+    const quiet = await openBytes(noGrid);
+    const before = await quiet.exportReport();
+    test.assert(before.converted.length === 0 && before.lost.length === 0, "a file that would convert on save reports nothing until something is edited");
+
+    edit(quiet);
+    const grid = await quiet.exportReport();
+    test.assert(grid.lost.length === 0 && grid.converted.length === 1 && /table column widths/i.test(grid.converted[0].detail) && grid.converted[0].where === "word/document.xml" && grid.converted[0].id === "table-grid:word/document.xml",
+      `a rebuilt table grid is listed as converted, naming the part and the reason (${JSON.stringify(grid.converted.map((i) => i.detail))})`);
+    test.assert(JSON.stringify(await quiet.exportReport()) === JSON.stringify(grid), "asking twice gives the same list");
+    test.assert((await quiet.save()).mode === "preserving-edit" && JSON.stringify(await quiet.exportReport()) === JSON.stringify(grid), "the list the writer showed is the one the save produced");
+
+    const drop = await openBytes(orphanBookmark);
+    edit(drop);
+    const dropped = await drop.exportReport();
+    test.assert(dropped.lost.length === 1 && dropped.lost[0].kind === "range" && /Bookmark/.test(dropped.lost[0].detail) && dropped.converted.some((i) => i.kind === "content" && /bookmarks/i.test(i.detail)),
+      `an unmatched bookmark is listed as lost (kind range) and the bookmark cleanup as converted (${JSON.stringify(dropped.lost.map((i) => i.detail))})`);
+    test.assert([...dropped.converted, ...dropped.lost].every((i) => i.kind && i.detail && i.where && i.id), "every item carries kind, detail, where and id for the first-save list");
+
+    const clean = await openBytes(S11);
+    edit(clean);
+    const none = await clean.exportReport();
+    test.assert(none.converted.length === 0 && none.lost.length === 0, "an edit that converts nothing reports nothing, so the first-save list stays out of the writer's way");
+  }
 
   test.finish();
 };

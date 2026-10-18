@@ -14,8 +14,8 @@
  * bank each step's declared outputs and restore them into the new tree on reuse,
  * or restrict banking to steps whose entire result is the verdict. Neither is
  * implemented, and the honest alternative already exists in the tree —
- * tooling/lib/release-cache.mjs and tooling/lib/gate-receipts.mjs reuse by
- * content hash and are wired into the pipeline that ships.
+ * tooling/lib/release-cache.mjs reuses by content hash and is wired into the
+ * pipeline that ships.
  *
  * tests/features/release-step-resume.test.mjs holds the acknowledgement and the
  * path this file shares with tooling/release-step-resume.mjs.

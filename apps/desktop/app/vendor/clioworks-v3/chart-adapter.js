@@ -97,16 +97,36 @@
     // Every member maps onto the ClioChart surface (see the mapping in the
     // v5.1 handoff): the history and the owner write-back stay the engine's
     // own — this façade invents no state and no persistence.
+    //
+    // ONE step per adoption. The frame port opens a single history step in
+    // beginChange and then calls applyTable inside it; if applyTable opened
+    // its own step, the same pre-adoption snapshot would be recorded twice
+    // and the second undo would be a no-op. While beginChange is open,
+    // applyTable writes the table raw and the outer step is the only step the
+    // writer sees. Called on its own (no beginChange), applyTable still
+    // records exactly one step, labelled for the Edit menu.
+    let insideBeginChange = false;
     const chartEngineFacade = () => ({
       readTable: () => engineState()?.table || null,
       applyTable(table) {
         const text = window.serializeClioChartTable(table);
-        return window.clioChartTableChange('frame_apply', () => window.restoreClioChartText(text));
+        if (insideBeginChange) return window.restoreClioChartText(text);
+        return window.clioChartTableChange('edit_step_adopt_copy', () => window.restoreClioChartText(text));
       },
       serialize: (table) => window.serializeClioChartTable(table),
       parse: (text) => window.parseClioChartTable(text, engineState()?.table?.offset || 0),
       undoOnce: () => window.undoClioChart(),
-      beginChange: (mutate) => window.clioChartTableChange('frame_metadata', mutate),
+      beginChange: (mutate) => {
+        // A nested beginChange adds no second step: the outer call already
+        // brackets the whole change.
+        if (insideBeginChange) return mutate();
+        insideBeginChange = true;
+        try {
+          return window.clioChartTableChange('edit_step_adopt_copy', mutate);
+        } finally {
+          insideBeginChange = false;
+        }
+      },
       ownerId: () => engineState()?.owner?.fileId || engineState()?.owner?.kind || 'clio-chart-scratch',
       objectId: () => 'clio-chart-grid',
       revision: () => engineHistory()?.size?.().undo || 0,
@@ -182,6 +202,39 @@
           } finally { state.saving = false; syncDerived(); notify(); }
         }
         return { status: 'blocked', code: 'NOT_WIRED', message: '此命令尚未接入真實能力，保持停用。' };
+      },
+      // The open copy, for a host that draws its own edit panel (the strip on
+      // the ordinary desk). Every call goes through the one FrameSession;
+      // nothing here holds state of its own.
+      frame: {
+        snapshot: () => frameSession?.snapshot() || null,
+        draftTable: () => (frameSession?.handle ? chartEngineFacade().parse(frameSession.handle.text) : null),
+        edit(op) {
+          const result = frameSession ? frameSession.edit(op) : { status: 'blocked', code: 'NO_FRAME' };
+          notify();
+          return result;
+        },
+        async adopt() {
+          if (!frameSession) return { status: 'blocked', code: 'NO_FRAME' };
+          const reviewed = await frameSession.prepare();
+          if (reviewed.status !== 'ok') { notify(); return reviewed; }
+          const requestId = window.crypto?.randomUUID?.() || `req-${Date.now()}`;
+          const result = await frameSession.accept({ requestId });
+          state.editRevision += 1; syncDerived(); notify();
+          return result;
+        },
+        cancel() {
+          const result = frameSession ? frameSession.discard() : { status: 'blocked', code: 'NO_FRAME' };
+          syncDerived(); notify();
+          return result;
+        },
+        // After a commit whose outcome was lost, ask the engine whether it
+        // landed; only then may the copy be adopted again or discarded.
+        async reconcile() {
+          const result = frameSession ? await frameSession.reconcile() : { status: 'blocked', code: 'NO_FRAME' };
+          syncDerived(); notify();
+          return result;
+        },
       },
       subscribe(listener) {
         listeners.add(listener);

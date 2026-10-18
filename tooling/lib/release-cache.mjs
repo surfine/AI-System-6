@@ -1,19 +1,17 @@
 // A machine-local store for release steps that development already paid for.
 //
-// tooling/lib/gate-receipts.mjs does this for the ship gates: a gate
-// banks a receipt keyed to a content hash of everything it reads, and a release
-// spends the receipt instead of running the gate again. This module applies the
-// same discipline to the rest of the release — the deterministic gate, the
-// public source snapshot, and the two dependency installs — which together cost
-// about ninety seconds of a release that repeats them although nothing they
-// read has moved.
+// A release step keyed to a content hash of everything it reads is spent
+// instead of run again. This applies to the deterministic gate, the public
+// source snapshot, and the two dependency installs, which together cost about
+// ninety seconds of a release that repeats them although nothing they read has
+// moved. (The ship gates are not cached: they run every time.)
 //
-// The difference is that these steps have OUTPUT. A reused browser gate gives
-// back a verdict; a reused `npm ci` must give back node_modules, and a reused
-// `verify:release` must give back the bundle it built and the base receipt it
-// sealed. So an entry holds both: the sealed claim and the exact bytes.
+// These steps have OUTPUT. A reused `npm ci` must give back node_modules, and a
+// reused `verify:release` must give back the bundle it built and the base
+// receipt it sealed. So an entry holds both: the sealed claim and the exact
+// bytes.
 //
-// The policy is fail-closed in the same three ways as a gate receipt:
+// The policy is fail-closed in three ways:
 //
 //  1. The key must describe EVERY input of the step. Where a complete list is
 //     not cheap, the key uses something wider than the real input set — the
@@ -23,12 +21,8 @@
 //     are the same, AND every stored byte still hashes to what the entry says.
 //     Any difference, any unreadable file, and any error is a reason to run.
 //  3. An entry is sealed. A hand-edited entry does not open.
-//
-// One rule is borrowed whole from the gate receipts: a repository path that no
-// gate-input rule claims turns reuse OFF for the entire release, this store
-// included. An unowned path is a request for the full release, never permission
-// to guess.
 
+import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import {
   existsSync,
@@ -41,10 +35,36 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
+import { hostname } from "node:os";
 import path from "node:path";
 import process from "node:process";
 
-import { collectCoverage, machineBinding, sha256 } from "./gate-receipts.mjs";
+function sha256(value) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function playwrightVersion(root) {
+  try {
+    return String(JSON.parse(readFileSync(path.join(root, "node_modules/playwright/package.json"), "utf8")).version || "");
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * What binds an entry to one host: node_modules holds compiled native
+ * binaries, so a payload made on another machine proves nothing here.
+ */
+export function machineBinding(root) {
+  const binding = {
+    hostname: hostname(),
+    platform: process.platform,
+    arch: process.arch,
+    nodeVersion: process.version,
+    playwrightVersion: playwrightVersion(root),
+  };
+  return { ...binding, sha256: sha256(JSON.stringify(binding)) };
+}
 
 export const RELEASE_CACHE_SCHEMA = "ai-system-6/release-step-cache/v1";
 export const RELEASE_CACHE_DIR = "dist/release-cache";
@@ -104,28 +124,12 @@ export function releaseStepKey(root, step, parts) {
 }
 
 /**
- * May the release spend anything at all?
- *
- * One repository path that no gate-input rule claims stops reuse for every ship
- * gate. The same answer holds here: if the rule table cannot say what reads a
- * file, no cached step may claim it read the right bytes.
+ * May the release spend anything at all? Only `--no-reuse` says no; every key
+ * already binds the source tree, the policy version and the machine.
  */
 export function releaseReuseAllowed(root, { allowReuse = true } = {}) {
   if (!allowReuse) return { allowed: false, reason: "no-reuse-requested", unmapped: [] };
-  let coverage;
-  try {
-    coverage = collectCoverage(root);
-  } catch (error) {
-    return { allowed: false, reason: `coverage-unreadable:${error.message}`, unmapped: [] };
-  }
-  if (coverage.unmapped.length) {
-    return {
-      allowed: false,
-      reason: `unmapped-paths:${coverage.unmapped.length}`,
-      unmapped: coverage.unmapped,
-    };
-  }
-  return { allowed: true, reason: "coverage-complete", unmapped: [] };
+  return { allowed: true, reason: "keys-bind-the-tree", unmapped: [] };
 }
 
 function entryRoot(cacheRoot, step, key) {

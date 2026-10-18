@@ -1113,7 +1113,7 @@
   --window-shadow: none;
   --inactive-window-shadow: 2px 2px 0 #5e5e5e;
   --window-backdrop-filter: none;
-  /* Painter glass contract (Theme Lab / verify:theme-lab:painter): eras
+  /* Painter glass contract (Theme Lab / audit:theme-lab): eras
      through Yosemite stay at 0; Big Sur and Liquid override. Distinct from
      Yosemite's restrained sidebar frost (blur 7), which is not this token. */
   --painter-blur: none;
@@ -1803,18 +1803,18 @@
   --choice-radius: 0;
   --choice-shadow: none;
   --choice-checked-bg: var(--paper);
-  --choice-checkmark-image: url("./system.css-reference/icon/checkmark.svg");
+  --choice-checkmark-image: url("./assets/themes/classic/controls/checkmark.svg");
   --radio-bg: transparent;
   --radio-border: 0;
   --radio-shadow: none;
-  --radio-image: url("./system.css-reference/icon/radio-border.svg");
-  --radio-focus-image: url("./system.css-reference/icon/radio-border-focused.svg");
+  --radio-image: url("./assets/themes/classic/controls/radio-border.svg");
+  --radio-focus-image: url("./assets/themes/classic/controls/radio-border-focused.svg");
   --radio-checked-image:
-    url("./system.css-reference/icon/radio-dot.svg"),
-    url("./system.css-reference/icon/radio-border.svg");
+    url("./assets/themes/classic/controls/radio-dot.svg"),
+    url("./assets/themes/classic/controls/radio-border.svg");
   --radio-checked-focus-image:
-    url("./system.css-reference/icon/radio-dot.svg"),
-    url("./system.css-reference/icon/radio-border-focused.svg");
+    url("./assets/themes/classic/controls/radio-dot.svg"),
+    url("./assets/themes/classic/controls/radio-border-focused.svg");
   /* A disabled choice control defaults to the enabled art plus the shared
      disabled opacity, which is what every era rendered before these roles
      existed. An era whose real disabled control is drawn differently rather
@@ -3212,6 +3212,21 @@ body[data-menu-bar-model="system-owned"] {
   font-size: 24px;
   font-weight: 700;
   line-height: 1.35;
+}
+
+/* Until starting turns slow (or fails) the screen is System 6's greeting:
+   one sentence in a plain box, no progress bar, no checklist. */
+.boot-screen:not(.is-slow) :is(.boot-progress, .boot-ledger) {
+  display: none;
+}
+
+.boot-screen:not(.is-slow) > #boot-message {
+  min-width: 0;
+  padding: 16px 28px;
+  border: var(--system-border);
+  background: var(--paper);
+  box-shadow: 2px 2px 0 var(--ink);
+  font-size: 18px;
 }
 
 .boot-progress {

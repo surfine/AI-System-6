@@ -235,52 +235,26 @@ function renderClioTalkWelcome() {
       .then(() => window.AISystem6ClioProvider?.resolve?.({ reason: "welcome" }))
       .catch(() => {});
   }
-  const introducing = typeof isClioIntroductionActive === "function" && isClioIntroductionActive();
-  // A true first visit greets before any model gate: the greeting is scripted
-  // and needs no model, and desktop-profile first copy must not be a gate.
-  // No read-only branch: a window that does not hold the write lease still
-  // talks, still saves, and must not be greeted by an explanation of a lock
-  // that no longer stops it.
-  const welcomeKey = introducing && !sideAskEnabled && !clioTalkTemporaryMode
-      ? "clio_first_welcome_message"
-      : providerResolving
-        ? "clio_provider_resolving_message"
-        : !modelReady
-          ? "clio_model_required_message"
-          : (sideAskEnabled && !isMultiFinderMode()
-            ? "sideask_welcome_message"
-            : (clioTalkTemporaryMode ? "temporary_welcome_message" : "welcome_message"));
+  // First use is About's "First time here"; ClioTalk always opens with its
+  // ordinary welcome. No read-only branch: a window that does not hold the
+  // write lease still talks, still saves, and must not be greeted by an
+  // explanation of a lock that no longer stops it.
+  const welcomeKey = providerResolving
+    ? "clio_provider_resolving_message"
+    : !modelReady
+      ? "clio_model_required_message"
+      : (sideAskEnabled && !isMultiFinderMode()
+        ? "sideask_welcome_message"
+        : (clioTalkTemporaryMode ? "temporary_welcome_message" : "welcome_message"));
   body.innerHTML = `<p>${t(welcomeKey)}</p>`;
-  const introducingWelcome = welcomeKey === "clio_first_welcome_message";
   // The website's own AI is what a visitor gets by default, so the honest
   // reason they cannot send is usually not "connect a model" -- it is that the
-  // shared budget for today is spent. The resolver already knows which it is;
-  // until now nothing read it, and everyone got the same generic line.
-  const sharedQuotaSpent = providerState.quota?.state === "exhausted";
-  if (introducingWelcome && !modelReady && !providerResolving) {
-    const line = sharedQuotaSpent ? "clio_shared_quota_spent" : "clio_first_welcome_no_model";
-    body.insertAdjacentHTML("beforeend", `<p><span>${t(line)}</span></p>`);
+  // shared budget for today is spent. The resolver already knows which it is.
+  if (!modelReady && !providerResolving && providerState.quota?.state === "exhausted") {
+    body.insertAdjacentHTML("beforeend", `<p><span>${t("clio_shared_quota_spent")}</span></p>`);
   }
 
-  if (introducingWelcome) {
-    const actions = document.createElement("div");
-    actions.className = "clio-welcome-actions";
-    [
-      ["idea", "clio_starter_idea"],
-      ["notes", "clio_starter_notes"],
-      ["file", "clio_starter_file"],
-      ["explore", "clio_starter_explore"],
-    ].forEach(([starter, labelKey]) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "btn";
-      button.dataset.clioStarter = starter;
-      button.textContent = t(labelKey);
-      if (starter === "explore") button.dataset.balloonHelp = "balloon_clio_starter_explore";
-      actions.append(button);
-    });
-    body.append(actions);
-  } else if (modelReady && !sideAskEnabled && !clioTalkTemporaryMode) {
+  if (modelReady && !sideAskEnabled && !clioTalkTemporaryMode) {
     const actions = document.createElement("div");
     actions.className = "clio-welcome-actions";
     [
@@ -314,7 +288,7 @@ function clioTalkModelReady() {
   );
   const localReady = typeof localModelState !== "undefined"
     && (localModelState?.ready || localModelState?.loaded);
-  return cloudReady || localReady;
+  return cloudReady || localReady || window.AISystem6BuiltInLocal?.active === true;
 }
 
 // One readiness question for the whole product. ClioTalk owns the original
@@ -4591,8 +4565,8 @@ function currentContextWindowText(config = cloudConfig) {
 }
 
 function isLocalModelIndicatorReady() {
-  return typeof localModelState !== "undefined"
-    && !!(localModelState?.ready || localModelState?.loaded);
+  return window.AISystem6BuiltInLocal?.active === true || (typeof localModelState !== "undefined"
+    && !!(localModelState?.ready || localModelState?.loaded));
 }
 
 function refreshCloudUsageDisplay() {
@@ -4998,6 +4972,15 @@ function fetchModelPayload(payload, signal, options = {}) {
     delete nextPayload.ai_system6_record_loadout;
     if (shouldRecordLoadout) recordContextLoadout(nextPayload, options.invocation);
   } else {
+    // The built-in model is the Mac's local route (the resolver picks it before LM Studio);
+    // what it cannot read (images, tools, a JSON schema) still goes to LM Studio.
+    const builtIn = window.AISystem6BuiltInLocal;
+    if (builtIn?.active && builtIn.canServe(nextPayload)) {
+      delete nextPayload.ai_system6_record_loadout;
+      if (shouldRecordLoadout) recordContextLoadout(nextPayload, options.invocation);
+      reserve();
+      return builtIn.chat(nextPayload, { signal });
+    }
     if (!localLmStudioConnectionEnabled) {
       throw new Error("lmstudio_server_offline: Connect to LM Studio in Control Panel first.");
     }
@@ -5062,15 +5045,27 @@ function fetchModelPayload(payload, signal, options = {}) {
   });
 }
 
+function builtInModelErrorKey(code) {
+  if (code === "context-budget-exceeded") return "device_model_error_too_long";
+  if (code === "device_busy" || code === "rate_limit") return "device_model_error_busy";
+  if (code === "device_unavailable" || code === "device_memory_gate") return "device_model_error_unavailable";
+  return /^device_/.test(code) ? "device_model_error_failed" : "";
+}
+
 async function throwModelResponseError(response, endPerf, invocation = null) {
   const detail = await response.text();
   const structured = (() => {
     try { return JSON.parse(detail); } catch { return null; }
   })();
-  const routeLabel = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active
-    ? "Cloud API"
-    : "LM Studio";
-  const message = `${routeLabel} returned ${response.status}: ${serviceErrorDetail(response.status, detail)}`;
+  const cloudRoute = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active;
+  // The built-in model's own failures read as the built-in model's, never as LM Studio's.
+  const builtInKey = !cloudRoute && window.AISystem6BuiltInLocal?.active
+    ? builtInModelErrorKey(String(structured?.code || ""))
+    : "";
+  const routeLabel = cloudRoute ? "Cloud API" : "LM Studio";
+  const message = builtInKey
+    ? t(builtInKey)
+    : `${routeLabel} returned ${response.status}: ${serviceErrorDetail(response.status, detail)}`;
   const code = String(structured?.code || (response.status === 402 ? "cloud_insufficient_balance" : "") || (
     typeof classifyLmStudioError === "function" ? classifyLmStudioError(message, response) : ""
   ));
@@ -5263,7 +5258,11 @@ async function sendLocalModelTask(options = {}) {
       const toolCalls = Array.isArray(streamedToolCalls) ? streamedToolCalls : [];
       // A turn that only asks for a tool has no visible text, and that is a
       // complete turn, not an empty one. Mirrors the JSON reader's rule.
-      if (!text && !toolCalls.length) throw new Error("LM Studio stream did not include content.");
+      if (!text && !toolCalls.length) {
+        throw new Error(window.AISystem6BuiltInLocal?.active && servedRoute !== "cloud"
+          ? t("device_model_error_failed")
+          : "LM Studio stream did not include content.");
+      }
       if (isCloud && streamUsage?.prompt_tokens) {
         trackCloudTokenUsage(streamUsage.prompt_tokens, streamUsage.completion_tokens || 0, streamUsage.total_tokens || 0, streamUsage, servedModel);
       }

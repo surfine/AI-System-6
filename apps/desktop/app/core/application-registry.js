@@ -63,6 +63,7 @@ function registerApplication(descriptor) {
   const record = Object.freeze({
     id: descriptor.id,
     labelKey: String(descriptor.labelKey || ""),
+    descriptionKey: String(descriptor.descriptionKey || ""),
     windowName: String(descriptor.windowName || ""),
     acceptedItemKinds: Object.freeze(kinds),
     acceptedIntents: Object.freeze(intents),
@@ -458,6 +459,9 @@ registerApplication({
 registerApplication({
   id: "clioWorksLedger",
   labelKey: "clioworks_ledger_label",
+  // What this application opens, in the words Get Info and the Applications
+  // description use.
+  descriptionKey: "clio_chart_opens_formats",
   // The workbook surface is the chart window the native host opens; there is
   // no "clioWorks" window (the window-registry contract walks every literal
   // windowName, and a named-but-unbuilt window hides from its instruments).
@@ -474,21 +478,8 @@ registerApplication({
     }
     await ensureNativeBinariesModule();
     await ensureClioWorksLedgerModule();
-    if (context.intent === "read") {
-      // Reading intent: open the existing text projection in Reader; never
-      // overwrites the native source.
-      if (typeof createReaderFileDocumentTab === "function" && typeof openReaderDocumentTab === "function") {
-        const tab = createReaderFileDocumentTab(file.name);
-        openReaderDocumentTab(tab.id);
-        openWindow("reader");
-        return { ok: true };
-      }
-      return { ok: false, reason: "reader-unavailable" };
-    }
-    if (context.intent === "edit" || context.intent === "open") {
-      return window.AISystem6ClioWorks?.openNativeWorkbook?.(file, context);
-    }
-    return { ok: false, reason: "unsupported-intent" };
+    // Read → Reader's text projection (never the native bytes); edit/open → the workbook surface. The split lives in the lazy host.
+    return window.AISystem6ClioWorks.dispatchIntent(file, context);
   },
 });
 
@@ -496,16 +487,15 @@ registerApplication({
 // intent split as workbooks. Edit goes through the real Quire/Lectern adapters
 // (no upstream window substitute; the S11 editor screens arrive later); read
 // opens the text projection in Reader and never touches the native bytes.
-for (const [appId, labelKey, kind] of [
-  ["clioWorksQuire", "clioworks_quire_label", "docx"],
-  ["clioWorksLectern", "clioworks_lectern_label", "pptx"],
+for (const [appId, labelKey, kind, windowName] of [
+  ["clioWorksQuire", "clioworks_quire_label", "docx", "clioWrite"],
+  ["clioWorksLectern", "clioworks_lectern_label", "pptx", "clioStage"],
 ]) {
   registerApplication({
     id: appId,
     labelKey,
-    // Document-model apps: their editor surfaces (S11) are still pending
-    // design review, so they name no window yet.
-    windowName: "",
+    // A presentation is edited inside ClioStage (S11 M2), a Word document in ClioWrite (S11 M3).
+    windowName,
     acceptedItemKinds: [kind],
     acceptedIntents: ["open", "read", "edit", "export"],
     recordsRuns: ["edit", "export"],
@@ -517,19 +507,8 @@ for (const [appId, labelKey, kind] of [
       }
       await ensureNativeBinariesModule();
       await ensureClioWorksLedgerModule();
-      if (context.intent === "read") {
-        if (typeof createReaderFileDocumentTab === "function" && typeof openReaderDocumentTab === "function") {
-          const tab = createReaderFileDocumentTab(file.name);
-          openReaderDocumentTab(tab.id);
-          openWindow("reader");
-          return { ok: true };
-        }
-        return { ok: false, reason: "reader-unavailable" };
-      }
-      if (context.intent === "edit" || context.intent === "open") {
-        return window.AISystem6ClioWorks?.openNativeDocument?.(file, context);
-      }
-      return { ok: false, reason: "unsupported-intent" };
+      // The intent split (read → Reader, edit/open → the native surface) lives in the lazy host.
+      return window.AISystem6ClioWorks.dispatchIntent(file, context);
     },
   });
 }

@@ -25,60 +25,27 @@ window.AISystem6TinyShell = (() => {
     if (statusEl) statusEl.textContent = value;
     else setStatus(value);
   }
-  async function canonical(value) {
-    if (value instanceof Blob) {
-      const hash = await crypto.subtle.digest("SHA-256", await value.arrayBuffer());
-      return { blob: [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, "0")).join(""), size: value.size, type: value.type };
-    }
-    if (value instanceof ArrayBuffer || ArrayBuffer.isView(value)) {
-      const bytes = value instanceof ArrayBuffer ? new Uint8Array(value)
-        : new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
-      const hash = await crypto.subtle.digest("SHA-256", bytes);
-      return { binary: [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, "0")).join(""), size: bytes.byteLength };
-    }
-    if (value instanceof Date) return value.toISOString();
-    if (Array.isArray(value)) return Promise.all(value.map(canonical));
-    if (value && typeof value === "object") {
-      const result = {};
-      for (const key of Object.keys(value).sort()) result[key] = await canonical(value[key]);
-      return result;
-    }
-    return value;
-  }
-  async function fingerprint() {
+  // Storage identity lives in storage-fingerprint.js, which the bootstrap page
+  // also runs before the desk can write. Returns { fingerprint, manifest }.
+  async function measure() {
     const db = await openAppDb();
-    try {
-      // Read content, settings and revision history in one transaction. Only
-      // the writer fence, save epoch and window session are transient.
-      const names = [...db.objectStoreNames].sort();
-      if (!names.length) throw new Error(t("native_storage_failed"));
-      const tx = db.transaction(names, "readonly");
-      const done = window.AISystem6StorageTransactions.transactionDone(tx);
-      const reads = names.map((name) => {
-        const store = tx.objectStore(name);
-        return Promise.all([idbRequest(store.getAllKeys()), idbRequest(store.getAll())]);
-      });
-      const records = await Promise.all([...reads, done]);
-      records.pop();
-      const stores = names.map((name, index) => {
-        const [keys, values] = records[index];
-        return [name, keys.flatMap((key, i) => {
-          if (name === "keyval" && (key === "__ai_system6_write_fence__" || key === "storageVersion"
-              || String(key).startsWith("workingSession:"))) return [];
-          let value = values[i];
-          if (name === "keyval" && key === "settings" && value && typeof value === "object") {
-            value = { ...value };
-            delete value.localModelReady;
-            delete value.startupOpenedWindowNames;
-          }
-          return [[key, value]];
-        })];
-      });
-      const prefs = preferences();
-      const content = await canonical({ stores, native: { clipboard: prefs.clipboard === true, hotkey: prefs.hotkey || "" } });
-      const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(content)));
-      return [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, "0")).join("");
-    } finally { db.close(); }
+    try { return await window.AISystem6StorageFingerprint.read(db); }
+    catch { throw new Error(t("native_storage_failed")); }
+    finally { db.close(); }
+  }
+  async function fingerprint() { return (await measure()).fingerprint; }
+  // The updater compares the storage this launch was handed (measured by the
+  // bootstrap page before any desk code ran) with the storage the previous app
+  // measured before it quit. Whatever this build rewrites while booting is
+  // checked as "no record lost" instead of byte identity.
+  async function readyStorage() {
+    const store = window.AISystem6StorageFingerprint;
+    const arrival = store.takeArrival();
+    const current = await measure();
+    const lost = arrival ? store.lostRecords(arrival.manifest, current.manifest) : [];
+    return { dataFingerprint: arrival ? arrival.fingerprint : current.fingerprint,
+      writerData: { checked: !!arrival, lost: lost.length, missing: lost.slice(0, 10).map((item) => item.slice(0, 120)),
+        rewritten: !!arrival && arrival.fingerprint !== current.fingerprint, stores: store.counts(current.manifest) } };
   }
   async function collect(candidate) {
     if (!candidate?.text?.trim() || busy) return;
@@ -339,9 +306,9 @@ window.AISystem6TinyShell = (() => {
     initialized = true;
     panel();
     window.tiny.api.on("system6-shell", onEvent);
-    const dataFingerprint = await fingerprint();
+    const { dataFingerprint, writerData } = await readyStorage();
     const build = window.AISystem6BuildInfo;
-    const report = await call("ready", { dataFingerprint, frontendVersion: build?.version, frontendBuild: build?.build, frontendSource: build?.sourceCommit });
+    const report = await call("ready", { dataFingerprint, writerData, frontendVersion: build?.version, frontendBuild: build?.build, frontendSource: build?.sourceCommit });
     await call("settings", preferences());
     if (report.pendingFiles) await openFiles();
     if (cloudRuntimeApiKey && typeof window.migrateTinyShellCloudCredential === "function") {
@@ -382,7 +349,7 @@ window.AISystem6TinyShell = (() => {
     let finished = false;
     return () => { if (!finished) { finished = true; fileActivities -= 1; } };
   }
-  return { init, fingerprint, activeWork, checkUpdate, installUpdate, notify, beginFileActivity,
+  return { init, fingerprint, readyStorage, activeWork, checkUpdate, installUpdate, notify, beginFileActivity,
     receiveNativeDownload, isInstalling: () => busy };
 
 })();

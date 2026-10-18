@@ -1,0 +1,278 @@
+/* ClioWrite: the docx editing window (S11 M3). The status bar is the desk's own
+   .details-bar.app-status-bar (three slots) with .system-select-button pop-ups;
+   the ruler is the one bar full editing adds; the document flows on the desk's
+   paper. The text inside the document is the file's own (the vendored Quire
+   renderer draws its runs inline), so no appearance restyles a writer's words.
+   Every selector is scoped to .clio-write-window or the window's pop-up menus
+   (.cw-menu); tokens only. */
+
+.clio-write-window {
+  width: min(720px, calc(100vw - 72px));
+  height: min(560px, calc(100vh - 96px));
+}
+
+.clio-write-window .cw-status {
+  flex: none;
+  gap: 10px;
+}
+
+.clio-write-window .cw-receipt,
+.clio-write-window .cw-file {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clio-write-window .cw-context {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* The slots clip their text; the pop-up buttons' focus rings stay visible. */
+.clio-write-window .cw-status > .cw-context,
+.clio-write-window .cw-status > .cw-trailing {
+  overflow: visible;
+}
+
+.clio-write-window .cw-pop {
+  flex: none;
+  width: auto;
+}
+
+.clio-write-window .cw-pop[hidden] {
+  display: none;
+}
+
+/* Full editing's ruler: two pop-ups, then the page's width with its margins
+   shaded and this paragraph's indents marked. Shown as the file has it, never dragged. */
+.clio-write-window .cw-ruler {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--details-bar-border, var(--ink));
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.clio-write-window .cw-ruler[hidden] {
+  display: none;
+}
+
+.clio-write-window .cw-ruler-pops {
+  display: flex;
+  flex: none;
+  gap: 6px;
+}
+
+.clio-write-window .cw-ruler-strip {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 80px;
+  height: 14px;
+  border: 1px solid var(--ink);
+  background: repeating-linear-gradient(90deg, var(--ink) 0 1px, transparent 1px 10%) 0 100% / 100% 4px no-repeat, var(--paper);
+}
+
+.clio-write-window .cw-mark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.clio-write-window .cw-mark.is-margin-left {
+  left: 0;
+  width: var(--cw-margin-left, 0%);
+  background: var(--shade-light, var(--paper));
+  border-right: 1px solid var(--ink);
+}
+
+.clio-write-window .cw-mark.is-margin-right {
+  left: var(--cw-margin-right, 100%);
+  right: 0;
+  background: var(--shade-light, var(--paper));
+  border-left: 1px solid var(--ink);
+}
+
+.clio-write-window .cw-mark.is-indent-first,
+.clio-write-window .cw-mark.is-indent-left,
+.clio-write-window .cw-mark.is-indent-right {
+  width: 8px;
+  height: 5px;
+  background: var(--ink);
+  clip-path: polygon(0 100%, 50% 0, 100% 100%);
+  transform: translateX(-4px);
+}
+
+.clio-write-window .cw-mark.is-indent-first {
+  left: var(--cw-indent-first, 0%);
+  bottom: auto;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.clio-write-window .cw-mark.is-indent-left {
+  left: var(--cw-indent-left, 0%);
+  top: auto;
+}
+
+.clio-write-window .cw-mark.is-indent-right {
+  left: var(--cw-indent-right, 100%);
+  top: auto;
+}
+
+/* The pane: the document (or the empty note), the caption, and the alert layer. */
+.clio-write-window .clio-write-pane {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--glass-reading-surface, var(--paper));
+  color: var(--ink);
+}
+
+.clio-write-window .cw-scroller {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  background: var(--glass-reading-surface, var(--paper));
+}
+
+.clio-write-window .cw-scroller[hidden],
+.clio-write-window .cw-empty[hidden] {
+  display: none;
+}
+
+/* The flow wraps to the window (Express and full editing alike): never wider than the
+   scroller and centred by the layer's own sizer. The flow box itself is never capped in CSS:
+   quire sets its inline width and lays every table, tab stop and picture against that width. The
+   page box is as wide as its column, not its container, so each redraw measures the same. */
+.clio-write-window .cw-scroller .sizer {
+  max-inline-size: 100%;
+}
+
+/* The document's own text is drawn black on white, as the file has it. */
+.clio-write-window .cw-scroller .pages {
+  position: relative;
+  inline-size: fit-content;
+  outline: none;
+  color: #000000;
+  background: #ffffff;
+}
+
+/* Reached by keyboard (Tab), the editing area shows the desk's focus ring; mouse and touch keep only the caret. */
+.clio-write-window .cw-scroller .pages:focus-visible {
+  outline: var(--system-focus-outline, 1px dotted var(--ink));
+  outline-offset: -3px;
+}
+
+.clio-write-window .cw-scroller .flow {
+  box-sizing: border-box;
+  padding: 16px 20px;
+}
+
+/* An inline picture keeps the size the file gives it. */
+.clio-write-window .cw-scroller .img {
+  display: inline-block;
+  vertical-align: bottom;
+}
+
+.clio-write-window .cw-scroller [contenteditable="false"] {
+  cursor: default;
+}
+
+.clio-write-window .cw-empty {
+  flex: 1 1 auto;
+  padding: 24px;
+  max-width: 44em;
+}
+
+.clio-write-window .cw-empty p {
+  margin: 8px 0 0;
+}
+
+.clio-write-window .cw-caption {
+  flex: none;
+  margin: 0;
+  padding: 2px 8px;
+  border-top: 1px solid var(--details-bar-border, var(--ink));
+  font-size: var(--system-caption-size, 11px);
+}
+
+/* The first-save list: a fixed alert, double border, no title bar, cannot be moved. */
+.clio-write-window .cw-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clio-write-window .cw-layer[hidden] {
+  display: none;
+}
+
+.clio-write-window .cw-alert {
+  max-width: min(440px, 92%);
+  padding: 1px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.clio-write-window .cw-alert-in {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 2px solid var(--ink);
+}
+
+.clio-write-window .cw-alert p,
+.clio-write-window .cw-alert ul {
+  margin: 0;
+}
+
+.clio-write-window .cw-alert ul {
+  padding-inline-start: 18px;
+}
+
+.clio-write-window .cw-alert-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.menu-popover.cw-menu {
+  display: block;
+  position: fixed;
+  top: var(--cw-menu-y, 0);
+  left: var(--cw-menu-x, 0);
+}
+
+.cw-menu .cw-menu-label small {
+  display: block;
+  font-size: var(--system-caption-size, 11px);
+  white-space: normal;
+}
+
+.cw-menu button.is-disabled {
+  color: var(--shade-dark, var(--ink));
+}
+
+.cw-menu kbd {
+  font: inherit;
+}
+
+/* Touch: the status bar, the ruler's pop-ups and the menus grow to 44px. */
+@media (hover: none) and (pointer: coarse) {
+  .clio-write-window .cw-status .cw-pop,
+  .clio-write-window .cw-ruler .cw-pop,
+  .cw-menu button {
+    min-height: 44px;
+  }
+}

@@ -13,6 +13,17 @@
   var VFX = ['blur', 'box', 'melt', 'doodle'];
   var SFX = ['stamp', 'pen', 'bell', 'don'];
   var POSE_ONCE = { realsmile: 'smile' }; // 一次性的过渡态：只在写它的那一行播放，之后停在这张脸
+  // 以下只给界面用（章卡英文副题、传讯笺页眉的地名）；不进存档，不影响逻辑
+  var ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'];
+  var EN_TITLE = { ch01: 'Borrowed Light — a lamp that is not yours', ch02: 'Night Voyage — one slip a night', ch03: 'The Lighthouse — a seat she never asked for',
+    ch04: 'Still Sealed — the volume nobody opens', ch05: 'The Wager — a bet made in her name', ch06: 'In Her Name — a letter signed for someone else',
+    ch07: 'Leakage — the ink that travels', ch08: 'Mediation — three seals on one pact', ch09: 'Aftermath — the tide after the storm',
+    ch10: 'Plaintext — a letter with no seal', hidden: 'The Other Shore — the same sea, from the far side' };
+  var BG_LABEL = { street_spring: '春市', fair_booth: '星潮祭', library: '王立书库', my_room_night: '住处', yuan_room: '潮汐巷工坊', cafe: '回水茶馆',
+    ferry: '渡船', bookshop: '锚与烛', hospital: '医馆', lighthouse_hill: '灯塔丘', rain_street: '雨巷', phone: '笺上' };
+  function speakerVar(id) { return 'var(--c-' + id + ', var(--ink))'; }
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function seeded(seed) { return function () { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }; }
 
   var $ = function (id) { return document.getElementById(id); };
   var el = {
@@ -20,7 +31,8 @@
     choices: $('choices'), hud: $('hud'), rhud: $('replayhud'), chaptag: $('chaptag'), title: $('title'),
     phone: $('phone'), phoneName: $('phoneName'), phoneBody: $('phoneBody'), phoneDeco: $('phoneDeco'), phoneTraces: $('phoneTraces'), collage: $('collage'),
     msgpop: $('msgpop'), sys: $('sysline'), quick: $('quickbar'), overlay: $('overlay'), modal: $('modal'),
-    toast: $('toast'), debug: $('debug'), wolf: $('wolfShade'), wall: $('wall')
+    toast: $('toast'), debug: $('debug'), wolf: $('wolfShade'), wall: $('wall'),
+    marks: $('marks'), slipMarks: $('slipMarks'), frost: $('frost'), dmeta: $('dmeta'), dcount: $('dcount'), rorig: $('replayOrig')
   };
   function reduced() { return el.app.classList.contains('reduce'); }
   function sealColor(id) { return (A.SEAL_COLORS && A.SEAL_COLORS[id]) || A.CHAR_COLORS[id] || '#C23B22'; }
@@ -48,7 +60,7 @@
   Store.probe();
   var GLOBAL = Store.get('global', null) || {};
   ['cards', 'endings', 'reached', 'letters', 'echoes', 'bestTrust', 'flagsSeen', 'dossierSeen'].forEach(function (k) { GLOBAL[k] = GLOBAL[k] || {}; });
-  var SET = Object.assign({ textSpeed: 6, autoSpeed: 5, volume: 35, muted: false, showTags: false }, Store.get('settings', {}) || {});
+  var SET = Object.assign({ textSpeed: 6, autoSpeed: 5, volume: 35, muted: false, showTags: false, theme: 'auto' }, Store.get('settings', {}) || {});
   var READ = Store.get('read', {}) || {};
   var readTimer = null;
   function saveGlobal() { Store.set('global', GLOBAL); }
@@ -127,6 +139,7 @@
   }
   function paintedBg(id, o) { return !!paintedSrc(id, o); }
   function bgHtml(id, o) {
+    if (id === 'paper') return '<div class="bg-plain"></div>'; // 「纸」背景改成平的港雾底，不再画羊皮纸与金边
     if (paintedBg(id, o)) return '<div class="bg-painted' + (id === 'lighthouse_hill' && o.plain ? ' push' : '') + '"><img src="' + paintedSrc(id, o) + '" alt="" decoding="async"></div>' + (A.fx ? A.fx(id, o.v) : '');
     return A.bg(id, o);
   }
@@ -276,23 +289,140 @@
     G.view.show.forEach(function (id) { if (R.NPCS.indexOf(id) >= 0 && list.indexOf(id) < 0) list.push(id); });
     G.relevant.forEach(function (id) { if (list.indexOf(id) < 0) list.push(id); });
     list = list.slice(0, 3);
-    var h = '<div class="grp margin-l">' +
-      '<span class="stat' + (s.energy <= 3 ? ' low' : '') + '" title="身心 ' + s.energy + '/10">身心<b>' + s.energy + '</b></span>' +
-      '<span class="stat" title="夜航笔记 ' + s.own + '/10">夜航<b>' + s.own + '</b></span></div>';
-    h += '<div class="grp right margin-r"><div class="aff"><button class="aff-btn" data-u="aff" aria-expanded="false">好感</button><div class="aff-panel" hidden>';
-    if (list.length) list.forEach(function (id) { h += '<div class="row" title="' + esc(nameOf(id)) + '：你以为 ' + s.perceived[id] + '/10"><span class="nm">' + esc(nameOf(id)) + '</span><b class="val">' + s.perceived[id] + '</b></div>'; });
-    else h += '<div class="row"><span class="nm">—</span></div>';
-    h += '</div></div></div>';
-    el.hud.innerHTML = h;
+    if (!el.hud.querySelector('.hudbox')) { // 骨架只建一次，之后只改数值，烛线和航迹才有过渡
+      el.hud.innerHTML = '<div class="grp margin-l hudbox">' +
+        '<div class="row hrow" data-k="energy"><span class="hl">身心</span><span class="candle"><span class="ticks"></span><span class="wick"></span><span class="flame"></span></span><b class="num"></b></div>' +
+        '<div class="row hrow" data-k="own"><span class="hl">夜航</span><svg class="wake" viewBox="0 0 108 16" aria-hidden="true"><path class="track" d="' + WAKE_D + '"/><path class="trail" d="' + WAKE_D + '"/><circle class="boat" r="2.6" cx="0" cy="0"/></svg><b class="num"></b></div>' +
+        '<div class="aff"><button class="aff-btn" data-u="aff" aria-expanded="false">好感</button><div class="aff-panel" hidden></div></div></div>';
+    }
+    var cr = el.hud.querySelector('[data-k=energy]'), cd = cr.querySelector('.candle'), wr = el.hud.querySelector('[data-k=own]');
+    cr.title = '身心 ' + s.energy + '/10'; wr.title = '夜航笔记 ' + s.own + '/10';
+    cd.style.setProperty('--v', Math.max(0, Math.min(10, s.energy)));
+    cd.classList.toggle('low', s.energy <= 3); cd.classList.toggle('out', s.energy <= 0);
+    cr.querySelector('.num').textContent = s.energy; wr.querySelector('.num').textContent = s.own;
+    setWake(wr.querySelector('.wake'), Math.max(0, Math.min(10, s.own)));
+    var ap = '';
+    if (list.length) list.forEach(function (id) { ap += '<div class="row" title="' + esc(nameOf(id)) + '：你以为 ' + s.perceived[id] + '/10"><span class="nm">' + esc(nameOf(id)) + '</span><b class="val">' + s.perceived[id] + '</b></div>'; });
+    else ap += '<div class="row"><span class="nm">—</span></div>';
+    el.hud.querySelector('.aff-panel').innerHTML = ap;
     el.hud.hidden = !!G.replay;
+    setLeakMarks(s.leak);
     updateChapterTag();
     updateDebug();
+  }
+  var WAKE_D = 'M2 9 C 14 2, 22 2, 30 9 S 46 16, 56 9 S 74 2, 84 9 S 98 15, 106 8';
+  function setWake(svg, v) {
+    var p = svg.querySelector('.trail'), L = p.getTotalLength ? p.getTotalLength() : 0;
+    if (!L) return;
+    p.style.strokeDasharray = L; p.style.strokeDashoffset = L * (1 - v / 10);
+    var pt = p.getPointAtLength(Math.max(.01, L * v / 10));
+    svg.querySelector('.boat').setAttribute('transform', 'translate(' + pt.x.toFixed(1) + ' ' + pt.y.toFixed(1) + ')');
+  }
+  // 外流墨痕：画面四边与笺边。种子固定，外流值每多 2 点亮一级（共 10 级），不显示数字
+  var leakLevel = -1;
+  function buildLeakMarks() {
+    var svg = el.marks, w = svg.clientWidth || window.innerWidth || 1280, h = svg.clientHeight || window.innerHeight || 800, r = seeded(7), out = '';
+    svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+    for (var c = 0; c < 30; c++) { // 每级 3 簇，每簇 2–4 道短排线，像转抄时笔尖蹭出来的
+      var edge = Math.floor(r() * 4), d = Math.pow(r(), 2.4) * Math.min(w, h) * .2, x, y;
+      if (edge === 0) { x = r() * w; y = d; } else if (edge === 1) { x = w - d; y = r() * h; } else if (edge === 2) { x = r() * w; y = h - d; } else { x = d; y = r() * h; }
+      var n = 2 + Math.floor(r() * 3), len = 6 + r() * 16, ang = (-48 + r() * 10) * Math.PI / 180, lv = Math.floor(c / 3) + 1;
+      for (var k = 0; k < n; k++) {
+        var ox = x + k * 3.2, oy = y + k * 1.2, l2 = len * (.7 + r() * .5);
+        out += '<line class="m" data-l="' + lv + '" x1="' + ox.toFixed(1) + '" y1="' + oy.toFixed(1) + '" x2="' + (ox + Math.cos(ang) * l2).toFixed(1) + '" y2="' + (oy + Math.sin(ang) * l2).toFixed(1) + '" stroke-width="' + (.45 + r() * .4).toFixed(2) + '"/>';
+      }
+    }
+    out += '<defs><filter id="leakWash" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6"/></filter></defs>';
+    for (var j = 0; j < 14; j++) {
+      var e2 = Math.floor(r() * 4), dd = r() * 60, bx = e2 % 2 ? (e2 === 1 ? w - dd : dd) : r() * w, by = e2 % 2 ? r() * h : (e2 === 0 ? dd : h - dd);
+      out += '<circle class="m" data-l="' + (4 + Math.floor(j / 2)) + '" cx="' + bx.toFixed(1) + '" cy="' + by.toFixed(1) + '" r="' + (8 + r() * 22).toFixed(1) + '" filter="url(#leakWash)"/>';
+    }
+    svg.innerHTML = out;
+    var sm = el.slipMarks, sw = el.dialog.clientWidth || 760, sh = el.dialog.clientHeight || 170, r2 = seeded(31), o2 = '';
+    sm.setAttribute('viewBox', '0 0 ' + sw + ' ' + sh);
+    for (var i = 0; i < 50; i++) { // 笺边：只沿上边与右边
+      var top = r2() < .62, sx = top ? 60 + r2() * (sw - 70) : sw - r2() * 14, sy = top ? r2() * 12 : r2() * sh, sl = 5 + r2() * 12, sa = -50 * Math.PI / 180;
+      o2 += '<line class="m" data-l="' + (Math.floor(i / 5) + 1) + '" x1="' + sx.toFixed(1) + '" y1="' + sy.toFixed(1) + '" x2="' + (sx + Math.cos(sa) * sl).toFixed(1) + '" y2="' + (sy + Math.sin(sa) * sl).toFixed(1) + '" stroke-width=".6"/>';
+    }
+    sm.innerHTML = o2;
+    var keep = leakLevel; leakLevel = -1; if (keep >= 0) paintLeak(keep);
+  }
+  function paintLeak(lv) {
+    if (lv === leakLevel) return; leakLevel = lv;
+    [el.marks, el.slipMarks].forEach(function (svg) { svg.querySelectorAll('.m').forEach(function (m) { m.classList.toggle('on', +m.getAttribute('data-l') <= lv); }); });
+  }
+  function setLeakMarks(leak) { paintLeak(G.inGame ? Math.max(0, Math.min(10, Math.ceil((leak || 0) / 2))) : 0); }
+  // 白狼：霜的负形。按舞台尺寸与外流值画；同一状态不重画，免得连着几句白狼时闪一下
+  var wolfKey = '';
+  function drawWolf(face, force) {
+    var w = el.wolf.clientWidth || el.stage.clientWidth || window.innerWidth || 1280, h = el.wolf.clientHeight || el.stage.clientHeight || window.innerHeight || 800;
+    var leak = G.st ? Math.max(0, Math.min(20, G.st.leak || 0)) : 0, foot = 0;
+    if (w < 720) foot = (parseFloat(el.app.style.getPropertyValue('--ui-dialog-height')) || 150) + 56; // 手机：站在对话笺与快捷栏上方
+    var minX = 0; if (!el.phone.hidden && w >= 720) { var pr = el.phone.getBoundingClientRect(), sr = el.wolf.getBoundingClientRect(); minX = Math.round(pr.right - sr.left); } // 双笺：站到笺的右边
+    var key = [face, w, h, leak, Math.round(foot), minX].join('|');
+    if (!force && key === wolfKey) return;
+    wolfKey = key;
+    el.wolf.innerHTML = A.wolfShade(face, { w: w, h: h, leak: leak, foot: foot, minX: minX });
+  }
+  // 第十章「让它走」：烛光把你投在墙上，影子长出狼形，再退回只剩你自己。只由行选项 shadow 触发：
+  // rise 长出来、wolf 停在狼形、leave 退回人形并褪去冷白、self 只剩你自己；没有 shadow 的行就收起
+  var SHADOW_CUE = { rise: { t: .9, c: 1, ms: 1800 }, wolf: { t: .9, c: 1, ms: 700 }, leave: { t: 0, c: 0, ms: 2800 }, self: { t: 0, c: 0, ms: 900 } };
+  function wasReadKey(key) { return !!READ[key]; }
+  function paintShadow(t, c) { el.wolf.innerHTML = A.wolfShadow({ t: t, cold: c }); }
+  function cueShadow(cue, instant) {
+    var to = SHADOW_CUE[cue];
+    if (!to) { if (G.shadow) endShadow(); return; }
+    cancelAnimationFrame(G.shadowRaf);
+    var from = G.shadow || (cue === 'leave' ? { t: .9, c: 1 } : { t: 0, c: 0 });
+    G.shadow = { t: from.t, c: from.c }; wolfKey = '';
+    el.app.classList.add('wolf-shadow');
+    if (instant || reduced() || (from.t === to.t && from.c === to.c)) { G.shadow = { t: to.t, c: to.c }; paintShadow(to.t, to.c); return; }
+    var start = performance.now();
+    (function step(now) {
+      var k = Math.min(1, (now - start) / to.ms), e = k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+      G.shadow = { t: from.t + (to.t - from.t) * e, c: from.c + (to.c - from.c) * e };
+      paintShadow(G.shadow.t, G.shadow.c);
+      if (k < 1) G.shadowRaf = requestAnimationFrame(step);
+    })(start);
+  }
+  function endShadow() {
+    cancelAnimationFrame(G.shadowRaf);
+    if (!G.shadow) return;
+    G.shadow = null; wolfKey = '';
+    el.app.classList.remove('wolf-shadow'); // 影子随透明度淡出；下一句白狼会重画成霜
+    setTimeout(function () { if (!G.shadow && !el.app.classList.contains('wolf-on')) { el.wolf.innerHTML = ''; wolfKey = ''; } }, 1000);
+  }
+  // 白狼介入：四边霜线（短直线为主，冰晶少量）
+  function buildFrost() {
+    var svg = el.frost.querySelector('svg'), w = el.frost.clientWidth || window.innerWidth || 1280, h = el.frost.clientHeight || window.innerHeight || 800, r = seeded(13), out = '';
+    svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+    function crystal(x, y, s, a) {
+      var p = '';
+      for (var k = 0; k < 3; k++) { var an = a + k * Math.PI / 3, dx = Math.cos(an) * s, dy = Math.sin(an) * s; p += 'M' + (x - dx).toFixed(1) + ' ' + (y - dy).toFixed(1) + 'L' + (x + dx).toFixed(1) + ' ' + (y + dy).toFixed(1); }
+      return '<path d="' + p + '" opacity="' + (.35 + r() * .5).toFixed(2) + '"/>';
+    }
+    for (var i = 0; i < 28; i++) {
+      var edge = i % 4, d = 4 + Math.pow(r(), 3) * 18, x, y;
+      if (edge === 0) { x = r() * w; y = d; } else if (edge === 1) { x = w - d; y = r() * h; } else if (edge === 2) { x = r() * w; y = h - d; } else { x = d; y = r() * h; }
+      out += crystal(x, y, 1.5 + r() * 2.5, r() * Math.PI);
+    }
+    for (var j = 0; j < 56; j++) {
+      var e = j % 4, len = 24 + r() * 120, o = 3 + (j % 3) * 3 + r() * 2, x0, y0;
+      if (e === 0 || e === 2) { x0 = r() * w; y0 = e === 0 ? o : h - o; out += '<line x1="' + x0.toFixed(1) + '" y1="' + y0.toFixed(1) + '" x2="' + (x0 + len).toFixed(1) + '" y2="' + y0.toFixed(1) + '" opacity=".5"/>'; }
+      else { y0 = r() * h; x0 = e === 1 ? w - o : o; out += '<line x1="' + x0.toFixed(1) + '" y1="' + y0.toFixed(1) + '" x2="' + x0.toFixed(1) + '" y2="' + (y0 + len).toFixed(1) + '" opacity=".5"/>'; }
+    }
+    svg.innerHTML = out;
+  }
+  function shortKigo(t) { // 章节签只放季语里最短的一段（如「春末」），完整季语留给章卡
+    var parts = String(t || '').split(/\s*[·・]\s*/).filter(Boolean);
+    return parts.reduce(function (a, b) { return b.length < a.length ? b : a; }, parts[0] || '');
   }
   function updateChapterTag() {
     var ch = G.chapter, show = !!(ch && G.inGame && !G.replay && ch.title);
     el.chaptag.hidden = !show;
     if (!show) { el.chaptag.textContent = ''; return; }
-    el.chaptag.textContent = (ch.id === 'hidden' ? '隐藏章' : '第' + (NUM[ch.no] || ch.no) + '章') + ' · ' + ch.title;
+    var k = shortKigo(ch.subtitle);
+    el.chaptag.innerHTML = esc((ch.id === 'hidden' ? '隐藏章' : '第' + (NUM[ch.no] || ch.no) + '章') + '　' + ch.title) + (k ? '<small>' + esc(k) + '</small>' : '');
   }
 
   function chapterByNo(no) { return no === 11 ? STORY.chapters.hidden : STORY.byNo[no]; }
@@ -334,8 +464,8 @@
   }
 
   function clearStageText() {
-    el.dialog.hidden = true; el.choices.hidden = true; el.sys.hidden = true; el.msgpop.hidden = true; el.msgpop.innerHTML = '';
-    resetWall(); el.app.classList.remove('wolf-on'); endKeyMoment();
+    el.dialog.hidden = true; el.choices.hidden = true; el.app.classList.remove('choosing'); el.sys.hidden = true; el.msgpop.hidden = true; el.msgpop.innerHTML = '';
+    resetWall(); el.app.classList.remove('wolf-on'); endShadow(); endKeyMoment();
     clearVfx(); clearDeco();
   }
 
@@ -344,7 +474,7 @@
     if (!f) return errorCard('找不到场景「' + id + '」。剧本可能还没写完。');
     G.chapter = f.chapter; G.scene = f.scene; G.sceneId = id;
     if (f.chapter.no != null) G.st.chapter = f.chapter.no;
-    resetPoses(); applyDeco(f.scene); // 立绘特殊态不跨场景；still / props 由场景决定
+    resetPoses(); applyDeco(f.scene); endShadow(); // 立绘特殊态、墙上的影子都不跨场景；still / props 由场景决定
     G.tower = towerFor(f.chapter, id, f.scene);
     setBg(f.scene.bg || G.view.bg, true, f.scene.bgv);
     setMusic(f.scene.music || 'none');
@@ -381,9 +511,6 @@
     var ro = new ResizeObserver(function () { set(el.dialog.getBoundingClientRect().height); });
     ro.observe(el.dialog);
   }
-  var BROOCH_SVG = '<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="17" fill="none" stroke="#C9A24A" stroke-width="1.2" opacity=".7"/>' +
-    '<path d="M20 6C29.5 12.5 30.5 25 20 34C9.5 25 10.5 12.5 20 6Z" fill="var(--glass-emerald, #2E7D62)" stroke="#C9A24A" stroke-width="1"/>' +
-    '<path d="M20 9.5V31M20 16.5l5-4M20 21.5l-5-4M20 26l5-4" fill="none" stroke="#BFE8D3" stroke-width=".9" stroke-linecap="round"/></svg>';
   function isKeyMoment() { return !!G.keyHold; }
   function endKeyMoment() {
     clearTimeout(G.keyTimer); G.keyHold = false;
@@ -413,9 +540,10 @@
     var wallMode = o.wall === true ? 'full' : (o.wall === 'edge' ? 'edge' : '');
     resetWall();
     var isWolf = sp.id === 'wolf';
+    cueShadow(o.shadow, G.skip && wasReadKey(key));
     if (isWolf) {
       var wf = G.view.faces.wolf || 'neutral';
-      el.wolf.innerHTML = A.wolfShade(wf);
+      if (!G.shadow) drawWolf(wf);
       if (!el.app.classList.contains('wolf-on') && (wf === 'neutral' || wf === 'smile')) sfx('wolf');
     }
     el.app.classList.toggle('wolf-on', isWolf);
@@ -425,7 +553,7 @@
     var wasRead = !!READ[key];
     markRead(key);
     if (o.motif && !(G.skip && wasRead)) playMotif(o.motif, { resolve: o.motif_resolve === true });
-    el.choices.hidden = true;
+    el.choices.hidden = true; el.app.classList.remove('choosing');
     el.sys.hidden = true;
     if (sp.kind !== 'msg') { el.msgpop.hidden = true; el.msgpop.innerHTML = ''; G.phoneRun = []; }
     G.waiting = 'line';
@@ -457,8 +585,12 @@
       el.dialog.hidden = false;
       var meSpeak = sp.id === (G.st && G.st.flags.hidden_run ? 'yuan' : 'me');
       el.dialog.className = 'dialog ' + sp.kind + (isWolf ? ' wolf' : '') + (meSpeak ? ' me-speak' : '');
-      if (sp.kind === 'char') el.name.innerHTML = esc(nameOf(sp.id)) + '<span class="nseal">' + A.seal(A.CHAR_LABEL[sp.id] || '', sealColor(sp.id), 26) + '</span>';
-      else el.name.innerHTML = '';
+      // 传讯笺：左栏竖排名牌，颜色取说话人主色；页眉写地点与句序
+      el.dialog.style.setProperty('--speaker', sp.kind === 'char' ? speakerVar(sp.id) : 'var(--c-narr)');
+      el.name.textContent = sp.kind === 'char' ? nameOf(sp.id) : (sp.kind === 'think' ? '心声' : '');
+      var place = BG_LABEL[G.view.bg] || '';
+      el.dmeta.textContent = isWolf ? '影 · 墙角的白影' : (G.replay ? '重读 · ' + (place || '另一边') : '传讯笺' + (place ? ' · ' + place : ''));
+      el.dcount.textContent = lineCount();
       el.text.classList.toggle('whisper', !!o.whisper);
       if (sp.kind === 'think' && !/^[（(]/.test(text)) text = '（' + text + '）';
       typeText(text, wasRead, el.text, false);
@@ -469,6 +601,12 @@
     updateHud();
   }
 
+  function lineCount() { // 句序：只数当前状态下可见的行
+    var q = G.seq; if (!q || !q.lines || q.idx < 0) return '';
+    var at = 0, all = 0;
+    for (var i = 0; i < q.lines.length; i++) { if (!R.lineVisible(G.st, q.lines[i])) continue; all++; if (i <= q.idx) at++; }
+    return all > 1 ? pad2(at) + ' / ' + pad2(all) : '';
+  }
   function resetWall() {
     el.wall.classList.remove('on', 'edge');
     el.phone.classList.remove('frost-on');
@@ -550,18 +688,21 @@
       G.shown = Math.min(G.full.length, G.shown + step);
       var chunk = G.full.slice(from, G.shown);
       if (sys) { target.textContent = G.full.slice(0, G.shown); target.insertAdjacentHTML('beforeend', '<span class="caret"></span>'); if (chunk.trim()) sfx('type'); }
-      else { target.insertAdjacentHTML('beforeend', '<span class="seep">' + esc(chunk) + '</span>'); if (G.shown % 2 === 0) AU.tick(); }
-      if (G.shown >= G.full.length) finishTyping(wasRead);
+      else { // 墨从纸背浮上来：每个字一个 span，各自由淡转实
+        target.insertAdjacentHTML('beforeend', Array.from(chunk).map(function (c) { return /\s/.test(c) ? esc(c) : '<span class="seep">' + esc(c) + '</span>'; }).join(''));
+        if (G.shown % 2 === 0) AU.tick();
+      }
+      if (G.shown >= G.full.length) finishTyping(wasRead, true);
     }, iv);
   }
-  function finishTyping(wasRead) {
+  function finishTyping(wasRead, natural) {
     clearInterval(G.typeTimer);
     if (wasRead === undefined) wasRead = G.typedRead;
     var wasTyping = G.typing;
     G.typing = false;
     var t = G.typeTarget || el.text;
     if (!G.typeSys && el.app.classList.contains('letter-mode') && /^[—\s]*韩栖$/.test(G.full.trim())) t.innerHTML = '<span class="sign">' + esc(G.full) + '</span>'; // 终章信的落款：第一次用自己的字
-    else t.textContent = G.full;
+    else if (!(natural && !G.typeSys)) t.textContent = G.full; // 自然打完时留着最后几个字把淡入走完；点击跳过才整句换成实字
     if (G.typeSys) { if (wasTyping || !wasRead) sfx('ding'); lineDone(wasRead, 1400); return; }
     el.dialog.classList.add('done');
     lineDone(wasRead, 900 + G.full.length * 55);
@@ -662,31 +803,39 @@
       }, sec * 1000);
     }
   }
-  function sceneIsKeyMoment(vis) {
+  function choiceIsKey(c) { // 单个选项是否关键：c.key、regret/seize 上的 key，或 REGRETS 表里登记为 key 的遗憾
     var byId = (R.REGRETS || {});
-    return vis.some(function (c) {
-      if (c.key === true) return true;
-      if (c.regret && typeof c.regret === 'object' && c.regret.key === true) return true;
-      if (c.seize && typeof c.seize === 'object' && c.seize.key === true) return true;
-      var rid = c.regret && typeof c.regret === 'object' ? c.regret.id : c.regret;
-      return !!(rid && byId[rid] && byId[rid].key === true);
-    });
+    if (c.key === true) return true;
+    if (c.regret && typeof c.regret === 'object' && c.regret.key === true) return true;
+    if (c.seize && typeof c.seize === 'object' && c.seize.key === true) return true;
+    var rid = c.regret && typeof c.regret === 'object' ? c.regret.id : c.regret;
+    return !!(rid && byId[rid] && byId[rid].key === true);
   }
+  function sceneIsKeyMoment(vis) { return vis.some(choiceIsKey); }
   function renderChoices(vis, isKey) {
     G.curChoices = vis; G.waiting = 'choice';
-    var me = G.st && G.st.flags.hidden_run ? 'yuan' : 'me', h = isKey ? '<div class="keyhint"><span class="key-brooch" aria-hidden="true">' + BROOCH_SVG + '</span>关键抉择</div>' : '';
+    var me = G.st && G.st.flags.hidden_run ? 'yuan' : 'me', h = '';
+    if (isKey) {
+      var regretAhead = vis.some(function (c) { return c.regret; }), no = G.chapter && G.chapter.no;
+      h += '<div class="keyhint"><span class="wax" aria-hidden="true"></span><span class="k">关键抉择</span>' +
+        '<span class="klbl">' + esc((G.chapter && G.chapter.id === 'hidden' ? '隐藏章' : (no ? '第' + (NUM[no] || no) + '章' : '')) + (regretAhead ? ' · 这一笔会写进遗憾册' : '')) + '</span></div>';
+    }
+    h += '<div class="choice-list">';
     vis.forEach(function (c, i) {
-      var tempt = R.isTempting(G.st, c), tag = c.tag;
+      var tempt = R.isTempting(G.st, c), tag = c.tag, key = isKey && choiceIsKey(c);
       var text = String(c.text || '').replace(/^🔒\s*/, '');
-      h += '<button class="choice' + (tag === 'meta' ? ' meta' : '') + (tempt ? ' tempt' : '') + '" data-i="' + i + '">' +
-        (tag === 'meta' ? '<span class="claw">' + A.claw() + '</span>' : '') +
-        '<span class="num">' + (i + 1) + '</span><span class="ctext">' + esc(text) +
+      // 纸的种类按 tag 决定：relay 转抄小印，ask 纯白纸，关键项朱红细边加蜡封点
+      h += '<button class="choice' + (tag ? ' tag-' + tag : '') + (tag === 'meta' ? ' meta' : '') + (tempt ? ' tempt' : '') + (key ? ' key' : '') + '" data-i="' + i + '">' +
+        (key ? '<span class="wax" aria-hidden="true"></span>' : '') +
+        '<span class="num">' + pad2(i + 1) + '</span><span class="ctext">' + esc(text) +
         (tag === 'meta' ? '<span class="hint">元知识：你在别人的回放里看到过这件事。</span>' : '') +
-        (tempt ? '<span class="hint">好累……要不找人帮忙问问？</span>' : '') + '</span>' +
-        (SET.showTags && tag && TAG_LABEL[tag] ? '<span class="ctag">' + A.icon(tag) + '<span class="lbl">' + TAG_LABEL[tag] + '</span></span>' : '') +
-        '<span class="sealslot"><span class="ghost">' + A.seal(A.CHAR_LABEL[me], '#C23B22', 40) + '</span></span></button>';
+        (tempt ? '<span class="hint">好累……要不找人帮忙问问？</span>' : '') +
+        (SET.showTags && tag && TAG_LABEL[tag] ? '<span class="ctag">' + esc(TAG_LABEL[tag] + (tag === 'relay' ? ' · 转抄' : '')) + '</span>' : '') + '</span>' +
+        (tag === 'relay' ? '<span class="relay-seal">转抄</span>' : '') +
+        '<span class="sealslot" aria-hidden="true"></span></button>';
     });
-    el.choices.innerHTML = h; el.choices.hidden = false;
+    h += '</div>';
+    el.choices.innerHTML = h; el.choices.hidden = false; el.app.classList.add('choosing');
     autosave();
     var first = el.choices.querySelector('.choice'); if (!isKey && first && !('ontouchstart' in window)) first.focus({ preventScroll: true });
   }
@@ -695,7 +844,7 @@
     if (isKeyMoment()) return; // 关键抉择的三秒还没走完，先不接选择
     G.waiting = null;
     var go = function () {
-      el.choices.hidden = true; el.choices.classList.remove('stamping'); endKeyMoment();
+      el.choices.hidden = true; el.app.classList.remove('choosing'); el.choices.classList.remove('stamping'); endKeyMoment();
       G.backlog.push({ k: 'choice', t: String(c.text || '').replace(/^🔒\s*/, '') });
       recordLetters(c);
       if (c.tag === 'boundary-respect') noteRespect(c);
@@ -707,7 +856,7 @@
     sfx('stamp');
     if (!btn || reduced()) return go();
     var me = G.st && G.st.flags.hidden_run ? 'yuan' : 'me';
-    btn.querySelector('.sealslot').insertAdjacentHTML('beforeend', '<span class="stamp">' + A.seal(A.CHAR_LABEL[me], c.tag === 'meta' ? '#5E7286' : '#C23B22', 40) + '</span>');
+    btn.querySelector('.sealslot').insertAdjacentHTML('beforeend', '<span class="stamp' + (c.tag === 'meta' ? ' cold' : '') + '">' + esc(A.CHAR_LABEL[me] || '') + '</span>');
     el.choices.classList.add('stamping'); btn.classList.add('stamped');
     setTimeout(go, 420);
   }
@@ -809,12 +958,13 @@
     G.tower = towerFor(ch, null, rp);
     setBg(rp.bg || 'black', false, rp.bgv); setMusic(rp.music || 'night');
     G.relevant = pov ? [pov] : [];
-    renderReplayHud(rp);
+    renderReplayHud(rp, ch);
+    renderReplayOrig();
     overlayCard('<div class="card"><div class="k">他人视角 · 回放</div><h2>' + esc(rp.title || '另一半') + '</h2><p>' +
       (pov ? esc(R.NAMES[pov] || pov) + '那边，同一段时间。' : '同一段时间，另一边。') + '</p><div class="actions"><button class="btn primary" data-go>看下去</button></div></div>', 'dark', function () {
       playSeq('replay', rp.lines, 'rp:' + ch.id + (G.endRes ? ':' + G.endRes.id : ''), function () {
         var entries = G.st.ledger.filter(function (e) { return e.ch === ch.no; });
-        var fin = function () { G.replay = false; el.app.classList.remove('replay'); el.rhud.hidden = true; applyLow(); done(); };
+        var fin = function () { G.replay = false; el.app.classList.remove('replay'); el.rhud.hidden = true; el.rorig.hidden = true; el.rorig.innerHTML = ''; applyLow(); done(); };
         if (!entries.length) return fin();
         clearStageText();
         overlayCard('<div class="card"><div class="k">本章账簿 · 真实状态</div><h2>你没看到的那一栏</h2>' + ledgerList(entries, true) +
@@ -822,17 +972,29 @@
       }, false);
     });
   }
-  function renderReplayHud(rp) {
-    var pov = rp.pov, s = G.st, h = '<span class="tag">重抄卷 · ' + esc(pov ? (R.NAMES[pov] || pov) + '那边' : '另一边') + '</span><div class="stats">', i;
+  function renderReplayHud(rp, ch) {
+    var pov = rp.pov, s = G.st, i, no = ch && ch.no;
+    var chLabel = ch && ch.id === 'hidden' ? '隐藏章' : (no ? '第' + (NUM[no] || no) + '章' : '');
+    var h = '<div class="tag"><span class="klbl">以别人的眼睛重读' + (chLabel ? ' · ' + esc(chLabel) : '') + '</span><b>' + esc(rp.title || '另一半') + '</b>' +
+      '<span class="sub">' + esc(pov ? (R.NAMES[pov] || pov) + '那边，同一段时间。' : '同一段时间，另一边。') + '</span></div><div class="stats">' +
+      (pov ? '<span class="pseal" style="--speaker:' + speakerVar(pov) + '">' + esc(A.CHAR_LABEL[pov] || '') + '</span>' : '');
     if (pov && s.trust[pov] != null) {
       var tb = '';
       for (i = 0; i < 10; i++) tb += '<i class="' + (i < s.trust[pov] ? 'on' : '') + '"></i>';
       h += '<div class="srow"><span>真实信任</span><span class="tbar">' + tb + '</span><b>' + s.trust[pov] + '/10</b></div>';
     }
-    var drops = '';
-    for (i = 0; i < 20; i++) drops += '<i class="' + (i < s.leak ? 'on' + (i >= 11 ? ' hot' : '') : '') + '"></i>';
+    var drops = '', lv = Math.ceil(s.leak / 2);
+    for (i = 0; i < 10; i++) drops += '<i class="' + (i < lv ? 'on' + (i >= 6 ? ' hot' : '') : '') + '"></i>';
     h += '<div class="srow"><span>外流墨痕</span><span class="drops">' + drops + '</span><b>' + s.leak + '</b></div></div>';
     el.rhud.innerHTML = h; el.rhud.hidden = false;
+  }
+  function renderReplayOrig() { // 左栏：本章你这边的原文，以淡墨叠在底下（取日志里最后几句）
+    var src = G.backlog.filter(function (b) { return b.k === 'char' || b.k === 'narr' || b.k === 'think' || b.k === 'msg'; }).slice(-6);
+    el.rorig.innerHTML = src.length ? '<span class="klbl">你这边 · 原文</span>' + src.map(function (b) {
+      var who = b.k === 'char' || b.k === 'msg' ? nameOf(b.who) : (b.k === 'think' ? '心声' : '旁白');
+      return '<p style="--speaker:' + (b.k === 'char' || b.k === 'msg' ? speakerVar(b.who) : 'var(--c-narr)') + '"><span class="w">' + esc(who) + '</span>' + esc(b.t) + '</p>';
+    }).join('') : '';
+    el.rorig.hidden = !src.length;
   }
   function debtLine() { return '未结算（挂账 + 退回）：' + R.debt(G.st) + ' 笔'; }
   function ledgerList(entries, reveal) {
@@ -897,7 +1059,7 @@
     var h = '<div class="card ending-card"><span class="kind">' + esc(R.KIND_LABEL[(data && data.kind) || meta.kind] || '') + '</span><h2 style="margin-top:12px">' + esc(title) + '</h2>';
     if (!data) h += '<p>（这个结局的文本尚未完成。）</p>';
     if (arch.text) h += '<p>' + esc(arch.text) + '</p>';
-    if (res.epilogues.length) h += '<p class="loadinfo">附加尾声：' + res.epilogues.map(function (e) { return R.endingMeta(e).name; }).join('、') + '</p>';
+    if (res.epilogues.length) h += '<p class="loadinfo">附加尾声：' + res.epilogues.map(function (e) { var ed = (STORY.endingsData || {})['epi_' + e]; return (ed && ed.title) || R.endingMeta(e).name; }).join('、') + '</p>';
     if (res.id === 'night') h += HELP_HTML;
     h += '<p class="loadinfo">' + (isNew ? '已收入结局画廊。' : '画廊里已经有这个结局。') + (R.unlocksHidden(res.id) && STORY.chapters.hidden ? ' 隐藏章「对岸」已解锁。' : (R.unlocksHidden(res.id) ? ' 隐藏章「对岸」已解锁（文本尚未完成）。' : '')) + '</p>';
     h += '<div class="actions"><button class="btn primary" data-go>合上这一卷</button><button class="btn" data-archive>打开档案馆</button></div></div>';
@@ -931,10 +1093,20 @@
   });
 
   function chapterCard(ch, next) {
-    var hidden = ch.id === 'hidden', no = '第' + (NUM[ch.no] || ch.no) + '话', t = String(ch.title || '');
-    var name = t.split('').map(function (c) { return '<span>' + esc(c) + '</span>'; }).join('');
-    var h = '<div class="titlecard' + (hidden ? ' white' : '') + '"><div class="kigo">' + esc(ch.subtitle || '') + '</div><div class="no">' + esc(no) + '</div>' +
-      '<div class="name' + (t.length > 3 ? ' long' : '') + '">' + name + '</div><div class="seal">' + esc(NUM[ch.no] || ch.no) + '</div><div class="tap">点击继续</div></div>';
+    var hidden = ch.id === 'hidden', no = hidden ? '隐藏章' : '第' + (NUM[ch.no] || ch.no) + '章', t = String(ch.title || '');
+    // 章卡：铅字盘网格、反写的铅字、竖排大字章名（每字一个铅字方块）、朱红章号印、英文副题
+    var name = Array.from(t).map(function (c, i) { return '<span class="type" style="--i:' + i + '">' + esc(c) + '</span>'; }).join('');
+    var r = seeded(5 + (ch.no || 0)), pool = '信人言为外流明文笺墨' + t, W = window.innerWidth || 1280, H = window.innerHeight || 800, gh = '', n = 0;
+    for (var g = 0; g < 60 && n < 15; g++) {
+      var px = Math.floor(r() * Math.ceil(W / 64)) * 64 + 10, py = Math.floor(r() * Math.ceil(H / 64)) * 64 + 10;
+      if (px > W * .28 && px < W * .72) continue; // 中间 40% 不放，免得压住章名和季语
+      gh += '<span style="left:' + px + 'px;top:' + py + 'px">' + esc(pool.charAt(Math.floor(r() * pool.length))) + '</span>'; n++;
+    }
+    var en = EN_TITLE[ch.id] || '';
+    var h = '<div class="titlecard' + (hidden ? ' white' : '') + '"><div class="case" aria-hidden="true"></div><div class="ghosts" aria-hidden="true">' + gh + '</div>' +
+      '<div class="tc-set"><div class="no">' + esc(no) + '</div><div class="name' + (t.length > 2 ? ' long' : '') + '" aria-label="' + esc(t) + '">' + name + '</div>' +
+      '<span class="seal" aria-hidden="true">' + esc(hidden ? '岸' : (NUM[ch.no] || ch.no)) + '</span><div class="kigo">' + esc(ch.subtitle || '') + '</div></div>' +
+      '<div class="tc-en"><b>' + (hidden ? 'HIDDEN CHAPTER' : 'CHAPTER ' + (ROMAN[ch.no] || ch.no)) + '</b>' + (en ? '<i>' + esc(en) + '</i>' : '') + '</div><div class="tap">点击继续</div></div>';
     var done = false, finish = function () {
       if (done) return; done = true; clearTimeout(timer);
       el.overlay.className = 'overlay ' + (hidden ? 'ink-white' : 'ink'); el.overlay.innerHTML = ''; el.overlay.hidden = false;
@@ -981,7 +1153,7 @@
     closeModal(true);
     G.st = ensureState(d.st); G.view = d.view || { bg: 'paper', music: 'none', show: [], faces: {} }; G.backlog = d.backlog || []; G.endRes = null;
     G.view.faces = G.view.faces || {}; G.view.poses = G.view.poses || {}; G.poseOnce = {}; // 旧存档没有 poses
-    G.replay = false; el.app.classList.remove('replay'); el.rhud.hidden = true;
+    G.replay = false; el.app.classList.remove('replay'); el.rhud.hidden = true; el.rorig.hidden = true;
     enterGameUI();
     var ch = STORY.chapters[d.chapterId];
     if (!ch) return showMissing(d.chapterNo || 1);
@@ -1117,13 +1289,23 @@
   function openSettings() {
     openModal('设置', function () {
       function row(k, label, min, max) { return '<label class="set-row"><span>' + label + '</span><input type="range" min="' + min + '" max="' + max + '" value="' + SET[k] + '" data-set="' + k + '"><output>' + fmt(k, SET[k]) + '</output></label>'; }
-      return row('textSpeed', '文字速度', 1, 10) + row('autoSpeed', '自动播放速度', 1, 10) + row('volume', '音量', 0, 100) +
+      var th = '<div class="set-row"><span id="setThemeL">配色</span><div class="seg" role="radiogroup" aria-labelledby="setThemeL">' + [['auto', '自动'], ['light', '浅'], ['dark', '深']].map(function (t) {
+        return '<button type="button" role="radio" data-theme-set="' + t[0] + '" aria-checked="' + (SET.theme === t[0]) + '">' + t[1] + '</button>';
+      }).join('') + '</div><output>' + (SET.theme === 'auto' ? '随系统' : '') + '</output></div>';
+      return th + row('textSpeed', '文字速度', 1, 10) + row('autoSpeed', '自动播放速度', 1, 10) + row('volume', '音量', 0, 100) +
         '<label class="set-row"><span>静音</span><input type="checkbox" data-set="muted"' + (SET.muted ? ' checked' : '') + '><span></span></label>' +
         '<label class="set-row"><span>显示选项类型（剧透）</span><input type="checkbox" data-set="showTags"' + (SET.showTags ? ' checked' : '') + '><span></span></label>' +
         '<p class="loadinfo">音乐、环境声和音效都由程序实时生成，默认音量较低。系统开启「减少动态效果」时，本作会关闭动画。</p>' +
         '<div class="actions" style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" data-act="help">求助信息</button></div>';
     }, {
       mount: function (m) {
+        m.querySelectorAll('[data-theme-set]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            SET.theme = b.dataset.themeSet; applyTheme(); saveSettings();
+            m.querySelectorAll('[data-theme-set]').forEach(function (x) { x.setAttribute('aria-checked', String(x === b)); });
+            var o = b.closest('.set-row').querySelector('output'); if (o) o.textContent = SET.theme === 'auto' ? '随系统' : '';
+          });
+        });
         m.querySelectorAll('[data-set]').forEach(function (inp) {
           inp.addEventListener('input', function () {
             var k = inp.dataset.set;
@@ -1137,6 +1319,10 @@
   }
   function fmt(k, v) { if (k === 'textSpeed' && v >= 10) return '瞬间'; return k === 'volume' ? v + '%' : String(v); }
   function applySettings() { AU.setVolume(SET.volume / 100); AU.setMuted(SET.muted); }
+  function applyTheme() { // 自动 = 跟随系统（不写 data-theme）；浅 / 深 写到 <html data-theme>
+    var t = SET.theme === 'light' || SET.theme === 'dark' ? SET.theme : 'auto', root = document.documentElement;
+    if (t === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', t);
+  }
 
   var DOSSIER = [
     { id: 'me', code: 'DB-QI', rare: 6, icon: 'j_quill', name: '代笔', born: '东方 · 县学', height: '待考', job: '书记官 · 代笔人',
@@ -1146,7 +1332,7 @@
     { id: 'yuan', code: 'DB-YU', rare: 6, icon: 'j_compass', name: '海图', born: '澜港 · 潮汐巷', height: '待考', job: '海图师 · 手装绘本作者',
       bio: '望月礼仪学院宫廷礼服与纹章科肄业。在潮汐巷开小工坊，画旧物、港口与传说；手装的《海图》小册读者不多，都很忠实。',
       f: ['举止挑不出错，嘴很硬。「礼仪是给别人的体面，不是给自己的枷锁。」', '只想安安静静地画画、吃饱饭。最怕自己的话被拿去别处议论，也怕欠人情。「草稿不见客。」', '工坊墙上挂着一件月白色的礼服，没有完成。那是她退学时没交的毕业作品。'],
-      promo: [['paid', '第一章 · 按字计酬，收下稿费'], ['refused_pay', '第一章 · 不收稿费'], ['cover_respected', '第二章 · 封面她自己画'], ['lh_respected', '第三章 · 不再推她去灯塔席'], ['lh_pushed', '第三章 · 推她去灯塔席'], ['proof', '第四章 · 封印典籍'], ['told_bet', '第五章 · 说出赌约'], ['hid_bet', '第五章 · 瞒下赌约'], ['named_submit', '第六章 · 以她的名义递信'], ['broke_pact', '第八章 · 私下打破契约'], ['returned_gifts', '第八章 · 礼物连同蜡封退回'], ['ending_plain', '终章 · 一页明文'], ['ending_side', '终章 · 并肩']] },
+      promo: [['paid', '第一章 · 按字计酬，收下稿费'], ['refused_pay', '第一章 · 不收稿费'], ['cover_respected', '第二章 · 封面她自己画'], ['lh_respected', '第三章 · 不再推她去灯塔席'], ['lh_pushed', '第三章 · 推她去灯塔席'], ['proof', '第四章 · 封印典籍'], ['told_bet', '第五章 · 说出赌约'], ['hid_bet', '第五章 · 瞒下赌约'], ['named_submit', '第六章 · 以她的名义递信'], ['broke_pact', '第八章 · 私下打破契约'], ['returned_gifts', '第八章 · 礼物连同蜡封退回'], ['ending_plain', '终章 · 一页明文'], ['ending_side', '终章 · 同行']] },
     { id: 'qiu', code: 'DB-QU', rare: 5, icon: 'j_type', name: '此人', born: '北方某城', height: '待考', job: '铸字匠',
       bio: '为北方一座城的书坊铸铅字。与韩栖是多年笔友，只通过传讯笺往来，从未见面。',
       f: ['自称「此人」。比喻多半和铸字、和冰有关。「字与字之间要留铅空。」', '想靠近，又怕被刺伤，所以留一层冰。说的话只说给一个人听；被转抄一次，冰就厚一层。', '为《夜航笔记》铸了一整套活字，独缺一个「信」字。'],
@@ -1187,7 +1373,7 @@
       bio: '澜港沙龙的常客，以刻薄闻名。', f: ['单片眼镜从不摘下。', '赌约签在羊皮纸上，他从不食言——包括道歉。', '他年轻时写过一本没人读的诗集。'], promo: [['refused_bet', '第五章 · 没有打赌']], noTrust: true },
     { id: 'wolf', code: 'DB-00', rare: 0, icon: 'j_shadow', name: '影', born: '不明', height: '不明', job: '韩栖内心的影子',
       bio: '不是真实存在的人。只在韩栖想加码、想把人拉回来、熬夜到失控时出现。',
-      f: ['左眼一道竖疤，两只手各倒握一把短刀，笑声尖而短。', '「你逃不掉的，我们是同一种人。」', '那两把刀其实是两支笔：削尖的羽毛笔，和东方印章的柄。'], promo: [], noTrust: true }
+      f: ['没有身体。霜长到它身边就停住，停住的那条线就是它。笑声尖而短。', '「你逃不掉的，我们是同一种人。」', '烛光一晃，墙上那道影子是你自己的：低着头，握着笔。'], promo: [], noTrust: true }
   ];
   var LEVELS = [4, 6, 8];
   function dossierLevel(d) {
@@ -1265,7 +1451,8 @@
         h += '<div class="cards-grid">';
         R.ENDINGS.forEach(function (e, i) {
           var g = GLOBAL.endings[e.id];
-          if (g) h += '<div class="acard"><div class="meta">' + esc(R.KIND_LABEL[e.kind]) + '</div><h4>' + esc(g.title || e.name) + '</h4>' + esc(g.text || '') + '</div>';
+          var cur = (STORY.endingsData || {})[e.id] || {};
+          if (g) h += '<div class="acard"><div class="meta">' + esc(R.KIND_LABEL[e.kind]) + '</div><h4>' + esc(cur.title || g.title || e.name) + '</h4>' + esc((cur.archive && cur.archive.text) || g.text || '') + '</div>';
           else h += '<div class="acard locked">' + A.silhouette(i * 13 + 5) + '<div class="meta">' + esc(R.KIND_LABEL[e.kind]) + ' · ？？</div>' + esc(e.hint) + '</div>';
         });
         h += '</div><p class="loadinfo">已收集 ' + Object.keys(GLOBAL.endings).length + ' / ' + R.ENDINGS.length + '</p>';
@@ -1371,7 +1558,7 @@
     G.inGame = false; G.seq = null; G.waiting = null; G.replay = false; G.endRes = null; G.holdUntil = 0;
     endKeyMoment(); G.keyShownFor = null; // 关键抉择没走完就离开时，把胸针和白狼收回去
     el.app.classList.remove('replay', 'letter-mode', 'low1', 'low2'); lastLow = -1; if (AU.setDegrade) AU.setDegrade(false);
-    el.rhud.hidden = true; el.hud.hidden = true; el.quick.hidden = true; el.chaptag.hidden = true;
+    el.rhud.hidden = true; el.rorig.hidden = true; el.hud.hidden = true; el.quick.hidden = true; el.chaptag.hidden = true; setLeakMarks(0);
     el.overlay.hidden = true; clearStageText(); el.phone.hidden = true;
     G.view = { bg: 'paper', bgv: null, music: 'none', show: [], faces: {}, poses: {} }; G.poseOnce = {}; renderChars(); setBg('paper'); setMusic('calm');
     if (AU.ambient) AU.ambient(null);
@@ -1379,18 +1566,19 @@
     var hasSave = !!latestSave();
     var hasHidden = GLOBAL.hidden;
     var missing = LOAD.missing, reached = Object.keys(GLOBAL.reached).length;
+    var items = [['start', '开始'], ['continue', '继续', !hasSave], ['load', '读档'], ['chapters', '章节选择', false, reached || ''],
+      ['archive', '档案馆', false, Object.keys(GLOBAL.cards).length + Object.keys(GLOBAL.endings).length]];
+    if (hasHidden) items.push(['hidden', '隐藏章 · 对岸', false, '', 'secret']);
+    items.push(['settings', '设置'], ['about', '关于']);
+    // 标题：方格铅字「明」「文」、竖排副题、编号菜单、「栖印」朱印
     el.title.innerHTML = '<div class="title-bg" aria-hidden="true"></div><div class="title-scrim" aria-hidden="true"></div>' +
-      '<div class="title-word"><h1 class="logo">明文</h1><div class="logo-en">Plaintext</div><div class="logo-sub">代笔人与海图师</div></div>' +
-      '<nav class="menu" aria-label="主菜单">' +
-      '<button data-t="start">开始</button>' +
-      '<button data-t="continue"' + (hasSave ? '' : ' disabled') + '>继续</button>' +
-      '<button data-t="load">读档</button>' +
-      '<button data-t="chapters">章节选择' + (reached ? '<small>' + reached + '</small>' : '') + '</button>' +
-      '<button data-t="archive">档案馆<small>' + (Object.keys(GLOBAL.cards).length + Object.keys(GLOBAL.endings).length) + '</small></button>' +
-      (hasHidden ? '<button class="secret" data-t="hidden">隐藏章 · 对岸</button>' : '') +
-      '<button data-t="settings">设置</button>' +
-      '<button data-t="about">关于</button>' +
-      '</nav>' +
+      '<div class="title-wrap"><div class="title-word"><h1 class="logo" aria-label="明文"><span class="type">明</span><span class="type">文</span></h1>' +
+      '<div class="logo-sub">代笔人与海图师</div><div class="logo-en">Plaintext</div><span class="seal-sq" aria-hidden="true">栖印</span></div>' +
+      '<nav class="menu" aria-label="主菜单">' + items.map(function (it, i) {
+        return '<button data-t="' + it[0] + '"' + (it[4] ? ' class="' + it[4] + '"' : '') + (it[2] ? ' disabled' : '') + '><span class="n">' + pad2(i + 1) + '</span><span class="t">' + esc(it[1]) + '</span>' +
+          (it[3] !== undefined && it[3] !== '' ? '<small>' + esc(it[3]) + '</small>' : '') + '</button>';
+      }).join('') + '</nav></div>' +
+      '<div class="title-tagline" aria-hidden="true">每一章结束，你都会以别人的眼睛重读那一段旅程。</div>' +
       '<div class="title-note">本作涉及过劳、人际冲突与越界行为，不含自伤内容。撑不住的时候，「设置 → 求助信息」里有可以联系的地方。' +
       (missing.length && LOAD.ok.length ? '<br>部分章节尚未完成：' + esc(missing.join('、')) : '') +
       (!LOAD.ok.length ? '<br>剧本文件都还没有就位，开始后会提示「本章尚未完成」。' : '') +
@@ -1493,6 +1681,13 @@
     if (!G.inGame) return;
     if (k === 'Escape') { ev.preventDefault(); return openMenu(); }
     if (G.waiting === 'choice' && /^[1-9]$/.test(k)) { ev.preventDefault(); return choose(Number(k) - 1); }
+    if (G.waiting === 'choice' && !isKeyMoment() && (k === 'ArrowDown' || k === 'ArrowUp')) { // 方向键在选项间移动焦点
+      var bs = Array.prototype.slice.call(el.choices.querySelectorAll('.choice')), at = bs.indexOf(document.activeElement);
+      if (!bs.length) return;
+      ev.preventDefault();
+      at = at < 0 ? (k === 'ArrowDown' ? 0 : bs.length - 1) : (at + (k === 'ArrowDown' ? 1 : -1) + bs.length) % bs.length;
+      return bs[at].focus({ preventScroll: false });
+    }
     if ((k === ' ' || k === 'Enter') && G.waiting === 'line') {
       if (document.activeElement && document.activeElement.tagName === 'BUTTON' && k === 'Enter') return;
       ev.preventDefault(); if (G.skip) stopSkip(); return userAdvance();
@@ -1694,13 +1889,17 @@
     document.body.insertAdjacentHTML('afterbegin', A.defs());
     var tile = A.paperTile(); if (tile) document.documentElement.style.setProperty('--paper-tile', 'url(' + tile + ')');
     el.app.style.fontFamily = getComputedStyle(document.documentElement).getPropertyValue('--ui-sans') || ''; // 界面一律黑体（旧样式把 app 设成楷体）
-    el.wolf.innerHTML = A.wolfShade();
+    el.wolf.innerHTML = ''; // 白狼按舞台尺寸画，第一次开口时才画
     el.wall.innerHTML = A.hexWall();
     var frost = document.createElement('div'); // 右笺四缘的冰晶格（wall:'edge'），平时透明
     frost.className = 'phone-frost'; frost.setAttribute('aria-hidden', 'true'); frost.innerHTML = A.hexEdge();
     el.phone.insertBefore(frost, el.phoneBody);
     if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) el.app.classList.add('reduce');
+    applyTheme();
     watchDialogHeight(); // 快捷栏按对话框的真实高度定位（见上面 watchDialogHeight 的说明）
+    buildLeakMarks(); buildFrost();
+    var rsT = null;
+    window.addEventListener('resize', function () { clearTimeout(rsT); rsT = setTimeout(function () { buildLeakMarks(); buildFrost(); if (!G.shadow && el.app.classList.contains('wolf-on')) drawWolf(G.view.faces.wolf || 'neutral'); }, 200); });
     setBg('paper');
     var files = FILES.map(function (f) { return 'story/' + f + '.js'; });
     loadScripts(files, function () {

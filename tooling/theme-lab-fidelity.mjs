@@ -290,8 +290,11 @@ function referenceCrop(source, rawCrop, label) {
     throw new Error(`${label} crop ${JSON.stringify(crop)} is outside ${source.width}x${source.height}`);
   }
   const scale = Number(rawCrop.scale || 1);
-  if (!Number.isFinite(scale) || scale <= 0 || scale > 1) {
-    throw new Error(`${label} reference scale must be in (0, 1]: got ${rawCrop.scale}`);
+  // Above 1, a 1x native reference is enlarged nearest-neighbour onto a
+  // Retina or fractional device grid (the Platinum 1.25x/1.5x/2x boards): each
+  // native pixel becomes the block a pixel-snapped renderer should draw.
+  if (!Number.isFinite(scale) || scale <= 0 || scale > 4) {
+    throw new Error(`${label} reference scale must be in (0, 4]: got ${rawCrop.scale}`);
   }
   const outWidth = Math.max(1, Math.round(crop.width * scale));
   const outHeight = Math.max(1, Math.round(crop.height * scale));

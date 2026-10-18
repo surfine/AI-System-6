@@ -243,7 +243,9 @@ function applySecurityHeaders(res) {
       // search, so the reveal resolves the song before it offers the link. No
       // key, no account, CORS-open, and the same service family as the audio
       // host above.
-      "connect-src 'self' http://127.0.0.1:* http://localhost:* https://audio-ssl.itunes.apple.com https://itunes.apple.com",
+      // api.github.com is About's star count: one read when the window opens,
+      // shown only if it answers.
+      "connect-src 'self' http://127.0.0.1:* http://localhost:* https://audio-ssl.itunes.apple.com https://itunes.apple.com https://api.github.com",
       // media-src is the same audio on the path iOS uses: WebKit refuses these
       // store previews in decodeAudioData, so the quiz plays them through a
       // media element, and a policy with only connect-src silences the phone.
@@ -265,7 +267,8 @@ function applySecurityHeaders(res) {
       // that sets no profiling cookies before a person presses play.
       // The browse origin is Time Machine's web engine: proxied pages run
       // there, never on this origin (see server/browse/relay-node.js).
-      `frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com${browseFrameSource()}`,
+      // player.bilibili.com is About's film, mounted only after play is pressed.
+      `frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com https://player.bilibili.com${browseFrameSource()}`,
       "object-src 'none'",
       "base-uri 'none'",
       "frame-ancestors 'none'",

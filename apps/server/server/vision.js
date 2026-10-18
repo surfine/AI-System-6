@@ -3,6 +3,17 @@
 // Local vision uses the same model boundary as the rest of AI System 6:
 // Gemma/Qwen are first-class local QA targets, while the OpenAI-compatible
 // image-content payload keeps the route open to other LM Studio VLMs.
+//
+// On a Mac with the built-in model downloaded (Qwen3.5 4B carries a vision
+// tower), local vision goes to the AISystem6Intelligence helper first: no
+// LM Studio, no model swap, the vision tower loaded only now. LM Studio stays
+// the fallback, and the explicit choice when the caller names a provider or a
+// model. AI_SYSTEM6_VISION_BUILT_IN=0 turns the built-in rung off.
+
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const crypto = require("node:crypto");
 
 const { getLocalUrls } = require("./lib/local-urls.js");
 const { sameModelName } = require("./lib/lmstudio-models.js");
@@ -301,6 +312,89 @@ function visionPromptForMode(mode = "describe", options = {}) {
 }
 
 /**
+ * Whether this call may use the built-in model: nothing named a provider or a
+ * model (a named one is the writer's explicit choice), and it is not off.
+ *
+ * @param {{ provider?: string, model?: string }} options
+ */
+function builtInVisionAllowed(options) {
+  if (process.env.AI_SYSTEM6_VISION_BUILT_IN === "0") return false;
+  const provider = String(options.provider || "").trim();
+  const model = String(options.model || "").trim();
+  return (!provider || provider === "built-in") && (!model || model.startsWith("built-in:"));
+}
+
+/**
+ * Local image understanding on the built-in model through the helper. Images
+ * go to private temporary files (the helper reads paths, not base64 over the
+ * pipe) that are removed afterwards. Returns null when no built-in model with
+ * vision is installed, so the caller moves on to LM Studio.
+ *
+ * @param {{ images: string[], prompt: ReturnType<typeof visionPromptForMode>, model?: string, signal?: AbortSignal | null }} options
+ * @returns {Promise<{ text: string, model: string, usage: any, raw: any } | null>}
+ */
+async function postBuiltInVisionAnalysis(options) {
+  const device = require("./device-model.js");
+  const helper = device.deviceModelHelperPath();
+  if (!helper) return null;
+  const status = await device.builtInModelStatus();
+  const visionModels = Array.isArray(status.vision) ? status.vision : [];
+  if (!status.available || !visionModels.length) return null;
+  const requested = String(options.model || "").replace(/^built-in:/, "");
+  const model = visionModels.includes(requested) ? requested
+    : visionModels.includes(device.DEFAULT_MLX_MODEL) ? device.DEFAULT_MLX_MODEL : visionModels[0];
+
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ais6-vision-"));
+  try {
+    const files = options.images.map((dataUrl, index) => {
+      const parsed = parseImageDataUrl(dataUrl);
+      if (!parsed) throw new Error("Missing or invalid image data URL.");
+      const ext = parsed.mimeType.split("/")[1].replace("jpeg", "jpg");
+      const file = path.join(dir, `${index}-${crypto.randomBytes(6).toString("hex")}.${ext}`);
+      fs.writeFileSync(file, Buffer.from(parsed.base64, "base64"), { mode: 0o600 });
+      return file;
+    });
+    const request = {
+      engine: "mlx",
+      model,
+      instructions: options.prompt.system,
+      prompt: options.prompt.user,
+      images: files,
+      options: { temperature: options.prompt.temperature, maxTokens: options.prompt.maxTokens },
+    };
+    const result = await new Promise((resolve, reject) => {
+      let text = "";
+      /** @type {any} */
+      let handle = null;
+      const onAbort = () => {
+        handle?.cancel();
+        reject(Object.assign(new Error("Vision request was aborted."), { name: "AbortError" }));
+      };
+      if (options.signal?.aborted) { onAbort(); return; }
+      options.signal?.addEventListener("abort", onAbort, { once: true });
+      const settle = () => {
+        options.signal?.removeEventListener("abort", onAbort);
+        handle?.finish();
+      };
+      handle = device.sendToServeHelper(helper, { op: "chat", request }, {
+        onEvent: (event) => {
+          if (event.type === "delta") text += String(event.text || "");
+          else if (event.type === "snapshot") text = String(event.text || "");
+          else if (event.type === "done") { settle(); resolve({ text, usage: event.usage || null, raw: event }); }
+          else if (event.type === "error") { settle(); reject(new Error(String(event.message || event.code || "The built-in model could not read the image."))); }
+        },
+        onExit: () => { settle(); reject(new Error("The built-in model helper stopped.")); },
+      });
+    });
+    const text = scrubVisibleModelOutput(/** @type {any} */ (result).text).trim();
+    if (!text) throw new Error("Vision model response was empty.");
+    return { text, model: `built-in:${model}`, usage: /** @type {any} */ (result).usage, raw: /** @type {any} */ (result).raw };
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+/**
  * @param {{
  *   dataUrl: string,
  *   images?: Array<string>,
@@ -334,7 +428,18 @@ async function postLocalVisionAnalysis(options) {
 
   const mode = String(options.mode || "describe").trim() || "describe";
   const prompt = visionPromptForMode(mode, { name: options.name, prompt: options.prompt });
-  const provider = String(options.provider || "lm-studio").trim();
+  let builtInError = null;
+  if (builtInVisionAllowed(options)) {
+    try {
+      const builtIn = await postBuiltInVisionAnalysis({ images, prompt, model: options.model, signal: options.signal });
+      if (builtIn) return builtIn;
+    } catch (error) {
+      if (/** @type {any} */ (error)?.name === "AbortError") throw error;
+      // LM Studio is the fallback; keep this error in case it has nothing either.
+      builtInError = error;
+    }
+  }
+  const provider = String(options.provider || "lm-studio").trim() === "built-in" ? "lm-studio" : String(options.provider || "lm-studio").trim();
   const endpoint = String(options.endpoint || "").trim();
   const { chatUrl } = getLocalUrls(provider, endpoint);
   const baseUrl = new URL(chatUrl).origin;
@@ -415,7 +520,7 @@ async function postLocalVisionAnalysis(options) {
     }
   }
 
-  throw lastError || new Error("No local vision model is available.");
+  throw lastError || builtInError || new Error("No local vision model is available.");
 }
 
 module.exports = {
@@ -426,8 +531,10 @@ module.exports = {
   imageBufferToDataUrl,
   inlineRemoteVisionImage,
   isHttpsImageUrl,
+  builtInVisionAllowed,
   localVisionModelCandidates,
   parseImageDataUrl,
+  postBuiltInVisionAnalysis,
   resolveLocalVisionModelCandidates,
   postLocalVisionAnalysis,
   resolveLocalVisionImages,

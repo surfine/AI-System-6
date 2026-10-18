@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/APPEARANCE-QA.md -->
-<!-- source-sha256: df5b16ca1b9d777b943c1fe1c2ed89c4e61497b1bccb05fe0177d7caf04f87de -->
+<!-- source-sha256: 235252981830d98ff7f2f72d0f6f0072449f498e46b11ffa78e6fd5a4589ed29 -->
 
 英文版为准。本文档仅供人类参考。
 
@@ -29,7 +29,7 @@ NeXTSTEP（2026-09-23 正式发布）由下文各自的小节覆盖，不靠表�
 八套正式外观（注册表 `releaseReady: true`）在 Control Panel 的
 Appearance 选择器与 Special 菜单中开放。NeXTSTEP 于 2026-09-23 按作者决定加入，
 此前已记录它的工作流与边界门禁、59/59 图标和触摸目标。四套
-历史外观还须通过 `npm run verify:theme-lab:fidelity` 对已 pin 的 canonical
+历史外观还须通过 `npm run audit:theme-lab:fidelity` 对已 pin 的 canonical
 reference 校验。该命令检查两个互不混淆的层级：来自记录运行的 `tolerances`
 （回归层），以及共享的 `FIDELITY_FLOOR`（与时代目标的绝对差距层）。每个
 specimen 在自己的 `floor` 台账中声明所处状态，因此一块 board 不可能一边远离
@@ -41,6 +41,9 @@ reference、一边自称 canonical。详见
 | Board | specimen 数 | 达到 floor | 已记录差距 | reference 不可用 |
 | --- | --- | --- | --- | --- |
 | Platinum | 20 | 14 | 0 | 6（3 个照片缩略图裁片，加 3 个裁错对象的裁片） |
+| Platinum 1.25x | 6 | 6 | 0 | 0 |
+| Platinum 1.5x | 6 | 5 | 1（Trash 32 材质） | 0 |
+| Platinum 2x | 6 | 5 | 1（Trash 32） | 0 |
 | Aqua | 18 | 18 | 0 | 0 |
 | Snow Leopard | 19 | 19 | 0 | 0 |
 | Yosemite | 17 | 15 | 0 | 2（checkbox/radio 标记只有 clone 资产） |
@@ -127,7 +130,7 @@ Liquid Glass 没有历史截图 target，继续使用各自的设计契约加回
 伪造 fidelity board。
 Liquid Glass 正在通过现有主题 ID 与材质 token 重校到 macOS 27 Golden Gate；它
 不会新增主题或主题家族。
-`npm run verify:appearance-apps` 另行在六套外观下渲染
+`npm run audit:appearance-apps` 另行在六套外观下渲染
 `REPRESENTATIVE_WINDOWS` 当前列出的真实窗口，证明普通 App 与视觉特殊 App 都
 收到同一套系统 title bar painter；这个传播检查不与像素回归或历史 fidelity
 混为一谈。
@@ -165,7 +168,7 @@ NeXTSTEP 证据还覆盖原生式窗口按钮、key/main 标题状态、浮动�
 Dock、最小化窗口、列式 Finder/Shelf、滚动条、输入法切换、离线资源和跨外观／会话
 恢复。这套外观映射到的每个对象现在都有自己的 3.3 风格图标（59/59），Classic 图标回退
 已经取消。NeXTSTEP 没有 canonical 的 Theme Lab 基准板：`verify-nextstep-workflow` 及其
-边界配套是它的检测工具，`verify:theme-lab:fidelity` 通过并不说明它的情况。它的发布
+边界配套是它的检测工具，`audit:theme-lab:fidelity` 通过并不说明它的情况。它的发布
 不提升此前历史相似度结论，也不代表所有图标族已获历史审核通过。
 
 ## 十二套外观仪表（2026-10-04）
@@ -175,11 +178,11 @@ Dock、最小化窗口、列式 Finder/Shelf、滚动条、输入法切换、离
 | 仪表 | 锁定内容 | 闸门 |
 | --- | --- | --- |
 | `appearance-system` + `harvest-ux` 契约 | 注册表时间线、polishPending 诚实性、Theme Lab calm 钩子（`quiet-focus`／key-window／vibrancy／灰阶量测属性）、Drawing Board 素描资产接线 | `verify:quick -- --feature appearance-system`／`harvest-ux` |
-| `tooling/verify-appearance-app-coverage.mjs` | 每套外观对每个已注册窗口的计算样式；Retina 栅格底线；菜单栏模型；仅代表窗口截图 | ship-only `appearance-real-apps` |
-| `tests/visual/theme-lab/<id>.png` | 十二套 Theme Lab 回归基线（网页适配，非原生保真） | ship `theme-lab-regression` |
+| `tooling/verify-appearance-app-coverage.mjs` | 每套外观对每个已注册窗口的计算样式；Retina 栅格底线；菜单栏模型；仅代表窗口截图 | `audit:appearance-apps`（按需） |
+| `tests/visual/theme-lab/<id>.png` | 十二套 Theme Lab 回归基线（网页适配，非原生保真） | `audit:theme-lab`（按需） |
 | Theme Lab Surfaces → 打磨对照板 | 现场 `measurePolishBoards()` 写入 `data-theme-lab-measure-*`（key-window 可区分性、vibrancy `backdrop-filter`、L0–L3 灰阶）；calm 选择是产品 UI | 人工／未来探针对 |
 
 **本轮延后（不要求）：** 十二套 × 每个窗口的完整截图 CI、canonical 历史保真
-（`verify:theme-lab:fidelity`，人工缓存）、以及剩余 docs／P5 `polishTodos`
+（`audit:theme-lab:fidelity`，人工缓存）、以及剩余 docs／P5 `polishTodos`
 （System 7／Lion／Drawing Board）的清空。Theme Lab 会显示未完成的 polishTodos，
 但不会清空注册表。

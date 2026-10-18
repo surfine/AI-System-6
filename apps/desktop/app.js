@@ -438,8 +438,6 @@ const {
   meterTokensEl,
   meterElapsedEl,
   meterStopEl,
-  aboutModelEl,
-  aboutVersionEl,
   statusClockTimeEl,
   statusClockDateEl,
   statusModelEl,
@@ -1462,7 +1460,9 @@ let currentReaderClipCount = 0;
 // persist only the Clio-first completion flag below.
 let guideSeen = false;
 let clioOnboardingCompleted = false;
-let clioIntroductionReplay = false;
+// About's "Show this window at startup": show is null until the writer (or a
+// finished door) decides; shows counts startup appearances before that.
+let aboutStartup = { show: null, shows: 0 };
 let clioProviderPreference = "auto";
 let multiFinderSwitcherHintSeen = false;
 let calculatorExpression = "0";
@@ -1680,7 +1680,7 @@ function getLocalModelDisplayName() {
     return cloudConfig.model;
   }
 
-  return modelInput.value.trim() || t("local_lm_studio");
+  return window.AISystem6BuiltInLocal?.label || modelInput.value.trim() || t("local_lm_studio");
 }
 
 let dictationIntentDestination = "assistant";

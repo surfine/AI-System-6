@@ -949,17 +949,6 @@ body.quick-draft-focus .writing-spine-panel {
   width: 420px;
 }
 
-.about-window {
-  position: fixed;
-  left: 50%;
-  top: calc(var(--system-menu-height, 25px) + (100vh - var(--system-menu-height, 25px)) / 2);
-  width: 360px;
-  max-width: calc(100vw - 32px);
-  max-height: calc(100vh - 68px);
-  transform: translate(-50%, -50%);
-  z-index: var(--z-window-pinned);
-}
-
 .title-bar {
   height: var(--system-titlebar-height);
   min-height: var(--system-titlebar-height);
@@ -1400,14 +1389,14 @@ html:lang(zh-Hans) .title-bar h2 {
 .window-frame-bar.is-vertical {
   top: var(--frame-bar-start, 0);
   right: var(--window-frame-inset-right, 0);
-  bottom: var(--window-frame-lane);
+  bottom: calc(var(--window-frame-lane) + var(--window-frame-inset-bottom, 0px));
   width: var(--window-frame-lane);
   border-left: var(--window-frame-track-border);
 }
 
 .window-frame-bar.is-horizontal {
   left: var(--frame-bar-start, 0);
-  right: var(--window-frame-lane);
+  right: calc(var(--window-frame-lane) + var(--window-frame-inset-right, 0px));
   bottom: var(--window-frame-inset-bottom, 0);
   height: var(--window-frame-lane);
   flex-direction: row;

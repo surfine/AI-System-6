@@ -42,17 +42,15 @@ test.assert(
   "pin and unpin do not advance last-used order — only a real focus does",
 );
 
-// A protected system sheet keeps its own band through an ordinary compaction.
+// About is an ordinary window since 2026-10-16 (non-modal, built on demand):
+// it focuses inside the normal band like any other window, so the windows it
+// opens from its chapters can come in front of it.
 await vmw.context.openWindow("about");
 await vmw.waitFor(() => vmw.run('!!getWindow("about")'));
 vmw.run('focusWindow(getWindow("about"))');
 const aboutZ = Number(vmw.run('getWindow("about").style.zIndex || 0'));
-test.assert(aboutZ > 8990, "About is focused above every ordinary window, out of the normal band");
-vmw.run("compactWindowLayerStack()");
-test.assert(
-  Number(vmw.run('getWindow("about").style.zIndex || 0')) === aboutZ,
-  "compaction never pulls a protected system sheet down into the normal range",
-);
+test.assert(aboutZ > 0 && aboutZ < 8990, `About focuses in the normal band (${aboutZ}), not as a system sheet`);
+test.assert(vmw.run('windowStackLayer(getWindow("about"))') === "normal", "About's stack layer is normal");
 
 // --- hardening: reserved layers are by role, not by number ------------------
 // A big numeric request alone must never lift an ordinary window into the

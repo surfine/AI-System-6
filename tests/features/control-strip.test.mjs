@@ -309,8 +309,12 @@ const aquaCss = read("styles/67-aqua-appearance.css");
 test.assertIncludes(stripCss, "background: var(--control-strip-tile-bg)", "module tiles consume the era tile material");
 test.assertIncludes(stripCss, "background: var(--control-strip-grip)", "the handle grip texture is an era token");
 test.assertIncludes(stripCss, "border-radius: var(--control-strip-radius-mirrored)", "a right-anchored strip mirrors its rounded tab end");
-test.assertIncludes(appearanceCss, "--control-strip-radius: 4px 12px 12px 4px;", "Platinum rounds the outer tab end into the OS 9 half-capsule");
-test.assertIncludes(appearanceCss, "--control-strip-tile-shadow: inset 0 0 0 1px #7a7a7a", "Platinum tiles are raised bevel buttons");
+// B4 (2026-10-16): measured on Mac OS 9.0.4 the strip is square and flat --
+// a #c0c0c0 body in a black frame, each tile lit white at its top-left and
+// shaded #a0a0a0 / #808080 at its bottom-right, no capsule, no gradient.
+test.assertIncludes(appearanceCss, "--control-strip-radius: 0;", "Platinum's strip is square, as on the real machine");
+test.assertIncludes(appearanceCss, "--control-strip-tile-shadow: inset 1px 1px #c0c0c0, inset 2px 2px #ffffff, inset -1px -1px #808080, inset -2px -2px #a0a0a0;", "Platinum tiles carry the measured one-pixel bevel");
+test.assertNotIncludes(appearanceCss, "--control-strip-tile-bg: linear-gradient", "Platinum tiles draw no gradient");
 test.assertMatches(aquaCss, /counterfactual[\s\S]*--control-strip-bg/, "the Aqua-family strip materials are labeled counterfactual, not reproduction");
 test.assertMatches(appearanceCss, /counterfactual[\s\S]*--control-strip-bg: rgba\(251, 251, 251, 0\.82\)/, "the Yosemite strip material is labeled counterfactual");
 test.assertNotMatches(aquaCss, /\.control-strip[\s-]/, "Aqua-family eras theme the strip through tokens, never selectors");

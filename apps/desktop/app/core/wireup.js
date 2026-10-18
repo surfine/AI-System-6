@@ -51,7 +51,6 @@ function wireAppEvents() {
   installDesktopScrollLock();
   installHeldPlaceTracking();
   initializeBalloonHelp();
-  initializeClioOnboarding();
   const clearLiquidPress = () => document.querySelectorAll(".is-glass-pressed").forEach((node) => node.classList.remove("is-glass-pressed"));
   addEventListener("pointerdown", (event) => {
     if (event.pointerType === "touch") {
@@ -636,8 +635,6 @@ function wireAppEvents() {
     if (currentDocMap && !document.querySelector('[data-window="docMap"]')?.classList.contains("is-hidden")) {
       requestAnimationFrame(() => restoreDocMapCanvasView());
     }
-    document.querySelectorAll(".window.about-window:not(.is-hidden)")
-      .forEach((win) => requestAnimationFrame(() => placeCenteredSystemWindow(win)));
     // Entering/leaving the phone portrait breakpoint flips the full-screen app
     // shell on or off.
     syncMobileAppForeground();
@@ -1437,7 +1434,7 @@ function wireAppEvents() {
     bar.addEventListener("pointerdown", (event) => {
       if (event.target.closest("button")) return;
       const win = bar.closest(".window");
-      if (["about", "saveChat"].includes(win?.dataset.window)) return;
+      if (win?.dataset.window === "saveChat") return;
       if (!win) return;
       // Writing-mode split panes are CSS-owned fixed columns (60vw / 33vw):
       // a drag would leave inline left/top behind that beats the non-!important

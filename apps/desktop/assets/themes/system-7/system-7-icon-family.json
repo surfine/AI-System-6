@@ -76,6 +76,12 @@
         "32": "icons/clioStage-32.png"
       }
     },
+    "clioWrite": {
+      "sizes": {
+        "16": "icons/clioWrite-16.png",
+        "32": "icons/clioWrite-32.png"
+      }
+    },
     "cloudModel": {
       "sizes": {
         "16": "icons/cloudModel-16.png",

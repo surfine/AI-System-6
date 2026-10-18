@@ -3232,6 +3232,12 @@ function createManualSectionDraft() {
 function savePipelineData() {
   const project = getActiveProject();
   if (!project) return;
+  // This save runs on every launch: the working session's writing-flow restore
+  // ends in it. So it has to answer the question the writer's own work asks -
+  // did anything change? A stamp written regardless rewrote the project record
+  // on an idle boot, and the updater's health gate compares whole stores, so
+  // that lone timestamp was enough to roll a healthy update back.
+  const before = JSON.stringify(project);
 
   project.questionSheet = questionSheetBodyInput.value;
   if (questionCountEl) questionCountEl.textContent = questionSheetCellText(project.questionSheet || "");
@@ -3271,7 +3277,6 @@ function savePipelineData() {
     // parked in exactly that read-only field, and says no for every route
     // command -- they blur the editor before they run.
     if (manuscriptPhase() === "drafting" && draftBodyInput) draft.body = draftBodyInput.value;
-    draft.updatedAt = new Date().toISOString();
   }
 
   project.flowState = {
@@ -3280,7 +3285,13 @@ function savePipelineData() {
     outline: getMeaningfulOutlineSections(outlineSections).length > 0,
     drafting: (project.drafts || []).some((draft) => (draft.body || draft.title || "").trim()),
   };
-  project.updatedAt = new Date().toISOString();
+  // One comparison, and both stamps inside it: the project's own, and the
+  // selected draft's, which is a field of the same record.
+  if (JSON.stringify(project) !== before) {
+    project.updatedAt = new Date().toISOString();
+    const changedDraft = selectedDraftIndex >= 0 ? project.drafts?.[selectedDraftIndex] : null;
+    if (changedDraft) changedDraft.updatedAt = project.updatedAt;
+  }
   saveDeskState();
   updateFlowGuideChecklist({ render: false });
 }

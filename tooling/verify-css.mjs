@@ -18,7 +18,7 @@
 // Rationale and full skill: .claude/skills/css-no-pingpong/SKILL.md
 
 import { spawnSync } from "node:child_process";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveProjectPath } from "./lib/paths.mjs";
@@ -34,6 +34,17 @@ const budget = JSON.parse(readFileSync(join(root, "tooling/css-budget.json"), "u
 const failures = [];
 const cliArgs = process.argv.slice(2);
 const requestedCssFiles = [];
+// --write-down: a budget may only fall, and a count below its budget is a
+// drain nobody wrote back. Lower every such budget to the measured count and
+// rewrite tooling/css-budget.json; the diff is the evidence. Raising stays a
+// hand edit with a reason.
+const WRITE_DOWN = cliArgs.includes("--write-down");
+const lowered = [];
+function writeDown(label, current, measured, apply) {
+  if (!WRITE_DOWN || typeof current !== "number" || measured >= current) return;
+  apply(measured);
+  lowered.push(`${label}: ${current} -> ${measured}`);
+}
 
 function normalizeRequestedCssFile(value) {
   const normalized = String(value || "").replaceAll("\\", "/");
@@ -52,10 +63,13 @@ for (let index = 0; index < cliArgs.length; index += 1) {
     }
     requestedCssFiles.push(value);
     index += 1;
+  } else if (arg === "--write-down") {
+    // handled above
   } else if (arg === "--help") {
     console.log(`Usage:
   node tooling/verify-css.mjs
   node tooling/verify-css.mjs --file apps/desktop/styles/10-windows.css [--file apps/desktop/styles/00-foundation.css]
+  node tooling/verify-css.mjs --write-down     # lower every budget to its measured count, rewrite css-budget.json
 
 Without --file the release-grade gate checks every stylesheet. Repeated --file
 arguments scope the normal edit loop to the styles owned by the current task.`);
@@ -92,6 +106,7 @@ function checkCssFile(relPath, budgets) {
       : `${relPath}: !important = ${importantCount}, budget = ${importantBudget}. Stop adding overrides; fix specificity or move the rule out of the override layer.`);
   } else {
     ok(`${relPath}: !important ${importantCount}/${importantBudget}`);
+    writeDown(`important ${relPath}`, budgets.important[relPath], importantCount, (n) => { budgets.important[relPath] = n; });
   }
 
   const zBudget = budgets.zIndex[relPath] ?? 0;
@@ -101,6 +116,7 @@ function checkCssFile(relPath, budgets) {
       : `${relPath}: z-index uses = ${zIndexCount}, budget = ${zBudget}. Reuse an existing layer or add a --z-* token instead.`);
   } else {
     ok(`${relPath}: z-index ${zIndexCount}/${zBudget}`);
+    writeDown(`zIndex ${relPath}`, budgets.zIndex[relPath], zIndexCount, (n) => { budgets.zIndex[relPath] = n; });
   }
 }
 
@@ -699,6 +715,7 @@ if (typeof orphanBudget !== "number") {
   );
 } else {
   ok(`${LIQUID_FILE}: orphan twin selectors ${orphanTwins.length}/${orphanBudget}`);
+  writeDown("liquidGlassOrphanCount", orphanBudget, orphanTwins.length, (n) => { budget.liquidGlassOrphanCount = n; });
 }
 
 const twinBudget = budget.liquidGlassTwinCount;
@@ -712,6 +729,7 @@ if (typeof twinBudget !== "number") {
   );
 } else {
   ok(`${LIQUID_FILE}: twin selectors ${twinCount}/${twinBudget}`);
+  writeDown("liquidGlassTwinCount", twinBudget, twinCount, (n) => { budget.liquidGlassTwinCount = n; });
 }
 
 // Liquid Glass is selected the way every era is, by body[data-theme]
@@ -1196,6 +1214,7 @@ if (!geometryBudgets || typeof geometryBudgets !== "object") {
       );
     } else {
       ok(`${relPath}: appearance geometry ${geometry}/${allowed.geometry}`);
+      writeDown(`appearanceGeometry ${relPath} geometry`, allowed.geometry, geometry, (n) => { allowed.geometry = n; });
     }
     const unprefixed = countUnprefixedRules(relPath);
     const unprefixedBudget = allowed.unprefixed;
@@ -1210,6 +1229,7 @@ if (!geometryBudgets || typeof geometryBudgets !== "object") {
       );
     } else {
       ok(`${relPath}: unprefixed top-level rules ${unprefixed.length}/${unprefixedBudget}`);
+      writeDown(`appearanceGeometry ${relPath} unprefixed`, unprefixedBudget, unprefixed.length, (n) => { allowed.unprefixed = n; });
     }
 
     if (hairline > allowed.hairline) {
@@ -1219,7 +1239,18 @@ if (!geometryBudgets || typeof geometryBudgets !== "object") {
       );
     } else {
       ok(`${relPath}: 1px border shorthands ${hairline}/${allowed.hairline}`);
+      writeDown(`appearanceGeometry ${relPath} hairline`, allowed.hairline, hairline, (n) => { allowed.hairline = n; });
     }
+  }
+}
+
+if (WRITE_DOWN) {
+  if (lowered.length) {
+    writeFileSync(join(root, "tooling/css-budget.json"), `${JSON.stringify(budget, null, 2)}\n`);
+    console.log(`\n--write-down lowered ${lowered.length} budget(s) in tooling/css-budget.json:`);
+    lowered.forEach((line) => console.log(`  ${line}`));
+  } else {
+    console.log("\n--write-down: every budget already equals its measured count.");
   }
 }
 

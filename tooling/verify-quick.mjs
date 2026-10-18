@@ -25,12 +25,12 @@ const npm = process.platform === "win32" ? "npm.cmd" : "npm";
 const args = process.argv.slice(2).filter((arg) => arg !== "--");
 const features = [];
 const cssFiles = [];
-const gates = [];
 const sourceFiles = [];
 let build = true;
 let css = false;
 let docs = false;
 let smoke = false;
+let ship = false;
 let src = false;
 
 for (let index = 0; index < args.length; index += 1) {
@@ -43,14 +43,8 @@ for (let index = 0; index < args.length; index += 1) {
     }
     features.push(name);
     index += 1;
-  } else if (arg === "--gate") {
-    const name = args[index + 1];
-    if (!name || name.startsWith("--")) {
-      console.error("NO  --gate requires a ship-gate name (npm run verify:gate -- --list).");
-      process.exit(1);
-    }
-    gates.push(name);
-    index += 1;
+  } else if (arg === "--ship") {
+    ship = true;
   } else if (arg === "--css") {
     css = true;
   } else if (arg === "--css-file") {
@@ -81,7 +75,7 @@ for (let index = 0; index < args.length; index += 1) {
   } else if (arg === "--help") {
     console.log(`Usage:
   npm run verify:quick
-  npm run verify:quick -- --feature <name> [--feature <name>] [--css] [--css-file <path>] [--docs] [--src] [--smoke] [--gate <name>] [--no-build]
+  npm run verify:quick -- --feature <name> [--feature <name>] [--css] [--css-file <path>] [--docs] [--src] [--smoke] [--ship] [--no-build]
 
 The quick gate never runs verify:release, global feature verification, visual
 snapshots, packaging, or deployment. Repeat --css-file to isolate CSS checks to
@@ -92,9 +86,8 @@ is about 210 CPU-seconds across 334 contracts, and a change to one module has no
 business paying for the rest. Repeat it for each file touched. A file no
 contract reads runs no contract, and the run says so.
 
---gate runs one whole browser ship gate with development receipts. Release
-reuse requires the separate verify:gate -- --release-stamp workflow and exact
-receipt matching. List gates with: npm run verify:gate -- --list`);
+--ship runs the release gate (tooling/verify-ship.mjs: the desk boot and the
+cascade ledger at both viewports, about five minutes) once, after the build.`);
     process.exit(0);
   } else {
     console.error(`NO  unknown quick-verification option: ${arg}`);
@@ -219,13 +212,13 @@ if (smoke) {
   });
 }
 
-// The quick runner owns the build decision. Gate children use those built
-// bytes; --no-build explicitly opts out at both levels.
-if (gates.length) {
+// The quick runner owns the build decision. The ship gate uses those built
+// bytes and never rebuilds; --no-build explicitly opts out of the build.
+if (ship) {
   checks.push({
-    label: `ship gate${gates.length === 1 ? "" : "s"} (receipt banked)`,
+    label: "ship gate",
     command: process.execPath,
-    commandArgs: ["tooling/verify-gate.mjs", ...gates, "--no-build"],
+    commandArgs: ["tooling/verify-ship.mjs"],
     live: true,
   });
 }

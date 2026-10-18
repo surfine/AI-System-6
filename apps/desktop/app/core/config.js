@@ -624,6 +624,7 @@ const ensureFindPathModule = createLazyModuleLoader("AISystem6FindPathLoaded", [
 const ensureEndfieldTerminalModule = createLazyModuleLoader("AISystem6EndfieldTerminalLoaded", ["app/features/endfield-terminal.js"], false, ["styles.endfield-terminal.css"]);
 // Time Machine's live engines on their own, for Reader's rendered rung; the
 // loader shares the script with Time Machine's own (loaded once either way).
+const ensureAboutModule = createLazyModuleLoader("AISystem6AboutLoaded", ["app/core/application-shell.js", "app/content/about-chapters.js", "app/content/release-notes.js", "app/features/about-desk.js"], false, ["styles.about.css"]);
 const ensureTimeMachineEngineModule = createLazyModuleLoader("AISystem6TimeMachineEngines", ["app/features/time-machine-engine.js"]);
 const ensureTimeMachineModule = createLazyModuleLoader("AISystem6TimeMachineLoaded", ["app/features/time-machine-engine.js", "app/features/time-machine.js"], false, ["styles.time-machine.css"]);
 const ensureHkrrReviewModule = createLazyModuleLoader("", ["app/features/hkrr-review.js"]);
@@ -891,6 +892,8 @@ function ensureUnifiedSpecContractsModule() { return ensureLazySystemModule("app
 const ensureChatCompactionModuleLoaded = createLazyModuleLoader("AISystem6ChatCompactionLoaded", ["app/core/chat-compaction.js"]);
 const ensureChatContextCapabilitiesModuleLoaded = createLazyModuleLoader("AISystem6ChatContextCapabilitiesLoaded", ["app/core/chat-context-capabilities.js"]);
 function ensureChatContextCapabilitiesModule() { return ensureChatContextCapabilitiesModuleLoaded(); }
+const ensureDeviceModelModuleLoaded = createLazyModuleLoader("AISystem6DeviceModelLoaded", ["app/core/device-model-client.js"]);
+function ensureDeviceModelModule() { return ensureDeviceModelModuleLoaded(); }
 function ensureChatCompactionModule() { return ensureChatCompactionModuleLoaded(); }
 function ensureChatCachePolicyModule() { return ensureLazySystemModule("app/vendor/unified-spec/cache-policy-install.js", "AISystem6ChatCachePolicyLoaded"); }
 const ensureChatRunDetailsModuleLoaded = createLazyModuleLoader("AISystem6ChatRunDetailsLoaded", ["app/core/chat-run-details.js"]);
@@ -898,8 +901,15 @@ function ensureChatRunDetailsModule() { return ensureChatRunDetailsModuleLoaded(
 const ensureReadingBridgeModuleLoaded = createLazyModuleLoader("AISystem6ReadingBridgeLoaded", ["app/features/reading-bridge.js"]);
 function ensureReadingBridgeModule() { return ensureReadingBridgeModuleLoaded(); }
 const ensureOpenQuestionsModuleLoaded = createLazyModuleLoader("AISystem6OpenQuestionsLoaded", ["app/features/open-questions.js"]);
-const ensureClioWorksV51Loaded = createLazyModuleLoader("AISystem6ClioWorksV51Loaded", ["app/vendor/clioworks-v3/ui-model.js", "app/vendor/clioworks-v3/frame-session.js", "app/vendor/clioworks-v3/runtime-port.js", "app/vendor/clioworks-v3/context-strip.js", "app/vendor/clioworks-v3/chart-frame-port.js"]);
+const ensureClioWorksV51Loaded = createLazyModuleLoader("AISystem6ChartFramePort", ["app/vendor/clioworks-v3/ui-model.js", "app/vendor/clioworks-v3/frame-session.js", "app/vendor/clioworks-v3/runtime-port.js", "app/vendor/clioworks-v3/context-strip.js", "app/vendor/clioworks-v3/chart-frame-port.js"]);
 function ensureClioWorksV51Modules() { return ensureClioWorksV51Loaded(); }
+// The chart copy's context strip: the v5.1 modules first, then the kit shell it draws with.
+const ensureClioChartContextLoaded = createLazyModuleLoader("AISystem6ClioChartContext", ["app/vendor/clioworks-v3/core.js", "app/vendor/clioworks-v3/dom.js", "app/vendor/clioworks-v3/components.js", "app/vendor/clioworks-v3/more-menu.js", "app/vendor/clioworks-v3/chart-adapter.js", "app/features/clio-chart-context.js"], false, ["styles.clioworks-native.css"]);
+async function ensureClioChartContextModule() { await ensureClioWorksV51Modules(); return ensureClioChartContextLoaded(); }
+const ensureClioChartWorkbookLoaded = createLazyModuleLoader("AISystem6ClioChartWorkbook", ["app/features/clio-chart-comments.js", "app/features/clio-chart-workbook.js"], false, ["styles.clio-chart.css"]);
+async function ensureClioChartWorkbookModule() { await ensureClioChartModule(); return ensureClioChartWorkbookLoaded(); }
+const ensureClioWriteModule = createLazyModuleLoader("AISystem6ClioWriteLoaded", ["app/core/application-shell.js", "app/features/clio-write.js"], false, ["styles.clio-chart.css"]);
+const ensureClioStageNativeModule = createLazyModuleLoader("AISystem6ClioStageNative", ["app/features/clio-stage-native.js"], false, ["styles.clio-chart.css"]);
 function ensureOpenQuestionsModule() { return ensureOpenQuestionsModuleLoaded(); }
 const ensureReadingRelationsModuleLoaded = createLazyModuleLoader("AISystem6ReadingRelationsLoaded", ["app/features/reading-relations.js"]);
 function ensureReadingRelationsModule() { return ensureReadingRelationsModuleLoaded(); }
@@ -1163,4 +1173,4 @@ function installLazyFunctionStub(name, ensureModule) {
 ].forEach((name) => installLazyFunctionStub(name, ensureOutlineClaimModule));
 
 const ensureProjectBackupExportData = createLazyModuleLoader("AISystem6ProjectBackupExportData", ["app/features/project-backup-export-data.js"]);
-const ensureTinyShellModule = createLazyModuleLoader("AISystem6TinyShell", ["app/core/tinyjs-shell.js"]);
+const ensureTinyShellModule = createLazyModuleLoader("AISystem6TinyShell", ["app/core/storage-fingerprint.js", "app/core/tinyjs-shell.js"]);

@@ -1072,6 +1072,25 @@ function claimCheckQueryText(body) {
  * @param {string} body
  * @returns {string[]}
  */
+// Sentences end after their punctuation and the whitespace that follows.
+// Scanned, not split on a lookbehind: older WebKit (macOS 12) rejects one at
+// parse time, and the whole module would fail to load.
+function sentenceParts(text) {
+  const ENDS = "。！？.!?";
+  const parts = [];
+  let start = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    if (!ENDS.includes(text[index]) || !/\s/.test(text[index + 1] || "")) continue;
+    let end = index + 1;
+    while (end < text.length && /\s/.test(text[end])) end += 1;
+    parts.push(text.slice(start, end));
+    start = end;
+    index = end - 1;
+  }
+  if (start < text.length) parts.push(text.slice(start));
+  return parts;
+}
+
 function extractOnlineCheckClaims(body) {
   const paragraphs = String(body || "")
     .split(/\n+/)
@@ -1079,8 +1098,7 @@ function extractOnlineCheckClaims(body) {
     .filter((item) => item.length > 20);
   const candidates = paragraphs.length >= 3
     ? paragraphs
-    : String(body || "")
-        .split(/(?<=[。！？.!?])\s+/)
+    : sentenceParts(String(body || ""))
         .map((item) => item.replace(/\s+/g, " ").trim())
         .filter((item) => item.length > 20);
   return candidates

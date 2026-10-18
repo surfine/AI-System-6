@@ -90,12 +90,9 @@ function shortLog(commit) {
 // Paths whose bytes are a measurement of the merged tree, not content anyone
 // wrote. "One side's change was discarded" cannot describe them: after a merge
 // the only correct value is the one you get by measuring again, and that value
-// will equal whichever side happened to measure the same tree. Regenerate with
-// `npm run sync:readme-payload` -- if a path here ever stops being an output of
-// that command, take it off this list.
+// will equal whichever side happened to measure the same tree. The READMEs left
+// this list on 2026-10-15: they state the budget now, not the measurement.
 const REGENERATED_MEASUREMENTS = new Set([
-  "README.md",
-  "README.zh-CN.md",
   "site/data/floppy-budget.json",
   "tests/appearance-snapshot.json",
 ]);

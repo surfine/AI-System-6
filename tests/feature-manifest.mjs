@@ -152,6 +152,10 @@ export const publicProductContracts = [
     tests: ["clio-chart.test.mjs"],
   },
   {
+    feature: "ClioChart context strip and copy editing",
+    tests: ["public/clioworks-v51-context-strip.test.mjs", "public/clioworks-v51-chart-wiring.test.mjs", "public/clioworks-v51-chart-frame.test.mjs"],
+  },
+  {
     feature: "Edit kernel",
     tests: ["edit-kernel.test.mjs"],
   },

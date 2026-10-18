@@ -1,4 +1,14 @@
 window.AISystem6LaunchIntent = {
+  // The desk's own shareable links: `?open=scrapbook&id=<id>`, and the same
+  // for a document, the projects view or the control panel. The named routes
+  // below open a surface; a link to one *object* is what this adds, and it
+  // resolves inside the mounted project only (see openDeepLink).
+  deskIntent(search) {
+    const params = new URLSearchParams(String(search || ""));
+    const target = String(params.get("open") || "");
+    if (!["scrapbook", "teachtext", "project", "settings"].includes(target)) return null;
+    return { target, id: String(params.get("id") || "") };
+  },
   parse(search) {
     const appearances = (window.AISystem6Theme?.themes || []).map(({ id }) => id);
     const commands = {

@@ -91,13 +91,16 @@ function leaveWriterModeNow() {
 }
 
 function isClioIntroductionActive() {
-  return clioIntroductionReplay || !clioOnboardingCompleted;
+  return !clioOnboardingCompleted;
 }
 
+// The introduction is About's "First time here" face. Any of its three doors
+// finishes it, and so does an ordinary ClioTalk exchange; a finished door also
+// clears "Show this window at startup".
 async function completeClioOnboarding(reason = "completed") {
-  if (clioOnboardingCompleted && !clioIntroductionReplay) return false;
+  if (clioOnboardingCompleted) return false;
   clioOnboardingCompleted = true;
-  clioIntroductionReplay = false;
+  if (aboutStartup.show !== true) aboutStartup = { ...aboutStartup, show: false };
   await saveDeskState();
   window.dispatchEvent(new CustomEvent("ai-system6:clio-onboarding-complete", {
     detail: { reason },
@@ -106,77 +109,9 @@ async function completeClioOnboarding(reason = "completed") {
   return true;
 }
 
-async function openClioIntroduction({ replay = true } = {}) {
-  if (replay) clioIntroductionReplay = true;
-  if (typeof startNewClioTalkConversation === "function" && conversation.length) {
-    const started = await startNewClioTalkConversation();
-    if (started === false) return false;
-  }
-  await openWindow("assistant");
-  if (typeof renderClioTalkWelcome === "function") renderClioTalkWelcome();
-  if (typeof window.AISystem6ClioProvider?.resolve === "function") {
-    await ensureClioProviderResolver().catch(() => {});
-    window.AISystem6ClioProvider.resolve({ reason: "introduction" }).catch(() => {});
-  }
-  window.requestAnimationFrame(() => promptInput?.focus());
-  return true;
-}
-
-async function openFirstRunClioTalk() {
-  setWorkspaceProfile(workspaceProfileDesktop, { persist: false });
-  quietStartup();
-  clioIntroductionReplay = false;
-  await openWindow("assistant");
-  if (typeof renderClioTalkWelcome === "function") renderClioTalkWelcome();
-  await ensureClioProviderResolver().catch(() => {});
-  window.AISystem6ClioProvider?.resolve?.({ reason: "first-run" }).catch(() => {});
-  window.requestAnimationFrame(() => promptInput?.focus());
-  return true;
-}
-
-function activateClioStarter(starterId = "") {
-  const id = String(starterId || "");
-  // The stranger's card plays the 30-second offline tour in every model
-  // state. The demo beats prose: it needs no model, never mutates user data,
-  // and always restores the desk. Prompt-prose introductions are retired.
-  if (id === "explore") {
-    if (typeof handleAction !== "function") return false;
-    handleAction("play-teaser-demo");
-    return true;
-  }
-  const modelReady = typeof clioTalkModelReady === "function" && clioTalkModelReady();
-  if (!modelReady) {
-    // Without a model a prefilled composer cannot send, so each card opens
-    // the nearest working door instead.
-    const openAction = {
-      idea: "open-quick-draft",
-      notes: "open-note-pad",
-      file: "open-import-utility",
-    }[id];
-    if (!openAction || typeof handleAction !== "function") return false;
-    handleAction(openAction);
-    return true;
-  }
-  const key = {
-    idea: "clio_starter_idea_prompt",
-    notes: "clio_starter_notes_prompt",
-    file: "clio_starter_file_prompt",
-  }[id];
-  if (!key || !promptInput) return false;
-  promptInput.value = t(key);
-  promptInput.dispatchEvent(new Event("input", { bubbles: true }));
-  promptInput.focus();
-  promptInput.setSelectionRange(promptInput.value.length, promptInput.value.length);
-  return true;
-}
-
-function initializeClioOnboarding() {
-  document.addEventListener("click", (event) => {
-    const starter = event.target.closest?.("[data-clio-starter]");
-    if (!starter) return;
-    event.preventDefault();
-    activateClioStarter(starter.dataset.clioStarter);
-  });
+async function openAboutFirstTime({ startup = false } = {}) {
+  await ensureAboutModule();
+  return window.AISystem6About.open({ face: "first", startup });
 }
 
 async function useThisWindowForClio() {

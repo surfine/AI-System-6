@@ -1050,7 +1050,10 @@
   }
 
   const AMOUNT_PATTERN = /(\d+(?:\.\d+)?)\s*(美元|美金|元|块钱|块|MB|GB|TB|KB|万元|亿|dollars?|USD)/gi;
-  const SUBJECT_PATTERN = /(?<![0-9A-Za-z])[A-Za-z][A-Za-z0-9]*(?:\s+(?:[A-Za-z][a-z]+|\d+[a-z]?)(?![0-9A-Za-z]))*/g;
+  // The leading separator is consumed instead of looked behind (old WebKit
+  // rejects lookbehind at parse time); the capture keeps the name, and the
+  // recorded offset skips that separator again.
+  const SUBJECT_PATTERN = /(?:^|[^0-9A-Za-z])([A-Za-z][A-Za-z0-9]*(?:\s+(?:[A-Za-z][a-z]+|\d+[a-z]?)(?![0-9A-Za-z]))*)/g;
 
   // Whose price or capacity is it? The nearest name before each amount, in
   // its own sentence first; names that are part of a longer name said earlier
@@ -1059,7 +1062,7 @@
     const source = String(text || "");
     const subjects = new Set();
     const names = [...source.matchAll(SUBJECT_PATTERN)]
-      .map((match) => ({ at: match.index, name: match[0].trim() }))
+      .map((match) => ({ at: match.index + (match[1] === match[0] ? 0 : 1), name: match[1].trim() }))
       .filter((entry) => !/^(MB|GB|TB|KB|USD|dollars?)$/i.test(entry.name));
     const canonical = (name) => {
       const head = name.split(/\s+/)[0];

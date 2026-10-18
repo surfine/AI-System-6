@@ -466,7 +466,7 @@
     ["teachText", "TeachText"], ["scrapbook", "Scrapbook"],
     ["assistant", "ClioTalk"], ["controlPanel", "Control / Settings"],
     ["reviewDesk", "Review Desk"], ["docMap", "DocMap"],
-    ["rootline", "Rootline"], ["joyride", "Joyride"], ["mingwen", "Plaintext"],
+    ["rootline", "Rootline"], ["joyride", "Joyride"], ["mingwen", "Plaintext"], ["clioWrite", "ClioWrite"],
     ["imagePromptStudio", "Image Prompt Studio"], ["lightroom", "Text Lightroom"],
     ["micropolis", "Micropolis"], ["openttd", "OpenTTD"], ["doom", "DOOM"], ["bonsaiCity", "Bonsai City"],
     ["clioPaint", "ClioPaint"], ["clioProject", "ClioProject"], ["oneMoreTune", "One More Tune"],

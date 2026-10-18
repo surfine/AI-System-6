@@ -1524,3 +1524,13 @@ detached instead of pretending nothing happened.
   anchors keep your original words flagged.
 - Reliability sweep: nine defects fixed across the v5.1 surface, every fix
   pinned by an executable contract (505 feature contracts green).
+
+## Public Beta 1.0.59 - 2026-10-18
+
+- **Edit Office files on the desk.** Excel workbooks (.xlsx) open in ClioChart, PowerPoint decks (.pptx) in ClioStage, and Word documents (.docx) in a new ClioWrite window. Express changes cell values, slide text and notes, or paragraph text; Full Editing adds formulas, slide and layout commands, and headings, emphasis and lists. ClioWrite also appears on phones and tablets.
+- **Saving keeps the rest of the file as it was.** Tables, charts, SmartArt and pictures stay read-only and are kept; comments can be read, added and answered. The first save lists, in plain words and with the sheet or page, anything that will be converted or lost, and Cancel is the default. Edit › Undo steps back through named changes. Nothing is created from scratch yet. The round trip has been checked in LibreOffice for all three formats and in Microsoft Excel and PowerPoint for Mac; the Word check is still to come, and ClioWrite's icon is a temporary line drawing.
+- **About is a window you can leave open.** It opens when you ask for it and no longer blocks the desk. It holds the film and the credits, and **First time here** offers three ways in: pick a Mac, write one line on a Note Pad slip, or watch the film. The startup checklist appears only when startup is slow or fails.
+- **Platinum reads more like Mac OS 9.** Window frames, scroll bars, desktop and Apple-menu icons, the Control Strip, and the small text in lists, labels and status bars follow real Mac OS 9 screens. Bold titles, buttons and menus keep a bold face, because Geneva has none. Reading and editing text keep their modern sizes.
+- **Classic radio buttons and checkboxes show again.** In some installs they had gone blank, so the Control Panel's AI Connection list showed only labels.
+- **The web desk can notify you and link to objects.** When the tab is in the background, a new notification reaches you as a system notification; the first use asks for permission. Clicking it returns to the object it named, and a link such as `?open=scrapbook&id=…` opens that object inside the project already on the desk.
+- **Plaintext (明文) has a new look and a longer story.** A type-and-slip interface with a harbour-fog palette and ink-blue text, light by default and dark by system or setting. The white wolf is redrawn as frost, the true ending gains an epilogue, the side route becomes a friendship ending 同行, and chapter 10 adds four choices.

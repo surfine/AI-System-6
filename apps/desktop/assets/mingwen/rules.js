@@ -40,7 +40,7 @@
     { id: 'echo', name: '回声', kind: 'bad', hint: '能托人问就托人问，截图能转就转。说出去的话，会自己找回来。' },
     { id: 'blank', name: '白纸', kind: 'bad', hint: '调解之后「顺路」去看她、不署名寄东西、私发书稿——终章也不告诉罗砚。' },
     { id: 'return', name: '退件', kind: 'bad', hint: '不收稿费，一直送、一直替她做；终章再附上一份礼物或补偿。' },
-    { id: 'side', name: '并肩', kind: 'love', hint: '尊重每一个「不」，也写完自己的书；终章明文亲交，再直接问她。答案每局不同。' },
+    { id: 'side', name: '同行', kind: 'friend', hint: '尊重每一个「不」，也写完自己的书；终章明文亲交，直接告诉她你的打算，然后尊重她的回复。' },
     { id: 'plain', name: '明文', kind: 'true', hint: '收下稿费，尊重边界，少托人传话；终章一页纸，亲手交给她：不加密，不转交。' },
     { id: 'window', name: '旧窗口', kind: 'friend', hint: '陪长庚上山，约小满吃饭而不是托小满办事。真结局没有发生时，老朋友还在。' },
     { id: 'breakfast', name: '早饭', kind: 'family', hint: '接妈的电话，答应回家，手术那晚陪床，早点睡。真结局没有发生时，厨房的灯会亮。' },
@@ -48,7 +48,7 @@
     { id: 'drift', name: '潮退', kind: 'normal', hint: '不越界，也不太投入；终章交出一道谜题，而不是一页明文。' }
   ];
   var EPILOGUES = ['window', 'breakfast', 'lamp'];
-  var KIND_LABEL = { bad: '坏结局', love: '恋爱结局', romance: '恋爱结局', 'true': '真结局', friend: '友情结局', family: '亲情结局', self: '自我结局', normal: '普通结局' };
+  var KIND_LABEL = { bad: '坏结局', 'true': '真结局', friend: '友情结局', family: '亲情结局', self: '自我结局', normal: '普通结局' };
 
   function clamp(v, lo, hi) { v = Number(v) || 0; return v < lo ? lo : (v > hi ? hi : v); }
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -235,14 +235,19 @@
     return s.ledger.filter(function (e) { return e.accepted === 'hang' || e.accepted === 'back'; }).length;
   }
 
+  // 草稿：同行（side）的门槛。去掉心意种子后，own 从 6 提到 7（与「自己的灯」同线，即「写完自己的书」），
+  // 使真结局导向策略里 同行 / 明文 的比例回到原来的三七开左右。见 README「待拍板」
+  var SIDE_TRUST = 8, SIDE_OWN = 7;
+
   var ENDING_TESTS = {
     night: function (s) { return s.energy <= 2; },
     echo: function (s) { return s.leak >= 9; },
     blank: function (s) { return !!s.flags.broke_pact && !s.flags.final_told_yan; },
     'return': function (s) { return !s.flags.paid && debt(s) >= 7 && !!s.flags.final_gift; },
     side: function (s) {
-      return !!s.flags.final_plain && !!s.flags.final_asked && s.seed === 1 &&
-        s.trust.yuan >= 8 && s.push <= 3 && s.leak <= 4 && s.own >= 6;
+      // 草稿：去掉心意种子（不再有随机的「接受」）；「直接告诉她打算」之后尊重她的回复即可
+      return !!s.flags.final_plain && !!s.flags.final_asked && !s.flags.c10_dossier &&
+        s.trust.yuan >= SIDE_TRUST && s.push <= 3 && s.leak <= 4 && s.own >= SIDE_OWN;
     },
     plain: function (s) { return !!s.flags.final_plain && s.trust.yuan >= 6 && s.push <= 3 && s.leak <= 6; },
     window: function (s) { return s.trust.geng >= 8 && s.trust.man >= 6; },
@@ -257,6 +262,7 @@
       if (ENDING_TESTS[ENDINGS[i].id](s)) { id = ENDINGS[i].id; break; }
     }
     var epis = EPILOGUES.filter(function (e) { return e !== id && ENDING_TESTS[e](s); });
+    if (id === 'plain') epis.push('plain'); // 草稿：〈尾声 · 明文〉只跟在真结局之后，排在最后
     return {
       id: id,
       epilogues: epis,

@@ -1,0 +1,368 @@
+/* About AI System 6 (app/features/about-desk.js): an ordinary window built on
+   demand, so this sheet travels with its loader (styles.about.css) and never
+   rides the boot. Every selector is scoped to .about-*. The chapter rail is
+   the Control Panel's own .control-chooser tablist, dressed by each era's
+   --control-chooser-* tokens; nothing here restyles it. */
+
+.about-window {
+  width: min(560px, calc(100vw - 32px));
+}
+
+.about-window.is-film-open:not(.is-first-face) {
+  width: min(720px, calc(100vw - 32px));
+}
+
+.about-window.is-first-face {
+  width: min(680px, calc(100vw - 32px));
+}
+
+.about-pane {
+  display: grid;
+  gap: 12px;
+  max-height: calc(100vh - 88px);
+  overflow: auto;
+  padding: 12px 14px;
+}
+
+.about-book {
+  display: grid;
+  grid-template-columns: var(--control-settings-columns, minmax(0, 1fr));
+  grid-template-rows: var(--control-settings-rows, auto);
+  gap: 10px;
+  min-width: 0;
+}
+
+.about-book > .control-chooser {
+  grid-area: var(--control-chooser-area, auto);
+}
+
+.about-book[hidden],
+.about-first[hidden] {
+  display: none;
+}
+
+.about-chapter {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+}
+
+.about-first {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.about-identity {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 12px;
+  align-items: center;
+}
+
+.about-mark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: var(--system-border);
+  background: var(--paper);
+  font-family: var(--ui-font);
+  font-size: 22px;
+  font-weight: var(--system-strong-weight);
+}
+
+.about-identity-words {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.about-name {
+  margin: 0;
+  font-size: 15px;
+}
+
+.about-tagline,
+.about-version,
+.about-fine,
+.about-chapter-lead,
+.about-item p,
+.about-door-body {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.about-version {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.about-fine {
+  color: var(--shade-dark);
+  font-size: 11px;
+}
+
+.about-meter {
+  display: grid;
+  margin: 0;
+  border: var(--system-border);
+}
+
+.about-meter-row {
+  display: grid;
+  grid-template-columns: 9em minmax(0, 1fr);
+  gap: 8px;
+  padding: 4px 8px;
+  border-top: 1px dotted var(--ink);
+}
+
+.about-meter-row:first-child {
+  border-top: 0;
+}
+
+.about-meter-row dt {
+  font-weight: var(--system-strong-weight);
+}
+
+.about-meter-row dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.about-meter-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  text-decoration: underline;
+}
+
+.about-film {
+  display: grid;
+  gap: 8px;
+}
+
+.about-film-poster {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 6px;
+  border: var(--system-border);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  text-align: start;
+}
+
+.about-film-play {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 18px;
+}
+
+.about-film-caption {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.about-film-frame {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: var(--system-border);
+  background: var(--ink);
+}
+
+.about-credits {
+  display: grid;
+  gap: 6px;
+}
+
+.about-credits-line {
+  margin: 0;
+}
+
+.about-credits-buttons,
+.about-places,
+.about-film-row,
+.about-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.about-star-glyph {
+  margin-inline-end: 2px;
+}
+
+.about-notes summary {
+  font-weight: var(--system-strong-weight);
+}
+
+.about-notes-list {
+  display: grid;
+  gap: 4px;
+  margin: 6px 0 0;
+  padding-inline-start: 1.3em;
+}
+
+.about-chapter-head {
+  margin: 0;
+  font-size: 14px;
+}
+
+.about-items {
+  display: grid;
+}
+
+.about-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  align-items: center;
+  padding: 7px 0;
+  border-top: 1px dotted var(--ink);
+}
+
+.about-item-words {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.about-eras {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.about-era {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 4px 6px;
+  border: var(--system-border);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+}
+
+.about-era.is-current {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.about-era-year {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+.about-era-now {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.about-doors {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.about-door {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  min-width: 0;
+  padding: 10px;
+  border: var(--system-border);
+  border-radius: var(--item-radius);
+}
+
+.about-door-title {
+  margin: 0;
+  font-size: 13px;
+}
+
+.about-door .about-eras {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.about-door .about-era {
+  flex-direction: column;
+  gap: 0;
+  padding: 3px 5px;
+}
+
+.about-door .about-film-poster {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.about-line {
+  width: 100%;
+  min-height: 4.5em;
+  resize: vertical;
+}
+
+.about-door-result {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: var(--system-border);
+}
+
+.about-result-head {
+  margin: 0;
+  font-weight: var(--system-strong-weight);
+}
+
+.about-first-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.about-startup {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  margin-inline-end: auto;
+}
+
+@media (max-width: 700px) {
+  .about-doors,
+  .about-eras {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .about-meter-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .about-pane {
+    max-height: none;
+  }
+}
+
+.about-route-stops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}

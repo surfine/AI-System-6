@@ -198,7 +198,7 @@
       && !(typeof modalScrim !== "undefined" && modalScrim && !modalScrim.classList.contains("is-hidden") && modalScrim.getClientRects().length)
       && !document.fullscreenElement
       && !document.body.classList.contains("window-fullscreen-active")
-      && !Array.from(document.querySelectorAll('.system-modal:not(.is-hidden), dialog[open], [aria-modal="true"], .window[data-window="about"]:not(.is-hidden), .window[data-window="saveChat"]:not(.is-hidden)')).some((el) => el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden");
+      && !Array.from(document.querySelectorAll('.system-modal:not(.is-hidden), dialog[open], [aria-modal="true"], .window[data-window="saveChat"]:not(.is-hidden)')).some((el) => el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden");
   }
   function eligible(win) {
     if (!desktopReady() || !win?.isConnected || !win.matches(".window[data-window]")) return false;

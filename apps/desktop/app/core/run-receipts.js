@@ -465,6 +465,7 @@ window.AISystem6RunReceipts = Object.freeze({
   getReceipt,
   queryReceipts,
   queryReceiptsByOutput,
+  isAdopted: runReceiptIsAdopted,
   subscribe: subscribeRunReceipts,
   repeatReceipt,
 });

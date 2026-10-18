@@ -21,5 +21,7 @@ let package = Package(
       name: "AISystem6Vision",
       path: "Sources/AISystem6Vision"
     ),
+    // The Intelligence helper (FoundationModels + MLX) lives in ../macos-intelligence:
+    // MLX needs macOS 14, this package keeps its macOS 11 floor.
   ]
 )

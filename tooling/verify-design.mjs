@@ -85,10 +85,16 @@ function validateClassicPlatinumContract() {
   if (!canonicalSource || !existsSync(join(root, canonicalSource))) {
     fail(`${fidelityContractPath} canonicalSource must name an existing document`);
   }
-  for (const principle of ["productFirst", "smoothClassicSvg", "noPixelMode", "noWholeUiScale"]) {
+  for (const principle of ["productFirst", "smoothClassicSvg", "noPixelMode", "noWholeUiScale", "chromeRealMachineFirst"]) {
     if (fidelityContract.principles?.[principle] !== true) {
       fail(`${fidelityContractPath} principles.${principle} must remain true`);
     }
+  }
+  // C3: system chrome is judged by real-machine pixels; the prose rule must
+  // stay in the canonical document the contract names.
+  if (canonicalSource && existsSync(join(root, canonicalSource))
+    && !readFileSync(join(root, canonicalSource), "utf8").includes("System chrome is the exception")) {
+    fail(`${canonicalSource} must keep the system-chrome real-machine-first rule (C3)`);
   }
   if (JSON.stringify(fidelityContract.states?.priority) !== JSON.stringify(requiredPriority)) {
     fail(`${fidelityContractPath} states.priority must match the shared control-state order`);

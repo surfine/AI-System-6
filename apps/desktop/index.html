@@ -11,19 +11,19 @@
     <!-- Let the system choose status glyph contrast. -->
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20261014.1" />
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20261014.1" />
-    <link rel="manifest" href="assets/app-icon/manifest.json?v=20261014.1" />
-    <script src="app/core/theme-registry.js?v=20261014.1"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20261014.1" />
+    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20261018.2" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20261018.2" />
+    <link rel="manifest" href="assets/app-icon/manifest.json?v=20261018.2" />
+    <script src="app/core/theme-registry.js?v=20261018.2"></script>
+    <link rel="stylesheet" href="styles.bundle.css?v=20261018.2" />
     <!-- Preload the application while parsing the desktop. -->
-    <link rel="preload" as="script" href="app.bundle.js?v=20261014.1" />
+    <link rel="preload" as="script" href="app.bundle.js?v=20261018.2" />
   </head>
   <body class="is-booting">
     <pre id="cw3-log" style="position:fixed;left:8px;bottom:8px;z-index:9999;max-width:46vw;max-height:38vh;overflow:auto;margin:0;padding:8px;background:rgba(0,0,0,.72);color:#7CFC9B;font:11px/1.4 ui-monospace,Menlo,monospace;border-radius:6px;white-space:pre-wrap;" hidden></pre>
-    <script src="app/core/theme-body-init.js?v=20261014.1"></script>
+    <script src="app/core/theme-body-init.js?v=20261018.2"></script>
     <!-- Register crash recovery before the application bundle. -->
-    <script src="app/core/boot-safety-net.js?v=20261014.1"></script>
+    <script src="app/core/boot-safety-net.js?v=20261018.2"></script>
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
         <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
@@ -143,7 +143,7 @@
         <div class="happy-mac is-sleeping" aria-hidden="true">
           <span class="happy-mac-face"></span>
         </div>
-        <p id="boot-message" data-i18n="boot_starting">Starting AI System 6...</p>
+        <p id="boot-message" data-i18n="boot_welcome">Welcome to AI System 6.</p>
         <div class="boot-progress" aria-hidden="true"><span id="boot-progress-fill"></span></div>
         <div class="boot-ledger" aria-label="Startup checks" data-i18n-aria-label="startup_checks">
           <span id="boot-startup-disk" data-i18n="boot_startup_pending">Startup Disk</span>
@@ -513,13 +513,7 @@
               <span class="sys-icon sys-icon-ordinary clio-welcome-icon" data-system-icon="assistant" aria-hidden="true"></span>
               <div class="speaker" data-i18n="assistant">ClioTalk</div>
               <div class="message-content">
-                <p data-i18n="clio_first_welcome_message"><strong>Hi. I’m Clio.</strong><span>What are you working on?</span></p>
-                <div class="clio-welcome-actions">
-                  <button class="btn" type="button" data-clio-starter="idea" data-i18n="clio_starter_idea">I have an idea</button>
-                  <button class="btn" type="button" data-clio-starter="notes" data-i18n="clio_starter_notes">I have some notes</button>
-                  <button class="btn" type="button" data-clio-starter="file" data-i18n="clio_starter_file">I have a file</button>
-                  <button class="btn" type="button" data-clio-starter="explore" data-i18n="clio_starter_explore">Just looking around</button>
-                </div>
+                <p data-i18n="welcome_message">ClioTalk is ready.</p>
               </div>
             </article>
           </div>
@@ -3389,31 +3383,6 @@
         </div>
       </section>
 
-      <section class="window about-window is-hidden" data-window="about" aria-labelledby="about-title">
-        <div class="title-bar">
-          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
-          <h2 id="about-title" data-i18n="about_menu">About AI System 6</h2>
-        </div>
-        <div class="window-pane about-pane">
-          <div class="large-icon"></div>
-          <p>AI System 6</p>
-          <p data-i18n="bicycle_line">A reply is not a manuscript until you decide where it belongs.</p>
-          <p data-i18n="about_body">AI System 6 keeps the desk quiet, turns thoughts into files, and lets the user ride.</p>
-          <dl class="about-stats about-stats-compact">
-            <dt data-i18n="about_version">Version</dt>
-            <dd id="about-version">--</dd>
-            <dt id="about-model-label" data-i18n="about_model">Local model</dt>
-            <dd id="about-model">--</dd>
-          </dl>
-          <div class="button-row about-links">
-            <button class="btn mini-btn" type="button" data-action="open-project-site" data-i18n="guide_project_site">Project Site</button>
-            <button class="btn mini-btn" type="button" data-action="open-github-repo" data-i18n="guide_source_code">Source Code</button>
-            <button class="btn mini-btn" type="button" data-action="open-guide-promo" data-i18n="guide_promo_short">The Film</button>
-          </div>
-          <button class="btn default" type="button" data-action="close-about" data-i18n="ok">OK</button>
-        </div>
-      </section>
-
       <section class="icon-column" aria-label="Desktop icons" data-i18n-aria-label="desktop_icons">
         <button class="desktop-icon" type="button" data-open="disk" data-balloon-help="balloon_startup_disk">
           <span class="sys-icon sys-icon-desktop" data-system-icon="startupDisk" aria-hidden="true"></span>
@@ -3466,10 +3435,10 @@
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20261014.1"></script>
+    <script src="app/generated/build-info.js?v=20261018.2"></script>
     <template id="standard-window-controls"><button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button><button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button><button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button></template>
-    <script src="app.bundle.js?v=20261014.1"></script>
-    <script src="app/vendor/clioworks-v3/fixture.js?v=20261014.1"></script>
+    <script src="app.bundle.js?v=20261018.2"></script>
+    <script src="app/vendor/clioworks-v3/fixture.js?v=20261018.2"></script>
 
   </body>
 </html>

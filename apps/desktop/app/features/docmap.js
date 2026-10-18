@@ -1176,7 +1176,11 @@ function normalizeDocMap(data, source) {
 
 function firstSentence(text, limit = 160) {
   const value = String(text || "").replace(/\s+/g, " ").trim();
-  const sentence = value.split(/(?<=[。！？.!?])\s+/)[0] || value;
+  // Up to and including the first ender + whitespace; the whole value when
+  // no such boundary exists. Scanned, not split on a lookbehind: older WebKit
+  // (macOS 12) rejects one at parse time and the module would not load.
+  const end = value.search(/[。！？.!?]\s/);
+  const sentence = end === -1 ? value : value.slice(0, end + 2).trim();
   return docMapShortRebuildText(sentence, limit);
 }
 

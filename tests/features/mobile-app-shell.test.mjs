@@ -185,6 +185,7 @@ for (const appId of [
   "docMap",
   "clioStage",
   "clioChart",
+  "clioWrite",
   "liquidCover",
   "cmfStudio",
   "soundscape",

@@ -116,6 +116,42 @@
               "height": 32
             }
           }
+        },
+        "clioWrite": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/classic/clioWrite.png",
+              "sha256": "520db1f74fd1ce4424632284b49f890088c2eef2edb27fcbd8df40ebbd53e716",
+              "prompt": "tooling/icon-generation/completion/prompts/classic/clioWrite.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/clioWrite-16.svg",
+            "32": "icons/clioWrite-32.svg"
+          },
+          "assets": {
+            "icons/clioWrite-16.svg": {
+              "sha256": "142315b0b11d7abd66c213b22b41eb17448e2e751d8840e962bc1b93bbec0d37",
+              "width": 16,
+              "height": 16
+            },
+            "icons/clioWrite-mask-16.svg": {
+              "sha256": "32354a00cb19558a16204ef5a718ac228df19e58eaa84a016787e0eb0ea43977",
+              "width": 16,
+              "height": 16
+            },
+            "icons/clioWrite-32.svg": {
+              "sha256": "0a9a407effc53c5112717b17e233154d7ee56d4eea0cf437271a9aaaff25889e",
+              "width": 32,
+              "height": 32
+            },
+            "icons/clioWrite-mask-32.svg": {
+              "sha256": "2b4988c5798724adb21956dbd36b1d3b45f56fe42ad93c058e7a27de0683053e",
+              "width": 32,
+              "height": 32
+            }
+          }
         }
       }
     },
@@ -252,6 +288,50 @@
               "height": 128
             }
           }
+        },
+        "clioWrite": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/platinum/clioWrite.png",
+              "sha256": "6cb8983b7066c0fa52994c0589e3f0c7d85b1423ea66c59ee6c7692990145a8f",
+              "prompt": "tooling/icon-generation/completion/prompts/platinum/clioWrite.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/clioWrite-16.png",
+            "32": "icons/clioWrite-32.png",
+            "42": "icons/clioWrite-42.png",
+            "64": "icons/clioWrite-64.png",
+            "128": "icons/clioWrite-128.png"
+          },
+          "assets": {
+            "icons/clioWrite-16.png": {
+              "sha256": "49e13d15112d7d092a50ba50c3ac2c7919334e360208e265794c4170f3d6266d",
+              "width": 16,
+              "height": 16
+            },
+            "icons/clioWrite-32.png": {
+              "sha256": "0f3d066697b941b8f577bec2fdf769261ce22ea4378f17c977574476124418ad",
+              "width": 32,
+              "height": 32
+            },
+            "icons/clioWrite-42.png": {
+              "sha256": "e547755c93acda068b0c8e27876845f5f8a6b61b7f115c6e616fae4b0444605b",
+              "width": 42,
+              "height": 42
+            },
+            "icons/clioWrite-64.png": {
+              "sha256": "e53538911fecde8223fb7f61891596fe98b7d0692f238c1d58603a71ca151ae1",
+              "width": 64,
+              "height": 64
+            },
+            "icons/clioWrite-128.png": {
+              "sha256": "1f33529aead74ceea016881de87bd269cfb68a02148133d57dd7c84df7af55f5",
+              "width": 128,
+              "height": 128
+            }
+          }
         }
       }
     },
@@ -366,6 +446,44 @@
             },
             "icons/mingwen-128.png": {
               "sha256": "1a53d7f0dc76123750306fd1110e6c46cd97b230fb13b39122cde4c82fad66e6",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "clioWrite": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/aqua/clioWrite.png",
+              "sha256": "08a84c32d230a53d4cdee5d9cdcab1f090a258cfad677bf8b93311129d22ccc5",
+              "prompt": "tooling/icon-generation/completion/prompts/aqua/clioWrite.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/clioWrite-16.png",
+            "32": "icons/clioWrite-32.png",
+            "64": "icons/clioWrite-64.png",
+            "128": "icons/clioWrite-128.png"
+          },
+          "assets": {
+            "icons/clioWrite-16.png": {
+              "sha256": "9607d6500d879246e3765e8d7e0fa8452c39271449daf5c28d391c0298d79a8f",
+              "width": 16,
+              "height": 16
+            },
+            "icons/clioWrite-32.png": {
+              "sha256": "f0f3810833585bb98f266af177822b318bc595256dac814a7ef778829eeefbac",
+              "width": 32,
+              "height": 32
+            },
+            "icons/clioWrite-64.png": {
+              "sha256": "0658cde206faadf4eb4627ede90cb0574965e20c56b335ea6bbc932d848be923",
+              "width": 64,
+              "height": 64
+            },
+            "icons/clioWrite-128.png": {
+              "sha256": "90398f5c74c1d6f79ae75965b39a0f0c9fb84a41f0d79e06e97cfd46e9fbd9ab",
               "width": 128,
               "height": 128
             }
@@ -506,6 +624,50 @@
               "height": 512
             }
           }
+        },
+        "clioWrite": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/snow-leopard/clioWrite.png",
+              "sha256": "a05f92a14fcd84f19b5f76ab366e6908382147fbde1d80a29aacee41223b78b2",
+              "prompt": "tooling/icon-generation/completion/prompts/snow-leopard/clioWrite.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/clioWrite-16.png",
+            "32": "icons/clioWrite-32.png",
+            "64": "icons/clioWrite-64.png",
+            "128": "icons/clioWrite-128.png",
+            "512": "icons/clioWrite-512.png"
+          },
+          "assets": {
+            "icons/clioWrite-16.png": {
+              "sha256": "5dd9e88030e65de16e9877f819bec3ac60439e04028e8cf14843150649642656",
+              "width": 16,
+              "height": 16
+            },
+            "icons/clioWrite-32.png": {
+              "sha256": "c7906f830fa0401395c63cd7c7217339b69f0cf6bd4d4fb700af1464b1e3c2a2",
+              "width": 32,
+              "height": 32
+            },
+            "icons/clioWrite-64.png": {
+              "sha256": "1abb4a14b38ad46c26538d89afce7e7ac943cb87d948c8cfbf5855b3bda454ec",
+              "width": 64,
+              "height": 64
+            },
+            "icons/clioWrite-128.png": {
+              "sha256": "8f513d01528c0836e89c287282faa211995a76cb22f27d63ec47fa2e0aed0106",
+              "width": 128,
+              "height": 128
+            },
+            "icons/clioWrite-512.png": {
+              "sha256": "20662b60ce11b0d8addda1c1d9f5214f11a868d837596e60250671e436c49db5",
+              "width": 512,
+              "height": 512
+            }
+          }
         }
       }
     },
@@ -624,6 +786,44 @@
               "height": 128
             }
           }
+        },
+        "clioWrite": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/yosemite/clioWrite.png",
+              "sha256": "38a5102787371c78f4c054c5cc7012c2aef08405a83cb5464dde90a51c3cb73a",
+              "prompt": "tooling/icon-generation/completion/prompts/yosemite/clioWrite.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/clioWrite-16.png",
+            "32": "icons/clioWrite-32.png",
+            "64": "icons/clioWrite-64.png",
+            "128": "icons/clioWrite-128.png"
+          },
+          "assets": {
+            "icons/clioWrite-16.png": {
+              "sha256": "1c78915f0f71507f9a63b94fe897e0060a2806a8ac27f0bad32cede2c7f37afe",
+              "width": 16,
+              "height": 16
+            },
+            "icons/clioWrite-32.png": {
+              "sha256": "5033c7a4a787ca2d3e2e09648cf115327694c79960789d65dec0cf44d53d13d4",
+              "width": 32,
+              "height": 32
+            },
+            "icons/clioWrite-64.png": {
+              "sha256": "f305c2e734fc7997754d8eaaf8a2373ac7d906ba6337bb1c09244d6184046b28",
+              "width": 64,
+              "height": 64
+            },
+            "icons/clioWrite-128.png": {
+              "sha256": "2dfddafa7bc8384ac0eb538621e485dd12d4934a891229e7b54dc64339a89c36",
+              "width": 128,
+              "height": 128
+            }
+          }
         }
       }
     },
@@ -738,6 +938,44 @@
             },
             "icons/mingwen-128.png": {
               "sha256": "9ad6d7520416e782657ca29dd401fae2e597ea402555225d229c395a0ace1dfa",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "clioWrite": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/big-sur/clioWrite.png",
+              "sha256": "53628d13a7348535c286a35600fb88b67985f44f2ed154960e90c0df78fdc65b",
+              "prompt": "tooling/icon-generation/completion/prompts/big-sur/clioWrite.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/clioWrite-16.png",
+            "32": "icons/clioWrite-32.png",
+            "64": "icons/clioWrite-64.png",
+            "128": "icons/clioWrite-128.png"
+          },
+          "assets": {
+            "icons/clioWrite-16.png": {
+              "sha256": "1445b288e9cfc6820b59389b90c4911e459a65130e9e519dd0540f10072bfc29",
+              "width": 16,
+              "height": 16
+            },
+            "icons/clioWrite-32.png": {
+              "sha256": "76e1c3a1bad6f2b7a33697096e3b418c16963c4368095b1e22143ef6e8663819",
+              "width": 32,
+              "height": 32
+            },
+            "icons/clioWrite-64.png": {
+              "sha256": "540693051bfbfd1cf893ee5d4e6fe5c115f84fe4a16fe6d131d890a7f6039dcb",
+              "width": 64,
+              "height": 64
+            },
+            "icons/clioWrite-128.png": {
+              "sha256": "fd4c933fa377d6f380fa1249204af88a33528f581b6e6d962f97ff856346e672",
               "width": 128,
               "height": 128
             }
@@ -1084,6 +1322,44 @@
             },
             "icons/mingwen-128.png": {
               "sha256": "d7d2d74a8d376a5ba83861e6d3adadc4ed903fd5d314edd6d1c5a0a256978acd",
+              "width": 128,
+              "height": 128
+            }
+          }
+        },
+        "clioWrite": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/nextstep/clioWrite.png",
+              "sha256": "73cc3315651e36bd8cc6aaa7eefb1ac01f15bf1ef2bbdf4ef6d47edf97cae674",
+              "prompt": "tooling/icon-generation/completion/prompts/nextstep/clioWrite.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/clioWrite-16.png",
+            "32": "icons/clioWrite-32.png",
+            "64": "icons/clioWrite-64.png",
+            "128": "icons/clioWrite-128.png"
+          },
+          "assets": {
+            "icons/clioWrite-16.png": {
+              "sha256": "ddc4aac7b10bb6be11a08c5889935349c81fb465243b1044f689c684e0477209",
+              "width": 16,
+              "height": 16
+            },
+            "icons/clioWrite-32.png": {
+              "sha256": "3937e3ddb3504e5c2ddebf40750d8cf8ee47e0d0198fd37689ae88d9b1fb149e",
+              "width": 32,
+              "height": 32
+            },
+            "icons/clioWrite-64.png": {
+              "sha256": "4e81f19d97441523f29faae99cfb2e0486796cfcda62b020e5f60d4b6992fc73",
+              "width": 64,
+              "height": 64
+            },
+            "icons/clioWrite-128.png": {
+              "sha256": "ba90ed1cd4e37c520efe6d54fcfa42e050593ad94268f13fc205da2ea7d82028",
               "width": 128,
               "height": 128
             }
@@ -1626,11 +1902,113 @@
             "128-dark": "icons/mingwen-128-dark.png",
             "128-clear": "icons/mingwen-128-clear.png"
           }
+        },
+        "clioWrite": {
+          "sourceKind": "original-generated-era-illustration",
+          "sources": {
+            "default": {
+              "file": "tooling/icon-generation/completion/masters/liquid-glass/clioWrite.png",
+              "sha256": "156352af437aee11a905cb90e041d5ab903b644c7abbefac7ade4f1a48ef0a43",
+              "prompt": "tooling/icon-generation/completion/prompts/liquid-glass/clioWrite.txt"
+            },
+            "dark": {
+              "file": "tooling/icon-generation/completion/masters/liquid-glass/clioWrite-dark.png",
+              "sha256": "45007446774022ceb4c459af9c290243bd0e22e38d5531b99df76fe79e227038",
+              "prompt": "tooling/icon-generation/completion/prompts/liquid-glass/clioWrite-dark.txt"
+            },
+            "clear": {
+              "file": "tooling/icon-generation/completion/masters/liquid-glass/clioWrite-clear.png",
+              "sha256": "fb14c35c505bba037b5e9f08f7dc9903360e2c8b3789289d5bee62d968ad02d0",
+              "prompt": "tooling/icon-generation/completion/prompts/liquid-glass/clioWrite-clear.txt"
+            }
+          },
+          "sizes": {
+            "16": "icons/clioWrite-16-default.png",
+            "32": "icons/clioWrite-32-default.png",
+            "64": "icons/clioWrite-64-default.png",
+            "128": "icons/clioWrite-128-default.png"
+          },
+          "assets": {
+            "icons/clioWrite-16-default.png": {
+              "sha256": "9e703bba26750cc26ace560291d2113ee9e05c99e7f1fb32254e58abd7484b9f",
+              "width": 16,
+              "height": 16
+            },
+            "icons/clioWrite-16-dark.png": {
+              "sha256": "32e027232baefb07f09f20a2fbeeb172ceaa13adb0ef9b90e3ecedd0c371a911",
+              "width": 16,
+              "height": 16
+            },
+            "icons/clioWrite-16-clear.png": {
+              "sha256": "fd2acbbd13a42a930a53d0bfd2a20df5f424b9bbd0a1f5cfaefa568500a473ce",
+              "width": 16,
+              "height": 16
+            },
+            "icons/clioWrite-32-default.png": {
+              "sha256": "cd95d4da9ed58a2a80945d9462b200f5215a2f43cbec24b327d0e420d2416a32",
+              "width": 32,
+              "height": 32
+            },
+            "icons/clioWrite-32-dark.png": {
+              "sha256": "b5c07aeefb65b96af8630018e7533027ed540c4c1124f73e455b8375e32c67f0",
+              "width": 32,
+              "height": 32
+            },
+            "icons/clioWrite-32-clear.png": {
+              "sha256": "d749d0ed8a827e70c83ce29f2f587523bd3411042b0cab3d2286f152bd870edb",
+              "width": 32,
+              "height": 32
+            },
+            "icons/clioWrite-64-default.png": {
+              "sha256": "559fa5d4c6a91bea30975178f623d25087140ef67ddcf97540d7373e82c63b9e",
+              "width": 64,
+              "height": 64
+            },
+            "icons/clioWrite-64-dark.png": {
+              "sha256": "970ff855c8f0217a2d311791d11e55ca692b6792a7ca7f7375da1fc2573ab7f8",
+              "width": 64,
+              "height": 64
+            },
+            "icons/clioWrite-64-clear.png": {
+              "sha256": "486963b3f78531dd3432763946d2bfb90a3ce50f12c7b310936ab378923f96a6",
+              "width": 64,
+              "height": 64
+            },
+            "icons/clioWrite-128-default.png": {
+              "sha256": "9a6371602360cef75c88ebf1ea0e47dcfc861ee2de46a1f0b0f7d4aee8976907",
+              "width": 128,
+              "height": 128
+            },
+            "icons/clioWrite-128-dark.png": {
+              "sha256": "f59a5b2b499ef8c0151cfd140ac3c9a8f9588bf3da2c576f62c72cc10ce250af",
+              "width": 128,
+              "height": 128
+            },
+            "icons/clioWrite-128-clear.png": {
+              "sha256": "c5593506ff614f50c43aadaaebc3492a8ac7f91b7b6593a19602d8dbb906eccd",
+              "width": 128,
+              "height": 128
+            }
+          },
+          "appearanceSizes": {
+            "16-default": "icons/clioWrite-16-default.png",
+            "16-dark": "icons/clioWrite-16-dark.png",
+            "16-clear": "icons/clioWrite-16-clear.png",
+            "32-default": "icons/clioWrite-32-default.png",
+            "32-dark": "icons/clioWrite-32-dark.png",
+            "32-clear": "icons/clioWrite-32-clear.png",
+            "64-default": "icons/clioWrite-64-default.png",
+            "64-dark": "icons/clioWrite-64-dark.png",
+            "64-clear": "icons/clioWrite-64-clear.png",
+            "128-default": "icons/clioWrite-128-default.png",
+            "128-dark": "icons/clioWrite-128-dark.png",
+            "128-clear": "icons/clioWrite-128-clear.png"
+          }
         }
       }
     }
   },
-  "sourceSha256": "d9ab13b3339a25ae4143ad161d26d4c1cd285b2035ef4ec5f429c292ab9b0c23",
+  "sourceSha256": "0dc6d09b4115c483ba7375a8b25c8d8561f4b2aea2340e987e34c2f3a5f3eb3c",
   "engine": "built-in Image Gen",
   "modelVersion": "not exposed by tool",
   "sizePolicy": "Native-size derivatives of individual generated masters; 1-bit optical threshold at 16/32, transparent fitted raster tiers elsewhere.",

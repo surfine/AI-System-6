@@ -5,10 +5,16 @@
 
 import vm from "node:vm";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createFeatureTest } from "../helpers/feature-test-harness.mjs";
 import {
   OTA_ARCHIVE_BASE_URL,
+  HELPER_NAMES,
+  HELPER_RESOURCE_BUNDLES_DIR,
+  MIN_MACOS_MAJOR,
+  HELPERS,
   OTA_MANIFEST_URL,
   REPO_ROOT,
   TINYJS_CONFIG_FILE,
@@ -19,11 +25,15 @@ import {
   buildTinyjsBuildArgs,
   buildVersionMetadata,
   commandFailed,
+  declaredHelperProducts,
   evaluatePackagedRuntime,
+  listResourceBundles,
   notaryCredentialsPresent,
   otaUpdateLocations,
   parseArguments,
+  parseLocalRpaths,
   parseMinimumOsVersion,
+  parseRpathDylibs,
   parseOtoolLibraries,
   planTinyjsPackaging,
   resolveAppIdentity,
@@ -169,6 +179,10 @@ test.assert(resolveSigningPlan({ env: {} }).mode === "ad-hoc", "dev falls back t
 test.assert(commandFailed({ status: 0 }) === false && commandFailed({ status: 1 }) === true,
   "only a zero exit status is a success");
 test.assert(
+  notaryCredentialsPresent({ AI_SYSTEM6_NOTARY_PROFILE: "ai-system6-notary" }),
+  "a notarytool keychain profile counts as notary credentials",
+);
+test.assert(
   notaryCredentialsPresent({ AI_SYSTEM6_NOTARY_APPLE_ID: "a@b.c", AI_SYSTEM6_NOTARY_APP_PASSWORD: "pw", AI_SYSTEM6_TEAM_ID: "T" })
     && notaryCredentialsPresent({ AI_SYSTEM6_NOTARY_KEY_ID: "K", AI_SYSTEM6_NOTARY_ISSUER: "I", AI_SYSTEM6_NOTARY_KEY: "P" })
     && notaryCredentialsPresent({ AI_SYSTEM6_NOTARY_KEY_ID: "K" }) === false,
@@ -282,6 +296,62 @@ const helperTooNew = evaluatePackagedRuntime({
 test.assert(helperTooNew.ok === false && helperTooNew.helper.minOs === "16.0"
   && helperTooNew.reasons.some((reason) => /above the supported macOS 15/.test(reason)),
   "a helper built above macOS 15 is refused");
+const twoHelpers = evaluatePackagedRuntime({
+  nodePath: "/tmp/node", helperPaths: ["/tmp/AISystem6Vision", "/tmp/AISystem6Intelligence"], arch: "arm64",
+  runCommand: (command, args) => {
+    const probe = [command, ...args].join(" ");
+    if (probe.endsWith("--version")) return { status: 0, stdout: "v24.5.0\n", stderr: "" };
+    if (probe.includes("AISystem6Intelligence") && probe.startsWith("otool -l")) return { status: 0, stdout: "cmd LC_BUILD_VERSION\n      minos 26.0\n", stderr: "" };
+    return { status: 0, stdout: "", stderr: "" };
+  },
+});
+test.assert(twoHelpers.helpers.length === 2 && twoHelpers.ok === false
+  && twoHelpers.reasons.some((reason) => /^intelligence helper targets macOS 26\.0/.test(reason)),
+  "every shipped helper is checked and a failure names the helper");
+test.assert(HELPER_NAMES.join(",") === "AISystem6Vision,AISystem6Intelligence"
+  && declaredHelperProducts('.executable(name: "AISystem6Shell", targets: ["A"]),\n    .executable(name: "AISystem6Vision", targets: ["V"]),').join(",") === "AISystem6Shell,AISystem6Vision",
+  "the helper list is Vision then Intelligence and declared SwiftPM products are parsed so an undeclared one can be skipped");
+test.assert(HELPERS[0].packageDir === "platform/macos/shell/macos-webview" && HELPERS[0].resourceBundles === false
+  && HELPERS[1].packageDir === "platform/macos/shell/macos-intelligence" && HELPERS[1].resourceBundles === true
+  && HELPER_RESOURCE_BUNDLES_DIR === "Contents/Resources",
+  "each helper declares its own SwiftPM package; only Intelligence ships resource bundles, into Contents/Resources where MLX and Bundle.module look");
+for (const helper of HELPERS) {
+  const manifest = readFileSync(new URL("../../" + helper.packageDir + "/Package.swift", import.meta.url), "utf8");
+  test.assert(declaredHelperProducts(manifest).includes(helper.name), helper.name + " is a product of the package it is built from");
+}
+const intelligenceManifest = readFileSync(new URL("../../platform/macos/shell/macos-intelligence/Package.swift", import.meta.url), "utf8");
+const intelligenceFloor = Number(/\.macOS\(\.v(\d+)\)/.exec(intelligenceManifest)?.[1]);
+test.assert(intelligenceFloor > 0 && intelligenceFloor <= 15,
+  "the Intelligence package's macOS floor (" + intelligenceFloor + ") is at or below the app's supported macOS 15, so evaluatePackagedRuntime accepts its minos");
+test.assert(MIN_MACOS_MAJOR === 15 && /\["LSMinimumSystemVersion", "15\.0"\]/.test(readFileSync(new URL("../../tooling/build-tinyjs-shell-app.mjs", import.meta.url), "utf8")),
+  "the minos check and the packaged LSMinimumSystemVersion both say macOS 15 (tinyjs.json carries no OS floor)");
+const intelligenceRunner = (command, args) => {
+  const probe = [command, ...args].join(" ");
+  if (probe.startsWith("otool -l") && probe.includes("AISystem6Intelligence")) {
+    return { status: 0, stdout: "cmd LC_BUILD_VERSION\n      minos 14.0\n", stderr: "" };
+  }
+  return goodRunner(command, args);
+};
+const intelligenceOk = evaluatePackagedRuntime({
+  nodePath: "/tmp/node", helperPaths: ["/tmp/AISystem6Vision", "/tmp/AISystem6Intelligence"], arch: "arm64", runCommand: intelligenceRunner,
+});
+test.assert(intelligenceOk.ok === true && intelligenceOk.helpers[1].minOs === "14.0",
+  "an Intelligence helper at minos 14.0 is accepted under the macOS 15 floor");
+test.assert(parseRpathDylibs("x:\n\t@rpath/libswiftCompatibilitySpan.dylib (compatibility version 0.0.0)\n\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0)\n").join(",") === "libswiftCompatibilitySpan.dylib"
+  && parseLocalRpaths("cmd LC_RPATH\n path /usr/lib/swift (offset 12)\ncmd LC_RPATH\n path @loader_path (offset 12)\ncmd LC_RPATH\n path /Applications/Xcode.app/tc (offset 12)\n").join(",") === "/Applications/Xcode.app/tc",
+  "toolchain @rpath dylibs and machine-local rpaths are found so they can be embedded and dropped");
+test.assert(parseOtoolLibraries("x:\n\t@executable_path/../Frameworks/libswiftCompatibilitySpan.dylib (compatibility version 1.0.0)\n\t@rpath/libother.dylib (compatibility version 1.0.0)\n").join(",") === "@rpath/libother.dylib",
+  "a library embedded in Contents/Frameworks passes the machine-local check and a bare @rpath one does not");
+const bundleFixture = mkdtempSync(join(tmpdir(), "ais6-bundles-"));
+for (const name of ["b.bundle", "a.bundle"]) mkdirSync(join(bundleFixture, name));
+mkdirSync(join(bundleFixture, "Cmlx.o.dir"));
+test.assert(listResourceBundles(bundleFixture).join(",") === "a.bundle,b.bundle" && listResourceBundles(join(bundleFixture, "missing")).length === 0,
+  "only *.bundle directories next to the product are shipped with a helper");
+rmSync(bundleFixture, { recursive: true, force: true });
+const tinyjsBackend = readFileSync(new URL("../../platform/macos/tinyjs/src/main.js", import.meta.url), "utf8");
+test.assert(/AI_SYSTEM6_VISION_HELPER: resources\.replace\(\/Resources\$\/, "MacOS\/AISystem6Vision"\)/.test(tinyjsBackend)
+  && /AI_SYSTEM6_DEVICE_MODEL_HELPER: resources\.replace\(\/Resources\$\/, "MacOS\/AISystem6Intelligence"\)/.test(tinyjsBackend),
+  "the shell backend tells the server where both bundled helpers are");
 test.assert(evaluatePackagedRuntime({ arch: "arm64", runCommand: () => ({ status: 0, stdout: "", stderr: "" }) }).ok === false,
   "a runtime with no named Node binary fails closed");
 

@@ -25,6 +25,16 @@ When evidence conflicts, resolve in this order:
 Historical dimensions are calibration evidence, never a hard acceptance value on
 every device.
 
+**System chrome is the exception (C3, 2026-10-16).** For the system frame —
+window frames and bevels, title bars, menus and the menu bar, scroll bars,
+cursors, desktop icons and labels, the Control Strip, list rows, status bars
+and dialog text — real-machine evidence (item 4) wins over items 2 and 3: a
+dispute is settled by real Mac OS 9 / System 6 pixels, not by impression or by
+the existing recipe. A product need that departs from the real machine there
+is written down beside the rule with its reason. Long-form reading, editing and
+previews keep modern readability (decision G1). The internal pixel baseline is
+`internal/evidence/exe-study-2026-10-16/shots/os9-*.png`; it never ships.
+
 ## Enforced contract vs. reference targets
 
 `npm run verify:design` reads the machine contract, validates its current

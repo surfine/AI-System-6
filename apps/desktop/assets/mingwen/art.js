@@ -84,7 +84,6 @@
       '<radialGradient id="frostGlow"><stop offset="0" stop-color="' + WOLF + '" stop-opacity=".55"/><stop offset="1" stop-color="' + FROST + '" stop-opacity="0"/></radialGradient>' +
       '<linearGradient id="glassSheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".28"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>' +
       '<linearGradient id="beamW" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + WW + '" stop-opacity=".45"/><stop offset="1" stop-color="' + WW + '" stop-opacity="0"/></linearGradient>' +
-      '<linearGradient id="bladeG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9FB0BF"/><stop offset=".5" stop-color="' + WOLF + '"/><stop offset="1" stop-color="#6E7F8F"/></linearGradient>' +
       '<pattern id="hexP" width="52" height="90" patternUnits="userSpaceOnUse"><path d="M26 0 L52 15 L52 45 L26 60 L0 45 L0 15 Z M26 60 L26 90 M0 45 L0 75 M52 45 L52 75" fill="none" stroke="' + WOLF + '" stroke-width="1.6"/></pattern>' +
       '<pattern id="hexEdgeP" width="26" height="45" patternUnits="userSpaceOnUse"><path d="M13 0 L26 7.5 L26 22.5 L13 30 L0 22.5 L0 7.5 Z M13 30 L13 45 M0 22.5 L0 37.5 M26 22.5 L26 37.5" fill="none" stroke="#7F9DB8" stroke-width="1.3"/><path d="M13 1.6 L24.4 8.2" stroke="' + WW + '" stroke-width="1"/></pattern>' +
       '<pattern id="laceP" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="12" cy="12" r="5" fill="none" stroke="' + LACE + '" stroke-width="1.2"/><circle cx="0" cy="0" r="2" fill="' + LACE + '"/><circle cx="24" cy="24" r="2" fill="' + LACE + '"/></pattern>' +
@@ -522,7 +521,7 @@
     s += poly([[0, 0], [1600, 0], [1600, 420], [0, 40]], '#1E1F29') + stroke('M0 60L1600 440M0 0L1600 380', '#3B2E26', 18) + stroke('M500 0L520 160M1000 0L1020 260', '#3B2E26', 14);
     s += '<g transform="rotate(-3 470 260)">' + rect(380, 180, 170, 230, PAH, ol(IN, 1.6)) + stroke('M400 214h130M400 240h120M400 266h130M400 292h110M400 318h130M400 344h100', IW, 2, op(0.55)) + kai(465, 205, '榜', 18, IN) + kai(536, 380, '这次一定', 13, CI, ' writing-mode="tb"') + circ(465, 184, 4, GOD) + '</g>';
     s += g(path('M700 470Q690 330 740 280Q770 240 800 280Q840 330 830 470Z', IN, op(0.4)) + circ(770, 250, 34, IN, op(0.4)), cls('no-wolf'));
-    s += g(path('M700 470Q690 330 740 290L760 220L790 250L830 200L816 268Q840 330 830 470Z', WOLFI, op(0.6)) + stroke('M700 300L640 230M840 300L900 240', WOLFI, 6, op(0.6)), cls('only-wolf'));
+    s += g(path('M700 470Q690 330 740 290L760 220L790 250L830 200L816 268Q840 330 830 470Z', WOLFI, op(0.6)), cls('only-wolf'));
     var wx = 870, wy = 150, ww = 320, wh = 330;
     s += '<clipPath id="' + wid + '"><rect x="' + wx + '" y="' + wy + '" width="' + ww + '" height="' + wh + '"/></clipPath>';
     var out = rect(wx, wy, ww, wh, 'url(#' + sky + ')');
@@ -848,7 +847,7 @@
     mom: { main: '#2E4A6B', label: '琴', prop: 'bowl' },
     dad: { main: '#6B5E4E', label: '山', prop: 'lamp' },
     critic: { main: '#1B1A1F', label: '钟', prop: 'monocle' },
-    wolf: { main: WOLFI, label: '狼', prop: 'blades' }
+    wolf: { main: WOLFI, label: '狼' }
   };
   var SEAL_COLORS = { me: '#243A5E', yuan: '#B5372A', qiu: '#6F7884', cheng: '#5D7486', yan: '#2F4A3A', man: '#5E8FC2', ye: '#6B4C8A', geng: '#8C7A5B', zhe: '#7A4E2E', mom: '#2E4A6B', dad: '#6B5E4E', critic: '#2A2830', wolf: '#4A5868' };
   var HS = 'translate(200 364) scale(.8) translate(-200 -332)'; // 头部比例（成年人）
@@ -1176,24 +1175,174 @@
     return s;
   }
 
-  function wolfSvg(f, klass) {
-    var st = (f === 'neutral' || f === 'smile') ? 'grin' : ((f === 'curious' || f === 'soft') ? 'whisper' : ((f === 'angry' || f === 'annoyed') ? 'snarl' : 'fade'));
-    var headT = st === 'whisper' ? 'translate(-20 26) rotate(-10 230 190)' : '';
-    var body = path('M140 600Q120 470 150 400Q170 330 220 300L260 300Q310 330 320 400Q336 470 316 600Z', WOLFI) +
-      path('M150 410Q100 460 96 520L120 524Q130 474 170 440Z M300 410Q352 450 360 520L336 526Q326 472 290 442Z', WOLFI);
-    var head = '<g transform="' + headT + '"><g transform="' + (st === 'snarl' ? 'rotate(28 250 120)' : '') + '">' + path('M226 150L236 76L262 140Z', WOLFI) + path('M262 140L284 84L290 154Z', WOLFI) + '</g>' +
-      path('M210 300Q190 230 214 176Q240 140 286 150Q314 158 318 196L300 214L190 236L118 246Q104 238 118 226L196 200Z', WOLFI) +
-      stroke('M118 246L196 230Q240 214 300 214', WOLF, 1.6, op(0.6)) + line(238, 176, 268, 172, WOLF, 3) + stroke('M252 150L254 202', WOLF, 2.4) +
-      (st === 'grin' ? stroke('M130 244l8 -6l8 6l8 -6l8 6l8 -6l8 6l8 -6l8 6l8 -6l8 6', WOLF, 1.6) : '') +
-      (st === 'snarl' ? stroke('M126 244l8 -8l8 8l8 -8l8 8l8 -8l8 8l8 -8l8 8', WOLF, 2) + stroke('M190 236q-10 10 -24 8', WOLF, 1.4) : '') + '</g>';
-    function blade(x, y, ang) {
-      return '<g transform="translate(' + x + ' ' + y + ') rotate(' + ang + ')">' + path('M0 0Q-14 -60 -4 -130L4 -140Q12 -64 6 0Z', 'url(#bladeG)', ol(WOLF, 1)) + stroke('M2 -6L0 -126', WOLFI, 1, op(0.6)) + rect(-6, 0, 14, 30, WOLFI, ol(WOLF, 1)) + '</g>';
+  /* ---------- 白狼：霜的负形 ----------
+     狼没有身体。霜从画面右缘、下缘长进来，长到它身边就停住；停住的那条线就是它的轮廓，
+     里面只剩一层很淡的冷白，眼睛是一点冷光。外流值越高，霜越厚、它越近也越完整（幅度克制）。
+     狼形画在 400×600 的「狼坐标」里，面朝左坐着；wPlace() 把它放进舞台像素坐标。
+     第三个值 1 = 尖角（耳尖、鼻尖、爪尖）；第四个值是头部权重：1 随头转，0 不动，中间是脖子。 */
+  var WSIT = [[22, 118, 1, 1], [30, 108, 0, 1], [60, 100, 0, 1], [92, 92, 0, 1], [112, 80, 0, 1], [128, 70, 0, 1], [136, 64, 0, 1], [150, 24, 1, 1], [170, 62, 0, 1], [180, 70, 0, 1], [196, 90, 0, 1], [206, 100, 1, 1], [204, 112, 0, .9], [208, 150, 0, .5], [212, 190, 0, .15],
+    [230, 234], [252, 286], [276, 340], [302, 392], [330, 430], [346, 476], [350, 524], [340, 556], [356, 566], [382, 580], [398, 594, 1], [366, 597], [320, 598], [270, 598], [214, 597, 1], [208, 588], [204, 550], [196, 500], [184, 456], [168, 426], [160, 470], [158, 540], [162, 596], [140, 598], [100, 598], [88, 593, 1],
+    [94, 585], [104, 560], [110, 480], [110, 400], [102, 346], [94, 300], [92, 270], [84, 258, 1], [92, 246], [86, 232, 1, .1], [94, 220, 0, .25], [88, 206, 1, .45], [92, 192, 0, .65], [86, 172, 0, .9], [74, 156, 0, 1], [56, 144, 0, 1], [36, 134, 0, 1], [26, 128, 0, 1]];
+  var W_EAR = 7, W_EYE = [108, 98];
+  var W_POSE = { whisper: { rot: -7 }, grin: { rot: 6 }, snarl: { rot: -14, ears: 1 }, fade: { rot: -3 } };
+  var W_SCALE = { whisper: .8, grin: 1, snarl: 1.3, fade: .94 }, W_LV = { whisper: .6, grin: .8, snarl: .92, fade: .8 };
+  function wolfState(f) { return (f === 'neutral' || f === 'smile') ? 'grin' : ((f === 'curious' || f === 'soft') ? 'whisper' : ((f === 'angry' || f === 'annoyed') ? 'snarl' : 'fade')); }
+  function wRot(p, a, w) {
+    var r = a * w * Math.PI / 180, dx = p[0] - 150, dy = p[1] - 160;
+    return [150 + dx * Math.cos(r) - dy * Math.sin(r), 160 + dx * Math.sin(r) + dy * Math.cos(r)];
+  }
+  function wPose(name) {
+    var P = W_POSE[name] || W_POSE.grin;
+    return {
+      pts: WSIT.map(function (p, i) { var q = [p[0], p[1]], w = p[3] || 0; if (P.ears && i === W_EAR) { q[0] += 12; q[1] += 8; } if (w) q = wRot(q, P.rot, w); return [q[0], q[1], p[2]]; }),
+      eye: wRot(W_EYE, P.rot, 1)
+    };
+  }
+  function wCurve(pts, per) { // Catmull-Rom → 三次贝塞尔，顺便取样成折线（给「点在形内」和沿边取点用）
+    var len = pts.length, d = 'M' + n(pts[0][0]) + ' ' + n(pts[0][1]), s = [];
+    per = per || 8;
+    for (var i = 0; i < len; i++) {
+      var p0 = pts[(i - 1 + len) % len], p1 = pts[i], p2 = pts[(i + 1) % len], p3 = pts[(i + 2) % len];
+      var c1 = p1[2] ? [p1[0], p1[1]] : [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+      var c2 = p2[2] ? [p2[0], p2[1]] : [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+      d += 'C' + n(c1[0]) + ' ' + n(c1[1]) + ' ' + n(c2[0]) + ' ' + n(c2[1]) + ' ' + n(p2[0]) + ' ' + n(p2[1]);
+      for (var k = 0; k < per; k++) {
+        var t = k / per, u = 1 - t;
+        s.push([u * u * u * p1[0] + 3 * u * u * t * c1[0] + 3 * u * t * t * c2[0] + t * t * t * p2[0], u * u * u * p1[1] + 3 * u * u * t * c1[1] + 3 * u * t * t * c2[1] + t * t * t * p2[1]]);
+      }
     }
-    var blades = st === 'snarl' ? blade(108, 520, 160) + blade(348, 520, -160) : blade(108, 520, 200) + blade(348, 520, 160);
-    var rim = stroke('M316 600Q336 470 320 400Q310 330 260 300', WOLF, 2.4, op(0.7)) + stroke('M286 150Q314 158 318 196', WOLF, 2, op(0.7));
-    var drips = path(dots([[170, 620, 6], [230, 640, 5], [290, 628, 6], [206, 666, 4]]), WOLFI, cls('fx-drip'));
-    return '<svg class="' + (klass || 'portrait-svg') + ' wolf-' + st + '" viewBox="0 0 400 680" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
-      circ(220, 380, 260, 'url(#frostGlow)', op(0.6)) + g(body + head + rim + blades + drips, cls('wolf-body')) + '</svg>';
+    return { d: d + 'Z', s: s };
+  }
+  function wInside(poly, x, y) {
+    var c = false;
+    for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      var a = poly[i], b = poly[j];
+      if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) c = !c;
+    }
+    return c;
+  }
+  function wPlace(w, h, st, L, o) { // 桌面放在右侧；手机放在对话笺上方（foot = 笺与快捷栏占去的高度）
+    if (o.plate) return { x: (w - 398 * .9) / 2, y: h - 598 * .9 - 8, s: .9 };
+    var k = (W_SCALE[st] || 1) * (.84 + .16 * L), H, s, x, y;
+    if (w >= 720) {
+      H = h * .74 * k; s = H / 600; x = w - 398 * s - w * .045 - L * w * .03; y = h - 598 * s;
+      if (st === 'snarl') { x -= w * .075; y += H * .1; }
+      if (o.minX) x = Math.max(x, Math.min(w - 300 * s, o.minX - 60 * s)); // 双笺在场时站到笺的右边，不压字
+    } else {
+      var foot = Math.max(120, Math.min(h * .5, o.foot || 172));
+      H = Math.min((h - foot) * .92, h * .56) * k; s = H / 600; x = w - 398 * s + 2 - L * 10; y = (h - foot) - 598 * s;
+      if (st === 'snarl') { x -= 14; y += H * .12; }
+    }
+    return { x: x, y: y, s: s };
+  }
+  function wDendrite(x, y, ang, len, r) { // 冰晶枝：从边界一点往外长，主干两侧各有 60° 的短枝
+    var d = 'M' + n(x) + ' ' + n(y) + 'L' + n(x + Math.cos(ang) * len) + ' ' + n(y + Math.sin(ang) * len), nb = len > 22 ? 2 : (len > 10 ? 1 : 0);
+    for (var b = 1; b <= nb; b++) {
+      var t = b / (nb + 1) + (r() - .5) * .12, bx = x + Math.cos(ang) * len * t, by = y + Math.sin(ang) * len * t, bl = len * (1 - t) * (.35 + r() * .2);
+      d += 'M' + n(bx) + ' ' + n(by) + 'l' + n(Math.cos(ang - 1.05) * bl) + ' ' + n(Math.sin(ang - 1.05) * bl);
+      d += 'M' + n(bx) + ' ' + n(by) + 'l' + n(Math.cos(ang + 1.05) * bl) + ' ' + n(Math.sin(ang + 1.05) * bl);
+    }
+    return d;
+  }
+  function wSpark(x, y, s) {
+    var d = '';
+    for (var k = 0; k < 3; k++) { var a = k * Math.PI / 3, dx = Math.cos(a) * s, dy = Math.sin(a) * s; d += 'M' + n(x - dx) + ' ' + n(y - dy) + 'L' + n(x + dx) + ' ' + n(y + dy); }
+    return d;
+  }
+  function wolfFrost(w, h, st, o) {
+    var L = Math.max(0, Math.min(1, (o.leak || 0) / 20)), fade = st === 'fade' ? .55 : 0, r = rnd(13);
+    var lv = W_LV[st] * (1 - fade * .6) * (.62 + .38 * L), A2 = function (v) { return Math.min(1, v * lv).toFixed(2); };
+    var P = wPlace(w, h, st, L, o), W = wPose(st), cv = wCurve(W.pts), S = cv.s.map(function (p) { return [P.x + p[0] * P.s, P.y + p[1] * P.s]; });
+    var cx = P.x + 230 * P.s, cy = P.y + 360 * P.s, R = Math.max(360 * P.s, 220), T = 'translate(' + n(P.x) + ' ' + n(P.y) + ') scale(' + (Math.round(P.s * 1000) / 1000) + ')';
+    var ex = P.x + W.eye[0] * P.s, ey = P.y + W.eye[1] * P.s, sw = function (v) { return n(v / Math.max(.4, P.s) * Math.min(1, P.s)); };
+    var id = { g: nid('wfG'), e: nid('wfE'), b: nid('wfB'), f1: nid('wfF'), f2: nid('wfF'), eye: nid('wfI'), m: nid('wfM') };
+    var out = '<defs>' +
+      '<radialGradient id="' + id.g + '" gradientUnits="userSpaceOnUse" cx="' + n(cx) + '" cy="' + n(cy) + '" r="' + n(R) + '"><stop offset="0" stop-color="#D6F0EE" stop-opacity="' + A2(.42) + '"/><stop offset=".55" stop-color="#D6F0EE" stop-opacity="' + A2(.26) + '"/><stop offset="1" stop-color="#D6F0EE" stop-opacity="0"/></radialGradient>' +
+      '<linearGradient id="' + id.e + '" gradientUnits="userSpaceOnUse" x1="' + w + '" y1="0" x2="' + n(w * .5) + '" y2="0"><stop offset="0" stop-color="#D6F0EE" stop-opacity="' + A2(.42) + '"/><stop offset="1" stop-color="#D6F0EE" stop-opacity="0"/></linearGradient>' +
+      '<linearGradient id="' + id.b + '" gradientUnits="userSpaceOnUse" x1="0" y1="' + n(P.y + 40 * P.s) + '" x2="0" y2="' + n(P.y + 600 * P.s) + '"><stop offset="0" stop-color="#EEFAF8" stop-opacity="' + A2(.4) + '"/><stop offset=".7" stop-color="#E2F4F2" stop-opacity="' + A2(.26) + '"/><stop offset="1" stop-color="#E2F4F2" stop-opacity="' + A2(.1) + '"/></linearGradient>' +
+      '<filter id="' + id.f1 + '" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="' + sw(14) + '"/></filter><filter id="' + id.f2 + '" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="' + sw(3) + '"/></filter>' +
+      '<radialGradient id="' + id.eye + '"><stop offset="0" stop-color="#F2FFFD" stop-opacity=".9"/><stop offset="1" stop-color="#BFEFEA" stop-opacity="0"/></radialGradient>' +
+      '<mask id="' + id.m + '" maskUnits="userSpaceOnUse" x="0" y="0" width="' + w + '" height="' + h + '"><rect width="' + w + '" height="' + h + '" fill="#fff"/><path d="' + cv.d + '" transform="' + T + '" fill="#000"/></mask>' +
+      '</defs>';
+    if (o.plate) out += rect(0, 0, w, h, '#0C1317') + rect(0, 0, w, h, 'url(#' + id.g + ')', op(0.5)); // 档案卡：先垫一块冷黑底，浅色主题下才看得见冷白
+    out += '<g class="fn-hole" mask="url(#' + id.m + ')">' +
+      '<rect class="fn-veil" width="' + w + '" height="' + h + '" fill="url(#' + id.e + ')"/>' +
+      '<rect class="fn-veil" width="' + w + '" height="' + h + '" fill="url(#' + id.g + ')"/>' +
+      '<path class="fn-veil" d="' + cv.d + '" transform="' + T + '" fill="none" stroke="#DDF3F1" stroke-width="' + sw(46) + '" stroke-opacity="' + A2(.5) + '" filter="url(#' + id.f1 + ')"/>' +
+      '<path class="fn-veil" d="' + cv.d + '" transform="' + T + '" fill="none" stroke="#EEFAF8" stroke-width="' + sw(10) + '" stroke-opacity="' + A2(.55) + '" filter="url(#' + id.f2 + ')"/>';
+    // 沿轮廓往外长的冰纹：外流低时稀一些、短一些
+    var acc = 0, step = 6.5, cnt = S.length, bw = Math.max(.6, Math.min(.85, P.s * .8)), thin = (1 - L) * .4, grow = .75 + .35 * L;
+    for (var i = 0; i < cnt; i++) {
+      var a = S[i], b = S[(i + 1) % cnt], seg = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      acc += seg; if (acc < step) continue; acc = 0;
+      if (a[1] > h - 2) continue;
+      var tx = (b[0] - a[0]) / (seg || 1), ty = (b[1] - a[1]) / (seg || 1), nx = -ty, ny = tx;
+      if (wInside(S, a[0] + nx * 4, a[1] + ny * 4)) { nx = -nx; ny = -ny; }
+      var skip = r();
+      if (fade && skip < fade * .7) continue;
+      if (st === 'whisper' && skip > .65) continue;
+      if (r() < thin) continue;
+      var ang = Math.atan2(ny, nx) + (r() - .5) * .9, len = (4 + Math.pow(r(), 2.2) * 26) * Math.sqrt(P.s) * (st === 'snarl' ? 1.2 : 1) * grow;
+      out += '<path class="fn-c" fill="none" stroke="#DDF1EF" stroke-linecap="round" style="--i:' + r().toFixed(2) + '" d="' + wDendrite(a[0] + nx * 1.5, a[1] + ny * 1.5, ang, len, r) + '" stroke-width="' + bw.toFixed(2) + '" opacity="' + (.3 + r() * .45).toFixed(2) + '"/>';
+    }
+    // 从画面右缘、下缘长进来的霜蕨
+    var ferns = Math.round((st === 'snarl' ? 26 : 16) * (1 - fade * .6) * (.55 + .6 * L));
+    for (var j = 0; j < ferns; j++) {
+      var fromRight = j % 3 !== 2, fx = fromRight ? w - 1 : w * (.5 + r() * .5), fy = fromRight ? r() * h : h - 1;
+      var fa = (fromRight ? Math.PI : -Math.PI / 2) + (r() - .5) * .8, fl = (24 + r() * 70) * (st === 'snarl' ? 1.3 : 1) * Math.min(1, w / 1000 + .3) * grow;
+      out += '<path class="fn-c" fill="none" stroke="#DDF1EF" stroke-linecap="round" style="--i:' + r().toFixed(2) + '" d="' + wDendrite(fx, fy, fa, fl, r) + '" stroke-width=".8" opacity="' + (.3 + r() * .35).toFixed(2) + '"/>';
+    }
+    // 雾里的小冰晶
+    var sparks = Math.round(30 + 40 * L);
+    for (var k = 0; k < sparks; k++) {
+      var sa = r() * Math.PI * 2, sr = Math.sqrt(r()) * R, sx = cx + Math.cos(sa) * sr, sy = cy + Math.sin(sa) * sr;
+      if (fade && r() < fade) continue;
+      out += '<path class="fn-spark" fill="none" stroke="#F2FFFD" stroke-linecap="round" style="--i:' + r().toFixed(2) + '" d="' + wSpark(sx, sy, 1.2 + r() * 2.2) + '" stroke-width=".7" opacity="' + (.3 + r() * .5).toFixed(2) + '"/>';
+    }
+    out += '</g>';
+    out += '<path class="fn-body" d="' + cv.d + '" transform="' + T + '" fill="url(#' + id.b + ')"/>'; // 留白：霜停住的地方，就是它
+    if (fade) out += '<path class="fn-close" d="' + cv.d + '" transform="' + T + '" fill="#D6E8E8" opacity="' + (fade * .45).toFixed(2) + '"/>'; // 消散：空处先被雾填上
+    var eo = st === 'whisper' ? .55 : (st === 'fade' ? .7 * (1 - fade) + .1 : 1), er = Math.max(1.6, 2.4 * P.s) * (st === 'snarl' ? 1.25 : 1);
+    out += '<g class="fn-eye" opacity="' + eo.toFixed(2) + '">' + circ(ex, ey, er * 5, 'url(#' + id.eye + ')', op(0.55)) + circ(ex, ey, er * 1.9, '#0E1A1E', op(0.35)) + circ(ex, ey, er * 1.15, '#F6FFFE') + '</g>';
+    return out;
+  }
+  function wolfSvg(f, klass, o) {
+    o = o || {};
+    var st = wolfState(f), w = Math.max(1, Math.round(o.w || 400)), h = Math.max(1, Math.round(o.h || 600));
+    if (!o.w) o = { plate: true, leak: 12 }; // 档案馆人物卡：400×600，冷黑底
+    return '<svg class="' + (klass || 'portrait-svg') + ' wolf-' + st + (o.plate ? ' wolf-plate' : '') + '" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' + wolfFrost(w, h, st, o) + '</svg>';
+  }
+
+  /* ---------- 白狼：主角的影子（只用在第十章「让它走」） ----------
+     烛光把韩栖投在阁楼墙上。同一组 33 个点：t=0 是他低头写字的侧影，t=1 长出耳朵和吻。
+     影子本身一直是他的，只有多长出来的那一块是冷白的；cold 控制那一块和眼睛的冷光。
+     坐标对齐 my_room_night 背景（1600×900，slice），t=0 时正好压在画里原有的影子上。 */
+  var SH_HUMAN = [[30, 520], [40, 450], [62, 400], [92, 372], [110, 346], [112, 322], [106, 304], [94, 298], [90, 286], [86, 276], [84, 268], [82, 262], [72, 254, 1], [82, 236], [86, 222], [88, 208], [98, 186], [110, 168], [128, 154], [150, 146], [170, 144], [192, 148], [212, 160], [228, 182], [234, 212], [230, 244], [220, 272], [218, 300], [236, 328], [290, 348], [334, 380], [352, 440], [358, 520]];
+  var SH_BEAST = [[30, 520], [40, 450], [62, 400], [92, 372], [110, 346], [112, 322], [96, 300], [66, 292], [40, 286], [20, 280], [6, 274], [0, 266], [-6, 256, 1], [14, 244], [46, 232], [74, 216], [96, 196], [114, 178], [126, 128, 1], [150, 166], [166, 160], [182, 118, 1], [204, 166], [226, 188], [236, 216], [234, 248], [226, 276], [222, 304], [236, 328], [290, 348], [334, 380], [352, 440], [358, 520]];
+  var SH_EYE = [100, 224], SH_T = 'translate(612 40) scale(.86)';
+  function shMorph(t) {
+    var e = t * t * (3 - 2 * t);
+    return SH_HUMAN.map(function (p, i) { var q = SH_BEAST[i]; return [p[0] + (q[0] - p[0]) * e, p[1] + (q[1] - p[1]) * e, (q[2] && t > .4) || p[2] ? 1 : 0]; });
+  }
+  function wolfShadow(o) {
+    o = o || {};
+    var t = Math.max(0, Math.min(1, +o.t || 0)), cold = o.cold == null ? t : Math.max(0, Math.min(1, +o.cold)), hc = wCurve(SH_HUMAN), mc = wCurve(shMorph(t));
+    var id = { fade: nid('shA'), clip: nid('shC'), head: nid('shH'), headG: nid('shG'), soft: nid('shS'), m: nid('shM'), eye: nid('shE') };
+    var out = '<defs><linearGradient id="' + id.fade + '" x1="0" y1="0" x2="0" y2="1"><stop offset=".62" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>' +
+      '<mask id="' + id.clip + '" maskUnits="userSpaceOnUse" x="0" y="0" width="1600" height="900"><rect x="0" y="0" width="1600" height="470" fill="url(#' + id.fade + ')"/></mask>' +
+      '<linearGradient id="' + id.headG + '" x1="0" y1="0" x2="0" y2="1"><stop offset=".72" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>' +
+      '<mask id="' + id.head + '" maskUnits="userSpaceOnUse" x="0" y="0" width="1600" height="900"><rect x="0" y="0" width="1600" height="330" fill="url(#' + id.headG + ')"/></mask>' +
+      '<filter id="' + id.soft + '" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="3"/></filter>' +
+      '<mask id="' + id.m + '" maskUnits="userSpaceOnUse" x="0" y="0" width="1600" height="900"><path d="' + mc.d + '" transform="' + SH_T + '" fill="#fff"/><path d="' + hc.d + '" transform="' + SH_T + '" fill="#000"/></mask>' +
+      '<radialGradient id="' + id.eye + '"><stop offset="0" stop-color="#F2FFFD" stop-opacity=".95"/><stop offset="1" stop-color="#BFEFEA" stop-opacity="0"/></radialGradient></defs>';
+    out += '<g mask="url(#' + id.clip + ')"><g class="sd-flick">';
+    out += '<path class="sd-body" d="' + mc.d + '" transform="' + SH_T + '" fill="#070B14" opacity="' + (.5 + .06 * t).toFixed(2) + '" filter="url(#' + id.soft + ')"/>';
+    out += '<g mask="url(#' + id.m + ')"><path class="sd-cold" d="' + mc.d + '" transform="' + SH_T + '" filter="url(#' + id.soft + ')" fill="#D6F0EE" opacity="' + (.62 * cold).toFixed(2) + '"/></g>';
+    out += '<path class="sd-rim" mask="url(#' + id.head + ')" d="' + mc.d + '" transform="' + SH_T + '" fill="none" stroke="#E2F6F4" stroke-width="1.6" vector-effect="non-scaling-stroke" opacity="' + (.8 * cold).toFixed(2) + '"/>';
+    var ex = 612 + SH_EYE[0] * .86, ey = 40 + SH_EYE[1] * .86, eo = Math.max(0, (t - .5) * 2) * cold;
+    out += '<g class="sd-eye" opacity="' + eo.toFixed(2) + '">' + circ(ex, ey, 12, 'url(#' + id.eye + ')', op(0.6)) + circ(ex, ey, 2.6, '#F2FFFD') + '</g>';
+    out += '</g></g>';
+    return '<svg class="wolf-svg wolf-shadow-svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' + out + '</svg>';
   }
 
   function portrait(id, f, o) {
@@ -1220,7 +1369,7 @@
     return '<svg class="portrait-svg p-' + id + ' f-' + f + '" ' + vb + '><defs><clipPath id="rimR"><rect x="200" y="0" width="200" height="600"/></clipPath><clipPath id="shadeL"><rect x="0" y="0" width="190" height="600"/></clipPath></defs><g filter="url(#ptLight)"><g filter="url(#ptWobS)">' + celLines(inner) + '</g></g></svg>';
   }
   function celLines(svg) { return svg.replace(/stroke="#1B1A1F"/g, 'stroke="#3B2626" stroke-opacity=".82"'); }
-  function wolfShade(f) { return wolfSvg(f || 'neutral', 'wolf-svg'); }
+  function wolfShade(f, o) { return o && o.w && o.h ? wolfSvg(f || 'neutral', 'wolf-svg', o) : ''; } // 舞台尺寸未知时不画
   function shadowFigure(id) { return portrait(id, 'soft'); }
   function silhouette(seed) {
     var r = rnd(seed || 1);
@@ -1347,7 +1496,7 @@
     j_bowl: '<path d="M4 11h16a8 8 0 0 1-16 0z" fill="' + PAH + '" stroke="' + IN + '" stroke-width="1.4"/><path d="M9 8q-2-2 0-4M13 8q-2-2 0-4" stroke="' + IW2 + '" stroke-width="1.4" fill="none"/>',
     j_lamp: '<path d="M9 7h6l1 9H8z" fill="' + AM + '" stroke="' + IN + '" stroke-width="1.4"/><path d="M12 3v4M8 18h8" stroke="' + IN + '" stroke-width="1.6"/>',
     j_eye: '<circle cx="12" cy="12" r="6" fill="none" stroke="' + GO + '" stroke-width="2"/><path d="M17 16l3 5" stroke="' + GO + '" stroke-width="1.6"/>',
-    j_shadow: '<path d="M6 21q-2-10 6-14l2-4 2 5q4 4 2 13z" fill="' + WOLFI + '"/><path d="M12 9v4" stroke="' + WOLF + '" stroke-width="1.2"/>'
+    j_shadow: '<path d="M6 21q-2-10 6-14l2-4 2 5q4 4 2 13z" fill="' + WOLFI + '"/><circle cx="11" cy="10" r="1" fill="' + WOLF + '"/>'
   };
   function icon(name, klass) { return '<svg class="icon ' + (klass || '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (ICONS[name] || '') + '</svg>'; }
 
@@ -1356,7 +1505,7 @@
     CHAR_COLORS: (function () { var o = {}; for (var k in CH) o[k] = CH[k].main; return o; })(),
     SEAL_COLORS: SEAL_COLORS,
     CHAR_LABEL: (function () { var o = {}; for (var k in CH) o[k] = CH[k].label; return o; })(),
-    defs: defs, paperTile: paperTile, bg: bg, bgVariants: bgVariants, tod: tod, portrait: portrait, wolfShade: wolfShade, shadowFigure: shadowFigure,
+    defs: defs, paperTile: paperTile, bg: bg, bgVariants: bgVariants, tod: tod, portrait: portrait, wolfShade: wolfShade, wolfShadow: wolfShadow, shadowFigure: shadowFigure,
     titleArt: titleArt, silhouette: silhouette, seal: seal, claw: claw, hexWall: hexWall, hexEdge: hexEdge, doodle: doodle, cardArt: cardArt, barcode: barcode,
     TOWER_BGS: TOWER_BGS.slice(), POSES: POSES, props: props, PROPS: (function () { var o = {}; for (var k in PROPS) o[k] = Object.keys(PROPS[k]); return o; })(),
     candle: candleHud, bookmark: bookmark, starmap: starmap, icon: icon, BG_IDS: Object.keys(BG),

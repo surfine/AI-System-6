@@ -15,7 +15,7 @@ One route from your raw questions to a finished piece. Projects in your browser.
 [![Model](https://img.shields.io/badge/model-bring%20your%20own-000000?style=flat-square)](#bring-your-own-model)
 [![Live](https://img.shields.io/badge/live-system6.aaronlau.me-000000?style=flat-square)](https://system6.aaronlau.me)
 
-[**BOOT IT NOW**](https://system6.aaronlau.me)&nbsp;&nbsp;·&nbsp;&nbsp;[**50s FILM**](https://www.bilibili.com/video/BV1ht3m6UEDb/)&nbsp;&nbsp;·&nbsp;&nbsp;[**PRODUCT SITE**](https://aisystem6.pages.dev)&nbsp;&nbsp;·&nbsp;&nbsp;[**MAC BETA**](https://github.com/surfine/AI-System-6/releases/latest)&nbsp;&nbsp;·&nbsp;&nbsp;[简体中文](README.zh-CN.md)
+[**BOOT IT NOW**](https://system6.aaronlau.me)&nbsp;&nbsp;·&nbsp;&nbsp;[**THE FILM**](https://www.bilibili.com/video/BV1gYph6hEE6/)&nbsp;&nbsp;·&nbsp;&nbsp;[**PRODUCT SITE**](https://aisystem6.aaronlau.me)&nbsp;&nbsp;·&nbsp;&nbsp;[**MAC BETA**](https://github.com/surfine/AI-System-6/releases/latest)&nbsp;&nbsp;·&nbsp;&nbsp;[简体中文](README.zh-CN.md)
 
 <br>
 
@@ -42,7 +42,7 @@ TWELVE APPEARANCES IN ALL. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 ## Contents
 
 - [Recent progress](#recent-progress)
-- [What's new in 1.0.58](#whats-new-in-1058)
+- [What's new in 1.0.59](#whats-new-in-1059)
 - [Earlier releases](#earlier-releases--1058--1057--1056-click-to-expand)
 - [What this protects](#what-this-protects)
 - [Run it in 60 seconds](#run-it-in-60-seconds)
@@ -61,6 +61,7 @@ TWELVE APPEARANCES IN ALL. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 
 ## Recent progress
 
+- **Edit the Office files you already have, on the desk.** Excel workbooks (.xlsx) open in ClioChart, PowerPoint decks (.pptx) in ClioStage, and Word documents (.docx) in ClioWrite. Express changes cell values, slide text and notes, or paragraph text; Full Editing adds formulas, slide and layout commands, and headings, emphasis and lists. Tables, charts, SmartArt and pictures stay read-only and are kept, and comments can be read, added and answered. Saving keeps everything else in the file as it was; the first save lists, in plain words and with the sheet or page, anything that will be converted or lost, and Cancel is the default. Edit › Undo steps back through named changes. Nothing is created from scratch yet, and the round trip has been checked in LibreOffice for all three formats and in Microsoft Excel and PowerPoint for Mac; the Word check is still to come.
 - **Turn source text into a diagram or slide deck.** ClioChart keeps the source sentence behind each diagram element. ClioStage lets you edit the slide itself and preview the page before printing. AI drafting needs a connected model. Check the result before sharing it.
 - **Keep editing after an image moves between apps.** Insert a diagram, drawing or cover as an editable copy. When the original changes, choose whether to sync the copy. Each editor keeps its own undo history.
 - **Return to the window you need.** Dock previews show an app’s windows before you choose one. In Mac OS X appearances, the Dock starts off; enable it in the Control Panel. All twelve appearances remain available.
@@ -70,24 +71,32 @@ TWELVE APPEARANCES IN ALL. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 Projects stay in your browser. Export a backup to keep another copy. You can explore the desktop, play games and open the **36 demonstration project disks** without connecting an AI model.
 
 <details>
-<summary>Release details: 1.0.58, 1.0.57 and 1.0.56</summary>
+<summary>Release details: 1.0.59, 1.0.58, 1.0.57 and 1.0.56</summary>
 
-## What's new in 1.0.58
+## What's new in 1.0.59
+
+- **The desk starts on macOS 12 again.** A regular expression in the boot bundle stopped 1.0.59 from starting under WebKit before 16.4, the engine behind the Intel/Monterey app and older Safari. The bundle no longer uses that form; the Intel app is rebuilt from the same source, signed with a Developer ID and notarized.
+- **Edit Office files on the desk.** Excel workbooks (.xlsx) open in ClioChart, PowerPoint decks (.pptx) in ClioStage, and Word documents (.docx) in a new ClioWrite window. Express changes cell values, slide text and notes, or paragraph text; Full Editing adds formulas, slide and layout commands, and headings, emphasis and lists. ClioWrite also appears on phones and tablets.
+- **Saving keeps the rest of the file as it was.** Tables, charts, SmartArt and pictures stay read-only and are kept; comments can be read, added and answered. The first save lists, in plain words and with the sheet or page, anything that will be converted or lost, and Cancel is the default. Edit › Undo steps back through named changes. Nothing is created from scratch yet. The round trip has been checked in LibreOffice for all three formats and in Microsoft Excel and PowerPoint for Mac; the Word check is still to come, and ClioWrite's icon is a temporary line drawing.
+- **About is a window you can leave open.** It opens when you ask for it and no longer blocks the desk. It holds the film and the credits, and **First time here** offers three ways in: pick a Mac, write one line on a Note Pad slip, or watch the film. The startup checklist appears only when startup is slow or fails.
+- **Platinum reads more like Mac OS 9.** Window frames, scroll bars, desktop and Apple-menu icons, the Control Strip, and the small text in lists, labels and status bars follow real Mac OS 9 screens. Bold titles, buttons and menus keep a bold face, because Geneva has none. Reading and editing text keep their modern sizes.
+- **Classic radio buttons and checkboxes show again.** In some installs they had gone blank, so the Control Panel's AI Connection list showed only labels.
+- **The web desk can notify you and link to objects.** When the tab is in the background, a new notification reaches you as a system notification; the first use asks for permission. Clicking it returns to the object it named, and a link such as `?open=scrapbook&id=…` opens that object inside the project already on the desk.
+- **Plaintext (明文) has a new look and a longer story.** A type-and-slip interface with a harbour-fog palette and ink-blue text, light by default and dark by system or setting. The white wolf is redrawn as frost, the true ending gains an epilogue, the side route becomes a friendship ending 同行, and chapter 10 adds four choices.
+
+<details>
+<summary><b>Earlier releases — 1.0.58 / 1.0.57 / 1.0.56</b> (click to expand)</summary>
+
+**1.0.58**
 
 - **The Mac app moves to TinyJS on Apple silicon, macOS 15 or later.** The complete app includes Node, the local server and the web desk. Updates check automatically; choose Install and Restart after work is saved and active model, import and export tasks finish. The first 1.0.58 OTA uses ad-hoc signing: it checks HTTPS, SHA-256 and the application signature, while Developer ID and notarization remain pending. First installation may need the macOS Open Anyway step.
 - **Mac collection stays under your control.** Clipboard collection starts off. Selected text and screenshot OCR become editable candidates before you confirm their destination. The Mac Application panel also offers a selection shortcut, Quick Look and download controls. Existing model keys ask before migration to Keychain; failed or cancelled migration preserves the original configuration.
-
 
 - **Charts edit in place as real copies.** Select a chart, choose 编辑副本, and it opens in ClioChart with its own undo; adopt lands as one undoable parent step while the source stays byte-identical. A parent edit under an open draft refuses the commit instead of overwriting either side.
 - **A context strip names the object you are on** — the commands that apply to the current selection, with a stated reason for anything disabled, answering identically across all twelve appearances.
 - **Credibility when the network lies.** A commit whose receipt the transport lost leaves the session explicitly uncertain and reconciles by querying the original request — it never re-fires the write or reports a landed apply as cancelled.
 - **Open questions are notes too.** Mark a scrap 待解：it keeps the quoted source, and its status moves only by your acceptance; similar questions surface as local, dismissible hints.
 - **Reading stays honest under version churn.** Annotations remember their revision; only real content changes become review candidates; dead anchors keep your words flagged.
-
-<details>
-<summary><b>Earlier releases — 1.0.58 / 1.0.57 / 1.0.56</b> (click to expand)</summary>
-
-**1.0.58**
 
 - **Office files keep their own bytes.** Bring a DOCX, XLSX or PPTX onto the
   File Floppy and the original package rides beside the extracted text copy;
@@ -585,8 +594,8 @@ The writing runtime keeps author, recipient, voice and medium independent, share
 ## Built under a 1988 constraint
 
 ```text
-boot-critical payload   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░  2,955,314 bytes
-two 1.44 MB floppies    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓  2,949,120 bytes
+boot-critical payload   stays under the System Floppy Budget: 2,959,872 bytes
+two 1.44 MB floppies    2,949,120 bytes of capacity, with a reserve the gate keeps
 heavy tools             load lazily, from a third disk
 ```
 
@@ -626,7 +635,7 @@ On the day that gate was built it caught this README quoting a stale number
 three times in one afternoon.
 
 Every product screenshot on this page and on the
-[product site](https://aisystem6.pages.dev) is re-shot from the running app by
+[product site](https://aisystem6.aaronlau.me) is re-shot from the running app by
 `npm run site:capture-frames`, `npm run site:capture-route`, and
 `tooling/capture-site-proofs.mjs`. Each of those starts the app and photographs
 real windows, so there is no art directory of hand-made marketing images to fall
@@ -687,7 +696,7 @@ provenance are in vendor/ubol/.
 
 If AI writing tools should leave your voice alone, **[★ star AI System 6](https://github.com/surfine/AI-System-6)**.
 
-[**LIVE DESKTOP**](https://system6.aaronlau.me)&nbsp;&nbsp;·&nbsp;&nbsp;[**BILIBILI FILM**](https://www.bilibili.com/video/BV1ht3m6UEDb/)&nbsp;&nbsp;·&nbsp;&nbsp;[**PRODUCT SITE**](https://aisystem6.pages.dev)&nbsp;&nbsp;·&nbsp;&nbsp;[**LATEST RELEASE**](https://github.com/surfine/AI-System-6/releases/latest)
+[**LIVE DESKTOP**](https://system6.aaronlau.me)&nbsp;&nbsp;·&nbsp;&nbsp;[**BILIBILI FILM**](https://www.bilibili.com/video/BV1gYph6hEE6/)&nbsp;&nbsp;·&nbsp;&nbsp;[**PRODUCT SITE**](https://aisystem6.aaronlau.me)&nbsp;&nbsp;·&nbsp;&nbsp;[**LATEST RELEASE**](https://github.com/surfine/AI-System-6/releases/latest)
 
 </div>
 

@@ -300,6 +300,28 @@
     },
   });
 
+  window.AISystem6Capabilities?.registerServiceProvider?.("device.status", {
+    id: "same-origin-node",
+    request(input = {}) {
+      return sameOriginNode.request({
+        url: "/api/device-model/status",
+        init: { headers: { "Accept": "application/json" } },
+        signal: input.signal,
+      });
+    },
+  });
+
+  window.AISystem6Capabilities?.registerServiceProvider?.("device.chat", {
+    id: "same-origin-node",
+    request(input = {}) {
+      return sameOriginNode.request({
+        url: "/api/device-model/chat",
+        init: input.init,
+        signal: input.signal,
+      });
+    },
+  });
+
   window.AISystem6Capabilities?.registerServiceProvider?.("macShared.session", {
     id: "same-origin-node",
     request(input = {}) {
@@ -547,6 +569,8 @@
         "cloud.quota",
         "cloud.embeddings",
         "local.lmstudio.start",
+        "device.status",
+        "device.chat",
         "macShared.session",
         "endfield.search",
         "endfield.ask",

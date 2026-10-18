@@ -23,15 +23,25 @@ const CLIO_CHART_MENUS = typeof menu === "function" && typeof editWithSelection 
       menuItem("clio-chart-new-display", "clio_chart_template_display"),
       menuItem("clio-chart-new-rating", "clio_chart_template_rating"),
       menuItem("clio-chart-new-blank", "clio_chart_template_blank"),
-    ]),
-    menuItem("clio-chart-from-text", "clio_chart_from_text"),
-    menuItem("clio-chart-import", "import"),
-    menuItem("clio-chart-save-document", "clio_chart_save_document"),
-    menuItem("clio-chart-save-template", "clio_chart_save_template"),
-    menuItem("clio-chart-hand-back", "clio_chart_hand_back"),
+    ], { dataset: { menuCondition: "cwk-off" } }),
+    menuItem("clio-chart-from-text", "clio_chart_from_text", "", { menuCondition: "cwk-off" }),
+    menuItem("clio-chart-import", "import", "", { menuCondition: "cwk-off" }),
+    menuItem("clio-chart-save-document", "clio_chart_save_document", "", { menuCondition: "cwk-off" }),
+    menuItem("clio-chart-save-template", "clio_chart_save_template", "", { menuCondition: "cwk-off" }),
+    menuItem("clio-chart-hand-back", "clio_chart_hand_back", "", { menuCondition: "cwk-off" }),
+    // A mounted workbook (clio-chart-workbook.js) lists its wired commands here;
+    // the rows are hidden otherwise and greyed with a reason when unavailable.
+    menuItem("clio-chart-workbook-save", "clio_chart_workbook_cmd_save", "clio-chart-workbook-save", { menuCondition: "cwk-on" }),
+    menuItem("clio-chart-workbook-revert", "clio_chart_workbook_cmd_revert", "", { menuCondition: "cwk-revert" }),
     menuItem("close-active-window", "close", "close-window"),
   ]),
-  menu("edit", "menu_edit", editWithSelection),
+  menu("edit", "menu_edit", [
+    ...editWithSelection,
+    menuItem("clio-chart-workbook-comment", "clio_chart_workbook_cmd_add_comment", "clio-chart-workbook-comment", { menuCondition: "cwk-comment" }),
+  ]),
+  menu("view", "menu_view", [
+    menuItem("clio-chart-workbook-mode", "clio_chart_workbook_mode_full", "clio-chart-workbook-mode"),
+  ], { menuCondition: "cwk-on" }),
   menu("chart", "menu_chart", [
     // One matrix, six projections, one of them showing. The row for the
     // projection already on screen was black and did nothing when chosen,
@@ -72,7 +82,7 @@ const CLIO_CHART_MENUS = typeof menu === "function" && typeof editWithSelection 
       menuItem("clio-chart-gaps", "clio_chart_gaps"),
       menuItem("clio-chart-write-up", "clio_chart_write_up"),
     ]),
-  ]),
+  ], { menuCondition: "cwk-off" }),
   // The concept canvas's arrangement commands (app/core/edit-snap.js); the
   // menu is there only while the canvas is on screen.
   menu("arrange", "menu_arrange", [
@@ -980,8 +990,9 @@ function redoClioChart() {
 }
 
 // The table and the canvas are two editors in one window: Edit > Undo follows
-// the one on screen.
-registerEditHistory("clioChart", () => (clioChartState.mode === "diagram" ? window.AISystem6ClioDiagram : clioChartState.table ? {
+// the one on screen. A mounted xlsx workbook is a third, and while it is open it
+// is the one on screen: its steps are the codec's own transactions (S11-C2).
+registerEditHistory("clioChart", () => (window.AISystem6ClioChartWorkbook?.current?.() ? window.AISystem6ClioChartWorkbook.editHistory?.() || null : clioChartState.mode === "diagram" ? window.AISystem6ClioDiagram : clioChartState.table ? {
   undo: undoClioChart,
   redo: redoClioChart,
   canUndo: () => clioChartState.history.canUndo(),
@@ -2559,10 +2570,31 @@ function clioChartNumbersIn(text) {
 }
 
 function clioChartSourceSentences(sourceText) {
-  return String(sourceText || "").normalize("NFKC")
-    .split(/(?<=[。！？!?；;])|(?<=\.)\s+|\n+/)
-    .map((sentence) => sentence.trim())
-    .filter(Boolean);
+  // Enders (CJK/Latin) end a sentence at once; a period only when whitespace
+  // follows; a newline is a boundary of its own. Scanned, not split on
+  // lookbehinds: older WebKit (macOS 12) rejects those at parse time.
+  const text = String(sourceText || "").normalize("NFKC");
+  const ENDS = "。！？!?；;";
+  const parts = [];
+  let start = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    if (char === "\n") {
+      parts.push(text.slice(start, index));
+      start = index + 1;
+    } else if (ENDS.includes(char)) {
+      parts.push(text.slice(start, index + 1));
+      start = index + 1;
+    } else if (char === "." && /\s/.test(text[index + 1] || "")) {
+      parts.push(text.slice(start, index + 1));
+      let end = index + 1;
+      while (end < text.length && /\s/.test(text[end])) end += 1;
+      start = end;
+      index = end - 1;
+    }
+  }
+  if (start < text.length) parts.push(text.slice(start));
+  return parts.map((sentence) => sentence.trim()).filter(Boolean);
 }
 
 function clioChartGroundingSource(sourceText) {
@@ -3395,6 +3427,15 @@ function loadClioChartTable(table, meta = {}) {
   clioChartState.owner = meta.owner || null;
   clioChartOwnerNotice();
   renderClioChart();
+  syncClioChartContext(true);
+}
+
+// The context strip over a chart copy loads on the first table, never with the window.
+function syncClioChartContext(changed) {
+  if (!clioChartState.table || typeof ensureClioChartContextModule !== "function" || new URLSearchParams(location.search).has("fixture")) return;
+  ensureClioChartContextModule()
+    .then(() => (changed ? window.AISystem6ClioChartContext.tableChanged() : window.AISystem6ClioChartContext.attach()))
+    .catch((error) => console.warn("ClioChart context strip", error));
 }
 
 // Called by openWindow for every path that reveals the window, so a restored
@@ -3403,6 +3444,7 @@ function attachClioChart() {
   bindClioChartControls();
   if (!clioChartState.table && !clioChartState.extraction) openClioChartTemplate({ id: "blank", builtIn: true });
   else renderClioChart();
+  syncClioChartContext(false);
 }
 
 function openClioChart(source = null) {
@@ -3791,6 +3833,8 @@ function clioChartCommandAvailable(action) {
   }
   const activeWindow = document.querySelector(".window.is-active");
   if (activeWindow?.dataset.window !== "clioChart") return false;
+  // The workbook owns the window: the chart underneath is hidden, so no chart command may act on it.
+  if (window.AISystem6ClioChartWorkbook?.current?.()) return false;
   if (action === "clio-chart-hand-back") {
     return !!window.AISystem6ClioChart?.hasOwnedBlock?.();
   }
@@ -3876,6 +3920,7 @@ window.AISystem6Runtime?.registerApplication({
       {
         handler: () => runClioChartRuntimeCommand(action),
         isAvailable: () => clioChartCommandAvailable(action),
+        unavailableReason: () => (action.startsWith("clio-chart-") && window.AISystem6ClioChartWorkbook?.current?.() ? "clio_chart_workbook_reason_chart_off" : ""),
       },
     ])
   ),

@@ -97,7 +97,8 @@ function fileEdges(root, relative) {
   const source = readIfPresent(root, relative);
   const edges = new Set();
   if (!source) return edges;
-  for (const match of source.matchAll(/[[(]\s*\n?\s*"(tooling\/[\w./-]+\.mjs)"/g)) {
+  // The ship gates include one browser boot that lives under tests/e2e.
+  for (const match of source.matchAll(/[[(]\s*\n?\s*"((?:tooling|tests\/e2e)\/[\w./-]+\.mjs)"/g)) {
     edges.add(`file:${match[1]}`);
   }
   for (const match of source.matchAll(/"run",\s*"([\w:.-]+)"/g)) edges.add(`script:${match[1]}`);
@@ -228,7 +229,7 @@ export function computeGateWiring(root = repositoryRoot, { shipGates = SHIP_GATE
     if (!existsSync(join(root, entry))) dangling.push(`ship gate ${gate.name} runs ${entry}, which does not exist`);
   }
 
-  // A script called verify:phase5 that runs verify-appearance-phase5.mjs is a
+  // A script called audit:appearance-phase5 that runs verify-appearance-phase5.mjs is a
   // short name, not a defect; it is reported so a reader can tell the short
   // name from a wrong one.
   const nameMismatches = [];

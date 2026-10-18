@@ -60,6 +60,22 @@
   const noisePattern = "(?:\\bads?\\b|advertisement|sponsor(?:ed)?|cookie|subscribe|sign\\s*in|log\\s*in|共\\s*\\d+\\s*次阅读|点击查看|查看更多|订阅我们|广告位?[A-Za-z0-9]*|扫码|登录|注册|阅读量)";
   const NOISE = () => new RegExp(noisePattern, "gi");
 
+  // Sentence enders (CJK and Latin) stay attached to the sentence they end.
+  // Scanned, not split on a lookbehind: older WebKit (macOS 12) rejects one at
+  // parse time and the module would not load.
+  function sentencesOf(text) {
+    const ENDS = "。！？；.!?;";
+    const parts = [];
+    let start = 0;
+    for (let index = 0; index < text.length; index += 1) {
+      if (!ENDS.includes(text[index])) continue;
+      parts.push(text.slice(start, index + 1));
+      start = index + 1;
+    }
+    if (start < text.length) parts.push(text.slice(start));
+    return parts;
+  }
+
   function stripNoise(text) {
     // Sentence-wise: stripping tokens from the whole text re-joins around
     // the holes and shifts every sentence boundary — an ad swap would then
@@ -68,8 +84,7 @@
     // sentence that was nothing but template copy drops out entirely: promo
     // text is a network's template, so "订阅我们！" vs "登录查看更多" is a
     // network swap, not a change of meaning.
-    return String(text || "")
-      .split(/(?<=[。！？；.!?;])/)
+    return sentencesOf(String(text || ""))
       .filter((sentence) => {
         if (!sentence.trim()) return false;
         // A sentence the template pattern touches AND strips below the
@@ -89,10 +104,7 @@
     const before = stripNoise(oldText);
     const after = stripNoise(newText);
     if (before === after) return { changed: false, reason: "no-semantic-change" };
-    const sentenceIds = (text) => {
-      const parts = text.split(/(?<=[。！？；.!?;])/);
-      return parts.map((part) => part.trim()).filter(Boolean);
-    };
+    const sentenceIds = (text) => sentencesOf(text).map((part) => part.trim()).filter(Boolean);
     const oldSentences = sentenceIds(before);
     const newSentences = sentenceIds(after);
     const removed = oldSentences.filter((sentence) => !newSentences.includes(sentence));

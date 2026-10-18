@@ -62,10 +62,39 @@
     try {
       global.sessionStorage?.setItem(ATTEMPT_KEY, running);
     } catch {}
-    console.warn(`AI System 6: this page is running build ${running}; the deployment serves ${deployed}. Reloading once.`);
     await settleShell();
-    global.location.reload();
+    // D2 (2026-10-16): a reload under the writer's fingers dropped the last
+    // words typed (2 of 4 runs lost 12-16 characters). While someone is
+    // writing, the update waits until the page is put away; either way the
+    // desk's own record is flushed before the page goes.
+    if (writerIsBusy()) {
+      console.warn(`AI System 6: build ${deployed} is ready; reloading once this page is put away.`);
+      global.document.addEventListener("visibilitychange", () => {
+        if (global.document.visibilityState === "hidden") void reloadAfterFlush();
+      });
+      return "deferred";
+    }
+    console.warn(`AI System 6: this page is running build ${running}; the deployment serves ${deployed}. Reloading once.`);
+    await reloadAfterFlush();
     return "reloading";
+  }
+
+  let lastInputAt = 0;
+  global.document?.addEventListener?.("input", () => { lastInputAt = Date.now(); }, true);
+
+  function writerIsBusy() {
+    const field = global.document?.activeElement;
+    const editing = !!field?.closest?.("textarea, input:not([type=checkbox]):not([type=radio]):not([type=button]), [contenteditable='true']");
+    return editing || Date.now() - lastInputAt < 15000;
+  }
+
+  async function reloadAfterFlush() {
+    const flush = Promise.all([
+      typeof global.flushWorkingSessionCommit === "function" ? global.flushWorkingSessionCommit() : null,
+      typeof global.saveDeskState === "function" ? global.saveDeskState() : null,
+    ]).catch(() => {});
+    await Promise.race([flush, new Promise((resolve) => global.setTimeout(resolve, 2000))]);
+    global.location.reload();
   }
 
   /**

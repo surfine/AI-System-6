@@ -342,8 +342,6 @@ function getElements() {
   const meterTokensEl = document.querySelector("#meter-tokens");
   const meterElapsedEl = document.querySelector("#meter-elapsed");
   const meterStopEl = document.querySelector("#meter-stop");
-  const aboutModelEl = document.querySelector("#about-model");
-  const aboutVersionEl = document.querySelector("#about-version");
   const statusClockTimeEl = document.querySelector("#status-clock-time");
   const statusClockDateEl = document.querySelector("#status-clock-date");
   const statusModelEl = document.querySelector("#status-model");
@@ -723,8 +721,6 @@ function getElements() {
     meterTokensEl,
     meterElapsedEl,
     meterStopEl,
-    aboutModelEl,
-    aboutVersionEl,
     statusClockTimeEl,
     statusClockDateEl,
     statusModelEl,

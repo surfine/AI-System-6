@@ -43,8 +43,15 @@
   /* lone surrogates cannot appear in XML: they are written as _xHHHH_ escapes */
   /* ST_Xstring text (cells, shared strings, comments, header/footer codes): control characters, carriage returns
      included, become _xHHHH_ escapes as Excel writes them; elsewhere a carriage return is written as it is */
-  const escX = (s) => XML.escText(String(s)).replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, (m) => '_x' + m.charCodeAt(0).toString(16).toUpperCase() + '_');
-  const escT = (s) => XML.escText(String(s), true).replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, (m) => '_x' + m.charCodeAt(0).toString(16).toUpperCase() + '_');
+  /* Two passes, no lookbehind: WebKit before 16.4 (macOS 12) rejects it at
+     parse time. Pairs are kept first, then lone low and high surrogates are
+     escaped, which covers exactly what the single lookbehind pattern did. */
+  const loneSurrogateEscape = (m) => '_x' + m.charCodeAt(0).toString(16).toUpperCase() + '_';
+  const escapeLoneSurrogates = (value) => String(value)
+    .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[\uDC00-\uDFFF]/g, (m) => (m.length === 2 ? m : loneSurrogateEscape(m)))
+    .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, loneSurrogateEscape);
+  const escX = (s) => escapeLoneSurrogates(XML.escText(String(s)));
+  const escT = (s) => escapeLoneSurrogates(XML.escText(String(s), true));
   /** a text node that keeps its leading / trailing spaces */
   const tEl = (s, tag) => { s = String(s); tag = tag || 't'; return /^\s|\s$|\n/.test(s) ? `<${tag} xml:space="preserve">${escX(s)}</${tag}>` : `<${tag}>${escX(s)}</${tag}>`; };
   const attrs = (o) => { let s = ''; for (const k in o) { const v = o[k]; if (v === undefined || v === null || v === false) continue; s += ' ' + k + '="' + esc(v === true ? '1' : v) + '"'; } return s; };

@@ -210,12 +210,21 @@ copyFileSync(builtBinary, appBinary);
 // The macOS 26 document reader for the server's OCR ladder; the shell tells
 // the server where it is (AI_SYSTEM6_VISION_HELPER). Absent, OCR uses the
 // other engines.
-const visionBinary = join(dirname(builtBinary), "AISystem6Vision");
-if (existsSync(visionBinary)) {
-  copyFileSync(visionBinary, join(macOsDir, "AISystem6Vision"));
-  console.log("Bundled AISystem6Vision.");
-} else {
-  console.warn(`No ${visionBinary}; the app's OCR will not use Apple's document recognition.`);
+// AISystem6Intelligence (Apple's model and MLX) lives in its own package,
+// platform/macos/shell/macos-intelligence, and needs its SwiftPM resource
+// bundles; tooling/build-tinyjs-shell-app.mjs builds and ships it. This
+// legacy WKWebView shell copies it only if it was built beside the shell
+// binary, and an absent helper is skipped, never an error.
+for (const helperName of ["AISystem6Vision", "AISystem6Intelligence"]) {
+  const helperBinary = join(dirname(builtBinary), helperName);
+  if (existsSync(helperBinary)) {
+    copyFileSync(helperBinary, join(macOsDir, helperName));
+    console.log(`Bundled ${helperName}.`);
+  } else if (helperName === "AISystem6Vision") {
+    console.warn(`No ${helperBinary}; the app's OCR will not use Apple's document recognition.`);
+  } else {
+    console.log(`Skipped ${helperName}: not built next to the shell binary.`);
+  }
 }
 // uBlock Origin Lite's Safari build, loaded by Time Machine's native engine
 // (GPL-3.0, unmodified; see vendor/ubol/PROVENANCE.md).

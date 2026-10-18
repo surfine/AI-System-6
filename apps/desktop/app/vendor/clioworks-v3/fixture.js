@@ -193,6 +193,81 @@
       };
       return;
     }
+    if (adapterKind === 'workbook') {
+      // S11-M0: workbook surface (Express <-> full) over the REAL Ledger adapter, inside
+      // the existing clioChart window. Fixture-only; the files come from the lab-served
+      // fixture-files/ copies of tests/fixtures/clioworks-s11/ and nothing is written.
+      await loadScript('app/vendor/clioworks-v3/ledger-adapter.js');
+      await loadScript('app/vendor/clioworks-v3/workbook-adapter.js');
+      const fileName = (new URLSearchParams(location.search).get('file') || 'budget-s11').replace(/\.xlsx$/, '');
+      if (!/^[a-z0-9-]+$/.test(fileName)) { log('fixture: bad file name'); return; }
+      const response = await fetch('app/vendor/clioworks-v3/fixture-files/' + fileName + '.xlsx');
+      if (!response.ok) { log('fixture: workbook file not found ' + fileName); return; }
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      openWindow('clioChart');
+      let chartWin = null;
+      for (let i = 0; i < 80 && !chartWin; i += 1) {
+        chartWin = document.querySelector('[data-window="clioChart"]:not(.is-hidden):not(.is-app-hidden)');
+        if (!chartWin) { await new Promise((resolve) => setTimeout(resolve, 100)); }
+      }
+      const pane = document.querySelector('.clio-chart-pane');
+      if (!chartWin || !pane) { log('fixture: clioChart window never ready'); return; }
+      pane.style.position = 'relative';
+      const mountPoint = document.createElement('div');
+      mountPoint.id = 'cw3-mount';
+      mountPoint.style.cssText = 'position:absolute;inset:0;';
+      pane.append(mountPoint);
+      const savedFiles = [];
+      let integration;
+      try {
+        integration = await window.ClioWorksWorkbook.create(window, {
+          bytes, name: fileName + '.xlsx',
+          // No real file is written: the sink only records what a save would have produced.
+          sink: async (out, info) => { savedFiles.push(info); },
+        });
+      } catch (error) {
+        log('fixture: workbook adapter error ' + (error && error.message));
+        return;
+      }
+      window.__CW3_INTEGRATION__ = integration;
+      window.__CW3_WB__ = { session: integration.session, saved: savedFiles };
+      integration.hideEngineChrome();
+      let mounted;
+      try {
+        mounted = window.ClioWorksHost.mountNative({
+          element: mountPoint,
+          adapter: integration.adapter,
+          menuPort: integration.menuPort,
+          hostWindow: window,
+          toolbarItems: [],
+          catalog: integration.catalog,
+          resolveCommand: integration.resolveCommand,
+          onError: (error) => log('fixture: mount error ' + (error && error.message)),
+          onTheme: (info) => { window.__CW3_THEME__ = info; },
+        });
+        // Express has no toolbar: the status bar and the 命令… menu are the whole command surface.
+        mounted.surface.querySelector('.cw-toolbar')?.remove();
+      } catch (error) {
+        log('fixture: mountNative failed ' + (error && error.message));
+        integration.restoreEngineChrome();
+        integration.dispose();
+        return;
+      }
+      await mounted.ready;
+      log('fixture: workbook adapter mounted file=' + fileName);
+      log('fixture: DONE');
+      window.__CW3_MOUNTED__ = {
+        mounted,
+        info: window.__CW3_THEME__,
+        adapter: integration.adapter,
+        dispose() {
+          try { mounted.dispose(); } finally {
+            try { integration.dispose(); } finally { integration.restoreEngineChrome(); mountPoint.remove(); }
+          }
+        },
+      };
+      return;
+    }
     if (adapterKind === 'chart') {
       // V3-E-1 (GridCraft): real ClioChart engine adapter in the real window.
       await loadScript('app/vendor/clioworks-v3/more-menu.js');
@@ -276,6 +351,81 @@
           }
         },
       };
+      return;
+    }
+    if (adapterKind === 'docx') {
+      // S11-M3 (front): the Quire adapter's write surface under the UPSTREAM contentEditable
+      // layer (editor.js + layout.js), inside the existing teachText window. It is NOT the real
+      // editor: a lab to see the vendored editing layer on the frozen quire-s11.docx. The
+      // ClioWrite window arrives with M3 middle; nothing is written, the Save button only
+      // records what a save would have produced. ?mode=full shows the toolbar; the default
+      // (express) leaves the keyboard and the status line.
+      await loadScript('app/vendor/clioworks-v3/quire-adapter.js');
+      const response = await fetch('app/vendor/clioworks-v3/fixture-files/quire-s11.docx');
+      if (!response.ok) { log('fixture: docx file not found'); return; }
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      const quire = await window.ClioWorksQuireAdapter.open(bytes, { name: 'quire-s11.docx' });
+      const L = await window.ClioWorksQuireAdapter.loadEditor();
+      openWindow('teachText');
+      let ttWin = null;
+      for (let i = 0; i < 50 && !ttWin; i += 1) {
+        ttWin = document.querySelector('[data-window="teachText"]:not(.is-hidden):not(.is-app-hidden)');
+        if (!ttWin) await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      const pane = document.getElementById('teachtext-form');
+      if (!ttWin || !pane) { log('fixture: teachText window never ready'); return; }
+      const full = new URLSearchParams(location.search).get('mode') === 'full';
+      pane.style.position = 'relative';
+      const lab = document.createElement('div');
+      lab.id = 'cw3-mount';
+      lab.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;background:var(--toolbar-bg,#fff);';
+      const bar = document.createElement('div');
+      bar.style.cssText = 'display:' + (full ? 'flex' : 'none') + ';gap:4px;padding:4px;border-bottom:1px solid var(--toolbar-border,#000);';
+      const scroller = document.createElement('div');
+      scroller.style.cssText = 'flex:1;overflow:auto;';
+      const status = document.createElement('div');
+      status.style.cssText = 'padding:2px 6px;border-top:1px solid var(--toolbar-border,#000);font:11px var(--title-font,sans-serif);';
+      lab.append(bar, scroller, status);
+      pane.append(lab);
+      const style = document.createElement('style');
+      style.textContent = '#cw3-mount .pages{outline:none}#cw3-mount .page{background:#fff;color:#000;margin:8px auto;box-shadow:0 0 0 1px #888}';
+      lab.append(style);
+      const saved = [];
+      const refresh = () => {
+        status.textContent = (quire.isDirty() ? '已改动' : '未改动') + ' · 第 ' + quire.getEditRevision() + ' 版 · 表格与图片只读'
+          + (quire.canUndo() ? ' · 可撤销：' + quire.undoLabel() : '');
+      };
+      // The editor layer asks for its commands through L.ui.exec; route the ones this lab has.
+      const selected = () => (L.ed.sel ? String(L.ed.sel.f.p.id) : null);
+      const commands = {
+        undo: () => quire.undo(), redo: () => quire.redo(),
+        bold: () => L.ed.toggleRun('b'), italic: () => L.ed.toggleRun('i'), underline: () => L.ed.toggleRun('u', 'single'),
+        heading1: () => { const id = selected(); if (id) quire.setHeading(id, 1); },
+        bullet: () => { const id = selected(); if (id) quire.setList(id, 'bullet'); },
+        save: async () => { const rev = quire.getEditRevision(); const out = await quire.save(); saved.push({ mode: out.mode, bytes: out.bytes.byteLength, revision: rev }); quire.markSaved(rev); refresh(); },
+      };
+      L.ui = { exec: (name) => { if (commands[name]) commands[name](); }, toast: (text) => log('fixture: ' + text), dialogOpen() {}, menuOpen() {} };
+      L.app = L.app || {};
+      for (const [name, label] of [['undo', '撤销'], ['redo', '重做'], ['bold', '粗体'], ['italic', '斜体'], ['underline', '下划线'], ['heading1', '标题 1'], ['bullet', '项目符号'], ['save', '存']]) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = label;
+        button.addEventListener('mousedown', (event) => event.preventDefault());
+        button.addEventListener('click', () => commands[name]());
+        bar.append(button);
+      }
+      const lockObjects = () => scroller.querySelectorAll('table, img').forEach((node) => node.setAttribute('contenteditable', 'false'));
+      L.D.doc = quire.document();
+      L.layout.mount(scroller);
+      L.layout.render();
+      L.ed.init();
+      lockObjects();
+      L.bus.on('doc-changed', () => { quire.syncExternal(); lockObjects(); refresh(); });
+      refresh();
+      log('fixture: docx adapter mounted paragraphs=' + quire.paragraphs().length);
+      log('fixture: DONE');
+      window.__CW3_DOCX__ = { adapter: quire, L, saved, commands };
+      window.__CW3_MOUNTED__ = { adapter: quire, dispose() { lab.remove(); } };
       return;
     }
     if (adapterKind === 'teachtext') {

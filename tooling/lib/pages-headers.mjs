@@ -67,7 +67,7 @@ const securityHeaders = Object.freeze([
   // app remote and for Apple Music downloads (connect-src for the API,
   // media-src for the signed audio URLs), and blob: for a video the writer
   // chose locally (the storyboard's keyframe import).
-  "Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com https://www.youtube.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://audio-ssl.itunes.apple.com https://itunes.apple.com http://127.0.0.1:4173; media-src 'self' data: https://audio-ssl.itunes.apple.com http://127.0.0.1:4173 blob:; worker-src 'self' blob:; frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com https://aisystem6-browse.pages.dev; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+  "Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com https://www.youtube.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://audio-ssl.itunes.apple.com https://itunes.apple.com https://api.github.com http://127.0.0.1:4173; media-src 'self' data: https://audio-ssl.itunes.apple.com http://127.0.0.1:4173 blob:; worker-src 'self' blob:; frame-src 'self' https://challenges.cloudflare.com https://www.youtube-nocookie.com https://player.bilibili.com https://aisystem6-browse.pages.dev; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
 ]);
 
 /** The full `_headers` file contents. */

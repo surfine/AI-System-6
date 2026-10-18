@@ -28,6 +28,13 @@
 //   project and asserts its real content renders (the owner's rule: the
 //   disk must not be allowed to rot).
 //
+//   PASS C ("xlsx edit") is the ClioWorks S11 M1 stop: a real xlsx goes onto
+//   a File Floppy through the Choose-button picker, opens through the
+//   "Edit file" intent into the ClioChart workbook surface, one cell is
+//   changed by typing, and Cmd/Ctrl+S answers with the surface's own saved
+//   receipt, a durable edit run receipt, and bytes in the working store that
+//   still carry the file's opaque custom part and the typed value.
+//
 // Follows the browser-tool idiom already established by
 // tooling/verify-bonsai-acceptance.mjs and tooling/appearance-snapshot.mjs:
 // a real app server on a free port, Playwright's own managed Chromium
@@ -66,9 +73,17 @@ import {
   writingMenuSubmenuClick,
 } from "./lib/walk-dom.mjs";
 
+const XLSX_FIXTURE_PATH = join(dirname(dirname(fileURLToPath(import.meta.url))), "tests/fixtures/clioworks-s11/budget-s11.xlsx");
+const XLSX_NAME = "budget-s11.xlsx";
+const DOCX_FIXTURE_PATH = join(dirname(dirname(fileURLToPath(import.meta.url))), "tests/fixtures/clioworks-s11/quire-s11.docx");
+const DOCX_NAME = "quire-s11.docx";
+const DOCX_FIRST_PARAGRAPH = "搬家清单"; // the fixture's Heading 1, its first paragraph
+const DOCX_TYPED_WORD = "终版";
+
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
+const AdmZip = require("adm-zip");
 
 // tests/e2e/helpers.mjs and tests/e2e/fake-model.mjs are plain ESM modules
 // with no dependency on the Playwright test runner (no `@playwright/test`
@@ -93,10 +108,10 @@ const evidenceDir = outputIndex >= 0
   ? resolve(process.argv[outputIndex + 1] || "")
   : join(root, "dist", "walk-evidence");
 const onlyIndex = process.argv.indexOf("--only");
-const onlyPass = onlyIndex >= 0 ? process.argv[onlyIndex + 1] : null; // "fresh" | "demo-disk"
+const onlyPass = onlyIndex >= 0 ? process.argv[onlyIndex + 1] : null; // "fresh" | "demo-disk" | "xlsx-edit" | "docx-edit"
 
 if (process.argv.includes("--help")) {
-  console.log("Usage: node tooling/verify-walk.mjs [--output DIR] [--only fresh|demo-disk]");
+  console.log("Usage: node tooling/verify-walk.mjs [--output DIR] [--only fresh|demo-disk|xlsx-edit|docx-edit]");
   process.exit(0);
 }
 
@@ -798,6 +813,226 @@ async function runDemoDiskWalk(browser, serverUrl) {
   return { passId, diagnostics };
 }
 
+
+// ---------------------------------------------------------------------------
+// PASS C — ClioWorks S11 M1: edit a workbook and save it, through the real UI.
+// ---------------------------------------------------------------------------
+async function runXlsxEditWalk(browser, serverUrl, fakeModelPort) {
+  const passId = "xlsx-edit";
+  const context = await browser.newContext({ viewport: { width: 1280, height: 860 }, baseURL: serverUrl });
+  const page = await context.newPage();
+  const diagnostics = [];
+  attachDiagnostics(page, diagnostics, { modelPort: fakeModelPort });
+
+  await bootApp(page);
+  await dismissGuide(page);
+  await dismissClioOnboarding(page);
+  await createProjectThroughUi(page, "Walk Gate Workbook");
+  // Project creation can land in Writing Studio; the File Floppy lives on the desktop profile.
+  if (await page.evaluate(() => document.body.dataset.workspaceProfile === "writing")) {
+    await page.dblclick("#finder-writing-studio-toggle");
+    await page.waitForFunction(() => document.body.dataset.workspaceProfile === "desktop", undefined, { timeout: 10000 });
+  }
+  // Inserting a file embeds its text; with the stub model connected that goes to the
+  // fake local endpoint instead of the browser's own model download.
+  await connectFakeModelThroughUi(page, fakeModelPort);
+
+  await runStop(page, passId, "xlsx-insert", "insert budget-s11.xlsx onto a File Floppy through the Choose-button picker", async () => {
+    await page.dblclick("#desktop-file-floppy-starter");
+    await assertFrontmost(page, "rag", "File Floppy");
+    const chooserPromise = page.waitForEvent("filechooser");
+    await page.click('label[for="files"]');
+    const chooser = await chooserPromise;
+    await chooser.setFiles(XLSX_FIXTURE_PATH);
+    await page.click("#index-files");
+    await page.waitForFunction(
+      () => /inserted/i.test(document.querySelector("#rag-status")?.textContent || ""),
+      undefined,
+      { timeout: 20000 }
+    );
+    await page.dblclick("#mounted-text-disk");
+    await assertFrontmost(page, "textDisk", "File Floppy (mounted)");
+    await page.waitForSelector(`[data-mounted-file="${XLSX_NAME}"]`, { timeout: 10000 });
+  });
+
+  await runStop(page, passId, "xlsx-open", "Edit file opens the workbook surface with the file's own numbers", async () => {
+    await page.dblclick(`[data-mounted-file="${XLSX_NAME}"]`);
+    await page.waitForSelector("#system-modal[open] #system-modal-yes", { timeout: 10000 });
+    const message = await page.textContent("#system-modal-message");
+    assert(message.includes(XLSX_NAME), `the open-intent question names the file (read: ${JSON.stringify(message)})`);
+    assert((await page.textContent("#system-modal-yes")).trim() === "Edit file", "the question offers Edit file");
+    await page.click("#system-modal-yes");
+    await page.waitForSelector('[data-window="clioChart"].is-workbook-mounted', { timeout: 20000 });
+    await assertFrontmost(page, "clioChart", "ClioChart workbook");
+    const b2 = page.locator('[data-window="clioChart"] td[data-r="1"][data-c="1"]');
+    await b2.waitFor({ state: "visible", timeout: 10000 });
+    assert((await b2.textContent()).trim() === "220", `the workbook shows the file's B2 (220), got ${JSON.stringify(await b2.textContent())}`);
+    const dirty = await page.evaluate(() => document.querySelector('[data-window="clioChart"] [data-dirty]')?.dataset.dirty);
+    assert(dirty === "false", `a freshly opened workbook is clean (data-dirty=${dirty})`);
+  });
+
+  await runStop(page, passId, "xlsx-edit-save", "type one cell, Cmd/Ctrl+S, and read the receipt", async () => {
+    const b2 = page.locator('[data-window="clioChart"] td[data-r="1"][data-c="1"]');
+    await b2.click();
+    await page.keyboard.type("250");
+    await page.keyboard.press("Enter");
+    await page.waitForFunction(
+      () => document.querySelector('[data-window="clioChart"] td[data-r="1"][data-c="1"]')?.textContent?.trim() === "250"
+        && document.querySelector('[data-window="clioChart"] [data-dirty]')?.dataset.dirty === "true",
+      undefined,
+      { timeout: 10000 }
+    );
+    // Enter moved the selection down; put it back on a cell so the surface has focus, then save.
+    await b2.click();
+    const mac = await page.evaluate(() => /Mac/i.test(navigator.platform));
+    await page.keyboard.press(mac ? "Meta+s" : "Control+s");
+    await page.waitForFunction(
+      () => document.querySelector('[data-window="clioChart"] [data-receipt-kind]')?.dataset.receiptKind === "saved",
+      undefined,
+      { timeout: 15000 }
+    );
+    const receipt = (await page.textContent('[data-window="clioChart"] .cwk-receipt')) || "";
+    assert(receipt.includes(XLSX_NAME), `the saved receipt names the file (read: ${JSON.stringify(receipt)})`);
+    const dirtyAfter = await page.evaluate(() => document.querySelector('[data-window="clioChart"] [data-dirty]')?.dataset.dirty);
+    assert(dirtyAfter === "false", `saving cleans the workbook (data-dirty=${dirtyAfter})`);
+
+    // The bytes the save wrote to the working store: the typed value is in, the file's opaque part is still carried.
+    const base64 = await page.evaluate((name) => {
+      const bytes = window.AISystem6NativeBinaries.workingBytes(name);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]);
+      return btoa(binary);
+    }, XLSX_NAME);
+    const zip = new AdmZip(Buffer.from(base64, "base64"));
+    const sheet = zip.readAsText("xl/worksheets/sheet1.xml");
+    assert(/<c r="B2"[^>]*><v>250<\/v><\/c>/.test(sheet), "the saved sheet1.xml carries B2 = 250");
+    assert(zip.getEntry("customXml/clw-preservation.xml"), "the saved package still carries the file's custom XML part");
+    assert(zip.readAsText("xl/styles.xml").includes("formatCode=\"&quot;¥&quot;#,##0\""), "the saved package keeps the currency number format");
+
+    // One durable edit run receipt, completed, for this workbook.
+    let found = null;
+    for (let attempt = 0; attempt < 30 && !found; attempt += 1) {
+      const db = await dumpIndexedDb(page);
+      found = (db.chatFiles || []).find((f) => f.artifactKind === "clio-run-record" && f.runReceipt?.intent === "edit" && f.runReceipt?.sourceAppId === "clioWorksLedger");
+      if (!found) await page.waitForTimeout(300);
+    }
+    assert(found, "no clioWorksLedger edit run receipt was persisted");
+    assert(found.runReceipt.status === "completed", `the edit run receipt is completed (status ${found.runReceipt.status})`);
+  });
+
+  assert(diagnostics.length === 0, `xlsx-edit browser diagnostics:\n${diagnostics.join("\n")}`);
+  await context.close();
+  return { passId, diagnostics };
+}
+
+// ---------------------------------------------------------------------------
+// PASS D — ClioWorks S11 M3: edit a document in ClioWrite Express and save it, through the real UI.
+// ---------------------------------------------------------------------------
+async function runDocxEditWalk(browser, serverUrl, fakeModelPort) {
+  const passId = "docx-edit";
+  const context = await browser.newContext({ viewport: { width: 1280, height: 860 }, baseURL: serverUrl });
+  const page = await context.newPage();
+  const diagnostics = [];
+  attachDiagnostics(page, diagnostics, { modelPort: fakeModelPort });
+
+  await bootApp(page);
+  await dismissGuide(page);
+  await dismissClioOnboarding(page);
+  await createProjectThroughUi(page, "Walk Gate Document");
+  if (await page.evaluate(() => document.body.dataset.workspaceProfile === "writing")) {
+    await page.dblclick("#finder-writing-studio-toggle");
+    await page.waitForFunction(() => document.body.dataset.workspaceProfile === "desktop", undefined, { timeout: 10000 });
+  }
+  await connectFakeModelThroughUi(page, fakeModelPort);
+
+  await runStop(page, passId, "docx-insert", "insert quire-s11.docx onto a File Floppy through the Choose-button picker", async () => {
+    await page.dblclick("#desktop-file-floppy-starter");
+    await assertFrontmost(page, "rag", "File Floppy");
+    const chooserPromise = page.waitForEvent("filechooser");
+    await page.click('label[for="files"]');
+    const chooser = await chooserPromise;
+    await chooser.setFiles(DOCX_FIXTURE_PATH);
+    await page.click("#index-files");
+    await page.waitForFunction(
+      () => /inserted/i.test(document.querySelector("#rag-status")?.textContent || ""),
+      undefined,
+      { timeout: 20000 }
+    );
+    await page.dblclick("#mounted-text-disk");
+    await assertFrontmost(page, "textDisk", "File Floppy (mounted)");
+    await page.waitForSelector(`[data-mounted-file="${DOCX_NAME}"]`, { timeout: 10000 });
+  });
+
+  await runStop(page, passId, "docx-open", "Edit file opens ClioWrite Express with the file's own first paragraph", async () => {
+    await page.dblclick(`[data-mounted-file="${DOCX_NAME}"]`);
+    await page.waitForSelector("#system-modal[open] #system-modal-yes", { timeout: 10000 });
+    const message = await page.textContent("#system-modal-message");
+    assert(message.includes(DOCX_NAME), `the open-intent question names the file (read: ${JSON.stringify(message)})`);
+    assert((await page.textContent("#system-modal-yes")).trim() === "Edit file", "the question offers Edit file");
+    await page.click("#system-modal-yes");
+    await page.waitForSelector('[data-window="clioWrite"] .cw-scroller:not([hidden])', { timeout: 30000 });
+    await assertFrontmost(page, "clioWrite", "ClioWrite");
+    const title = ((await page.textContent('[data-window="clioWrite"] #clio-write-title')) || "").trim();
+    assert(title === "ClioWrite Express", `the window opens in ClioWrite Express (read: ${JSON.stringify(title)})`);
+    await page.waitForFunction(
+      (text) => (document.querySelector('[data-window="clioWrite"] .cw-scroller')?.textContent || "").includes(text),
+      DOCX_FIRST_PARAGRAPH,
+      { timeout: 15000 }
+    );
+    const dirty = await page.evaluate(() => document.querySelector('[data-window="clioWrite"]')?.dataset.dirty);
+    assert(dirty === "false", `a freshly opened document is clean (data-dirty=${dirty})`);
+  });
+
+  await runStop(page, passId, "docx-edit-save", "type one word, Cmd/Ctrl+S, and read the receipt", async () => {
+    const first = page.locator('[data-window="clioWrite"] .cw-scroller').getByText(DOCX_FIRST_PARAGRAPH, { exact: true }).first();
+    await first.click();
+    await page.keyboard.press("End");
+    await page.keyboard.type(DOCX_TYPED_WORD);
+    await page.waitForFunction(
+      (word) => document.querySelector('[data-window="clioWrite"]')?.dataset.dirty === "true"
+        && (document.querySelector('[data-window="clioWrite"] .cw-scroller')?.textContent || "").includes(word),
+      DOCX_TYPED_WORD,
+      { timeout: 10000 }
+    );
+    const mac = await page.evaluate(() => /Mac/i.test(navigator.platform));
+    await page.keyboard.press(mac ? "Meta+s" : "Control+s");
+    // The first save may list what converts; answer Save once, as the writer would.
+    await page.waitForFunction(
+      () => document.querySelector('[data-window="clioWrite"] [data-choice="save"]')
+        || document.querySelector('[data-window="clioWrite"]')?.dataset.receiptKind === "saved",
+      undefined,
+      { timeout: 15000 }
+    );
+    const confirm = page.locator('[data-window="clioWrite"] .cw-alert [data-choice="save"]');
+    if (await confirm.count()) await confirm.click();
+    await page.waitForFunction(
+      () => document.querySelector('[data-window="clioWrite"]')?.dataset.receiptKind === "saved",
+      undefined,
+      { timeout: 15000 }
+    );
+    const receipt = (await page.textContent('[data-window="clioWrite"] .cw-receipt')) || "";
+    assert(receipt.includes(DOCX_NAME), `the saved receipt names the file (read: ${JSON.stringify(receipt)})`);
+    const dirtyAfter = await page.evaluate(() => document.querySelector('[data-window="clioWrite"]')?.dataset.dirty);
+    assert(dirtyAfter === "false", `saving cleans the document (data-dirty=${dirtyAfter})`);
+
+    // The bytes the save wrote to the working store: the typed word is in, the picture part is untouched.
+    const base64 = await page.evaluate((name) => {
+      const bytes = window.AISystem6NativeBinaries.workingBytes(name);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]);
+      return btoa(binary);
+    }, DOCX_NAME);
+    const zip = new AdmZip(Buffer.from(base64, "base64"));
+    assert(zip.readAsText("word/document.xml").includes(DOCX_TYPED_WORD), "the saved document.xml carries the typed word");
+    const original = new AdmZip(DOCX_FIXTURE_PATH);
+    assert(zip.getEntry("word/media/image1.png")?.getData().equals(original.getEntry("word/media/image1.png").getData()), "the saved package keeps the picture part byte for byte");
+  });
+
+  assert(diagnostics.length === 0, `docx-edit browser diagnostics:\n${diagnostics.join("\n")}`);
+  await context.close();
+  return { passId, diagnostics };
+}
+
 // ---------------------------------------------------------------------------
 let server;
 let browser;
@@ -817,7 +1052,13 @@ try {
   if (!onlyPass || onlyPass === "demo-disk") {
     results.push(await runDemoDiskWalk(browser, server.url));
   }
-  if (onlyPass) console.log(`--only ${onlyPass}: this run is diagnostic; the gate requires both passes.`);
+  if (!onlyPass || onlyPass === "xlsx-edit") {
+    results.push(await runXlsxEditWalk(browser, server.url, fakeModelPort));
+  }
+  if (!onlyPass || onlyPass === "docx-edit") {
+    results.push(await runDocxEditWalk(browser, server.url, fakeModelPort));
+  }
+  if (onlyPass) console.log(`--only ${onlyPass}: this run is diagnostic; the gate requires all four passes.`);
 
   writeFileSync(
     join(evidenceDir, "summary.json"),

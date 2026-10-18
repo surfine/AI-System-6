@@ -52,24 +52,23 @@ try {
   assert.equal(result.status, 1, "compact output still enforces public coverage");
   assert.match(result.stderr, /missing public-safe contract/);
 
-  // Execute quick in an isolated project. The fixture gate has the same
-  // build opt-out contract as verify:gate; command failures must stop the chain.
+  // Execute quick in an isolated project. The fixture ship gate never
+  // builds (verify-ship runs against the bytes quick built); command failures must stop the chain.
   put("bin/git", "#!/bin/sh\nexit 0\n");
   put("bin/npm", "#!/bin/sh\nprintf 'build\\n' >> builds.log\nexit ${BUILD_STATUS:-0}\n");
   const { chmodSync } = await import("node:fs");
   chmodSync(join(scratch, "bin/git"), 0o755);
   chmodSync(join(scratch, "bin/npm"), 0o755);
-  put("tooling/verify-gate.mjs", `import { appendFileSync } from 'node:fs';
-if (!process.argv.includes('--no-build')) appendFileSync('builds.log', 'build\\n');
+  put("tooling/verify-ship.mjs", `import { appendFileSync } from 'node:fs';
 appendFileSync('gates.log', 'gate\\n');`);
   const env = { PATH: `${join(scratch, "bin")}:${process.env.PATH}` };
-  result = run("verify-quick.mjs", ["--gate", "fixture"], env);
+  result = run("verify-quick.mjs", ["--ship"], env);
   assert.equal(result.status, 0, result.stderr);
   assert.equal(readFileSync(join(scratch, "builds.log"), "utf8"), "build\n", "quick plus gate builds exactly once");
-  result = run("verify-quick.mjs", ["--gate", "fixture", "--no-build"], env);
+  result = run("verify-quick.mjs", ["--ship", "--no-build"], env);
   assert.equal(result.status, 0);
   assert.equal(readFileSync(join(scratch, "builds.log"), "utf8"), "build\n", "no-build applies to the entire chain");
-  result = run("verify-quick.mjs", ["--gate", "fixture"], { ...env, BUILD_STATUS: "3" });
+  result = run("verify-quick.mjs", ["--ship"], { ...env, BUILD_STATUS: "3" });
   assert.equal(result.status, 3);
   assert.equal(readFileSync(join(scratch, "gates.log"), "utf8"), "gate\ngate\n", "a failed build prevents gate execution");
 

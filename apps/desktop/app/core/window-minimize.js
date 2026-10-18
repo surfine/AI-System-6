@@ -901,7 +901,7 @@
   function isMinimizable(win) {
     const name = win?.dataset?.window || "";
     if (!name) return false;
-    if (name === "about" || name === "saveChat") return false;
+    if (name === "saveChat") return false;
     return Boolean(win.querySelector?.(":scope > .title-bar > .close-box"));
   }
 
@@ -960,7 +960,7 @@
   // or host that claims Command-M for its own window never lets it reach the
   // page, so this is best effort and the menus never advertise it.
   document.addEventListener("keydown", (event) => {
-    if (!enabled() || !event.metaKey || event.altKey || event.ctrlKey || event.shiftKey) return;
+    if (event.defaultPrevented || !enabled() || !event.metaKey || event.altKey || event.ctrlKey || event.shiftKey) return;
     if (String(event.key).toLowerCase() !== "m") return;
     const win = document.querySelector(".window.is-active[data-window]");
     if (!win || !isMinimizable(win)) return;

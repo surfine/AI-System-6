@@ -93,3 +93,25 @@
 .cw-native .cw5-context .cw-button[hidden] {
   display: none;
 }
+
+/* The chart copy panel on the ordinary desk: shown only while a copy is open,
+   above the grid, in the toolbar's own material. */
+.cw-native .cw5-copy {
+  flex: none;
+  padding: 4px 8px 6px;
+  background: var(--toolbar-bg);
+  border-block-end: var(--toolbar-border);
+}
+.cw-native .cw5-copy[hidden] { display: none; }
+.cw-native .cw5-copy-hint { margin: 0 0 4px; font-size: 11px; }
+.cw-native .cw5-copy-grid { max-block-size: 140px; overflow: auto; }
+.cw-native .cw5-copy-grid input {
+  inline-size: 100%;
+  min-inline-size: 5ch;
+  box-sizing: border-box;
+  font: inherit;
+}
+.cw-native .cw5-copy-actions { display: flex; gap: 4px; margin-block-start: 4px; }
+@media (pointer: coarse) {
+  .cw-native .cw5-copy-grid input { font-size: 16px; }
+}

@@ -488,6 +488,17 @@ async function boot() {
     if (window.tiny?.api) {
       ensureTinyShellModule().then(() => window.AISystem6TinyShell.init())
         .catch((error) => setStatus(t("native_operation_failed", error.message)));
+    } else {
+      // A page has no OS link handler; the URL it was opened with is its front
+      // door, and it reaches the same targets the shell's route does.
+      const search = window.location?.search || "";
+      if (search.includes("open=")) {
+        await runBootStep("Deep link", async () => {
+          await ensureLazySystemModule("app/core/launch-intent.js", "AISystem6LaunchIntentLoaded");
+          const intent = window.AISystem6LaunchIntent?.deskIntent?.(search);
+          if (intent) await openDeepLink(intent.target, intent.id);
+        });
+      }
     }
     // This timer fires after boot() has already returned, so nothing here is
     // inside boot()'s own try/catch any more — an uncaught throw in this

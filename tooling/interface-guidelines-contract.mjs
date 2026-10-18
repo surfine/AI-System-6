@@ -276,6 +276,14 @@ const dynamicWindowSources = Object.freeze({
     cssPrefixes: Object.freeze(["clio-project-"]),
     iconId: "clioProject",
   }),
+  clioWrite: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-clio-write",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/clio-write.js#installWindow",
+    cssPrefixes: Object.freeze(["clio-write-", "cw-"]),
+    iconId: "clioWrite",
+  }),
   clioPaint: Object.freeze({
     sourceKind: "lazy",
     openCommand: "open-clio-paint",
@@ -318,6 +326,14 @@ const dynamicWindowSources = Object.freeze({
     mountPath: "app/features/project-cd-print.js#installFinishingReceiptWindow",
     cssPrefixes: Object.freeze(["finishing-receipt-"]),
     iconId: "projectCd",
+  }),
+  about: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-about",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/about-desk.js#installAboutWindow",
+    cssPrefixes: Object.freeze(["about-"]),
+    iconId: "startupDisk",
   }),
   holdThought: Object.freeze({
     sourceKind: "lazy",
@@ -626,6 +642,7 @@ const windowInterfaceContracts = Object.freeze({
   clioStage: creativeLab(),
   clioChart: creativeLab(),
   clioPaint: creativeLab(),
+  clioWrite: creativeLab(),
   // The plan for one project: a summoned utility over the route, not a lab.
   clioProject: specializedUtility("utility", {
     route: "summoned",
@@ -668,7 +685,14 @@ const windowInterfaceContracts = Object.freeze({
   fileInfo: modalSurface(),
   projectInfo: modalSurface("core"),
   finishingReceipt: modalSurface("core"),
-  about: modalSurface(),
+  about: specializedUtility("utility", {
+    route: "system",
+    documentModel: "none",
+    statusModel: "none",
+    statusLayout: "none",
+    rationale: "About is an ordinary non-modal window built on demand: an instrument, the film and the site's chapters, with no persistent status bar.",
+    referenceSurface: "control",
+  }),
 });
 
 export const windowInterfaceRegistry = Object.freeze(Object.fromEntries(

@@ -13,13 +13,9 @@
 //   5. readme payload sync  — README quotes the measured public-tree bytes
 //   6. dirty tree           — the release freezes HEAD; uncommitted work is a
 //                             refusal (and swept-in foreign files are worse)
-//   7. appearance token drift — an era moving vs Classic fails verify:ship
-//                             (~18 min in); the lite detector here is heuristic
-//                             (new/changed rules in theme-bearing stylesheets
-//                             since the last baseline capture) and says
-//                             "re-baseline before releasing" when suspicious
+//   (the old check 7, appearance token drift, left with the pixel gates)
 import { execSync, spawnSync } from "node:child_process";
-import { readFileSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -77,19 +73,16 @@ if (localeCheck.status === 0) {
 // 5. readme payload sync.
 const readme = readFileSync(join(root, "README.md"), "utf8");
 const snapshotBudget = JSON.parse(readFileSync(join(root, "tooling/public-tree-budget.json"), "utf8"));
-// The measured number lives in the last sync; recompute cheaply by asking
-// the sync tool in check mode would rebuild — instead compare against the
-// published README.zh-CN so drift between the two is caught, and flag when
-// the readme predates the latest snapshot manifest change.
-const mtime = (path) => { try { return statSync(path).mtimeMs; } catch { return 0; } };
-const readmeBytes = (readme.match(/payload[\s\S]{0,40}?(\d[\d,]{6,})\s*bytes/i) || [])[1];
-const measuredBytes = (() => {
-  try { return JSON.parse(readFileSync(join(root, "site/data/floppy-budget.json"), "utf8")).bytes; } catch { return 0; }
+// The README states the budget, not the measured payload (2026-10-15): the
+// number a release must get right is the invariant, and it moves only with the
+// manifest. The measured bytes are in site/data/floppy-budget.json.
+const budgetBytes = (() => {
+  try { return JSON.parse(readFileSync(join(root, "site/data/floppy-budget.json"), "utf8")).budgetBytes; } catch { return 0; }
 })();
-if (readmeBytes && measuredBytes && readmeBytes.replace(/,/g, "") === String(measuredBytes)) {
-  note(`readme payload: quotes the measured ${readmeBytes} bytes`);
+if (budgetBytes && readme.includes(budgetBytes.toLocaleString("en-US"))) {
+  note(`readme states the System Floppy Budget (${budgetBytes.toLocaleString("en-US")} bytes)`);
 } else {
-  problems.push(`README 载荷数字与实测不符（README ${readmeBytes || "?"} vs 实测 ${measuredBytes}）—— 运行 \`npm run sync:readme-payload\`。`);
+  problems.push(`README 没有写明系统软盘预算（${budgetBytes || "?"} 字节）；README 只承诺预算，不引用实测载荷。`);
 }
 
 // 6. dirty tree.
@@ -101,26 +94,9 @@ if (!String(status.stdout || "").trim()) {
   problems.push(`工作树不干净（${dirty.length} 个文件）—— 发版冻结 HEAD，未提交的工作会丢失或被拒绝。先提交。`);
 }
 
-// 7. appearance drift (heuristic): theme-bearing stylesheets modified after
-// the last appearance baseline capture → tell the builder to re-baseline
-// first. The real check is expensive; this is the tripwire.
-const baselineFiles = ["internal/evidence/drafts/appearance-phase5/phase5-report.json"];
-let newestBaseline = 0;
-for (const file of baselineFiles) {
-  try { newestBaseline = Math.max(newestBaseline, mtime(join(root, file))); } catch {}
-}
-const themeStyles = ["styles/00-foundation.css", "styles/50-apps.css", "styles/30-surfaces.css", "styles/92-clioworks-native.css"];
-let newestThemeStyle = 0;
-for (const file of themeStyles) {
-  try { newestThemeStyle = Math.max(newestThemeStyle, mtime(join(root, file))); } catch {}
-}
-if (newestThemeStyle > newestBaseline) {
-  problems.push("主题样式表在最近一次外观基线捕获之后被修改 —— appearance-token-tables 门会在发版中段拒绝。先运行 `npm run snapshot:appearance` 重照基线。");
-} else {
-  note("appearance: theme stylesheets older than the last baseline");
-}
-
-
+// The appearance-drift tripwire that stood here (stylesheets newer than the last
+// baseline) is gone with the pixel gates it guarded; see RELEASE.md "Removed from
+// the release gate".
 
 console.log(`\nrelease-doctor: ${problems.length ? problems.length + " 个问题" : "全部通过"}`);
 if (problems.length) {

@@ -40,7 +40,8 @@
     "iconAssetsFrozen": true,
     "noPixelMode": true,
     "noImageGen": true,
-    "noWholeUiScale": true
+    "noWholeUiScale": true,
+    "chromeRealMachineFirst": true
   },
   "finePointer": {
     "menuBar": { "min": 22, "max": 24, "unit": "px" },

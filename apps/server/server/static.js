@@ -22,7 +22,8 @@ const fsPromises = require("node:fs/promises");
 const path = require("node:path");
 
 const { send } = require("./lib/http.js");
-const { desktopRoot, repoRoot } = require("./lib/build-info.js");
+const { desktopRoot, repoRoot, appBuild, appSourceCommit } = require("./lib/build-info.js");
+const { shellOwned } = require("./shell-session.js");
 
 /**
  * Extension -> Content-Type. Same five entries as root. Anything
@@ -77,7 +78,7 @@ const exactPublicFiles = new Set([
   "styles.rootline.css",
   "styles.joyride.css",
   "styles.project-disks.css",
-  "styles.clio-project.css", "styles.edit-kernel.css",
+  "styles.clio-project.css", "styles.edit-kernel.css", "styles.about.css",
   "styles.big-sur.css",
   "styles.tiger.css",
   "styles.system-7.css",
@@ -155,9 +156,15 @@ function resolvePublicFile(relative) {
   return path.resolve(desktopRoot, relative);
 }
 
-function cacheHeaders(relative, ext, url) {
+// The Mac application replaces its payload in place while WebKit's HTTP cache
+// survives the swap, and `?v=<build>` names the build stamp, not the bytes: two
+// payloads can share a stamp. A shell-owned server is a loopback hop, so
+// nothing is pinned there; every response revalidates against an ETag that
+// carries the payload identity.
+function cacheHeaders(relative, ext, url, { pinned = true } = {}) {
   const versioned = Boolean(url?.searchParams?.get("v"));
   const contentHashed = /(?:^|[.-])[a-f0-9]{8,}(?:[.-]|$)/i.test(path.basename(relative));
+  if (!pinned) return { "Cache-Control": "no-cache" };
   if (versioned || contentHashed) {
     return { "Cache-Control": "public, max-age=31536000, immutable" };
   }
@@ -196,12 +203,13 @@ async function handleStatic(req, res) {
     if (!stat.isFile()) throw new Error("Not a file");
     const ext = path.extname(filePath);
     const contentType = mimeTypes[ext] || "application/octet-stream";
-    const etag = `W/"${stat.size.toString(16)}-${Math.trunc(stat.mtimeMs).toString(16)}"`;
+    const payload = shellOwned ? `-${appBuild}-${String(appSourceCommit || "").slice(0, 12)}` : "";
+    const etag = `W/"${stat.size.toString(16)}-${Math.trunc(stat.mtimeMs).toString(16)}${payload}"`;
     const headers = {
       "Content-Type": contentType,
       "Content-Length": stat.size,
       "ETag": etag,
-      ...cacheHeaders(relative, ext, url),
+      ...cacheHeaders(relative, ext, url, { pinned: !shellOwned }),
     };
     if (relative.startsWith("assets/openttd/") || relative.startsWith("assets/doom/") || relative.startsWith("assets/mingwen/")) {
       // Game shells (OpenTTD and DOOM in wasm, 明文 as a plain static page) run
