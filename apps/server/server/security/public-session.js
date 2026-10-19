@@ -63,6 +63,20 @@ const sessionFreePaths = new Set([
   "/api/one-more-tune/preview",
 ]);
 
+// Content doors with children. 潮汐信笺 reads the blog's already-public pack
+// through this fixed proxy, with no caller-supplied URL and no writer data; a
+// Turnstile challenge in front of a public article would only make the reader
+// unable to open its first page. The address window still applies.
+const sessionFreePrefixes = new Set(["/api/aaron-blog"]);
+
+function isSessionFree(pathname) {
+  if (sessionFreePaths.has(pathname)) return true;
+  for (const prefix of sessionFreePrefixes) {
+    if (pathname === prefix || pathname.startsWith(`${prefix}/`)) return true;
+  }
+  return false;
+}
+
 class TtlLruWindows {
   constructor(maxEntries, ttlMs) {
     this.maxEntries = maxEntries;
@@ -565,7 +579,7 @@ async function runWithPublicGuard(req, res, handler) {
 
   const session = sessionFromRequest(req)
     || (macSharedPaths.has(pathname) ? macSharedSessionFromRequest(req) : null);
-  if (!session && !sessionFreePaths.has(pathname)) {
+  if (!session && !isSessionFree(pathname)) {
     sendJson(res, 401, {
       error: "Verification required",
       code: "verification_required",
