@@ -3064,6 +3064,7 @@ function getActionAvailability() {
     "open-menu-selection": finderVolumeCapabilities
       ? finderVolumeCapabilities.canOpen
       : !!activeItem,
+    "open-with": fclip(),
     "duplicate-selection": canDuplicateFinderSelection,
     "make-alias": isFinderWindow
       && !!currentFinderSelection
@@ -3243,18 +3244,18 @@ function getActionAvailability() {
       || hasProjectCdSelection
       || hasMountedFileSelection
       || !!finderVolumeCapabilities?.canTrash,
-    "put-away": !!selectedTrashItem,
+    "put-away": !!selectedTrashItem || !!document.querySelector(".desktop-object.is-selected"),
     "page-setup": canUsePageSetup,
     "print-current": isTeachText && hasTeachTextBody,
     "print-directory": canPrintDirectory,
     "close-active-window": !!activeWin && !activeWin.classList.contains("is-hidden"),
     // An editor with a registered history answers Undo and Redo while that
     // history has a step; a focused text field keeps its own.
-    "undo": hasEditableFocus || isTeachText || isAssistant || !!editHistoryFor(winName)?.canUndo(),
+    "undo": hasEditableFocus || isTeachText || isAssistant || !!editHistoryFor(winName)?.canUndo() || finderUndoReady(),
     "redo": hasEditableFocus || (editHistoryFor(winName) ? editHistoryFor(winName).canRedo() : true),
     "cut": hasEditableSelectionRange,
-    "copy": !!window.getSelection().toString() || hasEditableSelectionRange,
-    "paste": hasEditableFocus || isTeachText || isAssistant,
+    "copy": !!window.getSelection().toString() || hasEditableSelectionRange || fclip(),
+    "paste": hasEditableFocus || isTeachText || isAssistant || fclip(1),
     "clear-edit": hasEditableSelectionRange,
     // Select All takes the whole field, and an empty field has nothing to
     // take: select() moved the caret from 0-0 to 0-0, so the command was
@@ -3291,6 +3292,7 @@ function getActionAvailability() {
     "clip-assistant-selection": isAssistant && !!window.getSelection().toString().trim(),
     "retry-last-message": isAssistant && !!lastUserText && !activeAbortController,
     "empty-trash": getProjectTrashItems().length > 0,
+    "finder-clean-up": window.AISystem6FinderOps?.cleanUpState().ok ?? true,
     "erase-disk": !!selectedProject,
     "reset-system": showResetSystemMenu,
     // An empty desk has nowhere to be interrupted from, and a spent pile has
@@ -3651,6 +3653,7 @@ function updateMenuState() {
               : !window.AISystem6WindowPinControls?.isSuspended();
       btn.classList.toggle("is-hidden", hidden);
     }
+    if (action === "finder-clean-up") btn.textContent = t(btn.dataset.i18n = window.AISystem6FinderOps?.cleanUpState().label || "clean_up_desktop");
     if (action === "tile-windows") {
       btn.classList.toggle("is-hidden", isPortraitDocumentFlow());
     }
@@ -5851,7 +5854,9 @@ function getDesktopAvoidanceInsets({ margin = 18, spineGap = 18, iconGap = 34 } 
   const spine = document.querySelector(".writing-spine-panel") || document.querySelector(".spine-flow-toolbox");
   const spineRect = spine?.getBoundingClientRect();
   const iconColumn = document.querySelector(".nextstep-dock") || document.querySelector(".icon-column");
-  const iconRect = iconColumn?.getBoundingClientRect();
+  const iconRect = iconColumn?.classList.contains("is-spatial")
+    ? window.AISystem6FinderDesk?.iconsRect?.()
+    : iconColumn?.getBoundingClientRect();
   // NeXTSTEP's main menu owns the left column in every workspace profile, not
   // only while the Writing Flow floats under it: in the desktop profile a
   // window used to open at x=24 with 126px of it under the menu.
@@ -6293,7 +6298,7 @@ function startWindowResize(event, win, edge = "right") {
 // 4px is not a new number; it is what Liquid Glass already ships for this token.
 function syncIconColumnDensity() {
   const column = document.querySelector(".icon-column");
-  if (!column) return;
+  if (!column || column.classList.contains("is-spatial")) return;
   // Measure at the natural spacing, never at the tightened one, or the
   // measurement would describe its own previous answer.
   column.classList.remove("is-tight");

@@ -31,12 +31,12 @@ Mach-O files are signed inside-out; the ZIP, DMG, SHA-256 and OTA manifest are
 produced only after the bundle is sealed. A formal release uses the frozen
 source and sealed artifacts of `release:prepare`.
 
-The user approved publishing the 1.0.58 OTA ad-hoc signed first, with Developer
-ID to follow. That mode has no notarization and no same-Team-ID binding, so the
-first download has to go through Gatekeeper's Open Anyway step; claiming
-notarization would be false. The signer runs the formal flow once Developer ID
-and notarization are configured. Later formal releases require the real
-credentials by default.
+The 1.0.58 OTA was published ad-hoc signed, so its first download went through
+Gatekeeper's Open Anyway step. From shell 1.1.0 the app is Developer ID signed,
+notarized and stapled (`signing.json` names the certificate SHA-1 and the
+notarytool profile; credentials stay in the keychain). An ad-hoc 1.0.x install
+may update to it, because the updater only binds the signing team once the
+running app has one; later updates must keep the same team.
 
 Updates check automatically and the writer's click on “Install and Restart”
 performs them. Work is saved and new tasks are refused before the download;

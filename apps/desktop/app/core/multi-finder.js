@@ -463,6 +463,12 @@ function windowMenuOwnsWindowVerbs() {
   return window.AISystem6Theme?.hasCapability?.("window-menu") === true;
 }
 
+function isClassicFinderEra() { return window.AISystem6Theme?.hasCapability?.("window-menu") !== true; }
+function isPhoneFinderViewport() {
+  const small = Math.min(window.innerWidth, window.innerHeight) < 600;
+  return (window.matchMedia?.("(pointer: coarse)")?.matches === true && small) || !!document.body?.classList.contains("mobile-app-foreground") || !!document.body?.classList.contains("mobile-landscape-shell");
+}
+
 function applicationVerbRows() {
   return [
     applicationRow("hide-active-app", t("hide_app", activeAppLabel())),

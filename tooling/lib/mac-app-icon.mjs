@@ -120,3 +120,42 @@ export const MAC_APP_ICONSET_SIZES = Object.freeze([
   ["icon_512x512.png", 512],
   ["icon_512x512@2x.png", 1024],
 ]);
+
+/**
+ * The iOS App Store icon from the same source as the Mac AppIcon: one
+ * 1024×1024 single-layer PNG, opaque (App Store icons may carry no alpha), the
+ * transparent artwork flattened onto `background`. No version band by default:
+ * the App Store icon stays the same across releases. `version` paints the
+ * same International Orange band the Mac betas carry, for a TestFlight build
+ * that has to be told apart on the home screen.
+ * @returns {Buffer} PNG bytes (RGB, no alpha channel)
+ */
+export function renderIosAppIcon({
+  sourcePath,
+  size = 1024,
+  background = "#FFFFFF",
+  version = "",
+  orange = INTERNATIONAL_ORANGE,
+} = {}) {
+  if (!sourcePath || !existsSync(sourcePath)) {
+    throw new Error(`App icon source is missing: ${sourcePath || "(empty)"}`);
+  }
+  const canvas = createCanvas(size, size);
+  const ctx = canvas.getContext("2d", { alpha: false });
+  ctx.fillStyle = background;
+  ctx.fillRect(0, 0, size, size);
+  if (version) {
+    const banded = new Image();
+    banded.src = renderVersionedMacAppIcon({ sourcePath, version, size, orange });
+    ctx.drawImage(banded, 0, 0, size, size);
+  } else {
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(loadImageSync(sourcePath), 0, 0, size, size);
+  }
+  return canvas.toBuffer("image/png");
+}
+
+/** PNG colour type from the IHDR chunk: 2 = RGB (no alpha), 6 = RGBA. */
+export function pngColorType(bytes) {
+  return bytes.length > 25 && bytes.readUInt32BE(12) === 0x49484452 ? bytes[25] : -1;
+}

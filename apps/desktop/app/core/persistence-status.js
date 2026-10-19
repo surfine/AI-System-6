@@ -936,6 +936,9 @@ function setControlTab(name) {
     panel.classList.toggle("is-active", active);
     panel.hidden = !active;
   });
+  if (target === "local" && window.AISystem6Capabilities?.capabilityAvailable("device.status")) {
+    ensureBuiltInModelDoorModule().then(() => window.AISystem6BuiltInModelDoor.show(), () => {});
+  }
   if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
   if (typeof window.syncAiSourceChoice === "function") window.syncAiSourceChoice();
 

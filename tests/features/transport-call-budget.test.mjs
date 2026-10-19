@@ -21,7 +21,7 @@ const server = vm.createContext({
   isTrustedDeepSeekCredentialTarget: () => true, normalizeCloudVisionMessages: (messages) => ({ messages }),
   isAutoModelId: () => false, isDeepSeekCloudModelId: () => true,
   stripCloudLocalOnlyFields: noop, stripDeepseekV4LocalOnlyFields: noop,
-  shouldStripDeepseekV4Sampling: () => false, cloudAuthHeaders: () => ({}), assertFinalChatPayloadBudget: noop,
+  cloudAuthHeaders: () => ({}), assertFinalChatPayloadBudget: noop,
   modelContentFromChatData: (data) => data?.choices?.[0]?.message?.content || "",
   findHumanizerOutputHits: (content) => content.includes("bad") ? ["bad"] : [],
   findHumanizerStyleDiagnostics: () => [], shouldLintHumanizerOutput: () => true,
@@ -31,7 +31,7 @@ const server = vm.createContext({
   cloudRunUsageMetrics: (usage, known, unknown) => ({ ...usage, total_tokens: known, unknown }),
 });
 vm.runInContext(functions(read("apps/server/server/routes/chat.js"), ["createChatFollowupBudget", "repairHumanizerOutputIfNeeded"]), server);
-vm.runInContext(functions(read("apps/server/server/routes/cloud-chat.js"), ["retryWithoutThinking", "repairCloudHumanizerOutputIfNeeded", "handleCloudChat"]), server);
+vm.runInContext(functions(read("apps/server/server/routes/cloud-chat.js"), ["normalizeDeepseekEffort", "clampDeepseekMaxTokens", "retryWithoutThinking", "repairCloudHumanizerOutputIfNeeded", "handleCloudChat"]), server);
 async function cloudRun({ followups, repairs = 1, answers, failRepair = false }) {
   const wires = [];
   server.postJsonWithFallback = async (url, payload, signal, auth, options) => {

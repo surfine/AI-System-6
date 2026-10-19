@@ -128,8 +128,24 @@ if (controlStrip.includes("balloon_${descriptor.labelKey}")) {
   }
 }
 
+// A lazy feature may keep its own copy in LOCAL_STRINGS so the boot bundle does
+// not carry it. Those keys are still resolved by tr(); the app's own contract
+// proves the two language maps carry the same keys.
+const localTranslationKeys = new Set();
+for (const path of appFiles) {
+  const source = readFileSync(path, "utf8");
+  const start = source.indexOf("const LOCAL_STRINGS");
+  if (start < 0) continue;
+  const end = source.indexOf("const language =", start);
+  const block = source.slice(start, end > start ? end : undefined);
+  for (const match of block.matchAll(/(?:^|[\s,{])([a-z][a-z0-9_]*):/g)) localTranslationKeys.add(match[1]);
+}
+
 const unresolved = [...referenced]
-  .filter(([key]) => !enKeys.has(key) || !zhKeys.has(key))
+  .filter(([key]) => (
+    (!enKeys.has(key) && !localTranslationKeys.has(key))
+    || (!zhKeys.has(key) && !localTranslationKeys.has(key))
+  ))
   .map(([key, paths]) => `${key} <- ${[...paths].join("; ")}`)
   .sort();
 test.assert(unresolved.length === 0, `all static translation and Balloon Help references resolve (missing: ${unresolved.join(" | ")})`);

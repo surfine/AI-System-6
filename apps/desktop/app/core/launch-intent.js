@@ -106,8 +106,11 @@ window.AISystem6LaunchIntent = {
       }
     };
     const set = rawParam("set");
-    const open = param("open");
-    const launch = param("launch");
+    // An App Store shell names the apps its bundle leaves out (the GPL games);
+    // a link to one opens the plain desk there.
+    const leftOut = new Set(window.AISystem6NativeShell?.excludedApps || []);
+    const open = leftOut.has(param("open")) ? "" : param("open");
+    const launch = leftOut.has(param("launch")) ? "" : param("launch");
     const appearance = param("appearance");
     const tour = param("tour");
     const mode = param("mode");

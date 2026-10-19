@@ -303,8 +303,10 @@ function duplicateSelectedDocumentFile() {
   chatFiles.unshift(copy);
   selectedChatFileId = copy.id;
   selectedDocumentFolderId = null;
+  markDeskDirty("chatFiles", copy.id);
   saveDeskState();
   renderDocuments();
+  finderCommand("duplicated", { key: `file:${copy.id}` });
   setStatus(t("file_duplicated", copy.name));
 }
 
@@ -315,56 +317,15 @@ function withFinderObjects(callback) {
   return ensureLazyModuleForUserAction(t("finder_objects"), ensureFinderObjectsModule).then(callback);
 }
 
-async function renameSelectedDocumentItem() {
+function renameSelectedDocumentItem() {
   const folder = getSelectedDocumentFolder();
-  if (folder) {
-    const name = await showInputDialog({
-      message: t("rename_folder_prompt"),
-      defaultValue: displayFolderName(folder.name),
-    });
-    if (!name?.trim() || !isInActiveProject(folder) || !getProjectFolders().includes(folder)) return;
-    const normalized = name.trim();
-    const siblingExists = getProjectFolders().some((item) => {
-      if (item.id === folder.id) return false;
-      if ((item.parentId || null) !== (folder.parentId || null)) return false;
-      return displayFolderName(item.name).toLowerCase() === normalized.toLowerCase();
-    });
-    if (siblingExists) {
-      setStatus(t("folder_name_taken", normalized));
-      return;
-    }
-    folder.name = isDefaultFolderName(normalized) ? "General" : normalized;
-    folder.updatedAt = new Date().toISOString();
-    markDeskDirty("chatFolders", folder.id);
-    saveDeskState();
-    renderDocuments();
-    setStatus(t("folder_renamed", displayFolderName(folder.name)));
-    return;
-  }
-
-  const file = chatFiles.find((item) => item.id === selectedChatFileId && isInActiveProject(item));
-  if (!file) {
+  const file = folder ? null : chatFiles.find((item) => item.id === selectedChatFileId && isInActiveProject(item));
+  const item = folder || file;
+  if (!item) {
     setStatus(t("select_finder_item_first"));
     return;
   }
-  const name = await showInputDialog({
-    message: t("rename_file_prompt"),
-    defaultValue: file.name,
-  });
-  if (!name?.trim() || !isInActiveProject(file) || !getProjectFiles().includes(file)) return;
-  file.name = name.trim();
-  if (file.type === "chat") file.titleMode = "manual";
-  file.updatedAt = new Date().toISOString();
-  // Renaming a file changes a record the desk already holds, so the save has
-  // to be told which one rather than finding it by scanning the desk.
-  markDeskDirty("chatFiles", file.id);
-  if (file.id === activeTextFileId) {
-    teachTextNameInput.value = file.name;
-    syncTeachTextNameDisplay();
-  }
-  saveDeskState();
-  renderDocuments();
-  setStatus(t("file_renamed", file.name));
+  finderCommand("begin-rename", { key: `${folder ? "folder" : "file"}:${item.id}`, selectAll: true });
 }
 
 function moveSelectedDocumentFileToTrash() {
@@ -408,6 +369,14 @@ function moveDocumentFolderToTrashById(folderId) {
     return false;
   }
 
+  // What stands on the desktop stays there, filed one level up.
+  for (const [list, field] of [["folders", "parentId"], ["files", "folderId"]]) {
+    getDocumentFolderTree(folder.id)[list].forEach((item) => {
+      if (item === folder || !item.placement?.desktop) return;
+      item[field] = folder.parentId || null;
+      markDeskDirty(list === "files" ? "chatFiles" : "chatFolders", item.id);
+    });
+  }
   const tree = getDocumentFolderTree(folder.id);
   const folderIds = new Set(tree.folders.map((item) => item.id));
   const fileIds = new Set(tree.files.map((item) => item.id));
@@ -614,16 +583,17 @@ function renderDocuments() {
 
   const selectedFolder = getSelectedFolder();
   const currentParentId = selectedFolder?.id || null;
-  const visibleFiles = selectedFolderId === "all"
+  const visibleFiles = (selectedFolderId === "all"
     ? getProjectFiles().filter((file) => {
         const folder = file.folderId ? getProjectFolders().find((item) => item.id === file.folderId) : null;
         return !folder;
       })
-    : getProjectFiles().filter((file) => file.folderId === selectedFolderId);
-  const visibleFolders = getProjectFolders().filter((folder) => (folder.parentId || null) === currentParentId);
+    : getProjectFiles().filter((file) => file.folderId === selectedFolderId)).filter((file) => !file.placement?.desktop);
+  const visibleFolders = getProjectFolders().filter((folder) => (folder.parentId || null) === currentParentId && !folder.placement?.desktop);
   if (!visibleFiles.some((file) => file.id === selectedChatFileId)) selectedChatFileId = null;
   if (!visibleFolders.some((folder) => folder.id === selectedDocumentFolderId)) selectedDocumentFolderId = null;
 
+  restoreFinderWindowState("documents");
   const mode = normalizeFinderViewMode(windowViewModes.documents);
   windowViewModes.documents = mode;
   const grid = documentIconGridEl;
@@ -637,6 +607,7 @@ function renderDocuments() {
     currentLanguage,
     collectionVersion(visibleFiles),
     collectionVersion(visibleFolders),
+    finderPlacementVersion,
   ].join("::");
   if (shouldSkipRender("documents", signature)) return;
   const fragment = document.createDocumentFragment();
@@ -671,7 +642,6 @@ function renderDocuments() {
       }
 
       const row = document.createElement("div");
-      row.draggable = true;
       if (item.type === "folder") {
         const folder = item;
         const selected = selectedDocumentItemKeys.has(documentSelectionKey("folder", folder.id)) || folder.id === selectedDocumentFolderId;
@@ -785,7 +755,6 @@ function renderDocuments() {
       const folder = item;
       const button = document.createElement("button");
       button.type = "button";
-      button.draggable = true;
       const selected = selectedDocumentItemKeys.has(documentSelectionKey("folder", folder.id)) || folder.id === selectedDocumentFolderId;
       button.className = `finder-item finder-label-${folder.finderLabel || "none"}${selected ? " is-selected" : ""}`;
       button.dataset.dragType = "document-folder";
@@ -824,7 +793,6 @@ function renderDocuments() {
       const file = item;
       const button = document.createElement("button");
       button.type = "button";
-      button.draggable = true;
       button.dataset.dragType = "file";
       button.dataset.id = file.id;
       button.dataset.projectId = file.projectId;
@@ -858,6 +826,7 @@ function renderDocuments() {
     });
   }
   grid.append(fragment);
+  syncFinderWindow("documents", grid, sortedItems, mode);
 
   renderFolderSuggestions();
   updateDocMapEntryButtons();
@@ -2808,6 +2777,8 @@ function duplicateActiveFile() {
 
 async function renameActiveFile() {
   const activeWin = document.querySelector(".window.is-active");
+  const desk = activeAppId === "finder" && !/^(projects|documents)$/.test(activeWin?.dataset.window) && document.querySelector(".desktop-object.is-selected");
+  if (desk) return finderCommand("begin-rename", { el: desk, selectAll: true });
   if (activeWin?.dataset.window === "projects") {
     const item = getSelectedProjectFinderItem();
     if (!item || item.canRename === false || item.virtual) {
@@ -2959,6 +2930,7 @@ function duplicateDocumentFolderById(folderId) {
   saveDeskState();
   renderDocuments();
   renderProjectDisks();
+  finderCommand("duplicated", { key: `folder:${copy.id}` });
   setStatus(t("folder_duplicated", displayFolderName(copy.name)));
   return copy;
 }

@@ -27,10 +27,10 @@ vm.createContext(context);
 vm.runInContext(capabilities, context, { filename: "chat-context-capabilities.vm.js" });
 const caps = context.AISystem6ChatContextCapabilities;
 
-const deepseek = caps.capabilityFor("deepseek", "deepseek-chat");
-test.assert(deepseek.known === true && deepseek.inputLimit === 131072 && deepseek.contextWindow === 131072,
+const deepseek = caps.capabilityFor("deepseek", "deepseek-flash");
+test.assert(deepseek.known === true && deepseek.inputLimit === 1000000 && deepseek.contextWindow === 1000000,
   "deepseek's profile carries its documented input limit and window");
-test.assert(deepseek.docVersion === "2026-10-10", "the profile names its documentation version");
+test.assert(deepseek.docVersion === "2026-10-19", "the profile names its documentation version");
 const unknown = caps.capabilityFor("some-new-provider", "x");
 test.assert(unknown.known === false && unknown.inputLimit === null && unknown.contextWindow === null,
   "an unlisted provider gets null limits (never advertised maxima)");
@@ -59,7 +59,7 @@ const budgetContext = {
   defaultRequestedOutputTokens: () => 1024,
   reservedSafetyTokens: 512,
   clioCloudRouteActive: () => true,
-  cloudConfig: { active: true, provider: "deepseek", model: "deepseek-chat" },
+  cloudConfig: { active: true, provider: "deepseek", model: "deepseek-flash" },
   AISystem6ChatContextCapabilities: caps,
 };
 budgetContext.globalThis = budgetContext;
@@ -75,7 +75,7 @@ const realBudget = await budgetContext.readModelBudget({
     { role: "assistant", content: "z".repeat(2000) },
   ],
 }, { taskKind: "chat" });
-test.assert(realBudget.input_limit === 131072 && realBudget.provider_scope === "cloud:deepseek",
+test.assert(realBudget.input_limit === 1000000 && realBudget.provider_scope === "cloud:deepseek",
   `the real readModelBudget resolves deepseek's input limit (${realBudget.input_limit}, ${realBudget.provider_scope})`);
 test.assert(realBudget.budget_source === "provider-input-limit",
   "a known provider names its budget source provider-input-limit");

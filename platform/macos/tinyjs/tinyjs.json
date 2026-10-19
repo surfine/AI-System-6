@@ -2,7 +2,7 @@
   "name": "ai-system6-shell",
   "title": "AI System 6 Beta",
   "id": "local.aisystem6.beta.shell",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "minTinyjs": "0.50.1",
   "size": "1280x800",
   "backend": "src/main.js",

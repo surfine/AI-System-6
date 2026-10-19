@@ -420,8 +420,13 @@ test.assert(vmw.run('JSON.parse(localStorage.getItem("ai-system-6-dock-favorites
 vmw.run('window.AISystem6WindowMinimize.setDockVisible(false); window.AISystem6WindowMinimize.setDockVisible(true)');
 await new Promise((resolve) => setTimeout(resolve, 20));
 test.assert(vmw.run(`!document.querySelector('.desk-dock-item[data-app-id="quickDraft"]')`), "hiding and showing Dock preserves removed shortcuts");
+// Use the application whose menu was just exercised, after restoring the
+// default projection: the keyboard path should not depend on which app is
+// currently on the desktop.
+vmw.run(`localStorage.removeItem('ai-system-6-dock-favorites'); window.dispatchEvent({type:'storage', key:'ai-system-6-dock-favorites'})`);
+await vmw.waitFor(() => vmw.run(`!!document.querySelector('.desk-dock-item[data-app-id="quickDraft"]')`));
 vmw.run(`(() => {
-  const cell = document.querySelector('.desk-dock-item[data-app-id="lightroom"]');
+  const cell = document.querySelector('.desk-dock-item[data-app-id="quickDraft"]');
   cell.focus(); window.__dockMenuCell = cell;
   document.querySelector('.desk-dock-items').dispatchEvent({type: 'keydown', key: 'F10', shiftKey: true, preventDefault() {}});
 })()`);
@@ -444,7 +449,7 @@ vmw.run(`document.querySelector('.desk-dock-menu button').dispatchEvent(new Even
 test.assert(vmw.run('getWindow("quickDraft") === window.__dockRestoredWindow && getWindow("quickDraft").classList.contains("is-collapsed")'), "choosing a rolled window restores the same window without unfolding it");
 vmw.run(`localStorage.setItem('ai-system-6-dock-favorites', '{broken'); window.dispatchEvent({type:'storage', key:'ai-system-6-dock-favorites'})`);
 await new Promise((resolve) => setTimeout(resolve, 20));
-test.assert(vmw.run(`!!document.querySelector('.desk-dock-item[data-app-id="lightroom"]')`), "corrupt preference falls back to the default application projection");
+test.assert(vmw.run(`!!document.querySelector('.desk-dock-item[data-app-id="quickDraft"]')`), "corrupt preference falls back to the default application projection");
 
 await vmw.context.AISystem6Theme.applyTheme("liquid-glass", { persist: false });
 await vmw.context.AISystem6Theme.whenReady();

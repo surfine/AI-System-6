@@ -132,7 +132,7 @@ test.assertNotIncludes(multiFinder, "renderAppleRunningApps", "only the original
 test.assertIncludes(profile, '"about_finder"', "Desktop switches the existing About window to Finder copy");
 test.assertIncludes(persistence, 'workspaceProfile === workspaceProfileDesktop ? "workspace_desktop" : "workspace_writing"', "System Status names the active profile");
 test.assertIncludes(html, 'data-drag-type="mounted-disk"', "the mounted File Floppy exposes the existing drag contract");
-test.assertMatches(dragDrop, /data\.type === "mounted-disk"[\s\S]*ejectTextDisk\(\)/, "dragging the whole File Floppy to Trash reuses Eject");
+test.assertMatches(read("app/core/finder-drag.js"), /data\.type === "mounted-disk"[\s\S]*ejectTextDisk\(\)/, "dragging the whole File Floppy to Trash reuses Eject (the Trash drop handler lives in finder-drag.js)");
 
 // --- Fresh-project stop-1 focus + no standing conflict ---------------------
 //

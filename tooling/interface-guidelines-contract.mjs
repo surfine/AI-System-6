@@ -300,6 +300,14 @@ const dynamicWindowSources = Object.freeze({
     cssPrefixes: Object.freeze(["one-more-tune-"]),
     iconId: "oneMoreTune",
   }),
+  aaronBlog: Object.freeze({
+    sourceKind: "lazy",
+    openCommand: "open-aaron-blog",
+    ensure: "loadLazyWindowModule",
+    mountPath: "app/features/aaron-blog.js#installWindow",
+    cssPrefixes: Object.freeze(["aaron-blog-"]),
+    iconId: "manuscript",
+  }),
   // The film the reveal points at, in a window of its own: same application,
   // same module, second window. Its command is the quiz's own "watch it here",
   // because that button — not a menu item on the desk — is what opens it.
@@ -610,6 +618,8 @@ const windowInterfaceContracts = Object.freeze({
     referenceSurface: "finder",
     rationale: "Print Directory reports the selected Finder source and its print metadata above one preview.",
   }),
+
+  aaronBlog: standardDocument("reader", "summoned", { referenceSurface: "reader", rationale: "The blog reader keeps one continuous reading pane; its left rail chooses the collection and the list chooses the document." }),
   reader: standardDocument("reader", "summoned", { documentModel: "tdi", tdiHost: "reader-tabs" }),
   timeMachine: specializedUtility("reader", {
     documentModel: "tdi",

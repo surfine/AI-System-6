@@ -2882,6 +2882,12 @@ window.AISystem6BonsaiCityLoaded = true;
     return Number.isInteger(value);
   }
 
+  // An App Store shell leaves Micropolis (GPL) out: no "Send to Micropolis"
+  // there. The .cty file export is Bonsai's own clean-room codec and stays.
+  function micropolisShipped() {
+    return !(window.AISystem6NativeShell?.excludedApps || []).includes("micropolis");
+  }
+
   function micropolisExporter() {
     return window.AISystem6BonsaiMicropolisExport || null;
   }
@@ -3999,7 +4005,7 @@ window.AISystem6BonsaiCityLoaded = true;
         summary.append(name, date);
         const actions = document.createElement("div");
         actions.className = "bonsai-city-row-actions";
-        ["open", "export", "export-sc2", "export-cty", "send-micropolis", "delete"].forEach((action) => {
+        ["open", "export", "export-sc2", "export-cty", ...(micropolisShipped() ? ["send-micropolis"] : []), "delete"].forEach((action) => {
           const button = document.createElement("button");
           button.type = "button";
           button.className = `btn mini-btn${action === "delete" ? " danger" : ""}`;
@@ -4044,7 +4050,7 @@ window.AISystem6BonsaiCityLoaded = true;
       setMessage(ok ? (isOsmSaveText(target.saveData) ? "bonsai_status_exported_osm" : "bonsai_status_exported") : "bonsai_status_export_failed");
       return;
     }
-    if (action === "send-micropolis") return sendRecordToMicropolis(target);
+    if (action === "send-micropolis") return micropolisShipped() ? sendRecordToMicropolis(target) : false;
     if (action === "export-cty") return exportRecordAsCty(target);
     if (action === "export-sc2") {
       try {
@@ -4899,7 +4905,7 @@ window.AISystem6BonsaiCityLoaded = true;
     "save-as": () => saveCurrentCityAs(),
     "export-sc2": () => exportCurrentSc2(),
     "export-cty": () => exportCurrentAsCty(),
-    "send-micropolis": () => sendCurrentToMicropolis(),
+    "send-micropolis": () => (micropolisShipped() ? sendCurrentToMicropolis() : false),
     "drive-streets": () => driveCurrentStreets(),
     "plan-transit": () => planTransitInRootline(),
     "flip-pot": () => openFlipPot(),
@@ -5009,7 +5015,7 @@ window.AISystem6BonsaiCityLoaded = true;
           item("save-as", "bonsai_save_as"),
           item("export-sc2", "bonsai_export_sc2"),
           item("export-cty", "bonsai_export_cty"),
-          item("send-micropolis", "bonsai_send_micropolis"),
+          ...(micropolisShipped() ? [item("send-micropolis", "bonsai_send_micropolis")] : []),
           item("drive-streets", "bonsai_drive_streets"),
           item("plan-transit", "bonsai_plan_transit_rootline"),
           item("flip-pot", "bonsai_flip_pot_menu"),

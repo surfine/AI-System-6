@@ -643,6 +643,76 @@ async function callWebSearchAnswerStream({
   return finalResult;
 }
 
+// DeepSeek's Tools API (2026-10): a plain search backend, separate from the
+// Responses web_search tool above. It is an optional backend, off unless the
+// deployment opts in, and it bills per successful request (~¥5 per 1,000), so
+// the route that serves it is BYOK-only.
+function deepseekToolsEnabled() {
+  return process.env.AI_SYSTEM6_DEEPSEEK_TOOLS === "1";
+}
+
+/**
+ * POST /v1/tools/search. Returns the result list the API sends, with the
+ * fields the desk already understands (title, url, snippet, date, site,
+ * score); no answer is synthesized here.
+ *
+ * @param {{ apiKey: string, query: string, count?: number, signal?: AbortSignal | null, onRequest?: () => void }} options
+ */
+async function callDeepseekToolsSearch({ apiKey, query, count = 10, signal, onRequest }) {
+  // Bounds from the API reference; kept inside the function because the
+  // contract harness extracts functions, not module-level constants.
+  const maxQueryChars = 128;
+  const maxCount = 50;
+  const q = String(query || "").trim();
+  const chars = [...q].length;
+  if (!chars) throw webSearchUpstreamError(400, "Missing query", { code: "missing_query", error: "Missing query" });
+  if (chars > maxQueryChars) {
+    throw webSearchUpstreamError(400, "Query too long", { code: "query_too_long", error: "Query too long" });
+  }
+  const requested = Math.floor(Number(count));
+  const n = Math.min(maxCount, Math.max(1, Number.isFinite(requested) ? requested : 10));
+  const target = `${DEEPSEEK_PUBLIC_BASE_URL}/v1/tools/search`;
+  const cloudTarget = await resolveCloudTarget(DEEPSEEK_PUBLIC_BASE_URL);
+  const { response } = await postJsonWithFallback(
+    target,
+    { query: q, count: n },
+    signal,
+    cloudAuthHeaders(apiKey),
+    { maxBytes: 8 * 1024 * 1024, pinnedAddress: cloudTarget.address, pinnedFamily: cloudTarget.family, onRequest }
+  );
+  const text = await response.text();
+  let data = null;
+  try {
+    data = JSON.parse(text);
+  } catch {}
+  if (!response.ok) {
+    const message = data?.error?.message || data?.message || text.slice(0, 500) || `HTTP ${response.status}`;
+    throw webSearchUpstreamError(response.status, message, {
+      code: data?.error?.code || "deepseek_tools_failed",
+      error: message,
+    });
+  }
+  const results = (Array.isArray(data?.results) ? data.results : [])
+    .filter((item) => item && typeof item.url === "string" && item.url)
+    .map((item) => ({
+      title: String(item.title || item.url),
+      url: String(item.url),
+      snippet: String(item.snippet || item.summary || ""),
+      summary: String(item.summary || ""),
+      date: String(item.date || ""),
+      siteName: String(item.site_name || siteFromUrl(item.url) || ""),
+      authority: Number.isFinite(Number(item.authority)) ? Number(item.authority) : null,
+      score: Number.isFinite(Number(item.rerank_score)) ? Number(item.rerank_score) : null,
+    }));
+  return {
+    provider: "deepseek-tools",
+    query: q,
+    count: n,
+    results,
+    billing: "DeepSeek Tools search: about ¥5 per 1,000 successful requests",
+  };
+}
+
 module.exports = {
   CLAIM_VERDICT_SCHEMA,
   WEB_SEARCH_EFFORTS,
@@ -650,7 +720,9 @@ module.exports = {
   WEB_SEARCH_MODES,
   WEB_SEARCH_QUERY_MAX_LENGTH,
   buildWebSearchPayload,
+  callDeepseekToolsSearch,
   callWebSearchAnswer,
+  deepseekToolsEnabled,
   callWebSearchAnswerStream,
   normalizeWebSearchEffort,
   parseWebSearchResponse,

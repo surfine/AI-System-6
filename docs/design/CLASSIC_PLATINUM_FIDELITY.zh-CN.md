@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/CLASSIC_PLATINUM_FIDELITY.md -->
-<!-- source-sha256: 62d1bcac520a18004d9a598cade48d30a61af18260c638dc9178cd8f8ff1b073 -->
+<!-- source-sha256: 1b39367db446121b12ff97b80298df9c525815c21fef07747c77b131922a3faa -->
 
 # Classic / Platinum 保真度合约
 

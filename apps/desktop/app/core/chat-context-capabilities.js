@@ -18,20 +18,20 @@
   'use strict';
   if (root.AISystem6ChatContextCapabilities) return;
 
-  const DOC_VERSION = "2026-10-10";
+  const DOC_VERSION = "2026-10-19";
 
   const PROVIDERS = Object.freeze({
     deepseek: Object.freeze({
-      inputLimit: 131072,
-      contextWindow: 131072,
-      outputBudgetCountsThinking: false,
-      cacheForkSupported: true,
+      inputLimit: 1000000,
+      contextWindow: 1000000,
+      outputBudgetCountsThinking: true,
+      cacheForkSupported: false,
       singleGeneration: true,
       toolsNeverExecute: true,
       serverHostedTools: false,
       replaySupported: true,
       docVersion: DOC_VERSION,
-      testedModels: Object.freeze(["deepseek-chat"]),
+      testedModels: Object.freeze(["deepseek-flash", "deepseek-v4-pro"]),
     }),
     anthropic: Object.freeze({
       inputLimit: 200000,

@@ -52,6 +52,7 @@ window.AISystem6Admissions = (() => {
     memoryCards: { app: "accessories", load: ensureMemoryCardsModule, command: "open-memory-cards" },
     micropolis: { app: "micropolis", load: ensureMicropolisModule, command: "open-micropolis" , multiFinder: "Micropolis" , applicationGroup: "games", appLabel: "micropolis_label", appIcon: "micropolis", appDesc: "app_desc_micropolis", api: "AISystem6Micropolis", phone: 2, grow: 1 },
     oneMoreTune: { app: "oneMoreTune", load: ensureOneMoreTuneModule, command: "open-one-more-tune" , multiFinder: "One More Tune" , applicationGroup: "extras", appLabel: "one_more_tune_label", appIcon: "oneMoreTune", appIconClass: "tools-icon", appDesc: "app_desc_one_more_tune", repaint: "renderOneMoreTune", api: "AISystem6OneMoreTune", width: 680, phone: 1, tile: 1, grow: 1 },
+    aaronBlog: { app: "aaronBlog", load: ensureAaronBlogModule, command: "open-aaron-blog", multiFinder: "潮汐信笺", applicationGroup: "root", appLabel: "aaron_blog_label", appIcon: "manuscript", appIconClass: "tools-icon", appDesc: "app_desc_aaron_blog", appearance: 1, api: "AISystem6AaronBlog", width: 980, phone: 1, tile: 1, grow: 1, repaint: "renderAaronBlogLanguage" },
     mingwen: { app: "mingwen", load: ensureMingwenModule, command: "open-mingwen" , multiFinderKey: "mingwen_title" , applicationGroup: "games", appLabel: "mingwen_label", appIcon: "mingwen", appDesc: "app_desc_mingwen", api: "AISystem6Mingwen", width: 1024, phone: 2, tile: 1, grow: 1 },
     openttd: { app: "openttd", load: ensureOpenTTDModule, command: "open-openttd" , multiFinder: "OpenTTD" , applicationGroup: "games", appLabel: "openttd_label", appIcon: "openttd", appDesc: "app_desc_openttd", api: "AISystem6OpenTTD", phone: 2 },
     rootline: { app: "rootline", load: ensureRootlineModule, command: "open-rootline" , multiFinder: "Rootline" , applicationGroup: "games", appLabel: "rootline_label", appIcon: "rootline", appDesc: "app_desc_rootline", api: "AISystem6Rootline", phone: 2, tile: 1, grow: 1, repaint: "renderRootline" },
@@ -64,6 +65,10 @@ window.AISystem6Admissions = (() => {
     todo: { app: "accessories", load: ensureTodoDaModule, command: "open-todo-da" },
     translationPad: { app: "accessories", load: ensureTranslationPadModule, command: "open-translation-pad" },
   };
+  // An App Store shell names the apps its bundle leaves out (the GPL games).
+  (window.AISystem6NativeShell?.excludedApps || []).forEach((app) => {
+    for (const name in WINDOWS) if (WINDOWS[name].app === app) delete WINDOWS[name];
+  });
 
   function windowRecord(name) {
     return WINDOWS[String(name || "")] || null;

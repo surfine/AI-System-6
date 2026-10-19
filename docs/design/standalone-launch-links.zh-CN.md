@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/standalone-launch-links.md -->
-<!-- source-sha256: e154ce615e8b91396fd768d1959bc2b450e122afce786b626cc787e50a00c009 -->
+<!-- source-sha256: 16f65b5d69a146d80ac4b286fac86af6ea2790c60c655e8a29ec8da173b6a500 -->
 <!-- 英文版为准，本文件仅供人类参考 -->
 
 # 独立直达链接 —— 一个链接，直接进某个功能

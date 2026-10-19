@@ -915,6 +915,7 @@ function renderFinderListHeader(windowName, mode, { interactive = true, onChange
     button.addEventListener("click", (event) => {
       event.stopPropagation();
       toggleFinderSortReversed(windowName);
+      saveFinderWindowState(windowName);
       onChange?.();
     });
   } else {
@@ -1991,6 +1992,13 @@ function applyProjectDiskRiskMark(icon, project) {
 //
 // The mounted disk keeps its static markup, because it is also the drop target
 // for filing things into the current project. The ejected ones are drawn.
+// finder-ops.js owns window state and spatial layout; the version makes a
+// placement-only change redraw.
+let finderPlacementVersion = 0;
+function restoreFinderWindowState(name) { window.AISystem6FinderOps?.restoreWindowState(name); }
+function saveFinderWindowState(name) { if (/^(projects|documents)$/.test(name)) finderCommand("window-state", { name }); }
+function syncFinderWindow(...args) { ensureFinderOpsModule().then(() => window.AISystem6FinderOps.syncWindow(...args), () => {}); }
+
 function renderProjectDiskDesktopIcons() {
   const column = currentProjectLabelEl?.closest(".icon-column");
   const mountedIcon = currentProjectLabelEl?.closest(".desktop-icon");
@@ -2030,7 +2038,8 @@ function renderProjectDiskDesktopIcons() {
       // switching the disk you write on is a decision, not the by-product of
       // going to look for something.
       icon.dataset.action = `peek-project-disk:${project.id}`;
-      icon.draggable = true;
+      icon.dataset.dropTarget = "project";
+      icon.dataset.ejected = "true";
       icon.append(
         Object.assign(document.createElement("span"), { className: "sys-icon sys-icon-desktop" }),
         document.createElement("span"),
@@ -2048,6 +2057,8 @@ function renderProjectDiskDesktopIcons() {
   applyProjectDiskRiskMark(mountedIcon, mountedId ? projects.find((project) => project.id === mountedId) : null);
   drawn.forEach((icon) => icon.remove());
   if (typeof hydrateSystemIcons === "function") hydrateSystemIcons(column);
+  if (!window.AISystem6FinderDesk && mountedId && [...chatFiles, ...chatFolders].some((item) => item.placement?.desktop)) ensureFinderDeskModule().catch(() => {});
+  window.AISystem6FinderDesk?.sync?.();
 }
 
 function setProjectDiskActionVisible(button, visible) {
@@ -2171,10 +2182,10 @@ function getProjectFileFinderItem(file) {
 function getProjectRootFinderItems() {
   const currentParentId = getProjectFinderCurrentParentId();
   const folders = getProjectFolders()
-    .filter((folder) => (folder.parentId || null) === currentParentId)
+    .filter((folder) => (folder.parentId || null) === currentParentId && !folder.placement?.desktop)
     .map(getProjectFolderFinderItem);
   const files = getProjectFiles()
-    .filter((file) => (file.folderId || null) === currentParentId)
+    .filter((file) => (file.folderId || null) === currentParentId && !file.placement?.desktop)
     .map(getProjectFileFinderItem);
   if (currentParentId) return [...folders, ...files];
   const references = projectReferences
@@ -2342,7 +2353,6 @@ function renderProjectRootListItem(item, project, mode, orderedItems = []) {
   row.className = `finder-list-row${item.label ? ` label-${item.label}` : ""} finder-label-${item.finderLabel || "none"}${selected ? " is-selected" : ""}`;
   if (isSystem) row.dataset.projectRootId = item.id;
   if (isFolder || isFile) {
-    row.draggable = true;
     row.dataset.dragType = isFolder ? "document-folder" : isReference ? "projectReference" : "file";
     row.dataset.id = item.id;
     row.dataset.projectId = item.projectId;
@@ -2441,7 +2451,6 @@ function renderProjectRootIconItem(item, orderedItems = []) {
   button.className = `finder-item${item.label ? ` label-${item.label}` : ""} finder-label-${item.finderLabel || "none"}${selected ? " is-selected" : ""}`;
   if (isSystem) button.dataset.projectRootId = item.id;
   if (isFolder || isFile) {
-    button.draggable = true;
     button.dataset.dragType = isFolder ? "document-folder" : isReference ? "projectReference" : "file";
     button.dataset.id = item.id;
     button.dataset.projectId = item.projectId;
@@ -2599,6 +2608,7 @@ function renderProjectDisks() {
   projectDiskGridEl.dataset.dropTarget = "document-current-folder";
   projectDiskGridEl.dataset.folderId = currentFolder?.id || "";
 
+  restoreFinderWindowState("projects");
   const mode = normalizeFinderViewMode(windowViewModes.projects);
   windowViewModes.projects = mode;
   const items = sortFinderItemsForView(getProjectRootFinderItems(), mode, finderSortReversed("projects"));
@@ -2614,6 +2624,7 @@ function renderProjectDisks() {
     finderSortReversed("projects"),
     currentLanguage,
     collectionVersion(items),
+    finderPlacementVersion,
   ].join("::");
   if (shouldSkipRender("projectDisks", signature)) return;
   const fragment = document.createDocumentFragment();
@@ -2642,6 +2653,7 @@ function renderProjectDisks() {
     projectDiskGridEl.append(empty);
     updateFinderViewButtons(getWindow("projects"), mode);
     setFinderViewClasses(projectDiskGridEl, mode);
+    syncFinderWindow("projects", projectDiskGridEl, items, mode);
     syncProjectDiskMoreActions();
     if (typeof settlePendingFinderFit === "function") settlePendingFinderFit(getWindow("projects"));
     return;
@@ -2668,6 +2680,7 @@ function renderProjectDisks() {
     items.forEach((item) => fragment.append(renderProjectRootIconItem(item, items)));
   }
   projectDiskGridEl.append(fragment);
+  syncFinderWindow("projects", projectDiskGridEl, items, mode);
   if (typeof settlePendingFinderFit === "function") settlePendingFinderFit(getWindow("projects"));
 }
 

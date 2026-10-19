@@ -15,6 +15,14 @@ assert.equal(worker.newer("1.0.9", "1.0.10"), true);
 assert.equal(worker.newer("1.0.10", "1.0.9"), false);
 assert.equal(worker.newer("1.0.10", "1.0.10"), false);
 assert.throws(() => worker.newer("1.0.0", "1.0.1-beta"));
+// Installs at 1.0.0 and 1.0.1 (ad-hoc builds) are offered the 1.1.0 notarized shell.
+assert.equal(worker.newer("1.0.0", "1.1.0"), true);
+assert.equal(worker.newer("1.0.1", "1.1.0"), true);
+// The macOS network-settings proxy reaches Node's fetch through the worker.
+assert.equal(worker.systemProxyUrl("  HTTPSEnable : 1\n  HTTPSPort : 7890\n  HTTPSProxy : 127.0.0.1\n"), "http://127.0.0.1:7890");
+assert.equal(worker.systemProxyUrl("  HTTPSEnable : 0\n  HTTPSPort : 7890\n  HTTPSProxy : 127.0.0.1\n"), null);
+assert.equal(worker.systemProxyUrl("  HTTPSEnable : 1\n  HTTPSPort : 99999\n  HTTPSProxy : 127.0.0.1\n"), null);
+assert.equal(worker.systemProxyUrl("  HTTPSEnable : 1\n  HTTPSPort : 80\n  HTTPSProxy : evil host;rm\n"), null);
 for (const url of ["file:///etc/passwd", "http://example.com/a.zip", "https://user:secret@example.com/a.zip"]) {
   assert.throws(() => worker.safeUrl(url));
 }

@@ -79,6 +79,7 @@ function getApplication(appId) {
   return applicationsById.get(String(appId || "")) || null;
 }
 
+
 function resolveApplicationForItem(item, intent = "open") {
   const normalized = normalizeApplicationIntent(intent);
   if (!normalized) return { ok: false, reason: "unknown-intent", appId: "" };
@@ -836,6 +837,7 @@ window.AISystem6ApplicationRegistry = Object.freeze({
   applicationObjectAvailability,
   openProjectObject,
   itemKind: applicationItemKind,
+  applicationsForItemKind: (kind) => [...applicationsById.values()].filter((a) => a.acceptedItemKinds.includes(kind) && a.acceptedIntents.includes("open")),
   registerApplicationLifecycle,
   upgradeLifecycleLanes,
   getApplicationLifecycleState,

@@ -1,5 +1,5 @@
 <!-- canonical-source: platform/macos/tinyjs/README.md -->
-<!-- source-sha256: 2bac8726162c0346239ea3fef0ac4150e3d73809c8e20397c050d4bcdab2132e -->
+<!-- source-sha256: eb3c9445bb18321af13b458040c9254b3919917c698be2450b5b7d5b50ed5a4a -->
 
 > 英文版为准；本译文仅供人类参考，Agent 应读取英文入口。
 

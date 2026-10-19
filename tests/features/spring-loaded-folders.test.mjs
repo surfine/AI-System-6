@@ -3,6 +3,9 @@
 // the drag can continue into the next level. The navigation is in-memory only
 // (no saveDeskState, no Working Session, no storage), only activates on
 // precise pointers, and snaps the Finder back to the origin on drop or cancel.
+// The session lives in the lazy pointer engine (finder-drag.js); drag-drop.js
+// keeps the HTML5 arming (Reader clippings still drag that way) and the
+// window.AISystem6DragDrop forwarders Reader calls.
 
 import vm from "node:vm";
 
@@ -10,6 +13,7 @@ import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("spring-loaded-folders");
 const dragDrop = read("app/core/drag-drop.js");
+const finderDrag = read("app/core/finder-drag.js");
 // The external-drop router ships with the drag layer and the Finder drop
 // handler calls into it, so the vm runs both, in bundle order.
 const externalDrop = read("app/core/external-drop.js");
@@ -17,24 +21,27 @@ const reader = read("app/features/reader.js");
 const manifest = read("tooling/runtime-manifest.mjs");
 
 // ---- Structure contract ----------------------------------------------------
-test.assertIncludes(dragDrop, "springFolderDelayMs = 650", "the spring delay is a named 650ms constant");
-test.assertIncludes(dragDrop, "activeInternalDragData", "the active drag payload lives only in memory");
-test.assertIncludes(dragDrop, "springFolderTimer", "the spring timer is module state");
-test.assertIncludes(dragDrop, "springFolderSession", "the spring session is module state");
-test.assertIncludes(dragDrop, "originFolderId", "the session remembers the starting Finder path");
-test.assertIncludes(dragDrop, "currentTargetId", "the session tracks the hovered folder");
-test.assertIncludes(dragDrop, "opened", "the session tracks whether a folder opened");
-test.assertIncludes(dragDrop, 'matchMedia("(hover: hover) and (pointer: fine)")', "spring folders require a precise pointer");
-test.assertIncludes(dragDrop, '"document-folder"', "only Finder folder targets spring open");
+test.assertIncludes(finderDrag, "springFolderDelayMs = 650", "the spring delay is a named 650ms constant");
+test.assertIncludes(finderDrag, "activeInternalDragData", "the active drag payload lives only in memory");
+test.assertIncludes(finderDrag, "springFolderTimer", "the spring timer is module state");
+test.assertIncludes(finderDrag, "springFolderSession", "the spring session is module state");
+test.assertIncludes(finderDrag, "originFolderId", "the session remembers the starting Finder path");
+test.assertIncludes(finderDrag, "currentTargetId", "the session tracks the hovered folder");
+test.assertIncludes(finderDrag, "opened", "the session tracks whether a folder opened");
+test.assertIncludes(finderDrag, 'matchMedia("(hover: hover) and (pointer: fine)")', "spring folders require a precise pointer");
+test.assertIncludes(finderDrag, '"clipping-selection"', "Reader clipping drags can spring folders too");
+test.assertIncludes(finderDrag, "isDocumentFolderDescendant", "spring validation reuses the existing tree check");
+test.assertIncludes(finderDrag, "openDocumentFolder", "spring navigation reuses the documents Finder opener");
+test.assertIncludes(finderDrag, "openProjectFinderFolder", "spring navigation reuses the Project Disk opener");
+test.assertIncludes(finderDrag, 'target.dataset.dropTarget === "document-folder") maybeSpringFolder(target)', "the pointer engine arms the same spring on Finder folders");
 test.assertIncludes(dragDrop, 'dropTarget.dataset.dropTarget === "document-folder"', "spring only arms on Finder folder targets");
 test.assertIncludes(dragDrop, 'addEventListener("dragenter"', "the spring timer also arms on dragenter so a stationary hover opens");
-test.assertIncludes(dragDrop, '"clipping-selection"', "Reader clipping drags can spring folders too");
-test.assertIncludes(dragDrop, "isDocumentFolderDescendant", "spring validation reuses the existing tree check");
-test.assertIncludes(dragDrop, "openDocumentFolder", "spring navigation reuses the documents Finder opener");
-test.assertIncludes(dragDrop, "openProjectFinderFolder", "spring navigation reuses the Project Disk opener");
 test.assertIncludes(dragDrop, "handleDropToDocumentFolder(dragData, springTargetFolderId)", "the drop reuses the existing folder-drop handler");
-test.assertIncludes(dragDrop, "endSpringFolderSession()", "dragend always finishes a spring session");
+test.assertIncludes(dragDrop, "window.AISystem6FinderDrag?.endSpringFolderSession()", "dragend and drop always finish a spring session");
 test.assertIncludes(dragDrop, "window.AISystem6DragDrop", "the drag layer exposes the spring hooks");
+test.assertMatches(dragDrop, /beginSpringFolderSession: \(dragData, ask = \+\+springAsk\) => ensureFinderDragModule\(\)/, "the begin hook loads the engine on demand");
+test.assertIncludes(dragDrop, "ask === springAsk && window.AISystem6FinderDrag.beginSpringFolderSession(dragData)", "a drag that ended while the engine loaded never begins a late session");
+test.assertNotIncludes(dragDrop, "springFolderDelayMs", "the spring session no longer ships in the boot bundle");
 test.assertIncludes(reader, "beginSpringFolderSession", "Reader registers its clipping payload with the spring layer");
 test.assertIncludes(reader, "sourceTitle", "Reader clipping payload keeps its source title");
 test.assertIncludes(reader, "sourceUrl", "Reader clipping payload keeps its source URL");
@@ -47,9 +54,9 @@ test.assertNotIncludes(
   "the drag layer is not lazy"
 );
 
-const springNavigateBlock = dragDrop.slice(
-  dragDrop.indexOf("function springNavigateToFolder"),
-  dragDrop.indexOf("function springRestoreOrigin")
+const springNavigateBlock = finderDrag.slice(
+  finderDrag.indexOf("function springNavigateToFolder"),
+  finderDrag.indexOf("function springRestoreOrigin")
 );
 test.assertNotIncludes(springNavigateBlock, "setStatus(", "spring navigation never writes status text");
 test.assertNotIncludes(springNavigateBlock, "saveDeskState(", "spring navigation never saves desk state");
@@ -160,6 +167,7 @@ function buildContext(pointerFine, clock) {
       addEventListener: () => {},
     },
     document: fakeDocument,
+    ensureFinderDragModule: async () => true,
     setTimeout: clock.setTimeout,
     clearTimeout: clock.clearTimeout,
     activeProjectId: "p-1",
@@ -275,10 +283,14 @@ const harness = buildContext(true, clock);
 vm.runInContext(externalDrop, harness.context);
 vm.runInContext(dragDrop, harness.context);
 harness.context.initDragAndDrop();
+vm.runInContext(finderDrag, harness.context);
 const handlers = harness.fakeDocument.handlers;
 const state = harness.state;
 const context = harness.context;
-const dragstart = handlers.get("dragstart")[0];
+const springEngine = context.window.AISystem6FinderDrag;
+// Both engines open a session through the module: the pointer engine when a
+// Finder drag starts, Reader through window.AISystem6DragDrop.
+const dragstart = (event) => springEngine.beginSpringFolderSession(JSON.parse(event.dataTransfer.getData("application/json")));
 const dragenter = handlers.get("dragenter")[0];
 const dragover = handlers.get("dragover")[0];
 const dragleave = handlers.get("dragleave")[0];
@@ -322,7 +334,7 @@ test.assert(
   "the Project Disk Finder follows the same temporary path"
 );
 test.assert(
-  context.getSpringFolderState()?.opened === true,
+  springEngine.getSpringFolderState()?.opened === true,
   "the session records that the folder opened"
 );
 test.assert(
@@ -346,7 +358,7 @@ test.assert(
   "drop hands the final spring target folder id to the existing drop handler"
 );
 test.assert(
-  context.selectedFolderId === "all" && context.getSpringFolderState() === null,
+  context.selectedFolderId === "all" && springEngine.getSpringFolderState() === null,
   "drop restores the starting Finder path and ends the session"
 );
 
@@ -356,7 +368,7 @@ dragover(dragOverEvent(folderAEl, filePayload));
 clock.advance(760);
 dragend(dragEndEvent(fileEl));
 test.assert(
-  context.selectedFolderId === "all" && context.getSpringFolderState() === null,
+  context.selectedFolderId === "all" && springEngine.getSpringFolderState() === null,
   "drag cancel restores the starting Finder path and ends the session"
 );
 test.assert(
@@ -392,7 +404,7 @@ dragstart(dragStartEvent(foreignFileEl, JSON.stringify({ type: "file", id: "file
 dragover(dragOverEvent(folderAEl, filePayload));
 clock.advance(760);
 test.assert(
-  state.opened.length === 0 && context.getSpringFolderState() === null,
+  state.opened.length === 0 && springEngine.getSpringFolderState() === null,
   "a foreign-project drag never starts a spring session"
 );
 dragend(dragEndEvent(foreignFileEl));
@@ -409,19 +421,19 @@ const clipPayload = {
   after: "after",
 };
 test.assert(
-  context.beginSpringFolderSession(clipPayload) === true
-    && context.getSpringFolderState()?.originFolderId === "all",
+  springEngine.beginSpringFolderSession(clipPayload) === true
+    && springEngine.getSpringFolderState()?.originFolderId === "all",
   "a Reader clipping-selection payload can start a spring session"
 );
 let finishError = null;
 try {
-  context.endSpringFolderSession();
-  context.endSpringFolderSession();
+  context.window.AISystem6DragDrop.endSpringFolderSession();
+  context.window.AISystem6DragDrop.endSpringFolderSession();
 } catch (error) {
   finishError = error;
 }
 test.assert(
-  finishError === null && context.getSpringFolderState() === null,
+  finishError === null && springEngine.getSpringFolderState() === null,
   "finish is idempotent and calling it twice raises no error"
 );
 
@@ -431,13 +443,15 @@ const coarseHarness = buildContext(false, coarseClock);
 vm.runInContext(externalDrop, coarseHarness.context);
 vm.runInContext(dragDrop, coarseHarness.context);
 coarseHarness.context.initDragAndDrop();
+vm.runInContext(finderDrag, coarseHarness.context);
 const coarseHandlers = coarseHarness.fakeDocument.handlers;
-coarseHandlers.get("dragstart")[0](dragStartEvent(fileEl, filePayload));
+const coarseEngine = coarseHarness.context.window.AISystem6FinderDrag;
+test.assert(coarseEngine.beginSpringFolderSession(JSON.parse(filePayload)) === false, "a coarse pointer never opens a spring session");
 coarseHandlers.get("dragenter")[0](dragOverEvent(folderAEl, filePayload));
 coarseHandlers.get("dragover")[0](dragOverEvent(folderAEl, filePayload));
 coarseClock.advance(760);
 test.assert(
-  coarseHarness.context.getSpringFolderState() === null && coarseHarness.state.opened.length === 0,
+  coarseEngine.getSpringFolderState() === null && coarseHarness.state.opened.length === 0,
   "pointer: coarse devices keep the existing behavior with no spring folders"
 );
 coarseHandlers.get("dragend")[0](dragEndEvent(fileEl));

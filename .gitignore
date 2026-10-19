@@ -10,6 +10,7 @@ internal/archive/runtime-legacy/
 /apps/desktop/styles.theme-lab.css
 /apps/desktop/styles.draft-desk.css
 /apps/desktop/styles.control-strip.css
+/apps/desktop/styles.finder-spatial.css
 /apps/desktop/styles.cmf-studio.css
 /apps/desktop/styles.soundscape.css
 /apps/desktop/styles.liquid-cover.css
@@ -180,3 +181,4 @@ internal/plans/creator-blueprint/
 test-results/
 output/
 .DS_Store
+platform/macos/tinyjs/signing.local.json

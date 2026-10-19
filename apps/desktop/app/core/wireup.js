@@ -48,6 +48,10 @@ function syncAppearanceColorModeControl() {
 }
 
 function wireAppEvents() {
+  // The spatial desk loads only once the writer has placed an icon.
+  try {
+    if (localStorage.getItem("ais6.desktop.systemIconPositions")) ensureFinderDeskModule().catch(() => {});
+  } catch {}
   installDesktopScrollLock();
   installHeldPlaceTracking();
   initializeBalloonHelp();
@@ -1360,7 +1364,12 @@ function wireAppEvents() {
     window.AISystem6NextstepShell?.wire(win);
     win.querySelectorAll(".title-bar").forEach((bar) => wireTitleBarChrome(bar));
 
-    win.querySelector(".close-box")?.addEventListener("click", () => closeWindow(win.dataset.window, false, win.dataset.windowInstance));
+    win.querySelector(".close-box")?.addEventListener("click", (event) => {
+      // Option-click closes every Finder window.
+      const all = event.altKey && viewWindowNames.includes(win.dataset.window)
+        ? [...document.querySelectorAll(".window:not(.is-hidden)")].filter((w) => viewWindowNames.includes(w.dataset.window)) : [win];
+      all.forEach((w) => closeWindow(w.dataset.window, false, w.dataset.windowInstance));
+    });
 
     win.querySelector(".resize-box")?.addEventListener("click", () => {
       zoomWindow(win);

@@ -661,6 +661,7 @@ const ensureClioChartModule = createLazyModuleLoader("AISystem6ClioChartLoaded",
 const ensureClioProjectModule = createLazyModuleLoader("AISystem6ClioProjectWindowLoaded", ["app/core/application-shell.js", "app/core/edit-history.js", "app/core/clio-project.js", "app/features/clio-project-window.js"], false, ["styles.clio-project.css"]);
 const ensureClioPaintModule = createLazyModuleLoader("AISystem6ClioPaintLoaded", ["app/core/application-shell.js", "app/core/edit-history.js", "app/core/edit-snap.js", "app/core/edit-layers.js", "app/core/edit-assets.js", "app/core/edit-embeds.js", "app/features/clio-paint.js"], false, ["styles.clio-paint.css", "styles.edit-kernel.css"]);
 const ensureOneMoreTuneModule = createLazyModuleLoader("AISystem6OneMoreTuneLoaded", ["app/core/application-shell.js", "app/features/one-more-tune.js"], false, ["styles.one-more-tune.css"]);
+const ensureAaronBlogModule = createLazyModuleLoader("AISystem6AaronBlogLoaded", ["app/core/application-shell.js", "app/features/aaron-blog.js"], false, ["styles.aaron-blog.css"]);
 const ensureTodoDaModule = createLazyModuleLoader("AISystem6TodoDaLoaded", ["app/core/application-shell.js", "app/features/todo-da.js"]);
 const ensureSideAskPadModule = createLazyModuleLoader("AISystem6SideAskPadLoaded", ["app/core/application-shell.js", "app/features/sideask-pad.js"]);
 const ensureLiquidCoverModule = createLazyModuleLoader("AISystem6LiquidCoverLoaded", ["app/core/application-shell.js", "app/core/edit-history.js", "app/core/edit-snap.js", "app/core/edit-layers.js", "app/core/edit-assets.js", "app/core/edit-embeds.js", "app/features/image-prompt-runtime.js", "app/features/liquid-cover-model.js", "app/features/liquid-cover.js"], false, ["styles.liquid-cover.css", "styles.edit-kernel.css"]);
@@ -884,6 +885,11 @@ function ensureLazySystemModule(path, loadedFlag) {
   return promise;
 }
 function ensureFinderObjectsModule() { return ensureLazySystemModule("app/features/finder-objects.js", "AISystem6FinderObjectsLoaded"); }
+function ensureFinderSpaceModule() { return ensureLazySystemModule("app/core/finder-space.js", "AISystem6FinderSpaceLoaded"); }
+function ensureFinderOpsModule() { return ensureLazySystemModule("app/core/finder-ops.js", "AISystem6FinderOpsLoaded"); }
+function ensureFinderMenusModule() { return ensureLazySystemModule("app/core/finder-menus.js", "AISystem6FinderMenusLoaded"); }
+const ensureFinderDeskModule = createLazyModuleLoader("AISystem6FinderDeskLoaded", ["app/core/finder-desk.js"], false, ["styles.finder-spatial.css"]);
+const ensureFinderDragModule = createLazyModuleLoader("AISystem6FinderDragLoaded", ["app/core/finder-drag.js"], false, ["styles.finder-spatial.css"]);
 function ensureDesktopMaintenanceModule() { return ensureLazySystemModule("app/core/desktop-maintenance.js", "AISystem6DesktopMaintenanceLoaded"); }
 function ensureNativeBinariesModule() { return ensureLazySystemModule("app/core/native-binaries.js", "AISystem6NativeBinaries"); }
 function ensureClioWorksLedgerModule() { return ensureLazySystemModule("app/vendor/clioworks-v3/native-host.js", "AISystem6ClioWorksLoaded"); }
@@ -894,6 +900,7 @@ const ensureChatContextCapabilitiesModuleLoaded = createLazyModuleLoader("AISyst
 function ensureChatContextCapabilitiesModule() { return ensureChatContextCapabilitiesModuleLoaded(); }
 const ensureDeviceModelModuleLoaded = createLazyModuleLoader("AISystem6DeviceModelLoaded", ["app/core/device-model-client.js"]);
 function ensureDeviceModelModule() { return ensureDeviceModelModuleLoaded(); }
+const ensureBuiltInModelDoorModule = createLazyModuleLoader("AISystem6BuiltInModelDoorLoaded", ["app/features/built-in-model-door.js"]);
 function ensureChatCompactionModule() { return ensureChatCompactionModuleLoaded(); }
 function ensureChatCachePolicyModule() { return ensureLazySystemModule("app/vendor/unified-spec/cache-policy-install.js", "AISystem6ChatCachePolicyLoaded"); }
 const ensureChatRunDetailsModuleLoaded = createLazyModuleLoader("AISystem6ChatRunDetailsLoaded", ["app/core/chat-run-details.js"]);

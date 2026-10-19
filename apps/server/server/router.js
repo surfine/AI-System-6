@@ -74,13 +74,19 @@ const handleMacSharedQuota = lazyHandler(() => require("./routes/mac-shared.js")
 const handleChat = lazyHandler(() => require("./routes/chat.js"), "./routes/chat.js", "handleChat");
 const handleDeviceModelStatus = lazyHandler(() => require("./routes/device-model.js"), "./routes/device-model.js", "handleDeviceModelStatus");
 const handleDeviceModelChat = lazyHandler(() => require("./routes/device-model.js"), "./routes/device-model.js", "handleDeviceModelChat");
+const handleDeviceModelCatalog = lazyHandler(() => require("./routes/device-model.js"), "./routes/device-model.js", "handleDeviceModelCatalog");
+const handleDeviceModelDownloadStart = lazyHandler(() => require("./routes/device-model.js"), "./routes/device-model.js", "handleDeviceModelDownloadStart");
+const handleDeviceModelDownloadAttach = lazyHandler(() => require("./routes/device-model.js"), "./routes/device-model.js", "handleDeviceModelDownloadAttach");
+const handleDeviceModelDownloadCancel = lazyHandler(() => require("./routes/device-model.js"), "./routes/device-model.js", "handleDeviceModelDownloadCancel");
 const handleDraftThesis = lazyHandler(() => require("./routes/draft-thesis.js"), "./routes/draft-thesis.js", "handleDraftThesis");
 const handleBureaucracyCaptions = lazyHandler(() => require("./routes/bureaucracy-captions.js"), "./routes/bureaucracy-captions.js", "handleBureaucracyCaptions");
 const handleImageGenerate = lazyHandler(() => require("./routes/image-generate.js"), "./routes/image-generate.js", "handleImageGenerate");
 const handleVisionAnalyze = lazyHandler(() => require("./routes/vision-analyze.js"), "./routes/vision-analyze.js", "handleVisionAnalyze");
 const handleSearch = lazyHandler(() => require("./routes/search.js"), "./routes/search.js", "handleSearch");
 const handleSearchAnswer = lazyHandler(() => require("./routes/search-answer.js"), "./routes/search-answer.js", "handleSearchAnswer");
+const handleSearchTools = lazyHandler(() => require("./routes/search-tools.js"), "./routes/search-tools.js", "handleSearchTools");
 const handleReader = lazyHandler(() => require("./routes/reader.js"), "./routes/reader.js", "handleReader");
+const handleAaronBlog = lazyHandler(() => require("./routes/aaron-blog.js"), "./routes/aaron-blog.js", "handleAaronBlog");
 const handleTimeMachine = lazyHandler(() => require("./routes/time-machine.js"), "./routes/time-machine.js", "handleTimeMachine");
 const handleEndfieldSearch = lazyHandler(() => require("./routes/endfield-search.js"), "./routes/endfield-search.js", "handleEndfieldSearch");
 const handleEndfieldAsk = lazyHandler(() => require("./routes/endfield-ask.js"), "./routes/endfield-ask.js", "handleEndfieldAsk");
@@ -158,6 +164,10 @@ const localExactRoutes = new Map([
   ["POST /api/chat", handleChat],
   ["GET /api/device-model/status", handleDeviceModelStatus],
   ["POST /api/device-model/chat", handleDeviceModelChat],
+  ["GET /api/device-model/catalog", handleDeviceModelCatalog],
+  ["POST /api/device-model/download", handleDeviceModelDownloadStart],
+  ["GET /api/device-model/download", handleDeviceModelDownloadAttach],
+  ["DELETE /api/device-model/download", handleDeviceModelDownloadCancel],
   ["POST /api/draft/thesis", handleDraftThesis],
   ["POST /api/bureaucracy/captions", handleBureaucracyCaptions],
   ["POST /api/image/generate", handleImageGenerate],
@@ -166,6 +176,7 @@ const localExactRoutes = new Map([
   ["POST /api/import-ocr-pages", handleImportOcrPages],
   ["POST /api/subtitles/translate", handleSubtitlesTranslate],
   ["POST /api/search/answer", handleSearchAnswer],
+  ["POST /api/search/tools", handleSearchTools],
   // The guest bridge is loopback-only by construction: none of these three
   // keys appear in publicExactRouteKeys, so the public profile never serves
   // them. /mcp admits itself (security/mcp-admission.js); the executor pair
@@ -295,6 +306,7 @@ const localPrefixRoutes = [
   { method: "GET", prefix: "/go", handler: handleGoRedirect },
   { method: "GET", prefix: "/api/search", handler: handleSearch },
   { method: "GET", prefix: "/api/reader", handler: handleReader },
+  { method: "GET", prefix: "/api/aaron-blog", handler: handleAaronBlog },
   { method: "GET", prefix: "/api/time-machine", handler: handleTimeMachine },
   { method: "GET", prefix: "/api/endfield/search", handler: handleEndfieldSearch },
   { method: "POST", prefix: "/api/endfield/search", handler: handleEndfieldSearch },
@@ -310,6 +322,7 @@ const publicPrefixRouteKeys = new Set([
   "GET /go",
   "GET /api/search",
   "GET /api/reader",
+  "GET /api/aaron-blog",
   "GET /api/time-machine",
   "GET /api/endfield/search",
   "POST /api/endfield/search",

@@ -11,6 +11,32 @@ const run = promisify(execFile);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const MAX_BYTES = 1024 * 1024 * 1024;
 
+// Node's fetch ignores proxies, and a desktop app on a proxied network has no
+// HTTPS_PROXY in its environment: the proxy lives in macOS Network settings.
+// Read that (scutil --proxy) and switch on Node's built-in proxy support for
+// this worker process only. No dependency; an explicit HTTPS_PROXY wins.
+function systemProxyUrl(text) {
+  const field = (key) => new RegExp("^\\s*" + key + " : (.*)$", "m").exec(String(text))?.[1]?.trim();
+  if (field("HTTPSEnable") !== "1") return null;
+  const host = field("HTTPSProxy"), port = Number(field("HTTPSPort"));
+  if (!/^[\w.-]+$/.test(host || "") || !Number.isInteger(port) || port < 1 || port > 65535) return null;
+  return "http://" + host + ":" + port;
+}
+async function useSystemProxy(env = process.env) {
+  if (!(env.HTTPS_PROXY || env.https_proxy)) {
+    try {
+      const url = systemProxyUrl((await run("/usr/sbin/scutil", ["--proxy"], { timeout: 5000 })).stdout);
+      if (url) env.HTTPS_PROXY = url;
+    } catch {}
+  }
+  if (!(env.HTTPS_PROXY || env.https_proxy)) return false;
+  if (!env.NO_PROXY && !env.no_proxy) env.NO_PROXY = "localhost,127.0.0.1,::1";
+  const enable = require("node:http").setGlobalProxyFromEnv;
+  if (typeof enable !== "function") return false;
+  enable();
+  return true;
+}
+
 function safeUrl(value, localTest = false) {
   const url = new URL(value);
   if (url.username || url.password || (url.protocol !== "https:" && !(localTest && url.protocol === "http:" && ["127.0.0.1", "localhost"].includes(url.hostname)))) {
@@ -206,11 +232,13 @@ async function install(home) {
       await run("/usr/bin/open", ["-n", s.app]);
       const report = await health(s, s.identity);
       s.phase = "healthy"; s.report = report; await journal(file, s);
-      // Keep worker/journal for diagnosis, but remove the old app only after
-      // product ready and readable storage were observed.
-      await fs.rm(s.backup, { recursive: true, force: true }).catch(() => {});
-      await fs.rm(path.join(home, "payload.zip"), { force: true }).catch(() => {});
+      // The old app goes only after product ready and readable storage were
+      // observed. A healthy install then removes the whole private updater
+      // directory (previous app, payload, worker, journal): it holds a second
+      // copy of the app next to /Applications. A failed or restored install
+      // keeps it, so the journal and the failed copy can be diagnosed.
       if (s.recoveryFile) await fs.rm(s.recoveryFile, { force: true }).catch(() => {});
+      await fs.rm(home, { recursive: true, force: true }).catch(() => {});
       return { status: "healthy" };
     }
     throw new Error("Interrupted install needs recovery");
@@ -303,9 +331,10 @@ async function frontendCache(request) {
 if (require.main === module) {
   (async () => {
     const command = process.argv[2];
+    if (command === "check" || command === "prepare") await useSystemProxy();
     const result = command === "install" ? await install(process.argv[3])
       : await ({ check, prepare, recover, frontendCache }[command])(JSON.parse(await fs.readFile(process.argv[3])));
     process.stdout.write(JSON.stringify(result) + "\n");
   })().catch((e) => { console.error(JSON.stringify({ error: String(e.message).slice(0, 500) })); process.exitCode = 1; });
 }
-module.exports = { safeUrl, newer, boundedFetch, check, prepare, install, inspectApp, recover, frontendCache, health };
+module.exports = { systemProxyUrl, useSystemProxy, safeUrl, newer, boundedFetch, check, prepare, install, inspectApp, recover, frontendCache, health };

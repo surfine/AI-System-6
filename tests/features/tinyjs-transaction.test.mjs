@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync, spawn } from 'node:child_process';
@@ -46,6 +46,8 @@ if (process.platform !== 'darwin' || process.arch !== 'arm64') {
       assert.equal(actual.shellVersion,outcome==='healthy'?identity.shellVersion:oldIdentity.shellVersion);
       const health=JSON.parse(await readFile(healthyFile));assert.equal(health.dataFingerprint,dataFingerprint);assert.equal(health.ready,true);
       await assert.rejects(readFile(state.recoveryFile),{code:'ENOENT'});
+      // A healthy install leaves no private updater copy next to the app; a restored one keeps it for diagnosis.
+      assert.equal(await stat(home).then(()=>true,()=>false),outcome!=='healthy');
       console.log('Actual swap/restart transaction:',outcome,'passed');
     }
     {

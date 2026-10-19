@@ -31,17 +31,20 @@ import {
   openSync,
   readFileSync,
   readSync,
+  mkdtempSync,
   readdirSync,
   rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
+import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import process from "node:process";
 
 import { buildNative } from "./build-tinyjs-native.mjs";
 import { MAC_APP_ICONSET_SIZES, renderVersionedMacAppIcon } from "./lib/mac-app-icon.mjs";
+import { macSigningProblems, readMacSigningConfig, withMacSigningDefaults } from "./lib/mac-signing.mjs";
 
 export const REPO_ROOT = resolve(fileURLToPath(new URL("..", import.meta.url)));
 
@@ -221,8 +224,10 @@ export function buildVersionMetadata({
   sha256 = "",
   size = 0,
   manifestUrl = OTA_MANIFEST_URL,
+  signing = null,
 } = {}) {
   return {
+    ...(signing ? { signing: { mode: String(signing.mode || ""), notarized: signing.notarized === true } } : {}),
     identity: { ...identity },
     product: { version: identity.productVersion || "", build: identity.build || "", commit: identity.sourceCommit || "" },
     shell: { version: identity.shellVersion || "", bundleIdentifier: identity.bundleIdentifier || "" },
@@ -262,7 +267,10 @@ export function resolveSigningPlan({ env = {}, production = false, allowAdhoc = 
         + "or Apple ID + app password + team id); refusing to seal without notarization.",
       );
     }
-    return { mode: "developer-id", identity: contractIdentity, production: true, notarize: true };
+    return {
+      mode: "developer-id", identity: contractIdentity, production: true, notarize: true,
+      notaryProfile: String(env.AI_SYSTEM6_NOTARY_PROFILE || "").trim(),
+    };
   }
   if (contractIdentity) {
     return { mode: "developer-id", identity: contractIdentity, production: false, notarize: notaryCredentialsPresent(env) };
@@ -621,6 +629,10 @@ export function collectMachOFiles(root) {
 function signArgs(plan, target) {
   const args = ["tooling/sign-mac-app.mjs", ...target];
   args.push("--identity", plan.signing.identity);
+  if (plan.signing.notaryProfile) args.push("--keychain-profile", plan.signing.notaryProfile);
+  // Production never degrades to "signed but not notarized": the signer exits
+  // non-zero instead of printing NOT EXECUTED.
+  if (plan.production && plan.signing.notarize) args.push("--require-notarization");
   return args;
 }
 
@@ -639,6 +651,24 @@ function verifySealed(plan) {
     runChecked("/usr/sbin/spctl", ["--assess", "--type", "execute", "--verbose=4", plan.appDir], {
       label: "spctl --assess",
     });
+  }
+}
+
+/**
+ * The OTA zip is what the updater installs, so prove THAT file: unpack it the
+ * way the updater does (ditto) and require the stapled ticket and a Gatekeeper
+ * "accepted" verdict on the extracted app, not just on the build directory.
+ */
+function verifyArchivedApp(plan) {
+  const scratch = mkdtempSync(join(tmpdir(), "ais6-zip-verify-"));
+  try {
+    runChecked("/usr/bin/ditto", ["-x", "-k", plan.zipPath, scratch], { label: "unpack OTA zip" });
+    const extracted = join(scratch, plan.appName);
+    runChecked("/usr/bin/codesign", ["--verify", "--deep", "--strict", extracted], { label: "codesign --verify (zip)" });
+    runChecked("/usr/bin/xcrun", ["stapler", "validate", extracted], { label: "stapler validate (zip)" });
+    runChecked("/usr/sbin/spctl", ["--assess", "--type", "execute", "--verbose=4", extracted], { label: "spctl --assess (zip)" });
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
   }
 }
 
@@ -716,6 +746,9 @@ function buildHelpers(plan) {
     if (helper.resourceBundles) {
       const bundles = listResourceBundles(binDir);
       if (bundles.length === 0) throw new Error(helper.name + " needs its SwiftPM resource bundles but " + binDir + " has none.");
+      if (helper.name === INTELLIGENCE_HELPER_NAME && !bundles.some((bundle) => existsSync(join(binDir, bundle, "Contents/Resources/default.metallib")))) {
+        throw new Error(helper.name + " needs MLX's default.metallib in a resource bundle; the Swift toolchain did not produce it.");
+      }
       mkdirSync(helper.resourcesDestination, { recursive: true });
       for (const bundle of bundles) copyTree(join(binDir, bundle), join(helper.resourcesDestination, bundle));
       console.log("Bundled helper " + helper.name + " with " + bundles.join(", ") + ".");
@@ -729,6 +762,12 @@ function buildHelpers(plan) {
 
 /** Drive the pinned CLI, assemble, validate, sign, seal, archive, manifest. */
 function buildTinyjsApp(plan) {
+  if (plan.production && plan.signing.mode === "developer-id") {
+    // Before an hour of compiling: the certificate and the notary profile must
+    // already work, or the build stops here with the reason.
+    const problems = macSigningProblems({ identity: plan.signing.identity, notaryProfile: plan.signing.notaryProfile });
+    if (problems.length) throw new Error("Production signing is not ready:\n - " + problems.join("\n - "));
+  }
   runChecked(process.execPath, [join(REPO_ROOT, "tooling/verify-tinyjs-baseline.mjs")], { label: "verify TinyJS baseline" });
   if (existsSync(plan.cli.command) === false) {
     throw new Error("Pinned TinyJS launcher not found: " + plan.cli.command + " (controller-owned vendor/tinyjs).");
@@ -815,6 +854,7 @@ function buildTinyjsApp(plan) {
     ["-c", "-k", "--sequesterRsrc", "--keepParent", plan.appDir, plan.zipPath],
     { label: "ditto zip" },
   );
+  if (plan.signing.notarize) verifyArchivedApp(plan);
   const sha256 = sha256File(plan.zipPath);
   const size = statSync(plan.zipPath).size;
   const manifest = buildOtaManifest({
@@ -830,6 +870,7 @@ function buildTinyjsApp(plan) {
     sha256,
     size,
     manifestUrl: plan.ota.manifestUrl,
+    signing: { mode: plan.signing.mode, notarized: Boolean(plan.signing.notarize) },
   });
   writeFileSync(plan.ota.metadataPath, JSON.stringify(metadata, null, 2) + "\n");
 
@@ -886,8 +927,13 @@ function gitHead(repoRoot) {
   return result.status === 0 ? String(result.stdout).trim() : "";
 }
 
-export function main({ argv = process.argv.slice(2), env = process.env, repoRoot = REPO_ROOT } = {}) {
+export function main({ argv = process.argv.slice(2), env: baseEnv = process.env, repoRoot = REPO_ROOT } = {}) {
   const options = parseArguments(argv);
+  // A production build signs with the checked-in, non-secret identity and
+  // notary profile name unless the environment overrides them.
+  const env = options.production && !options.allowAdhoc
+    ? withMacSigningDefaults(baseEnv, readMacSigningConfig(repoRoot))
+    : baseEnv;
   if (options.help) { console.log(usage()); return null; }
   const configFile = options.config ? resolve(repoRoot, options.config) : join(repoRoot, TINYJS_CONFIG_FILE);
   const config = existsSync(configFile) ? readJson(configFile) : {};

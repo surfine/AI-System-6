@@ -335,7 +335,9 @@ for (const code of new Set([...emitted, ...exporter.WARNING_CODES])) {
 }
 test.assertIncludes(translations, "bonsai_micropolis_send_report_intro", "the way back has its own opening line");
 test.assertIncludes(cityWindowSource, "sendRecordToMicropolis", "a saved city can be sent to Micropolis from the browser");
-test.assertIncludes(cityWindowSource, "\"send-micropolis\": () => sendCurrentToMicropolis()", "the File menu can send the open city");
+// Send to Micropolis is a GPL entry point: the iOS/App Store shell ships
+// without it, so the command is gated at the call site rather than removed.
+test.assertIncludes(cityWindowSource, "\"send-micropolis\": () => (micropolisShipped() ? sendCurrentToMicropolis() : false)", "the File menu can send the open city where Micropolis ships");
 test.assertIncludes(cityWindowSource, "exportPayloadAsCty", "a Bonsai city can leave as a classic .cty file");
 test.assertIncludes(cityWindowSource, "\"export-cty\": () => exportCurrentAsCty()", "the File menu can export the open city as .cty");
 test.assertIncludes(translations, "bonsai_status_exported_cty", "the .cty export says when the file is written");

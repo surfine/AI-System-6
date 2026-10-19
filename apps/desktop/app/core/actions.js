@@ -7,6 +7,7 @@ let reviewDeskMode = "style";
 const keyboardShortcutRegistry = [
   { id: "new-document", key: "n", action: "new-document", display: "⌘N", labelKey: "new_document", keyCaps: true, scope: ["teachText", "quickDraft"] },
   { id: "new-folder", key: "n", shift: true, action: "new-folder", display: "⇧⌘N", labelKey: "new_folder", keyCaps: true, suppressInEditable: true, scope: ["finder"] },
+  { id: "new-folder-classic", key: "n", action: "new-folder", display: "⌘N", labelKey: "new_folder", keyCaps: true, suppressInEditable: true, scope: ["finder"] },
   // ⌘O means "open what this application opens", so each application claims
   // the key for its own Open command. One shared entry used to cover Finder and
   // TeachText, which meant TeachText's "Open… ⌘O" row printed a key that
@@ -20,6 +21,8 @@ const keyboardShortcutRegistry = [
   { id: "open", key: "o", action: "open-menu-selection", display: "⌘O", labelKey: "open", keyCaps: true, suppressInEditable: true, scope: ["finder"] },
   { id: "open-text-document", key: "o", action: "open-text-document", display: "⌘O", labelKey: "open", scope: ["teachText"] },
   { id: "reader-open-source", key: "o", action: "reader-open-source", display: "⌘O", labelKey: "open_source", scope: ["reader"] },
+  { id: "blog-sync", key: "r", action: "blog-sync", display: "⌘R", labelKey: "refresh", scope: ["aaronBlog"] },
+  { id: "blog-search", key: "f", action: "blog-search", display: "⌘F", labelKey: "aaron_blog_search", scope: ["aaronBlog"] },
   { id: "start-new-clio-chat", key: "n", action: "start-new-clio-chat", display: "⌘N", labelKey: "new_conversation", scope: ["clioTalk"] },
   { id: "save", key: "s", action: "save-current", display: "⌘S", labelKey: "save_current", keyCaps: true, scope: ["teachText", "clioTalk", "quickDraft"] },
   { id: "save-copy", key: "s", shift: true, action: "save-copy", display: "⇧⌘S", labelKey: "save_copy", keyCaps: true, scope: ["teachText"] },
@@ -146,6 +149,9 @@ const writeRequiredActions = new Set([
   "dictionary-delete-word",
 ]);
 
+function finderCommand(name, ctx = {}) { return ensureFinderOpsModule().then(() => window.AISystem6FinderOps.run(name, ctx)); }
+function finderUndoReady() { return activeAppId === "finder" && !getActiveEditableElement() && !!window.AISystem6FinderOps?.canUndo(); }
+const fclip = (p) => window.AISystem6FinderOps?.clipReady(p);
 function keyboardShortcutById(id) {
   return keyboardShortcutRegistry.find((shortcut) => shortcut.id === id) || null;
 }
@@ -244,10 +250,11 @@ function createFolderFromMenu() {
   const parentId = (activeName === "projects" || activeName === "documents")
     ? (selectedFolderId === "all" ? null : selectedFolderId)
     : null;
-  const folder = createFinderFolder(t("new_folder"), parentId);
+  const folder = createFinderFolder(t("empty_folder_name"), parentId);
   selectedChatFileId = null;
   selectedDocumentFolderId = folder.id;
   selectedProjectRootItemId = null;
+  markDeskDirty("chatFolders", folder.id);
   saveDeskState();
   if (activeName === "documents") {
     renderDocuments();
@@ -256,6 +263,7 @@ function createFolderFromMenu() {
     renderProjectDisks();
   }
   setStatus(t("folder_created", displayFolderName(folder.name)));
+  finderCommand("begin-rename", { key: `folder:${folder.id}`, selectAll: true, created: true });
 }
 
 function openFinderMenuSelection() {
@@ -1738,7 +1746,9 @@ function getApplicationActionHandlers() {
       setStatus(t("context_cleared"));
     },
     "empty-trash": emptyActiveProjectTrash,
-    "put-away": putAwaySelectedTrashItem,
+    "show-clipboard": () => handleAction("open-clipboard"),
+    "finder-clean-up": () => finderCommand("clean-up", { option: !!window.event?.altKey }),
+    "put-away": () => document.querySelector(".desktop-object.is-selected") ? finderCommand("put-away-desktop") : putAwaySelectedTrashItem(),
     "print-directory": () => openPrintDirectoryPreview(),
     "erase-disk": eraseSelectedProjectDisk,
     "reset-system": resetSystemStorage,
@@ -1762,11 +1772,12 @@ function getApplicationActionHandlers() {
       }
     },
     "save-copy": () => saveTextDocument({ asCopy: true }),
-    "undo": () => runEditCommand("undo"),
+    "undo": () => finderUndoReady() ? finderCommand("undo") : runEditCommand("undo"),
     "redo": () => runEditCommand("redo"),
     "cut": () => runEditCommand("cut"),
-    "copy": () => runEditCommand("copy"),
-    "paste": () => runEditCommand("paste"),
+    "copy": () => fclip() ? finderCommand("copy-items") : runEditCommand("copy"),
+    "paste": () => fclip(1) ? finderCommand("paste-items") : runEditCommand("paste"),
+    "open-with": () => finderCommand("open-with"),
     "clear-edit": () => runEditCommand("delete"),
     "select-all": () => runEditCommand("select-all"),
     "insert-text-disk": insertFileFloppyFromWindow,
@@ -1993,13 +2004,14 @@ function runShortcut(event) {
         || (Array.isArray(candidate.scope) && candidate.scope.includes(shortcutAppId))
       );
   });
-  const shortcut = command?.shortcut();
-  if (!command || !shortcut) return;
+  // A classic Finder's New Folder is ⌘N (System 6), not ⇧⌘N.
+  const shortcut = command ? command.shortcut() : key === "n" && !event.shiftKey && !event.altKey && shortcutAppId === "finder" && isClassicFinderEra() && keyboardShortcutById("new-folder-classic");
+  if (!shortcut) return;
   if (shortcut.suppressInEditable && getActiveEditableElement()) return;
 
   event.preventDefault();
   closeMenus();
-  handleAction(command.id);
+  handleAction(command ? command.id : "new-folder");
 }
 
 // Key Caps opens on the command sheet for the application behind it

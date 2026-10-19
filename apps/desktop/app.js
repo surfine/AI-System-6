@@ -869,6 +869,7 @@ function getApplicationsItems() {
   // are not listed as top-level applications.
   return withStaticFinderMetadata([
     ...window.AISystem6Admissions?.applicationItems?.("root"),
+    { name: t("lightroom_title"), iconId: "lightroom", icon: "app-icon", action: "open-lightroom", type: "application", kind: t("application") },
     { name: t("writing_studio"), iconId: "writingStudio", icon: "writing-studio-icon", action: "open-writing-studio", type: "application", kind: t("application"), workspaceProfiles: [workspaceProfileDesktop] },
     { name: t("assistant_label"), iconId: "assistant", icon: "app-icon", action: "open-assistant", type: "application", kind: t("application") },
     { name: t("reader_label"), iconId: "reader", icon: "reader-desk-icon", action: "open-reader", type: "application", kind: t("application") },
@@ -1286,6 +1287,7 @@ function toggleViewMode(winName, mode) {
   else if (winName === "projects") renderProjectDisks();
   else if (winName === "imageManager") renderTeachTextImageAttachments();
   else if (finderContainerWindowNames.includes(winName)) renderStaticFinderWindow(winName);
+  saveFinderWindowState(winName);
   updateMenuState();
 }
 

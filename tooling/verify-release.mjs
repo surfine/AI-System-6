@@ -122,6 +122,19 @@ const webkitCompat = runReceiptCheck("webkit-compat", process.execPath, ["toolin
 if (webkitCompat.status === 0) ok("WebKit compatibility");
 else fail(`WebKit compatibility failed\n${webkitCompat.stderr || webkitCompat.stdout}`);
 
+// Signing facts are per machine, never source. A certificate SHA-1 or a
+// notarytool profile name in the committed config means someone put them back.
+try {
+  const signing = JSON.parse(readFileSync(join(root, "platform/macos/tinyjs/signing.json"), "utf8"));
+  if (String(signing.developerId || "").trim() || String(signing.notaryProfile || "").trim()) {
+    fail("platform/macos/tinyjs/signing.json carries a certificate SHA-1 or notary profile; use AI_SYSTEM6_DEVELOPER_ID / AI_SYSTEM6_NOTARY_PROFILE or signing.local.json");
+  } else {
+    ok("signing config carries no machine credentials");
+  }
+} catch (error) {
+  fail(`signing config unreadable: ${error.message}`);
+}
+
 const releaseAssets = runReceiptCheck("release-assets", process.execPath, ["tooling/check-release-assets.mjs"], {
   cwd: root,
   encoding: "utf8",

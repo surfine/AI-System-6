@@ -25,8 +25,10 @@ run(`
   window.__timers = [];
   window.__realSetTimeout = setTimeout;
   window.__realClearTimeout = clearTimeout;
-  setTimeout = (fn, delay) => { window.__timers.push({ fn, delay }); return window.__timers.length; };
-  clearTimeout = (id) => { if (id > 0) window.__timers[id - 1] = null; };
+  // Handles far above the boot VM's own timer ids, so a timer the desk set
+  // before this stub (a lazy module's load watchdog) never clears one of these.
+  setTimeout = (fn, delay) => { window.__timers.push({ fn, delay }); return 1e6 + window.__timers.length; };
+  clearTimeout = (id) => { if (id > 1e6) window.__timers[id - 1e6 - 1] = null; };
   window.__pendingTimers = () => window.__timers.filter(Boolean).map((entry) => entry.delay);
   // The clock's own timer, not "whatever timer is next": the harness's
   // setTimeout stub also catches timers the desk schedules for its own work.

@@ -274,7 +274,9 @@ for (const kind of Object.keys(sim.DISASTER_KINDS)) required.add(`bonsai_tool_di
 // is how a button came to read "bonsai_city_export_cty". Expand each such
 // list through its own template and require every key it spells.
 let templateKeys = 0;
-for (const match of shellSource.matchAll(/\[((?:\s*"[a-z0-9-]+",?)+)\s*\]\.forEach\(\((\w+)\) => \{([\s\S]{0,900}?)\n {6,8}\}\);/g)) {
+// The list may carry a conditional spread for a GPL entry the iOS shell
+// leaves out; its quoted members still spell the same keys.
+for (const match of shellSource.matchAll(/\[((?:[^\[\]]|\[[^\[\]]*\])*)\]\.forEach\(\((\w+)\) => \{([\s\S]{0,900}?)\n {6,8}\}\);/g)) {
   const values = [...match[1].matchAll(/"([a-z0-9-]+)"/g)].map((m) => m[1]);
   const name = match[2];
   const template = new RegExp("t\\(`(bonsai_[a-z0-9_]*)\\$\\{" + name + "(\\.replaceAll\\(\"-\", \"_\"\\))?\\}([a-z0-9_]*)`", "g");

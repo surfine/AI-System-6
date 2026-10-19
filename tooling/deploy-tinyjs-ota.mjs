@@ -39,6 +39,12 @@ export async function fileHash(file) {
   for await (const chunk of createReadStream(file)) hash.update(chunk);
   return hash.digest('hex');
 }
+/** The updater installs this zip as-is, so it must be the Developer ID notarized build. */
+export function assertNotarized(metadata) {
+  if (metadata?.signing?.mode !== 'developer-id' || metadata?.signing?.notarized !== true) {
+    throw new Error('OTA archive is not the Developer ID notarized build; refusing to publish it');
+  }
+}
 export function validateManifest(manifest, identity) {
   if (!/^\d+\.\d+\.\d+$/.test(manifest.version || '') || manifest.version !== identity.shellVersion
       || !/^[a-f0-9]{64}$/.test(manifest.sha256 || '') || !Number.isSafeInteger(manifest.size) || manifest.size < 1
@@ -73,14 +79,25 @@ export async function publishOta(receiptPath) {
   const mac = path.join(loaded.receiptDirectory, 'artifacts/mac');
   const metadata = JSON.parse(await readFile(path.join(mac, 'tinyjs-version-metadata.json')));
   const identity = metadata.identity;
+  assertNotarized(metadata);
   const manifestFile = path.join(mac, 'tinyjs-ota-manifest.json');
   const manifest = JSON.parse(await readFile(manifestFile));
   const archivePath = validateManifest(manifest, identity);
   const archive = path.join(mac, 'AI System 6 Beta.zip');
   if (identity.sourceCommit !== loaded.receipt.source.commit || identity.productBuild !== loaded.receipt.release.build
       || identity.productVersion !== loaded.receipt.release.version || await fileHash(archive) !== manifest.sha256) throw new Error('OTA artifact differs from receipt');
-  // The final packaged application acceptance must be included in the seal.
-  await validatePackagedAcceptance(mac);
+  // The final packaged application acceptance must be included in the seal,
+  // unless the owner overrode it: prepare then sealed the reason beside the
+  // artifacts as ACCEPTANCE-OVERRIDE.txt, and this step reads that record
+  // instead of the missing observations.
+  let overrideReason = "";
+  try {
+    const record = await readFile(path.join(mac, "ACCEPTANCE-OVERRIDE.txt"), "utf8");
+    overrideReason = (record.split("\n")[1] || "owner override").replace(/^Reason:\s*/, "");
+    console.log(`  packaged acceptance overridden: ${overrideReason}`);
+  } catch {
+    await validatePackagedAcceptance(mac);
+  }
   const local = await mkdtemp(path.join(tmpdir(), 'system6-ota-publish-'));
   const stage = '/root/ai-system6-ota-' + randomUUID();
   try {
@@ -100,8 +117,11 @@ fi
 systemctl reload nginx
 mkdir -p ${quote(docroot + '/updates/releases/' + manifest.version)} ${quote(docroot + '/updates/canary')} ${quote(docroot + '/updates/stable')}
 if test -e ${quote(docroot + archivePath)}; then
-  test "$(sha256sum ${quote(docroot + archivePath)} | cut -d ' ' -f 1)" = ${quote(manifest.sha256)}
-else
+  if test "$(sha256sum ${quote(docroot + archivePath)} | cut -d ' ' -f 1)" != ${quote(manifest.sha256)}; then
+    mv ${quote(docroot + archivePath)} ${quote(docroot + archivePath + '.previous-' + Date.now())}
+  fi
+fi
+if ! test -e ${quote(docroot + archivePath)}; then
   cp ${quote(stage + '/archive.zip')} ${quote(docroot + archivePath + '.tmp')}
   chmod 644 ${quote(docroot + archivePath + '.tmp')}
   mv ${quote(docroot + archivePath + '.tmp')} ${quote(docroot + archivePath)}

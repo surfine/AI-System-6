@@ -228,6 +228,7 @@ const finderMenus = [
   menu("file", "menu_file", [
     menuItem("new-folder", "new_folder", "new-folder"),
     menuItem("open-menu-selection", "open", "open"),
+    menuItem("open-with", "open_with"),
     menuItem("close-active-window", "close", "close-window"),
     menuSeparator,
     menuItem("open-file-info", "get_info", "get-info"),
@@ -657,6 +658,31 @@ const clioTalkMenus = [
   specialMenu(),
 ];
 
+const aaronBlogMenus = [
+  menu("file", "menu_file", [
+    menuItem("blog-sync", "refresh", "blog-sync"),
+    menuItem("close-active-window", "close", "close-window"),
+  ]),
+  menu("edit", "menu_edit", [
+    menuItem("copy", "copy", "copy"),
+    menuItem("select-all", "select_all", "select-all"),
+    menuSeparator,
+    menuItem("blog-search", "aaron_blog_search", "blog-search"),
+  ]),
+  menu("view", "menu_view", [
+    menuItem("blog-section-best", "aaron_blog_best"),
+    menuItem("blog-section-all", "aaron_blog_all"),
+    menuItem("blog-section-notes", "aaron_blog_notes"),
+    menuItem("blog-section-tags", "aaron_blog_tags"),
+    menuItem("blog-section-archive", "aaron_blog_archive"),
+    menuItem("blog-section-threads", "aaron_blog_threads"),
+    menuSeparator,
+    menuItem("blog-back", "aaron_blog_back"),
+  ]),
+  windowMenu(),
+  specialMenu(),
+];
+
 const readerMenus = [
   menu("file", "menu_file", [
     menuItem("reader-open-source", "open_source", "reader-open-source"),
@@ -984,6 +1010,7 @@ const applicationMenuSets = Object.freeze({
   teachText: teachTextMenus,
   clioTalk: clioTalkMenus,
   reader: readerMenus,
+  aaronBlog: aaronBlogMenus,
   timeMachine: timeMachineMenus,
   docMap: docMapMenus,
   scrapbook: scrapbookMenus,
@@ -1004,6 +1031,11 @@ globalThis.AISystem6RegisterApplicationMenuSet = (appId, definitions = []) => {
 
 function menuSetIdForApp(appId = "finder") {
   if (appId === "writingStudio") return "teachText";
+  // A classic era's Finder menus load once, on the first menu bar it draws.
+  if (appId === "finder" && typeof isClassicFinderEra === "function" && isClassicFinderEra()) {
+    if (lazyApplicationMenuSets.has("finderClassic")) return "finderClassic";
+    if (typeof ensureFinderMenusModule === "function") menuSetIdForApp.asked ||= ensureFinderMenusModule().then(() => updateMenuState(), () => {});
+  }
   return applicationMenuSets[appId] || lazyApplicationMenuSets.has(appId) ? appId : "system";
 }
 

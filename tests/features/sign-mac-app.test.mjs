@@ -32,6 +32,13 @@ try {
   test.assert(refusedApp.status === 1 && /get-task-allow/.test(refusedApp.stderr), "a debuggable app plist is refused for a signed build");
   const refusedNode = run(["--node-entitlements", debugPlist]);
   test.assert(refusedNode.status === 1 && /get-task-allow/.test(refusedNode.stderr), "a debuggable Node plist is refused for a signed build");
+
+  // Production never degrades: --require-notarization without credentials or an identity is an error, not "NOT EXECUTED".
+  const strictApp = (args) => spawnSync(process.execPath, [join(root, "tooling/sign-mac-app.mjs"), "--app", app, "--require-notarization", ...args], { encoding: "utf8", env: { PATH: process.env.PATH } });
+  const noCredentials = strictApp(["--identity", "ABCDEF"]);
+  test.assert(noCredentials.status === 1 && /no notarization credentials/.test(noCredentials.stderr), "a required notarization without credentials fails closed");
+  const noIdentity = strictApp([]);
+  test.assert(noIdentity.status === 1 && /not falling back to ad-hoc/.test(noIdentity.stderr), "a required notarization without an identity never signs ad-hoc");
 } finally {
   rmSync(scratch, { recursive: true, force: true });
 }

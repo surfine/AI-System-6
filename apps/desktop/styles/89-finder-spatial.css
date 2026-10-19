@@ -1,0 +1,133 @@
+/* Finder spatial layer (feature-lazy; loaded by finder-desk.js and finder-drag.js).
+   Era differences are tokens only: base rules sit unscoped, per-era rules set
+   custom properties under [data-theme] / [data-lineage]. */
+
+/* With a stored icon position the launcher column becomes a full-desktop
+   layer: the layer lets the desk through, its icons stand where they were put.
+   The position stays the column's own (absolute), so a responsive shell that
+   turns the column static still wins and finder-desk.js stands the layer down. */
+.icon-column.is-spatial {
+  inset: 0;
+  pointer-events: none;
+}
+
+.icon-column.is-spatial .desktop-icon {
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 0;
+  transform: translate(var(--x, 0px), var(--y, 0px));
+  pointer-events: auto;
+}
+
+.icon-column.is-spatial [data-open="trash"] {
+  margin-top: 0;
+}
+
+/* One fixed overlay carries the drag: above every window, below the menus. */
+#finder-drag-layer {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-selection-marquee);
+  pointer-events: none;
+}
+
+#finder-drag-layer.is-returning {
+  transition: transform var(--finder-drag-return-duration, 180ms) ease-out;
+}
+
+/* Drag look by era, tokens only (the fallbacks below are the modern look). A
+   modern Finder carries a translucent copy
+   of the icon. The classic eras (System 6 to NeXTSTEP) carry what System 6
+   does: the hollow outline of the icon's shape (the SVG filter finder-drag.js
+   puts in the layer keeps only the silhouette's edge ring), dithered at a 50%
+   checker of the pixel pitch, no label box. */
+body:is([data-lineage~="classic"], [data-theme="nextstep"]) {
+  --finder-drag-filter: url("#finder-drag-outline-filter");
+  --finder-drag-mask: repeating-conic-gradient(#000 0% 25%, transparent 0% 50%);
+  --finder-drag-outline-opacity: 1;
+  /* 1-bit: the name being edited is inverted, never the OS accent colour. */
+  --finder-rename-bg: #000;
+  --finder-rename-ink: #fff;
+}
+
+.finder-drag-outline {
+  position: fixed;
+  left: var(--finder-drag-x, 0);
+  top: var(--finder-drag-y, 0);
+  width: var(--finder-drag-w, auto);
+  height: var(--finder-drag-h, auto);
+  filter: var(--finder-drag-filter, none);
+  -webkit-mask-image: var(--finder-drag-mask, none);
+  mask-image: var(--finder-drag-mask, none);
+  -webkit-mask-size: var(--finder-drag-dither-size, 2px 2px);
+  mask-size: var(--finder-drag-dither-size, 2px 2px);
+  opacity: var(--finder-drag-outline-opacity, 0.6);
+}
+
+.finder-drag-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.finder-drag-outline > .sys-icon {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body.is-finder-dragging {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #finder-drag-layer.is-returning {
+    transition: none;
+  }
+}
+
+/* Inline rename: the label is edited where it stands. No edit box: the text
+   keeps the selected-label inversion and the caret does the rest. */
+.is-renaming {
+  outline: none;
+  border: 0;
+  box-shadow: none;
+  cursor: text;
+  user-select: text;
+  -webkit-user-select: text;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--finder-rename-bg, Highlight);
+  color: var(--finder-rename-ink, HighlightText);
+}
+
+/* A Finder window with a placed icon: the grid becomes the icon area, every
+   icon stands at its own spot, and the area grows to the lowest icon so the
+   window scrolls to it. Unplaced icons get their flow spot from finder-ops.js. */
+.finder-grid.is-spatial {
+  position: relative;
+  display: block;
+  min-height: var(--finder-extent, 100%);
+}
+
+.finder-grid.is-spatial > .finder-item {
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 0;
+  width: var(--w, auto);
+  transform: translate(var(--x, 0px), var(--y, 0px));
+}
+
+/* System 6 window header: "n items   nK in disk   nK available". */
+.finder-info-bar {
+  white-space: pre;
+}
+
+.menu.finder-context-menu {
+  left: var(--finder-menu-x, 0);
+  top: var(--finder-menu-y, 0);
+}

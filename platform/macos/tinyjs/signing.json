@@ -1,0 +1,5 @@
+{
+  "_note": "No machine credentials in the repository. Set AI_SYSTEM6_DEVELOPER_ID (the 40-hex SHA-1 of the Developer ID Application certificate) and AI_SYSTEM6_NOTARY_PROFILE (a notarytool keychain profile) in the environment, or keep a local, gitignored platform/macos/tinyjs/signing.local.json with the same keys.",
+  "developerId": "",
+  "notaryProfile": ""
+}

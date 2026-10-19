@@ -140,7 +140,12 @@ test.assertIncludes(
   "window.AISystem6QuickDraft?.newDocument",
   "the Draft Desk New command enters through the public API"
 );
-for (const command of ["undo", "redo", "cut", "copy", "paste", "select-all"]) {
+// Undo asks the Finder first (its own undo scope) and otherwise falls through.
+test.assertIncludes(actions, '"undo": () => finderUndoReady() ? finderCommand("undo") : runEditCommand("undo")', "undo dispatches through the shared edit command router unless the Finder owns the step");
+// Modern Finder Copy / Paste carry items when the Finder owns the step.
+test.assertIncludes(actions, '"copy": () => fclip() ? finderCommand("copy-items") : runEditCommand("copy")', "copy dispatches through the shared edit command router unless the Finder holds items");
+test.assertIncludes(actions, '"paste": () => fclip(1) ? finderCommand("paste-items") : runEditCommand("paste")', "paste dispatches through the shared edit command router unless the Finder holds items");
+for (const command of ["redo", "cut", "select-all"]) {
   test.assertIncludes(actions, `"${command}": () => runEditCommand("${command}")`, `${command} dispatches through the shared edit command router`);
 }
 const documentsChat = read("app/features/documents-chat.js");

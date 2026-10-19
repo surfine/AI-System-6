@@ -130,4 +130,29 @@ const test = createFeatureTest("project-backup-roundtrip");
   }
 }
 
+// Finder coordinates travel: an icon placed on the desktop, a folder window's
+// view, sort and scroll, and the project root window keep their state across an
+// export and an import. They hold no ids, so the remap leaves them alone.
+{
+  const seed = seedComplexProject();
+  seed.files[0].placement = { x: 40, y: 72, desktop: { x: 300, y: 120 } };
+  seed.folders[1].windowState = { view: "list", sort: { key: "list", reversed: true }, scroll: { top: 64, left: 0 } };
+  seed.projects[0].rootWindowState = { view: "small-icon", sort: { key: "small-icon", reversed: false }, scroll: { top: 0, left: 0 } };
+  seed.trash.push({
+    id: "trash-placed", projectId: "p1", type: "file", name: "placed.md",
+    originalData: { id: "file-trashed", projectId: "p1", type: "text", name: "placed.md", body: "放过的", folderId: "folder-1", placement: { x: 8, y: 8, desktop: null } },
+  });
+  const runtime = createBackupVm(seed);
+  const bundle = await runtime.recovery.exportRecoveryProjectBackup("p1");
+  test.assert(runtime.backup.validateBackup(bundle).valid === true, "a backup carrying Finder coordinates validates");
+  const remapped = runtime.backup.remapBackup(bundle, { uuid: (() => { let n = 0; return () => `fc-${++n}`; })() });
+  const placed = remapped.files.find((file) => file.name === "manuscript.md");
+  test.assert(JSON.stringify(placed?.placement) === JSON.stringify({ x: 40, y: 72, desktop: { x: 300, y: 120 } }), "a file's placement, desktop spot included, survives export and import");
+  const drafts = remapped.folders.find((folder) => folder.name === "Drafts");
+  test.assert(drafts?.windowState?.view === "list" && drafts.windowState.sort.reversed === true && drafts.windowState.scroll.top === 64, "a folder's windowState survives export and import");
+  test.assert(remapped.project.rootWindowState?.view === "small-icon", "the project's rootWindowState survives export and import");
+  const trashed = (remapped.trash || []).find((item) => item.name === "placed.md");
+  test.assert(trashed?.originalData?.placement?.x === 8, "a trashed file keeps its placement inside originalData");
+}
+
 test.finish();

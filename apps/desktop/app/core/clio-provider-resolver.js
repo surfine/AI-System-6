@@ -207,14 +207,17 @@
     publish({ status: "resolving", target, fallbackReason: "" });
     // "device" is a preference for the ask-only doors; general chat has no device
     // route, so it walks like auto and the doors read the published device state.
+    // The iOS shell answers /api/device-model/* in process and has no LM Studio.
     const candidates = selectedPreference === "auto" || selectedPreference === "device"
       ? (target === "mac"
         ? ["local", "device", "website", "byok"]
-        : ["vps", "pages"].includes(target)
-          ? ["website", "byok"]
-          : ["local", "device", "byok"])
+        : target === "ios"
+          ? ["device", "website", "byok"]
+          : ["vps", "pages"].includes(target)
+            ? ["website", "byok"]
+            : ["local", "device", "byok"])
       : [selectedPreference];
-    const deviceProbe = candidates.includes("device") && ["mac", "local"].includes(target) ? probeDevice() : null;
+    const deviceProbe = candidates.includes("device") && ["mac", "local", "ios"].includes(target) ? probeDevice() : null;
 
     let lastReason = "";
     for (const candidate of candidates) {

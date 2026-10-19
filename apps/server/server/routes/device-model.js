@@ -1,5 +1,9 @@
 // GET  /api/device-model/status
 // POST /api/device-model/chat
+// GET  /api/device-model/catalog        the built-in pack: size, license, state, memory gate
+// POST /api/device-model/download       { id, consentBytes } -> SSE progress of the one download
+// GET  /api/device-model/download       attach to the running download (SSE), else { download }
+// DELETE /api/device-model/download     cancel it (SIGTERM to the download process)
 //
 // On-device models behind the AISystem6Intelligence helper: Apple's model by
 // default, the built-in MLX model with `engine: "mlx"` (status with
@@ -18,14 +22,23 @@
 
 const { sendJson, readJsonBody, requestSignal, respondIfClientError } = require("../lib/http.js");
 const {
+  builtInModelStatus,
+  combinedDeviceStatus,
+  deviceChatRefusal,
   buildBuiltInChatRequest,
   buildDeviceRequest,
-  builtInModelStatus,
+  builtInCatalog,
+  builtInDownloadRunning,
+  cancelBuiltInDownload,
+  downloadSnapshot,
+  startBuiltInDownload,
+  subscribeBuiltInDownload,
   checkContextBudget,
   deviceModelHelperPath,
   deviceModelStatus,
-  isAskOnlyTaskKind,
+  mapHelperError,
   persistentHelperEnabled,
+  planDeviceChat,
   prewarmServeHelper,
   sendToServeHelper,
   serveHelperRunning,
@@ -34,39 +47,6 @@ const {
 
 const CHAT_TIMEOUT_MS = 120000;
 const MODEL_ID = "apple-foundation-models";
-const GUARDRAIL_WAY_OUT = "Apple's on-device check declined this text. Nothing was changed or sent anywhere. You can use the website allowance or your own key, or skip this step.";
-
-/**
- * @param {string} code helper error code
- * @param {string} message helper message
- * @param {string} [reason]
- * @returns {{ status: number, body: Record<string, unknown> }}
- */
-function mapHelperError(code, message, reason) {
-  switch (code) {
-    case "exceededContextWindowSize":
-      return { status: 413, body: { code: "context-budget-exceeded", error: "This is longer than the on-device model can read at once." } };
-    case "guardrailViolation":
-      return { status: 422, body: { code: "device_guardrail_violation", error: GUARDRAIL_WAY_OUT, way_out: ["website", "byok", "skip"] } };
-    case "refusal":
-      return { status: 422, body: { code: "device_refusal", error: "The on-device model declined to answer this. Nothing was changed.", way_out: ["website", "byok", "skip"] } };
-    case "unsupportedLanguageOrLocale":
-      return { status: 422, body: { code: "device_language_unsupported", error: "The on-device model does not support this language." } };
-    case "rateLimited":
-    case "concurrentRequests":
-      return { status: 429, body: { code: code === "rateLimited" ? "rate_limit" : "device_busy", error: "The on-device model is busy. Try again in a moment." } };
-    case "consentRequired":
-      return { status: 409, body: { code: "device_consent_required", error: "This on-device model needs your consent to download first. Nothing was changed." } };
-    case "memoryGate":
-      return { status: 503, body: { code: "device_memory_gate", error: "This Mac does not have enough free memory for that on-device model." } };
-    case "unavailable":
-      return { status: 503, body: { code: "device_unavailable", reason: reason || "other", error: "The on-device model is not available." } };
-    case "badRequest":
-      return { status: 400, body: { code: "invalid_request", error: message || "The request was not valid." } };
-    default:
-      return { status: 502, body: { code: "device_failed", error: "The on-device model stopped without an answer." } };
-  }
-}
 
 /**
  * @param {import("node:http").IncomingMessage} _req
@@ -80,16 +60,89 @@ async function handleDeviceModelStatus(_req, res) {
   }
   // Apple's model at the top level (unchanged shape), the built-in model beside it.
   const [apple, builtIn] = await Promise.all([deviceModelStatus(), builtInModelStatus()]);
-  sendJson(res, 200, {
-    ...apple,
-    builtIn: {
-      available: builtIn.available === true,
-      reason: builtIn.reason || null,
-      defaultModel: builtIn.defaultModel || null,
-      vision: Array.isArray(builtIn.vision) ? builtIn.vision : [],
-      contextSize: builtIn.contextSize || null,
-    },
-  }, { "Cache-Control": "no-store" });
+  sendJson(res, 200, combinedDeviceStatus(apple, builtIn), { "Cache-Control": "no-store" });
+}
+
+/**
+ * @param {import("node:http").IncomingMessage} _req
+ * @param {import("node:http").ServerResponse} res
+ */
+async function handleDeviceModelCatalog(_req, res) {
+  const catalog = await builtInCatalog();
+  sendJson(res, 200, { ...catalog, download: downloadSnapshot() }, { "Cache-Control": "no-store" });
+}
+
+/**
+ * Progress events for the one download, written as they arrive. A closed
+ * connection stops the listening only: the download goes on and can be
+ * re-attached to, because only the writer's Cancel stops it.
+ *
+ * @param {import("node:http").IncomingMessage} req
+ * @param {import("node:http").ServerResponse} res
+ */
+function streamDownload(req, res) {
+  res.socket?.setNoDelay?.(true);
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream; charset=utf-8",
+    "Cache-Control": "no-store, no-transform",
+    Connection: "keep-alive",
+    "X-Accel-Buffering": "no",
+  });
+  res.flushHeaders?.();
+  const write = (event) => { if (!res.writableEnded) res.write(`data: ${JSON.stringify(event)}\n\n`); };
+  const current = downloadSnapshot();
+  write({ type: current?.state === "running" ? "progress" : current?.state || "idle", ...(current || {}) });
+  if (!current || current.state !== "running") { res.end(); return; }
+  const unsubscribe = subscribeBuiltInDownload((event) => {
+    write(event);
+    if (event.type !== "progress") { unsubscribe(); res.end(); }
+  });
+  req.on("close", unsubscribe);
+}
+
+/**
+ * @param {import("node:http").IncomingMessage} req
+ * @param {import("node:http").ServerResponse} res
+ */
+async function handleDeviceModelDownloadStart(req, res) {
+  try {
+    const body = await readJsonBody(req);
+    await startBuiltInDownload(body);
+    streamDownload(req, res);
+  } catch (error) {
+    // The download's own refusals (consent, memory gate, no helper) are plain
+    // answers, 4xx or 503, never a generic failure.
+    const status = Number(error?.statusCode);
+    if (error?.code && Number.isInteger(status) && status >= 400 && status < 600 && !res.headersSent) {
+      sendJson(res, status, {
+        code: String(error.code),
+        error: String(error.message || "The model download was refused."),
+        ...(error.totalBytes ? { totalBytes: error.totalBytes } : {}),
+        ...(error.reason ? { reason: String(error.reason) } : {}),
+      });
+      return;
+    }
+    if (respondIfClientError(res, error)) return;
+    if (!res.headersSent) sendJson(res, 502, { code: "device_failed", error: "The model download could not start." });
+    else res.end();
+  }
+}
+
+/**
+ * @param {import("node:http").IncomingMessage} req
+ * @param {import("node:http").ServerResponse} res
+ */
+function handleDeviceModelDownloadAttach(req, res) {
+  if (builtInDownloadRunning()) { streamDownload(req, res); return; }
+  sendJson(res, 200, { download: downloadSnapshot() }, { "Cache-Control": "no-store" });
+}
+
+/**
+ * @param {import("node:http").IncomingMessage} _req
+ * @param {import("node:http").ServerResponse} res
+ */
+function handleDeviceModelDownloadCancel(_req, res) {
+  sendJson(res, 200, { cancelled: cancelBuiltInDownload(), download: downloadSnapshot() }, { "Cache-Control": "no-store" });
 }
 
 /**
@@ -100,21 +153,13 @@ async function handleDeviceModelChat(req, res) {
   const signal = requestSignal(req, res);
   try {
     const body = await readJsonBody(req);
-    // General chat is the built-in model's alone; Apple's model stays ask-only.
-    const general = body?.engine === "mlx" && !isAskOnlyTaskKind(body?.ai_system6_task_kind);
-    const built = general ? buildBuiltInChatRequest(body) : buildDeviceRequest(body);
+    // The plan and the refusals are pure (device-model.js) and shared with the
+    // iOS shell; this route adds only the helper process around them.
+    const built = planDeviceChat(body);
     const status = built.engine === "mlx" ? await builtInModelStatus() : await deviceModelStatus();
-    if (!status.available) {
-      sendJson(res, 503, { code: "device_unavailable", reason: status.reason || "other", error: "The on-device model is not available." });
-      return;
-    }
-    const budget = checkContextBudget(built.estimatedTokens, built.replyTokens, status.contextSize);
-    if (!budget.ok) {
-      sendJson(res, 413, {
-        code: "context-budget-exceeded",
-        error: "This is longer than the on-device model can read at once. Shorten it, or use the website allowance or your own key.",
-        budget: { estimated_tokens: budget.total, limit_tokens: budget.limit, limit_source: budget.limitSource },
-      });
+    const refusal = deviceChatRefusal(built, status);
+    if (refusal) {
+      sendJson(res, refusal.status, refusal.body);
       return;
     }
     const helper = deviceModelHelperPath();
@@ -122,15 +167,11 @@ async function handleDeviceModelChat(req, res) {
       sendJson(res, 503, { code: "device_unavailable", reason: "helperMissing", error: "The on-device model is not available." });
       return;
     }
-    if (built.engine === "mlx" && Array.isArray(status.runnable) && !status.runnable.includes(built.request.model)) {
-      sendJson(res, 503, { code: "device_unavailable", reason: "notDownloaded", error: "That built-in model is not downloaded." });
-      return;
-    }
-    const modelId = built.engine === "mlx" ? `built-in:${built.request.model}` : MODEL_ID;
+    const modelId = built.modelId;
     if (built.engine === "mlx" && persistentHelperEnabled() && !serveHelperRunning(helper)) {
       prewarmServeHelper(helper, String(built.request.model));
     }
-    if (general && body.stream === false) {
+    if (!built.stream) {
       await answerAsJson(helper, built.request, signal, res, modelId);
     } else if (persistentHelperEnabled()) {
       await streamFromServeHelper(helper, built.request, signal, res, modelId);
@@ -408,4 +449,12 @@ function streamFromHelper(helper, request, signal, res, modelId = MODEL_ID) {
   });
 }
 
-module.exports = { handleDeviceModelStatus, handleDeviceModelChat, mapHelperError };
+module.exports = {
+  handleDeviceModelStatus,
+  handleDeviceModelChat,
+  handleDeviceModelCatalog,
+  handleDeviceModelDownloadStart,
+  handleDeviceModelDownloadAttach,
+  handleDeviceModelDownloadCancel,
+  mapHelperError,
+};

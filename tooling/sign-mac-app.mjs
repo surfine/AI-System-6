@@ -20,6 +20,8 @@
 //   - no identity                -> ad-hoc sign only, report NOT EXECUTED
 //   - identity only              -> sign + verify, notarization NOT EXECUTED
 //   - identity + notary creds    -> sign + verify + notarize + staple + verify
+//   - --require-notarization     -> the first two cases become errors (exit 1):
+//                                   production never ships signed-only or ad-hoc
 //
 //   node tooling/sign-mac-app.mjs --app dist/X.app [--dmg dist/X.dmg]
 //     [--identity <sha1>] [--keychain-profile <name>] [--node-entitlements <node.plist>] [--entitlements <app.plist>]
@@ -59,6 +61,7 @@ function parseArguments(argv, env = process.env) {
     app: "", dmg: "", nodeEntitlements: NODE_ENTITLEMENTS, entitlements: "",
     identity: String(env.AI_SYSTEM6_DEVELOPER_ID || "").trim(),
     keychainProfile: String(env.AI_SYSTEM6_NOTARY_PROFILE || "").trim(),
+    requireNotarization: false,
   };
   const take = (index) => argv[index + 1] || "";
   for (let index = 0; index < argv.length; index += 1) {
@@ -69,9 +72,10 @@ function parseArguments(argv, env = process.env) {
     else if (arg === "--entitlements") options.entitlements = resolve(take(index));
     else if (arg === "--identity") options.identity = take(index).trim();
     else if (arg === "--keychain-profile") options.keychainProfile = take(index).trim();
+    else if (arg === "--require-notarization") options.requireNotarization = true;
     else if (arg === "--help" || arg === "-h") {
       console.log("Usage: node tooling/sign-mac-app.mjs [--app <path.app>] [--dmg <path.dmg>] [--identity <sha1>] "
-        + "[--keychain-profile <name>] [--node-entitlements <node.plist>] [--entitlements <app.plist>]");
+        + "[--keychain-profile <name>] [--node-entitlements <node.plist>] [--entitlements <app.plist>] [--require-notarization]");
       process.exit(0);
     }
     if (["--app", "--dmg", "--node-entitlements", "--entitlements", "--identity", "--keychain-profile"].includes(arg)) index += 1;
@@ -198,6 +202,10 @@ function main() {
       process.exit(1);
     }
   }
+  if (options.requireNotarization && (!options.identity || options.identity === "-")) {
+    console.error("Refusing: --require-notarization needs a Developer ID identity (--identity or AI_SYSTEM6_DEVELOPER_ID); not falling back to ad-hoc.");
+    process.exit(1);
+  }
   if (!options.identity) {
     console.error("NOT EXECUTED: no signing identity (--identity or AI_SYSTEM6_DEVELOPER_ID); signing ad-hoc (Control-click -> Open still required).");
     options.identity = "-";
@@ -208,6 +216,10 @@ function main() {
     process.exit(1);
   }
   const credentials = options.identity === "-" ? null : notaryArguments(options);
+  if (options.requireNotarization && !credentials) {
+    console.error("Refusing: --require-notarization but no notarization credentials are configured (keychain profile, App Store Connect API key, or Apple ID + app password + team id).");
+    process.exit(1);
+  }
   if (options.identity !== "-" && !credentials) {
     console.error("NOT EXECUTED: notarization credentials unavailable (keychain profile, App Store Connect API key, or Apple ID + app password + team id). Signed with Hardened Runtime but not notarized.");
   }

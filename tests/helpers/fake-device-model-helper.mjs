@@ -11,6 +11,9 @@
 //                              | memoryGate | downloadFailed | revise | crash
 //                              (mlx-done, the error codes and crash are the MLX engine's shapes)
 //   FAKE_DEVICE_MODEL_MLX      installed packs for mlx-status, comma separated ("" = none)
+//   FAKE_DEVICE_MODEL_PACK     notInstalled (default) | partial | installed: state mlx-catalog reports for qwen3.5-4b-4bit
+//   FAKE_DEVICE_MODEL_MEMGATE  "0" refuses the pack in mlx-catalog and mlx-download
+//   FAKE_DEVICE_MODEL_DOWNLOAD ok (default) | slow | fail: how mlx-download behaves
 //   FAKE_DEVICE_MODEL_LOG      file that receives requests, SIGTERM, CANCEL, PREWARM and SERVE notes
 import { appendFileSync, readFileSync, existsSync } from "node:fs";
 import { createInterface } from "node:readline";
@@ -99,8 +102,45 @@ async function chat(request, emit, cancelled, e) {
   return 0;
 }
 
+const FAKE_PACK_BYTES = 3_061_000_000;
+function catalogObject(e) {
+  const state = e.FAKE_DEVICE_MODEL_PACK || "notInstalled";
+  const pack = (id, displayName) => ({
+    id, repo: `mlx-community/${displayName}`, revision: "fake", displayName, license: "Apache-2.0",
+    licenseURL: "https://huggingface.co/Qwen/Qwen3.5-4B/blob/main/LICENSE", totalBytes: FAKE_PACK_BYTES,
+    estimatedResidentBytes: 4_090_000_000, contextTokens: 16384, languages: ["zh-Hans", "zh-Hant", "en"],
+    hasVision: true, drafter: null, state, ...(state === "partial" ? { bytesOnDisk: 1_000_000_000 } : {}),
+    memoryGate: { allowed: e.FAKE_DEVICE_MODEL_MEMGATE !== "0", limitBytes: 9_600_000_000 },
+  });
+  return {
+    packs: [pack("qwen3-1.7b-4bit", "Qwen3 1.7B (4-bit)"), pack("qwen3.5-4b-4bit", "Qwen3.5 4B (4-bit)")],
+    drafters: [], physicalMemoryBytes: 16_000_000_000, root: "/private/secret/ClioModels", lastGood: null,
+  };
+}
+
+/** mlx-download <id> --consent <n>: NDJSON progress, then done / error; SIGTERM exits 143 without a done line. */
+async function download(args, e) {
+  log(`DOWNLOAD ${args.join(" ")}`);
+  process.on("SIGTERM", () => { log("SIGTERM"); process.exit(143); });
+  const consent = Number(args[args.indexOf("--consent") + 1]);
+  if (consent !== FAKE_PACK_BYTES) { out({ type: "error", code: "consentRequired", message: "consent" }); process.exit(2); }
+  if (e.FAKE_DEVICE_MODEL_MEMGATE === "0") { out({ type: "error", code: "memoryGate", message: "gate" }); process.exit(3); }
+  const mode = e.FAKE_DEVICE_MODEL_DOWNLOAD || "ok";
+  for (let step = 1; step <= 4; step += 1) {
+    out({ type: "progress", bytesDone: Math.round(FAKE_PACK_BYTES * step / 4), totalBytes: FAKE_PACK_BYTES, file: "model.safetensors" });
+    if (mode === "fail" && step === 2) { out({ type: "error", code: "downloadFailed", message: "network at /private/secret" }); process.exit(1); }
+    await sleep(mode === "slow" ? 600 : 20);
+  }
+  out({ type: "done", id: args[0], path: "/private/secret/ClioModels/x" });
+  process.exit(0);
+}
+
 const command = process.argv[2];
-if (command === "status") {
+if (command === "mlx-catalog") {
+  out(catalogObject(env));
+} else if (command === "mlx-download") {
+  await download(process.argv.slice(3), env);
+} else if (command === "status") {
   out(statusObject(env));
 } else if (command === "mlx-status") {
   out(mlxStatusObject(env));

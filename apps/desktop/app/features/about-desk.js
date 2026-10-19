@@ -364,7 +364,13 @@
 
   function chapterBlocks(id) {
     const content = window.AISystem6AboutChapters?.chapters?.[id];
-    return content?.[currentLanguage === "zh" ? "zh" : "en"] || content?.en || [];
+    const blocks = content?.[currentLanguage === "zh" ? "zh" : "en"] || content?.en || [];
+    // An App Store shell leaves the GPL games out: their rows go, and so does a
+    // heading left with nothing under it ("It also runs DOOM.").
+    const leftOut = (window.AISystem6NativeShell?.excludedApps || []).map((app) => `open-${app}`);
+    if (!leftOut.length) return blocks;
+    const kept = blocks.filter((block) => !(block.kind === "item" && leftOut.includes(block.open)));
+    return kept.filter((block, index) => block.kind !== "head" || (kept[index + 1] && kept[index + 1].kind !== "head"));
   }
 
   function commandState(action) {

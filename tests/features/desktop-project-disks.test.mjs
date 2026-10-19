@@ -76,13 +76,44 @@ test.assertNotMatches(
 //
 // Dragging a disk to the Trash has always meant eject, never erase. Erasing
 // already has its own door, so the Trash is free to mean what it means.
-test.assertIncludes(dragDrop, "archiveProjectDiskById(data.id);", "dragging a disk to the Trash puts it away");
-test.assertNotIncludes(dragDrop, "moveSelectedProjectToTrash();", "it no longer files the project itself as rubbish");
-test.assertIncludes(dragDrop, 't("cannot_archive_mounted_project")', "the disk you are working in is refused, with the reason");
+// The Trash and disk drop handlers moved to finder-drag.js (lazy, loaded by any
+// pointer drag); dispatchInternalDrop in drag-drop.js still routes to them.
+const trashDrop = read("app/core/finder-drag.js");
+test.assertIncludes(trashDrop, "archiveProjectDiskById(data.id);", "dragging a disk to the Trash puts it away");
+test.assertNotIncludes(trashDrop + dragDrop, "moveSelectedProjectToTrash();", "it no longer files the project itself as rubbish");
+test.assertIncludes(trashDrop, 't("finder_refuse_mounted_disk_trash")', "the disk you are working in is refused, with the reason");
+test.assertIncludes(dragDrop, "handleDropToTrash(dragData)", "the shared drop chain still routes the Trash to its handler");
 test.assertIncludes(runtime, "function archiveProjectDiskById", "one archive path, addressable by id");
 test.assertIncludes(runtime, "archiveProjectDiskById(getSelectedProject()?.id);", "so the menu command and the drag cannot drift apart");
 
-for (const key of ["ejected_project_disk", "cannot_archive_mounted_project"]) {
+// A drop on an ejected disk is refused in the one shared drop chain, so the
+// HTML5 drop and the pointer engine say the same thing.
+{
+  const statuses = [];
+  const moved = [];
+  const dropContext = vm.createContext({
+    window: { AISystem6FinderDragLoaded: true },
+    setStatus: (text) => statuses.push(text),
+    t: (key) => key,
+    openWindow: () => {},
+    chatFiles: [{ id: "f1", projectId: "p1" }],
+    scraps: [],
+    saveDeskState: () => moved.push("saved"),
+    renderDocuments: () => {},
+    renderScraps: () => {},
+  });
+  vm.runInContext(dragDrop.slice(dragDrop.indexOf("function dispatchInternalDrop"), dragDrop.indexOf("// Which Finder drop targets")), dropContext);
+  const finderDragSrc = read("app/core/finder-drag.js");
+  vm.runInContext(finderDragSrc.slice(finderDragSrc.indexOf("function handleDropToProject"), finderDragSrc.indexOf("// End of the shared drop handlers.")), dropContext);
+  const ejectedDisk = { id: "", dataset: { dropTarget: "project", projectId: "p2", ejected: "true" } };
+  dropContext.dispatchInternalDrop(ejectedDisk, { type: "file", id: "f1", projectId: "p1" }, null);
+  test.assert(statuses.includes("finder_refuse_ejected_readonly") && moved.length === 0, "a drop on an ejected disk is refused with the read-only reason and moves nothing");
+  dropContext.dispatchInternalDrop({ id: "", dataset: { dropTarget: "project", projectId: "p2" } }, { type: "file", id: "f1", projectId: "p1" }, null);
+  test.assert(moved.length === 1, "a drop on a mounted project disk still files the item there");
+}
+test.assertNotIncludes(read("index.html"), 'data-drag-type="mounted-disk" draggable="true"', "the mounted File Floppy icon is no HTML5 draggable either");
+
+for (const key of ["ejected_project_disk", "cannot_archive_mounted_project", "finder_refuse_ejected_readonly"]) {
   test.assertIncludes(en, `${key}:`, `English names ${key}`);
   test.assertIncludes(zh, `${key}:`, `Chinese names ${key}`);
 }
@@ -166,6 +197,10 @@ const context = vm.createContext({
   projectDisplayName: (project) => project.name,
   t: (key, value) => `${key}:${value}`,
   document: { createElement: (tag) => fakeNode(tag) },
+  window: {},
+  // Desktop objects (records with placement.desktop) load the spatial desk.
+  chatFiles: [],
+  chatFolders: [],
   Object,
 });
 vm.runInContext(source, context);
@@ -187,6 +222,11 @@ test.assert(!column.order.some((node) => node.dataset.ejectedProjectId === "p3")
 test.assert(drawn[0].className.includes("is-ejected-disk"), "the drawn disk carries the ejected state");
 test.assert(drawn[0].lastChild.textContent === "Kettle", "and its own project's name");
 test.assert(drawn[0].dataset.dragType === "project", "so it can be dragged to the Trash like any disk");
+// The pointer engine owns desktop icons (finder-drag.js), so the disk is not an
+// HTML5 draggable; it is a read-only drop target, so a drop on it is refused
+// with the reason instead of quietly filing something onto it.
+test.assert(drawn[0].draggable === false, "the ejected disk is dragged by the pointer engine, not HTML5");
+test.assert(drawn[0].dataset.dropTarget === "project" && drawn[0].dataset.ejected === "true", "it is a project drop target marked ejected");
 test.assert(column.order.indexOf(drawn[0]) === column.order.indexOf(mountedIcon) + 1, "ejected disks sit beside the mounted one");
 
 // Redrawing reuses the icon that is already there: a desktop that rebuilt every

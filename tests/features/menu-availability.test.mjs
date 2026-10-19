@@ -30,6 +30,7 @@ const cmfStudio = read("app/features/cmf-studio.js");
 const liquidCover = read("app/features/liquid-cover.js");
 const endfieldTerminal = read("app/features/endfield-terminal.js");
 const quickDraftHandoff = read("app/features/quick-draft-handoff.js");
+const aaronBlog = read("app/features/aaron-blog.js");
 const docMap = read("app/features/docmap.js");
 const runtime = read("app/core/runtime.js");
 
@@ -114,6 +115,9 @@ const runtimeCommandIds = new Set(
     // 文字亮室's verbs are registered beside Quick Draft's but answer to their
     // own rule, lightroomCommandAvailable(), so they are gated the same way.
     ...quickDraftHandoff.matchAll(/"(open-quick-draft|quick-draft-[a-z0-9-]+|lightroom-[a-z0-9-]+)"/g).map((match) => match[1]),
+    // 潮汐信笺 owns its reader verbs; each is registered with an availability
+    // predicate when the lazy app module loads.
+    ...aaronBlog.matchAll(/"(open-aaron-blog|blog-[a-z0-9-]+)"/g).map((match) => match[1]),
     ...docMap.matchAll(/"(open-docmap|docmap-[a-z0-9-]+|focus-docmap-question)"/g).map((match) => match[1]),
   ]
 );
@@ -158,6 +162,7 @@ const ALWAYS_AVAILABLE = new Map([
   // Navigation: opening the manuscript is valid in every workspace profile.
   ["open-teachtext-manuscript", "navigation"],
   ["new-note", "creating an empty note needs no selection"],
+  ["show-clipboard", "System 6 Show Clipboard row opens the Clipboard desk accessory, which is always there to open"],
   // Appearance choices are always valid and update their own checked state.
   ["set-theme-classic", "Appearance choice is valid from every application"],
   ["set-theme-system-7", "Appearance choice is valid from every application"],

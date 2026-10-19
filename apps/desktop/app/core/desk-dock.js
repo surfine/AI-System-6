@@ -371,7 +371,8 @@
     }
     const badge = document.createElement("span");
     badge.className = "desk-dock-miniature-badge";
-    badge.innerHTML = renderSystemIcon(win.dataset.window || appId || "document", { size: "large" });
+    const record = window.AISystem6Admissions?.windowRecord?.(win.dataset.window);
+    badge.innerHTML = renderSystemIcon(record?.appIcon || win.dataset.window || appId || "document", { size: "large" });
     figure.append(badge);
     return figure;
   }
@@ -399,9 +400,12 @@
 
   function makeRunningCell(app) {
     // The application's own icon, named by its window the way the NeXTSTEP
-    // Dock names a tile (renderSystemIcon takes a window name).
+    // Dock names a tile (renderSystemIcon takes a window name). An app may
+    // declare a different icon in its admission row; the running cell honours
+    // that before falling back to the window kind.
+    const record = window.AISystem6Admissions?.windowRecord?.(app.lastWindowName);
     return buildCell({
-      iconId: app.lastWindowName || app.id,
+      iconId: record?.appIcon || app.lastWindowName || app.id,
       label: app.label || app.id,
       key: `app:${app.id}`,
       appId: app.id,

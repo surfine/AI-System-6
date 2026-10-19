@@ -76,6 +76,12 @@ export const lazyStyleBundles = [
     sources: ["styles/89-control-strip.css"],
   },
   {
+    id: "finder-spatial",
+    output: "styles.finder-spatial.css",
+    loader: "app/core/config.js",
+    sources: ["styles/89-finder-spatial.css"],
+  },
+  {
     id: "draft-desk",
     output: "styles.draft-desk.css",
     loader: "app/core/config.js",
@@ -230,6 +236,12 @@ export const lazyStyleBundles = [
     loader: "app/core/config.js",
     sources: ["styles/97-one-more-tune.css"],
   },
+  {
+    id: "aaron-blog",
+    output: "styles.aaron-blog.css",
+    loader: "app/core/config.js",
+    sources: ["styles/94-aaron-blog.css"],
+  },
   // Rootline builds its own window like the other games, and every selector
   // is scoped to .rootline-*.
   {
@@ -335,6 +347,7 @@ export const styleLayerByPath = Object.freeze({
   "styles/84-clio-write.css": "clio-write",
   "styles/88-soundscape.css": "soundscape",
   "styles/89-control-strip.css": "control-strip",
+  "styles/89-finder-spatial.css": "finder-spatial",
   "styles/90-endfield-terminal.css": "endfield-terminal",
   "styles/91-draft-desk.css": "draft-desk",
   "styles/92-clioworks-native.css": "clioworks-native",
@@ -347,6 +360,7 @@ export const styleLayerByPath = Object.freeze({
   "styles/92-micropolis.css": "micropolis",
   "styles/93-openttd.css": "openttd",
   "styles/94-bonsai.css": "bonsai",
+  "styles/94-aaron-blog.css": "aaron-blog",
   "styles/96-clio-paint.css": "clio-paint",
   "styles/97-one-more-tune.css": "one-more-tune",
   "styles/98-project-disks.css": "project-disks",

@@ -10,11 +10,12 @@
 //   output requests separate.
 // - Strips client-only underscore-prefixed fields (_cloud_*) from the
 //   payload after pulling them into locals.
-// - Strips deepseek-v4 sampling/local-thinking fields (temperature, top_p,
-//   presence_*, frequency_*, logprobs, top_logprobs, reasoning_effort,
-//   enable_thinking, chat_template_kwargs, top_k, min_p) when targeting v4-pro/v4-flash
-//   with thinking enabled. Thinking is "enabled" by default; only an
-//   explicit { thinking: { type: "disabled" } } skips the strip.
+// - Applies DeepSeek V4's current controls (docs 2026-10): `thinking.type`
+//   (enabled by default) and `reasoning_effort` (none|low|high|max, with
+//   minimal→low and medium/xhigh→high). In thinking mode temperature has no
+//   effect and top_p does (clamped to 0.95–1); frequency_penalty and
+//   presence_penalty are deprecated on every V4 model. Non-thinking is the
+//   explicit { thinking: { type: "disabled" } } switch.
 // - Non-JSON upstream response: maps to 401 (heuristic auth) or
 //   upstream status (or 502 if upstream was somehow OK).
 // - JSON error response: merges upstream body and synthesizes detail
@@ -69,13 +70,24 @@ const {
   resolveTaskPolicy,
 } = require("../task-policy.js");
 
-/**
- * @param {any} payload
- * @returns {boolean}
- */
-function shouldStripDeepseekV4Sampling(payload) {
-  if (!isDeepSeekCloudModelId(payload.model)) return false;
-  return !payload.thinking || payload.thinking.type !== "disabled";
+// DeepSeek V4 limits and effort names, from the 2026-10 API reference. Both
+// functions stay self-contained: the route's contract harness runs them in a
+// VM that extracts functions, not module-level constants.
+function normalizeDeepseekEffort(value) {
+  const efforts = {
+    none: "none", minimal: "low", low: "low", medium: "high", high: "high", max: "max", xhigh: "high",
+  };
+  return efforts[String(value || "").toLowerCase()] || "";
+}
+
+function clampDeepseekMaxTokens(payload) {
+  const maxOutputTokens = 393216;
+  const value = Number(payload.max_tokens);
+  if (!Number.isFinite(value)) {
+    delete payload.max_tokens;
+    return;
+  }
+  payload.max_tokens = Math.min(maxOutputTokens, Math.max(1, Math.floor(value)));
 }
 
 /**
@@ -529,7 +541,7 @@ async function handleCloudChat(req, res) {
       stripDeepseekV4LocalOnlyFields(payload);
       // `reasoning_effort` stays a top-level field: measured 2026-08-14, the
       // nested `thinking.reasoning_effort` form has no effect on the spend.
-      if (policy.thinking) payload.reasoning_effort = policy.effort;
+      if (policy.thinking) payload.reasoning_effort = normalizeDeepseekEffort(policy.effort) || policy.effort;
       // A tool-carrying request has to echo every round's reasoning_content
       // back or DeepSeek answers 400, and thinking mode rejects a forced tool
       // choice. Tool rounds therefore run non-thinking with an automatic
@@ -547,13 +559,20 @@ async function handleCloudChat(req, res) {
       payload.thinking = { type: "disabled" };
       delete payload.reasoning_effort;
     }
-    if (shouldStripDeepseekV4Sampling(payload)) {
-      delete payload.temperature;
-      delete payload.top_p;
+    if (isDeepSeekCloudModelId(payload.model)) {
+      // Deprecated on every DeepSeek V4 model; local runtimes keep theirs.
       delete payload.presence_penalty;
       delete payload.frequency_penalty;
-      delete payload.logprobs;
-      delete payload.top_logprobs;
+      if (payload.thinking?.type === "disabled") {
+        // Without thinking top_p is fixed at 1.0, and temperature works.
+        delete payload.top_p;
+      } else {
+        // Thinking ignores temperature; top_p is the sampling control, 0.95–1.
+        delete payload.temperature;
+        const topP = Number(payload.top_p);
+        payload.top_p = Number.isFinite(topP) ? Math.min(1, Math.max(0.95, topP)) : 1;
+      }
+      clampDeepseekMaxTokens(payload);
     }
     console.log("[cloud-chat] model:", payload.model, "stream:", payload.stream, "has_key:", !!apiKey);
 
@@ -753,6 +772,19 @@ async function handleCloudChat(req, res) {
     });
 
     const choice = data && data.choices ? data.choices[0] : {};
+    // DeepSeek V4 can end a completion with no answer at all: the scheduler
+    // ran out of capacity, or the generation was aborted. A 200 with empty
+    // content would read as an empty answer, so it becomes a named refusal.
+    const finishReason = String(choice.finish_reason || data.stop_reason || "");
+    if (!modelContentFromChatData(data).trim()
+      && (finishReason === "insufficient_system_resource" || finishReason === "aborted")) {
+      const aborted = finishReason === "aborted";
+      send(res, 503, JSON.stringify({
+        error: aborted ? "服务已中止本次回答，请重试。" : "服务端资源不足，请稍后重试。",
+        code: aborted ? "cloud_answer_aborted" : "cloud_insufficient_system_resource",
+      }), { "Content-Type": "application/json" });
+      return;
+    }
     data.ai_system6_metrics = {
       elapsed_ms: Date.now() - startedAt,
       finish_reason: choice.finish_reason || data.stop_reason || "",

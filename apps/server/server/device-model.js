@@ -137,15 +137,25 @@ async function deviceModelStatus() {
   if (statusCache && statusCache.helper === helper && Date.now() - statusCache.at < STATUS_TTL_MS) {
     return statusCache.value;
   }
-  const raw = await readHelperStatus(helper);
-  const value = {
+  const value = shapeAppleStatus(await readHelperStatus(helper));
+  statusCache = { helper, at: Date.now(), value };
+  return value;
+}
+
+/**
+ * Apple's model status as the page reads it, from the helper's raw `status`
+ * object. Pure: the iOS shell runs it in JavaScriptCore on the in-process
+ * answer (tooling/build-device-request-bundle.mjs).
+ *
+ * @param {any} raw
+ */
+function shapeAppleStatus(raw) {
+  return {
     ...raw,
     available: raw.available === true,
     reason: raw.available === true ? null : String(raw.reason || "other"),
     contextSize: Number.isFinite(Number(raw.contextSize)) && Number(raw.contextSize) > 0 ? Number(raw.contextSize) : null,
   };
-  statusCache = { helper, at: Date.now(), value };
-  return value;
 }
 
 /**
@@ -161,7 +171,18 @@ async function builtInModelStatus() {
   if (mlxStatusCache && mlxStatusCache.helper === helper && Date.now() - mlxStatusCache.at < STATUS_TTL_MS) {
     return mlxStatusCache.value;
   }
-  const raw = await readHelperStatus(helper, "mlx-status");
+  const value = shapeBuiltInStatus(await readHelperStatus(helper, "mlx-status"));
+  mlxStatusCache = { helper, at: Date.now(), value };
+  return value;
+}
+
+/**
+ * The built-in model's status from the helper's raw `mlx-status` object. Pure,
+ * shared with the iOS shell like shapeAppleStatus.
+ *
+ * @param {any} raw
+ */
+function shapeBuiltInStatus(raw) {
   const runnable = Array.isArray(raw.runnable) ? raw.runnable.map(String) : [];
   const value = {
     ...raw,
@@ -176,8 +197,27 @@ async function builtInModelStatus() {
   const windows = raw.contextTokens && typeof raw.contextTokens === "object" ? raw.contextTokens : {};
   const window = Number(windows[value.defaultModel || ""]);
   if (Number.isFinite(window) && window > 0) value.contextSize = window;
-  mlxStatusCache = { helper, at: Date.now(), value };
   return value;
+}
+
+/**
+ * GET /api/device-model/status without ?engine: Apple's model at the top
+ * level (unchanged shape), the built-in model beside it.
+ *
+ * @param {any} apple shaped by shapeAppleStatus
+ * @param {any} builtIn shaped by shapeBuiltInStatus
+ */
+function combinedDeviceStatus(apple, builtIn) {
+  return {
+    ...apple,
+    builtIn: {
+      available: builtIn.available === true,
+      reason: builtIn.reason || null,
+      defaultModel: builtIn.defaultModel || null,
+      vision: Array.isArray(builtIn.vision) ? builtIn.vision : [],
+      contextSize: builtIn.contextSize || null,
+    },
+  };
 }
 
 // ---- the persistent helper -----------------------------------------------
@@ -481,6 +521,214 @@ function buildBuiltInChatRequest(body) {
   };
 }
 
+// ---- the built-in model's door: catalog and consented download -------------
+//
+// The writer sees the curated pack, its exact download size and its license
+// (`mlx-catalog`), consents by sending that exact byte count back, and watches
+// `mlx-download` progress. One download at a time; the helper itself refuses a
+// consent that is not the pack's total size and a pack the memory gate refuses.
+// Cancel is SIGTERM to the download process (exit 143, bytes already on disk
+// are kept and the next download resumes from them).
+
+const PACK_ID = /^[a-z0-9.\-]{1,64}$/;
+
+/**
+ * One helper command whose whole stdout is one JSON object (mlx-catalog).
+ *
+ * @param {string} helper
+ * @param {string[]} args
+ * @returns {Promise<any | null>}
+ */
+function readHelperJson(helper, args) {
+  return new Promise((resolve) => {
+    let out = "";
+    let settled = false;
+    const done = (value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(value);
+    };
+    const child = spawnHelper(helper, args);
+    const timer = setTimeout(() => { child.kill("SIGTERM"); done(null); }, STATUS_TIMEOUT_MS * 3);
+    child.stdout.on("data", (chunk) => { out += chunk; });
+    child.on("error", () => done(null));
+    child.on("close", () => {
+      try {
+        const parsed = JSON.parse(out.trim().split("\n").pop() || "null");
+        done(parsed && typeof parsed === "object" ? parsed : null);
+      } catch {
+        done(null);
+      }
+    });
+    child.stdin.on("error", () => {});
+    child.stdin.end();
+  });
+}
+
+const finiteOrNull = (value) => (Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : null);
+
+/**
+ * What the page may show about one pack: nothing from the helper's own paths.
+ *
+ * @param {any} pack
+ */
+function publicPack(pack) {
+  const licenseURL = typeof pack.licenseURL === "string" && /^https:\/\//.test(pack.licenseURL) ? pack.licenseURL : "";
+  return {
+    id: String(pack.id),
+    displayName: String(pack.displayName || pack.id),
+    repo: String(pack.repo || ""),
+    license: String(pack.license || ""),
+    licenseURL,
+    totalBytes: finiteOrNull(pack.totalBytes),
+    estimatedResidentBytes: finiteOrNull(pack.estimatedResidentBytes),
+    contextTokens: finiteOrNull(pack.contextTokens),
+    languages: Array.isArray(pack.languages) ? pack.languages.map(String) : [],
+    state: ["installed", "partial", "notInstalled"].includes(pack.state) ? pack.state : "notInstalled",
+    bytesOnDisk: finiteOrNull(pack.bytesOnDisk),
+    memoryGate: {
+      allowed: pack.memoryGate?.allowed !== false,
+      limitBytes: finiteOrNull(pack.memoryGate?.limitBytes),
+    },
+  };
+}
+
+/**
+ * The curated default pack and the machine it would run on, or a plain reason.
+ *
+ * @returns {Promise<{ helper: boolean, reason: string | null, pack: any | null, physicalMemoryBytes: number | null }>}
+ */
+async function builtInCatalog() {
+  const helper = deviceModelHelperPath();
+  if (!helper) return { helper: false, reason: "helperMissing", pack: null, physicalMemoryBytes: null };
+  const raw = await readHelperJson(helper, ["mlx-catalog"]);
+  const found = Array.isArray(raw?.packs) ? raw.packs.find((pack) => pack?.id === DEFAULT_MLX_MODEL) : null;
+  if (!found) return { helper: true, reason: "other", pack: null, physicalMemoryBytes: null };
+  return { helper: true, reason: null, pack: publicPack(found), physicalMemoryBytes: finiteOrNull(raw.physicalMemoryBytes) };
+}
+
+/**
+ * @typedef {{ id: string, state: "running" | "done" | "error" | "cancelled", bytesDone: number, totalBytes: number, file: string, code: string, message: string }} DownloadSnapshot
+ */
+
+/** @type {{ child: import("node:child_process").ChildProcess | null, snapshot: DownloadSnapshot, listeners: Set<(event: any) => void>, cancelled: boolean } | null} */
+let activeDownload = null;
+
+function downloadSnapshot() {
+  return activeDownload ? { ...activeDownload.snapshot } : null;
+}
+
+/** @param {(event: any) => void} listener */
+function subscribeBuiltInDownload(listener) {
+  if (!activeDownload) return () => {};
+  const current = activeDownload;
+  current.listeners.add(listener);
+  return () => current.listeners.delete(listener);
+}
+
+function builtInDownloadRunning() {
+  return activeDownload?.snapshot.state === "running";
+}
+
+function cancelBuiltInDownload() {
+  if (!activeDownload || activeDownload.snapshot.state !== "running") return false;
+  activeDownload.cancelled = true;
+  activeDownload.child?.kill("SIGTERM");
+  return true;
+}
+
+function downloadFailure(statusCode, code, message, extra = {}) {
+  return Object.assign(new Error(message), { statusCode, code, ...extra });
+}
+
+/**
+ * Start the one download. The consent must be the exact byte count the writer
+ * was shown; it is checked here against a fresh catalog read and again by the
+ * helper itself.
+ *
+ * @param {{ id?: unknown, consentBytes?: unknown }} request
+ */
+async function startBuiltInDownload(request) {
+  const id = String(request?.id || "");
+  if (!PACK_ID.test(id)) throw downloadFailure(400, "invalid_request", "A model id is required.");
+  const helper = deviceModelHelperPath();
+  if (!helper) throw downloadFailure(503, "device_unavailable", "The built-in model is not part of this install.", { reason: "helperMissing" });
+  if (builtInDownloadRunning()) throw downloadFailure(409, "download_in_progress", "A model download is already running.");
+  const catalog = await builtInCatalog();
+  if (!catalog.pack || catalog.pack.id !== id) throw downloadFailure(404, "unknown_model", "That model is not in the built-in catalog.");
+  const pack = catalog.pack;
+  if (pack.state === "installed") throw downloadFailure(409, "already_installed", "That model is already downloaded.");
+  if (!pack.memoryGate.allowed) throw downloadFailure(503, "device_memory_gate", "This Mac does not have enough free memory for that on-device model.");
+  if (!Number.isSafeInteger(request?.consentBytes) || request.consentBytes !== pack.totalBytes) {
+    throw downloadFailure(409, "device_consent_required", "This model needs your consent to the exact download size first.", { totalBytes: pack.totalBytes });
+  }
+  if (builtInDownloadRunning()) throw downloadFailure(409, "download_in_progress", "A model download is already running.");
+
+  const child = spawnHelper(helper, ["mlx-download", id, "--consent", String(pack.totalBytes)]);
+  const state = {
+    child,
+    listeners: new Set(),
+    cancelled: false,
+    snapshot: /** @type {DownloadSnapshot} */ ({ id, state: "running", bytesDone: pack.bytesOnDisk || 0, totalBytes: pack.totalBytes, file: "", code: "", message: "" }),
+  };
+  activeDownload = state;
+  const emit = (event) => { for (const listener of [...state.listeners]) { try { listener(event); } catch {} } };
+  const settle = (next) => {
+    if (state.snapshot.state !== "running") return;
+    Object.assign(state.snapshot, next);
+    // The new pack changes what `mlx-status` answers.
+    resetDeviceModelStatusCache();
+    emit({ type: next.state === "done" ? "done" : next.state === "cancelled" ? "cancelled" : "error", ...state.snapshot });
+  };
+  let buffer = "";
+  const handleLine = (line) => {
+    if (!line.trim()) return;
+    let event;
+    try { event = JSON.parse(line); } catch { return; }
+    if (event.type === "progress") {
+      const bytesDone = finiteOrNull(event.bytesDone);
+      if (bytesDone !== null) state.snapshot.bytesDone = Math.min(bytesDone, state.snapshot.totalBytes);
+      state.snapshot.file = typeof event.file === "string" ? event.file.slice(0, 120) : "";
+      emit({ type: "progress", ...state.snapshot });
+    } else if (event.type === "done") {
+      settle({ state: "done", bytesDone: state.snapshot.totalBytes });
+    } else if (event.type === "error") {
+      const code = ["memoryGate", "consentRequired", "downloadFailed", "badRequest"].includes(event.code) ? event.code : "downloadFailed";
+      settle({ state: "error", code, message: "" });
+    }
+  };
+  child.stdout.on("data", (chunk) => {
+    buffer += chunk;
+    let newline;
+    while ((newline = buffer.indexOf("\n")) >= 0) {
+      const line = buffer.slice(0, newline);
+      buffer = buffer.slice(newline + 1);
+      handleLine(line);
+    }
+  });
+  child.stderr.on("data", () => {});
+  child.on("error", () => settle({ state: "error", code: "downloadFailed" }));
+  child.on("close", (code) => {
+    if (buffer.trim()) handleLine(buffer);
+    buffer = "";
+    if (state.snapshot.state !== "running") return;
+    if (state.cancelled || code === 143 || code === 130) settle({ state: "cancelled" });
+    else settle({ state: "error", code: code === 3 ? "memoryGate" : "downloadFailed" });
+  });
+  child.stdin.on("error", () => {});
+  child.stdin.end();
+  return state;
+}
+
+// A download is a child of the server: it must not outlive it.
+// The iOS shell bundles this module into a VM with no Node globals (the
+// device-request contract runs it there), so the exit hook is only installed
+// where a process exists.
+if (typeof process !== "undefined" && typeof process.once === "function") {
+  process.once("exit", () => { activeDownload?.child?.kill("SIGTERM"); });
+}
+
 /** Whether a request kind is one of the ask-only doors. */
 function isAskOnlyTaskKind(kind) {
   return Object.prototype.hasOwnProperty.call(taskWhitelist, String(kind || "").trim().toLowerCase());
@@ -498,21 +746,121 @@ function checkContextBudget(estimatedTokens, replyTokens, contextSize) {
   return { ok: total <= limit, total, limit, limitSource: contextSize ? "helper" : "assumed" };
 }
 
+const DEVICE_MODEL_ID = "apple-foundation-models";
+const GUARDRAIL_WAY_OUT = "Apple's on-device check declined this text. Nothing was changed or sent anywhere. You can use the website allowance or your own key, or skip this step.";
+
+/**
+ * The request half of POST /api/device-model/chat: general chat is the
+ * built-in model's alone, Apple's model stays ask-only. Throws the same 4xx
+ * errors as the builders. Shared with the iOS shell, which runs this file in
+ * JavaScriptCore (tooling/build-device-request-bundle.mjs), so the guardrails
+ * and the whitelist have one source.
+ *
+ * @param {any} body
+ */
+function planDeviceChat(body) {
+  const general = body?.engine === "mlx" && !isAskOnlyTaskKind(body?.ai_system6_task_kind);
+  const built = general ? buildBuiltInChatRequest(body) : buildDeviceRequest(body);
+  return {
+    ...built,
+    general,
+    stream: !(general && body.stream === false),
+    modelId: built.engine === "mlx" ? `built-in:${built.request.model}` : DEVICE_MODEL_ID,
+  };
+}
+
+/**
+ * Whether the engine's status lets a planned request run: null, or the
+ * refusal the route answers with. A missing helper already reads as an
+ * unavailable status, so the order matches the route's checks.
+ *
+ * @param {ReturnType<typeof planDeviceChat>} plan
+ * @param {any} status shaped by shapeAppleStatus or shapeBuiltInStatus
+ * @returns {{ status: number, body: Record<string, unknown> } | null}
+ */
+function deviceChatRefusal(plan, status) {
+  if (!status.available) {
+    return { status: 503, body: { code: "device_unavailable", reason: status.reason || "other", error: "The on-device model is not available." } };
+  }
+  const budget = checkContextBudget(plan.estimatedTokens, plan.replyTokens, status.contextSize);
+  if (!budget.ok) {
+    return {
+      status: 413,
+      body: {
+        code: "context-budget-exceeded",
+        error: "This is longer than the on-device model can read at once. Shorten it, or use the website allowance or your own key.",
+        budget: { estimated_tokens: budget.total, limit_tokens: budget.limit, limit_source: budget.limitSource },
+      },
+    };
+  }
+  if (plan.engine === "mlx" && Array.isArray(status.runnable) && !status.runnable.includes(plan.request.model)) {
+    return { status: 503, body: { code: "device_unavailable", reason: "notDownloaded", error: "That built-in model is not downloaded." } };
+  }
+  return null;
+}
+
+/**
+ * A helper error code as the page reads it.
+ *
+ * @param {string} code helper error code
+ * @param {string} message helper message
+ * @param {string} [reason]
+ * @returns {{ status: number, body: Record<string, unknown> }}
+ */
+function mapHelperError(code, message, reason) {
+  switch (code) {
+    case "exceededContextWindowSize":
+      return { status: 413, body: { code: "context-budget-exceeded", error: "This is longer than the on-device model can read at once." } };
+    case "guardrailViolation":
+      return { status: 422, body: { code: "device_guardrail_violation", error: GUARDRAIL_WAY_OUT, way_out: ["website", "byok", "skip"] } };
+    case "refusal":
+      return { status: 422, body: { code: "device_refusal", error: "The on-device model declined to answer this. Nothing was changed.", way_out: ["website", "byok", "skip"] } };
+    case "unsupportedLanguageOrLocale":
+      return { status: 422, body: { code: "device_language_unsupported", error: "The on-device model does not support this language." } };
+    case "rateLimited":
+    case "concurrentRequests":
+      return { status: 429, body: { code: code === "rateLimited" ? "rate_limit" : "device_busy", error: "The on-device model is busy. Try again in a moment." } };
+    case "consentRequired":
+      return { status: 409, body: { code: "device_consent_required", error: "This on-device model needs your consent to download first. Nothing was changed." } };
+    case "memoryGate":
+      return { status: 503, body: { code: "device_memory_gate", error: "This Mac does not have enough free memory for that on-device model." } };
+    case "unavailable":
+      return { status: 503, body: { code: "device_unavailable", reason: reason || "other", error: "The on-device model is not available." } };
+    case "badRequest":
+      return { status: 400, body: { code: "invalid_request", error: message || "The request was not valid." } };
+    default:
+      return { status: 502, body: { code: "device_failed", error: "The on-device model stopped without an answer." } };
+  }
+}
+
 module.exports = {
   DEFAULT_MLX_MODEL,
+  DEVICE_MODEL_ID,
+  builtInCatalog,
+  builtInDownloadRunning,
+  cancelBuiltInDownload,
+  downloadSnapshot,
+  startBuiltInDownload,
+  subscribeBuiltInDownload,
   buildBuiltInChatRequest,
   buildDeviceRequest,
   builtInModelStatus,
   checkContextBudget,
+  combinedDeviceStatus,
+  deviceChatRefusal,
   deviceModelHelperPath,
   deviceModelStatus,
   estimateTokens,
   isAskOnlyTaskKind,
+  mapHelperError,
   persistentHelperEnabled,
+  planDeviceChat,
   prewarmServeHelper,
   resetDeviceModelStatusCache,
   sendToServeHelper,
   serveHelperRunning,
+  shapeAppleStatus,
+  shapeBuiltInStatus,
   shutdownDeviceModelHelpers,
   spawnHelper,
   taskWhitelist,
