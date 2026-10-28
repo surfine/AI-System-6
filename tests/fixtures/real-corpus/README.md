@@ -4,7 +4,7 @@
 
 ## Licences
 
-Each file's licence is in the `license` field of `manifest.json`, which is authoritative. The government and school files carry no explicit open licence: they are for internal testing only and must not be redistributed — keep them out of public repositories, release packages, the site and demo disks. The PDFs are stored and recorded as `pending: "N1"` until stage N1.
+Each file's licence is in the `license` field of `manifest.json`, which is authoritative. The government and school files carry no explicit open licence: they are for internal testing only and must not be redistributed — keep them out of public repositories, release packages, the site and demo disks. The four PDFs were held back the same way; on 2026-10-28 the owner confirmed they may be published, so `manifest.json` records that decision for F01–F04 and the public snapshot ships them. The government and school docx/xlsx keep the earlier rule.
 
 ## Automatic checks
 
