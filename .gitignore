@@ -76,6 +76,11 @@ system.css-reference/fonts/modern/
 !site/img/hero-desktop.mp4
 internal/evidence/drafts/hero-frames/
 *.pdf
+# The real-file corpus's four PDFs are tracked and published (owner's
+# confirmation, 2026-10-28). `*.pdf` above is what keeps stray working copies
+# out; these four are an explicit, licensed exception rather than a hole in it.
+!tests/fixtures/real-corpus/pdf/
+!tests/fixtures/real-corpus/pdf/*.pdf
 
 # vendored reference clones (own .git) and local scratch output
 external/
