@@ -27,6 +27,23 @@
   const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   NF.MONTHS = MONTHS; NF.DAYS = DAYS;
+  /* aaa / aaaa: the weekday, short and full, in the language of the section's tag ([$-411], [$-ja-JP]), as Excel
+     shows it; untagged or in another language, in English as ddd / dddd. By the Windows primary language ID (the
+     tag's low 10 bits; calendar and digit bits sit above 16) */
+  const ZH = '日一二三四五六'.split(''), JA = '日月火水木金土'.split(''), KO = '일월화수목금토'.split('');
+  const WEEKDAYS = {
+    0x04: [ZH, ZH.map((d) => '星期' + d)],   // Simplified and Traditional Chinese alike
+    0x07: [['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'], ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']],
+    0x09: [DAYS.map((d) => d.slice(0, 3)), DAYS],
+    0x0c: [['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'], ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']],
+    0x11: [JA, JA.map((d) => d + '曜日')],
+    0x12: [KO, KO.map((d) => d + '요일')],
+  };
+  const LANG_IDS = { zh: 0x04, de: 0x07, en: 0x09, fr: 0x0c, ja: 0x11, ko: 0x12 };
+  const weekdayNames = (lcid, full) => {
+    const id = /^[0-9A-F]{3,8}$/.test(lcid || '') ? parseInt(lcid, 16) & 0x3ff : LANG_IDS[String(lcid || '').split('-')[0].toLowerCase()];
+    return (WEEKDAYS[id] || WEEKDAYS[0x09])[full ? 1 : 0];
+  };
   const COLORS = { black: '#000000', blue: '#0000FF', cyan: '#00FFFF', green: '#00FF00', magenta: '#FF00FF', red: '#FF0000', white: '#FFFFFF', yellow: '#FFFF00' };
   /* the 56-colour legacy palette ([ColorN] and indexed colours) */
   NF.PALETTE = ['#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#800000', '#008000', '#000080', '#808000', '#800080', '#008080', '#C0C0C0', '#808080',
@@ -113,6 +130,8 @@
   NF.r15 = (x) => (x === 0 || !isFinite(x) ? x : parseFloat(x.toPrecision(15)));
 
   /* -------------------------------------------------------------- General */
+  /* stripDec and normExp: derived from SheetJS SSF ssf.js, strip_decimal and normalize_exp (Apache License 2.0;
+     ssf.js (C) 2013-present SheetJS); changed: stripDec leaves exponents alone */
   const stripDec = (o) => (o.indexOf('.') < 0 || /e/i.test(o) ? o : o.replace(/(?:\.0*|(\.\d*[1-9])0+)$/, '$1'));
   const normExp = (o) => (o.indexOf('E') < 0 ? o : o.replace(/(?:\.0*|(\.\d*[1-9])0+)E/, '$1E').replace(/(E[+-])(\d)$/, '$10$2'));
   /** General format in at most `w` characters (Excel's default is 11; the grid passes the column width) */
@@ -188,7 +207,7 @@
     out.push(cur);
     return out;
   }
-  const DATE_RE = /^(yyyy|yyy|yy|y|mmmmm|mmmm|mmm|mm|m|dddd|ddd|dd|d|hh|h|ss|s|e|bbbb|bb|b|gggg|ggg|gg|g)/i;
+  const DATE_RE = /^(yyyy|yyy|yy|y|mmmmm|mmmm|mmm|mm|m|dddd|ddd|dd|d|aaaa|aaa|hh|h|ss|s|e|bbbb|bb|b|gggg|ggg|gg|g)/i;
   /** tokenise one section */
   function tokenize(sec) {
     const toks = [];
@@ -653,6 +672,7 @@
             case 'dd': push(o, String(p.d).padStart(2, '0')); break;
             case 'ddd': push(o, DAYS[p.wd].slice(0, 3)); break;
             case 'dddd': push(o, DAYS[p.wd]); break;
+            case 'aaa': case 'aaaa': push(o, weekdayNames(sec.lcid, s === 'aaaa')[p.wd]); break;
             case 'h': push(o, String(hasAmPm ? ((p.H + 11) % 12) + 1 : p.H)); break;
             case 'hh': push(o, String(hasAmPm ? ((p.H + 11) % 12) + 1 : p.H).padStart(2, '0')); break;
             case 's': push(o, String(p.S)); break;
@@ -734,7 +754,7 @@
 
   /* ------------------------------------------------------- classification */
   NF.isDate = (code) => { const p = NF.parse(code); return p.secs.length > 0 && p.secs[0].kind === 'date'; };
-  NF.isTimeOnly = (code) => { const p = NF.parse(code); const s = p.secs[0]; return !!s && s.kind === 'date' && !s.toks.some((t) => t.t === 'dt' && !t.min && /^[ymdbe]/.test(t.s)); };
+  NF.isTimeOnly = (code) => { const p = NF.parse(code); const s = p.secs[0]; return !!s && s.kind === 'date' && !s.toks.some((t) => t.t === 'dt' && !t.min && /^[ymdabe]/.test(t.s)); };
   NF.isPercent = (code) => { const p = NF.parse(code); return !!(p.secs[0] && p.secs[0].pct); };
   /** category for the Format Cells dialog */
   NF.category = function (code) {

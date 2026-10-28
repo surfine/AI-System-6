@@ -81,4 +81,60 @@ changed();
 test.assert(sent.at(-1).type === "keep-appearance" && sent.at(-1).appearance === "big-sur", "switching appearances sends only the current appearance id");
 const controllerChange = source.slice(source.indexOf('addEventListener("controllerchange"'), source.indexOf('  watchLanguageForShell();'));
 test.assertIncludes(controllerChange, "keepActiveAppearanceStyles()", "first install and worker updates keep the already loaded appearance after claim");
+
+
+// ---- A stamped URL revalidates instead of pinning the morning's bytes ------
+//
+// The build stamp names the build, not the bytes: a dev server serving the
+// same stamp after a source edit serves different bytes under it, and plain
+// cache-first pinned them for the stamp's whole life. The revalidation costs
+// one conditional request per URL while the bytes match (304), and swaps the
+// fresh body in the moment they do not.
+{
+  const revalidateCallbacks = new Map();
+  const store = new Map();          // cache key -> { etag, body }
+  const netBodies = new Map();      // url -> body the "server" answers with
+  let conditional = false;
+  const swSelf = { location: new URL("https://example.test/sw.js?v=b"), addEventListener: (name, fn) => revalidateCallbacks.set(name, fn) };
+  const ctx = { self: swSelf, URL, Request, Response, console,
+    caches: { open: async () => ({
+      match: async (url) => { const e = store.get(url); return e ? new Response(e.body, { headers: { etag: e.etag } }) : undefined; },
+      put: async (url, response) => { const body = await response.text(); store.set(url, { etag: response.headers.get("etag"), body }); },
+    }) },
+    fetch: async (request) => {
+      const body = netBodies.get(request.url);
+      const text = async () => "";
+      if (body === undefined) return { status: 404, ok: false, text };
+      const etag = `"${body.length}"`;
+      if (request.headers && request.headers.get("if-none-match") === etag) { conditional = true; return { status: 304, ok: false, text }; }
+      return { status: 200, ok: true, type: "basic", headers: new Headers({ etag }), clone() { return this; }, text: async () => body };
+    },
+  };
+  vm.runInNewContext(read("apps/desktop/sw.js"), ctx);
+  const cacheFirst = swSelf.AISystem6TestCacheFirst;
+  test.assert(typeof cacheFirst === "function", "the worker exposes its cache-first path for contracts");
+
+  const url = "https://example.test/app/features/x.js?v=b";
+  netBodies.set(url, "morning bytes");
+  await cacheFirst(new Request(url), undefined, new URL(url));
+  test.assert(store.get(url)?.body === "morning bytes", "the first fetch fills the cache as before");
+
+  netBodies.set(url, "afternoon bytes");
+  const second = await cacheFirst(new Request(url), undefined, new URL(url));
+  test.assert(await second.text() === "afternoon bytes",
+    "changed bytes under the same stamp replace the cached body immediately");
+  test.assert(conditional === false,
+    "the second look was a full answer: the bytes had changed, so no 304 lied");
+
+  conditional = false;
+  const third = await cacheFirst(new Request(url), undefined, new URL(url));
+  test.assert(await third.text() === "afternoon bytes" && conditional,
+    "unchanged bytes answer from the cache after one 304");
+
+  netBodies.delete(url);
+  const offline = await cacheFirst(new Request(url), undefined, new URL(url));
+  test.assert(await offline.text() === "afternoon bytes",
+    "and a dead network still falls back to the cached copy");
+}
+
 test.finish();

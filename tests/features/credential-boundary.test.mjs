@@ -282,7 +282,7 @@ test.assertIncludes(cloudModel, 'cloudConfig.credentialId = ""', "Control Panel 
 test.assertIncludes(cloudChat, "resolveCloudCredential", "cloud chat resolves credentials inside the local service");
 test.assertIncludes(cloudChat, "const usingSharedCloud = isPublicDeployment && !suppliedPublicApiKey", "public BYOK never silently falls back while a user key is present");
 test.assertIncludes(cloudChat, "delete raw._cloud_credential_id", "credential IDs never reach the provider payload");
-test.assertIncludes(cloudStatus, "if (connected && !usingSharedCloud)", "the public shared account balance is not exposed to visitors");
+test.assertIncludes(cloudStatus, "if (connected && !usingSharedCloud && !anthropic)", "the public shared account balance is not exposed to visitors");
 test.assertIncludes(cloudStatus, "credentialId: body.credential_id", "status checks accept the local credential reference");
 test.assertIncludes(router, '["POST /api/cloud/credentials", handleCloudCredentials]', "credential registration is a guarded local API route");
 const publicRoutes = router.match(/const publicExactRouteKeys = new Set\(\[[\s\S]*?\]\);/)?.[0] || "";

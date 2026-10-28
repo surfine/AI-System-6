@@ -5,7 +5,7 @@
 
 "use strict";
 
-const { isPublicDeployment, publicGuestBridgeEnabled } = require("./runtime-profile.js");
+const { isPublicDeployment, publicAgentCloudEnabled, publicGuestBridgeEnabled } = require("./runtime-profile.js");
 const { embeddingsRelayConfig } = require("./embeddings-relay.js");
 
 /**
@@ -95,7 +95,16 @@ const handleMcpClient = lazyHandler(() => require("./routes/mcp-client.js"), "./
 const handleAgentExecutorStream = lazyHandler(() => require("./routes/agent-executor.js"), "./routes/agent-executor.js", "handleAgentExecutorStream");
 const handleAgentExecutorReply = lazyHandler(() => require("./routes/agent-executor.js"), "./routes/agent-executor.js", "handleAgentExecutorReply");
 const handleAgentExecutorToken = lazyHandler(() => require("./routes/agent-executor.js"), "./routes/agent-executor.js", "handleAgentExecutorToken");
+const handleAgentFoldersChoose = lazyHandler(() => require("./routes/agent.js"), "./routes/agent.js", "handleAgentFoldersChoose");
+const handleAgentFolderLevel = lazyHandler(() => require("./routes/agent.js"), "./routes/agent.js", "handleAgentFolderLevel");
+const handleAgentFolders = lazyHandler(() => require("./routes/agent.js"), "./routes/agent.js", "handleAgentFolders");
+const handleAgentRuns = lazyHandler(() => require("./routes/agent.js"), "./routes/agent.js", "handleAgentRuns");
+const handleAgentRunAction = lazyHandler(() => require("./routes/agent.js"), "./routes/agent.js", "handleAgentRunAction");
+const handleAgentCloudStatus = lazyHandler(() => require("./routes/agent-cloud.js"), "./routes/agent-cloud.js", "handleAgentCloudStatus");
+const handleAgentCloudRuns = lazyHandler(() => require("./routes/agent-cloud.js"), "./routes/agent-cloud.js", "handleAgentCloudRuns");
+const handleAgentCloudRunAction = lazyHandler(() => require("./routes/agent-cloud.js"), "./routes/agent-cloud.js", "handleAgentCloudRunAction");
 const handleImportText = lazyHandler(() => require("./routes/import-text.js"), "./routes/import-text.js", "handleImportText");
+const handleImportIworkConvert = lazyHandler(() => require("./routes/import-iwork-convert.js"), "./routes/import-iwork-convert.js", "handleImportIworkConvert");
 const handleImportOcrPages = lazyHandler(() => require("./routes/import-ocr-pages.js"), "./routes/import-ocr-pages.js", "handleImportOcrPages");
 const handleSubtitlesTranslate = lazyHandler(() => require("./routes/subtitles-translate.js"), "./routes/subtitles-translate.js", "handleSubtitlesTranslate");
 const handleCmfCapabilities = lazyHandler(() => require("./routes/cmf-capabilities.js"), "./routes/cmf-capabilities.js", "handleCmfCapabilities");
@@ -173,6 +182,7 @@ const localExactRoutes = new Map([
   ["POST /api/image/generate", handleImageGenerate],
   ["POST /api/vision/analyze", handleVisionAnalyze],
   ["POST /api/import-text", handleImportText],
+  ["POST /api/import-iwork-convert", handleImportIworkConvert],
   ["POST /api/import-ocr-pages", handleImportOcrPages],
   ["POST /api/subtitles/translate", handleSubtitlesTranslate],
   ["POST /api/search/answer", handleSearchAnswer],
@@ -190,6 +200,20 @@ const localExactRoutes = new Map([
   ["GET /api/agent/executor", handleAgentExecutorStream],
   ["POST /api/agent/executor/reply", handleAgentExecutorReply],
   ["POST /api/agent/executor/token", handleAgentExecutorToken],
+  // ClioTalk's engine host (docs/AGENT-HARNESS.md): shared folders, runs in
+  // shadow copies, put-back. Local only — never in publicExactRouteKeys — and
+  // loopback only even with LAN access on (routes/agent.js admits itself).
+  ["POST /api/agent/folders/choose", handleAgentFoldersChoose],
+  ["POST /api/agent/folders/level", handleAgentFolderLevel],
+  ["GET /api/agent/folders", handleAgentFolders],
+  ["DELETE /api/agent/folders", handleAgentFolders],
+  ["GET /api/agent/runs", handleAgentRuns],
+  ["POST /api/agent/runs", handleAgentRuns],
+  // ClioTalk's agent mode on the public web: a disposable container per run
+  // (routes/agent-cloud.js). Public only with AI_SYSTEM6_PUBLIC_AGENT=1; local
+  // only with AI_SYSTEM6_AGENT_CLOUD=1 on loopback (the handler refuses).
+  ["GET /api/agent-cloud/status", handleAgentCloudStatus],
+  ["POST /api/agent-cloud/runs", handleAgentCloudRuns],
   ["GET /api/cmf/capabilities", handleCmfCapabilities],
   ["POST /api/cmf/export-usdz", handleCmfExportUsdz],
   ["POST /api/cmf/render-views", handleCmfRenderViews],
@@ -282,6 +306,15 @@ if (publicGuestBridgeEnabled) {
   ].forEach((key) => publicExactRouteKeys.add(key));
 }
 
+// ClioTalk's agent mode in a disposable container per run. Opt-in like the
+// guest bridge (AI_SYSTEM6_PUBLIC_AGENT=1): off, the paths do not exist on the
+// public deployment at all. On, they sit behind the ordinary Turnstile session
+// guard, and every model call a run makes is booked by its proxy.
+if (publicAgentCloudEnabled) {
+  publicExactRouteKeys.add("GET /api/agent-cloud/status");
+  publicExactRouteKeys.add("POST /api/agent-cloud/runs");
+}
+
 // The public deployment has no provider that can embed, so this route was
 // local-only and the web build fell back to a model in the visitor's browser.
 // With the relay configured it answers from the Pages deployment's Workers AI
@@ -316,6 +349,12 @@ const localPrefixRoutes = [
   { method: "GET", prefix: "/api/one-more-tune/credits", handler: handleOneMoreTuneCredits },
   { method: "GET", prefix: "/api/one-more-tune/media", handler: handleOneMoreTuneMedia },
   { method: "GET", prefix: "/api/one-more-tune/preview", handler: handleOneMoreTunePreview },
+  // /api/agent/runs/:id/{events,changes} and /api/agent/runs/:id/{stop,putback,discard}.
+  { method: "GET", prefix: "/api/agent/runs", handler: handleAgentRunAction },
+  { method: "POST", prefix: "/api/agent/runs", handler: handleAgentRunAction },
+  // /api/agent-cloud/runs/:id/{events,changes} and /:id/{stop,discard}.
+  { method: "GET", prefix: "/api/agent-cloud/runs", handler: handleAgentCloudRunAction },
+  { method: "POST", prefix: "/api/agent-cloud/runs", handler: handleAgentCloudRunAction },
 ];
 
 const publicPrefixRouteKeys = new Set([
@@ -337,6 +376,11 @@ const publicPrefixRouteKeys = new Set([
   // hands out, and a quiz played by ear has no other way to be played.
   "GET /api/one-more-tune/preview",
 ]);
+
+if (publicAgentCloudEnabled) {
+  publicPrefixRouteKeys.add("GET /api/agent-cloud/runs");
+  publicPrefixRouteKeys.add("POST /api/agent-cloud/runs");
+}
 
 const prefixRoutes = isPublicDeployment
   ? localPrefixRoutes.filter((route) =>

@@ -1,7 +1,7 @@
 {
   "_note": "Ratcheting design-governance budgets. Counts capture current historical debt; verify:design fails only when new agent-default design anti-patterns exceed the baseline. Lower a count when cleanup removes instances. Raising a count requires a deliberate justification.",
   "checks": {
-    "thickSideAccentDeclarations": 14,
+    "thickSideAccentDeclarations": 15,
     "layoutPropertyTransitions": 2,
     "gradientTextRules": 0,
     "nestedCardSelectors": 0,
@@ -11,5 +11,6 @@
     "sketchyDecorativeSvgTells": 0,
     "classicSoftChromeShadow": 0,
     "platinumSoftChromeShadow": 0
-  }
+  },
+  "_thickSideAccent1060Note": "2026-10-28: +1 for the proposal channel's quote blocks (99-cliotalk-agent.css 125/252). The 引文 quote grammar — a 3px left rule marking quoted speech, as on the Review Desk's candidate cards (99-review-comments.css:107, already budgeted) and in the RoundTrip design board — is deliberate: the engine's proposed clips and review notes display with the same quoted-speech shape so the put-back window reads as one system. Not an agent-default stripe; a shared token of the quote language."
 }

@@ -20,7 +20,7 @@ const Flip = context.window.AISystem6BasinFlipPot;
 const config = read("app/core/config.js");
 const projectDisk = read("app/features/project-disk.js");
 const appJs = read("app.js");
-test.assertIncludes(config, "indexedDbVersion: 6", "the database carries the transit plan store");
+test.assertIncludes(config, "indexedDbVersion: 7", "the database carries the transit plan store (v6; v7 added nativeDocuments)");
 test.assertIncludes(config, 'transitPlansStoreName: "transitPlans"', "the plan store has a name");
 test.assertIncludes(appJs, "transitPlansStoreName,", "the store name reaches the shared scope");
 test.assertIncludes(projectDisk, "db.createObjectStore(transitPlansStoreName", "the upgrade path creates the plan store");

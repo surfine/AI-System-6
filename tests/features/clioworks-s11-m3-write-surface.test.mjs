@@ -9,8 +9,8 @@
 //     and lists are refused with a reason; text inside one paragraph passes;
 //   - full editing applies heading 1-3 / body, bold, and lists through the adapter's narrow face,
 //     each one named step in the Edit menu, in the writer's words;
-//   - typing in a table, or over a picture, is refused BEFORE the upstream editor sees it (in
-//     both modes; the upstream editor alone would type into the table);
+//   - inside a table the words of a cell are editable while its structure is refused (N10);
+//     typing over a picture is refused BEFORE the upstream editor sees it (in both modes);
 //   - ⌘S writes through the real native host; the stored package reads back with the edits;
 //   - the first-save list appears only when something would be converted or lost;
 //   - the desk glue routes a docx to ClioWrite (one session per file) while read stays Reader's.
@@ -110,14 +110,26 @@ const run = async () => {
       "an Express edit makes the document dirty and Edit › Undo names 「键入」");
   }
 
-  // 3. Tables and pictures: refused before the editor sees the input, in both modes.
+  // 3. Tables: the words inside a cell are editable (N10), the structure is not;
+  //    pictures stay text-refusing, in both modes.
   {
     test.assert(inCell.table === true, "a caret in the table's cell is known to be in a table");
     for (const mode of ["express", "full"]) {
-      for (const kind of ["text", "backward", "forward", "split", "delete"]) {
-        test.assert(api.gateInput(mode, kind, inCell).code === "READ_ONLY_TABLE", `${mode}: ${kind} inside the table is refused`);
+      for (const kind of ["text", "delete"]) {
+        test.assert(api.gateInput(mode, kind, inCell).allow, `${mode}: ${kind} inside the table's words passes`);
+      }
+      for (const kind of ["split", "line"]) {
+        test.assert(api.gateInput(mode, kind, inCell).code === "READ_ONLY_TABLE", `${mode}: ${kind} inside the table (its structure) is refused`);
       }
     }
+    const cellLen = D.plen(cell);
+    const cellStart = api.describe(D, doc, D.pos(cell, 0), D.pos(cell, 0));
+    const cellEnd = api.describe(D, doc, D.pos(cell, cellLen), D.pos(cell, cellLen));
+    test.assert(api.gateInput("full", "backward", cellStart).code === "READ_ONLY_TABLE" && api.gateInput("full", "forward", cellEnd).code === "READ_ONLY_TABLE",
+      "Backspace at a cell paragraph's start and Delete at its end (joining across the cell) are refused");
+    const twoCells = api.describe(D, doc, D.pos(cell, 0), D.pos(D.byId(doc, Number(adapter.tables()[0].rows[1][0].paragraphIds[0])), 1));
+    test.assert(api.gateInput("full", "delete", twoCells).code === "READ_ONLY_TABLE", "a delete across two cell paragraphs is refused (structure)");
+    test.assert(api.gateInput("full", "format", inCell).code === "READ_ONLY_TABLE", "formatting into a cell is refused");
     test.assert(api.gateInput("full", "backward", beforeText).code === "READ_ONLY_IMAGE", "Backspace over the picture is refused");
     const overPicture = api.describe(D, doc, D.pos(pictureParagraph, 0), D.pos(pictureParagraph, 2));
     test.assert(api.gateInput("express", "text", overPicture).code === "READ_ONLY_IMAGE", "typing over a selection that holds the picture is refused");
@@ -126,9 +138,9 @@ const run = async () => {
     test.assert(api.gateInput("full", "forward", api.describe(D, doc, D.pos(tail, D.plen(tail)), D.pos(tail, D.plen(tail)))).code === "READ_ONLY_TABLE",
       "full editing: Delete at the end of the paragraph before the table (joining into it) is refused");
     const rev = session.revision();
-    const refused = session.gate("text", inCell);
+    const refused = session.gate("split", inCell);
     test.assert(!refused.allow && session.receipt.kind === "blocked" && /clio_write_reason_table/.test(session.receiptText()) && session.revision() === rev,
-      "a refusal leaves a receipt in the status bar and changes nothing");
+      "a structural refusal in the table leaves a receipt in the status bar and changes nothing");
   }
 
   // 4. Full editing: heading, bold, list — one named step each.

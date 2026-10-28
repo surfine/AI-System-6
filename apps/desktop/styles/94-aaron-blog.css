@@ -268,6 +268,23 @@
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+.aaron-blog-article-head .aaron-blog-ask {
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+/* The paragraph a SideAsk citation points at. */
+.aaron-blog-article-body > .is-cited {
+  background: var(--btn-bg);
+  outline: 1px solid var(--shade-dark);
+  outline-offset: 4px;
+}
 .aaron-blog-article-body {
   color: var(--ink);
   font-family: var(--text-font);

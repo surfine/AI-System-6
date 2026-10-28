@@ -58,7 +58,22 @@ export async function bootThemedPage(browser, serverUrl, theme, viewport, { dete
     reducedMotion: "reduce",
     hasTouch: phone,
     isMobile: phone,
+    ...(deterministic ? { serviceWorkers: "block" } : {}),
   });
+  if (deterministic) {
+    // The ledger measures the CSS cascade, not what the network happened to
+    // deliver. A remote pack or API that arrives during one run and not the
+    // next changes window content, placement and how long a window takes to
+    // open, which then shows up as derived cells in unrelated windows. Keep
+    // local assets, let the model stubs below answer their own endpoints, and
+    // refuse everything else before it can reach a desktop window.
+    await context.route("**/*", (route) => {
+      const target = new URL(route.request().url());
+      return target.hostname === "127.0.0.1" || target.hostname === "localhost" || target.hostname === "[::1]"
+        ? route.continue()
+        : route.abort();
+    });
+  }
   // The saved-appearance boot appearance-snapshot.mjs uses; local model
   // probes answered offline so no window waits on developer software.
   await stubLocalModels(context);
@@ -112,20 +127,31 @@ export async function openEveryWindow(page, { settleMs = 0 } = {}) {
   const opened = [];
   const failed = [];
   for (const name of windowNames) {
-    try {
-      await page.evaluate((windowName) => window.__cascadeReseed?.(windowName), name);
-      await Promise.race([
-        page.evaluate((windowName) => openWindow(windowName), name),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("open timeout")), WINDOW_OPEN_TIMEOUT)),
-      ]);
-      const shown = await page.evaluate((windowName) => {
-        const win = document.querySelector(`[data-window="${windowName}"]`);
-        return Boolean(win && !win.classList.contains("is-hidden") && !win.classList.contains("is-app-hidden"));
-      }, name);
-      (shown ? opened : failed).push(shown ? name : { window: name, error: "not shown after openWindow" });
-    } catch (error) {
-      failed.push({ window: name, error: String(error?.message || error).split("\n")[0] });
+    let result = null;
+    // One lazy module occasionally loses a race with the teardown of the
+    // window before it and misses the 20s deadline. Retrying in the same
+    // session keeps the measured window set stable instead of turning a
+    // transient miss into "appeared/disappeared" cells in unrelated windows.
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      try {
+        await page.evaluate((windowName) => window.__cascadeReseed?.(windowName), name);
+        await Promise.race([
+          page.evaluate((windowName) => openWindow(windowName), name),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("open timeout")), WINDOW_OPEN_TIMEOUT)),
+        ]);
+        const shown = await page.evaluate((windowName) => {
+          const win = document.querySelector(`[data-window="${windowName}"]`);
+          return Boolean(win && !win.classList.contains("is-hidden") && !win.classList.contains("is-app-hidden"));
+        }, name);
+        result = shown ? { shown: true } : { shown: false, error: "not shown after openWindow" };
+      } catch (error) {
+        result = { shown: false, error: String(error?.message || error).split("\n")[0] };
+      }
+      if (result.shown) break;
+      if (attempt === 1) await page.waitForTimeout(500);
     }
+    if (result.shown) opened.push(name);
+    else failed.push({ window: name, error: result.error });
     // A window places itself against the rectangles of the windows already
     // open, and those still change while their content loads; a pause before
     // the next open makes the placements the same from run to run.

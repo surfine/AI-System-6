@@ -29,6 +29,7 @@ const {
 } = require("../cloud.js");
 const { isPublicDeployment } = require("../runtime-profile.js");
 const { resolveCloudCredential } = require("../credential-vault.js");
+const { isAnthropicUrl } = require("../anthropic-messages.js");
 
 /**
  * @param {import("node:http").IncomingMessage} req
@@ -46,9 +47,10 @@ async function handleCloudStatus(req, res) {
       : body.base_url || DEEPSEEK_BASE_URL_DEFAULT;
     const cloudTarget = await resolveCloudTarget(requestedBaseUrl);
     const baseUrl = cloudTarget.baseUrl;
+    const anthropic = isAnthropicUrl(baseUrl);
     const apiKey = String(await resolveCloudCredential({
       credentialId: body.credential_id,
-      provider: body.provider || "deepseek",
+      provider: anthropic ? "anthropic" : body.provider || "deepseek",
       targetBaseUrl: baseUrl,
       suppliedApiKey: body.api_key,
       allowSupplied: isPublicDeployment,
@@ -58,7 +60,10 @@ async function handleCloudStatus(req, res) {
       return;
     }
 
-    const authHeaders = cloudAuthHeaders(apiKey);
+    // Anthropic takes its key in x-api-key and has no balance endpoint.
+    const authHeaders = anthropic
+      ? { "x-api-key": apiKey, "anthropic-version": "2023-06-01" }
+      : cloudAuthHeaders(apiKey);
     const fetchOptions = {
       maxBytes: 4 * 1024 * 1024,
       pinnedAddress: cloudTarget.address,
@@ -101,7 +106,7 @@ async function handleCloudStatus(req, res) {
     let balance = null;
     /** @type {string | null} */
     let balanceError = null;
-    if (connected && !usingSharedCloud) {
+    if (connected && !usingSharedCloud && !anthropic) {
       try {
         let balanceResult = await getTextOnceWithFallback(
           `${baseUrl}/v1/user/balance`,

@@ -24,6 +24,7 @@ const keyboardShortcutRegistry = [
   { id: "blog-sync", key: "r", action: "blog-sync", display: "⌘R", labelKey: "refresh", scope: ["aaronBlog"] },
   { id: "blog-search", key: "f", action: "blog-search", display: "⌘F", labelKey: "aaron_blog_search", scope: ["aaronBlog"] },
   { id: "start-new-clio-chat", key: "n", action: "start-new-clio-chat", display: "⌘N", labelKey: "new_conversation", scope: ["clioTalk"] },
+  { id: "new-office-document", key: "n", action: "new-office-document", display: "⌘N", labelKey: "new_office_document", keyCaps: true, scope: ["clioWrite", "clioChart", "clioStage"] },
   { id: "save", key: "s", action: "save-current", display: "⌘S", labelKey: "save_current", keyCaps: true, scope: ["teachText", "clioTalk", "quickDraft"] },
   { id: "save-copy", key: "s", shift: true, action: "save-copy", display: "⇧⌘S", labelKey: "save_copy", keyCaps: true, scope: ["teachText"] },
   { id: "close-window", key: "w", action: "close-active-window", display: "⌘W", labelKey: "close_window", keyCaps: true, scope: "global" },
@@ -116,6 +117,10 @@ const keyboardShortcutRegistry = [
   { id: "clio-chart-view-5", key: "5", action: "clio-chart-score", display: "⌘5", labelKey: "clio_chart_score", suppressInEditable: true, scope: ["clioChart"] },
   { id: "clio-chart-view-6", key: "6", action: "clio-chart-compare", display: "⌘6", labelKey: "clio_chart_compare", suppressInEditable: true, scope: ["clioChart"] },
   { id: "clio-chart-reverse", key: "r", action: "clio-chart-reverse-sort", display: "⌘R", labelKey: "clio_chart_reverse_sort", suppressInEditable: true, scope: ["clioChart"] },
+  // N6: the show. ⇧⌘P starts presenting the deck in front (⌘P stays the
+  // browser's print; ClioWrite's page view owns it in its own scope). Ending
+  // is ⌘., handled by the show layer itself, the key the page view closes with.
+  { id: "clio-stage-present", key: "p", shift: true, action: "clio-stage-present", display: "⇧⌘P", labelKey: "clio_stage_present", keyCaps: true, scope: ["clioStage"] },
 ];
 
 // Action-level write contract: these commands mutate durable / project state
@@ -131,6 +136,8 @@ const writeRequiredActions = new Set([
   "rename-active-chat",
   "new-document",
   "new-folder",
+  "new-office-document",
+  "office-save-as-stationery",
   "new-project-disk",
   "rename-project-disk",
   "rename-file",
@@ -1342,6 +1349,15 @@ function getApplicationActionHandlers() {
     // installs, and a bare reference here would capture the value the name
     // held when this table was built, which is undefined.
     "export-document-word": () => exportActiveDocumentAsWord(),
+    // N14 来回: both halves load with the round-trip module, engine first.
+    "send-manuscript-review": async () => {
+      await ensureLazyModuleForUserAction(t("send_manuscript_review"), ensureManuscriptRoundTripModule);
+      return window.AISystem6ManuscriptRoundTripUI?.openSendReview?.();
+    },
+    "import-manuscript-return": async () => {
+      await ensureLazyModuleForUserAction(t("roundtrip_return_title"), ensureManuscriptRoundTripModule);
+      return window.AISystem6ManuscriptRoundTripUI?.openReturnImport?.();
+    },
     "export-project-cd-word": () => exportSelectedProjectCdItemAsWord(),
     "install-web-app": () => window.AISystem6WebPlatform?.installWebApp?.(),
     "export-project-backup": exportActiveProjectDisk,
@@ -1429,6 +1445,9 @@ function getApplicationActionHandlers() {
       return newTextDocument();
     },
     "new-folder": createFolderFromMenu,
+    // N4: ⌘N/new dispatches eagerly so the key works before office-new loads;
+    // the module takes the command over (with its own availability) once in.
+    "new-office-document": () => ensureLazyModuleForUserAction(t("new_office_document"), ensureOfficeNewModule).then(() => window.AISystem6OfficeNew.open()),
     "duplicate-selection": duplicateFinderMenuSelection,
     // The Apple menu's "Start Writing Route" carries its own id because
     // balloon help and the workspace-capability gate both address it by name.
@@ -2020,6 +2039,10 @@ window.AISystem6Runtime?.registerApplication({id:"keyCaps",windowName:"keyCaps",
 window.AISystem6Runtime?.registerLazyCommand?.("open-window-instance",{ensure:()=>ensureLazySystemModule("app/core/window-instances.js","AISystem6WinInst")});
 window.AISystem6Runtime?.registerLazyCommand?.("see-as-chart",{ensure:ensureClioChartModule});
 window.AISystem6Runtime?.registerLazyCommand?.("clio-project-reset-layout",{ensure:ensureClioProjectModule});
+// N4: the command registers itself when office-new.js loads (it is menu-only).
+window.AISystem6Runtime?.registerLazyCommand?.("office-save-as-stationery",{ensure:ensureOfficeNewModule});
+// N5b: the workbook tools register their real handlers when they load (menu-only rows).
+["chart","paste-function","convert-text-number","convert-text-date","convert-number-text","chart-delete"].forEach((command)=>window.AISystem6Runtime?.registerLazyCommand?.(`clio-chart-workbook-${command}`,{ensure:ensureClioChartWorkbookToolsLoaded}));
 window.AISystem6Runtime?.registerCommand?.("peek-project-disk",{handler:async({peekProjectId=""}={})=>{await ensureProjectPeekModule();await openProjectPeek(peekProjectId);},isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-project-overview",{handler:async()=>{await ensureProjectPeekModule();await openProjectOverview();},isAvailable:()=>!0});
 // Every lazy opener comes from one table (app/core/app-admissions.js): the
@@ -2053,6 +2076,13 @@ Object.entries({
 // surface in front (markdown-editor.js decides which one that is).
 ["heading-0","heading-1","heading-2","heading-3","bold","italic","strike","code","link","quote","bullet","numbered","task","indent","outdent","table","rule","code-block"]
   .forEach((command)=>window.AISystem6Runtime?.registerCommand?.(`format-${command}`,{handler:()=>mdeRunFormat(command),isAvailable:()=>!!mdeFormatTarget()}));
+// N15a: 打开链接 —— Format 菜单的跟随动词。链接解析、白名单与 window.open
+// 都在懒载的 writing-safety 模块里（config.js 的 ensureWritingSafetyModule）；
+// 这里只登记 lazy 命令，第一次点击把模块带进来后由模块注册真身接管。
+window.AISystem6Runtime?.registerLazyCommand?.("format-open-link",{
+  ensure:()=>ensureWritingSafetyModule(),
+  isAvailable:()=>!!mdeFormatTarget(false),
+});
 window.AISystem6Runtime?.registerCommand?.("open-heading-navigator",{handler:mdeOpenHeadings,isAvailable:()=>!!mdeFormatTarget(false),unavailableReason:()=>"balloon_disabled_menu_headings"});
 window.AISystem6Runtime?.registerCommand?.("open-project-info",{handler:openProjectInfo,isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-file-info",{handler:openFileInfo,isAvailable:()=>!0});
@@ -2133,6 +2163,7 @@ window.AISystem6Runtime?.registerCommand?.("open-rebuild-flow",{handler:openRebu
 window.AISystem6Runtime?.registerCommand?.("open-review-desk",{handler:()=>openReviewDesk("style"),isAvailable:()=>!0});
 // Review Desk is a writing-route surface: in the desktop profile it stays
 // unavailable, so the notification falls back to opening the receipt itself.
+window.AISystem6Runtime?.registerCommand?.("toggle-cliotalk-agent",{handler:async()=>{await ensureClioTalkAgentModule();await window.AISystem6ClioTalkAgent.toggle();},isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-guest-reviews",{handler:async()=>{await openReviewDesk("guests");await ensureGuestToolsModule();window.AISystem6GuestTools?.renderGuestReviews?.();const win=getWindow("reviewDesk");if(win&&!win.classList.contains("is-hidden"))return;const latest=(window.AISystem6RunReceipts?.queryReceipts?.({limit:50,includeRunning:!0})||[]).find((file)=>String(file.runReceipt?.sourceAppId||"").startsWith("guest:"));if(latest)await window.AISystem6ApplicationRegistry?.openProjectObject?.(latest,"open");},isAvailable:()=>!0});
 window.AISystem6Runtime?.registerCommand?.("open-project-backup",{handler:openProjectBackupPanel,isAvailable:()=>!0});
 // "open-project-disks" is already taken by the mounted Project Hard Disk, so

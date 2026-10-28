@@ -753,6 +753,9 @@
   --z-selection-marquee: 30000;
   --z-demo-overlay: 39900;
   --z-demo-highlight: 39910;
+  /* Full screen's top-edge reveal band: over every window and the strip,
+     under the menu bar it summons (88-desk-dock.css). */
+  --z-fullscreen-reveal: 39990;
   --z-system-menu: 40000;
   --z-system-menu-popover: 40010;
   --z-system-menu-subpopover: 40020;

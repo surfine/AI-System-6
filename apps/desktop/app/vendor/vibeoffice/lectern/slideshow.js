@@ -5,28 +5,28 @@
   const { h } = L;
 
   /* ================= effect catalogue (shared with UI and .pptx I/O) ================= */
-  const DIR8 = [['b', 'From Bottom', 4], ['l', 'From Left', 8], ['r', 'From Right', 2], ['t', 'From Top', 1], ['bl', 'From Bottom-Left', 12], ['br', 'From Bottom-Right', 6], ['tl', 'From Top-Left', 9], ['tr', 'From Top-Right', 3]];
-  const DIR4 = [['b', 'From Bottom', 4], ['l', 'From Left', 8], ['r', 'From Right', 2], ['t', 'From Top', 1]];
-  const HV = [['horz', 'Horizontal', 10], ['vert', 'Vertical', 5]];
-  const INOUT = [['in', 'In', 16], ['out', 'Out', 32]];
-  const ACROSS = [['across', 'Across', 10], ['down', 'Down', 5]];
-  const SPLIT = [['horzIn', 'Horizontal In', 26], ['horzOut', 'Horizontal Out', 42], ['vertIn', 'Vertical In', 21], ['vertOut', 'Vertical Out', 37]];
-  const DIAG = [['dl', 'Left Down', 12], ['ul', 'Left Up', 9], ['dr', 'Right Down', 6], ['ur', 'Right Up', 3]];
-  const SPOKES = [['1', '1 Spoke', 1], ['2', '2 Spokes', 2], ['3', '3 Spokes', 3], ['4', '4 Spokes', 4], ['8', '8 Spokes', 8]];
+  const DIR8 = [['b', L.N('From Bottom'), 4], ['l', L.N('From Left'), 8], ['r', L.N('From Right'), 2], ['t', L.N('From Top'), 1], ['bl', L.N('From Bottom-Left'), 12], ['br', L.N('From Bottom-Right'), 6], ['tl', L.N('From Top-Left'), 9], ['tr', L.N('From Top-Right'), 3]];
+  const DIR4 = [['b', L.N('From Bottom'), 4], ['l', L.N('From Left'), 8], ['r', L.N('From Right'), 2], ['t', L.N('From Top'), 1]];
+  const HV = [['horz', L.N('Horizontal'), 10], ['vert', L.N('Vertical'), 5]];
+  const INOUT = [['in', L.N('In'), 16], ['out', L.N('Out'), 32]];
+  const ACROSS = [['across', L.N('Across'), 10], ['down', L.N('Down'), 5]];
+  const SPLIT = [['horzIn', L.N('Horizontal In'), 26], ['horzOut', L.N('Horizontal Out'), 42], ['vertIn', L.N('Vertical In'), 21], ['vertOut', L.N('Vertical Out'), 37]];
+  const DIAG = [['dl', L.N('Left Down'), 12], ['ul', L.N('Left Up'), 9], ['dr', L.N('Right Down'), 6], ['ur', L.N('Right Up'), 3]];
+  const SPOKES = [['1', L.N('1 Spoke'), 1], ['2', L.N('2 Spokes'), 2], ['3', L.N('3 Spokes'), 3], ['4', L.N('4 Spokes'), 4], ['8', L.N('8 Spokes'), 8]];
   const E_ENTR = [
-    ['appear', 'Appear', 1], ['blinds', 'Blinds', 3, HV], ['box', 'Box', 4, INOUT], ['checkerboard', 'Checkerboard', 5, ACROSS], ['circle', 'Circle', 6, INOUT],
-    ['diamond', 'Diamond', 8, INOUT], ['dissolve', 'Dissolve In', 9], ['fade', 'Fade', 10], ['flyIn', 'Fly In', 2, DIR8], ['peekIn', 'Peek In', 12, DIR4],
-    ['plus', 'Plus', 13, INOUT], ['randomBars', 'Random Bars', 14, HV], ['split', 'Split', 16, SPLIT], ['strips', 'Strips', 18, DIAG], ['wedge', 'Wedge', 20],
-    ['wheel', 'Wheel', 21, SPOKES], ['wipe', 'Wipe', 22, DIR4], ['zoom', 'Zoom', 23], ['ascend', 'Ascend', 42], ['descend', 'Descend', 47], ['expand', 'Expand', 55], ['spinner', 'Spinner', 49],
+    ['appear', L.N('Appear'), 1], ['blinds', L.N('Blinds'), 3, HV], ['box', L.N('Box'), 4, INOUT], ['checkerboard', L.N('Checkerboard'), 5, ACROSS], ['circle', L.N('Circle'), 6, INOUT],
+    ['diamond', L.N('Diamond'), 8, INOUT], ['dissolve', L.N('Dissolve In'), 9], ['fade', L.N('Fade'), 10], ['flyIn', L.N('Fly In'), 2, DIR8], ['peekIn', L.N('Peek In'), 12, DIR4],
+    ['plus', L.N('Plus'), 13, INOUT], ['randomBars', L.N('Random Bars'), 14, HV], ['split', L.N('Split'), 16, SPLIT], ['strips', L.N('Strips'), 18, DIAG], ['wedge', L.N('Wedge'), 20],
+    ['wheel', L.N('Wheel'), 21, SPOKES], ['wipe', L.N('Wipe'), 22, DIR4], ['zoom', L.N('Zoom'), 23], ['ascend', L.N('Ascend'), 42], ['descend', L.N('Descend'), 47], ['expand', L.N('Expand'), 55], ['spinner', L.N('Spinner'), 49],
   ];
-  const E_EMPH = [['growShrink', 'Grow/Shrink', 6], ['spin', 'Spin', 8], ['transparency', 'Transparency', 9], ['teeter', 'Teeter', 32], ['blink', 'Blink', 35]];
+  const E_EMPH = [['growShrink', L.N('Grow/Shrink'), 6], ['spin', L.N('Spin'), 8], ['transparency', L.N('Transparency'), 9], ['teeter', L.N('Teeter'), 32], ['blink', L.N('Blink'), 35]];
   const E_EXIT = [
-    ['disappear', 'Disappear', 1], ['blinds', 'Blinds', 3, HV], ['box', 'Box', 4, INOUT], ['checkerboard', 'Checkerboard', 5, ACROSS], ['circle', 'Circle', 6, INOUT],
-    ['diamond', 'Diamond', 8, INOUT], ['dissolve', 'Dissolve Out', 9], ['fade', 'Fade', 10], ['flyOut', 'Fly Out', 2, DIR8], ['peekIn', 'Peek Out', 12, DIR4],
-    ['plus', 'Plus', 13, INOUT], ['randomBars', 'Random Bars', 14, HV], ['split', 'Split', 16, SPLIT], ['strips', 'Strips', 18, DIAG], ['wedge', 'Wedge', 20],
-    ['wheel', 'Wheel', 21, SPOKES], ['wipe', 'Wipe', 22, DIR4], ['zoom', 'Zoom', 23], ['descend', 'Sink Down', 47],
+    ['disappear', L.N('Disappear'), 1], ['blinds', L.N('Blinds'), 3, HV], ['box', L.N('Box'), 4, INOUT], ['checkerboard', L.N('Checkerboard'), 5, ACROSS], ['circle', L.N('Circle'), 6, INOUT],
+    ['diamond', L.N('Diamond'), 8, INOUT], ['dissolve', L.N('Dissolve Out'), 9], ['fade', L.N('Fade'), 10], ['flyOut', L.N('Fly Out'), 2, DIR8], ['peekIn', L.N('Peek Out'), 12, DIR4],
+    ['plus', L.N('Plus'), 13, INOUT], ['randomBars', L.N('Random Bars'), 14, HV], ['split', L.N('Split'), 16, SPLIT], ['strips', L.N('Strips'), 18, DIAG], ['wedge', L.N('Wedge'), 20],
+    ['wheel', L.N('Wheel'), 21, SPOKES], ['wipe', L.N('Wipe'), 22, DIR4], ['zoom', L.N('Zoom'), 23], ['descend', L.N('Sink Down'), 47],
   ];
-  const E_PATH = [['right', 'Right', 0], ['left', 'Left', 0], ['up', 'Up', 0], ['down', 'Down', 0], ['diagDR', 'Diagonal Down Right', 0], ['diagUR', 'Diagonal Up Right', 0], ['circle', 'Circle', 0], ['bounce', 'Bounce Right', 0]];
+  const E_PATH = [['right', L.N('Right'), 0], ['left', L.N('Left'), 0], ['up', L.N('Up'), 0], ['down', L.N('Down'), 0], ['diagDR', L.N('Diagonal Down Right'), 0], ['diagUR', L.N('Diagonal Up Right'), 0], ['circle', L.N('Circle'), 0], ['bounce', L.N('Bounce Right'), 0]];
   const A = (L.anim = {
     ENTR: E_ENTR, EMPH: E_EMPH, EXIT: E_EXIT, PATH: E_PATH,
     list: (cls) => ({ entr: E_ENTR, emph: E_EMPH, exit: E_EXIT, path: E_PATH }[cls] || E_ENTR),
@@ -96,35 +96,35 @@
       return [[0, 0], v];
     },
     pathString(a) { const p = A.pathPoints(a); return p.map((q, i) => `${i ? 'L' : 'M'} ${L.round(q[0], 4)} ${L.round(q[1], 4)}`).join(' ') + ' E'; },
-    SPEEDS: [['Very Slow', 5000], ['Slow', 3000], ['Medium', 2000], ['Fast', 1000], ['Very Fast', 500]],
+    SPEEDS: [[L.N('Very Slow'), 5000], [L.N('Slow'), 3000], [L.N('Medium'), 2000], [L.N('Fast'), 1000], [L.N('Very Fast'), 500]],
   });
 
   /* transitions (2003 list) */
   const TR = [];
   const tr = (name, type, extra) => TR.push(Object.assign({ name, type }, extra || {}));
-  tr('No Transition', 'none');
-  tr('Blinds Horizontal', 'blinds', { dir: 'horz' }); tr('Blinds Vertical', 'blinds', { dir: 'vert' });
-  tr('Box In', 'zoom', { dir: 'in' }); tr('Box Out', 'zoom', { dir: 'out' });
-  tr('Checkerboard Across', 'checker', { dir: 'horz' }); tr('Checkerboard Down', 'checker', { dir: 'vert' });
-  tr('Comb Horizontal', 'comb', { dir: 'horz' }); tr('Comb Vertical', 'comb', { dir: 'vert' });
-  tr('Cover Down', 'cover', { dir: 'd' }); tr('Cover Left', 'cover', { dir: 'l' }); tr('Cover Right', 'cover', { dir: 'r' }); tr('Cover Up', 'cover', { dir: 'u' });
-  tr('Cover Left-Down', 'cover', { dir: 'ld' }); tr('Cover Left-Up', 'cover', { dir: 'lu' }); tr('Cover Right-Down', 'cover', { dir: 'rd' }); tr('Cover Right-Up', 'cover', { dir: 'ru' });
-  tr('Cut', 'cut'); tr('Cut Through Black', 'cut', { thruBlk: true });
-  tr('Dissolve', 'dissolve'); tr('Fade Smoothly', 'fade'); tr('Fade Through Black', 'fade', { thruBlk: true });
-  tr('Newsflash', 'newsflash');
-  tr('Push Down', 'push', { dir: 'd' }); tr('Push Left', 'push', { dir: 'l' }); tr('Push Right', 'push', { dir: 'r' }); tr('Push Up', 'push', { dir: 'u' });
-  tr('Random Bars Horizontal', 'randomBar', { dir: 'horz' }); tr('Random Bars Vertical', 'randomBar', { dir: 'vert' });
-  tr('Shape Circle', 'circle'); tr('Shape Diamond', 'diamond'); tr('Shape Plus', 'plus');
-  tr('Split Horizontal In', 'split', { orient: 'horz', dir: 'in' }); tr('Split Horizontal Out', 'split', { orient: 'horz', dir: 'out' });
-  tr('Split Vertical In', 'split', { orient: 'vert', dir: 'in' }); tr('Split Vertical Out', 'split', { orient: 'vert', dir: 'out' });
-  tr('Strips Left-Down', 'strips', { dir: 'ld' }); tr('Strips Left-Up', 'strips', { dir: 'lu' }); tr('Strips Right-Down', 'strips', { dir: 'rd' }); tr('Strips Right-Up', 'strips', { dir: 'ru' });
-  tr('Uncover Down', 'pull', { dir: 'd' }); tr('Uncover Left', 'pull', { dir: 'l' }); tr('Uncover Right', 'pull', { dir: 'r' }); tr('Uncover Up', 'pull', { dir: 'u' });
-  tr('Uncover Left-Down', 'pull', { dir: 'ld' }); tr('Uncover Left-Up', 'pull', { dir: 'lu' }); tr('Uncover Right-Down', 'pull', { dir: 'rd' }); tr('Uncover Right-Up', 'pull', { dir: 'ru' });
-  tr('Wedge', 'wedge');
-  tr('Wheel Clockwise, 1 Spoke', 'wheel', { spokes: 1 }); tr('Wheel Clockwise, 2 Spokes', 'wheel', { spokes: 2 }); tr('Wheel Clockwise, 3 Spokes', 'wheel', { spokes: 3 });
-  tr('Wheel Clockwise, 4 Spokes', 'wheel', { spokes: 4 }); tr('Wheel Clockwise, 8 Spokes', 'wheel', { spokes: 8 });
-  tr('Wipe Down', 'wipe', { dir: 'd' }); tr('Wipe Left', 'wipe', { dir: 'l' }); tr('Wipe Right', 'wipe', { dir: 'r' }); tr('Wipe Up', 'wipe', { dir: 'u' });
-  tr('Random Transition', 'random');
+  tr(L.N('No Transition'), 'none');
+  tr(L.N('Blinds Horizontal'), 'blinds', { dir: 'horz' }); tr(L.N('Blinds Vertical'), 'blinds', { dir: 'vert' });
+  tr(L.N('Box In'), 'zoom', { dir: 'in' }); tr(L.N('Box Out'), 'zoom', { dir: 'out' });
+  tr(L.N('Checkerboard Across'), 'checker', { dir: 'horz' }); tr(L.N('Checkerboard Down'), 'checker', { dir: 'vert' });
+  tr(L.N('Comb Horizontal'), 'comb', { dir: 'horz' }); tr(L.N('Comb Vertical'), 'comb', { dir: 'vert' });
+  tr(L.N('Cover Down'), 'cover', { dir: 'd' }); tr(L.N('Cover Left'), 'cover', { dir: 'l' }); tr(L.N('Cover Right'), 'cover', { dir: 'r' }); tr(L.N('Cover Up'), 'cover', { dir: 'u' });
+  tr(L.N('Cover Left-Down'), 'cover', { dir: 'ld' }); tr(L.N('Cover Left-Up'), 'cover', { dir: 'lu' }); tr(L.N('Cover Right-Down'), 'cover', { dir: 'rd' }); tr(L.N('Cover Right-Up'), 'cover', { dir: 'ru' });
+  tr(L.N('Cut|transition'), 'cut'); tr(L.N('Cut Through Black'), 'cut', { thruBlk: true });
+  tr(L.N('Dissolve'), 'dissolve'); tr(L.N('Fade Smoothly'), 'fade'); tr(L.N('Fade Through Black'), 'fade', { thruBlk: true });
+  tr(L.N('Newsflash'), 'newsflash');
+  tr(L.N('Push Down'), 'push', { dir: 'd' }); tr(L.N('Push Left'), 'push', { dir: 'l' }); tr(L.N('Push Right'), 'push', { dir: 'r' }); tr(L.N('Push Up'), 'push', { dir: 'u' });
+  tr(L.N('Random Bars Horizontal'), 'randomBar', { dir: 'horz' }); tr(L.N('Random Bars Vertical'), 'randomBar', { dir: 'vert' });
+  tr(L.N('Shape Circle'), 'circle'); tr(L.N('Shape Diamond'), 'diamond'); tr(L.N('Shape Plus'), 'plus');
+  tr(L.N('Split Horizontal In'), 'split', { orient: 'horz', dir: 'in' }); tr(L.N('Split Horizontal Out'), 'split', { orient: 'horz', dir: 'out' });
+  tr(L.N('Split Vertical In'), 'split', { orient: 'vert', dir: 'in' }); tr(L.N('Split Vertical Out'), 'split', { orient: 'vert', dir: 'out' });
+  tr(L.N('Strips Left-Down'), 'strips', { dir: 'ld' }); tr(L.N('Strips Left-Up'), 'strips', { dir: 'lu' }); tr(L.N('Strips Right-Down'), 'strips', { dir: 'rd' }); tr(L.N('Strips Right-Up'), 'strips', { dir: 'ru' });
+  tr(L.N('Uncover Down'), 'pull', { dir: 'd' }); tr(L.N('Uncover Left'), 'pull', { dir: 'l' }); tr(L.N('Uncover Right'), 'pull', { dir: 'r' }); tr(L.N('Uncover Up'), 'pull', { dir: 'u' });
+  tr(L.N('Uncover Left-Down'), 'pull', { dir: 'ld' }); tr(L.N('Uncover Left-Up'), 'pull', { dir: 'lu' }); tr(L.N('Uncover Right-Down'), 'pull', { dir: 'rd' }); tr(L.N('Uncover Right-Up'), 'pull', { dir: 'ru' });
+  tr(L.N('Wedge'), 'wedge');
+  tr(L.N('Wheel Clockwise, 1 Spoke'), 'wheel', { spokes: 1 }); tr(L.N('Wheel Clockwise, 2 Spokes'), 'wheel', { spokes: 2 }); tr(L.N('Wheel Clockwise, 3 Spokes'), 'wheel', { spokes: 3 });
+  tr(L.N('Wheel Clockwise, 4 Spokes'), 'wheel', { spokes: 4 }); tr(L.N('Wheel Clockwise, 8 Spokes'), 'wheel', { spokes: 8 });
+  tr(L.N('Wipe Down'), 'wipe', { dir: 'd' }); tr(L.N('Wipe Left'), 'wipe', { dir: 'l' }); tr(L.N('Wipe Right'), 'wipe', { dir: 'r' }); tr(L.N('Wipe Up'), 'wipe', { dir: 'u' });
+  tr(L.N('Random Transition'), 'random');
   A.TRANSITIONS = TR;
   A.transName = (t) => {
     if (!t || t.type === 'none') return 'No Transition';
@@ -384,6 +384,8 @@
     root.addEventListener('pointerdown', onPointerDown);
     root.addEventListener('pointermove', onPointerMove);
     root.addEventListener('pointerup', onPointerUp);
+    root.addEventListener('pointercancel', pressLost);
+    window.addEventListener('blur', pressLost);
     root.addEventListener('contextmenu', onContext);
     root.addEventListener('wheel', onWheel, { passive: true });
     document.addEventListener('keydown', onKey, true);
@@ -729,6 +731,7 @@
     if (st.rehearse && !st.ended) recordTime(st.pos);
     document.removeEventListener('keydown', onKey, true);
     window.removeEventListener('resize', layout);
+    window.removeEventListener('blur', pressLost);
     try { if (document.fullscreenElement) await document.exitFullscreen(); } catch (e) { /* ignore */ }
     try { if (st.wake) st.wake.release(); } catch (e) { /* ignore */ }
     const inkData = st.ink;
@@ -747,7 +750,7 @@
     }
     if (rehearse) {
       const total = Object.values(rehearse).reduce((a, b) => a + b, 0);
-      const r = await L.ui.msg(`The total time for the slide show was ${fmtTime(total)}. Do you want to keep the new slide timings?`, { icon: 'question', buttons: ['&Yes', '&No'] });
+      const r = await L.ui.msg(L.t('The total time for the slide show was {0}. Do you want to keep the new slide timings?', fmtTime(total)), { icon: 'question', buttons: ['&Yes', '&No'] });
       if (r === 0) {
         L.hist.push('Rehearse Timings');
         for (const k in rehearse) { const s = L.pres.slides[+k]; if (s) { s.trans = Object.assign({}, s.trans, { after: Math.round(rehearse[k]) }); } }
@@ -805,9 +808,11 @@
     return [(e.clientX - r.left) / st.k, (e.clientY - r.top) / st.k];
   }
   let drawing = null;
+  /** a dialog or menu over the show (inside it in full screen, L.ui): its clicks, wheel and right-clicks are its own */
+  const overShow = (e) => !!(e.target.closest && e.target.closest('.dlg-overlay, .menu'));
   function onPointerDown(e) {
     if (!st) return;
-    if (e.target.closest('.popbar') || e.target.closest('.rehearse')) return;
+    if (e.target.closest('.popbar') || e.target.closest('.rehearse') || overShow(e)) return;
     idleCursor();
     if (e.button === 2) return;
     if (st.pen && e.button === 0) {
@@ -824,9 +829,13 @@
     if (link && e.button === 0) { e.preventDefault(); follow(JSON.parse(link.dataset.link)); return; }
     if (e.button === 0) { st._down = true; }
   }
+  /** the press ends without its release (let go in another window, the window left, the pointer cancelled): no
+      click to advance, no ink following the bare pointer */
+  function pressLost() { drawing = null; if (st) st._down = false; }
   function onPointerMove(e) {
     if (!st) return;
     idleCursor();
+    if (e.pointerType === 'mouse' && !(e.buttons & 1)) pressLost();
     if (drawing) {
       if (drawing.erase) { eraseAt(toSlidePt(e)); return; }
       drawing.pts.push(toSlidePt(e));
@@ -846,9 +855,9 @@
     st.ink[key] = list.filter((s) => !s.pts.some((q) => Math.hypot(q[0] - p[0], q[1] - p[1]) < 10));
     redrawInk();
   }
-  function onWheel(e) { if (!st || st.pen) return; if (e.deltaY > 0) S.next(); else if (e.deltaY < 0) S.prev(); }
+  function onWheel(e) { if (!st || st.pen || overShow(e)) return; if (e.deltaY > 0) S.next(); else if (e.deltaY < 0) S.prev(); }
   function follow(link) {
-    if (link.url) { const a = h('a', { href: link.url, target: '_blank', rel: 'noopener noreferrer' }); document.body.appendChild(a); a.click(); a.remove(); return; }
+    if (link.url) { L.ui.linkDialog(link.url); return; }   // shown to copy, never opened from here
     if (link.slide) { const i = L.pres.slides.findIndex((s) => s.id === link.slide); if (i >= 0) S.goto(i); return; }
     switch (link.action) {
       case 'next': S.next(); break;
@@ -879,14 +888,14 @@
       { label: '&Ballpoint Pen', run: () => setPen('pen'), checked: () => st.pen === 'pen' },
       { label: '&Felt Tip Pen', run: () => setPen('felt'), checked: () => st.pen === 'felt' },
       { label: '&Highlighter', run: () => setPen('highlighter'), checked: () => st.pen === 'highlighter' },
-      { label: 'Ink &Color', sub: ['#FF0000', '#0000FF', '#00B050', '#000000', '#FFFFFF', '#FFC000', '#7030A0'].map((c) => ({ label: { '#FF0000': 'Red', '#0000FF': 'Blue', '#00B050': 'Green', '#000000': 'Black', '#FFFFFF': 'White', '#FFC000': 'Gold', '#7030A0': 'Purple' }[c], html: `<span style="display:inline-block;width:12px;height:12px;background:${c};border:1px solid #555"></span>`, run: () => { st.penColor = c; if (!st.pen) setPen('pen'); }, checked: () => st.penColor === c })) },
+      { label: 'Ink &Color', sub: ['#FF0000', '#0000FF', '#00B050', '#000000', '#FFFFFF', '#FFC000', '#7030A0'].map((c) => ({ label: { '#FF0000': L.N('Red'), '#0000FF': L.N('Blue'), '#00B050': L.N('Green'), '#000000': L.N('Black'), '#FFFFFF': L.N('White'), '#FFC000': L.N('Gold'), '#7030A0': L.N('Purple') }[c], html: `<span style="display:inline-block;width:12px;height:12px;background:${c};border:1px solid #555"></span>`, run: () => { st.penColor = c; if (!st.pen) setPen('pen'); }, checked: () => st.penColor === c })) },
       '-',
       { label: '&Eraser', run: () => setPen('eraser'), checked: () => st.pen === 'eraser' },
       { label: 'E&rase All Ink on Slide', run: () => { st.ink[st.order[st.pos]] = []; redrawInk(); } },
     ];
   }
   function showMenu() {
-    const slides = st.order.map((i, pos) => ({ label: `&${pos + 1} ${L.model.slideTitle(L.pres.slides[i]) || 'Slide ' + (i + 1)}`.slice(0, 60), run: () => showSlide(pos, { transition: true }), checked: () => st.pos === pos }));
+    const slides = st.order.map((i, pos) => ({ label: `&${pos + 1} ${(L.model.slideTitle(L.pres.slides[i]) || L.t('Slide {0}', i + 1)).slice(0, 56).replace(/&/g, '&&')}`, raw: true, run: () => showSlide(pos, { transition: true }), checked: () => st.pos === pos }));
     return [
       { label: '&Next', run: () => S.next() },
       { label: '&Previous', run: () => S.prev() },
@@ -901,6 +910,7 @@
     ];
   }
   function onContext(e) {
+    if (overShow(e)) return;
     e.preventDefault();
     if (!st) return;
     if (st.pen) { setPen(null); }
@@ -917,7 +927,10 @@
 
   function onKey(e) {
     if (!S.active) return;
-    if (L.ui.dialogOpen()) return;
+    /* the browser's reload keys would reload the page, and the presentation with it: during the show they do nothing
+       (also with the show's menu or a dialog open) */
+    if (e.key === 'F5' || ((e.ctrlKey || e.metaKey) && (e.key === 'r' || e.key === 'R'))) { e.preventDefault(); e.stopPropagation(); return; }
+    if (L.ui.dialogOpen()) { L.ui.dialogKey(e); return; }   // the app's own handler stands aside during the show
     if (L.ui.menuOpen()) { if (L.ui.menuKey(e)) { e.preventDefault(); e.stopPropagation(); } return; }
     const k = e.key;
     e.stopPropagation();
@@ -948,7 +961,7 @@
   function showGoto() {
     let g = root.querySelector('.gotobox');
     if (!g) { g = h('div', { class: 'gotobox' }); root.appendChild(g); }
-    g.textContent = 'Go to slide ' + st.gotoBuf;
+    g.textContent = L.t('Go to slide {0}', st.gotoBuf);
   }
   function hideGoto() { const g = root && root.querySelector('.gotobox'); if (g) g.remove(); }
 

@@ -10,6 +10,7 @@ const { isSubscriptionCliUrl } = require("./subscription-cli.js");
 const SUBSCRIPTION_CLI_CREDENTIAL = "subscription-cli";
 
 const {
+  isTrustedAnthropicCredentialTarget,
   isTrustedDeepSeekCredentialTarget,
   normalizeCloudBaseUrl,
 } = require("./cloud.js");
@@ -52,6 +53,9 @@ function createCredentialId(provider, baseUrl) {
 function providerEnvironmentKey(provider, targetBaseUrl) {
   if (isTrustedDeepSeekCredentialTarget(provider, targetBaseUrl)) {
     return String(process.env.DEEPSEEK_API_KEY || "").trim();
+  }
+  if (isTrustedAnthropicCredentialTarget(provider, targetBaseUrl)) {
+    return String(process.env.ANTHROPIC_API_KEY || "").trim();
   }
   return "";
 }
@@ -248,6 +252,17 @@ async function resolveCloudCredential(options = {}) {
     throw credentialScopeMismatch();
   }
   if (allowSupplied && suppliedApiKey) return String(suppliedApiKey).trim();
+  // The writer puts an Anthropic key into Keychain from a terminal, so the
+  // browser never holds an id for it: its Keychain entry is found by the same
+  // provider-and-endpoint id the Control Panel would have created.
+  if (!id && isTrustedAnthropicCredentialTarget(provider, normalizedTargetBaseUrl)) {
+    const anthropicId = createCredentialId(provider, normalizedTargetBaseUrl);
+    const keychainValue = stagedSecret(anthropicId, now) || await readKeychainCredential(anthropicId);
+    if (keychainValue) {
+      stageSecret(anthropicId, keychainValue, now);
+      return keychainValue;
+    }
+  }
   const sessionSecret = id ? stagedSecret(id, now) : "";
   if (sessionSecret) return sessionSecret;
   if (id) {

@@ -140,18 +140,31 @@
   /* Integral representations evaluated to full double precision:
      periodic trapezoid rules (exponentially convergent) for J and I, composite Gauss–Legendre for Y,
      a doubly-exponential-decay trapezoid for K; power series where they are cancellation-free. */
+  /** the 16-point Gauss–Legendre rule on [−1, 1]: its nodes are the roots of the Legendre polynomial P16, each
+      bracketed by a sign change on a fine grid and narrowed by bisection to the last bit; the weights are
+      2(1 − x²) / (16 P15(x))² (DLMF 3.5.19) */
   const GL = (function () {
-    const n = 16, xs = [], ws = [];
-    for (let i = 1; i <= n; i++) {
-      let z = Math.cos((Math.PI * (i - 0.25)) / (n + 0.5)), pp = 0;
-      for (let it = 0; it < 100; it++) {
-        let p1 = 1, p2 = 0;
-        for (let j = 1; j <= n; j++) { const p3 = p2; p2 = p1; p1 = ((2 * j - 1) * z * p2 - (j - 1) * p3) / j; }
-        pp = (n * (z * p1 - p2)) / (z * z - 1);
-        const z1 = z; z = z1 - p1 / pp;
-        if (Math.abs(z - z1) < 1e-16) break;
+    const n = 16;
+    /** [P_n(x), P_(n−1)(x)] by the three-term recurrence (DLMF 18.9.1) */
+    const legendre = (x) => {
+      let prev = 1, cur = x;
+      for (let k = 1; k < n; k++) { const next = ((2 * k + 1) * x * cur - k * prev) / (k + 1); prev = cur; cur = next; }
+      return [cur, prev];
+    };
+    const xs = [], ws = [], steps = 4000;
+    for (let i = 0; i < steps; i++) {
+      let lo = -1 + (2 * i) / steps, hi = -1 + (2 * (i + 1)) / steps;
+      let flo = legendre(lo)[0];
+      if (flo * legendre(hi)[0] > 0) continue;
+      for (;;) {
+        const mid = (lo + hi) / 2;
+        if (mid <= lo || mid >= hi) break;
+        const fm = legendre(mid)[0];
+        if (fm === 0) { lo = hi = mid; break; }
+        if ((fm < 0) === (flo < 0)) { lo = mid; flo = fm; } else hi = mid;
       }
-      xs.push(z); ws.push(2 / ((1 - z * z) * pp * pp));
+      const x = (lo + hi) / 2, p = legendre(x)[1];
+      xs.push(x); ws.push((2 * (1 - x * x)) / (n * p) ** 2);
     }
     return { xs, ws };
   })();

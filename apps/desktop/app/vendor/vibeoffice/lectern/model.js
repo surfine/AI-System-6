@@ -6,6 +6,8 @@
   'use strict';
   const L = window.L;
   const M = (L.model = {});
+  /* UI text in the tables below, shown in the UI's language where it is displayed (L.N; this file also loads without common/i18n.js) */
+  const N = L.N || ((s) => s);
 
   /* ---------- default text levels (PowerPoint 2003 master) ---------- */
   const BODY_BULLETS = ['•', '–', '•', '–', '»', '•', '•', '•', '•'];
@@ -43,6 +45,20 @@
     scheme('#EAF3FA', '#0B2545', '#8DA9C4', '#13315C', '#5FA8D3', '#E07A5F', '#3D5A80', '#98C1D9'),
     scheme('#1B1F2A', '#E6E9F0', '#0E1118', '#7FDBCA', '#4CC9F0', '#F72585', '#B5179E', '#4361EE'),
   ];
+  /* the theme's style matrix (fmtScheme) in the themes Lectern writes, which shapes refer to by index (SmartArt
+     quick styles, PowerPoint's shape styles) in the colour they name: fills 1–3 (solid, a soft and a rich
+     top-to-bottom gradient, as colour changes per stop), line widths 1–3 (pt) and effects 1–3 (drop shadows, pt) */
+  M.FMT = {
+    fills: [null, [[0, [['tint', 78000], ['satMod', 108000]]], [1, []]], [[0, [['tint', 68000], ['satMod', 118000]]], [0.45, []], [1, [['shade', 78000], ['satMod', 112000]]]]],
+    lines: [0.75, 1.5, 2.5],
+    effects: [{ blur: 3, dist: 1, a: 0.28 }, { blur: 6, dist: 2.5, a: 0.3 }, { blur: 10, dist: 4, a: 0.35 }],
+  };
+  /** fill n of the matrix (1–3) in colour c (a hex colour) */
+  M.fmtFill = (n, c, a) => {
+    const g = M.FMT.fills[n - 1];
+    if (!g) return { t: 'solid', c, a: a == null ? 1 : a };
+    return { t: 'grad', stops: g.map(([p, mods]) => ({ p, c: L.color.applyMods(c, mods.map(([name, val]) => ({ name, val }))), a: a == null ? 1 : a })), ang: 90, path: 'lin' };
+  };
 
   /* ---------- helpers for decoration shapes ---------- */
   let decoId = 0;
@@ -89,7 +105,7 @@
     tx: { title: { algn: 'l' }, body: { bu: { c: 'accent2', ch: '✦' } } },
   });
 
-  defDesign('meadow', 'Meadow', {
+  defDesign('meadow', N('Meadow'), {
     colors: scheme('#F7FBEF', '#22331A', '#A7C08F', '#2F5E1E', '#7DB04B', '#E7A93B', '#3B7D2A', '#8A9A5B', '#B9D88F', '#4E7A33', '#F3D27A', '#6A9C89'),
     fonts: { major: 'Century Gothic', minor: 'Century Gothic' },
     bg: solid('bg1'),
@@ -101,7 +117,7 @@
     tx: { title: { algn: 'l' }, body: { bu: { c: 'accent1', ch: '●' } }, footer: { color: '#FFFFFF' } },
   });
 
-  defDesign('ember', 'Ember', {
+  defDesign('ember', N('Ember'), {
     colors: scheme('#FFF8F0', '#3A2414', '#C9A88C', '#8C2D04', '#E8641C', '#C1272D', '#B5651D', '#8E6C4F', '#F4A259', '#5B3A29', '#F7C59F', '#A23B05'),
     fonts: { major: 'Franklin Gothic Medium', minor: 'Arial' },
     bg: solid('bg1'),
@@ -120,7 +136,7 @@
     tx: { title: { algn: 'l' }, body: { bu: { c: 'accent1', ch: '■' } } },
   });
 
-  defDesign('graphite', 'Graphite', {
+  defDesign('graphite', N('Graphite'), {
     colors: scheme('#2B2D31', '#E8EAED', '#17181B', '#FFFFFF', '#F28C28', '#58A6FF', '#79C0FF', '#B1BAC4', '#FFB86B', '#8B949E', '#3FB950', '#D2A8FF'),
     fonts: { major: 'Arial', minor: 'Arial' },
     bg: grad([[0, '#34373D'], [1, '#232428']], 90),
@@ -131,7 +147,7 @@
     tx: { title: { algn: 'l', rPr: { b: true } }, body: { bu: { c: 'accent1', ch: '▸' } } },
   });
 
-  defDesign('blueprint', 'Blueprint', {
+  defDesign('blueprint', N('Blueprint'), {
     colors: scheme('#1D4E89', '#E8F1FB', '#123359', '#FFFFFF', '#7FB3E6', '#FFD24D', '#B3D4F5', '#9DBCE0', '#4A86C5', '#C9DDF2', '#FFE699', '#5FA0DA'),
     fonts: { major: 'Courier New', minor: 'Arial' },
     bg: solid('bg1'),
@@ -142,7 +158,7 @@
     tx: { title: { algn: 'l', rPr: { b: true } }, body: { bu: { c: 'accent2', ch: '–' } } },
   });
 
-  defDesign('capsule', 'Capsule', {
+  defDesign('capsule', N('Capsule'), {
     colors: scheme('#FFFFFF', '#1E2D33', '#9FB4BA', '#21545F', '#2BA6A0', '#9BC53D', '#1F7A8C', '#7E9C9F', '#7FD1C8', '#33658A', '#E3D96E', '#F26B38'),
     fonts: { major: 'Trebuchet MS', minor: 'Trebuchet MS' },
     bg: solid('bg1'),
@@ -168,7 +184,7 @@
     tx: { body: { bu: { c: 'accent1', ch: '•' } }, footer: { color: '#FFFFFF' } },
   });
 
-  defDesign('parchment', 'Parchment', {
+  defDesign('parchment', N('Parchment'), {
     colors: scheme('#F4ECD8', '#3B2A1A', '#B8A27F', '#5A3A1A', '#C8A96B', '#8C5A2B', '#7B3F00', '#8A7A60', '#E1CDA0', '#6B4F2E', '#A77B4F', '#556B2F'),
     fonts: { major: 'Book Antiqua', minor: 'Georgia' },
     bg: grad([[0, '#F7F0DE'], [1, '#E6D7B5']], 0, 'circle'),
@@ -223,7 +239,21 @@
     tx: { body: { bu: { c: 'accent1' } } },
   });
 
+  defDesign('evergreen', N('Evergreen'), {
+    colors: scheme('#FBF8F3', '#2B2622', '#E9E2D7', '#1F4038', '#2F6B5B', '#C9803A', '#3F6E8C', '#8C7A66', '#93B7A8', '#5E5A55', '#E8C590', '#A8503E'),
+    fonts: { major: 'Georgia', minor: 'Calibri' },
+    bg: solid('bg1'),
+    /* a copper rule over the title, a hairline over the footer */
+    deco: (W, H) => [deco('rect', W * 0.05, H * 0.07, W * 0.05, H * 0.008, solid('accent2')), deco('rect', W * 0.05, H * 0.905, W * 0.9, H * 0.002, solid('lt2'))],
+    /* the title slide: text on the left, a pine panel on the right */
+    titleDeco: (W, H) => [deco('rect', W * 0.6, 0, W * 0.4, H, solid('tx2')), deco('rect', W * 0.6, 0, W * 0.006, H, solid('accent2'))],
+    ph: { title: [0.05, 0.09, 0.9, 0.13], body: [0.05, 0.26, 0.9, 0.61], ctrTitle: [0.06, 0.25, 0.48, 0.3], subTitle: [0.06, 0.57, 0.48, 0.16], dt: [0.05, 0.92, 0.2333, 0.06], ftr: [0.3417, 0.92, 0.3167, 0.06], sldNum: [0.7167, 0.92, 0.2333, 0.06] },
+    tx: { title: { algn: 'l', rPr: { sz: 36 } }, body: { bu: { c: 'accent2' } }, footer: { color: 'folHlink' }, ctrTitleAlgn: 'l', subTitleAlgn: 'l' },
+  });
+
   M.DESIGNS = DESIGNS;
+  /** a design's name as shown: ours in the UI's language, a file's own as it is */
+  M.designName = (d) => (!d ? '' : DESIGNS.some((x) => x.key === d.key && x.name === d.name) && L.t ? L.t(d.name) : d.name);
 
   /** Build a concrete design object (data only) for a slide size. */
   M.buildDesign = function (key, W, H) {
@@ -264,7 +294,7 @@
     const slot = (design && design.clrMap && design.clrMap[c]) || MAP[c] || c;
     return cols[slot] || L.color.PRESET[c] || fallback || '#000000';
   };
-  M.SCHEME_SLOTS = [['lt1', 'Background'], ['dk1', 'Text and lines'], ['lt2', 'Shadows'], ['dk2', 'Title text'], ['accent1', 'Fills'], ['accent2', 'Accent'], ['hlink', 'Accent and hyperlink'], ['folHlink', 'Accent and followed hyperlink']];
+  M.SCHEME_SLOTS = [['lt1', N('Background')], ['dk1', 'Text and lines'], ['lt2', N('Shadows')], ['dk2', 'Title text'], ['accent1', N('Fills')], ['accent2', N('Accent')], ['hlink', 'Accent and hyperlink'], ['folHlink', 'Accent and followed hyperlink']];
   M.schemeRow = (design) => ['bg1', 'tx1', 'bg2', 'tx2', 'accent1', 'accent2', 'hlink', 'folHlink'].map((k) => ({ ref: k, hex: M.resolveColor(k, design) }));
 
   /* ---------- text model ---------- */
@@ -284,7 +314,7 @@
   T.paraText = (p) => p.rs.map((r) => (r.fld ? r.t || '' : r.t)).join('');
   T.plain = (tx) => (tx && tx.ps ? tx.ps.map(T.paraText).join('\n') : '');
   T.isEmpty = (tx) => !tx || !tx.ps || tx.ps.every((p) => !T.paraText(p).length);
-  T.RUN_KEYS = ['b', 'i', 'u', 'strike', 'sz', 'font', 'color', 'base', 'shd', 'shdX', 'link', 'fld', 'spc', 'cap', 'fill', 'ln', 'hl', 'emb', 'keep'];
+  T.RUN_KEYS = ['b', 'i', 'u', 'strike', 'sz', 'font', 'fontEA', 'color', 'base', 'shd', 'shdX', 'link', 'fld', 'spc', 'cap', 'fill', 'ln', 'hl', 'emb', 'keep'];
   T.runProps = (r) => { const o = {}; for (const k of T.RUN_KEYS) if (r[k] !== undefined && k !== 'fld') o[k] = r[k]; return o; };
   T.sameProps = (a, b) => L.equal(T.runProps(a), T.runProps(b)) && !a.fld && !b.fld;
   T.normalize = (p) => {
@@ -373,6 +403,14 @@
     if (f === '+mn' || f === '+mn-lt') return (design && design.fonts && design.fonts.minor) || 'Arial';
     return f;
   };
+  /** a run's East Asian font: +mn-ea / +mj-ea (or none: the master's +mn-ea) are the design's, else as given;
+      undefined where the design has none */
+  S.fontEA = (f, design) => {
+    const fonts = (design && design.fonts) || {};
+    if (f === '+mj-ea') return fonts.majorEA || undefined;
+    if (!f || f === '+mn-ea') return fonts.minorEA || undefined;
+    return f && f[0] !== '+' ? f : undefined;
+  };
   S.run = (ps, r) => Object.assign({}, ps.rPr || {}, T.runProps(r || {}));
 
   /* ---------- layouts ---------- */
@@ -381,8 +419,8 @@
     { key: 'titleOnly', name: 'Title Only', group: 'Text Layouts', ox: 'titleOnly' },
     { key: 'text', name: 'Title and Text', group: 'Text Layouts', ox: 'tx' },
     { key: 'twoText', name: 'Title and 2-Column Text', group: 'Text Layouts', ox: 'twoColTx' },
-    { key: 'blank', name: 'Blank', group: 'Content Layouts', ox: 'blank' },
-    { key: 'contentOnly', name: 'Content', group: 'Content Layouts', ox: 'objOnly' },
+    { key: 'blank', name: N('Blank'), group: 'Content Layouts', ox: 'blank' },
+    { key: 'contentOnly', name: N('Content'), group: 'Content Layouts', ox: 'objOnly' },
     { key: 'content', name: 'Title and Content', group: 'Content Layouts', ox: 'obj' },
     { key: 'twoContent', name: 'Title and 2 Content', group: 'Content Layouts', ox: 'twoObj' },
     { key: 'contentTwoContent', name: 'Title, Content and 2 Content', group: 'Content Layouts', ox: 'objAndTwoObj' },
@@ -468,15 +506,17 @@
     { key: 'wide10', name: 'On-screen Show (16:10)', w: 720, h: 450 },
     { key: 'letter', name: 'Letter Paper (8.5x11 in)', w: 720, h: 540 },
     { key: 'a4', name: 'A4 Paper (210x297 mm)', w: 780, h: 540 },
-    { key: '35mm', name: '35mm Slides', w: 810, h: 540 },
-    { key: 'overhead', name: 'Overhead', w: 720, h: 540 },
-    { key: 'banner', name: 'Banner', w: 576, h: 72 },
-    { key: 'custom', name: 'Custom', w: 720, h: 540 },
+    { key: '35mm', name: N('35mm Slides'), w: 810, h: 540 },
+    { key: 'overhead', name: N('Overhead'), w: 720, h: 540 },
+    { key: 'banner', name: N('Banner'), w: 576, h: 72 },
+    { key: 'custom', name: N('Custom'), w: 720, h: 540 },
   ];
 
+  /** the size of a new presentation, unless the user chose another (Page Setup): Widescreen, as in PowerPoint */
+  M.DEFAULT_SIZE = { w: 960, h: 540 };
   M.newPresentation = function (opts) {
     opts = opts || {};
-    const W = opts.w || 720, H = opts.h || 540;
+    const W = opts.w || M.DEFAULT_SIZE.w, H = opts.h || M.DEFAULT_SIZE.h;
     const design = M.buildDesign(opts.design || 'default', W, H);
     const pres = {
       W, H, firstNum: 1, title: opts.title || '',
@@ -485,6 +525,10 @@
       hf: { dt: false, dtAuto: true, dtFmt: 'datetime1', dtText: '', num: false, ftr: false, ftrText: '', notOnTitle: false },
       props: { author: '', subject: '', keywords: '', comments: '', company: '', category: '', created: new Date().toISOString() },
     };
+    /* the text language and East Asian font of the UI's language, as its PowerPoint makes a new presentation
+       (common/locales.js); not for a file being read (pptx-read.js: locale false) */
+    const loc = opts.locale !== false && L.locale && L.locale.get().slide;
+    if (loc) { pres.lang = loc.lang; if (loc.fontEA) Object.assign(design.fonts, { majorEA: loc.fontEA, minorEA: loc.fontEA }); }
     if (opts.empty !== true) pres.slides.push(M.newSlide(pres, 'title', design.id));
     return pres;
   };
@@ -705,10 +749,13 @@
   H.restore = (snap) => { Object.assign(L.pres, JSON.parse(snap)); };
   /** Record state before a mutation. coalesceKey merges rapid repeats (typing). */
   H.push = (label, coalesceKey) => {
+    /* an edit made while a drag is live (one the keys held back didn't stop) ends that drag first: the drag put back
+       what it moved, so this step's snapshot and the drag's own never interleave */
+    if (L.ui && L.ui.dragging && L.ui.dragging()) L.ui.dragCancel();
     const now = Date.now();
     if (coalesceKey && H._key === coalesceKey && now - H._t < 1200) { H._t = now; H.dirty = true; return; }
     H._key = coalesceKey || null; H._t = now;
-    H.undo.push({ label: label || 'Edit', snap: H.snapshot(), sel: L.ed ? L.ed.saveSel() : null });
+    H.undo.push({ label: label || N('Edit'), snap: H.snapshot(), sel: L.ed ? L.ed.saveSel() : null });
     if (H.undo.length > H.limit) H.undo.shift();
     H.redo.length = 0;
     H.dirty = true;

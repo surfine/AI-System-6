@@ -1,6 +1,6 @@
 # 往返② EXPECTED（由 make-roundtrip.mjs 产生，勿手改）
 
-被测件：`edited.pptx`，sha256 `4bfff0001d8e5980f9a273f523bd112f21309bc76a862fa86b5f156698d903d2`（139944 字节）
+被测件：`edited.pptx`，sha256 `3ac8bc95d5fb1b3776f6fdfad1d3f98118651e4a61f13f3c32b3fbf28783b03b`（58013 字节）
 起点：`base.pptx`，sha256 `823e0a6836c2cd3ccf4dc9bd8ae9acaffa6c12c4943b0812801f66e8f3863452`（= slides-modern-comment-s11.pptx 原样副本，2 页 + 现代批注 3 条）
 重新产生：`node tests/fixtures/clioworks-s11/roundtrip-2/make-roundtrip.mjs --check`，必须报字节一致。
 
@@ -26,15 +26,15 @@
 | 第 1 页 | TextBox 3 | 1 | `sge801fb3cs:1:0` | 设备丙尚未测试。 | | |
 | 第 1 页 | TextBox 4 | 0 | `sge801n7ubz:0:0` | 不代表真实设备测量；文字是原生可编辑对象。 | | |
 | 第 2 页 | TextBox 1 | 0 | `sge801tqske:0:0` | ClioWorks · 合成格式夹具 | | |
-| 第 2 页 | TextBox 2 | 0 | `sge801yhkle:0:0` | 先给出证据，再说明边界 | | |
-| 第 2 页 | TextBox 3 | 0 | `sge8023dcae:0:0` | 正文、数据和演示保留各自的编辑状态。 | | |
-| 第 2 页 | TextBox 3 | 1 | `sge8023dcae:1:0` | 来源改变后，作者决定更新哪些副本。 | | |
-| 第 2 页 | TextBox 4 | 0 | `sge802bxn9l:0:0` | 不代表真实设备测量；文字是原生可编辑对象。 | | |
-| 第 3 页 | TextBox 1 | 0 | `sge802hz9i0:0:0` | ClioWorks · 合成格式夹具 | | |
-| 第 3 页 | TextBox 2 | 0 | `sge802m7lj0:0:0` | 先给出证据，再说明边界 | | |
-| 第 3 页 | TextBox 3 | 0 | `sge802re98:0:0` | 正文、数据和演示保留各自的编辑状态。 | | |
-| 第 3 页 | TextBox 3 | 1 | `sge802re98:1:0` | 来源改变后，作者决定更新哪些副本。 | | |
-| 第 3 页 | TextBox 4 | 0 | `sge802zq477:0:0` | 不代表真实设备测量；文字是原生可编辑对象。 | | |
+| 第 2 页 | TextBox 2 | 0 | `sge801wvn6l:0:0` | 先给出证据，再说明边界 | | |
+| 第 2 页 | TextBox 3 | 0 | `sge801z5ess:0:0` | 正文、数据和演示保留各自的编辑状态。 | | |
+| 第 2 页 | TextBox 3 | 1 | `sge801z5ess:1:0` | 来源改变后，作者决定更新哪些副本。 | | |
+| 第 2 页 | TextBox 4 | 0 | `sge8023dcae:0:0` | 不代表真实设备测量；文字是原生可编辑对象。 | | |
+| 第 3 页 | TextBox 1 | 0 | `sge80272gg:0:0` | ClioWorks · 合成格式夹具 | | |
+| 第 3 页 | TextBox 2 | 0 | `sge802c3t5:0:0` | 先给出证据，再说明边界 | | |
+| 第 3 页 | TextBox 3 | 0 | `sge802hz9i0:0:0` | 正文、数据和演示保留各自的编辑状态。 | | |
+| 第 3 页 | TextBox 3 | 1 | `sge802hz9i0:1:0` | 来源改变后，作者决定更新哪些副本。 | | |
+| 第 3 页 | TextBox 4 | 0 | `sge802pez57:0:0` | 不代表真实设备测量；文字是原生可编辑对象。 | | |
 
 ## 逐页备注（lectern-adapter 读回 edited.pptx）
 
@@ -63,14 +63,14 @@
 | 部件 | 状态 | base | edited |
 | --- | --- | --- | --- |
 | `[Content_Types].xml` | changed | `ee6e07711f29` | `84b1314f7271` |
-| `_rels/.rels` | changed | `694cc89ebda9` | `4a4332d26e10` |
+| `_rels/.rels` | same | `694cc89ebda9` | `694cc89ebda9` |
 | `customXml/clw-preservation.xml` | same | `93419e97c133` | `93419e97c133` |
 | `docProps/app.xml` | same | `77fbd43c41b9` | `77fbd43c41b9` |
 | `docProps/core.xml` | same | `b25bcc592550` | `b25bcc592550` |
 | `docProps/thumbnail.jpeg` | same | `116f9aa8ea03` | `116f9aa8ea03` |
 | `ppt/_rels/presentation.xml.rels` | changed | `6304493af1a7` | `7867fafddf03` |
 | `ppt/authors.xml` | same | `db6ba8ee1562` | `db6ba8ee1562` |
-| `ppt/comments/modernComment_100_1A2B3C4D.xml` | changed | `d515e7137a0a` | `bfbbbdf52c79` |
+| `ppt/comments/modernComment_100_1A2B3C4D.xml` | changed | `d515e7137a0a` | `bab81b52f17c` |
 | `ppt/notesMasters/_rels/notesMaster1.xml.rels` | same | `e04df15e1a39` | `e04df15e1a39` |
 | `ppt/notesMasters/notesMaster1.xml` | same | `970fd6eed1e6` | `970fd6eed1e6` |
 | `ppt/notesSlides/_rels/notesSlide1.xml.rels` | changed | `c1e57cc916d3` | `fd4441fb876f` |
@@ -79,20 +79,20 @@
 | `ppt/notesSlides/notesSlide1.xml` | changed | `56f534548fb4` | `e931ba645c92` |
 | `ppt/notesSlides/notesSlide2.xml` | same | `56f534548fb4` | `56f534548fb4` |
 | `ppt/notesSlides/notesSlide3.xml` | new | `` | `56f534548fb4` |
-| `ppt/presProps.xml` | changed | `b42af61236cd` | `1f487487097a` |
+| `ppt/presProps.xml` | same | `b42af61236cd` | `b42af61236cd` |
 | `ppt/presentation.xml` | changed | `7845b530fea0` | `3f3fee261b4c` |
 | `ppt/printerSettings/printerSettings1.bin` | same | `d7768f87e07d` | `d7768f87e07d` |
-| `ppt/slideLayouts/_rels/slideLayout1.xml.rels` | changed | `7c1f290acd6c` | `661facc4260c` |
-| `ppt/slideLayouts/_rels/slideLayout10.xml.rels` | changed | `7c1f290acd6c` | `661facc4260c` |
-| `ppt/slideLayouts/_rels/slideLayout11.xml.rels` | changed | `7c1f290acd6c` | `661facc4260c` |
-| `ppt/slideLayouts/_rels/slideLayout2.xml.rels` | changed | `7c1f290acd6c` | `661facc4260c` |
-| `ppt/slideLayouts/_rels/slideLayout3.xml.rels` | changed | `7c1f290acd6c` | `661facc4260c` |
-| `ppt/slideLayouts/_rels/slideLayout4.xml.rels` | changed | `7c1f290acd6c` | `661facc4260c` |
-| `ppt/slideLayouts/_rels/slideLayout5.xml.rels` | changed | `7c1f290acd6c` | `661facc4260c` |
-| `ppt/slideLayouts/_rels/slideLayout6.xml.rels` | changed | `7c1f290acd6c` | `661facc4260c` |
-| `ppt/slideLayouts/_rels/slideLayout7.xml.rels` | changed | `7c1f290acd6c` | `661facc4260c` |
-| `ppt/slideLayouts/_rels/slideLayout8.xml.rels` | changed | `7c1f290acd6c` | `661facc4260c` |
-| `ppt/slideLayouts/_rels/slideLayout9.xml.rels` | changed | `7c1f290acd6c` | `661facc4260c` |
+| `ppt/slideLayouts/_rels/slideLayout1.xml.rels` | same | `7c1f290acd6c` | `7c1f290acd6c` |
+| `ppt/slideLayouts/_rels/slideLayout10.xml.rels` | same | `7c1f290acd6c` | `7c1f290acd6c` |
+| `ppt/slideLayouts/_rels/slideLayout11.xml.rels` | same | `7c1f290acd6c` | `7c1f290acd6c` |
+| `ppt/slideLayouts/_rels/slideLayout2.xml.rels` | same | `7c1f290acd6c` | `7c1f290acd6c` |
+| `ppt/slideLayouts/_rels/slideLayout3.xml.rels` | same | `7c1f290acd6c` | `7c1f290acd6c` |
+| `ppt/slideLayouts/_rels/slideLayout4.xml.rels` | same | `7c1f290acd6c` | `7c1f290acd6c` |
+| `ppt/slideLayouts/_rels/slideLayout5.xml.rels` | same | `7c1f290acd6c` | `7c1f290acd6c` |
+| `ppt/slideLayouts/_rels/slideLayout6.xml.rels` | same | `7c1f290acd6c` | `7c1f290acd6c` |
+| `ppt/slideLayouts/_rels/slideLayout7.xml.rels` | same | `7c1f290acd6c` | `7c1f290acd6c` |
+| `ppt/slideLayouts/_rels/slideLayout8.xml.rels` | same | `7c1f290acd6c` | `7c1f290acd6c` |
+| `ppt/slideLayouts/_rels/slideLayout9.xml.rels` | same | `7c1f290acd6c` | `7c1f290acd6c` |
 | `ppt/slideLayouts/slideLayout1.xml` | same | `25c93a2f186d` | `25c93a2f186d` |
 | `ppt/slideLayouts/slideLayout10.xml` | same | `1f8304c9d6c0` | `1f8304c9d6c0` |
 | `ppt/slideLayouts/slideLayout11.xml` | same | `355ac266c267` | `355ac266c267` |
@@ -104,13 +104,13 @@
 | `ppt/slideLayouts/slideLayout7.xml` | same | `e4d86b009a8c` | `e4d86b009a8c` |
 | `ppt/slideLayouts/slideLayout8.xml` | same | `950b9d16468d` | `950b9d16468d` |
 | `ppt/slideLayouts/slideLayout9.xml` | same | `4e9439878755` | `4e9439878755` |
-| `ppt/slideMasters/_rels/slideMaster1.xml.rels` | changed | `52e5efa51d86` | `c29f19276ee2` |
+| `ppt/slideMasters/_rels/slideMaster1.xml.rels` | same | `52e5efa51d86` | `52e5efa51d86` |
 | `ppt/slideMasters/slideMaster1.xml` | same | `44cc65956f47` | `44cc65956f47` |
-| `ppt/slides/_rels/slide1.xml.rels` | changed | `6fed4c884ae8` | `0f86b2da2b51` |
-| `ppt/slides/_rels/slide2.xml.rels` | changed | `8fca8722ee5a` | `5e4c9798b243` |
+| `ppt/slides/_rels/slide1.xml.rels` | same | `6fed4c884ae8` | `6fed4c884ae8` |
+| `ppt/slides/_rels/slide2.xml.rels` | same | `8fca8722ee5a` | `8fca8722ee5a` |
 | `ppt/slides/_rels/slide3.xml.rels` | new | `` | `c0101f403430` |
 | `ppt/slides/slide1.xml` | changed | `258161af4832` | `e9896aa8eea0` |
-| `ppt/slides/slide2.xml` | changed | `656d2743a73d` | `f9ef178947af` |
+| `ppt/slides/slide2.xml` | same | `656d2743a73d` | `656d2743a73d` |
 | `ppt/slides/slide3.xml` | new | `` | `f9ef178947af` |
 | `ppt/tableStyles.xml` | same | `0e7ac0325133` | `0e7ac0325133` |
 | `ppt/theme/theme1.xml` | same | `4c3412087e8f` | `4c3412087e8f` |

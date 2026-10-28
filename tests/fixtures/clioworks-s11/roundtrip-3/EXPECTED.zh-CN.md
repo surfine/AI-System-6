@@ -1,6 +1,6 @@
 # 往返③ EXPECTED（由 make-roundtrip.mjs 产生，勿手改）
 
-被测件：`edited.docx`，sha256 `10aff9e265b3e507b1bc7f764cb7ed4cf7b2010e67325391d9872134a16a8477`（33328 字节）
+被测件：`edited.docx`，sha256 `107f5b0b4e8d800cf41ebc3b388a35fa95dca223deabd63d483372a50cb900dc`（33323 字节）
 起点：`base.docx`，sha256 `d81675b952bd4d89ffc26515127c120e98703cde300b0238030c458930d2c720`（= quire-s11.docx 原样副本，12 段 + 1 张表 + 1 张图 + 批注 1 条：阿澄「纸箱数量再确认一下」，原本就有，不是本次新增）
 重新产生：`node tests/fixtures/clioworks-s11/roundtrip-3/make-roundtrip.mjs --check`，必须报字节一致。
 回覆：quire-adapter 支持回覆（`replyComment`），本次回覆挂在本次新增的根批注之下。
@@ -53,7 +53,7 @@
 | --- | --- | --- | --- |
 | `[Content_Types].xml` | changed | `c11d5c41a2f5` | `59903f4ea297` |
 | `_rels/.rels` | changed | `6b1f432240d6` | `d6f21829c008` |
-| `docProps/app.xml` | new | `` | `bc56e96bfe91` |
+| `docProps/app.xml` | new | `` | `cbc8718b3853` |
 | `docProps/core.xml` | new | `` | `22fbdd34b42d` |
 | `word/_rels/document.xml.rels` | changed | `a03dd7362ce5` | `f8d6333a3613` |
 | `word/comments.xml` | changed | `1f5f746f36ac` | `48891c67d941` |

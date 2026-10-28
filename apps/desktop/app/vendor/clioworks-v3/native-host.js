@@ -41,6 +41,44 @@
     return window[spec.global];
   }
 
+  // The three codecs write the SAME names on window.L — L.preserve is
+  // Quire's, Ledger's and Lectern's alike, L.model is Ledger's and Lectern's
+  // — and their vendored files read those names at CALL time (docx-write
+  // reaches for L.preserve.begin, xlsx-write for L.preserve.begin, lectern's
+  // readers walk L.model), so whichever codec loaded LAST owns them for all.
+  // The fix is ownership by snapshot, never by re-running module files (that
+  // re-created classes under a live document and broke its save). When a
+  // format's codec finishes loading, its world — every name on L at that
+  // moment — is remembered; before any codec operation the names are pointed
+  // back at that world. Live documents keep their own closures and are
+  // untouched; the names they read at call time simply belong to their
+  // format again.
+  const codecWorlds = new Map();
+  let activeWorld = '';
+  function snapshotCodecWorld(format) {
+    if (codecWorlds.has(format)) return;
+    const names = new Map();
+    for (const key of Object.keys(window.L)) names.set(key, window.L[key]);
+    codecWorlds.set(format, names);
+  }
+  function activateCodecWorld(format) {
+    if (activeWorld === format) return;
+    const names = codecWorlds.get(format);
+    if (!names) { activeWorld = format; return; }
+    for (const key of Object.keys(window.L)) if (!names.has(key)) delete window.L[key];
+    for (const [key, value] of names) window.L[key] = value;
+    activeWorld = format;
+  }
+  async function ownCodec(format) {
+    const factory = await ensureAdapter(format);
+    // The adapter's own loader first, so a codec that never loaded loads once
+    // (and its completeness check runs); it memoizes, so this is cheap after.
+    if (typeof factory.loadCodec === 'function') await factory.loadCodec();
+    snapshotCodecWorld(format);
+    activateCodecWorld(format);
+    return factory;
+  }
+
   function ensureLedgerAdapter() {
     return ensureAdapter('xlsx');
   }
@@ -74,20 +112,49 @@
   }
 
   /**
+   * Which document an open names. A floppy package is found by its mounted
+   * name, a Project Hard Disk document by its project file id (N0): either an
+   * explicit `source`, or a chatFiles item of type "office" handed over by the
+   * Finder or the application registry.
+   * @param {{source?: {kind: string, mountedName?: string, fileId?: string}, type?: string, id?: string, mountedName?: string, name?: string}} item
+   */
+  function sourceOf(item = {}) {
+    if (item.source && item.source.kind === 'project') return { kind: 'project', fileId: item.source.fileId };
+    if (item.source && item.source.kind === 'floppy') return { kind: 'floppy', mountedName: item.source.mountedName };
+    if (item.type === 'office') return { kind: 'project', fileId: item.id };
+    return { kind: 'floppy', mountedName: item.mountedName || item.name };
+  }
+
+  async function recordForSource(source) {
+    const store = nativeStore();
+    if (source.kind === 'project') return store.openProjectDocument(source.fileId);
+    return store.recordFor(source.mountedName);
+  }
+
+  /**
    * Open a native Office document for editing through the format's real adapter.
    * The adapter's document model rides on the record (liveAdapter). A workbook
    * (xlsx) is mounted into the ClioChart window by the workbook surface, a
    * presentation (pptx) into the ClioStage window by its native surface, a
    * document (docx) into the ClioWrite window (S11 M3).  Read intent never
    * comes here: it stays Reader's text projection (S11-19).
-   * @param {{mountedName: string, name?: string}} item the desk's native-binary record handle
+   * @param {{mountedName?: string, name?: string, source?: object, type?: string, id?: string}} item a floppy handle, a source, or a project office item
    * @param {object} context application-registry context (intent, project)
    */
   async function openNativeDocument(item, context = {}) {
     const store = nativeStore();
-    const mountedName = item.mountedName || item.name;
-    const record = store.recordFor(mountedName);
-    if (!record) return { ok: false, reason: 'not-native' };
+    const source = sourceOf(item);
+    let record = null;
+    try { record = await recordForSource(source); } catch (error) { record = null; }
+    if (!record) {
+      if (source.kind !== 'project') return { ok: false, reason: 'not-native' };
+      // The item is on the disk but its bytes are not: say so, never open an empty editor.
+      if (typeof setStatus === 'function') setStatus(t('clioworks_native_missing', item.name || ''));
+      return { ok: false, reason: 'missing-bytes' };
+    }
+    // The handle the editors hold and hand back: the mounted name on a floppy,
+    // "project-file:<id>" on the Project Hard Disk.
+    const mountedName = record.mountedName;
     const format = record.format;
     if (!ADAPTERS[format]) return { ok: false, reason: `unsupported-format:${format}` };
 
@@ -101,7 +168,7 @@
       && surfaceGlobal.current?.()?.mountedName === mountedName;
 
     if (!sameSession) {
-      const adapterFactory = await ensureAdapter(format);
+      const adapterFactory = await ownCodec(format);
       // Keep the live adapter on the record so later edit/save commands reuse
       // the same in-memory model instead of re-parsing.
       record.liveAdapter = await openAdapterFor(adapterFactory, record, store.workingBytes(mountedName));
@@ -177,7 +244,7 @@
     if (!receiptId || typeof window.AISystem6RunReceipts?.finishReceipt !== 'function') return;
     try {
       await window.AISystem6RunReceipts.finishReceipt(receiptId, outcome.ok
-        ? { status: 'completed', affectedObjectIds: [record.id], destination: record.mountedName }
+        ? { status: 'completed', affectedObjectIds: outcome.affectedObjectIds || [record.id], destination: outcome.destination || (record.source && record.source.kind === 'project' ? record.fileName : record.mountedName) }
         : { status: 'failed', publicErrorReason: outcome.message || outcome.reason });
     } catch (error) { /* the save result stands */ }
   }
@@ -203,6 +270,9 @@
     // The revision being encoded: typing that lands while the save runs stays unsaved.
     const encodedRevision = typeof doc.getEditRevision === 'function' ? doc.getEditRevision() : undefined;
     try {
+      // The writer reads shared codec names at call time; make sure they are
+      // this document's format's before it encodes.
+      await ownCodec(record.format);
       result = await doc.save();
       bytes = new Uint8Array(result.bytes);
     } catch (error) {
@@ -212,7 +282,10 @@
     }
     const sha256 = await sha256Hex(bytes);
     try {
-      store.setWorkingBytes(mountedName, bytes, { dirty: false });
+      // A project document's bytes go back to the Project Hard Disk (same row,
+      // one put); a floppy package's stay in the floppy's working copy.
+      if (record.source && record.source.kind === 'project') await store.writeProjectBytes(mountedName, bytes);
+      else store.setWorkingBytes(mountedName, bytes, { dirty: false });
       if (typeof doc.markSaved === 'function') doc.markSaved(encodedRevision);
     } catch (error) {
       const failure = { ok: false, reason: 'store-failed', message: String(error && error.message || error) };
@@ -243,13 +316,221 @@
     if (!record || !ADAPTERS[record.format]) return { ok: false, reason: 'not-native' };
     if (!record.liveAdapter) return { ok: false, reason: 'not-open' };
     try {
-      const factory = await ensureAdapter(record.format);
+      if (record.source && record.source.kind === 'project') {
+        if (!(await store.reloadProjectBytes(mountedName))) return { ok: false, reason: 'revert-failed', message: 'missing-bytes' };
+      }
+      const factory = await ownCodec(record.format);
       const adapter = await openAdapterFor(factory, record, store.workingBytes(mountedName));
       record.liveAdapter = adapter;
       return { ok: true, adapter };
     } catch (error) {
       return { ok: false, reason: 'revert-failed', message: String(error && error.message || error) };
     }
+  }
+
+  /* ------------------------------------------------ N0: Save As… (存储为…) */
+
+  // Which window a format's editor lives in: the dialog borrows its app so the
+  // menu bar does not jump to ClioTalk while it is open.
+  const SURFACE_APPS = { xlsx: 'clioChart', docx: 'clioWrite', pptx: 'clioStage' };
+
+  function surfaceFor(format) {
+    if (format === 'xlsx') return workbookSurface();
+    if (format === 'pptx') return presentationSurface();
+    const write = window.AISystem6ClioWrite;
+    return write && typeof write.open === 'function' ? write : null;
+  }
+
+  function folderNameOf(record) {
+    if (!record.source || record.source.kind !== 'project' || typeof chatFiles === 'undefined') return '';
+    const item = chatFiles.find((file) => file && file.id === record.source.fileId);
+    const folder = item && item.folderId && typeof chatFolders !== 'undefined'
+      ? chatFolders.find((entry) => entry && entry.id === item.folderId) : null;
+    if (!folder) return '';
+    return typeof displayFolderName === 'function' ? displayFolderName(folder.name) : folder.name;
+  }
+
+  let pendingSaveAs = null;
+
+  /**
+   * The desk's own Save dialog (the saveChat window: name, folder, the folder
+   * suggestions) in a "clioworks" mode, with one more question — where. The
+   * destination radios are added for this question and removed after it, so
+   * the other modes never see them. Resolves { name, folderName, destination }
+   * or null when the dialog was closed without saving.
+   */
+  function askSaveAs(record) {
+    const doc = document;
+    const win = typeof getWindow === 'function' ? getWindow('saveChat') : doc.querySelector('[data-window="saveChat"]');
+    const form = doc.querySelector('#save-chat-form');
+    const nameInput = doc.querySelector('#chat-file-name');
+    const folderInput = doc.querySelector('#chat-folder-name');
+    const hint = doc.querySelector('#save-chat-hint');
+    const title = doc.querySelector('#save-chat-title');
+    if (!win || !form || !nameInput || !folderInput) return Promise.resolve(null);
+    if (pendingSaveAs) pendingSaveAs(null);
+
+    return new Promise((resolve) => {
+      const fieldset = doc.createElement('fieldset');
+      fieldset.className = 'clioworks-save-destination';
+      fieldset.dataset.clioworksSaveAs = 'true';
+      const legend = doc.createElement('legend');
+      legend.textContent = t('clioworks_save_as_where');
+      fieldset.append(legend);
+      for (const [value, labelKey] of [['project', 'clioworks_save_as_project'], ['download', 'clioworks_save_as_download']]) {
+        const label = doc.createElement('label');
+        label.style.marginInlineEnd = '1.5em';
+        const radio = doc.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'clioworks-save-destination';
+        radio.value = value;
+        radio.checked = value === 'project';
+        const text = doc.createElement('span');
+        text.textContent = t(labelKey);
+        label.append(radio, ' ', text);
+        fieldset.append(label);
+      }
+      const destination = () => fieldset.querySelector('input:checked')?.value || 'project';
+      const syncFolder = () => { folderInput.disabled = destination() === 'download'; };
+      fieldset.addEventListener('change', syncFolder);
+      form.insertBefore(fieldset, hint || form.querySelector('.button-row'));
+
+      saveDialogMode = 'clioworks';
+      win.dataset.app = SURFACE_APPS[record.format] || 'clioWrite';
+      if (title) title.textContent = t('clioworks_save_as_title');
+      if (hint) hint.textContent = t('clioworks_save_as_hint');
+      nameInput.readOnly = false;
+      nameInput.classList.remove('is-derived-name');
+      nameInput.value = record.fileName || '';
+      // The folder the document is in; empty is the top of the Project Hard Disk.
+      folderInput.value = folderNameOf(record);
+      if (typeof renderFolderSuggestions === 'function') renderFolderSuggestions();
+
+      let observer = null;
+      const settle = (value) => {
+        if (pendingSaveAs !== settle) return;
+        pendingSaveAs = null;
+        observer?.disconnect();
+        doc.removeEventListener('submit', onSubmit, true);
+        fieldset.remove();
+        folderInput.disabled = false;
+        // Back to the dialog's everyday mode (Save Chat), the way its own close does.
+        if (typeof configureSaveDialog === 'function') configureSaveDialog('chat');
+        else saveDialogMode = 'chat';
+        if (win) win.dataset.app = 'clioTalk';
+        resolve(value);
+      };
+      // Capture on the document, so this answers before the desk's own submit
+      // handler (which would save a chat) ever sees the event.
+      const onSubmit = (event) => {
+        if (event.target !== form) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        const answer = { name: nameInput.value.trim(), folderName: folderInput.value.trim(), destination: destination() };
+        settle(answer);
+        if (typeof closeWindow === 'function') closeWindow('saveChat');
+      };
+      pendingSaveAs = settle;
+      doc.addEventListener('submit', onSubmit, true);
+      // Cancel, the close box and Escape all close the window: that is the "no".
+      // Only a window that was showing can close; opening it passes through
+      // class changes of its own while it is still hidden.
+      if (typeof MutationObserver === 'function') {
+        let shown = !win.classList.contains('is-hidden');
+        observer = new MutationObserver(() => {
+          if (!win.classList.contains('is-hidden')) shown = true;
+          else if (shown) settle(null);
+        });
+        observer.observe(win, { attributes: true, attributeFilter: ['class'] });
+      }
+      if (typeof openWindow === 'function') openWindow('saveChat');
+      try { nameInput.focus({ preventScroll: true }); nameInput.select(); } catch (error) { /* focus is a courtesy */ }
+    });
+  }
+
+  function downloadBytes(bytes, fileName, format) {
+    const mimeType = nativeStore().MIME_TYPES[format] || 'application/octet-stream';
+    const blob = new Blob([bytes], { type: mimeType });
+    const platform = window.AISystem6WebPlatform;
+    const saved = platform && typeof platform.saveArtifact === 'function'
+      ? platform.saveArtifact({ blob, fileName, mimeType })
+      : false;
+    return { saved: !!saved, blob, mimeType };
+  }
+
+  /**
+   * Save As… (存储为…): the open document's current state, encoded by the
+   * same preserving writer as Save, either as a NEW Project Hard Disk document
+   * that the window then edits (the source — a floppy package or another
+   * project file — is left as it was), or downloaded to this computer as a
+   * real .docx/.xlsx/.pptx. `options.answer` skips the dialog (tests, scripts).
+   */
+  async function saveNativeDocumentAs(handle, options = {}) {
+    const store = nativeStore();
+    const record = store.recordFor(handle);
+    if (!record || !ADAPTERS[record.format]) return { ok: false, reason: 'not-native' };
+    const doc = record.liveAdapter;
+    if (!doc) return { ok: false, reason: 'not-open' };
+    const answer = options.answer || await askSaveAs(record);
+    if (!answer) return { ok: false, reason: 'cancelled' };
+    const fileName = store.nameWithExtension(answer.name || record.fileName, record.format);
+    const toProject = answer.destination !== 'download';
+    const projectId = typeof activeProjectId !== 'undefined' ? activeProjectId : (record.projectId || '');
+    if (toProject && !projectId) {
+      if (typeof setStatus === 'function') setStatus(t('no_project_mounted'));
+      return { ok: false, reason: 'no-project' };
+    }
+
+    const encodedRevision = typeof doc.getEditRevision === 'function' ? doc.getEditRevision() : undefined;
+    let bytes;
+    try {
+      // The writer reads shared codec names at call time; own them for this
+      // document's format before it encodes.
+      await ownCodec(record.format);
+      bytes = new Uint8Array((await doc.save()).bytes);
+    } catch (error) {
+      const failure = { ok: false, reason: 'encode-failed', message: String(error && error.message || error) };
+      if (typeof setStatus === 'function') setStatus(t('clioworks_save_as_failed', fileName, failure.message));
+      return failure;
+    }
+
+    if (!toProject) {
+      // A download changes nothing on the desk: the window keeps its document
+      // and its unsaved state.
+      const { saved, blob, mimeType } = downloadBytes(bytes, fileName, record.format);
+      if (typeof setStatus === 'function') setStatus(saved ? t('clioworks_saved_as_download', fileName) : t('clioworks_save_as_failed', fileName, ''));
+      return { ok: saved, destination: 'download', fileName, mimeType, blob, byteLength: bytes.byteLength, sha256: await sha256Hex(bytes) };
+    }
+
+    const receiptId = await beginSaveReceipt(record);
+    let item;
+    try {
+      item = await store.createProjectDocument({ projectId, name: fileName, folderName: answer.folderName || '', format: record.format, bytes });
+      if (!item) throw new Error('the new document did not reach the Project Hard Disk');
+    } catch (error) {
+      const failure = { ok: false, reason: 'store-failed', message: String(error && error.message || error) };
+      await endSaveReceipt(receiptId, record, failure);
+      if (typeof setStatus === 'function') setStatus(t('clioworks_save_as_failed', fileName, failure.message));
+      return failure;
+    }
+    // The live model now belongs to the new document: its edits are saved
+    // there, and the source it came from keeps the bytes it had.
+    if (typeof doc.markSaved === 'function') doc.markSaved(encodedRevision);
+    // The new document is a source too: its own linked text copy.
+    try { await store.refreshLinkedReference(item.id, bytes); } catch (error) { /* made again on its next save */ }
+    const next = await store.openProjectDocument(item.id);
+    next.liveAdapter = doc;
+    if (record.liveAdapter === doc) record.liveAdapter = null;
+    if (record.source && record.source.kind === 'project') store.forgetProjectDocument(handle);
+    const surface = surfaceFor(record.format);
+    if (surface) {
+      try { await surface.open(next, { mountedName: next.mountedName, fileName: item.name }); } catch (error) { /* the document is saved; the window catches up on the next open */ }
+    }
+    const saved = { ok: true, destination: 'project', fileId: item.id, fileName: item.name, mountedName: next.mountedName, byteLength: bytes.byteLength, sha256: await sha256Hex(bytes), receiptId };
+    await endSaveReceipt(receiptId, record, { ...saved, affectedObjectIds: [item.id], destination: item.name });
+    if (typeof setStatus === 'function') setStatus(t('clioworks_saved_as_project', item.name));
+    if (typeof renderProjectDisks === 'function') { try { renderProjectDisks(); } catch (error) { /* repaint on the next render */ } }
+    return saved;
   }
 
   /**
@@ -285,10 +566,12 @@
     openNativeDocument,
     dispatchIntent,
     saveNativeDocument,
+    saveNativeDocumentAs,
     revertNativeDocument,
     openNativeWorkbook,
     saveNativeWorkbook,
     ensureAdapter,
+    ownCodec,
     ensureLedgerAdapter,
     FORMATS: Object.freeze(Object.keys(ADAPTERS)),
   });

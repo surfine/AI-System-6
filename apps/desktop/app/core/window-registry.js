@@ -72,10 +72,11 @@ const windowRegistry = Object.freeze({
     app: "accessories",
     mobileOverlay: true,
     sidebar: true,
-    lazy: { ensure: () => Promise.all([ensureGuestToolsModule(), ensureMcpServersModule()]) },
+    lazy: { ensure: () => Promise.all([ensureGuestToolsModule(), ensureMcpServersModule(), ensureClioTalkAgentModule()]) },
     onOpen: () => {
       window.AISystem6GuestTools?.renderChooserGuests?.();
       window.AISystem6McpServers?.renderChooserServers?.();
+      window.AISystem6ClioTalkAgent?.renderChooserFolders?.();
     },
   },
   claimCheck: {

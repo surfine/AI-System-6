@@ -328,7 +328,6 @@ async function handleOneMoreTunePreview(req, res) {
     const held = [];
     let heldBytes = 0;
     for (;;) {
-      // eslint-disable-next-line no-await-in-loop -- the stream is sequential.
       const { done, value } = await reader.read();
       if (done) break;
       sent += value.byteLength;

@@ -658,6 +658,18 @@ function attachMarkdownHighlight(textarea) {
   textarea.addEventListener("select", scheduleSelectionPaint);
   textarea.addEventListener("focus", scheduleSelectionPaint);
   textarea.addEventListener("scroll", syncScroll, { passive: true });
+  // N15a: ⌘/Ctrl+click follows the link under the pointer (the overlay's
+  // md-url span is the ink the writer aims at). The parser and the open live
+  // in the lazy writing-safety module; this router only hands the click over,
+  // after the browser has already placed the caret at the click position.
+  surface.addEventListener("click", (event) => {
+    if (event.defaultPrevented || event.altKey || event.shiftKey) return;
+    if (!(event.metaKey || event.ctrlKey)) return;
+    if (typeof ensureWritingSafetyModule !== "function") return;
+    ensureWritingSafetyModule()
+      .then(() => window.AISystem6WritingSafety?.followLinkAtPoint?.(event, textarea))
+      .catch(() => {});
+  });
   // The overlay paints every glyph, so it must also paint the characters an
   // IME is still composing. Skipping the repaint here left the pinyin and the
   // candidate characters invisible: the transparent textarea holds them, the

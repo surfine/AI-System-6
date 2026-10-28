@@ -127,7 +127,7 @@ test.assert(
 );
 
 const v3Bundle = await backup.attachIntegrity(legacyBundle);
-test.assert(v3Bundle.formatVersion === 7, "new exports use the current format v7");
+test.assert(v3Bundle.formatVersion === 8, "new exports use the current format v8");
 test.assert(
   /^[a-f0-9]{64}$/.test(v3Bundle.integrity.contentHash),
   "new exports carry a SHA-256 content hash"
@@ -324,7 +324,7 @@ test.assert(
   "v2 reference chunks point at the imported reference and project"
 );
 const exportedV2 = await backup.attachIntegrity(importedV2);
-test.assert(exportedV2.formatVersion === 7, "imported v2 re-exports as the current v7 format");
+test.assert(exportedV2.formatVersion === 8, "imported v2 re-exports as the current v8 format");
 test.assert(
   Array.isArray(exportedV2.documentRevisions) && exportedV2.documentRevisions.length === 0,
   "the v3 export of an imported v2 backup carries an empty documentRevisions array"
@@ -645,7 +645,7 @@ sceneBundle.workingSession = {
   },
 };
 const sceneExport = await backup.attachIntegrity(sceneBundle);
-test.assert(sceneExport.formatVersion === 7, "a backup carrying a desktop scene exports at the current version");
+test.assert(sceneExport.formatVersion === 8, "a backup carrying a desktop scene exports at the current version");
 const sceneValidation = backup.validateBackup(sceneExport);
 if (!sceneValidation.valid) console.error(sceneValidation.errors.join("\n"));
 test.assert(sceneValidation.valid, "a bundle with a desktop scene satisfies the schema");
@@ -808,10 +808,10 @@ darkroomBundle.darkroomRecords = [
   },
 ];
 const darkroomExport = await backup.attachIntegrity(darkroomBundle);
-test.assert(darkroomExport.formatVersion === 7, "a backup carrying a darkroom exports as v7");
+test.assert(darkroomExport.formatVersion === 8, "a backup carrying a darkroom exports as v8");
 const darkroomValidation = backup.validateBackup(darkroomExport);
 if (!darkroomValidation.valid) console.error(darkroomValidation.errors.join("\n"));
-test.assert(darkroomValidation.valid, "a v7 bundle with a darkroom record satisfies the schema");
+test.assert(darkroomValidation.valid, "a v8 bundle with a darkroom record satisfies the schema");
 test.assert(
   (await backup.verifyIntegrity(darkroomExport)).valid,
   "the darkroom record is covered by the SHA-256 content hash"

@@ -34,6 +34,8 @@
       aaron_blog_search_placeholder: "Search titles, tags or text", aaron_blog_original: "Original",
       aaron_blog_note: "Note", aaron_blog_unavailable: "Could not load this post",
       aaron_blog_missing: "This post is not in the downloaded pack.",
+      aaron_blog_ask: "Ask in SideAsk", aaron_blog_ask_post: "Ask about this post",
+      aaron_blog_whole: "Whole blog", aaron_blog_on_site: "aaronlau.me", aaron_blog_disk: "Demo disk",
     },
     zh: {
       aaron_blog_best: "精选", aaron_blog_all: "全部推送", aaron_blog_notes: "笔记",
@@ -50,6 +52,8 @@
       aaron_blog_search_placeholder: "搜索标题、标签或正文", aaron_blog_original: "原文",
       aaron_blog_note: "笔记", aaron_blog_unavailable: "这篇没有载入",
       aaron_blog_missing: "这篇不在已下载的内容包里。",
+      aaron_blog_ask: "在 SideAsk 中问", aaron_blog_ask_post: "问这篇",
+      aaron_blog_whole: "整个博客", aaron_blog_on_site: "aaronlau.me", aaron_blog_disk: "演示磁盘",
     },
   };
   const language = () => (String(document.documentElement.lang || "").toLowerCase().startsWith("zh") ? "zh" : "en");
@@ -482,6 +486,14 @@
     if (pane) pane.dataset.view = view;
   }
 
+  // Long reads (/long/) travel in their own file of the pack.
+  async function ensureLongPack() {
+    if (state.chunks.has("long")) return state.chunks.get("long");
+    const pack = await fetchPack("long");
+    state.chunks.set("long", pack);
+    return pack;
+  }
+
   async function ensureChunk(year) {
     if (state.chunks.has(year)) return state.chunks.get(year);
     const chunk = await fetchPack(`chunk/${year}`);
@@ -494,10 +506,17 @@
       const item = [...state.tagsBySlug.values()].find((entry) => entry.name === tag);
       return item ? `<a href="#/tag/${esc(item.slug)}" data-tag-slug="${esc(item.slug)}">#${esc(tag)}</a>` : `<span>#${esc(tag)}</span>`;
     }).join(" ");
+    // A long read names its source: an AIS6 demo disk, or where it first ran.
     const origin = post.origin
-      ? `<a class="aaron-blog-origin" href="${esc(post.origin)}" data-external="1" rel="noopener noreferrer">${esc(tr("aaron_blog_original", "Original"))} ↗</a>`
+      ? `<a class="aaron-blog-origin" href="${esc(post.origin)}" data-external="1" rel="noopener noreferrer">${esc(post.source || tr("aaron_blog_original", "Original"))} ↗</a>`
       : "";
-    return `<footer class="aaron-blog-article-foot"><span>${esc(post.date)} · ${post.minutes} ${esc(tr("aaron_blog_minutes", "min read"))}</span><span class="aaron-blog-article-tags">${tags}</span>${origin}</footer>`;
+    const disk = post.diskUrl
+      ? `<a class="aaron-blog-origin" href="${esc(post.diskUrl)}" data-external="1" rel="noopener noreferrer">${esc(tr("aaron_blog_disk", "Demo disk"))} ↗</a>`
+      : "";
+    const site = post.path
+      ? `<a class="aaron-blog-origin" href="https://aaronlau.me${esc(post.path)}" data-external="1" rel="noopener noreferrer">${esc(tr("aaron_blog_on_site", "aaronlau.me"))} ↗</a>`
+      : "";
+    return `<footer class="aaron-blog-article-foot"><span>${esc(post.date)} · ${post.minutes} ${esc(tr("aaron_blog_minutes", "min read"))}</span><span class="aaron-blog-article-tags">${tags}</span>${origin}${disk}${site}</footer>`;
   }
 
   async function openPost(id, { restoreScroll = 0 } = {}) {
@@ -513,12 +532,12 @@
       article.innerHTML = `<div class="aaron-blog-article-inner"><div class="aaron-blog-article-head"><button type="button" class="aaron-blog-back" data-blog-back>← ${esc(tr("aaron_blog_back", "Back"))}</button><time>${esc(post.date)}</time><span>${post.minutes} ${esc(tr("aaron_blog_minutes", "min read"))}</span></div><div class="aaron-blog-empty">${esc(tr("aaron_blog_loading", "Loading…"))}</div></div>`;
     }
     try {
-      const chunk = await ensureChunk(post.date.slice(0, 4));
+      const chunk = post.kind === "long" ? await ensureLongPack() : await ensureChunk(post.date.slice(0, 4));
       if (state.destroyed) return;
       const html = chunk?.posts?.[id]?.html || "";
       if (!html) throw new Error(tr("aaron_blog_missing", "This post is not in the downloaded pack."));
       if (article) {
-        article.innerHTML = `<div class="aaron-blog-article-inner"><div class="aaron-blog-article-head"><button type="button" class="aaron-blog-back" data-blog-back>← ${esc(tr("aaron_blog_back", "Back"))}</button><time>${esc(post.date)}</time><span>${post.minutes} ${esc(tr("aaron_blog_minutes", "min read"))}</span></div><div class="aaron-blog-article-body">${safeHtml(html)}</div>${articleFooter(post)}</div>`;
+        article.innerHTML = `<div class="aaron-blog-article-inner"><div class="aaron-blog-article-head"><button type="button" class="aaron-blog-back" data-blog-back>← ${esc(tr("aaron_blog_back", "Back"))}</button><time>${esc(post.date)}</time><span>${post.minutes} ${esc(tr("aaron_blog_minutes", "min read"))}</span><button type="button" class="aaron-blog-ask" data-blog-ask="post">${esc(tr("aaron_blog_ask_post", "Ask about this post"))}</button></div><div class="aaron-blog-article-body">${safeHtml(html)}</div>${articleFooter(post)}</div>`;
         article.scrollTop = Number(restoreScroll) || 0;
       }
       state.error = "";
@@ -615,6 +634,15 @@
         state.searchEntries = null;
         state.chunks.clear();
       }
+      // Keep the blog's chunk index for SideAsk questions asked offline.
+      if (manifest?.rag?.sha256) {
+        const cachedRag = await cacheGet("ragSha256");
+        if (changed || cachedRag !== manifest.rag.sha256) {
+          fetchPack("rag", { force: true })
+            .then(() => cachePut("ragSha256", manifest.rag.sha256))
+            .catch(() => {});
+        }
+      }
     } catch (error) {
       state.online = false;
       const cachedIndex = await cacheGet("index");
@@ -644,7 +672,8 @@
   function applyIndex(index, { render = true } = {}) {
     if (!index || !Array.isArray(index.posts)) return;
     state.index = index;
-    state.postsById = new Map(index.posts.map((post) => [post.id, post]));
+    // Long reads are openable (SideAsk cites them) without joining the lists.
+    state.postsById = new Map([...index.posts, ...(index.longs || [])].map((post) => [post.id, post]));
     state.notesById = new Map((index.notes || []).map((note) => [note.id, note]));
     state.tagsBySlug = new Map((index.tags || []).map((tag) => [tag.slug, tag]));
     if (state.selectedId && !state.postsById.has(state.selectedId) && !state.notesById.has(state.selectedId)) {
@@ -688,7 +717,7 @@
       labelledBy: "aaron-blog-title",
       title: "潮汐信笺",
       statusClass: "compact-status-bar aaron-blog-status",
-      statusHtml: `<span class="status-bar-leading" data-blog-section-label>${esc(sectionLabel())}</span><span class="status-bar-context" data-blog-count></span><span class="status-bar-trailing"><button type="button" class="aaron-blog-status-sync" data-blog-sync>${esc(tr("refresh", "Refresh"))}</button></span>`,
+      statusHtml: `<span class="status-bar-leading" data-blog-section-label>${esc(sectionLabel())}</span><span class="status-bar-context" data-blog-count></span><span class="status-bar-trailing"><button type="button" class="aaron-blog-status-sync" data-blog-ask="auto">${esc(tr("aaron_blog_ask", "Ask in SideAsk"))}</button> <button type="button" class="aaron-blog-status-sync" data-blog-sync>${esc(tr("refresh", "Refresh"))}</button></span>`,
       paneClass: "aaron-blog-pane",
       paneHtml: `<div class="aaron-blog-shell" data-view="list">
         <nav class="aaron-blog-rail" aria-label="${esc(tr("aaron_blog_sections", "潮汐信笺 sections"))}">
@@ -709,6 +738,16 @@
       </div>`,
     });
     win.querySelector("[data-blog-sync]")?.addEventListener("click", () => sync(true));
+    // The selection is read before the press can collapse it.
+    win.addEventListener("pointerdown", (event) => {
+      if (event.target.closest("[data-blog-ask]")) pendingQuote = selectedArticleText();
+    }, true);
+    win.addEventListener("click", (event) => {
+      const ask = event.target.closest("[data-blog-ask]");
+      if (!ask) return;
+      event.preventDefault();
+      askInSideAsk({ scope: ask.dataset.blogAsk });
+    });
     win.querySelector(".aaron-blog-rail")?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-blog-section]");
       if (!button) return;
@@ -834,11 +873,121 @@
     renderList();
   }
 
+  // ---- SideAsk anchor ------------------------------------------------------
+  // 潮汐信笺 pairs with SideAsk the way the Endfield Terminal does: the
+  // grounding adapter (app/core/aaron-blog-grounding.js) searches the blog for
+  // every question, and a cited paragraph opens back here.
+  let pendingQuote = "";
+
+  // The ranking runtime and the adapter load with this app, not at boot.
+  function ensureGrounding() {
+    if (typeof ensureLazySystemModule !== "function") return Promise.resolve(false);
+    return ensureLazySystemModule("app/shared/blog-rag-runtime.js", "AISystem6BlogRagRuntimeLoaded")
+      .then(() => ensureLazySystemModule("app/core/aaron-blog-grounding.js", "AISystem6AaronBlogGroundingLoaded"))
+      .catch(() => false);
+  }
+
+  function selectedArticleText() {
+    const selection = window.getSelection?.();
+    const article = articleEl();
+    if (!selection || selection.isCollapsed || !article) return "";
+    const node = selection.anchorNode;
+    if (!node || !article.contains(node.nodeType === 1 ? node : node.parentNode)) return "";
+    return String(selection.toString() || "").replace(/\s+/g, " ").trim().slice(0, 600);
+  }
+
+  function currentPost() {
+    return state.selectedKind === "post" && state.selectedId ? state.postsById.get(state.selectedId) || null : null;
+  }
+
+  function sideAskLabel() {
+    const scope = window.AISystem6AaronBlogGrounding?.getScope?.();
+    const name = tr("aaron_blog_label", "潮汐信笺");
+    return scope?.type === "post" && scope.title ? `${name} / ${scope.title}` : `${name} / ${tr("aaron_blog_whole", "Whole blog")}`;
+  }
+
+  /**
+   * Open SideAsk paired with this window. "post" asks about the post on
+   * screen; "auto" does so only when a passage is selected, else the whole
+   * blog. A selected passage becomes the start of the question.
+   * @param {{ scope?: string }} [options]
+   */
+  async function askInSideAsk({ scope = "auto" } = {}) {
+    installWindow();
+    const quote = pendingQuote || selectedArticleText();
+    pendingQuote = "";
+    const post = currentPost();
+    const aboutPost = !!post && (scope === "post" || (scope === "auto" && !!quote));
+    await ensureGrounding();
+    window.AISystem6AaronBlogGrounding?.setScope?.(aboutPost
+      ? { type: "post", id: post.id, title: post.title, date: post.date }
+      : { type: "blog" });
+    if (typeof arrangeWindowAssistantSplit !== "function") return false;
+    const paired = await arrangeWindowAssistantSplit(WINDOW_NAME);
+    if (typeof updateSideAskSourceChrome === "function") updateSideAskSourceChrome();
+    const input = document.querySelector("#prompt");
+    if (input && quote) {
+      input.value = `「${quote}」\n`;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    input?.focus();
+    return paired;
+  }
+
+  function normalizedText(value) {
+    return String(value || "").replace(/\s+/g, " ").trim();
+  }
+
+  // Mark the cited block: by its position in the article body, confirmed (or
+  // found) by the opening words of the cited text.
+  function markCited(para, quote) {
+    const body = articleEl()?.querySelector(".aaron-blog-article-body");
+    if (!body) return false;
+    body.querySelectorAll(".is-cited").forEach((node) => node.classList.remove("is-cited"));
+    const children = [...body.children];
+    const needle = normalizedText(quote).slice(0, 24);
+    let target = Number.isInteger(para) && para >= 0 ? children[para] || null : null;
+    if (needle && !(target && normalizedText(target.textContent).includes(needle))) {
+      target = children.find((node) => normalizedText(node.textContent).includes(needle)) || target;
+    }
+    if (!target) return false;
+    target.classList.add("is-cited");
+    target.scrollIntoView({ block: "center", behavior: "smooth" });
+    return true;
+  }
+
+  /**
+   * Open a cited post (or note) here and mark the cited paragraph.
+   * @param {{ postId?: string, para?: number, quote?: string }} [target]
+   */
+  async function reveal({ postId = "", para = -1, quote = "" } = {}) {
+    installWindow();
+    await openWindow(WINDOW_NAME);
+    await boot();
+    if (state.notesById.has(postId)) {
+      openNote(postId);
+      return true;
+    }
+    if (!state.postsById.has(postId)) return false;
+    if (state.selectedId !== postId || !articleEl()?.querySelector(".aaron-blog-article-body")) await openPost(postId);
+    markCited(Number(para), quote);
+    return true;
+  }
+
+  // The chunk index synced with the pack, for questions asked offline.
+  async function ragPack() {
+    return cacheGet("rag");
+  }
+
   window.renderAaronBlogLanguage = renderAaronBlogLanguage;
   window.AISystem6AaronBlog = {
     attach: installWindow,
     open,
     openPost,
+    reveal,
+    ragPack,
+    askInSideAsk,
+    sideAskLabel,
     sync,
     captureSession,
     restoreSession,
@@ -847,8 +996,8 @@
   window.AISystem6Runtime?.registerApplication({
     id: "aaronBlog",
     windowName: WINDOW_NAME,
-    mount: async () => { installWindow(); await boot(); return true; },
-    restore: async () => { installWindow(); await boot(); return true; },
+    mount: async () => { installWindow(); ensureGrounding(); await boot(); return true; },
+    restore: async () => { installWindow(); ensureGrounding(); await boot(); return true; },
     commands: Object.fromEntries([
       ["open-aaron-blog", () => open()],
       ["blog-sync", () => sync(true)],

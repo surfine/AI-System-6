@@ -118,7 +118,7 @@ if (stale) {
 try {
   const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
   const changelog = readFileSync(join(root, "CHANGELOG.md"), "utf8");
-  const latestBeta = [...changelog.matchAll(/^## Public Beta (\d+\.\d+\.\d+)/gm)]
+  const latestBeta = [...changelog.matchAll(/^## Public Beta (\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?)/gm)]
     .map((match) => match[1])
     .pop();
   if (latestBeta && latestBeta === pkg.version) {

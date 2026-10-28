@@ -43,6 +43,8 @@
     return NaN;
   }
   def('RATE', 3, 6, 'nnnnnn', (ctx, n, p, v, f, t, g) => { const r = rate(n, p, v, opt(f, 0), T(t), opt(g, 0.1)); return isNaN(r) ? E.NUM : r; });
+  /* Derived from Apache OpenOffice main/sc/source/core/tool/interpr2.cxx, ScGetZinsZ (Apache License 2.0;
+     common/licenses/apache-openoffice-NOTICE.txt) */
   function ipmt(r, per, n, v, f, t) {
     const p = pmt(r, n, v, f, t);
     let i;
@@ -167,6 +169,7 @@
     }
     return dep;
   });
+  /* Derived from Apache OpenOffice main/sc/source/core/tool/interpr2.cxx, ScGetGDA (Apache License 2.0) */
   function ddb(c, s, l, p, f) {
     let r = f / l, old;
     if (r >= 1) { r = 1; old = p === 1 ? c : 0; } else old = c * Math.pow(1 - r, p - 1);
@@ -175,50 +178,38 @@
     return d < 0 ? 0 : d;
   }
   def('DDB', 4, 5, 'nnnnn', (ctx, c, s, l, p, f) => { f = opt(f, 2); if (c < 0 || s < 0 || l <= 0 || p <= 0 || f <= 0 || p > l) return E.NUM; return ddb(c, s, l, p, f); });
-  /* VDB (port of the classic algorithm used by Excel-compatible engines) */
-  function interVdb(c, s, l, l1, per, f) {
-    let v = 0;
-    const intEnd = Math.ceil(per - 1e-12);
-    let term, sln = 0, salv = c - s, now = false;
-    for (let i = 1; i <= intEnd; i++) {
-      if (!now) {
-        const d = gDdb(c, s, l, i, f);
-        sln = salv / (l1 - (i - 1));
-        if (sln > d) { term = sln; now = true; } else { term = d; salv -= d; }
-      } else term = sln;
-      if (i === intEnd) term *= per + 1 - intEnd;
-      v += term;
+  /* VDB: the depreciation between times a and b, counted in periods. A period's amount accrues evenly over it, so
+     each period adds the share of it that lies between a and b. A period's amount is the declining balance (rate
+     f / l, at most the whole book value) on what the asset is still worth, never taking it below the salvage value;
+     unless noSwitch, once straight line over the life left gives more, that straight-line amount from then on. */
+  function vdbAmounts(c, s, l, n, f, noSwitch) {
+    const rate = Math.min(f / l, 1), out = [];
+    let book = c, line = 0;
+    for (let k = 1; k <= n; k++) {
+      let d = Math.max(0, Math.min(book * rate, book - s));
+      if (!noSwitch && !line) { const sl = (book - s) / (l - (k - 1)); if (sl > d) line = sl; }
+      if (line) d = line;
+      out.push(d);
+      book -= d;
     }
-    return v;
+    return out;
   }
-  function gDdb(c, s, l, p, f) {
-    let rate = f / l, old;
-    if (rate >= 1) { rate = 1; old = p === 1 ? c : 0; } else old = c * Math.pow(1 - rate, p - 1);
-    const nw = c * Math.pow(1 - rate, p);
-    const d = nw < s ? old - s : old - nw;
-    return d < 0 ? 0 : d;
-  }
-  const near = (a, b) => Math.abs(a - b) < 1e-12;
+  /** a time within rounding of a period boundary is on it */
+  const snap = (t) => (Math.abs(t - Math.round(t)) < 1e-12 ? Math.round(t) : t);
   def('VDB', 5, 7, 'nnnnnnb', (ctx, c, s, l, a, b, f, ns) => {
     f = opt(f, 2); ns = opt(ns, false);
     if (c < 0 || s < 0 || l <= 0 || a < 0 || b < a || b > l || f <= 0) return E.NUM;
-    const iS = Math.floor(a + 1e-12), iE = Math.ceil(b - 1e-12);
+    a = snap(a); b = snap(b);
+    const amounts = vdbAmounts(c, s, l, Math.ceil(b), f, ns);
     let v = 0;
-    if (ns) {
-      for (let i = iS + 1; i <= iE; i++) {
-        let term = gDdb(c, s, l, i, f);
-        if (i === iS + 1) term *= Math.min(b, iS + 1) - a;
-        else if (i === iE) term *= b + 1 - iE;
-        v += term;
-      }
-      return v;
+    for (let k = Math.floor(a) + 1; k <= amounts.length; k++) {
+      const share = Math.min(b, k) - Math.max(a, k - 1);
+      if (share > 0) v += share * amounts[k - 1];
     }
-    let part = 0;
-    if (!near(a, iS)) { const tv = c - interVdb(c, s, l, l, iS, f); part += (a - iS) * interVdb(tv, s, l, l - iS, 1, f); }
-    if (!near(b, iE)) { const ts = iE - 1; const tv = c - interVdb(c, s, l, l, ts, f); part += (iE - b) * interVdb(tv, s, l, l - ts, iE - ts, f); }
-    const c2 = c - interVdb(c, s, l, l, iS, f);
-    return interVdb(c2, s, l, l - iS, iE - iS, f) - part;
+    return v;
   });
+  /* AMORLINC and AMORDEGRC: derived from Apache OpenOffice main/scaddins/source/analysis/analysishelper.cxx,
+     GetAmorlinc and GetAmordegrc (Apache License 2.0) */
   def('AMORLINC', 6, 7, 'nnnnnnn', (ctx, cost, d0, first, salv, per, rt, basis) => {
     basis = trunc(opt(basis, 0)); per = trunc(per);
     if (rt <= 0 || salv > cost || cost <= 0 || basis === 2 || basis < 0 || basis > 4) return E.NUM;

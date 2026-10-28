@@ -9,18 +9,19 @@
   const { h, s } = L;
   const CH = (L.chart = {});
   CH.PALETTE = ['#9999FF', '#993366', '#FFFFCC', '#CCFFFF', '#660066', '#FF8080', '#0066CC', '#CCCCFF', '#000080', '#FF00FF', '#FFFF00', '#00FFFF'];
+  const N = (x) => x;   // UI text, translated where it is shown (common/i18n.js)
   CH.KINDS = [
-    ['col', 'Clustered Column'], ['colStacked', 'Stacked Column'], ['colPct', '100% Stacked Column'],
-    ['bar', 'Clustered Bar'], ['barStacked', 'Stacked Bar'],
-    ['line', 'Line'], ['lineMarkers', 'Line with Markers'],
-    ['area', 'Area'], ['areaStacked', 'Stacked Area'],
-    ['pie', 'Pie'], ['doughnut', 'Doughnut'], ['scatter', 'XY (Scatter)'],
+    ['col', N('Clustered Column')], ['colStacked', N('Stacked Column')], ['colPct', N('100% Stacked Column')],
+    ['bar', N('Clustered Bar')], ['barStacked', N('Stacked Bar')],
+    ['line', N('Line|chart')], ['lineMarkers', N('Line with Markers')],
+    ['area', N('Area|chart')], ['areaStacked', N('Stacked Area')],
+    ['pie', N('Pie|chart')], ['doughnut', N('Doughnut')], ['scatter', N('XY (Scatter)')],
   ];
   /* kinds only the v2 renderer (Lectern's chart-draw.js) draws; offered when it is loaded */
   const KINDS_V2 = CH.KINDS.slice();
-  KINDS_V2.splice(5, 0, ['barPct', '100% Stacked Bar']);
-  KINDS_V2.splice(10, 0, ['areaPct', '100% Stacked Area']);
-  KINDS_V2.push(['bubble', 'Bubble'], ['radar', 'Radar'], ['radarFilled', 'Filled Radar']);
+  KINDS_V2.splice(5, 0, ['barPct', N('100% Stacked Bar')]);
+  KINDS_V2.splice(10, 0, ['areaPct', N('100% Stacked Area')]);
+  KINDS_V2.push(['bubble', N('Bubble')], ['radar', N('Radar')], ['radarFilled', N('Filled Radar')]);
   CH.kinds = () => (CH.renderV2 ? KINDS_V2 : CH.KINDS);
   /* the design (theme) of what is being edited, for theme colours: Lectern's slide; none in Quire and Ledger */
   const curDesign = () => (L.ui && L.ui.currentDesign ? L.ui.currentDesign() : null);

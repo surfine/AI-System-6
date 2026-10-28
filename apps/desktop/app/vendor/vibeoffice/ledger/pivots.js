@@ -265,7 +265,7 @@
     for (const t of p.tables) {
       if (t.drop) {
         // Told only when the result stays behind as plain cells; a deleted sheet or output takes the pivot with it
-        const notice = t.notify ? { what: 'This pivot table will be saved as plain cells, because ' + (/source column/.test(t.drop) ? 'a column it uses was deleted from its source data.' : 'its source data was deleted.'), place: (sheet(wb, t.sheet)?.name || '') + ': ' + t.name, notify: true } : { what: t.drop, notify: false };
+        const notice = t.notify ? { what: /source column/.test(t.drop) ? 'This pivot table will be saved as plain cells, because a column it uses was deleted from its source data.' : 'This pivot table will be saved as plain cells, because its source data was deleted.', place: (sheet(wb, t.sheet)?.name || '') + ': ' + t.name, notify: true } : { what: t.drop, notify: false };
         if (!t.copy) w.omit(t.part, notice.what, { notify: notice.notify, place: notice.place }); else w.loss({ id: 'pivot-copy:' + t.sheet + ':' + t.name, what: notice.what, place: notice.place, notify: notice.notify, where: t.name, action: 'drop' });
         continue;
       }

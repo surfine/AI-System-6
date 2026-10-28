@@ -4532,7 +4532,7 @@ function renderOneMoreTuneChallenge(body) {
     const links = listen || film ? `<span class="omt-links">${listen}${film}</span>` : "";
     body.innerHTML = oneMoreTuneRoom("reveal", `
           ${oneMoreTuneRoundStage(question, { status: `<span class="omt-verdict" data-s="${verdict}"><span aria-hidden="true">${verdict === "right" ? "✓" : verdict === "skip" ? "–" : "✕"}</span><span data-i18n="${verdictKey}">${oneMoreTuneEscape(t(verdictKey))}</span></span>` })}
-          <div class="omt-gap"></div>
+          <div class="omt-gap"><div class="omt-wheel-slot" data-one-more-tune-wheel role="group" aria-label="${oneMoreTuneEscape(t("one_more_tune_wheel_aria"))}" data-i18n-aria-label="one_more_tune_wheel_aria"></div></div>
           <div class="omt-q"><div class="omt-notes">
             <h2 class="omt-title" id="one-more-tune-step-title">${oneMoreTuneEscape([notes.song, notes.artist].filter(Boolean).join(" — "))}</h2>
             <p class="omt-meta">${notes.film ? `<span>${oneMoreTuneEscape(notes.film)}</span>` : ""}${links}</p>
@@ -4542,6 +4542,8 @@ function renderOneMoreTuneChallenge(body) {
             <div class="omt-grid">${oneMoreTuneChoiceKeys(question, { reveal: true })}</div>
             <div class="omt-act"><button class="omt-next" type="button" data-one-more-tune-command="one-more-tune-round-next" data-i18n="${last ? "one_more_tune_see_result" : "one_more_tune_next"}">${oneMoreTuneEscape(t(last ? "one_more_tune_see_result" : "one_more_tune_next"))}</button></div>
           </div>`, { enter });
+    oneMoreTuneRoot()?.setAttribute("data-omt-scrub", "");
+    oneMoreTuneAttachReplayWheel(question);
     return;
   }
   clearOneMoreTuneNowPlaying();
@@ -4558,9 +4560,112 @@ function renderOneMoreTuneChallenge(body) {
       : "";
   body.innerHTML = oneMoreTuneRoom("question", `
           ${oneMoreTuneRoundStage(question, { status: '<span class="omt-aux mono" aria-hidden="true"><span data-disc-elapsed>— : —</span><span class="omt-sep">/</span><span data-disc-total>— : —</span></span>' })}
-          <div class="omt-gap"></div>
+          <div class="omt-gap"><div class="omt-wheel-slot" data-one-more-tune-wheel role="group" aria-label="${oneMoreTuneEscape(t("one_more_tune_wheel_aria"))}" data-i18n-aria-label="one_more_tune_wheel_aria"></div></div>
           <div class="omt-q"><h2 class="omt-qtext" id="one-more-tune-step-title" data-i18n="${question.prompt}">Which one does this belong to?</h2>${notice}${oneMoreTuneSongEmbed(question)}</div>
           <div class="omt-opts"><div class="omt-grid">${oneMoreTuneChoiceKeys(question)}</div></div>`);
+  oneMoreTuneRoot()?.removeAttribute("data-omt-scrub");
+  oneMoreTuneAttachChoiceWheel(question);
+}
+
+// --- The click wheel ----------------------------------------------------
+//
+// The wide room's breathing space is where the wheel earns its keep: a radio
+// with its dial on the left and its wheel on the right. The narrow rooms keep
+// the four keys alone — on a phone the keys are already thumb-sized targets,
+// and a wheel that duplicates them is one more thing to learn for nothing.
+// The CSS owns that decision (@container omt); this side only mounts.
+//
+// Everything the wheel does goes through doors that already exist: focus is a
+// data attribute on the very key buttons the eye already knows, and a commit
+// clicks the key it named, so the submit path, its receipts, its waiting
+// state and its audio unlock are shared, not paralleled.
+
+let oneMoreTuneWheelModule = null;
+
+async function oneMoreTuneEnsureWheel() {
+  if (window.AISystem6OneMoreTuneWheel) {
+    oneMoreTuneWheelModule = window.AISystem6OneMoreTuneWheel;
+    return oneMoreTuneWheelModule;
+  }
+  // The loader is config.js's own; a contract that runs this file alone has
+  // neither it nor a module loader, and the wheel is simply not mounted there.
+  if (typeof ensureOneMoreTuneWheelModule === "function") {
+    await ensureOneMoreTuneWheelModule();
+    oneMoreTuneWheelModule = window.AISystem6OneMoreTuneWheel || null;
+  }
+  return oneMoreTuneWheelModule;
+}
+
+function oneMoreTuneAttachChoiceWheel(question) {
+  const slot = document.querySelector('[data-window="oneMoreTune"] [data-one-more-tune-wheel]');
+  if (!slot || !question || question.submitted) return;
+  void oneMoreTuneEnsureWheel().then((wheel) => {
+    // The face may have moved on while the module travelled; a stale mount
+    // would put a wheel on a reveal.
+    if (!wheel || !slot.isConnected) return;
+    const keys = () => [...slot.closest(".omt-room").querySelectorAll(".omt-opts button.omt-opt[data-one-more-tune-submit]")];
+    wheel.mount(slot, {
+      count: (question.choices || []).length,
+      selectLabel: t("one_more_tune_wheel_select"),
+      zoneAria: (n) => t("one_more_tune_wheel_zone").replace("{n}", String(n + 1)),
+      onFocus: (index) => {
+        keys().forEach((key, i) => {
+          if (i === index) key.setAttribute("data-wheel-focus", "true");
+          else key.removeAttribute("data-wheel-focus");
+        });
+      },
+      onCommit: (index) => keys()[index]?.click(),
+      haptic: (ms) => {
+        try { navigator.vibrate?.(ms); } catch { /* no haptics is fine */ }
+      },
+    });
+  });
+}
+
+// The reveal's wheel is a scrub: the answer is known, the question is where
+// did that sound sit, and turning moves the replay's start inside the cue
+// window. The window is the red line — a preview plays 0–30 seconds and
+// nothing else — so the wheel asks for a delta and the clamping lives here,
+// next to the window it protects; the wheel never learns where the edges are.
+let oneMoreTuneReplayOffset = 0;
+
+function oneMoreTuneAttachReplayWheel(question) {
+  const slot = document.querySelector('[data-window="oneMoreTune"] [data-one-more-tune-wheel]');
+  if (!slot || !question || !question.submitted) return;
+  oneMoreTuneReplayOffset = 0;
+  void oneMoreTuneEnsureWheel().then((wheel) => {
+    if (!wheel || !slot.isConnected) return;
+    const { start, end } = oneMoreTuneCueWindow(question);
+    const span = Math.max(0, end - start);
+    if (!Number.isFinite(span) || span <= 0) return;
+    const clamp = (seconds) => Math.max(0, Math.min(span - 1, seconds));
+    wheel.mount(slot, {
+      mode: "scrub",
+      selectLabel: t("one_more_tune_wheel_replay"),
+      zoneAria: (n) => t("one_more_tune_wheel_zone_seek").replace("{n}", String(n + 1)),
+      zoneSeconds: [-5, 5, 15, -15],
+      scrubBy: (delta) => {
+        oneMoreTuneReplayOffset = clamp(oneMoreTuneReplayOffset + delta);
+      },
+      onScrubCommit: () => {
+        unlockOneMoreTuneAudio();
+        const key = oneMoreTuneQuestionAudioKey(question);
+        void oneMoreTuneLoadMedia(question).then((ready) => {
+          if (!ready) return;
+          // The hear command repaints through its render; this commit owes the
+          // same face sync, or the radio would keep saying idle while the cue
+          // sounds.
+          if (playOneMoreTuneWindow(key, start + oneMoreTuneReplayOffset, end)) {
+            paintOneMoreTuneDisc();
+            startOneMoreTuneDiscTicker();
+          }
+        });
+      },
+      haptic: (ms) => {
+        try { navigator.vibrate?.(ms); } catch { /* no haptics is fine */ }
+      },
+    });
+  });
 }
 
 /**

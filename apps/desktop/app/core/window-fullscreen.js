@@ -196,10 +196,21 @@
   });
 
   // ---- The green lamp -----------------------------------------------------
+  // Only Lion moves Zoom to a green lamp beside Close. Its right end is the
+  // full-screen arrows, so Zoom needs its own control. The later eras that
+  // also grant `full-screen` keep their real green lamp at the right and put
+  // full screen on that same button; adding a second lamp there would be a
+  // duplicate control, and without a grid slot it falls into an implicit
+  // second title-bar row as an unstyled native button.
+  const ZOOM_LAMP_THEME = "lion";
+
   function syncZoomLamp(win) {
     const bar = win?.querySelector?.(":scope > .title-bar");
     const existing = bar?.querySelector?.(":scope > .zoom-lamp") || null;
-    const wants = bar && enabled() && bar.querySelector(":scope > .resize-box");
+    const wants = bar
+      && enabled()
+      && window.AISystem6Theme?.getCurrentTheme?.() === ZOOM_LAMP_THEME
+      && bar.querySelector(":scope > .resize-box");
     if (!wants) {
       existing?.remove();
       return;

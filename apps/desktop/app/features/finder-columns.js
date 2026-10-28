@@ -36,7 +36,7 @@
     return [
       ...getProjectFolders().filter((item) => (item.parentId || null) === parentId).map((item) => ref("folder", item)),
       ...getProjectFiles().filter((item) => (item.folderId || null) === parentId).map((item) => ref("file", item)),
-      ...(parentId ? [] : projectReferences.filter((item) => item.projectId === activeProjectId).map((item) => ref("projectReference", item))),
+      ...(parentId ? [] : projectReferences.filter((item) => item.projectId === activeProjectId && !item.officeFileId).map((item) => ref("projectReference", item))),
     ];
   }
 

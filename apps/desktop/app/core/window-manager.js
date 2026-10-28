@@ -927,6 +927,8 @@ function sideAskSourceDisplayLabel(appId = sideAskAnchorAppId) {
     return title ? `${t("time_machine")} / ${title}` : t("time_machine");
   }
   if (appId === "imagePromptStudio") return t("image_prompt_studio_label");
+  const anchor = window.AISystem6SideAskAnchors?.[appId];
+  if (anchor) return anchor.label();
   if (appId === "endfieldTerminal") {
     const ctx = window.AISystem6EndfieldSideAsk;
     return ctx?.query
@@ -984,6 +986,7 @@ function focusSideAskSource() {
     timeMachine: "timeMachine",
     imagePromptStudio: "imagePromptStudio",
     endfieldTerminal: "endfieldTerminal",
+    aaronBlog: "aaronBlog",
   }[sideAskAnchorAppId];
   const sourceWindow = windowName ? getWindow(windowName) : null;
   if (sourceWindow) focusWindow(sourceWindow);
@@ -2822,9 +2825,12 @@ function syncEditStepLabels() {
   const history = typeof getActiveEditableElement === "function" && getActiveEditableElement() ? null : editHistoryFor();
   ["undo", "redo"].forEach((command) => {
     const step = history?.[`${command}Label`]?.() || "";
+    // A 「全部替换 N 处」 step keeps its count: the history hands over the
+    // label's args, so the translation renders the number the step was named with.
+    const args = typeof history?.[`${command}LabelArgs`] === "function" ? history[`${command}LabelArgs`]() : [];
     // An app whose Edit menu keeps its own Undo row marks it data-edit-step.
     document.querySelectorAll(`[data-action="${command}"][data-i18n], [data-edit-step="${command}"][data-i18n]`).forEach((row) => {
-      const text = step ? t(`${command}_step`, t(step)) : t(row.dataset.i18n);
+      const text = step ? t(`${command}_step`, t(step, ...args)) : t(row.dataset.i18n);
       if (!writeShortcutRowLabel(row, text)) row.textContent = text;
     });
   });
@@ -2863,11 +2869,6 @@ function getActionAvailability() {
   // Outline - and an unavailable command is refused in silence.
   const routeWinName = (typeof currentWritingRouteStop === "function" && currentWritingRouteStop()) || winName;
   const quickDraftApi = winName === "quickDraft" ? window.AISystem6QuickDraft : null;
-  const quickDraftHasBody = Boolean(quickDraftApi?.hasBody?.());
-  const quickDraftHasInput = Boolean(quickDraftApi?.hasInput?.());
-  const quickDraftHasOrganizableMaterial = Boolean(quickDraftApi?.hasOrganizableMaterial?.());
-  const quickDraftVentActive = Boolean(quickDraftApi?.isVentIntakeActive?.());
-  const quickDraftHasModel = Boolean(quickDraftApi?.modelAvailable?.());
   const quickDraftCanPreview = Boolean(quickDraftApi?.canPreviewAdjustments?.());
   const quickDraftCanDevelop = Boolean(quickDraftApi?.canDevelop?.());
   const lightroomApi = winName === "lightroom" ? window.AISystem6QuickDraft : null;
@@ -2997,10 +2998,6 @@ function getActionAvailability() {
   // Wider than reviewDeskReady on purpose: the command promotes a saved "final"
   // file into review rather than refusing it, so the row must stay black there.
   const canViewReviewManuscript = canEnterTeachTextReviewState({ promoteSavedFinal: true });
-  const activeControlEnabled = (selector) => {
-    const control = document.querySelector(selector);
-    return !!control && !control.disabled && !control.classList.contains("is-disabled") && !control.hidden;
-  };
   // Some controls (Reader's toolbar, Scrapbook's editor buttons) own their
   // real availability through the native disabled/hidden state. updateMenuState()
   // mirrors that availability onto the shared `is-disabled` class, so reading
@@ -3061,6 +3058,10 @@ function getActionAvailability() {
     "new-folder": winName === "documents"
       ? isProjectMounted
       : !!finderVolumeCapabilities?.canCreateFolder,
+    // An Office blank or pad lands on the Project Hard Disk, so both need it;
+    // marking a pad also needs an Office editor in front.
+    "new-office-document": isProjectMounted,
+    "office-save-as-stationery": isProjectMounted && ["clioWrite", "clioChart", "clioStage"].includes(winName),
     "open-menu-selection": finderVolumeCapabilities
       ? finderVolumeCapabilities.canOpen
       : !!activeItem,
@@ -3142,6 +3143,9 @@ function getActionAvailability() {
     // Word takes the manuscript on screen or the conversation in front of
     // the writer, so the row is black wherever one of those exists.
     "export-document-word": isTeachText || isChatFile || (isAssistant && hasConversation),
+    // N14 送审 sends the manuscript itself, so it needs exactly that: the
+    // TeachText window with a body to clean, footnote and hand over.
+    "send-manuscript-review": isTeachText && hasTeachTextBody,
     "download-active-bilingual-markdown": hasTeachTextTranslation,
     "export-teachtext-project-cd": teachTextCanBurnProjectCd,
     // Sending a draft to the darkroom needs a draft. The row is grey until one
@@ -3377,6 +3381,11 @@ function getActionAvailability() {
     // open, so it has no state to refuse on.
     "open-dictation": true,
     "open-heading-navigator": !!mdeFormatTarget(false),
+    // N15a: 打开链接在光标落在 Markdown 链接内时可用。解析器是懒载的
+    // （writing-safety.js）：模块就位后按真实链接作答；未就位时按「写作面
+    // 在前」作答，命令加载后自己再解释（Time Machine 行同款边界）。
+    "format-open-link": !!MDE_FORMAT_SURFACES[winName]
+      && (window.AISystem6WritingSafety?.canFollowLink?.() ?? true),
     "open-rag": true,
     "open-text-disk": getMountedTextDiskChunks().length > 0,
     "insert-text-disk": isProjectMounted,

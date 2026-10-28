@@ -59,7 +59,7 @@
     }
     return K.attributes(K.merge(xml, changes, type), attrs);
   };
-  D.runFields = { b: '@b', i: '@i', u: '@u', strike: '@strike', sz: '@sz', spc: '@spc', kern: '@kern', base: '@baseline', lang: '@lang', cap: '@cap', font: 'latin', hl: 'highlight', color: 'solidFill noFill gradFill blipFill pattFill grpFill', fill: 'solidFill noFill gradFill blipFill pattFill grpFill', ln: 'ln', shd: 'effectLst', shdX: 'effectLst' };
+  D.runFields = { b: '@b', i: '@i', u: '@u', strike: '@strike', sz: '@sz', spc: '@spc', kern: '@kern', base: '@baseline', lang: '@lang', cap: '@cap', font: 'latin', fontEA: 'ea', hl: 'highlight', color: 'solidFill noFill gradFill blipFill pattFill grpFill', fill: 'solidFill noFill gradFill blipFill pattFill grpFill', ln: 'ln', shd: 'effectLst', shdX: 'effectLst' };
   D.paraFields = { algn: '@algn', marL: '@marL', marR: '@marR', indent: '@indent', rtl: '@rtl', defTab: '@defTabSz', spcBef: 'spcBef', spcAft: 'spcAft', lnSpc: 'lnSpc', tabs: 'tabLst', bu: 'buClrTx buClr buSzTx buSzPct buSzPts buFontTx buFont buNone buAutoNum buChar buBlip' };
   function levels(xml, generated, current, before) {
     const fresh = K.parse(generated), replacements = {};

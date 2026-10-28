@@ -1,0 +1,319 @@
+/* ClioTalk agent mode (app/features/cliotalk-agent.js): the mode bar, the run
+   card's plan and work log, the shadow strip, Chooser's shared folders and the
+   put-back dialog. Built on demand, so this sheet travels with its loader
+   (styles.cliotalk-agent.css) and never rides the boot. Every selector is
+   scoped to .clio-agent-*, .chooser-folder* or .agent-putback-*; colours and
+   lines are the foundation's tokens, so each era dresses them. */
+
+.clio-agent-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 4px 8px;
+  border-bottom: var(--system-border);
+  background: var(--details-bar-bg);
+  font-size: 12px;
+}
+
+/* The welcome speaks about ClioTalk's own model; the agent runs on the
+   engine host, so the card would only say something untrue here. */
+.assistant-window.is-agent-mode .clio-welcome {
+  display: none;
+}
+
+.clio-agent-modes {
+  display: inline-flex;
+  gap: 0;
+}
+
+.clio-agent-mode-choice[aria-checked="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.clio-agent-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.clio-agent-model,
+.clio-agent-note {
+  color: var(--ink);
+}
+
+.clio-agent-note {
+  font-style: italic;
+}
+
+.clio-agent-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+  border-top: var(--system-border);
+  font-size: 12px;
+}
+
+.clio-agent-stop-hint {
+  margin-left: auto;
+}
+
+.clio-agent-run .message-content {
+  display: grid;
+  gap: 10px;
+}
+
+.clio-agent-plan {
+  border: var(--system-border);
+}
+
+.clio-agent-plan-head {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-bottom: var(--system-border);
+}
+
+.clio-agent-plan-list {
+  margin: 0;
+  padding: 6px 10px;
+  list-style: none;
+  display: grid;
+  gap: 2px;
+}
+
+.clio-agent-plan-list label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.clio-agent-plan-list .is-current {
+  font-weight: bold;
+}
+
+.clio-agent-log {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--mono-font);
+  font-size: 12px;
+}
+
+.clio-agent-log-line {
+  display: grid;
+  grid-template-columns: 7em minmax(0, 1fr);
+  column-gap: 8px;
+}
+
+.clio-agent-log-subject {
+  overflow-wrap: anywhere;
+}
+
+.clio-agent-log-error {
+  grid-column: 2;
+  overflow-wrap: anywhere;
+}
+
+.clio-agent-log-line.is-failed .clio-agent-log-verb {
+  text-decoration: line-through;
+}
+
+.clio-agent-text {
+  border-left: 3px solid var(--ink);
+  padding-left: 10px;
+}
+
+.chooser-folder-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.chooser-folder {
+  border: var(--system-border);
+  padding: 6px;
+  display: grid;
+  gap: 4px;
+}
+
+.chooser-folder.is-unavailable {
+  opacity: 0.6;
+}
+
+.chooser-folder-head {
+  display: grid;
+}
+
+.chooser-folder-head small {
+  overflow-wrap: anywhere;
+}
+
+.chooser-folder-levels {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.agent-putback-modal {
+  width: min(760px, calc(100vw - 32px));
+}
+
+.agent-putback-form {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.agent-putback-form h2 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.agent-putback-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
+  min-height: 280px;
+  border: var(--system-border);
+}
+
+.agent-putback-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-right: var(--system-border);
+  overflow: auto;
+  max-height: 50vh;
+}
+
+.agent-putback-list li {
+  border-bottom: var(--system-border);
+  padding: 4px 6px;
+}
+
+.agent-putback-list li.is-focused {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.agent-putback-list label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.agent-putback-name {
+  all: unset;
+  cursor: default;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.agent-putback-badge {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* The put-back window's two tabs: files that wait in the shadow, and the
+   engine's proposals (clips, review notes, restore packs). */
+.agent-putback-tabs {
+  display: flex;
+  gap: 0;
+}
+
+.agent-putback-tabs button {
+  border: var(--system-border);
+  border-bottom: 0;
+  padding: 2px 12px;
+}
+
+.agent-putback-tabs button.is-active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* A proposal's payload is data the writer reads before deciding: the passage
+   verbatim, the engine's words labelled as the engine's. */
+.agent-proposal-reason {
+  margin: 0;
+  font-style: italic;
+}
+
+.agent-proposal-quote {
+  margin: 0;
+  padding: 4px 8px;
+  border-left: 3px solid var(--ink);
+  font-family: var(--mono-font);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.agent-proposal-files {
+  margin: 0;
+  padding: 0 0 0 18px;
+}
+
+.agent-proposal-status {
+  display: block;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.agent-putback-preview .button-row {
+  margin-top: 8px;
+}
+
+.agent-putback-preview {
+  padding: 8px 10px;
+  overflow: auto;
+  max-height: 50vh;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
+.agent-putback-diff {
+  margin: 0;
+  font-family: var(--mono-font);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.agent-putback-diff .is-added {
+  font-weight: bold;
+}
+
+.agent-putback-diff .is-removed {
+  text-decoration: line-through;
+}
+
+.agent-putback-report {
+  border: var(--system-border);
+  padding: 6px 8px;
+}
+
+.agent-putback-conflict {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 700px) {
+  .agent-putback-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .agent-putback-list {
+    border-right: 0;
+    border-bottom: var(--system-border);
+  }
+}

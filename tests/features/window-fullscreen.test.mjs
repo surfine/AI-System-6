@@ -10,7 +10,7 @@
 // really is Zoom.
 
 import { createAppBootVm } from "../helpers/app-boot-vm.mjs";
-import { createFeatureTest } from "../helpers/feature-test-harness.mjs";
+import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
 const test = createFeatureTest("window-fullscreen");
 const vmw = createAppBootVm();
@@ -164,6 +164,116 @@ test.assert(!vmw.run('getWindow("control").classList.contains("is-fullscreen")')
 test.assert(
   vmw.run('getWindow("control").querySelector(":scope > .title-bar > .zoom-lamp") === null'),
   "and Snow Leopard draws no extra green lamp",
+);
+
+// Full screen reached Yosemite, Big Sur and Liquid Glass too, but Lion's
+// extra Zoom lamp is not their anatomy: their green lamp is already the
+// right-end full-screen button. Without a grid slot the extra button fell
+// into an implicit second title-bar row and painted as an unstyled native
+// button under Close.
+for (const theme of ["yosemite", "big-sur", "liquid-glass"]) {
+  await vmw.context.AISystem6Theme.applyTheme(theme, { persist: false });
+  await vmw.context.AISystem6Theme.whenReady();
+  test.assert(
+    vmw.run('getWindow("control").querySelector(":scope > .title-bar > .zoom-lamp") === null'),
+    `${theme} adds no second Zoom lamp beside the green full-screen button`,
+  );
+  test.assert(
+    vmw.run('getWindow("control").querySelector(":scope > .title-bar > .resize-box") !== null'),
+    `${theme} keeps its own right-end green button`,
+  );
+}
+
+// The lamp belongs to Lion's anatomy, so returning to Lion puts it back.
+await vmw.context.AISystem6Theme.applyTheme("lion", { persist: false });
+await vmw.context.AISystem6Theme.whenReady();
+test.assert(
+  vmw.run('getWindow("control").querySelector(":scope > .title-bar > .zoom-lamp") !== null'),
+  "returning to Lion restores the green Zoom lamp",
+);
+
+// --- the menu bar hides in full screen, and the top edge brings it back -----
+// 10.7 hides the bar with the window's own title bar and slides it back over
+// the full-screen window while the pointer is at the top edge (macOS). The
+// failure this pins: the bar could not be summoned at all, because the hot
+// zone was a 4px strip with no stacking rung of its own -- a pointer aimed at
+// where the bar appears hit nothing, and dipping below the strip during the
+// slide hid the bar again mid-flight.
+vmw.run('window.AISystem6WindowFullscreen.enter(getWindow("control"))');
+test.assert(vmw.run('document.body.classList.contains("window-fullscreen-active")'), "full screen takes the menu bar off the desk");
+test.assert(
+  vmw.run('document.querySelectorAll(".fullscreen-reveal").length === 1'),
+  "one top-edge hot zone exists while a window is full screen (the bar is a single global object)",
+);
+// Pointer into the band reveals the bar over the full-screen window.
+vmw.run('document.querySelector(".fullscreen-reveal").dispatchEvent(new Event("pointerenter"))');
+test.assert(
+  vmw.run('document.body.classList.contains("fullscreen-menu-revealed")'),
+  "the pointer at the top edge reveals the menu bar",
+);
+// A document pointerover names its target by hand: the VM's Event, like the
+// browser's, owns a getter-only target a plain Object.assign cannot write.
+const pointerOver = (targetScript) => vmw.run(`(() => {
+  const event = new Event("pointerover", { bubbles: true });
+  Object.defineProperty(event, "target", { value: ${targetScript} });
+  document.dispatchEvent(event);
+})()`);
+// Resting inside the zone's band under the bar keeps it: leaving must mean
+// leaving the bar AND the band.
+pointerOver('document.querySelector(".fullscreen-reveal")');
+test.assert(
+  vmw.run('document.body.classList.contains("fullscreen-menu-revealed")'),
+  "the pointer resting in the band under the revealed bar does not dismiss it",
+);
+// So does the bar itself and an open menu popover.
+pointerOver('document.querySelector(".menu-bar .apple")');
+test.assert(
+  vmw.run('document.body.classList.contains("fullscreen-menu-revealed")'),
+  "the pointer over the revealed bar keeps it revealed",
+);
+// Moving onto the full-screen window's content hides it again.
+pointerOver('getWindow("control")');
+test.assert(
+  !vmw.run('document.body.classList.contains("fullscreen-menu-revealed")'),
+  "leaving the bar for the window hides it again",
+);
+// Leaving full screen returns the resident bar: no zone, no reveal state.
+vmw.run('window.AISystem6WindowFullscreen.exit(getWindow("control"))');
+test.assert(
+  vmw.run('document.querySelectorAll(".fullscreen-reveal").length === 0 && !document.body.classList.contains("window-fullscreen-active") && !document.body.classList.contains("fullscreen-menu-revealed")'),
+  "exiting full screen removes the zone and restores the resident menu bar",
+);
+
+// The zone's stacking and geometry are the fix's other half, and they live in
+// the sheets: a rung above every window and the Control Strip, under the bar
+// it summons, and a band as tall as the bar plus a 4px trigger strip.
+const foundation = read("styles/00-foundation.css");
+const deskDock = read("styles/88-desk-dock.css");
+const zValue = (token) => Number((foundation.match(new RegExp(`--${token}:\\s*(\\d+)`)) || [])[1]);
+test.assert(
+  zValue("z-fullscreen-reveal") > zValue("z-window-priority")
+    && zValue("z-fullscreen-reveal") > zValue("z-control-strip")
+    && zValue("z-fullscreen-reveal") < zValue("z-system-menu"),
+  "the hot zone stacks above a full-screen window and the strip, under the menu bar it reveals",
+);
+test.assert(
+  deskDock.includes("height: calc(var(--menu-bar-height) + 4px)"),
+  "the hot band is the menu bar's own height plus a 4px trigger strip, as macOS's top-edge zone is",
+);
+test.assert(
+  deskDock.includes("z-index: var(--z-fullscreen-reveal)"),
+  "the hot zone claims its stacking rung by token",
+);
+test.assert(
+  deskDock.includes("body.window-fullscreen-active .menu-bar") && deskDock.includes("fullscreen-menu-revealed .menu-bar"),
+  "full screen hides the bar by transform and the reveal state brings it back, overlaying the window",
+);
+// The phone's own full-screen shell is a different mechanism: its classes and
+// sheets never meet the desktop reveal (is-mobile-fullscreen stays as it was).
+const responsive = read("styles/60-responsive.css");
+test.assert(
+  !responsive.includes("fullscreen-reveal") && !responsive.includes("fullscreen-menu-revealed"),
+  "the mobile full-screen shell keeps its own rules, untouched by the desktop reveal",
 );
 
 test.finish();

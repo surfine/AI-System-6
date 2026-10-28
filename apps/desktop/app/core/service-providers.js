@@ -90,14 +90,59 @@
     },
   });
 
-  window.AISystem6Capabilities?.registerServiceProvider?.("reader.subtitlesTranslate", {
+  // Routes that only forward the caller's own init to one fixed path. They
+  // were twenty-two copies of the same provider; a table keeps each route
+  // named here (the service boundary's one place) for a fraction of the boot
+  // bytes.
+  [
+    ["reader.subtitlesTranslate", "/api/subtitles/translate"],
+    // The MCP bridge, both directions. The page answers a guest's tool call and
+    // mints an invitation through these, and asks an external server through the
+    // third, so a shell that carries the desk somewhere else can swap the
+    // transport without touching the bridge itself.
+    ["agent.executorReply", "/api/agent/executor/reply"],
+    ["agent.executorToken", "/api/agent/executor/token"],
+    ["mcp.client", "/api/mcp/client"],
+    ["cloud.credentials", "/api/cloud/credentials"],
+    ["cloud.status", "/api/cloud/status"],
+    // A subscription CLI provider (Claude / Codex) has no endpoint to probe; the
+    // server answers whether the CLI is installed and signed in.
+    ["cloud.subscriptionStatus", "/api/subscription-cli/status"],
+    ["cloud.models", "/api/cloud/models"],
+    ["vision.analyze", "/api/vision/analyze"],
+    ["cloud.files.upload", "/api/cloud/files"],
+    ["cloud.files.delete", "/api/cloud/files"],
+    ["local.lmstudio.start", "/api/lmstudio/start"],
+    ["device.chat", "/api/device-model/chat"],
+    ["macShared.session", "/api/mac-shared/session"],
+    ["endfield.ask", "/api/endfield/ask"],
+    ["cmf.capabilities", "/api/cmf/capabilities"],
+    ["cmf.exportUsdz", "/api/cmf/export-usdz"],
+    ["artifact.import.ocr", "/api/import-ocr-pages"],
+    ["artifact.import.text", "/api/import-text"],
+    // N9: iWork original pages and the Office copy, both through the server's
+    // own iWork importer.
+    ["artifact.import.iwork", "/api/import-iwork-convert"],
+    ["system.version", "/api/version"],
+    ["quickDraft.thesis", "/api/draft/thesis"],
+    ["bureaucracyMeme.captions", "/api/bureaucracy/captions"],
+  ].forEach(([name, url]) => {
+    window.AISystem6Capabilities?.registerServiceProvider?.(name, {
+      id: "same-origin-node",
+      request(input = {}) {
+        return sameOriginNode.request({ url, init: input.init, signal: input.signal });
+      },
+    });
+  });
+
+  // ClioTalk's engine host (docs/AGENT-HARNESS.md): one provider for the
+  // /api/agent/folders* and /api/agent/runs* family, path checked here.
+  window.AISystem6Capabilities?.registerServiceProvider?.("agent.harness", {
     id: "same-origin-node",
     request(input = {}) {
-      return sameOriginNode.request({
-        url: "/api/subtitles/translate",
-        init: input.init,
-        signal: input.signal,
-      });
+      const url = String(input.path || "");
+      if (!/^\/api\/agent\/(?:folders|runs)(?:[/?]|$)/.test(url)) return Promise.reject(new Error("Not an agent route."));
+      return sameOriginNode.request({ url, init: input.init, signal: input.signal });
     },
   });
 
@@ -118,43 +163,6 @@
       if (input.provider) params.set("provider", input.provider);
       return sameOriginNode.request({
         url: `/api/search?${params.toString()}`,
-        signal: input.signal,
-      });
-    },
-  });
-
-  // The MCP bridge, both directions. The page answers a guest's tool call and
-  // mints an invitation through these, and asks an external server through the
-  // third, so a shell that carries the desk somewhere else can swap the
-  // transport without touching the bridge itself.
-  window.AISystem6Capabilities?.registerServiceProvider?.("agent.executorReply", {
-    id: "same-origin-node",
-    request(input = {}) {
-      return sameOriginNode.request({
-        url: "/api/agent/executor/reply",
-        init: input.init,
-        signal: input.signal,
-      });
-    },
-  });
-
-  window.AISystem6Capabilities?.registerServiceProvider?.("agent.executorToken", {
-    id: "same-origin-node",
-    request(input = {}) {
-      return sameOriginNode.request({
-        url: "/api/agent/executor/token",
-        init: input.init,
-        signal: input.signal,
-      });
-    },
-  });
-
-  window.AISystem6Capabilities?.registerServiceProvider?.("mcp.client", {
-    id: "same-origin-node",
-    request(input = {}) {
-      return sameOriginNode.request({
-        url: "/api/mcp/client",
-        init: input.init,
         signal: input.signal,
       });
     },
@@ -184,63 +192,6 @@
     },
   });
 
-  window.AISystem6Capabilities?.registerServiceProvider?.("cloud.credentials", {
-    id: "same-origin-node",
-    request(input = {}) {
-      return sameOriginNode.request({
-        url: "/api/cloud/credentials",
-        init: input.init,
-        signal: input.signal,
-      });
-    },
-  });
-
-  window.AISystem6Capabilities?.registerServiceProvider?.("cloud.status", {
-    id: "same-origin-node",
-    request(input = {}) {
-      return sameOriginNode.request({
-        url: "/api/cloud/status",
-        init: input.init,
-        signal: input.signal,
-      });
-    },
-  });
-
-  // A subscription CLI provider (Claude / Codex) has no endpoint to probe; the
-  // server answers whether the CLI is installed and signed in.
-  window.AISystem6Capabilities?.registerServiceProvider?.("cloud.subscriptionStatus", {
-    id: "same-origin-node",
-    request(input = {}) {
-      return sameOriginNode.request({
-        url: "/api/subscription-cli/status",
-        init: input.init,
-        signal: input.signal,
-      });
-    },
-  });
-
-  window.AISystem6Capabilities?.registerServiceProvider?.("cloud.models", {
-    id: "same-origin-node",
-    request(input = {}) {
-      return sameOriginNode.request({
-        url: "/api/cloud/models",
-        init: input.init,
-        signal: input.signal,
-      });
-    },
-  });
-
-  window.AISystem6Capabilities?.registerServiceProvider?.("vision.analyze", {
-    id: "same-origin-node",
-    request(input = {}) {
-      return sameOriginNode.request({
-        url: "/api/vision/analyze",
-        init: input.init,
-        signal: input.signal,
-      });
-    },
-  });
-
   window.AISystem6Capabilities?.registerServiceProvider?.("cloud.chat", {
     id: "same-origin-node",
     request(input = {}) {
@@ -248,28 +199,6 @@
         url: typeof cloudCredentialMode === "function" && cloudCredentialMode() === "shared-remote"
           ? "/api/mac-shared/chat"
           : "/api/cloud/chat",
-        init: input.init,
-        signal: input.signal,
-      });
-    },
-  });
-
-  window.AISystem6Capabilities?.registerServiceProvider?.("cloud.files.upload", {
-    id: "same-origin-node",
-    request(input = {}) {
-      return sameOriginNode.request({
-        url: "/api/cloud/files",
-        init: input.init,
-        signal: input.signal,
-      });
-    },
-  });
-
-  window.AISystem6Capabilities?.registerServiceProvider?.("cloud.files.delete", {
-    id: "same-origin-node",
-    request(input = {}) {
-      return sameOriginNode.request({
-        url: "/api/cloud/files",
         init: input.init,
         signal: input.signal,
       });
@@ -289,45 +218,12 @@
     },
   });
 
-  window.AISystem6Capabilities?.registerServiceProvider?.("local.lmstudio.start", {
-    id: "same-origin-node",
-    request(input = {}) {
-      return sameOriginNode.request({
-        url: "/api/lmstudio/start",
-        init: input.init,
-        signal: input.signal,
-      });
-    },
-  });
-
   window.AISystem6Capabilities?.registerServiceProvider?.("device.status", {
     id: "same-origin-node",
     request(input = {}) {
       return sameOriginNode.request({
         url: "/api/device-model/status",
         init: { headers: { "Accept": "application/json" } },
-        signal: input.signal,
-      });
-    },
-  });
-
-  window.AISystem6Capabilities?.registerServiceProvider?.("device.chat", {
-    id: "same-origin-node",
-    request(input = {}) {
-      return sameOriginNode.request({
-        url: "/api/device-model/chat",
-        init: input.init,
-        signal: input.signal,
-      });
-    },
-  });
-
-  window.AISystem6Capabilities?.registerServiceProvider?.("macShared.session", {
-    id: "same-origin-node",
-    request(input = {}) {
-      return sameOriginNode.request({
-        url: "/api/mac-shared/session",
-        init: input.init,
         signal: input.signal,
       });
     },
@@ -356,33 +252,18 @@
     },
   });
 
-  window.AISystem6Capabilities?.registerServiceProvider?.("endfield.ask", {
+  // 潮汐信笺 × SideAsk: the blog's own retrieval route, through the service
+  // boundary like every other same-origin call.
+  window.AISystem6Capabilities?.registerServiceProvider?.("aaron-blog.search", {
     id: "same-origin-node",
     request(input = {}) {
-      return sameOriginNode.request({
-        url: "/api/endfield/ask",
-        init: input.init,
-        signal: input.signal,
+      const params = new URLSearchParams({
+        q: String(input.query || ""),
+        limit: String(input.limit || 18),
       });
-    },
-  });
-
-  window.AISystem6Capabilities?.registerServiceProvider?.("cmf.capabilities", {
-    id: "same-origin-node",
-    request(input = {}) {
+      if (input.doc) params.set("doc", String(input.doc));
       return sameOriginNode.request({
-        url: "/api/cmf/capabilities",
-        init: input.init,
-        signal: input.signal,
-      });
-    },
-  });
-
-  window.AISystem6Capabilities?.registerServiceProvider?.("cmf.exportUsdz", {
-    id: "same-origin-node",
-    request(input = {}) {
-      return sameOriginNode.request({
-        url: "/api/cmf/export-usdz",
+        url: `/api/aaron-blog/retrieve?${params}`,
         init: input.init,
         signal: input.signal,
       });
@@ -443,61 +324,6 @@
         post({ url: input.url || "", playable: input.playable || {} }),
         publicWeb
       );
-    },
-  });
-
-  window.AISystem6Capabilities?.registerServiceProvider?.("artifact.import.ocr", {
-    id: "same-origin-node",
-    request(input = {}) {
-      return sameOriginNode.request({
-        url: "/api/import-ocr-pages",
-        init: input.init,
-        signal: input.signal,
-      });
-    },
-  });
-
-  window.AISystem6Capabilities?.registerServiceProvider?.("artifact.import.text", {
-    id: "same-origin-node",
-    request(input = {}) {
-      return sameOriginNode.request({
-        url: "/api/import-text",
-        init: input.init,
-        signal: input.signal,
-      });
-    },
-  });
-
-  window.AISystem6Capabilities?.registerServiceProvider?.("system.version", {
-    id: "same-origin-node",
-    request(input = {}) {
-      return sameOriginNode.request({
-        url: "/api/version",
-        init: input.init,
-        signal: input.signal,
-      });
-    },
-  });
-
-  window.AISystem6Capabilities?.registerServiceProvider?.("quickDraft.thesis", {
-    id: "same-origin-node",
-    request(input = {}) {
-      return sameOriginNode.request({
-        url: "/api/draft/thesis",
-        init: input.init,
-        signal: input.signal,
-      });
-    },
-  });
-
-  window.AISystem6Capabilities?.registerServiceProvider?.("bureaucracyMeme.captions", {
-    id: "same-origin-node",
-    request(input = {}) {
-      return sameOriginNode.request({
-        url: "/api/bureaucracy/captions",
-        init: input.init,
-        signal: input.signal,
-      });
     },
   });
 
@@ -574,12 +400,14 @@
         "macShared.session",
         "endfield.search",
         "endfield.ask",
+        "aaron-blog.search",
         "cmf.capabilities",
         "cmf.exportUsdz",
         "system.music",
         "soundscape.gamdl",
         "artifact.import.ocr",
         "artifact.import.text",
+        "artifact.import.iwork",
         "system.version",
         "quickDraft.thesis",
         "bureaucracyMeme.captions",
@@ -587,6 +415,7 @@
         "bonsai.osm",
         "agent.executorReply",
         "agent.executorToken",
+        "agent.harness",
         "mcp.client",
       ];
       names.forEach((name) => {

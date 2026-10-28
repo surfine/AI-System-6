@@ -26,6 +26,7 @@ const MCP_PROTOCOL_VERSION = "2025-11-25";
 const SUPPORTED_PROTOCOL_VERSIONS = new Set(["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"]);
 const JSON_LIMIT_BYTES = 2 * 1024 * 1024;
 const APPROVAL_TIMEOUT_MS = 5_000;
+const ENGINE_GUEST_NAME = "clio-engine";
 
 const JSONRPC = {
   PARSE_ERROR: -32700,
@@ -104,6 +105,24 @@ function guestIdentityFromRequest(req, params) {
     requestedPrivilege: tools.normalizePrivilege(header("x-ais6-guest-privilege")) || tools.DEFAULT_PRIVILEGE,
     protocolVersion: String(params?.protocolVersion || ""),
   };
+}
+
+/**
+ * The guest name "clio-engine" is reserved and refused. ClioTalk's engine
+ * used to join under it at 可提议, which handed a model with web tools every
+ * desk-wide read tool (and the resources surface) over the whole Project Hard
+ * Disk, far beyond the folder the writer shared. Agent runs now get no MCP
+ * server at all (agent/runs.js), so nothing may claim the name, with or
+ * without the old run-token header. Other guests pass through unchanged.
+ * @param {import("node:http").IncomingMessage} req
+ * @param {{ name: string, purpose: string, requestedPrivilege: string }} identity
+ * @returns {{ ok: boolean, error: string }}
+ */
+function engineGuestAdmission(req, identity) {
+  const token = String(req.headers["x-ais6-engine-run"] || "").trim();
+  const claimsEngineName = identity.name.trim().toLowerCase() === ENGINE_GUEST_NAME;
+  if (!token && !claimsEngineName) return { ok: true, error: "" };
+  return { ok: false, error: `The guest name "${ENGINE_GUEST_NAME}" is reserved for ClioTalk's engine, which does not join the desk.` };
 }
 
 /**
@@ -248,6 +267,11 @@ async function handleMcp(req, res) {
 
   if (rpcMethod === "initialize") {
     const identity = guestIdentityFromRequest(req, params);
+    const engine = engineGuestAdmission(req, identity);
+    if (!engine.ok) {
+      sendRpcError(res, id, JSONRPC.INVALID_REQUEST, engine.error, 403);
+      return;
+    }
     if (identity.protocolVersion && !SUPPORTED_PROTOCOL_VERSIONS.has(identity.protocolVersion)) {
       sendRpcError(res, id, JSONRPC.INVALID_PARAMS, `Unsupported protocol version ${identity.protocolVersion}; supported versions are ${[...SUPPORTED_PROTOCOL_VERSIONS].join(", ")}.`);
       return;
@@ -322,4 +346,4 @@ async function handleMcp(req, res) {
   }
 }
 
-module.exports = { MCP_PROTOCOL_VERSION, handleMcp };
+module.exports = { ENGINE_GUEST_NAME, MCP_PROTOCOL_VERSION, engineGuestAdmission, handleMcp };

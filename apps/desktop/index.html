@@ -11,19 +11,19 @@
     <!-- Let the system choose status glyph contrast. -->
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20261019.3" />
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20261019.3" />
-    <link rel="manifest" href="assets/app-icon/manifest.json?v=20261019.3" />
-    <script src="app/core/theme-registry.js?v=20261019.3"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20261019.3" />
+    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20261028.1" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20261028.1" />
+    <link rel="manifest" href="assets/app-icon/manifest.json?v=20261028.1" />
+    <script src="app/core/theme-registry.js?v=20261028.1"></script>
+    <link rel="stylesheet" href="styles.bundle.css?v=20261028.1" />
     <!-- Preload the application while parsing the desktop. -->
-    <link rel="preload" as="script" href="app.bundle.js?v=20261019.3" />
+    <link rel="preload" as="script" href="app.bundle.js?v=20261028.1" />
   </head>
   <body class="is-booting">
     <pre id="cw3-log" style="position:fixed;left:8px;bottom:8px;z-index:9999;max-width:46vw;max-height:38vh;overflow:auto;margin:0;padding:8px;background:rgba(0,0,0,.72);color:#7CFC9B;font:11px/1.4 ui-monospace,Menlo,monospace;border-radius:6px;white-space:pre-wrap;" hidden></pre>
-    <script src="app/core/theme-body-init.js?v=20261019.3"></script>
+    <script src="app/core/theme-body-init.js?v=20261028.1"></script>
     <!-- Register crash recovery before the application bundle. -->
-    <script src="app/core/boot-safety-net.js?v=20261019.3"></script>
+    <script src="app/core/boot-safety-net.js?v=20261028.1"></script>
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
         <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
@@ -505,6 +505,7 @@
            reversible, so nobody must decide a conversation is worth keeping
            before starting one. -->
           <button class="btn mini-btn clio-keep-temporary is-hidden" id="clio-keep-temporary" type="button" data-action="save-conversation" data-i18n="save_as_conversation_file">Save as Conversation File…</button>
+          <button class="btn mini-btn clio-agent-mode" id="clio-agent-mode" type="button" data-action="toggle-cliotalk-agent" aria-pressed="false" data-i18n="agent_mode_agent">Agent</button>
           <button class="btn mini-btn clio-connect-ai" id="clio-connect-ai" type="button" data-action="open-clio-model-settings" hidden data-i18n="clio_connect_ai">Connect AI…</button>
         </div>
         <div class="messages-stage">
@@ -732,6 +733,7 @@
                 <option value="deepseek" data-i18n="cloud_provider_deepseek">DeepSeek</option>
                 <option value="claude-subscription" data-i18n="cloud_provider_claude_subscription" data-requires-capability="subscription_cli" hidden>Claude (subscription on this Mac)</option>
                 <option value="codex-subscription" data-i18n="cloud_provider_codex_subscription" data-requires-capability="subscription_cli" hidden>Codex (subscription on this Mac)</option>
+                <option value="anthropic" data-i18n="cloud_provider_anthropic" data-requires-capability="anthropic_api" hidden>Anthropic</option>
               </select></div>
             </label>
 
@@ -2031,6 +2033,7 @@
                   <button class="btn" type="button" data-action="open-guest-reviews" data-i18n="guest_reviews">Guest Reviews</button>
                   <button class="btn" type="button" data-action="open-review-comments" data-i18n="review_comments">Comments</button>
                   <button class="btn" type="button" data-action="open-review-compare" data-i18n="review_compare">Compare Versions</button>
+                  <button class="btn" type="button" data-action="import-manuscript-return" data-i18n="roundtrip_return_ellipsis">Return Review…</button>
                 <hr />
                     <button class="btn" type="button" data-action="toggle-sideask" aria-pressed="false" data-i18n="sideask">SideAsk</button>
                   </div>
@@ -3435,10 +3438,10 @@
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20261019.3"></script>
+    <script src="app/generated/build-info.js?v=20261028.1"></script>
     <template id="standard-window-controls"><button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button><button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button><button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button></template>
-    <script src="app.bundle.js?v=20261019.3"></script>
-    <script src="app/vendor/clioworks-v3/fixture.js?v=20261019.3"></script>
+    <script src="app.bundle.js?v=20261028.1"></script>
+    <script src="app/vendor/clioworks-v3/fixture.js?v=20261028.1"></script>
 
   </body>
 </html>

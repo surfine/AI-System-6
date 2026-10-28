@@ -138,10 +138,13 @@ test.assertMatches(control, /use-website-ai[\s\S]*use-local-ai[\s\S]*show-ai-adv
 test.assertMatches(control, /detect-local-models[\s\S]*local-manual-connection[\s\S]*local-connect-fields/, "local setup detects known apps before showing connection fields");
 test.assertIncludes(control, 'id="reset-ai-connection"', "Control Panel exposes Reset AI Connection");
 // The writer's own Claude / Codex subscription, run through the CLI on this
-// Mac, is the one route to those models (docs/SUBSCRIPTION-CLI.md). A paid
-// provider API entry is still not part of the product.
+// Mac (docs/SUBSCRIPTION-CLI.md), and since 2026-10-24 Anthropic's API with
+// the key in this Mac's Keychain, are the routes to those models. Both are
+// hidden until the local server says it can serve them; no other paid
+// provider API is part of the product.
 test.assertIncludes(control, '<option value="claude-subscription" data-i18n="cloud_provider_claude_subscription" data-requires-capability="subscription_cli" hidden>', "the Claude entry is the local subscription CLI, hidden until the server can run it");
-const controlWithoutSubscriptionCli = control.replace(/<option value="(?:claude|codex)-subscription"[^\n]*<\/option>/g, "");
+test.assertIncludes(control, '<option value="anthropic" data-i18n="cloud_provider_anthropic" data-requires-capability="anthropic_api" hidden>', "the Anthropic API entry is local-only, hidden until the server offers it");
+const controlWithoutSubscriptionCli = control.replace(/<option value="(?:(?:claude|codex)-subscription|anthropic)"[^\n]*<\/option>/g, "");
 for (const forbiddenProvider of ["Groq", "Gemini", "Anthropic", "Claude"]) {
   test.assertNotIncludes(controlWithoutSubscriptionCli, forbiddenProvider, `Control Panel does not add ${forbiddenProvider} beyond the subscription CLI`);
 }

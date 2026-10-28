@@ -144,10 +144,17 @@ test.assertIncludes(
   "grid-template-rows: var(--scrapbook-mobile-pane-rows);",
   "the phone shell consumes the era-owned Scrapbook row contract"
 );
+// Owner decision 2026-10-19: an empty conversation names no file. The bar says
+// what the first message will do instead of inventing "Chat 08:10".
 test.assertIncludes(
   chatMessages,
-  "name.textContent = file?.name || (project ? getPendingClioTalkFileName()",
-  "ClioTalk replaces the empty file placeholder with the pending Chat filename on phone and desktop"
+  "const started = Array.isArray(conversation) && conversation.length > 0;",
+  "ClioTalk waits for the first message before naming the Chat file"
+);
+test.assertIncludes(
+  chatMessages,
+  'started ? getPendingClioTalkFileName() : t("clio_chat_file_waiting")',
+  "the empty file bar says what the first message will do, on phone and desktop"
 );
 test.assertIncludes(
   dictionary,

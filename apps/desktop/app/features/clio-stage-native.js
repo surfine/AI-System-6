@@ -54,6 +54,9 @@
     layout: 'clio_stage_native_step_layout',
     'comment-add': 'clio_stage_native_step_comment',
     'comment-reply': 'clio_stage_native_step_comment',
+    // N3: the find/replace engine's single replace (find-replace.js); its batch
+    // step 「全部替换 N 处」 carries a count, so it is matched below, not listed.
+    '替换': 'clio_stage_native_step_replace',
   });
   // Commands that change the page itself belong to ClioStage (full) mode.
   const FULL_ONLY = new Set(['slide.add', 'slide.duplicate', 'slide.delete', 'slide.layout', 'slide.reset-layout', 'page.check']);
@@ -72,7 +75,13 @@
     const text = String(label || '');
     if (!text) return '';
     if (text.startsWith('clio_stage_native_step_')) return text;
+    if (/^全部替换 \d+ 处$/.test(text)) return 'clio_stage_native_step_replace_all';
     return STEP_KEYS[text] || 'clio_stage_native_step_change';
+  }
+  /** The count a 「全部替换 N 处」 undo label carries, as the translation's args. */
+  function stepLabelArgs(label) {
+    const m = /^全部替换 (\d+) 处$/.exec(String(label || ''));
+    return m ? [Number(m[1])] : [];
   }
 
   /* ------------------------------------------------------------ the deck */
@@ -429,6 +438,9 @@
       canRedo,
       undoLabel: () => (canUndo() && fn(adapter, 'undoLabel') ? stepKey(adapter.undoLabel()) : ''),
       redoLabel: () => (canRedo() && fn(adapter, 'redoLabel') ? stepKey(adapter.redoLabel()) : ''),
+      // 「全部替换 N 处」 keeps its count in the menu row (undoLabelArgs feeds it).
+      undoLabelArgs: () => (canUndo() && fn(adapter, 'undoLabel') ? stepLabelArgs(adapter.undoLabel()) : []),
+      redoLabelArgs: () => (canRedo() && fn(adapter, 'redoLabel') ? stepLabelArgs(adapter.redoLabel()) : []),
     });
 
     const commentsAvailable = () => fn(adapter, 'comments') && fn(adapter, 'addComment');
@@ -485,6 +497,9 @@
         wired('resetLayout') ? { id: 'slide.reset-layout', labelKey: 'clio_stage_reset_layout', shortcut: '' } : null,
         checkAvailable() ? { id: 'page.check', labelKey: 'clio_stage_native_cmd_check', shortcut: '⌘K' } : null,
         commentsAvailable() ? { id: 'comments.open', labelKey: 'clio_stage_native_cmd_comment', shortcut: '⌘M' } : null,
+        // N3: the shared 查找 / 替换 windoid (features/clioworks-find.js).
+        { id: 'find.open', labelKey: 'clioworks_find_replace_menu', shortcut: '⌘F' },
+        { id: 'find.next', labelKey: 'find_next', shortcut: '⌘G' },
       ].filter(Boolean);
       return list.map((command) => ({ ...command, state: commandState(command.id) }));
     }
@@ -883,6 +898,8 @@
       if (id === 'page.prev') return turn(-1);
       if (id === 'page.next') return turn(1);
       if (id === 'comments.open') return openComments();
+      if (id === 'find.open') return openFind(false);
+      if (id === 'find.next') return openFind(true);
       if (id === 'page.check') return openCheck();
       if (id === 'slide.layout') return chooseLayout();
       if (id.startsWith('slide.')) return runSlide(id);
@@ -1371,6 +1388,23 @@
       confirmList,
       alertFailure,
       focus: railFocus,
+      // The find windoid's select-a-match: bring the slide forward and put the
+      // page's selection on the text box, or the caret range on the notes.
+      revealFindMatch(locator) {
+        if (!locator) return false;
+        closeRunEditor(false);
+        if (!session.setSlide(String(locator.slide))) return false;
+        if (locator.notes) {
+          session.select(null);
+          if (notesEl.readOnly) return true;   // read-only notes come forward but take no caret
+          notesEl.focus();
+          try { notesEl.setSelectionRange(locator.from, locator.to); } catch (error) { /* the caret stays where focus put it */ }
+          return true;
+        }
+        if (locator.shape == null) return false;
+        session.select(String(locator.shape));
+        return true;
+      },
       afterHistory: () => { render(); refreshWindoid(); refreshMenus(); },
       unmount: teardown,
     };
@@ -1379,9 +1413,13 @@
   function keyCommand(session, event) {
     const key = String(event.key || '').toLowerCase();
     if (key === 'e') return 'view.mode';
-    if (key === 's') return 'file.save';
+    // ⇧⌘S is Save As… (N0), which the desk's shortcut table takes.
+    if (key === 's') return event.shiftKey ? '' : 'file.save';
     if (key === 'm' && session.commentsAvailable()) return 'comments.open';
     if (key === 'k') return 'page.check';
+    // N3: the shared 查找 / 替换 windoid (features/clioworks-find.js).
+    if (key === 'f' && !event.shiftKey) return 'find.open';
+    if (key === 'g' && !event.shiftKey) return 'find.next';
     if (key === '[' || event.code === 'BracketLeft') return 'page.prev';
     if (key === ']' || event.code === 'BracketRight') return 'page.next';
     return '';
@@ -1461,6 +1499,7 @@
     active = null;
     entry.surface.unmount();
     entry.session.close();
+    if (typeof root.AISystem6ClioWorksFind?.close === 'function') root.AISystem6ClioWorksFind.close();
     swapMenus(false);
     if (typeof root.updateMenuState === 'function') { try { root.updateMenuState(); } catch (error) { /* next redraw */ } }
   }
@@ -1490,6 +1529,55 @@
     return 'cancelled';
   }
 
+  /* ------------------------------------------------- the shared find windoid (N3) */
+
+  /**
+   * The surface the shared find windoid acts through (features/clioworks-find.js):
+   * the live Lectern adapter session, the editor's own selection as the chosen
+   * text box, and the select-a-match that brings a slide's shape or notes
+   * forward. Null when no presentation is mounted — the Edit › 查找 rows answer
+   * through listed().
+   */
+  function findContext() {
+    if (!active) return null;
+    const entry = active;
+    const surface = entry.surface;
+    const session = entry.session;
+    return {
+      appId: 'clioStage',
+      kind: 'pptx',
+      name: entry.fileName,
+      adapter: session.adapter,
+      doc: surface.root.ownerDocument,
+      pane: surface.root,
+      commitPending: () => surface.commitPending(),
+      // 选中文字's box: the selected text box, or nothing (the page, its notes
+      // and every other text box are searched).
+      selection: () => {
+        const sel = session.selection;
+        return sel && sel.shapeId ? { shapeId: sel.shapeId } : null;
+      },
+      select: (match) => surface.revealFindMatch(match && match.locator),
+      // The engine's run/notes edits go through the adapter's own steps; this
+      // is the repaint half, as for a hand edit.
+      afterEdit: () => { session.afterEdit(); surface.afterHistory(); },
+    };
+  }
+  function openFind(next) {
+    const ctx = findContext();
+    if (!ctx) return;
+    const api = root.AISystem6ClioWorksFind;
+    if (api && typeof api.open === 'function') { if (next) api.next(ctx); else api.open(ctx); return; }
+    const ensure = root.AISystem6EnsureClioWorksFindModule;
+    if (typeof ensure !== 'function') return;
+    ensure().then(() => {
+      const found = root.AISystem6ClioWorksFind;
+      if (!found || typeof found.open !== 'function') return;
+      if (next && typeof found.next === 'function') found.next(ctx);
+      else found.open(ctx);
+    }).catch((error) => console.warn('ClioStage native: find module', error));
+  }
+
   /* ------------------------------------------------- the desk's menu bar */
   // ClioStage's menus are declared with the shell (app/data/menus.js), so a
   // mounted presentation brings its own rows the way a lazy application does:
@@ -1510,6 +1598,10 @@
     'clio-stage-native-layout': ['slide.layout', '', 'clio_stage_native_cmd_layout'],
     'clio-stage-native-reset-layout': ['slide.reset-layout', '', 'clio_stage_reset_layout'],
     'clio-stage-native-check': ['page.check', 'k', 'clio_stage_native_cmd_check'],
+    // N3: the shared 查找 / 替换 windoid (features/clioworks-find.js), the keys
+    // taken by the surface while a presentation is in front.
+    'clio-stage-native-find': ['find.open', 'f', 'clioworks_find_replace_menu'],
+    'clio-stage-native-find-next': ['find.next', 'g', 'find_next'],
   });
   const baseId = (commandId) => (commandId.startsWith('view.mode') ? 'view.mode' : commandId);
   const listed = (commandId) => !!active && active.session.commands().some((command) => command.id === baseId(commandId));
@@ -1543,6 +1635,19 @@
     }
   });
 
+  // Save As… (N0) is the host's, not the session's: a new Project Hard Disk
+  // file the window then edits, or a download. ⇧⌘S through the desk's table.
+  try {
+    root.AISystem6Runtime?.registerCommand?.('clio-stage-native-save-as', {
+      handler: () => (active && fn(nativeHost(), 'saveNativeDocumentAs') ? nativeHost().saveNativeDocumentAs(active.mountedName) : null),
+      isAvailable: () => !!active && !active.session.saving && fn(nativeHost(), 'saveNativeDocumentAs'),
+      unavailableReason: () => '',
+    });
+  } catch (error) { /* already registered by an earlier load */ }
+  if (typeof keyboardShortcutRegistry !== 'undefined' && !keyboardShortcutRegistry.some((entry) => entry.id === 'clio-stage-native-save-as')) {
+    keyboardShortcutRegistry.push({ id: 'clio-stage-native-save-as', key: 's', shift: true, action: 'clio-stage-native-save-as', display: '⇧⌘S', labelKey: 'clioworks_save_as', keyCaps: true, scope: ['clioStage'] });
+  }
+
   let savedMenus = null;
   function nativeMenuSet(original) {
     const item = (action, labelKey) => menuItem(action, labelKey, MENU_COMMANDS[action][1] ? action : '');
@@ -1551,8 +1656,14 @@
     const rows = (list) => list.filter((action) => listed(MENU_COMMANDS[action][0])).map((action) => item(action, MENU_COMMANDS[action][2]));
     const sep = typeof menuSeparator !== 'undefined' ? [menuSeparator] : [];
     return [
-      menu('file', 'menu_file', [...rows(['clio-stage-native-save', 'clio-stage-native-revert']), ...sep, menuItem('close-active-window', 'close', 'close-window')]),
-      menu('edit', 'menu_edit', [...(edit ? edit.items : []), ...(listed('comments.open') ? [...sep, item('clio-stage-native-comment', 'clio_stage_native_cmd_comment')] : [])]),
+      menu('file', 'menu_file', [...rows(['clio-stage-native-save']), menuItem('clio-stage-native-save-as', 'clioworks_save_as', 'clio-stage-native-save-as'), ...rows(['clio-stage-native-revert']), ...sep, menuItem('close-active-window', 'close', 'close-window')]),
+      menu('edit', 'menu_edit', [
+        ...(edit ? edit.items : []),
+        // N3: the shared 查找 / 替换 windoid, then the comments windoid; each
+        // row only stands while its own command is listed on the session.
+        ...(listed('find.open') ? [...sep, item('clio-stage-native-find', 'clioworks_find_replace_menu'), item('clio-stage-native-find-next', 'find_next')] : []),
+        ...(listed('comments.open') ? [...sep, item('clio-stage-native-comment', 'clio_stage_native_cmd_comment')] : []),
+      ]),
       menu('presentation', 'menu_presentation', [
         ...rows(['clio-stage-native-prev', 'clio-stage-native-next']), ...sep,
         ...rows(['clio-stage-native-mode-express', 'clio-stage-native-mode-full']), ...sep,
@@ -1604,6 +1715,8 @@
     hasUnsaved: () => !!active && active.session.isDirty(),
     // The Edit menu's history while a presentation is mounted (read by clio-stage.js).
     editHistory: () => (active ? active.session.editHistory : null),
+    // N3: the surface the shared 查找 / 替换 windoid acts through, or null.
+    findContext,
     listed,
     commandState: (commandId) => (active ? active.session.commandState(baseId(commandId)) : null),
     createSession,

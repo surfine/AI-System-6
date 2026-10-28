@@ -279,6 +279,23 @@ function compareDocumentRevisions(olderRevision, newerRevision) {
   };
 }
 
+// N15a: 恢复把整篇正文换掉，必须是一个可撤销的编辑步（编辑器 mdeApply 的
+// 全量替换），不许绕过撤销历史直接改值。实现在懒载的 writing-safety 模块；
+// 这里只把模块带到——带不来（无头/加载失败）就直接写，恢复不能因此被挡住。
+async function applyRestoredPaperBody(paper, body) {
+  const text = String(body ?? "");
+  if (!paper) return;
+  if (typeof ensureWritingSafetyModule === "function") {
+    try {
+      await ensureWritingSafetyModule();
+    } catch {
+      // fall through to the direct write
+    }
+  }
+  if (window.AISystem6WritingSafety?.applyRestoredBody?.(paper, text) === true) return;
+  paper.value = text;
+}
+
 // The route manuscript has no chatFiles record to write back into: it lives in
 // the project's own document (project.outline), which the manuscript field
 // shows as prose. Same promise as the file path — protect what is on the paper
@@ -315,14 +332,14 @@ async function restoreRouteManuscriptRevision(revision) {
   else project.outline = restored;
   project.updatedAt = new Date().toISOString();
   if (paper) {
-    paper.value = restored;
+    await applyRestoredPaperBody(paper, restored);
     if (typeof markTeachTextModified === "function") markTeachTextModified();
   }
   const saved = await saveDeskState();
   if (!saved) {
     project.outline = previous.outline;
     project.updatedAt = previous.updatedAt;
-    if (paper && previous.body !== undefined) paper.value = previous.body;
+    if (paper && previous.body !== undefined) await applyRestoredPaperBody(paper, previous.body);
     if (previous.statusKey && typeof setTeachTextStatus === "function") setTeachTextStatus(previous.statusKey);
     setStatus?.(t?.("versions_restore_persist_failed") || "Could not save the restored document; nothing was changed.");
     return false;
@@ -379,7 +396,7 @@ async function restoreDocumentRevision(revision) {
   // the new one on the disk.
   markDeskDirty("chatFiles", target.id);
   if (target.id === activeTextFileId) {
-    teachTextBodyInput.value = target.body;
+    await applyRestoredPaperBody(teachTextBodyInput, target.body);
     markTeachTextModified();
     refreshTeachTextDocumentState();
   }
@@ -391,7 +408,7 @@ async function restoreDocumentRevision(revision) {
     target.body = previous.body;
     target.updatedAt = previous.updatedAt;
     if (target.id === activeTextFileId) {
-      if (previous.textareaBody !== undefined) teachTextBodyInput.value = previous.textareaBody;
+      if (previous.textareaBody !== undefined) await applyRestoredPaperBody(teachTextBodyInput, previous.textareaBody);
       if (previous.statusKey && typeof setTeachTextStatus === "function") setTeachTextStatus(previous.statusKey);
       if (typeof refreshTeachTextDocumentState === "function") refreshTeachTextDocumentState();
     }
@@ -441,7 +458,12 @@ function renderDocumentVersionsList() {
       checkbox.value = revision.id;
       const summary = document.createElement("span");
       const when = new Date(revision.createdAt).toLocaleString();
-      const parts = [when, revision.operation, revision.origin, revision.contentHash.slice(0, 8)];
+      // 自动存档的 operation 是稳定的机器值（"auto-archive"），列表里显示
+      // t() 词条，与显式存储的修订一眼可分；存储不随语言变化。
+      const operationLabel = revision.operation === "auto-archive" && typeof t === "function"
+        ? t("auto_archive")
+        : revision.operation;
+      const parts = [when, operationLabel, revision.origin, revision.contentHash.slice(0, 8)];
       if (revision.runRecordId) {
         const run = getProjectFiles?.().find((file) => file.id === revision.runRecordId && file.artifactKind === "clio-run-record");
         parts.push(run ? `Run: ${run.name}` : `Run: ${revision.runRecordId.slice(0, 8)}`);

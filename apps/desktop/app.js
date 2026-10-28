@@ -1523,8 +1523,15 @@ function isSubscriptionCloudProvider(provider = cloudConfig?.provider) {
   return provider === "claude-subscription" || provider === "codex-subscription";
 }
 
+// Anthropic's key goes into this Mac's Keychain from a terminal
+// (`node tooling/anthropic-key.mjs`); the server finds it there, so the page never
+// holds the key or an id for it, and the provider never appears publicly.
+function isKeychainCloudProvider(provider = cloudConfig?.provider) {
+  return provider === "anthropic";
+}
+
 function cloudCredentialReady(config = cloudConfig) {
-  if (isSubscriptionCloudProvider(config?.provider)) return !isPublicCloudCredentialMode();
+  if (isSubscriptionCloudProvider(config?.provider) || isKeychainCloudProvider(config?.provider)) return !isPublicCloudCredentialMode();
   return !!(config?.credentialMode === "shared-remote" || config?.credentialId || cloudRuntimeApiKey || (
     isPublicCloudCredentialMode()
     && publicSharedCloudAvailable
@@ -1534,6 +1541,7 @@ function cloudCredentialReady(config = cloudConfig) {
 
 function cloudCredentialMode(config = cloudConfig) {
   if (isSubscriptionCloudProvider(config?.provider)) return "subscription";
+  if (isKeychainCloudProvider(config?.provider)) return "keychain";
   if (config?.credentialMode === "shared-remote") return "shared-remote";
   if (isPublicCloudCredentialMode()) {
     if (cloudRuntimeApiKey) return "byok";
@@ -1783,18 +1791,6 @@ async function ensureClioProviderResolver() {
       throw error;
     });
   return clioProviderResolverLoadPromise;
-}
-
-let explanationLensLoadPromise = null;
-
-async function ensureExplanationLens() {
-  if (window.AISystem6ExplanationLens) return true;
-  explanationLensLoadPromise ||= loadClassicScriptOnce("app/core/explanation-lens.js")
-    .catch((error) => {
-      explanationLensLoadPromise = null;
-      throw error;
-    });
-  return explanationLensLoadPromise;
 }
 
 let modelUserErrorsLoadPromise = null;
@@ -2223,6 +2219,16 @@ function applyLanguage() {
 
 function syncPromptPlaceholder() {
   if (!promptInput) return;
+  // Agent mode (代理) speaks to the engine host, not to ClioTalk's own model.
+  if (window.AISystem6ClioTalkAgent?.isActive()) {
+    promptInput.placeholder = t(window.AISystem6ClioTalkAgent.placeholderKey());
+    return;
+  }
+  // Boot may have restored 代理 while the agent module is still lazy.
+  if (clioTalkAgentModeActive()) {
+    promptInput.placeholder = t("agent_prompt_placeholder");
+    return;
+  }
   if (typeof clioTalkModelReady === "function" && !clioTalkModelReady()) {
     promptInput.placeholder = t("clio_model_required_placeholder");
     return;
@@ -2760,16 +2766,32 @@ async function importFilesToMountedTextDisk(files, options = {}) {
   }
   const usedMountedNames = new Set(mountedTextDisk.files.map((name) => name.toLowerCase()));
 
+  // N15b (旧版 .doc/.xls/.ppt 明确说明): the whole batch gate lives in the lazy
+  // import module (features/legacy-formats.js, riding the ODF import loader) —
+  // ONE alert names every old-format file with what to do instead, the entries
+  // land in `failures`, and the flagged files leave this very array.
+  await ensureOdf().then(m=>m.gate(files,failures));
+
   for (let fileIndex = 0; fileIndex < files.length; fileIndex += 1) {
     const file = files[fileIndex];
     assertImportProjectActive();
     setImportStatus(t("file_disk_reading_file", fileIndex + 1, files.length, file.name));
 
     try {
+      // OpenDocument → editable Office copy (2026-10-24 「ODF 导入成副本」):
+      // the converter appends the copy to this import batch, so it mounts
+      // through this same loop (text projection, then native registration)
+      // while the .odt/… original below stays an ordinary imported file; what
+      // the converter could not carry is listed for the writer, never dropped.
+      if (/\.od[tps]$/i.test(file.name)) await (await ensureOdf()).copy(file, files, failures);
       const extracted = await extractFileText(file, { signal: controller?.signal });
       const text = extracted?.text || "";
       assertImportProjectActive();
       const mountedName = uniqueMountedFileName(file.name, usedMountedNames);
+      if (/\.pdf$/i.test(file.name || "")) readerPdfSources.set(`${importProjectId}::${mountedName}`, file);
+      // N9: a Pages/Numbers/Keynote original stays in-session for its
+      // original-page PDF and the Office copy; only the File, never stored.
+      if (/\.(pages|numbers|key)$/i.test(file.name || "")) readerIworkSources.set(`${importProjectId}::${mountedName}`, file);
       const fileChunks = chunkText(text, mountedName);
       if (!fileChunks.length) {
         failures.push({ name: file.name, message: t("file_disk_warn_no_chunks") });

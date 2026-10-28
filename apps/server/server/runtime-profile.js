@@ -32,8 +32,15 @@ const deploymentTarget = isPublicDeployment
 const publicGuestBridgeEnabled = isPublicDeployment
   && String(process.env.AI_SYSTEM6_PUBLIC_MCP || "").trim() === "1";
 
+// ClioTalk's agent mode on the public web (disposable container per run,
+// apps/server/server/agent-cloud/) is opt-in the same way: off, the
+// /api/agent-cloud/* paths are absent from the public route table.
+const publicAgentCloudEnabled = isPublicDeployment
+  && String(process.env.AI_SYSTEM6_PUBLIC_AGENT || "").trim() === "1";
+
 module.exports = {
   LOCAL_PROFILE,
+  publicAgentCloudEnabled,
   publicGuestBridgeEnabled,
   PUBLIC_PROFILE,
   deploymentProfile,

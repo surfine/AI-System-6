@@ -23,8 +23,10 @@ internal/archive/runtime-legacy/
 /apps/desktop/styles.clio-project.css
 /apps/desktop/styles.edit-kernel.css
 /apps/desktop/styles.about.css
+/apps/desktop/styles.cliotalk-agent.css
 /apps/desktop/styles.docmap.css
 /apps/desktop/styles.searcher.css
+/apps/desktop/styles.reader-pages.css
 /apps/desktop/styles.big-sur.css
 /apps/desktop/styles.tiger.css
 /apps/desktop/styles.system-7.css
@@ -66,6 +68,7 @@ builds/
 *.pem
 *.key
 !**/system.css-reference/**/*.key
+!tests/fixtures/clioworks-n9/*.key
 system.css-reference/fonts/modern/
 *.7z
 *.mp4
@@ -182,3 +185,7 @@ test-results/
 output/
 .DS_Store
 platform/macos/tinyjs/signing.local.json
+
+# Slim DeepSeek Harness install for the ClioTalk engine (tooling/build-dsh-slim.mjs).
+/vendor-runtime/
+.playwright-cli/

@@ -12,153 +12,126 @@
   const S = (C.special = {});
 
   /* --------------------------------------------------------- special functions */
-  /* W. J. Cody's rational approximations (SPECFUN CALERF) */
-  const EA = [3.16112374387056560e00, 1.13864154151050156e02, 3.77485237685302021e02, 3.20937758913846947e03, 1.85777706184603153e-1];
-  const EB = [2.36012909523441209e01, 2.44024637934444173e02, 1.28261652607737228e03, 2.84423683343917062e03];
-  const EC = [5.64188496988670089e-1, 8.88314979438837594e00, 6.61191906371416295e01, 2.98635138197400131e02, 8.81952221241769090e02, 1.71204761263407058e03, 2.05107837782607147e03, 1.23033935479799725e03, 2.15311535474403846e-8];
-  const ED = [1.57449261107098347e01, 1.17693950891312499e02, 5.37181101862009858e02, 1.62138957456669019e03, 3.29079923573345963e03, 4.36261909014324716e03, 3.43936767414372164e03, 1.23033935480374942e03];
-  const EP = [3.05326634961232344e-1, 3.60344899949804439e-1, 1.25781726111229246e-1, 1.60837851487422766e-2, 6.58749161529837803e-4, 1.63153871373020978e-2];
-  const EQ = [2.56852019228982242e00, 1.87295284992346725e00, 5.27905102951428412e-1, 6.05183413124413191e-2, 2.33520497626869185e-3];
-  const SQRPI = 5.6418958354775628695e-1;
-  /** jint 0: erf, 1: erfc */
-  function calerf(x, jint) {
-    const y = Math.abs(x);
-    let result;
-    if (y <= 0.46875) {
-      let ysq = y > 1.11e-16 ? y * y : 0;
-      let xnum = EA[4] * ysq, xden = ysq;
-      for (let i = 0; i < 3; i++) { xnum = (xnum + EA[i]) * ysq; xden = (xden + EB[i]) * ysq; }
-      result = (x * (xnum + EA[3])) / (xden + EB[3]);
-      return jint ? 1 - result : result;
+  /* The special functions, from their definitions in the NIST Digital Library of Mathematical Functions (DLMF):
+     power series where they converge fast, continued fractions in the tails, Stirling's series for the gamma
+     function, and Halley's method to invert the normal distribution. */
+  /** b0 + a1/(b1 + a2/(b2 + …)) for terms(j) = [aj, bj], j ≥ 1: the modified Lentz method (zero denominators
+      nudged to TINY), to a relative change below 1e-16 or 3000 terms */
+  const TINY = 1e-300;
+  function contFrac(b0, terms) {
+    let f = b0 || TINY, c = f, d = 0;
+    for (let j = 1; j <= 3000; j++) {
+      const [aj, bj] = terms(j);
+      d = bj + aj * d; d = d === 0 ? 1 / TINY : 1 / d;
+      c = bj + aj / c; if (c === 0) c = TINY;
+      const step = c * d;
+      f *= step;
+      if (Math.abs(step - 1) < 1e-16) break;
     }
-    if (y <= 4) {
-      let xnum = EC[8] * y, xden = y;
-      for (let i = 0; i < 7; i++) { xnum = (xnum + EC[i]) * y; xden = (xden + ED[i]) * y; }
-      result = (xnum + EC[7]) / (xden + ED[7]);
-      const ysq = Math.trunc(y * 16) / 16;
-      const del = (y - ysq) * (y + ysq);
-      result = Math.exp(-ysq * ysq) * Math.exp(-del) * result;
-    } else {
-      if (y >= 26.543) result = 0;
-      else {
-        const ysq = 1 / (y * y);
-        let xnum = EP[5] * ysq, xden = ysq;
-        for (let i = 0; i < 4; i++) { xnum = (xnum + EP[i]) * ysq; xden = (xden + EQ[i]) * ysq; }
-        result = (ysq * (xnum + EP[4])) / (xden + EQ[4]);
-        result = (SQRPI - result) / y;
-        const ysq2 = Math.trunc(y * 16) / 16;
-        const del = (y - ysq2) * (y + ysq2);
-        result = Math.exp(-ysq2 * ysq2) * Math.exp(-del) * result;
-      }
-    }
-    /* result is erfc(|x|) here */
-    if (jint === 0) { result = 0.5 - result + 0.5; if (x < 0) result = -result; }
-    else if (x < 0) result = 2 - result;
-    return result;
+    return f;
   }
-  S.erf = (x) => calerf(x, 0);
-  S.erfc = (x) => calerf(x, 1);
+  const SQRT_PI = Math.sqrt(Math.PI);
+  /** erf(x) = 2/√π e^(−x²) Σ 2ⁿ x^(2n+1) / (1·3·…·(2n+1)) (DLMF 7.6.2): every term positive, used below |x| = 2 */
+  function erfSeries(x) {
+    const x2 = x * x;
+    let term = x, sum = x;
+    for (let n = 1; n < 1000 && Math.abs(term) > Math.abs(sum) * 1e-17; n++) { term *= (2 * x2) / (2 * n + 1); sum += term; }
+    return ((2 / SQRT_PI) * Math.exp(-x2)) * sum;
+  }
+  /** erfc(x) = e^(−x²)/√π · 1/(x + (1/2)/(x + 1/(x + (3/2)/(x + …)))) (DLMF 7.9.2), for x ≥ 2; 0 once e^(−x²) is */
+  const erfcFraction = (x) => (x > 27.3 ? 0 : Math.exp(-x * x) / SQRT_PI / contFrac(x, (j) => [j / 2, x]));
+  S.erf = (x) => (Math.abs(x) < 2 ? erfSeries(x) : Math.sign(x) * (1 - erfcFraction(Math.abs(x))));
+  S.erfc = (x) => (x >= 2 ? erfcFraction(x) : x > -2 ? 1 - erfSeries(x) : 2 - erfcFraction(-x));
   S.normCdf = (z) => 0.5 * S.erfc(-z / Math.SQRT2);
   S.normPdf = (z) => Math.exp(-0.5 * z * z) / Math.sqrt(2 * Math.PI);
-  /** Wichura AS241 */
+  /** the standard normal quantile: a first estimate from the upper tail q = min(p, 1 − p) (Abramowitz and Stegun
+      26.2.23, error below 4.5e-4), then Halley's method: in the middle on ½ erf(x/√2) − (p − ½), p − ½ being exact
+      there; in the tails on Q(x) − q, Q the upper tail ½ erfc(x/√2); so neither loses digits to a difference */
   S.normInv = function (p) {
-    if (p <= 0 || p >= 1) return NaN;
-    const q = p - 0.5;
-    if (Math.abs(q) <= 0.425) {
-      const r = 0.180625 - q * q;
-      return (q * (((((((2509.0809287301226727 * r + 33430.575583588128105) * r + 67265.770927008700853) * r + 45921.953931549871457) * r + 13731.693765509461125) * r + 1971.5909503065514427) * r + 133.14166789178437745) * r + 3.387132872796366608)) /
-        (((((((5226.495278852545925 * r + 28729.085735721942674) * r + 39307.89580009271061) * r + 21213.794301586595867) * r + 5394.1960214247511077) * r + 687.1870074920579083) * r + 42.313330701600911252) * r + 1);
+    if (!(p > 0 && p < 1)) return NaN;
+    if (p === 0.5) return 0;
+    const q = Math.min(p, 1 - p), t = Math.sqrt(-2 * Math.log(q));
+    let x = t - (2.515517 + 0.802853 * t + 0.010328 * t * t) / (1 + 1.432788 * t + 0.189269 * t * t + 0.001308 * t * t * t);
+    const d = p - 0.5;
+    if (Math.abs(d) < 0.25) {
+      x = d < 0 ? -x : x;
+      for (let i = 0; i < 8; i++) {
+        const u = (0.5 * S.erf(x / Math.SQRT2) - d) / S.normPdf(x);   // g = ½ erf(x/√2) − d; g' = φ, g'' = −xφ
+        const step = u / (1 + (x * u) / 2);
+        x -= step;
+        if (Math.abs(step) <= 1e-16 * Math.abs(x)) break;
+      }
+      return x;
     }
-    let r = q < 0 ? p : 1 - p;
-    r = Math.sqrt(-Math.log(r));
-    let val;
-    if (r <= 5) {
-      r -= 1.6;
-      val = (((((((7.7454501427834140764e-4 * r + 0.0227238449892691845833) * r + 0.24178072517745061177) * r + 1.27045825245236838258) * r + 3.64784832476320460504) * r + 5.7694972214606914055) * r + 4.6303378461565452959) * r + 1.42343711074968357734) /
-        (((((((1.05075007164441684324e-9 * r + 5.475938084995344946e-4) * r + 0.0151986665636164571966) * r + 0.14810397642748007459) * r + 0.68976733498510000455) * r + 1.6763848301838038494) * r + 2.05319162663775882187) * r + 1);
-    } else {
-      r -= 5;
-      val = (((((((2.01033439929228813265e-7 * r + 2.71155556874348757815e-5) * r + 0.0012426609473880784386) * r + 0.026532189526576123093) * r + 0.29656057182850489123) * r + 1.7848265399172913358) * r + 5.4637849111641143699) * r + 6.6579046435011037772) /
-        (((((((2.04426310338993978564e-15 * r + 1.4215117583164458887e-7) * r + 1.8463183175100546818e-5) * r + 7.868691311456132591e-4) * r + 0.0148753612908506148525) * r + 0.13692988092273580531) * r + 0.59983220655588793769) * r + 1);
+    for (let i = 0; i < 8; i++) {
+      const u = (0.5 * S.erfc(x / Math.SQRT2) - q) / S.normPdf(x);   // (Q(x) − q) / φ(x); Q' = −φ, Q'' = xφ
+      const step = u / (1 - (x * u) / 2);
+      x += step;
+      if (Math.abs(step) <= 1e-16 * Math.abs(x)) break;
     }
-    return q < 0 ? -val : val;
+    return p < 0.5 ? -x : x;
   };
-  /* Lanczos gamma (g = 7, n = 9) */
-  const LG = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+  /* For z ≥ 10, Stirling's series (DLMF 5.11.1): ln Γ(z) = (z − ½) ln z − z + ½ ln 2π + Σ B₂ₖ / (2k(2k − 1) z^(2k−1)) */
+  const STIRLING = [1 / 12, -1 / 360, 1 / 1260, -1 / 1680, 1 / 1188, -691 / 360360, 1 / 156, -3617 / 122400];
+  function stirlingSum(z) {
+    const inv = 1 / z, inv2 = inv * inv;
+    let sum = 0, pow = inv;
+    for (const c of STIRLING) { sum += c * pow; pow *= inv2; }
+    return sum;
+  }
+  const lnGammaLarge = (z) => (z - 0.5) * Math.log(z) - z + 0.5 * Math.log(2 * Math.PI) + stirlingSum(z);
+  /** Γ(z) for 10 ≤ z ≤ 171.62 as √(2π) z^(z−½) e^(−z) e^(Σ), the power in halves so it never overflows first: each
+      factor is exact to an ulp or two, where e^(ln Γ) would carry ln Γ's rounding times its size */
+  function gammaLarge(z) {
+    const half = Math.pow(z, (z - 0.5) / 2);
+    return Math.sqrt(2 * Math.PI) * half * Math.exp(-z) * half * Math.exp(stirlingSum(z));
+  }
+  /** below 10, Γ(z) = Γ(z + n) / (z (z + 1) … (z + n − 1)): [the shift n, that product] */
+  const shiftUp = (z) => { let prod = 1, n = 0; while (z + n < 10) prod *= z + n++; return [n, prod]; };
   S.gamma = function (z) {
-    if (z < 0.5) return Math.PI / (Math.sin(Math.PI * z) * S.gamma(1 - z));
+    if (z < 0.5) return Math.PI / (Math.sin(Math.PI * z) * S.gamma(1 - z));   // reflection (DLMF 5.5.3)
     if (z > 171.62) return Infinity;
     if (Number.isInteger(z) && z <= 171) return C.fact(z - 1);
-    z -= 1;
-    let x = LG[0];
-    for (let i = 1; i < 9; i++) x += LG[i] / (z + i);
-    const t = z + 7.5;
-    return Math.sqrt(2 * Math.PI) * Math.pow(t, z + 0.5) * Math.exp(-t) * x;
+    const [n, prod] = shiftUp(z);
+    return gammaLarge(z + n) / prod;
   };
   S.lnGamma = function (z) {
     if (z < 0.5) return Math.log(Math.PI / Math.abs(Math.sin(Math.PI * z))) - S.lnGamma(1 - z);
     if (Number.isInteger(z) && z < 171) return Math.log(C.fact(z - 1));
-    z -= 1;
-    let x = LG[0];
-    for (let i = 1; i < 9; i++) x += LG[i] / (z + i);
-    const t = z + 7.5;
-    return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(x);
+    return z < 10 ? Math.log(S.gamma(z)) : lnGammaLarge(z);
   };
-  /** regularised lower incomplete gamma P(a, x) */
-  S.gammaP = function (a, x) {
-    if (x <= 0) return 0;
-    if (x < a + 1) {
-      let sum = 1 / a, del = sum, ap = a;
-      for (let n = 0; n < 1000; n++) { ap++; del *= x / ap; sum += del; if (Math.abs(del) < Math.abs(sum) * 1e-16) break; }
-      return sum * Math.exp(-x + a * Math.log(x) - S.lnGamma(a));
-    }
-    return 1 - S.gammaQcf(a, x);
-  };
-  S.gammaQcf = function (a, x) {
-    let b = x + 1 - a, c = 1 / 1e-300, d = 1 / b, h = d;
-    for (let i = 1; i < 1000; i++) {
-      const an = -i * (i - a);
-      b += 2;
-      d = an * d + b; if (Math.abs(d) < 1e-300) d = 1e-300;
-      c = b + an / c; if (Math.abs(c) < 1e-300) c = 1e-300;
-      d = 1 / d;
-      const del = d * c;
-      h *= del;
-      if (Math.abs(del - 1) < 1e-16) break;
-    }
-    return Math.exp(-x + a * Math.log(x) - S.lnGamma(a)) * h;
-  };
-  S.gammaQ = (a, x) => (x < a + 1 ? 1 - S.gammaP(a, x) : S.gammaQcf(a, x));
-  /** regularised incomplete beta I_x(a, b) */
+  /* The regularised incomplete gamma and beta functions (DLMF): a power series, or a continued fraction where the
+     series converges slowly. */
+  /** e^-x x^a / Γ(a), the factor both gamma forms share */
+  const gammaFront = (a, x) => Math.exp(a * Math.log(x) - x - S.lnGamma(a));
+  /** P(a, x) = e^-x x^a Σ x^n / Γ(a + n + 1) (DLMF 8.7.1), each term the one before times x / (a + n) */
+  function gammaSeries(a, x) {
+    let term = 1 / a, total = term;
+    for (let n = 1; n < 1000 && Math.abs(term) >= Math.abs(total) * 1e-16; n++) { term *= x / (a + n); total += term; }
+    return total * gammaFront(a, x);
+  }
+  /** Q(a, x) = e^-x x^a / Γ(a) · 1/(x + 1 − a − 1(1 − a)/(x + 3 − a − 2(2 − a)/(x + 5 − a − …))) (DLMF 8.9.2) */
+  const gammaFraction = (a, x) => gammaFront(a, x) * contFrac(0, (j) => [j === 1 ? 1 : -(j - 1) * (j - 1 - a), x + 2 * j - 1 - a]);
+  /** regularised lower incomplete gamma P(a, x): the series below x = a + 1, where it converges fast */
+  S.gammaP = (a, x) => (x <= 0 ? 0 : x < a + 1 ? gammaSeries(a, x) : 1 - gammaFraction(a, x));
+  /** regularised upper incomplete gamma Q(a, x) = 1 − P(a, x) */
+  S.gammaQ = (a, x) => (x <= 0 ? 1 : x < a + 1 ? 1 - gammaSeries(a, x) : gammaFraction(a, x));
+  /** regularised incomplete beta I_x(a, b) = x^a (1 − x)^b / (a B(a, b)) · 1/(1 + d1/(1 + d2/(1 + …))), with
+      d(2m+1) = −(a + m)(a + b + m)x / ((a + 2m)(a + 2m + 1)) and d(2m) = m(b − m)x / ((a + 2m − 1)(a + 2m))
+      (DLMF 8.17.22); it converges fast below x = (a + 1)/(a + b + 2), above it I_x(a, b) = 1 − I_(1−x)(b, a) */
+  function betaFraction(x, a, b) {
+    const front = Math.exp(a * Math.log(x) + b * Math.log(1 - x) + S.lnGamma(a + b) - S.lnGamma(a) - S.lnGamma(b)) / a;
+    return front * contFrac(0, (j) => {
+      if (j === 1) return [1, 1];
+      const k = j - 1, m = k >> 1;
+      return [k % 2 ? -((a + m) * (a + b + m) * x) / ((a + 2 * m) * (a + 2 * m + 1)) : (m * (b - m) * x) / ((a + 2 * m - 1) * (a + 2 * m)), 1];
+    });
+  }
   S.betaI = function (x, a, b) {
     if (x <= 0) return 0;
     if (x >= 1) return 1;
-    const bt = Math.exp(S.lnGamma(a + b) - S.lnGamma(a) - S.lnGamma(b) + a * Math.log(x) + b * Math.log(1 - x));
-    if (x < (a + 1) / (a + b + 2)) return (bt * betacf(x, a, b)) / a;
-    return 1 - (bt * betacf(1 - x, b, a)) / b;
+    return x < (a + 1) / (a + b + 2) ? betaFraction(x, a, b) : 1 - betaFraction(1 - x, b, a);
   };
-  function betacf(x, a, b) {
-    const qab = a + b, qap = a + 1, qam = a - 1;
-    let c = 1, d = 1 - (qab * x) / qap;
-    if (Math.abs(d) < 1e-300) d = 1e-300;
-    d = 1 / d;
-    let h = d;
-    for (let m = 1; m <= 3000; m++) {
-      const m2 = 2 * m;
-      let aa = (m * (b - m) * x) / ((qam + m2) * (a + m2));
-      d = 1 + aa * d; if (Math.abs(d) < 1e-300) d = 1e-300;
-      c = 1 + aa / c; if (Math.abs(c) < 1e-300) c = 1e-300;
-      d = 1 / d; h *= d * c;
-      aa = (-(a + m) * (qab + m) * x) / ((a + m2) * (qap + m2));
-      d = 1 + aa * d; if (Math.abs(d) < 1e-300) d = 1e-300;
-      c = 1 + aa / c; if (Math.abs(c) < 1e-300) c = 1e-300;
-      d = 1 / d;
-      const del = d * c;
-      h *= del;
-      if (Math.abs(del - 1) < 1e-16) break;
-    }
-    return h;
-  }
   /** invert a monotone cdf on [lo, hi] (bisection + secant polish) */
   S.invert = function (cdf, p, lo, hi, increasing) {
     if (increasing === undefined) increasing = true;
@@ -170,7 +143,8 @@
     for (let i = 0; i < 300; i++) {
       const mid = (lo + hi) / 2;
       const f = cdf(mid) - p;
-      if (Math.abs(f) < 1e-15 || (hi - lo) < 1e-15 * Math.max(1, Math.abs(mid))) return mid;
+      /* relative, so a tiny p (CHISQ.INV(1e-8,1) ≈ 1.6e-16) is found to full precision too */
+      if (f === 0 || Math.abs(f) < 1e-15 * Math.min(p, 1) || hi - lo <= 1e-15 * Math.abs(mid) || mid === lo || mid === hi) return mid;
       if ((f < 0) === (flo < 0)) { lo = mid; flo = f; } else { hi = mid; }
     }
     return (lo + hi) / 2;
@@ -180,6 +154,8 @@
   S.tInv = (p, df) => { if (p === 0.5) return 0; const r = S.invert((x) => S.tCdf(x, df), p, -1e3, 1e3); return r; };
   S.chiCdf = (x, k) => S.gammaP(k / 2, x / 2);
   S.fCdf = (x, d1, d2) => (x <= 0 ? 0 : S.betaI((d1 * x) / (d1 * x + d2), d1 / 2, d2 / 2));
+  /** the right tail 1 − F(x), from I_(1−w)(d2/2, d1/2) rather than by subtraction, which loses every digit below 1e-16 */
+  S.fTail = (x, d1, d2) => (x <= 0 ? 1 : S.betaI(d2 / (d1 * x + d2), d2 / 2, d1 / 2));
   S.betaPdf = (x, a, b) => Math.exp((a - 1) * Math.log(x) + (b - 1) * Math.log(1 - x) - (S.lnGamma(a) + S.lnGamma(b) - S.lnGamma(a + b)));
 
   /* --------------------------------------------------------- collections */
@@ -529,7 +505,7 @@
   def('NORMSINV', 1, 1, 'n', (ctx, p) => (p <= 0 || p >= 1 ? E.NUM : S.normInv(p)));
   C.alias('NORM.S.INV', 'NORMSINV');
   def('PHI', 1, 1, 'n', (ctx, x) => S.normPdf(x));
-  def('GAUSS', 1, 1, 'n', (ctx, x) => S.normCdf(x) - 0.5);
+  def('GAUSS', 1, 1, 'n', (ctx, x) => 0.5 * S.erf(x / Math.SQRT2));
   def('LOGNORMDIST', 3, 3, 'nnn', (ctx, x, m, s) => (x <= 0 || s <= 0 ? E.NUM : S.normCdf((Math.log(x) - m) / s)));
   def('LOGNORM.DIST', 4, 4, 'nnnb', (ctx, x, m, s, cum) => { if (x <= 0 || s <= 0) return E.NUM; const z = (Math.log(x) - m) / s; return cum ? S.normCdf(z) : S.normPdf(z) / (x * s); });
   def('LOGINV', 3, 3, 'nnn', (ctx, p, m, s) => (p <= 0 || p >= 1 || s <= 0 ? E.NUM : Math.exp(m + s * S.normInv(p))));
@@ -538,10 +514,10 @@
   C.alias('CONFIDENCE.NORM', 'CONFIDENCE');
   def('CONFIDENCE.T', 3, 3, 'nnn', (ctx, a, s, n) => { n = trunc(n); if (a <= 0 || a >= 1 || s <= 0 || n < 1) return E.NUM; if (n === 1) return E.DIV0; return (-S.tInv(a / 2, n - 1) * s) / Math.sqrt(n); });
   /* t */
-  def('TDIST', 3, 3, 'nnn', (ctx, x, df, tails) => { df = trunc(df); tails = trunc(tails); if (x < 0 || df < 1 || (tails !== 1 && tails !== 2)) return E.NUM; const p = 1 - S.tCdf(x, df); return tails === 2 ? 2 * p : p; });
+  def('TDIST', 3, 3, 'nnn', (ctx, x, df, tails) => { df = trunc(df); tails = trunc(tails); if (x < 0 || df < 1 || (tails !== 1 && tails !== 2)) return E.NUM; const p = S.tCdf(-x, df); return tails === 2 ? 2 * p : p; });
   def('T.DIST', 3, 3, 'nnb', (ctx, x, df, cum) => { df = trunc(df); if (df < 1) return E.NUM; return cum ? S.tCdf(x, df) : S.tPdf(x, df); });
-  def('T.DIST.2T', 2, 2, 'nn', (ctx, x, df) => { df = trunc(df); if (x < 0 || df < 1) return E.NUM; return 2 * (1 - S.tCdf(x, df)); });
-  def('T.DIST.RT', 2, 2, 'nn', (ctx, x, df) => { df = trunc(df); if (df < 1) return E.NUM; return 1 - S.tCdf(x, df); });
+  def('T.DIST.2T', 2, 2, 'nn', (ctx, x, df) => { df = trunc(df); if (x < 0 || df < 1) return E.NUM; return 2 * S.tCdf(-x, df); });
+  def('T.DIST.RT', 2, 2, 'nn', (ctx, x, df) => { df = trunc(df); if (df < 1) return E.NUM; return S.tCdf(-x, df); });
   def('TINV', 2, 2, 'nn', (ctx, p, df) => { df = trunc(df); if (p <= 0 || p > 1 || df < 1) return E.NUM; return Math.abs(S.tInv(p / 2, df)); });
   C.alias('T.INV.2T', 'TINV');
   def('T.INV', 2, 2, 'nn', (ctx, p, df) => { df = trunc(df); if (p <= 0 || p >= 1 || df < 1) return E.NUM; return S.tInv(p, df); });
@@ -549,11 +525,11 @@
   def('CHIDIST', 2, 2, 'nn', (ctx, x, df) => { df = trunc(df); if (x < 0 || df < 1 || df > 1e10) return E.NUM; return S.gammaQ(df / 2, x / 2); });
   C.alias('CHISQ.DIST.RT', 'CHIDIST');
   def('CHISQ.DIST', 3, 3, 'nnb', (ctx, x, df, cum) => { df = trunc(df); if (x < 0 || df < 1) return E.NUM; if (cum) return S.gammaP(df / 2, x / 2); if (x === 0) return df === 2 ? 0.5 : df === 1 ? E.DIV0 : 0; return Math.exp((df / 2 - 1) * Math.log(x) - x / 2 - (df / 2) * Math.LN2 - S.lnGamma(df / 2)); });
-  def('CHIINV', 2, 2, 'nn', (ctx, p, df) => { df = trunc(df); if (p <= 0 || p > 1 || df < 1) return E.NUM; if (p === 1) return 0; return S.invert((x) => 1 - S.gammaP(df / 2, x / 2), p, 0, Math.max(10, df * 10), false); });
+  def('CHIINV', 2, 2, 'nn', (ctx, p, df) => { df = trunc(df); if (p <= 0 || p > 1 || df < 1) return E.NUM; if (p === 1) return 0; return S.invert((x) => S.gammaQ(df / 2, x / 2), p, 0, Math.max(10, df * 10), false); });
   C.alias('CHISQ.INV.RT', 'CHIINV');
   def('CHISQ.INV', 2, 2, 'nn', (ctx, p, df) => { df = trunc(df); if (p < 0 || p >= 1 || df < 1) return E.NUM; if (p === 0) return 0; return S.invert((x) => S.gammaP(df / 2, x / 2), p, 0, Math.max(10, df * 10)); });
   /* F */
-  def('FDIST', 3, 3, 'nnn', (ctx, x, a, b) => { a = trunc(a); b = trunc(b); if (x < 0 || a < 1 || b < 1) return E.NUM; return 1 - S.fCdf(x, a, b); });
+  def('FDIST', 3, 3, 'nnn', (ctx, x, a, b) => { a = trunc(a); b = trunc(b); if (x < 0 || a < 1 || b < 1) return E.NUM; return S.fTail(x, a, b); });
   C.alias('F.DIST.RT', 'FDIST');
   def('F.DIST', 4, 4, 'nnnb', (ctx, x, a, b, cum) => {
     a = trunc(a); b = trunc(b); if (x < 0 || a < 1 || b < 1) return E.NUM;
@@ -561,7 +537,7 @@
     if (x === 0) return a === 2 ? 1 : a < 2 ? E.NUM : 0;
     return Math.exp(0.5 * (a * Math.log(a * x) + b * Math.log(b) - (a + b) * Math.log(a * x + b)) - Math.log(x) - (S.lnGamma(a / 2) + S.lnGamma(b / 2) - S.lnGamma((a + b) / 2)));
   });
-  def('FINV', 3, 3, 'nnn', (ctx, p, a, b) => { a = trunc(a); b = trunc(b); if (p <= 0 || p > 1 || a < 1 || b < 1) return E.NUM; if (p === 1) return 0; return S.invert((x) => 1 - S.fCdf(x, a, b), p, 0, 1000, false); });
+  def('FINV', 3, 3, 'nnn', (ctx, p, a, b) => { a = trunc(a); b = trunc(b); if (p <= 0 || p > 1 || a < 1 || b < 1) return E.NUM; if (p === 1) return 0; return S.invert((x) => S.fTail(x, a, b), p, 0, 1000, false); });
   C.alias('F.INV.RT', 'FINV');
   def('F.INV', 3, 3, 'nnn', (ctx, p, a, b) => { a = trunc(a); b = trunc(b); if (p < 0 || p >= 1 || a < 1 || b < 1) return E.NUM; if (p === 0) return 0; return S.invert((x) => S.fCdf(x, a, b), p, 0, 1000); });
   /* beta */
@@ -669,7 +645,7 @@
       if (type === 2) { const sp = ((n1 - 1) * v1 + (n2 - 1) * v2) / (n1 + n2 - 2); t = Math.abs(mean(x) - mean(y)) / Math.sqrt(sp * (1 / n1 + 1 / n2)); df = n1 + n2 - 2; }
       else { const se = v1 / n1 + v2 / n2; t = Math.abs(mean(x) - mean(y)) / Math.sqrt(se); df = (se * se) / ((v1 / n1) * (v1 / n1) / (n1 - 1) + (v2 / n2) * (v2 / n2) / (n2 - 1)); }
     }
-    const p = 1 - S.tCdf(t, df);
+    const p = S.tCdf(-t, df);
     return tails === 2 ? 2 * p : p;
   });
   C.alias('T.TEST', 'TTEST');
@@ -680,8 +656,7 @@
     const v1 = devsq(x) / (x.length - 1), v2 = devsq(y) / (y.length - 1);
     if (!v1 || !v2) return E.DIV0;
     const f = v1 / v2;
-    const p = S.fCdf(f, x.length - 1, y.length - 1);
-    return 2 * Math.min(p, 1 - p);
+    return 2 * Math.min(S.fCdf(f, x.length - 1, y.length - 1), S.fTail(f, x.length - 1, y.length - 1));
   });
   C.alias('F.TEST', 'FTEST');
   def('CHITEST', 2, 2, 'aa', (ctx, a, b) => {

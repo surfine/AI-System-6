@@ -145,9 +145,15 @@ window.AISystem6Config = (() => {
     // "imageAttachments" so a picture is one object shared by every surface,
     // instead of base64 swelling each project and scrap record. Version 6
     // adds "transitPlans": the Basin's line-network plans, which Rootline
-    // writes and Bonsai City reads when the mayor flips the pot. The upgrade
-    // is a no-op for every existing store.
-    indexedDbVersion: 6,
+    // writes and Bonsai City reads when the mayor flips the pot. Version 7
+    // adds "nativeDocuments" (ClioWorks N0, owner decision 2026-10-24): the
+    // bytes of an Office document (docx/xlsx/pptx) kept on the Project Hard
+    // Disk, one row per document, named by its small chatFiles item (type
+    // "office", nativeDocumentId). The store name is spelled where it is used
+    // (the upgrade below and the lazy native-binaries module), not here: the
+    // boot bundle pays for every byte. The upgrade is a no-op for every
+    // existing store.
+    indexedDbVersion: 7,
     referenceStoreName: "projectReferences",
     keyvalStoreName: "keyval",
     projectsStoreName: "projects",
@@ -508,6 +514,9 @@ const ensureWritingFlowModule = createLazyModuleLoader("AISystem6WritingFlowLoad
   "app/core/explanation-lens.js",
   "app/data/evergreen-demo-corpus.js",
   "app/content/rebuild-samples.js",
+  // The outline tree's parse/serialise half (split from app/core/markdown.js):
+  // Writing Flow edits the tree through it.
+  "app/core/markdown-outline.js",
   "app/features/writing-flow.js",
   // 「还原写作对象」: its own window, built on Writing Flow's helpers.
   "app/features/rebuild-flow.js",
@@ -558,6 +567,10 @@ const ensureUserRecoveryMessagesModule = createLazyModuleLoader("AISystem6UserRe
 // them is the same one-line loader it was before, now without a do-nothing
 // version of it shipping in the meantime.
 const ensureTeachtextWritingModule = createLazyModuleLoader("AISystem6TeachtextWriting", ["app/features/teachtext-writing.js"]);
+// N15a: 手稿「自动存档」修订与写作面链接跟随（features/writing-safety.js）。
+// 调度与链接解析全在模块里；急载侧只有 wireup 的一行收口、Format 菜单一行、
+// 可用性行与 markdown-editor 的 ⌘/Ctrl+点击路由。
+const ensureWritingSafetyModule = createLazyModuleLoader("AISystem6WritingSafety", ["app/features/writing-safety.js"]);
 const ensureDocumentRolePolicyModule = createLazyModuleLoader("AISystem6DocumentRolePolicy", ["app/core/document-role-policy.js"]);
 // 字符分镜图 (internal/plans/STORYBOARD-SPEC.zh-CN.md): the storyboard parser,
 // its per-paragraph model calls and the sheet. Nothing of it is in the boot
@@ -594,6 +607,15 @@ const ensureSystemConceptsData = createLazyModuleLoader("AISystem6SystemConcepts
 ], true);
 const ensureMemoryCardsModule = createLazyModuleLoader("", ["app/features/memory-cards.js"]);
 const ensureAlarmClockModule = createLazyModuleLoader("", ["app/features/alarm-clock.js"]);
+// ODF (odt/ods/odp → editable Office copy) is a whole converter with its own
+// codec loads; it rides the first ODF import, never the boot.
+// N15b: the ODF import loader also carries the old-format import gate
+// (legacy-formats.js) and the workbook's CSV in/out (clio-chart-csv.js) — the
+// import-conversion side paths share one lazy bundle and name no new loaders.
+const ensureOdf = createLazyModuleLoader("AISystem6OdfImport", ["app/features/odf-import.js", "app/features/legacy-formats.js", "app/features/clio-chart-csv.js"], true);
+// N9: the iWork original-page view and 建副本 ride one loader; Reader's eager
+// hook is one lookup, everything else loads on the first iWork file.
+const ensureIworkReadingModule = createLazyModuleLoader("AISystem6IworkReading", ["app/features/iwork-reading.js"]);
 const ensureBureaucracyMemeModule = createLazyModuleLoader("AISystem6BureaucracyMeme", ["app/core/application-shell.js", "app/features/bureaucracy-meme.js"], false, ["styles.bureaucracy-meme.css"]);
 const ensurePrintDirectoryModule = createLazyModuleLoader("", ["app/features/print-directory.js"]);
 const ensureProjectCdPrintModule = createLazyModuleLoader("", ["app/core/application-shell.js", "app/features/project-cd-print.js"]);
@@ -613,7 +635,7 @@ const ensureDictationPadModule = createLazyModuleLoader("AISystem6DictationPadLo
   "app/features/dictation-pad.js",
 ]);
 const ensureHoldThatThoughtModule = createLazyModuleLoader("AISystem6HoldThatThoughtLoaded", ["app/core/application-shell.js", "app/features/hold-that-thought.js"]);
-const ensureProjectPeekModule = createLazyModuleLoader("AISystem6ProjectPeekLoaded", ["app/core/application-shell.js", "app/features/project-peek.js"], false, ["styles.project-disks.css"]);
+const ensureProjectPeekModule = createLazyModuleLoader("AISystem6ProjectPeekLoaded", ["app/core/application-shell.js", "app/core/markdown-outline.js", "app/features/project-peek.js"], false, ["styles.project-disks.css"]);
 // The backup schema and the assembler that reads it travel with an export or
 // a restore, not with every boot.
 const ensureProjectDiskBackupModule = createLazyModuleLoader("AISystem6ProjectDiskBackupLoaded", ["app/core/project-disk-backup.js"]);
@@ -637,11 +659,35 @@ const ensureGuestToolsModule = createLazyModuleLoader("AISystem6GuestTools", [
   "app/core/protected-ranges.js",
   "app/features/guest-tools.js",
 ]);
+const ensureReaderPagesModule = createLazyModuleLoader("AISystem6ReaderPages", ["app/features/reader-pages.js"], false, ["styles.reader-pages.css"]);
+// ClioWorks N7: the organizing model and its window ride one loader, and the
+// original-page view's lazy sheet already covers both modes.
+const ensureReaderOrganizeModule = createLazyModuleLoader("AISystem6ReaderOrganize", ["app/core/pdf-organize.js", "app/features/reader-organize.js"]);
 const ensureRebuildPackModule = createLazyModuleLoader("AISystem6RebuildPack", ["app/core/rebuild-pack.js"]);
 // The outbound half: the servers this desk asks, and the File Floppy landing
 // every answer takes. Chooser loads it; so does Searcher when the chosen
 // provider is one of those servers.
 const ensureMcpServersModule = createLazyModuleLoader("AISystem6McpServers", ["app/features/mcp-servers.js"]);
+// ClioTalk's agent mode and Chooser's shared folders (docs/AGENT-HARNESS.md):
+// the mode button and Chooser load it.
+const ensureClioTalkAgentModule = createLazyModuleLoader("AISystem6ClioTalkAgent", ["app/features/cliotalk-agent.js"], false, ["styles.cliotalk-agent.css"]);
+// The last ClioTalk mode (对话 / 代理) is one localStorage read (the same key
+// the lazy module's readStoredMode uses): boot restores the 代理 selection
+// before that module ever loads, and the module's own restore agrees with it.
+function clioTalkAgentModeActive() {
+  try { return !!window.AISystem6ClioTalkAgent?.isActive?.() || localStorage.getItem("ai-system6-cliotalk-mode") === "agent"; } catch { return false; }
+}
+// Boot's half of "Mode at boot". The module stays lazy; the mode button keeps
+// its pressed look as the way back to 对话 until the module's bar takes over.
+function restoreClioTalkAgentModeSelection() {
+  if (window.AISystem6ClioTalkAgent || !clioTalkAgentModeActive()) return false;
+  document.querySelector('[data-window="assistant"]')?.classList.add("is-agent-mode");
+  document.getElementById("clio-agent-mode")?.setAttribute("aria-pressed", "true");
+  syncPromptPlaceholder();
+  return true;
+}
+// ClioTalk's cloud agent runs on the public web (docs/AGENT-HARNESS.md).
+const ensureAgentCloudModule = createLazyModuleLoader("AISystem6AgentCloud", ["app/core/agent-cloud-providers.js", "app/features/cliotalk-agent-cloud.js"]);
 const ensureMingmingHandoffReviewModule = createLazyModuleLoader("", ["app/features/mingming-handoff-review.js"]);
 // Review Desk's comment threads and version compare. The pure model and the
 // anchor search load first; the panel installs the flag.
@@ -658,9 +704,11 @@ const ensureCommandSheetModule = createLazyModuleLoader("AISystem6CommandSheet",
 const ensureClioChartModule = createLazyModuleLoader("AISystem6ClioChartLoaded", ["app/core/edit-history.js", "app/core/edit-snap.js", "app/core/edit-layers.js", "app/core/edit-embeds.js", "app/features/clio-chart.js", "app/features/clio-diagram.js"], false, ["styles.clio-chart.css", "styles.edit-kernel.css"]);
 // The plan window carries its pure model with it: the model is also what the
 // contract executes, so it stays a separate file rather than folding in.
-const ensureClioProjectModule = createLazyModuleLoader("AISystem6ClioProjectWindowLoaded", ["app/core/application-shell.js", "app/core/edit-history.js", "app/core/clio-project.js", "app/features/clio-project-window.js"], false, ["styles.clio-project.css"]);
+const ensureClioProjectModule = createLazyModuleLoader("AISystem6ClioProjectWindowLoaded", ["app/core/application-shell.js", "app/core/edit-history.js", "app/core/clio-project.js", "app/core/markdown-outline.js", "app/features/clio-project-window.js"], false, ["styles.clio-project.css"]);
 const ensureClioPaintModule = createLazyModuleLoader("AISystem6ClioPaintLoaded", ["app/core/application-shell.js", "app/core/edit-history.js", "app/core/edit-snap.js", "app/core/edit-layers.js", "app/core/edit-assets.js", "app/core/edit-embeds.js", "app/features/clio-paint.js"], false, ["styles.clio-paint.css", "styles.edit-kernel.css"]);
 const ensureOneMoreTuneModule = createLazyModuleLoader("AISystem6OneMoreTuneLoaded", ["app/core/application-shell.js", "app/features/one-more-tune.js"], false, ["styles.one-more-tune.css"]);
+// The wheel rides along beside its host: same lazy lane, no stylesheet of its own.
+const ensureOneMoreTuneWheelModule = createLazyModuleLoader("AISystem6OneMoreTuneWheelLoaded", ["app/features/one-more-tune-wheel.js"]);
 const ensureAaronBlogModule = createLazyModuleLoader("AISystem6AaronBlogLoaded", ["app/core/application-shell.js", "app/features/aaron-blog.js"], false, ["styles.aaron-blog.css"]);
 const ensureTodoDaModule = createLazyModuleLoader("AISystem6TodoDaLoaded", ["app/core/application-shell.js", "app/features/todo-da.js"]);
 const ensureSideAskPadModule = createLazyModuleLoader("AISystem6SideAskPadLoaded", ["app/core/application-shell.js", "app/features/sideask-pad.js"]);
@@ -893,6 +941,7 @@ const ensureFinderDragModule = createLazyModuleLoader("AISystem6FinderDragLoaded
 function ensureDesktopMaintenanceModule() { return ensureLazySystemModule("app/core/desktop-maintenance.js", "AISystem6DesktopMaintenanceLoaded"); }
 function ensureNativeBinariesModule() { return ensureLazySystemModule("app/core/native-binaries.js", "AISystem6NativeBinaries"); }
 function ensureClioWorksLedgerModule() { return ensureLazySystemModule("app/vendor/clioworks-v3/native-host.js", "AISystem6ClioWorksLoaded"); }
+function ensureOfficeNewModule() { return ensureLazySystemModule("app/features/office-new.js", "AISystem6OfficeNew"); }
 const ensureClioStageAuditModuleLoaded = createLazyModuleLoader("AISystem6ClioStageAuditLoaded", ["app/features/clio-stage-audit.js"], false, ["styles.clio-stage-audit.css"]);
 function ensureUnifiedSpecContractsModule() { return ensureLazySystemModule("app/vendor/unified-spec/contracts-install.js", "ClioWorksUnifiedContractsLoaded"); }
 const ensureChatCompactionModuleLoaded = createLazyModuleLoader("AISystem6ChatCompactionLoaded", ["app/core/chat-compaction.js"]);
@@ -906,7 +955,6 @@ function ensureChatCachePolicyModule() { return ensureLazySystemModule("app/vend
 const ensureChatRunDetailsModuleLoaded = createLazyModuleLoader("AISystem6ChatRunDetailsLoaded", ["app/core/chat-run-details.js"]);
 function ensureChatRunDetailsModule() { return ensureChatRunDetailsModuleLoaded(); }
 const ensureReadingBridgeModuleLoaded = createLazyModuleLoader("AISystem6ReadingBridgeLoaded", ["app/features/reading-bridge.js"]);
-function ensureReadingBridgeModule() { return ensureReadingBridgeModuleLoaded(); }
 const ensureOpenQuestionsModuleLoaded = createLazyModuleLoader("AISystem6OpenQuestionsLoaded", ["app/features/open-questions.js"]);
 const ensureClioWorksV51Loaded = createLazyModuleLoader("AISystem6ChartFramePort", ["app/vendor/clioworks-v3/ui-model.js", "app/vendor/clioworks-v3/frame-session.js", "app/vendor/clioworks-v3/runtime-port.js", "app/vendor/clioworks-v3/context-strip.js", "app/vendor/clioworks-v3/chart-frame-port.js"]);
 function ensureClioWorksV51Modules() { return ensureClioWorksV51Loaded(); }
@@ -915,23 +963,65 @@ const ensureClioChartContextLoaded = createLazyModuleLoader("AISystem6ClioChartC
 async function ensureClioChartContextModule() { await ensureClioWorksV51Modules(); return ensureClioChartContextLoaded(); }
 const ensureClioChartWorkbookLoaded = createLazyModuleLoader("AISystem6ClioChartWorkbook", ["app/features/clio-chart-comments.js", "app/features/clio-chart-workbook.js"], false, ["styles.clio-chart.css"]);
 async function ensureClioChartWorkbookModule() { await ensureClioChartModule(); return ensureClioChartWorkbookLoaded(); }
-const ensureClioWriteModule = createLazyModuleLoader("AISystem6ClioWriteLoaded", ["app/core/application-shell.js", "app/features/clio-write.js"], false, ["styles.clio-chart.css"]);
+// N5b (clio-chart-workbook-tools.js): the vendored suite core first — the chart
+// renderer and dml read L.h/L.s/L.color from it — then the tools module.
+const ensureClioChartWorkbookToolsLoaded = createLazyModuleLoader("AISystem6ClioChartWorkbookTools", ["app/vendor/vibeoffice/common/core.js", "app/features/clio-chart-workbook-tools.js"], false, ["styles.clio-chart.css"]);
+const ensureClioWriteModule = createLazyModuleLoader("AISystem6ClioWriteLoaded", ["app/core/application-shell.js", "app/features/clio-write-fonts.js", "app/features/clio-write.js"], false, ["styles.clio-chart.css"]);
+// N12: the substituted-fonts display (clio-write-fonts.js) rides ClioWrite's loader above.
+// N13a: the 「修订」 review side path. The ported engine (quire-review.js) and the
+// windoid (clio-write-review.js) ride one loader with the shared ClioWrite sheet;
+// only the 编辑 menu row and this loader are eager. clio-write.js opens them
+// through window.AISystem6EnsureClioWriteReviewModule when the command runs.
+// N15b: 字数统计 (clio-write-word-count.js) is the same side path's read-only
+// window and rides this one loader with them.
+// 比较→修订: the compare windoid (clio-write-compare.js) rides the same loader,
+// with the shared word-diff core its changed-paragraph hunks read ahead of it.
+const ensureClioWriteReviewModule = createLazyModuleLoader("AISystem6ClioWriteReviewLoaded", ["app/vendor/clioworks-v3/quire-review.js", "app/features/clio-write-review.js", "app/features/clio-write-word-count.js", "app/core/word-diff.js", "app/features/clio-write-compare.js"], false, ["styles.clio-chart.css"]);
+window.AISystem6EnsureClioWriteReviewModule = ensureClioWriteReviewModule;
+// N15b: the old-format gate (legacy-formats.js) screens every File Floppy
+// import batch, and clio-chart-csv.js serves the workbook File menu's 导入/
+// 导出 CSV… — both ride the ODF import loader above: one lazy bundle for the
+// import-conversion side paths, no eager lines of their own.
+// N3: the shared 查找 / 替换 windoid. The engine (find-replace.js) and the
+// windoid (clioworks-find.js) ride one loader with the shared ClioWrite sheet;
+// only the 编辑 menu rows and this loader are eager. All three editors open
+// them through window.AISystem6EnsureClioWorksFindModule when a command runs.
+const ensureClioWorksFindModule = createLazyModuleLoader("AISystem6ClioWorksFindLoaded", ["app/vendor/clioworks-v3/find-replace.js", "app/features/clioworks-find.js"], false, ["styles.clio-chart.css"]);
+window.AISystem6EnsureClioWorksFindModule = ensureClioWorksFindModule;
+// N11: the desk's own memory clipboard (features/clioworks-clipboard.js) — the
+// 带来源副本 the three ClioWorks editors paste between them. The board itself
+// is the module; every editor opens it through this loader on its first copy or
+// paste, the same one-line rule the find windoid's loader follows.
+const ensureClioworksClipboardModule = createLazyModuleLoader("AISystem6ClioworksClipboardLoaded", ["app/features/clioworks-clipboard.js"]);
+window.AISystem6EnsureClioworksClipboard = ensureClioworksClipboardModule;
+// N14: the manuscript round trip (送审 export / 回稿 import). The engine
+// (round naming, cleaning, paragraph alignment) and the dialog/windoid ride
+// one loader with the shared ClioWrite sheet; the File menu row, the Review
+// Desk Commands row and this loader are the eager lines. The flag is the UI
+// file's own ...Loaded mark, set after the last source lands — the same
+// two-file rule ensureClioWorksFindModule follows.
+const ensureManuscriptRoundTripModule = createLazyModuleLoader("AISystem6ManuscriptRoundTripUILoaded", ["app/vendor/clioworks-v3/manuscript-roundtrip.js", "app/features/manuscript-roundtrip.js"], false, ["styles.clio-chart.css"]);
+window.AISystem6EnsureManuscriptRoundTripModule = ensureManuscriptRoundTripModule;
+// 邮件合并: the marked lexer, the shared word-export generator, the CSV reader
+// and the dialog ride one loader with the shared ClioWrite sheet; ClioWrite's
+// 文件 menu row and this loader are the eager lines. The flag is the module's
+// own ...Loaded mark, set after the last source lands.
+const ensureClioworksMailMergeModule = createLazyModuleLoader("AISystem6ClioworksMailMergeLoaded", ["app/vendor/marked.umd.js", "app/features/word-export.js", "app/features/clio-chart-csv.js", "app/features/clioworks-mailmerge.js"], false, ["styles.clio-chart.css"]);
+window.AISystem6EnsureClioworksMailMerge = ensureClioworksMailMergeModule;
+// N8: the Review Desk's 回稿 tab — per-paragraph candidates, the verbatim
+// message column, the three-way compare. Engine and N14's UI first (lastImport
+// is where a fresh round is read), the shared word-diff core the candidate
+// highlighting reads, then the tab itself; the flag is the tab file's own.
+const ensureRoundtripReviewModule = createLazyModuleLoader("AISystem6RoundtripReviewLoaded", ["app/vendor/clioworks-v3/manuscript-roundtrip.js", "app/features/manuscript-roundtrip.js", "app/core/word-diff.js", "app/features/roundtrip-review.js"]);
 const ensureClioStageNativeModule = createLazyModuleLoader("AISystem6ClioStageNative", ["app/features/clio-stage-native.js"], false, ["styles.clio-chart.css"]);
 function ensureOpenQuestionsModule() { return ensureOpenQuestionsModuleLoaded(); }
 const ensureReadingRelationsModuleLoaded = createLazyModuleLoader("AISystem6ReadingRelationsLoaded", ["app/features/reading-relations.js"]);
-function ensureReadingRelationsModule() { return ensureReadingRelationsModuleLoaded(); }
 const ensureReadingLayersModuleLoaded = createLazyModuleLoader("AISystem6ReadingLayersLoaded", ["app/features/reading-layers.js"]);
-function ensureReadingLayersModule() { return ensureReadingLayersModuleLoaded(); }
 const ensureReadingCompareModuleLoaded = createLazyModuleLoader("AISystem6ReadingCompareLoaded", ["app/features/reading-compare.js"]);
-function ensureReadingCompareModule() { return ensureReadingCompareModuleLoaded(); }
 const ensureReadingBoundaryModuleLoaded = createLazyModuleLoader("AISystem6ReadingBoundaryLoaded", ["app/features/reading-boundary.js"]);
-function ensureReadingBoundaryModule() { return ensureReadingBoundaryModuleLoaded(); }
 const ensureSourceVersionsModuleLoaded = createLazyModuleLoader("AISystem6SourceVersionsLoaded", ["app/features/source-versions.js"]);
-function ensureSourceVersionsModule() { return ensureSourceVersionsModuleLoaded(); }
 const ensureReadingPackageModuleLoaded = createLazyModuleLoader("AISystem6ReadingPackageLoaded", ["app/features/reading-package.js"]);
-function ensureReadingPackageModule() { return ensureReadingPackageModuleLoaded(); }
 const ensureMediaReadingModuleLoaded = createLazyModuleLoader("AISystem6MediaReadingLoaded", ["app/features/media-reading.js"]);
-function ensureMediaReadingModule() { return ensureMediaReadingModuleLoaded(); }
 function ensureClioStageAuditModule() { return ensureClioStageAuditModuleLoaded(); }
 // The sheet travels with the module: DocMap's styles are lazy too.
 const ensureDocMapModuleLoaded = createLazyModuleLoader("AISystem6DocMapLoaded", ["app/features/docmap.js"], false, ["styles.docmap.css"]);
@@ -1180,4 +1270,7 @@ function installLazyFunctionStub(name, ensureModule) {
 ].forEach((name) => installLazyFunctionStub(name, ensureOutlineClaimModule));
 
 const ensureProjectBackupExportData = createLazyModuleLoader("AISystem6ProjectBackupExportData", ["app/features/project-backup-export-data.js"]);
+// The File Floppy's browser OCR / PDF readers and the webp/heic canvas
+// normalizer; export-import.js awaits this before every call into them.
+const ensureFileImportExtractors = createLazyModuleLoader("AISystem6FileImportExtractors", ["app/features/file-import-extractors.js"]);
 const ensureTinyShellModule = createLazyModuleLoader("AISystem6TinyShell", ["app/core/storage-fingerprint.js", "app/core/tinyjs-shell.js"]);

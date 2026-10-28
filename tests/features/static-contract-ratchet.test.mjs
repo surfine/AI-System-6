@@ -78,6 +78,9 @@ const suiteInfrastructure = new Set([
   // patch inputs and invalid manifests. These exercise tooling, not app UI.
   "tinyjs-packaging.test.mjs",
   "tinyjs-ota-publish.test.mjs",
+  // Runs the Intel/Monterey legacy line's Mach-O gate against real binaries
+  // (a cloned node standing in for a wrong-architecture canvas.node).
+  "mac-legacy-build.test.mjs",
   // Runs the release checkpoint CLI for real in a temporary tree and holds it
   // to the bank path the orchestrator writes. It makes a claim about the
   // release tooling, not about the product, so it belongs on this side of the

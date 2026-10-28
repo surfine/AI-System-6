@@ -52,6 +52,7 @@ const {
   resolveCloudVisionModel,
 } = require("../cloud.js");
 const { normalizeCloudVisionMessages } = require("../cloud-vision.js");
+const { isAnthropicUrl } = require("../anthropic-messages.js");
 const { handleCloudFileTokenMessages } = require("../cloud-files.js");
 const { isPublicDeployment } = require("../runtime-profile.js");
 const { resolveCloudCredential } = require("../credential-vault.js");
@@ -391,9 +392,10 @@ async function handleCloudChat(req, res) {
       : raw._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT;
     const cloudTarget = await resolveCloudTarget(requestedTargetBaseUrl);
     const targetBaseUrl = cloudTarget.baseUrl;
+    const provider = isAnthropicUrl(targetBaseUrl) ? "anthropic" : "deepseek";
     const apiKey = await resolveCloudCredential({
       credentialId: raw._cloud_credential_id,
-      provider: "deepseek",
+      provider,
       targetBaseUrl,
       suppliedApiKey: raw._cloud_api_key,
       allowSupplied: isPublicDeployment,
@@ -555,6 +557,12 @@ async function handleCloudChat(req, res) {
         payload.max_tokens = answerBudget + reasoningAllowance;
       }
     }
+    if (provider === "anthropic") {
+      // Claude thinks adaptively and cannot switch it off; effort is the only
+      // lever, and its thinking spends from max_tokens as DeepSeek's does.
+      payload.reasoning_effort = policy.thinking ? policy.effort : "low";
+      payload.max_tokens = answerBudget + Math.max(policy.reasoningAllowance, 4000);
+    }
     if (vision.hasVision) {
       payload.thinking = { type: "disabled" };
       delete payload.reasoning_effort;
@@ -661,7 +669,7 @@ async function handleCloudChat(req, res) {
     /** @type {number | null | undefined} undefined = this run never retried */
     let retriedUsageTokens;
 
-    if (policy.thinking && isBudgetStarvedCompletion(data)) {
+    if (policy.thinking && provider !== "anthropic" && isBudgetStarvedCompletion(data)) {
       // The first request's usage is booked here, once, and before anything
       // decides to retry. Booking it afterwards is what charged the first
       // reservation for both calls: the answer the retry returned was added to

@@ -156,6 +156,9 @@ export function createBootContext(overrides = {}) {
     refreshSystemSelectControls: syncNoop,
     installWorkingSessionAutosave: syncNoop,
     installApplicationLifecycleWatch: syncNoop,
+    // Agent-tails: boot puts the ClioTalk window back in 代理 with one
+    // localStorage read before the lazy module exists.
+    restoreClioTalkAgentModeSelection: syncNoop,
     runBootSequence: asyncNoop,
     scheduleDesktopMaintenance: syncNoop,
     applyControlStripState: syncNoop,

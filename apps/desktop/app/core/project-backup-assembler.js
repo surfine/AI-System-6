@@ -16,6 +16,66 @@ window.AISystem6ProjectBackupAssembler = (() => {
     return Array.isArray(value) ? value : fallback;
   }
 
+  /** Every nativeDocumentId the project's files and Trash name (v8). */
+  function officeDocumentIds(files, trash) {
+    const ids = new Set();
+    const visit = (file) => {
+      if (file && file.type === "office" && typeof file.nativeDocumentId === "string" && file.nativeDocumentId) ids.add(file.nativeDocumentId);
+    };
+    files.forEach(visit);
+    trash.forEach((item) => {
+      const original = item && item.originalData;
+      if (!original) return;
+      visit(original);
+      (Array.isArray(original.files) ? original.files : []).forEach(visit);
+    });
+    return [...ids];
+  }
+
+  function bytesToBase64(bytes) {
+    const view = new Uint8Array(bytes);
+    let binary = "";
+    for (let offset = 0; offset < view.length; offset += 0x8000) {
+      binary += String.fromCharCode.apply(null, view.subarray(offset, offset + 0x8000));
+    }
+    return btoa(binary);
+  }
+
+  /**
+   * The Office documents' bytes, read from the nativeDocuments store for both
+   * Normal and Recovery Export (the bytes never live in the desk's memory). A
+   * row that cannot be read fails the export: a backup that silently lost a
+   * document would restore an Office file with nothing in it.
+   */
+  async function readNativeDocuments(ids, source) {
+    if (!ids.length) return [];
+    const rows = typeof source.getNativeDocuments === "function"
+      ? await source.getNativeDocuments(ids)
+      : await (async () => {
+        const db = await openAppDb();
+        try {
+          const tx = db.transaction("nativeDocuments", "readonly");
+          const store = tx.objectStore("nativeDocuments");
+          return await Promise.all(ids.map((id) => idbRequest(store.get(id))));
+        } finally {
+          db.close();
+        }
+      })();
+    return ids.map((id, index) => {
+      const row = (rows || [])[index];
+      if (!row || !row.bytes) throw new Error(`An Office document's bytes are missing (${id}).`);
+      return {
+        id: row.id,
+        projectId: row.projectId || "",
+        format: row.format,
+        byteLength: row.byteLength,
+        sha256: row.sha256 || "",
+        updatedAt: row.updatedAt || "",
+        base64: bytesToBase64(row.bytes),
+      };
+    });
+  }
+
   /**
    * @param {{ projectId: string, source: {
    *   getProject: (id: string) => Promise<any>,
@@ -52,6 +112,7 @@ window.AISystem6ProjectBackupAssembler = (() => {
       readCollection(source.getDarkroomRecords, projectId),
       readCollection(source.getImageAttachments, projectId),
     ]);
+    const nativeDocuments = await readNativeDocuments(officeDocumentIds(files, trash), source);
     const bundle = {
       format: "ai-system-6-project-disk",
       formatVersion: window.AISystem6ProjectDiskBackup.currentFormatVersion,
@@ -71,6 +132,7 @@ window.AISystem6ProjectBackupAssembler = (() => {
       documentRevisions,
       darkroomRecords,
       imageAttachments,
+      nativeDocuments,
     };
     if (workingSession && typeof workingSession === "object") bundle.workingSession = workingSession;
     const attached = await window.AISystem6ProjectDiskBackup.attachIntegrity(bundle);

@@ -1,0 +1,318 @@
+/* ClioStage N6 — the show layer and the page overview (features/clio-stage.js).
+   The full-screen page-by-page projection, the presenter console that lives
+   inside it, and the overview light table. This sheet rides the ClioWorks
+   editors' shared lazy bundle (styles.clio-chart.css): the layer is built by
+   clio-stage.js, which that loader brings in, so a boot never downloads it.
+   The pages themselves keep the printed sheet's own CSS inside their shadow
+   roots; only the dark room around them is styled here. */
+
+.clio-stage-show {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-window-pinned);
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  color: #fff;
+}
+
+/* The audience face: the sheet alone, centred in the dark. */
+.clio-stage-show-face {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.clio-stage-show-audience {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  cursor: pointer;
+}
+
+/* The room the page is scaled against fills the dark stage, so the fit is
+   measured against the whole screen (and, in portrait, by width). */
+.clio-stage-show-page {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clio-stage-show-audience .clio-stage-page-host,
+.clio-stage-show-projector .clio-stage-page-host {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* The presenter face: the current page big, the next page and the notes beside. */
+.clio-stage-show-head {
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px 8px;
+  font-size: 12px;
+}
+
+.clio-stage-show-timer {
+  font-variant-numeric: tabular-nums;
+}
+
+.clio-stage-show-console {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 12px;
+  padding: 0 14px;
+}
+
+.clio-stage-show-current {
+  flex: 2;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clio-stage-show-side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.clio-stage-show-side > span {
+  flex: none;
+}
+
+.clio-stage-show-next {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.clio-stage-show-next-room {
+  height: clamp(90px, 18vh, 200px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clio-stage-show-next-caption {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clio-stage-show-end {
+  height: clamp(90px, 18vh, 200px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #fff;
+  font-size: 13px;
+}
+
+.clio-stage-show-notes {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid #fff;
+  padding: 8px;
+  line-height: 1.6;
+}
+
+/* One control row, both faces: every button a touch point of at least 44px,
+   because a show is driven standing up, with a finger. */
+.clio-stage-show-controls {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px calc(10px + var(--touch-safe-inset));
+}
+
+.clio-stage-show-button {
+  min-height: var(--touch-primary-min-height);
+  min-width: 44px;
+  padding: 4px 14px;
+  font: inherit;
+  font-size: 12px;
+  color: #000;
+  background: #fff;
+  border: 1px solid #fff;
+  border-radius: 8px;
+}
+
+.clio-stage-show-button:focus-visible {
+  outline: var(--system-focus-outline);
+}
+
+.clio-stage-show-button[aria-pressed="true"] {
+  color: #fff;
+  background: #000;
+}
+
+.clio-stage-show-counter {
+  min-width: 4em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The projector: the copy a second screen shows; visible only while it is the
+   full-screen element there. */
+.clio-stage-show-projector {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+
+.clio-stage-show-projector[hidden] {
+  display: none;
+}
+
+/* Phone portrait and narrow windows (R4): the console stacks, and the pages
+   still scale by width inside their rooms, so nothing is cropped. */
+@media (orientation: portrait), (max-width: 639px) {
+  .clio-stage-show-console {
+    flex-direction: column;
+    padding: 0 10px;
+  }
+
+  .clio-stage-show-next-room,
+  .clio-stage-show-end {
+    height: clamp(64px, 12vh, 120px);
+  }
+
+  .clio-stage-show-notes {
+    flex: none;
+    max-height: 26vh;
+  }
+}
+
+/* --- the page overview: the deck as a light table --------------------------- */
+.clio-stage-overview {
+  overflow: auto;
+  padding: 14px;
+}
+
+.clio-stage-overview-grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.clio-stage-overview-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.clio-stage-overview-item.is-current .clio-stage-overview-number {
+  background: var(--ink, #000);
+  color: var(--paper, #fff);
+}
+
+.clio-stage-overview-item.is-drop-before,
+.clio-stage-overview-item.is-drop-after {
+  outline: 2px dashed var(--ink, #000);
+  outline-offset: 3px;
+}
+
+.clio-stage-overview-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.clio-stage-overview-card:focus-visible {
+  outline: var(--system-focus-outline);
+}
+
+.clio-stage-overview-caption {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  font-size: 12px;
+  min-width: 0;
+}
+
+.clio-stage-overview-number {
+  flex: none;
+  min-width: 20px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.clio-stage-overview-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clio-stage-overview-layout {
+  flex: none;
+  opacity: 0.7;
+}
+
+.clio-stage-overview-room {
+  position: relative;
+  width: 100%;
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper, #fff);
+  border: 1px solid var(--ink, #000);
+}
+
+.clio-stage-overview-card[aria-current="true"] .clio-stage-overview-room {
+  outline: 2px solid var(--ink, #000);
+  outline-offset: 2px;
+}
+
+.clio-stage-overview-present {
+  align-self: flex-start;
+  min-height: var(--touch-primary-min-height);
+  padding: 2px 12px;
+  font: inherit;
+  font-size: 12px;
+}
+
+@media (max-width: 639px) {
+  .clio-stage-overview-grid {
+    grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+    gap: 10px;
+  }
+}

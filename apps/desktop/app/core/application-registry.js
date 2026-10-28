@@ -27,9 +27,10 @@ function applicationItemKind(item) {
   if (!item) return "";
   if (item.type === "chat") return "chat";
   if (item.type === "alias") return "alias";
-  // A native OOXML package rides on the desk's native-binaries store: the
-  // kind is the file extension, never a text body guess.
-  if (item.type === "nativeBinary" && typeof item.format === "string") return item.format.toLowerCase();
+  // A native OOXML package rides on the desk's native-binaries store, or (N0)
+  // lives on the Project Hard Disk as an "office" item: the kind is the file
+  // extension, never a text body guess.
+  if ((item.type === "nativeBinary" || item.type === "office") && typeof item.format === "string") return item.format.toLowerCase();
   if (item.type === "text") {
     if (item.clioDiagram) return "clio-diagram";
     // A saved Cover Glass cover: the layer JSON rides on the document.

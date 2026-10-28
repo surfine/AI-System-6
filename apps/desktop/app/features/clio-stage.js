@@ -690,16 +690,18 @@ function observeClioStageFit() {
 
 function renderClioStage() {
   if (!clioStageState.parsed) return renderClioStageEmpty();
+  if (clioStageState.mode !== "overview") clioStageStopOverviewObserver();
   if (clioStageState.mode === "source") return renderClioStageSource();
   if (clioStageState.mode === "cue") return renderClioStageCue();
   if (clioStageState.mode === "print") return renderClioStagePrint();
+  if (clioStageState.mode === "overview") return renderClioStageOverview();
   if (clioStageState.mode === "slide") return renderClioStageSlide();
   return renderClioStageDocument();
 }
 
 function setClioStageMode(mode) {
   if (!clioStageState.parsed) return;
-  clioStageState.mode = ["source", "document", "slide", "cue", "print"].includes(mode) ? mode : "document";
+  clioStageState.mode = ["source", "document", "slide", "cue", "print", "overview"].includes(mode) ? mode : "document";
   renderClioStage();
   // Reading the deck is not presenting it: the screen is only held for the
   // two modes a person actually stands in front of, and let go on the way out.
@@ -715,11 +717,558 @@ function showClioStageSlide(index) {
   renderClioStage();
 }
 
+// --- the show: full-screen pages, and the presenter's console (N6) ------------
+// Presenting is a read-only projection of the deck. A page turns by direct
+// switch, with the same fade a page arriving already uses (the one animation
+// the deck has -- nothing new is invented here); nothing under it can be
+// edited while the layer is up, and leaving puts the deck back on the page the
+// writer left. The presenter layout is a switchable face of the same layer,
+// not a second window: with a second screen (window.getScreenDetails, the
+// Window Management API) the audience's page is projected full screen there
+// automatically, and without one -- no API, no permission, no second screen --
+// the console is the whole stage and nothing throws. No window primitive is
+// added: the layer is one overlay this module builds and owns.
+const clioStageShow = {
+  active: false,
+  layout: "audience",     // "audience" | "presenter"
+  index: 0,
+  fromIndex: 0,
+  startedAt: 0,
+  timerId: 0,
+  fullscreen: false,      // this layer asked for the full screen and got it
+  projected: false,       // a second screen is showing the audience's page
+  root: null,
+  onFullscreenChange: null,
+  onResize: null,
+};
+
+function clioStageShowProjector() {
+  return clioStageShow.root?.querySelector(".clio-stage-show-projector") || null;
+}
+
+function clioStageShowButton(labelKey, run, { pressed, titleKey } = {}) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "clio-stage-show-button";
+  button.textContent = t(labelKey);
+  if (pressed !== undefined) button.setAttribute("aria-pressed", pressed ? "true" : "false");
+  if (titleKey) {
+    button.title = t(titleKey);
+    button.setAttribute("aria-label", t(titleKey));
+  }
+  button.addEventListener("click", (event) => {
+    event.stopPropagation();
+    run();
+  });
+  return button;
+}
+
+// One control row, both faces: every button a touch point of at least 44px,
+// because a show is driven standing up, with a finger.
+function clioStageShowControls(count) {
+  const row = document.createElement("div");
+  row.className = "clio-stage-show-controls";
+  row.setAttribute("role", "toolbar");
+  row.setAttribute("aria-label", t("clio_stage_present"));
+  const counter = document.createElement("span");
+  counter.className = "clio-stage-show-counter";
+  counter.textContent = t("clio_stage_show_page", clioStageShow.index + 1, count);
+  row.append(
+    clioStageShowButton("previous_slide", () => clioStageShowStep(-1), { titleKey: "previous_slide" }),
+    counter,
+    clioStageShowButton("next_slide", () => clioStageShowStep(1), { titleKey: "next_slide" }),
+  );
+  if (clioStageShow.layout === "presenter") {
+    row.append(clioStageShowButton("clio_stage_presenter_view", () => clioStageShowSetLayout("audience"), { pressed: true }));
+    row.append(clioStageShowButton("clio_stage_overview", () => clioStageShowOpenOverview()));
+  } else {
+    row.append(clioStageShowButton("clio_stage_presenter_view", () => clioStageShowSetLayout("presenter"), { pressed: false }));
+  }
+  row.append(clioStageShowButton("clio_stage_present_exit", () => clioStageEndShow(), { titleKey: "clio_stage_present_exit" }));
+  return row;
+}
+
+function clioStageShowPageRoom(className) {
+  const room = document.createElement("div");
+  room.className = className;
+  const host = document.createElement("div");
+  host.className = "clio-stage-page-host";
+  // The page entering is the only transition the deck knows: the arrival fade
+  // the rail and the streaming stage already use, untouched.
+  host.classList.add("is-arriving");
+  room.append(host);
+  return { room, host };
+}
+
+function clioStageRenderShow() {
+  const root = clioStageShow.root;
+  const face = root?.querySelector(".clio-stage-show-face");
+  if (!clioStageShow.active || !root || !face || !clioStageState.parsed) return;
+  const parsed = clioStageState.parsed;
+  const count = parsed.slides.length;
+  clioStageShow.index = Math.max(0, Math.min(count - 1, clioStageShow.index));
+  const index = clioStageShow.index;
+  face.className = `clio-stage-show-face${clioStageShow.layout === "presenter" ? " clio-stage-show-face-presenter" : ""}`;
+  face.replaceChildren();
+  const mount = (host, at) => clioStageMountPage(host, at);
+  if (clioStageShow.layout === "presenter") {
+    const head = document.createElement("div");
+    head.className = "clio-stage-show-head";
+    const title = document.createElement("b");
+    title.textContent = `${t("clio_stage_presenter_view")} · ${clioStageState.source?.title || t("clio_stage_label")}`;
+    const clock = document.createElement("span");
+    clock.className = "clio-stage-show-timer";
+    head.append(title, clock);
+    const consoleEl = document.createElement("div");
+    consoleEl.className = "clio-stage-show-console";
+    const current = clioStageShowPageRoom("clio-stage-show-current");
+    const side = document.createElement("aside");
+    side.className = "clio-stage-show-side";
+    const nextLabel = document.createElement("span");
+    nextLabel.textContent = t("next_slide");
+    const nextIndex = index + 1;
+    const nextBlock = document.createElement("div");
+    nextBlock.className = "clio-stage-show-next";
+    if (nextIndex < count) {
+      const nextRoom = clioStageShowPageRoom("clio-stage-show-next-room");
+      nextBlock.append(nextRoom.room);
+      const nextCaption = document.createElement("div");
+      nextCaption.className = "clio-stage-show-next-caption";
+      nextCaption.textContent = t("clio_stage_thumb_label", nextIndex + 1, clioStageThumbTitle(parsed.slides[nextIndex]) || t("untitled"));
+      nextBlock.append(nextCaption);
+      mount(nextRoom.host, nextIndex);
+    } else {
+      const end = document.createElement("span");
+      end.className = "clio-stage-show-end";
+      end.textContent = t("end_of_deck");
+      nextBlock.append(end);
+    }
+    const notesLabel = document.createElement("span");
+    notesLabel.textContent = t("clio_stage_notes");
+    const notes = document.createElement("div");
+    notes.className = "clio-stage-show-notes";
+    notes.setAttribute("aria-label", t("clio_stage_notes"));
+    const notesBody = document.createElement("div");
+    notesBody.className = "clio-stage-show-notes-body";
+    const notesText = clioStageSlideNotes(index);
+    if (notesText) notesBody.innerHTML = markdownToSystemHtml(notesText);
+    notes.append(notesBody);
+    side.append(nextLabel, nextBlock, notesLabel, notes);
+    consoleEl.append(current.room, side);
+    face.append(head, consoleEl, clioStageShowControls(count));
+    mount(current.host, index);
+    clioStageScalePage(current.host);
+    const nextHost = face.querySelector(".clio-stage-show-next-room .clio-stage-page-host");
+    if (nextHost) clioStageScalePage(nextHost);
+    updateClioStageShowTimer();
+  } else {
+    const audience = document.createElement("div");
+    audience.className = "clio-stage-show-audience";
+    // A click anywhere on the stage advances, the way a show has always gone.
+    audience.addEventListener("click", () => clioStageShowStep(1));
+    const page = clioStageShowPageRoom("clio-stage-show-page");
+    audience.append(page.room);
+    face.append(audience, clioStageShowControls(count));
+    mount(page.host, index);
+    clioStageScalePage(page.host);
+  }
+  // The projector keeps its own copy of the page the audience is on.
+  const projector = clioStageShowProjector();
+  const projectorHost = projector?.querySelector(".clio-stage-page-host");
+  if (clioStageShow.projected && projectorHost) {
+    mount(projectorHost, index);
+    clioStageScalePage(projectorHost);
+  }
+  root.focus?.();
+}
+
+function updateClioStageShowTimer() {
+  if (!clioStageShow.active || !clioStageShow.startedAt) return;
+  const node = clioStageShow.root?.querySelector(".clio-stage-show-timer");
+  if (!node) return;
+  const elapsed = Math.max(0, Date.now() - clioStageShow.startedAt);
+  const minutes = String(Math.floor(elapsed / 60000)).padStart(2, "0");
+  const seconds = String(Math.floor((elapsed % 60000) / 1000)).padStart(2, "0");
+  node.textContent = `${minutes}:${seconds}`;
+}
+
+function clioStageShowStep(delta) {
+  if (!clioStageShow.active || !clioStageState.parsed) return false;
+  const count = clioStageState.parsed.slides.length;
+  const next = Math.max(0, Math.min(count - 1, clioStageShow.index + (Number(delta) || 0)));
+  if (next === clioStageShow.index) return false;
+  clioStageShow.index = next;
+  clioStageRenderShow();
+  return true;
+}
+
+// The keyboard a show answers: → and Space forward, ← back, Esc and ⌘. (the
+// desk's own "terminate an operation", the key the page view closes with) out.
+// The stops keep the desk's global keys from hearing what the layer handled.
+function clioStageShowKeydown(event) {
+  if (!clioStageShow.active || event.isComposing) return;
+  const forward = ["ArrowRight", " ", "Spacebar", "PageDown"].includes(event.key);
+  const back = ["ArrowLeft", "PageUp"].includes(event.key);
+  const stop = event.key === "." && (event.metaKey || event.ctrlKey) && !event.altKey;
+  if (!forward && !back && event.key !== "Escape" && !stop) return;
+  event.preventDefault();
+  event.stopPropagation();
+  if (event.key === "Escape" || stop) {
+    clioStageEndShow();
+    return;
+  }
+  clioStageShowStep(forward ? 1 : -1);
+}
+
+function clioStageBuildShow() {
+  const root = document.createElement("div");
+  root.className = "clio-stage-show";
+  root.setAttribute("role", "application");
+  root.setAttribute("aria-label", t("clio_stage_present"));
+  root.tabIndex = 0;
+  const face = document.createElement("div");
+  face.className = "clio-stage-show-face";
+  const projector = document.createElement("div");
+  projector.className = "clio-stage-show-projector";
+  projector.hidden = true;
+  const projectorHost = document.createElement("div");
+  projectorHost.className = "clio-stage-page-host";
+  projector.append(projectorHost);
+  root.append(face, projector);
+  root.addEventListener("keydown", clioStageShowKeydown);
+  return root;
+}
+
+// The second screen, asked for the way the Window Management API defines: the
+// permission prompt is the browser's, and any refusal, missing API or missing
+// second screen answers null -- the caller stays on one screen, silently.
+async function clioStageShowSecondScreen() {
+  if (typeof window.getScreenDetails !== "function") return null;
+  const details = await window.getScreenDetails();
+  const screens = Array.from(details?.screens || []);
+  return screens.find((screen) => screen && screen !== details.currentScreen) || null;
+}
+
+async function clioStageShowProject() {
+  const projector = clioStageShowProjector();
+  if (!clioStageShow.active || !projector || clioStageShow.projected) return false;
+  if (typeof projector.requestFullscreen !== "function") return false;
+  try {
+    const screen = await clioStageShowSecondScreen();
+    if (!screen) return false;
+    projector.hidden = false;
+    const host = projector.querySelector(".clio-stage-page-host");
+    clioStageMountPage(host, clioStageShow.index);
+    clioStageScalePage(host);
+    await projector.requestFullscreen({ navigationUI: "hide", screen });
+    clioStageShow.projected = true;
+    // The room the page scales against only exists once the second screen has
+    // actually taken the element: until then the projector was measured
+    // against this screen. Mount it again at the screen that now holds it,
+    // so the first page fits the projector, not the laptop.
+    clioStageMountPage(host, clioStageShow.index);
+    clioStageScalePage(host);
+    setStatus(t("clio_stage_show_projected"));
+    return true;
+  } catch (error) {
+    projector.hidden = true;
+    setStatus(t("clio_stage_show_projection_unavailable"));
+    return false;
+  }
+}
+
+async function clioStageShowStopProjection() {
+  const projector = clioStageShowProjector();
+  if (!clioStageShow.projected) return;
+  clioStageShow.projected = false;
+  if (projector) projector.hidden = true;
+  if (projector && document.fullscreenElement === projector && typeof document.exitFullscreen === "function") {
+    try { await document.exitFullscreen(); } catch (error) { /* already leaving */ }
+  }
+}
+
+async function clioStageShowSetLayout(layout) {
+  if (!clioStageShow.active) return false;
+  const next = layout === "presenter" ? "presenter" : "audience";
+  if (next === clioStageShow.layout) return true;
+  clioStageShow.layout = next;
+  // Leaving this layer's own full screen on purpose: the flag comes down first
+  // so the fullscreenchange that follows is not read as the show ending.
+  clioStageShow.fullscreen = false;
+  if (typeof document.exitFullscreen === "function" && document.fullscreenElement) {
+    try { await document.exitFullscreen(); } catch (error) { /* already leaving */ }
+  }
+  if (next === "presenter") {
+    await clioStageShowProject();
+  } else {
+    await clioStageShowStopProjection();
+    try {
+      await clioStageShow.root?.requestFullscreen?.({ navigationUI: "hide" });
+      clioStageShow.fullscreen = document.fullscreenElement === clioStageShow.root;
+    } catch (error) { /* the layer already covers the desk */ }
+  }
+  clioStageRenderShow();
+  return true;
+}
+
+// Esc leaving full screen is the browser's exit, so the layer listens for the
+// element coming back: the audience show ends; a projection merely falls back
+// to the one screen, because the presenter is still standing there.
+function clioStageShowFullscreenChange() {
+  if (!clioStageShow.active) return;
+  const fullscreen = document.fullscreenElement || null;
+  const projector = clioStageShowProjector();
+  if (fullscreen === projector) {
+    // The second screen has just taken the element: its room is the one the
+    // page must fit now, whatever this screen measured a moment before.
+    const host = projector?.querySelector(".clio-stage-page-host");
+    if (host) clioStageScalePage(host);
+    return;
+  }
+  if (fullscreen === clioStageShow.root) return;
+  if (clioStageShow.projected && projector) {
+    clioStageShow.projected = false;
+    clioStageShow.fullscreen = false;
+    projector.hidden = true;
+    return;
+  }
+  if (clioStageShow.fullscreen) clioStageEndShow();
+}
+
+function clioStageShowRescale() {
+  if (!clioStageShow.active || !clioStageShow.root) return;
+  clioStageShow.root.querySelectorAll(".clio-stage-page-host").forEach((host) => clioStageScalePage(host));
+}
+
+async function clioStageStartShow({ index } = {}) {
+  const parsed = clioStageState.parsed;
+  if (!parsed?.slides?.length || clioStageState.source?.streaming || clioStageShow.active) return false;
+  // What the writer was typing reaches its file before the room goes dark.
+  clioStageEndSession();
+  clioStageFlushPersist();
+  clioStageShow.active = true;
+  clioStageShow.layout = "audience";
+  clioStageShow.fromIndex = clioStageState.index;
+  clioStageShow.index = Math.max(0, Math.min(parsed.slides.length - 1, index === undefined ? clioStageState.index : Number(index) || 0));
+  clioStageShow.projected = false;
+  clioStageShow.fullscreen = false;
+  clioStageShow.startedAt = Date.now();
+  clioStageShow.root = clioStageBuildShow();
+  document.body.append(clioStageShow.root);
+  clioStageShow.onFullscreenChange = clioStageShowFullscreenChange;
+  document.addEventListener("fullscreenchange", clioStageShow.onFullscreenChange);
+  clioStageShow.onResize = clioStageShowRescale;
+  window.addEventListener("resize", clioStageShow.onResize);
+  window.clearInterval(clioStageShow.timerId);
+  clioStageShow.timerId = window.setInterval(updateClioStageShowTimer, 1000);
+  clioStageRenderShow();
+  // The room goes dark on the one screen; a second screen is only asked for
+  // once the presenter console is switched on. Full screen itself is optional:
+  // without it the layer still covers the desk.
+  try {
+    await clioStageShow.root.requestFullscreen?.({ navigationUI: "hide" });
+    clioStageShow.fullscreen = document.fullscreenElement === clioStageShow.root;
+  } catch (error) {
+    clioStageShow.fullscreen = false;
+  }
+  clioStageShow.root.focus?.();
+  window.AISystem6WebPlatform?.holdScreenWakeLock?.("clioStage");
+  if (typeof updateMenuState === "function") updateMenuState();
+  return true;
+}
+
+// The overview is outside the show (a viewport mode of its own), so the
+// console's button leaves the show first and lands on the page it was on.
+function clioStageShowOpenOverview() {
+  if (!clioStageShow.active) return false;
+  const at = clioStageShow.index;
+  clioStageEndShow();
+  clioStageState.index = at;
+  setClioStageMode("overview");
+  return true;
+}
+
+// --- the page overview: the deck as a light table (N6) ------------------------
+// Every page at once, at its printed size scaled into a thumbnail; a click
+// goes back to editing that page, the 放映 button starts the show on it, and
+// reordering is the deck model's own one named step (clioStageMovePage), so
+// one Undo takes a drag back. Thumbs render as they come into view; without
+// an IntersectionObserver they all render at once.
+let clioStageOverviewObserver = null;
+
+function clioStageStopOverviewObserver() {
+  clioStageOverviewObserver?.disconnect?.();
+  clioStageOverviewObserver = null;
+}
+
+function clioStageOverviewThumb(host, index) {
+  if (!host.isConnected || host.dataset.clioStageThumbMounted === "true") return;
+  host.dataset.clioStageThumbMounted = "true";
+  const frame = clioStageMountPage(host, index);
+  if (frame) clioStageScalePage(host);
+}
+
+function renderClioStageOverview() {
+  const els = clioStageElements();
+  const parsed = clioStageState.parsed;
+  if (!els.viewport || !parsed?.slides?.length) return renderClioStageEmpty();
+  clioStageEndSession();
+  clioStageStopOverviewObserver();
+  els.viewport.className = "clio-stage-viewport clio-stage-overview";
+  els.viewport.replaceChildren();
+  const runtime = clioStageDeckRuntime();
+  const layouts = runtime ? runtime.layoutList() : [];
+  const editable = clioStageCanEdit();
+  const grid = document.createElement("ol");
+  grid.className = "clio-stage-overview-grid";
+  grid.setAttribute("aria-label", t("clio_stage_overview_label"));
+  const pending = [];
+  parsed.slides.forEach((slide, index) => {
+    const classes = runtime ? runtime.pageClasses(slide) : { layout: "" };
+    const layout = layouts.find((entry) => entry.id === classes.layout);
+    const title = clioStageThumbTitle(slide) || t("untitled");
+    const item = document.createElement("li");
+    item.className = "clio-stage-overview-item";
+    if (index === clioStageState.index) item.classList.add("is-current");
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "clio-stage-overview-card";
+    card.setAttribute("aria-label", t("clio_stage_thumb_label", index + 1, title));
+    if (index === clioStageState.index) card.setAttribute("aria-current", "true");
+    const caption = document.createElement("span");
+    caption.className = "clio-stage-overview-caption";
+    const number = document.createElement("span");
+    number.className = "clio-stage-overview-number";
+    number.textContent = String(index + 1);
+    const name = document.createElement("span");
+    name.className = "clio-stage-overview-title";
+    name.textContent = title;
+    caption.append(number, name);
+    if (layout) {
+      const kind = document.createElement("span");
+      kind.className = "clio-stage-overview-layout";
+      kind.textContent = clioStageLayoutLabel(layout);
+      caption.append(kind);
+    }
+    const room = document.createElement("div");
+    room.className = "clio-stage-overview-room";
+    room.style.aspectRatio = parsed.size === "4:3" ? "4 / 3" : "16 / 9";
+    const host = document.createElement("div");
+    host.className = "clio-stage-page-host";
+    host.dataset.clioStageThumb = String(index);
+    room.append(host);
+    card.append(caption, room);
+    // Click: back to editing on that page.
+    card.addEventListener("click", () => {
+      setClioStageMode("slide");
+      showClioStageSlide(index);
+    });
+    // Reorder: the deck model's own one-step move, for a keyboard.
+    if (editable) {
+      card.addEventListener("keydown", (event) => {
+        if (!event.altKey || !["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) return;
+        event.preventDefault();
+        const to = index + (["ArrowUp", "ArrowLeft"].includes(event.key) ? -1 : 1);
+        if (to >= 0 && to < parsed.slides.length) clioStageMovePage(index, to);
+      });
+      item.draggable = true;
+      item.addEventListener("dragstart", (event) => {
+        clioStageDragFrom = index;
+        event.dataTransfer?.setData("text/plain", String(index));
+        if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+      });
+      item.addEventListener("dragend", () => {
+        clioStageDragFrom = -1;
+        grid.querySelectorAll(".is-drop-before, .is-drop-after").forEach((node) => node.classList.remove("is-drop-before", "is-drop-after"));
+      });
+      item.addEventListener("dragover", (event) => {
+        if (clioStageDragFrom < 0) return;
+        event.preventDefault();
+        const box = item.getBoundingClientRect();
+        const after = (event.clientX - box.left) + (event.clientY - box.top) > (box.width + box.height) / 2;
+        item.classList.toggle("is-drop-after", after);
+        item.classList.toggle("is-drop-before", !after);
+      });
+      item.addEventListener("dragleave", () => item.classList.remove("is-drop-before", "is-drop-after"));
+      item.addEventListener("drop", (event) => {
+        if (clioStageDragFrom < 0) return;
+        event.preventDefault();
+        const from = clioStageDragFrom;
+        const after = item.classList.contains("is-drop-after");
+        clioStageDragFrom = -1;
+        let to = index + (after ? 1 : 0);
+        if (from < to) to -= 1;
+        if (to !== from) clioStageMovePage(from, to);
+        else item.classList.remove("is-drop-before", "is-drop-after");
+      });
+    }
+    // The show, from this page.
+    const present = document.createElement("button");
+    present.type = "button";
+    present.className = "clio-stage-overview-present";
+    present.textContent = t("clio_stage_overview_present");
+    present.setAttribute("aria-label", t("clio_stage_overview_present_from", index + 1, title));
+    present.addEventListener("click", (event) => {
+      event.stopPropagation();
+      clioStageStartShow({ index });
+    });
+    item.append(card, present);
+    grid.append(item);
+    pending.push([host, index]);
+  });
+  els.viewport.append(grid);
+  // The pages render as they scroll into view; an engine without the observer
+  // (or a test) gets them all at once.
+  if (typeof IntersectionObserver === "function") {
+    clioStageOverviewObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        clioStageOverviewObserver.unobserve(entry.target);
+        clioStageOverviewThumb(entry.target, Number(entry.target.dataset.clioStageThumb) || 0);
+      });
+    }, { root: els.viewport, rootMargin: "240px" });
+    pending.forEach(([host]) => clioStageOverviewObserver.observe(host));
+  } else {
+    pending.forEach(([host, index]) => clioStageOverviewThumb(host, index));
+  }
+  syncClioStageControls();
+}
+
+function clioStageEndShow() {
+  if (!clioStageShow.active) return false;
+  const projector = clioStageShowProjector();
+  const owned = [clioStageShow.root, projector].includes(document.fullscreenElement);
+  clioStageShow.active = false;
+  clioStageShow.projected = false;
+  clioStageShow.fullscreen = false;
+  window.clearInterval(clioStageShow.timerId);
+  clioStageShow.timerId = 0;
+  document.removeEventListener("fullscreenchange", clioStageShow.onFullscreenChange);
+  window.removeEventListener("resize", clioStageShow.onResize);
+  clioStageShow.root?.remove();
+  clioStageShow.root = null;
+  if (owned && document.fullscreenElement && typeof document.exitFullscreen === "function") {
+    try { document.exitFullscreen(); } catch (error) { /* already leaving */ }
+  }
+  // Back to the editing view, on the page the writer left it on.
+  clioStageState.index = Math.max(0, Math.min((clioStageState.parsed?.slides.length || 1) - 1, clioStageShow.fromIndex));
+  renderClioStage();
+  if (!clioStageIsPresenting()) window.AISystem6WebPlatform?.releaseScreenWakeLock?.("clioStage");
+  if (typeof updateMenuState === "function") updateMenuState();
+  return true;
+}
+
 async function loadClioStageSource(source) {
+  // N11: the desk clipboard module rides along with the deck, so the first ⌘C
+  // or ⌘V finds it present.
+  if (typeof window.AISystem6EnsureClioworksClipboard === "function") {
+    window.AISystem6EnsureClioworksClipboard().catch(() => {});
+  }
   const markdown = normalizeMarkdownText(source?.markdown || "");
   const title = source?.title || t("clio_stage_label");
   const parsed = parseClioStageMarpDocument(markdown);
   // Whatever the writer was typing reaches its file before another deck replaces it.
+  clioStageEndShow();
   clioStageEndSession();
   clioStageFlushPersist();
   clioStageState.pending = null;
@@ -783,9 +1332,20 @@ async function openClioStage(source = null) {
 
 function handleClioStageKeydown(event) {
   if (!clioStageState.parsed || !["slide", "cue"].includes(clioStageState.mode)) return;
+  // The show layer owns the keyboard while it is up: its own listener turns
+  // the pages and ends the show, so the window route stands down (N6).
+  if (clioStageShow.active) return;
   const win = getWindow("clioStage");
   if (!win || win.classList.contains("is-hidden") || !win.classList.contains("is-active")) return;
   if (getActiveEditableElement() || window.AISystem6ClioStageNative?.current?.()) return;
+  // N11: the desk's own clipboard — ⌘C copies the selected 文字条, ⌘V pastes a
+  // ClioChart region or ClioWrite paragraphs onto the page. While an edit
+  // session holds the caret (the guard above) both keys stay the browser's.
+  if (clioStageSelectionKey(event) && !event.altKey && !event.shiftKey) {
+    const key = String(event.key || "").toLowerCase();
+    if (key === "c") { event.preventDefault(); clioStageClipboardCopy(); return; }
+    if (key === "v") { event.preventDefault(); clioStageClipboardPaste(); return; }
+  }
   if (event.key === "ArrowLeft") {
     event.preventDefault();
     showClioStageSlide(clioStageState.index - 1);
@@ -951,8 +1511,11 @@ function clioStageModel() {
 
 function clioStageCanEdit() {
   const source = clioStageState.source;
-  return !!(clioStageState.parsed && source?.markdown && clioStageState.mode === "slide"
-    && !source.streaming && clioStageModel());
+  // The show is a read-only projection: while its layer is up, every edit
+  // command is refused at this one door (N6). The overview edits the deck's
+  // structure (the one-step reorder), so it is an editing view like Slide View.
+  return !!(clioStageState.parsed && source?.markdown && ["slide", "overview"].includes(clioStageState.mode)
+    && !source.streaming && !clioStageShow.active && clioStageModel());
 }
 
 function clioStageCurrentPage() {
@@ -1092,6 +1655,104 @@ function clioStageEditDeck(change, options) {
   const next = change(model, clioStageState.source.markdown);
   return next ? clioStageApplyMarkdown(next, options) : false;
 }
+
+// --- N11: the desk's own clipboard (features/clioworks-clipboard.js) ------------
+// A selected 文字条 copies as a stage-text snapshot (its lines, plus where they
+// came from); a paste appends to the current page — a ClioChart region as one
+// GFM 表格 block, ClioWrite paragraphs as one 文字条 each (一段一条). Both are
+// one named step in the deck's own history; the status line says the source.
+function clioStageDeskClipboard() {
+  return window.AISystem6ClioworksClipboard || null;
+}
+function clioStageSelectionKey(event) {
+  const useMeta = typeof shortcutUsesCommandKey === "function"
+    ? shortcutUsesCommandKey()
+    : /mac|iphone|ipad/i.test(String(typeof navigator !== "undefined" && (navigator.platform || "")));
+  return useMeta ? !!event.metaKey && !event.ctrlKey : !!event.ctrlKey && !event.metaKey;
+}
+function clioStageClipboardCopy() {
+  const clip = clioStageDeskClipboard();
+  if (!clip || !clioStageCanEdit() || clioStageState.selected < 0) return;
+  const model = clioStageModel();
+  const page = clioStageCurrentPage();
+  if (!model || page === null) return;
+  const content = model.contentBlocks(model.parseBlocks(page));
+  const entry = content[clioStageState.selected];
+  const block = entry && entry.block;
+  if (!block) return;
+  let lines = [];
+  if (block.type === "list" && Array.isArray(block.items)) lines = block.items.map((item) => item.text);
+  else if (block.type === "paragraph" || block.type === "heading" || block.type === "quote") lines = String(block.text || "").split("\n");
+  lines = lines.map((line) => String(line || "").trim()).filter(Boolean);
+  if (!lines.length) return;
+  const source = clioStageState.source || {};
+  const pageAt = clioStageState.index + 1;
+  clip.put("stage-text", { lines, page: clioStageState.index }, {
+    appId: "clioStage",
+    fileId: source.sourceItemId ? String(source.sourceItemId) : source.title || "",
+    fileName: source.title || "",
+    range: `p${pageAt}#${entry.at}`,
+  });
+  // The system clipboard gets the two public flavours, so an outside paste still has the words.
+  clip.writeSystem(clip.plainOf(clip.peek()), clip.htmlOf(clip.peek())).then(() => {});
+  setStatus(t("clioworks_clip_copied", lines.join(" ").slice(0, 40)));
+}
+// One GFM table block from a grid of cell texts (a ClioChart region, or a
+// ClioWrite table's cells): pipes escaped so a cell's own | cannot add a column.
+function clioStageTableMarkdown(rows) {
+  const escCell = (text) => String(text == null ? "" : text).replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+  const width = rows.reduce((n, row) => Math.max(n, Array.isArray(row) ? row.length : 0), 0);
+  if (!rows.length || !width) return "";
+  const line = (cells, filler) => `| ${Array.from({ length: width }, (_, i) => escCell(cells[i]) || filler).join(" | ")} |`;
+  return [
+    line(rows[0], ""),
+    `| ${Array.from({ length: width }, () => "---").join(" | ")} |`,
+    ...rows.slice(1).map((row) => line(row, "")),
+  ].join("\n");
+}
+function clioStageAppendBlocks(raw) {
+  const model = clioStageModel();
+  const markdown = clioStageState.source?.markdown;
+  const page = clioStageCurrentPage();
+  if (!model || !markdown || page === null || !raw) return false;
+  const head = page.replace(/\s*$/, "");
+  return model.withPage(markdown, clioStageState.index, `${head}${head ? "\n\n" : ""}${raw}\n`);
+}
+function clioStageClipboardPaste() {
+  const clip = clioStageDeskClipboard();
+  if (!clip || !clioStageCanEdit()) return;
+  const entry = clip.peek();
+  if (!entry) return;                       // an empty desk board keeps today's behaviour
+  const model = clioStageModel();
+  if (!model) return;
+  const from = entry.source;
+  const note = () => setStatus(t("clioworks_clip_pasted", from.fileName || from.fileId, from.range));
+  if (entry.kind === "chart-region") {
+    const rows = (entry.snapshot.rows || []).map((row) => row.map((cell) => (cell && cell.text) || ""));
+    const table = clioStageTableMarkdown(rows);
+    if (table && clioStageEditDeck(() => clioStageAppendBlocks(table), { label: "edit_step_paste_table" })) note();
+    return;
+  }
+  if (entry.kind === "write-blocks") {
+    // 一段一条: each paragraph a 文字条 of its own; a table in the copy lands
+    // as one GFM 表格 block, the same shape a ClioChart region takes.
+    const parts = [];
+    for (const block of entry.snapshot.blocks || []) {
+      if (!block) continue;
+      if (block.t === "tbl") {
+        const rows = (block.rows || []).map((row) => (row.cells || []).map((cell) => (cell.blocks || [])
+          .map((p) => (p.runs || []).map((run) => (run && run.t === "text" ? run.text : "")).join("")).join(" ")));
+        const table = clioStageTableMarkdown(rows);
+        if (table) parts.push(table);
+        continue;
+      }
+      const text = (block.runs || []).map((run) => (run && run.t === "text" ? run.text : "")).join("").trim();
+      if (text) parts.push(model.escapeText(text));
+    }
+    if (parts.length && clioStageEditDeck(() => clioStageAppendBlocks(parts.join("\n\n")), { label: "edit_step_paste_items" })) note();
+  }
+}
+
 
 function clioStageAddSlide() {
   return clioStageEditDeck(
@@ -1691,6 +2352,7 @@ function clioStageEndSession() {
 // final open() replaces all of it with the finished, editable deck.
 function showClioStageStreaming(markdownSoFar, { label = "" } = {}) {
   const model = clioStageModel();
+  clioStageEndShow();
   const first = !clioStageState.streaming;
   if (first && !clioStageState.pending) openWindow("clioStage");
   const pending = clioStageState.pending || { label, retry: null, failed: "" };
@@ -1810,6 +2472,7 @@ function clioStageIsPresenting() {
 
 window.AISystem6ApplicationRegistry?.registerApplicationLifecycle?.("clioStage", {
   onSuspend: () => {
+    clioStageEndShow();
     clioStageEndSession();
     clioStageFlushPersist();
     window.AISystem6WebPlatform?.releaseScreenWakeLock?.("clioStage");
@@ -1824,6 +2487,8 @@ window.AISystem6ApplicationRegistry?.registerApplicationLifecycle?.("clioStage",
     if (clioStageIsPresenting()) window.AISystem6WebPlatform?.holdScreenWakeLock?.("clioStage");
   },
   onDispose: () => {
+    clioStageEndShow();
+    clioStageStopOverviewObserver();
     clioStageEndSession();
     clioStageFlushPersist();
     window.AISystem6WebPlatform?.releaseScreenWakeLock?.("clioStage");
@@ -2196,6 +2861,16 @@ window.AISystem6ClioStage = {
   redo: redoClioStage,
   canUndo: clioStageCanUndo,
   canRedo: clioStageCanRedo,
+  // N6: the show and the presenter console -- a read-only projection the
+  // presenter drives; the snapshot is the contract's window onto the layer.
+  startShow: clioStageStartShow,
+  endShow: clioStageEndShow,
+  setShowLayout: clioStageShowSetLayout,
+  showStep: clioStageShowStep,
+  showState: () => ({ active: clioStageShow.active, layout: clioStageShow.layout, index: clioStageShow.index, projected: clioStageShow.projected }),
+  // N11: the desk clipboard's two ends, for the key route and the contract.
+  clipboardCopy: clioStageClipboardCopy,
+  clipboardPaste: clioStageClipboardPaste,
   addSlide: clioStageAddSlide,
   duplicateSlide: clioStageDuplicateSlide,
   deleteSlide: clioStageDeleteSlide,
@@ -2237,6 +2912,8 @@ const CLIO_STAGE_COMMAND_NAMES = [
   "clio-stage-duplicate-slide",
   "clio-stage-delete-slide",
   "clio-stage-reset-layout",
+  "clio-stage-present",
+  "clio-stage-overview",
   "clio-stage-previous",
   "clio-stage-next",
   "clio-stage-source",
@@ -2270,6 +2947,12 @@ function clioStageCommandAvailable(action) {
       return clioStageCanEdit();
     case "clio-stage-print-preview":
       return !!clioStageState.parsed?.slides?.length;
+    // N6: the show is a projection of a whole deck that has finished arriving;
+    // the overview is the deck's own view, so it lives outside the show.
+    case "clio-stage-present":
+      return !clioStageShow.active && !clioStageState.source?.streaming && !!clioStageState.parsed?.slides?.length;
+    case "clio-stage-overview":
+      return !clioStageShow.active && !!clioStageState.parsed?.slides?.length;
     case "clio-stage-delete-slide":
       return clioStageCanEdit() && clioStageState.parsed.slides.length > 1;
     case "clio-stage-reset-layout":
@@ -2317,6 +3000,8 @@ function runClioStageRuntimeCommand(action) {
     return ensureClioStageAuditModule().then(() => window.AISystem6ClioStageAudit?.toggle?.());
   }
   if (command === "print-preview") return window.AISystem6ClioStage.setMode?.("print");
+  if (command === "present") return clioStageStartShow();
+  if (command === "overview") return clioStageShow.active ? false : window.AISystem6ClioStage.setMode?.("overview");
   if (command === "save-draft") return saveClioStageDraft();
   if (command === "add-slide") return clioStageAddSlide();
   if (command === "duplicate-slide") return clioStageDuplicateSlide();

@@ -32,15 +32,46 @@ const stationeryResetFields = [
   "promptFolderKind",
 ];
 
+// N4: an Office document can be a stationery pad too. Its copy duplicates the
+// bytes row (below); a text/chat pad keeps the plain in-memory copy it always had.
 function isStationeryCapableFile(file) {
   return !!file
-    && (file.type === "text" || file.type === "chat")
+    && (file.type === "text" || file.type === "chat" || file.type === "office")
     && !String(file.artifactKind || "").trim()
     && isInActiveProject(file);
 }
 
+// An Office pad's copy is a NEW document on the Project Hard Disk: its own
+// bytes row (same bytes, new row), then its item through the store's commit —
+// the N0 order, so a failure leaves neither bytes nor item behind — and its
+// own linked text copy, exactly as N0 makes one for a saved document.
+async function createOfficeStationeryCopy(file) {
+  if (typeof ensureNativeBinariesModule !== "function") return null;
+  await ensureNativeBinariesModule();
+  const store = window.AISystem6NativeBinaries;
+  if (!store) return null;
+  const row = await store.readDocumentBytes(file.nativeDocumentId);
+  if (!row) {
+    setStatus(t("clioworks_native_missing", file.name));
+    return null;
+  }
+  const copy = await store.createProjectDocument({
+    projectId: file.projectId,
+    name: t("untitled"),
+    folderId: file.folderId || null,
+    format: file.format,
+    bytes: row.bytes,
+  });
+  if (!copy) return null;
+  try { await store.refreshLinkedReference(copy.id, row.bytes); } catch (error) { /* made again on its first save */ }
+  return copy;
+}
+
 function createStationeryCopy(file) {
   if (!isStationeryCapableFile(file) || file.stationery !== true) return null;
+  // An Office pad's copy is a real new document (bytes row + committed item),
+  // so it is made asynchronously and the caller awaits it.
+  if (file.type === "office") return createOfficeStationeryCopy(file);
   const now = new Date().toISOString();
   const copy = structuredClone(file);
   copy.id = crypto.randomUUID();
@@ -55,9 +86,7 @@ function createStationeryCopy(file) {
   return copy;
 }
 
-function openProjectFileWithStationery(file) {
-  const copy = createStationeryCopy(file);
-  if (!copy) return null;
+function presentStationeryCopy(copy) {
   selectedChatFileId = copy.id;
   selectedDocumentFolderId = null;
   selectedProjectRootItemId = null;
@@ -65,9 +94,36 @@ function openProjectFileWithStationery(file) {
   renderDocuments();
   renderProjectDisks();
   if (copy.type === "text") openTextFile(copy.id);
-  else openChatFileWindow(copy.id);
+  else if (copy.type === "chat") openChatFileWindow(copy.id);
+  else return openOfficeStationeryCopy(copy);
   setStatus(t("stationery_copy_created", copy.name));
   return copy;
+}
+
+// The pad's copy opens through the same native host the Finder's open uses,
+// so it lands in its own editor with its own handle.
+async function openOfficeStationeryCopy(copy) {
+  if (typeof ensureClioWorksLedgerModule === "function") await ensureClioWorksLedgerModule().catch(() => {});
+  const host = window.AISystem6ClioWorks;
+  if (!host || typeof host.openNativeDocument !== "function") {
+    setStatus(t("clio_write_unavailable"));
+    return null;
+  }
+  const opened = await host.openNativeDocument(copy);
+  if (!opened || opened.ok === false) return null;
+  setStatus(t("stationery_copy_created", copy.name));
+  return copy;
+}
+
+function openProjectFileWithStationery(file) {
+  const copy = createStationeryCopy(file);
+  if (!copy) return null;
+  if (copy && typeof copy.then === "function") {
+    return copy
+      .then((made) => (made ? presentStationeryCopy(made) : null))
+      .catch(() => null);
+  }
+  return presentStationeryCopy(copy);
 }
 
 function clippingContentHash(text = "") {

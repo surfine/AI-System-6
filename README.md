@@ -42,8 +42,8 @@ TWELVE APPEARANCES IN ALL. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 ## Contents
 
 - [Recent progress](#recent-progress)
-- [What's new in 1.0.59](#whats-new-in-1059)
-- [Earlier releases](#earlier-releases--1058--1057--1056-click-to-expand)
+- [What's new in 1.0.60-beta.1](#whats-new-in-1060-beta1)
+- [Earlier releases](#earlier-releases--1059--1058--1057--1056-click-to-expand)
 - [What this protects](#what-this-protects)
 - [Run it in 60 seconds](#run-it-in-60-seconds)
 - [The route is the product](#the-route-is-the-product)
@@ -61,6 +61,10 @@ TWELVE APPEARANCES IN ALL. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 
 ## Recent progress
 
+- **The office suite is finished.** ClioWrite edits text inside table cells, inserts pictures from the file picker or as a clipboard screenshot, resizes them by the corner and, inside a table, replaces a picture and inserts or deletes rows and columns. It adds Page View — a read-only, print-preview look in which headers and footers, page numbers, footnotes and columns are shown and every word is kept. Print and Export PDF share one browser print path, so text in the exported PDF stays selectable and searchable, and Track Changes writes w:ins/w:del back into the docx with each revision attributable and acceptable or rejectable one by one. One Find and Replace window serves ClioWrite, ClioChart and ClioStage.
+- **A manuscript can go out for review and come back.** Send for Review… exports the manuscript as a clean .docx with its citations as Word footnotes, filing each round in the 来回 folder. A returned .docx opens in the Review Desk as one candidate per changed paragraph, with the reviewer's messages quoted verbatim, a three-way comparison, and adoption or withdrawal in a single step. Compare → Revise turns a comparison of two .docx files into revision candidates. Mail merge turns a ClioChart workbook or a CSV into one clean .docx per row — or one print stack.
+- **Charts, slides and reading fill in the everyday moves.** ClioChart inserts and deletes rows and columns, freezes panes, moves CSV in and out, and pastes an area snapshot that names where it came from. ClioStage presents with a presenter view that projects onto a second display, plus a page overview. Reader reads iWork files (Pages, Numbers, Keynote) page by page through QuickLook previews and builds an Office copy in one click, with the first-save checklist saying what will be lost; PDF pages can be reorganized and tables extracted.
+- **ClioTalk can work as an agent.** On the Mac, agent mode runs a local engine host behind an ACP boundary: every engine write lands in a shadow copy, files reach the real folder only through per-file put-back, and folders arrive only through the Chooser's shared folder. On the web, the same UI runs the agent in a cloud sandbox. A proposal channel scoped to the run and kept write-only by the kernel lets the engine offer clips, review notes and restore packs, adopted one by one in the put-back window. The last mode returns at startup, a web run survives a refresh, errors speak both languages, and agent use has its own allowance — with room for your own key.
 - **Read the blog as a native app.** 潮汐信笺 opens aaronlau.me in a real AI System 6 window: 2,463 posts, notes, tags, archive and series, with full-text search in all twelve appearances and on a phone. The blog publishes a versioned content pack; the app caches it, so Refresh picks up new posts without reinstalling and what you have already read stays available offline.
 - **Edit the Office files you already have, on the desk.** Excel workbooks (.xlsx) open in ClioChart, PowerPoint decks (.pptx) in ClioStage, and Word documents (.docx) in ClioWrite. Express changes cell values, slide text and notes, or paragraph text; Full Editing adds formulas, slide and layout commands, and headings, emphasis and lists. Tables, charts, SmartArt and pictures stay read-only and are kept, and comments can be read, added and answered. Saving keeps everything else in the file as it was; the first save lists, in plain words and with the sheet or page, anything that will be converted or lost, and Cancel is the default. Edit › Undo steps back through named changes. Nothing is created from scratch yet, and the round trip has been checked in LibreOffice for all three formats and in Microsoft Excel and PowerPoint for Mac; the Word check is still to come.
 - **Turn source text into a diagram or slide deck.** ClioChart keeps the source sentence behind each diagram element. ClioStage lets you edit the slide itself and preview the page before printing. AI drafting needs a connected model. Check the result before sharing it.
@@ -72,9 +76,24 @@ TWELVE APPEARANCES IN ALL. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 Projects stay in your browser. Export a backup to keep another copy. You can explore the desktop, play games and open the **36 demonstration project disks** without connecting an AI model.
 
 <details>
-<summary>Release details: 1.0.59, 1.0.58, 1.0.57 and 1.0.56</summary>
+<summary>Release details: 1.0.60-beta.1, 1.0.59, 1.0.58, 1.0.57 and 1.0.56</summary>
 
-## What's new in 1.0.59
+## What's new in 1.0.60-beta.1
+
+- **ClioWrite is a finished word processor.** Text can be edited inside table cells; inside a table, a picture can be replaced and rows and columns inserted or deleted. Pictures come in from the file picker or as a clipboard screenshot, and resize by the corner. Hyperlinks can be followed. Manuscripts are archived automatically, and crash recovery is visible when it happens.
+- **Page View looks at the page as it will print.** A read-only, print-preview view shows headers and footers, page numbers, footnotes and columns, and every word is kept. Print and Export PDF share one browser print path, so the text in an exported PDF stays selectable and searchable.
+- **Track Changes makes the round trip.** ClioWrite writes w:ins/w:del back into the docx; the tracking state travels with the file, each revision carries its author's name, and each can be accepted or rejected one by one.
+- **A manuscript can go out for review and come back.** Send for Review… exports the manuscript as a clean .docx with its citations as Word footnotes, filing each round in the 来回 folder; AI traces, review marks and version history stay out of the file. A returned .docx opens in the Review Desk as one candidate per changed paragraph, with the reviewer's messages quoted verbatim, a three-way comparison, and adoption — or withdrawal — in a single step. Compare → Revise turns a comparison of two .docx files into revision candidates.
+- **Mail merge fills a template from a table.** A ClioChart workbook or a CSV is the data source; the template carries «column» placeholders, and each row becomes one clean .docx — or the whole batch goes to one print stack.
+- **One Find and Replace window serves ClioWrite, ClioChart and ClioStage.**
+- **Charts, slides and reading fill in the everyday moves.** ClioChart inserts and deletes rows and columns, freezes panes, moves CSV in and out, and pastes an area snapshot that names where it came from. ClioStage presents, with a Presenter View that projects onto a second display when one is detected, plus a Page Overview; something pasted in from another app arrives as a table or as text strips. Reader reads iWork files (Pages, Numbers, Keynote) page by page through QuickLook previews and builds an Office copy in one click, with the first-save checklist saying what will be lost; PDF pages can be reorganized and tables extracted.
+- **New documents, stationery, and copies that keep what they carry.** New documents and Office stationery start files on the desk; a copy from one Office app to another keeps its formatting and names where it came from.
+- **ClioTalk can work as an agent.** On the Mac, agent mode runs a local engine host behind an ACP boundary: every engine write lands in a shadow copy, files reach the real folder only through per-file put-back, and folders arrive only through the Chooser's shared folder. On the web, the same UI runs the agent in a cloud sandbox. A proposal channel scoped to the run and kept write-only by the kernel lets the engine offer clips, review notes and restore packs as candidates, adopted one by one in the put-back window. The last mode returns at startup, a web run survives a refresh, error messages speak both languages, and agent use has its own allowance — with room for your own key.
+
+<details>
+<summary><b>Earlier releases — 1.0.59 / 1.0.58 / 1.0.57 / 1.0.56</b> (click to expand)</summary>
+
+**1.0.59**
 
 - **The blog is a new window on the desk.** 潮汐信笺 reads aaronlau.me in a real AI System 6 window: 2,463 posts, two notes, tags, archive and seven threads, with full-text search, in all twelve appearances and on a phone. The site publishes a versioned content pack, and the app keeps a local copy, so Refresh picks up new posts without reinstalling, while articles and search already loaded keep working offline. An App-scope original opens through the desk's browser.
 - **The Mac app starts on macOS 12, is notarized, and can carry a built-in model.** The boot bundle no longer uses a form older WebKit rejects, so the Intel/Monterey app and older Safari start again; the 1.0.59 download and updates carry a Developer ID signature and Apple's notarization ticket, so the app opens with a double-click (a copy downloaded in a browser may still ask once), and a 1.0.58 ad-hoc install updates in place. On Apple silicon, Control Panel > Local Model offers Qwen3.5 4B (4-bit) as a separate consented download with its size, license and memory need shown first; it runs on this Mac and your text does not leave it.
@@ -319,6 +338,7 @@ Projects stay in your browser. Export a backup to keep another copy. You can exp
 
 </details>
 
+</details>
 
 </details>
 

@@ -8,7 +8,8 @@
 // to the S11-4 subset over the frozen quire-s11.docx; clioworks-s11-m3-quire-adapter.test.mjs owns the
 // per-operation round trips (heading/list/style/split/merge/undo, one comment save+reopen, read-only
 // refusals, picture-part bytes), so layers 6-8 only add what it does not assert:
-//   6. read-only blocks stay byte-identical in the XML (not just in text) through text AND format edits
+//   6. the table's XML stays byte-identical (not just in text) through text AND format edits,
+//      while its words move only through the upstream path (N10: one named step via syncExternal)
 //   7. comment threads survive a second save/reopen generation, an edit inside the commented paragraph,
 //      and land in commentsExtended as resolved
 //   8. exportReport names what saving converts or drops, and says nothing before any edit
@@ -213,7 +214,8 @@ zout.close()
   // The writer hoists namespace declarations to the root; the element itself must not change.
   const drawingXml = (xml) => (xml.match(/<w:drawing>.*?<\/w:drawing>/s)?.[0] || "").replace(/ xmlns:\w+="[^"]*"/g, "");
 
-  // 6. Tables and pictures are kept as XML, not merely as text, through every kind of subset edit.
+  // 6. The table's XML is kept as XML, not merely as text, through every kind of subset edit
+  //    (N10: its words stay editable through the upstream path, its XML does not move).
   {
     const original = zipOf(S11).readAsText("word/document.xml");
     test.assert(tableXml(original) !== "" && drawingXml(original) !== "", "the S11 fixture carries one table and one drawing to compare");
@@ -234,8 +236,20 @@ zout.close()
     test.assert(pkg.getEntry("word/media/image1.png").getData().equals(zipOf(S11).getEntry("word/media/image1.png").getData()) && pkg.getEntry("word/settings.xml")?.getData().equals(zipOf(S11).getEntry("word/settings.xml").getData()),
       "the picture and settings parts keep their original bytes");
     const back = await openBytes(new Uint8Array(out.bytes));
-    test.assert(back.tables()[0].readOnly === true && byText(back, "新书架").runs[0].kind === "image" && back.tables()[0].rows[1][1].text === "20",
-      "after the save the table and picture are still read-only blocks with their content");
+    test.assert(back.tables()[0].rows[1][1].text === "20" && byText(back, "新书架").runs[0].kind === "image",
+      "after the save the table keeps its cells and the picture is still an object, not text");
+    // N10: the table's XML is frozen above; its WORDS still move. The upstream
+    // editor's path (D.tx, what E.edit runs) edits a cell, syncExternal counts it
+    // once, one named undo step takes it back — the narrow face keeps refusing.
+    test.assert(back.setRunText(back.tables()[0].rows[1][0].paragraphIds[0], 0, "纸箱x").code === "READ_ONLY_TABLE",
+      "the adapter's narrow face still refuses a table-cell run edit");
+    const cellId = back.tables()[0].rows[1][0].paragraphIds[0];
+    vm.runInContext(`(() => { const d = L.D; const p = d.byId(d.doc, ${cellId}); d.tx('Typing', () => { d.touch(p); p.runs[0].text = '二十' + p.runs[0].text; }); })()`, context);
+    test.assert(back.syncExternal() === true && back.undoLabel() === "Typing" && back.tables()[0].rows[1][0].text === "二十纸箱",
+      "an upstream-path edit inside a cell is one named step, counted once by syncExternal");
+    back.undo();
+    test.assert(back.tables()[0].rows[1][0].text === "纸箱", "undo restores the cell's words");
+    back.markSaved(back.getEditRevision());
   }
 
   // 7. Comments: second generation, edit inside the commented paragraph, resolved flag in the package.

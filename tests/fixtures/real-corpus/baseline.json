@@ -1,0 +1,369 @@
+{
+ "note": "R1 corpus baseline; regenerate with node tooling/clioworks-r1-corpus.mjs --write-baseline",
+ "files": [
+  {
+   "id": "D01",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": true,
+   "changed_parts": [
+    "word/document.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "D02",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": true,
+   "changed_parts": [
+    "word/document.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "D03",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": true,
+   "changed_parts": [
+    "word/document.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "D04",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": true,
+   "changed_parts": [
+    "word/document.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "D08",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": true,
+   "changed_parts": [
+    "word/document.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "D09",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": true,
+   "changed_parts": [
+    "word/document.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "D11",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": false,
+   "untouched_parts_identical": false,
+   "error": "edited: no editable text run in the body (tables are read-only in ClioWrite)",
+   "lo_open": "not_run"
+  },
+  {
+   "id": "D12",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": true,
+   "changed_parts": [
+    "word/document.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "D15",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": false,
+   "changed_parts": [
+    "[Content_Types].xml",
+    "_rels/.rels",
+    "word/_rels/comments.xml.rels",
+    "word/_rels/document.xml.rels",
+    "word/comments.xml",
+    "word/commentsExtended.xml",
+    "word/document.xml",
+    "word/fontTable.xml",
+    "word/styles.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "D16",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": true,
+   "changed_parts": [
+    "word/document.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "D17",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": true,
+   "changed_parts": [
+    "word/document.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "D18",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": false,
+   "changed_parts": [
+    "[Content_Types].xml",
+    "_rels/.rels",
+    "word/_rels/document.xml.rels",
+    "word/comments.xml",
+    "word/commentsExtended.xml",
+    "word/document.xml",
+    "word/fontTable.xml",
+    "word/styles.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "X01",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": true,
+   "changed_parts": [
+    "xl/sharedStrings.xml",
+    "xl/worksheets/sheet1.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "X02",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": true,
+   "changed_parts": [
+    "xl/sharedStrings.xml",
+    "xl/worksheets/sheet1.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "X03",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": true,
+   "changed_parts": [
+    "xl/sharedStrings.xml",
+    "xl/worksheets/sheet1.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "X07",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": true,
+   "changed_parts": [
+    "xl/sharedStrings.xml",
+    "xl/worksheets/sheet1.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "X09",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": true,
+   "changed_parts": [
+    "xl/sharedStrings.xml",
+    "xl/worksheets/sheet1.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "X10",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": true,
+   "changed_parts": [
+    "xl/sharedStrings.xml",
+    "xl/worksheets/sheet1.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "X11",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": false,
+   "untouched_parts_identical": false,
+   "error": "edited: no non-formula text cell found",
+   "lo_open": "not_run"
+  },
+  {
+   "id": "X13",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": true,
+   "changed_parts": [
+    "xl/sharedStrings.xml",
+    "xl/worksheets/Sheet2.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "X14",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": true,
+   "changed_parts": [
+    "xl/sharedStrings.xml",
+    "xl/worksheets/sheet1.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "X15",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": true,
+   "changed_parts": [
+    "xl/sharedStrings.xml",
+    "xl/worksheets/sheet1.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "P01",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": true,
+   "changed_parts": [
+    "ppt/slides/slide1.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "P02",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": true,
+   "changed_parts": [
+    "ppt/slides/slide1.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "P03",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": true,
+   "changed_parts": [
+    "ppt/slides/slide1.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "P04",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": false,
+   "untouched_parts_identical": false,
+   "error": "edited: no editable text run found in any text box",
+   "lo_open": "not_run"
+  },
+  {
+   "id": "P05",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": true,
+   "untouched_parts_identical": true,
+   "changed_parts": [
+    "ppt/slides/slide1.xml"
+   ],
+   "lo_open": true,
+   "reencode_identical": true
+  },
+  {
+   "id": "P09",
+   "open": true,
+   "untouched_identical": true,
+   "edited_valid": false,
+   "untouched_parts_identical": false,
+   "error": "edited: no editable text run found in any text box",
+   "lo_open": "not_run"
+  },
+  {
+   "id": "F01",
+   "pending": "N1"
+  },
+  {
+   "id": "F02",
+   "pending": "N1"
+  },
+  {
+   "id": "F03",
+   "pending": "N1"
+  },
+  {
+   "id": "F04",
+   "pending": "N1"
+  }
+ ]
+}

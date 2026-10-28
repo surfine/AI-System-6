@@ -100,7 +100,7 @@
       case 'upperLetter': return n > 0 ? String.fromCharCode(65 + ((n - 1) % 26)).repeat(Math.floor((n - 1) / 26) + 1) : '';
       case 'lowerLetter': return n > 0 ? String.fromCharCode(97 + ((n - 1) % 26)).repeat(Math.floor((n - 1) / 26) + 1) : '';
       case 'decimalZero': return n < 10 ? '0' + n : String(n);
-      case 'ordinal': { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+      case 'ordinal': return n + D.ordinalSuffix(n);
       case 'cardinalText': return D.numWords(n, false);
       case 'ordinalText': return D.numWords(n, true);
       case 'chicago': { const sy = ['*', '†', '‡', '§']; return sy[(n - 1) % 4].repeat(Math.floor((n - 1) / 4) + 1); }
@@ -115,6 +115,11 @@
   const ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
   const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
   const ORD = { one: 'first', two: 'second', three: 'third', five: 'fifth', eight: 'eighth', nine: 'ninth', twelve: 'twelfth' };
+  /** English ordinal suffix: 1st, 2nd, 3rd, 4th, but 11th, 12th, 13th (and 111th …); th for 0 and below */
+  D.ordinalSuffix = (n) => {
+    if (!(n > 0) || [11, 12, 13].includes(n % 100)) return 'th';
+    return { 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th';
+  };
   D.numWords = function (n, ordinal) {
     const w = (x) => {
       if (x < 20) return ONES[x];
@@ -326,6 +331,32 @@
     const s = L.store.get('defaultSect', null);
     if (s && !opts.modern) Object.assign(doc.sect, s);
     doc.main.blocks.push(D.para());
+    return doc;
+  };
+
+  /** a new document as the Office of a language makes it (loc: common/locales.js, L.locale.get()): page, line grid,
+      fonts, languages, the Normal style, tab stops, punctuation compression; the user's own Default… page setup
+      (L.store 'defaultSect') comes first. Only for a document the user starts, never for one that is opened. */
+  D.applyLocale = function (doc, loc) {
+    if (!loc || !loc.sect) return doc;
+    Object.assign(doc.sect, L.clone(loc.sect), L.store.get('defaultSect', null) || {});
+    if (loc.rPr) Object.assign(doc.defaults.rPr, loc.rPr);
+    if (loc.pPr && doc.styles.Normal) doc.styles.Normal.pPr = Object.assign({}, doc.styles.Normal.pPr, loc.pPr);
+    if (loc.defTab) doc.settings.defTab = loc.defTab;
+    if (loc.charSpacing) doc.settings.charSpacing = loc.charSpacing;
+    if (loc.themeLang) doc.settings.themeLang = Object.assign({}, loc.themeLang);
+    if (loc.themeEA) Object.assign(doc.theme, { minorEA: loc.themeEA.minor, majorEA: loc.themeEA.major });
+    /* a built-in style with a font of its own takes the language's East Asian font beside it where that differs from
+       the text's: the theme's heading font beside Arial and Tahoma (headings, Title, Balloon Text…), as that Office's
+       styles take +見出し (majorEastAsia: Japanese ＭＳ ゴシック), its body font beside the others (Courier New). In the
+       corpus (tools/locale-defaults.py) Japanese themes have ＭＳ ゴシック for headings in 8 files of 9 and Balloon Text
+       takes it in 3; Korean and Chinese themes have the text's font for both, so their styles get none */
+    if (loc.themeEA && loc.rPr) for (const s of Object.values(doc.styles)) {
+      const f = s.rPr && s.rPr.font;
+      if (!f || s.rPr.fontEA) continue;
+      const ea = /^(Arial|Tahoma)$/.test(f) ? loc.themeEA.major : loc.themeEA.minor;
+      if (ea !== loc.rPr.fontEA) s.rPr = Object.assign({}, s.rPr, { fontEA: ea });
+    }
     return doc;
   };
 
@@ -640,7 +671,8 @@
     const tbStories = [];
     for (const st of allStories) {
       D.walk(st, (b) => {
-        if (b.t === 'p') for (const it of b.runs) if ((it.t === 'shape' || it.t === 'group') && it.tb) {
+        /* a shape's text box, or each of a group's (a diagram's shapes): a group has none of its own */
+        if (b.t === 'p') for (const it of b.runs) if ((it.t === 'shape' && it.tb) || it.t === 'group') {
           for (const tb of it.t === 'group' ? D.groupTextboxes(it) : [it.tb]) {
             tb.kind = 'tb';
             // Runtime back-reference, rebuilt on indexing. Keep it out of JSON
@@ -898,6 +930,9 @@
   D.tx = function (label, fn, opts) {
     opts = opts || {};
     if (H.cur) { H.depth++; try { return fn(); } finally { H.depth--; } }
+    /* an edit in the middle of a drag (a moved shape, a ruler marker…) comes before the drag's own step: the drag ends
+       first, as if Esc. A text selection being made (Quire's press watcher) is no edit of its own and goes on. */
+    if (L.ui && L.ui.dragging && L.ui.dragging() && !(L.ed && L.ed.pressing && L.ed.pressing())) L.ui.dragCancel();
     const t = { label, objs: new Map(), keys: new Map(), paras: new Set(), tbls: new Set(), struct: false, global: false, full: null, selBefore: D.getSel ? D.getSel() : null, merge: opts.merge || null, time: Date.now() };
     H.cur = t;
     let res, err = null;

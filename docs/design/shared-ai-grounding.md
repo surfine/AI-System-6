@@ -72,6 +72,11 @@ numbering schemes follow the same result order.
 - No new UI/CSS: grounding chips reuse `clio-basis-chip` /
   `message-grounding-*` classes; no new endpoints.
 
+## Second anchor
+
+潮汐信笺 (the aaronlau.me reader) is the second anchor on this contract, with
+the blog's own chunk index as its corpus: see `aaron-blog-grounding.md`.
+
 ## Tests
 
 - `tests/integration/endfield-grounding.test.mjs` — adapter numbering,

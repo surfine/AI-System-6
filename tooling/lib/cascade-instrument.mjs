@@ -731,7 +731,23 @@ export function installCascadeLedger(core, layerOrderList) {
           // state) and an auto margin (resolved against whatever width the
           // content had that run). Their value is kept as what was declared.
           const computed = valueOf(style, property);
-          const value = !winner.selector ? "(inline)" : winner.value === "auto" && property.startsWith("margin-") ? "auto" : computed;
+          // A fr-based grid template resolves against the container's width,
+          // so its computed pixels move with any window-size change while the
+          // rule that declares it has not moved at all. Record the declaration
+          // itself (the same treatment an auto margin gets); a real change to
+          // the template still changes the declaration.
+          const template = /^grid-template-(?:columns|rows)$/.test(property);
+          // A width declared fit-content/max-content/min-content (or auto)
+          // resolves against its content, so its pixels move when the content
+          // does while the rule stands still. Declared intrinsic sizing is
+          // recorded as declared, like the auto margin above.
+          const intrinsicSize = /^(?:width|height|inline-size|block-size)$/.test(property)
+            && (/(?:^|\s)(?:fit-content|max-content|min-content|auto)(?:\s|$)/.test(winner.value)
+              || /%/.test(winner.value));
+          const value = !winner.selector ? "(inline)"
+            : winner.value === "auto" && property.startsWith("margin-") ? "auto"
+              : template || intrinsicSize ? winner.value
+                : computed;
           const rule = winner.selector
             ? intern("rules", winner.selector.key, () => ({ file: winner.selector.file, selector: winner.selector.text, specificity: winner.selector.spec.join(","), key: winner.selector.key }))
             : intern("rules", "inline style attribute", () => ({ file: "inline style attribute", selector: "", specificity: "1,0,0,0", key: "inline style attribute" }));

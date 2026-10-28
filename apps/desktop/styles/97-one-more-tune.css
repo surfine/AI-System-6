@@ -1009,7 +1009,11 @@
 .one-more-tune-window .filters input, .one-more-tune-window .filters select { border:1px solid var(--separator);border-radius:var(--inset-radius);background:var(--surface-secondary);padding:11px 13px;min-height:45px }
 .one-more-tune-window .filters input { flex:1;min-width:180px }
 .one-more-tune-window .library-grid { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px }
-.one-more-tune-window .library-item { border:1px solid var(--separator);border-radius:var(--surface-radius);background:var(--surface-secondary);text-align:left;padding:19px;min-height:151px }
+/* The shelf's card button renders as .library-card (the markup's own name);
+   .library-item kept the style for years while the class drifted, so every
+   card wore the browser's default button face. One selector, both names. */
+.one-more-tune-window .library-card, .one-more-tune-window .library-item { border:1px solid var(--separator);border-radius:var(--surface-radius);background:var(--surface-secondary);text-align:left;padding:19px;min-height:151px;cursor:pointer }
+.one-more-tune-window .library-card:active, .one-more-tune-window .library-item:active { transform:translateY(1px) scale(.98);transition:transform 100ms cubic-bezier(.23,1,.32,1) }
 .one-more-tune-window .library-item h3 { font-size:15px;line-height:1.5;margin:8px 0 }
 .one-more-tune-window .library-item p { font-size:11px;color:var(--omt-muted);margin:4px 0;overflow-wrap:anywhere }
 .one-more-tune-window .muted { color:var(--omt-muted) }
@@ -1652,12 +1656,57 @@ body[data-theme="classic"] .one-more-tune-window {
 .one-more-tune-window[data-omt-room]:not(.is-mobile-fullscreen) .one-more-tune-body { overflow:visible }
 .one-more-tune-window .omt-in {
   position:relative;box-sizing:border-box;height:100%;overflow:hidden;display:grid;
-  grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto;
-  grid-template-areas:"stage" "gap" "q" "opts";row-gap:14px;column-gap:16px;padding:14px 16px 16px;
+  grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto minmax(0,1fr);
+  /* The question reads straight after the stage and the keys follow it; the
+     room's slack pools under them instead of cutting between card and
+     question (the gap-first order stranded 200px of nothing there on a
+     phone and 360px on a desk). */
+  grid-template-areas:"stage" "q" "opts" "gap";row-gap:14px;column-gap:16px;padding:14px 16px 16px;
   --omt-card-h:clamp(84px,100cqh - 560px,200px);--omt-dial-h:72px;
 }
 .one-more-tune-window .omt-radio { grid-area:stage }
 .one-more-tune-window .omt-gap { grid-area:gap;min-height:0 }
+/* The click wheel. Constants measured from Apple Music's own 404 easter egg;
+   the feel lives in one-more-tune-wheel.js, this is only the body it wears.
+   Narrow rooms keep the keys alone — a phone's keys are already thumb-sized,
+   and the wheel is the desk's second way to press, not a third thing to learn. */
+.one-more-tune-window .omt-wheel-slot { display:none }
+.one-more-tune-window .omt-wheel-ring {
+  position:relative;width:208px;aspect-ratio:1;border-radius:50%;
+  touch-action:none;user-select:none;-webkit-user-select:none;
+  background:radial-gradient(circle,var(--omt-key) 0 37%,var(--omt-key-press) 38% 100%);
+  box-shadow:inset 0 0 0 2px var(--omt-key-edge),0 2px 4px rgba(0,0,0,.12);
+}
+.one-more-tune-window .omt-wheel-quad { position:absolute;inset:0;border-radius:50%;pointer-events:none }
+.one-more-tune-window .omt-wheel-zone,.one-more-tune-window .omt-wheel-select {
+  border:0;background:transparent;color:var(--omt-room-ink);font:inherit;cursor:pointer;
+  transition:transform 160ms cubic-bezier(.23,1,.32,1);
+}
+.one-more-tune-window .omt-wheel-zone {
+  position:absolute;min-width:44px;min-height:34px;padding:4px 8px;border-radius:var(--omt-opt-radius);
+  font-size:14px;letter-spacing:.06em;
+}
+.one-more-tune-window .omt-wheel-zone[data-zone="0"] { top:7%;left:50%;transform:translateX(-50%) }
+.one-more-tune-window .omt-wheel-zone[data-zone="1"] { right:4%;top:50%;transform:translateY(-50%) }
+.one-more-tune-window .omt-wheel-zone[data-zone="2"] { bottom:7%;left:50%;transform:translateX(-50%) }
+.one-more-tune-window .omt-wheel-zone[data-zone="3"] { left:4%;top:50%;transform:translateY(-50%) }
+.one-more-tune-window .omt-wheel-zone[data-zone="0"]:active { transform:translateX(-50%) scale(.96);transition-duration:100ms }
+.one-more-tune-window .omt-wheel-zone[data-zone="2"]:active { transform:translateX(-50%) scale(.96);transition-duration:100ms }
+.one-more-tune-window .omt-wheel-zone[data-zone="1"]:active,.one-more-tune-window .omt-wheel-zone[data-zone="3"]:active { transform:translateY(-50%) scale(.96);transition-duration:100ms }
+.one-more-tune-window .omt-wheel-zone.is-on { font-weight:600 }
+/* The scrub's zones carry ±seconds, not single digits: a touch smaller and
+   tighter, same targets. */
+.one-more-tune-window[data-omt-scrub] .omt-wheel-zone { font-size:12.5px;letter-spacing:.02em;padding:4px 6px }
+.one-more-tune-window .omt-wheel-zone:focus-visible,.one-more-tune-window .omt-wheel-select:focus-visible { outline:2px solid var(--omt-room-ink);outline-offset:2px }
+.one-more-tune-window .omt-wheel-select {
+  position:absolute;inset:31%;border-radius:50%;font-size:13px;
+  background:var(--omt-key);box-shadow:inset 0 0 0 2px var(--omt-key-edge);
+}
+.one-more-tune-window .omt-wheel-select:active { transform:scale(.96);transition-duration:100ms }
+/* The wheel's focus is the key's own state, not a second highlight: instant,
+   like an iPod's selection, and animated nowhere (keyboard rule). */
+.one-more-tune-window .omt-opt[data-wheel-focus] { box-shadow:inset 0 0 0 2px var(--omt-room-ink);background:var(--omt-key-press) }
+.one-more-tune-window .omt-room[data-omt-waiting] .omt-wheel-slot { opacity:.45 }
 .one-more-tune-window .omt-q { grid-area:q;min-width:0 }
 .one-more-tune-window .omt-opts { grid-area:opts;min-width:0 }
 .one-more-tune-window .omt-sr { position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap }
@@ -1881,9 +1930,11 @@ body[data-theme="classic"] .one-more-tune-window {
    right, and the way onward comes back where the keys were, so a pointer never
    crosses the window for it. */
 @container omt (min-aspect-ratio:13/10) {
-  .one-more-tune-window .omt-in { grid-template-columns:minmax(0,min(46cqw,460px)) minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto auto;grid-template-areas:"stage gap" "stage q" "stage opts";column-gap:clamp(20px,4cqw,44px);padding-top:18px;
+  .one-more-tune-window .omt-in { grid-template-columns:minmax(0,min(46cqw,460px)) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"stage q" "stage gap" "stage opts";column-gap:clamp(20px,4cqw,44px);padding-top:18px;
     --omt-card-h:clamp(110px,100cqh - 280px,240px) }
   .one-more-tune-window .omt-radio { align-self:center }
+  .one-more-tune-window .omt-gap { display:grid;place-items:center }
+  .one-more-tune-window .omt-wheel-slot { display:block }
   .one-more-tune-window .omt-room[data-omt-phase="result"] .omt-in { grid-template-columns:minmax(0,min(44cqw,420px)) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto;grid-template-areas:"head list" "head gap" "head acts" "head desk" }
   .one-more-tune-window .omt-rhead { align-self:center }
   .one-more-tune-window .omt-list { grid-template-rows:repeat(5,auto);grid-auto-flow:column;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:22px }

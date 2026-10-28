@@ -1,6 +1,7 @@
 // Cloud model integration — DeepSeek is the first-class cloud provider.
-// The server routes stay OpenAI-compatible internally, but product QA does
-// not promise other paid cloud vendors.
+// The server routes stay OpenAI-compatible internally; Anthropic's Messages
+// API is the one other paid vendor, local-only, adapted on the server
+// (apps/server/server/anthropic-messages.js). Product QA promises no others.
 
 (function () {
   "use strict";
@@ -37,6 +38,7 @@
     // `claude` / `codex` run (docs/SUBSCRIPTION-CLI.md).
     "claude-subscription": "subscription-cli://claude",
     "codex-subscription": "subscription-cli://codex",
+    anthropic: "https:" + String.fromCharCode(47, 47) + "api.anthropic.com",
   };
   // Sentinel the server resolves per task: heavy analysis runs on V4 Pro,
   // everything else on Flash. Kept out of the model list itself so
@@ -52,17 +54,19 @@
     "codex-subscription": [{ id: "default", i18n: "cloud_model_cli_default", context_length: 200000 }],
   };
 
-  // The subscription entries exist only where the server can run the CLIs.
+  // Local-only providers (the subscription CLIs, Anthropic) name the
+  // capability they need; each shows only where the server offers it, and an
+  // active one the server stopped offering is switched off.
   window.addEventListener?.("ai-system6:capabilities", function (event) {
-    const enabled = /** @type {CustomEvent} */ (event).detail?.features?.subscription_cli === true;
-    cloudProviderEl?.querySelectorAll?.("option[data-requires-capability='subscription_cli']").forEach(function (option) {
-      option.hidden = !enabled;
+    const features = /** @type {CustomEvent} */ (event).detail?.features || {};
+    cloudProviderEl?.querySelectorAll?.("option[data-requires-capability]").forEach(function (option) {
+      option.hidden = features[option.dataset.requiresCapability] !== true;
+      if (option.hidden && option.value === cloudConfig?.provider && cloudConfig.active) {
+        cloudConfig.active = false;
+        saveCloudConfig();
+        applyCloudActiveState();
+      }
     });
-    if (!enabled && isSubscriptionCloudProvider(cloudConfig?.provider) && cloudConfig.active) {
-      cloudConfig.active = false;
-      saveCloudConfig();
-      applyCloudActiveState();
-    }
   });
 
   let cloudModels = [];
@@ -71,7 +75,7 @@
   window.syncCloudCredentialUi = function () {
     // A subscription CLI signs in on its own, so there is no key to ask for.
     const keyField = cloudApiKeyEl?.closest?.(".control-field");
-    if (keyField) keyField.hidden = isSubscriptionCloudProvider(cloudConfig?.provider);
+    if (keyField) keyField.hidden = isSubscriptionCloudProvider(cloudConfig?.provider) || isKeychainCloudProvider(cloudConfig?.provider);
     const sharedAvailable = isPublicCloudCredentialMode() && publicSharedCloudAvailable;
     const mode = typeof cloudCredentialMode === "function" ? cloudCredentialMode() : "none";
     if (cloudApiKeyLabelEl) {
@@ -80,7 +84,9 @@
       cloudApiKeyLabelEl.textContent = typeof t === "function" ? t(labelKey) : "API Key";
     }
     if (!cloudStatusHint || cloudConfig?.active) return;
-    const hintKey = mode === "byok"
+    const hintKey = mode === "keychain"
+      ? "cloud_anthropic_keychain_hint"
+      : mode === "byok"
       ? "cloud_byok_hint"
       : sharedAvailable
         ? "cloud_shared_hint"
@@ -261,6 +267,7 @@
   async function fetchBalanceOnly() {
     if (!cloudConfig || !cloudConfig.provider || !cloudCredentialReady()) return null;
     if (isSubscriptionCloudProvider(cloudConfig.provider)) return null;
+    if (isKeychainCloudProvider(cloudConfig.provider)) return null;
     if (cloudCredentialMode() === "shared") return null;
     try {
       const baseUrl = PROVIDER_BASE_URLS[cloudConfig.provider] || DEEPSEEK_BASE_URL;
@@ -289,12 +296,13 @@
 
   window.fetchCloudBalanceSilent = function () { return fetchBalanceOnly(); };
 
-  async function fetchCloudModels() {
+  async function fetchCloudModels(provider) {
     try {
       const response = await window.AISystem6Capabilities.requestService("cloud.models", {});
       if (!response.ok) return [];
       const data = await response.json();
-      return Array.isArray(data.models) ? data.models : [];
+      const models = data.by_provider?.[provider] || data.models;
+      return Array.isArray(models) ? models : [];
     } catch (e) { return []; }
   }
 
@@ -615,7 +623,7 @@
 
     const activeText = cloudConfig.active ? "✓" : "";
     const localText = !cloudConfig.active ? "✓" : "";
-    const cloudModeText = isSubscriptionCloudProvider(cloudConfig.provider)
+    const cloudModeText = cloudConfig.provider !== "deepseek"
       ? cloudProviderDisplayName(cloudConfig.provider)
       : currentLanguage === "zh" ? "DeepSeek（云端）" : "DeepSeek (Cloud)";
     const cloudRouteText = typeof cloudModelRouteLabel === "function" ? cloudModelRouteLabel(cloudConfig) : cloudModeText;
@@ -713,8 +721,9 @@
     updateCheckButtonState();
     cloudStatusEl.hidden = true;
     if (isSubscriptionCloudProvider(provider)) cloudConfig.model = "default";
+    if (isKeychainCloudProvider(provider) && !/^claude-/.test(String(cloudConfig.model || ""))) cloudConfig.model = "claude-opus-5-5";
     populateCloudModelDropdown(BUILTIN_PROVIDER_MODELS[provider] || []);
-    const models = isSubscriptionCloudProvider(provider) ? [] : await fetchCloudModels();
+    const models = isSubscriptionCloudProvider(provider) ? [] : await fetchCloudModels(provider);
     if (models.length) populateCloudModelDropdown(models);
     if (cloudConfig.model) setCloudModelControlValue(cloudConfig.model);
     window.syncCloudModelControls();
@@ -1063,7 +1072,7 @@
     cloudProviderEl.value = cloudConfig.provider;
     cloudApiKeyEl.value = "";
     populateCloudModelDropdown(BUILTIN_PROVIDER_MODELS[cloudConfig.provider] || []);
-    fetchCloudModels().then(function (models) {
+    fetchCloudModels(cloudConfig.provider).then(function (models) {
       if (models.length) populateCloudModelDropdown(models);
       if (cloudConfig.model) setCloudModelControlValue(cloudConfig.model);
       window.syncCloudModelControls();

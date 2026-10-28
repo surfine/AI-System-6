@@ -122,6 +122,14 @@ export const lazyStyleBundles = [
     loader: "app/core/config.js",
     sources: ["styles/80-bureaucracy-meme.css"],
   },
+  // Reader's original-page view is summoned by a PDF, not resident: its module
+  // is lazy and every selector is .reader-pages* or .reader-page-*.
+  {
+    id: "reader-pages",
+    output: "styles.reader-pages.css",
+    loader: "app/core/config.js",
+    sources: ["styles/80-reader-pages.css"],
+  },
   // Time Machine is summoned, not resident: its module has always been lazy and
   // every selector is .time-machine-* or #time-machine-*.
   {
@@ -159,11 +167,14 @@ export const lazyStyleBundles = [
   // surface (S11 M2) rides it too: ClioStage's loader already pulls this sheet,
   // and its selectors are scoped to .clio-stage-native / .is-native-mounted.
   // ClioWrite (S11 M3) draws its docx window with it too: .clio-write-window / .cw-menu.
+  // N6's show layer and page overview (84-clio-stage-show.css) ride it the same
+  // way: clio-stage.js builds them, that loader brings the sheet, and every
+  // selector is scoped to .clio-stage-show / .clio-stage-overview.
   {
     id: "clio-chart",
     output: "styles.clio-chart.css",
     loader: "app/core/config.js",
-    sources: ["styles/87-clio-chart.css", "styles/84-clio-chart-workbook.css", "styles/84-windoid.css", "styles/84-clio-stage-native.css", "styles/84-clio-write.css"],
+    sources: ["styles/87-clio-chart.css", "styles/84-clio-chart-workbook.css", "styles/84-windoid.css", "styles/84-clio-stage-native.css", "styles/84-clio-write.css", "styles/84-clio-stage-show.css"],
   },
   {
     id: "micropolis",
@@ -295,6 +306,15 @@ export const lazyStyleBundles = [
     loader: "app/core/config.js",
     sources: ["styles/99-edit-kernel.css", "styles/99-review-comments.css"],
   },
+  // ClioTalk agent mode, Chooser's shared folders and the put-back dialog:
+  // built on demand by app/features/cliotalk-agent.js, every selector scoped
+  // to .clio-agent-* / .chooser-folder* / .agent-putback-*.
+  {
+    id: "cliotalk-agent",
+    output: "styles.cliotalk-agent.css",
+    loader: "app/core/config.js",
+    sources: ["styles/99-cliotalk-agent.css"],
+  },
 ];
 
 // Every stylesheet the product ships, eager or lazy. Checks that reason about
@@ -337,6 +357,7 @@ export const styleLayerByPath = Object.freeze({
   "styles/nextstep-shell.css": "nextstep-shell",
   "styles/70-liquid-glass.css": "liquid-glass",
   "styles/80-bureaucracy-meme.css": "bureaucracy-meme",
+  "styles/80-reader-pages.css": "reader-pages",
   "styles/85-liquid-cover.css": "liquid-cover",
   "styles/95-image-prompt-studio.css": "image-prompt-studio",
   "styles/86-cmf-studio.css": "cmf-studio",
@@ -345,6 +366,7 @@ export const styleLayerByPath = Object.freeze({
   "styles/84-windoid.css": "windoid",
   "styles/84-clio-stage-native.css": "clio-stage-native",
   "styles/84-clio-write.css": "clio-write",
+  "styles/84-clio-stage-show.css": "clio-stage-show",
   "styles/88-soundscape.css": "soundscape",
   "styles/89-control-strip.css": "control-strip",
   "styles/89-finder-spatial.css": "finder-spatial",
@@ -370,6 +392,7 @@ export const styleLayerByPath = Object.freeze({
   "styles/99-rootline.css": "rootline",
   "styles/99-joyride.css": "joyride",
   "styles/99-about-desk.css": "about",
+  "styles/99-cliotalk-agent.css": "cliotalk-agent",
 });
 
 // Layer order = eager files in bundle order, then lazy sheets in declaration

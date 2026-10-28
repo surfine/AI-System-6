@@ -7,8 +7,11 @@
 // and the writer's own words stay the writer's.
 //
 // The panel is the Review Desk's "comments" lens (opened from Commands…). It
-// has two views: the threads, and a word-by-word compare of two saved
-// versions (or the text as it is now).
+// has three views: the threads, a word-by-word compare of two saved versions
+// (or the text as it is now), and the 回稿 tab — whose candidates, messages
+// and three-way compare the lazy roundtrip-review module renders into this
+// panel's placeholder container (ClioWorks N8); the file here owns only the
+// tab row and the container.
 
 (function installReviewDeskComments() {
   if (window.AISystem6ReviewDeskPanel) return;
@@ -347,7 +350,9 @@
     const head = node("div", "review-comments-head");
     const tabs = node("div", "review-comments-tabs");
     tabs.setAttribute("role", "tablist");
-    [["comments", "review_comments"], ["compare", "review_compare"]].forEach(([id, key]) => {
+    // The 回稿 tab renders nothing here: its candidates and messages live in
+    // the lazy roundtrip-review module, drawn into the placeholder below.
+    [["comments", "review_comments"], ["compare", "review_compare"], ["roundtrip", "roundtrip_tab"]].forEach(([id, key]) => {
       const tab = button(say(key), "tab", "btn mini-btn review-comments-tab");
       tab.dataset.rcTab = id;
       tab.setAttribute("role", "tab");
@@ -407,7 +412,11 @@
     compareBody.dataset.rcBody = "compare";
     compareBody.append(node("div", "review-compare"));
 
-    panel.append(head, commentsBody, compareBody);
+    // 回稿: the tab's own module draws into this container (N8).
+    const roundtripBody = node("div", "review-comments-body is-hidden");
+    roundtripBody.dataset.rcBody = "roundtrip";
+
+    panel.append(head, commentsBody, compareBody, roundtripBody);
     if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
     wire(panel);
   }
@@ -715,13 +724,23 @@
   }
 
   async function show(tab = "comments") {
-    view.tab = tab === "compare" ? "compare" : "comments";
+    view.tab = ["compare", "roundtrip"].includes(tab) ? tab : "comments";
     build();
     render();
     if (view.tab === "compare") {
       await loadRevisions();
       renderCompare();
       computeDiff();
+    } else if (view.tab === "roundtrip") {
+      // The candidates, the message column and the three-way compare are the
+      // roundtrip module's; this panel keeps only the tab and the container.
+      const host = panelEl()?.querySelector('[data-rc-body="roundtrip"]');
+      try {
+        if (typeof ensureRoundtripReviewModule === "function") await ensureRoundtripReviewModule();
+        window.AISystem6RoundtripReview?.show(host);
+      } catch {
+        setStatus(say("roundtrip_module_failed"));
+      }
     } else {
       renderComposerQuote();
       applyDecorations();

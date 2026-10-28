@@ -85,6 +85,14 @@ function wireAppEvents() {
       stopGeneration();
       return;
     }
+    // Agent mode (代理) sends the prompt to the engine host instead. Boot may
+    // have restored 代理 before the lazy module loaded: the first send loads
+    // it and waits for that restore to settle before the run starts.
+    if (clioTalkAgentModeActive()) {
+      await ensureClioTalkAgentModule();
+      await window.AISystem6ClioTalkAgent.restoredMode();
+      if (window.AISystem6ClioTalkAgent.isActive()) return window.AISystem6ClioTalkAgent.submit(promptInput.value);
+    }
     await submitUserText(promptInput.value.trim());
   });
 
@@ -324,6 +332,8 @@ function wireAppEvents() {
     syncReviewDeskFromTeachText({ force: true });
     renderClaimCheckSections();
     renderStyleCheckSections();
+    // N15a: 第一次输入把「自动存档 + 链接跟随」的懒载模块带进来；之后它自己听。
+    if (typeof ensureWritingSafetyModule === "function" && !window.AISystem6WritingSafety) ensureWritingSafetyModule().catch(() => {});
   });
 
   ["select", "click", "keyup"].forEach((eventName) => {

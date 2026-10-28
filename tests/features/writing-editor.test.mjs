@@ -85,10 +85,15 @@ const menuCommands = (formatMenu?.items || [])
   .map((item) => item.action.slice("format-".length));
 const { formatMarkdown, FORMAT_COMMANDS: formatCommands } = await import("../../tooling/vendor/writing-editor/format.mjs");
 const registered = [...(actions.match(/\[([^\]]*)\]\s*\.forEach\(\(command\)=>window\.AISystem6Runtime\?\.registerCommand\?\.\(`format-\$\{command\}`/)?.[1] || "").matchAll(/"([a-z0-9-]+)"/g)].map((match) => match[1]);
+// N15a's 打开链接 is a Format-menu verb that reads the caret's link instead of
+// editing the line: it registers itself as a lazy command, not a format
+// transform, and running it on plain text changes nothing by design.
+const nonFormat = new Set(["open-link"]);
+test.assertIncludes(actions, 'registerLazyCommand?.("format-open-link"', "open-link is registered as a lazy command of its own");
 // Every row, run on a real line of the DTK manuscript, changes the text.
 const sample = "我桌面上这台 Mac mini 本该在 2021 年消失。";
 test.assert(
-  menuCommands.every((command) => {
+  menuCommands.filter((command) => !nonFormat.has(command)).every((command) => {
     const result = formatMarkdown(sample, 0, 5, command);
     // Body text and Outdent have nothing to take away from a plain line.
     return result && (result.insert !== sample.slice(result.from, result.to) || ["heading-0", "outdent"].includes(command));
@@ -97,8 +102,8 @@ test.assert(
 );
 test.assert((formatMenu?.items || []).every((item) => item.type !== "item" || item.labelKey), "every row has a label");
 test.assert(menuCommands.length >= 18, `the menu lists the Markdown commands (${menuCommands.length})`);
-test.assert(menuCommands.every((command) => formatCommands.includes(command)), "every menu row is a command the editor knows");
-test.assert(menuCommands.every((command) => registered.includes(command)), "and every one is registered as an application command");
+test.assert(menuCommands.every((command) => nonFormat.has(command) || formatCommands.includes(command)), "every menu row is a command the editor knows");
+test.assert(menuCommands.filter((command) => !nonFormat.has(command)).every((command) => registered.includes(command)), "and every one is registered as an application command");
 test.assertMatches(actions, /\(\{ id: `format-\$\{id\}`, key, display: [^}]*, dispatch: false \}\)/, "the key equivalents are display-only: the editor answers the keys");
 for (const key of ["menu_format", "format_body", "format_heading_1", "format_bold", "format_link", "format_task", "format_table", "format_code_block", "heading_navigator", "writing_mode_write", "writing_mode_read", "writing_mode_split", "hide_keyboard"]) {
   test.assertIncludes(en, `    ${key}:`, `English defines ${key}`);

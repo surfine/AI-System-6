@@ -25,9 +25,30 @@
     a = clampPos(a);
     f = clampPos(f || a);
     E.sel = { a, f };
+    if (!opts || !opts.keepObj) E.clearObjSel();   /* a text selection ends an object selection */
     if (!opts || !opts.keepPending) E.pending = null;
     if (!opts || !opts.noDom) E.restoreDom(opts && opts.noScroll);
     E.selChanged();
+  };
+  /** the one way into an object selection, os = { p, o, it, el, float }: the text selection becomes the object's
+      anchor, and the page's own selection covers the object (inline) or goes (floating), so no text stays
+      highlighted. Inline handles are drawn here, floating ones by drawing.js. */
+  E.selectObject = function (os) {
+    if (E.objSel && E.objSel.el !== os.el) E.clearObjSel();
+    E.objSel = os;
+    if (LY.root) LY.root.classList.toggle('objsel', !!os.float);
+    E.setSel(D.pos(os.p, os.o), D.pos(os.p, os.o + 1), { noScroll: true, keepObj: true });
+    if (!os.float) showHandles(os.el);
+    L.bus.emit('objsel', os);
+  };
+  /** the one way an object selection ends: its handles go with it (the inline ones here, the floating
+      ones in drawing.js, which follows 'objsel') */
+  E.clearObjSel = function () {
+    hideHandles();
+    if (!E.objSel) return;
+    E.objSel = null;
+    if (LY.root) LY.root.classList.remove('objsel');
+    L.bus.emit('objsel', null);
   };
   function clampPos(pos) { return { p: pos.p, o: L.clamp(pos.o, 0, D.plen(pos.p)) }; }
   E.selectedParas = function () {
@@ -55,8 +76,11 @@
   const domIsOurs = () => { const s = window.getSelection(); return !!lastDom && s.anchorNode === lastDom.an && s.anchorOffset === lastDom.ao && s.focusNode === lastDom.fn && s.focusOffset === lastDom.fo; };
   E.restoreDom = function (noScroll) {
     if (!E.sel || !LY.root) return;
+    E.drawSel(false);
     const s = window.getSelection();
-    const a = LY.posToDom(E.sel.a), f = LY.posToDom(E.sel.f);
+    /* a selected floating object: the page holds a (hidden) caret at its anchor, so no text shows selected (Chrome
+       puts a caret back into a focused page left with no selection at all) */
+    const a = LY.posToDom(E.sel.a), f = E.objSel && E.objSel.float ? a : LY.posToDom(E.sel.f);
     if (!a || !f) return;
     settingDom++;
     try {
@@ -84,8 +108,14 @@
     const e = n.nodeType === 3 ? n.parentNode : n;
     return !!(e && e.closest && (e.closest('#pages') || e.closest('.ed-host')));
   }
+  /** the part of the page not being edited: the body while a header or footer is, a header or footer while the
+      body is; a selection there is put back (keys would edit text the user can't see being edited) */
+  const offLimits = (n) => { const e = n && (n.nodeType === 3 ? n.parentNode : n); return !!(e && e.closest && e.closest(LY.hfEdit ? '.pg-body' : '.pg-hdr, .pg-ftr') && !e.closest('.tbx')); };
+  /** while a header or footer is edited, the page it is edited on follows the selection */
+  const hfPage = (n) => { const e = n && (n.nodeType === 3 ? n.parentNode : n), pg = e && e.closest && e.closest('.pg'); if (LY.hfEdit && pg && pg.dataset.pg != null) LY.hfEdit.page = +pg.dataset.pg; };
   E.onSelectionChange = function () {
     if (E.composing) return;
+    if (E.sel && domIsOurs()) return;   /* our own (the caret held at a floating object's anchor, a selection-bar drag) */
     const s = window.getSelection();
     if (!s.rangeCount || !isEditableNode(s.focusNode)) return;
     const m = E.readDom();
@@ -98,12 +128,30 @@
     const changed = !E.sel || !D.eqPos(m.a, E.sel.a) || !D.eqPos(m.f, E.sel.f);
     if (!changed) return;
     if (domIsOurs() && E.sel) return; /* our own restore landed on an equivalent DOM point */
+    if (offLimits(s.focusNode)) { if (E.sel) E.restoreDom(true); return; }
+    hfPage(s.focusNode);
     E.pending = null; D.breakMerge();
     E.sel = m;
-    E.objSel = null;
+    E.clearObjSel();
+    E.drawSel(false);
     E.selChanged();
     E.markCells();
   };
+  /* The model's selection drawn while the keyboard is elsewhere (Find and Replace keeps it): putting it into the
+     page would take the focus with it, as Chrome focuses the editable page a selection lands in. Drawn again after
+     each layout, gone when the page's own selection is set. */
+  let selDrawn = false;
+  E.drawSel = function (on) {
+    const can = typeof CSS !== 'undefined' && CSS.highlights && typeof Highlight === 'function';
+    selDrawn = !!on && can;
+    if (!can) return;
+    const [a, b] = on && E.sel ? E.range().map((p) => LY.posToDom(p)) : [];
+    if (!a || !b) { CSS.highlights.delete('quire-sel'); return; }
+    const r = document.createRange();
+    try { r.setStart(a.node, a.offset); r.setEnd(b.node, b.offset); } catch (e) { CSS.highlights.delete('quire-sel'); return; }
+    CSS.highlights.set('quire-sel', new Highlight(r));
+  };
+  L.bus.on('layout-done', () => { if (selDrawn) E.drawSel(true); });
   /** pull a pending DOM selection into the model before acting on a key (selectionchange is asynchronous) */
   E.syncSel = function () {
     if (E.composing || !LY.root || domIsOurs()) return;
@@ -112,18 +160,44 @@
     const m = E.readDom();
     if (!m) { snapCaret(); return; }
     if (E.sel && D.eqPos(m.a, E.sel.a) && D.eqPos(m.f, E.sel.f)) return;
+    if (offLimits(s.focusNode)) { if (E.sel) E.restoreDom(true); return; }
+    hfPage(s.focusNode);
     E.pending = null; D.breakMerge();
-    E.sel = m; E.objSel = null; E.selChanged();
+    E.sel = m; E.clearObjSel(); E.selChanged();
   };
-  /* where the pointer is while a button is held: a drag that leaves the text is placed by the pointer */
-  let pointer = null, textDrag = false, snapQueued = false;
-  document.addEventListener('pointerdown', (e) => { const t = e.target; textDrag = e.button === 0 && !!(t.closest && t.closest('.p') && LY.root && LY.root.contains(t)); }, true);
-  document.addEventListener('pointermove', (e) => {
-    pointer = e.buttons & 1 ? { x: e.clientX, y: e.clientY } : null;
-    /* outside the page (grey area, other panes) the browser stops extending the selection: follow the pointer */
-    if (pointer && textDrag && !overText(pointer) && !snapQueued) { snapQueued = true; requestAnimationFrame(() => { snapQueued = false; if (pointer && textDrag) snapCaret(); }); }
+  /* A press in the document is a ui.drag (common/ui.js) that watches the browser's own text selection: it holds no
+     pointer and draws nothing. Its release ends the selection ('sel-done'); a release the page never sees (let go in
+     another window, cancelled), Esc or a second button end it without one, so nothing acts on a selection the user
+     didn't finish; a drag of the page's own (an object, the selection bar, a tool) takes over from it. While it
+     lasts, `pointer` is where the pointer is: a selection dragged out of the text follows it. */
+  let pointer = null, textDrag = false, snapQueued = false, press = null;
+  document.addEventListener('pointerdown', (e) => {
+    const t = e.target;
+    if (e.button !== 0 || !isEditableNode(t)) return;
+    textDrag = !!(t.closest && t.closest('.p') && LY.root && LY.root.contains(t));
+    pointer = { x: e.clientX, y: e.clientY };
+    const done = () => { if (press === d) { press = null; pointer = null; textDrag = false; } };
+    const d = L.ui.drag(e, {
+      capture: false, threshold: 0, cursor: false,
+      move(ev) {
+        pointer = { x: ev.clientX, y: ev.clientY };
+        /* outside the page (grey area, other panes) the browser stops extending the selection: follow the pointer */
+        if (textDrag && !overText(pointer) && !snapQueued) { snapQueued = true; requestAnimationFrame(() => { snapQueued = false; if (pointer && textDrag) snapCaret(); }); }
+      },
+      up() { done(); setTimeout(selDone, 0); },
+      cancel: done,
+    });
+    press = d;
   }, true);
-  document.addEventListener('pointerup', () => { pointer = null; textDrag = false; }, true);
+  /** a mouse button is down in the document (a selection may still be dragged out) */
+  E.pressing = () => !!press;
+  /** the user let go of the mouse in the document: 'sel' fires all through a drag, 'sel-done' once, when
+      the text selection (or caret) is made; the Format Painter and the highlighter act on it */
+  function selDone() {
+    if (E.objSel) return; /* a press on a shape or picture selected it, not text */
+    E.syncSel();
+    if (E.sel && !E.objSel) L.bus.emit('sel-done', E.sel);
+  }
   /** the selection's moving end landed where there is no text (page gap, margins): put it at the nearest
       paragraph — its end when the point is below it, its start when above — and, when a selection is being
       dragged out, keep where it started */
@@ -172,16 +246,18 @@
   /** notify UI (debounced through rAF) */
   E.selChanged = L.rafThrottle(() => { L.bus.emit('sel', E.sel); });
 
-  E.scrollToCaret = function () {
+  /** bring the caret into view: the page's selection, or (fromModel) the model's, when the page's isn't moved */
+  E.scrollToCaret = function (fromModel) {
     const sc = LY.scroller;
     if (!sc || !E.sel) return;
     const s = window.getSelection();
-    if (!s.rangeCount) return;
+    const at = fromModel ? LY.posToDom(E.sel.f) : s.rangeCount ? { node: s.focusNode, offset: s.focusOffset } : null;
+    if (!at) return;
     const rng = document.createRange();
-    try { rng.setStart(s.focusNode, s.focusOffset); rng.collapse(true); } catch (e) { return; }
+    try { rng.setStart(at.node, at.offset); rng.collapse(true); } catch (e) { return; }
     let r = rng.getClientRects()[0] || rng.getBoundingClientRect();
     if (!r || (!r.height && !r.top)) {
-      const n = s.focusNode && (s.focusNode.nodeType === 3 ? s.focusNode.parentNode : s.focusNode);
+      const n = at.node && (at.node.nodeType === 3 ? at.node.parentNode : at.node);
       if (n && n.getBoundingClientRect) r = n.getBoundingClientRect();
     }
     if (!r) return;
@@ -227,10 +303,25 @@
     if (E.collapsed()) return E.sel.f;
     const [a, b] = E.range();
     if (E.cellSel) { const r = clearCells(); if (r) return r; }
+    if (E.rowSel && !O.tracking()) return deleteRowSel(a, b);   /* tracked, the text is marked deleted as any (rows can't be) */
     const pos = O.deleteRange(a, b);
     O.repairFields(D.storyOf(doc(), pos.p));
     return pos;
   };
+  /** a selection from inside a table out of it (E.rowSel): the text outside the table goes, then the rows */
+  function deleteRowSel(a, b) {
+    const rs = E.rowSel, d = doc();
+    E.rowSel = null;
+    const i = rs.cont.blocks.indexOf(rs.tbl);
+    let pos;
+    if (rs.down) { const q = D.firstPara(rs.cont.blocks.slice(i + 1)); pos = q ? O.deleteRange(D.pos(q, 0), b) : b; }
+    else { const q = D.lastPara(rs.cont.blocks.slice(0, i)); pos = q ? O.deleteRange(a, D.pos(q, D.plen(q))) : a; }
+    if (rs.r0 === 0 && rs.r1 >= rs.tbl.rows.length - 1) O.removeBlock(rs.tbl);
+    else if (L.tables && L.tables.removeRows) L.tables.removeRows(rs.tbl, rs.r0, rs.r1);
+    d._idxDirty = true;
+    O.repairFields(D.storyOf(d, pos.p));
+    return pos;
+  }
   function clearCells() {
     const cs = E.cellSel;
     if (!cs) return null;
@@ -251,7 +342,7 @@
     if (!E.sel) return;
     const d = doc();
     if (E.objSel && E.objSel.float) return;
-    E.edit('Typing', () => {
+    E.edit(L.N('Typing'), () => {
       let pos = E.deleteSelection();
       if (E.overtype && E.collapsed()) {
         const n = D.plen(pos.p);
@@ -282,7 +373,7 @@
     if (E.collapsed() && !D.plen(p) && LY.labels && LY.labels.get(p.id)) {
       const pp = D.pProps(d, p);
       const lvl = pp.num ? pp.num.lvl || 0 : 0;
-      E.edit('Numbering', () => {
+      E.edit(L.N('Numbering'), () => {
         D.touch(p);
         if (lvl > 0) p.pPr.num = { id: pp.num.id, lvl: lvl - 1 };
         else { p.pPr.num = { id: '0', lvl: 0 }; delete p.pPr.ind; if (D.styleProps(d, p.pPr.style || 'Normal').pPr.num) p.pPr.style = undefined; }
@@ -290,7 +381,7 @@
       });
       return;
     }
-    E.edit('Typing', () => {
+    E.edit(L.N('Typing'), () => {
       const pos = E.deleteSelection();
       const np = O.splitPara(pos);
       /* AutoFormat: "---" + Enter → border line */
@@ -299,13 +390,13 @@
     if (L.autocorrect) L.autocorrect.afterEnter();
   };
   E.insertItem = function (item, label) {
-    E.edit(label || 'Insert', () => O.insertItem(E.deleteSelection(), item));
+    E.edit(label || L.N('Insert'), () => O.insertItem(E.deleteSelection(), item));
   };
-  E.insertTextAt = (text, label) => E.edit(label || 'Insert', () => O.insertPlain(E.deleteSelection(), text, E.pending ? D.mergeRPr(O.inheritRPr(E.sel.f), E.pending) : null));
+  E.insertTextAt = (text, label) => E.edit(label || L.N('Insert'), () => O.insertPlain(E.deleteSelection(), text, E.pending ? D.mergeRPr(O.inheritRPr(E.sel.f), E.pending) : null));
   E.backspace = function (word) {
     if (!E.sel) return;
     const d = doc();
-    if (!E.collapsed()) { E.edit('Delete', () => E.deleteSelection()); return; }
+    if (!E.collapsed()) { E.edit(L.N('Delete'), () => E.deleteSelection()); return; }
     const pos = E.sel.f;
     const p = pos.p;
     if (pos.o === 0) {
@@ -313,7 +404,7 @@
       const lb = LY.labels && LY.labels.get(p.id);
       const pp = D.pProps(d, p);
       if (lb) {
-        E.edit('Numbering', () => {
+        E.edit(L.N('Numbering'), () => {
           D.touch(p);
           const ind = pp.ind || {};
           p.pPr.num = { id: '0', lvl: 0 };
@@ -323,7 +414,7 @@
         return;
       }
       if (p.pPr.ind && (p.pPr.ind.fl > 0 || p.pPr.ind.l > 0) && L.store.get('acIndentBackspace', true)) {
-        E.edit('Indent', () => { D.touch(p); if (p.pPr.ind.fl > 0) p.pPr.ind.fl = 0; else p.pPr.ind.l = Math.max(0, (p.pPr.ind.l || 0) - 36); return D.pos(p, 0); });
+        E.edit(L.N('Indent'), () => { D.touch(p); if (p.pPr.ind.fl > 0) p.pPr.ind.fl = 0; else p.pPr.ind.l = Math.max(0, (p.pPr.ind.l || 0) - 36); return D.pos(p, 0); });
         return;
       }
       const info = D.info(d, p);
@@ -332,17 +423,17 @@
       if (!prevB) return; /* start of story / cell */
       if (prevB.t === 'tbl') {
         /* empty paragraph after a table is removed; otherwise move into the table */
-        if (!D.plen(p) && info.cont.blocks[idx + 1]) { E.edit('Delete', () => { const r = O.removeBlock(p); void r; const lp = D.lastPara([prevB]); return D.pos(lp, D.plen(lp)); }); return; }
+        if (!D.plen(p) && info.cont.blocks[idx + 1]) { E.edit(L.N('Delete'), () => { const r = O.removeBlock(p); void r; const lp = D.lastPara([prevB]); return D.pos(lp, D.plen(lp)); }); return; }
         const lp = D.lastPara([prevB]);
         E.setSel(D.pos(lp, D.plen(lp)));
         return;
       }
-      if (O.tracking()) { E.edit('Delete', () => O.deleteRange(D.pos(prevB, D.plen(prevB)), pos)); return; }
-      E.edit('Delete', () => O.joinNext(prevB) || pos);
+      if (O.tracking()) { E.edit(L.N('Delete'), () => O.deleteRange(D.pos(prevB, D.plen(prevB)), pos)); return; }
+      E.edit(L.N('Delete'), () => O.joinNext(prevB) || pos);
       return;
     }
     let a = word ? wordStartBefore(p, pos.o) : prevCharOffset(p, pos.o);
-    E.edit('Delete', () => {
+    E.edit(L.N('Delete'), () => {
       const r = O.deleteRange(D.pos(p, a), pos);
       O.repairFields(D.storyOf(d, p));
       return O.tracking() ? D.pos(p, a) : r;
@@ -351,7 +442,7 @@
   E.del = function (word) {
     if (!E.sel) return;
     const d = doc();
-    if (!E.collapsed()) { E.edit('Delete', () => E.deleteSelection()); return; }
+    if (!E.collapsed()) { E.edit(L.N('Delete'), () => E.deleteSelection()); return; }
     const pos = E.sel.f;
     const p = pos.p;
     const n = D.plen(p);
@@ -361,12 +452,12 @@
       const nb = info.cont.blocks[idx + 1];
       if (!nb) return;
       if (nb.t === 'tbl') return;
-      if (O.tracking()) { E.edit('Delete', () => { O.deleteRange(pos, D.pos(nb, 0)); return pos; }); return; }
-      E.edit('Delete', () => O.joinNext(p) || pos);
+      if (O.tracking()) { E.edit(L.N('Delete'), () => { O.deleteRange(pos, D.pos(nb, 0)); return pos; }); return; }
+      E.edit(L.N('Delete'), () => O.joinNext(p) || pos);
       return;
     }
     const b = word ? wordEndAfter(p, pos.o) : nextCharOffset(p, pos.o);
-    E.edit('Delete', () => { O.deleteRange(pos, D.pos(p, b)); O.repairFields(D.storyOf(d, p)); return pos; }, { merge: word ? null : 'fdel' });
+    E.edit(L.N('Delete'), () => { O.deleteRange(pos, D.pos(p, b)); O.repairFields(D.storyOf(d, p)); return pos; }, { merge: word ? null : 'fdel' });
   };
   function prevCharOffset(p, o) {
     /* skip over surrogate pairs and zero-length markers; skip deleted (tracked) text */
@@ -415,7 +506,7 @@
     const sel = E.selectedParas();
     const atStart = E.collapsed() ? E.sel.f.o === 0 : sel.length > 1;
     if (lb && atStart) {
-      E.edit('Numbering', () => {
+      E.edit(L.N('Numbering'), () => {
         for (const q of sel.length ? sel : [p]) {
           const qp = D.pProps(d, q);
           if (!qp.num || !qp.num.id || qp.num.id === '0') continue;
@@ -430,10 +521,10 @@
     if (shift) return;
     if (!lb && atStart && E.collapsed() && D.plen(p) > 0 && L.store.get('acIndentTab', true) && !(pp.ind && pp.ind.fl > 0)) {
       /* Tab at the start of a paragraph sets the first-line indent (AutoFormat As You Type) */
-      E.edit('Indent', () => { D.touch(p); p.pPr.ind = Object.assign({}, p.pPr.ind || {}, { fl: 36 }); return E.sel.f; });
+      E.edit(L.N('Indent'), () => { D.touch(p); p.pPr.ind = Object.assign({}, p.pPr.ind || {}, { fl: 36 }); return E.sel.f; });
       return;
     }
-    E.insertItem(D.item('tab'), 'Typing');
+    E.insertItem(D.item('tab'), L.N('Typing'));
   };
 
   /* ---------- formatting ---------- */
@@ -445,7 +536,7 @@
       const w = O.wordAt(E.sel.f);
       if (w && w[0].o < E.sel.f.o && E.sel.f.o < w[1].o) {
         const keep = E.sel;
-        E.edit(label || 'Format', () => { O.setRunProps(w[0], w[1], props); return keep; });
+        E.edit(label || L.N('Format'), () => { O.setRunProps(w[0], w[1], props); return keep; });
         return;
       }
       E.pending = Object.assign({}, E.pending || {}, props);
@@ -455,7 +546,7 @@
     }
     const [a, b] = E.range();
     const keep = E.sel;
-    E.edit(label || 'Format', () => { O.setRunProps(a, b, props); return keep; });
+    E.edit(label || L.N('Format'), () => { O.setRunProps(a, b, props); return keep; });
   };
   /** toggle a boolean run property based on the first character's state */
   E.toggleRun = function (key, val, label) {
@@ -541,7 +632,7 @@
   E.markCells = function () {
     if (!LY.root) return;
     for (const td of LY.root.querySelectorAll('td.csel')) td.classList.remove('csel');
-    E.cellSel = null;
+    E.cellSel = null; E.rowSel = null;
     if (!E.sel || E.collapsed()) return;
     const d = doc();
     const ca = D.cellOf(d, E.sel.a.p), cb = D.cellOf(d, E.sel.f.p);
@@ -557,8 +648,19 @@
       E.cellSel = { tbl: ca.tbl, r0, r1, c0, c1, cells };
       for (const c of cells) for (const td of LY.root.querySelectorAll(`td[data-cid="${c.id}"]`)) td.classList.add('csel');
     } else {
-      /* whole cells covered when selection runs from inside a table to outside */
       const [a, b] = E.range();
+      /* from inside a table out of it (into the text above or below): whole rows, from the row the selection starts
+         in to the table's end (or from its start), as Word does */
+      const ia = D.info(d, a.p), ib = D.info(d, b.p);
+      const ta = ia && ia.parents[0] && ia.parents[0].tbl ? ia.parents[0] : null, tb = ib && ib.parents[0] && ib.parents[0].tbl ? ib.parents[0] : null;
+      const rs = ta && ib && !ib.parents.length && ia.story === ib.story ? { tbl: ta.tbl, cont: ia.story, r0: ta.tbl.rows.indexOf(ta.row), r1: ta.tbl.rows.length - 1, down: true }
+        : tb && ia && !ia.parents.length && ia.story === ib.story ? { tbl: tb.tbl, cont: ib.story, r0: 0, r1: tb.tbl.rows.indexOf(tb.row), down: false } : null;
+      if (rs) {
+        E.rowSel = rs;
+        for (let r = rs.r0; r <= rs.r1; r++) for (const c of rs.tbl.rows[r].cells) for (const td of LY.root.querySelectorAll(`td[data-cid="${c.id}"]`)) td.classList.add('csel');
+        return;
+      }
+      /* whole cells covered when selection runs from inside a table to outside */
       for (const p of D.parasBetween(d, a.p, b.p)) { const ci = D.cellOf(d, p); if (ci && (p !== a.p || a.o === 0)) for (const td of LY.root.querySelectorAll(`td[data-cid="${ci.cell.id}"]`)) td.classList.add('csel'); }
     }
   };
@@ -627,7 +729,7 @@
       case 'deleteWordBackward': E.backspace(true); break;
       case 'deleteWordForward': E.del(true); break;
       case 'deleteSoftLineBackward': case 'deleteHardLineBackward': case 'deleteSoftLineForward': case 'deleteHardLineForward': case 'deleteContent': case 'deleteByCut':
-        if (!E.collapsed()) E.edit('Delete', () => E.deleteSelection());
+        if (!E.collapsed()) E.edit(L.N('Delete'), () => E.deleteSelection());
         break;
       case 'historyUndo': L.ui.exec('undo'); break;
       case 'historyRedo': L.ui.exec('redo'); break;
@@ -644,7 +746,7 @@
     if (!E.sel) { const m = E.readDom(); if (m) E.sel = m; }
     if (E.sel && !E.collapsed()) {
       /* replace the selection first so the composition starts at a clean caret */
-      E.edit('Typing', () => E.deleteSelection());
+      E.edit(L.N('Typing'), () => E.deleteSelection());
     }
     E.composing = true;
     compStart = E.sel ? { p: E.sel.f.p, o: E.sel.f.o } : null;
@@ -669,6 +771,9 @@
     const ctrl = e.ctrlKey || e.metaKey, shift = e.shiftKey, alt = e.altKey;
     if (!E.objSel && !/^(Shift|Control|Alt|Meta)$/.test(k)) E.syncSel();
     if (L.app && L.app.shortcut && L.app.shortcut(e)) { e.preventDefault(); return; }
+    /* a selected floating object: the selection is its anchor, so Enter and Tab would type over it and delete it
+       (Delete and Backspace below do delete it, as they should) */
+    if (E.objSel && E.objSel.float && (k === 'Enter' || k === 'Tab')) { e.preventDefault(); return; }
     if (k === 'Enter' && !alt) {
       e.preventDefault();
       if (ctrl && shift) E.enter('column');
@@ -681,12 +786,12 @@
     if (k === 'Delete') { e.preventDefault(); if (shift && !ctrl) L.ui.exec('cut'); else E.del(ctrl); return; }
     if (k === 'Tab' && !alt) {
       e.preventDefault();
-      if (ctrl) E.insertItem(D.item('tab'), 'Typing'); else E.tab(shift);
+      if (ctrl) E.insertItem(D.item('tab'), L.N('Typing')); else E.tab(shift);
       return;
     }
     if (k === 'Insert' && !ctrl && !shift) { e.preventDefault(); E.overtype = !E.overtype; L.bus.emit('sel', E.sel); return; }
     if (k === ' ' && ctrl && shift) { e.preventDefault(); E.typeText(' '); return; }
-    if (k === 'Escape') { if (E.objSel) { E.objSel = null; L.bus.emit('objsel', null); } return; }
+    if (k === 'Escape') { E.clearObjSel(); return; }
     /* paragraph navigation */
     if (ctrl && !alt && (k === 'ArrowUp' || k === 'ArrowDown')) {
       e.preventDefault();
@@ -745,7 +850,7 @@
       e.clipboardData.setData('application/x-quire', JSON.stringify({ blocks: data.blocks, media: data.media, preserved: data.preserved }));
     } catch (err) { /* ignore */ }
     E.clip = data;
-    if (cut) E.edit('Cut', () => E.deleteSelection());
+    if (cut) E.edit(L.N('Cut'), () => E.deleteSelection());
   }
   E.copyData = function () {
     if (!E.sel) return null;
@@ -776,21 +881,53 @@
   }
   E.pasteBlocks = function (blocks, opts) {
     if (!blocks || !blocks.length) return;
-    E.edit('Paste', () => {
+    E.edit(L.N('Paste'), () => {
       const pos = E.deleteSelection();
       return O.insertBlocks(pos, blocks, opts);
     });
     E.lastPaste = Date.now();
   };
   E.pasteText = function (text) {
-    E.edit('Paste', () => O.insertPlain(E.deleteSelection(), text.replace(/\r\n?/g, '\n').replace(/\n$/, '')));
+    E.edit(L.N('Paste'), () => O.insertPlain(E.deleteSelection(), text.replace(/\r\n?/g, '\n').replace(/\n$/, '')));
   };
-  /* internal drag & drop of text */
+  /* internal drag & drop of text: dragData is the text dragged from this page, until the drag ends (dropped
+     anywhere, or cancelled); a drop carries its mark, so a drop from elsewhere never moves it */
   let dragData = null;
+  const DRAG_MARK = 'application/x-quire-drag';
+  const dndOff = () => !!(L.app && L.app.opts && L.app.opts.dragDrop === false);
   function onDragStart(e) {
+    dragData = null;
     if (!E.sel || E.collapsed()) return;
+    if (dndOff()) { e.preventDefault(); return; }
     dragData = { range: E.range(), data: E.copyData() };
-    try { e.dataTransfer.setData('text/plain', dragData.data.text); e.dataTransfer.setData('text/html', dragData.data.html); e.dataTransfer.effectAllowed = 'copyMove'; } catch (err) { /* ignore */ }
+    if (!dragData.data) { dragData = null; return; }
+    try { e.dataTransfer.setData('text/plain', dragData.data.text); e.dataTransfer.setData('text/html', dragData.data.html); e.dataTransfer.setData(DRAG_MARK, '1'); e.dataTransfer.effectAllowed = 'copyMove'; } catch (err) { /* ignore */ }
+  }
+  document.addEventListener('dragend', () => { dragData = null; }, true);
+  /** move (Ctrl: copy) the text a…b to target, one undo step; the text moved is selected after, as in Word */
+  function moveRange(a, b, target, copy) {
+    const d = doc();
+    if (D.cmp(d, target, a) > 0 && D.cmp(d, target, b) < 0) return false;
+    const blocks = O.copyRange(a, b);
+    const one = D.info(d, a.p).cont === D.info(d, b.p).cont;
+    E.clearObjSel();
+    return E.edit(copy ? 'Drag and Drop' : L.N('Move'), () => {
+      let at = target;
+      if (!copy) {
+        if (D.cmp(d, target, b) >= 0 && !one) {
+          /* across a table: insert first, so the positions stay valid */
+          const end = O.insertBlocks(target, blocks);
+          O.deleteRange(a, b);
+          return end;
+        }
+        /* a drop later in the source's last paragraph is counted from that paragraph's end, which the removal doesn't
+           touch: the removal may shorten the paragraph and join it to the source's first, or (tracked) leave it whole */
+        const tail = D.cmp(d, target, b) >= 0 && target.p === b.p ? D.plen(b.p) - target.o : null;
+        O.deleteRange(a, b);
+        if (tail != null) { const p = D.info(d, b.p) ? b.p : a.p; at = D.pos(p, D.plen(p) - tail); }
+      }
+      return { a: at, f: O.insertBlocks(at, blocks) };
+    });
   }
   async function onDrop(e) {
     const files = Array.from((e.dataTransfer && e.dataTransfer.files) || []);
@@ -806,27 +943,11 @@
       return;
     }
     if (!target) return;
+    if (dragData && !Array.from(e.dataTransfer.types || []).includes(DRAG_MARK)) dragData = null;
     if (dragData) {
       const [a, b] = dragData.range;
-      const d = doc();
-      const inside = D.cmp(d, target, a) > 0 && D.cmp(d, target, b) < 0;
-      if (inside) { dragData = null; return; }
-      const copy = e.ctrlKey || e.altKey;
-      const blocks = dragData.data.blocks;
-      E.edit(copy ? 'Drag and Drop' : 'Move', () => {
-        /* insert first when dropping after the source, so positions stay valid */
-        const after = D.cmp(d, target, b) >= 0;
-        let end;
-        if (after) {
-          end = O.insertBlocks(target, blocks);
-          if (!copy) O.deleteRange(a, b);
-        } else {
-          if (!copy) O.deleteRange(a, b);
-          end = O.insertBlocks(target, blocks);
-        }
-        return end;
-      });
       dragData = null;
+      moveRange(a, b, target, e.ctrlKey || e.altKey);
       return;
     }
     const html = e.dataTransfer.getData('text/html'), text = e.dataTransfer.getData('text/plain');
@@ -837,21 +958,28 @@
 
   /* ---------- mouse ---------- */
   function onMouseDown(e) {
-    hideHandles();
-    if (e.button !== 0) return;
+    if (e.button !== 0 && e.button !== 2) return;
     const t = e.target;
-    /* floating objects & inline images */
+    /* the part of the page not being edited (the body while a header is, a header while the body is) takes no
+       caret; a double-click there switches (onDblClick) */
+    if (offLimits(t)) { e.preventDefault(); return; }
+    /* floating objects & inline images; a right-click selects one too (a selected one stays so), so the menu is its own */
     const obj = t.closest && t.closest('.img, .shp, .flt');
     if (obj && L.drawing && L.drawing.onObjectDown && L.drawing.onObjectDown(e, obj)) return;
     if (obj && obj.classList.contains('img') && obj.closest('.p')) {
       e.preventDefault();
+      if (e.button === 2 && E.objSel && E.objSel.el === obj) return;
       const pos = LY.domToPos(obj.parentNode, Array.prototype.indexOf.call(obj.parentNode.childNodes, obj));
-      if (pos) selectInlineObject(pos, obj);
+      if (pos) { selectInlineObject(pos, obj); if (e.button === 0) startObjectMove(e, pos); }
       return;
     }
-    /* header/footer double-click is handled in dblclick; a single click on a header in body mode just moves the caret */
-    E.objSel = null;
-    L.bus.emit('objsel', null);
+    if (e.button !== 0) return;
+    E.clearObjSel();
+    /* Drag-and-drop text editing off (Tools ▸ Options): a press inside the selection starts a new one there */
+    if (dndOff() && !e.shiftKey && E.sel && !E.collapsed() && document.caretRangeFromPoint) {
+      const r = document.caretRangeFromPoint(e.clientX, e.clientY);
+      if (r && LY.root.contains(r.startContainer)) window.getSelection().setBaseAndExtent(r.startContainer, r.startOffset, r.startContainer, r.startOffset);
+    }
     /* selection bar (left margin) */
     if (LY.view === 'print' || LY.view === 'normal') {
       const pg = t.closest && t.closest('.pg, .flow');
@@ -861,18 +989,18 @@
         if (e.clientX < br.left - 2) {
           e.preventDefault();
           LY.root.focus({ preventScroll: true });
-          const pos = posAtPoint(br.left + 2, e.clientY);
-          if (!pos) return;
-          if (e.ctrlKey) { E.selectAll(); return; }
-          if (e.detail >= 2) { E.selectPara(pos.p); return; }
-          selectLine(pos, e.shiftKey);
+          const line = lineAt(e.clientY);
+          if (!line) return;
+          if (e.ctrlKey || e.detail >= 3) { E.selectAll(); return; }
+          if (e.detail === 2) { E.selectPara(line[0].p); return; }
+          selectBar(e, line);
           return;
         }
       }
     }
     /* Ctrl+click selects a sentence */
     if (e.ctrlKey && !e.shiftKey && !(t.closest && t.closest('[data-link]'))) {
-      setTimeout(() => { if (E.sel) { const s = O.sentenceExtent(E.sel.f); E.setSel(s[0], s[1]); } }, 0);
+      setTimeout(() => { E.syncSel(); if (E.sel) { const s = O.sentenceExtent(E.sel.f); E.setSel(s[0], s[1]); } }, 0);
     }
   }
   function posAtPoint(x, y) {
@@ -882,19 +1010,42 @@
     return node ? LY.domToPos(node, off) : null;
   }
   E.posAtPoint = posAtPoint;
-  function selectLine(pos, extend) {
-    const caret = pos;
-    E.setSel(caret, caret);
+  /** [start, end] of the body's line at height y (the selection bar beside it), as the page lays it out */
+  function lineAt(y) {
+    const pg = LY.pages.find((x) => { const r = x.el.getBoundingClientRect(); return y >= r.top && y < r.bottom; }) || null;
+    const body = pg ? pg.el.querySelector('.pg-body') : LY.root.querySelector('.flow');
+    if (!body) return null;
+    const br = body.getBoundingClientRect();
+    const r = document.caretRangeFromPoint && document.caretRangeFromPoint(br.left + 2, L.clamp(y, br.top + 1, br.bottom - 1));
+    if (!r || !body.contains(r.startContainer)) return null;
     const s = window.getSelection();
+    settingDom++;
     try {
+      s.setBaseAndExtent(r.startContainer, r.startOffset, r.startContainer, r.startOffset);
       s.modify('move', 'backward', 'lineboundary');
-      s.modify('extend', 'forward', 'lineboundary');
-      const m = E.readDom();
-      if (m) {
-        if (extend && E.sel) E.setSel(E.sel.a, m.f); else { E.sel = m; E.selChanged(); }
-      }
-    } catch (err) { /* modify not supported */ }
+      const a = LY.domToPos(s.focusNode, s.focusOffset);
+      s.modify('move', 'forward', 'lineboundary');
+      const b = LY.domToPos(s.focusNode, s.focusOffset);
+      return a && b && a.p === b.p ? [a, b] : null;
+    } catch (err) { return null; } finally { setTimeout(() => { settingDom = Math.max(0, settingDom - 1); }, 0); }
   }
+  /** a press in the selection bar: whole lines, from the line pressed (with Shift, from the selection's start) to
+      the line at the pointer as it is dragged */
+  function selectBar(e, line) {
+    const from = e.shiftKey && E.sel ? E.sel.a : null;
+    const put = (cur) => {
+      if (from) E.setSel(from, D.cmp(doc(), cur[0], from) < 0 ? cur[0] : cur[1], { noScroll: true });
+      else if (D.cmp(doc(), cur[0], line[0]) < 0) E.setSel(line[1], cur[0], { noScroll: true });
+      else E.setSel(line[0], cur[1], { noScroll: true });
+    };
+    put(line);
+    L.ui.drag(e, { threshold: 0, move(ev) { const cur = lineAt(ev.clientY); if (cur) put(cur); }, up() { setTimeout(selDone, 0); } });
+  }
+  /** a hyperlink: a bookmark in this document, or (L.ui.linkDialog) its address to copy, never opened from here */
+  E.followLink = function (url) {
+    if (url.startsWith('#')) { if (L.app && L.app.gotoBookmark) L.app.gotoBookmark(url.slice(1)); }
+    else L.ui.linkDialog(url);
+  };
   function onClick(e) {
     const t = e.target;
     const control = t.closest && t.closest('[data-control]');
@@ -905,9 +1056,7 @@
     const ln = t.closest && t.closest('[data-link]');
     if (ln && (e.ctrlKey || e.metaKey || LY.view === 'reading' || E.readOnly)) {
       e.preventDefault();
-      const url = ln.dataset.link;
-      if (url.startsWith('#')) { if (L.app && L.app.gotoBookmark) L.app.gotoBookmark(url.slice(1)); }
-      else { const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.click(); }
+      E.followLink(ln.dataset.link);
       return;
     }
     const nr = t.closest && t.closest('.nref');
@@ -923,21 +1072,50 @@
     const t = e.target;
     const hf = t.closest && t.closest('.pg-hdr, .pg-ftr');
     if (hf && !LY.hfEdit && L.app && L.app.editHeaderFooter) { e.preventDefault(); L.app.editHeaderFooter(hf.dataset.kind, +hf.closest('.pg').dataset.pg, e); return; }
-    if (LY.hfEdit && t.closest && t.closest('.pg-body') && L.app && L.app.closeHeaderFooter) { e.preventDefault(); L.app.closeHeaderFooter(); return; }
+    if (LY.hfEdit && t.closest && t.closest('.pg-body') && L.app && L.app.closeHeaderFooter) { e.preventDefault(); L.app.closeHeaderFooter(false, e); return; }
+    /* the top or bottom margin of a page (an empty header or footer has no height): open it */
+    const pg = t.closest && t.closest('.pg');
+    if (pg && !LY.hfEdit && LY.view === 'print' && (t === pg || t.classList.contains('crop')) && L.app && L.app.editHeaderFooter) {
+      const b = (pg.querySelector('.pg-body') || pg).getBoundingClientRect();
+      if (e.clientY < b.top || e.clientY > b.bottom) { e.preventDefault(); L.app.editHeaderFooter(e.clientY < b.top ? 'hdr' : 'ftr', +pg.dataset.pg, e); return; }
+    }
     const nr = t.closest && t.closest('.nref');
     if (nr && L.app && L.app.gotoNote) { e.preventDefault(); L.app.gotoNote(nr.dataset.note); return; }
     const img = t.closest && t.closest('.img, .shp');
     if (img && L.app && L.app.formatObject) { e.preventDefault(); L.app.formatObject(); return; }
   }
+  /** an inline picture (or shape, chart) pressed and dragged: it moves into the text where it is let go (Ctrl: a
+      copy), a caret showing where; Esc puts it down where it was */
+  function startObjectMove(e, pos) {
+    let mark = null;
+    const caretAt = (ev) => { const r = document.caretRangeFromPoint && document.caretRangeFromPoint(ev.clientX, ev.clientY); return r && LY.root.contains(r.startContainer) && !(r.startContainer.nodeType === 1 && r.startContainer.closest('.pg-hdr, .pg-ftr')) ? r : null; };
+    const drop = () => { if (mark) { mark.remove(); mark = null; } };
+    L.ui.drag(e, {
+      move(ev) {
+        const r = caretAt(ev), box = r && (r.getClientRects()[0] || r.getBoundingClientRect());
+        if (!mark) { mark = document.createElement('div'); mark.className = 'drop-caret'; LY.scroller.appendChild(mark); }
+        if (!box || !box.height) { mark.style.display = 'none'; return; }
+        const sr = LY.scroller.getBoundingClientRect();
+        Object.assign(mark.style, { display: '', left: box.left - sr.left + LY.scroller.scrollLeft + 'px', top: box.top - sr.top + LY.scroller.scrollTop + 'px', height: box.height + 'px' });
+      },
+      up(ev, d) {
+        drop();
+        if (!d.moved) return;
+        const r = caretAt(ev), target = r && LY.domToPos(r.startContainer, r.startOffset);
+        if (!target || (target.p === pos.p && (target.o === pos.o || target.o === pos.o + 1))) return;
+        if (moveRange(D.pos(pos.p, pos.o), D.pos(pos.p, pos.o + 1), target, ev.ctrlKey)) {
+          const at = E.sel.a;
+          setTimeout(() => { if (L.app && L.app.selectItemAt) L.app.selectItemAt(at.p, at.o); }, 0);
+        }
+      },
+      cancel: drop,
+    });
+  }
+  E.startObjectMove = startObjectMove;
   /* inline object selection with resize handles */
   let handles = null;
   function selectInlineObject(pos, elObj) {
-    const p = pos.p;
-    const it = D.itemAfter(p, pos.o);
-    E.setSel(D.pos(p, pos.o), D.pos(p, pos.o + 1), { noScroll: true });
-    E.objSel = { p, o: pos.o, it, el: elObj, float: false };
-    showHandles(elObj);
-    L.bus.emit('objsel', E.objSel);
+    E.selectObject({ p: pos.p, o: pos.o, it: D.itemAfter(pos.p, pos.o), el: elObj, float: false });
   }
   function hideHandles() { if (handles) { handles.remove(); handles = null; } }
   E.hideHandles = hideHandles;
@@ -970,47 +1148,46 @@
     ev.preventDefault();
     ev.stopPropagation();
     const os = E.objSel;
-    if (!os || !os.it) return;
+    if (ev.button !== 0 || !os || !os.it) return;
     const z = LY.zoom;
     const it = os.it;
     const w0 = it.w || 72, h0 = it.h || 72;
-    const sx = ev.clientX, sy = ev.clientY;
     const corner = hname.length === 2;
     const ghost = document.createElement('div');
     ghost.className = 'resize-ghost';
-    box.appendChild(ghost);
     let nw = w0, nh = h0;
-    const mv = (e2) => {
-      const dx = (e2.clientX - sx) / z / D.PX, dy = (e2.clientY - sy) / z / D.PX;
-      nw = w0 + (hname.includes('e') ? dx : hname.includes('w') ? -dx : 0);
-      nh = h0 + (hname.includes('s') ? dy : hname.includes('n') ? -dy : 0);
-      if (corner && !e2.shiftKey) { const k = Math.max(nw / w0, nh / h0); nw = w0 * k; nh = h0 * k; }
-      nw = Math.max(4, nw); nh = Math.max(4, nh);
-      ghost.style.width = nw * D.PX * z + 'px';
-      ghost.style.height = nh * D.PX * z + 'px';
-      if (hname.includes('w')) ghost.style.left = (w0 - nw) * D.PX * z + 'px';
-      if (hname.includes('n')) ghost.style.top = (h0 - nh) * D.PX * z + 'px';
-    };
-    const up = () => {
-      window.removeEventListener('pointermove', mv);
-      window.removeEventListener('pointerup', up);
-      ghost.remove();
-      if (Math.abs(nw - w0) < 0.5 && Math.abs(nh - h0) < 0.5) return;
-      const pos = { p: os.p, o: os.o };
-      E.edit('Resize Picture', () => {
-        D.touch(pos.p);
-        const item = D.itemAfter(pos.p, pos.o);
-        if (item) { item.w = L.round(nw, 2); item.h = L.round(nh, 2); }
-        return { a: D.pos(pos.p, pos.o), f: D.pos(pos.p, pos.o + 1) };
-      });
-      setTimeout(() => {
-        const f = LY.fragFor(pos.p, pos.o);
-        const elx = f && f.querySelector(`[data-o="${pos.o}"]`);
-        if (elx) selectInlineObject(pos, elx);
-      }, 0);
-    };
-    window.addEventListener('pointermove', mv);
-    window.addEventListener('pointerup', up);
+    L.ui.drag(ev, {
+      move(e2, d) {
+        if (!ghost.parentNode) box.appendChild(ghost);
+        const dx = d.dx / z / D.PX, dy = d.dy / z / D.PX;
+        nw = w0 + (hname.includes('e') ? dx : hname.includes('w') ? -dx : 0);
+        nh = h0 + (hname.includes('s') ? dy : hname.includes('n') ? -dy : 0);
+        if (corner && !e2.shiftKey) { const k = Math.max(nw / w0, nh / h0); nw = w0 * k; nh = h0 * k; }
+        nw = Math.max(4, nw); nh = Math.max(4, nh);
+        ghost.style.width = nw * D.PX * z + 'px';
+        ghost.style.height = nh * D.PX * z + 'px';
+        if (hname.includes('w')) ghost.style.left = (w0 - nw) * D.PX * z + 'px';
+        if (hname.includes('n')) ghost.style.top = (h0 - nh) * D.PX * z + 'px';
+      },
+      up(e2, d) {
+        ghost.remove();
+        if (!d.moved || (Math.abs(nw - w0) < 0.5 && Math.abs(nh - h0) < 0.5)) return;
+        const pos = { p: os.p, o: os.o };
+        E.edit('Resize Picture', () => {
+          D.touch(pos.p);
+          const item = D.itemAfter(pos.p, pos.o);
+          if (item) { item.w = L.round(nw, 2); item.h = L.round(nh, 2); }
+          return { a: D.pos(pos.p, pos.o), f: D.pos(pos.p, pos.o + 1) };
+        });
+        setTimeout(() => {
+          const f = LY.fragFor(pos.p, pos.o);
+          const elx = f && f.querySelector(`[data-o="${pos.o}"]`);
+          if (elx) selectInlineObject(pos, elx);
+        }, 0);
+      },
+      cancel: () => ghost.remove(),
+      capture: LY.scroller,   /* the handles are drawn again with the selection */
+    });
   }
   E.selectInlineObject = selectInlineObject;
 })();

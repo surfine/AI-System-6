@@ -77,20 +77,18 @@
   }
 
   /* ================= AES (decryption) ================= */
-  const SBOX = new Uint8Array(256), INV = new Uint8Array(256);
-  (function () {
-    const rotl = (x, s) => ((x << s) | (x >> (8 - s))) & 0xff;
-    let p = 1, q = 1;
-    do {
-      p = p ^ ((p << 1) & 0xff) ^ (p & 0x80 ? 0x1b : 0);
-      q ^= q << 1; q ^= q << 2; q ^= q << 4; q &= 0xff; if (q & 0x80) q ^= 0x09;
-      SBOX[p] = (q ^ rotl(q, 1) ^ rotl(q, 2) ^ rotl(q, 3) ^ rotl(q, 4) ^ 0x63) & 0xff;
-    } while (p !== 1);
-    SBOX[0] = 0x63;
-    for (let i = 0; i < 256; i++) INV[SBOX[i]] = i;
-  })();
   const xtime = (b) => ((b << 1) ^ (b & 0x80 ? 0x1b : 0)) & 0xff;
   const gmul = (a, b) => { let r = 0; while (b) { if (b & 1) r ^= a; a = xtime(a); b >>= 1; } return r; };
+  /* the S-box from its definition (FIPS 197, 5.1.1): the multiplicative inverse in GF(2^8), b^254 (0 stays 0), then
+     the affine map b ^ (b <<< 1) ^ (b <<< 2) ^ (b <<< 3) ^ (b <<< 4) ^ 0x63 */
+  const SBOX = new Uint8Array(256), INV = new Uint8Array(256);
+  const rotl8 = (x, n) => ((x << n) | (x >> (8 - n))) & 0xff;
+  for (let b = 0; b < 256; b++) {
+    let inv = 1, sq = b;
+    for (let i = 1; i < 8; i++) { sq = gmul(sq, sq); inv = gmul(inv, sq); }   // b^2 · b^4 · … · b^128 = b^254
+    SBOX[b] = inv ^ rotl8(inv, 1) ^ rotl8(inv, 2) ^ rotl8(inv, 3) ^ rotl8(inv, 4) ^ 0x63;
+    INV[SBOX[b]] = b;
+  }
   const M9 = new Uint8Array(256), M11 = new Uint8Array(256), M13 = new Uint8Array(256), M14 = new Uint8Array(256);
   for (let i = 0; i < 256; i++) { M9[i] = gmul(i, 9); M11[i] = gmul(i, 11); M13[i] = gmul(i, 13); M14[i] = gmul(i, 14); }
   function expandKey(key) {

@@ -29,9 +29,12 @@ const STALE_OUTLINE = "## New Section\n\n";
 // a property of the global object -- so it cannot be called from out here. A
 // browser's script tag evaluates the module in the same scope as the rest of
 // the app, and running its real source through the VM does exactly that, which
-// is what makes the real command functions reachable.
+// is what makes the real command functions reachable. markdown-outline.js goes
+// first, the way config.js's loader orders them: the outline renderer calls
+// into that parse/serialise half.
 function bootRoute() {
   const vmw = createAppBootVm();
+  vmw.run(readFileSync(join(root, "apps/desktop/app/core/markdown-outline.js"), "utf8"));
   vmw.run(readFileSync(join(root, "apps/desktop/app/features/writing-flow.js"), "utf8"));
   return vmw;
 }

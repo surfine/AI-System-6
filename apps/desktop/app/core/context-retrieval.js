@@ -165,7 +165,8 @@ async function embedTexts(texts, signal, options = {}) {
   // A subscription CLI has no embeddings endpoint; the local and in-browser
   // embedders below answer instead.
   const useCloudEmbeddings = (Boolean(hostedEmbeddings)
-    || (isCloud && cloudConfig?.provider && cloudConfig.provider !== "deepseek")) && !(typeof isSubscriptionCloudProvider === "function" && isSubscriptionCloudProvider());
+    // Anthropic has no embeddings endpoint either.
+    || (isCloud && cloudConfig?.provider && cloudConfig.provider !== "deepseek" && cloudConfig.provider !== "anthropic")) && !(typeof isSubscriptionCloudProvider === "function" && isSubscriptionCloudProvider());
   const modelForCloudEmbeddings = String(cloudConfig?.model || "").trim();
   const localModel = String(embeddingModelInput?.value?.trim() || "");
   const localConnected = !!localLmStudioConnectionEnabled;
@@ -859,6 +860,15 @@ function isContextSourceLive(contextItem) {
   return true;
 }
 
+// ClioWorks N0: an Office document's linked text copy (its project source)
+// follows the document to the Trash and back. The work is in the lazy
+// native-binaries module, loaded only when an Office document is involved.
+function followOfficeDocuments(item, step) {
+  if ([item, ...(item?.files || [])].some((file) => file?.type === "office")) {
+    ensureNativeBinariesModule().then(() => AISystem6NativeBinaries[step](item)).catch(() => {});
+  }
+}
+
 function purgeContextForTrashedItems(items = []) {
   const records = Array.from(items || []).filter(Boolean);
   if (!records.length) return;
@@ -871,6 +881,8 @@ function purgeContextForTrashedItems(items = []) {
   records.forEach((record) => {
     const type = record.type || record.originalType || record.kind;
     const item = record.item || record.originalData || record;
+    // An Office document's linked text copy follows it to the Trash.
+    followOfficeDocuments(item, "dropTextCopies");
     if (type === "file") {
       if (record.id || item.id) fileIds.add(record.id || item.id);
       if (item.name || record.name) fileNames.add(item.name || record.name);
@@ -926,7 +938,7 @@ function clampNumber(value, min, max) {
   return Math.max(min, Math.min(value, max));
 }
 
-var CLOUD_MODEL_CONTEXT_LENGTHS = { "auto": 1000000, "deepseek-flash": 1000000, "deepseek-v4-pro": 1000000, "deepseek-v4-flash": 1000000 };
+var CLOUD_MODEL_CONTEXT_LENGTHS = { "auto": 1000000, "deepseek-flash": 1000000, "deepseek-v4-pro": 1000000, "deepseek-v4-flash": 1000000, "claude-opus-5-5": 1000000, "claude-sonnet-5-5": 1000000, "claude-haiku-5-5": 1000000, "claude-fable-5-1": 1000000 };
 
 function currentModelMaxContextTokens() {
   if (typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.model) {

@@ -2191,6 +2191,12 @@ body[data-selection-model="key-window"] .window[data-window]:not(.is-active) {
   display: none;
 }
 
+/* Agent mode needs this Mac's engine host, or on the public site the cloud
+   sandbox (data-agent-cloud, set from /api/capabilities). */
+:root[data-deployment-profile="public"]:not([data-agent-cloud="1"]) .clio-agent-mode {
+  display: none;
+}
+
 /* Before the file exists this reads "where this conversation will be saved".
    That is a status line, so it must not borrow the shared disabled-control
    hatch — a dotted edge says "provisional" in the same vocabulary the

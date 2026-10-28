@@ -25,7 +25,10 @@ import { parse } from "acorn";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const appRoot = join(root, "apps", "desktop", "app");
+// agent-cloud-providers.js is lazy: one provider for /api/agent-cloud/*,
+// loaded by ensureAgentCloudModule, so it adds nothing to the boot bundle.
 const allowed = new Set([
+  "app/core/agent-cloud-providers.js",
   "app/core/local-lmstudio-client.js",
   "app/core/public-access.js",
   "app/core/service-providers.js",

@@ -24,7 +24,8 @@ function getChatFileTitle() {
 }
 
 function formatChatFile(file) {
-  return file.messages.map((item) => `${item.role}: ${item.content}`).join("\n\n");
+  // An Office document has no messages (and no text body to show).
+  return (file.messages || []).map((item) => `${item.role}: ${item.content}`).join("\n\n");
 }
 
 function formatChatFileMarkdown(file) {
@@ -847,11 +848,8 @@ function importTranscriptionLanguage() {
 }
 
 const importPayloadMaxRawBytes = 60 * 1024 * 1024;
-const paddleOcrDetModelPath = "/assets/ocr/paddle/det/model.json";
-const paddleOcrRecModelPath = "/assets/ocr/paddle/rec/model.json";
 const pdfJsBrowserPath = "/app/vendor/pdf.min.js";
 const pdfJsWorkerPath = "/app/vendor/pdf.worker.min.js";
-let paddleOcrBrowserPromise = null;
 let pdfJsBrowserPromise = null;
 
 async function getDeploymentCapabilities() {
@@ -935,62 +933,6 @@ function throwIfAborted(signal) {
   if (signal?.aborted) throw fileDiskAbortError();
 }
 
-function canBrowserNormalizeImageFile(file) {
-  return /\.(webp|heic|heif)$/i.test(file.name || "");
-}
-
-function isImageImportFile(file) {
-  return /\.(bmp|jpe?g|png|webp|heic|heif)$/i.test(file.name || "")
-    || /^image\//i.test(file.type || "");
-}
-
-function isBrowserPaddleOcrFile(file) {
-  return isImageImportFile(file)
-    || /\.(pdf|pages|numbers|key)$/i.test(file.name || "")
-    || /^(application\/pdf|application\/vnd\.apple\.(numbers|keynote))$/i.test(file.type || "");
-}
-
-function loadImageElementFromFile(file) {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const image = new Image();
-    image.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(image);
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("Browser could not decode this image."));
-    };
-    image.src = url;
-  });
-}
-
-async function convertImageFileToPngArrayBuffer(file) {
-  const image = await loadImageElementFromFile(file);
-  const width = image.naturalWidth || image.width;
-  const height = image.naturalHeight || image.height;
-  if (!width || !height || width * height > 50000000) {
-    throw new Error("Image dimensions are too large for browser conversion.");
-  }
-
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const context = canvas.getContext("2d");
-  context.fillStyle = "#ffffff";
-  context.fillRect(0, 0, width, height);
-  context.drawImage(image, 0, 0);
-
-  const blob = await new Promise((resolve, reject) => {
-    canvas.toBlob((result) => {
-      if (result) resolve(result);
-      else reject(new Error("Browser image conversion failed."));
-    }, "image/png");
-  });
-  return blob.arrayBuffer();
-}
-
 // Browser-vendor scripts (PaddleOCR, PDF.js) load through their own small
 // loader on purpose: they are node_modules copies served at app/vendor/*
 // URLs, so they must NOT go through the shared system lazy loader (which adds
@@ -1022,19 +964,15 @@ function loadBrowserVendorScriptOnce(src) {
   });
 }
 
-async function getBrowserPaddleOcr() {
-  if (!paddleOcrBrowserPromise) {
-    paddleOcrBrowserPromise = loadBrowserVendorScriptOnce("/app/vendor/paddle-ocr.js")
-      .then(async () => {
-        const ocr = window.paddlejs?.ocr;
-        if (!ocr || typeof ocr.init !== "function" || typeof ocr.recognize !== "function") {
-          throw new Error("PaddleOCR Tiny did not expose its browser OCR API.");
-        }
-        await ocr.init(paddleOcrDetModelPath, paddleOcrRecModelPath);
-        return ocr;
-      });
-  }
-  return paddleOcrBrowserPromise;
+// wasm decoders, packed CJK cmaps and standard fonts: fetched one file at a time.
+function pdfJsDocumentOptions(data) {
+  return {
+    data,
+    wasmUrl: "/app/vendor/pdfjs-wasm/",
+    cMapUrl: "/app/vendor/pdfjs-cmaps/",
+    cMapPacked: true,
+    standardFontDataUrl: "/app/vendor/pdfjs-standard-fonts/",
+  };
 }
 
 async function getBrowserPdfJs() {
@@ -1051,165 +989,6 @@ async function getBrowserPdfJs() {
   return pdfJsBrowserPromise;
 }
 
-async function extractImageTextWithBrowserPaddle(file, options = {}) {
-  throwIfAborted(options.signal);
-  const image = await loadImageElementFromFile(file);
-  throwIfAborted(options.signal);
-  const ocr = await getBrowserPaddleOcr();
-  throwIfAborted(options.signal);
-  const result = await ocr.recognize(image);
-  const lines = Array.isArray(result?.text) ? result.text : [result?.text || ""];
-  const text = lines.map((line) => String(line || "").trim()).filter(Boolean).join("\n").trim();
-  if (!text) throw new Error("PaddleOCR Tiny did not return readable text.");
-  return text;
-}
-
-function base64ToBlobUrl(base64, mimeType = "image/png") {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index += 1) {
-    bytes[index] = binary.charCodeAt(index);
-  }
-  return URL.createObjectURL(new Blob([bytes], { type: mimeType }));
-}
-
-async function loadImageElementFromBlobUrl(url) {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("Browser could not decode an OCR page image."));
-    image.src = url;
-  });
-}
-
-async function recognizePaddleImageElement(image, options = {}) {
-  throwIfAborted(options.signal);
-  const ocr = await getBrowserPaddleOcr();
-  throwIfAborted(options.signal);
-  const result = await ocr.recognize(image);
-  const lines = Array.isArray(result?.text) ? result.text : [result?.text || ""];
-  return lines.map((line) => String(line || "").trim()).filter(Boolean).join("\n").trim();
-}
-
-async function extractPdfTextInBrowser(file, options = {}) {
-  const signal = options.signal;
-  throwIfAborted(signal);
-  if ((file.size || 0) > 20 * 1024 * 1024) {
-    throw new Error(t("public_import_pdf_too_large"));
-  }
-
-  const pdfjs = await getBrowserPdfJs();
-  const data = new Uint8Array(await file.arrayBuffer());
-  throwIfAborted(signal);
-  // pdfjs 6 decodes JBIG2 / JPEG 2000 / ICC through wasm; point it at the
-  // served copies so image-heavy scans keep full fidelity.
-  const loadingTask = pdfjs.getDocument({ data, wasmUrl: "/app/vendor/pdfjs-wasm/" });
-  const pdfDocument = await loadingTask.promise;
-  const pageLimit = Math.min(pdfDocument.numPages, 20);
-  const chunks = [];
-
-  try {
-    for (let pageNumber = 1; pageNumber <= pageLimit; pageNumber += 1) {
-      throwIfAborted(signal);
-      const page = await pdfDocument.getPage(pageNumber);
-      try {
-        const textContent = await page.getTextContent();
-        const embeddedText = (textContent.items || [])
-          .map((item) => String(item?.str || "").trim())
-          .filter(Boolean)
-          .join(" ")
-          .trim();
-        if (embeddedText) {
-          chunks.push(`${t("public_import_page", pageNumber)}\n${embeddedText}`);
-          continue;
-        }
-
-        const baseViewport = page.getViewport({ scale: 1 });
-        const pixelBudget = 6_000_000;
-        const scale = Math.min(
-          1.75,
-          Math.sqrt(pixelBudget / Math.max(1, baseViewport.width * baseViewport.height))
-        );
-        const viewport = page.getViewport({ scale });
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.max(1, Math.ceil(viewport.width));
-        canvas.height = Math.max(1, Math.ceil(viewport.height));
-        const context = canvas.getContext("2d", { alpha: false });
-        await page.render({
-          canvasContext: context,
-          viewport,
-          background: "rgb(255,255,255)",
-        }).promise;
-        throwIfAborted(signal);
-        const text = await recognizePaddleImageElement(canvas, { signal });
-        canvas.width = 1;
-        canvas.height = 1;
-        if (text) chunks.push(`${t("public_import_page", pageNumber)}\n${text}`);
-      } finally {
-        page.cleanup();
-      }
-    }
-  } finally {
-    await pdfDocument.destroy();
-  }
-
-  if (pdfDocument.numPages > pageLimit) {
-    chunks.push(t("public_import_pdf_truncated", pageLimit, pdfDocument.numPages));
-  }
-  const text = chunks.join("\n\n").trim();
-  if (!text) throw new Error(t("public_import_pdf_empty"));
-  return text;
-}
-
-async function extractRenderedPagesWithBrowserPaddle(file, options = {}) {
-  const signal = options.signal;
-  throwIfAborted(signal);
-  const fileBuffer = await file.arrayBuffer();
-  throwIfAborted(signal);
-  const response = await window.AISystem6Capabilities.requestService("artifact.import.ocr", {
-    init: {
-      method: "POST",
-      signal,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: file.name,
-        type: file.type,
-        data: arrayBufferToBase64(fileBuffer),
-      }),
-    },
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.detail || data.error || response.statusText);
-  }
-  if (data.text && !data.pages?.length) return data.text;
-
-  const chunks = [];
-  for (const page of data.pages || []) {
-    throwIfAborted(signal);
-    const url = base64ToBlobUrl(page.data, page.mimeType || "image/png");
-    try {
-      const image = await loadImageElementFromBlobUrl(url);
-      const text = await recognizePaddleImageElement(image, { signal });
-      // ClioWorks v4.3 (I43-01/Q04): an iWork bundle without readable text
-      // sends its single best PREVIEW image — one rendering of the first page,
-      // not page 1 of a one-page document — so it is labelled for what it is.
-      const pageLabel = page.kind === "preview"
-        ? (currentLanguage === "zh" ? "预览图" : "Preview image")
-        : t("public_import_page", page.pageNumber || chunks.length + 1);
-      if (text) chunks.push(`${pageLabel}\n${text}`);
-    } finally {
-      URL.revokeObjectURL(url);
-    }
-  }
-  if (data.truncated) {
-    chunks.push("PaddleOCR 已在可渲染页数限制后停止。");
-  }
-  const text = chunks.join("\n\n").trim();
-  if (!text) throw new Error("PaddleOCR Tiny did not return readable text.");
-  return text;
-}
-
 async function buildImportFilePayload(file, options = {}) {
   const signal = options.signal;
   throwIfAborted(signal);
@@ -1218,10 +997,14 @@ async function buildImportFilePayload(file, options = {}) {
     throw new Error("This file is too large for direct import. Split it or import a smaller file.");
   }
 
-  if (canBrowserNormalizeImageFile(file)) {
+  // The canvas normalizer rides the lazy import-extractors module with the
+  // OCR readers (app/features/file-import-extractors.js); ensure it before
+  // reading its gates.
+  await ensureFileImportExtractors();
+  if (window.AISystem6FileImportExtractors.canBrowserNormalizeImageFile(file)) {
     try {
       throwIfAborted(signal);
-      const pngBuffer = await convertImageFileToPngArrayBuffer(file);
+      const pngBuffer = await window.AISystem6FileImportExtractors.convertImageFileToPngArrayBuffer(file);
       throwIfAborted(signal);
       return {
         name: file.name,
@@ -1363,17 +1146,20 @@ async function extractFileText(file, options = {}) {
   }
 
   if (capabilities.public_deployment && /\.pdf$/i.test(file.name || "")) {
-    const text = await extractPdfTextInBrowser(file, { signal });
+    await ensureFileImportExtractors();
+    const text = await window.AISystem6FileImportExtractors.extractPdfTextInBrowser(file, { signal });
     return { text, subtitleTranslations: null, videoTranscript: null };
   }
 
   const browserPaddleRequired =
     capabilities.public_deployment || ocrEngineInput?.value === "paddle";
-  if (browserPaddleRequired && isBrowserPaddleOcrFile(file)) {
-    if (isImageImportFile(file)) {
+  if (browserPaddleRequired) await ensureFileImportExtractors();
+  const extractors = window.AISystem6FileImportExtractors;
+  if (browserPaddleRequired && extractors.isBrowserPaddleOcrFile(file)) {
+    if (extractors.isImageImportFile(file)) {
       let text = "";
       try {
-        text = await extractImageTextWithBrowserPaddle(file, { signal });
+        text = await extractors.extractImageTextWithBrowserPaddle(file, { signal });
       } catch (paddleError) {
         throwIfAborted(signal);
         if (!capabilities.features?.cloud_vision) throw paddleError;
@@ -1385,7 +1171,7 @@ async function extractFileText(file, options = {}) {
     }
     const text = capabilities.public_deployment
       ? (() => { throw new Error(t("public_import_unsupported", file.name)); })()
-      : await extractRenderedPagesWithBrowserPaddle(file, { signal });
+      : await extractors.extractRenderedPagesWithBrowserPaddle(file, { signal });
     return { text, subtitleTranslations: null, videoTranscript: null };
   }
 
@@ -1639,6 +1425,7 @@ async function commitImportedProjectAtomically(imported) {
       chatFilesStoreName,
       referenceStoreName,
       imageAttachmentsStoreName,
+      "nativeDocuments",
       keyvalStoreName,
     ];
     await window.AISystem6StorageTransactions.runTransaction(
@@ -1657,6 +1444,8 @@ async function commitImportedProjectAtomically(imported) {
         // them: a disk that restored its figures but not its pictures would
         // show raw `![](aisystem6-image:...)` markdown and look corrupt.
         putAll(imageAttachmentsStoreName, imported.imageAttachments || []);
+        // An Office document's bytes land with the item that names them.
+        putAll("nativeDocuments", imported.nativeDocuments || []);
         const trashStore = tx.objectStore(trashStoreName);
         imported.trash.forEach((item) => {
           writes.push(idbRequest(trashStore.put(item, item._storageId)));

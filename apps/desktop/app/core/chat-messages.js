@@ -1030,10 +1030,16 @@ function renderClioTalkFileBar() {
   }
   button.hidden = false;
   button.disabled = !file;
-  name.textContent = file?.name || (project ? getPendingClioTalkFileName() : t("clio_chat_file_no_project"));
+  // Before the first message there is no file to name: the bar says what the
+  // first message will do and carries no invented "Chat 08:10" path. The
+  // pending name is minted when the conversation actually starts, so its time
+  // is the time of the save rather than the time the window opened.
+  const started = Array.isArray(conversation) && conversation.length > 0;
+  name.textContent = file?.name
+    || (project ? (started ? getPendingClioTalkFileName() : t("clio_chat_file_waiting")) : t("clio_chat_file_no_project"));
   path.textContent = file
     ? clioTalkProjectObjectPath(file)
-    : (project ? t("clio_chat_file_path_pending", clioTalkPendingObjectPath()) : "");
+    : (project && started ? t("clio_chat_file_path_pending", clioTalkPendingObjectPath()) : "");
   button.title = path.textContent || name.textContent;
 }
 
@@ -1056,7 +1062,10 @@ function syncClioTalkSendButton() {
   }
   const isBusy = !!activeAbortController || form.classList.contains("is-generating");
   const canResolve = window.AISystem6ClioProvider?.canAttempt?.() === true;
-  sendButton.disabled = (!clioTalkModelReady() && !canResolve) || isBusy || !String(promptInput?.value || "").trim();
+  // Agent mode (代理) runs on the engine host, not on ClioTalk's own model.
+  // Also true while boot has restored 代理 and the lazy module is not loaded.
+  const agent = clioTalkAgentModeActive();
+  sendButton.disabled = (!clioTalkModelReady() && !canResolve && !agent) || isBusy || !String(promptInput?.value || "").trim();
 }
 
 function setComposerSubmitMode(isBusy) {
@@ -1529,6 +1538,12 @@ function formatQuickDraftForClioTalk() {
       : "Quick Draft has no thesis, sources, or draft yet. Help the user state their own thesis first; do not generate the stance for them.");
 }
 
+// A lazy app can register itself as a retrieval anchor (prepare, grounding,
+// context, label, reveal); 潮汐信笺 does (app/core/aaron-blog-grounding.js).
+function anchorHook(id = sideAskAnchorAppId) {
+  return sideAskEnabled && !isMultiFinderMode() ? window.AISystem6SideAskAnchors?.[id] : null;
+}
+
 function clioTalkSideAskGroundingSource() {
   if (!sideAskEnabled || isMultiFinderMode()) return null;
   const anchor = sideAskAnchorAppId || "teachText";
@@ -1604,8 +1619,10 @@ function captureClioTalkGroundingSnapshot(options = {}) {
       && window.AISystem6EndfieldGrounding?.snapshot?.().grounding) || null;
   const endfieldSourceGrounding = (endfieldSourceEnabled
       && window.AISystem6EndfieldGrounding?.snapshot?.().grounding) || null;
+  const anchorGrounding = anchorHook()?.grounding();
   const sources = uniqueClioTalkGroundingSources([
     sideAskSource,
+    ...(anchorGrounding?.sources || []),
     ...(endfieldGrounding?.sources || []),
     ...(endfieldSourceGrounding?.sources || []),
     ...clioTalkAttachedClipSources(),
@@ -1645,7 +1662,7 @@ function captureClioTalkGroundingSnapshot(options = {}) {
     missing.push(t("clio_grounding_reading_capped"));
   }
   return {
-    sources: sources.slice(0, 4),
+    sources: sources.slice(0, anchorGrounding ? 24 : 4),
     sourceCount: sources.length,
     missing,
     contextPanelAvailable: !!(sources.length || lastRetrievedContextItems?.length || lastContextBudget),
@@ -1718,6 +1735,8 @@ function appendMessageGrounding(item, grounding) {
 // Finder; anything else falls back to the context panel, which is where the
 // retrieval detail actually lives.
 function revealClioTalkGroundingSource(source) {
+  const anchor = window.AISystem6SideAskAnchors?.[source?.kind];
+  if (anchor) return void anchor.reveal(source);
   if (source?.kind === "endfield") {
     if (typeof openWindow === "function") openWindow("endfieldTerminal");
     const terminalWin = typeof getWindow === "function"
@@ -3506,6 +3525,8 @@ function formatSideAskAnchorContext() {
     ].filter(Boolean).join("\n\n");
     return section(t("image_prompt_studio_label"), content, 12000);
   }
+  const hook = anchorHook(anchor);
+  if (hook) return section(hook.label(), hook.context(currentLanguage), 16000);
   if (anchor === "endfieldTerminal") {
     const adapter = window.AISystem6EndfieldGrounding;
     const fresh = adapter?.snapshot?.();
@@ -5996,6 +6017,7 @@ async function submitUserTextCore(userText, options = {}) {
         }).catch(() => {});
       }
     }
+    await anchorHook()?.prepare(userText, requestAbortController.signal);
     if (useWebSearch && !hasClioImages) {
       updatePendingMessage(pendingMessage, 1, t("clio_web_search_running"));
       const webResult = await runClioTalkWebSearch(userText, requestAbortController.signal, {

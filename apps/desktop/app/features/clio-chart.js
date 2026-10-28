@@ -15,6 +15,9 @@ window.AISystem6ClioChartLoaded = true;
 // the registration is skipped there instead of throwing at load.
 const CLIO_CHART_MENUS = typeof menu === "function" && typeof editWithSelection !== "undefined" ? [
   menu("file", "menu_file", [
+    // N4: a new Office document while ClioChart is in front starts as a blank
+    // workbook; 存为文具… (shown once one is mounted) marks it a stationery pad.
+    menuItem("new-office-document", "office_new_blank", "new-office-document"),
     submenu("clio_chart_new_from_template", [
       menuItem("clio-chart-new-cpu-gpu", "clio_chart_template_cpu_gpu"),
       menuItem("clio-chart-new-gaming", "clio_chart_template_gaming"),
@@ -32,15 +35,43 @@ const CLIO_CHART_MENUS = typeof menu === "function" && typeof editWithSelection 
     // A mounted workbook (clio-chart-workbook.js) lists its wired commands here;
     // the rows are hidden otherwise and greyed with a reason when unavailable.
     menuItem("clio-chart-workbook-save", "clio_chart_workbook_cmd_save", "clio-chart-workbook-save", { menuCondition: "cwk-on" }),
+    menuItem("clio-chart-workbook-save-as", "clioworks_save_as", "clio-chart-workbook-save-as", { menuCondition: "cwk-on" }),
+    menuItem("office-save-as-stationery", "office_save_as_stationery", "", { menuCondition: "cwk-on" }),
+    // N15b: CSV in and out. 导入 makes a NEW .xlsx on the Project Hard Disk,
+    // so the row answers for a mounted project even while no workbook is open;
+    // 导出 is the mounted workbook's own command and shows with the others.
+    menuItem("clio-chart-workbook-import-csv", "clio_chart_workbook_cmd_import_csv", "clio-chart-workbook-import-csv"),
+    menuItem("clio-chart-workbook-export-csv", "clio_chart_workbook_cmd_export_csv", "clio-chart-workbook-export-csv", { menuCondition: "cwk-on" }),
     menuItem("clio-chart-workbook-revert", "clio_chart_workbook_cmd_revert", "", { menuCondition: "cwk-revert" }),
     menuItem("close-active-window", "close", "close-window"),
   ]),
   menu("edit", "menu_edit", [
     ...editWithSelection,
+    // N3: the shared 查找 / 替换 windoid (features/clioworks-find.js) while a
+    // workbook is mounted; the rows are hidden otherwise and greyed with a
+    // reason when the workbook's own gate refuses them.
+    menuItem("clio-chart-workbook-find", "clioworks_find_replace_menu", "clio-chart-workbook-find", { menuCondition: "cwk-on" }),
+    menuItem("clio-chart-workbook-find-next", "find_next", "clio-chart-workbook-find-next", { menuCondition: "cwk-on" }),
     menuItem("clio-chart-workbook-comment", "clio_chart_workbook_cmd_add_comment", "clio-chart-workbook-comment", { menuCondition: "cwk-comment" }),
   ]),
   menu("view", "menu_view", [
     menuItem("clio-chart-workbook-mode", "clio_chart_workbook_mode_full", "clio-chart-workbook-mode"),
+  ], { menuCondition: "cwk-on" }),
+  // The mounted workbook's own data commands (N5b, clio-chart-workbook-tools.js):
+  // 制图 turns the selection into a chart, 粘贴函数 lists what the vendored
+  // formula engine really implements, the conversions rewrite one column or
+  // range as one named undo step.
+  menu("data", "menu_data", [
+    menuItem("clio-chart-workbook-chart", "clio_chart_workbook_cmd_chart", "clio-chart-workbook-chart"),
+    menuItem("clio-chart-workbook-paste-function", "clio_chart_workbook_cmd_paste_function", "clio-chart-workbook-paste-function"),
+    menuSeparator,
+    submenu("clio_chart_workbook_menu_convert", [
+      menuItem("clio-chart-workbook-convert-text-number", "clio_chart_workbook_cmd_convert_text_number", "clio-chart-workbook-convert-text-number"),
+      menuItem("clio-chart-workbook-convert-text-date", "clio_chart_workbook_cmd_convert_text_date", "clio-chart-workbook-convert-text-date"),
+      menuItem("clio-chart-workbook-convert-number-text", "clio_chart_workbook_cmd_convert_number_text", "clio-chart-workbook-convert-number-text"),
+    ]),
+    menuSeparator,
+    menuItem("clio-chart-workbook-chart-delete", "clio_chart_workbook_cmd_delete_chart", "clio-chart-workbook-chart-delete"),
   ], { menuCondition: "cwk-on" }),
   menu("chart", "menu_chart", [
     // One matrix, six projections, one of them showing. The row for the

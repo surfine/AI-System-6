@@ -402,7 +402,16 @@ function extractPagesStorageArchiveText(buffer) {
   return cleanPagesIwaText(text);
 }
 
-function extractPagesIwaText(entries, { budget = createIwaDecodeBudget(), report = null } = {}) {
+/**
+ * The readable paragraph chunks of a Pages document, in storage order. Each
+ * chunk is one storage archive's paragraphs (already cleaned); the N9 copy
+ * path turns each chunk into a document paragraph, so the chunk list — not the
+ * joined text — is the faithful unit here.
+ * @param {Map<string, Buffer>} entries
+ * @param {{ budget?: { remaining: number }, report?: object }} [options]
+ * @returns {string[]}
+ */
+function extractPagesIwaChunks(entries, { budget = createIwaDecodeBudget(), report = null } = {}) {
   const store = parseIwaArchive(entries, { budget, report });
   const chunks = [];
   let sawStorageArchive = false;
@@ -425,8 +434,12 @@ function extractPagesIwaText(entries, { budget = createIwaDecodeBudget(), report
     if (text) chunks.push(text);
   }
 
-  if (!sawStorageArchive) return "";
-  return cleanPagesIwaText(chunks.join("\n\n"));
+  return sawStorageArchive ? chunks : [];
+}
+
+function extractPagesIwaText(entries, { budget = createIwaDecodeBudget(), report = null } = {}) {
+  const chunks = extractPagesIwaChunks(entries, { budget, report });
+  return chunks.length ? cleanPagesIwaText(chunks.join("\n\n")) : "";
 }
 
 function extractPagesXmlText(entries) {
@@ -462,6 +475,41 @@ function previewImages(entries) {
 
 function iworkPreviewPdf(entries) {
   return entries.get("QuickLook/Preview.pdf") || entries.get("QuickLook/Thumbnail.pdf") || entries.get("preview.pdf");
+}
+
+/** Which iWork application a file claims to be, by extension or MIME type.
+ * @param {string} name
+ * @param {string} [mimeType]
+ * @returns {"pages" | "numbers" | "keynote" | ""}
+ */
+function iworkKindForName(name, mimeType = "") {
+  const lower = String(name || "").toLowerCase();
+  if (lower.endsWith(".pages")) return "pages";
+  if (lower.endsWith(".numbers")) return "numbers";
+  if (lower.endsWith(".key")) return "keynote";
+  const type = String(mimeType || "").toLowerCase();
+  if (type === "application/vnd.apple.pages") return "pages";
+  if (type === "application/vnd.apple.numbers") return "numbers";
+  if (type === "application/vnd.apple.keynote") return "keynote";
+  return "";
+}
+
+/**
+ * The iWork bundle's own QuickLook preview PDF — the pages Apple's QuickLook
+ * drew of the document. N9 原页阅读 serves exactly these bytes; nothing is
+ * rendered here. Null when the bundle shipped no preview PDF.
+ * @param {Buffer} buffer an iWork package (a ZIP)
+ * @returns {Buffer | null}
+ */
+function extractIworkPreviewPdf(buffer) {
+  let entries;
+  try {
+    entries = readZipEntries(buffer);
+  } catch {
+    return null;
+  }
+  const pdf = iworkPreviewPdf(entries);
+  return pdf?.length ? pdf : null;
 }
 
 /**
@@ -911,7 +959,16 @@ function extractNumbersTableRows(records, tableRecord) {
   };
 }
 
-function extractNumbersIwaText(entries, { budget = createIwaDecodeBudget(), report = null } = {}) {
+/**
+ * Every readable table of a Numbers document as structure: the cleaned table
+ * name and its rows of cleaned cell strings. The same gates as the text
+ * extractor (a table with any readable cell is a table; an unnamed one-cell
+ * table is noise) so the text form and the N9 copy form never disagree.
+ * @param {Map<string, Buffer>} entries
+ * @param {{ budget?: { remaining: number }, report?: object }} [options]
+ * @returns {{ name: string, rows: string[][] }[]}
+ */
+function extractNumbersIwaTables(entries, { budget = createIwaDecodeBudget(), report = null } = {}) {
   const store = parseIwaArchive(entries, { budget, report });
   const tables = [];
 
@@ -935,15 +992,26 @@ function extractNumbersIwaText(entries, { budget = createIwaDecodeBudget(), repo
     const filledCells = rows.reduce((sum, row) => sum + row.filter(Boolean).length, 0);
     if (!table.name && filledCells < 2) continue;
 
-    const title = table.name || `Table ${tables.length + 1}`;
-    const lines = rows
-      .map((row) => row.map(formatNumbersCellValue).join("\t").trimEnd())
-      .filter((line) => line.trim());
-    const text = cleanImportedText(`# ${title}\n${lines.join("\n")}`);
-    if (text) tables.push(text);
+    tables.push({ name: cleanNumbersCellValue(table.name), rows });
   }
 
-  return tables.length ? cleanImportedText(tables.join("\n\n")) : "";
+  return tables;
+}
+
+function extractNumbersIwaText(entries, { budget = createIwaDecodeBudget(), report = null } = {}) {
+  const tables = extractNumbersIwaTables(entries, { budget, report });
+
+  const texts = tables
+    .map((table, index) => {
+      const title = table.name || `Table ${index + 1}`;
+      const lines = table.rows
+        .map((row) => row.map(formatNumbersCellValue).join("\t").trimEnd())
+        .filter((line) => line.trim());
+      return cleanImportedText(`# ${title}\n${lines.join("\n")}`);
+    })
+    .filter((text) => text);
+
+  return texts.length ? cleanImportedText(texts.join("\n\n")) : "";
 }
 
 async function extractNumbersText(buffer, options = {}) {
@@ -964,11 +1032,19 @@ async function extractNumbersText(buffer, options = {}) {
   throw new Error("Numbers files need readable tables or a preview image. Export to XLSX or PDF if this file cannot be read.");
 }
 
-function extractKeynoteIwaText(entries, { budget = createIwaDecodeBudget(), report = null } = {}) {
+/**
+ * One text-parts array per slide file, in slide order. A slide with no
+ * readable object is still a slide (an empty parts array), so the N9 copy
+ * path can keep the deck's page count instead of collapsing it.
+ * @param {Map<string, Buffer>} entries
+ * @param {{ budget?: { remaining: number }, report?: object }} [options]
+ * @returns {string[][]}
+ */
+function extractKeynoteIwaSlides(entries, { budget = createIwaDecodeBudget(), report = null } = {}) {
   const slideNames = Array.from(entries.keys())
     .filter((name) => /^Index\/Slide(?:-\d+)?\.iwa$/i.test(name))
     .filter((name) => !/^Index\/TemplateSlide/i.test(name));
-  if (!slideNames.length) return "";
+  if (!slideNames.length) return [];
 
   const slideOrder = new Map(slideNames.map((name, index) => [name, index]));
   const slides = slideNames.map(() => []);
@@ -1000,6 +1076,12 @@ function extractKeynoteIwaText(entries, { budget = createIwaDecodeBudget(), repo
     text = cleanPagesIwaText(text);
     if (text) slides[slideIndex].push(text);
   }
+
+  return slides;
+}
+
+function extractKeynoteIwaText(entries, { budget = createIwaDecodeBudget(), report = null } = {}) {
+  const slides = extractKeynoteIwaSlides(entries, { budget, report });
 
   const chunks = slides
     .map((parts, index) => {
@@ -1035,5 +1117,10 @@ module.exports = {
   extractPagesIwaText,
   extractNumbersIwaText,
   extractKeynoteIwaText,
+  extractPagesIwaChunks,
+  extractNumbersIwaTables,
+  extractKeynoteIwaSlides,
+  extractIworkPreviewPdf,
+  iworkKindForName,
   renderIworkOcrImages,
 };

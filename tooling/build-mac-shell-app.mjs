@@ -17,7 +17,9 @@ const appDisplayName = process.env.AI_SYSTEM6_APP_DISPLAY_NAME || "AI System 6 B
 const appName = `${appDisplayName}.app`;
 const legacyAppNames = ["AI System 6 Shell.app"];
 const distDir = join(repoRoot, "dist");
-const appDir = join(distDir, appName);
+// AI_SYSTEM6_APP_OUTPUT_DIR lets a second build line (the Intel/Monterey
+// legacy app) write its bundle without replacing the one in dist/.
+const appDir = join(process.env.AI_SYSTEM6_APP_OUTPUT_DIR ? resolve(repoRoot, process.env.AI_SYSTEM6_APP_OUTPUT_DIR) : distDir, appName);
 const contentsDir = join(appDir, "Contents");
 const macOsDir = join(contentsDir, "MacOS");
 const resourcesDir = join(contentsDir, "Resources");
@@ -147,7 +149,8 @@ function embedBackDeployedSwiftRuntime() {
     throw new Error(`Missing back-deployed Swift concurrency runtime: ${backDeploymentConcurrency}`);
   }
   copyFileSync(backDeploymentConcurrency, swiftConcurrency);
-  execFileSync("/usr/bin/lipo", [swiftConcurrency, "-verify_arch", "arm64"], { stdio: "inherit" });
+  const shellArch = macosTargetTriple.split("-")[0] || process.arch.replace("x64", "x86_64");
+  execFileSync("/usr/bin/lipo", [swiftConcurrency, "-verify_arch", shellArch], { stdio: "inherit" });
 
   execFileSync(
     "/usr/bin/install_name_tool",

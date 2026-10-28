@@ -144,10 +144,13 @@ export const lazyRuntimePaths = [
   "app/vendor/stream-markdown-parser.global.js",
   "app/features/aaron-blog.js",
   "app/features/project-backup-export-data.js",
+  "app/features/file-import-extractors.js",
   "app/core/storage-fingerprint.js",
   "app/core/tinyjs-shell.js",
   "app/features/clio-stage-audit.js",
   "app/features/built-in-model-door.js",
+  "app/core/agent-cloud-providers.js",
+  "app/features/cliotalk-agent-cloud.js",
   "app/vendor/unified-spec/contracts-install.js",
   "app/vendor/unified-spec/cache-policy-install.js",
   "app/core/chat-compaction.js",
@@ -174,8 +177,53 @@ export const lazyRuntimePaths = [
   "app/features/clio-chart-context.js",
   "app/features/clio-chart-comments.js",
   "app/features/clio-chart-workbook.js",
+  // N5b: 制图 / 粘贴函数 / 列类型转换 — the model half is vm-testable, the
+  // dialogs and the 1-bit chart overlay only exist once a command asks for them.
+  "app/features/clio-chart-workbook-tools.js",
   "app/features/clio-stage-native.js",
   "app/features/clio-write.js",
+  // N13a: the 「修订」 review side path — the ported engine and the windoid ride
+  // config.js's ensureClioWriteReviewModule (one loader, the ClioWrite sheet).
+  "app/vendor/clioworks-v3/quire-review.js",
+  "app/features/clio-write-review.js",
+  // 比较→修订: the compare windoid rides the same review loader, with the
+  // word-diff core it shares (word-diff.js is listed further down with its
+  // other loaders; a path may appear once per list it belongs to).
+  "app/features/clio-write-compare.js",
+  // N3: the shared 查找 / 替换 windoid — the engine and the windoid ride
+  // config.js's ensureClioWorksFindModule (one loader, the ClioWrite sheet).
+  "app/vendor/clioworks-v3/find-replace.js",
+  "app/features/clioworks-find.js",
+  // N11: the desk's own memory clipboard — the 带来源副本 the three ClioWorks
+  // editors paste between them; rides config.js's ensureClioworksClipboardModule.
+  "app/features/clioworks-clipboard.js",
+  // N14: the manuscript round trip — the engine (送审 planning, 回稿 alignment)
+  // and its dialog/windoid ride config.js's ensureManuscriptRoundTripModule.
+  "app/vendor/clioworks-v3/manuscript-roundtrip.js",
+  "app/features/manuscript-roundtrip.js",
+  // 邮件合并 — the engine and its dialog ride config.js's
+  // ensureClioworksMailMergeModule with the shared word-export generator.
+  "app/features/clioworks-mailmerge.js",
+  // N8: the Review Desk's 回稿 tab — candidates, messages, three-way compare,
+  // riding config.js's ensureRoundtripReviewModule behind N14's own two files.
+  "app/features/roundtrip-review.js",
+  // N12: the substituted-fonts display (ClioWrite's status note, Get Info's
+  // 「字体」 row, N2b's print preview) rides ClioWrite's loader; Get Info's own
+  // loader names the same file when ClioWrite is not open.
+  "app/features/clio-write-fonts.js",
+  // N4: 新建 (New) and 文具 (Stationery) for Office documents — the codec
+  // loads, the blank builders and the System 6 dialog ride one loader.
+  "app/features/office-new.js",
+  // N15b: the old-format import gate, the workbook's CSV in/out and the
+  // ClioWrite word count — each rides its own loader in config.js.
+  "app/features/legacy-formats.js",
+  "app/features/clio-chart-csv.js",
+  "app/features/clio-write-word-count.js",
+  // N15a: the manuscript's 「自动存档」 revisions and link following on the
+  // writing surfaces — one module riding config.js's ensureWritingSafetyModule;
+  // the eager side is one wireup line, one menu row, one availability line and
+  // markdown-editor.js's ⌘/Ctrl+click router.
+  "app/features/writing-safety.js",
   "app/core/chat-context-capabilities.js",
   "app/core/device-model-client.js",
   "app/core/web-app-shell.js",
@@ -203,7 +251,13 @@ export const lazyRuntimePaths = [
   "app/data/evergreen-demo-corpus.js",
   "app/features/memory-cards.js",
   "app/features/alarm-clock.js",
+  "app/features/odf-import.js",
+  // N9: the iWork original-page fetch and 建副本 flow ride ensureIworkReadingModule.
+  "app/features/iwork-reading.js",
   "app/features/bureaucracy-meme.js",
+  "app/features/reader-pages.js",
+  "app/core/pdf-organize.js",
+  "app/features/reader-organize.js",
   "app/features/print-directory.js",
   "app/features/project-cd-print.js",
   "app/features/word-export.js",
@@ -220,6 +274,11 @@ export const lazyRuntimePaths = [
   "app/content/shared-project-disks-index.js",
   ...SHARED_DISKS.map(({ route }) => `app/content/shared-disks/${route}.js`),
   "app/features/writing-flow.js",
+  // The outline tree's parse/serialise half, split from app/core/markdown.js
+  // for the floppy budget: Writing Flow, Project Peek and the ClioProject
+  // window are its only callers, and each loader names it; the boot keeps the
+  // command half actions.js reaches (outlineTreeMove/Promote/Demote).
+  "app/core/markdown-outline.js",
   "app/features/rebuild-flow.js",
   "app/features/outline-claim.js",
   "app/features/mingming-lens.js",
@@ -245,6 +304,7 @@ export const lazyRuntimePaths = [
   "app/features/about-desk.js",
   "app/features/clio-paint.js",
   "app/features/one-more-tune.js",
+  "app/features/one-more-tune-wheel.js",
   "app/core/pot-world.js",
   "app/features/rootline-core.js",
   "app/features/rootline-pot.js",
@@ -355,6 +415,7 @@ export const lazyRuntimePaths = [
   "app/features/guest-tools.js",
   "app/core/rebuild-pack.js",
   "app/features/mcp-servers.js",
+  "app/features/cliotalk-agent.js",
   "app/features/mingming-handoff-review.js",
   "app/features/docmap.js",
   "app/features/finder-objects.js",

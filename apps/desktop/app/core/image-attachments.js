@@ -533,23 +533,6 @@ function normalizeClioImageInputs(inputs = [], options = {}) {
   return result;
 }
 
-function clioImageInputInlineChars(inputs = []) {
-  return normalizeClioImageInputs(inputs)
-    .reduce((sum, input) => sum + input.inlineDataUrl.length, 0);
-}
-
-function clioImageInputBlocks(inputs = []) {
-  return normalizeClioImageInputs(inputs, { includeRuntime: true }).flatMap((input) => {
-    if (input.removedAt) return [];
-    if (input.fileToken && input.fileExpiresAt > Date.now()) {
-      return [{ type: "file", file_id: input.fileToken }];
-    }
-    return input.inlineDataUrl
-      ? [{ type: "image_url", image_url: { url: input.inlineDataUrl, detail: "original" } }]
-      : [];
-  });
-}
-
 /**
  * @param {any[]} attachments
  * @param {{ limit?: number }} [options]

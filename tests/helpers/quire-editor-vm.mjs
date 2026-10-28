@@ -96,6 +96,12 @@ export async function createQuireEditorVm({ docx, name = "写作.docx" }) {
   const rect = { top: 0, bottom: 0, left: 0, right: 0, width: 0, height: 0 };
   Object.defineProperty(proto, "getBoundingClientRect", { configurable: true, value() { return rect; } });
   if (typeof document.createElement("div").getClientRects !== "function") Object.defineProperty(proto, "getClientRects", { configurable: true, value() { return []; } });
+  // linkedom has no layout engine, so offset* are undefined and every arithmetic
+  // that measures a header story or a footnote area turns NaN. Zero is the same
+  // "no layout" fact the rects above already stand for (N2c: parts render).
+  for (const metric of ["offsetHeight", "offsetWidth", "offsetTop", "offsetLeft"]) {
+    if (typeof document.createElement("div")[metric] === "undefined") Object.defineProperty(proto, metric, { configurable: true, value: 0 });
+  }
 
   const timers = [];
   const context = {
@@ -104,6 +110,8 @@ export async function createQuireEditorVm({ docx, name = "写作.docx" }) {
     ArrayBuffer, Uint8Array, DataView, Promise, Map, Set, WeakMap, JSON, Math, Date, Intl,
     RegExp, Error, Object, Array, String, Number, Boolean, Symbol, Proxy, Reflect,
     navigator: { platform: "MacIntel", userAgent: "quire-editor-vm" },
+    // layout.js measures a pagination pass with performance.now(); linkedom has none.
+    performance: { now: () => Date.now() },
     localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
     location: { href: "http://localhost/" },
     document,
@@ -115,6 +123,7 @@ export async function createQuireEditorVm({ docx, name = "写作.docx" }) {
     setTimeout: (callback) => { timers.push(callback); return timers.length; },
     addEventListener: add.bind(windowTarget),
     removeEventListener: remove.bind(windowTarget),
+    dispatchEvent: dispatch.bind(windowTarget),
   };
   context.globalThis = context;
   context.window = context;

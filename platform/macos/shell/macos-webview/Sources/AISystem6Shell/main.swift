@@ -126,6 +126,46 @@ func shellLog(_ message: String) {
   }
 }
 
+/// Page errors (uncaught exceptions, unhandled rejections, console.error)
+/// written to shell.log, bounded so a page in a loop cannot fill the disk.
+final class WebDiagnostics: NSObject, WKScriptMessageHandler {
+  static let shared = WebDiagnostics()
+  static let handlerName = "aiSystem6Diagnostics"
+  static let captureScript = """
+  (function () {
+    var post = function (kind, detail) {
+      try { window.webkit.messageHandlers.\(handlerName).postMessage(kind + ": " + String(detail).slice(0, 2000)); } catch (e) {}
+    };
+    window.addEventListener("error", function (event) {
+      var error = event.error;
+      post("error", (event.message || "") + " @ " + (event.filename || "") + ":" + (event.lineno || 0) + ":" + (event.colno || 0)
+        + (error && error.stack ? "\\n" + error.stack : ""));
+    }, true);
+    window.addEventListener("unhandledrejection", function (event) {
+      var reason = event.reason;
+      post("unhandledrejection", reason && reason.stack ? (reason.name || "Error") + ": " + (reason.message || "") + "\\n" + reason.stack : reason);
+    });
+    var consoleError = console.error;
+    console.error = function () {
+      try {
+        post("console.error", Array.prototype.map.call(arguments, function (item) {
+          return item && item.stack ? item.message + "\\n" + item.stack : String(item);
+        }).join(" "));
+      } catch (e) {}
+      return consoleError.apply(console, arguments);
+    };
+  })();
+  """
+  private var remaining = 500
+
+  func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
+    guard remaining > 0 else { return }
+    remaining -= 1
+    shellLog("web \(message.body)")
+    if remaining == 0 { shellLog("web: further page errors are not logged this session") }
+  }
+}
+
 final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDelegate {
   private var window: NSWindow!
   private var webView: WKWebView!
@@ -230,8 +270,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
   private func buildWindow() {
     let configuration = WKWebViewConfiguration()
     configuration.websiteDataStore = .default()
+    // The page's own errors go to shell.log. On a machine nobody can sit at
+    // (an older Mac on another desk) the log is the only witness to why the
+    // desk did not start: a script error before boot leaves only the Sad Mac.
+    configuration.userContentController.addUserScript(WKUserScript(
+      source: WebDiagnostics.captureScript,
+      injectionTime: .atDocumentStart,
+      forMainFrameOnly: true
+    ))
+    configuration.userContentController.add(WebDiagnostics.shared, name: WebDiagnostics.handlerName)
+    // Right-click > Inspect Element. Monterey predates isInspectable; the
+    // preference key is what Safari's own Develop menu sets there.
+    configuration.preferences.setValue(true, forKey: "developerExtrasEnabled")
 
     webView = WKWebView(frame: .zero, configuration: configuration)
+    if #available(macOS 13.3, *) {
+      webView.isInspectable = true
+    }
     webView.navigationDelegate = self
     webView.uiDelegate = self
     webView.allowsBackForwardNavigationGestures = true

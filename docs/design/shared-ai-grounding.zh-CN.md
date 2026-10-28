@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/shared-ai-grounding.md -->
-<!-- source-sha256: 8a5dce58c5bb281cbc5cd526793cb24cfb10a06318c28dc71cda537fb3ffdb7b -->
+<!-- source-sha256: aea97093793c3965c318f7c56745c2452b29810e13bc8e35a56e2883369738d0 -->
 <!-- 英文版为准，本文件仅供人类参考 -->
 
 # 共享 AI 证据契约 —— 一份证据，多个界面
@@ -62,6 +62,11 @@ ClioTalk/SideAsk 回答里的引用使用 `[S1]…[Sn]`。剧情终端窗口保�
   默认关闭。
 - 无新增 UI/CSS：chips 复用 `clio-basis-chip` / `message-grounding-*`；
   无新增端点。
+
+## 第二个锚点
+
+潮汐信笺（aaronlau.me 阅读器）是这份契约上的第二个锚点，语料是博客自己发布的切块索引：
+见 `aaron-blog-grounding.zh-CN.md`。
 
 ## 测试
 

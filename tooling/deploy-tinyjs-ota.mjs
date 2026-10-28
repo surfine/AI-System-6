@@ -63,7 +63,15 @@ async function readManifest(channel) {
   return response.json();
 }
 async function archiveReadback(url, expectedHash, expectedSize) {
-  const response = await fetch(url, { redirect: 'error', signal: AbortSignal.timeout(600000) });
+  // The archive URL is served with `expires max`, so a plain readback can be
+  // answered from a cache that still holds the package this upload replaced.
+  // The query is ignored by nginx's location match and keeps the read honest.
+  const separator = url.includes("?") ? "&" : "?";
+  const response = await fetch(`${url}${separator}verify=${randomUUID()}`, {
+    cache: "no-store",
+    redirect: "error",
+    signal: AbortSignal.timeout(600000),
+  });
   if (!response.ok) throw new Error('OTA archive HTTP ' + response.status);
   const hash = createHash('sha256'); let size = 0;
   for await (const bytes of response.body) {

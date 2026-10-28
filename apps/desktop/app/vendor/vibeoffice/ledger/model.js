@@ -33,16 +33,12 @@
     '#3366FF', '#33CCCC', '#99CC00', '#FFCC00', '#FF9900', '#FF6600', '#666699', '#969696', '#003366', '#339966', '#003300', '#333300', '#993300', '#993366', '#333399', '#333333'];
   const hex2rgb = (h) => { const n = parseInt(String(h).replace('#', '').slice(-6), 16) || 0; return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
   const rgb2hex = (r, g, b) => '#' + [r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('').toUpperCase();
-  function rgb2hsl(r, g, b) { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b); let h = 0, s = 0; const l = (mx + mn) / 2; if (mx !== mn) { const d = mx - mn; s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn); h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h /= 6; } return [h, s, l]; }
-  function hsl2rgb(h, s, l) { if (!s) return [l * 255, l * 255, l * 255]; const f = (p, q, t) => { if (t < 0) t += 1; if (t > 1) t -= 1; if (t < 1 / 6) return p + (q - p) * 6 * t; if (t < 1 / 2) return q; if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6; return p; }; const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q; return [f(p, q, h + 1 / 3) * 255, f(p, q, h) * 255, f(p, q, h - 1 / 3) * 255]; }
-  /** SpreadsheetML tint: lighten (tint > 0) or darken (tint < 0) in HSL luminance */
+  /** SpreadsheetML tint: lighten (tint > 0) or darken (tint < 0) in HSL luminance (the suite's conversions, L.color) */
   M.applyTint = function (hex, tint) {
     if (!tint) return hex;
-    const [r, g, b] = hex2rgb(hex);
-    const [h, s, l] = rgb2hsl(r, g, b);
+    const [h, s, l] = L.color.rgbToHsl(...hex2rgb(hex));
     const l2 = tint < 0 ? l * (1 + tint) : l * (1 - tint) + tint;
-    const [r2, g2, b2] = hsl2rgb(h, s, Math.max(0, Math.min(1, l2)));
-    return rgb2hex(r2, g2, b2);
+    return rgb2hex(...L.color.hslToRgb(h, s, Math.max(0, Math.min(1, l2))));
   };
   /** colour object {rgb:'FFRRGGBB'|'#RRGGBB'} {theme:n, tint} {indexed:n} {auto:true} or '#hex' → '#RRGGBB' | null */
   M.colorHex = function (wb, c, auto) {
@@ -195,7 +191,7 @@
       this.baseColW = 8;
       this.defRowH = null; /* points; null → from default font */
       this.view = { freeze: null, zoom: 100, grid: true, headings: true, zeros: true, rtl: false, top: { r: 0, c: 0 }, sel: null, formulas: false, gridColor: null, pageBreakPreview: false };
-      this.print = { margins: { l: 0.75, r: 0.75, t: 1, b: 1, header: 0.5, footer: 0.5 }, orientation: 'portrait', paper: 1, scale: 100, fitW: null, fitH: null, fit: false, hCenter: false, vCenter: false, gridLines: false, headings: false, header: '', footer: '', firstPage: null, pageOrder: 'downThenOver', rowBreaks: [], colBreaks: [], area: null, titleRows: null, titleCols: null, bw: false, draft: false, comments: 'none', errors: 'displayed' };
+      this.print = { margins: { l: 0.75, r: 0.75, t: 1, b: 1, header: 0.5, footer: 0.5 }, orientation: 'portrait', paper: wb.paper || 1, scale: 100, fitW: null, fitH: null, fit: false, hCenter: false, vCenter: false, gridLines: false, headings: false, header: '', footer: '', firstPage: null, pageOrder: 'downThenOver', rowBreaks: [], colBreaks: [], area: null, titleRows: null, titleCols: null, bw: false, draft: false, comments: 'none', errors: 'displayed' };
       this.protection = null;
       this.outline = { below: true, right: true };
       this.maxR = -1; this.maxC = -1; /* used range bounds (cells with content or style) */
@@ -276,11 +272,11 @@
     if (wb && wb._mdw) return wb._mdw;
     const f = wb ? wb.defaultFont : { name: 'Arial', sz: 10 };
     let w = 7;
-    const name = String(f.name || '').toLowerCase();
+    const name = L.fontKey ? L.fontKey(f.name) : String(f.name || '').toLowerCase();
     const sz = f.sz || 11;
     if (L.measureDigit) w = L.measureDigit(f);
     else {
-      const k = { calibri: 7 / 11, arial: 7 / 10, 'aptos narrow': 7 / 11, aptos: 7.5 / 11, cambria: 7 / 11, 'times new roman': 7 / 12, verdana: 8 / 10, tahoma: 7 / 10, 'courier new': 8 / 10, 'segoe ui': 7 / 10 }[name] || 7 / 11;
+      const k = { calibri: 7 / 11, arial: 7 / 10, 'aptos narrow': 7 / 11, aptos: 7.5 / 11, cambria: 7 / 11, 'times new roman': 7 / 12, verdana: 8 / 10, tahoma: 7 / 10, 'courier new': 8 / 10, 'segoe ui': 7 / 10, 'ms pgothic': 8 / 11 }[name] || 7 / 11;
       w = Math.max(5, Math.round(k * sz));
     }
     if (wb) wb._mdw = w;
@@ -304,12 +300,16 @@
   };
   /** default row height in points for the default font */
   M.fontRowPt = function (font) {
-    const name = String((font && font.name) || 'Arial').toLowerCase();
+    const name = L.fontKey ? L.fontKey((font && font.name) || 'Arial') : String((font && font.name) || 'Arial').toLowerCase();
     const sz = (font && font.sz) || 11;
     const table = { arial: { 8: 11.25, 9: 12, 10: 12.75, 11: 14.25, 12: 15, 14: 18, 16: 20.25, 18: 23.25, 20: 25.5, 24: 30 }, calibri: { 8: 11.25, 9: 12, 10: 12.75, 11: 15, 12: 15.75, 14: 18.75, 16: 21, 18: 23.25, 20: 26.25, 24: 31.5 } };
     const t = table[name] || (/calibri|aptos|segoe/.test(name) ? table.calibri : null);
     if (t && t[sz]) return t[sz];
-    return Math.round(sz * 1.275 * 4) / 4;
+    /* East Asian fonts, from their size in localized Excel workbooks: ＭＳ Ｐゴシック 11 has rows of 13.5
+       (the corpora's Japanese workbooks), 宋体 11 of 13.5 and 新細明體 11 of 14.25 (Chinese workbooks);
+       游ゴシック 11 of 18.75 and 맑은 고딕 11 of 16.5 (Office's; unverified) */
+    const ea = { 'ms pgothic': 13.5, 'ms gothic': 13.5, 'yu gothic': 18.75, 'malgun gothic': 16.5, simsun: 13.5, pmingliu: 14.25 }[name];
+    return Math.round(sz * (ea ? ea / 11 : 1.275) * 4) / 4;
   };
   M.defaultRowPt = (sh) => sh.defRowH ?? (sh.extra.formatKeep?.legacyNamespace ? sh.fileDefRowH : null) ?? M.fontRowPt(sh.wb.defaultFont);
   M.rowPt = function (sh, r) {

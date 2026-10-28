@@ -24,12 +24,41 @@
   'use strict';
   if (root.AISystem6ClioChartWorkbook) return;
 
-  const MAX_ROWS = 500;
-  const MAX_COLS = 26;
+  // The sheet's own bounds (1,048,576 x 16,384) are the only limit; the grid
+  // renders a virtualised window of rows, so a 10,000-row sheet stays light.
+  const COL_RENDER_LIMIT = 256;
+  const ROW_WINDOW_BUFFER = 8;
   const STEP_KEYS = Object.freeze({
     cell: 'clio_chart_workbook_step_cell',
     formula: 'clio_chart_workbook_step_formula',
     comment: 'clio_chart_workbook_step_comment',
+    insert_rows: 'clio_chart_workbook_step_insert_rows',
+    delete_rows: 'clio_chart_workbook_step_delete_rows',
+    insert_cols: 'clio_chart_workbook_step_insert_cols',
+    delete_cols: 'clio_chart_workbook_step_delete_cols',
+    insert_sheet: 'clio_chart_workbook_step_insert_sheet',
+    delete_sheet: 'clio_chart_workbook_step_delete_sheet',
+    rename_sheet: 'clio_chart_workbook_step_rename_sheet',
+    fill_down: 'clio_chart_workbook_step_fill_down',
+    fill_right: 'clio_chart_workbook_step_fill_right',
+    freeze: 'clio_chart_workbook_step_freeze',
+    // N11: the desk clipboard's pastes — one named step whichever app the copy
+    // came from. The labels ride the adapter's undo stack verbatim (stepKey
+    // passes any 'clio_chart_workbook_step_' text through).
+    paste: 'clio_chart_workbook_step_paste',
+    paste_from_write: 'clio_chart_workbook_step_paste_from_write',
+  });
+  const STRUCTURE_STEP_KEYS = Object.freeze({
+    'insert-rows': STEP_KEYS.insert_rows,
+    'delete-rows': STEP_KEYS.delete_rows,
+    'insert-cols': STEP_KEYS.insert_cols,
+    'delete-cols': STEP_KEYS.delete_cols,
+    'fill-down': STEP_KEYS.fill_down,
+    'fill-right': STEP_KEYS.fill_right,
+    'insert-sheet': STEP_KEYS.insert_sheet,
+    'delete-sheet': STEP_KEYS.delete_sheet,
+    'rename-sheet': STEP_KEYS.rename_sheet,
+    freeze: STEP_KEYS.freeze,
   });
   const STATE_KEYS = Object.freeze({
     empty: 'clio_chart_workbook_state_empty',
@@ -69,6 +98,18 @@
     if (/^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i.test(s)) return Number(s);
     return String(text);
   }
+  /**
+   * Virtualisation math, pure so a contract can hold it: which rows the DOM
+   * holds at one scroll position. `frozenRows` always stay in the DOM, so the
+   * window starts no higher than just below them.
+   */
+  function rowWindow(total, scrollTop, viewportPx, buffer, rowHeightPx, frozenRows = 0) {
+    const height = Math.max(1, Number(rowHeightPx) || 24);
+    const count = Math.ceil(Math.max(1, viewportPx) / height) + buffer * 2;
+    const first = Math.max(frozenRows, Math.floor(scrollTop / height) - buffer);
+    const last = Math.min(Math.max(0, total - 1), first + count - 1);
+    return { first, last: Math.max(first, last), count: Math.max(first, last) - first + 1 };
+  }
   // macOS takes the command key only: Ctrl+E/S/M belong to the text fields there.
   function commandKey(event) {
     const useMeta = typeof shortcutUsesCommandKey === 'function' ? shortcutUsesCommandKey() : /mac|iphone|ipad/i.test(String(typeof navigator !== 'undefined' && (navigator.platform || '')));
@@ -83,7 +124,17 @@
     const text = String(label || '');
     if (!text) return '';
     if (text.startsWith('clio_chart_workbook_step_')) return text;
+    // N3: the find/replace engine's steps (find-replace.js); the batch one
+    // carries a count, so it is matched, not listed.
+    if (/^全部替换 \d+ 处$/.test(text)) return 'clio_chart_workbook_step_replace_all';
+    if (text === '替换') return 'clio_chart_workbook_step_replace';
+    if (Object.prototype.hasOwnProperty.call(STRUCTURE_STEP_KEYS, text)) return STRUCTURE_STEP_KEYS[text];
     return /comment/i.test(text) ? STEP_KEYS.comment : STEP_KEYS.cell;
+  }
+  /** The count a 「全部替换 N 处」 undo label carries, as the translation's args. */
+  function stepLabelArgs(label) {
+    const m = /^全部替换 (\d+) 处$/.exec(String(label || ''));
+    return m ? [Number(m[1])] : [];
   }
 
   /* ---------------------------------------------------------------- session */
@@ -204,7 +255,9 @@
       }
       const rows = Math.max(maxR + 4, 14);
       const cols = Math.max(maxC + 3, 8);
-      return { rows: Math.min(rows, MAX_ROWS), cols: Math.min(cols, MAX_COLS), truncated: rows > MAX_ROWS || cols > MAX_COLS };
+      // Rows are virtualised, so their number is unbounded. Columns render in
+      // the DOM; beyond the render limit the sheet says so instead of hanging.
+      return { rows, cols: Math.min(cols, COL_RENDER_LIMIT), truncated: cols > COL_RENDER_LIMIT };
     }
 
     function calcLoaded() { return fn(adapter, 'calcLoaded') ? !!adapter.calcLoaded() : false; }
@@ -403,6 +456,9 @@
       canRedo,
       undoLabel: () => (canUndo() && fn(adapter, 'undoLabel') ? stepKey(adapter.undoLabel()) : ''),
       redoLabel: () => (canRedo() && fn(adapter, 'redoLabel') ? stepKey(adapter.redoLabel()) : ''),
+      // 「全部替换 N 处」 keeps its count in the menu row (undoLabelArgs feeds it).
+      undoLabelArgs: () => (canUndo() && fn(adapter, 'undoLabel') ? stepLabelArgs(adapter.undoLabel()) : []),
+      redoLabelArgs: () => (canRedo() && fn(adapter, 'redoLabel') ? stepLabelArgs(adapter.redoLabel()) : []),
     });
 
     function commentsAvailable() {
@@ -430,6 +486,25 @@
       }
     }
     function commands() {
+      const busy = s.saving || s.confirming || s.reverting;
+      const sel = selection();
+      const frozen = freezeInfo();
+      const structure = structureReady() ? [
+        { id: 'structure.rows.above', labelKey: 'clio_chart_workbook_cmd_insert_row_above', shortcut: '' },
+        { id: 'structure.rows.below', labelKey: 'clio_chart_workbook_cmd_insert_row_below', shortcut: '' },
+        { id: 'structure.rows.delete', labelKey: 'clio_chart_workbook_cmd_delete_rows', shortcut: '' },
+        { id: 'structure.cols.left', labelKey: 'clio_chart_workbook_cmd_insert_col_left', shortcut: '' },
+        { id: 'structure.cols.right', labelKey: 'clio_chart_workbook_cmd_insert_col_right', shortcut: '' },
+        { id: 'structure.cols.delete', labelKey: 'clio_chart_workbook_cmd_delete_cols', shortcut: '' },
+        { id: 'structure.fill.down', labelKey: 'clio_chart_workbook_cmd_fill_down', shortcut: '⌘D' },
+        { id: 'structure.fill.right', labelKey: 'clio_chart_workbook_cmd_fill_right', shortcut: '⌘R' },
+        sel.r > 0 || frozen ? { id: 'structure.freeze.rows', labelKey: 'clio_chart_workbook_cmd_freeze_rows', shortcut: '', checked: !!frozen && frozen.r === sel.r } : null,
+        sel.c > 0 || frozen ? { id: 'structure.freeze.cols', labelKey: 'clio_chart_workbook_cmd_freeze_cols', shortcut: '', checked: !!frozen && frozen.c === sel.c } : null,
+        frozen ? { id: 'structure.freeze.clear', labelKey: 'clio_chart_workbook_cmd_unfreeze', shortcut: '' } : null,
+        { id: 'sheet.insert', labelKey: 'clio_chart_workbook_cmd_insert_sheet', shortcut: '' },
+        { id: 'sheet.rename', labelKey: 'clio_chart_workbook_cmd_rename_sheet', shortcut: '' },
+        { id: 'sheet.delete', labelKey: 'clio_chart_workbook_cmd_delete_sheet', shortcut: '' },
+      ] : [];
       const list = [
         { id: 'file.save', labelKey: 'clio_chart_workbook_cmd_save', shortcut: '⌘S' },
         fn(host, 'revert') ? { id: 'file.revert', labelKey: 'clio_chart_workbook_cmd_revert', shortcut: '' } : null,
@@ -437,8 +512,16 @@
         { id: 'cell.value', labelKey: 'clio_chart_workbook_cmd_edit_value', shortcut: '' },
         { id: 'cell.formula', labelKey: 'clio_chart_workbook_cmd_edit_formula', shortcut: '' },
         commentsAvailable() ? { id: 'comments.open', labelKey: 'clio_chart_workbook_cmd_comments', shortcut: '⌘M' } : null,
+        // N3: the shared 查找 / 替换 windoid (features/clioworks-find.js).
+        { id: 'find.open', labelKey: 'clioworks_find_replace_menu', shortcut: '⌘F' },
+        { id: 'find.next', labelKey: 'find_next', shortcut: '⌘G' },
+        ...structure,
       ].filter(Boolean);
-      return list.map((command) => ({ ...command, state: commandState(command.id) }));
+      return list.map((command) => {
+        const structural = command.id.startsWith('structure.') || command.id.startsWith('sheet.');
+        const state = structural && busy ? { enabled: false, reason: tr('clio_chart_workbook_reason_saving') } : commandState(command.id);
+        return { ...command, state };
+      });
     }
 
     /** 「复原到上次存储…」: the host re-opens the adapter from the last saved bytes. Not undoable. */
@@ -470,11 +553,216 @@
       if (!sheets.includes(s.sheet)) s.sheet = sheets[0] || '';
     }
 
+    /* ------------------------------------------------- structure commands (N5a) */
+    const structureReady = () => fn(adapter, 'insertRows') && fn(adapter, 'deleteRows') && fn(adapter, 'insertCols') && fn(adapter, 'deleteCols');
+    const BLOCK_MESSAGES = Object.freeze({
+      LAST_SHEET: 'clio_chart_workbook_structure_last_sheet',
+      EMPTY_NAME: 'clio_chart_workbook_structure_name_empty',
+      NAME_TOO_LONG: 'clio_chart_workbook_structure_name_long',
+      BAD_NAME_CHARS: 'clio_chart_workbook_structure_name_chars',
+      NAME_IN_USE: 'clio_chart_workbook_structure_name_used',
+      WOULD_DROP_CELLS: 'clio_chart_workbook_structure_push_off',
+      BAD_LINE: 'clio_chart_workbook_receipt_bad_address',
+      BAD_COUNT: 'clio_chart_workbook_receipt_bad_address',
+    });
+    function settleStructure(out) {
+      if (out && out.status === 'blocked') {
+        setReceipt(BLOCK_MESSAGES[out.code] || 'clio_chart_workbook_receipt_unavailable', 'blocked');
+        return out;
+      }
+      if (!out || out.status !== 'ok') {
+        setReceipt('clio_chart_workbook_structure_failed', 'error');
+        return out || { status: 'failed' };
+      }
+      localStale.clear();
+      // A structural change can leave the selection past the new bounds; the
+      // selection follows the sheet, not the other way round.
+      const ext = extent(s.sheet);
+      const sel = s.selections.get(s.sheet) || { r: 0, c: 0, r2: 0, c2: 0 };
+      s.selections.set(s.sheet, {
+        r: Math.max(0, Math.min(sel.r, ext.rows - 1)),
+        c: Math.max(0, Math.min(sel.c, ext.cols - 1)),
+        r2: Math.max(0, Math.min(sel.r2 == null ? sel.r : sel.r2, ext.rows - 1)),
+        c2: Math.max(0, Math.min(sel.c2 == null ? sel.c : sel.c2, ext.cols - 1)),
+      });
+      if (!s.saving) s.receipt = restingReceipt();
+      notify();
+      return out;
+    }
+
+    /** ⌘D / ⌘R over the selected range. The range needs more than one line in the fill direction. */
+    function fill(direction) {
+      if (s.closed || s.reverting || s.confirming) return { status: 'blocked', code: 'CLOSED' };
+      if (!structureReady() || !fn(adapter, 'fillRange')) return { status: 'blocked', code: 'UNAVAILABLE' };
+      const rg = session.range();
+      if (direction === 'down' ? rg.r2 === rg.r1 : rg.c2 === rg.c1) {
+        setReceipt(direction === 'down' ? 'clio_chart_workbook_receipt_fill_range_down' : 'clio_chart_workbook_receipt_fill_range_right', 'blocked');
+        return { status: 'blocked', code: 'FILL_RANGE' };
+      }
+      if (s.mode === 'express') {
+        // Express writes values only: a fill whose source holds formulas would be formula entry.
+        for (let c = rg.c1; c <= rg.c2; c += 1) {
+          for (let r = rg.r1; r <= rg.r2; r += 1) {
+            const isSource = direction === 'down' ? r === rg.r1 : c === rg.c1;
+            if (isSource && adapter.getCell(s.sheet, cellRef(r, c)).formula != null) {
+              setReceipt('clio_chart_workbook_receipt_express_value_only', 'blocked');
+              return { status: 'blocked', code: 'EXPRESS_VALUE_ONLY' };
+            }
+          }
+        }
+      }
+      return settleStructure(adapter.fillRange(s.sheet, rg, direction));
+    }
+
+    /* ---------------------------------- N11: the desk clipboard's workbook half */
+    // The selected rectangle as a frozen-in-waiting 表格快照: each cell's
+    // computed display text, its raw value and formula, its number format, the
+    // merges that fall inside the region (relative to it) and the column
+    // widths. The clipboard module clones and freezes this; nothing here
+    // keeps a live reference into the sheet.
+    function copyRegion() {
+      const rg = session.range();
+      const book = fn(adapter, 'workbook') ? adapter.workbook() : null;
+      const sheetObj = book && Array.isArray(book.sheets) ? book.sheets.find((item) => item && item.name === s.sheet) : null;
+      const styles = book && book.styles && typeof book.styles.get === 'function' ? book.styles : null;
+      const rows = [];
+      for (let r = rg.r1; r <= rg.r2; r += 1) {
+        const row = [];
+        for (let c = rg.c1; c <= rg.c2; c += 1) {
+          const ref = cellRef(r, c);
+          const cell = adapter.getCell(s.sheet, ref);
+          if (!cell || !cell.exists) { row.push({ text: '', v: null, f: null, nf: null }); continue; }
+          let nf = null;
+          if (styles && cell.style != null) {
+            try { nf = styles.get(cell.style)?.nf || null; } catch (error) { nf = null; }
+          }
+          const shown = view(s.sheet, ref);
+          row.push({
+            // A not-yet-recalculated formula shows 「尚未重算」 on screen; the
+            // honest copy of it is no text at all (its cached value is gone),
+            // never the label and never the old number.
+            text: shown.state === 'stale' ? '' : shown.text,
+            v: typeof cell.value === 'number' || typeof cell.value === 'string' || typeof cell.value === 'boolean' ? cell.value : null,
+            f: typeof cell.formula === 'string' ? cell.formula : null,
+            nf,
+          });
+        }
+        rows.push(row);
+      }
+      const merges = [];
+      if (sheetObj && Array.isArray(sheetObj.merges)) {
+        for (const m of sheetObj.merges) {
+          if (!m || m.r1 > rg.r2 || m.r2 < rg.r1 || m.c1 > rg.c2 || m.c2 < rg.c1) continue;
+          const top = Math.max(m.r1, rg.r1);
+          const left = Math.max(m.c1, rg.c1);
+          merges.push({ r: top - rg.r1, c: left - rg.c1, rs: Math.min(m.r2, rg.r2) - top + 1, cs: Math.min(m.c2, rg.c2) - left + 1 });
+        }
+      }
+      const colWidths = [];
+      if (sheetObj && Array.isArray(sheetObj.cols)) {
+        for (let c = rg.c1; c <= rg.c2; c += 1) {
+          const o = sheetObj.cols[c];
+          colWidths.push(o && typeof o.w === 'number' ? o.w : null);
+        }
+      }
+      return {
+        sheet: s.sheet,
+        origin: { r: rg.r1, c: rg.c1 },
+        ref: `${s.sheet}!${cellRef(rg.r1, rg.c1)}:${cellRef(rg.r2, rg.c2)}`,
+        rows, merges, colWidths,
+      };
+    }
+
+    /**
+     * Paste a region snapshot at the selection's top-left as ONE named undo
+     * step. Formulas ride along in full mode with their relative references
+     * shifted by the paste offset — N5a's own fill rule (ledger-structure.js
+     * copyForFill), absolute references staying put; Express writes values
+     * only, exactly as it refuses typed formulas.
+     */
+    function pasteRegion(snapshot, options = {}) {
+      if (s.closed) return { status: 'blocked', code: 'CLOSED' };
+      if (s.reverting) return { status: 'blocked', code: 'REVERTING' };
+      if (s.confirming) return { status: 'blocked', code: 'CONFIRM_OPEN' };
+      const rows = snapshot && Array.isArray(snapshot.rows) ? snapshot.rows : null;
+      if (!rows || !rows.length || !rows.some((row) => Array.isArray(row) && row.length)) return { status: 'failed', code: 'EMPTY' };
+      const book = fn(adapter, 'workbook') ? adapter.workbook() : null;
+      const undo = book && book.undo && typeof book.undo.begin === 'function' && typeof book.undo.end === 'function' ? book.undo : null;
+      if (!undo) return { status: 'blocked', code: 'UNAVAILABLE' };
+      const rg = session.range();
+      const label = options.label || STEP_KEYS.paste;
+      const F = root.L && root.L.formula;
+      const dr = snapshot.origin ? rg.r1 - snapshot.origin.r : 0;
+      const dc = snapshot.origin ? rg.c1 - snapshot.origin.c : 0;
+      let formulas = 0;
+      const changed = [];
+      undo.begin(label);
+      try {
+        rows.forEach((row, ri) => {
+          if (!Array.isArray(row)) return;
+          row.forEach((cell, ci) => {
+            const r = rg.r1 + ri;
+            const c = rg.c1 + ci;
+            const ref = cellRef(r, c);
+            let patch;
+            if (s.mode === 'full' && cell && typeof cell.f === 'string' && cell.f) {
+              let formula = cell.f;
+              // N5a's rule: F.toText(F.shift(F.parse(f), dr, dc)); an engine that
+              // cannot parse it rides the formula verbatim, as fill does.
+              if ((dr || dc) && F && typeof F.parse === 'function' && typeof F.shift === 'function' && typeof F.toText === 'function') {
+                try { formula = F.toText(F.shift(F.parse(cell.f), dr, dc)); } catch (error) { formula = cell.f; }
+              }
+              formulas += 1;
+              patch = { formula, value: null, label: STEP_KEYS.formula };
+            } else {
+              const value = cell && typeof cell.v === 'number' ? cell.v
+                : cell && typeof cell.v === 'boolean' ? cell.v
+                  : cell && typeof cell.v === 'string' && cell.v ? cell.v
+                    : parseValue(cell && typeof cell.text === 'string' ? cell.text : '');
+              patch = { value, formula: null, label: STEP_KEYS.cell };
+            }
+            adapter.setCell(s.sheet, ref, patch);
+            changed.push({ sheet: s.sheet, ref });
+          });
+        });
+      } finally {
+        undo.end();
+      }
+      for (const item of changed) {
+        if (formulas) localStale.add(`${item.sheet}!${item.ref}`);
+      }
+      // A paste that staled anything asks for the recalculation, the one
+      // commitCell rule (Q-M1-1).
+      const pending = formulas || calcLoaded() || anyStale() ? recalc(changed) : null;
+      notify();
+      return { status: 'ok', cells: changed.length, recalc: pending };
+    }
+
+    function sheetStep(run) {
+      const out = run();
+      const sheets = visibleSheets();
+      if (!sheets.includes(s.sheet)) s.sheet = sheets[0] || '';
+      return settleStructure(out);
+    }
+
+    function freezeInfo() {
+      if (!fn(adapter, 'freeze')) return null;
+      try { return adapter.freeze(s.sheet); } catch (error) { return null; }
+    }
+    function setFreeze(r, c) {
+      if (!fn(adapter, 'setFreeze')) return { status: 'blocked', code: 'UNAVAILABLE' };
+      return settleStructure(adapter.setFreeze(s.sheet, r, c));
+    }
+
     const session = {
       get adapter() { return adapter; },
       get mode() { return s.mode; },
       get sheet() { return s.sheet; },
       get receipt() { return s.receipt; },
+      // N11: the desk clipboard's source reference names this workbook — the
+      // module reads them off the session, the way the receipts read opts.
+      get mountedName() { return opts.mountedName || ''; },
+      get fileName() { return opts.fileName || ''; },
       get saving() { return s.saving; },
       get confirming() { return s.confirming; },
       get recalculating() { return s.recalcs > 0; },
@@ -503,10 +791,22 @@
         notify();
         return true;
       },
-      select(r, c) {
-        s.selections.set(s.sheet, { r, c });
+      select(r, c, extend = false) {
+        const prior = s.selections.get(s.sheet) || { r: 0, c: 0, r2: 0, c2: 0 };
+        if (extend) s.selections.set(s.sheet, { r: prior.r, c: prior.c, r2: r, c2: c });
+        else s.selections.set(s.sheet, { r, c, r2: r, c2: c });
         settleReceipt();
         notify();
+      },
+      /** The selected rectangle, normalised: { r1, c1, r2, c2 }. */
+      range() {
+        const sel = s.selections.get(s.sheet) || { r: 0, c: 0, r2: 0, c2: 0 };
+        return {
+          r1: Math.min(sel.r, sel.r2 == null ? sel.r : sel.r2),
+          c1: Math.min(sel.c, sel.c2 == null ? sel.c : sel.c2),
+          r2: Math.max(sel.r, sel.r2 == null ? sel.r : sel.r2),
+          c2: Math.max(sel.c, sel.c2 == null ? sel.c : sel.c2),
+        };
       },
       view,
       staleRefs,
@@ -522,6 +822,23 @@
       commands,
       commentsAvailable,
       editHistory,
+      /* structure (N5a); a missing adapter capability is answered, never faked */
+      structureReady,
+      surveyLines: (axis, at, n) => (fn(adapter, 'surveyLines') ? adapter.surveyLines(s.sheet, axis, at, n) : null),
+      insertRows: (at, n) => (structureReady() ? settleStructure(adapter.insertRows(s.sheet, at, n)) : { status: 'blocked', code: 'UNAVAILABLE' }),
+      deleteRows: (at, n) => (structureReady() ? settleStructure(adapter.deleteRows(s.sheet, at, n)) : { status: 'blocked', code: 'UNAVAILABLE' }),
+      insertCols: (at, n) => (structureReady() ? settleStructure(adapter.insertCols(s.sheet, at, n)) : { status: 'blocked', code: 'UNAVAILABLE' }),
+      deleteCols: (at, n) => (structureReady() ? settleStructure(adapter.deleteCols(s.sheet, at, n)) : { status: 'blocked', code: 'UNAVAILABLE' }),
+      fill,
+      // N11: the desk clipboard's read/write over this sheet (the module in
+      // features/clioworks-clipboard.js freezes what copyRegion returns).
+      copyRegion,
+      pasteRegion,
+      insertSheet: () => (fn(adapter, 'insertSheet') ? sheetStep(() => adapter.insertSheet()) : { status: 'blocked', code: 'UNAVAILABLE' }),
+      renameSheet: (name) => (fn(adapter, 'renameSheet') ? settleStructure(adapter.renameSheet(s.sheet, name)) : { status: 'blocked', code: 'UNAVAILABLE' }),
+      deleteSheet: () => (fn(adapter, 'deleteSheet') ? sheetStep(() => adapter.deleteSheet(s.sheet)) : { status: 'blocked', code: 'UNAVAILABLE' }),
+      freezeInfo,
+      setFreeze,
       lastRecalc: () => lastRecalc,
       close() { s.closed = true; listeners.clear(); },
     };
@@ -615,7 +932,7 @@
       doc.removeEventListener('pointerdown', away, true);
       menu.remove();
     }
-    function openMenu(anchor, items, labelKey) {
+    function openMenu(anchor, items, labelKey, point = null) {
       closeMenu();
       const menu = h(doc, 'div', { class: 'menu-popover cwk-menu', role: 'menu', 'aria-label': tr(labelKey) });
       for (const item of items) {
@@ -652,8 +969,8 @@
       doc.body.append(menu);
       const rect = anchor.getBoundingClientRect();
       const view = doc.defaultView;
-      const x = Math.max(8, Math.min(rect.left, view.innerWidth - menu.offsetWidth - 8));
-      const y = Math.max(8, Math.min(rect.bottom + 2, view.innerHeight - menu.offsetHeight - 8));
+      const x = Math.max(8, Math.min(point ? point.x : rect.left, view.innerWidth - menu.offsetWidth - 8));
+      const y = Math.max(8, Math.min(point ? point.y : rect.bottom + 2, view.innerHeight - menu.offsetHeight - 8));
       menu.style.setProperty('--cwk-menu-x', `${x}px`);
       menu.style.setProperty('--cwk-menu-y', `${y}px`);
       doc.addEventListener('pointerdown', away, true);
@@ -706,15 +1023,26 @@
       }
     }
 
-    function selectCell(r, c, focus = true) {
+    /** Bring one row into the rendered window (and the viewport) so it can take focus. */
+    function ensureRowVisible(r) {
+      if (r >= windowState.first && r <= windowState.last) return;
+      // A row's place in the scroll geometry is its own index times the row
+      // height (frozen rows take flow space; the spacer accounts for the rows
+      // the window skips). Aim just under the frozen block; focus() trims the rest.
+      scrollEl.scrollTop = Math.max(0, r - frozen().r - ROW_WINDOW_BUFFER) * rowHeight;
+      buildGrid();
+    }
+    function selectCell(r, c, focus = true, extend = false) {
       closeCellEditor(false);
-      session.select(r, c);
+      session.select(r, c, extend);
+      ensureRowVisible(session.selection().r);
+      render();
       if (focus) focusSelected();
     }
-    function moveSelection(dr, dc) {
+    function moveSelection(dr, dc, extend = false) {
       const ext = session.extent(session.sheet);
       const sel = session.selection();
-      selectCell(Math.max(0, Math.min(ext.rows - 1, sel.r + dr)), Math.max(0, Math.min(ext.cols - 1, sel.c + dc)));
+      selectCell(Math.max(0, Math.min(ext.rows - 1, sel.r + dr)), Math.max(0, Math.min(ext.cols - 1, sel.c + dc)), true, extend);
     }
     function startCellEdit(initial) {
       const v = selectedView();
@@ -812,13 +1140,166 @@
       comments = null;
       openComments();
     }
+
+    /* -- the shared 查找 / 替换 windoid (N3): the window itself lives in the lazy
+       find module (features/clioworks-find.js, config.js
+       ensureClioWorksFindModule); the surface hands over one cell at a time. -- */
+    function openFind(next) {
+      const ctx = findContext();
+      const api = root.AISystem6ClioWorksFind;
+      if (api && typeof api.open === 'function') { if (next) api.next(ctx); else api.open(ctx); return; }
+      const ensure = root.AISystem6EnsureClioWorksFindModule;
+      if (typeof ensure !== 'function') return;
+      ensure().then(() => {
+        const found = root.AISystem6ClioWorksFind;
+        if (!found || typeof found.open !== 'function') return;
+        if (next && typeof found.next === 'function') found.next(ctx);
+        else found.open(ctx);
+      }).catch((error) => console.warn('ClioChart workbook: find module', error));
+    }
     function runCommand(id) {
       if (id === 'file.save') return runSave();
       if (id === 'file.revert') return runRevert();
       if (id === 'view.mode') return toggleMode();
       if (id === 'comments.open') return openComments();
+      if (id === 'find.open') return openFind(false);
+      if (id === 'find.next') return openFind(true);
       if (id === 'cell.value' || id === 'cell.formula') return startCellEdit();
+      if (id === 'structure.rows.above') return applyLines('r', session.selection().r, linesTarget('r'));
+      if (id === 'structure.rows.below') return applyLines('r', session.selection().r + 1, linesTarget('r'));
+      if (id === 'structure.rows.delete') return applyLines('r', session.range().r1, -linesTarget('r'));
+      if (id === 'structure.cols.left') return applyLines('c', session.selection().c, linesTarget('c'));
+      if (id === 'structure.cols.right') return applyLines('c', session.selection().c + 1, linesTarget('c'));
+      if (id === 'structure.cols.delete') return applyLines('c', session.range().c1, -linesTarget('c'));
+      if (id === 'structure.fill.down') return runFill('down');
+      if (id === 'structure.fill.right') return runFill('right');
+      if (id === 'structure.freeze.rows') return runFreeze('rows');
+      if (id === 'structure.freeze.cols') return runFreeze('cols');
+      if (id === 'structure.freeze.clear') return runFreeze('clear');
+      if (id === 'sheet.insert') return runInsertSheet();
+      if (id === 'sheet.rename') return runRenameSheet();
+      if (id === 'sheet.delete') return runDeleteSheet();
       return null;
+    }
+
+    /* -- structure commands (N5a): the confirmation names what shifts before anything runs -- */
+    // A header right-click or ⌘D-sized range can name several lines at once; the
+    // selection answers how many when it spans them, otherwise one.
+    function linesTarget(axis) {
+      const rg = session.range();
+      return axis === 'r' ? rg.r2 - rg.r1 + 1 : rg.c2 - rg.c1 + 1;
+    }
+    const SURVEY_KINDS = Object.freeze({
+      formulas: 'clio_chart_workbook_shift_formulas',
+      merges: 'clio_chart_workbook_shift_merges',
+      names: 'clio_chart_workbook_shift_names',
+      tables: 'clio_chart_workbook_shift_tables',
+      charts: 'clio_chart_workbook_shift_charts',
+      cf: 'clio_chart_workbook_shift_cf',
+      dv: 'clio_chart_workbook_shift_dv',
+    });
+    const KEPT_KINDS = Object.freeze({
+      'pivot-table': 'clio_chart_workbook_kept_pivot_table',
+      slicer: 'clio_chart_workbook_kept_slicer',
+    });
+    function surveyLines(shifts, kept) {
+      const lines = Object.keys(SURVEY_KINDS)
+        .filter((kind) => shifts[kind] > 0)
+        .map((kind) => tr(SURVEY_KINDS[kind], shifts[kind]));
+      const staying = kept.map((item) => tr(KEPT_KINDS[item.kind] || 'clio_chart_workbook_lost_kind_other', item.count));
+      return { lines, staying };
+    }
+    async function confirmStructure(kindWord, survey) {
+      const { lines, staying } = surveyLines(survey.shifts, survey.kept);
+      const total = Object.keys(SURVEY_KINDS).reduce((sum, kind) => sum + (survey.shifts[kind] || 0), 0);
+      // Nothing shifts and nothing stays: there is nothing to confirm.
+      if (!total && !staying.length) return true;
+      const message = [
+        tr(kindWord),
+        lines.length ? tr('clio_chart_workbook_confirm_shifts') + '\n' + lines.join('\n') : '',
+        staying.length ? tr('clio_chart_workbook_confirm_kept') + '\n' + staying.join('\n') : '',
+      ].filter(Boolean).join('\n\n');
+      const answer = typeof root.showSystemModal === 'function'
+        ? await root.showSystemModal(message, 'confirm', { defaultAction: 'cancel', confirmKey: 'clio_chart_workbook_confirm_structure', danger: kindWord.indexOf('delete') >= 0 })
+        : 'cancel';
+      return answer === 'yes';
+    }
+    function structureWords(axis, at, n) {
+      const count = Math.abs(n);
+      const label = axis === 'r'
+        ? tr(n > 0 ? 'clio_chart_workbook_confirm_insert_rows' : 'clio_chart_workbook_confirm_delete_rows', count, at + 1)
+        : tr(n > 0 ? 'clio_chart_workbook_confirm_insert_cols' : 'clio_chart_workbook_confirm_delete_cols', count, at + 1);
+      return label + ' · ' + session.sheet;
+    }
+    async function applyLines(axis, at, signedN) {
+      if (session.composing) return { status: 'blocked', code: 'IME_COMPOSING' };
+      if (!commitPending()) return { status: 'blocked', code: 'INPUT_REFUSED' };
+      const count = Math.abs(signedN);
+      const survey = session.surveyLines(axis, at, signedN);
+      if (survey && !(await confirmStructure(structureWords(axis, at, signedN), survey))) return { status: 'cancelled' };
+      const out = signedN > 0
+        ? (axis === 'r' ? session.insertRows(at, count) : session.insertCols(at, count))
+        : (axis === 'r' ? session.deleteRows(at, count) : session.deleteCols(at, count));
+      render();
+      refreshMenus();
+      refreshComments();
+      return out;
+    }
+    function runFill(direction) {
+      if (session.composing) return { status: 'blocked', code: 'IME_COMPOSING' };
+      if (!commitPending()) return { status: 'blocked', code: 'INPUT_REFUSED' };
+      const out = session.fill(direction);
+      render();
+      refreshMenus();
+      return out;
+    }
+    function runFreeze(kind) {
+      if (session.composing) return { status: 'blocked', code: 'IME_COMPOSING' };
+      const sel = session.selection();
+      const frozenNow = session.freezeInfo() || { r: 0, c: 0 };
+      if (kind === 'clear') return settleFreeze(0, 0);
+      if (kind === 'rows') {
+        const rows = frozenNow.r === sel.r ? 0 : sel.r; // the same row freezes or unfreezes that axis
+        return settleFreeze(rows, frozenNow.c);
+      }
+      const cols = frozenNow.c === sel.c ? 0 : sel.c;
+      return settleFreeze(frozenNow.r, cols);
+    }
+    function settleFreeze(r, c) {
+      const out = session.setFreeze(r, c);
+      render();
+      refreshMenus();
+      return out;
+    }
+    async function runInsertSheet() {
+      if (session.composing) return { status: 'blocked', code: 'IME_COMPOSING' };
+      const out = session.insertSheet();
+      render();
+      refreshMenus();
+      return out;
+    }
+    async function runRenameSheet() {
+      if (session.composing) return { status: 'blocked', code: 'IME_COMPOSING' };
+      const name = typeof root.showInputDialog === 'function'
+        ? await root.showInputDialog({ title: tr('clio_chart_workbook_rename_title'), message: tr('clio_chart_workbook_rename_message'), defaultValue: session.sheet })
+        : null;
+      if (name == null) return { status: 'cancelled' };
+      const out = session.renameSheet(name);
+      render();
+      refreshMenus();
+      return out;
+    }
+    async function runDeleteSheet() {
+      if (session.composing) return { status: 'blocked', code: 'IME_COMPOSING' };
+      const answer = typeof root.showSystemModal === 'function'
+        ? await root.showSystemModal(tr('clio_chart_workbook_delete_sheet_confirm', session.sheet), 'confirm', { defaultAction: 'cancel', confirmKey: 'clio_chart_workbook_delete_sheet_button', danger: true })
+        : 'cancel';
+      if (answer !== 'yes') return { status: 'cancelled' };
+      const out = session.deleteSheet();
+      render();
+      refreshMenus();
+      rebindComments();
+      return out;
     }
 
     /* -- first-save list and failure alert -- */
@@ -831,6 +1312,8 @@
       'comment-thread': 'clio_chart_workbook_lost_kind_comment_thread',
       sheet: 'clio_chart_workbook_lost_kind_sheet',
       signature: 'clio_chart_workbook_lost_kind_signature',
+      'pivot-table': 'clio_chart_workbook_lost_kind_pivot_table',
+      slicer: 'clio_chart_workbook_lost_kind_slicer',
     });
     function lossName(item) {
       const kind = String(item.kind || item.what || '');
@@ -887,46 +1370,101 @@
     }
 
     /* -- render -- */
-    function buildGrid() {
+    // The grid is virtualised: only a window of rows lives in the DOM, padded by
+    // two spacer rows that hold the scrolled-out height, so a 10,000-row sheet
+    // costs the same as a 50-row one. Frozen rows and columns are always in the
+    // window and pinned with sticky cells.
+    let rowHeight = 24;
+    const COL_HEAD_PX = 40;
+    const COL_PX = 104;
+    const windowState = { first: 0, last: 0 };
+    const frozen = () => session.freezeInfo() || { r: 0, c: 0 };
+    const measureRowHeight = () => {
+      const row = tbody && tbody.querySelector('tr[data-r]');
+      if (row && row.offsetHeight > 4) rowHeight = row.offsetHeight;
+    };
+    const syncWindow = () => {
       const ext = session.extent(session.sheet);
+      const next = rowWindow(ext.rows, scrollEl.scrollTop, scrollEl.clientHeight || 320, ROW_WINDOW_BUFFER, rowHeight, frozen().r);
+      windowState.first = next.first;
+      windowState.last = next.last;
+      return { ext, ...next };
+    };
+
+    function buildGrid() {
+      const { ext, first, last } = syncWindow();
       const colgroup = h(doc, 'colgroup', {}, [h(doc, 'col', { class: 'cwk-col-head' })]);
       const head = h(doc, 'tr', {}, [h(doc, 'th', { scope: 'col', class: 'cwk-corner', 'aria-label': tr('clio_chart_workbook_row_header') })]);
       for (let c = 0; c < ext.cols; c += 1) {
         colgroup.append(h(doc, 'col', { class: 'cwk-col' }));
-        head.append(h(doc, 'th', { scope: 'col', text: colName(c) }));
+        head.append(h(doc, 'th', { scope: 'col', dataset: { c }, text: colName(c) }));
       }
       tbody = h(doc, 'tbody');
-      for (let r = 0; r < ext.rows; r += 1) {
-        const tr_ = h(doc, 'tr', {}, [h(doc, 'th', { scope: 'row', text: String(r + 1) })]);
-        for (let c = 0; c < ext.cols; c += 1) tr_.append(h(doc, 'td', { role: 'gridcell', tabindex: '-1', dataset: { r, c } }));
-        tbody.append(tr_);
-      }
+      const fr = frozen().r;
+      for (let r = 0; r < fr; r += 1) appendDataRow(r, ext, r);
+      if (first > fr) tbody.append(spacerRow(first - fr, ext));
+      for (let r = Math.max(first, fr); r <= last; r += 1) appendDataRow(r, ext);
+      if (last < ext.rows - 1) tbody.append(spacerRow(ext.rows - 1 - last, ext));
       tableEl.replaceChildren(colgroup, h(doc, 'thead', {}, [head]), tbody);
       tableEl.dataset.sheet = session.sheet;
       tableEl.dataset.rows = String(ext.rows);
       tableEl.dataset.cols = String(ext.cols);
       tableEl.dataset.truncated = String(ext.truncated);
+      measureRowHeight();
+    }
+    function spacerRow(rows, ext) {
+      const row = h(doc, 'tr', { class: 'cwk-spacer', 'aria-hidden': 'true' }, [h(doc, 'td', { colspan: String(ext.cols + 1) })]);
+      row.style.setProperty('--cwk-spacer', String(Math.max(0, rows) * rowHeight) + 'px');
+      return row;
+    }
+    function appendDataRow(r, ext, stickyIndex = -1) {
+      const fz = frozen();
+      const tr_ = h(doc, 'tr', stickyIndex >= 0 ? { dataset: { r, frozen: '1' } } : { dataset: { r } });
+      const headCell = h(doc, 'th', { scope: 'row', text: String(r + 1) });
+      if (stickyIndex >= 0) { headCell.classList.add('cwk-frozen'); headCell.style.setProperty('--cwk-top', rowHeight + 'px'); }
+      tr_.append(headCell);
+      for (let c = 0; c < ext.cols; c += 1) {
+        const td = h(doc, 'td', { role: 'gridcell', tabindex: '-1', dataset: { r, c } });
+        if (stickyIndex >= 0) { td.classList.add('cwk-frozen'); td.style.setProperty('--cwk-top', (stickyIndex + 1) * rowHeight + 'px'); }
+        if (c < fz.c) { td.classList.add('cwk-sticky-col'); td.style.setProperty('--cwk-left', (COL_HEAD_PX + c * COL_PX) + 'px'); }
+        if (c === fz.c - 1) td.classList.add('cwk-col-split');
+        tr_.append(td);
+      }
+      tbody.append(tr_);
+    }
+    function windowNeedsRebuild() {
+      const ext = session.extent(session.sheet);
+      const next = rowWindow(ext.rows, scrollEl.scrollTop, scrollEl.clientHeight || 320, ROW_WINDOW_BUFFER, rowHeight, frozen().r);
+      return next.first !== windowState.first || next.last !== windowState.last;
     }
     function render() {
       if (disposed) return;
       const ext = session.extent(session.sheet);
       if (tableEl.dataset.sheet !== session.sheet || Number(tableEl.dataset.rows) !== ext.rows || Number(tableEl.dataset.cols) !== ext.cols) buildGrid();
+      else if (windowNeedsRebuild()) buildGrid();
       const sel = session.selection();
+      const rg = session.range();
       const stale = session.staleRefs(session.sheet);
-      for (const td of tbody.querySelectorAll('td')) {
+      for (const td of tbody.querySelectorAll('td[data-r]')) {
         if (cellEditor && td.contains(cellEditor.input)) continue;
         const r = Number(td.dataset.r);
         const c = Number(td.dataset.c);
         const v = session.view(session.sheet, cellRef(r, c), stale);
         const selected = r === sel.r && c === sel.c;
+        const inRange = r >= rg.r1 && r <= rg.r2 && c >= rg.c1 && c <= rg.c2;
         td.replaceChildren(doc.createTextNode(v.text));
         if (v.state === 'formula') td.append(h(doc, 'sup', { 'aria-hidden': 'true', text: 'ƒ' }));
-        td.className = [v.numeric ? 'is-numeric' : '', v.state === 'stale' ? 'is-stale' : '', selected ? 'is-selected' : ''].filter(Boolean).join(' ');
+        // The sticky classes set at build time (frozen rows and columns) survive the repaint.
+        const sticky = ['cwk-frozen', 'cwk-sticky-col', 'cwk-col-split'].filter((name) => td.classList.contains(name));
+        td.className = [...sticky, v.numeric ? 'is-numeric' : '', v.state === 'stale' ? 'is-stale' : '', selected ? 'is-selected' : '', inRange && !selected ? 'is-in-range' : ''].filter(Boolean).join(' ');
         td.dataset.state = v.state;
         td.setAttribute('aria-label', v.label);
         td.setAttribute('aria-selected', String(selected));
         td.tabIndex = selected ? 0 : -1;
       }
+      const fz = frozen();
+      tableEl.dataset.frozenRows = String(fz.r);
+      tableEl.dataset.frozenCols = String(fz.c);
       if (comments) { const a = anchorNow(); if (`${a.sheet}!${a.ref}` !== commentsAnchor) refreshComments(); }
       const express = session.mode === 'express';
       rootEl.dataset.mode = session.mode;
@@ -944,6 +1482,7 @@
       syncBarButtons();
       captionEl.textContent = [
         tr(express ? (session.commentsAvailable() ? 'clio_chart_workbook_caption_express' : 'clio_chart_workbook_caption_express_plain') : 'clio_chart_workbook_caption_full'),
+        fz.r || fz.c ? tr('clio_chart_workbook_caption_frozen', fz.r, fz.c) : '',
         ext.truncated ? tr('clio_chart_workbook_caption_truncated', ext.rows, ext.cols) : '',
       ].filter(Boolean).join(' · ');
     }
@@ -958,10 +1497,15 @@
     /* -- wiring -- */
     on(sheetBtn, 'click', () => {
       if (!commitPending()) return;
-      openMenu(sheetBtn, session.sheetNames().map((name) => ({
-        id: `sheet:${name}`, label: name, checked: name === session.sheet,
-        run: () => { if (session.setSheet(name)) { refreshComments(); focusSelected(); } },
-      })), 'clio_chart_workbook_menu_sheets');
+      openMenu(sheetBtn, [
+        ...session.sheetNames().map((name) => ({
+          id: `sheet:${name}`, label: name, checked: name === session.sheet,
+          run: () => { if (session.setSheet(name)) { scrollEl.scrollTop = 0; buildGrid(); refreshComments(); focusSelected(); } },
+        })),
+        session.structureReady() ? { id: 'sheet.insert', label: tr('clio_chart_workbook_cmd_insert_sheet'), run: runInsertSheet } : null,
+        session.structureReady() ? { id: 'sheet.rename', label: tr('clio_chart_workbook_cmd_rename_sheet'), run: runRenameSheet } : null,
+        session.structureReady() ? { id: 'sheet.delete', label: tr('clio_chart_workbook_cmd_delete_sheet'), run: runDeleteSheet } : null,
+      ].filter(Boolean), 'clio_chart_workbook_menu_sheets');
     });
     on(modeBtn, 'click', () => openMenu(modeBtn, [
       { id: 'view.mode.express', label: tr('clio_chart_workbook_mode_express'), checked: session.mode === 'express', run: () => { if (session.mode !== 'express') toggleMode(); } },
@@ -1012,14 +1556,64 @@
     });
     on(tableEl, 'click', (event) => {
       const td = event.target.closest('td[data-r]');
-      if (td && !(cellEditor && td.contains(cellEditor.input))) selectCell(Number(td.dataset.r), Number(td.dataset.c));
+      if (td && !(cellEditor && td.contains(cellEditor.input))) selectCell(Number(td.dataset.r), Number(td.dataset.c), true, event.shiftKey);
     });
     on(tableEl, 'dblclick', (event) => { if (event.target.closest('td[data-r]')) startCellEdit(); });
+    // The virtualised window follows the scroll: only the rows in sight are rebuilt.
+    let scrollTick = false;
+    on(scrollEl, 'scroll', () => {
+      if (scrollTick || disposed) return;
+      scrollTick = true;
+      const view = doc.defaultView;
+      (view && typeof view.requestAnimationFrame === 'function' ? view.requestAnimationFrame : (fn) => setTimeout(fn, 16))(() => {
+        scrollTick = false;
+        if (disposed) return;
+        if (windowNeedsRebuild()) { buildGrid(); render(); }
+      });
+    });
+    // Row and column headers carry their own menu (insert / delete / freeze).
+    on(tableEl, 'contextmenu', (event) => {
+      const th = event.target.closest('th');
+      if (!th || th.classList.contains('cwk-corner')) return;
+      event.preventDefault();
+      const point = { x: event.clientX, y: event.clientY };
+      if (th.getAttribute('scope') === 'row') {
+        const r = Number(th.parentElement.dataset.r);
+        if (Number.isInteger(r)) {
+          const rg = session.range();
+          const many = r >= rg.r1 && r <= rg.r2 && rg.r2 > rg.r1;
+          if (!many) selectCell(r, session.selection().c, false);
+          const count = many ? rg.r2 - rg.r1 + 1 : 1;
+          const at = many ? rg.r1 : r;
+          openMenu(th, [
+            { id: 'ctx.row.above', label: tr('clio_chart_workbook_menu_insert_row_above', at + 1), run: () => applyLines('r', at, count) },
+            { id: 'ctx.row.below', label: tr('clio_chart_workbook_menu_insert_row_below', at + 1), run: () => applyLines('r', at + 1, count) },
+            { id: 'ctx.row.delete', label: tr('clio_chart_workbook_menu_delete_rows', count, at + 1, at + count), run: () => applyLines('r', at, -count) },
+            at > 0 ? { id: 'ctx.row.freeze', label: tr('clio_chart_workbook_menu_freeze_rows', at), run: () => settleFreeze(at, (session.freezeInfo() || { c: 0 }).c) } : null,
+          ].filter(Boolean), 'clio_chart_workbook_menu_rows', point);
+        }
+      } else if (th.getAttribute('scope') === 'col') {
+        const c = Number(th.dataset.c);
+        if (Number.isInteger(c)) {
+          const rg = session.range();
+          const many = c >= rg.c1 && c <= rg.c2 && rg.c2 > rg.c1;
+          if (!many) selectCell(session.selection().r, c, false);
+          const count = many ? rg.c2 - rg.c1 + 1 : 1;
+          const at = many ? rg.c1 : c;
+          openMenu(th, [
+            { id: 'ctx.col.left', label: tr('clio_chart_workbook_menu_insert_col_left', colName(at)), run: () => applyLines('c', at, count) },
+            { id: 'ctx.col.right', label: tr('clio_chart_workbook_menu_insert_col_right', colName(at)), run: () => applyLines('c', at + 1, count) },
+            { id: 'ctx.col.delete', label: tr('clio_chart_workbook_menu_delete_cols', count, colName(at), colName(at + count - 1)), run: () => applyLines('c', at, -count) },
+            c > 0 ? { id: 'ctx.col.freeze', label: tr('clio_chart_workbook_menu_freeze_cols', at), run: () => settleFreeze((session.freezeInfo() || { r: 0 }).r, at) } : null,
+          ].filter(Boolean), 'clio_chart_workbook_menu_cols', point);
+        }
+      }
+    });
     on(tableEl, 'keydown', (event) => {
       if (event.isComposing || event.keyCode === 229 || event.target.closest('input')) return;
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       const move = { ArrowDown: [1, 0], ArrowUp: [-1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }[event.key];
-      if (move) { event.preventDefault(); moveSelection(...move); return; }
+      if (move) { event.preventDefault(); moveSelection(...move, event.shiftKey); return; }
       if (event.key === 'Enter' || event.key === 'F2') { event.preventDefault(); startCellEdit(); return; }
       if (event.key === 'Delete' || event.key === 'Backspace') {
         event.preventDefault();
@@ -1030,7 +1624,7 @@
       }
       if (event.key.length === 1) { event.preventDefault(); startCellEdit(event.key); }
     });
-    // ⌘E, ⌘S and ⌘M live on the surface; none is taken while an input method is composing.
+    // ⌘E, ⌘S, ⌘M, ⌘D and ⌘R live on the surface; none is taken while an input method is composing.
     // ⌘Z is left to the desk: Edit › Undo reaches this workbook through clio-chart.js.
     on(rootEl, 'keydown', (event) => {
       if (event.isComposing || event.keyCode === 229 || session.composing) return;
@@ -1039,7 +1633,80 @@
       if (key === 'e') { event.preventDefault(); toggleMode(); }
       else if (key === 's') { event.preventDefault(); runSave(); }
       else if (key === 'm' && session.commentsAvailable()) { event.preventDefault(); openComments(); }
+      else if (key === 'd') { event.preventDefault(); runFill('down'); }
+      else if (key === 'r') { event.preventDefault(); runFill('right'); }
+      else if (key === 'f') { event.preventDefault(); runCommand('find.open'); }
+      else if (key === 'g') { event.preventDefault(); runCommand('find.next'); }
+      // N11: ⌘V pastes the desk's own clipboard into the sheet; an empty desk
+      // board changes nothing (the grid never took ⌘V before either).
+      else if (key === 'v') { event.preventDefault(); pasteFromBoard(); }
+      // N11: ⌘C copies the selected region onto the desk board. A keydown is
+      // the one copy a grid can promise: the browser only raises a copy event
+      // for a document selection, and the cells are not one. A focused field
+      // (the address bar, the comment box) keeps its own copy.
+      else if (key === 'c' && !inField(event)) { event.preventDefault(); copyFromBoard(); }
     });
+    /* -- N11: the desk clipboard's copy and paste. ⌘C arrives as the keydown
+       above; this copy listener stands behind it for a copy the browser raises
+       on its own (a document selection inside the workbook). -- */
+    const inField = (event) => !!(event.target && event.target.closest && event.target.closest('input, textarea, [contenteditable="true"]'));
+    on(rootEl, 'copy', (event) => {
+      if (cellEditor || inField(event)) return;     // a copy inside a field is that field's own
+      const clip = root.AISystem6ClioworksClipboard;
+      if (!clip) return;                            // the board module is not loaded: native copy only
+      const entry = clip.chartRegionFromSession(session, { fileId: opts.mountedName || opts.fileName || '', fileName: opts.fileName || '' });
+      if (!entry) return;
+      event.preventDefault();
+      try {
+        event.clipboardData.setData('text/plain', clip.plainOf(entry));
+        event.clipboardData.setData('text/html', clip.htmlOf(entry));
+      } catch (error) { /* the desk board already holds the copy */ }
+      session.setReceipt('clio_chart_workbook_receipt_copied', 'info', [entry.source.range]);
+    });
+    function copyFromBoard() {
+      if (cellEditor) return;
+      const clip = root.AISystem6ClioworksClipboard;
+      if (!clip) return;
+      const entry = clip.chartRegionFromSession(session, { fileId: opts.mountedName || opts.fileName || '', fileName: opts.fileName || '' });
+      if (!entry) return;
+      // The system clipboard gets the two public flavours, so a paste outside
+      // the desk still has the words; the board itself never leaves the desk.
+      clip.writeSystem(clip.plainOf(entry), clip.htmlOf(entry));
+      session.setReceipt('clio_chart_workbook_receipt_copied', 'info', [entry.source.range]);
+    }
+    function pasteFromBoard() {
+      if (cellEditor) return;                       // the input bar's own paste is text into that field
+      const clip = root.AISystem6ClioworksClipboard;
+      if (!clip) return;
+      const entry = clip.peek();
+      if (!entry) return;                           // empty desk board: current behaviour, nothing
+      let out = null;
+      if (entry.kind === 'chart-region') {
+        out = session.pasteRegion(entry.snapshot, { label: STEP_KEYS.paste });
+      } else {
+        // A ClioWrite table pastes as its cell texts; anything else (paragraphs,
+        // a stage 文字条) is the one cell the selection names, as values.
+        const grid = entry.kind === 'write-blocks' ? clip.tableGridOf(entry) : null;
+        const single = () => {
+          const plain = String(clip.plainOf(entry) || '').split(/\r\n|\r|\n/, 1)[0] || '';
+          return plain ? { rows: [[{ text: plain }]] } : null;
+        };
+        // tableGridOf answers the grid of cell rows; pasteRegion reads a region
+        // snapshot, whose rows sit one level down.
+        const source = grid ? { rows: grid } : single();
+        if (source) out = session.pasteRegion(source, { label: grid ? STEP_KEYS.paste_from_write : STEP_KEYS.paste });
+      }
+      if (out && out.status === 'ok') {
+        session.setReceipt('clio_chart_workbook_receipt_pasted', 'info', [entry.source.fileName || entry.source.fileId, entry.source.range]);
+        render();
+      } else if (out && out.status === 'blocked') {
+        setReceiptBlocked(out.code);
+      }
+    }
+    function setReceiptBlocked(code) {
+      const key = code === 'CONFIRM_OPEN' || code === 'REVERTING' ? 'clio_chart_workbook_reason_saving' : code === 'UNAVAILABLE' ? 'clio_chart_workbook_receipt_unavailable' : 'clio_chart_workbook_receipt_nothing';
+      session.setReceipt(key, 'blocked');
+    }
 
     let offSession = () => {};
     function teardown() {
@@ -1074,11 +1741,18 @@
       render,
       runSave,
       runCommand,
+      runFill,
       toggleMode,
+      // N11: the desk clipboard's two ends, for the capture key route and the contract.
+      pasteFromBoard,
+      copyFromBoard,
       commitPending,
       confirmList,
       alertFailure,
       focus: focusSelected,
+      // The find windoid's select-a-match: the cell, scrolled into the rendered
+      // window, selected and focused (surface selectCell).
+      revealCell: (r, c) => { selectCell(r, c, true); },
       afterHistory: () => { render(); refreshComments(); refreshMenus(); },
       afterRecalc: () => { refreshComments(); },
       rebindComments,
@@ -1142,7 +1816,7 @@
     });
     entry.session = session;
     try {
-      entry.surface = mountSurface(windowEl, session, { fileName });
+      entry.surface = mountSurface(windowEl, session, { fileName, mountedName });
     } catch (error) {
       session.close();
       windowEl.classList.remove('is-workbook-mounted');
@@ -1151,6 +1825,9 @@
     }
     active = entry;
     entry.surface.focus();
+    // N11: the desk clipboard module rides along with the workbook, so the
+    // first ⌘C finds it present (the copy event itself is synchronous).
+    if (typeof root.AISystem6EnsureClioworksClipboard === 'function') root.AISystem6EnsureClioworksClipboard().catch(() => {});
     if (typeof root.updateMenuState === 'function') { try { root.updateMenuState(); } catch (error) { /* next redraw */ } }
     return { ok: true };
   }
@@ -1161,6 +1838,7 @@
     active = null;
     entry.surface.unmount();
     entry.session.close();
+    if (typeof root.AISystem6ClioWorksFind?.close === 'function') root.AISystem6ClioWorksFind.close();
     if (typeof root.updateMenuState === 'function') { try { root.updateMenuState(); } catch (error) { /* next redraw */ } }
   }
 
@@ -1202,7 +1880,48 @@
     'clio-chart-workbook-mode': ['view.mode', 'e', 'clio_chart_workbook_mode_full'],
     'clio-chart-workbook-comment': ['comments.open', 'm', 'clio_chart_workbook_cmd_add_comment'],
     'clio-chart-workbook-revert': ['file.revert', '', 'clio_chart_workbook_cmd_revert'],
+    // N3: the shared 查找 / 替换 windoid (features/clioworks-find.js), the keys
+    // taken by the surface while a workbook is in front.
+    'clio-chart-workbook-find': ['find.open', 'f', 'clioworks_find_replace_menu'],
+    'clio-chart-workbook-find-next': ['find.next', 'g', 'find_next'],
   };
+  /**
+   * The surface the shared find windoid acts through (features/clioworks-find.js):
+   * the live Ledger adapter session, the editor's own selection as a rectangle,
+   * and the select-a-match that brings one cell forward. Null when no workbook
+   * is mounted — the desk's Edit › 查找 rows answer through listed().
+   */
+  function findContext() {
+    if (!active) return null;
+    const entry = active;
+    const surface = entry.surface;
+    const session = entry.session;
+    return {
+      appId: 'clioChart',
+      kind: 'xlsx',
+      name: entry.fileName,
+      adapter: session.adapter,
+      doc: surface.root.ownerDocument,
+      pane: surface.root,
+      commitPending: () => surface.commitPending(),
+      // 选中文字's box: the selected rectangle on the sheet it is on, or nothing
+      // (a single cell searches the whole workbook).
+      selection: () => {
+        if (!surface.commitPending()) return null;
+        const rg = session.range();
+        return rg.r1 === rg.r2 && rg.c1 === rg.c2 ? null : { sheet: session.sheet, r1: rg.r1, c1: rg.c1, r2: rg.r2, c2: rg.c2 };
+      },
+      select(match) {
+        const loc = match && match.locator;
+        if (!loc || loc.row == null || loc.col == null) return false;
+        if (session.sheet !== loc.sheet && !session.setSheet(loc.sheet)) return false;
+        surface.revealCell(loc.row - 1, loc.col - 1);
+        return true;
+      },
+      // The engine's setCell edits already counted; this is the repaint half.
+      afterEdit: () => surface.afterHistory(),
+    };
+  }
   const listed = (commandId) => !!active && active.session.commands().some((command) => command.id === commandId);
   const chartWindowInFront = () => {
     const win = root.document && root.document.querySelector('.window.is-active[data-window]');
@@ -1217,6 +1936,67 @@
   root.AISystem6Runtime?.registerCommand?.('clio-chart-workbook-mode', menuCommand('view.mode'));
   root.AISystem6Runtime?.registerCommand?.('clio-chart-workbook-comment', menuCommand('comments.open'));
   root.AISystem6Runtime?.registerCommand?.('clio-chart-workbook-revert', menuCommand('file.revert'));
+  root.AISystem6Runtime?.registerCommand?.('clio-chart-workbook-find', menuCommand('find.open'));
+  root.AISystem6Runtime?.registerCommand?.('clio-chart-workbook-find-next', menuCommand('find.next'));
+  // Save As… (N0) is the host's, not the session's: a new Project Hard Disk
+  // file the window then edits, or a download. ⇧⌘S through the desk's table
+  // (the capture listener below leaves every ⇧ combination alone).
+  root.AISystem6Runtime?.registerCommand?.('clio-chart-workbook-save-as', {
+    handler: () => (active && fn(nativeHost(), 'saveNativeDocumentAs') ? nativeHost().saveNativeDocumentAs(active.mountedName) : null),
+    isAvailable: () => !!active && !active.session.saving && fn(nativeHost(), 'saveNativeDocumentAs'),
+    unavailableReason: () => '',
+  });
+  // 导入 CSV… / 导出 CSV… (N15b): the parsing, the Ledger build and the BOM
+  // live in the lazy CSV module (features/clio-chart-csv.js, riding the ODF
+  // import loader with the other import-conversion modules); these rows only
+  // pick the file and hand over the mounted session. 导入 needs a mounted
+  // project (the new document lands on the Project Hard Disk), 导出 needs the
+  // workbook itself.
+  async function importCsvWorkbook() {
+    if (typeof ensureOdf !== 'function' || typeof openTransientFilePicker !== 'function') return;
+    try {
+      await ensureOdf();
+    } catch (error) {
+      console.warn('ClioChart workbook: csv module', error);
+      return;
+    }
+    const csv = root.AISystem6ClioChartCsv;
+    if (!csv || typeof csv.importWorkbook !== 'function') return;
+    openTransientFilePicker({
+      accept: '.csv,.tsv,text/csv,text/tab-separated-values',
+      multiple: false,
+      onSelect(files) {
+        const file = Array.from(files || []).find(Boolean);
+        if (file) csv.importWorkbook({ file }).catch((error) => console.warn('ClioChart workbook: csv import', error));
+      },
+    });
+  }
+  async function exportCsvSheet() {
+    if (!active || typeof ensureOdf !== 'function') return;
+    try {
+      await ensureOdf();
+    } catch (error) {
+      console.warn('ClioChart workbook: csv module', error);
+      return;
+    }
+    const csv = root.AISystem6ClioChartCsv;
+    if (csv && typeof csv.exportSheet === 'function') {
+      await csv.exportSheet({ adapter: active.session.adapter, sheetName: active.session.sheet, fileName: active.fileName || active.mountedName });
+    }
+  }
+  root.AISystem6Runtime?.registerCommand?.('clio-chart-workbook-import-csv', {
+    handler: () => importCsvWorkbook(),
+    isAvailable: () => (typeof getActiveProject === 'function' ? !!getActiveProject() : true) && typeof openTransientFilePicker === 'function',
+    unavailableReason: () => (typeof getActiveProject === 'function' && !getActiveProject() ? tr('no_project_mounted') : ''),
+  });
+  root.AISystem6Runtime?.registerCommand?.('clio-chart-workbook-export-csv', {
+    handler: () => exportCsvSheet(),
+    isAvailable: () => !!active && listed('view.mode'),
+    unavailableReason: () => (active ? '' : tr('clio_chart_workbook_reason_no_workbook')),
+  });
+  if (typeof keyboardShortcutRegistry !== 'undefined' && !keyboardShortcutRegistry.some((entry) => entry.id === 'clio-chart-workbook-save-as')) {
+    keyboardShortcutRegistry.push({ id: 'clio-chart-workbook-save-as', key: 's', shift: true, action: 'clio-chart-workbook-save-as', display: '⇧⌘S', labelKey: 'clioworks_save_as', keyCaps: true, scope: ['clioChart'] });
+  }
   Object.keys(MENU_COMMANDS).forEach((action) => {
     const [, key, labelKey] = MENU_COMMANDS[action];
     if (key && typeof keyboardShortcutRegistry !== 'undefined' && !keyboardShortcutRegistry.some((entry) => entry.id === action)) {
@@ -1224,9 +2004,10 @@
       keyboardShortcutRegistry.push({ id: action, key, ...(key === 'm' ? { code: 'KeyM' } : {}), action, display: '⌘' + key.toUpperCase(), labelKey, dispatch: false, scope: ['clioChart'] });
     }
   });
-  // Focus outside the grid (the title bar, the window body) still reaches ⌘E, ⌘S
-  // and ⌘M while a workbook is in front. Taken in the capture phase, so the
-  // desk's Minimize (⌘M) finds the event already handled; never while an input
+  // Focus outside the grid (the title bar, the window body) still reaches ⌘E, ⌘S,
+  // ⌘M, ⌘D and ⌘R while a workbook is in front. Taken in the capture phase, so the
+  // desk's Minimize (⌘M) and the chart's reverse sort (⌘R, off while a workbook
+  // owns the window) find the event already handled; never while an input
   // method is composing; keys pressed inside the surface are the surface's own.
   if (root.document && fn(root.document, 'addEventListener')) {
     root.document.addEventListener('keydown', (event) => {
@@ -1236,7 +2017,22 @@
       if (root.document.body && root.document.body.classList.contains('has-system-modal')) return;
       if (active.surface.root.contains(event.target) || !chartWindowInFront()) return;
       const key = String(event.key || '').toLowerCase();
-      const commandId = key === 'e' ? 'view.mode' : key === 's' ? 'file.save' : key === 'm' && active.session.commentsAvailable() ? 'comments.open' : '';
+      // N11: ⌘V with the focus outside the grid still pastes the desk board.
+      if (key === 'v' && fn(active.surface, 'pasteFromBoard')) {
+        event.preventDefault();
+        active.surface.pasteFromBoard();
+        return;
+      }
+      const fill = key === 'd' ? 'down' : key === 'r' ? 'right' : '';
+      if (fill) {
+        if (!active.session.structureReady()) return;
+        event.preventDefault();
+        active.surface.runFill(fill);
+        return;
+      }
+      const commandId = key === 'e' ? 'view.mode' : key === 's' ? 'file.save'
+        : key === 'f' ? 'find.open' : key === 'g' ? 'find.next'
+          : key === 'm' && active.session.commentsAvailable() ? 'comments.open' : '';
       if (!commandId) return;
       event.preventDefault();
       active.surface.runCommand(commandId);
@@ -1252,7 +2048,14 @@
     hasUnsaved: () => !!active && active.session.isDirty(),
     // The Edit menu's history while a workbook is mounted (read by clio-chart.js).
     editHistory: () => (active ? active.session.editHistory : null),
+    // N3: the surface the shared 查找 / 替换 windoid acts through, or null.
+    findContext,
+    // The mounted session itself, for the N5b tools (clio-chart-workbook-tools.js):
+    // they read the selection and answer through the same receipts the grid shows.
+    session: () => (active ? active.session : null),
     createSession,
     parseAddress,
+    // Pure virtualisation math, held by contract: which rows are in the DOM.
+    rowWindow,
   });
 })(typeof window !== 'undefined' ? window : globalThis);

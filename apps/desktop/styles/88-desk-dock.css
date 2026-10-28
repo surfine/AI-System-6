@@ -692,12 +692,20 @@ body.window-fullscreen-active.fullscreen-menu-revealed .window.is-fullscreen > .
   transform: translateY(var(--menu-bar-height));
 }
 
+/* The top-edge hot zone that summons the bar back. macOS's zone is a menu-bar
+   row; the band is therefore the bar's own height plus a 4px trigger strip
+   under it, so a pointer aimed at where the bar will appear reveals it and a
+   small dip during the 160ms slide does not dismiss it again. The zone owns a
+   rung above every window and the Control Strip (--z-fullscreen-reveal) and
+   below the bar itself, so the summoned bar and its popovers stay clickable;
+   the band under the revealed bar belongs to the menu, as on the Mac. */
 .fullscreen-reveal {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
+  height: calc(var(--menu-bar-height) + 4px);
+  z-index: var(--z-fullscreen-reveal);
 }
 
 @media (prefers-reduced-motion: reduce) {

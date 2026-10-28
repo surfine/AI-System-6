@@ -185,6 +185,69 @@
   font-size: var(--system-caption-size, 11px);
 }
 
+/* The virtualised window: spacer rows hold the height of the rows the DOM does
+   not carry, so the scrollbar covers the whole sheet. */
+.clio-chart-workbook .cwk-grid tr.cwk-spacer td {
+  border: 0;
+  padding: 0;
+}
+
+/* The header row and the row-number column stay in view while the sheet
+   scrolls; frozen rows and columns (N5a) stay pinned under them. Sticky cells
+   need their own opaque background so the scrolled sheet does not read
+   through them. */
+.clio-chart-workbook .cwk-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: calc(var(--z-local-chrome) + 1);
+  background: var(--clio-chart-panel);
+}
+
+.clio-chart-workbook .cwk-grid th[scope="row"] {
+  position: sticky;
+  left: 0;
+  z-index: var(--z-local-chrome);
+  background: var(--clio-chart-panel);
+}
+
+.clio-chart-workbook .cwk-grid thead th.cwk-corner {
+  z-index: calc(var(--z-local-chrome) + 2);
+}
+
+.clio-chart-workbook .cwk-grid td.cwk-frozen,
+.clio-chart-workbook .cwk-grid th.cwk-frozen {
+  position: sticky;
+  top: var(--cwk-top, 0);
+  z-index: var(--z-local-chrome);
+  background: var(--clio-chart-surface, var(--paper));
+}
+
+.clio-chart-workbook .cwk-grid tr[data-frozen="1"] > td,
+.clio-chart-workbook .cwk-grid tr[data-frozen="1"] > th {
+  box-shadow: inset 0 -2px 0 var(--clio-chart-rule, var(--ink));
+}
+
+.clio-chart-workbook .cwk-grid td.cwk-sticky-col {
+  position: sticky;
+  left: var(--cwk-left, 0);
+  z-index: var(--z-local-control);
+  background: var(--clio-chart-surface, var(--paper));
+}
+
+.clio-chart-workbook .cwk-grid td.cwk-sticky-col.cwk-frozen {
+  z-index: calc(var(--z-local-chrome) + 1);
+}
+
+/* The last frozen column carries the split line of the frozen pane. */
+.clio-chart-workbook .cwk-grid td.cwk-col-split {
+  box-shadow: inset -2px 0 0 var(--clio-chart-rule, var(--ink));
+}
+
+/* A selected range reads as a frame the anchor sits in (N5a fill target). */
+.clio-chart-workbook .cwk-grid td.is-in-range {
+  box-shadow: inset 0 0 0 1px var(--clio-chart-rule, var(--ink));
+}
+
 /* The first-save list: a fixed alert, double border, no title bar, cannot be moved. */
 .clio-chart-workbook .cwk-layer {
   position: absolute;
@@ -265,4 +328,247 @@
   .clio-chart-workbook .cwk-bar-button {
     min-width: 44px;
   }
+}
+
+/* Virtualised grid: the spacer rows stand in for the rows scrolled out of the
+   DOM; their height comes from the script as a custom property. */
+.clio-chart-workbook .cwk-grid tr.cwk-spacer {
+  height: var(--cwk-spacer, 0);
+}
+
+/* -- N5b: the anchored chart boxes and the two tools dialogs -- */
+
+/* The overlay lives in the scroll element, so its boxes scroll with the sheet.
+   Paint order does the layering with no z-index of its own: the boxes are
+   positioned and later in tree order than the table (so they cover cells),
+   while the sticky headers' --z-local-chrome keeps them above the boxes. */
+.clio-chart-workbook .cwk-scroll {
+  position: relative;
+}
+
+.clio-chart-workbook .cwk-charts {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.clio-chart-workbook .cwk-chartbox {
+  position: absolute;
+  left: var(--cwk-chart-x, 0);
+  top: var(--cwk-chart-y, 0);
+  width: var(--cwk-chart-w, 240px);
+  height: var(--cwk-chart-h, 160px);
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid var(--clio-chart-rule, var(--ink));
+  background: var(--clio-chart-surface, var(--paper));
+  color: var(--clio-chart-ink, var(--ink));
+  pointer-events: auto;
+  cursor: default;
+}
+
+.clio-chart-workbook .cwk-chartbox:focus-visible {
+  outline: 2px solid var(--system-focus-outline, var(--ink));
+  outline-offset: -2px;
+}
+
+/* Selection reads like the grid's own: a solid frame plus corner handles. */
+.clio-chart-workbook .cwk-chartbox.is-selected {
+  border: 2px solid var(--clio-chart-ink, var(--ink));
+}
+
+.clio-chart-workbook .cwk-chartbox.is-selected::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--clio-chart-ink, var(--ink)), var(--clio-chart-ink, var(--ink))) 0 0 / 7px 2px no-repeat,
+    linear-gradient(var(--clio-chart-ink, var(--ink)), var(--clio-chart-ink, var(--ink))) 100% 0 / 7px 2px no-repeat,
+    linear-gradient(var(--clio-chart-ink, var(--ink)), var(--clio-chart-ink, var(--ink))) 0 100% / 7px 2px no-repeat,
+    linear-gradient(var(--clio-chart-ink, var(--ink)), var(--clio-chart-ink, var(--ink))) 100% 100% / 7px 2px no-repeat;
+}
+
+.clio-chart-workbook .cwk-chartbox svg {
+  display: block;
+}
+
+/* The two dialogs share the first-save alert's System 6 frame: 1px box, 2px
+   inner rule, no colours. */
+.cwk-dialog {
+  max-width: min(560px, 94vw);
+  padding: 1px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.cwk-dialog::backdrop {
+  background: transparent;
+}
+
+.cwk-dialog form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 2px solid var(--ink);
+}
+
+.cwk-dialog-title {
+  font-size: var(--system-caption-size, 12px);
+}
+
+.cwk-dialog-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cwk-dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cwk-dialog-field > span {
+  font-size: var(--system-caption-size, 11px);
+}
+
+.cwk-dialog-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.cwk-dialog-input {
+  box-sizing: border-box;
+  width: 100%;
+  font-family: ui-monospace, monospace;
+}
+
+.cwk-dialog-hint {
+  margin: 0;
+  font-size: var(--system-caption-size, 11px);
+}
+
+.cwk-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* The kind list: six 1-bit icons in a row, the chosen one boxed. */
+.cwk-kindlist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.cwk-kind {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 44px;
+  padding: 3px 4px;
+  border: 1px solid transparent;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: default;
+}
+
+.cwk-kind:hover {
+  background: var(--clio-chart-panel);
+}
+
+.cwk-kind.is-on {
+  border-color: var(--clio-chart-ink, var(--ink));
+  background: var(--clio-chart-surface, var(--paper));
+}
+
+.cwk-kind span {
+  font-size: var(--system-caption-size, 11px);
+}
+
+.cwk-preview {
+  box-sizing: border-box;
+  min-height: 120px;
+  padding: 4px;
+  border: 1px solid var(--clio-chart-rule, var(--ink));
+  background: var(--clio-chart-surface, var(--paper));
+  overflow: auto;
+}
+
+/* Paste Function: categories in one wrap row, the engine's functions in a
+   scrolling list, the chosen one's signature and description below. */
+.cwk-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.cwk-cat {
+  padding: 2px 8px;
+  border: 1px solid transparent;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: default;
+}
+
+.cwk-cat:hover {
+  background: var(--clio-chart-panel);
+}
+
+.cwk-cat.is-on {
+  border-color: var(--clio-chart-ink, var(--ink));
+}
+
+.cwk-fnlist {
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid var(--clio-chart-rule, var(--ink));
+  background: var(--clio-chart-surface, var(--paper));
+}
+
+.cwk-fnlist .cwk-dialog-hint {
+  padding: 6px 8px;
+}
+
+.cwk-fn {
+  padding: 2px 8px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.cwk-fn:hover {
+  background: var(--clio-chart-panel);
+}
+
+.cwk-fn.is-on {
+  background: var(--clio-chart-panel);
+  box-shadow: inset 0 0 0 1px var(--clio-chart-rule, var(--ink));
+}
+
+.cwk-fn-detail {
+  margin: 0;
+  min-height: 2.4em;
+  font-size: var(--system-caption-size, 11px);
 }

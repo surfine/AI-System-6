@@ -27,7 +27,7 @@ contracts/）与 `ClioWorks-GenOffice-Addendum-v4.1.zip`（采用补充、audit-
 
 | 包内任务 | 本地已有对应物 | 本轮做法 |
 | --- | --- | --- |
-| G41-00 源码切片/许可映射 | vendor/vibeoffice（Apache-2.0，锁定 4c011173，偏离四处在案） | GenOffice 本轮不引入源码；audit-adapter 为 kit 自带独立候选 |
+| G41-00 源码切片/许可映射 | vendor/vibeoffice（Apache-2.0，锁定 32ff53a5，偏离清单见 docs/clioworks/ADOPTION.md） | GenOffice 本轮不引入源码；audit-adapter 为 kit 自带独立候选 |
 | G41-01 / D42-02 ClioStage 实测布局检查 | clio-stage.js 真实 placement 系统（clio-place 指令、clioStageWithPlacement 往返、clioStageSetPlacement 一次可撤销步、clioStageSlideContext 测量上下文、clioStageFrameMetrics 单位换算） | 新 lazy 特性 `clio-stage-audit.js`：真实 DOM 测量 → audit-adapter 合同 → 检查面板（主仓材料） |
 | D42-01 实际样式对照 | style-manifest 十二主题 + theme-registry | kit 的 host_lab.py 只读对照已跑（见证据），Python Playwright 缺席由 Node 驱动等价替代并记录 |
 | D42-03 候选几何采用闭环 | 同上 setPlacement/history | 预览=DOM 临时几何；采用=setPlacement（一次撤销）；失败注入；重查 |

@@ -72,6 +72,8 @@
           document.documentElement.dataset.deploymentTarget =
             capabilities.deployment_target
               || (capabilities.public_deployment ? "vps" : "static");
+          // ClioTalk's 代理 shows on the public site only with the cloud sandbox.
+          document.documentElement.dataset.agentCloud = capabilities.features?.agent_cloud ? "1" : "";
           window.dispatchEvent(new CustomEvent("ai-system6:capabilities", {
             detail: capabilities,
           }));

@@ -137,6 +137,11 @@ server.listen(port, host, () => {
   console.log(`${appName} ${appVersion} build ${appBuild}`);
   console.log(`Deployment profile: ${deploymentProfile}`);
   console.log(`LAN access: ${localRequestPolicy.allowLan ? "enabled with token" : "disabled"}`);
+  // Cloud agent runs leave nothing behind a restart: the janitor removes
+  // leftover containers and workspaces now and once a minute after.
+  if (require("./server/agent-cloud/config.js").agentCloudEnabled()) {
+    require("./server/agent-cloud/runs.js").startJanitor();
+  }
   const registeredRoutes = listMigratedRoutes();
   // The full METHOD PATH list is a debugging aid. Startup prints the count.
   if (process.env.AI_SYSTEM6_LOG_ROUTES === "1") {

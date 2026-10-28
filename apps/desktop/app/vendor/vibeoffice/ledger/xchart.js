@@ -226,14 +226,16 @@
 
   /* ------------------------------------------------------------ Chart Wizard */
   const TYPES = [
-    { id: 'column', label: 'Column', subs: [['col', 'Clustered Column'], ['colStacked', 'Stacked Column'], ['colPct', '100% Stacked Column']] },
-    { id: 'bar', label: 'Bar', subs: [['bar', 'Clustered Bar'], ['barStacked', 'Stacked Bar']] },
-    { id: 'line', label: 'Line', subs: [['line', 'Line'], ['lineMarkers', 'Line with markers displayed at each data value']] },
-    { id: 'pie', label: 'Pie', subs: [['pie', 'Pie']] },
+    { id: 'column', label: 'Column|chart', subs: [['col', 'Clustered Column'], ['colStacked', 'Stacked Column'], ['colPct', L.N('100% Stacked Column')]] },
+    { id: 'bar', label: 'Bar|chart', subs: [['bar', 'Clustered Bar'], ['barStacked', 'Stacked Bar']] },
+    { id: 'line', label: 'Line|chart', subs: [['line', L.N('Line|chart')], ['lineMarkers', 'Line with markers displayed at each data value']] },
+    { id: 'pie', label: 'Pie|chart', subs: [['pie', L.N('Pie|chart')]] },
     { id: 'scatter', label: 'XY (Scatter)', subs: [['scatter', 'Scatter. Compares pairs of values.']] },
-    { id: 'area', label: 'Area', subs: [['area', 'Area'], ['areaStacked', 'Stacked Area']] },
-    { id: 'doughnut', label: 'Doughnut', subs: [['doughnut', 'Doughnut']] },
+    { id: 'area', label: 'Area|chart', subs: [['area', L.N('Area|chart')], ['areaStacked', 'Stacked Area']] },
+    { id: 'doughnut', label: 'Doughnut', subs: [['doughnut', L.N('Doughnut')]] },
   ];
+  /** a chart sub-type's name (English, shown translated) */
+  const subName = (k) => { for (const t of TYPES) for (const [id, l] of t.subs) if (id === k) return l; return k; };
   const typeIcon = (kind) => {
     const s = 40;
     const bars = (pts, horiz) => pts.map(([x, y, w, hh, col]) => (horiz ? `<rect x="${y}" y="${x}" width="${hh}" height="${w}" fill="${col}" stroke="#000" stroke-width=".5"/>` : `<rect x="${x}" y="${s - 4 - hh - y}" width="${w}" height="${hh}" fill="${col}" stroke="#000" stroke-width=".5"/>`)).join('');
@@ -262,7 +264,7 @@
     const kinds = TYPES.flatMap((t) => t.subs.map((s) => s[0]));
     L.ui.openMenu([{ custom: (close) => {
       const g = L.h('div', { class: 'ctype-grid' });
-      for (const k of kinds) { const b = L.h('button', { type: 'button', class: 'ctype-b', html: typeIcon(k), 'data-tip': k, 'aria-label': k }); b.addEventListener('click', () => { close(); if (d && d.kind === 'chart' && d.chart) CW.setKind(d, k); }); g.appendChild(b); }
+      for (const k of kinds) { const b = L.h('button', { type: 'button', class: 'ctype-b', html: typeIcon(k), 'data-tip': subName(k), 'aria-label': subName(k) }); b.addEventListener('click', () => { close(); if (d && d.kind === 'chart' && d.chart) CW.setKind(d, k); }); g.appendChild(b); }
       return g;
     } }], at);
   };
@@ -331,14 +333,14 @@
         subs.textContent = '';
         for (const [k, label] of curType.subs) {
           const b = h('button', { type: 'button', class: 'cw-sub' + (k === st.kind ? ' on' : ''), html: typeIcon(k), 'aria-label': label });
-          b.addEventListener('click', () => { st.kind = k; desc.textContent = label; drawSubs(); drawPreview(); });
+          b.addEventListener('click', () => { st.kind = k; desc.textContent = L.t(label); drawSubs(); drawPreview(); });
           subs.appendChild(b);
         }
         const cur = curType.subs.find((s) => s[0] === st.kind);
-        desc.textContent = cur ? cur[1] : '';
+        desc.textContent = cur ? L.t(cur[1]) : '';
       };
       for (const t of TYPES) {
-        const it = h('div', { class: 'cw-type' + (t === curType ? ' on' : ''), role: 'option', html: typeIcon(t.subs[0][0]).replace(/width="40" height="40"/, 'width="20" height="20"') + `<span>${t.label}</span>` });
+        const it = h('div', { class: 'cw-type' + (t === curType ? ' on' : ''), role: 'option', html: typeIcon(t.subs[0][0]).replace(/width="40" height="40"/, 'width="20" height="20"') + `<span>${L.esc(L.t(t.label))}</span>` });
         it.addEventListener('click', () => { curType = t; if (!t.subs.some((s) => s[0] === st.kind)) st.kind = t.subs[0][0]; L.$$('.cw-type', list).forEach((x) => x.classList.toggle('on', x === it)); drawSubs(); drawPreview(); });
         list.appendChild(it);
       }
@@ -362,7 +364,7 @@
       const leg = h('div', { class: 'col' }, ui.check('&Show legend', st.legend !== 'none', (v) => { st.legend = v ? 'r' : 'none'; drawPreview(); }),
         ...[['b', '&Bottom'], ['tr', 'C&orner'], ['t', 'To&p'], ['r', '&Right'], ['l', '&Left']].map(([k, l]) => ui.radio('cw-leg', l, st.legend === k, () => { st.legend = k; drawPreview(); })));
       const lab = h('div', { class: 'col' }, ui.check('&Value', st.labels, (v) => { st.labels = v; drawPreview(); }));
-      stepBox.appendChild(ui.tabs([{ label: 'Titles', body: titles }, { label: 'Gridlines', body: grid }, { label: 'Legend', body: leg }, { label: 'Data Labels', body: lab }]));
+      stepBox.appendChild(ui.tabs([{ label: 'Titles', body: titles }, { label: 'Gridlines|chart', body: grid }, { label: 'Legend', body: leg }, { label: 'Data Labels', body: lab }]));
     }
     function step4() {
       stepBox.textContent = '';
@@ -370,14 +372,14 @@
       nm.addEventListener('input', () => { st.sheetName = nm.value; });
       stepBox.append(h('div', { text: 'Place chart:' }),
         h('div', { class: 'row', style: 'gap:8px;margin:6px 0' }, ui.radio('cw-where', 'As new &sheet:', st.where === 'sheet', () => { st.where = 'sheet'; }), nm),
-        h('div', { class: 'row', style: 'gap:8px;margin:6px 0' }, ui.radio('cw-where', 'As &object in:', st.where === 'object', () => { st.where = 'object'; }), h('span', { text: sh.name })));
+        h('div', { class: 'row', style: 'gap:8px;margin:6px 0' }, ui.radio('cw-where', 'As &object in:', st.where === 'object', () => { st.where = 'object'; }), h('span', { translate: 'no', text: sh.name })));
     }
     const steps = editing ? [step1, step2, step3] : [step1, step2, step3, step4];
     const titles = ['Chart Type', 'Chart Source Data', 'Chart Options', 'Chart Location'];
     return new Promise((resolve) => {
       let ok = false;
       const d = ui.dialog({
-        title: 'Chart Wizard - Step 1 of ' + steps.length + ' - Chart Type', body, width: 640,
+        title: L.t('Chart Wizard - Step {0} of {1} - {2}', 1, steps.length, L.t(titles[0])), body, width: 640,
         buttons: [
           { label: 'Cancel' },
           { label: '< &Back', onClick: () => { if (st.step > 1) { st.step--; show(); } return false; } },
@@ -385,7 +387,7 @@
           { label: '&Finish', primary: true, onClick: () => { ok = true; } },
         ],
       });
-      function show() { steps[st.step - 1](); d.el.querySelector('.dlg-ttl').textContent = `Chart Wizard - Step ${st.step} of ${steps.length} - ${titles[st.step - 1]}`; d.buttons[1].disabled = st.step === 1; d.buttons[2].disabled = st.step === steps.length; drawPreview(); }
+      function show() { steps[st.step - 1](); d.el.querySelector('.dlg-ttl').textContent = L.t('Chart Wizard - Step {0} of {1} - {2}', st.step, steps.length, L.t(titles[st.step - 1])); d.buttons[1].disabled = st.step === 1; d.buttons[2].disabled = st.step === steps.length; drawPreview(); }
       show();
       d.done.then(() => {
         if (!ok) { resolve(null); return; }

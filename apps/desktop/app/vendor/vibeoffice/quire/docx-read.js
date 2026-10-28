@@ -163,13 +163,23 @@
           const mj = X.path(fs, 'majorFont', 'latin'), mn = X.path(fs, 'minorFont', 'latin');
           if (mj && at(mj, 'typeface')) doc.theme.major = at(mj, 'typeface');
           if (mn && at(mn, 'typeface')) doc.theme.minor = at(mn, 'typeface');
-          const mjEa = X.path(fs, 'majorFont', 'ea'), mnEa = X.path(fs, 'minorFont', 'ea');
-          doc.theme.majorEA = mjEa && at(mjEa, 'typeface'); doc.theme.minorEA = mnEa && at(mnEa, 'typeface');
+          /* the East Asian fonts: the theme's own (a:ea), else its font for the script of the document's East Asian
+             language (settings' themeFontLang: a Japanese Word's theme has <a:font script="Jpan" typeface="游明朝"/>) */
+          const setRel = relOfType('settings'), setX = setRel && (await xml(setRel.target));
+          const eaLang = String((setX && kid(setX, 'themeFontLang') && at(kid(setX, 'themeFontLang'), 'eastAsia')) || '').toLowerCase();
+          const script = /^ja/.test(eaLang) ? 'Jpan' : /^ko/.test(eaLang) ? 'Hang' : /^zh-(cn|sg)/.test(eaLang) ? 'Hans' : /^zh/.test(eaLang) ? 'Hant' : null;
+          const eaFont = (part) => {
+            const ea = X.path(fs, part, 'ea'), own = ea && at(ea, 'typeface');
+            const f = !own && script && kids(kid(fs, part) || fs).find((c) => c.localName === 'font' && at(c, 'script') === script);
+            return own || (f && at(f, 'typeface')) || '';
+          };
+          doc.theme.majorEA = eaFont('majorFont'); doc.theme.minorEA = eaFont('minorFont');
         }
       }
     }
     const dctx = { theme: doc.theme };
     const themeFont = (v) => (/^major/.test(v) ? doc.theme.major : doc.theme.minor);
+    const themeFontEA = (v) => (/^major/.test(v) ? doc.theme.majorEA : doc.theme.minorEA) || undefined;
 
     /* ---- colours ---- */
     function wColor(el, attr, themeAttr) {
@@ -237,7 +247,7 @@
             const f = at(c, 'ascii') || at(c, 'hAnsi');
             const ft = at(c, 'asciiTheme') || at(c, 'hAnsiTheme');
             if (ft) r.font = themeFont(ft); else if (f) r.font = f;
-            if (at(c, 'eastAsia')) r.fontEA = at(c, 'eastAsia'); else if (at(c, 'eastAsiaTheme')) r.fontEA = themeFont(at(c, 'eastAsiaTheme'));
+            if (at(c, 'eastAsia')) r.fontEA = at(c, 'eastAsia'); else if (at(c, 'eastAsiaTheme') && themeFontEA(at(c, 'eastAsiaTheme'))) r.fontEA = themeFontEA(at(c, 'eastAsiaTheme'));
             if (at(c, 'cs')) r.fontCS = at(c, 'cs');
             if (at(c, 'hint')) r.hint = at(c, 'hint');
             break;
@@ -640,6 +650,8 @@
       for (const c of setX.children) {
         switch (c.localName) {
           case 'defaultTabStop': s.defTab = tw(at(c, 'val')) || 36; break;
+          case 'characterSpacingControl': s.charSpacing = at(c, 'val'); break;
+          case 'themeFontLang': s.themeLang = { val: at(c, 'val') || undefined, eastAsia: at(c, 'eastAsia') || undefined, bidi: at(c, 'bidi') || undefined }; break;
           case 'evenAndOddHeaders': s.evenOdd = bool(c); break;
           case 'trackRevisions': s.track = bool(c); break;
           case 'mirrorMargins': s.mirror = bool(c); break;
@@ -867,7 +879,9 @@
             /* without xml:space="preserve", line breaks from pretty-printed XML (and the indentation around
                them) are dropped at the ends and folded to a space inside; plain spaces are kept, as in Word */
             let tx = c.textContent;
-            if (/[\r\n]/.test(tx) && c.getAttribute('xml:space') !== 'preserve' && c.getAttributeNS('http://www.w3.org/XML/1998/namespace', 'space') !== 'preserve') tx = tx.replace(/^[ \t]*[\r\n][ \t\r\n]*|[ \t\r\n]*[\r\n][ \t]*$/g, '').replace(/[ \t]*[\r\n]+[ \t]*/g, ' ');
+            // XML normalizes source newlines to LF. A surviving CR came from a
+            // character reference (&#13;) and is content, even without xml:space.
+            if (/\n/.test(tx) && c.getAttribute('xml:space') !== 'preserve' && c.getAttributeNS('http://www.w3.org/XML/1998/namespace', 'space') !== 'preserve') tx = tx.split('\r').map(s => s.replace(/^[ \t]*\n[ \t\n]*|[ \t\n]*\n[ \t]*$/g, '').replace(/[ \t]*\n+[ \t]*/g, ' ')).join('\r');
             text(tx);
             break;
           }
@@ -1331,22 +1345,37 @@
       const sx = xf.chw ? w / xf.chw : 1, sy = xf.chh ? h / xf.chh : 1;
       const it = { t: 'group', w, h, kids: [] };
       if (g.localName === 'wpc') { const bg = kid(g, 'bg'); const f = bg && X.fillIn(bg, mctx); if (f) it.fill = f; }
-      const walk = (parent, map) => {
+      /* a box in a group's child space, in the space around the group: scaled and moved, then mirrored by the
+         group's flips (a mirrored child turns the other way and is flipped with it) and turned by its rotation */
+      const inGroup = (gx, x0, y0, w0, h0, csx, csy, b) => {
+        let x = x0 + (b.x - (gx.chx || 0)) * csx, y = y0 + (b.y - (gx.chy || 0)) * csy, rot = b.rot || 0, flipH = !!b.flipH, flipV = !!b.flipV;
+        const bw = b.w * csx, bh = b.h * csy;
+        if (gx.flipH) { x = 2 * x0 + w0 - x - bw; flipH = !flipH; rot = -rot; }
+        if (gx.flipV) { y = 2 * y0 + h0 - y - bh; flipV = !flipV; rot = -rot; }
+        if (gx.rot) {
+          const a = gx.rot * Math.PI / 180, dx = x + bw / 2 - (x0 + w0 / 2), dy = y + bh / 2 - (y0 + h0 / 2);
+          x = x0 + w0 / 2 + dx * Math.cos(a) - dy * Math.sin(a) - bw / 2; y = y0 + h0 / 2 + dx * Math.sin(a) + dy * Math.cos(a) - bh / 2; rot += gx.rot;
+        }
+        return { x, y, w: bw, h: bh, rot: ((rot % 360) + 360) % 360, flipH, flipV };
+      };
+      /* children filled "from the group" take the nearest group fill */
+      const fillCtx = (spPr, gctx) => { const f = spPr && X.fillIn(spPr, gctx); return f ? Object.assign({}, mctx, { groupFill: f }) : gctx; };
+      const walk = (parent, map, gctx) => {
         for (const c of parent.children) {
           const nm = c.localName;
           if (nm === 'wsp' || nm === 'sp' || nm === 'pic' || nm === 'grpSp' || nm === 'wgp' || nm === 'cxnSp') {
             const spPr = kid(c, 'spPr') || kid(c, 'grpSpPr');
             const cx = X.xfrm(kid(spPr, 'xfrm'));
             if (!cx) continue;
-            const r = map(cx);
             if (nm === 'grpSp' || nm === 'wgp') {
               const csx = cx.chw ? cx.w / cx.chw : 1, csy = cx.chh ? cx.h / cx.chh : 1;
-              walk(c, (b) => map({ x: cx.x + (b.x - (cx.chx || 0)) * csx, y: cx.y + (b.y - (cx.chy || 0)) * csy, w: b.w * csx, h: b.h * csy, rot: b.rot, flipH: b.flipH, flipV: b.flipV }));
+              walk(c, (b) => map(inGroup(cx, cx.x, cx.y, cx.w, cx.h, csx, csy, b)), fillCtx(spPr, gctx));
               continue;
             }
+            const r = map({ x: cx.x, y: cx.y, w: cx.w, h: cx.h, rot: cx.rot, flipH: cx.flipH, flipV: cx.flipV });
             let k;
-            if (nm === 'pic') k = picItem(c, mctx, r.w, r.h);
-            else k = shapeItem(c, mctx, r.w, r.h, ctx);
+            if (nm === 'pic') k = picItem(c, gctx, r.w, r.h);
+            else k = shapeItem(c, gctx, r.w, r.h, ctx);
             if (!k) continue;
             /* plain DrawingML shapes (locked canvases pasted from PowerPoint) carry DrawingML text */
             if (nm === 'sp' && !k.tb) {
@@ -1363,12 +1392,15 @@
               }
             }
             k.x = r.x; k.y = r.y; k.w = r.w; k.h = r.h;
-            if (cx.rot) k.rot = cx.rot;
+            delete k.rot; delete k.flipH; delete k.flipV;
+            if (r.rot) k.rot = r.rot;
+            if (r.flipH) k.flipH = true;
+            if (r.flipV) k.flipV = true;
             it.kids.push(k);
           }
         }
       };
-      walk(g, (b) => ({ x: (b.x - (xf.chx || 0)) * sx, y: (b.y - (xf.chy || 0)) * sy, w: b.w * sx, h: b.h * sy }));
+      walk(g, (b) => inGroup(xf, 0, 0, w, h, sx, sy, b), fillCtx(gsp, mctx));
       it.tb = null;
       return it;
     }

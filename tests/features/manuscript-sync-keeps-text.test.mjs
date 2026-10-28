@@ -57,6 +57,10 @@ test.assertNotIncludes(
   // object. Evaluating the module's real source in the SAME scope is what the
   // browser's script tag does, so the declarations land where the rest of the
   // app can see them, which is the condition this contract is about.
+  // markdown-outline.js comes first, exactly as config.js's loader orders
+  // them: writing-flow's outline rendering calls into the parse/serialise
+  // half that moved out of markdown.js for the floppy budget.
+  vmw.run(readFileSync(join(root, "apps/desktop/app/core/markdown-outline.js"), "utf8"));
   vmw.run(readFileSync(join(root, "apps/desktop/app/features/writing-flow.js"), "utf8"));
   test.assert(
     typeof ctx.syncProjectOutlineToTeachText === "function",

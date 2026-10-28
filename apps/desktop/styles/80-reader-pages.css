@@ -1,0 +1,357 @@
+/* Reader's original-page view for PDFs (features/reader-pages.js). Lazy: this
+   sheet travels with the module, never with the boot. Every selector is
+   .reader-pages* or .reader-page-*, plus the one state class .has-pages the
+   module puts on #reader-content while it owns it. The 整理页面 mode and the
+   dragged extraction rectangle (features/reader-organize.js) ride the same
+   sheet with .reader-organize* selectors. */
+
+.reader-content.has-pages {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  line-height: normal;
+}
+
+.reader-content.has-pages::after {
+  display: none;
+}
+
+.reader-content.has-pages > * {
+  max-width: none;
+  margin-inline: 0;
+}
+
+/* The view switch also sits above the plain-text view of a PDF. */
+.reader-pages-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--ink);
+  background: var(--surface-secondary, var(--paper));
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.reader-content:not(.has-pages) > .reader-pages-bar {
+  position: sticky;
+  top: -28px;
+  margin: -28px -34px 14px;
+  max-width: none;
+}
+
+.reader-pages-bar .btn[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.reader-pages-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.reader-pages-group .select-wrap {
+  min-width: 0;
+}
+
+.reader-pages-bar input.reader-pages-number {
+  flex: none;
+  width: 3.4em;
+  text-align: center;
+}
+
+.reader-pages-bar input.reader-pages-find {
+  flex: none;
+  width: 11em;
+  min-width: 0;
+}
+
+.reader-pages-counter,
+.reader-pages-find-count {
+  min-width: 4em;
+  white-space: nowrap;
+}
+
+.reader-pages-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.reader-pages-thumbs {
+  flex: 0 0 96px;
+  margin: 0;
+  padding: 8px 6px;
+  overflow-y: auto;
+  border-right: 1px solid var(--ink);
+  background: var(--surface-secondary, var(--paper));
+  list-style: none;
+}
+
+.reader-pages-thumb {
+  display: block;
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 3px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.reader-pages-thumb[aria-current="true"] {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+.reader-pages-thumb canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-bottom: 2px;
+  background: var(--paper);
+}
+
+.reader-pages-scroll {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding: 12px;
+  overflow: auto;
+  background: var(--shade);
+  user-select: text;
+}
+
+.reader-page {
+  position: relative;
+  width: var(--page-w);
+  height: var(--page-h);
+  margin: 0 auto 12px;
+  background: var(--paper);
+  box-shadow: 1px 1px 0 var(--ink);
+  overflow: hidden;
+  --total-scale-factor: 1;
+  --scale-round-x: 1px;
+  --scale-round-y: 1px;
+}
+
+.reader-page canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.reader-page-label {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--shade-dark);
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.reader-page-text {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  line-height: 1;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+}
+
+.reader-page-text :is(span, br) {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0 0;
+}
+
+.reader-page-text ::selection {
+  background: color-mix(in srgb, var(--selection-bg, var(--ink)) 35%, transparent);
+}
+
+.reader-page-text .reader-page-hit {
+  background: color-mix(in srgb, var(--shade-dark) 45%, transparent);
+  outline: 1px solid var(--ink);
+}
+
+.reader-page-text .reader-page-hit.is-current {
+  background: color-mix(in srgb, var(--ink) 40%, transparent);
+  outline-width: 2px;
+}
+
+.reader-pages-note {
+  padding: 18px;
+  text-align: center;
+}
+
+/* --- 整理页面 (features/reader-organize.js) ------------------------------- */
+
+.reader-organize-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+  background: var(--shade);
+}
+
+.reader-organize-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reader-organize-tile {
+  position: relative;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  text-align: center;
+  touch-action: none;
+}
+
+.reader-organize-tile.is-selected {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+.reader-organize-tile.is-dragged {
+  opacity: 0.45;
+}
+
+.reader-organize-tile.is-drop-before {
+  box-shadow: -3px 0 0 var(--ink);
+}
+
+.reader-organize-frame {
+  display: grid;
+  place-items: center;
+  min-height: 132px;
+  background: var(--paper);
+}
+
+.reader-organize-frame canvas {
+  display: block;
+  max-width: 100%;
+  background: var(--paper);
+}
+
+.reader-organize-number {
+  display: inline-block;
+  margin-top: 3px;
+  font-size: 11px;
+}
+
+.reader-organize-ghost {
+  position: fixed;
+  left: var(--ghost-x, 0px);
+  top: var(--ghost-y, 0px);
+  width: 108px;
+  padding: 4px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  pointer-events: none;
+}
+
+.reader-organize-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--ink);
+  background: var(--surface-secondary, var(--paper));
+  font-size: 12px;
+}
+
+.reader-organize-foot .btn {
+  margin-left: auto;
+}
+
+.reader-organize-foot .btn + .btn {
+  margin-left: 0;
+}
+
+.reader-organize-summary {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+/* One drag draws one rectangle on one page. The rect paints above the page's
+   canvas and text layer by DOM order, so it needs no z-index. */
+.reader-pages-scroll.is-extracting {
+  cursor: crosshair;
+}
+
+.reader-pages-scroll.is-extracting .reader-page * {
+  pointer-events: none;
+}
+
+.reader-organize-extract-rect {
+  position: absolute;
+  left: var(--rect-x, 0px);
+  top: var(--rect-y, 0px);
+  width: var(--rect-w, 0px);
+  height: var(--rect-h, 0px);
+  border: 1px dashed var(--ink);
+  background: color-mix(in srgb, var(--ink) 12%, transparent);
+  pointer-events: none;
+}
+
+/* The preview: a plain table; a cell nothing landed in says so. */
+dialog.reader-organize-preview {
+  width: min(720px, 92vw);
+}
+
+#reader-organize-table-scroll {
+  max-height: 46vh;
+  overflow: auto;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.reader-organize-table {
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.reader-organize-table td {
+  max-width: 15em;
+  padding: 3px 8px;
+  border: 1px solid var(--ink);
+  vertical-align: top;
+}
+
+.reader-organize-table td.is-unrecognized {
+  color: var(--shade-dark);
+  font-style: italic;
+}
+
+@media (max-width: 640px) {
+  .reader-pages-thumbs {
+    flex-basis: 64px;
+    padding: 6px 4px;
+  }
+
+  .reader-pages-scroll {
+    padding: 6px;
+  }
+
+  .reader-pages-bar input.reader-pages-find {
+    width: 8em;
+  }
+}

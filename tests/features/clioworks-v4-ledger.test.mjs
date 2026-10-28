@@ -313,7 +313,8 @@ async function editPathGate(test) {
     test.assert(/<calcPr[^>]*fullCalcOnLoad="1"/.test(partText(stale, "xl/workbook.xml")), "and the workbook asks the next reader to recalculate on load");
   }
 
-  // 6f. Undo, then save: the content equals the original; the bytes are a fresh serialization.
+  // 6f. Undo, then save: the content equals the original; with every part back to what the writer makes of the
+  // unedited workbook, part preservation (common/zip.js preserveUntouched) hands back the original file itself.
   {
     const a = await open(budget);
     const original = grid(a);
@@ -329,7 +330,7 @@ async function editPathGate(test) {
     const changed = diff(original, grid(await open(bytes)));
     test.assert(changed.length === 0, `the saved content after undo equals the original on every cell (differs: ${changed.join(",")})`);
     test.assert(["D2", "D3", "D12", "G2", "B2"].every((ref) => rawV(bytes, ref) === rawV(budget, ref)), "the original cached results are back in the XML (D2, D3, D12, G2, B2)");
-    test.assert(bytes.length !== budget.length || bytes.some((x, i) => x !== budget[i]), "the bytes are a fresh serialization, not the original file");
+    test.assert(bytes.length === budget.length && bytes.every((x, i) => x === budget[i]), "no part differs from the unedited write, so the bytes are the original file (part preservation)");
 
     // Without the evaluator, undo cannot restore the old results: they are stale and saved without a cache.
     const b = await open(budget);

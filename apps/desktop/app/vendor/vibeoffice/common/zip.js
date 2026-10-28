@@ -1,10 +1,21 @@
 /* VibeOffice — ZIP container engine (read + write), no dependencies; shared by Quire, Ledger and Lectern.
  * Uses the browser's Compression Streams when present and ships a small pure-JS inflater, so Office
  * Open XML packages open in any modern browser (and in Node, for the tests).
+ *
+ * Also loaded by the service worker (public/sw.js, importScripts), which unpacks the whole published site
+ * from updater/web-<version>.zip with read(), entry.bytes(), entry.usize, entry.crc and crc32(). Careful when
+ * editing: it runs there with no window or DOM (only self/globalThis), a change to it is a change to the
+ * worker (browsers reinstall it), and a bug here can stop the site from caching or updating for every
+ * visitor. Keep those members working, and check tests/sw.test.mjs as well as the apps.
  */
 (function (root) {
   'use strict';
   const L = root.L || (root.L = {});
+  /* ClioWorks deviation (documented): L.t / L.N are defined upstream by common/i18n.js, which ClioWorks does not
+     vendor, yet vendored files call them (some while loading). English fall-through; i18n.js would overwrite it. zip.js is the
+     first file every ClioWorks codec load list names, so L exists with them before any file that calls L.N at load. */
+  if (!L.N) L.N = (s) => s;
+  if (!L.t) L.t = (s, ...a) => String(s).replace(/(\S)\|[A-Za-z][A-Za-z -]*$/, '$1').replace(/\{(\d+)\}/g, (m, i) => (a[i] != null ? a[i] : m));
   const te = new TextEncoder();
   const td = new TextDecoder('utf-8');
 
@@ -24,7 +35,31 @@
     return (c ^ 0xffffffff) >>> 0;
   }
 
-  /* ---------- pure-JS inflate (RFC 1951) ---------- */
+  /* ---------- pure-JS inflate (RFC 1951) ----------
+     Derived from puff contrib/puff/puff.c (zlib licence): Mark Adler's puff.c translated to JavaScript and
+     altered (typed arrays, a growing output buffer). This is an altered version, not the original puff. Its
+     notice:
+
+       Copyright (C) 2002-2013 Mark Adler, all rights reserved
+       version 2.3, 21 Jan 2013
+
+       This software is provided 'as-is', without any express or implied
+       warranty.  In no event will the author be held liable for any damages
+       arising from the use of this software.
+
+       Permission is granted to anyone to use this software for any purpose,
+       including commercial applications, and to alter it and redistribute it
+       freely, subject to the following restrictions:
+
+       1. The origin of this software must not be misrepresented; you must not
+          claim that you wrote the original software. If you use this software
+          in a product, an acknowledgment in the product documentation would be
+          appreciated but is not required.
+       2. Altered source versions must be plainly marked as such, and must not be
+          misrepresented as being the original software.
+       3. This notice may not be removed or altered from any source distribution.
+
+       Mark Adler */
   const LBASE = [3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258];
   const LEXT = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0];
   const DBASE = [1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577];
@@ -152,9 +187,10 @@
   }
 
   /* ---------- reader ---------- */
-  function makeEntry(u8, dv, name, method, csize, usize, loff, dataStart) {
+  /* crc: the CRC-32 the central directory records (undefined for an entry found by the repair path) */
+  function makeEntry(u8, dv, name, method, csize, usize, loff, dataStart, crc, cen) {
     return {
-      name, method, csize, usize, loff,
+      name, method, csize, usize, loff, crc, cen,
       async bytes() {
         if (this._cache) return this._cache;
         let start = dataStart;
@@ -172,6 +208,22 @@
         return out;
       },
       async text() { return td.decode(await this.bytes()); },
+      /* ClioWorks deviation (documented): the entry's stored records, for write() to copy verbatim (part
+         preservation): the whole local record (header, data, data descriptor) and the central directory record.
+         null when the entry cannot be copied safely (repair-path entry, encrypted, zip64, truncated). */
+      raw() {
+        const lh = this.loff, cp = this.cen;
+        if (cp == null || this.crc == null || lh + 30 > u8.length || dv.getUint32(lh, true) !== 0x04034b50) return null;
+        const flags = dv.getUint16(lh + 6, true);
+        const start = lh + 30 + dv.getUint16(lh + 26, true) + dv.getUint16(lh + 28, true);
+        let end = start + this.csize;
+        if (flags & 1 || end > u8.length || this.csize >= 0xffffffff || this.usize >= 0xffffffff) return null;
+        if (flags & 8) end += end + 4 <= u8.length && dv.getUint32(end, true) === 0x08074b50 ? 16 : 12;
+        const cend = cp + 46 + dv.getUint16(cp + 28, true) + dv.getUint16(cp + 30, true) + dv.getUint16(cp + 32, true);
+        if (end > u8.length || cend > u8.length) return null;
+        for (let xp = cp + 46 + dv.getUint16(cp + 28, true), xe = xp + dv.getUint16(cp + 30, true); xp + 4 <= xe; xp += 4 + dv.getUint16(xp + 2, true)) if (dv.getUint16(xp, true) === 1) return null;
+        return { local: u8.subarray(lh, end), central: u8.subarray(cp, cend) };
+      },
     };
   }
   const decodeName = (u8, flags) => (flags & 0x800 ? td.decode(u8) : Array.from(u8, (b) => String.fromCharCode(b)).join(''));
@@ -205,6 +257,7 @@
       if (p + 46 > u8.length || dv.getUint32(p, true) !== 0x02014b50) break;
       const flags = dv.getUint16(p + 8, true);
       const method = dv.getUint16(p + 10, true);
+      const crc = dv.getUint32(p + 16, true);
       let csize = dv.getUint32(p + 20, true);
       let usize = dv.getUint32(p + 24, true);
       const nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
@@ -222,8 +275,9 @@
         }
         xp += 4 + sz;
       }
+      const cen = p;
       p += 46 + nlen + xlen + clen;
-      addEntry(files, makeEntry(u8, dv, name, method, csize, usize, loff));
+      addEntry(files, makeEntry(u8, dv, name, method, csize, usize, loff, undefined, crc, cen));
     }
     return files.size ? files : null;
   }
@@ -299,13 +353,23 @@
     const date = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
     return { time, date };
   }
-  /** files: [{name, data: Uint8Array|string, store?: bool}] → Blob */
+  /** files: [{name, data: Uint8Array|string, store?: bool, raw?: entry.raw()}] → Blob
+      ClioWorks deviation (documented): a file with `raw` is copied as stored (local record and central record byte
+      for byte; only the central record's offset moves), so an untouched part keeps its container bytes too. */
   async function write(files, mime) {
     const parts = [];
     const central = [];
     let offset = 0;
     const { time, date } = dosDateTime(new Date());
     for (const f of files) {
+      if (f.raw) {
+        const ch = f.raw.central.slice();
+        new DataView(ch.buffer).setUint32(42, offset, true);
+        parts.push(f.raw.local);
+        central.push(ch);
+        offset += f.raw.local.length;
+        continue;
+      }
       const nameBytes = te.encode(f.name);
       const data = typeof f.data === 'string' ? te.encode(f.data) : f.data instanceof Uint8Array ? f.data : new Uint8Array(f.data);
       const crc = crc32(data);
@@ -357,5 +421,215 @@
     return new Blob([...parts, ...central, end], { type: mime || 'application/zip' });
   }
 
-  L.zip = { read, write, crc32, inflateRawJS, encode: (s) => te.encode(s), decode: (b) => td.decode(b) };
+  /* ---------- ClioWorks deviation (documented): part-level preservation after an edit ----------
+     A three-way merge at part granularity. original = the file as opened; baseline = what the writer makes of the
+     UNEDITED model; edited = what it makes of the edited model. A part the edit did not change (baseline and edited
+     agree, byte for byte, including both lacking it) is taken from the original in its stored form (or stays absent,
+     or stays present); only a part whose written bytes moved is taken from the writer. Re-serialising parts the edit
+     never touched is what makes Office "repair" a file. The writer's numbering (relationship ids, style indices, ...)
+     may differ from the original's, so a merged package is accepted only when consistent() finds every cross-part
+     reference between kept and written parts intact; otherwise the writer's package stands.
+     `patch(name, originalBytes)` may return new bytes for a part that is otherwise kept: a minimal edit of the
+     original text that the codec's writer would make anyway (the Ledger adapter's recalculate-on-load request).
+     Returns { buffer, kept, written } or null (nothing to keep, unreadable package, or the check failed). */
+  async function partsOf(buffer) {
+    const files = await read(buffer);
+    if (files.repaired) throw new Error('repaired package');
+    const out = new Map();
+    for (const entry of new Set(files.values())) out.set(entry.name, entry);
+    return out;
+  }
+  async function sameBytes(a, b) {
+    if (!a || !b) return !a && !b;
+    if (a.usize != null && b.usize != null && a.usize !== b.usize && a.crc != null) return false;
+    const x = await a.bytes(), y = await b.bytes();
+    if (x.length !== y.length) return false;
+    for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return false;
+    return true;
+  }
+  /* The consistency check, without the codec: what can break when original parts and written parts meet is a
+     cross-part reference the writer renumbered. Three families are checked (generic OPC plus the identifiers the
+     three formats share across parts):
+       relationships  a written part keeps an original .rels only if every relationship it was written against is in
+                      that .rels unchanged (and the other way round), and no relationship dangles that did not before;
+       content types  every part keeps the content type its own package gave it;
+       identities     definitions referred to from another part (comment, note, list, style, number-format, sheet,
+                      author and slide ids; positional shared strings and cell formats; paragraph ids) — a kept part
+                      that the writer would write differently must define every identity the writer's version does,
+                      with the same content; a written part must still define every identity the original did. */
+  const IDENTITY_ATTRS = { comment: 'id', footnote: 'id', endnote: 'id', num: 'numId', abstractNum: 'abstractNumId', style: 'styleId', numFmt: 'numFmtId', sheet: 'sheetId', cmAuthor: 'id', author: 'id', sldId: 'id', sldMasterId: 'id' };
+  const POSITIONAL = { 'sst/si': 1, 'cellXfs/xf': 1, 'cellStyleXfs/xf': 1, 'dxfs/dxf': 1 };
+  const PRINT_ATTRS = ['numFmtId', 'fontId', 'fillId', 'borderId', 'xfId', 'formatCode', 'name'];
+  const TAG_RE = /<(\/?)(?:[\w.-]+:)?([\w.-]+)((?:\s+[^\s=/>]+\s*=\s*(?:"[^"]*"|'[^']*'))*)\s*(\/?)>|<!\[CDATA\[([\s\S]*?)\]\]>|<[!?][\s\S]*?>/g;
+  /* an attribute by local name, any prefix but r: (r:id is a relationship, not an identity) */
+  const attrOf = (attrs, local) => { const m = new RegExp('(?:^|\\s)(?:(?!r:)[\\w.-]+:)?' + local + '\\s*=\\s*(?:"([^"]*)"|\'([^\']*)\')').exec(attrs); return m ? (m[1] != null ? m[1] : m[2]) : null; };
+  /* text content for comparison: entities decoded, whitespace (indentation of a pretty-printed original) ignored */
+  const plain = (t) => t.replace(/&(?:#x([0-9a-f]+)|#(\d+)|(amp|lt|gt|quot|apos));/gi, (all, hex, dec, name) => (hex ? String.fromCodePoint(parseInt(hex, 16)) : dec ? String.fromCodePoint(+dec) : { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" }[name.toLowerCase()])).replace(/\s+/g, '');
+  function identities(text) {
+    const out = new Map(), stack = [], counts = new Map();
+    let open = 0, last = 0, m;
+    TAG_RE.lastIndex = 0;
+    while ((m = TAG_RE.exec(text))) {
+      if (open && m.index > last) { const t = text.slice(last, m.index); for (const f of stack) if (f.key && f.withText) f.text += t; }
+      last = TAG_RE.lastIndex;
+      if (m[5] != null) { if (open) for (const f of stack) if (f.key && f.withText) f.text += m[5]; continue; }
+      if (!m[2]) continue;
+      if (m[1]) { const f = stack.pop(); if (f && f.key) { open--; out.set(f.key, f.print + '|' + plain(f.text)); } continue; }
+      const local = m[2], attrs = m[3] || '';
+      const parent = stack.length ? stack[stack.length - 1].local : '';
+      let key = null;
+      if (POSITIONAL[parent + '/' + local]) { const c = (counts.get(stack.length + parent) || 0); counts.set(stack.length + parent, c + 1); key = parent + '/' + local + '[' + c + ']'; }
+      else if (IDENTITY_ATTRS[local]) { const v = attrOf(attrs, IDENTITY_ATTRS[local]); if (v != null) key = local + '#' + v; }
+      else if (local === 'p' && stack.some((f) => f.local === 'comment')) { const v = attrOf(attrs, 'paraId'); if (v != null) key = 'p#' + v; }
+      const print = key ? PRINT_ATTRS.map((a) => attrOf(attrs, a) || '').join(',') : '';
+      if (m[4]) { if (key) out.set(key, print + '|'); continue; }
+      if (key) open++;
+      stack.push({ local, key, print, text: '', withText: !!key && local !== 'p' });
+    }
+    return out;
+  }
+  function relsOf(text, relsName) {
+    const dir = relsName.replace(/(^|\/)_rels\/[^/]*$/, '$1');
+    const out = new Map();
+    for (const m of text.matchAll(/<(?:[\w.-]+:)?Relationship\b([^>]*)>/g)) {
+      const id = attrOf(m[1], 'Id'), type = attrOf(m[1], 'Type') || '', mode = attrOf(m[1], 'TargetMode') || '';
+      let target = attrOf(m[1], 'Target') || '';
+      if (mode !== 'External') {
+        target = target.split('#')[0];
+        const parts = (target.startsWith('/') ? target.slice(1) : dir + target).split('/'), norm = [];
+        for (const p of parts) { if (p === '..') norm.pop(); else if (p && p !== '.') norm.push(p); }
+        try { target = decodeURIComponent(norm.join('/')); } catch (e) { target = norm.join('/'); }
+      }
+      out.set(id, type + '|' + mode + '|' + target);
+    }
+    return out;
+  }
+  function typesOf(text) {
+    const defaults = new Map(), overrides = new Map();
+    for (const m of text.matchAll(/<(?:[\w.-]+:)?Default\b([^>]*)>/g)) defaults.set((attrOf(m[1], 'Extension') || '').toLowerCase(), attrOf(m[1], 'ContentType'));
+    for (const m of text.matchAll(/<(?:[\w.-]+:)?Override\b([^>]*)>/g)) overrides.set((attrOf(m[1], 'PartName') || '').replace(/^\//, '').toLowerCase(), attrOf(m[1], 'ContentType'));
+    return (name) => overrides.get(name.toLowerCase()) || defaults.get((name.split('.').pop() || '').toLowerCase()) || null;
+  }
+  const relsOwner = (name) => { const m = /^(.*?)_rels\/([^/]*)\.rels$/.exec(name); return m ? m[1] + m[2] : null; };
+  const isXml = (name) => /\.(xml|rels|vml)$/i.test(name);
+  async function consistent(O, W, from, names) {
+    const text = async (pkg, name) => { const e = pkg.get(name); return e && isXml(name) ? td.decode(await e.bytes()) : null; };
+    const pkgOf = (name) => (from.get(name) === 'W' ? W : O);
+    const differs = async (name) => !(await sameBytes(O.get(name), W.get(name)));
+    /* relationships */
+    for (const name of names) {
+      if (!name.endsWith('.rels')) continue;
+      const owner = relsOwner(name);
+      if (owner == null || !from.has(owner) || from.get(owner) === from.get(name) || !(await differs(name))) continue;
+      const mine = relsOf(await text(pkgOf(name), name) || '', name);
+      const needed = relsOf(await text(pkgOf(owner), name) || '', name);
+      const ownerText = await text(pkgOf(owner), owner) || '';
+      /* only ids the owner names; implicit relationships (styles, settings, theme...) are found by type */
+      for (const [id, rel] of needed) if (mine.get(id) !== rel && (ownerText.includes('"' + id + '"') || ownerText.includes("'" + id + "'"))) return 'relationship ' + id + ' of ' + owner;
+    }
+    const exists = (pkg, target) => pkg.has(target);
+    for (const name of names) {
+      if (!name.endsWith('.rels')) continue;
+      const rels = relsOf(await text(pkgOf(name), name) || '', name);
+      for (const rel of rels.values()) {
+        const [, mode, target] = rel.split('|');
+        if (mode === 'External' || !target || names.has(target)) continue;
+        if (!exists(pkgOf(name), target)) continue; /* already dangling in its own package */
+        return 'dangling ' + target;
+      }
+    }
+    /* content types */
+    const ctName = '[Content_Types].xml';
+    if (from.has(ctName) && await differs(ctName)) {
+      const final = typesOf(await text(pkgOf(ctName), ctName) || '');
+      const typeO = typesOf(await text(O, ctName) || ''), typeW = typesOf(await text(W, ctName) || '');
+      for (const name of names) {
+        if (name === ctName) continue;
+        const own = (from.get(name) === 'W' ? typeW : typeO)(name);
+        if (own && final(name) !== own) return 'content type of ' + name;
+      }
+    }
+    /* identities: only those the other side actually names (an attribute value in its parts) can break */
+    const named = async (side) => {
+      const values = new Set();
+      for (const name of names) if (from.get(name) === side && isXml(name) && !name.endsWith('.rels')) {
+        for (const m of (await text(side === 'W' ? W : O, name) || '').matchAll(/=\s*(?:"([^"]*)"|'([^']*)')/g)) values.add(m[1] != null ? m[1] : m[2]);
+      }
+      return values;
+    };
+    let byWritten = null, byKept = null;
+    const valueOf = (key) => { const i = key.indexOf('#'); return i >= 0 ? key.slice(i + 1) : key.slice(key.lastIndexOf('[') + 1, -1); };
+    for (const name of names) {
+      if (!isXml(name) || name.endsWith('.rels') || !O.has(name) || !W.has(name) || !(await differs(name))) continue;
+      const o = identities(await text(O, name)), w = identities(await text(W, name));
+      if (from.get(name) === 'W') {
+        /* written: every identity the kept parts name is still defined (the edit may change its content) */
+        byKept = byKept || await named('O');
+        for (const key of o.keys()) if (!w.has(key) && byKept.has(valueOf(key))) return 'identity ' + key + ' gone from ' + name;
+      } else {
+        /* kept: every identity the written parts name is defined here, with the content the writer gave it */
+        byWritten = byWritten || await named('W');
+        for (const [key, print] of w) if (o.get(key) !== print && byWritten.has(valueOf(key))) return 'identity ' + key + ' differs in ' + name;
+      }
+    }
+    return '';
+  }
+
+  async function preserveUntouched({ original, baseline, edited, mime, patch }) {
+    try {
+      const O = await partsOf(original), B = await partsOf(baseline), W = await partsOf(edited);
+      const files = [], kept = [], written = [], from = new Map();
+      for (const [name, o] of O) {
+        const b = B.get(name), w = W.get(name);
+        if (await sameBytes(b, w)) {
+          const patched = patch ? await patch(name, await o.bytes()) : null;
+          from.set(name, 'O');
+          if (patched) { files.push({ name, data: patched }); written.push(name); continue; }
+          const raw = o.raw();
+          if (raw) files.push({ name, raw }); else files.push({ name, data: await o.bytes() });
+          kept.push(name);
+        } else if (w) { files.push({ name, data: await w.bytes() }); written.push(name); from.set(name, 'W'); }
+        else written.push('-' + name);
+      }
+      for (const [name, w] of W) {
+        if (O.has(name)) continue;
+        if (await sameBytes(B.get(name), w)) continue; /* the writer adds it whether or not the edit happened */
+        files.push({ name, data: await w.bytes() });
+        written.push('+' + name);
+        from.set(name, 'W');
+      }
+      if (!kept.length) return null;
+      /* nothing the edit made differs from the unedited write (an edit undone): the original file stands */
+      if (!written.length) return { buffer: original instanceof Uint8Array ? original.slice().buffer : original.slice(0), kept, written };
+      if (await consistent(O, W, from, new Set(from.keys()))) return null;
+      return { buffer: await (await write(files, mime)).arrayBuffer(), kept, written };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /* The baseline write for preserveUntouched, kept off the save path: taken once, while `unchanged()` holds (no edit
+     yet), in idle time in a browser (requestIdleCallback, else a short timer) and at once where there is no frame
+     loop (tests, node). A save before it is ready gets null and saves as the plain writer does. A save while it is
+     being written waits for that one write, so two writes never run interleaved over the codec's shared state. */
+  function idleBaseline(writeBaseline, unchanged) {
+    let value = null, running = null, tried = false;
+    const run = () => {
+      if (tried || !unchanged()) return running;
+      tried = true;
+      running = Promise.resolve().then(writeBaseline).then((b) => { if (unchanged()) value = b; }, () => {}).then(() => { running = null; });
+      return running;
+    };
+    return {
+      schedule() {
+        if (typeof requestIdleCallback === 'function') requestIdleCallback(() => run(), { timeout: 2000 });
+        else if (typeof requestAnimationFrame === 'function') setTimeout(run, 250);
+        else return run();
+        return null;
+      },
+      async get() { if (running) await running; return value; },
+    };
+  }
+
+  L.zip = { read, write, crc32, inflateRawJS, encode: (s) => te.encode(s), decode: (b) => td.decode(b), preserveUntouched, idleBaseline };
 })(typeof window !== 'undefined' ? window : globalThis);

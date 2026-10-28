@@ -70,6 +70,7 @@ const exactPublicFiles = new Set([
   "styles.cmf-studio.css",
   "styles.endfield-terminal.css",
   "styles.bureaucracy-meme.css",
+  "styles.reader-pages.css",
   "styles.time-machine.css",
   "styles.docmap.css",
   "styles.searcher.css",
@@ -79,7 +80,7 @@ const exactPublicFiles = new Set([
   "styles.rootline.css",
   "styles.joyride.css",
   "styles.project-disks.css",
-  "styles.clio-project.css", "styles.edit-kernel.css", "styles.about.css",
+  "styles.clio-project.css", "styles.edit-kernel.css", "styles.about.css", "styles.cliotalk-agent.css",
   "styles.big-sur.css",
   "styles.tiger.css",
   "styles.system-7.css",
@@ -104,14 +105,21 @@ const exactPublicFiles = new Set([
 // node_modules route.
 const publicFileAliases = new Map([
   ["app/vendor/paddle-ocr.js", "node_modules/@paddlejs-models/ocr/lib/index.js"],
-  ["app/vendor/pdf.min.js", "node_modules/pdfjs-dist/build/pdf.min.mjs"],
-  ["app/vendor/pdf.worker.min.js", "node_modules/pdfjs-dist/build/pdf.worker.min.mjs"],
+  ["app/vendor/pdf.min.js", "node_modules/pdfjs-dist/legacy/build/pdf.min.mjs"],
+  ["app/vendor/pdf.worker.min.js", "node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs"],
   ["app/vendor/pdfjs-wasm/jbig2.wasm", "node_modules/pdfjs-dist/wasm/jbig2.wasm"],
   ["app/vendor/pdfjs-wasm/jbig2_nowasm_fallback.js", "node_modules/pdfjs-dist/wasm/jbig2_nowasm_fallback.js"],
   ["app/vendor/pdfjs-wasm/openjpeg.wasm", "node_modules/pdfjs-dist/wasm/openjpeg.wasm"],
   ["app/vendor/pdfjs-wasm/openjpeg_nowasm_fallback.js", "node_modules/pdfjs-dist/wasm/openjpeg_nowasm_fallback.js"],
   ["app/vendor/pdfjs-wasm/qcms_bg.wasm", "node_modules/pdfjs-dist/wasm/qcms_bg.wasm"],
 ]);
+
+// pdf.js reads CJK character maps and the 14 standard fonts on demand, one
+// file at a time, when a page needs them. They are never in the boot floppy.
+const publicDirectoryAliases = [
+  ["app/vendor/pdfjs-cmaps/", "node_modules/pdfjs-dist/cmaps/"],
+  ["app/vendor/pdfjs-standard-fonts/", "node_modules/pdfjs-dist/standard_fonts/"],
+];
 
 const desktopPublicPrefixes = [
   "app/",
@@ -141,6 +149,9 @@ function publicRelativePath(pathname) {
   if (normalized.split("/").some((part) => part.startsWith("."))) return "";
   if (exactPublicFiles.has(normalized)) return normalized;
   if (publicFileAliases.has(normalized)) return publicFileAliases.get(normalized);
+  for (const [prefix, target] of publicDirectoryAliases) {
+    if (normalized.startsWith(prefix) && normalized.length > prefix.length) return target + normalized.slice(prefix.length);
+  }
   if (desktopPublicPrefixes.some((prefix) => normalized.startsWith(prefix))) return normalized;
   if (repositoryPublicPrefixes.some((prefix) => normalized.startsWith(prefix))) return normalized;
   return "";

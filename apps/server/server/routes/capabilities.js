@@ -24,6 +24,7 @@ const {
 } = require("../shared-cloud-budget.js");
 const { embeddingsRelayConfig } = require("../embeddings-relay.js");
 const { browseConfig } = require("../browse/relay-node.js");
+const { agentCloudEnabled } = require("../agent-cloud/config.js");
 
 /**
  * @param {import("node:http").IncomingMessage} _req
@@ -116,9 +117,19 @@ function handleCapabilities(_req, res) {
       // The guest bridge: always on this Mac, opt-in on the public
       // deployment. The page reads this before it subscribes as an executor.
       guest_bridge: !isPublicDeployment || publicGuestBridgeEnabled,
+      // ClioTalk's engine host: dsh in a shadow copy of a shared folder, this
+      // Mac only (docs/AGENT-HARNESS.md). /api/agent/folders says whether the
+      // engine is installed.
+      agent_harness: !isPublicDeployment,
+      // The same agent mode in a disposable container per run on this host
+      // (docs/AGENT-HARNESS.md, "Cloud sandbox (web)"). Opt-in; the page asks
+      // /api/agent-cloud/status whether the sandbox image is ready.
+      agent_cloud: agentCloudEnabled(),
       local_models: !isPublicDeployment,
       // Claude / Codex subscription CLIs run on this Mac only (docs/SUBSCRIPTION-CLI.md).
       subscription_cli: !isPublicDeployment,
+      // Anthropic's Messages API, with the key in this Mac's Keychain.
+      anthropic_api: !isPublicDeployment,
       local_vision: !isPublicDeployment,
       // Cloud vision rides the same BYOK / shared-allowance path as chat, so
       // the public deployment can read images for the first time.

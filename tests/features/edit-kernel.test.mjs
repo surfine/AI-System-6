@@ -216,7 +216,7 @@ const editRouting = read("app/features/documents-chat.js");
 test.assertIncludes(windowManager, "function registerEditHistory(windowName, history)", "windows register their history by name");
 test.assertIncludes(windowManager, '"undo": hasEditableFocus || isTeachText || isAssistant || !!editHistoryFor(winName)?.canUndo()', "Undo is live while the window's history has a step");
 test.assertIncludes(editRouting, "editHistoryFor()", "Edit > Undo / Redo reach the registered history when no field is the target");
-test.assertIncludes(windowManager, "t(`${command}_step`, t(step))", "the menu names the step it would take back");
+test.assertIncludes(windowManager, "t(`${command}_step`, t(step, ...args))", "the menu names the step it would take back");
 for (const file of ["app/features/clio-stage.js", "app/features/clio-chart.js"]) {
   test.assertIncludes(read(file), "registerEditHistory(", `${file} registers its history`);
 }

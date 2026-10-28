@@ -1,6 +1,6 @@
 /* ClioWorks v4 (V4-01): native XLSX open/edit/save adapter around the vendored
  * VibeOffice Ledger codec (apps/desktop/app/vendor/vibeoffice/, Apache-2.0,
- * pinned upstream 4c011173838de5d65e8ea0407684ba820a277273).
+ * pinned upstream 32ff53a5da0e75ebac11acdb0251cd3d8c7bf408).
  *
  * Contract (INTEROPERABILITY.zh-CN):
  *  - Unchanged bytes pass through untouched: save() returns the original
@@ -36,6 +36,7 @@
     'app/vendor/vibeoffice/ledger/slicers.js',
     'app/vendor/vibeoffice/ledger/tables.js',
     'app/vendor/vibeoffice/ledger/xchart.js',
+    'app/vendor/clioworks-v3/ledger-structure.js',
     'app/vendor/vibeoffice/ledger/xlsx-read.js',
     'app/vendor/vibeoffice/ledger/xlsx-write.js',
   ];
@@ -240,10 +241,46 @@
    * @param {ArrayBuffer|Uint8Array} bytes the untouched original package bytes
    * @param {{name?:string, scopeId?:string, documentId?:string, generation?:number}} meta
    */
+  /** workbook.xml text with calcPr fullCalcOnLoad="1": the attribute set on an existing calcPr, or a calcPr
+   *  inserted at its schema place (after definedNames, before oleSize and the rest). null if no workbook root. */
+  function requestRecalcOnLoad(xml) {
+    const root = /<([\w.-]+:)?workbook\b/.exec(xml);
+    if (!root) return null;
+    const p = (root[1] || '').replace(/\./g, '\\.');
+    const existing = new RegExp('<' + p + 'calcPr\\b[^>]*?(/?)>').exec(xml);
+    if (existing) {
+      const tag = existing[0];
+      if (/\sfullCalcOnLoad\s*=\s*["'](1|true)["']/.test(tag)) return xml;
+      const fixed = /\sfullCalcOnLoad\s*=/.test(tag)
+        ? tag.replace(/(\sfullCalcOnLoad\s*=\s*)(["'])[^"']*\2/, (all, attr, quote) => attr + quote + '1' + quote)
+        : tag.replace(/\s*(\/?)>$/, ' fullCalcOnLoad="1"$1>');
+      return xml.slice(0, existing.index) + fixed + xml.slice(existing.index + tag.length);
+    }
+    const after = ['oleSize', 'customWorkbookViews', 'pivotCaches', 'smartTagPr', 'smartTagTypes', 'webPublishing', 'fileRecoveryPr', 'webPublishObjects', 'extLst'];
+    const next = new RegExp('<' + p + '(?:' + after.join('|') + ')\\b|</' + p + 'workbook>').exec(xml);
+    if (!next) return null;
+    return xml.slice(0, next.index) + '<' + (root[1] || '') + 'calcPr fullCalcOnLoad="1"/>' + xml.slice(next.index);
+  }
+
+
   async function open(bytes, meta = {}) {
     const L = await loadCodec();
     const original = bytes instanceof Uint8Array ? bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) : bytes.slice(0);
     const wb = await L.xlsxRead.read(cloneBytes(original), {});
+    // Part preservation (R1): the baseline is what the writer makes of the UNEDITED workbook, written
+    // once in idle time after open (L.zip.idleBaseline), before any edit or recalculation. Every part
+    // the baseline and the edited write agree on keeps its original bytes (L.zip.preserveUntouched).
+    const asBuffer = (out) => (out instanceof Uint8Array ? out.buffer.slice(out.byteOffset, out.byteOffset + out.byteLength) : out);
+    const written = async (book) => asBuffer(await L.xlsxWrite.bytes(book, { type: book.type || 'xlsx' }));
+    const baseline = L.zip.idleBaseline(() => written(wb), () => editRevision === 0 && calcEpoch === 0);
+    // The writer always asks the next reader to recalculate on load; a kept original workbook.xml must
+    // still ask whenever a formula is saved without its cached result (stale), or Excel shows blanks.
+    const anyStale = () => wb.sheets.some((sh) => (sh.rows || []).some((row) => row && row.cells && row.cells.some((cell) => cell && typeof cell.f === 'string' && cell.dirty)));
+    const recalcPatch = (name, bytes) => {
+      if (name !== 'xl/workbook.xml' || !anyStale()) return null;
+      const next = requestRecalcOnLoad(L.zip.decode(bytes));
+      return next ? L.zip.encode(next) : null;
+    };
     // ONE dirty source (Amendment 1): isDirty() = editRevision !== savedRevision.
     // "Ever edited" (editRevision > 0) decides save mode and never goes back to false:
     // an undo to the saved state is still an edit unless the bytes compare equal.
@@ -466,6 +503,51 @@
       return { changed: changed.map(({ sheet, ref }) => ({ sheet, ref })) };
     }
 
+    /* ------------------------------------------------- structure editing (N5a) */
+    const Structure = () => root.AISystem6LedgerStructure;
+    // True once any structural edit ran in this session. While it holds, the first-save
+    // list names the parts that do not follow structural edits (pivot tables, slicers).
+    let structureEdited = false;
+    const structureKept = () => (structureEdited && Structure() ? Structure().keptKinds(wb, null) : []);
+
+    /**
+     * One structural change = one named undo step over a model snapshot pair. A
+     * refused or throwing change leaves the model exactly as it was.
+     */
+    function structureStep(label, apply) {
+      const S = Structure();
+      if (!S) return { status: 'failed', code: 'NO_STRUCTURE_MODULE' };
+      const before = S.snapshot(wb);
+      let out;
+      try { out = apply(S); } catch (error) {
+        try { S.restore(wb, before); } catch (restoreError) { console.warn('ledger-adapter: structure rollback', restoreError); }
+        return { status: 'failed', code: 'STRUCTURE_FAILED', message: String(error && error.message || error) };
+      }
+      if (!out || out.status !== 'ok') {
+        try { S.restore(wb, before); } catch (restoreError) { /* nothing was promised */ }
+        return out || { status: 'failed', code: 'STRUCTURE_FAILED' };
+      }
+      const after = S.snapshot(wb);
+      history().begin(label);
+      history().op(() => S.restore(wb, before), () => S.restore(wb, after));
+      history().end();
+      structureEdited = true;
+      editRevision += 1;
+      graphStale = true;
+      encodeMemo = null;
+      precedentCache.clear();
+      positionalKeys.clear();
+      const seeds = out.seeds || out.cells || [];
+      if (seeds.length) {
+        if (calcReady()) {
+          ensureGraph();
+          root.L.calc.changed(wb, seeds);
+          calcEpoch += 1;
+        } else invalidateDependents(seeds);
+      }
+      return out;
+    }
+
     /* --------------------------------------------------------------- comments */
     const T = () => L.threads;
     const isThreaded = (cm) => !!(cm && cm.thread && cm.thread.length && T().active(cm));
@@ -629,6 +711,63 @@
 
       touched: () => [...touchedCells.entries()].map(([sheet, refs]) => ({ sheet, refs: [...refs].sort() })),
 
+      /* -------------------------------------------------- structure (N5a) */
+      /** What one insert/delete of lines would shift, and what stays as it was. */
+      surveyLines(sheetId, axis, at, n) {
+        const S = Structure();
+        if (!S) return { status: 'failed', code: 'NO_STRUCTURE_MODULE' };
+        return S.surveyLines(wb, findSheet(wb, sheetId), axis, at, n);
+      },
+      insertRows(sheetId, at, n) { return structureStep('insert-rows', (S) => S.insertRows(wb, findSheet(wb, sheetId), at, n)); },
+      deleteRows(sheetId, at, n) { return structureStep('delete-rows', (S) => S.deleteRows(wb, findSheet(wb, sheetId), at, n)); },
+      insertCols(sheetId, at, n) { return structureStep('insert-cols', (S) => S.insertCols(wb, findSheet(wb, sheetId), at, n)); },
+      deleteCols(sheetId, at, n) { return structureStep('delete-cols', (S) => S.deleteCols(wb, findSheet(wb, sheetId), at, n)); },
+      /** ⌘D / ⌘R: fill a range from its first row (down) or first column (right). */
+      fillRange(sheetId, range, direction) { return structureStep(direction === 'right' ? 'fill-right' : 'fill-down', (S) => S.fill(wb, findSheet(wb, sheetId), range, direction)); },
+      insertSheet(name, at) { return structureStep('insert-sheet', (S) => S.insertSheet(wb, name, at)); },
+      deleteSheet(sheetId) { return structureStep('delete-sheet', (S) => S.deleteSheet(wb, findSheet(wb, sheetId))); },
+      renameSheet(sheetId, next) { return structureStep('rename-sheet', (S) => S.renameSheet(wb, findSheet(wb, sheetId), next)); },
+
+      /**
+       * N5b: one named undo step around a model change that is not a cell, on
+       * the caller's word (chart drawings). `run` must be atomic by
+       * construction — compute everything, then mutate once — and records its
+       * own undo/redo pair with history().op(); it returns the seeds whose
+       * cached results the change stale (usually none). The transaction only
+       * counts when something was actually recorded, so a refused change
+       * leaves neither history nor the dirty axis moved.
+       */
+      applyModelStep(label, run) {
+        const undo = history();
+        const depth = undo.stack.length;
+        undo.begin(label);
+        let seeds = [];
+        try { seeds = run(undo) || []; }
+        catch (error) {
+          undo.end();
+          return { status: 'failed', code: 'STEP_FAILED', message: String(error && error.message || error) };
+        }
+        undo.end();
+        if (undo.stack.length === depth) return { status: 'failed', code: 'STEP_EMPTY' };
+        editRevision += 1;
+        graphStale = true;
+        encodeMemo = null;
+        if (seeds.length) {
+          if (calcReady()) {
+            ensureGraph();
+            root.L.calc.changed(wb, seeds);
+            calcEpoch += 1;
+          } else invalidateDependents(seeds);
+        }
+        return { status: 'ok' };
+      },
+      /** Frozen rows/columns of a sheet, as the file stores them. */
+      freeze(sheetId) {
+        const sheet = findSheet(wb, sheetId);
+        return sheet.view.freeze ? { r: sheet.view.freeze.r, c: sheet.view.freeze.c } : null;
+      },
+      setFreeze(sheetId, r, c) { return structureStep('freeze', (S) => S.setFreeze(wb, findSheet(wb, sheetId), r, c)); },
+
       /* ---------------------------------------------------------- evaluator */
       async ensureCalc() { return loadCalc(); },
       calcLoaded: calcReady,
@@ -791,6 +930,14 @@
           const item = { sheet: place.sheet, ref: place.ref, what: kind, kind, detail: String(entry.what || ''), id: String(entry.id || '') };
           (entry.action === 'drop' ? report.lost : report.converted).push(item);
         }
+        // N5a: parts that did not follow a structural edit are named in the first-save
+        // list too — the confirmation said so before the change ran, and saving says it again.
+        for (const kept of structureKept()) {
+          const key = 'kept|' + kept.kind;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          report.lost.push({ sheet: '', ref: '', what: kept.kind, kind: kept.kind, count: kept.count, detail: 'kept-by-structure-edit', id: key });
+        }
         return report;
       },
 
@@ -804,13 +951,16 @@
     async function encodeCurrent() {
       const key = editRevision + ':' + calcEpoch;
       if (encodeMemo && encodeMemo.key === key) return encodeMemo;
-      const out = await L.xlsxWrite.bytes(wb, { type: wb.type || 'xlsx' });
-      const buffer = out instanceof Uint8Array ? out.buffer.slice(out.byteOffset, out.byteOffset + out.byteLength) : out;
+      const base = await baseline.get(); // first: a baseline still being written finishes before this write starts
+      let buffer = await written(wb);
       const losses = (Array.isArray(wb.losses) ? wb.losses : []).filter((e) => !e.phase || e.phase === 'save').map((e) => ({ ...e }));
-      encodeMemo = { key, bytes: buffer, losses };
+      const merged = base && await L.zip.preserveUntouched({ original, baseline: base, edited: buffer, patch: recalcPatch });
+      if (merged) buffer = merged.buffer;
+      encodeMemo = { key, bytes: buffer, losses, parts: merged ? { kept: merged.kept, written: merged.written } : null };
       return encodeMemo;
     }
 
+    await baseline.schedule();
     return api;
   }
 

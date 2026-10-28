@@ -21,6 +21,8 @@ const net = require("node:net");
 const { isPrivateAddress } = require("./reader.js");
 const { isPublicDeployment } = require("./runtime-profile.js");
 const { subscriptionCliBaseUrl, subscriptionCliKind } = require("./subscription-cli.js");
+const { ANTHROPIC_BASE_URL, isAnthropicUrl } = require("./anthropic-messages.js");
+const { localProxyRoute } = require("./lib/proxy-route.js");
 
 const DEEPSEEK_API_KEY_DEFAULT = process.env.DEEPSEEK_API_KEY || "";
 const DEEPSEEK_BASE_URL_DEFAULT =
@@ -58,6 +60,9 @@ function resolveCloudBaseUrl(requestedBaseUrl) {
   if (!requested) return trustedCloudBaseUrl;
   const normalized = normalizeCloudBaseUrl(requested);
   if (normalized === trustedCloudBaseUrl) return normalized;
+  // Anthropic's Messages API is the one other named provider, and only on the
+  // writer's own Mac: the public deployment keeps its single DeepSeek target.
+  if (normalized === ANTHROPIC_BASE_URL && !isPublicDeployment) return normalized;
   if (!allowCustomCloudEndpoints) return trustedCloudBaseUrl;
   return normalized;
 }
@@ -78,6 +83,15 @@ async function resolveCloudTarget(requestedBaseUrl) {
   if (cliKind) {
     if (isPublicDeployment) throw cloudEndpointError("Subscription CLI providers are only available in the local app.");
     return { baseUrl: subscriptionCliBaseUrl(cliKind), address: "", family: 0 };
+  }
+  // A Mac that reaches the web through a proxy reaches Anthropic through it
+  // too: there the name may resolve to a poisoned or fake-ip answer, so the
+  // address is not pinned. Without a proxy it is pinned like any endpoint.
+  if (isAnthropicUrl(requestedBaseUrl)) {
+    if (isPublicDeployment) throw cloudEndpointError("Anthropic is only available in the local app.");
+    if (await localProxyRoute(ANTHROPIC_BASE_URL, isPrivateAddress)) {
+      return { baseUrl: ANTHROPIC_BASE_URL, address: "", family: 0 };
+    }
   }
   const baseUrl = resolveCloudBaseUrl(requestedBaseUrl);
   const parsed = new URL(baseUrl);
@@ -146,6 +160,22 @@ function isTrustedDeepSeekCredentialTarget(provider, targetBaseUrl) {
     return false;
   }
   return normalized === trustedCloudBaseUrl || normalized === DEEPSEEK_PUBLIC_BASE_URL;
+}
+
+/**
+ * The writer's own Anthropic key may only leave this Mac for Anthropic.
+ *
+ * @param {string} provider
+ * @param {string} targetBaseUrl
+ * @returns {boolean}
+ */
+function isTrustedAnthropicCredentialTarget(provider, targetBaseUrl) {
+  if (isPublicDeployment || String(provider || "").trim().toLowerCase() !== "anthropic") return false;
+  try {
+    return normalizeCloudBaseUrl(targetBaseUrl) === ANTHROPIC_BASE_URL;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -294,4 +324,5 @@ module.exports = {
   resolveCloudBaseUrl,
   resolveCloudTarget,
   isTrustedDeepSeekCredentialTarget,
+  isTrustedAnthropicCredentialTarget,
 };

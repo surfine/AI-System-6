@@ -6,6 +6,8 @@
   const L = root.L;
   const M = L.model, F = L.formula, NF = L.numfmt, XML = L.xml, K = L.opc;
   const R = (L.xlsxRead = {});
+  /* the messages the user sees (shown translated where they are shown): N marks them for the catalog */
+  const N = (s) => s;
 
   /* ------------------------------------------------------------ element helpers */
   const kids = (el, name) => (el ? el.children.filter((c) => !name || c.localName === name) : []);
@@ -1139,7 +1141,7 @@
           if (!opts.password) { const err = new Error('password'); err.code = 'password'; throw err; }
           try { inner = await L.officeCrypto.decrypt(bytes, opts.password); } catch (e2) {
             const unsup = e2 && e2.message === 'unsupported';
-            const err = new Error(unsup ? 'This workbook is encrypted with a method Ledger does not support (only the AES encryption Excel 2007 and later use is supported).' : 'The password you supplied is not correct. Verify that the CAPS LOCK key is off and be sure to use the correct capitalization.');
+            const err = new Error(unsup ? N('This workbook is encrypted with a method Ledger does not support (only the AES encryption Excel 2007 and later use is supported).') : N('The password you supplied is not correct. Verify that the CAPS LOCK key is off and be sure to use the correct capitalization.'));
             err.code = unsup ? 'unsupported' : 'badpassword';
             throw err;
           }
@@ -1155,9 +1157,9 @@
     const off = Array.from(rootRels.values()).find((r) => r.type === 'officeDocument');
     let wbPart = off ? off.target : 'xl/workbook.xml';
     if (!pkg.has(wbPart)) wbPart = pkg.find('xl/workbook.xml') || Array.from(zip.keys()).find((k) => /workbook\.xml$/.test(k));
-    if (!wbPart) throw new Error('This file is not an Excel workbook.');
+    if (!wbPart) throw new Error(N('This file is not an Excel workbook.'));
     const wbEl = await pkg.xml(wbPart);
-    if (!wbEl) throw new Error('The workbook part is damaged.');
+    if (!wbEl) throw new Error(N('The workbook part is damaged.'));
     const wrels = await pkg.rels(wbPart);
     const wb = new M.Workbook();
     try { L.opc.attach(wb, await L.opc.open(zip)); }

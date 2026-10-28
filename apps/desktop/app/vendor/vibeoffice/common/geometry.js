@@ -616,7 +616,60 @@
   for (const k in TR) if (G[k] && !G[k].text) G[k].text = TR[k];
 
   /* ---------- public API ---------- */
+  /* Preset pattern fills (a:pattFill prst, ECMA-376 ST_PresetPatternVal): 8×8 bitmaps, rows top to bottom, high bit
+     left, anchored at the shape's top-left corner. Taken from what PowerPoint draws: its PDF of a deck with each preset
+     in a rectangle embeds every tile as a 64×64 image (tools/patterns/). */
+  const PATTERNS = {
+    pct5: [0x80, 0, 0, 0, 0x08, 0, 0, 0], pct10: [0x80, 0, 0x08, 0, 0x80, 0, 0x08, 0], pct20: [0x88, 0, 0x22, 0, 0x88, 0, 0x22, 0],
+    pct25: [0x88, 0x22, 0x88, 0x22, 0x88, 0x22, 0x88, 0x22], pct30: [0xAA, 0x44, 0xAA, 0x11, 0xAA, 0x44, 0xAA, 0x11],
+    pct40: [0xAA, 0x55, 0xAA, 0x51, 0xAA, 0x55, 0xAA, 0x15], pct50: [0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55],
+    pct60: [0xEE, 0x55, 0xBB, 0x55, 0xEE, 0x55, 0xBB, 0x55], pct70: [0x77, 0xDD, 0x77, 0xDD, 0x77, 0xDD, 0x77, 0xDD],
+    pct75: [0x77, 0xFF, 0xDD, 0xFF, 0x77, 0xFF, 0xDD, 0xFF], pct80: [0xEF, 0xFF, 0xFE, 0xFF, 0xEF, 0xFF, 0xFE, 0xFF],
+    pct90: [0xFF, 0xFF, 0xFF, 0xF7, 0xFF, 0xFF, 0xFF, 0x7F], horz: [0xFF, 0, 0, 0, 0, 0, 0, 0], vert: [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80],
+    ltHorz: [0xFF, 0, 0, 0, 0xFF, 0, 0, 0], ltVert: [0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88], dkHorz: [0xFF, 0xFF, 0, 0, 0xFF, 0xFF, 0, 0],
+    dkVert: [0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC], narHorz: [0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF, 0],
+    narVert: [0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55], dashHorz: [0xF0, 0, 0, 0, 0x0F, 0, 0, 0],
+    dashVert: [0x80, 0x80, 0x80, 0x80, 0x08, 0x08, 0x08, 0x08], cross: [0xFF, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80],
+    dnDiag: [0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01], upDiag: [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80],
+    ltDnDiag: [0x88, 0x44, 0x22, 0x11, 0x88, 0x44, 0x22, 0x11], ltUpDiag: [0x11, 0x22, 0x44, 0x88, 0x11, 0x22, 0x44, 0x88],
+    dkDnDiag: [0xCC, 0x66, 0x33, 0x99, 0xCC, 0x66, 0x33, 0x99], dkUpDiag: [0x33, 0x66, 0xCC, 0x99, 0x33, 0x66, 0xCC, 0x99],
+    wdDnDiag: [0xC1, 0xE0, 0x70, 0x38, 0x1C, 0x0E, 0x07, 0x83], wdUpDiag: [0x83, 0x07, 0x0E, 0x1C, 0x38, 0x70, 0xE0, 0xC1],
+    dashDnDiag: [0, 0, 0x88, 0x44, 0x22, 0x11, 0, 0], dashUpDiag: [0, 0, 0x11, 0x22, 0x44, 0x88, 0, 0],
+    diagCross: [0x81, 0x42, 0x24, 0x18, 0x18, 0x24, 0x42, 0x81], smCheck: [0x99, 0x66, 0x66, 0x99, 0x99, 0x66, 0x66, 0x99],
+    lgCheck: [0xF0, 0xF0, 0xF0, 0xF0, 0x0F, 0x0F, 0x0F, 0x0F], smGrid: [0xFF, 0x88, 0x88, 0x88, 0xFF, 0x88, 0x88, 0x88],
+    lgGrid: [0xFF, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80], dotGrid: [0xAA, 0, 0x80, 0, 0x80, 0, 0x80, 0],
+    smConfetti: [0x80, 0x08, 0x40, 0x02, 0x10, 0x01, 0x20, 0x04], lgConfetti: [0xB1, 0x30, 0x03, 0x1B, 0xD8, 0xC0, 0x0C, 0x8D],
+    horzBrick: [0xFF, 0x80, 0x80, 0x80, 0xFF, 0x08, 0x08, 0x08], diagBrick: [0x01, 0x02, 0x04, 0x08, 0x18, 0x24, 0x42, 0x81],
+    solidDmnd: [0x10, 0x38, 0x7C, 0xFE, 0x7C, 0x38, 0x10, 0], openDmnd: [0x82, 0x44, 0x28, 0x10, 0x28, 0x44, 0x82, 0x01],
+    dotDmnd: [0x80, 0, 0x22, 0, 0x08, 0, 0x22, 0], plaid: [0xAA, 0x55, 0xAA, 0x55, 0xF0, 0xF0, 0xF0, 0xF0],
+    sphere: [0x77, 0x89, 0x8F, 0x8F, 0x77, 0x98, 0xF8, 0xF8], weave: [0x88, 0x54, 0x22, 0x45, 0x88, 0x14, 0x22, 0x51],
+    divot: [0, 0x10, 0x08, 0x10, 0, 0x80, 0x01, 0x80], shingle: [0x03, 0x84, 0x48, 0x30, 0x0C, 0x02, 0x01, 0x01],
+    wave: [0, 0x18, 0x25, 0xC0, 0, 0x18, 0x25, 0xC0], trellis: [0xFF, 0x66, 0xFF, 0x99, 0xFF, 0x66, 0xFF, 0x99],
+    zigZag: [0x81, 0x42, 0x24, 0x18, 0x81, 0x42, 0x24, 0x18],
+  };
+  /* each pattern's name, as Office's pattern pickers show it (UI text, translated where it is shown) */
+  const N = (x) => x;
+  const PATTERN_NAMES = { pct5: '5%', pct10: '10%', pct20: '20%', pct25: '25%', pct30: '30%', pct40: '40%', pct50: '50%', pct60: '60%', pct70: '70%', pct75: '75%', pct80: '80%', pct90: '90%',
+    horz: N('Horizontal'), vert: N('Vertical'), ltHorz: N('Light horizontal'), ltVert: N('Light vertical'), dkHorz: N('Dark horizontal'), dkVert: N('Dark vertical'),
+    narHorz: N('Narrow horizontal'), narVert: N('Narrow vertical'), dashHorz: N('Dashed horizontal'), dashVert: N('Dashed vertical'), cross: N('Cross'),
+    dnDiag: N('Downward diagonal'), upDiag: N('Upward diagonal'), ltDnDiag: N('Light downward diagonal'), ltUpDiag: N('Light upward diagonal'),
+    dkDnDiag: N('Dark downward diagonal'), dkUpDiag: N('Dark upward diagonal'), wdDnDiag: N('Wide downward diagonal'), wdUpDiag: N('Wide upward diagonal'),
+    dashDnDiag: N('Dashed downward diagonal'), dashUpDiag: N('Dashed upward diagonal'), diagCross: N('Diagonal cross'), smCheck: N('Small checker board'),
+    lgCheck: N('Large checker board'), smGrid: N('Small grid'), lgGrid: N('Large grid'), dotGrid: N('Dotted grid'), smConfetti: N('Small confetti'),
+    lgConfetti: N('Large confetti'), horzBrick: N('Horizontal brick'), diagBrick: N('Diagonal brick'), solidDmnd: N('Solid diamond'), openDmnd: N('Outlined diamond'),
+    dotDmnd: N('Dotted diamond'), plaid: N('Plaid'), sphere: N('Sphere'), weave: N('Weave'), divot: N('Divot'), shingle: N('Shingle'), wave: N('Wave'),
+    trellis: N('Trellis'), zigZag: N('Zig zag') };
+  /** SVG path of a pattern's set bits, one 1×1 square each, in an 8×8 box */
+  const patternPath = (bits) => {
+    let d = '';
+    bits.forEach((row, y) => { for (let x = 0; x < 8; x++) if (row & (0x80 >> x)) d += `M${x},${y}h1v1h-1z`; });
+    return d;
+  };
+
   L.geom = {
+    PATTERNS,
+    PATTERN_NAMES,
+    patternPath,
     presets: G,
     get: (name) => G[name] || G.rect,
     isLine: (name) => !!(G[name] && G[name].isLine),
@@ -629,6 +682,7 @@
       return g.fn(w, h, L.geom.adj(sh));
     },
     textRect(sh) {
+      if (sh.txRect) return sh.txRect;   // its own text area, [l, t, r, b] in the shape (SmartArt's txXfrm)
       const g = G[sh.geom];
       if (g && g.text) return g.text(sh.w, sh.h, L.geom.adj(sh));
       return [0, 0, sh.w, sh.h];
@@ -651,14 +705,14 @@
       sh.w = Math.abs(p2[0] - p1[0]); sh.h = Math.abs(p2[1] - p1[1]);
       sh.flipH = p1[0] > p2[0]; sh.flipV = p1[1] > p2[1];
     },
-    /* AutoShapes menu groups (2003 order) */
+    /* AutoShapes menu groups (2003 order), by their English names (UI text, translated where shown) */
     MENU: {
-      'Basic Shapes': ['rect', 'parallelogram', 'trapezoid', 'diamond', 'roundRect', 'octagon', 'triangle', 'rtTriangle', 'ellipse', 'hexagon', 'plus', 'pentagon', 'can', 'cube', 'bevel', 'foldedCorner', 'smileyFace', 'donut', 'noSmoking', 'heart', 'lightningBolt', 'sun', 'moon', 'arc', 'bracketPair', 'bracePair', 'leftBracket', 'rightBracket', 'leftBrace', 'rightBrace', 'frame', 'cloud'],
-      'Block Arrows': ['rightArrow', 'leftArrow', 'upArrow', 'downArrow', 'leftRightArrow', 'upDownArrow', 'quadArrow', 'bentArrow', 'uturnArrow', 'circularArrow', 'stripedRightArrow', 'notchedRightArrow', 'homePlate', 'chevron'],
-      'Flowchart': ['flowChartProcess', 'flowChartAlternateProcess', 'flowChartDecision', 'flowChartInputOutput', 'flowChartPredefinedProcess', 'flowChartInternalStorage', 'flowChartDocument', 'flowChartMultidocument', 'flowChartTerminator', 'flowChartPreparation', 'flowChartManualInput', 'flowChartManualOperation', 'flowChartConnector', 'flowChartOffpageConnector', 'flowChartPunchedCard', 'flowChartPunchedTape', 'flowChartSummingJunction', 'flowChartOr', 'flowChartCollate', 'flowChartSort', 'flowChartExtract', 'flowChartMerge', 'flowChartDelay', 'flowChartMagneticDisk', 'flowChartDisplay'],
-      'Stars and Banners': ['irregularSeal1', 'irregularSeal2', 'star4', 'star5', 'star6', 'star8', 'star16', 'star24', 'star32', 'ribbon2', 'verticalScroll', 'horizontalScroll', 'wave'],
-      'Callouts': ['wedgeRectCallout', 'wedgeRoundRectCallout', 'wedgeEllipseCallout', 'cloudCallout'],
-      'Action Buttons': ['actionButtonBlank', 'actionButtonHome', 'actionButtonHelp', 'actionButtonInformation', 'actionButtonBackPrevious', 'actionButtonForwardNext', 'actionButtonBeginning', 'actionButtonEnd', 'actionButtonReturn', 'actionButtonDocument', 'actionButtonSound', 'actionButtonMovie'],
+      [N('Basic Shapes')]: ['rect', 'parallelogram', 'trapezoid', 'diamond', 'roundRect', 'octagon', 'triangle', 'rtTriangle', 'ellipse', 'hexagon', 'plus', 'pentagon', 'can', 'cube', 'bevel', 'foldedCorner', 'smileyFace', 'donut', 'noSmoking', 'heart', 'lightningBolt', 'sun', 'moon', 'arc', 'bracketPair', 'bracePair', 'leftBracket', 'rightBracket', 'leftBrace', 'rightBrace', 'frame', 'cloud'],
+      [N('Block Arrows')]: ['rightArrow', 'leftArrow', 'upArrow', 'downArrow', 'leftRightArrow', 'upDownArrow', 'quadArrow', 'bentArrow', 'uturnArrow', 'circularArrow', 'stripedRightArrow', 'notchedRightArrow', 'homePlate', 'chevron'],
+      [N('Flowchart')]: ['flowChartProcess', 'flowChartAlternateProcess', 'flowChartDecision', 'flowChartInputOutput', 'flowChartPredefinedProcess', 'flowChartInternalStorage', 'flowChartDocument', 'flowChartMultidocument', 'flowChartTerminator', 'flowChartPreparation', 'flowChartManualInput', 'flowChartManualOperation', 'flowChartConnector', 'flowChartOffpageConnector', 'flowChartPunchedCard', 'flowChartPunchedTape', 'flowChartSummingJunction', 'flowChartOr', 'flowChartCollate', 'flowChartSort', 'flowChartExtract', 'flowChartMerge', 'flowChartDelay', 'flowChartMagneticDisk', 'flowChartDisplay'],
+      [N('Stars and Banners')]: ['irregularSeal1', 'irregularSeal2', 'star4', 'star5', 'star6', 'star8', 'star16', 'star24', 'star32', 'ribbon2', 'verticalScroll', 'horizontalScroll', 'wave'],
+      [N('Callouts')]: ['wedgeRectCallout', 'wedgeRoundRectCallout', 'wedgeEllipseCallout', 'cloudCallout'],
+      [N('Action Buttons')]: ['actionButtonBlank', 'actionButtonHome', 'actionButtonHelp', 'actionButtonInformation', 'actionButtonBackPrevious', 'actionButtonForwardNext', 'actionButtonBeginning', 'actionButtonEnd', 'actionButtonReturn', 'actionButtonDocument', 'actionButtonSound', 'actionButtonMovie'],
     },
     /* small SVG preview of a preset (for menus) */
     preview(name, size) {

@@ -439,6 +439,9 @@ async function boot() {
     // escaped-text fallback still paints usable messages.
     await ensureMarkdownParser().catch(() => {});
     markBootProgress("markdown parser");
+    // One localStorage read puts the ClioTalk window back in 代理 if that was
+    // the last mode; the agent module itself stays lazy (Mode at boot).
+    restoreClioTalkAgentModeSelection();
     // The writer's words are not part of onboarding. A snapshot exists only if
     // someone already worked here, so resuming one cannot disturb a true first
     // launch. The persisted onboarding bit is deliberately independent from

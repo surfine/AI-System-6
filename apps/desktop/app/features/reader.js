@@ -199,7 +199,44 @@ function dismissReaderSourceEntry() {
   return true;
 }
 
+// Opened PDFs by project and name; only the File is kept, never stored.
+const readerPdfSources = new Map();
+// Opened iWork files by project and name (N9): the File stays for the session
+// so the server importer can serve its preview PDF for original-page reading
+// and make the Office copy. Only the File is kept, never stored.
+const readerIworkSources = new Map();
+let readerPendingJump = null;
+
+function releaseReaderPages() {
+  window.AISystem6ReaderPages?.teardown();
+  readerContentEl?.classList.remove("has-pages");
+}
+
+// A PDF opens on its original pages (features/reader-pages.js). A Pages,
+// Numbers or Keynote file goes through the same view with the PDF its own
+// importer serves (features/iwork-reading.js, lazy); a conversion that fails
+// keeps the text view and shows its own bar.
+async function syncReaderPagesView(page) {
+  const key = `${activeProjectId}::${page.fileName}`;
+  const file = readerPdfSources.get(key);
+  const jump = readerPendingJump;
+  readerPendingJump = null;
+  if (!file && readerIworkSources.has(key)) {
+    try {
+      await ensureIworkReadingModule();
+      if (currentReaderPage === page) await window.AISystem6IworkReading.openPages({ page, jump });
+    } catch {}
+    return;
+  }
+  if (!file) return;
+  try {
+    await ensureReaderPagesModule();
+    if (currentReaderPage === page) await window.AISystem6ReaderPages.show(file, page, jump);
+  } catch {}
+}
+
 function showReaderNote(message) {
+  releaseReaderPages();
   const note = document.createElement("div");
   note.className = "empty-folder-note";
   note.textContent = message;
@@ -218,6 +255,7 @@ function disableReaderDocumentControls() {
 }
 
 function resetReaderDocumentState() {
+  releaseReaderPages();
   currentReaderPage = null;
   currentReaderClipCount = 0;
   setReaderWindowTitle();
@@ -376,6 +414,7 @@ async function openReaderDocument(readerDoc, options = {}) {
   }
 
 
+  releaseReaderPages();
   currentReaderPage = {
     kind: readerDoc.kind || "web",
     title: readerDocumentTitle(readerDoc),
@@ -413,6 +452,7 @@ async function openReaderDocument(readerDoc, options = {}) {
   updateReaderClioStageButton();
   updateReaderTranslationClipButton();
   updateMenuState();
+  syncReaderPagesView(currentReaderPage);
 }
 
 // How long the page is, in the unit its own script is counted in: CJK text by
@@ -1212,6 +1252,7 @@ function clipReaderSelection() {
   const originalBlockIds = transcriptContract?.blockIds || [];
 
   const scrapBody = text;
+  const pageInfo = window.AISystem6ReaderPages?.selectionPage(selection);
 
   const scrap = createScrap(
     `Clip: ${text.slice(0, 20)}...`,
@@ -1219,6 +1260,7 @@ function clipReaderSelection() {
     {
       source: {
         type: "reader-clip",
+        ...pageInfo,
         readerKind: currentReaderPage?.kind || "web",
         title,
         url,
@@ -1269,7 +1311,7 @@ function clipReaderSelection() {
     if (readerStatusEl) readerStatusEl.textContent = t("reader_clips_count", currentReaderClipCount);
     updateFlowGuideChecklist({ render: false });
     readerSelectionReceipt = text;
-    setStatus(t("reader_clipped"));
+    setStatus(pageInfo ? t("reader_clipped_page", pageInfo.page) : t("reader_clipped"));
   }
   updateReaderTranslationClipButton();
 }
@@ -1959,8 +2001,8 @@ window.AISystem6ApplicationRegistry?.registerApplicationLifecycle?.("reader", {
 
 let rmounted=!1;function mountReaderRuntime(){if(rmounted)return!0;rmounted=!0;readerAskForm?.addEventListener("submit",askReaderQuestion);registerAskBarSource("reader",describeReaderAskScope);initReaderSplitHandle();readerUrlInput?.addEventListener("keydown",event=>{if(eventIsTextComposition(event))return;if(event.key==="Enter"){event.preventDefault();fetchReaderPage()}else if(event.key==="Escape"&&dismissReaderSourceEntry())event.preventDefault()});return!0}
 function rwin(){return document.querySelector(".window.is-active")?.dataset.window==="reader"}function rctrl(s){const c=document.querySelector(s);return!!c&&!c.disabled&&!c.hidden}function rready(){return rwin()&&typeof docMapReadinessForSurface=="function"?docMapReadinessForSurface("reader"):null}
-const rav={"open-reader":()=>!0,"reader-open-source":()=>!0,"reader-open-another":()=>!!currentReaderPage,"reader-clip":()=>rctrl("#reader-clip-button"),"reader-clip-translate":()=>rctrl("#reader-clip-translate-button"),"reader-send-manuscript":()=>rctrl("#reader-send-manuscript"),"reader-make-docmap":()=>rctrl("#reader-docmap-button"),"reader-docmap-selection":()=>!!rready()?.selectionReady,"reader-docmap-source":()=>!!rready()?.wholeReady,"reader-open-clio-stage":()=>rctrl("#reader-open-clio-stage"),"reader-find-sources":()=>rctrl("#reader-find-sources"),"focus-reader-question":()=>!!currentReaderPage?.text};
-const rlist=[["open-reader",()=>{if(typeof openReaderWindowWithTabs=="function"){openReaderWindowWithTabs();return}openWindow("reader");readerUrlInput?.focus()}],["reader-open-source",handleReaderOpenButton],["reader-open-another",revealReaderSourceEntry],["reader-clip",clipReaderSelection],["reader-clip-translate",clipReaderSelectionWithTranslation],["reader-send-manuscript",sendReaderCopyToManuscript],["reader-make-docmap",()=>makeDocMapForRange("auto")],["reader-docmap-selection",()=>{const c=readerSelectionContext();if(!c)return setStatus(t("select_text_first"));return makeDocMapForRange("selection",c)}],["reader-docmap-source",()=>makeDocMapForRange("source")],["reader-find-sources",runReaderFindSources],["reader-open-clio-stage",openCurrentReaderInClioStage],["focus-reader-question",()=>readerQuestionInput?.focus()]];
+const rav={"open-reader":()=>!0,"reader-open-source":()=>!0,"reader-open-another":()=>!!currentReaderPage,"reader-clip":()=>rctrl("#reader-clip-button"),"reader-clip-translate":()=>rctrl("#reader-clip-translate-button"),"reader-send-manuscript":()=>rctrl("#reader-send-manuscript"),"reader-make-docmap":()=>rctrl("#reader-docmap-button"),"reader-docmap-selection":()=>!!rready()?.selectionReady,"reader-docmap-source":()=>!!rready()?.wholeReady,"reader-open-clio-stage":()=>rctrl("#reader-open-clio-stage"),"reader-find-sources":()=>rctrl("#reader-find-sources"),"reader-make-office-copy":()=>!!currentReaderPage&&/\.(pages|numbers|key)$/i.test(currentReaderPage.fileName||"")&&readerIworkSources.has(`${activeProjectId}::${currentReaderPage.fileName}`),"focus-reader-question":()=>!!currentReaderPage?.text};
+const rlist=[["open-reader",()=>{if(typeof openReaderWindowWithTabs=="function"){openReaderWindowWithTabs();return}openWindow("reader");readerUrlInput?.focus()}],["reader-open-source",handleReaderOpenButton],["reader-open-another",revealReaderSourceEntry],["reader-clip",clipReaderSelection],["reader-clip-translate",clipReaderSelectionWithTranslation],["reader-send-manuscript",sendReaderCopyToManuscript],["reader-make-docmap",()=>makeDocMapForRange("auto")],["reader-docmap-selection",()=>{const c=readerSelectionContext();if(!c)return setStatus(t("select_text_first"));return makeDocMapForRange("selection",c)}],["reader-docmap-source",()=>makeDocMapForRange("source")],["reader-find-sources",runReaderFindSources],["reader-open-clio-stage",openCurrentReaderInClioStage],["reader-make-office-copy",()=>ensureIworkReadingModule().then(()=>window.AISystem6IworkReading?.makeOfficeCopy()).catch(()=>setStatus(t("iwork_copy_failed","")))],["focus-reader-question",()=>readerQuestionInput?.focus()]];
 window.AISystem6Runtime?.registerApplication({id:"reader",windowName:"reader",mount:mountReaderRuntime,restore:()=>mountReaderRuntime(),commands:Object.fromEntries(rlist.map(([a,h])=>[a,{handler:h,isAvailable:()=>a==="open-reader"?!0:rwin()&&(rav[a]||(()=>!0))()}]))});
 
 // Called from the window registry's onReveal phase -- the only moment a window

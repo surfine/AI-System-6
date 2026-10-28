@@ -21,6 +21,7 @@
 "use strict";
 
 const { isSubscriptionCliUrl, subscriptionCliResponse } = require("../subscription-cli.js");
+const { anthropicChatResponse, isAnthropicUrl } = require("../anthropic-messages.js");
 const http = require("node:http");
 const https = require("node:https");
 const net = require("node:net");
@@ -338,9 +339,9 @@ function nodePostJson(targetUrl, payload, signal, extraHeaders = {}, options = {
         port: parsed.port,
         path: `${parsed.pathname}${parsed.search}`,
         method: "POST",
-        agent: isHttps ? httpsAgent : httpAgent,
+        agent: options.agent || (isHttps ? httpsAgent : httpAgent),
         servername: tlsServerName(parsed),
-        lookup: pinnedLookup(options),
+        lookup: options.agent ? undefined : pinnedLookup(options),
         headers: {
           "Content-Type": "application/json",
           ...extraHeaders,
@@ -432,9 +433,9 @@ function nodePostJsonStream(targetUrl, payload, signal, extraHeaders = {}, optio
         port: parsed.port,
         path: `${parsed.pathname}${parsed.search}`,
         method: "POST",
-        agent: isHttps ? httpsAgent : httpAgent,
+        agent: options.agent || (isHttps ? httpsAgent : httpAgent),
         servername: tlsServerName(parsed),
-        lookup: pinnedLookup(options),
+        lookup: options.agent ? undefined : pinnedLookup(options),
         headers: {
           "Content-Type": "application/json",
           ...extraHeaders,
@@ -668,6 +669,13 @@ function boundedFetchResponse(response, maxBytes) {
  */
 function proxyJsonStream(targetUrl, payload, signal, res, extraHeaders = {}, options = {}) {
   if (isSubscriptionCliUrl(targetUrl)) return proxySubscriptionCliStream(targetUrl, payload, signal, res, options);
+  if (isAnthropicUrl(targetUrl)) {
+    return pipeResponseStream(() => anthropicChatResponse(targetUrl, payload, signal, {
+      headers: extraHeaders,
+      stream: true,
+      postJson: anthropicTransport(options),
+    }), res, options);
+  }
   const maxBytes = normalizedMaxBytes(options.maxBytes);
   return new Promise((resolve, reject) => {
     const parsed = new URL(targetUrl);
@@ -752,9 +760,46 @@ function proxyJsonStream(targetUrl, payload, signal, res, extraHeaders = {}, opt
  * @param {import("node:http").ServerResponse} res
  * @param {{ onRequest?: () => void, onData?: (chunk: any) => void, onBeforeEnd?: () => void }} options
  */
-async function proxySubscriptionCliStream(targetUrl, payload, signal, res, options = {}) {
+function proxySubscriptionCliStream(targetUrl, payload, signal, res, options = {}) {
+  return pipeResponseStream(() => subscriptionCliResponse(targetUrl, payload, signal, { stream: true }), res, options);
+}
+
+/**
+ * The OpenAI-shaped Messages adapter reaches Anthropic over the node
+ * transport: through the Mac's proxy when one is set (resolveCloudTarget then
+ * pinned nothing), otherwise at the address resolveCloudTarget pinned.
+ *
+ * @param {{ maxBytes?: number, pinnedAddress?: string, pinnedFamily?: number }} options
+ */
+function anthropicTransport(options = {}) {
+  return async (url, body, signal, headers, { streamResponse = false } = {}) => {
+    const proxy = options.pinnedAddress ? null : proxyUrlForTarget(url);
+    const transportOptions = {
+      maxBytes: options.maxBytes,
+      pinnedAddress: options.pinnedAddress,
+      pinnedFamily: options.pinnedFamily,
+      ...(proxy ? { agent: httpProxyAgentFor(proxy) } : {}),
+    };
+    return {
+      response: streamResponse
+        ? await nodePostJsonStream(url, body, signal, headers, transportOptions)
+        : await nodePostJson(url, body, signal, headers, transportOptions),
+    };
+  };
+}
+
+/**
+ * Write a Response-shaped answer made on this server (a subscription CLI run,
+ * the Anthropic adapter) to `res` the way proxyJsonStream writes an
+ * upstream's, and resolve true once it ended.
+ *
+ * @param {() => Promise<Response>} makeResponse
+ * @param {import("node:http").ServerResponse} res
+ * @param {{ onRequest?: () => void, onData?: (chunk: any) => void, onBeforeEnd?: () => void }} options
+ */
+async function pipeResponseStream(makeResponse, res, options = {}) {
   if (typeof options.onRequest === "function") options.onRequest();
-  const response = await subscriptionCliResponse(targetUrl, payload, signal, { stream: true });
+  const response = await makeResponse();
   res.writeHead(response.status, {
     "Content-Type": response.headers.get("content-type") || "text/event-stream",
     "Cache-Control": "no-cache",
@@ -1015,7 +1060,7 @@ function nodeGetTextViaProxy(targetUrl, signal, headers = { "Accept": "applicati
  *   response: any,
  *   fallback: boolean,
  *   directLoopback?: boolean,
- *   transport: "fetch" | "node" | "subscription-cli",
+ *   transport: "fetch" | "node" | "subscription-cli" | "anthropic",
  * }>}
  */
 async function postJsonWithFallback(targetUrl, payload, signal, extraHeaders = {}, options = {}) {
@@ -1027,6 +1072,18 @@ async function postJsonWithFallback(targetUrl, payload, signal, extraHeaders = {
       response: await subscriptionCliResponse(targetUrl, payload, signal, { stream: Boolean(options.streamResponse || /** @type {{ stream?: unknown } | null} */ (payload)?.stream) }),
       fallback: false,
       transport: "subscription-cli",
+    };
+  }
+  if (isAnthropicUrl(targetUrl)) {
+    if (typeof options.onRequest === "function") options.onRequest();
+    return {
+      response: await anthropicChatResponse(targetUrl, payload, signal, {
+        headers: extraHeaders,
+        stream: Boolean(options.streamResponse || /** @type {{ stream?: unknown } | null} */ (payload)?.stream),
+        postJson: anthropicTransport(options),
+      }),
+      fallback: false,
+      transport: "anthropic",
     };
   }
   const forceNodeTransport =

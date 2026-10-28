@@ -423,6 +423,18 @@ const serverSideModelPaths = new Set([
   "/api/bureaucracy/captions",
   "/api/vision/analyze",
 ]);
+// /api/agent-cloud/runs is deliberately absent. A run has its own allowance
+// (agent-cloud/allowance.js: session runs, site daily runs and tokens), and the
+// group's address daily share counts chat requests, so a start must not spend
+// it. A start returns 202 at once; one active run per session and one container
+// host-wide are enforced in agent-cloud/runs.js.
+//
+// A run's changes, stop and discard do hold a slot, in their own group: a
+// finished run's changes are read, diffed and serialised (up to ~16 MB) on the
+// first request, so one session gets one of these at a time and the host two.
+// /events is left out: its stream stays open for the whole run, and holding a
+// slot with it would refuse that same session's stop.
+const agentCloudRunAction = /^\/api\/agent-cloud\/runs\/run-[a-f0-9-]{36}\/(?:changes|stop|discard)$/;
 
 // Routes that read a corpus or the network on the caller's behalf. They cost
 // the host bandwidth, CPU and its standing with the sites it reads, not the
@@ -441,6 +453,7 @@ const corpusReadPrefixes = [
 function requestGroup(pathname) {
   if (pathname.startsWith("/api/cmf/")) return "cmf";
   if (pathname === "/api/cloud/files") return "cloud-files";
+  if (agentCloudRunAction.test(pathname)) return "agent-cloud";
   if (pathname.startsWith("/api/cloud/")) return "cloud";
   if (serverSideModelPaths.has(pathname)) return "cloud";
   if (corpusReadPrefixes.some((prefix) => pathname.startsWith(prefix))) return "reader";
@@ -622,6 +635,7 @@ async function runWithPublicGuard(req, res, handler) {
   }
 
   const globalLimit = group === "cmf" ? 1
+    : group === "agent-cloud" ? 2
     : group === "cloud-files" ? 4
       : group === "cloud" ? 8
         : group === "reader" ? 4
@@ -693,6 +707,7 @@ module.exports = {
   anonymousSessionIdentity,
   clientIp,
   normalizeClientIp,
+  requestGroup,
   TtlLruWindows,
   addressDailyCloudRequests,
   rateLimitStateForTests: () => ({

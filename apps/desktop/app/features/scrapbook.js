@@ -1030,7 +1030,7 @@ function renderScrapSourceInfo(scrap) {
     sourceType: source.type || "",
   });
   const title = source.title || contract.title || "";
-  const details = [source.site || contract.origin, source.author, source.date, contract.timeRange, citation]
+  const details = [source.site || contract.origin, source.author, source.date, contract.timeRange, source.page ? t("reader_page_cite", source.page) : "", citation]
     .map((value) => String(value || "").trim())
     .filter((value, index, all) => value && value !== title && all.indexOf(value) === index);
   if (!title && !details.length) {
@@ -1109,7 +1109,7 @@ function moveFileToTrashById(fileId) {
   purgeContextForTrashedItems([{ type: "file", id: file.id, item: file }]);
   trashItems.unshift({
     projectId: activeProjectId,
-    title: `${file.name}.${file.type === "text" ? "text" : "chat"}`,
+    title: file.format ? file.name : `${file.name}.${file.type === "text" ? "text" : "chat"}`,
     body: file.type === "text" ? file.body : formatChatFile(file),
     originalPath: getProjectFolderPathLabel(file.folderId || null),
     originalType: 'file',
@@ -1656,6 +1656,7 @@ async function openSelectedScrapSourceInReader() {
       return;
     }
     const tab = createReaderFileDocumentTab(contract.fileName);
+    readerPendingJump = selected.source;
     openWindow("reader");
     openReaderDocumentTab(tab.id);
     return;

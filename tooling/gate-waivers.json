@@ -1,5 +1,6 @@
 {
   "unwired": {
+    "tooling/verify-mac-legacy.mjs": "The Intel/Monterey legacy app is a manual build line outside npm run release (owner decision, 2026-10-17): tooling/build-mac-legacy-x64.mjs runs this gate before it zips the app, and npm run verify:mac-legacy reruns it by hand; no release runner builds that app, so none runs its gate.",
     "tooling/appearance-token-check.mjs": "Demoted from the release gate on 2026-10-15 to an on-demand audit (npm run audit:appearance-tokens): the era token/geometry table against Classic, a computed-style comparison that shares its baselines with the pixel net. It is no longer part of verify:ship; internal/operations/RELEASE.md, \"Removed from the release gate\", says why.",
     "tooling/theme-lab-painter-contract.mjs": "Maintainer theme-lab painter regression instrument, run on demand via npm run audit:theme-lab (its first step); it builds the app, starts a preview server and compares twelve-era titlebar and vibrancy region pixels, so it is a design-evidence capture rather than a release condition, and the token tables plus the Theme Lab feature contracts own what a release gates on.",
     "tooling/verify-adoption.mjs": "引进消化吸收再创新的执行门（npm run verify:adoption）：纯文件检查，已在 npm test 链首运行并作为 clioworks-v51 合同的断言对象；此处登记是为保持台账与 runner 的映射完整，同样的断言以 adoption-doctrine 特性合同在每个测试车道运行；本脚本是维护者的独立快捷入口。",

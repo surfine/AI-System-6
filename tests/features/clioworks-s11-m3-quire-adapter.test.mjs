@@ -8,7 +8,9 @@
 //   - undo/redo are one labelled step per edit;
 //   - heading 1-3, run text, split/merge, bold/italic/underline, bullet/number/none lists;
 //   - comments add / reply / done round-trip with parent and landing range;
-//   - tables and images are readable and selectable but every write is refused;
+//   - the adapter's narrow face still refuses every table and image write (it serves the
+//     menu and find/replace); a table cell's words change only through the upstream
+//     editor's own path, which reports in via syncExternal (N10);
 //   - an unedited document saves as the original bytes and reports no loss.
 import vm from "node:vm";
 import AdmZip from "adm-zip";
@@ -21,12 +23,12 @@ const test = createFeatureTest("clioworks-s11-m3-quire-adapter");
 const DOCX = new Uint8Array(readFileSync(resolveProjectPath("tests/fixtures/clioworks-s11/quire-s11.docx")));
 const sha = (buf) => createHash("sha256").update(buf).digest("hex");
 
-// Vendored byte-for-byte from VibeOffice pin 4c011173838de5d65e8ea0407684ba820a277273.
+// Vendored byte-for-byte from VibeOffice pin 32ff53a5da0e75ebac11acdb0251cd3d8c7bf408.
 const VENDORED = {
   "ops.js": "60932bf0147e8e620d89953872d7a65f7101dd432ab9832311a26310f8f35c6e",
-  "editor.js": "087738e025316715ca9ffb387ea63becd7b7a74cfa57c03d4bab68b4fa48ebe2",
-  "layout.js": "93ec72584a03cf3879e1f153558d77dead58fee00c245dd4bce08260603cc5ef",
-  "drawing.js": "c122c1d982fabd619d2834c8e326ecff5d42e493659bb3f5d0c3906fa842d917",
+  "editor.js": "ef0832a2ea4d2d9048cf260816f5a0c3a75e7e4b9413a741c9a1ff9afacce192",
+  "layout.js": "8263bb50c6e2433507a167375b3317c5407c6d575e70d907d9b8008d06f1ccc4",
+  "drawing.js": "4e73fec0368ba92f08e610b76b6dc409fba4244ea4e654bc7df89e012f325401",
 };
 
 function session() {
@@ -101,6 +103,30 @@ const run = async () => {
     ];
     for (const [what, result, code] of refusals) test.assert(result && result.status === "blocked" && result.code === code, `${what} is refused (${code})`);
     test.assert(doc.isDirty() === false && doc.getEditRevision() === 0 && (await doc.save()).mode === "original-bytes", "refused writes leave the document clean and byte-identical");
+  }
+
+  // 5b. N10: the narrow face still refuses the table (it serves the menu and the
+  // find/replace surface); the opened door is the upstream editor's own path,
+  // which reports through syncExternal — the same accounting a keystroke takes.
+  {
+    const cellParagraph = doc.tables()[0].rows[0][0].paragraphIds[0];
+    const D = await vm.runInContext("(async () => (await ClioWorksQuireAdapter.loadCodec()).D)()", ctx);
+    const cell = D.byId(doc.document(), Number(cellParagraph));
+    const before = doc.tables()[0].rows[0][0].text;
+    const rev = doc.getEditRevision();
+    vm.runInContext("globalThis.__cellEdit = () => { L.D.touch(globalThis.__cell); globalThis.__cell.runs[0].text = '好' + globalThis.__cell.runs[0].text; }", ctx);
+    ctx.__cell = cell;
+    vm.runInContext("L.D.tx('Typing', globalThis.__cellEdit)", ctx);   // what E.edit runs on a keystroke
+    test.assert(doc.syncExternal() === true && doc.isDirty() && doc.getEditRevision() === rev + 1,
+      "an upstream-path edit inside a cell is counted exactly once through syncExternal()");
+    test.assert(doc.undoLabel() === "Typing" && doc.tables()[0].rows[0][0].text === "好" + before,
+      "the cell edit is one named undo step (the adapter's narrow face still says READ_ONLY_TABLE)");
+    doc.undo();
+    test.assert(doc.tables()[0].rows[0][0].text === before && doc.canRedo(), "undo restores the cell's words");
+    doc.redo();
+    doc.undo();
+    doc.markSaved(doc.getEditRevision());   // leave the document clean for the sections below
+    test.assert(!doc.isDirty(), "(cleanup) the N10 probe leaves the document clean");
   }
 
   // 6. Edits: one undo step each, dirty source moves, save + reopen reads back.

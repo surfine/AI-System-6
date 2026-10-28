@@ -3,8 +3,8 @@
 
 window.AISystem6ProjectDiskBackup = (() => {
   const format = "ai-system-6-project-disk";
-  // v7 carries bounded ClioTalk image inputs and a v3 Working Session.
-  const currentFormatVersion = 7;
+  // v8 carries the bytes of the project's Office documents (ClioWorks N0).
+  const currentFormatVersion = 8;
   // Version history:
   //   v1 — no SHA-256 integrity, no counts, no documentRevisions
   //   v2 — SHA-256 integrity + counts, no documentRevisions
@@ -23,7 +23,11 @@ window.AISystem6ProjectDiskBackup = (() => {
   //   v7 — + recoverable ClioTalk imageInputs. Only a bounded inline copy and
   //        safe metadata travel; File objects, object URLs, credentials and
   //        signed provider tokens are never backup material.
-  const supportedFormatVersions = [1, 2, 3, 4, 5, 6, currentFormatVersion];
+  //   v8 — + nativeDocuments: the bytes of every Office document (docx, xlsx,
+  //        pptx) the project's files and Trash name, base64 in the bundle,
+  //        with byteLength and sha256. Additive: a v1-v7 backup has no Office
+  //        documents and still restores exactly as before.
+  const supportedFormatVersions = [1, 2, 3, 4, 5, 6, 7, currentFormatVersion];
   const maxBackupBytes = 100 * 1024 * 1024;
   const maxArrayItems = 100000;
   const maxDepth = 40;
@@ -43,7 +47,11 @@ window.AISystem6ProjectDiskBackup = (() => {
     "documentRevisions",
     "darkroomRecords",
     "imageAttachments",
+    "nativeDocuments",
   ]);
+  // The first format version that carries each later collection.
+  const arrayKeySince = Object.freeze({ documentRevisions: 3, darkroomRecords: 5, imageAttachments: 6, nativeDocuments: 8 });
+  const carries = (key, formatVersion) => formatVersion >= (arrayKeySince[key] || 1);
 
   const relationFields = Object.freeze({
     projectId: "project",
@@ -59,6 +67,8 @@ window.AISystem6ProjectDiskBackup = (() => {
     scrapId: "scrap",
     sourceScrapId: "scrap",
     projectCdItemId: "projectCdItem",
+    nativeDocumentId: "nativeDocument",
+    officeFileId: "file",
   });
 
   // A desktop scene is windows and cursors. It must never become a side door
@@ -94,6 +104,13 @@ window.AISystem6ProjectDiskBackup = (() => {
 
   function recordId(value) {
     return typeof value === "string" ? value.trim() : "";
+  }
+
+  function base64ToArrayBuffer(base64) {
+    const binary = atob(String(base64 || ""));
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+    return bytes.buffer;
   }
 
   function clioInlineImageInfo(value) {
@@ -226,9 +243,7 @@ window.AISystem6ProjectDiskBackup = (() => {
     }
 
     arrayKeys.forEach((key) => {
-      if (key === "documentRevisions" && formatVersion < 3) return;
-      if (key === "darkroomRecords" && formatVersion < 5) return;
-      if (key === "imageAttachments" && formatVersion < 6) return;
+      if (!carries(key, formatVersion)) return;
       if (!Array.isArray(bundle[key])) {
         error(`backup.${key}`, "field must be an array");
       }
@@ -332,6 +347,7 @@ window.AISystem6ProjectDiskBackup = (() => {
       ["trash", bundle.trash, false],
       ["projectCdItem", bundle.projectCdItems, true],
       ["reference", bundle.references, true],
+      ["nativeDocument", carries("nativeDocuments", formatVersion) ? bundle.nativeDocuments : [], true],
     ];
     const ids = {};
     typeDefinitions.forEach(([type, items, requireId]) => {
@@ -382,6 +398,34 @@ window.AISystem6ProjectDiskBackup = (() => {
         }
       }
     });
+    // v8: an Office document's item names its bytes, and the bytes are real.
+    if (carries("nativeDocuments", formatVersion)) {
+      bundle.nativeDocuments.forEach((record, index) => {
+        const path = `backup.nativeDocuments[${index}]`;
+        if (!isPlainObject(record)) return;
+        if (!["docx", "xlsx", "pptx"].includes(record.format)) error(`${path}.format`, "must be docx, xlsx or pptx");
+        const encoded = String(record.base64 || "");
+        if (encoded.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(encoded)) {
+          error(`${path}.base64`, "must be base64 bytes");
+          return;
+        }
+        const padding = encoded.endsWith("==") ? 2 : encoded.endsWith("=") ? 1 : 0;
+        if (Number(record.byteLength) !== (encoded.length / 4) * 3 - padding) error(`${path}.byteLength`, "does not match the bytes");
+      });
+      const officeFiles = [
+        ...bundle.files.map((file, index) => [file, `backup.files[${index}]`]),
+        ...bundle.trash.flatMap((item, index) => {
+          const original = item?.originalData;
+          if (!isPlainObject(original)) return [];
+          return [[original, `backup.trash[${index}].originalData`],
+            ...(Array.isArray(original.files) ? original.files : []).map((file, fileIndex) => [file, `backup.trash[${index}].originalData.files[${fileIndex}]`])];
+        }),
+      ].filter(([file]) => file?.type === "office");
+      officeFiles.forEach(([file, path]) => {
+        if (!recordId(file.nativeDocumentId)) error(`${path}.nativeDocumentId`, "an Office document names its bytes");
+        else requireRelation(file.nativeDocumentId, "nativeDocument", `${path}.nativeDocumentId`);
+      });
+    }
     bundle.scraps.forEach((scrap, index) => {
       requireRelation(scrap.sourceFileId, "file", `backup.scraps[${index}].sourceFileId`);
       requireRelation(scrap.sourceDocumentId, "file", `backup.scraps[${index}].sourceDocumentId`);
@@ -527,12 +571,9 @@ window.AISystem6ProjectDiskBackup = (() => {
         error("backup.counts", "v2+ backup requires counts");
       } else {
         arrayKeys.forEach((key) => {
-          // v2 ships counts without documentRevisions (revisions arrived in v3).
-          if (key === "documentRevisions" && formatVersion < 3) return;
-          // Same for the darkroom, which arrived in v5.
-          if (key === "darkroomRecords" && formatVersion < 5) return;
-          if (key === "imageAttachments" && formatVersion < 6) return;
-      if (key === "imageAttachments" && formatVersion < 6) return;
+          // v2 ships counts without documentRevisions (revisions arrived in
+          // v3); the darkroom arrived in v5, pictures in v6, Office bytes in v8.
+          if (!carries(key, formatVersion)) return;
           if (Number(bundle.counts[key]) !== bundle[key].length) {
             error(`backup.counts.${key}`, "count does not match the array");
           }
@@ -587,6 +628,8 @@ window.AISystem6ProjectDiskBackup = (() => {
     // v6 the same way: a disk with no pictures exports an explicit empty set, so
     // "no pictures" and "field forgotten" stay apart.
     if (!Array.isArray(copy.imageAttachments)) copy.imageAttachments = [];
+    // v8 the same way: no Office documents is an explicit empty set.
+    if (!Array.isArray(copy.nativeDocuments)) copy.nativeDocuments = [];
     if (isPlainObject(copy.workingSession) && Number(copy.workingSession.version) === 2) {
       copy.workingSession = { ...copy.workingSession, version: 3, migratedFrom: 2 };
     }
@@ -861,6 +904,7 @@ window.AISystem6ProjectDiskBackup = (() => {
       revision: new Map(),
       imageAttachment: new Map(),
       clioImageInput: new Map(),
+      nativeDocument: new Map(),
     };
     const definitions = [
       ["folder", bundle.folders],
@@ -870,6 +914,7 @@ window.AISystem6ProjectDiskBackup = (() => {
       ["projectCdItem", bundle.projectCdItems],
       ["reference", bundle.references],
       ["imageAttachment", bundle.imageAttachments || []],
+      ["nativeDocument", bundle.nativeDocuments || []],
     ];
     definitions.forEach(([type, items]) => {
       items.forEach((item, index) => {
@@ -1139,6 +1184,12 @@ window.AISystem6ProjectDiskBackup = (() => {
       documentRevisions: importedDocumentRevisions,
       darkroomRecords: importedDarkroomRecords,
       imageAttachments: remapRecords("imageAttachment", bundle.imageAttachments || []),
+      // Ready for the nativeDocuments store: the bytes decoded, base64 gone.
+      nativeDocuments: remapRecords("nativeDocument", bundle.nativeDocuments || []).map(({ base64, ...row }) => ({
+        ...row,
+        bytes: base64ToArrayBuffer(base64),
+        updatedAt: row.updatedAt || now,
+      })),
       workingSession: remapWorkingSession(bundle.workingSession, idMaps, newProjectId, validation.formatVersion),
     };
   }

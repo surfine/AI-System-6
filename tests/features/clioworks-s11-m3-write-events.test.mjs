@@ -6,6 +6,9 @@
 // beforeinput / keydown / mousedown / pointerdown / composition events at the editor's own host,
 // capture phase and all, so the upstream listeners run exactly as in the browser. Each case
 // states what a writer does and what the file must still hold afterwards.
+// N10 boundary held here: the words inside a table cell are typed through the same
+// gate as body text; a click on a picture selects it (upstream handles, one-step
+// resize) while shapes and floating objects stay swallowed and never selected.
 import { readFileSync } from "node:fs";
 import { createFeatureTest, resolveProjectPath } from "../helpers/feature-test-harness.mjs";
 import { createQuireEditorVm } from "../helpers/quire-editor-vm.mjs";
@@ -68,23 +71,52 @@ const run = async () => {
       "the scrolling document is reachable from the keyboard as the scroller's one tab stop (axe scrollable-region-focusable)");
   }
 
-  // ---- pictures: click, handles, resize ----
+  // ---- pictures (N10): a click selects, the upstream handles appear, a corner
+  //      drag resizes as one named step; other objects stay swallowed ----
   {
     const adapter = await fresh("full");
-    const before = snapshot(adapter);
+    const pp = D().byId(adapter.document(), byText(adapter, "新书架").id);
+    const picture = () => { const it = pp.runs.find((r) => r.t === "img"); return { w: it.w, h: it.h }; };
+    const before = picture();
     const rev = adapter.getEditRevision();
     const img = doc.querySelector("#pages .img");
     v.fire(img, "mousedown", { button: 0, clientX: 4, clientY: 4 });
     v.fire(img, "pointerdown", { button: 0, clientX: 4, clientY: 4 });
+    v.flush();
     const handle = doc.querySelector(".obj-handles .oh-se");
+    test.assert(!!handle && !!E().objSel && E().objSel.it && E().objSel.it.t === "img" && !E().objSel.float,
+      "a click on a picture selects it and shows the upstream resize handles");
+    test.assert(adapter.getEditRevision() === rev && !adapter.isDirty(), "the click alone changes nothing in the file");
     if (handle) {
       v.fire(handle, "pointerdown", { button: 0, clientX: 10, clientY: 10 });
       v.fire(doc, "pointermove", { clientX: 400, clientY: 400, buttons: 1 });
-      v.fire(doc, "pointerup", { clientX: 400, clientY: 400 });
+      v.fire(doc, "pointerup", { button: 0, clientX: 400, clientY: 400 });
     }
     v.flush();
-    test.assert(!doc.querySelector(".obj-handles") && E().objSel === null, "a click on a picture shows no resize handles and selects no object");
-    test.assert(adapter.getEditRevision() === rev && snapshot(adapter) === before && !adapter.isDirty(), "dragging a picture handle changes nothing in the file");
+    const after = picture();
+    test.assert(after.w > before.w && after.h > before.h && Math.abs(after.w / after.h - before.w / before.h) < 0.01,
+      `dragging a corner handle resizes the picture with the aspect locked (${before.w}×${before.h} → ${after.w}×${after.h})`);
+    test.assert(api.editHistory().undoLabel() === "clio_write_step_resize_picture",
+      `the resize is one named undo step 「调整图片大小」 (${api.editHistory().undoLabel()})`);
+    api.editHistory().undo();
+    const restored = picture();
+    test.assert(restored.w === before.w && restored.h === before.h, "one Undo takes the size back");
+  }
+  {
+    const adapter = await fresh("full");
+    const rev = adapter.getEditRevision();
+    const paraEl = host().querySelector(".p");
+    const shape = doc.createElement("span");
+    shape.className = "shp";
+    paraEl.append(shape);
+    v.fire(shape, "mousedown", { button: 0, clientX: 2, clientY: 2 });
+    v.fire(shape, "pointerdown", { button: 0, clientX: 2, clientY: 2 });
+    beforeinput("insertText", "形");
+    const shapeReceipt = doc.querySelector(".cw-receipt").textContent;
+    test.assert(E().objSel === null && adapter.getEditRevision() === rev && shapeReceipt.startsWith("clio_write_receipt_refused:clio_write_reason_image"),
+      `a press on a shape (.shp) is still swallowed: nothing selected, typing names the object (${shapeReceipt})`);
+    v.fire(doc, "pointerup", { button: 0, clientX: 2, clientY: 2 });
+    shape.remove();
   }
 
   // ---- floating object: arrow keys do not nudge, a press does not start a move ----
@@ -110,11 +142,13 @@ const run = async () => {
     const adapter = await fresh("full");
     const cell = adapter.tables()[0].rows[0][0].paragraphIds[0];
     E().setSel(D().pos(D().byId(adapter.document(), cell), 0));
-    const before = snapshot(adapter);
-    const rev = adapter.getEditRevision();
     keydown(" ", { ctrlKey: true, shiftKey: true });
+    let cellText = adapter.tables()[0].rows[0][0].text;
+    const one = cellText.length === 3 && /^\s/.test(cellText) && adapter.isDirty();
     keydown(" ", { metaKey: true, shiftKey: true });
-    test.assert(snapshot(adapter) === before && adapter.getEditRevision() === rev, "⌃⇧Space and ⌘⇧Space do not type a space into the table");
+    cellText = adapter.tables()[0].rows[0][0].text;
+    test.assert(one && cellText.length === 4 && adapter.tables()[0].rows[1][0].text === "纸箱",
+      `⌃⇧Space and ⌘⇧Space type the narrow space into the cell's words (N10); the rest of the table stands (${JSON.stringify(cellText)})`);
 
     const express = await fresh("express");
     const a = D().byId(express.document(), byText(express, "这个周末").id);
@@ -404,25 +438,26 @@ const run = async () => {
     if (doc.querySelector(".cw-comments-windoid .windoid-close")) doc.querySelector(".cw-comments-windoid .windoid-close").dispatchEvent(v.make("click"));
   }
 
-  // D16: a press on a picture is swallowed, so the caret stays put (here in a table cell); typing then
-  // is refused naming the picture, while the same typing in the table still names the table.
+  // D16 (N10 boundary): typing in a cell lands in its words; a press on a picture selects
+  // it, so typing then names the picture until an arrow key gives the caret back.
   {
     const adapter = await fresh("full");
     const cell = adapter.tables()[0].rows[0][0].paragraphIds[0];
     const cellPara = D().byId(adapter.document(), cell);
     E().setSel(D().pos(cellPara, 0), D().pos(cellPara, 0));
-    const rev = adapter.getEditRevision();
     beforeinput("insertText", "表");
-    test.assert(receiptKey().startsWith("clio_write_receipt_refused:clio_write_reason_table"), `D16: typing in a table cell names the table (${receiptKey()})`);
+    test.assert(adapter.tables()[0].rows[0][0].text === "表项目" && adapter.isDirty(),
+      `D16: typing in a table cell lands in the cell's words (${adapter.tables()[0].rows[0][0].text})`);
+    api.editHistory().undo();
+    test.assert(adapter.tables()[0].rows[0][0].text === "项目", "D16: one Undo takes the cell's typing back");
     const img = doc.querySelector("#pages .img");
     v.fire(img, "mousedown", { button: 0, clientX: 4, clientY: 4 });
     beforeinput("insertText", "图");
-    test.assert(receiptKey().startsWith("clio_write_receipt_refused:clio_write_reason_image"), `D16: typing after a click on a picture names the picture, not the old table caret (${receiptKey()})`);
-    test.assert(adapter.getEditRevision() === rev, "D16: neither refusal changed the file");
-    // An arrow key back to the same caret ends the picture press: typing names the table again.
-    v.fire(doc.querySelector("#pages"), "keydown", { key: "ArrowLeft" });
-    beforeinput("insertText", "表");
-    test.assert(receiptKey().startsWith("clio_write_receipt_refused:clio_write_reason_table"), `D16: after an arrow key the picture press no longer stands (${receiptKey()})`);
+    test.assert(receiptKey().startsWith("clio_write_receipt_refused:clio_write_reason_image") && adapter.tables()[0].rows[0][0].text === "项目",
+      `D16: typing after a click on a picture names the picture, not the cell caret (${receiptKey()})`);
+    v.fire(doc.querySelector("#pages"), "keydown", { key: "ArrowRight" });
+    test.assert(E().objSel === null && E().sel && E().sel.a.o === E().sel.f.o, "D16: an arrow key ends the picture selection and gives the caret back");
+    v.fire(doc, "pointerup", { button: 0, clientX: 4, clientY: 4 });
   }
 
   // D17: the editing area is a Tab stop, so keyboard focus is shown with the desk's ring (a whole shorthand, never a colour slot).

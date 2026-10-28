@@ -76,8 +76,9 @@ for (const [items, action, shortcutId, display] of expectKeys) {
 
 const modernFile = byId(api.finderMenus, "file").items;
 test.assert(modernFile[0].action === "new-folder" && shortcutDisplay("new-folder") === "⇧⌘N"
-  && modernFile[1].action === "open-menu-selection" && modernFile[2].action === "open-with" && modernFile[3].action === "close-active-window",
-  "modern File menu keeps New Folder ⇧⌘N, Open, then Open With, Close");
+  && modernFile[1].action === "new-office-document"
+  && modernFile[2].action === "open-menu-selection" && modernFile[3].action === "open-with" && modernFile[4].action === "close-active-window",
+  "modern File menu keeps New Folder ⇧⌘N, New Office Document… (no key; ⌘N is the classic Finder's), Open, then Open With, Close");
 test.assert(!byId(classic, "file").items.some((i) => i.action === "open-with"), "the System 6 File menu has no Open With");
 
 for (const lang of ["en", "zh"]) {

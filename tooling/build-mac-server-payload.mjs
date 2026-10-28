@@ -22,9 +22,23 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { globSync } from "node:fs";
 import { compileBrowseFiltersForRelease } from "./lib/browse-filters-release.mjs";
+import { auditMachOTree } from "./lib/macho-audit.mjs";
+import { MAC_LEGACY_X64, fetchOfficialNode, nodeDistVersion, nodeVersionInRange } from "./lib/mac-legacy-profile.mjs";
 
 const repoRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
-const payloadDir = join(repoRoot, "dist", "mac-server-payload");
+
+// --profile legacy-x64 builds the Intel/Monterey payload (see
+// tooling/lib/mac-legacy-profile.mjs) into its own directory: the official
+// Node 22 darwin-x64 runtime and x64 native modules, cross-installed from this
+// Mac. The default profile is the mainline payload and is unchanged.
+const profileArgIndex = process.argv.indexOf("--profile");
+const profileName = profileArgIndex >= 0 ? process.argv[profileArgIndex + 1] : "";
+if (profileName && profileName !== MAC_LEGACY_X64.name) {
+  console.error(`Unknown --profile ${profileName}; the only profile is ${MAC_LEGACY_X64.name}.`);
+  process.exit(2);
+}
+const legacy = profileName === MAC_LEGACY_X64.name ? MAC_LEGACY_X64 : null;
+const payloadDir = legacy ? join(repoRoot, legacy.payloadDir) : join(repoRoot, "dist", "mac-server-payload");
 
 // The packaged runtime must satisfy two conditions, and the second one is
 // easy to miss on a developer's own Mac.
@@ -81,12 +95,31 @@ function packagedNodeCandidate(binaryPath) {
   };
 }
 
-const nodeCandidates = [process.env.AI_SYSTEM6_NODE_BINARY, process.execPath, "/usr/local/bin/node"]
-  .map(packagedNodeCandidate)
-  .filter(Boolean);
+// The legacy runtime is an x64 binary this Mac cannot run, so it is never
+// probed with --version: it is the pinned official tarball, and its version is
+// read from the tarball's header. AI_SYSTEM6_LEGACY_NODE_DIST names an
+// already-unpacked official tarball instead of the download.
+function legacyNodeCandidate() {
+  const dist = process.env.AI_SYSTEM6_LEGACY_NODE_DIST
+    ? { distDir: resolve(process.env.AI_SYSTEM6_LEGACY_NODE_DIST) }
+    : fetchOfficialNode(repoRoot, legacy.nodePlatformArch, legacy);
+  const binary = join(dist.distDir, "bin", "node");
+  const version = nodeDistVersion(dist.distDir);
+  if (!nodeVersionInRange(version, legacy)) {
+    console.error(`${dist.distDir} is Node ${version || "of unknown version"}; the ${legacy.name} profile needs >=${legacy.nodeFloor.join(".")} <${legacy.nodeMajorCeiling}.`);
+    process.exit(1);
+  }
+  return { path: binary, version, major: Number(version.slice(1).split(".")[0]), foreign: foreignLibraries(binary) };
+}
+
+const nodeCandidates = legacy
+  ? [legacyNodeCandidate()]
+  : [process.env.AI_SYSTEM6_NODE_BINARY, process.execPath, "/usr/local/bin/node"]
+    .map(packagedNodeCandidate)
+    .filter(Boolean);
 
 const packagedNode = nodeCandidates.find(
-  (candidate) => candidate.major >= MIN_PACKAGED_NODE_MAJOR && candidate.foreign?.length === 0
+  (candidate) => (legacy || candidate.major >= MIN_PACKAGED_NODE_MAJOR) && candidate.foreign?.length === 0
 );
 
 if (!packagedNode) {
@@ -146,12 +179,44 @@ for (const relative of ["apps/server", "apps/browse", "package.json", "package-l
   cpSync(join(repoRoot, relative), join(payloadDir, relative), { recursive: true });
 }
 
+// 2b. ClioTalk's engine: the slim dsh install tooling/build-dsh-slim.mjs
+//     wrote (git-ignored, ~165 MiB, sha256 manifest). It is verified against
+//     its MANIFEST.json and copied to the same relative path, where
+//     apps/server/server/agent/paths.js looks for it; its Mach-O files
+//     (ripgrep, the .node addons, libvips) are signed with everything else.
+//     Without it the app still builds and the engine reports engine_missing.
+const dshSlimRoot = join(repoRoot, "vendor-runtime", "dsh");
+if (existsSync(dshSlimRoot)) {
+  const verified = spawnSync(process.execPath, [join(repoRoot, "tooling", "build-dsh-slim.mjs"), "--verify"], { stdio: "inherit" });
+  if (verified.status !== 0) {
+    console.error("vendor-runtime/dsh failed its manifest check; rebuild it with node tooling/build-dsh-slim.mjs.");
+    process.exit(1);
+  }
+  cpSync(dshSlimRoot, join(payloadDir, "vendor-runtime", "dsh"), { recursive: true, verbatimSymlinks: true });
+} else {
+  console.warn("vendor-runtime/dsh is absent: this payload ships without the ClioTalk engine (node tooling/build-dsh-slim.mjs).");
+}
+
 // 3. Lockfile-exact production dependencies, installed inside the payload so
 //    native modules (canvas) arrive built for this machine's architecture.
+//    The legacy profile cross-installs: --cpu picks the x64 optional packages
+//    (@napi-rs/canvas-darwin-x64), npm_config_arch makes canvas's
+//    prebuild-install fetch the x64 binary. Should that download fail, its
+//    node-gyp fallback is aimed at x64 too, and the Mach-O audit below
+//    refuses anything that is not.
 const install = spawnSync(
   "npm",
-  ["ci", "--omit=dev", "--ignore-scripts=false", "--no-audit", "--no-fund"],
-  { cwd: payloadDir, stdio: "inherit", env: process.env }
+  [
+    "ci", "--omit=dev", "--ignore-scripts=false", "--no-audit", "--no-fund",
+    ...(legacy ? ["--os=darwin", `--cpu=${legacy.npmCpu}`] : []),
+  ],
+  {
+    cwd: payloadDir,
+    stdio: "inherit",
+    env: legacy
+      ? { ...process.env, npm_config_arch: legacy.npmCpu, npm_config_platform: "darwin" }
+      : process.env,
+  }
 );
 if (install.status !== 0) {
   console.error("npm ci for the payload failed.");
@@ -178,6 +243,55 @@ if (shippedForeign === null || shippedForeign.length) {
   process.exit(1);
 }
 
+// node-canvas 3.x's darwin-x64 prebuild links 28 Homebrew dylibs built for
+// macOS 14-15 (libcairo, libpango, libpcre2 ...); dyld on Monterey refuses
+// them. @napi-rs/canvas is self-contained (x86_64, minos 10.13), is what
+// pdfjs-dist itself renders with in Node, and covers what the server asks of
+// canvas (createCanvas, loadImage, 2D drawing, toBuffer("image/png") in
+// importers/image-ocr.js and importers/pdf.js). So the legacy payload answers
+// require("canvas") with it; the mainline payload keeps node-canvas.
+if (legacy) {
+  const canvasDir = join(payloadDir, "node_modules", "canvas");
+  const napiCanvas = join(payloadDir, "node_modules", "@napi-rs", `canvas-darwin-${legacy.npmCpu}`);
+  if (!existsSync(napiCanvas)) {
+    console.error(`${napiCanvas} is missing; the legacy payload has no canvas it can load.`);
+    process.exit(1);
+  }
+  const { version } = JSON.parse(readFileSync(join(canvasDir, "package.json"), "utf8"));
+  rmSync(canvasDir, { recursive: true, force: true });
+  mkdirSync(canvasDir, { recursive: true });
+  writeFileSync(
+    join(canvasDir, "package.json"),
+    `${JSON.stringify({ name: "canvas", version, private: true, main: "index.js", description: "AI System 6 legacy-x64: node-canvas answered by @napi-rs/canvas" }, null, 2)}\n`
+  );
+  writeFileSync(join(canvasDir, "index.js"), 'module.exports = require("@napi-rs/canvas");\n');
+}
+
+// The ClioTalk agent engine (vendor-runtime/dsh, copied into the mainline
+// payload whenever a slim install is present on the build Mac) is built for
+// the build Mac's architecture. On the legacy profile it would carry arm64
+// Mach-O into an x86_64 payload — exactly the June 2026 defect the audit
+// below exists to refuse — so the Intel app ships without it and the server
+// reports engine_missing there, the same as a Mac without the dsh install.
+if (legacy && existsSync(join(payloadDir, "vendor-runtime"))) {
+  rmSync(join(payloadDir, "vendor-runtime"), { recursive: true, force: true });
+  console.log("vendor-runtime removed from the legacy payload: the ClioTalk agent engine is not part of the Intel build (the engine reports engine_missing).");
+}
+
+if (legacy) {
+  const audit = auditMachOTree(payloadDir, {
+    arch: legacy.machoArch,
+    maxMinos: legacy.maxMinos,
+    executableDirFor: () => payloadDir,
+  });
+  if (audit.failures.length) {
+    console.error(`The ${legacy.name} payload carries Mach-O files that will not load on the target:`);
+    for (const failure of audit.failures) console.error(`  ${failure}`);
+    process.exit(1);
+  }
+  console.log(`Mach-O audit: ${audit.rows.length} file(s), all ${legacy.machoArch}, minos <= ${legacy.maxMinos}.`);
+}
+
 const launcher = join(payloadDir, "ai-system-6-server");
 writeFileSync(
   launcher,
@@ -193,6 +307,7 @@ writeFileSync(
   `${JSON.stringify(
     {
       nodeVersion: packagedNode.version,
+      ...(legacy ? { profile: legacy.name, arch: legacy.machoArch, maxMinos: legacy.maxMinos } : {}),
       packagedAt: new Date().toISOString(),
       assetPatterns: assetGlobs.length,
       repoFilesCopied: copied,

@@ -466,6 +466,9 @@ async function addMountedTextDiskToProject() {
       savedCount += 1;
     }
 
+    // An Office package keeps its bytes, edits included, as a Project Hard
+    // Disk document (ClioWorks N0).
+    savedCount += (await window.AISystem6NativeBinaries?.keepFloppyDocuments(activeProjectId))?.length || 0;
     ejectTextDisk({ silent: true });
     await loadActiveProjectReferences();
     openWindow("projects");

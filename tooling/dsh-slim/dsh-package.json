@@ -1,0 +1,8 @@
+{
+  "name": "ais6-dsh-slim-stage",
+  "private": true,
+  "description": "Pinned input for tooling/build-dsh-slim.mjs. Never installed into the repo root.",
+  "dependencies": {
+    "@deepseek-ai/dsh": "0.2.1-rc.3"
+  }
+}

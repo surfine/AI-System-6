@@ -459,24 +459,6 @@ function mountProject(project) {
   clearProjectTransientState();
 }
 
-function createTeachTextFile({ project, folder, name, body, label = "draft" }) {
-  const now = new Date().toISOString();
-  const file = {
-    id: crypto.randomUUID(),
-    projectId: project.id,
-    type: "text",
-    name,
-    folderId: folder.id,
-    body,
-    label,
-    durable: true,
-    createdAt: now,
-    updatedAt: now,
-  };
-  chatFiles.unshift(file);
-  return file;
-}
-
 function nextProjectDiskName() {
   const base = t("untitled_project");
   const names = new Set(projects.map((project) => project.name.toLowerCase()));
@@ -1034,6 +1016,13 @@ function openFileInfo() {
     iconClass = "doc-icon";
     iconId = "chatFile";
     sizeBytes = JSON.stringify(item.messages || []).length;
+  } else if (item.type === "office") {
+    // An Office document on the Project Hard Disk: the bytes' size, the
+    // floppy's document icon.
+    kindLabel = t(`kind_office_${item.format}`);
+    iconClass = "doc-icon";
+    iconId = "document";
+    sizeBytes = item.byteLength || 0;
   } else if (item.type === "folder") {
     kindLabel = t("folder_kind");
     iconClass = "folder-icon";
@@ -1122,9 +1111,8 @@ function openFileInfo() {
       : item.projectId || projects.includes(item) || item.type === "finder-volume" || item.type === "finder-root" || item.type === "folder" ? t("durable_yes") : t("durable_no");
   fileInfoCommentsEl.value = item.comments || "";
   fileInfoCommentsEl.disabled = item.readOnly === true;
-  // Stationery Pad applies to editable project files, not folders, system
-  // components, or derived artifacts whose identity is load-bearing.
-  const stationeryAvailable = (item.type === "text" || item.type === "chat") && item.readOnly !== true && !String(item.artifactKind || "").trim() && isInActiveProject(item);
+  // Stationery Pad: editable project files only (office included, N4).
+  const stationeryAvailable = (item.type === "text" || item.type === "chat" || item.type === "office") && item.readOnly !== true && !String(item.artifactKind || "").trim() && isInActiveProject(item);
   fileInfoStationeryEl.checked = item.stationery === true;
   fileInfoStationeryEl.disabled = !stationeryAvailable;
   withFinderObjects(() => {
@@ -1141,6 +1129,7 @@ function openFileInfo() {
   });
 
   renderFileInfoKindActions(item);
+  renderFileInfoFonts(item);
   // Download .md is for text-bearing objects. Folders, volumes, and aliases have
   // nothing honest to serialize — grey the control and say why once.
   if (fileInfoDownloadMarkdownButton) {
@@ -1160,6 +1149,14 @@ function openFileInfo() {
     else fileInfoDownloadMarkdownButton.dataset.balloonHelpDisabled = "balloon_get_info_download";
   }
   openWindow("fileInfo");
+}
+
+// N12: Get Info's 「字体」 row. Its only cheap sources (a live ClioWrite model,
+// or bytes the loaded codec already holds) exist only after ClioWrite has
+// loaded, and so has clio-write-fonts.js with it; otherwise there is no row.
+// The module clears the previous item's row itself.
+function renderFileInfoFonts(item) {
+  window.AISystem6ClioWriteFonts?.fillInfo?.(item, () => fileInfoItem === item);
 }
 
 // Verbs that only make sense for one kind of object.
@@ -1334,6 +1331,8 @@ function getActiveItem() {
 
 function restoreTrashItem(item) {
   if (!item || !isInActiveProject(item)) return false;
+  // A restored Office document gets its text copy back as a source.
+  followOfficeDocuments(item.originalData, "restoreTextCopies");
 
   if (item.originalType === "scrap" && item.originalData) {
     item.originalData.projectId = activeProjectId;
@@ -1464,6 +1463,9 @@ async function emptyActiveProjectTrash() {
   renderScraps();
   renderProjectCd();
   saveDeskState();
+  // Office documents keep their bytes in their own store: once nothing names
+  // a document any more, its bytes go too (ClioWorks N0).
+  ensureNativeBinariesModule().then(() => AISystem6NativeBinaries.sweepDocuments()).catch(() => {});
   if (items.length) playSystemSound("trash");
 }
 

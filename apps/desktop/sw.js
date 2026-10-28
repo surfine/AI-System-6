@@ -371,7 +371,38 @@ async function cacheFirst(request, cacheName, url) {
   const cache = await caches.open(cacheName);
   const key = stampedCacheKey(url);
   const cached = await cache.match(key);
-  if (cached) return cached;
+  if (cached) {
+    // The build stamp in `?v=` names the build, not the bytes — a dev server
+    // serving the same stamp after a source edit serves different bytes under
+    // it, and cache-first would pin them for the stamp's whole life (measured
+    // 2026-10-28: a lazy feature stayed on its morning body all day). The
+    // server answers ETags on every request, so a conditional revalidation
+    // costs one 304 round trip per URL per session and otherwise changes
+    // nothing for the reader.
+    const etag = cached.headers.get("etag");
+    if (etag) {
+      try {
+        // A fresh Request carrying the header — never a bare init (Headers can
+        // be realm-bound and arrive empty across one) and never a mutation of
+        // the caller's request (its guard belongs to whoever handed it here).
+        const revalidated = await fetch(new Request(key, {
+          headers: { "If-None-Match": etag },
+          redirect: "follow",
+        }));
+        if (revalidated.status === 304) return cached;
+        if (revalidated.ok) {
+          const fresh = revalidated.clone();
+          await cache.put(key, fresh);
+          return revalidated;
+        }
+      } catch {
+        // Revalidation is an upgrade, never a dependency: a dead network
+        // answers from the cached copy below.
+      }
+      return cached;
+    }
+    return cached;
+  }
   const response = await fetch(request);
   if (isCacheableResponse(response)) await cache.put(key, response.clone());
   return response;
@@ -459,3 +490,8 @@ self.addEventListener("fetch", (event) => {
     return unavailableResponse();
   }));
 });
+
+// The cache-first path, handed to the contract so the revalidation behaviour
+// is tested as it runs, not as it reads. Undefined in a real worker scope —
+// nothing in the desk reads it.
+self.AISystem6TestCacheFirst = cacheFirst;

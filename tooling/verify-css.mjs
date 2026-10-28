@@ -557,6 +557,7 @@ const THEME_FILES = new Set([
   // Theme-scoped files that don't participate in twinning. Bureaucracy/meme
   // and Endfield Terminal are standalone surfaces, not base/theme pairs.
   "styles/80-bureaucracy-meme.css",
+  "styles/80-reader-pages.css",
   "styles/90-endfield-terminal.css",
 ]);
 

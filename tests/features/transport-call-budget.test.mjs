@@ -18,7 +18,7 @@ const server = vm.createContext({
   DEEPSEEK_CLOUD_MODELS: [], resolveCloudTarget: async () => ({ baseUrl: "https://controlled.invalid" }),
   resolveCloudCredential: async () => "fixture-only", normalizeCloudModelId: (model) => model,
   resolveTaskPolicy: () => ({ thinking: true, answerBudget: 100, reasoningAllowance: 0, effort: "low" }),
-  isTrustedDeepSeekCredentialTarget: () => true, normalizeCloudVisionMessages: (messages) => ({ messages }),
+  isTrustedDeepSeekCredentialTarget: () => true, isAnthropicUrl: () => false, normalizeCloudVisionMessages: (messages) => ({ messages }),
   isAutoModelId: () => false, isDeepSeekCloudModelId: () => true,
   stripCloudLocalOnlyFields: noop, stripDeepseekV4LocalOnlyFields: noop,
   cloudAuthHeaders: () => ({}), assertFinalChatPayloadBudget: noop,

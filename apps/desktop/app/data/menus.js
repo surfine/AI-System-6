@@ -227,6 +227,7 @@ const windowMenu = () => menu("window", "menu_window", [
 const finderMenus = [
   menu("file", "menu_file", [
     menuItem("new-folder", "new_folder", "new-folder"),
+    menuItem("new-office-document", "new_office_document"),
     menuItem("open-menu-selection", "open", "open"),
     menuItem("open-with", "open_with"),
     menuItem("close-active-window", "close", "close-window"),
@@ -293,6 +294,8 @@ const teachTextMenus = [
       menuItem("export-document-word", "export_word_document"),
       menuItem("export-teachtext-project-cd", "export_project_cd"),
     ]),
+    // N14 送审: one clean .docx round in the 来回 folder, citations as footnotes.
+    menuItem("send-manuscript-review", "send_manuscript_review"),
     menuSeparator,
     menuItem("open-document-versions", "versions_menu"),
     menuSeparator,
@@ -303,15 +306,20 @@ const teachTextMenus = [
   // Markdown, made visible. Every row names its key equivalent, which is how
   // the keys are learned; the editor itself answers the keys.
   menu("format", "menu_format", [
-    "heading-0:body", "heading-1", "heading-2", "heading-3", "",
-    "bold", "italic", "strike", "code", "link", "",
-    "quote", "bullet", "numbered", "task", "indent", "outdent", "",
-    "table", "rule", "code-block",
-  ].map((row) => {
-    if (!row) return menuSeparator;
-    const [command, label = command] = row.split(":");
-    return menuItem(`format-${command}`, `format_${label.replace(/-/g, "_")}`, command === "rule" ? "" : `format-${command}`);
-  }), { menuCondition: "writing-format-menu" }),
+    ...[
+      "heading-0:body", "heading-1", "heading-2", "heading-3", "",
+      "bold", "italic", "strike", "code", "link", "",
+      "quote", "bullet", "numbered", "task", "indent", "outdent", "",
+      "table", "rule", "code-block",
+    ].map((row) => {
+      if (!row) return menuSeparator;
+      const [command, label = command] = row.split(":");
+      return menuItem(`format-${command}`, `format_${label.replace(/-/g, "_")}`, command === "rule" ? "" : `format-${command}`);
+    }),
+    // N15a: 打开链接 —— 跟随光标处的 Markdown 链接（⌘/Ctrl+点击链接同义）。
+    // 独立一行；插入路径（⌘K / format-link / 贴链）行为不变。
+    menuItem("format-open-link", "format_open_link"),
+  ], { menuCondition: "writing-format-menu" }),
   menu("writing", "menu_writing", [
     submenu("menu_go_to", [
       menuItem("open-question-sheet", "question_sheet", "route-question-sheet"),
@@ -701,6 +709,8 @@ const readerMenus = [
     menuItem("make-chart", "make_chart"),
     menuItem("make-slides", "make_slides"),
     menuItem("reader-open-clio-stage", "open_in_clio_stage"),
+    // N9: a Pages/Numbers/Keynote source becomes an editable Office copy.
+    menuItem("reader-make-office-copy", "iwork_make_office_copy"),
     menuItem("focus-reader-question", "ask"),
   ]),
   windowMenu(),
@@ -834,10 +844,12 @@ const searcherMenus = [
 
 const clioStageMenus = [
   menu("file", "menu_file", [
+    menuItem("new-office-document", "office_new_blank", "new-office-document"),
     menuItem("make-slides", "make_slides"),
     menuItem("clio-stage-import", "import"),
     menuItem("clio-stage-save-draft", "clio_stage_save_draft"),
     menuItem("clio-stage-export-pdf", "print_pdf"),
+    menuItem("office-save-as-stationery", "office_save_as_stationery"),
     menuItem("clio-stage-print-preview", "clio_stage_print_preview"),
     submenu("clio_stage_restyle", [
       menuItem("clio-stage-restyle-classic", "theme_classic"),
@@ -855,6 +867,7 @@ const clioStageMenus = [
   // reach the deck's own history when no text field is the target.
   menu("edit", "menu_edit", [editBasics[0], menuItem("redo", "redo", "redo"), ...editBasics.slice(1), menuSeparator, ...flatSelectionTools]),
   menu("presentation", "menu_presentation", [
+    menuItem("clio-stage-present", "clio_stage_present", "clio-stage-present"),
     menuItem("clio-stage-previous", "previous_slide"),
     menuItem("clio-stage-next", "next_slide"),
     submenu("menu_view", [
@@ -862,6 +875,7 @@ const clioStageMenus = [
       menuItem("clio-stage-document", "document_view"),
       menuItem("clio-stage-slide", "slide_view"),
       menuItem("clio-stage-cue", "cue_view"),
+      menuItem("clio-stage-overview", "clio_stage_overview"),
     ]),
     menuSeparator,
     menuItem("clio-stage-add-slide", "clio_stage_slide_add"),

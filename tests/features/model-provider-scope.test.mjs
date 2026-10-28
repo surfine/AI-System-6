@@ -42,10 +42,11 @@ test.assertIncludes(localVision, "tuneLmStudioChatPayload(enforceMarkdownOnlyCha
 test.assertIncludes(localVision, "type: \"image_url\"", "vision preserves an OpenAI-compatible image-content payload");
 
 test.assertIncludes(cloudModel, "DeepSeek is the first-class cloud provider", "cloud UI documents DeepSeek as the first-class cloud route");
-test.assertMatches(cloudModel, /const PROVIDER_BASE_URLS = \{\n    deepseek: DEEPSEEK_BASE_URL,\n(?:    \/\/[^\n]*\n)*    "claude-subscription": "subscription-cli:\/\/claude",\n    "codex-subscription": "subscription-cli:\/\/codex",\n  \};/, "cloud UI's built-in providers are DeepSeek plus the local subscription CLIs, nothing that bills a provider API");
+test.assertMatches(cloudModel, /const PROVIDER_BASE_URLS = \{\n    deepseek: DEEPSEEK_BASE_URL,\n(?:    \/\/[^\n]*\n)*    "claude-subscription": "subscription-cli:\/\/claude",\n    "codex-subscription": "subscription-cli:\/\/codex",\n    anthropic: "https:" \+ String\.fromCharCode\(47, 47\) \+ "api\.anthropic\.com",\n  \};/, "cloud UI's built-in providers are DeepSeek, the local subscription CLIs, and Anthropic's API (the writer's 2026-10-24 decision), nothing else that bills a provider API");
 test.assertIncludes(cloudModel, "const BUILTIN_PROVIDER_MODELS = {\n    deepseek: [", "cloud model picker exposes DeepSeek as the built-in cloud model family");
 test.assertNotIncludes(cloudModel, "openai:", "cloud UI does not promote OpenAI as a built-in paid provider");
-test.assertNotIncludes(cloudModel, "anthropic:", "cloud UI does not promote Anthropic as a built-in paid provider");
+test.assertIncludes(cloudModel, "data.by_provider?.[provider] || data.models", "Anthropic's model list comes from the server's own registry, never DeepSeek's");
+test.assertNotIncludes(cloudModel, "anthropic: [", "the page keeps no second copy of the Anthropic model list");
 test.assertIncludes(serverCloud, "DEEPSEEK_CLOUD_MODELS", "server cloud registry is the DeepSeek model registry");
 test.assertIncludes(serverCloud, "DeepSeek is the first-class cloud QA target", "server cloud helpers document DeepSeek as the cloud QA target");
 test.assertIncludes(serverCloud, "compatible endpoint as a best-effort escape hatch", "server cloud helpers retain OpenAI-compatible provider openness");

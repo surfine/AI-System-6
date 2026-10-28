@@ -121,6 +121,10 @@ declare function markGrayAffordance(control: any, unavailable: boolean, reasonKe
 // the menu context window, TeachText's save and the tabs bookkeeping. Every
 // call site guards with typeof for the lazy-loading reason above.
 declare function ensureWritingFlowModule(): Promise<void>;
+// N15a: auto-archive and link following live in writing-safety.js (lazy), and
+// config.js carries its loader; the restore bridge calls it with the same
+// typeof guard the other cross-module loaders get.
+declare function ensureWritingSafetyModule(): Promise<void>;
 declare function manuscriptPhase(): string;
 declare function shouldSyncProjectOutlineAsManuscript(project?: any): boolean;
 declare function registerEditHistory(windowName: string, history: any): void;
@@ -220,4 +224,7 @@ interface Element {
 interface Window {
   SpeechRecognition?: any;
   webkitSpeechRecognition?: any;
+  // N15a: writing-safety.js (lazy) installs this; document-revisions.js's
+  // restore bridge calls it guarded with optional chaining.
+  AISystem6WritingSafety?: any;
 }

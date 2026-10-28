@@ -60,11 +60,11 @@ function sharedCloudConfigured() {
   return !!String(process.env.DEEPSEEK_API_KEY || "").trim();
 }
 
-function statePath() {
+function statePath(fileName = "shared-cloud-budget.json") {
   const stateDirectory = String(
     process.env.AI_SYSTEM6_STATE_DIR || "/var/lib/ai-system6"
   ).trim();
-  return path.join(stateDirectory, "shared-cloud-budget.json");
+  return path.join(stateDirectory, fileName);
 }
 
 function utcDay(now = new Date()) {
@@ -131,8 +131,8 @@ function loadState(now = new Date(), { fresh = false } = {}) {
   return cachedState;
 }
 
-function withStateLock(callback) {
-  const filePath = statePath();
+function withStateLock(callback, fileName) {
+  const filePath = statePath(fileName);
   const lockPath = `${filePath}.lock`;
   fs.mkdirSync(path.dirname(filePath), { recursive: true, mode: 0o700 });
   const deadline = Date.now() + 5000;
@@ -171,8 +171,8 @@ function withStateLock(callback) {
   }
 }
 
-function persistState(state) {
-  const filePath = statePath();
+function persistState(state, fileName) {
+  const filePath = statePath(fileName);
   const directory = path.dirname(filePath);
   fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
   const temporary = `${filePath}.${process.pid}.${crypto.randomBytes(6).toString("hex")}.tmp`;
@@ -389,7 +389,16 @@ function usageTokenTotal(usage) {
   return Number.isFinite(Number(total)) ? Math.max(0, Math.floor(Number(total))) : null;
 }
 
-function createReservation({ reservationId, inputTokens, outputTokens, reservedTokens, remainingSessionRequests, weight = 1 }) {
+function createReservation({
+  reservationId,
+  inputTokens,
+  outputTokens,
+  reservedTokens,
+  remainingSessionRequests,
+  weight = 1,
+  // The agent allowance (agent-cloud/allowance.js) settles into its own file.
+  settleRequest = settleSharedCloudRequest,
+}) {
   let actualTokens = 0;
   let usageKnown = false;
   let requestSent = false;
@@ -426,7 +435,7 @@ function createReservation({ reservationId, inputTokens, outputTokens, reservedT
           ? "usage_unknown_reservation_retained"
           : "upstream_not_sent";
       try {
-        return settleSharedCloudRequest({
+        return settleRequest({
           reservationId,
           reservedTokens,
           actualTokens: settledTokens,
@@ -502,7 +511,13 @@ function resetSharedCloudBudgetCacheForTests() {
 
 module.exports = {
   IMAGE_BLOCK_TOKEN_ESTIMATE,
+  createReservation,
   estimatedInputTokens,
+  persistState,
+  secondsUntilUtcReset,
+  utcDay,
+  utcResetAt,
+  withStateLock,
   usageTokenTotal,
   pseudonymousCloudUserId,
   reserveSharedCloudRequest,

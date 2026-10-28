@@ -1,6 +1,6 @@
 /* ClioWorks v4 (V4-01): native DOCX open/edit/save adapter around the vendored
  * VibeOffice Quire codec (apps/desktop/app/vendor/vibeoffice/, Apache-2.0,
- * pinned upstream 4c011173838de5d65e8ea0407684ba820a277273).
+ * pinned upstream 32ff53a5da0e75ebac11acdb0251cd3d8c7bf408).
  *
  * Contract (INTEROPERABILITY.zh-CN) — same shape as the Ledger adapter:
  *  - Unchanged bytes pass through untouched: save() returns the original
@@ -41,6 +41,7 @@
     'app/vendor/vibeoffice/quire/ops.js',
     'app/vendor/vibeoffice/quire/omml.js',
     'app/vendor/vibeoffice/quire/render.js',
+    'app/vendor/vibeoffice/quire/portions.js',
     'app/vendor/vibeoffice/quire/preserve.js',
     'app/vendor/vibeoffice/quire/preserve-drawing.js',
     'app/vendor/vibeoffice/quire/docx-read.js',
@@ -242,6 +243,15 @@
       encodeMemo = null;
       return true;
     }
+
+    // Part preservation (R1): the baseline is what the writer makes of the UNEDITED document, written
+    // once in idle time after open (L.zip.idleBaseline). Every part the baseline and the edited write
+    // agree on keeps its original bytes (L.zip.preserveUntouched).
+    const written = async (model) => {
+      D.doc = model;
+      try { return await restoreUntouchedDrawings(L, original, await (await L.docx.write(model, { format: 'docx' })).arrayBuffer()); } finally { bind(); }
+    };
+    const baseline = L.zip.idleBaseline(() => written(doc), () => editRevision === 0);
 
     const mainBlocks = () => (Array.isArray(doc.main.blocks) ? doc.main.blocks : []);
     const paragraphsOf = (story) => (story && Array.isArray(story.blocks) ? story.blocks : []);
@@ -479,10 +489,14 @@
     async function encodeCurrent() {
       if (encodeMemo && encodeMemo.revision === editRevision) return encodeMemo;
       const rev = editRevision; // taken before the await: an edit during the encode must leave the memo stale
+      const base = await baseline.get(); // first: a baseline still being written finishes before this write starts
       bind();
       const blob = await L.docx.write(doc, { format: 'docx' });
-      const buffer = await restoreUntouchedDrawings(L, original, await blob.arrayBuffer());
-      const memo = { revision: rev, bytes: buffer };
+      let buffer = await restoreUntouchedDrawings(L, original, await blob.arrayBuffer());
+      const merged = base && await L.zip.preserveUntouched({ original, baseline: base, edited: buffer, mime: blob.type });
+      bind();
+      if (merged) buffer = merged.buffer;
+      const memo = { revision: rev, bytes: buffer, parts: merged ? { kept: merged.kept, written: merged.written } : null };
       if (rev === editRevision) encodeMemo = memo;
       return memo;
     }
@@ -739,6 +753,15 @@
         return { id: String(commentId), done: value };
       },
 
+      /* N13a hook: one NAMED model command from outside the adapter (the review
+       * engine quire-review.js resolving tracked changes). It is the same
+       * one-dirty-source accounting every built-in command goes through: bind,
+       * run D.tx(label, fn) so the whole call is one undo step under `label`,
+       * then refresh this adapter's history slice and count the edit exactly
+       * once. The command edits the model through the vendored D/O; it must
+       * touch what it changes (D.touch / D.touchList) so undo restores it. */
+      modelCommand(label, fn) { return transact(label, fn); },
+
       /* ---------------------------------------------------------------- undo */
       canUndo: () => { bind(); return D.canUndo(); },
       canRedo: () => { bind(); return D.canRedo(); },
@@ -807,8 +830,54 @@
       originalBytes: () => cloneBytes(original),
       originalBytesEqual: (candidate) => bytesEqual(original, candidate),
     };
+    await baseline.schedule();
     return api;
   }
 
-  root.ClioWorksQuireAdapter = Object.freeze({ open, loadCodec, loadEditor, MODULES: MODULES.slice(), EDITOR_MODULES: EDITOR_MODULES.slice() });
+  // The miniature of the upstream ui.drag the editing layer calls (the host's L.ui takes it as dragHost); one drag at a time.
+  let liveDrag = null;
+  function dragPress(e, o) {
+    if (e.button != null && e.button !== 0) return null;
+    if (liveDrag) liveDrag.end(false, null, 'new');
+    const d = { x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, dx: 0, dy: 0, moved: false, data: {} };
+    const id = e.pointerId;
+    const threshold = o.threshold == null ? 4 : o.threshold;
+    const cap = o.capture === false ? null : o.capture || e.target;
+    try { if (cap && id != null && cap.setPointerCapture) cap.setPointerCapture(id); } catch (_) { /* window listeners follow */ }
+    const on = (target, type, fn, capture) => { target.addEventListener(type, fn, capture); return () => target.removeEventListener(type, fn, capture); };
+    const offs = [
+      on(window, 'pointermove', (ev) => {
+        if (id != null && ev.pointerId !== id) return;
+        if (ev.buttons & 6) { end(false, null, 'button'); return; }
+        if (!(ev.buttons & 1)) { end(false, null, 'lost'); return; }
+        d.x = ev.clientX; d.y = ev.clientY; d.dx = d.x - d.x0; d.dy = d.y - d.y0;
+        if (!d.moved && Math.hypot(d.dx, d.dy) < threshold) return;
+        d.moved = true;
+        if (o.move) o.move(ev, d);
+      }, true),
+      on(window, 'pointerup', (ev) => { if ((id == null || ev.pointerId === id) && ev.button === 0) end(true, ev); }, true),
+      on(window, 'keydown', (ev) => { if (ev.key === 'Escape') end(false, null, 'esc'); }, true),
+      on(window, 'pointercancel', () => end(false, null, 'lost'), true),
+      on(window, 'blur', () => end(false, null, 'blur')),
+    ];
+    function end(ok, ev, why) {
+      if (liveDrag !== live) return;
+      liveDrag = null;
+      offs.forEach((off) => off());
+      try { if (cap && id != null && cap.hasPointerCapture && cap.hasPointerCapture(id)) cap.releasePointerCapture(id); } catch (_) { /* ignore */ }
+      if (ok) { if (o.up) o.up(ev, d); } else if (o.cancel) o.cancel(d, why);
+    }
+    const live = { end, d };
+    liveDrag = live;
+    return d;
+  }
+  // Pin 32ff53's editor calls L.ui.drag / dragCancel (its common/ui.js, not vendored) and ends a text selection from the
+  // drag's release. The host puts these three into its L.ui; one drag at a time, cancel on Esc, blur, a second button.
+  const dragHost = Object.freeze({
+    drag: (e, o) => dragPress(e, o || {}),
+    dragCancel: () => { if (liveDrag) liveDrag.end(false, null, 'api'); },
+    dragging: () => !!liveDrag,
+  });
+
+  root.ClioWorksQuireAdapter = Object.freeze({ open, loadCodec, loadEditor, dragHost, MODULES: MODULES.slice(), EDITOR_MODULES: EDITOR_MODULES.slice() });
 })(typeof window !== 'undefined' ? window : globalThis);

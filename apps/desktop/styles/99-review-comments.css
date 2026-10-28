@@ -285,3 +285,213 @@
   outline: 2px solid var(--ink);
   outline-offset: 1px;
 }
+
+/* ---- 回稿: per-paragraph candidates, messages, three-way compare (N8) ----
+   Black and white only, through the tokens this sheet already uses: the
+   design's .del/.ins pair is the .review-diff-del/.review-diff-ins this panel
+   draws elsewhere; no colour arrives with the reviewer's markup. */
+
+.roundtrip-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.roundtrip-summary .roundtrip-note {
+  border: 0;
+  padding: 0;
+}
+
+.roundtrip-columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+  align-items: flex-start;
+}
+
+.roundtrip-candidates {
+  flex: 1.25 1 16em;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  list-style: none;
+}
+
+.roundtrip-messages {
+  flex: 1 1 14em;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.roundtrip-messages-title {
+  font-size: 0.95em;
+}
+
+.roundtrip-cand,
+.roundtrip-message,
+.roundtrip-unplaced {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: var(--system-border);
+}
+
+.roundtrip-cand.is-accepted {
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+}
+
+.roundtrip-cand.is-lost .roundtrip-cand-text {
+  color: var(--shade-dark);
+}
+
+.roundtrip-cand-head,
+.roundtrip-message-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.roundtrip-cand-status,
+.roundtrip-message-anchor {
+  color: var(--shade-dark);
+  font-size: 0.9em;
+}
+
+.roundtrip-cand-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+
+.roundtrip-cand-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.roundtrip-tone {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 3px 6px;
+  border: 1px dashed var(--ink);
+  font-size: 0.9em;
+}
+
+.roundtrip-decision {
+  margin: 0;
+  font-size: 0.9em;
+}
+
+.roundtrip-decision.is-accepted {
+  font-weight: bold;
+}
+
+.roundtrip-decision.is-rejected {
+  color: var(--shade-dark);
+  text-decoration: line-through;
+}
+
+.roundtrip-decision.is-lost {
+  color: var(--shade-dark);
+}
+
+.roundtrip-editbox {
+  display: grid;
+  gap: 6px;
+}
+
+.roundtrip-editbox textarea {
+  width: 100%;
+  min-width: 0;
+  resize: vertical;
+}
+
+.roundtrip-message.is-done .review-thread-quote {
+  color: var(--shade-dark);
+}
+
+.roundtrip-message-reply {
+  margin: 0;
+}
+
+.roundtrip-message-note {
+  margin: 0;
+  color: var(--shade-dark);
+  font-size: 0.85em;
+}
+
+.roundtrip-message-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.roundtrip-unplaced .roundtrip-message-list {
+  padding-left: 10px;
+  border-left: 1px dotted var(--shade);
+}
+
+.roundtrip-note {
+  margin: 0;
+  padding-top: 6px;
+  border-top: 1px solid var(--shade);
+  color: var(--shade-dark);
+  font-size: 0.85em;
+}
+
+/* The three-way compare: 送审版 · 现在 · 对方改回, one row per changed
+   paragraph, read-only. */
+
+.roundtrip-compare-table {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px 8px;
+}
+
+.roundtrip-compare-head {
+  text-align: center;
+}
+
+.roundtrip-compare-cell {
+  padding: 6px 8px;
+  border: var(--system-border);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.92em;
+}
+
+.roundtrip-compare-cell.is-gone {
+  color: var(--shade-dark);
+}
+
+.roundtrip-compare-cell.is-accepted {
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+}
+
+.roundtrip-compare-cell.is-returned {
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+}
+
+@media (max-width: 640px) {
+  .roundtrip-compare-table {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -188,7 +188,7 @@ const run = async () => {
     const bc = back.comments(back.slides()[0].id);
     test.assert(bc.length === 6 && bc.filter((x) => x.parentId).length === 3 && bc.some((x) => x.text === "收到。" && x.author === "阿澄") && bc.find((x) => x.text === "标题可以再短一点。").anchorShapeId, "everything reads back after save and reopen, threads and anchor included");
     const slideXml = part(saved.bytes, "ppt/slides/slide1.xml");
-    test.assert(/commentRel/.test(slideXml) && /creationId val="2010101010"/.test(slideXml), "the slide keeps its commentRel and creationId");
+    test.assert(/commentRel/.test(slideXml) && /creationId\b[^>]*\bval="2010101010"/.test(slideXml), "the slide keeps its commentRel and creationId");
   }
 
   // 7. A deck with no comments gets a modern part, its authors part, rel, content type and slide extension.
@@ -283,7 +283,7 @@ const run = async () => {
     test.assert(names(original).every((n) => names(saved.bytes).includes(n)) && names(saved.bytes).length === names(original).length, "the saved package has exactly the original's parts");
     const rels = (i) => part(saved.bytes, `ppt/slides/_rels/slide${i}.xml.rels`);
     test.assert(/relationships\/image" Target="..\/media\/image1.png"/.test(rels(1)) && /relationships\/chart" Target="..\/charts\/chart1.xml"/.test(rels(2)) && ["diagramData", "diagramLayout", "diagramQuickStyle", "diagramColors"].every((t) => rels(3).includes("relationships/" + t)), "the slides keep their relationships to the picture, chart and the four diagram parts");
-    test.assert(/<p:pic>[\s\S]*r:embed="rIdObjPic"/.test(part(saved.bytes, "ppt/slides/slide1.xml")) && /uri="http:\/\/schemas.openxmlformats.org\/drawingml\/2006\/chart"/.test(part(saved.bytes, "ppt/slides/slide2.xml")) && /<dgm:relIds r:dm="rIdObjDm"/.test(part(saved.bytes, "ppt/slides/slide3.xml")), "the picture, chart and diagram frames are still on their pages");
+    test.assert(/<p:pic>[\s\S]*r:embed="rIdObjPic"/.test(part(saved.bytes, "ppt/slides/slide1.xml")) && /uri="http:\/\/schemas.openxmlformats.org\/drawingml\/2006\/chart"/.test(part(saved.bytes, "ppt/slides/slide2.xml")) && /<dgm:relIds\b[^>]*\br:dm="rIdObjDm"/.test(part(saved.bytes, "ppt/slides/slide3.xml")), "the picture, chart and diagram frames are still on their pages");
     const orig4 = part(original, "ppt/slides/slide4.xml");
     const out4 = part(saved.bytes, "ppt/slides/slide4.xml");
     test.assert(out4.includes(orig4.slice(orig4.indexOf("<p:transition"), orig4.indexOf("</p:timing>") + 11)) && out4.includes("动画页：改过的标题") && !out4.includes(was), "the transition and the whole animation timing are kept byte-for-byte while the edited title is new");

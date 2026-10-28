@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/clioworks/v4/adapter-map.md -->
-<!-- source-sha256: 39499e84808e7c7d8ab04db9319bd1f9abd5a4ece3694aa5436821e1f40083c7 -->
+<!-- source-sha256: 071d14a66db93bbf35236fe5260affd1822e7e0159735772a3f5f145ca892b79 -->
 
 > 英文版为准。本文档仅供人类参考。
 
@@ -32,7 +32,7 @@ Aaron）：依 tasks.json 全推 V4-00→V4-11；五上游已 clone 並釘版；
 
 | 上游 | 鎖定提交 | 角色（spec §9） | 構建前提 |
 | --- | --- | --- | --- |
-| VibeOffice | `4c011173838de5d65e8ea0407684ba820a277273` | Quire/Ledger/Lectern 原生編輯 + OPC 保留式寫入 | 純 Web（public/ + tools/），無 Cargo；LOSSLESS_SAVE.md 已知靜默丟失待修/阻斷 |
+| VibeOffice | `32ff53a5da0e75ebac11acdb0251cd3d8c7bf408` | Quire/Ledger/Lectern 原生編輯 + OPC 保留式寫入 | 純 Web（public/ + tools/），無 Cargo；LOSSLESS_SAVE.md 已知靜默丟失待修/阻斷 |
 | wordcraft | `a1caf22a0b4faa4675a2d6dbcc24e0516b300e30` | 支持文稿排版、共享 PDF 佈局（crates/layout） | Rust workspace，edition 2024；`cargo check -p wordcraft-layout --target wasm32-unknown-unknown` 通過 |
 | gridcraft | `13664fe66b952e7abcd68e2371c1d4f34f990dac` | 已選工作簿實際重算（crates/calc） | 同上 `gridcraft-calc` check 通過；`apps/gridcraft-web` 經 Trunk 完整 build 出 wasm |
 | deckcraft | `84acb49895c8190396b686c1eb9f20c730e48633` | 支持子集放映邏輯（crates/anim） | 同上 `deckcraft-anim` check 通過 |

@@ -1089,6 +1089,12 @@ function openAppDb() {
         const store = db.createObjectStore(transitPlansStoreName, { keyPath: "id" });
         store.createIndex("cityId", "cityId", { unique: false });
       }
+      // Version 7: an Office document's bytes on the Project Hard Disk
+      // (ClioWorks N0). One row per document; the project file item names it
+      // by nativeDocumentId, so the bytes never swell a chatFiles record.
+      if (!db.objectStoreNames.contains("nativeDocuments")) {
+        db.createObjectStore("nativeDocuments", { keyPath: "id" });
+      }
     };
 
     request.onblocked = () => finish(
@@ -1436,15 +1442,6 @@ function normalizeWritingSurfaceState(project) {
     return surfaces;
   }, {});
   return project.writingSurfaces;
-}
-
-function setProjectOutlineSections(project, sections) {
-  if (!project) return [defaultOutlineSection];
-
-  const normalized = normalizeOutlineSections(sections);
-  project.outlineSections = normalized;
-  project.outline = serializeOutlineSections(normalized);
-  return normalized;
 }
 
 function setProjectOutlineMarkdown(project, markdown) {
@@ -2132,9 +2129,14 @@ function getProjectFolderFinderItem(folder) {
 
 function getProjectFileFinderItem(file) {
   const isAlias = file.type === "alias";
+  // An Office document (ClioWorks N0): its bytes live in nativeDocuments, the
+  // item only names them, so its size is the bytes' and it has no text body.
+  const isOffice = file.type === "office";
   const isClipping = file.artifactKind === "clipping";
   const isRunRecord = file.artifactKind === "clio-run-record";
-  const kindLabel = isAlias
+  const kindLabel = isOffice
+    ? t(`kind_office_${file.format}`)
+    : isAlias
     ? t("kind_alias")
     : isClipping
       ? t("kind_clipping")
@@ -2149,16 +2151,17 @@ function getProjectFileFinderItem(file) {
   // generic document icon and their own kind label instead of the TeachText
   // "T" glyph, which misrepresented what the folder holds.
   const iconClass = isAlias ? "alias-icon" : isClipping ? "scrap-icon" : isRunRecord ? "doc-icon" : file.type === "text" ? "teachtext-icon" : "doc-icon";
-  const iconId = isAlias ? "alias" : isClipping ? "scrap" : isRunRecord ? "document" : file.type === "text" ? "teachText" : "chatFile";
-  const bodyText = isAlias ? "" : file.type === "text" ? (file.body || "") : formatChatFile(file);
+  const iconId = isAlias ? "alias" : isClipping ? "scrap" : isRunRecord || isOffice ? "document" : file.type === "text" ? "teachText" : "chatFile";
+  const bodyText = isAlias || isOffice ? "" : file.type === "text" ? (file.body || "") : formatChatFile(file);
   return {
     ...file,
     kindLabel,
     iconClass,
     iconId,
-    sizeValue: bodyText.length,
+    sizeValue: isOffice ? file.byteLength || 0 : bodyText.length,
     modifiedAt: file.updatedAt || file.createdAt,
-    canDuplicate: true,
+    // A duplicate would name the same bytes twice; Save As makes the copy.
+    canDuplicate: !isOffice,
     canRename: true,
     canTrash: true,
     canMakeDocMap: !isAlias && file.type === "text" && bodyText.trim().length >= docMapMinDocumentChars,
@@ -2188,8 +2191,10 @@ function getProjectRootFinderItems() {
     .filter((file) => (file.folderId || null) === currentParentId && !file.placement?.desktop)
     .map(getProjectFileFinderItem);
   if (currentParentId) return [...folders, ...files];
+  // An Office document's text copy is a source, not a second file: the
+  // document itself is the one icon (ClioWorks N0).
   const references = projectReferences
-    .filter((reference) => reference.projectId === activeProjectId)
+    .filter((reference) => reference.projectId === activeProjectId && !reference.officeFileId)
     .map(getProjectReferenceFinderItem);
   return [...folders, ...files, ...references];
 }

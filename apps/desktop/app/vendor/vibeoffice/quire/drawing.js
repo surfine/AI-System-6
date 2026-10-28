@@ -20,22 +20,10 @@
   };
   const col = (c, fb) => (!c ? fb || '#000000' : c[0] === '#' ? c : /^[0-9A-F]{6}$/i.test(c) ? '#' + c : L.dml.schemeHex(c, themeCtx()));
 
-  /* ---------- patterns ---------- */
-  const PATT = {
-    pct5: [0x80, 0, 0, 0, 0x08, 0, 0, 0], pct10: [0x80, 0, 0x08, 0, 0x80, 0, 0x08, 0], pct20: [0x88, 0, 0x22, 0, 0x88, 0, 0x22, 0],
-    pct25: [0x88, 0x22, 0x88, 0x22, 0x88, 0x22, 0x88, 0x22], pct30: [0xAA, 0x44, 0xAA, 0x11, 0xAA, 0x44, 0xAA, 0x11], pct40: [0xAA, 0x55, 0xAA, 0x51, 0xAA, 0x55, 0xAA, 0x15],
-    pct50: [0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55], pct60: [0xEE, 0x55, 0xBB, 0x55, 0xEE, 0x55, 0xBB, 0x55], pct70: [0xEE, 0xBB, 0xEE, 0xBB, 0xEE, 0xBB, 0xEE, 0xBB],
-    pct75: [0xEE, 0xFF, 0xBB, 0xFF, 0xEE, 0xFF, 0xBB, 0xFF], pct80: [0xF7, 0xFF, 0x7F, 0xFF, 0xF7, 0xFF, 0x7F, 0xFF], pct90: [0xFF, 0xF7, 0xFF, 0xFF, 0xFF, 0x7F, 0xFF, 0xFF],
-    horz: [0xFF, 0, 0, 0, 0xFF, 0, 0, 0], vert: [0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88], ltHorz: [0xFF, 0, 0, 0, 0, 0, 0, 0], ltVert: [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80],
-    dkHorz: [0xFF, 0xFF, 0, 0, 0xFF, 0xFF, 0, 0], dkVert: [0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC], narHorz: [0xFF, 0, 0xFF, 0, 0xFF, 0, 0xFF, 0], narVert: [0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA],
-    dnDiag: [0x88, 0x44, 0x22, 0x11, 0x88, 0x44, 0x22, 0x11], upDiag: [0x11, 0x22, 0x44, 0x88, 0x11, 0x22, 0x44, 0x88],
-    ltDnDiag: [0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01], ltUpDiag: [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80],
-    cross: [0xFF, 0x88, 0x88, 0x88, 0xFF, 0x88, 0x88, 0x88], diagCross: [0x81, 0x42, 0x24, 0x18, 0x18, 0x24, 0x42, 0x81], smCheck: [0xCC, 0xCC, 0x33, 0x33, 0xCC, 0xCC, 0x33, 0x33],
-    lgCheck: [0xF0, 0xF0, 0xF0, 0xF0, 0x0F, 0x0F, 0x0F, 0x0F], horzBrick: [0xFF, 0x80, 0x80, 0x80, 0xFF, 0x08, 0x08, 0x08], weave: [0x88, 0x54, 0x22, 0x45, 0x88, 0x14, 0x22, 0x51],
-    smConfetti: [0x80, 0x08, 0x40, 0x02, 0x10, 0x01, 0x20, 0x04], zigZag: [0x81, 0x42, 0x24, 0x18, 0x81, 0x42, 0x24, 0x18], dotGrid: [0xAA, 0, 0x80, 0, 0x80, 0, 0x80, 0],
-  };
+  /* ---------- patterns (8×8 bitmaps, OOXML prst names; common/geometry.js) ---------- */
+  const PATT = L.geom.PATTERNS;
   DR.PATTERNS = PATT;
-  const pattPath = (bits) => { let d = ''; bits.forEach((row, y) => { for (let x = 0; x < 8; x++) if (row & (0x80 >> x)) d += `M${x},${y}h1v1h-1z`; }); return d; };
+  const pattPath = L.geom.patternPath;
   DR.patternSVG = (prst, fg, bg, tile) => `<svg xmlns="http://www.w3.org/2000/svg" width="${tile || 6}" height="${tile || 6}" viewBox="0 0 8 8" shape-rendering="crispEdges"><rect width="8" height="8" fill="${bg}"/><path d="${pattPath(PATT[prst] || PATT.pct50)}" fill="${fg}"/></svg>`;
   DR.fillCSS = function (fill) {
     if (!fill || fill.t === 'none') return 'transparent';
@@ -151,7 +139,7 @@
   }
 
   /* ---------- WordArt ---------- */
-  DR.WARPS = [['textPlain', 'Plain Text'], ['textArchUp', 'Arch Up'], ['textArchDown', 'Arch Down'], ['textCircle', 'Circle'], ['textWave1', 'Wave'], ['textSlantUp', 'Slant Up'], ['textSlantDown', 'Slant Down'], ['textTriangle', 'Triangle Up'], ['textChevron', 'Chevron Up'], ['textCanUp', 'Can Up']];
+  DR.WARPS = [['textPlain', L.N('Plain Text')], ['textArchUp', L.N('Arch Up')], ['textArchDown', L.N('Arch Down')], ['textCircle', L.N('Circle')], ['textWave1', L.N('Wave')], ['textSlantUp', L.N('Slant Up')], ['textSlantDown', L.N('Slant Down')], ['textTriangle', L.N('Triangle Up')], ['textChevron', L.N('Chevron Up')], ['textCanUp', L.N('Can Up')]];
   function warpPoints(warp, w, hh, fs) {
     const pts = [], N = 64, m = fs * 0.15;
     for (let i = 0; i <= N; i++) {
@@ -172,7 +160,7 @@
     return pts;
   }
   DR.wordartSVG = function (sh) {
-    const wa = sh.wordart || { text: 'WordArt' };
+    const wa = sh.wordart || { text: 'LettersArt' };
     const w = Math.max(sh.w, 1), hh = Math.max(sh.h, 1);
     const svg = s('svg', { class: 'wa', width: L.round(w * PX, 2), height: L.round(hh * PX, 2), viewBox: `0 0 ${L.round(w, 3)} ${L.round(hh, 3)}`, preserveAspectRatio: 'none', overflow: 'visible' });
     const defs = s('defs');
@@ -257,7 +245,8 @@
       else if (it.vert === 'vert270') { tbx.style.writingMode = 'vertical-rl'; tbx.style.transform = 'rotate(180deg)'; }
       tbx.contentEditable = opts.readOnly ? 'false' : 'true';
       tbx.classList.add('ed-tb');
-      const inner = el('div', 'tbi', 'position:relative;width:100%');
+      /* as long as the lines (the box's height in vertical text), so the anchor places it across them */
+      const inner = el('div', 'tbi', 'position:relative;inline-size:100%');
       tbx.appendChild(inner);
       box.appendChild(tbx);
       /* paragraphs are laid out once the box is in the document (tab stops need measuring) */
@@ -477,7 +466,7 @@
       const W = page.W, H = page.H;
       const len = diag ? Math.hypot(W, H) * 0.75 : W * 0.8;
       const fs = wm.size && wm.size > 1 ? px(wm.size) : Math.min(len / Math.max(4, wm.text.length) * 1.6, 220);
-      const t = el('div', null, `font-family:${L.fontStack(wm.font || 'Times New Roman').replace(/"/g, "'")};font-size:${fs}px;color:#${wm.color || 'C0C0C0'};white-space:nowrap;transform:rotate(${diag ? -45 : 0}deg);opacity:${wm.semi === false ? 1 : 0.5};line-height:1`);
+      const t = el('div', null, `font-family:${L.fontStack(wm.font || 'Times New Roman').replace(/\x22/g, "'")};font-size:${fs}px;color:#${wm.color || 'C0C0C0'};white-space:nowrap;transform:rotate(${diag ? -45 : 0}deg);opacity:${wm.semi === false ? 1 : 0.5};line-height:1`);
       t.textContent = wm.text;
       box.appendChild(t);
     } else if (wm.type === 'picture' && wm.media) {
@@ -508,9 +497,10 @@
       /* inline shape or chart: select as an inline object */
       if (objEl.classList.contains('shp') && objEl.closest('.p') && !objEl.closest('.flt')) {
         e.preventDefault();
+        if (e.button !== 0 && L.ed.objSel && L.ed.objSel.el === objEl) return true;
         const pc = objEl.parentNode;
         const pos = L.layout.domToPos(pc, Array.prototype.indexOf.call(pc.childNodes, objEl));
-        if (pos) L.ed.selectInlineObject(pos, objEl);
+        if (pos) { L.ed.selectInlineObject(pos, objEl); if (e.button === 0) L.ed.startObjectMove(e, pos); }
         return true;
       }
       return false;
@@ -518,21 +508,17 @@
     e.preventDefault();
     const a = findAnchor(wrap);
     if (!a) return true;
+    if (e.button !== 0 && L.ed.objSel && L.ed.objSel.el === wrap) return true;   /* a right-click keeps it selected */
     DR.select(wrap, a);
-    startMove(e, wrap, a);
+    if (e.button === 0) startMove(e, wrap, a);
     return true;
   };
   DR.select = function (wrap, a) {
     DR.clearSelection();
-    L.ed.hideHandles();
+    L.ed.selectObject({ p: a.p, o: a.o, it: wrap._item, el: wrap, float: true });
     selWrap = wrap;
     wrap.classList.add('sel-obj');
-    const it = wrap._item;
-    L.ed.objSel = { p: a.p, o: a.o, it, el: wrap, float: true };
-    L.ed.sel = { a: D.pos(a.p, a.o), f: D.pos(a.p, a.o + 1) };
     showHandles(wrap);
-    L.bus.emit('objsel', L.ed.objSel);
-    L.bus.emit('sel', L.ed.sel);
   };
   function showHandles(target) {
     const sc = L.layout.scroller;
@@ -564,6 +550,7 @@
     if (w) DR.select(w, { p: os.p, o: os.o }); else DR.clearSelection();
   }
   L.bus.on('layout-done', () => setTimeout(() => { if (L.ed.objSel && L.ed.objSel.float) reselect(); else if (handles) DR.clearSelection(); }, 0));
+  L.bus.on('objsel', (os) => { if (!os || !os.float) DR.clearSelection(); });
   /** convert the float's position so that it moves by (dx,dy) points */
   function moveFloat(it, dxPt, dyPt, wrap) {
     const f = it.float;
@@ -574,96 +561,95 @@
     else f.posV.off = L.round((f.posV.off || 0) + dyPt, 2);
     delete f.posH.pct; delete f.posV.pct;
   }
+  /** a press on a floating object: dragging it moves it (an outline follows the pointer; the object moves on release) */
   function startMove(e, wrap, a) {
     const z = L.layout.zoom;
-    const sx = e.clientX, sy = e.clientY;
-    let moved = false;
     const ghost = el('div', 'resize-ghost');
-    const mv = (ev) => {
-      const dx = ev.clientX - sx, dy = ev.clientY - sy;
-      if (!moved && Math.hypot(dx, dy) < 3) return;
-      if (!moved) { moved = true; handles && handles.appendChild(ghost); ghost.style.width = '100%'; ghost.style.height = '100%'; }
-      ghost.style.transform = `translate(${dx}px,${dy}px)`;
-    };
-    const up = (ev) => {
-      window.removeEventListener('pointermove', mv);
-      window.removeEventListener('pointerup', up);
-      ghost.remove();
-      if (!moved) return;
-      const dxPt = (ev.clientX - sx) / z / PX, dyPt = (ev.clientY - sy) / z / PX;
-      L.ed.edit('Move Object', () => {
-        D.touch(a.p);
-        const it = D.itemAfter(a.p, a.o);
-        if (it && it.float) moveFloat(it, dxPt, dyPt, wrap);
-        return { a: D.pos(a.p, a.o), f: D.pos(a.p, a.o + 1) };
-      });
-    };
-    window.addEventListener('pointermove', mv);
-    window.addEventListener('pointerup', up);
+    L.ui.drag(e, {
+      move(ev, d) {
+        if (!ghost.parentNode) { if (!handles) return; handles.appendChild(ghost); ghost.style.width = '100%'; ghost.style.height = '100%'; }
+        ghost.style.transform = `translate(${d.dx}px,${d.dy}px)`;
+      },
+      up(ev, d) {
+        ghost.remove();
+        if (!d.moved) return;
+        const dxPt = (ev.clientX - d.x0) / z / PX, dyPt = (ev.clientY - d.y0) / z / PX;
+        L.ed.edit('Move Object', () => {
+          D.touch(a.p);
+          const it = D.itemAfter(a.p, a.o);
+          if (it && it.float) moveFloat(it, dxPt, dyPt, wrap);
+          return { a: D.pos(a.p, a.o), f: D.pos(a.p, a.o + 1) };
+        });
+      },
+      cancel: () => ghost.remove(),
+    });
   }
   DR.nudge = function (key, pt) {
     const os = L.ed.objSel;
     if (!os || !os.float) return;
     const dx = key === 'ArrowLeft' ? -pt : key === 'ArrowRight' ? pt : 0, dy = key === 'ArrowUp' ? -pt : key === 'ArrowDown' ? pt : 0;
-    L.ed.edit('Nudge', () => { D.touch(os.p); const it = D.itemAfter(os.p, os.o); if (it && it.float) moveFloat(it, dx, dy, os.el); return { a: D.pos(os.p, os.o), f: D.pos(os.p, os.o + 1) }; }, { merge: 'nudge' });
+    L.ed.edit(L.N('Nudge'), () => { D.touch(os.p); const it = D.itemAfter(os.p, os.o); if (it && it.float) moveFloat(it, dx, dy, os.el); return { a: D.pos(os.p, os.o), f: D.pos(os.p, os.o + 1) }; }, { merge: 'nudge' });
   };
   function startResize(ev, hn, target) {
     ev.preventDefault(); ev.stopPropagation();
     const os = L.ed.objSel;
-    if (!os) return;
+    if (ev.button !== 0 || !os) return;
     const z = L.layout.zoom;
     const it = os.it;
     const w0 = it.w || 72, h0 = it.h || 72;
-    const sx = ev.clientX, sy = ev.clientY;
     const corner = hn.length === 2;
     const ghost = el('div', 'resize-ghost');
-    handles.appendChild(ghost);
     let nw = w0, nh = h0, dxl = 0, dyt = 0;
     const lockAspect = it.t === 'img' || it.t === 'chart';
-    const mv = (e2) => {
-      const dx = (e2.clientX - sx) / z / PX, dy = (e2.clientY - sy) / z / PX;
-      nw = w0 + (hn.includes('e') ? dx : hn.includes('w') ? -dx : 0);
-      nh = h0 + (hn.includes('s') ? dy : hn.includes('n') ? -dy : 0);
-      if (corner && (lockAspect ? !e2.shiftKey : e2.shiftKey)) { const k = Math.max(nw / w0, nh / h0); nw = w0 * k; nh = h0 * k; }
-      nw = Math.max(2, nw); nh = Math.max(2, nh);
-      dxl = hn.includes('w') ? w0 - nw : 0; dyt = hn.includes('n') ? h0 - nh : 0;
-      ghost.style.cssText = `left:${dxl * PX * z}px;top:${dyt * PX * z}px;width:${nw * PX * z}px;height:${nh * PX * z}px`;
-    };
-    const up = () => {
-      window.removeEventListener('pointermove', mv);
-      window.removeEventListener('pointerup', up);
-      ghost.remove();
-      if (Math.abs(nw - w0) < 0.3 && Math.abs(nh - h0) < 0.3) return;
-      L.ed.edit('Resize Object', () => {
-        D.touch(os.p);
-        const item = D.itemAfter(os.p, os.o);
-        if (item) {
-          if (item.t === 'group') scaleGroup(item, nw / (item.w || 1), nh / (item.h || 1));
-          item.w = L.round(nw, 2); item.h = L.round(nh, 2);
-          if (item.float && (dxl || dyt)) moveFloat(item, dxl, dyt, target);
-        }
-        return { a: D.pos(os.p, os.o), f: D.pos(os.p, os.o + 1) };
-      });
-    };
-    window.addEventListener('pointermove', mv);
-    window.addEventListener('pointerup', up);
+    L.ui.drag(ev, {
+      move(e2, d) {
+        if (!ghost.parentNode && handles) handles.appendChild(ghost);
+        const dx = d.dx / z / PX, dy = d.dy / z / PX;
+        nw = w0 + (hn.includes('e') ? dx : hn.includes('w') ? -dx : 0);
+        nh = h0 + (hn.includes('s') ? dy : hn.includes('n') ? -dy : 0);
+        if (corner && (lockAspect ? !e2.shiftKey : e2.shiftKey)) { const k = Math.max(nw / w0, nh / h0); nw = w0 * k; nh = h0 * k; }
+        nw = Math.max(2, nw); nh = Math.max(2, nh);
+        dxl = hn.includes('w') ? w0 - nw : 0; dyt = hn.includes('n') ? h0 - nh : 0;
+        ghost.style.cssText = `left:${dxl * PX * z}px;top:${dyt * PX * z}px;width:${nw * PX * z}px;height:${nh * PX * z}px`;
+      },
+      up(e2, d) {
+        ghost.remove();
+        if (!d.moved || (Math.abs(nw - w0) < 0.3 && Math.abs(nh - h0) < 0.3)) return;
+        L.ed.edit('Resize Object', () => {
+          D.touch(os.p);
+          const item = D.itemAfter(os.p, os.o);
+          if (item) {
+            if (item.t === 'group') scaleGroup(item, nw / (item.w || 1), nh / (item.h || 1));
+            item.w = L.round(nw, 2); item.h = L.round(nh, 2);
+            if (item.float && (dxl || dyt)) moveFloat(item, dxl, dyt, target);
+          }
+          return { a: D.pos(os.p, os.o), f: D.pos(os.p, os.o + 1) };
+        });
+      },
+      cancel: () => ghost.remove(),
+      capture: L.layout.scroller,
+    });
   }
   function scaleGroup(g, kx, ky) { for (const k of g.kids || []) { k.x = (k.x || 0) * kx; k.y = (k.y || 0) * ky; k.w *= kx; k.h *= ky; if (k.t === 'group') scaleGroup(k, kx, ky); } }
   function startRotate(ev, target) {
     ev.preventDefault(); ev.stopPropagation();
     const os = L.ed.objSel;
-    if (!os) return;
-    const r = target.firstChild.getBoundingClientRect();
+    if (ev.button !== 0 || !os) return;
+    const shape = target.firstChild;
+    const r = shape.getBoundingClientRect();
     const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const transform0 = shape.style.transform;
     let ang = os.it.rot || 0;
-    const mv = (e2) => { ang = (Math.atan2(e2.clientY - cy, e2.clientX - cx) * 180) / Math.PI + 90; if (!e2.shiftKey) ang = Math.round(ang / 15) * 15; target.firstChild.style.transform = `rotate(${ang}deg)`; };
-    const up = () => {
-      window.removeEventListener('pointermove', mv);
-      window.removeEventListener('pointerup', up);
-      L.ed.edit('Rotate', () => { D.touch(os.p); const it = D.itemAfter(os.p, os.o); if (it) it.rot = L.round(((ang % 360) + 360) % 360, 1) || undefined; return { a: D.pos(os.p, os.o), f: D.pos(os.p, os.o + 1) }; });
-    };
-    window.addEventListener('pointermove', mv);
-    window.addEventListener('pointerup', up);
+    L.ui.drag(ev, {
+      move(e2) { ang = (Math.atan2(e2.clientY - cy, e2.clientX - cx) * 180) / Math.PI + 90; if (!e2.shiftKey) ang = Math.round(ang / 15) * 15; shape.style.transform = `rotate(${ang}deg)`; },
+      /* a click on the handle that never moved changes nothing */
+      up(e2, d) {
+        if (!d.moved) return;
+        L.ed.edit(L.N('Rotate'), () => { D.touch(os.p); const it = D.itemAfter(os.p, os.o); if (it) it.rot = L.round(((ang % 360) + 360) % 360, 1) || undefined; return { a: D.pos(os.p, os.o), f: D.pos(os.p, os.o + 1) }; });
+      },
+      cancel: () => { shape.style.transform = transform0; },
+      capture: L.layout.scroller,
+    });
   }
   /** modify the selected object (inline or floating) */
   DR.modifySelected = function (label, fn) {
@@ -680,7 +666,7 @@
   DR.selectedItem = () => (L.ed.objSel ? D.itemAfter(L.ed.objSel.p, L.ed.objSel.o) : null);
 
   /* ---------- wrapping styles (Format ▸ Picture ▸ Layout, Draw ▸ Text Wrapping) ---------- */
-  DR.WRAPS = [['inline', 'In Line with Text'], ['square', 'Square'], ['tight', 'Tight'], ['behind', 'Behind Text'], ['none', 'In Front of Text'], ['topBottom', 'Top and Bottom'], ['through', 'Through']];
+  DR.WRAPS = [['inline', L.N('In Line with Text')], ['square', L.N('Square')], ['tight', L.N('Tight')], ['behind', L.N('Behind Text')], ['none', L.N('In Front of Text')], ['topBottom', L.N('Top and Bottom')], ['through', L.N('Through')]];
   DR.setWrap = function (it, wrap, anchorInfo) {
     if (wrap === 'inline') { delete it.float; return; }
     if (!it.float) {

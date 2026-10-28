@@ -1,6 +1,6 @@
 /* ClioWorks v4 (V4-01): native PPTX open/edit/save adapter around the vendored
  * VibeOffice Lectern codec (apps/desktop/app/vendor/vibeoffice/, Apache-2.0,
- * pinned upstream 4c011173838de5d65e8ea0407684ba820a277273).
+ * pinned upstream 32ff53a5da0e75ebac11acdb0251cd3d8c7bf408).
  *
  * Contract (INTEROPERABILITY.zh-CN) — same shape as the Ledger/Quire adapters:
  *  - Unchanged bytes pass through untouched: save() returns the original
@@ -155,6 +155,7 @@
    * @param {ArrayBuffer|Uint8Array} bytes the untouched original package bytes
    * @param {{name?:string, scopeId?:string, documentId?:string, generation?:number}} meta
    */
+
   async function open(bytes, meta = {}) {
     const L = await loadCodec();
     const original = bytes instanceof Uint8Array ? bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) : bytes.slice(0);
@@ -169,6 +170,18 @@
     let savedRevision = 0;
     let encodeMemo = null;
     const touchedRuns = [];
+    // Part preservation (R1): the baseline is what the writer makes of the UNEDITED presentation,
+    // written once in idle time after open (L.zip.idleBaseline). Every part the baseline and the
+    // edited write agree on keeps its original bytes (L.zip.preserveUntouched).
+    const written = async (pres) => {
+      L.pres = pres;
+      try { return await (await L.pptx.write(pres, { format: 'pptx' })).arrayBuffer(); } finally { L.pres = doc; }
+    };
+    const baseline = L.zip.idleBaseline(() => {
+      if (L.hist && typeof L.hist.clear === 'function') L.hist.clear();
+      if (Array.isArray(doc.losses)) doc.losses = doc.losses.filter((e) => e.phase !== 'save');
+      return written(doc);
+    }, () => editRevision === 0);
     const undoStack = [];
     const redoStack = [];
 
@@ -289,13 +302,17 @@
     async function encodeCurrent() {
       if (encodeMemo && encodeMemo.revision === editRevision) return encodeMemo;
       const rev = editRevision; // taken before the await: an edit during the encode must leave the memo stale
+      const base = await baseline.get(); // first: a baseline still being written finishes before this write starts
       L.pres = doc;
       if (L.hist && typeof L.hist.clear === 'function') L.hist.clear();
       if (Array.isArray(doc.losses)) doc.losses = doc.losses.filter((e) => e.phase !== 'save');
       const blob = await L.pptx.write(doc, { format: 'pptx' });
-      const buffer = await blob.arrayBuffer();
+      let buffer = await blob.arrayBuffer();
       const losses = (Array.isArray(doc.losses) ? doc.losses : []).filter((e) => !e.phase || e.phase === 'save').map((e) => ({ ...e }));
-      const memo = { revision: rev, bytes: buffer, losses };
+      const merged = base && await L.zip.preserveUntouched({ original, baseline: base, edited: buffer, mime: blob.type });
+      L.pres = doc;
+      if (merged) buffer = merged.buffer;
+      const memo = { revision: rev, bytes: buffer, losses, parts: merged ? { kept: merged.kept, written: merged.written } : null };
       if (rev === editRevision) encodeMemo = memo;
       return memo;
     }
@@ -490,6 +507,8 @@
       canUndo: () => undoStack.length > 0,
       canRedo: () => redoStack.length > 0,
       undoLabel: () => (undoStack.length ? undoStack[undoStack.length - 1].label : ''),
+      // One named undo step around several model edits (find/replace's 全部替换).
+      transact: (label, fn) => transact(String(label || ''), fn),
       redoLabel: () => (redoStack.length ? redoStack[redoStack.length - 1].label : ''),
       undo() {
         const step = undoStack.pop();
@@ -556,6 +575,7 @@
       originalBytes: () => cloneBytes(original),
       originalBytesEqual: (candidate) => bytesEqual(original, candidate),
     };
+    await baseline.schedule();
     return api;
   }
 

@@ -87,7 +87,7 @@ function openDocumentFileOrAttachToClioTalk(file) {
   withFinderObjects(() => {
     if (file.type === "alias") return openAliasFile(file);
     if (openProjectFileWithStationery(file)) return;
-    if (file.type === "text" || file.type === "chat") {
+    if (file.type === "text" || file.type === "chat" || file.type === "office") {
       // The system decides object routing: open intents resolve through the
       // Application Registry (teachText / docMap / clioTalk), never through
       // a second per-surface copy of "which app handles this object".
@@ -2439,7 +2439,8 @@ function moveChatFileToTrash() {
   purgeContextForTrashedItems([{ type: "file", id: file.id, item: file }]);
   trashItems.unshift({
     projectId: activeProjectId,
-    title: `${file.name}.${file.type === "text" ? "text" : "chat"}`,
+    // An Office document's name already carries its extension.
+    title: file.format ? file.name : `${file.name}.${file.type === "text" ? "text" : "chat"}`,
     body: file.type === "text" ? file.body : formatChatFile(file),
     originalPath: getProjectFolderPathLabel(file.folderId || null),
     originalType: "file",
