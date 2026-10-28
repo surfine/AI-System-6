@@ -2511,12 +2511,45 @@ function playOneMoreTuneWindow(cardId, from, to) {
     return false;
   }
   stopOneMoreTuneAudio();
+  // WebKit drops a BufferSource started on a still-suspended context: no
+  // error, no sound, and the resume promise may resolve a beat later — by
+  // which time the node is gone. Chrome buffers the node; Safari does not,
+  // which is why the desk played and the Mac stayed silent from question two.
+  // The play therefore waits for the context to BE running before it starts.
+  // The wait is a continuation rather than an await because every caller of
+  // this function reads a boolean synchronously; the schedule is optimistic,
+  // and a context that never reaches "running" says so in the status line
+  // instead of leaving the face pretending it played.
+  if (buffer && context && context.state !== "running") {
+    void (async () => {
+      const resumed = await Promise.race([
+        // Promise.resolve: an engine (or a test stub) may hand back undefined
+        // from resume(); awaiting it must not throw.
+        Promise.resolve(context.resume?.()).then(() => context.state).catch(() => context.state),
+        new Promise((resolve) => setTimeout(() => resolve(context.state), 1500)),
+      ]);
+      if (resumed !== "running") {
+        setStatus(t("one_more_tune_audio_blocked"));
+        return;
+      }
+      playOneMoreTuneWindow(cardId, from, to);
+    })();
+    return true;
+  }
   context?.resume?.().catch(() => {});
   // A preview the context refused — iOS Safari will not hand every store
   // preview to decodeAudioData — plays through its own media element. The
   // element is the fallback, not the first choice: Web Audio keeps the end of
   // the segment on the audio clock instead of a timer that pauses after it.
   if (!buffer) {
+    // This play is itself a gesture (ONE_MORE_TUNE_SOUND_COMMANDS unlocked at
+    // the door), so the gate re-arms right here before anything else touches
+    // it: the silent wav plays muted inside the tap, which is what keeps
+    // iOS's permission to play later alive for the NEXT question. Without
+    // this re-arm, a gate whose src a preload rewrote outside a gesture
+    // arrives locked, the play below is refused, and every question after
+    // the first is silent — the report this whole section answers.
+    unlockOneMoreTuneAudio();
     const element = oneMoreTuneAudioElement();
     if (!element) {
       setStatus(t("one_more_tune_audio_failed"));
@@ -3831,8 +3864,17 @@ async function oneMoreTuneLoadPreviewElement(key, sources) {
   const chain = (Array.isArray(sources) ? sources : [sources]).filter((value) => value);
   if (!chain.length) return false;
   if (oneMoreTuneAudio.elements.has(key)) return Promise.resolve(true);
-  const element = oneMoreTuneAudioElement();
-  if (!element) return false;
+  // A dedicated probe element, not the shared gate. The gate is the element
+  // whose one silent play inside a gesture buys iOS's permission to play
+  // later; loading a preview into it rewrites its src OUTSIDE any gesture,
+  // which re-locks the element on iOS — and then every question after the
+  // first is silent, the tap's own play() refused, with the face reporting a
+  // sound. The probe is throwaway: it only answers "does a player exist for
+  // this URL", and the real playback (playOneMoreTuneWindow) asks the gate
+  // itself, inside the tap that asked for the sound.
+  const element = new Audio();
+  element.preload = "auto";
+  element.muted = true;
   for (const url of chain) {
     if (!/^(?:https:\/\/|\/api\/one-more-tune\/preview\?url=)/.test(String(url))) continue;
     // eslint-disable-next-line no-await-in-loop -- a fallback chain is sequential.
@@ -3852,11 +3894,9 @@ async function oneMoreTuneLoadPreviewElement(key, sources) {
         finish(true);
       };
       const failed = () => finish(false);
-      if (element.dataset.oneMoreTuneGate === "1") delete element.dataset.oneMoreTuneGate;
-      if (element.src !== url) {
-        element.muted = false;
-        element.src = url;
-      }
+      // The probe stays muted for its whole life: it is never heard, and a
+      // muted element needs no gesture on any platform.
+      element.src = url;
       element.addEventListener("loadeddata", ready);
       element.addEventListener("error", failed);
       // Some browsers report neither for a preview they will still play; the
@@ -4596,28 +4636,81 @@ async function oneMoreTuneEnsureWheel() {
   return oneMoreTuneWheelModule;
 }
 
+// The clicker's preference, kept where the other per-browser choices live and
+// defaulting to on: the tick is the device's own feedback, and a wheel that
+// turns silently is half a wheel. Stored as a string, read once, and a storage
+// refusal keeps the preference in memory rather than losing the switch.
+const ONE_MORE_TUNE_CLICKER_KEY = "ai-system-6-one-more-tune-clicker";
+let oneMoreTuneClickerPreference = null;
+
+function oneMoreTuneWheelClicker() {
+  if (oneMoreTuneClickerPreference !== null) return oneMoreTuneClickerPreference;
+  try {
+    const raw = localStorage.getItem(ONE_MORE_TUNE_CLICKER_KEY);
+    oneMoreTuneClickerPreference = raw === null ? true : raw === "1";
+  } catch {
+    oneMoreTuneClickerPreference = true;
+  }
+  return oneMoreTuneClickerPreference;
+}
+
+function setOneMoreTuneWheelClicker(on) {
+  oneMoreTuneClickerPreference = Boolean(on);
+  try {
+    localStorage.setItem(ONE_MORE_TUNE_CLICKER_KEY, on ? "1" : "0");
+  } catch {
+    // Refused storage keeps the switch for this page; the wheel still turns.
+  }
+}
+
+function oneMoreTuneHaptic(ms) {
+  try { navigator.vibrate?.(ms); } catch { /* no haptics is fine */ }
+}
+
+// The selection lives with the question, not with the DOM: a repaint (an audio
+// status, a preload landing, a language sweep) rebuilds the room, and a turn
+// that vanished with it would be a wheel that forgets where it was pointing.
+let oneMoreTuneWheelSelection = { token: "", index: -1 };
+
 function oneMoreTuneAttachChoiceWheel(question) {
   const slot = document.querySelector('[data-window="oneMoreTune"] [data-one-more-tune-wheel]');
   if (!slot || !question || question.submitted) return;
+  const token = String(question.token || "");
+  if (oneMoreTuneWheelSelection.token !== token) oneMoreTuneWheelSelection = { token, index: -1 };
   void oneMoreTuneEnsureWheel().then((wheel) => {
     // The face may have moved on while the module travelled; a stale mount
     // would put a wheel on a reveal.
     if (!wheel || !slot.isConnected) return;
     const keys = () => [...slot.closest(".omt-room").querySelectorAll(".omt-opts button.omt-opt[data-one-more-tune-submit]")];
+    const focusRow = (index) => {
+      oneMoreTuneWheelSelection = { token, index };
+      keys().forEach((key, i) => {
+        if (i === index) key.setAttribute("data-wheel-focus", "true");
+        else key.removeAttribute("data-wheel-focus");
+      });
+    };
     wheel.mount(slot, {
       count: (question.choices || []).length,
+      ringAria: t("one_more_tune_wheel_ring_choice"),
+      ringAriaKey: "one_more_tune_wheel_ring_choice",
+      labelFor: (index) => (question.choices || [])[index]?.label || "",
       selectLabel: t("one_more_tune_wheel_select"),
+      caption: t("one_more_tune_wheel_cap_choice"),
+      clickerLabel: t("one_more_tune_wheel_clicker"),
+      clickerOn: oneMoreTuneWheelClicker,
+      onToggleClicker: setOneMoreTuneWheelClicker,
       zoneAria: (n) => t("one_more_tune_wheel_zone").replace("{n}", String(n + 1)),
-      onFocus: (index) => {
-        keys().forEach((key, i) => {
-          if (i === index) key.setAttribute("data-wheel-focus", "true");
-          else key.removeAttribute("data-wheel-focus");
-        });
+      initialFocus: oneMoreTuneWheelSelection.token === token ? oneMoreTuneWheelSelection.index : -1,
+      onFocus: focusRow,
+      // A cardinal press is the same door as the row: name it, then click the
+      // key it names, so the submit path, its receipts and its audio unlock
+      // are one path.
+      onTapZone: (index) => {
+        focusRow(index);
+        keys()[index]?.click();
       },
       onCommit: (index) => keys()[index]?.click(),
-      haptic: (ms) => {
-        try { navigator.vibrate?.(ms); } catch { /* no haptics is fine */ }
-      },
+      haptic: oneMoreTuneHaptic,
     });
   });
 }
@@ -4641,7 +4734,13 @@ function oneMoreTuneAttachReplayWheel(question) {
     const clamp = (seconds) => Math.max(0, Math.min(span - 1, seconds));
     wheel.mount(slot, {
       mode: "scrub",
+      ringAria: t("one_more_tune_wheel_ring_scrub"),
+      ringAriaKey: "one_more_tune_wheel_ring_scrub",
       selectLabel: t("one_more_tune_wheel_replay"),
+      caption: t("one_more_tune_wheel_cap_scrub"),
+      clickerLabel: t("one_more_tune_wheel_clicker"),
+      clickerOn: oneMoreTuneWheelClicker,
+      onToggleClicker: setOneMoreTuneWheelClicker,
       zoneAria: (n) => t("one_more_tune_wheel_zone_seek").replace("{n}", String(n + 1)),
       zoneSeconds: [-5, 5, 15, -15],
       scrubBy: (delta) => {
@@ -4661,9 +4760,7 @@ function oneMoreTuneAttachReplayWheel(question) {
           }
         });
       },
-      haptic: (ms) => {
-        try { navigator.vibrate?.(ms); } catch { /* no haptics is fine */ }
-      },
+      haptic: oneMoreTuneHaptic,
     });
   });
 }

@@ -1490,6 +1490,25 @@ body[data-theme="classic"] .one-more-tune-window {
   --omt-ring-ink-5:var(--ink);
   --omt-ring-ink-6:var(--ink);
   --omt-ring-ink-none:var(--ink);
+  /* The wheel in one bit: the same geometry, drawn as two ink rings instead of
+     a silver body. The shadows become edges, the paddle becomes paper, and
+     nothing about the turn or its size changes with the appearance. */
+  --omt-wheel-face:var(--paper);
+  --omt-wheel-shadow:0 0 0 2px var(--ink),inset 0 0 0 1px var(--ink);
+  --omt-wheel-pad:var(--paper);
+  --omt-wheel-pad-1:var(--paper);
+  --omt-wheel-pad-2:var(--paper);
+  --omt-wheel-pad-edge:var(--ink);
+  --omt-wheel-seam:var(--ink);
+  --omt-wheel-mark:var(--ink);
+  --omt-wheel-select-edge:var(--ink);
+  --omt-wheel-select:var(--paper);
+  --omt-wheel-pad-shadow:none;
+  /* A 1-bit disc still has to read as a disc. A dither loud enough to see
+     darkens the whole wheel; a bevel inside the paddle's edge separates it
+     from the band with two hairlines, which is the same trick the desk's
+     other one-bit surfaces use. */
+  --omt-wheel-pad-image:none;
 }
 
 /* --- A phone on its side ----------------------------------------------------
@@ -1666,47 +1685,150 @@ body[data-theme="classic"] .one-more-tune-window {
 }
 .one-more-tune-window .omt-radio { grid-area:stage }
 .one-more-tune-window .omt-gap { grid-area:gap;min-height:0 }
-/* The click wheel. Constants measured from Apple Music's own 404 easter egg;
-   the feel lives in one-more-tune-wheel.js, this is only the body it wears.
-   Narrow rooms keep the keys alone — a phone's keys are already thumb-sized,
-   and the wheel is the desk's second way to press, not a third thing to learn. */
+/* --- The click wheel ------------------------------------------------------
+   One surface, like the device: the ring itself is the pointer target, the
+   four numbers are carved marks on it, and the centre is the only button on
+   it. Covering the ring with four buttons — the build this replaces — left
+   nothing to turn, which is why it stood still.
+   The materials are Apple Music's own 404 easter egg's (web-music-ipod.esm.js,
+   read 2026-10-28): a nine-layer shadow on the body, a conic highlight arc on
+   the rim, a noise-and-radial paddle inside, and a two-layer dome for the
+   centre. Four tokens are what an appearance may re-value — Classic does —
+   and the geometry and the feel never change with it. */
 .one-more-tune-window .omt-wheel-slot { display:none }
 .one-more-tune-window .omt-wheel-ring {
-  position:relative;width:208px;aspect-ratio:1;border-radius:50%;
-  touch-action:none;user-select:none;-webkit-user-select:none;
-  background:radial-gradient(circle,var(--omt-key) 0 37%,var(--omt-key-press) 38% 100%);
-  box-shadow:inset 0 0 0 2px var(--omt-key-edge),0 2px 4px rgba(0,0,0,.12);
+  position:relative;
+  /* The row is the bound, not the room: a landscape phone's room is 480px
+     tall but its wheel row is about 200, and a room-height rule put the
+     wheel's bottom past the viewport. The caption keeps its 34px first. */
+  height:min(360px,calc(100% - 34px));
+  width:auto;
+  aspect-ratio:1;
+  border-radius:50%;
+  cursor:grab;
+  touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+  background-color:var(--omt-wheel-face,#f8f8f8);
+  box-shadow:var(--omt-wheel-shadow,
+    inset -16px 29px 11px 15px #f4f4f4,
+    inset 8px -7px 34px -15px rgba(137,137,137,.8),
+    0 0 0 2px rgba(135,135,135,.38),
+    -4px 6px 10px 0 rgba(131,131,131,.23),
+    0 0 1px 3px rgba(72,72,72,.1),
+    0 -1px 1px 2px rgba(168,168,168,.67),
+    0 0 1px 3px #e9e9e8,
+    -2px 3px 1px 2px #d7d7d7,
+    -1px 1px 0 3px rgba(229,229,229,.47));
 }
-.one-more-tune-window .omt-wheel-quad { position:absolute;inset:0;border-radius:50%;pointer-events:none }
-.one-more-tune-window .omt-wheel-zone,.one-more-tune-window .omt-wheel-select {
-  border:0;background:transparent;color:var(--omt-room-ink);font:inherit;cursor:pointer;
-  transition:transform 160ms cubic-bezier(.23,1,.32,1);
+.one-more-tune-window .omt-wheel-ring:active { cursor:grabbing }
+.one-more-tune-window .omt-wheel-ring:focus-visible {
+  outline:2px solid var(--omt-room-ink);outline-offset:-6px;
 }
-.one-more-tune-window .omt-wheel-zone {
-  position:absolute;min-width:44px;min-height:34px;padding:4px 8px;border-radius:var(--omt-opt-radius);
-  font-size:14px;letter-spacing:.06em;
+/* The highlight arc sweeping the rim, exactly the egg's. */
+.one-more-tune-window .omt-wheel-ring::after {
+  content:"";position:absolute;display:block;
+  top:4.3%;left:5.9%;width:90.6%;height:90.6%;padding:4px;
+  border-radius:50%;
+  background-image:conic-gradient(from 345deg at center, transparent 0, transparent 16%, #fff 22%, transparent 30%, transparent 67%, #fff 72%, transparent 80%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite:exclude;
+  mask-composite:exclude;
+  filter:blur(12px);
+  pointer-events:none;
 }
-.one-more-tune-window .omt-wheel-zone[data-zone="0"] { top:7%;left:50%;transform:translateX(-50%) }
-.one-more-tune-window .omt-wheel-zone[data-zone="1"] { right:4%;top:50%;transform:translateY(-50%) }
-.one-more-tune-window .omt-wheel-zone[data-zone="2"] { bottom:7%;left:50%;transform:translateX(-50%) }
-.one-more-tune-window .omt-wheel-zone[data-zone="3"] { left:4%;top:50%;transform:translateY(-50%) }
-.one-more-tune-window .omt-wheel-zone[data-zone="0"]:active { transform:translateX(-50%) scale(.96);transition-duration:100ms }
-.one-more-tune-window .omt-wheel-zone[data-zone="2"]:active { transform:translateX(-50%) scale(.96);transition-duration:100ms }
-.one-more-tune-window .omt-wheel-zone[data-zone="1"]:active,.one-more-tune-window .omt-wheel-zone[data-zone="3"]:active { transform:translateY(-50%) scale(.96);transition-duration:100ms }
-.one-more-tune-window .omt-wheel-zone.is-on { font-weight:600 }
-/* The scrub's zones carry ±seconds, not single digits: a touch smaller and
-   tighter, same targets. */
-.one-more-tune-window[data-omt-scrub] .omt-wheel-zone { font-size:12.5px;letter-spacing:.02em;padding:4px 6px }
-.one-more-tune-window .omt-wheel-zone:focus-visible,.one-more-tune-window .omt-wheel-select:focus-visible { outline:2px solid var(--omt-room-ink);outline-offset:2px }
+/* The paddle: the egg's .scroll-wheel — fine tooth, a cooled radial, a dark
+   rim and the two shadows that make it sit under the ring's lip. It is the
+   surface's face, never a separate hit area; the ring above it takes every
+   pointer. */
+.one-more-tune-window .omt-wheel-pad {
+  position:absolute;inset:7.5%;border-radius:50%;
+  background-color:var(--omt-wheel-pad,#f2f2f2);
+  background-image:var(--omt-wheel-pad-image,
+    radial-gradient(circle at 1px 1px, rgba(0,0,0,.03) 1px, transparent 0),
+    radial-gradient(circle at 130% -100%, var(--omt-wheel-pad-1,#eaeaea), var(--omt-wheel-pad-2,#f6f6f6)));
+  background-size:4px 4px, 100% 100%;
+  border:2px solid var(--omt-wheel-pad-edge,#7e7e7e);
+  box-shadow:var(--omt-wheel-pad-shadow,
+    inset 0 0 0 2px rgba(249,249,249,.27),
+    4px -5px 18px 0 rgba(122,122,122,.6),
+    0 -1px 4px 2px rgba(168,168,168,.67));
+  pointer-events:none;
+}
+/* The two seams the egg draws at 45°/135°, marking the four presses. */
+.one-more-tune-window .omt-wheel-seams {
+  position:absolute;inset:0;border-radius:50%;pointer-events:none;overflow:hidden;
+}
+.one-more-tune-window .omt-wheel-seams::before,
+.one-more-tune-window .omt-wheel-seams::after {
+  content:"";position:absolute;top:0;width:0;height:100%;
+  border-left:1px solid var(--omt-wheel-seam,rgba(136,136,136,.45));
+}
+.one-more-tune-window .omt-wheel-seams::before { left:49.7%;transform:rotate(135deg) }
+.one-more-tune-window .omt-wheel-seams::after { left:50%;transform:rotate(45deg) }
+/* The four numbers are printing, not controls: they name where a press lands,
+   and they never take a pointer away from the turn. */
+.one-more-tune-window .omt-wheel-label {
+  position:absolute;pointer-events:none;
+  font-size:12px;font-weight:700;letter-spacing:.04em;line-height:1;
+  color:var(--omt-wheel-mark,#898989);
+  /* The printing sits in the band between the paddle and the rim; a paper
+     halo keeps a seam from striking through the digit. */
+  text-shadow:0 0 4px var(--omt-wheel-face,#f8f8f8),0 0 4px var(--omt-wheel-face,#f8f8f8),0 0 4px var(--omt-wheel-face,#f8f8f8);
+}
+.one-more-tune-window .omt-wheel-label[data-zone="0"] { top:2.2%;left:50%;transform:translateX(-50%) }
+.one-more-tune-window .omt-wheel-label[data-zone="1"] { right:2.2%;top:50%;transform:translateY(-50%) }
+.one-more-tune-window .omt-wheel-label[data-zone="2"] { bottom:2.2%;left:50%;transform:translateX(-50%) }
+.one-more-tune-window .omt-wheel-label[data-zone="3"] { left:2.2%;top:50%;transform:translateY(-50%) }
+.one-more-tune-window .omt-wheel-label.is-on { color:var(--omt-room-ink) }
+/* The centre: the egg's two-layer dome — a top sheen over a dark-to-light
+   dish — with its own border and press shadow. */
 .one-more-tune-window .omt-wheel-select {
-  position:absolute;inset:31%;border-radius:50%;font-size:13px;
-  background:var(--omt-key);box-shadow:inset 0 0 0 2px var(--omt-key-edge);
+  position:absolute;top:50%;left:50%;width:38%;height:38%;
+  transform:translate(-50%,-50%);
+  background:var(--omt-wheel-select,
+    radial-gradient(ellipse closest-side at 50% 30%, rgba(255,255,255,.2) 0%, rgba(255,255,255,.2) 72%, transparent 80.6%),
+    radial-gradient(farthest-side at -9% 209%, rgba(22,22,22,.19) 0%, rgba(250,250,250,.93)));
+  border:2px solid var(--omt-wheel-select-edge,#9f9f9f);border-radius:50%;
+  color:var(--omt-wheel-mark,#898989);font:inherit;font-size:15px;letter-spacing:.06em;
+  display:grid;place-items:center;cursor:pointer;
+  transition:transform .1s ease-out, box-shadow .1s ease-out;
+  -webkit-tap-highlight-color:transparent;
 }
-.one-more-tune-window .omt-wheel-select:active { transform:scale(.96);transition-duration:100ms }
-/* The wheel's focus is the key's own state, not a second highlight: instant,
-   like an iPod's selection, and animated nowhere (keyboard rule). */
-.one-more-tune-window .omt-opt[data-wheel-focus] { box-shadow:inset 0 0 0 2px var(--omt-room-ink);background:var(--omt-key-press) }
+.one-more-tune-window .omt-wheel-select:active {
+  transform:translate(-50%,-50%) scale(.98);
+  box-shadow:0 0 1px 1px #909090;
+  transition-duration:100ms;
+}
+.one-more-tune-window .omt-wheel-select:focus-visible {
+  outline:2px solid var(--omt-room-ink);outline-offset:3px;
+}
+/* What the wheel drives, said once under it, with the one switch a quiet desk
+   needs: the click. */
+.one-more-tune-window .omt-wheel-cap {
+  display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
+  margin:14px 0 0;font-size:12px;color:var(--omt-room-ink-3);text-align:center;
+}
+.one-more-tune-window .omt-wheel-clicker {
+  border:0;background:transparent;color:inherit;font:inherit;font-size:14px;
+  padding:2px 8px;border-radius:var(--omt-opt-radius);cursor:pointer;opacity:.4;
+  min-width:32px;min-height:32px;
+}
+.one-more-tune-window .omt-wheel-clicker[aria-pressed="true"] { opacity:1 }
+.one-more-tune-window .omt-wheel-clicker:active { transform:scale(.96);transition:transform 100ms cubic-bezier(.23,1,.32,1) }
+.one-more-tune-window .omt-wheel-clicker:focus-visible { outline:2px solid var(--omt-room-ink);outline-offset:2px }
+/* The selection is the screen's: the focused row inverts, instantly — an
+   iPod's selection moves with the wheel and never fades (and keyboard-driven
+   state changes take no animation anywhere). */
+.one-more-tune-window .omt-opt[data-wheel-focus] {
+  background:var(--omt-key-down);color:var(--omt-key-down-ink);
+  box-shadow:inset 0 0 0 2px var(--omt-key-down);
+}
+.one-more-tune-window .omt-opt[data-wheel-focus] .omt-key {
+  background:var(--omt-key-down-ink);color:var(--omt-key-down);
+}
 .one-more-tune-window .omt-room[data-omt-waiting] .omt-wheel-slot { opacity:.45 }
+
+
 .one-more-tune-window .omt-q { grid-area:q;min-width:0 }
 .one-more-tune-window .omt-opts { grid-area:opts;min-width:0 }
 .one-more-tune-window .omt-sr { position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap }
@@ -1930,11 +2052,59 @@ body[data-theme="classic"] .one-more-tune-window {
    right, and the way onward comes back where the keys were, so a pointer never
    crosses the window for it. */
 @container omt (min-aspect-ratio:13/10) {
-  .one-more-tune-window .omt-in { grid-template-columns:minmax(0,min(46cqw,460px)) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"stage q" "stage gap" "stage opts";column-gap:clamp(20px,4cqw,44px);padding-top:18px;
-    --omt-card-h:clamp(110px,100cqh - 280px,240px) }
+  /* A desk's room is a device: the question, then its screen (the four rows,
+     as a menu), then the wheel under it. The screen sits above the wheel
+     because that is the object being imitated, and because the band that used
+     to be empty is now the wheel's own height. */
+  .one-more-tune-window .omt-in { grid-template-columns:minmax(0,min(46cqw,460px)) minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);grid-template-areas:"stage q" "stage opts" "stage gap";column-gap:clamp(20px,4cqw,44px);padding-top:18px;
+    --omt-card-h:clamp(180px,100cqh - 380px,320px) }
   .one-more-tune-window .omt-radio { align-self:center }
-  .one-more-tune-window .omt-gap { display:grid;place-items:center }
-  .one-more-tune-window .omt-wheel-slot { display:block }
+  /* stretch, not center: a percentage height needs a definite parent, and a
+     centred grid item is content-sized — the wheel's height:100% resolved to
+     zero and the ring vanished. */
+  .one-more-tune-window .omt-gap { display:grid;place-items:center;align-content:stretch;gap:0;min-height:0 }
+  .one-more-tune-window .omt-wheel-slot {
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    height:100%;min-height:0;
+  }
+  /* The screen: one panel, four rows, the key number in its own column. The
+     rows stay the same buttons (and the reveal's same divs), so the submit
+     path and the reader's keyboard are untouched — only the drawing changes. */
+  .one-more-tune-window .omt-opts .omt-grid {
+    grid-template-columns:minmax(0,1fr);gap:0;
+    border:2px solid var(--omt-room-ink);background:var(--omt-key);
+  }
+  .one-more-tune-window .omt-opts .omt-opt {
+    flex-direction:row;align-items:center;justify-content:flex-start;gap:12px;
+    min-height:44px;padding:0 14px;border-radius:0;box-shadow:none;
+    background:transparent;border-bottom:1px solid var(--omt-room-hair);
+    font-size:15px;font-weight:600;
+  }
+  .one-more-tune-window .omt-opts .omt-opt:last-child { border-bottom:0 }
+  .one-more-tune-window .omt-opts .omt-opt .omt-key { width:20px;height:20px;font-size:11px;flex:none }
+  .one-more-tune-window .omt-opts .omt-opt[data-wheel-focus] { background:var(--omt-key-down);color:var(--omt-key-down-ink);box-shadow:none }
+  .one-more-tune-window .omt-opts .omt-opt[data-wheel-focus] .omt-key { background:var(--omt-key-down-ink);color:var(--omt-key-down) }
+  .one-more-tune-window .omt-opts .omt-mark { top:50%;transform:translateY(-50%) }
+  /* The reveal's own states, restated for the screen: the row rules above set
+     a transparent background, and a latched row keeps white ink — without
+     these it printed white on white. */
+  .one-more-tune-window .omt-opts .omt-opt[data-state="right"] { background:var(--omt-key-down);color:var(--omt-key-down-ink);border-bottom-color:transparent }
+  .one-more-tune-window .omt-opts .omt-opt[data-state="right"] .omt-key { background:var(--omt-key-down-ink);color:var(--omt-key-down) }
+  .one-more-tune-window .omt-opts .omt-opt[data-state="wrong"] { background:transparent;color:var(--omt-room-ink-2) }
+  .one-more-tune-window .omt-opts .omt-opt[data-state="pending"] { background:var(--omt-key-press);color:var(--omt-room-ink) }
+  .one-more-tune-window .omt-opts .omt-opt[data-state="idle"] { color:var(--omt-room-ink-3) }
+  /* A reveal carries its own Next under the screen, so its wheel steps down
+     just enough for both to fit one room. */
+  .one-more-tune-window .omt-room[data-omt-phase="reveal"] .omt-wheel-ring { height:min(320px,calc(100% - 34px)) }
+}
+
+/* A short wide room has no floor for a wheel: the row it would get is under
+   200px, and a 60px wheel is a toy. The screen keeps the room instead, its
+   four rows centred where the wheel would have been. */
+@container omt (min-aspect-ratio:13/10) and (max-height:600px) {
+  .one-more-tune-window .omt-in { grid-template-rows:auto minmax(0,1fr);grid-template-areas:"stage q" "stage opts" }
+  .one-more-tune-window .omt-wheel-slot { display:none }
+  .one-more-tune-window .omt-opts { align-self:center }
   .one-more-tune-window .omt-room[data-omt-phase="result"] .omt-in { grid-template-columns:minmax(0,min(44cqw,420px)) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto;grid-template-areas:"head list" "head gap" "head acts" "head desk" }
   .one-more-tune-window .omt-rhead { align-self:center }
   .one-more-tune-window .omt-list { grid-template-rows:repeat(5,auto);grid-auto-flow:column;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:22px }

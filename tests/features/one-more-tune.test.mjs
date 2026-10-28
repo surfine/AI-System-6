@@ -1014,8 +1014,8 @@ test.assertIncludes(source, '"one-more-tune-play-again",', "the button's press u
     "upright, the question reads straight after the radio and its keys follow; the room's slack pools under them, not between card and question");
   test.assertMatches(room, /@container omt \(max-aspect-ratio:13\/10\) and \(max-height:600px\) \{[\s\S]{0,500}--omt-card-h:clamp\(/,
     "a short upright room gives up the card's height first");
-  test.assertMatches(room, /@container omt \(min-aspect-ratio:13\/10\) \{[\s\S]{0,500}grid-template-areas:"stage q" "stage gap" "stage opts"/,
-    "a wide room gives the radio the left column, the question at the top right and the keys at the bottom");
+  test.assertMatches(room, /@container omt \(min-aspect-ratio:13\/10\) \{[\s\S]{0,900}grid-template-areas:"stage q" "stage opts" "stage gap"/,
+    "a wide room reads as the device: question, then its screen (the four rows), then the wheel under them");
   test.assertIncludes(room, "--omt-card-h:clamp(84px,100cqh - 560px,200px)",
     "the card takes the room's height after the dial, the question and its four keys");
   test.assertMatches(room, /:not\(\.is-mobile-fullscreen\) \.omt-room \{ flex:none;height:clamp\(/,

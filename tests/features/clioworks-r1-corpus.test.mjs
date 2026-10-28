@@ -99,7 +99,15 @@ const run = async () => {
   for (const entry of manifest) {
     const path = join(CORPUS, entry.file.split(".").pop(), entry.file);
     const present = existsSync(path);
-    test.assert(present, `${entry.id}: ${entry.file} exists`);
+    // The published snapshot ships this corpus minus the files its own licence
+    // holds back (the four PDFs: government documents with no open licence,
+    // internal-only pending the owner's confirmation — see the corpus README
+    // and the snapshot manifest's excludePaths). Absence is therefore a state
+    // only a held-back file may be in; a file that is here must still match
+    // the hash it was recorded with.
+    const heldBack = /不再分发|internal testing only/i.test(entry.license || "");
+    test.assert(present || heldBack,
+      present ? `${entry.id}: ${entry.file} exists` : `${entry.id}: ${entry.file} is absent only because its licence holds it back`);
     if (present) test.assert(sha256(readFileSync(path)) === entry.sha256, `${entry.id}: ${entry.file} still has its recorded sha256 (fixtures never silently change)`);
     test.assert(typeof entry.license === "string" && entry.license.length > 8, `${entry.id}: a licence is recorded`);
     test.assert(typeof entry.url === "string" && /^https?:\/\//.test(entry.url) && typeof entry.source_page === "string" && entry.source_page.length > 0, `${entry.id}: url and source_page are recorded`);

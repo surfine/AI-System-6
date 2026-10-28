@@ -171,14 +171,49 @@ test.assertIncludes(css, ".one-more-tune-window .omt-wheel-slot { display:none }
   "narrow rooms keep the keys alone: the wheel is hidden there");
 test.assertIncludes(css, "touch-action:none",
   "the ring claims its own gestures and never the page's scroll");
-test.assertMatches(css, /@container omt \(min-aspect-ratio:13\/10\) \{[\s\S]{0,600}\.one-more-tune-window \.omt-wheel-slot \{ display:block \}/,
+test.assertMatches(css, /@container omt \(min-aspect-ratio:13\/10\) \{[\s\S]{0,1400}\.one-more-tune-window \.omt-wheel-slot \{[\s\S]{0,200}display:flex/,
   "wide rooms give the wheel the breathing space");
-test.assertMatches(css, /\.omt-wheel-zone\[data-zone="0"\]:active \{[^}]*scale\(\.96\)/,
-  "a zone answers the press on the way down, with a scale a finger can feel");
+test.assertMatches(css, /\.omt-wheel-select:active \{[^}]*scale\(\.98\)/,
+  "the centre answers the press on the way down, with a scale a finger can feel");
 test.assertMatches(css, /\.omt-opt\[data-wheel-focus\] \{[^}]*\}/,
-  "the wheel's focus is a state on the keys the eye already knows");
+  "the wheel's focus is a state on the rows the eye already knows");
 test.assert(!/transition:all/.test(css.slice(css.indexOf(".omt-wheel-slot"))),
   "the wheel's transitions name their properties");
+
+// ---- One surface, and the two presses it tells apart -----------------------
+
+test.assert(wheel.constants.tapDegrees === 8 && wheel.constants.tapMs === 400,
+  "a press under 8 degrees and 400ms is a cardinal press, not a turn");
+test.assertMatches(source, /ring\.setAttribute\("role", "slider"\)/,
+  "the ring is a slider; the rows stay buttons, so a reader has both doors");
+test.assertMatches(source, /ring\.setAttribute\("aria-valuenow", String\(focus \+ 1\)\)/,
+  "and its value follows the selected row");
+test.assertMatches(source, /function cardinalAt\(point\)/,
+  "a press is classified by the angle it landed on");
+// Screen coordinates put +y downward, so 90 degrees is the BOTTOM: an
+// angle table written from the maths convention is a quarter turn out, and
+// a press on the top of the ring selects the fourth choice. All four.
+{
+  const cardinal = wheel.cardinal;
+  test.assert(cardinal(0, -100) === 0, "up on screen is choice 1's position");
+  test.assert(cardinal(100, 0) === 1, "right is choice 2's");
+  test.assert(cardinal(0, 100) === 2, "down is choice 3's");
+  test.assert(cardinal(-100, 0) === 3, "left is choice 4's");
+}
+test.assertMatches(source, /if \(event\.target\.closest\("button"\)\) return;/,
+  "only the centre button owns its press; the ring takes everything else");
+test.assert(!/\.omt-wheel-zone\b/.test(source + css),
+  "no buttons sit on the ring — the build that covered it could not be turned");
+test.assertMatches(source, /const tier = Math\.min\(step\.tier, tiers\.length - 1\);/,
+  "the seek ladder's index is clamped: the gesture has eight stops, the ladder seven, and the eighth used to read past it as NaN");
+test.assertMatches(css, /\.omt-wheel-label \{[^}]*pointer-events:none/,
+  "the carved numbers never take a pointer away from the turn");
+test.assertMatches(css, /\.omt-wheel-pad \{[\s\S]{0,700}pointer-events:none/,
+  "the paddle is the surface's face, not a second hit area");
+test.assertMatches(source, /if \(!handlers\.clickerOn\?\.\(\)\) return;/,
+  "the click obeys the switch the caption carries");
+test.assertIncludes(read("app/data/translations-en.js"), 'one_more_tune_wheel_clicker: "Click sound"',
+  "and the switch is named in both languages");
 // ---- The scrub: the reveal's wheel, and where the red line lives -----------
 
 test.assert(wheel.constants.seekTiers.join(",") === "5,5,5,10,10,10,20",
@@ -191,5 +226,7 @@ test.assertMatches(host, /oneMoreTuneRoot\(\)\?\.removeAttribute\("data-omt-scru
   "a question face takes the scrub dress back off");
 test.assertIncludes(read("app/data/translations-zh.js"), 'one_more_tune_wheel_replay: "重听"',
   "the scrub's centre has its own name in both languages");
+test.assertMatches(source, /ring\.setAttribute\("aria-label", handlers\.ringAria \|\| ""\)/,
+  "the ring carries its own accessible name, not a borrowed one");
 
 test.finish();
