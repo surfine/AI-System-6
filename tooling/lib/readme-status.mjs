@@ -32,8 +32,15 @@ export function statusLine({ version, build, chinese = false }) {
   const buildLabel = chinese ? "构建" : "build";
   const notes = chinese ? "发布说明" : "release notes";
   const tag = releaseTag(version);
-  return `${STATUS_START}**${label} ${version}** · ${buildLabel} ${build} · ${date} · `
-    + `[${notes}](https://github.com/${REPO_SLUG}/releases/tag/${tag})${STATUS_END}`;
+  // The markers must be their own lines. A line that starts with an HTML
+  // comment is an HTML block to GitHub's Markdown parser, so Markdown after the
+  // comment on the same line renders as literal asterisks and brackets.
+  return [
+    STATUS_START,
+    `**${label} ${version}** · ${buildLabel} ${build} · ${date} · `
+      + `[${notes}](https://github.com/${REPO_SLUG}/releases/tag/${tag})`,
+    STATUS_END,
+  ].join("\n");
 }
 
 /** Replace the marked line, or return null when the document has no markers. */

@@ -14,9 +14,16 @@ test.assert(buildDate("not-a-stamp") === "", "a malformed stamp yields no date i
 
 const english = statusLine({ version: "2.0.0-beta.1", build: "20261101.1" });
 test.assert(
-  english === "<!-- status:start -->**Beta 2.0.0-beta.1** · build 20261101.1 · 2026-11-01 · "
-    + "[release notes](https://github.com/surfine/AI-System-6/releases/tag/v2.0.0-beta.1)<!-- status:end -->",
+  english === "<!-- status:start -->\n"
+    + "**Beta 2.0.0-beta.1** · build 20261101.1 · 2026-11-01 · "
+    + "[release notes](https://github.com/surfine/AI-System-6/releases/tag/v2.0.0-beta.1)\n"
+    + "<!-- status:end -->",
   "the English line names the version, build, date and release tag"
+);
+test.assert(
+  english.startsWith("<!-- status:start -->\n")
+    && english.endsWith("\n<!-- status:end -->"),
+  "the HTML markers are separate lines so GitHub parses the Markdown between them"
 );
 
 const chinese = statusLine({ version: "2.0.0-beta.1", build: "20261101.1", chinese: true });

@@ -6,7 +6,9 @@
 
 <!-- doc-claims: verified | audited: 2026-11-01 -->
 
-<!-- status:start -->**Beta 2.0.0-beta.1** · build 20261101.1 · 2026-11-01 · [release notes](https://github.com/surfine/AI-System-6/releases/tag/v2.0.0-beta.1)<!-- status:end -->
+<!-- status:start -->
+**Beta 2.0.0-beta.1** · build 20261101.1 · 2026-11-01 · [release notes](https://github.com/surfine/AI-System-6/releases/tag/v2.0.0-beta.1)
+<!-- status:end -->
 
 **A local-first writing desk where the AI never becomes your voice.**<br>
 One route from your raw questions to a finished piece. Projects in your browser. A stateless server. Two floppy disks.
